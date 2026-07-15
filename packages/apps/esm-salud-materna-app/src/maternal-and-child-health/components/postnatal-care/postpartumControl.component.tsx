@@ -10,17 +10,16 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { launchWorkspace2, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { useLayoutType } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import type { ConfigObject } from '../../../config-schema';
 import { postnatalCareEditPrivilege } from '../../../constants';
+import { useMaternalFormLauncher } from '../../../hooks/useMaternalFormLauncher';
 import { usePostpartumControlTable } from '../../../hooks/usePostpartumControl';
-import { formEntryWorkspace } from '../../../types';
 
 import styles from './postnatalCareChart.scss';
 
@@ -44,17 +43,11 @@ const PostpartumControlTable: React.FC<ProgramsDetailedSummaryProps> = ({ patien
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
   const headerTitle = t('controlPuerperio', 'Control Puerperio');
-  const config = useConfig() as ConfigObject;
   const { prenatalEncounters, isValidating, mutate } = usePostpartumControlTable(patientUuid);
-
-  const formPrenatalUuid = config.formsList.postpartumControl;
+  const { launchForm: launchPostpartumControlForm } = useMaternalFormLauncher('postpartumControl', headerTitle);
 
   const handleAddPrenatalAttention = () => {
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: formPrenatalUuid },
-      encounterUuid: '',
-      handlePostResponse: mutate,
-    });
+    launchPostpartumControlForm('', () => void mutate());
   };
 
   // Define all possible row types based on the group members we've seen

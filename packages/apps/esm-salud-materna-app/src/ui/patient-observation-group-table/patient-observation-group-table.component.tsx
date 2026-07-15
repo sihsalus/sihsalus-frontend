@@ -14,12 +14,12 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { AddIcon, formatDate, isDesktop, launchWorkspace2, useLayoutType } from '@openmrs/esm-framework';
+import { AddIcon, formatDate, isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState, useFilteredEncounter } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import { formEntryWorkspace } from '../../types';
+import { useMaternalFormIdentifierLauncher } from '../../hooks/useMaternalFormLauncher';
 
 import ObservationGroupDetails, { type ObservationGroup } from './observation-group-details.component';
 import styles from './patient-observation-group-table.scss';
@@ -83,20 +83,11 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
     error,
     mutate,
   } = useFilteredEncounter(patientUuid, encounterType, formUuid);
+  const { launchForm: launchResolvedForm } = useMaternalFormIdentifierLauncher(formWorkspace, headerTitle);
   //TODO: MODIFY THIS TO SEND THE CURRENT DATA TO THE WORKSPACE , IT SHOULD BE EDITABLE
   const launchForm = useCallback(() => {
-    try {
-      if (formWorkspace) {
-        launchWorkspace2(formEntryWorkspace, {
-          form: { uuid: formWorkspace },
-          encounterUuid: '',
-          handlePostResponse: () => void mutate(),
-        });
-      }
-    } catch (err) {
-      console.error('Failed to launch form:', err);
-    }
-  }, [formWorkspace, mutate]);
+    launchResolvedForm('', () => void mutate());
+  }, [launchResolvedForm, mutate]);
 
   const parseDisplay = useCallback((display: string) => {
     const [category, ...rest] = display.split(': ');

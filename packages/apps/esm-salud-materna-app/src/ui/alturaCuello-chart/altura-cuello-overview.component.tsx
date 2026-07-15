@@ -1,16 +1,14 @@
 // altura-cuello-overview.component.tsx
 import { Button, DataTableSkeleton, InlineLoading } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import type { ConfigObject } from '../../config-schema';
 import { prenatalCareEditPrivilege } from '../../constants';
+import { useMaternalFormLauncher } from '../../hooks/useMaternalFormLauncher';
 import { usePrenatalMeasurements } from '../../hooks/usePrenatalMeasurements';
-import { formEntryWorkspace } from '../../types';
 import { getSafePatientName } from '../../utils/utils';
 
 import AlturaCuelloChart from './altura-cuello-chart.component';
@@ -23,7 +21,6 @@ interface AlturaCuelloOverviewProps {
 
 const AlturaCuelloOverview: React.FC<AlturaCuelloOverviewProps> = ({ patient, patientUuid }) => {
   const { t } = useTranslation();
-  const config = useConfig<ConfigObject>();
 
   const headerTitle = t('obstetricalCharts', 'Obstetrical Charts');
   const displayText = t('noMeasurementDataAvailable', 'No hay datos de mediciones disponibles');
@@ -33,12 +30,10 @@ const AlturaCuelloOverview: React.FC<AlturaCuelloOverviewProps> = ({ patient, pa
 
   // Hook para obtener datos de mediciones prenatales
   const { data, pregnancyStartDate, isLoading, error, mutate } = usePrenatalMeasurements(patientUuid);
+  const { launchForm: launchPrenatalCareForm } = useMaternalFormLauncher('atencionPrenatal', 'Atención prenatal');
   const launchForm = useCallback(() => {
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: config.formsList.atencionPrenatal },
-      handlePostResponse: () => void mutate(),
-    });
-  }, [config.formsList.atencionPrenatal, mutate]);
+    launchPrenatalCareForm('', () => void mutate());
+  }, [launchPrenatalCareForm, mutate]);
   const gestationalWeeks = useMemo(
     () => (pregnancyStartDate ? dayjs().diff(dayjs(pregnancyStartDate), 'week') : undefined),
     [pregnancyStartDate],

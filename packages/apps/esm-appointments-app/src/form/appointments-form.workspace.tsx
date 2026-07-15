@@ -41,7 +41,7 @@ import {
   validatePlainNumberInput,
 } from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Controller, useController, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -64,11 +64,11 @@ import {
   AppointmentKind,
   type AppointmentPayload,
   type AppointmentProviderDetails,
+  type AppointmentService,
   AppointmentStatus,
   type RecurringPattern,
 } from '../types';
 import Workload from '../workload/workload.component';
-//TO DO FIX THIS SHIT
 import {
   checkAppointmentConflict,
   checkRecurringAppointmentConflict,
@@ -142,7 +142,29 @@ const time12HourFormatRegexPattern = '^(1[0-2]|0?[1-9]):[0-5][0-9]$';
 
 const isValidTime = (timeStr: string) => timeStr.match(new RegExp(time12HourFormatRegexPattern));
 
-const isSuccessfulAppointmentResponse = (status?: number) => status >= 200 && status < 300 && status !== 204;
+const isSuccessfulAppointmentResponse = (status?: number) => status >= 200 && status < 300;
+
+function getErrorStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== 'object') {
+    return undefined;
+  }
+
+  const candidate = error as { status?: unknown; responseStatus?: unknown; response?: { status?: unknown } };
+  const status = candidate.status ?? candidate.responseStatus ?? candidate.response?.status;
+  return typeof status === 'number' ? status : undefined;
+}
+
+function isDefinitiveAppointmentSaveRejection(error: unknown) {
+  const status = getErrorStatus(error);
+  return Boolean(status && status >= 400 && status < 500 && ![408, 425, 429].includes(status));
+}
+
+function getConfiguredAppointmentDuration(service?: AppointmentService, serviceTypeUuid?: string) {
+  const serviceTypeDuration = serviceTypeUuid
+    ? service?.serviceTypes?.find((serviceType) => serviceType.uuid === serviceTypeUuid)?.duration
+    : undefined;
+  return serviceTypeDuration ?? service?.durationMins ?? DEFAULT_APPOINTMENT_DURATION_MINUTES;
+}
 
 function isValidDate(value: Date | undefined): value is Date {
   return value instanceof Date && !Number.isNaN(value.getTime());
@@ -295,7 +317,7 @@ const AppointmentsForm: React.FC<
   const workspaceTitle = props.workspaceTitle ?? workspaceProps.workspaceTitle;
   const closeWorkspace = props.closeWorkspace ?? (() => Promise.resolve(true));
   const promptBeforeClosing = props.promptBeforeClosing;
-  const { patient } = usePatient(patientUuid);
+  const { patient, error: patientError, isLoading: patientIsLoading } = usePatient(patientUuid);
   const { mutateAppointments } = useMutateAppointments();
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -304,7 +326,7 @@ const AppointmentsForm: React.FC<
   const session = useSession();
   const canEditAppointmentIssuedDate = userHasAccess(appointmentIssuedDateEditPrivilege, session?.user);
   const { selectedDate } = useContext(SelectedDateContext);
-  const { data: services, isLoading } = useAppointmentService();
+  const { data: services, error: servicesError, isLoading } = useAppointmentService();
   const { appointmentTypes, allowAllDayAppointments } = useConfig<ConfigObject>();
   const availableServices =
     appointment?.service && !services?.some((service) => service.uuid === appointment.service.uuid)
@@ -343,6 +365,8 @@ const AppointmentsForm: React.FC<
   const [isAllDayAppointment, setIsAllDayAppointment] = useState(false);
   const [isSuccessful, setIsSuccessful] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSaveOutcomeAmbiguous, setIsSaveOutcomeAmbiguous] = useState(false);
+  const saveAttemptInFlightRef = useRef(false);
   // Keep the trusted issue date stable for the lifetime of this form. Recomputing
   // `new Date()` on every render could silently change the submitted day if a
   // creation form remains open across midnight. Existing records fail closed
@@ -548,16 +572,13 @@ const AppointmentsForm: React.FC<
         ),
       },
     )
-    .refine(
-      () => canEditAppointmentIssuedDate || isValidDate(defaultDateAppointmentScheduled),
-      {
-        path: ['dateAppointmentScheduled'],
-        message: t(
-          'appointmentOriginalIssuedDateInvalid',
-          'The original appointment issue date is missing or invalid and cannot be preserved',
-        ),
-      },
-    );
+    .refine(() => canEditAppointmentIssuedDate || isValidDate(defaultDateAppointmentScheduled), {
+      path: ['dateAppointmentScheduled'],
+      message: t(
+        'appointmentOriginalIssuedDateInvalid',
+        'The original appointment issue date is missing or invalid and cannot be preserved',
+      ),
+    });
 
   type AppointmentFormData = z.infer<typeof appointmentsFormSchema>;
 
@@ -638,11 +659,20 @@ const AppointmentsForm: React.FC<
     if (isSuccessful) {
       reset();
       promptBeforeClosing?.(() => false);
-      closeWorkspace({ discardUnsavedChanges: true });
+      Promise.resolve(closeWorkspace({ discardUnsavedChanges: true })).catch(() => {
+        showSnackbar({
+          kind: 'warning',
+          title: t('appointmentSavedWorkspaceOpen', 'La cita ya fue guardada'),
+          subtitle: t(
+            'appointmentSavedWorkspaceOpenSubtitle',
+            'No se pudo cerrar el formulario. No vuelva a guardar; revise la cita en la lista.',
+          ),
+        });
+      });
       return;
     }
     promptBeforeClosing?.(() => isDirty);
-  }, [isDirty, promptBeforeClosing, isSuccessful, reset, closeWorkspace]);
+  }, [isDirty, promptBeforeClosing, isSuccessful, reset, closeWorkspace, t]);
 
   const handleWorkloadDateChange = (date: Date) => {
     const appointmentDate = getValues('appointmentDateTime');
@@ -711,6 +741,46 @@ const AppointmentsForm: React.FC<
 
   // Same for creating and editing
   const handleSaveAppointment = async (data: AppointmentFormData) => {
+    if (saveAttemptInFlightRef.current || isSuccessful || isSaveOutcomeAmbiguous) {
+      return;
+    }
+    saveAttemptInFlightRef.current = true;
+    const releaseSaveAttempt = () => {
+      saveAttemptInFlightRef.current = false;
+      setIsSubmitting(false);
+    };
+
+    const patientIdentityIsVerified = Boolean(patientUuid?.trim() && patient?.id === patientUuid);
+    const serviceIsVerified = availableServices.some((service) => service.uuid === data.selectedService);
+    const locationIsVerified = locations.some((location) => location.uuid === data.location);
+    const providerIsVerified = providerOptions.some((provider) => provider.uuid === data.provider);
+    if (
+      patientIsLoading ||
+      patientError ||
+      !patientIdentityIsVerified ||
+      servicesError ||
+      !serviceIsVerified ||
+      !locationIsVerified ||
+      providers.isLoading ||
+      providers.error ||
+      !providerIsVerified
+    ) {
+      showSnackbar({
+        title:
+          context === 'editing'
+            ? t('appointmentEditError', 'Error editing appointment')
+            : t('appointmentFormError', 'Error scheduling appointment'),
+        kind: 'error',
+        isLowContrast: false,
+        subtitle: t(
+          'appointmentCatalogVerificationFailed',
+          'No se pudo verificar el paciente, la sede, el servicio o el proveedor con los catálogos vigentes. Actualice el formulario antes de guardar.',
+        ),
+      });
+      releaseSaveAttempt();
+      return;
+    }
+
     setIsSubmitting(true);
     let appointmentPayload: AppointmentPayload;
     let recurringAppointmentPayload: {
@@ -725,7 +795,7 @@ const AppointmentsForm: React.FC<
         recurringPattern: constructRecurringPattern(data),
       };
     } catch (error) {
-      setIsSubmitting(false);
+      releaseSaveAttempt();
       showSnackbar({
         title:
           context === 'editing'
@@ -746,7 +816,7 @@ const AppointmentsForm: React.FC<
     }
 
     if (!(await validateAppointmentIsStillEditable())) {
-      setIsSubmitting(false);
+      releaseSaveAttempt();
       return;
     }
 
@@ -757,7 +827,7 @@ const AppointmentsForm: React.FC<
         ? await checkRecurringAppointmentConflict(recurringAppointmentPayload)
         : await checkAppointmentConflict(appointmentPayload);
     } catch (error) {
-      setIsSubmitting(false);
+      releaseSaveAttempt();
       showSnackbar({
         title:
           context === 'editing'
@@ -777,7 +847,7 @@ const AppointmentsForm: React.FC<
     if (response?.status === 200 && isConflictMap(response.data)) {
       const errorMessage = getConflictErrorMessage(response.data, t);
       if (errorMessage) {
-        setIsSubmitting(false);
+        releaseSaveAttempt();
         showSnackbar({
           isLowContrast: true,
           kind: 'error',
@@ -786,7 +856,7 @@ const AppointmentsForm: React.FC<
         return;
       }
     } else if (response?.status !== 204) {
-      setIsSubmitting(false);
+      releaseSaveAttempt();
       showSnackbar({
         title:
           context === 'editing'
@@ -805,61 +875,73 @@ const AppointmentsForm: React.FC<
     // Narrow the race between conflict validation and persistence. The backend API has no status CAS,
     // so re-read immediately before the update and fail closed if check-in happened meanwhile.
     if (!(await validateAppointmentIsStillEditable())) {
-      setIsSubmitting(false);
+      releaseSaveAttempt();
       return;
     }
 
     const abortController = new AbortController();
 
-    (isRecurringAppointment
-      ? saveRecurringAppointments(recurringAppointmentPayload, abortController)
-      : saveAppointment(appointmentPayload, abortController)
-    ).then(
-      ({ status }) => {
-        if (isSuccessfulAppointmentResponse(status)) {
-          setIsSubmitting(false);
-          setIsSuccessful(true);
-          mutateAppointments();
-          showSnackbar({
-            isLowContrast: true,
-            kind: 'success',
-            subtitle: t('appointmentNowVisible', 'It is now visible on the Appointments page'),
-            title:
-              context === 'editing'
-                ? t('appointmentEdited', 'Appointment edited')
-                : t('appointmentScheduled', 'Appointment scheduled'),
-          });
-        }
-        if (status === 204) {
-          setIsSubmitting(false);
-          showSnackbar({
-            title:
-              context === 'editing'
-                ? t('appointmentEditError', 'Error editing appointment')
-                : t('appointmentFormError', 'Error scheduling appointment'),
-            kind: 'error',
-            isLowContrast: false,
-            subtitle: t('noContent', 'No Content'),
-          });
-        }
-      },
-      (error) => {
-        setIsSubmitting(false);
+    try {
+      const { status } = isRecurringAppointment
+        ? await saveRecurringAppointments(recurringAppointmentPayload, abortController)
+        : await saveAppointment(appointmentPayload, abortController);
+
+      if (!isSuccessfulAppointmentResponse(status)) {
+        throw Object.assign(new Error('The appointment save returned an unsuccessful status.'), { status });
+      }
+
+      setIsSubmitting(false);
+      setIsSuccessful(true);
+      showSnackbar({
+        isLowContrast: true,
+        kind: 'success',
+        subtitle: t('appointmentNowVisible', 'It is now visible on the Appointments page'),
+        title:
+          context === 'editing'
+            ? t('appointmentEdited', 'Appointment edited')
+            : t('appointmentScheduled', 'Appointment scheduled'),
+      });
+
+      try {
+        await mutateAppointments();
+      } catch {
         showSnackbar({
-          title:
-            context === 'editing'
-              ? t('appointmentEditError', 'Error editing appointment')
-              : t('appointmentFormError', 'Error scheduling appointment'),
-          kind: 'error',
-          isLowContrast: false,
-          subtitle: getUserFacingErrorMessage(
-            error,
-            t('appointmentSaveFailed', 'No se pudo guardar la cita. Revise los datos e intente nuevamente.'),
-            { logContext: 'Save appointment' },
+          kind: 'warning',
+          title: t('appointmentSavedRefreshFailed', 'La cita ya fue guardada'),
+          subtitle: t(
+            'appointmentSavedRefreshFailedSubtitle',
+            'No se pudo actualizar la lista. No vuelva a guardar; recargue la lista de citas.',
           ),
         });
-      },
-    );
+      }
+    } catch (error) {
+      setIsSubmitting(false);
+      const definitiveRejection = isDefinitiveAppointmentSaveRejection(error);
+      if (definitiveRejection) {
+        saveAttemptInFlightRef.current = false;
+      } else {
+        setIsSaveOutcomeAmbiguous(true);
+      }
+
+      showSnackbar({
+        title:
+          context === 'editing'
+            ? t('appointmentEditError', 'Error editing appointment')
+            : t('appointmentFormError', 'Error scheduling appointment'),
+        kind: definitiveRejection ? 'error' : 'warning',
+        isLowContrast: false,
+        subtitle: definitiveRejection
+          ? getUserFacingErrorMessage(
+              error,
+              t('appointmentSaveRejected', 'La cita no fue guardada. Revise los datos antes de volver a intentar.'),
+              { logContext: 'Save appointment rejected' },
+            )
+          : t(
+              'appointmentSaveOutcomeUnknown',
+              'No se pudo confirmar si la cita fue guardada. No vuelva a enviarla; verifique primero la lista de citas.',
+            ),
+      });
+    }
   };
 
   const constructAppointmentPayload = (data: AppointmentFormData): AppointmentPayload => {
@@ -907,7 +989,7 @@ const AppointmentsForm: React.FC<
       ? dayjs(startDate).endOf('day')
       : startDateTime.add(duration ?? 0, 'minutes');
     const effectiveDateAppointmentScheduled = resolveAppointmentIssuedDate(
-      context !== 'editing' && canEditAppointmentIssuedDate,
+      canEditAppointmentIssuedDate,
       dateAppointmentScheduled,
       defaultDateAppointmentScheduled,
     );
@@ -967,6 +1049,18 @@ const AppointmentsForm: React.FC<
     <Workspace2 title={title} hasUnsavedChanges={isDirty && !isSuccessful}>
       <Form onSubmit={handleSubmit(handleSaveAppointment)}>
         <Stack gap={4}>
+          {isSaveOutcomeAmbiguous && (
+            <InlineNotification
+              className={styles.formErrorSummary}
+              kind="warning"
+              lowContrast={false}
+              title={t('appointmentSavePendingVerificationTitle', 'Resultado pendiente de verificación')}
+              subtitle={t(
+                'appointmentSaveOutcomeUnknown',
+                'No se pudo confirmar si la cita fue guardada. No vuelva a enviarla; verifique primero la lista de citas.',
+              )}
+            />
+          )}
           {Object.keys(errors).length > 0 && (
             <InlineNotification
               className={styles.formErrorSummary}
@@ -1029,21 +1123,16 @@ const AppointmentsForm: React.FC<
                     labelText={t('selectService', 'Select a service')}
                     onBlur={onBlur}
                     onChange={(event) => {
-                      if (context === 'creating') {
-                        const selectedServiceDuration = availableServices.find(
-                          (service) => service.uuid === event.target.value,
-                        )?.durationMins;
-                        setValue('duration', selectedServiceDuration ?? DEFAULT_APPOINTMENT_DURATION_MINUTES);
-                      } else if (context === 'editing') {
-                        const previousServiceDuration =
-                          availableServices.find((service) => service.uuid === getValues('selectedService'))
-                            ?.durationMins ?? DEFAULT_APPOINTMENT_DURATION_MINUTES;
-                        const selectedServiceDuration =
-                          availableServices.find((service) => service.uuid === event.target.value)?.durationMins ??
-                          DEFAULT_APPOINTMENT_DURATION_MINUTES;
-                        if (previousServiceDuration === getValues('duration')) {
-                          setValue('duration', selectedServiceDuration);
-                        }
+                      const previousService = availableServices.find(
+                        (service) => service.uuid === getValues('selectedService'),
+                      );
+                      const selectedService = availableServices.find((service) => service.uuid === event.target.value);
+                      const previousConfiguredDuration = getConfiguredAppointmentDuration(
+                        previousService,
+                        getValues('selectedServiceType'),
+                      );
+                      if (!dirtyFields.duration && getValues('duration') === previousConfiguredDuration) {
+                        setValue('duration', getConfiguredAppointmentDuration(selectedService));
                       }
                       if (event.target.value !== getValues('selectedService')) {
                         setValue('selectedServiceType', '', { shouldDirty: true, shouldValidate: true });
@@ -1083,9 +1172,11 @@ const AppointmentsForm: React.FC<
                           (serviceType) => serviceType.uuid === event.target.value,
                         );
                         if (!dirtyFields.duration) {
-                          const serviceDuration = selectedServiceDefinition?.durationMins;
-                          const nextDuration = selectedServiceType?.duration ?? serviceDuration;
-                          setValue('duration', nextDuration ?? DEFAULT_APPOINTMENT_DURATION_MINUTES);
+                          setValue(
+                            'duration',
+                            selectedServiceType?.duration ??
+                              getConfiguredAppointmentDuration(selectedServiceDefinition),
+                          );
                         }
                         onChange(event);
                       }}
@@ -1207,9 +1298,7 @@ const AppointmentsForm: React.FC<
                     />
                   </ResponsiveWrapper>
 
-                  {!isAllDayAppointment && (
-                    <TimeAndDuration control={control} errors={errors} services={services} watch={watch} t={t} />
-                  )}
+                  {!isAllDayAppointment && <TimeAndDuration control={control} t={t} />}
 
                   <ResponsiveWrapper>
                     <Controller
@@ -1342,9 +1431,7 @@ const AppointmentsForm: React.FC<
                     />
                   </ResponsiveWrapper>
 
-                  {!isAllDayAppointment && (
-                    <TimeAndDuration control={control} services={services} watch={watch} t={t} errors={errors} />
-                  )}
+                  {!isAllDayAppointment && <TimeAndDuration control={control} t={t} />}
                 </div>
               )}
             </div>
@@ -1405,7 +1492,7 @@ const AppointmentsForm: React.FC<
                       maxDate={new Date()}
                       id="dateAppointmentScheduledPickerInput"
                       data-testid="dateAppointmentScheduledPickerInput"
-                      isReadOnly={context === 'editing' || !canEditAppointmentIssuedDate}
+                      isReadOnly={!canEditAppointmentIssuedDate}
                       labelText={t('dateScheduledDetail', 'Date appointment issued')}
                       style={{ width: '100%' }}
                     />
@@ -1442,7 +1529,7 @@ const AppointmentsForm: React.FC<
           <Button className={styles.button} onClick={() => closeWorkspace()} kind="secondary">
             {t('discard', 'Discard')}
           </Button>
-          <Button className={styles.button} disabled={isSubmitting} type="submit">
+          <Button className={styles.button} disabled={isSubmitting || isSaveOutcomeAmbiguous || isSuccessful} type="submit">
             {t('saveAndClose', 'Save and close')}
           </Button>
         </ButtonSet>
@@ -1451,19 +1538,19 @@ const AppointmentsForm: React.FC<
   );
 };
 
-function TimeAndDuration({ t, watch: _watch, control, services: _services, errors }) {
+export function TimeAndDuration({ t, control }) {
   return (
     <>
       <ResponsiveWrapper>
         <Controller
           name="startTime"
           control={control}
-          render={({ field: { onChange, value } }) => (
+          render={({ field: { onChange, value }, fieldState }) => (
             <TimePicker
               id="time-picker"
               pattern={time12HourFormatRegexPattern}
-              invalid={!!errors?.startTime}
-              invalidText={errors?.startTime?.message}
+              invalid={Boolean(fieldState.error)}
+              invalidText={fieldState.error?.message}
               labelText={t('time', 'Time')}
               onChange={(event) => {
                 onChange(event.target.value);
@@ -1494,13 +1581,13 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
         <Controller
           name="duration"
           control={control}
-          render={({ field: { onChange, onBlur, value, ref } }) => (
+          render={({ field: { onChange, onBlur, value, ref }, fieldState }) => (
             <NumberInput
               disableWheel
               hideSteppers
               id="duration"
-              invalid={!!errors?.duration}
-              invalidText={errors?.duration?.message}
+              invalid={Boolean(fieldState.error)}
+              invalidText={fieldState.error?.message}
               label={t('durationInMinutes', 'Duration (minutes)')}
               max={1440}
               min={0}
@@ -1540,7 +1627,10 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
   );
 }
 
-function getAppointmentValidationSummary(errors: Record<string, unknown>, t: (key: string, fallback: string) => string) {
+function getAppointmentValidationSummary(
+  errors: Record<string, unknown>,
+  t: (key: string, fallback: string) => string,
+) {
   const labels: Record<string, string> = {
     location: t('location', 'Ubicación'),
     selectedService: t('service', 'Servicio'),

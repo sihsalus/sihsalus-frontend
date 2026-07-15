@@ -31,8 +31,8 @@ const MonthlyCalendarView: React.FC<AppointmentFilterCalendarProps> = ({
         <MonthlyHeader />
         <div className={styles.wrapper}>
           <div className={styles.monthlyCalendar}>
-            {monthDays(dayjs(selectedDate)).map((dateTime, i) => (
-              <MonthlyViewWorkload key={i} dateTime={dateTime} events={appointments} />
+            {monthDays(dayjs(selectedDate)).map((dateTime) => (
+              <MonthlyViewWorkload key={dateTime.format('YYYY-MM-DD')} dateTime={dateTime} events={appointments} />
             ))}
           </div>
         </div>

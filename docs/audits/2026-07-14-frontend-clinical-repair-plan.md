@@ -45,7 +45,7 @@ backend.
 | RBAC                          | Propagación, doble permiso clínico y bloqueo directo implementados       | Aprobar/asignar matriz de privilegios y probar roles reales                      |
 | FUA                           | Endpoint deshabilitado por defecto y HTML aislado/sanitizado            | Publicar un gateway HTTPS mismo origen y validar contrato/roles                  |
 | E2E                           | Smoke externo sintético separado del build del PR                       | Crear ambiente, variables, cuenta mínima, revisores y despliegue efímero por SHA |
-| Release                       | Fuente, SHA, rama y escaneo previos a publicación                       | Proteger ambientes de preproducción/producción y aprobar promoción               |
+| Release                       | SHA inmutable y promoción idempotente por digest; no despliega          | Implementar receptor de despliegue, proteger ambientes y aprobar promoción        |
 
 ## 1. Nacimiento y edad
 
@@ -121,6 +121,18 @@ El contrato de formatos, sus fuentes, brechas con content y el orden seguro de m
 - Fallar de forma visible si el catálogo no carga; no introducir una lista paralela de países.
 - Mantener deshabilitado el identificador `Otros` en emergencia mientras el UUID configurado no corresponda a un
   `PatientIdentifierType` realmente desplegado.
+- Antes del POST de paciente, guardar un checkpoint de creación en `sessionStorage` con TTL de dos horas, huella
+  SHA-256 del payload clínicamente relevante y alcance de sesión, usuario, ubicación y proveedor. La huella incluye
+  todos los nombres, direcciones, atributos —incluida nacionalidad y teléfono—, identificadores, nacimiento, sexo y
+  datos de fallecimiento; los UUID generados solo por el navegador no cambian su identidad semántica.
+- Ante timeout, pérdida de conexión, `408`, `425`, `429`, `499` o error de servidor, no repetir el POST de paciente.
+  Conciliar por UUID cuando exista y hacer además una búsqueda global exacta; solo una coincidencia completa y única
+  confirma el alta. Cero, múltiples o incompatibles coincidencias conservan el checkpoint y bloquean el reenvío.
+- Compartir un único intento en vuelo solo cuando payload, identificadores y contexto coinciden; dos altas con el
+  mismo documento pero demografía diferente son un conflicto, no la misma promesa.
+- Después de confirmar el paciente, una respuesta ambigua al guardar relaciones, observaciones o fotografía se
+  presenta como registro incompleto y no habilita un reintento automático. Un rechazo 4xx ordinario y concluyente sí
+  puede corregirse; una pérdida de respuesta exige conciliación clínica o soporte antes de continuar.
 
 ### Trabajo de content/datos
 
@@ -157,6 +169,22 @@ El contrato de formatos, sus fuentes, brechas con content y el orden seguro de m
 - Antes de crear una consulta, confirmar el tipo de atributo usado para el token de idempotencia. Mientras carga,
   ante error, si está ausente o si no está configurado, bloquear el guardado; una correlación explícita de cita debe
   existir también en backend y conserva su contrato propio.
+- Al crear un servicio de citas, limitar el nombre a los 50 caracteres del esquema backend y comprobar su unicidad
+  global por nombre normalizado. Exigir sede aún autorizada, color hexadecimal, horario válido con fin posterior al
+  inicio y duración entera de 1 a 1440 minutos que quepa dentro de la ventana del servicio.
+- Hacer prelectura del catálogo, guardar antes del POST un checkpoint con payload exacto, UUIDs de línea base,
+  `attemptId`, TTL y alcance de sesión/usuario. El guardado es solo-si-ausente y el borrado exige el mismo
+  `attemptId`, de modo que un intento no sobrescribe ni elimina el control de otro.
+- Compartir un mutex entre formularios montados y bloquear doble clic. Tras una respuesta perdida o una recarga,
+  consultar de nuevo el catálogo y confirmar únicamente un servicio nuevo, de nombre único y configuración exacta;
+  nunca repetir el POST a ciegas.
+- Considerar confirmación síncrona solo `204`, o `200`/`201` con UUID y configuración devuelta exactamente iguales
+  al payload. Un `202`, respuesta 2xx malformada, otro estado inesperado, `499`, fallo de red o catálogo no
+  concluyente requiere reconciliación y mantiene el formulario bloqueado. Un 4xx ordinario permite reintento
+  únicamente si la lectura posterior es válida y el checkpoint propio pudo eliminarse.
+- Validar identidad mínima de todo el catálogo —UUID único y nombre utilizable— sin derribar la administración por
+  un registro legado no relacionado; para el candidato reconciliado validar estrictamente sede, horario, duración y
+  color y hacer que cualquier forma malformada resulte en `false`, nunca en una excepción.
 
 ### Dependencias de backend
 
@@ -166,8 +194,16 @@ El contrato de formatos, sus fuentes, brechas con content y el orden seguro de m
 - Definir y hacer cumplir doble reserva de proveedor, capacidad del servicio y zona horaria institucional. El
   endpoint actual no cubre por sí solo todas esas reglas.
 - Registrar auditoría de creación, reprogramación, cancelación y transición a visita.
+- Añadir al alta de servicios de citas una clave de idempotencia, restricción `UNIQUE` transaccional sobre el nombre
+  normalizado y una respuesta de creación inequívoca. El chequeo previo de nombre del módulo actual no es atómico y
+  el checkpoint frontend no coordina pestañas, navegadores ni otros clientes.
 - Desplegar y verificar el `VisitAttributeType` configurado para el token de persistencia antes del frontend. Su
   ausencia bloquea deliberadamente la creación online de consultas para evitar duplicados tras timeouts ambiguos.
+- Verificar en el entorno objetivo ambos contratos, sin intercambiar sus valores:
+  - `visitPersistenceTokenAttributeTypeUuid=eb8b793b-f259-451d-9c09-53aa0ffd0d3f`, token de idempotencia de la
+    creación general de consultas;
+  - `appointmentVisitAttributeTypeUuid=193508ab-20c6-5291-9f23-0257335eaabd`, correlación explícita entre cita y
+    consulta.
 
 ### Criterios de aceptación
 
@@ -179,6 +215,42 @@ El contrato de formatos, sus fuentes, brechas con content y el orden seguro de m
 - Una ubicación o cola eliminada de la configuración bloquea el check-in con un mensaje accionable y no llega al
   POST de consulta/cola.
 - Un `200` malformado al consultar visitas bloquea check-in y edición en vez de habilitarlos.
+- Un doble clic, dos formularios en la misma pantalla o un remount no producen dos POST de servicio; una respuesta
+  `202` o perdida queda pendiente y una creación encontrada exactamente en el catálogo se concilia sin reenvío.
+- Un checkpoint de servicio vencido, corrupto, de otra sesión o de otro payload bloquea y exige revisión; no se borra
+  automáticamente para recuperar disponibilidad a costa de una posible duplicación.
+
+### Atención de emergencia y cierre de cola
+
+- Antes de crear una entrada de cola, el frontend hace una lectura fresca por visita y exige coincidencia exacta de
+  paciente, visita y cola. Después del POST vuelve a leer y solo acepta la entrada persistida que satisface ese mismo
+  contrato. Una respuesta perdida se reconcilia; un conflicto o payload malformado falla cerrado.
+- El intento de crear la entrada se registra en `sessionStorage` antes de escribir. El checkpoint contiene solo UUIDs
+  de contexto, no texto clínico, sobrevive a desmontar/recargar la pestaña y evita un segundo POST ciego hasta poder
+  reconciliar. Un rechazo explícito del POST permite corregir/reintentar; un fallo de verificación posterior no se
+  confunde con un rechazo de la escritura.
+- La búsqueda de una visita activa falla cerrada ante error, entradas incompletas, múltiples visitas de emergencia o
+  una única visita activa de otro tipo; esta última no se reutiliza silenciosamente como episodio de emergencia. Una
+  visita recién creada se vuelve a leer y se exige coincidencia de UUID, paciente, tipo, ubicación, estado activo y
+  ausencia de anulación antes de usarla. Si se pierde la respuesta del POST antes de obtener el UUID, el frontend aún
+  no dispone de una clave estable para reconciliar y el backend podría duplicarla; esto requiere idempotencia.
+- La acción **Atender** hace prelectura exacta, guarda un checkpoint sin texto clínico antes de cambiar el estado y
+  vuelve a leer paciente, visita, cola, estado `inService` y ausencia de `endedAt`. Solo entonces cierra el modal y
+  abre triaje/atención; el workspace recibe la entrada con el estado verificado. Tras un timeout, el siguiente clic
+  solo concilia y no repite el POST. Un rechazo explícito desbloquea el reintento únicamente si también se confirma
+  que la entrada conserva íntegramente el estado anterior.
+- El frontend conserva en `sessionStorage` el UUID del encuentro tan pronto como lo recibe, y verifica mediante una
+  lectura exacta UUID, paciente, visita, tipo de encuentro, ubicación y ausencia de anulación. Si después falla el
+  cierre de la cola, bloquea los campos clínicos y el reintento ejecuta únicamente la reconciliación de cola.
+- El cierre de cola hace una lectura fresca, conserva un `endedAt` existente, usa tiempo del servidor cuando está
+  disponible y exige una lectura posterior que confirme la persistencia. También busca de forma paginada una
+  transición sucesora y rechaza estados incompatibles en lugar de darlos por completados.
+- Si la creación del encuentro queda ambigua, se bloquea un reintento ciego y se pide revisar la historia clínica; un
+  rechazo HTTP explícito de validación sí desbloquea el formulario. Un mensaje técnico del backend nunca se presenta
+  al operador.
+- `sessionStorage` protege solo la misma pestaña/navegador. No resuelve dos clientes, una limpieza del almacenamiento
+  ni una carrera TOCTOU. El backend debe ofrecer operaciones transaccionales e idempotentes para visita, entrada de
+  cola, transición a atención y encuentro, con unicidad, control de versión/CAS y `create-or-return`.
 
 ## 4. Rutas, modales y workspaces
 
@@ -186,9 +258,19 @@ El contrato de formatos, sus fuentes, brechas con content y el orden seguro de m
 
 - Usar nombres registrados globalmente únicos y con prefijo del módulo.
 - Corregir colisiones entre condiciones, salud materna, CRED y atención ambulatoria.
-- Validar las 66 aplicaciones en CI mediante un script determinista.
+- Validar en CI todas las aplicaciones con `routes.json` —66 en esta revisión— mediante un script determinista.
+- Validar además que los lanzamientos estáticos de workspace apunten a un registro existente. El inventario actual
+  incluye 67 archivos `routes.json` contando rutas fuera de apps, 41 workspaces legacy, 94 registros v2, 42 ventanas
+  v2 y 10 grupos v2; los lanzamientos dinámicos permanecen como inventario para revisión manual.
 - Rechazar en runtime un segundo registro con el mismo nombre para modales y workspaces legacy.
 - Conservar los nombres nuevos al rebasar las correcciones recientes de CRED ya integradas en `main`.
+- Tratar `formsList` como identificadores: se prefiere un UUID estable y solo se admite un nombre por compatibilidad.
+  Antes de abrir CRED, Salud Materna o ESAVI, resolver una única coincidencia exacta, exigir `published=true` y
+  `retired=false`, verificar que una consulta directa devuelva el UUID solicitado y entregar al motor el objeto
+  `Form` completo con sus recursos. Una respuesta malformada, aproximada o ambigua bloquea el lanzamiento con copia
+  segura; nunca se usa el primer resultado de búsqueda como fallback.
+- Migrar el contenido desplegado de nombres a UUID después de inventariar formularios/versiones; si existen dos
+  formularios publicados con el mismo nombre, el frontend falla cerrado hasta que la configuración sea inequívoca.
 
 ### Criterios de aceptación
 
@@ -210,13 +292,19 @@ El contrato de formatos, sus fuentes, brechas con content y el orden seguro de m
 
 ### Bloqueo de despliegue
 
-La rama declara privilegios de edición que todavía no tienen una asignación operativa demostrada en los roles del
-contenido. No deben concederse de forma amplia para hacer pasar la UI. Antes de promover:
+El repositorio frontend demuestra qué privilegios declaran las superficies, pero no contiene una matriz autoritativa
+de asignaciones por rol. Por tanto, la ausencia de una asignación no puede inferirse del código: requiere un export
+fechado de backend/content. No deben concederse privilegios de forma amplia solo para hacer pasar la UI.
 
-La auditoría de los registros de lanzamiento encontró 12 privilegios sin rol, 37 registros protegidos explícitos y
-39 puntos de entrada efectivos:
+La medición reproducible de esta revisión encontró 752 definiciones de ruta, 376 con privilegio explícito (50,0 %),
+frente a 364/752 (48,4 %) en `origin/main`. En el subconjunto de modales/workspaces hay 132/244 (54,1 %), frente a
+122/244. `validate:lint-coverage` cubre 90 workspaces, pero valida lint, no RBAC.
 
-| Privilegio sin rol                            |                                  Superficies efectivas |
+Los 12 privilegios priorizados aparecen en 46 registros físicos; al deduplicar representaciones v1/v2 corresponden
+a 37 superficies lógicas. La ventana de listas de pacientes gobierna dos workspaces y su icono, por lo que el conteo
+operativo es de 39 puntos de entrada que deben contrastarse con la matriz externa:
+
+| Privilegio auditado                         |                                  Superficies efectivas |
 | --------------------------------------------- | -----------------------------------------------------: |
 | `app:hoja.clinica.accionesSinConexion.editar` |                                                1 modal |
 | `app:hoja.clinica.controlPrenatal.editar`     |                                 1 modal + 3 workspaces |
@@ -231,15 +319,14 @@ La auditoría de los registros de lanzamiento encontró 12 privilegios sin rol, 
 | `app:home.libroAtenciones.editar`             |                                          2 extensiones |
 | `app:home.listasPacientes.editar`             |          1 ventana que bloquea 2 workspaces y su icono |
 
-Además, Citas protege la edición de la fecha de emisión con `app:appointments.issueDate.edit`. Este privilegio no
-forma parte de los registros de lanzamiento de la tabla anterior, pero tampoco tiene una asignación operativa
-demostrada: debe incorporarse expresamente a la matriz por rol. Sin él, el campo queda de solo lectura y el payload
-conserva la fecha original incluso ante manipulación del DOM; el backend debe aplicar la misma autorización.
+Además, Citas protege la edición de la fecha de emisión con `app:appointments.issueDate.edit`. Debe incorporarse
+expresamente a la matriz por rol. Sin él, el campo queda de solo lectura y el payload conserva la fecha original
+incluso ante manipulación del DOM; el backend debe aplicar la misma autorización.
 
-El barrido más amplio encontró 27 privilegios `.editar` usados en código productivo sin rol operativo. Los 12 de la
-tabla son el bloqueo inmediato del nuevo guard de lanzamiento, pero la matriz clínica debe resolver los 27. La
-fusión de pacientes requiere además `app:opciones.fusionarPacientes`, que debe pertenecer a un rol supervisor
-separado, no a todos los usuarios clínicos.
+El código productivo contiene 48 privilegios `.editar` distintos y 29 aparecen en `routes.json`. Esos números no
+demuestran cuántos carecen de rol. La matriz externa debe resolverlos todos, junto con acciones no llamadas
+`.editar`; por ejemplo, `app:opciones.fusionarPacientes` debería pertenecer a un rol supervisor separado, no a todos
+los usuarios clínicos.
 
 1. aprobar una matriz por rol y acción con responsables clínicos y de seguridad;
 2. crear/asignar los privilegios en backend/content;
@@ -256,6 +343,8 @@ separado, no a todos los usuarios clínicos.
 - Usar credenciales de mismo origen y política `no-referrer`.
 - Sanitizar la respuesta con DOMPurify, retirar scripts, handlers, formularios, navegación y recursos de red.
 - Inyectar una CSP restrictiva y renderizar el resultado en un iframe con sandbox vacío.
+- Aplicar la misma transformación inerte a las vistas heredadas que abren una pestaña, y cortar su referencia
+  `window.opener`; ninguna ruta de formatos o solicitudes debe volver a cargar HTML remoto crudo.
 - No mostrar endpoint, payload ni respuesta cruda en el mensaje de error.
 
 ### Criterios de aceptación
@@ -286,12 +375,23 @@ separado, no a todos los usuarios clínicos.
   rama; un `workflow_run` originado por `pull_request` no puede promover una imagen.
 - Para tags, exigir formato SemVer estricto, pertenencia a `main` y una CI de evento `push` exitosa para ese SHA en
   `main`; una CI parcial de pull request no basta.
-- Construir y escanear la imagen antes del login/push; bloquear vulnerabilidades HIGH/CRITICAL según la política
-  configurada.
+- Construir antes de publicar y escanear el artefacto exacto: la imagen local si el SHA aún no existe o el digest de
+  registro si se reutiliza; bloquear vulnerabilidades HIGH/CRITICAL según la política configurada.
+- Fijar las imágenes base de Node y Nginx por digest, no solo por etiqueta, para que un rerun reconstruya desde las
+  mismas bases revisadas.
 - Auditar todos los workspaces y dependencias transitivas con
   `yarn npm audit --all --recursive --severity high`; el modo directo por defecto no es una barrera suficiente.
 - Proteger `frontend-pre-release` y `frontend-production` con revisores y reglas independientes.
-- Promover por digest/SHA y conservar la relación commit → imagen → despliegue.
+- Promover por digest/SHA y conservar la relación commit → imagen → despliegue. El workflow usa la fecha estable del
+  commit como `BUILD_TIME`, no la hora del rerun.
+- Antes de publicar, el workflow consulta GHCR y nunca sobrescribe una etiqueta `sha-<commit>` existente: la reutiliza
+  solo por su digest verificado, lo que permite reruns y tags SemVer sobre el mismo commit. Falla cerrado si no puede
+  distinguir un error de consulta de un manifiesto ausente, impide que una versión exacta cambie de digest, verifica
+  cada alias promovido y deja en el resumen la referencia desplegable `imagen@digest`.
+- Se retiró el `repository_dispatch` sin consumidor para no declarar una promoción inexistente; `latest` puede
+  mantenerse como alias humano, pero no se usa como entrada de promoción. El workflow publica, no despliega.
+- Antes de desplegar, implementar y auditar un receptor en el repositorio de infraestructura que consuma el SHA o
+  digest aprobado, aplique las protecciones del ambiente y produzca evidencia de rollout/rollback.
 
 ## 8. Estrategia de consolidación y PR
 
@@ -329,6 +429,7 @@ yarn install --immutable
 yarn validate:lint-coverage
 yarn test:tooling
 yarn validate:route-names
+yarn validate:workspace-routes
 yarn validate:error-exposure --base origin/main --head HEAD
 yarn typecheck:e2e
 yarn npm audit --all --recursive --severity high
@@ -348,7 +449,8 @@ comando monorepo. La evidencia exacta se incluirá en el PR.
 1. Respaldar contenido/datos cuando exista una migración.
 2. Publicar y validar los conceptos, tipos de identificador y privilegios aprobados.
 3. Configurar gateway FUA, ambientes protegidos y cuenta E2E sintética.
-4. Confirmar el `VisitAttributeType` de correlación cita→consulta y las reglas de identidad en el backend objetivo.
+4. Confirmar los dos `VisitAttributeType` anteriores —token general y correlación cita→consulta— y las reglas de
+   identidad en el backend objetivo.
 5. Ejecutar smokes por rol sin pacientes reales.
 
 ### Promoción
@@ -372,9 +474,19 @@ comando monorepo. La evidencia exacta se incluirá en el PR.
 
 - Atomicidad de citas, colas y reglas de capacidad/proveedor en backend; los prechecks frontend no eliminan carreras
   TOCTOU entre dos clientes.
+- Creación de servicios de citas entre pestañas, navegadores u otros clientes: `sessionStorage`, mutex y `attemptId`
+  protegen la pestaña actual, pero solo idempotencia y unicidad transaccional backend eliminan la carrera global. Un
+  checkpoint corrupto o vencido necesita además un flujo administrativo de revisión, no borrado automático.
+- Alta de paciente y recursos secundarios: la conciliación frontend evita el reenvío ciego conocido, pero el backend
+  todavía debe ofrecer una clave idempotente para paciente, relaciones, encuentro, observaciones y fotografía, más
+  un flujo auditable para completar una creación parcial después de una respuesta perdida.
+- Atomicidad de guardar atención de emergencia y cerrar su entrada de cola. La reconciliación local evita el reintento
+  duplicado conocido, pero no sustituye una clave de idempotencia y transacción del servidor.
+- Creación de visita de emergencia tras una respuesta perdida: el checkpoint de cola empieza cuando ya existe un UUID
+  de visita, por lo que el backend debe reconciliar/idempotentizar también el POST de visita.
 - Catálogo completo de nacionalidades y saneamiento de valores históricos.
 - Aprobación coordinada de formatos/unicidad para CE, pasaporte, DIE, CNV y `Otros`, junto con auditoría histórica.
-- Asignación institucional de privilegios nuevos.
+- Export fechado, aprobación y asignación institucional de la matriz de privilegios por rol.
 - Gateway FUA de mismo origen y contrato de respuesta.
 - Rotación de la credencial histórica y revisión de auditoría.
 - Configuración efectiva de GitHub environments, secretos, variables y revisores.

@@ -92,7 +92,7 @@ export const configSchema = {
   // 2. FORMS CONFIGURATION
   formsList: {
     _type: Type.Object,
-    _description: 'List of form identifiers. Values can be UUIDs or published OpenMRS form names.',
+    _description: 'Form identifiers: use an OpenMRS UUID or the exact name of a published, non-retired form.',
     _default: {
       // Maternal Forms
       prenatal: 'OBST-003-ATENCIÓN PRENATAL',

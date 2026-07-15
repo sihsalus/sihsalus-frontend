@@ -32,6 +32,10 @@ interface FhirEncounterBundle {
 
 interface OpenmrsResultsResponse<T> {
   results?: T[];
+  links?: Array<{
+    rel?: string;
+    uri?: string;
+  }>;
 }
 
 interface PatientSearchIdentifier {
@@ -168,33 +172,115 @@ export async function getLatestObsForConceptSet(
   return data.entry?.map((entry) => entry.resource).filter((resource): resource is FHIRObsResource => !!resource) ?? [];
 }
 
+const MAX_FORM_SEARCH_PAGES = 100;
+
+function normalizeFormName(value: string): string {
+  return value.normalize('NFC').trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function isOpenmrsFormResponse(value: unknown): value is OpenmrsForm {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  const candidate = value as Partial<OpenmrsForm>;
+  return (
+    typeof candidate.uuid === 'string' &&
+    candidate.uuid.trim().length > 0 &&
+    typeof candidate.name === 'string' &&
+    candidate.name.trim().length > 0 &&
+    typeof candidate.published === 'boolean' &&
+    typeof candidate.retired === 'boolean' &&
+    Array.isArray(candidate.resources)
+  );
+}
+
+function assertActivePublishedForm(value: unknown): OpenmrsForm {
+  if (!isOpenmrsFormResponse(value)) {
+    throw new Error('The OpenMRS form response is malformed');
+  }
+  if (value.published !== true || value.retired !== false) {
+    throw new Error('The configured OpenMRS form is unpublished or retired');
+  }
+  return value;
+}
+
+async function fetchAllFormSearchResults(initialUrl: string): Promise<OpenmrsForm[]> {
+  const forms: OpenmrsForm[] = [];
+  const visitedUrls = new Set<string>();
+  let nextUrl: string | undefined = initialUrl;
+
+  for (let page = 0; nextUrl && page < MAX_FORM_SEARCH_PAGES; page++) {
+    if (visitedUrls.has(nextUrl)) {
+      throw new Error('The OpenMRS form search returned a cyclic pagination link');
+    }
+    visitedUrls.add(nextUrl);
+
+    const { data } = await openmrsFetch<OpenmrsResultsResponse<unknown>>(nextUrl);
+    if (!data || typeof data !== 'object' || !Array.isArray(data.results)) {
+      throw new Error('The OpenMRS form search returned a malformed response');
+    }
+    if (data.links != null && !Array.isArray(data.links)) {
+      throw new Error('The OpenMRS form search returned malformed pagination metadata');
+    }
+
+    for (const candidate of data.results) {
+      if (!isOpenmrsFormResponse(candidate)) {
+        throw new Error('The OpenMRS form search returned a malformed form');
+      }
+      forms.push(candidate);
+    }
+
+    const nextLinks = (data.links ?? []).filter((link) => link?.rel === 'next');
+    if (nextLinks.length > 1 || (nextLinks.length === 1 && !nextLinks[0]?.uri?.trim())) {
+      throw new Error('The OpenMRS form search returned malformed pagination metadata');
+    }
+    nextUrl = nextLinks[0]?.uri?.trim();
+  }
+
+  if (nextUrl) {
+    throw new Error('The OpenMRS form search exceeded the safe pagination limit');
+  }
+
+  return forms;
+}
+
 /**
- * Fetches an OpenMRS form using either its name or UUID.
- * @param {string} nameOrUUID - The form's name or UUID.
- * @returns {Promise<OpenmrsForm | null>} - A Promise that resolves to the fetched OpenMRS form or null if not found.
+ * Fetches one exact, published and non-retired OpenMRS form using its name or UUID.
+ * Empty identifiers resolve to null for backward compatibility. Every configured
+ * identifier otherwise fails closed when identity or publication cannot be proven.
  */
 export async function fetchOpenMRSForm(nameOrUUID: string): Promise<OpenmrsForm | null> {
-  if (!nameOrUUID) {
+  const identifier = nameOrUUID?.trim();
+  if (!identifier) {
     return null;
   }
 
-  const { url, isUUID } = isUuid(nameOrUUID)
-    ? { url: `${restBaseUrl}/form/${nameOrUUID}?v=full`, isUUID: true }
-    : { url: `${restBaseUrl}/form?q=${nameOrUUID}&v=full`, isUUID: false };
-
-  if (isUUID) {
-    const { data: openmrsFormResponse } = await openmrsFetch<OpenmrsForm>(url);
-    return openmrsFormResponse;
-  }
-
-  const { data: openmrsFormResponse } = await openmrsFetch<OpenmrsResultsResponse<OpenmrsForm>>(url);
-  if (openmrsFormResponse.results?.length) {
-    const form = openmrsFormResponse.results.find((form) => form.retired === false);
-    if (form) {
-      return form;
+  if (isUuid(identifier)) {
+    const { data } = await openmrsFetch<unknown>(`${restBaseUrl}/form/${identifier}?v=full`);
+    const form = assertActivePublishedForm(data);
+    if (form.uuid.toLowerCase() !== identifier.toLowerCase()) {
+      throw new Error('The OpenMRS form response did not match the requested UUID');
     }
+    return form;
   }
-  throw new Error(`Form with ID "${nameOrUUID}" was not found`);
+
+  const searchParams = new URLSearchParams({ q: identifier, v: 'full', limit: '100' });
+  const forms = await fetchAllFormSearchResults(`${restBaseUrl}/form?${searchParams.toString()}`);
+  const normalizedIdentifier = normalizeFormName(identifier);
+  const matchingForms = forms.filter(
+    (form) =>
+      form.published === true && form.retired === false && normalizeFormName(form.name) === normalizedIdentifier,
+  );
+
+  if (matchingForms.length === 0) {
+    throw new Error(`No exact published OpenMRS form was found for "${identifier}"`);
+  }
+  if (matchingForms.length > 1) {
+    throw new Error(`Multiple exact published OpenMRS forms were found for "${identifier}"`);
+  }
+
+  return matchingForms[0];
 }
 
 /**

@@ -1,6 +1,7 @@
 export * from './components/previous-value-review/previous-value-review.component';
 export * from './components/value/view/field-value-view.component';
 export * from './constants';
+export { fetchOpenMRSForm } from './api';
 export { default as FormEngine } from './form-engine.component';
 export * from './hooks/useFormJson';
 export * from './registry/registry';

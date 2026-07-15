@@ -12,8 +12,8 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   age,
-  createErrorHandler,
   ExtensionSlot,
+  getUserFacingErrorMessage,
   showSnackbar,
   useConfig,
   useLayoutType,
@@ -27,7 +27,7 @@ import {
   useReferenceRanges,
   useVisitOrOfflineVisit,
 } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -217,6 +217,8 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   const [showErrorNotification, setShowErrorNotification] = useState(false);
   const [showErrorMessage, setShowErrorMessage] = useState(false);
   const [formErrorMessage, setFormErrorMessage] = useState('');
+  const [vitalsWereSaved, setVitalsWereSaved] = useState(false);
+  const saveInProgressRef = useRef(false);
 
   const {
     control,
@@ -238,7 +240,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       return;
     }
 
-    props.closeWorkspace();
+    await props.closeWorkspace();
   }, [props]);
 
   const closeCurrentWorkspaceWithSavedChanges = useCallback(async () => {
@@ -247,7 +249,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       return;
     }
 
-    props.closeWorkspaceWithSavedChanges();
+    await props.closeWorkspaceWithSavedChanges();
   }, [props]);
 
   const renderWorkspace = useCallback(
@@ -412,7 +414,11 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   );
 
   const savePatientVitalsAndBiometrics = useCallback(
-    (data: VitalsBiometricsFormData) => {
+    async (data: VitalsBiometricsFormData) => {
+      if (saveInProgressRef.current || vitalsWereSaved) {
+        return;
+      }
+
       const { computedBodyMassIndex: _bmi, glasgowTotal: _glasgowTotal, ...rawFormData } = data;
       const computedGlasgowTotal = calculateGlasgowComaScaleTotal(
         getGlasgowScore(rawFormData.glasgowEyeOpening),
@@ -466,47 +472,95 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
           return;
         }
 
+        saveInProgressRef.current = true;
         const abortController = new AbortController();
+        let response: Awaited<ReturnType<typeof savePatientVitals>>;
 
-        savePatientVitals(
-          encounterTypeUuid,
-          config.concepts,
-          patientUuid,
-          formData,
-          abortController,
-          locationUuid,
-          currentVisit.uuid,
-        )
-          .then(async (response) => {
-            if (response.status === 201 || response.status === 200) {
-              await workspaceOverrides.onVitalsSaved?.({
-                encounterTypeUuid,
-                formData,
-                patientUuid,
-                visitUuid: currentVisit.uuid,
-              });
-              invalidateCachedVitalsAndBiometrics();
-              void closeCurrentWorkspaceWithSavedChanges();
-              showSnackbar({
-                isLowContrast: true,
-                kind: 'success',
-                title: t('vitalsAndBiometricsRecorded', 'Vitals and Biometrics saved'),
-                subtitle: t(
-                  'vitalsAndBiometricsNowAvailable',
-                  'They are now visible on the Vitals and Biometrics page',
-                ),
-              });
-            }
-          })
-          .catch((error) => {
-            createErrorHandler()(error);
-            showSnackbar({
-              title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
-              kind: 'error',
-              isLowContrast: false,
-              subtitle: error?.message ?? t('unexpectedError', 'An unexpected error occurred. Please try again.'),
-            });
+        try {
+          response = await savePatientVitals(
+            encounterTypeUuid,
+            config.concepts,
+            patientUuid,
+            formData,
+            abortController,
+            locationUuid,
+            currentVisit.uuid,
+          );
+        } catch (error: unknown) {
+          showSnackbar({
+            title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
+            kind: 'error',
+            isLowContrast: false,
+            subtitle: getUserFacingErrorMessage(
+              error,
+              t('unexpectedError', 'An unexpected error occurred. Please try again.'),
+              { logContext: 'Save patient vitals and biometrics' },
+            ),
           });
+          saveInProgressRef.current = false;
+          return;
+        }
+
+        if (response.status < 200 || response.status >= 300) {
+          showSnackbar({
+            title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
+            kind: 'error',
+            isLowContrast: false,
+            subtitle: t('unexpectedError', 'An unexpected error occurred. Please try again.'),
+          });
+          saveInProgressRef.current = false;
+          return;
+        }
+
+        // From this point on the clinical encounter has been persisted. Keep the
+        // form locked even if a secondary workspace or queue action fails.
+        setVitalsWereSaved(true);
+        invalidateCachedVitalsAndBiometrics();
+        showSnackbar({
+          isLowContrast: true,
+          kind: 'success',
+          title: t('vitalsAndBiometricsRecorded', 'Vitals and Biometrics saved'),
+          subtitle: t(
+            'vitalsAndBiometricsNowAvailable',
+            'They are now visible on the Vitals and Biometrics page',
+          ),
+        });
+
+        const postSaveErrors: Array<{ context: string; error: unknown }> = [];
+
+        try {
+          await closeCurrentWorkspaceWithSavedChanges();
+        } catch (error: unknown) {
+          postSaveErrors.push({ context: 'Close workspace after saving patient vitals and biometrics', error });
+        }
+
+        try {
+          await workspaceOverrides.onVitalsSaved?.({
+            encounterTypeUuid,
+            formData,
+            patientUuid,
+            visitUuid: currentVisit.uuid,
+          });
+        } catch (error: unknown) {
+          postSaveErrors.push({ context: 'Run workflow after saving patient vitals and biometrics', error });
+        }
+
+        saveInProgressRef.current = false;
+
+        if (postSaveErrors.length > 0) {
+          for (const { context, error } of postSaveErrors) {
+            getUserFacingErrorMessage(error, '', { logContext: context });
+          }
+          showSnackbar({
+            title: t('vitalsSavedFollowUpIncomplete', 'Vitals saved; workflow incomplete'),
+            kind: 'warning',
+            isLowContrast: false,
+            subtitle: t(
+              'vitalsSavedDoNotSubmitAgain',
+              'The vitals were saved. Do not submit them again; review the patient chart and the care queue.',
+            ),
+          });
+        }
       } else {
         setHasInvalidVitals(true);
       }
@@ -522,6 +576,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       patientUuid,
       session?.sessionLocation?.uuid,
       t,
+      vitalsWereSaved,
       workspaceOverrides,
     ],
   );
@@ -1210,7 +1265,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
           className={styles.button}
           kind="primary"
           onClick={handleSubmit(savePatientVitalsAndBiometrics, onError)}
-          disabled={isSubmitting}
+          disabled={isSubmitting || vitalsWereSaved}
           type="submit"
         >
           {t('saveAndClose', 'Save and close')}

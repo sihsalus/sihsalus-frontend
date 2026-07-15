@@ -75,7 +75,7 @@ export const monthDays = (currentDate: Dayjs) => {
   const days: Dayjs[] = [];
 
   for (let i = lastMonth.daysInMonth() - monthStart.day() + 1; i <= lastMonth.daysInMonth(); i++) {
-    days.push(dayjs().month(lastMonth.month()).date(i));
+    days.push(lastMonth.date(i));
   }
 
   for (let i = 1; i <= monthDays; i++) {
@@ -85,7 +85,7 @@ export const monthDays = (currentDate: Dayjs) => {
   const dayLen = days.length > 30 ? 7 : 14;
 
   for (let i = 1; i < dayLen - monthEnd.day(); i++) {
-    days.push(dayjs().month(nextMonth.month()).date(i));
+    days.push(nextMonth.date(i));
   }
   return days;
 };

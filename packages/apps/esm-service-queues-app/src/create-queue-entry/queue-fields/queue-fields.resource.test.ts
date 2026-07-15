@@ -7,6 +7,7 @@ import {
   ActiveVisitQueueConflictError,
   MULTIPLE_ACTIVE_VISIT_QUEUE_ENTRIES,
   MultipleActiveVisitQueueEntriesError,
+  generateVisitQueueNumber,
   postQueueEntry,
   QUEUE_ENTRY_CREATION_UNVERIFIED,
   QUEUE_ENTRY_SEARCH_INVALID_RESPONSE,
@@ -116,6 +117,27 @@ describe('postQueueEntry', () => {
       visit: { uuid: input.visitUuid },
       queueEntry: { startedAt: new Date('2026-07-14T15:30:00.000Z') },
     });
+  });
+
+  it('falls back from GET to POST when the queue module rejects the GET method', async () => {
+    mockOpenmrsFetch
+      .mockRejectedValueOnce({ response: { status: 405 } })
+      .mockResolvedValueOnce({
+        data: { visitQueueNumber: 'A-02' },
+        headers: new Headers({ Date: 'Tue, 14 Jul 2026 15:30:00 GMT' }),
+      } as never);
+
+    await expect(
+      generateVisitQueueNumber(
+        input.locationUuid,
+        input.visitUuid,
+        input.queueUuid,
+        input.visitQueueNumberAttributeUuid,
+      ),
+    ).resolves.toMatchObject({ queueNumber: 'A-02' });
+
+    expect(mockOpenmrsFetch.mock.calls[0][1]).toMatchObject({ method: 'GET' });
+    expect(mockOpenmrsFetch.mock.calls[1][1]).toMatchObject({ method: 'POST' });
   });
 
   it('does not create an entry before the visit millisecond-precision start time', async () => {
@@ -277,22 +299,21 @@ describe('postQueueEntry', () => {
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });
 
-  it('creates the entry when ticket generation returns an empty body', async () => {
+  it('does not create an entry when ticket generation cannot be verified', async () => {
     mockOpenmrsFetch
       .mockResolvedValueOnce({ data: { results: [] } } as never)
       .mockResolvedValueOnce({ data: { results: [] } } as never)
       .mockResolvedValueOnce(visitWithoutQueueTicket)
       .mockResolvedValueOnce({ data: { visitQueueNumber: '' } } as never)
-      .mockResolvedValueOnce({ data: {} } as never)
       .mockResolvedValueOnce({
         data: { uuid: input.visitUuid, startDatetime: '2026-07-14T14:00:00.000Z', attributes: [] },
-      } as never)
-      .mockResolvedValueOnce({ data: { uuid: 'new-entry' }, status: 201 } as never)
-      .mockResolvedValueOnce({ data: { results: [createdActiveEntry] } } as never);
+      } as never);
 
-    await expect(createQueueEntry()).resolves.toMatchObject({ created: true });
-    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(8);
-    expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('/visit-queue-entry'))).toBe(true);
+    await expect(createQueueEntry()).rejects.toBeInstanceOf(QueueTicketGenerationError);
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(5);
+    expect(mockOpenmrsFetch.mock.calls[3][1]).toMatchObject({ method: 'GET' });
+    expect(mockOpenmrsFetch.mock.calls[4][0]).toContain(`/visit/${input.visitUuid}?v=`);
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('/visit-queue-entry'))).toBe(false);
   });
 
   it('uses a ticket persisted by the queue module when generation returns an empty body', async () => {
@@ -300,7 +321,6 @@ describe('postQueueEntry', () => {
       .mockResolvedValueOnce({ data: { results: [] } } as never)
       .mockResolvedValueOnce({ data: { results: [] } } as never)
       .mockResolvedValueOnce(visitWithoutQueueTicket)
-      .mockResolvedValueOnce({ data: {} } as never)
       .mockResolvedValueOnce({ data: {} } as never)
       .mockResolvedValueOnce({
         data: {
@@ -318,8 +338,8 @@ describe('postQueueEntry', () => {
       .mockResolvedValueOnce({ data: { results: [createdActiveEntry] } } as never);
 
     await expect(createQueueEntry()).resolves.toMatchObject({ created: true });
-    expect(mockOpenmrsFetch.mock.calls[5][0]).toContain(`/visit/${input.visitUuid}?v=`);
-    expect(mockOpenmrsFetch.mock.calls[6][0]).toContain('/visit-queue-entry');
+    expect(mockOpenmrsFetch.mock.calls[4][0]).toContain(`/visit/${input.visitUuid}?v=`);
+    expect(mockOpenmrsFetch.mock.calls[5][0]).toContain('/visit-queue-entry');
   });
 
   it('repairs a missing ticket on an existing active entry', async () => {

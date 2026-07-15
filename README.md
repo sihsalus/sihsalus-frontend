@@ -51,7 +51,7 @@ packages/
     configs/                            # Shared Jest/Vitest/TS config helpers
     openmrs/                            # CLI (openmrs develop, build, assemble)
     rspack-config/                      # Shared Rspack configuration
-  apps/                                 # 57 frontend modules (esm-*-app)
+  apps/                                 # 66 frontend modules (esm-*-app, revisión 2026-07-15)
   libs/
     esm-rbac/                           # @sihsalus/esm-rbac — HIPAA role-based access control
     esm-audit-logger/                   # @sihsalus/esm-audit-logger — Client-side PHI audit logging
@@ -113,6 +113,8 @@ yarn lint                                   # ESLint all packages
 yarn typecheck                              # TypeScript check all packages
 yarn verify                                 # lint + typecheck + test
 yarn verify:changed --base origin/main      # Verify changed workspaces plus workspace dependents
+yarn validate:route-names                   # Check globally unique route/extension registrations
+yarn validate:workspace-routes              # Check static workspace launch targets and inventory
 ```
 
 Repository discipline and workspace ownership expectations should stay close to the touched package README and the relevant quality commands.
@@ -174,17 +176,25 @@ docker build -t ghcr.io/sihsalus/sihsalus-frontend:dev .
 
 Nginx / reverse proxy configuration is managed in the infra repo (`sihsalus-distro-referenceapplication`).
 
-Para levantar la imagen publicada (branch `main`) en un servidor:
+Para levantar una imagen publicada de forma reproducible, use el digest que el workflow registró para el commit
+validado. El workflow de este repositorio publica la imagen, pero no despliega producción:
+
+El release nunca sobrescribe una etiqueta `sha-<commit>`: si ya existe, reutiliza y vuelve a escanear su digest; si no
+existe, la publica una sola vez. Los tags SemVer pueden promover ese mismo artefacto de forma idempotente, pero una
+versión exacta que ya apunte a otro digest bloquea el flujo. Antes de promover, `sihsalus-vX.Y.Z` debe coincidir
+exactamente con la versión raíz de `package.json`, que es la versión incluida en `build-info.json`. La promoción debe
+consumir la referencia registrada
+`ghcr.io/...@sha256:...`, no resolver `latest` ni otra etiqueta mutable en el momento del despliegue.
 
 ```bash
-# 1) Traer la etiqueta latest y resolver el digest exacto
-docker pull ghcr.io/sihsalus/sihsalus-frontend:latest
-DIGEST=$(docker inspect --format '{{ index .RepoDigests 0 }}' ghcr.io/sihsalus/sihsalus-frontend:latest)
-echo "$DIGEST"
+# 1) Copiar del resumen del release el digest aprobado (no latest/next ni sólo el tag)
+IMAGE_DIGEST="sha256:reemplace-por-el-digest-de-64-hexadecimales"
+IMAGE="ghcr.io/sihsalus/sihsalus-frontend@${IMAGE_DIGEST}"
+docker pull "$IMAGE"
 
-# 2) Redeploy con ese digest (recomendado para reproducibilidad)
+# 2) Desplegar mediante el repositorio/procedimiento de infraestructura aprobado
 docker rm -f sihsalus-frontend || true
-docker run -d --name sihsalus-frontend -p 8080:8080 "$DIGEST"
+docker run -d --name sihsalus-frontend -p 8080:8080 "$IMAGE"
 ```
 
 ## Architecture

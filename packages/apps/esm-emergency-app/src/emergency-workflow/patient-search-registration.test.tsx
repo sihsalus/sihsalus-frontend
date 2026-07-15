@@ -3,7 +3,11 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { type Config, configSchema } from '../config-schema';
-import { generateIdentifier, saveEmergencyPatient } from '../resources/patient-registration.resource';
+import {
+  EmergencyPatientRegistrationAmbiguousError,
+  prepareEmergencyPatientIdentifier,
+  saveEmergencyPatient,
+} from '../resources/patient-registration.resource';
 import { useNationalityConceptAnswers } from './patient-nationality.resource';
 import PatientSearchRegistration from './patient-search-registration.component';
 import { usePatientSearch } from './usePatientSearch';
@@ -17,13 +21,15 @@ vi.mock('./usePatientSearch', () => ({
 }));
 
 vi.mock('../resources/patient-registration.resource', () => ({
-  generateIdentifier: vi.fn(),
+  prepareEmergencyPatientIdentifier: vi.fn(),
   saveEmergencyPatient: vi.fn(),
+  EmergencyPatientRegistrationAmbiguousError: class EmergencyPatientRegistrationAmbiguousError extends Error {},
+  EmergencyPatientRegistrationVerificationError: class EmergencyPatientRegistrationVerificationError extends Error {},
 }));
 
 const mockUseConfig = vi.mocked(useConfig<Config>);
 const mockShowSnackbar = vi.mocked(showSnackbar);
-const mockGenerateIdentifier = vi.mocked(generateIdentifier);
+const mockPrepareEmergencyPatientIdentifier = vi.mocked(prepareEmergencyPatientIdentifier);
 const mockSaveEmergencyPatient = vi.mocked(saveEmergencyPatient);
 const mockUseNationalityConceptAnswers = vi.mocked(useNationalityConceptAnswers);
 const mockUsePatientSearch = vi.mocked(usePatientSearch);
@@ -31,6 +37,8 @@ const colombiaConceptUuid = 'b4c6023d-4e90-4803-a0cf-b089994a9ba1';
 
 describe('PatientSearchRegistration nationality flow', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
+    sessionStorage.clear();
     const config = getDefaultsFromConfigSchema(configSchema) as Config;
     mockUseConfig.mockReturnValue(config);
     mockUseNationalityConceptAnswers.mockReturnValue({
@@ -51,7 +59,7 @@ describe('PatientSearchRegistration nationality flow', () => {
       currentPage: 0,
       totalResults: 0,
     });
-    mockGenerateIdentifier.mockResolvedValue({ data: { identifier: '100TEST' } } as never);
+    mockPrepareEmergencyPatientIdentifier.mockResolvedValue('100TEST');
   });
 
   it('assigns, clears, and then allows manually selecting nationality as DNI completeness changes', async () => {
@@ -197,5 +205,25 @@ describe('PatientSearchRegistration nationality flow', () => {
     expect(mockShowSnackbar).not.toHaveBeenCalledWith(
       expect.objectContaining({ subtitle: expect.stringMatching(/SQLSTATE|\/ws\/rest/u) }),
     );
+  });
+
+  it('blocks a blind duplicate when the previous registration result is ambiguous', async () => {
+    const user = userEvent.setup();
+    mockSaveEmergencyPatient.mockRejectedValue(new EmergencyPatientRegistrationAmbiguousError());
+
+    render(<PatientSearchRegistration onPatientQueued={vi.fn()} />);
+    await user.click(screen.getByRole('button', { name: 'Registrar nuevo paciente' }));
+    await user.type(screen.getByRole('textbox', { name: /Apellido Paterno/u }), 'Quispe');
+    await user.type(screen.getByRole('textbox', { name: /Primer Nombre/u }), 'María');
+    await user.selectOptions(screen.getByRole('combobox', { name: /Sexo/u }), 'F');
+    await user.click(screen.getByRole('button', { name: 'Registrar paciente' }));
+
+    await waitFor(() => expect(mockSaveEmergencyPatient).toHaveBeenCalledOnce());
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      kind: 'error',
+      subtitle:
+        'No se pudo confirmar si el paciente ya fue registrado. No genere otro registro ni otro HCE; revise el paciente por HCE antes de continuar.',
+      title: 'Error al registrar paciente',
+    });
   });
 });

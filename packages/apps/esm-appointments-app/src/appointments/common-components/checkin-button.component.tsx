@@ -38,6 +38,7 @@ const ACTIVE_VISIT_TYPE_MISMATCH = 'ACTIVE_VISIT_TYPE_MISMATCH';
 const APPOINTMENT_LOCATION_MISSING = 'APPOINTMENT_LOCATION_MISSING';
 const APPOINTMENT_VISIT_TYPE_MAPPING_MISSING = 'APPOINTMENT_VISIT_TYPE_MAPPING_MISSING';
 const MULTIPLE_ACTIVE_VISITS = 'MULTIPLE_ACTIVE_VISITS';
+const ACTIVE_VISIT_SEARCH_INVALID = 'ACTIVE_VISIT_SEARCH_INVALID';
 
 interface CheckInButtonProps {
   patientUuid: string;
@@ -61,8 +62,7 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
   const serviceMappings = (appointmentQueueMappings ?? []).filter(
     (mapping) => mapping.appointmentServiceUuid === appointment.service.uuid,
   );
-  const visitTypeMapping =
-    queueMapping ?? (serviceMappings.length === 1 ? serviceMappings[0] : undefined);
+  const visitTypeMapping = queueMapping ?? (serviceMappings.length === 1 ? serviceMappings[0] : undefined);
 
   const showCheckInFailure = (error: unknown) =>
     showSnackbar({
@@ -79,6 +79,10 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
             [MULTIPLE_ACTIVE_VISITS]: t(
               'multipleActiveVisits',
               'El paciente tiene más de una consulta activa. Regularice las consultas antes de continuar.',
+            ),
+            [ACTIVE_VISIT_SEARCH_INVALID]: t(
+              'activeVisitCheckFailedSafe',
+              'No se pudo verificar de forma segura la consulta activa. No se inició otra consulta; actualice e intente nuevamente.',
             ),
             [ACTIVE_VISIT_CHANGED]: t(
               'activeVisitChanged',
@@ -132,7 +136,12 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
       undefined,
       'custom:(uuid,patient:(uuid),visitType:(uuid,display),location:(uuid,display),startDatetime,stopDatetime,attributes)',
     );
-    const activeVisits = response.data?.results ?? [];
+    const activeVisits = response.data?.results;
+    if (!Array.isArray(activeVisits)) {
+      throw Object.assign(new Error('The active visit search returned an invalid response.'), {
+        code: ACTIVE_VISIT_SEARCH_INVALID,
+      });
+    }
     if (activeVisits.length > 1) {
       throw Object.assign(new Error('The patient has multiple active visits.'), {
         code: MULTIPLE_ACTIVE_VISITS,

@@ -165,7 +165,6 @@ export async function generateVisitQueueNumber(
   })}`;
 
   let response: FetchResponse<QueueTicketResponse>;
-  let usedLegacyMethod = false;
 
   try {
     response = await openmrsFetch<QueueTicketResponse>(url, {
@@ -182,9 +181,8 @@ export async function generateVisitQueueNumber(
     }
 
     // Some queue-module versions expose this endpoint as POST.
-    usedLegacyMethod = true;
     response = await openmrsFetch<QueueTicketResponse>(url, {
-      method: 'GET',
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -192,7 +190,7 @@ export async function generateVisitQueueNumber(
     });
   }
 
-  let queueNumber = getQueueNumberFromResponse(response);
+  const queueNumber = getQueueNumberFromResponse(response);
   if (queueNumber) {
     return {
       queueNumber,
@@ -200,33 +198,9 @@ export async function generateVisitQueueNumber(
     };
   }
 
-  // Some queue-module versions return an empty GET response while still generating
-  // the number as a side effect. Try the alternate method before reading the visit.
-  if (!usedLegacyMethod) {
-    try {
-      const legacyResponse = await openmrsFetch<QueueTicketResponse>(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        signal: abortController.signal,
-      });
-      queueNumber = getQueueNumberFromResponse(legacyResponse);
-      if (queueNumber) {
-        return {
-          queueNumber,
-          startedAt: getAuthoritativeStartedAt(legacyResponse.headers?.get?.('Date'), visitStartDatetime),
-        };
-      }
-    } catch (error) {
-      const status = getErrorStatus(error);
-      if (status !== 404 && status !== 405) {
-        throw error;
-      }
-    }
-  }
-
-  // Some queue-module versions persist the attribute but return an empty body.
+  // A successful request with an empty body may already have generated and persisted
+  // the ticket. Re-read the visit before doing anything else; never issue a second
+  // generation request after a successful GET.
   const persistedTicket = await getPersistedVisitQueueTicket(
     visitUuid,
     visitQueueNumberAttributeUuid,
@@ -236,9 +210,7 @@ export async function generateVisitQueueNumber(
     return persistedTicket;
   }
 
-  // The queue module may generate the number during this request without returning
-  // it. The following visit-queue-entry request is still required to complete the flow.
-  return persistedTicket;
+  throw new QueueTicketGenerationError();
 }
 
 function getErrorStatus(error: unknown): number | undefined {

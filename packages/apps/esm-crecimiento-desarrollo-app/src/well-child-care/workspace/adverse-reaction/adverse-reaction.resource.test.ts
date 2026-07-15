@@ -41,6 +41,8 @@ describe('adverse reaction resource', () => {
             uuid: '6e4ae4b0-d746-3587-8f17-c0316847dff8',
             name: 'INMU-002-REPORTE ESAVI',
             display: 'INMU-002-REPORTE ESAVI',
+            published: true,
+            retired: false,
           },
         ],
       },
@@ -60,9 +62,7 @@ describe('adverse reaction resource', () => {
       config,
     });
 
-    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
-      '/ws/rest/v1/form?q=INMU-002-REPORTE%20ESAVI&v=custom:(uuid,name,display)',
-    );
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(expect.stringContaining('/ws/rest/v1/form?q=INMU-002-REPORTE+ESAVI'));
     expect(mockOpenmrsFetch).toHaveBeenCalledWith('/ws/rest/v1/encounter', {
       method: 'POST',
       headers: {
@@ -90,5 +90,36 @@ describe('adverse reaction resource', () => {
         ],
       },
     });
+  });
+
+  it('does not save when OpenMRS only returns an approximate form name', async () => {
+    mockOpenmrsFetch.mockReset();
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          {
+            uuid: 'wrong-form-uuid',
+            name: 'INMU-002-REPORTE ESAVI LEGACY',
+            published: true,
+            retired: false,
+          },
+        ],
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    await expect(
+      saveAdverseReaction({
+        patientUuid: 'patient-uuid',
+        locationUuid: 'location-uuid',
+        vaccineName: 'BCG',
+        reactionDescription: 'Fiebre',
+        severity: 'mild',
+        occurrenceDate: new Date('2026-05-05T10:30:00.000Z'),
+        config,
+      }),
+    ).rejects.toThrow(/No published CRED form/u);
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+    expect(mockOpenmrsFetch).not.toHaveBeenCalledWith('/ws/rest/v1/encounter', expect.anything());
   });
 });

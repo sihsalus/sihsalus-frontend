@@ -47,7 +47,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import type { Config } from '../config-schema';
-import { generateIdentifier, saveEmergencyPatient } from '../resources/patient-registration.resource';
+import {
+  EmergencyPatientRegistrationAmbiguousError,
+  EmergencyPatientRegistrationVerificationError,
+  prepareEmergencyPatientIdentifier,
+  saveEmergencyPatient,
+} from '../resources/patient-registration.resource';
 import { EmergencyNationalityField } from './components/emergency-nationality-field.component';
 import InitialPrioritySelector, { type InitialPriority } from './components/initial-priority-selector.component';
 import {
@@ -83,6 +88,7 @@ interface PatientSearchRegistrationProps {
     patientData: SearchedPatient,
     priorityLevel: InitialPriority,
   ) => Promise<void> | void;
+  submissionBlocked?: boolean;
 }
 
 const ageInputConstraints = { integer: true, max: MAX_PATIENT_AGE_YEARS, min: 0, nonNegative: true };
@@ -150,7 +156,10 @@ function getBirthdatePickerValue(value?: string) {
 // MAIN COMPONENT
 // ============================================================================
 
-const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ onPatientQueued }) => {
+const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({
+  onPatientQueued,
+  submissionBlocked = false,
+}) => {
   const { t } = useTranslation();
   const config = useConfig<Config>();
   const {
@@ -190,6 +199,8 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
 
   // Submitting state
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const queueSubmissionInFlightRef = useRef(false);
+  const patientRegistrationInFlightRef = useRef(false);
 
   // The patient ready to be queued (either selected or registered)
   const readyPatient = selectedPatient || registeredPatient;
@@ -415,7 +426,11 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
         });
         return;
       }
+      if (patientRegistrationInFlightRef.current) {
+        return;
+      }
 
+      patientRegistrationInFlightRef.current = true;
       setIsRegistering(true);
       try {
         const data = normalizeEmergencyRegistrationData(formData, config.patientRegistration);
@@ -427,8 +442,12 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
         );
 
         // 1. Generar OpenMRS ID vía idgen (needed early for unknown patient name)
-        const idGenResponse = await generateIdentifier(config.patientRegistration.identifierSourceUuid);
-        const openmrsId = idGenResponse.data.identifier;
+        const patientRegistrationContext = {
+          identifierSourceUuid: config.patientRegistration.identifierSourceUuid,
+          identifierTypeUuid: config.patientRegistration.openMrsIdIdentifierTypeUuid,
+          locationUuid: config.patientRegistration.defaultLocationUuid,
+        };
+        const openmrsId = await prepareEmergencyPatientIdentifier(patientRegistrationContext);
 
         // 2. Determine patient name
         // For unknown patients, append OpenMRS ID to differentiate: "DESCONOCIDO (10045)"
@@ -507,17 +526,27 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
         };
 
         // 7. Crear paciente en el backend
-        const response = await saveEmergencyPatient(patientPayload);
+        const response = await saveEmergencyPatient(patientPayload, {
+          ...patientRegistrationContext,
+          identifier: openmrsId,
+        });
         const savedPatient = response.data;
+        const savedPatientUuid = savedPatient.uuid?.trim();
+        if (!savedPatientUuid) {
+          throw new EmergencyPatientRegistrationVerificationError();
+        }
 
         const savedPatientIdentifiers = Array.isArray(savedPatient.identifiers)
           ? savedPatient.identifiers
               .map((identifier) => ({
                 uuid: identifier.uuid ?? '',
                 identifier: identifier.identifier || identifier.display || '',
-                identifierType: identifier.identifierType,
+                identifierType: {
+                  uuid: identifier.identifierType?.uuid ?? '',
+                  display: identifier.identifierType?.display ?? '',
+                },
               }))
-              .filter((identifier) => identifier.identifier)
+              .filter((identifier) => identifier.identifier && identifier.identifierType.uuid)
           : [];
 
         const fallbackIdentifiers = identifiers.map(
@@ -537,7 +566,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
         // 8. Mapear respuesta al formato SearchedPatient
         const displayName = [familyName, familyName2, givenName].filter(Boolean).join(' ');
         const newPatient = {
-          uuid: savedPatient.uuid,
+          uuid: savedPatientUuid,
           display: savedPatient.display || displayName,
           identifiers: savedPatientIdentifiers.length > 0 ? savedPatientIdentifiers : fallbackIdentifiers,
           person: {
@@ -575,22 +604,29 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
         setShowRegistrationForm(false);
       } catch (error: unknown) {
         const isExpiredSession = isSessionExpired(error);
+        const isRegistrationAmbiguous = error instanceof EmergencyPatientRegistrationAmbiguousError;
 
         showSnackbar({
           title: t('errorRegisteringPatient', 'Error al registrar paciente'),
           subtitle: isExpiredSession
             ? t('sessionExpiredError', 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.')
-            : getUserFacingErrorMessage(
-                error,
-                t(
-                  'patientRegistrationSafeError',
-                  'No se pudo completar el registro. Intente nuevamente o contacte al administrador del sistema.',
+            : isRegistrationAmbiguous
+              ? t(
+                  'patientRegistrationPendingVerification',
+                  'No se pudo confirmar si el paciente ya fue registrado. No genere otro registro ni otro HCE; revise el paciente por HCE antes de continuar.',
+                )
+              : getUserFacingErrorMessage(
+                  error,
+                  t(
+                    'patientRegistrationSafeError',
+                    'No se pudo completar el registro. Intente nuevamente o contacte al administrador del sistema.',
+                  ),
+                  { logContext: 'Register emergency patient' },
                 ),
-                { logContext: 'Register emergency patient' },
-              ),
           kind: 'error',
         });
       } finally {
+        patientRegistrationInFlightRef.current = false;
         setIsRegistering(false);
       }
     },
@@ -602,14 +638,16 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
   // ============================================================================
 
   const handleSendToQueue = useCallback(async () => {
-    if (!readyPatient || !initialPriority) return;
+    if (!readyPatient || !initialPriority || submissionBlocked || queueSubmissionInFlightRef.current) return;
+    queueSubmissionInFlightRef.current = true;
     setIsSubmitting(true);
     try {
       await onPatientQueued(readyPatient.uuid, readyPatient, initialPriority);
     } finally {
+      queueSubmissionInFlightRef.current = false;
       setIsSubmitting(false);
     }
-  }, [readyPatient, initialPriority, onPatientQueued]);
+  }, [readyPatient, initialPriority, onPatientQueued, submissionBlocked]);
 
   // ============================================================================
   // RENDER
@@ -722,7 +760,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                   kind="warning"
                   lowContrast
                   hideCloseButton
-                  title={t('patientNotFound', 'Paciente no encontrado')}
+                  title={t('patientNotFound', 'No se encontraron coincidencias')}
                   subtitle={t('noResultsFor', 'Sin resultados para "{{term}}"', { term: searchQuery })}
                 />
                 <Button kind="tertiary" renderIcon={UserFollow} onClick={() => handleOpenRegistrationForm()} size="md">
@@ -1304,7 +1342,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
               size="lg"
               renderIcon={SendFilled}
               onClick={handleSendToQueue}
-              disabled={!initialPriority || isSubmitting}
+              disabled={!initialPriority || isSubmitting || submissionBlocked}
               className={styles.submitButton}
             >
               {isSubmitting ? (

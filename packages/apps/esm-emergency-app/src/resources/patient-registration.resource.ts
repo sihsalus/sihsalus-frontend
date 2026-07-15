@@ -1,4 +1,10 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import {
+  clearEmergencyPatientRegistrationCheckpoint,
+  loadEmergencyPatientRegistrationCheckpoint,
+  saveEmergencyPatientRegistrationCheckpoint,
+  type EmergencyPatientRegistrationCheckpoint,
+} from '../emergency-workflow/emergency-patient-registration-checkpoint';
 
 /**
  * Payload structure for creating a patient via the quick emergency registration form.
@@ -33,6 +39,84 @@ export interface EmergencyPatientPayload {
   }>;
 }
 
+export interface EmergencyPatientRegistrationContext {
+  identifier: string;
+  identifierSourceUuid: string;
+  identifierTypeUuid: string;
+  locationUuid: string;
+}
+
+export interface EmergencyPatientRecord {
+  uuid?: string;
+  display?: string;
+  voided?: boolean;
+  identifiers?: Array<{
+    uuid?: string;
+    identifier?: string;
+    display?: string;
+    preferred?: boolean;
+    voided?: boolean;
+    identifierType?: { uuid?: string; display?: string };
+    location?: { uuid?: string };
+  }>;
+  person?: {
+    uuid?: string;
+    display?: string;
+    voided?: boolean;
+    gender?: string;
+    birthdate?: string;
+    birthdateEstimated?: boolean;
+    preferredName?: {
+      givenName?: string;
+      familyName?: string;
+      familyName2?: string;
+      display?: string;
+    };
+  };
+}
+
+interface EmergencyPatientSearchResponse {
+  results?: Array<EmergencyPatientRecord>;
+}
+
+const emergencyPatientReconciliationRepresentation =
+  'custom:(uuid,display,voided,identifiers:(uuid,identifier,display,preferred,voided,identifierType:(uuid,display),location:(uuid)),person:(uuid,display,voided,gender,birthdate,birthdateEstimated,preferredName:(givenName,familyName,familyName2,display)))';
+
+export class EmergencyPatientRegistrationVerificationError extends Error {
+  constructor(message = 'The emergency patient registration could not be verified.') {
+    super(message);
+    this.name = 'EmergencyPatientRegistrationVerificationError';
+  }
+}
+
+export class EmergencyPatientRegistrationConflictError extends EmergencyPatientRegistrationVerificationError {
+  constructor() {
+    super('The emergency patient registration identifier is associated with an incompatible record.');
+    this.name = 'EmergencyPatientRegistrationConflictError';
+  }
+}
+
+export class EmergencyPatientRegistrationAmbiguousError extends EmergencyPatientRegistrationVerificationError {
+  constructor() {
+    super('The emergency patient registration result is pending verification.');
+    this.name = 'EmergencyPatientRegistrationAmbiguousError';
+  }
+}
+
+export class EmergencyPatientRegistrationCheckpointUnavailableError extends EmergencyPatientRegistrationVerificationError {
+  constructor() {
+    super('The emergency patient registration could not be safely checkpointed.');
+    this.name = 'EmergencyPatientRegistrationCheckpointUnavailableError';
+  }
+}
+
+export class EmergencyPatientIdentifierGenerationError extends EmergencyPatientRegistrationVerificationError {
+  constructor() {
+    super('The emergency patient identifier could not be generated.');
+    this.name = 'EmergencyPatientIdentifierGenerationError';
+  }
+}
+
 /**
  * Generates an HCE automatically via the idgen module.
  * Sends an empty POST body to the identifier source endpoint.
@@ -48,16 +132,321 @@ export function generateIdentifier(sourceUuid: string) {
   });
 }
 
+function assertCompleteRegistrationContext(context: EmergencyPatientRegistrationContext) {
+  if (
+    ![context.identifier, context.identifierSourceUuid, context.identifierTypeUuid, context.locationUuid].every(
+      (value) => typeof value === 'string' && value.trim().length > 0,
+    )
+  ) {
+    throw new EmergencyPatientRegistrationVerificationError(
+      'The emergency patient registration context is incomplete.',
+    );
+  }
+}
+
+function checkpointMatchesContext(
+  checkpoint: EmergencyPatientRegistrationCheckpoint,
+  context: EmergencyPatientRegistrationContext,
+) {
+  return (
+    checkpoint.identifier === context.identifier &&
+    checkpoint.identifierSourceUuid === context.identifierSourceUuid &&
+    checkpoint.identifierTypeUuid === context.identifierTypeUuid &&
+    checkpoint.locationUuid === context.locationUuid
+  );
+}
+
+function configurationMatchesCheckpoint(
+  checkpoint: EmergencyPatientRegistrationCheckpoint,
+  configuration: Omit<EmergencyPatientRegistrationContext, 'identifier'>,
+) {
+  return (
+    checkpoint.identifierSourceUuid === configuration.identifierSourceUuid &&
+    checkpoint.identifierTypeUuid === configuration.identifierTypeUuid &&
+    checkpoint.locationUuid === configuration.locationUuid
+  );
+}
+
+/** Reuses the durable HCE of a pending attempt instead of consuming a new identifier. */
+export async function prepareEmergencyPatientIdentifier(
+  configuration: Omit<EmergencyPatientRegistrationContext, 'identifier'>,
+) {
+  if (
+    ![configuration.identifierSourceUuid, configuration.identifierTypeUuid, configuration.locationUuid].every(
+      (value) => typeof value === 'string' && value.trim().length > 0,
+    )
+  ) {
+    throw new EmergencyPatientRegistrationVerificationError(
+      'The emergency patient identifier configuration is incomplete.',
+    );
+  }
+
+  const checkpoint = loadEmergencyPatientRegistrationCheckpoint();
+  if (checkpoint) {
+    if (!configurationMatchesCheckpoint(checkpoint, configuration)) {
+      throw new EmergencyPatientRegistrationConflictError();
+    }
+    return checkpoint.identifier;
+  }
+
+  const response = await generateIdentifier(configuration.identifierSourceUuid);
+  const identifier = response.data?.identifier?.trim();
+  if (!identifier) {
+    throw new EmergencyPatientIdentifierGenerationError();
+  }
+  return identifier;
+}
+
+function assertValidPatientRecord(patient: EmergencyPatientRecord) {
+  if (
+    !patient ||
+    typeof patient !== 'object' ||
+    typeof patient.uuid !== 'string' ||
+    !patient.uuid.trim() ||
+    patient.voided !== false ||
+    !Array.isArray(patient.identifiers)
+  ) {
+    throw new EmergencyPatientRegistrationVerificationError(
+      'The emergency patient reconciliation returned an invalid patient.',
+    );
+  }
+
+  if (
+    patient.identifiers.some(
+      (identifier) =>
+        !identifier ||
+        typeof identifier.identifier !== 'string' ||
+        typeof identifier.preferred !== 'boolean' ||
+        typeof identifier.voided !== 'boolean' ||
+        typeof identifier.identifierType?.uuid !== 'string' ||
+        typeof identifier.location?.uuid !== 'string',
+    )
+  ) {
+    throw new EmergencyPatientRegistrationVerificationError(
+      'The emergency patient reconciliation returned an invalid identifier.',
+    );
+  }
+}
+
+function patientMatchesRegistrationContext(
+  patient: EmergencyPatientRecord,
+  context: EmergencyPatientRegistrationContext,
+) {
+  const identifiers = patient.identifiers ?? [];
+  const sameValueIdentifiers = identifiers.filter((identifier) => identifier.identifier?.trim() === context.identifier);
+  if (!sameValueIdentifiers.length) {
+    return false;
+  }
+
+  const exactIdentifiers = sameValueIdentifiers.filter(
+    (identifier) =>
+      identifier.voided === false &&
+      identifier.preferred === true &&
+      identifier.identifierType?.uuid === context.identifierTypeUuid &&
+      identifier.location?.uuid === context.locationUuid,
+  );
+  if (exactIdentifiers.length !== 1 || sameValueIdentifiers.length !== 1) {
+    throw new EmergencyPatientRegistrationConflictError();
+  }
+  return true;
+}
+
+async function fetchAndVerifyEmergencyPatient(patientUuid: string, context: EmergencyPatientRegistrationContext) {
+  const representation = encodeURIComponent(emergencyPatientReconciliationRepresentation);
+  const response = await openmrsFetch<EmergencyPatientRecord>(
+    `${restBaseUrl}/patient/${patientUuid}?v=${representation}`,
+  );
+  const patient = response.data;
+  assertValidPatientRecord(patient);
+  if (patient.uuid !== patientUuid || !patientMatchesRegistrationContext(patient, context)) {
+    throw new EmergencyPatientRegistrationConflictError();
+  }
+  return response;
+}
+
+async function reconcileEmergencyPatientRegistration(
+  context: EmergencyPatientRegistrationContext,
+): Promise<FetchResponse<EmergencyPatientRecord> | null> {
+  const pageSize = 100;
+  let startIndex = 0;
+  const seenPatientUuids = new Set<string>();
+  const matches: Array<EmergencyPatientRecord> = [];
+
+  while (true) {
+    const searchParams = new URLSearchParams({
+      q: context.identifier,
+      limit: String(pageSize),
+      startIndex: String(startIndex),
+      v: emergencyPatientReconciliationRepresentation,
+    });
+    const response = await openmrsFetch<EmergencyPatientSearchResponse>(
+      `${restBaseUrl}/patient?${searchParams.toString()}`,
+    );
+    const page = response.data?.results;
+    if (!Array.isArray(page)) {
+      throw new EmergencyPatientRegistrationVerificationError(
+        'The emergency patient reconciliation search returned an invalid response.',
+      );
+    }
+
+    page.forEach(assertValidPatientRecord);
+    const newPatients = page.filter((patient) => patient.uuid && !seenPatientUuids.has(patient.uuid));
+    for (const patient of newPatients) {
+      seenPatientUuids.add(patient.uuid as string);
+      if (patientMatchesRegistrationContext(patient, context)) {
+        matches.push(patient);
+      }
+    }
+
+    if (page.length < pageSize || newPatients.length === 0) {
+      break;
+    }
+    startIndex += page.length;
+  }
+
+  if (matches.length > 1) {
+    throw new EmergencyPatientRegistrationConflictError();
+  }
+  if (!matches.length) {
+    return null;
+  }
+  return fetchAndVerifyEmergencyPatient(matches[0].uuid as string, context);
+}
+
+function assertPayloadContainsRegistrationIdentifier(
+  patient: EmergencyPatientPayload,
+  context: EmergencyPatientRegistrationContext,
+) {
+  const matchingIdentifiers = patient.identifiers.filter(
+    (identifier) =>
+      identifier.identifier === context.identifier &&
+      identifier.identifierType === context.identifierTypeUuid &&
+      identifier.location === context.locationUuid &&
+      identifier.preferred === true,
+  );
+  if (matchingIdentifiers.length !== 1) {
+    throw new EmergencyPatientRegistrationConflictError();
+  }
+}
+
+function getErrorStatus(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return undefined;
+  }
+  const typedError = error as { status?: number; responseStatus?: number; response?: { status?: number } };
+  return typedError.status ?? typedError.responseStatus ?? typedError.response?.status;
+}
+
+function isDefinitivePatientCreateRejection(error: unknown) {
+  const status = getErrorStatus(error);
+  return Boolean(status && status >= 400 && status < 500 && ![408, 425, 429].includes(status));
+}
+
+const patientRegistrationOperations = new Map<
+  string,
+  {
+    context: EmergencyPatientRegistrationContext;
+    operation: Promise<FetchResponse<EmergencyPatientRecord>>;
+  }
+>();
+
 /**
  * Creates a new patient in OpenMRS via POST /ws/rest/v1/patient.
  *
  * @param patient - Patient payload with person demographics and identifiers
  * @returns Promise with the created patient data (uuid, display, identifiers)
  */
-export function saveEmergencyPatient(patient: EmergencyPatientPayload) {
-  return openmrsFetch(`${restBaseUrl}/patient`, {
-    headers: { 'Content-Type': 'application/json' },
-    method: 'POST',
-    body: patient,
+export function saveEmergencyPatient(patient: EmergencyPatientPayload, context: EmergencyPatientRegistrationContext) {
+  assertCompleteRegistrationContext(context);
+  assertPayloadContainsRegistrationIdentifier(patient, context);
+
+  const existingOperation = patientRegistrationOperations.get(context.identifier);
+  if (existingOperation) {
+    if (!checkpointMatchesContext({ version: 1, ...existingOperation.context }, context)) {
+      return Promise.reject(new EmergencyPatientRegistrationConflictError());
+    }
+    return existingOperation.operation;
+  }
+
+  const operation = runEmergencyPatientRegistration(patient, context).finally(() => {
+    if (patientRegistrationOperations.get(context.identifier)?.operation === operation) {
+      patientRegistrationOperations.delete(context.identifier);
+    }
   });
+  patientRegistrationOperations.set(context.identifier, { context, operation });
+  return operation;
+}
+
+async function runEmergencyPatientRegistration(
+  patient: EmergencyPatientPayload,
+  context: EmergencyPatientRegistrationContext,
+): Promise<FetchResponse<EmergencyPatientRecord>> {
+  const pendingCheckpoint = loadEmergencyPatientRegistrationCheckpoint();
+  if (pendingCheckpoint) {
+    if (!checkpointMatchesContext(pendingCheckpoint, context)) {
+      throw new EmergencyPatientRegistrationConflictError();
+    }
+    const existingPatient = await reconcileEmergencyPatientRegistration(context);
+    if (!existingPatient) {
+      throw new EmergencyPatientRegistrationAmbiguousError();
+    }
+    clearEmergencyPatientRegistrationCheckpoint();
+    return existingPatient;
+  }
+
+  const existingPatient = await reconcileEmergencyPatientRegistration(context);
+  if (existingPatient) {
+    return existingPatient;
+  }
+
+  if (!saveEmergencyPatientRegistrationCheckpoint({ version: 1, ...context })) {
+    throw new EmergencyPatientRegistrationCheckpointUnavailableError();
+  }
+
+  let createResponse: FetchResponse<EmergencyPatientRecord>;
+  try {
+    createResponse = await openmrsFetch<EmergencyPatientRecord>(`${restBaseUrl}/patient`, {
+      headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      body: patient,
+    });
+  } catch (error) {
+    try {
+      const reconciledPatient = await reconcileEmergencyPatientRegistration(context);
+      if (reconciledPatient) {
+        clearEmergencyPatientRegistrationCheckpoint();
+        return reconciledPatient;
+      }
+    } catch {
+      throw new EmergencyPatientRegistrationAmbiguousError();
+    }
+
+    if (isDefinitivePatientCreateRejection(error)) {
+      clearEmergencyPatientRegistrationCheckpoint();
+      throw error;
+    }
+    throw new EmergencyPatientRegistrationAmbiguousError();
+  }
+
+  const patientUuid = createResponse.data?.uuid?.trim();
+  if (patientUuid) {
+    try {
+      const verifiedPatient = await fetchAndVerifyEmergencyPatient(patientUuid, context);
+      clearEmergencyPatientRegistrationCheckpoint();
+      return verifiedPatient;
+    } catch {
+      // A valid identifier search is authoritative when a 2xx body is incomplete or stale.
+    }
+  }
+
+  try {
+    const reconciledPatient = await reconcileEmergencyPatientRegistration(context);
+    if (reconciledPatient) {
+      clearEmergencyPatientRegistrationCheckpoint();
+      return reconciledPatient;
+    }
+  } catch {
+    throw new EmergencyPatientRegistrationAmbiguousError();
+  }
+  throw new EmergencyPatientRegistrationAmbiguousError();
 }

@@ -247,7 +247,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
       availableQueueLocations.find((location) => location.id === sessionLocationUuid) ??
       (availableQueueLocations.length === 1 ? availableQueueLocations[0] : undefined);
     setSelectedQueueLocation(defaultLocation?.id ?? '');
-  }, [availableQueueLocations, currentQueueLocationUuid, selectedQueueLocation, sessionLocationUuid]);
+  }, [availableQueueLocations, currentQueueLocationUuid, queueLocations, selectedQueueLocation, sessionLocationUuid]);
 
   useEffect(() => {
     const nextPriority = priorities.some((allowedPriority) => allowedPriority.uuid === defaultPriorityConceptUuid)

@@ -1,4 +1,4 @@
-import { showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
@@ -86,15 +86,16 @@ export function useTriageVitalsSavedHandler(queueEntry: EmergencyQueueEntry) {
           IV: config.concepts.priorityIVConceptUuid,
         };
 
-        await transitionToAttentionQueue(
-          queueEntry.uuid,
-          queueEntry.patient.uuid,
+        await transitionToAttentionQueue({
+          sourceQueueEntryUuid: queueEntry.uuid,
+          patientUuid: queueEntry.patient.uuid,
           visitUuid,
-          priorityConfig?.conceptUuid ?? fallbackPriorityUuidByLevel[triagePriority.priority],
-          emergencyAttentionQueueUuid,
-          queueStatuses.waiting,
-          priorityConfig?.sortWeight ?? 999,
-        );
+          sourceQueueUuid: queueEntry.queue.uuid,
+          sourceStatusUuid: queueStatuses.inService,
+          targetQueueUuid: emergencyAttentionQueueUuid,
+          targetStatusUuid: queueStatuses.waiting,
+          targetPriorityUuid: priorityConfig?.conceptUuid ?? fallbackPriorityUuidByLevel[triagePriority.priority],
+        });
 
         mutate((key) => typeof key === 'string' && key.includes('/queue-entry'));
         showSnackbar({
@@ -108,13 +109,18 @@ export function useTriageVitalsSavedHandler(queueEntry: EmergencyQueueEntry) {
           ),
         });
       } catch (error: unknown) {
+        mutate((key) => typeof key === 'string' && key.includes('/queue-entry'));
         showSnackbar({
           title: t('errorCompletingTriage', 'Error al completar triaje'),
           kind: 'error',
-          subtitle:
-            error instanceof Error
-              ? error.message
-              : t('errorMovingPatientToAttentionQueue', 'No se pudo enviar el paciente a la cola de atención'),
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t(
+              'triageTransitionUnverifiedSafe',
+              'Los signos vitales fueron guardados, pero no se pudo confirmar el envío a atención. No vuelva a guardar los signos ni repita el triaje; revise la cola.',
+            ),
+            { logContext: 'Transition triaged emergency patient to attention' },
+          ),
         });
       }
     },
@@ -127,7 +133,9 @@ export function useTriageVitalsSavedHandler(queueEntry: EmergencyQueueEntry) {
       emergencyAttentionQueueUuid,
       mutate,
       queueEntry.patient.uuid,
+      queueEntry.queue.uuid,
       queueEntry.uuid,
+      queueStatuses.inService,
       queueStatuses.waiting,
       t,
     ],

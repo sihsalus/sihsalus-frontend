@@ -2,6 +2,7 @@ import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-fram
 import useSWR from 'swr';
 
 import type { ConfigObject } from '../../../config-schema';
+import { resolveCREDForm } from '../../../hooks/useCREDFormLauncher';
 
 type Severity = 'mild' | 'moderate' | 'severe';
 
@@ -40,12 +41,6 @@ interface EncounterResponse {
   obs?: Array<ObsResponse>;
 }
 
-interface FormResponse {
-  uuid: string;
-  name?: string;
-  display?: string;
-}
-
 export interface AdverseReactionSummary {
   id: string;
   occurrenceDate: string;
@@ -64,7 +59,7 @@ export async function saveAdverseReaction({
   config,
 }: AdverseReactionPayload) {
   const adverseReactionConfig = config.adverseReactionReporting;
-  const formUuid = await resolveFormUuid(config.formsList.adverseReactionForm);
+  const form = await resolveCREDForm(config.formsList.adverseReactionForm, 'INMU-002-REPORTE ESAVI');
 
   return openmrsFetch(`${restBaseUrl}/encounter`, {
     method: 'POST',
@@ -76,7 +71,7 @@ export async function saveAdverseReaction({
       location: locationUuid,
       encounterDatetime: occurrenceDate,
       encounterType: config.encounterTypes.vaccinationAdministration,
-      form: formUuid,
+      form: form.uuid,
       obs: [
         {
           concept: adverseReactionConfig.vaccineNameConceptUuid,
@@ -93,26 +88,6 @@ export async function saveAdverseReaction({
       ],
     },
   });
-}
-
-async function resolveFormUuid(formIdentifier: string) {
-  if (isUuid(formIdentifier)) {
-    return formIdentifier;
-  }
-
-  const response = await openmrsFetch<{ results: Array<FormResponse> }>(
-    `${restBaseUrl}/form?q=${encodeURIComponent(formIdentifier)}&v=custom:(uuid,name,display)`,
-  );
-
-  const exactMatch = response.data.results.find(
-    (form) => form.name === formIdentifier || form.display === formIdentifier || form.uuid === formIdentifier,
-  );
-
-  return exactMatch?.uuid ?? response.data.results[0]?.uuid ?? formIdentifier;
-}
-
-function isUuid(value: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
 export function useAdverseReactions(patientUuid: string, config: ConfigObject) {

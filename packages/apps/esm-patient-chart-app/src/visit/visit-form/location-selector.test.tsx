@@ -39,7 +39,7 @@ describe('tests location selector', () => {
 
     renderLocationSelector();
 
-    expect(screen.getByText(/visit location/i)).toBeInTheDocument();
+    expect(screen.getByText(/ubicación de la consulta/i)).toBeInTheDocument();
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
     expect(screen.getByText('Inpatient Ward')).toBeInTheDocument();
   });

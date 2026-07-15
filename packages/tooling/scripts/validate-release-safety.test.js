@@ -8,12 +8,7 @@ const repositoryRoot = path.resolve(__dirname, '../../..');
 test('keeps synthetic E2E credentials out of the environment template', () => {
   const environmentTemplate = readFileSync(path.join(repositoryRoot, '.env.template'), 'utf8');
 
-  for (const variableName of [
-    'E2E_USERNAME',
-    'E2E_PASSWORD',
-    'E2E_PATIENT_UUID',
-    'E2E_APPOINTMENTS_PATIENT_UUID',
-  ]) {
+  for (const variableName of ['E2E_USERNAME', 'E2E_PASSWORD', 'E2E_PATIENT_UUID', 'E2E_APPOINTMENTS_PATIENT_UUID']) {
     const matches = [...environmentTemplate.matchAll(new RegExp(`^${variableName}=([^\\r\\n]*)$`, 'gm'))];
 
     assert.equal(matches.length, 1, `${variableName} must appear exactly once`);
@@ -32,6 +27,51 @@ test('only releases branch images after CI succeeds for a push event', () => {
   );
   assert.match(releaseWorkflow, /CI_EVENT: \$\{\{ github\.event\.workflow_run\.event \}\}/);
   assert.match(releaseWorkflow, /\[\[ "\$\{CI_EVENT\}" != "push" \]\]/);
+});
+
+test('builds, scans and idempotently promotes an immutable commit image with a recorded digest', () => {
+  const releaseWorkflow = readFileSync(path.join(repositoryRoot, '.github/workflows/release.yml'), 'utf8');
+  const dockerfile = readFileSync(path.join(repositoryRoot, 'Dockerfile'), 'utf8');
+
+  assert.match(releaseWorkflow, /group: release-\$\{\{[^\n]*head_sha[^\n]*github\.sha[^\n]*\}\}/);
+  assert.match(releaseWorkflow, /BUILD_TIME="\$\(git show -s --format=%cI HEAD\)"/);
+  assert.match(
+    releaseWorkflow,
+    /"\$\{VERSION\}" != "\$\{PACKAGE_VERSION\}"/,
+    'release tags must match the version embedded from package.json',
+  );
+  assert.match(releaseWorkflow, /Release tag version .* must exactly match package\.json version/);
+  assert.match(releaseWorkflow, /type=raw,value=sha-\$\{\{ steps\.version\.outputs\.git_sha \}\}/);
+  assert.match(releaseWorkflow, /tags: \$\{\{ steps\.meta\.outputs\.tags \}\}/);
+  assert.match(
+    releaseWorkflow,
+    /image-ref: \$\{\{ steps\.immutable\.outputs\.scan_ref \}\}/,
+  );
+  assert.match(releaseWorkflow, /scan_ref=\$\{IMMUTABLE_IMAGE\}@\$\{INSPECT_OUTPUT\}/);
+  assert.match(releaseWorkflow, /Inspect immutable commit image/);
+  assert.match(releaseWorkflow, /Reusing immutable commit image/);
+  assert.match(releaseWorkflow, /not found\|manifest unknown/);
+  assert.match(releaseWorkflow, /if: steps\.immutable\.outputs\.exists != 'true'/);
+  assert.match(releaseWorkflow, /docker push "\$\{IMMUTABLE_IMAGE\}"/);
+  assert.doesNotMatch(releaseWorkflow, /docker push "\$\{image_tag\}"/);
+  assert.match(releaseWorkflow, /Resolve immutable image digest/);
+  assert.match(releaseWorkflow, /--format '\{\{\.Manifest\.Digest\}\}'/);
+  assert.match(releaseWorkflow, /\^sha256:\[0-9a-f\]\{64\}\$/);
+  assert.match(
+    releaseWorkflow,
+    /docker buildx imagetools create --tag "\$\{image_tag\}" "\$\{IMMUTABLE_SOURCE\}"/,
+  );
+  assert.match(releaseWorkflow, /exact release version already points to a different image digest/i);
+  assert.match(releaseWorkflow, /Promoted alias does not resolve to the verified digest/);
+  assert.match(
+    releaseWorkflow,
+    /IMAGE_DIGEST: ghcr\.io\/sihsalus\/sihsalus-frontend@\$\{\{ steps\.published\.outputs\.digest \}\}/,
+  );
+  assert.match(releaseWorkflow, /Deployment: not performed by this workflow/);
+  assert.doesNotMatch(releaseWorkflow, /repository-dispatch|frontend-published/);
+  assert.match(dockerfile, /FROM node:24-alpine@sha256:[0-9a-f]{64} AS builder/);
+  assert.match(dockerfile, /FROM node:24-alpine@sha256:[0-9a-f]{64} AS secure-init/);
+  assert.match(dockerfile, /FROM nginx:1\.31-alpine@sha256:[0-9a-f]{64} AS spa-nginx/);
 });
 
 test('audits every workspace and transitive dependency at high severity', () => {

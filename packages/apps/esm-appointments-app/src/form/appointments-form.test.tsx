@@ -6,12 +6,15 @@ import {
   showSnackbar,
   useConfig,
   useLocations,
+  usePatient,
   useSession,
   userHasAccess,
 } from '@openmrs/esm-framework';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import {
   mockLocations,
   mockPatient,
@@ -32,7 +35,21 @@ import { saveAppointment, saveRecurringAppointments } from './appointments-form.
 import AppointmentForm, {
   getRecurringAppointmentPeriodValidationError,
   isRecurringAppointmentHorizonAllowed,
+  TimeAndDuration,
 } from './appointments-form.workspace';
+
+function TimeAndDurationValidationHarness() {
+  const { control, setError } = useForm({
+    defaultValues: { startTime: '09:30', timeFormat: 'AM', duration: 30 },
+  });
+
+  useEffect(() => {
+    setError('startTime', { message: 'Invalid time' });
+    setError('duration', { message: 'Duration should be greater than zero' });
+  }, [setError]);
+
+  return <TimeAndDuration control={control} t={(_key, fallback) => fallback} />;
+}
 
 const defaultProps = {
   context: 'creating',
@@ -51,6 +68,7 @@ const mockSaveRecurringAppointments = vi.mocked(saveRecurringAppointments);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseLocations = vi.mocked(useLocations);
+const mockUsePatient = vi.mocked(usePatient);
 const mockUseProviders = vi.mocked(useProviders);
 const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
@@ -177,6 +195,12 @@ describe('AppointmentForm', () => {
       appointmentTypes: ['Scheduled', 'WalkIn'],
     });
     mockUseLocations.mockReturnValue(mockLocations.data.results);
+    mockUsePatient.mockReturnValue({
+      patient: { resourceType: 'Patient', id: mockPatient.id },
+      patientUuid: mockPatient.id,
+      error: null,
+      isLoading: false,
+    });
     mockUseSession.mockReturnValue(mockSession.data);
     mockUserHasAccess.mockReturnValue(false);
     mockUseProviders.mockReturnValue({
@@ -216,7 +240,7 @@ describe('AppointmentForm', () => {
     await user.click(screen.getByRole('button', { name: /save and close/i }));
 
     expect(await screen.findByText(/a recurring appointment should have an end date/i)).toBeInTheDocument();
-    expect(screen.getByText(/select at least one day of the week/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/select at least one day of the week/i)).not.toHaveLength(0);
     expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('/recurring-appointments/conflicts'))).toBe(
       false,
     );
@@ -362,6 +386,13 @@ describe('AppointmentForm', () => {
     ).toBe(false);
   });
 
+  it('renders controller validation messages on the time and duration fields', async () => {
+    render(<TimeAndDurationValidationHarness />);
+
+    expect(await screen.findByText('Invalid time')).toBeInTheDocument();
+    expect(screen.getByText('Duration should be greater than zero')).toBeInTheDocument();
+  });
+
   it('closes the workspace when the cancel button is clicked', async () => {
     const user = userEvent.setup();
 
@@ -422,6 +453,22 @@ describe('AppointmentForm', () => {
     await waitFor(() => {
       expect(defaultProps.closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true });
     });
+  });
+
+  it('treats HTTP 204 as a confirmed successful save and does not invite resubmission', async () => {
+    const user = userEvent.setup();
+    mockSaveAppointment.mockResolvedValue({ status: 204 } as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'success', title: 'Appointment scheduled' }),
+    );
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(expect.objectContaining({ title: 'No Content' }));
   });
 
   it('schedules an all-day appointment using the full selected day', async () => {
@@ -554,10 +601,39 @@ describe('AppointmentForm', () => {
     expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: false,
-      kind: 'error',
-      subtitle: 'No se pudo guardar la cita. Revise los datos e intente nuevamente.',
+      kind: 'warning',
+      subtitle:
+        'No se pudo confirmar si la cita fue guardada. No vuelva a enviarla; verifique primero la lista de citas.',
       title: 'Error scheduling appointment',
     });
+
+    expect(saveButton).toBeDisabled();
+    await user.click(saveButton);
+    expect(mockSaveAppointment).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows correction after a definitive client rejection', async () => {
+    const user = userEvent.setup();
+    mockSaveAppointment.mockRejectedValue({ response: { status: 400 } });
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+
+    const saveButton = screen.getByRole('button', { name: /save and close/i });
+    await user.click(saveButton);
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    expect(saveButton).toBeEnabled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      isLowContrast: false,
+      kind: 'error',
+      subtitle: 'La cita no fue guardada. Revise los datos antes de volver a intentar.',
+      title: 'Error scheduling appointment',
+    });
+
+    await user.click(saveButton);
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(2));
   });
 
   it('uses the selected service initial status when creating an appointment', async () => {
@@ -650,6 +726,47 @@ describe('AppointmentForm', () => {
     expect(mockSaveAppointment.mock.calls[0][0]).toEqual(expect.objectContaining({ uuid: appointment.uuid }));
   });
 
+  it('fails closed when the loaded patient identity does not match the appointment context', async () => {
+    const user = userEvent.setup();
+    const appointment = makeEditableAppointment();
+    mockUsePatient.mockReturnValue({
+      patient: { resourceType: 'Patient', id: 'different-patient-uuid' },
+      patientUuid: 'different-patient-uuid',
+      error: null,
+      isLoading: false,
+    });
+
+    renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
+    await waitForLoadingToFinish();
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(mockGetAppointmentStatus).not.toHaveBeenCalled();
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        subtitle:
+          'No se pudo verificar el paciente, la sede, el servicio o el proveedor con los catálogos vigentes. Actualice el formulario antes de guardar.',
+      }),
+    );
+  });
+
+  it('fails closed when a selected location cannot be verified in the current catalog', async () => {
+    const user = userEvent.setup();
+    const appointment = makeEditableAppointment();
+    mockUseLocations.mockReturnValue([]);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
+    await waitForLoadingToFinish();
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(mockGetAppointmentStatus).not.toHaveBeenCalled();
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'error', subtitle: expect.stringContaining('catálogos vigentes') }),
+    );
+  });
+
   it('uses service UUIDs so duplicate service names cannot select the wrong service', async () => {
     const user = userEvent.setup();
     const firstService = { ...mockUseAppointmentServiceData[0], uuid: 'service-a', name: 'Consulta', durationMins: 15 };
@@ -731,6 +848,59 @@ describe('AppointmentForm', () => {
     expect(screen.getByRole('spinbutton', { name: /duration/i })).toHaveValue(20);
     await user.selectOptions(screen.getByRole('combobox', { name: /^select a service$/i }), [nextService.uuid]);
     expect(screen.getByRole('spinbutton', { name: /duration/i })).toHaveValue(20);
+  });
+
+  it('replaces a duration derived from the previous service subtype when changing service', async () => {
+    const user = userEvent.setup();
+    const appointment = makeEditableAppointment();
+    const oldServiceType = { uuid: 'old-subtype', name: 'Procedimiento extendido', duration: 45 };
+    appointment.service = {
+      ...appointment.service,
+      durationMins: 20,
+      serviceTypes: [oldServiceType],
+    };
+    appointment.serviceType = oldServiceType;
+    appointment.endDateTime = new Date(new Date(appointment.startDateTime).getTime() + 45 * 60_000).toISOString();
+    const nextService = {
+      ...mockUseAppointmentServiceData[0],
+      uuid: 'next-service-without-subtype',
+      name: 'Consulta breve',
+      durationMins: 20,
+      serviceTypes: [],
+    };
+    mockAppointmentRequests([appointment.service, nextService]);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
+
+    await waitForLoadingToFinish();
+    expect(screen.getByRole('spinbutton', { name: /duration/i })).toHaveValue(45);
+    await user.selectOptions(screen.getByRole('combobox', { name: /^select a service$/i }), [nextService.uuid]);
+    expect(screen.getByRole('spinbutton', { name: /duration/i })).toHaveValue(20);
+  });
+
+  it('preserves a manually entered duration when changing service during creation', async () => {
+    const user = userEvent.setup();
+    const firstService = {
+      ...mockUseAppointmentServiceData[0],
+      uuid: 'first-service',
+      durationMins: 30,
+    };
+    const nextService = {
+      ...mockUseAppointmentServiceData[0],
+      uuid: 'next-service',
+      durationMins: 45,
+    };
+    mockAppointmentRequests([firstService, nextService]);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+    await user.selectOptions(screen.getByRole('combobox', { name: /^select a service$/i }), [firstService.uuid]);
+    const durationInput = screen.getByRole('spinbutton', { name: /duration/i });
+    await user.clear(durationInput);
+    await user.type(durationInput, '37');
+    await user.selectOptions(screen.getByRole('combobox', { name: /^select a service$/i }), [nextService.uuid]);
+    expect(durationInput).toHaveValue(37);
   });
 
   it('records the selected service subtype when creating an appointment', async () => {
@@ -1087,7 +1257,7 @@ describe('AppointmentForm', () => {
     await waitForLoadingToFinish();
     await user.click(screen.getByRole('button', { name: /save and close/i }));
 
-    expect(await screen.findByText(/a valid appointment issue date is required/i)).toBeInTheDocument();
+    expect(await screen.findAllByText(/a valid appointment issue date is required/i)).not.toHaveLength(0);
     expect(mockGetAppointmentStatus).not.toHaveBeenCalled();
     expect(mockSaveAppointment).not.toHaveBeenCalled();
   });

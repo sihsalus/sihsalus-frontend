@@ -1,3 +1,4 @@
+import { getUserFacingErrorMessage } from '@openmrs/esm-framework';
 import { getLocalCalendarDate, validatePatientBirthdate } from '@openmrs/esm-utils';
 import type { Workbook } from 'exceljs';
 import { v4 } from 'uuid';
@@ -27,6 +28,19 @@ import {
 const maxRows = 250;
 const maxFileSizeBytes = 5 * 1024 * 1024;
 const dangerousSpreadsheetFormulaStart = /^[=+\-@\t\r]/;
+
+export class PatientImportUserError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PatientImportUserError';
+  }
+}
+
+export function getImportErrorMessage(error: unknown, fallback: string, logContext: string) {
+  return error instanceof PatientImportUserError
+    ? error.message
+    : getUserFacingErrorMessage(error, fallback, { logContext });
+}
 
 const headerAliases: Record<SantaClotildeHeader, Array<string>> = {
   ORDEN: ['ORDEN'],
@@ -121,11 +135,11 @@ export async function downloadImportReport(rows: Array<ParsedPatientImportRow>) 
 
 export async function parseSantaClotildeWorkbook(file: File): Promise<Array<ParsedPatientImportRow>> {
   if (!file.name.toLowerCase().endsWith('.xlsx')) {
-    throw new Error('Only .xlsx Excel files are supported.');
+    throw new PatientImportUserError('Only .xlsx Excel files are supported.');
   }
 
   if (file.size > maxFileSizeBytes) {
-    throw new Error('The file exceeds the maximum size allowed.');
+    throw new PatientImportUserError('The file exceeds the maximum size allowed.');
   }
 
   const workbook = await createWorkbook();
@@ -133,14 +147,14 @@ export async function parseSantaClotildeWorkbook(file: File): Promise<Array<Pars
   const worksheet = workbook.worksheets[0];
 
   if (!worksheet) {
-    throw new Error('The file does not contain any worksheets.');
+    throw new PatientImportUserError('The file does not contain any worksheets.');
   }
 
   const headerMap = readHeaderMap(worksheet.getRow(1));
   const missingHeaders = santaClotildeHeaders.filter((header) => !headerMap[header]);
 
   if (missingHeaders.length) {
-    throw new Error(`Missing required columns: ${missingHeaders.join(', ')}.`);
+    throw new PatientImportUserError(`Missing required columns: ${missingHeaders.join(', ')}.`);
   }
 
   const rows: Array<ParsedPatientImportRow> = [];
@@ -176,7 +190,7 @@ export async function parseSantaClotildeWorkbook(file: File): Promise<Array<Pars
   });
 
   if (worksheet.actualRowCount - 1 > maxRows) {
-    throw new Error(`The template allows a maximum of ${maxRows} rows per file.`);
+    throw new PatientImportUserError(`The template allows a maximum of ${maxRows} rows per file.`);
   }
 
   applyDuplicateMessages(rows, duplicateDniRows, 'Duplicate DNI within the file.', 'error');
@@ -211,11 +225,11 @@ export async function createPatientFromImportRow(
   }
 
   if (existingPatient) {
-    throw new Error(`Ya existe un paciente con DNI ${row.normalized.dni}.`);
+    throw new PatientImportUserError(`Ya existe un paciente con DNI ${row.normalized.dni}.`);
   }
 
   if (existingPerson) {
-    throw new Error(
+    throw new PatientImportUserError(
       `Ya existe una persona con DNI ${row.normalized.dni}. Regístrela mediante el flujo manual para evitar duplicados.`,
     );
   }
@@ -376,7 +390,7 @@ async function buildPatientIdentifiers(
       identifierType.identifierSources?.[0];
 
     if (!source) {
-      throw new Error(`No generation source is configured for ${identifierType.name}.`);
+      throw new PatientImportUserError(`No generation source is configured for ${identifierType.name}.`);
     }
 
     const generated = await generateIdentifier(source.uuid);
@@ -545,7 +559,7 @@ function getCellText(cell): string {
   }
 
   if (typeof value === 'object' && 'formula' in value) {
-    throw new Error(`Cell ${cell.address} contains a formula. The file only supports values.`);
+    throw new PatientImportUserError(`Cell ${cell.address} contains a formula. The file only supports values.`);
   }
 
   if (value instanceof Date) {

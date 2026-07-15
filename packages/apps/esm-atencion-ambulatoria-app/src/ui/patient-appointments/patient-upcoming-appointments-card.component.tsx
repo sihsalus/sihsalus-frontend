@@ -8,7 +8,7 @@ import {
   StructuredListWrapper,
 } from '@carbon/react';
 import type { Visit } from '@openmrs/esm-framework';
-import { formatDate, parseDate, showSnackbar } from '@openmrs/esm-framework';
+import { formatDate, getUserFacingErrorMessage, parseDate, showSnackbar } from '@openmrs/esm-framework';
 import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -70,12 +70,19 @@ const PatientUpcomingAppointmentsCard: React.FC<PatientUpcomingAppointmentsProps
                 title: t('appointmentCheckedIn', 'Appointment Checked In'),
               });
             })
-            .catch((error) => {
+            .catch((error: unknown) => {
               showSnackbar({
                 title: t('updateError', 'Error updating upcoming appointment'),
                 kind: 'error',
                 isLowContrast: false,
-                subtitle: error?.message,
+                subtitle: getUserFacingErrorMessage(
+                  error,
+                  t(
+                    'appointmentCheckInStatusUnverifiedSafe',
+                    'La visita fue guardada, pero no se pudo confirmar el estado de la cita. Actualice y revise la cita antes de repetir la acción.',
+                  ),
+                  { logContext: 'Update appointment after visit save' },
+                ),
               });
             });
         } else {

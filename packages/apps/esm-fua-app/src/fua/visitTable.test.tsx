@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 
 import { FuaGenerationError, generateFuaFromVisit, generateFuasFromVisits, useVisits } from '../hooks/useVisit';
 
-import VisitTable from './visitTable';
+import VisitTable, { getFuaGenerationErrorMessage } from './visitTable';
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
@@ -79,5 +79,13 @@ describe('VisitTable FUA generation', () => {
         'El servidor rechazó la generación del FUA. Su sesión permanece activa; inténtelo nuevamente o contacte al administrador.',
     });
     expect(mockMutate).not.toHaveBeenCalled();
+  });
+
+  it('never uses a raw unexpected error as generation copy', () => {
+    const t = (_key: string, fallback: string) => fallback;
+
+    expect(
+      getFuaGenerationErrorMessage(new Error('POST /openmrs/ws/rest/v1/fua failed: SQLSTATE 23505'), t as never),
+    ).toBe('Ocurrió un error al generar el FUA');
   });
 });

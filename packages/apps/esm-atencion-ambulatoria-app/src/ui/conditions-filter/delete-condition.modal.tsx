@@ -1,5 +1,5 @@
 import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { showSnackbar } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -30,14 +30,19 @@ const DeleteConditionModal: React.FC<DeleteConditionModalProps> = ({ closeDelete
         kind: 'success',
         title: t('antecedentDeleted', 'Antecedent deleted'),
       });
-    } catch (error) {
-      console.error('Error deleting condition: ', error);
-
+    } catch (error: unknown) {
       showSnackbar({
         isLowContrast: false,
         kind: 'error',
         title: t('errorDeletingAntecedent', 'Error deleting antecedent'),
-        subtitle: error?.message,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t(
+            'conditionDeleteFailureSafe',
+            'No se pudo eliminar el antecedente. Actualice la historia y verifique si aún existe antes de reintentar.',
+          ),
+          { logContext: 'Delete outpatient condition' },
+        ),
       });
     }
   }, [closeDeleteModal, conditionId, mutate, t]);

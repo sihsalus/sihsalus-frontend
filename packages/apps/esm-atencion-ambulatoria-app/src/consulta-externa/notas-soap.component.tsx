@@ -1,11 +1,10 @@
 import { Accordion, AccordionItem, Tag } from '@carbon/react';
 import { formatDate, useConfig } from '@openmrs/esm-framework';
-import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
+import { useOutpatientFormLauncher } from '../hooks/useOutpatientFormLauncher';
 import { useSoapNotes } from '../hooks/useSoapNotes';
-import { patientFormEntryWorkspace } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 import styles from './consulta-externa-dashboard.scss';
 
@@ -21,16 +20,12 @@ const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
     config.encounterTypes?.externalConsultation,
     config.concepts,
   );
-
-  const handleLaunchForm = () => {
-    launchPatientWorkspace(patientFormEntryWorkspace, {
-      mutateForm: mutate,
-      formInfo: {
-        patientUuid,
-        formUuid: config.formsList?.soapNoteForm ?? config.formsList?.consultaExternaForm,
-      },
-    });
-  };
+  const { launchForm } = useOutpatientFormLauncher({
+    fallbackDisplay: t('soapNotes', 'Physical exam / SOAP'),
+    identifier: config.formsList?.soapNoteForm ?? config.formsList?.consultaExternaForm,
+    onSaved: mutate,
+    patientUuid,
+  });
 
   return (
     <ClinicalHistoryCard
@@ -42,7 +37,7 @@ const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
       isLoading={isLoading}
       isValidating={isValidating}
       loadingVariant="accordion"
-      onAction={handleLaunchForm}
+      onAction={() => void launchForm()}
       pagination={pagination}
     >
       <Accordion>

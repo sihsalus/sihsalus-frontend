@@ -103,6 +103,8 @@
   "vitalsAndBiometricsNowAvailable": "Ahora son visibles en la página de Signos Vitales y Datos Biométricos",
   "vitalsAndBiometricsRecorded": "Signos Vitales y Datos Biométricos guardados",
   "vitalsAndBiometricsSaveError": "Error al guardar signos vitales y datos biométricos",
+  "vitalsSavedDoNotSubmitAgain": "Los signos vitales ya fueron guardados. No vuelva a enviarlos; revise la historia del paciente y la cola de atención.",
+  "vitalsSavedFollowUpIncomplete": "Signos vitales guardados; flujo incompleto",
   "vitalsHistory": "Historial de signos vitales",
   "vitalSignDisplayed": "Signo vital mostrado",
   "vitalSigns": "Signos vitales",

@@ -46,7 +46,11 @@ const testProps = {
 const testWorkspace2Props: PatientWorkspace2DefinitionProps<
   {
     encounterTypeUuid?: string;
-    onVitalsSaved?: (payload: { formData: Record<string, number>; patientUuid: string; visitUuid: string }) => void;
+    onVitalsSaved?: (payload: {
+      formData: Record<string, number>;
+      patientUuid: string;
+      visitUuid: string;
+    }) => Promise<void> | void;
     profile?: 'default' | 'emergency-triage';
   },
   object
@@ -330,6 +334,89 @@ describe('VitalsBiometricsForm', () => {
     );
   });
 
+  it('does not report the clinical save as failed or allow a duplicate submit when the follow-up action fails', async () => {
+    const user = userEvent.setup();
+    const closeWorkspaceWithSavedChanges = vi.fn();
+    const onVitalsSaved = vi.fn().mockRejectedValue(new Error('Queue transition failed with patient data'));
+
+    mockSavePatientVitals.mockResolvedValue({
+      statusText: 'created',
+      status: 201,
+      data: [],
+    } as FetchResponse<unknown>);
+
+    render(
+      <VitalsAndBiometricsForm
+        {...testProps}
+        closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
+        onVitalsSaved={onVitalsSaved}
+      />,
+    );
+
+    await user.type(screen.getByRole('spinbutton', { name: /weight/i }), weightValue.toString());
+    const saveButton = screen.getByRole('button', { name: /save and close/i });
+    await user.click(saveButton);
+
+    await waitFor(() => expect(onVitalsSaved).toHaveBeenCalledTimes(1));
+    expect(closeWorkspaceWithSavedChanges).toHaveBeenCalledTimes(1);
+    expect(mockSavePatientVitals).toHaveBeenCalledTimes(1);
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'success', title: 'Vitals and Biometrics saved' }),
+    );
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'warning',
+          subtitle: 'The vitals were saved. Do not submit them again; review the patient chart and the care queue.',
+          title: 'Vitals saved; workflow incomplete',
+        }),
+      ),
+    );
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'error', title: 'Error saving vitals and biometrics' }),
+    );
+    expect(saveButton).toBeDisabled();
+
+    await user.click(saveButton);
+    expect(mockSavePatientVitals).toHaveBeenCalledTimes(1);
+    expect(mockShowSnackbar.mock.calls.flatMap(([message]) => message.subtitle ?? []).join(' ')).not.toMatch(
+      /patient data|queue transition failed/i,
+    );
+  });
+
+  it('continues the follow-up action without inviting a duplicate save when workspace close fails', async () => {
+    const user = userEvent.setup();
+    const closeWorkspaceWithSavedChanges = vi.fn().mockRejectedValue(new Error('Workspace close failed'));
+    const onVitalsSaved = vi.fn();
+
+    mockSavePatientVitals.mockResolvedValue({
+      statusText: 'created',
+      status: 201,
+      data: [],
+    } as FetchResponse<unknown>);
+
+    render(
+      <VitalsAndBiometricsForm
+        {...testProps}
+        closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
+        onVitalsSaved={onVitalsSaved}
+      />,
+    );
+
+    await user.type(screen.getByRole('spinbutton', { name: /weight/i }), weightValue.toString());
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(onVitalsSaved).toHaveBeenCalledTimes(1));
+    expect(closeWorkspaceWithSavedChanges).toHaveBeenCalledTimes(1);
+    expect(mockSavePatientVitals).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'warning' })),
+    );
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'error', title: 'Error saving vitals and biometrics' }),
+    );
+  });
+
   it('uses the workspace encounter type override when saving from Workspace 2', async () => {
     const user = userEvent.setup();
     const triageEncounterTypeUuid = 'triage-encounter-type-uuid';
@@ -495,18 +582,26 @@ describe('VitalsBiometricsForm', () => {
 
   it('renders an error snackbar if there was a problem saving vitals and biometrics', async () => {
     const user = userEvent.setup();
+    const closeWorkspaceWithSavedChanges = vi.fn();
+    const onVitalsSaved = vi.fn();
 
     const error = {
-      message: 'Some of the values entered are invalid',
+      message: 'SQLSTATE 23505 patient_uuid=private-patient-uuid',
       response: {
         status: 500,
-        statusText: 'Internal Server Error',
+        statusText: 'Internal endpoint /ws/rest/v1/encounter',
       },
     };
 
     mockSavePatientVitals.mockRejectedValueOnce(error);
 
-    render(<VitalsAndBiometricsForm {...testProps} />);
+    render(
+      <VitalsAndBiometricsForm
+        {...testProps}
+        closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
+        onVitalsSaved={onVitalsSaved}
+      />,
+    );
 
     const heightInput = screen.getByRole('spinbutton', { name: /height/i });
     const weightInput = screen.getByRole('spinbutton', { name: /weight/i });
@@ -540,9 +635,14 @@ describe('VitalsBiometricsForm', () => {
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: false,
       kind: 'error',
-      subtitle: 'Some of the values entered are invalid',
+      subtitle: 'An unexpected error occurred. Please try again.',
       title: 'Error saving vitals and biometrics',
     });
+    expect(mockShowSnackbar.mock.calls.flatMap(([message]) => message.subtitle ?? []).join(' ')).not.toMatch(
+      /SQLSTATE|patient_uuid|\/ws\/rest/u,
+    );
+    expect(closeWorkspaceWithSavedChanges).not.toHaveBeenCalled();
+    expect(onVitalsSaved).not.toHaveBeenCalled();
   });
 
   it('does not save vitals and biometrics without an active visit', async () => {

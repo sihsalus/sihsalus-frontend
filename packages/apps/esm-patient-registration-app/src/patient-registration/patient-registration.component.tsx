@@ -22,7 +22,7 @@ import { moduleName } from '../constants';
 import { ResourcesContext } from '../offline.resources';
 import BeforeSavePrompt from './before-save-prompt';
 import { getDocumentIdentifierEntry } from './field/external-lookup/dni-identifier';
-import { type SavePatientForm, SavePatientTransactionManager } from './form-manager';
+import { REGISTRATION_DOMAIN_ERROR, type SavePatientForm, SavePatientTransactionManager } from './form-manager';
 import { getDocumentTypeDefinitionByIdentifierType, normalizeDocumentNumber } from './identity/identity-documents';
 import { fetchPersonForPromotion, searchLocalIdentityByDocument } from './identity/identity-search.resource';
 import { applyPersonToRegistrationForm } from './identity/promotion';
@@ -37,6 +37,13 @@ import {
   usePatientUuidMap,
 } from './patient-registration-hooks';
 import { cancelRegistration, filterOutUndefinedPatientIdentifiers, scrollIntoView } from './patient-registration-utils';
+import { PATIENT_CREATION_CHECKPOINT_INVALID } from './patient-creation-checkpoint';
+import {
+  PATIENT_CREATION_AMBIGUOUS,
+  PATIENT_CREATION_CHECKPOINT_UNAVAILABLE,
+  PATIENT_CREATION_CONFLICT,
+  PATIENT_REGISTRATION_INCOMPLETE,
+} from './patient-creation-reconciliation';
 import { getEffectiveRegistrationConfig } from './peru-registration-config';
 import { SectionWrapper } from './section/section-wrapper.component';
 import { getValidationSchema, requiresDniNationalityVerification } from './validation/patient-registration-validation';
@@ -89,6 +96,7 @@ export function preserveMedicalRecordAttributes(
 }
 
 interface RegistrationSubmitError {
+  code?: string;
   status?: number;
   message?: string;
   responseBody?: {
@@ -96,6 +104,27 @@ interface RegistrationSubmitError {
       message?: string;
     };
   };
+}
+
+function createRegistrationDomainError(message: string): RegistrationSubmitError {
+  return { code: REGISTRATION_DOMAIN_ERROR, responseBody: { error: { message } } };
+}
+
+function getRegistrationErrorCode(error: unknown) {
+  return error && typeof error === 'object' && 'code' in error ? String(error.code) : undefined;
+}
+
+function getTrustedRegistrationDomainMessage(error: unknown) {
+  if (
+    error &&
+    typeof error === 'object' &&
+    'code' in error &&
+    error.code === REGISTRATION_DOMAIN_ERROR &&
+    'responseBody' in error
+  ) {
+    return (error as RegistrationSubmitError).responseBody?.error?.message;
+  }
+  return undefined;
 }
 
 function isSessionExpired(error: unknown): boolean {
@@ -236,6 +265,9 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   );
   const { data: photo } = usePatientPhoto(patientToEdit?.id);
   const savePatientTransactionManager = useRef(new SavePatientTransactionManager());
+  const saveInFlightRef = useRef(false);
+  const [isSaveOutcomeAmbiguous, setIsSaveOutcomeAmbiguous] = useState(false);
+  const [saveOutcomeSafetyMessage, setSaveOutcomeSafetyMessage] = useState<string>();
   const promotePersonUuid = useMemo(() => new URLSearchParams(search ?? '').get('promotePerson'), [search]);
   const [isLoadingPromotion, setIsLoadingPromotion] = useState(!!promotePersonUuid && !hasPatientRoute);
   const validationSchema = getValidationSchema(config, identifierTypes);
@@ -332,6 +364,11 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   }, [canEditMedicalRecord, config.sections, config.sectionDefinitions]);
 
   const onFormSubmit = async (values: FormValues, helpers: FormikHelpers<FormValues>) => {
+    if (saveInFlightRef.current || isSaveOutcomeAmbiguous) {
+      helpers.setSubmitting(false);
+      return;
+    }
+    saveInFlightRef.current = true;
     const abortController = new AbortController();
     helpers.setSubmitting(true);
 
@@ -361,29 +398,21 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
           const existingPerson = identityMatches.find((match) => match.kind === 'person');
 
           if (existingPatient) {
-            throw {
-              responseBody: {
-                error: {
-                  message: t(
-                    'duplicatePatientDocumentError',
-                    'Ya existe un paciente con este documento. Búsquelo antes de registrar uno nuevo.',
-                  ),
-                },
-              },
-            };
+            throw createRegistrationDomainError(
+              t(
+                'duplicatePatientDocumentError',
+                'Ya existe un paciente con este documento. Búsquelo antes de registrar uno nuevo.',
+              ),
+            );
           }
 
           if (existingPerson && existingPerson.uuid !== updatedFormValues.personUuidToPromote) {
-            throw {
-              responseBody: {
-                error: {
-                  message: t(
-                    'duplicatePersonDocumentError',
-                    'Ya existe una persona con este documento. Use la opción de promover persona para evitar duplicados.',
-                  ),
-                },
-              },
-            };
+            throw createRegistrationDomainError(
+              t(
+                'duplicatePersonDocumentError',
+                'Ya existe una persona con este documento. Use la opción de promover persona para evitar duplicados.',
+              ),
+            );
           }
         }
       }
@@ -425,6 +454,45 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
 
       setTarget(redirectUrl);
     } catch (error: unknown) {
+      const errorCode = getRegistrationErrorCode(error);
+      const patientCreationSafetyMessage =
+        errorCode === PATIENT_CREATION_AMBIGUOUS
+          ? t(
+              'patientCreateOutcomeUnknown',
+              'No se pudo confirmar si el paciente fue registrado. No vuelva a enviarlo; verifique primero el buscador de pacientes.',
+            )
+          : errorCode === PATIENT_CREATION_CONFLICT
+            ? t(
+                'patientCreateConflict',
+                'El identificador pendiente coincide con un registro incompatible. No continúe hasta que admisión verifique al paciente.',
+              )
+            : errorCode === PATIENT_CREATION_CHECKPOINT_UNAVAILABLE
+              ? t(
+                  'patientCreateCheckpointUnavailable',
+                  'No se pudo preparar un guardado seguro en este navegador. Habilite el almacenamiento de sesión y vuelva a intentar.',
+                )
+              : errorCode === PATIENT_CREATION_CHECKPOINT_INVALID
+                ? t(
+                    'patientCreateCheckpointInvalid',
+                    'Existe un intento de registro pendiente que no puede leerse. No vuelva a guardar; solicite a soporte que verifique al paciente y la sesión.',
+                  )
+                : errorCode === PATIENT_REGISTRATION_INCOMPLETE
+                  ? t(
+                      'patientRegistrationIncomplete',
+                      'El paciente ya existe, pero no se confirmó la finalización de relaciones u observaciones. No reenvíe el formulario; abra el paciente y solicite verificación.',
+                    )
+                  : undefined;
+      const outcomeIsAmbiguous =
+        errorCode === PATIENT_CREATION_AMBIGUOUS ||
+        errorCode === PATIENT_CREATION_CHECKPOINT_INVALID ||
+        errorCode === PATIENT_CREATION_CONFLICT ||
+        errorCode === PATIENT_REGISTRATION_INCOMPLETE;
+      if (outcomeIsAmbiguous) {
+        setIsSaveOutcomeAmbiguous(true);
+        setSaveOutcomeSafetyMessage(patientCreationSafetyMessage);
+      } else {
+        saveInFlightRef.current = false;
+      }
       const errorTitle = inEditMode
         ? t('updatePatientErrorSnackbarTitle', 'Patient Details Update Failed')
         : t('registrationErrorSnackbarTitle', 'Patient Registration Failed');
@@ -436,17 +504,23 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
           kind: 'error',
         });
       } else {
+        const trustedDomainMessage = getTrustedRegistrationDomainMessage(error);
         showSnackbar({
           title: errorTitle,
-          subtitle: getUserFacingErrorMessage(
-            error,
-            t(
-              'patientRegistrationSafeError',
-              'Could not complete the registration. Try again or contact the system administrator.',
+          subtitle:
+            trustedDomainMessage ??
+            patientCreationSafetyMessage ??
+            getUserFacingErrorMessage(
+              error,
+              t(
+                'patientSaveSafeError',
+                'Could not save the patient details. Try again or contact the system administrator.',
+              ),
+              {
+                logContext: inEditMode ? 'Update patient registration' : 'Create patient registration',
+              },
             ),
-            { logContext: inEditMode ? 'Update patient registration' : 'Create patient registration' },
-          ),
-          kind: 'error',
+          kind: outcomeIsAmbiguous ? 'warning' : 'error',
         });
       }
 
@@ -601,8 +675,10 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
               // user should be blocked to register the patient.
               disabled={
                 !currentSession ||
+                !currentSession.sessionLocation?.uuid ||
                 areIdentifiersUnavailableForSubmit(!!Object.keys(props.values.identifiers ?? {}).length) ||
                 isDniNationalityVerificationPending ||
+                isSaveOutcomeAmbiguous ||
                 props.isSubmitting
               }
             >
@@ -627,6 +703,20 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
         return (
           <Form className={styles.form} noValidate>
             <BeforeSavePrompt when={Object.keys(props.touched).length > 0} redirect={target} />
+            {isSaveOutcomeAmbiguous && (
+              <InlineNotification
+                hideCloseButton
+                kind="warning"
+                title={t('patientCreatePendingVerificationTitle', 'Registro pendiente de verificación')}
+                subtitle={
+                  saveOutcomeSafetyMessage ??
+                  t(
+                    'patientCreateOutcomeUnknown',
+                    'No se pudo confirmar si el paciente fue registrado. No vuelva a enviarlo; verifique primero el buscador de pacientes.',
+                  )
+                }
+              />
+            )}
             <div className={styles.formContainer}>
               <div>
                 <div className={styles.stickyColumn}>

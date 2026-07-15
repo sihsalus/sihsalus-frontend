@@ -165,6 +165,7 @@ export const useWorkspace2Context = vi.fn();
 interface OpenmrsDatePickerMockProps extends InputHTMLAttributes<HTMLInputElement> {
   invalid?: boolean;
   invalidText?: ReactNode;
+  isDisabled?: boolean;
   isInvalid?: boolean;
   isReadOnly?: boolean;
   isRequired?: boolean;
@@ -183,6 +184,7 @@ export const OpenmrsDatePicker = forwardRef<HTMLInputElement, OpenmrsDatePickerM
       value,
       onChange,
       invalid,
+      isDisabled,
       isInvalid,
       invalidText,
       isReadOnly,
@@ -203,6 +205,7 @@ export const OpenmrsDatePicker = forwardRef<HTMLInputElement, OpenmrsDatePickerM
           {...props}
           id={id}
           ref={ref}
+          disabled={isDisabled}
           readOnly={isReadOnly}
           required={required ?? isRequired}
           type="text"

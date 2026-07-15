@@ -19,7 +19,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { Add, Renew } from '@carbon/react/icons';
-import { showSnackbar, usePagination } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar, usePagination } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import type { TFunction } from 'i18next';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -54,7 +54,7 @@ function getArea(visit: VisitSummary) {
   return visit.location?.display?.trim() || 'N/A';
 }
 
-function getFuaGenerationErrorMessage(error: unknown, t: TFunction) {
+export function getFuaGenerationErrorMessage(error: unknown, t: TFunction) {
   if (!(error instanceof FuaGenerationError)) {
     return t('errorGeneratingFua', 'Ocurrió un error al generar el FUA');
   }
@@ -204,8 +204,9 @@ const VisitTable: React.FC = () => {
         showSnackbar({
           kind: 'error',
           title: t('error', 'Error'),
-          subtitle:
-            error instanceof Error ? error.message : t('errorGeneratingFua', 'Ocurrio un error al generar el FUA'),
+          subtitle: getUserFacingErrorMessage(error, t('errorGeneratingFua', 'Ocurrió un error al generar el FUA'), {
+            logContext: 'Generate FUAs in bulk',
+          }),
         });
       } finally {
         setIsBulkGenerating(false);

@@ -1,10 +1,16 @@
-import { getLocale, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { type FetchResponse, getLocale, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import { useCallback, useMemo } from 'react';
 import useSWR from 'swr';
 import useSWRImmutable from 'swr/immutable';
 import { type Config } from '../config-schema';
 import { omrsDateFormat } from '../constants';
+import {
+  clearTriageTransitionCheckpoint,
+  loadTriageTransitionCheckpoint,
+  saveTriageTransitionCheckpoint,
+  type TriageTransitionReconciliationCheckpoint,
+} from '../emergency-workflow/triage-transition-reconciliation-checkpoint';
 import { useServiceQueuesFilters } from '../utils/service-queues-integration';
 
 /**
@@ -14,6 +20,7 @@ import { useServiceQueuesFilters } from '../utils/service-queues-integration';
  */
 export interface EmergencyQueueEntry {
   uuid: string;
+  endedAt?: string | null;
   patient: {
     uuid: string;
     display: string;
@@ -56,6 +63,7 @@ export interface EmergencyQueueEntry {
       display: string;
     };
   };
+  queueComingFrom?: { uuid: string; display?: string } | null;
   visit?: {
     uuid: string;
     display: string;
@@ -445,6 +453,129 @@ export function useAverageWaitTimeByPriority(serviceUuid?: string, locationUuid?
  * @param sortWeight - Sort weight for the priority (optional)
  * @returns Promise with the created queue entry
  */
+interface EmergencyQueueEntryCreationSummary {
+  uuid?: string;
+  endedAt?: string | null;
+  patient?: { uuid?: string };
+  visit?: { uuid?: string };
+  queue?: { uuid?: string; display?: string };
+  status?: { uuid?: string };
+  priority?: { uuid?: string };
+}
+
+interface EmergencyQueueEntryCreationSearchResponse {
+  results?: Array<EmergencyQueueEntryCreationSummary>;
+}
+
+const emergencyQueueEntryCreationRepresentation =
+  'custom:(uuid,endedAt,patient:(uuid),visit:(uuid),queue:(uuid,display),status:(uuid),priority:(uuid))';
+
+export class EmergencyQueueEntryCreationVerificationError extends Error {
+  constructor() {
+    super('The emergency queue entry creation could not be verified.');
+    this.name = 'EmergencyQueueEntryCreationVerificationError';
+  }
+}
+
+export class MultipleActiveEmergencyQueueEntriesError extends Error {
+  constructor() {
+    super('More than one active emergency queue entry was found for the visit.');
+    this.name = 'MultipleActiveEmergencyQueueEntriesError';
+  }
+}
+
+export class EmergencyQueueEntryCreationConflictError extends Error {
+  constructor() {
+    super('An active queue entry conflicts with the requested emergency queue entry.');
+    this.name = 'EmergencyQueueEntryCreationConflictError';
+  }
+}
+
+export class EmergencyQueueEntrySearchInvalidResponseError extends Error {
+  constructor() {
+    super('The emergency queue entry search returned an invalid response.');
+    this.name = 'EmergencyQueueEntrySearchInvalidResponseError';
+  }
+}
+
+export class EmergencyQueueEntryCreationNotAttemptedError extends Error {
+  constructor(public readonly originalError: unknown) {
+    super('The emergency queue entry was not created because its preconditions could not be verified.');
+    this.name = 'EmergencyQueueEntryCreationNotAttemptedError';
+  }
+}
+
+export class EmergencyQueueEntryCreationRejectedError extends Error {
+  constructor(public readonly originalError: unknown) {
+    super('The emergency queue entry POST was explicitly rejected and reconciliation found no persisted entry.');
+    this.name = 'EmergencyQueueEntryCreationRejectedError';
+  }
+}
+
+interface ExpectedEmergencyQueueEntryCreation {
+  patientUuid: string;
+  visitUuid: string;
+  priorityUuid: string;
+  statusUuid: string;
+  queueUuid: string;
+}
+
+async function findActiveEmergencyQueueEntries(params: Record<string, string>) {
+  const searchParams = new URLSearchParams({
+    ...params,
+    isEnded: 'false',
+    v: emergencyQueueEntryCreationRepresentation,
+  });
+  const response = await openmrsFetch<EmergencyQueueEntryCreationSearchResponse>(
+    `${restBaseUrl}/queue-entry?${searchParams.toString()}`,
+  );
+  if (!Array.isArray(response.data?.results)) {
+    throw new EmergencyQueueEntrySearchInvalidResponseError();
+  }
+
+  return {
+    response,
+    entries: response.data.results.filter((entry) => !entry.endedAt),
+  };
+}
+
+function queueEntryMatchesExpectedCreation(
+  entry: EmergencyQueueEntryCreationSummary,
+  expected: ExpectedEmergencyQueueEntryCreation,
+) {
+  return (
+    Boolean(entry.uuid) &&
+    !entry.endedAt &&
+    entry.patient?.uuid === expected.patientUuid &&
+    entry.visit?.uuid === expected.visitUuid &&
+    entry.queue?.uuid === expected.queueUuid &&
+    entry.status?.uuid === expected.statusUuid &&
+    entry.priority?.uuid === expected.priorityUuid
+  );
+}
+
+function asCreatedQueueEntryResponse(
+  response: FetchResponse<EmergencyQueueEntryCreationSearchResponse>,
+  queueEntry: EmergencyQueueEntryCreationSummary,
+) {
+  return { ...response, data: queueEntry } as FetchResponse<EmergencyQueueEntryCreationSummary>;
+}
+
+export async function reconcileEmergencyQueueEntryCreation(expected: ExpectedEmergencyQueueEntryCreation) {
+  const { response, entries } = await findActiveEmergencyQueueEntries({ visit: expected.visitUuid });
+  if (entries.length > 1) {
+    throw new MultipleActiveEmergencyQueueEntriesError();
+  }
+  const entry = entries[0];
+  if (!entry) {
+    return null;
+  }
+  if (!queueEntryMatchesExpectedCreation(entry, expected)) {
+    throw new EmergencyQueueEntryCreationConflictError();
+  }
+  return asCreatedQueueEntryResponse(response, entry);
+}
+
 export async function createEmergencyQueueEntry(
   patientUuid: string,
   visitUuid: string,
@@ -453,23 +584,89 @@ export async function createEmergencyQueueEntry(
   queueUuid: string,
   sortWeight?: number,
 ) {
-  return openmrsFetch(`${restBaseUrl}/visit-queue-entry`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: {
-      visit: { uuid: visitUuid },
-      queueEntry: {
-        status: { uuid: statusUuid },
-        priority: { uuid: priorityUuid },
-        queue: { uuid: queueUuid },
-        patient: { uuid: patientUuid },
-        startedAt: dayjs().format(omrsDateFormat),
-        sortWeight: sortWeight ?? 4,
+  const expected = { patientUuid, visitUuid, priorityUuid, statusUuid, queueUuid };
+  let existingForVisit: Awaited<ReturnType<typeof reconcileEmergencyQueueEntryCreation>>;
+  try {
+    existingForVisit = await reconcileEmergencyQueueEntryCreation(expected);
+  } catch (error) {
+    throw new EmergencyQueueEntryCreationNotAttemptedError(error);
+  }
+  if (existingForVisit) {
+    return existingForVisit;
+  }
+
+  let existingForPatientAndQueue: Array<EmergencyQueueEntryCreationSummary>;
+  try {
+    ({ entries: existingForPatientAndQueue } = await findActiveEmergencyQueueEntries({
+      patient: patientUuid,
+      queue: queueUuid,
+    }));
+  } catch (error) {
+    throw new EmergencyQueueEntryCreationNotAttemptedError(error);
+  }
+  if (existingForPatientAndQueue.some((entry) => entry.visit?.uuid !== visitUuid)) {
+    throw new EmergencyQueueEntryCreationNotAttemptedError(new EmergencyQueueEntryCreationConflictError());
+  }
+
+  try {
+    await openmrsFetch<{ uuid?: string }>(`${restBaseUrl}/visit-queue-entry`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-    },
-  });
+      body: {
+        visit: { uuid: visitUuid },
+        queueEntry: {
+          status: { uuid: statusUuid },
+          priority: { uuid: priorityUuid },
+          queue: { uuid: queueUuid },
+          patient: { uuid: patientUuid },
+          startedAt: dayjs().format(omrsDateFormat),
+          sortWeight: sortWeight ?? 4,
+        },
+      },
+    });
+  } catch (error) {
+    let reconciliationConfirmedNoEntry = false;
+    try {
+      const reconciled = await reconcileEmergencyQueueEntryCreation(expected);
+      if (reconciled) {
+        return reconciled;
+      }
+      reconciliationConfirmedNoEntry = true;
+    } catch (reconciliationError) {
+      if (
+        reconciliationError instanceof MultipleActiveEmergencyQueueEntriesError ||
+        reconciliationError instanceof EmergencyQueueEntryCreationConflictError
+      ) {
+        throw reconciliationError;
+      }
+      // Preserve the original write error if the reconciliation read is unavailable.
+    }
+    if (reconciliationConfirmedNoEntry && isDefinitiveEmergencyQueuePostRejection(error)) {
+      throw new EmergencyQueueEntryCreationRejectedError(error);
+    }
+    throw error;
+  }
+
+  const verified = await reconcileEmergencyQueueEntryCreation(expected);
+  if (!verified) {
+    throw new EmergencyQueueEntryCreationVerificationError();
+  }
+  return verified;
+}
+
+export function isDefinitiveEmergencyQueueCreateRejection(error: unknown) {
+  return error instanceof EmergencyQueueEntryCreationRejectedError;
+}
+
+function isDefinitiveEmergencyQueuePostRejection(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const candidate = error as { status?: unknown; response?: { status?: unknown } };
+  const status = candidate.status ?? candidate.response?.status;
+  return typeof status === 'number' && [400, 401, 403, 404, 405, 415, 422].includes(status);
 }
 
 /**
@@ -553,41 +750,450 @@ export async function createTriageEncounter(
  * Transition a patient from triage queue to attention queue
  * using the Queue Module transition endpoint.
  *
- * @param currentQueueEntryUuid - UUID of the current queue entry to end
- * @param _patientUuid - UUID of the patient, kept for backward-compatible call sites
- * @param _visitUuid - UUID of the visit, kept for backward-compatible call sites
- * @param priorityUuid - UUID of the assigned priority (I-IV)
- * @param attentionQueueUuid - UUID of the attention queue
- * @param waitingStatusUuid - UUID of the "waiting" status
- * @param sortWeight - Sort weight for the priority
+ * The operation is checkpointed and reconciled before another transition can be
+ * attempted. This prevents a lost HTTP response from creating a second queue
+ * transition when the clinical vitals form has already been saved.
  */
-export async function transitionToAttentionQueue(
-  currentQueueEntryUuid: string,
-  _patientUuid: string,
-  _visitUuid: string,
-  priorityUuid: string,
-  attentionQueueUuid: string,
-  waitingStatusUuid: string,
-  _sortWeight: number,
-) {
-  return transitionEmergencyQueueEntry({
-    queueEntryToTransition: currentQueueEntryUuid,
-    newQueue: attentionQueueUuid,
-    newPriority: priorityUuid,
-    newStatus: waitingStatusUuid,
-  });
+export interface TriageQueueTransitionContext {
+  sourceQueueEntryUuid: string;
+  patientUuid: string;
+  visitUuid: string;
+  sourceQueueUuid: string;
+  sourceStatusUuid: string;
+  targetQueueUuid: string;
+  targetStatusUuid: string;
+  targetPriorityUuid: string;
 }
 
-export async function endEmergencyQueueEntry(queueEntryUuid: string) {
-  return openmrsFetch(`${restBaseUrl}/queue-entry/${queueEntryUuid}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: {
-      endedAt: dayjs().format(omrsDateFormat),
-    },
+const triageTransitionOperations = new Map<string, Promise<FetchResponse<EmergencyQueueEntryReconciliation>>>();
+
+export function transitionToAttentionQueue(context: TriageQueueTransitionContext) {
+  const existingOperation = triageTransitionOperations.get(context.sourceQueueEntryUuid);
+  if (existingOperation) {
+    return existingOperation;
+  }
+
+  const operation = runTriageQueueTransition(context).finally(() => {
+    if (triageTransitionOperations.get(context.sourceQueueEntryUuid) === operation) {
+      triageTransitionOperations.delete(context.sourceQueueEntryUuid);
+    }
   });
+  triageTransitionOperations.set(context.sourceQueueEntryUuid, operation);
+  return operation;
+}
+
+interface EmergencyQueueEntryReconciliation {
+  uuid?: string;
+  startedAt?: string;
+  endedAt?: string | null;
+  patient?: { uuid?: string };
+  visit?: { uuid?: string };
+  queue?: { uuid?: string };
+  status?: { uuid?: string };
+  priority?: { uuid?: string };
+  queueComingFrom?: { uuid?: string } | null;
+  previousQueueEntry?: { uuid?: string } | null;
+}
+
+interface EmergencyQueueEntrySearchResponse {
+  results?: Array<EmergencyQueueEntryReconciliation>;
+}
+
+const emergencyQueueEntryReconciliationRepresentation =
+  'custom:(uuid,startedAt,endedAt,patient:(uuid),visit:(uuid),queue:(uuid),status:(uuid),priority:(uuid),queueComingFrom:(uuid),previousQueueEntry:(uuid))';
+
+export class EmergencyQueueEntryPreconditionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'EmergencyQueueEntryPreconditionError';
+  }
+}
+
+export class EmergencyQueueEntryInactiveError extends EmergencyQueueEntryPreconditionError {
+  constructor() {
+    super('The emergency queue entry is no longer active.');
+    this.name = 'EmergencyQueueEntryInactiveError';
+  }
+}
+
+export class EmergencyQueueEntryTransitionConflictError extends EmergencyQueueEntryPreconditionError {
+  constructor() {
+    super('The emergency queue entry was transitioned by another operation.');
+    this.name = 'EmergencyQueueEntryTransitionConflictError';
+  }
+}
+
+export class EmergencyQueueEntryVerificationError extends EmergencyQueueEntryPreconditionError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'EmergencyQueueEntryVerificationError';
+  }
+}
+
+export class EmergencyQueueEntryTransitionAmbiguousError extends EmergencyQueueEntryVerificationError {
+  constructor() {
+    super('The emergency queue transition could not be verified. Review the queue before trying again.');
+    this.name = 'EmergencyQueueEntryTransitionAmbiguousError';
+  }
+}
+
+export class EmergencyQueueEntryTransitionNotAppliedError extends EmergencyQueueEntryVerificationError {
+  constructor() {
+    super('The previous emergency queue transition was not applied. Review the queue before trying again.');
+    this.name = 'EmergencyQueueEntryTransitionNotAppliedError';
+  }
+}
+
+export class EmergencyQueueEntryCheckpointUnavailableError extends EmergencyQueueEntryVerificationError {
+  constructor() {
+    super('The emergency queue transition could not be safely checkpointed.');
+    this.name = 'EmergencyQueueEntryCheckpointUnavailableError';
+  }
+}
+
+function fetchEmergencyQueueEntryForReconciliation(
+  queueEntryUuid: string,
+): Promise<FetchResponse<EmergencyQueueEntryReconciliation>> {
+  const representation = encodeURIComponent(emergencyQueueEntryReconciliationRepresentation);
+  return openmrsFetch(`${restBaseUrl}/queue-entry/${queueEntryUuid}?v=${representation}`);
+}
+
+function assertMatchingQueueEntry(response: FetchResponse<EmergencyQueueEntryReconciliation>, queueEntryUuid: string) {
+  if (response.data?.uuid !== queueEntryUuid) {
+    throw new EmergencyQueueEntryVerificationError(
+      'The emergency queue entry response did not match the requested entry.',
+    );
+  }
+  return response.data;
+}
+
+interface ExpectedEmergencyQueueEntryContext {
+  patientUuid: string;
+  visitUuid: string;
+  queueUuid: string;
+  statusUuid: string;
+}
+
+function assertEmergencyQueueEntryContext(
+  entry: EmergencyQueueEntryReconciliation,
+  expected: ExpectedEmergencyQueueEntryContext,
+) {
+  if (
+    entry.patient?.uuid !== expected.patientUuid ||
+    entry.visit?.uuid !== expected.visitUuid ||
+    entry.queue?.uuid !== expected.queueUuid ||
+    entry.status?.uuid !== expected.statusUuid
+  ) {
+    throw new EmergencyQueueEntryVerificationError('The emergency queue entry context changed before save.');
+  }
+}
+
+/** Re-reads and validates the queue entry immediately before a clinical write. */
+export async function assertEmergencyQueueEntryActive(
+  queueEntryUuid: string,
+  expected: ExpectedEmergencyQueueEntryContext,
+) {
+  const response = await fetchEmergencyQueueEntryForReconciliation(queueEntryUuid);
+  const entry = assertMatchingQueueEntry(response, queueEntryUuid);
+  assertEmergencyQueueEntryContext(entry, expected);
+  if (entry.endedAt) {
+    throw new EmergencyQueueEntryInactiveError();
+  }
+
+  return response;
+}
+
+function isPossibleDirectTransitionSuccessor(
+  candidate: EmergencyQueueEntryReconciliation,
+  source: EmergencyQueueEntryReconciliation,
+) {
+  const sourceStartedAt = source.startedAt ? new Date(source.startedAt).valueOf() : Number.NaN;
+  const sourceEndedAt = source.endedAt ? new Date(source.endedAt).valueOf() : Number.NaN;
+  const candidateStartedAt = candidate.startedAt ? new Date(candidate.startedAt).valueOf() : Number.NaN;
+  const previousQueueEntryUuid = candidate.previousQueueEntry?.uuid;
+  const explicitlyReferencesSource = Boolean(source.uuid && previousQueueEntryUuid === source.uuid);
+  const hasDifferentExplicitPredecessor = Boolean(previousQueueEntryUuid && !explicitlyReferencesSource);
+
+  return (
+    candidate.uuid !== source.uuid &&
+    candidate.patient?.uuid === source.patient?.uuid &&
+    candidate.visit?.uuid === source.visit?.uuid &&
+    candidate.queueComingFrom?.uuid === source.queue?.uuid &&
+    !hasDifferentExplicitPredecessor &&
+    (explicitlyReferencesSource ||
+      (Number.isFinite(sourceEndedAt) &&
+        Number.isFinite(candidateStartedAt) &&
+        candidateStartedAt <= sourceEndedAt &&
+        (!Number.isFinite(sourceStartedAt) || candidateStartedAt >= sourceStartedAt)))
+  );
+}
+
+async function findDirectEmergencyQueueTransitionSuccessors(source: EmergencyQueueEntryReconciliation) {
+  if (!source.endedAt || !source.visit?.uuid || !source.queue?.uuid) {
+    throw new EmergencyQueueEntryVerificationError('The emergency queue entry closure context is incomplete.');
+  }
+
+  const pageSize = 100;
+  let startIndex = 0;
+  const seenEntries = new Set<string>();
+  const successors: Array<EmergencyQueueEntryReconciliation> = [];
+
+  while (true) {
+    const searchParams = new URLSearchParams({
+      visit: source.visit.uuid,
+      queueComingFrom: source.queue.uuid,
+      limit: String(pageSize),
+      startIndex: String(startIndex),
+      v: emergencyQueueEntryReconciliationRepresentation,
+    });
+    const response = await openmrsFetch<EmergencyQueueEntrySearchResponse>(
+      `${restBaseUrl}/queue-entry?${searchParams.toString()}`,
+    );
+    const page = response.data?.results;
+    if (!Array.isArray(page)) {
+      throw new EmergencyQueueEntryVerificationError(
+        'The emergency queue transition search returned an invalid response.',
+      );
+    }
+    if (page.some((candidate) => !candidate || typeof candidate !== 'object' || typeof candidate.uuid !== 'string')) {
+      throw new EmergencyQueueEntryVerificationError(
+        'The emergency queue transition search returned an invalid entry.',
+      );
+    }
+
+    const newEntries = page.filter((entry) => entry.uuid && !seenEntries.has(entry.uuid));
+    newEntries.forEach((entry) => {
+      if (entry.uuid) {
+        seenEntries.add(entry.uuid);
+        if (isPossibleDirectTransitionSuccessor(entry, source)) {
+          successors.push(entry);
+        }
+      }
+    });
+    if (page.length < pageSize || newEntries.length === 0) {
+      return successors;
+    }
+    startIndex += page.length;
+  }
+}
+
+async function findDirectEmergencyQueueTransitionSuccessor(source: EmergencyQueueEntryReconciliation) {
+  return (await findDirectEmergencyQueueTransitionSuccessors(source))[0] ?? null;
+}
+
+function assertCompleteTriageTransitionContext(
+  context: TriageQueueTransitionContext,
+): asserts context is TriageQueueTransitionContext {
+  if (
+    ![
+      context.sourceQueueEntryUuid,
+      context.patientUuid,
+      context.visitUuid,
+      context.sourceQueueUuid,
+      context.sourceStatusUuid,
+      context.targetQueueUuid,
+      context.targetStatusUuid,
+      context.targetPriorityUuid,
+    ].every((value) => typeof value === 'string' && value.trim().length > 0)
+  ) {
+    throw new EmergencyQueueEntryVerificationError('The emergency queue transition context is incomplete.');
+  }
+}
+
+function checkpointMatchesTriageTransition(
+  checkpoint: TriageTransitionReconciliationCheckpoint,
+  context: TriageQueueTransitionContext,
+) {
+  return (
+    checkpoint.sourceQueueEntryUuid === context.sourceQueueEntryUuid &&
+    checkpoint.patientUuid === context.patientUuid &&
+    checkpoint.visitUuid === context.visitUuid &&
+    checkpoint.sourceQueueUuid === context.sourceQueueUuid &&
+    checkpoint.sourceStatusUuid === context.sourceStatusUuid &&
+    checkpoint.targetQueueUuid === context.targetQueueUuid &&
+    checkpoint.targetStatusUuid === context.targetStatusUuid &&
+    checkpoint.targetPriorityUuid === context.targetPriorityUuid
+  );
+}
+
+function createTriageTransitionCheckpoint(
+  context: TriageQueueTransitionContext,
+): TriageTransitionReconciliationCheckpoint {
+  return { version: 1, ...context };
+}
+
+type TriageTransitionReconciliationOutcome =
+  | {
+      state: 'confirmed';
+      response: FetchResponse<EmergencyQueueEntryReconciliation>;
+    }
+  | {
+      state: 'not-applied';
+      response: FetchResponse<EmergencyQueueEntryReconciliation>;
+    };
+
+async function reconcileTriageQueueTransition(
+  context: TriageQueueTransitionContext,
+): Promise<TriageTransitionReconciliationOutcome> {
+  const sourceResponse = await fetchEmergencyQueueEntryForReconciliation(context.sourceQueueEntryUuid);
+  const source = assertMatchingQueueEntry(sourceResponse, context.sourceQueueEntryUuid);
+  assertEmergencyQueueEntryContext(source, {
+    patientUuid: context.patientUuid,
+    visitUuid: context.visitUuid,
+    queueUuid: context.sourceQueueUuid,
+    statusUuid: context.sourceStatusUuid,
+  });
+
+  if (!source.endedAt) {
+    return { state: 'not-applied', response: sourceResponse };
+  }
+
+  const successors = await findDirectEmergencyQueueTransitionSuccessors(source);
+  if (successors.length !== 1) {
+    if (successors.length > 1) {
+      throw new EmergencyQueueEntryTransitionConflictError();
+    }
+    throw new EmergencyQueueEntryTransitionAmbiguousError();
+  }
+
+  const successor = successors[0];
+  if (
+    successor.patient?.uuid !== context.patientUuid ||
+    successor.visit?.uuid !== context.visitUuid ||
+    successor.queue?.uuid !== context.targetQueueUuid ||
+    successor.status?.uuid !== context.targetStatusUuid ||
+    successor.priority?.uuid !== context.targetPriorityUuid
+  ) {
+    throw new EmergencyQueueEntryTransitionConflictError();
+  }
+
+  return { state: 'confirmed', response: { ...sourceResponse, data: successor } };
+}
+
+async function runTriageQueueTransition(
+  context: TriageQueueTransitionContext,
+): Promise<FetchResponse<EmergencyQueueEntryReconciliation>> {
+  assertCompleteTriageTransitionContext(context);
+  const pendingCheckpoint = loadTriageTransitionCheckpoint(context.sourceQueueEntryUuid);
+
+  if (pendingCheckpoint) {
+    if (!checkpointMatchesTriageTransition(pendingCheckpoint, context)) {
+      throw new EmergencyQueueEntryTransitionConflictError();
+    }
+
+    const reconciliation = await reconcileTriageQueueTransition(context);
+    if (reconciliation.state === 'confirmed') {
+      clearTriageTransitionCheckpoint(context.sourceQueueEntryUuid);
+      return reconciliation.response;
+    }
+
+    throw new EmergencyQueueEntryTransitionNotAppliedError();
+  }
+
+  const preWriteReconciliation = await reconcileTriageQueueTransition(context);
+  if (preWriteReconciliation.state === 'confirmed') {
+    return preWriteReconciliation.response;
+  }
+
+  if (!saveTriageTransitionCheckpoint(createTriageTransitionCheckpoint(context))) {
+    throw new EmergencyQueueEntryCheckpointUnavailableError();
+  }
+
+  try {
+    await transitionEmergencyQueueEntry({
+      queueEntryToTransition: context.sourceQueueEntryUuid,
+      newQueue: context.targetQueueUuid,
+      newPriority: context.targetPriorityUuid,
+      newStatus: context.targetStatusUuid,
+    });
+  } catch (error) {
+    try {
+      const reconciliation = await reconcileTriageQueueTransition(context);
+      if (reconciliation.state === 'confirmed') {
+        clearTriageTransitionCheckpoint(context.sourceQueueEntryUuid);
+        return reconciliation.response;
+      }
+      throw new EmergencyQueueEntryTransitionNotAppliedError();
+    } catch (reconciliationError) {
+      if (reconciliationError instanceof EmergencyQueueEntryTransitionNotAppliedError) {
+        throw reconciliationError;
+      }
+      throw new EmergencyQueueEntryTransitionAmbiguousError();
+    }
+  }
+
+  const reconciliation = await reconcileTriageQueueTransition(context);
+  if (reconciliation.state !== 'confirmed') {
+    throw new EmergencyQueueEntryTransitionAmbiguousError();
+  }
+  clearTriageTransitionCheckpoint(context.sourceQueueEntryUuid);
+  return reconciliation.response;
+}
+
+async function verifyEmergencyQueueEntryClosedWithoutTransition(
+  response: FetchResponse<EmergencyQueueEntryReconciliation>,
+  queueEntryUuid: string,
+) {
+  const entry = assertMatchingQueueEntry(response, queueEntryUuid);
+  if (!entry.endedAt) {
+    throw new EmergencyQueueEntryVerificationError('The emergency queue entry closure could not be verified.');
+  }
+  if (await findDirectEmergencyQueueTransitionSuccessor(entry)) {
+    throw new EmergencyQueueEntryTransitionConflictError();
+  }
+  return response;
+}
+
+function getAuthoritativeEmergencyQueueEndDate(response: FetchResponse<EmergencyQueueEntryReconciliation>) {
+  const serverDateHeader = response.headers?.get?.('Date');
+  const serverDate = serverDateHeader ? new Date(serverDateHeader) : null;
+  const startedAt = response.data.startedAt ? new Date(response.data.startedAt) : null;
+  let authoritativeEndDate = serverDate && !Number.isNaN(serverDate.valueOf()) ? serverDate : new Date();
+  if (startedAt && !Number.isNaN(startedAt.valueOf()) && authoritativeEndDate < startedAt) {
+    authoritativeEndDate = startedAt;
+  }
+  return authoritativeEndDate;
+}
+
+/** Ends an active entry and verifies it was closed, rather than concurrently transitioned. */
+export async function endEmergencyQueueEntry(queueEntryUuid: string, expected?: ExpectedEmergencyQueueEntryContext) {
+  const freshResponse = await fetchEmergencyQueueEntryForReconciliation(queueEntryUuid);
+  const freshEntry = assertMatchingQueueEntry(freshResponse, queueEntryUuid);
+  if (expected) {
+    assertEmergencyQueueEntryContext(freshEntry, expected);
+  }
+  if (freshEntry.endedAt) {
+    return verifyEmergencyQueueEntryClosedWithoutTransition(freshResponse, queueEntryUuid);
+  }
+  if (!freshEntry.visit?.uuid || !freshEntry.queue?.uuid) {
+    throw new EmergencyQueueEntryVerificationError('The emergency queue entry closure context is incomplete.');
+  }
+
+  const authoritativeEndDate = getAuthoritativeEmergencyQueueEndDate(freshResponse);
+  try {
+    await openmrsFetch(`${restBaseUrl}/queue-entry/${queueEntryUuid}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: {
+        endedAt: dayjs(authoritativeEndDate).format(omrsDateFormat),
+      },
+    });
+  } catch (error) {
+    try {
+      const latestResponse = await fetchEmergencyQueueEntryForReconciliation(queueEntryUuid);
+      return await verifyEmergencyQueueEntryClosedWithoutTransition(latestResponse, queueEntryUuid);
+    } catch (reconciliationError) {
+      if (reconciliationError instanceof EmergencyQueueEntryTransitionConflictError) {
+        throw reconciliationError;
+      }
+      throw error;
+    }
+  }
+
+  const latestResponse = await fetchEmergencyQueueEntryForReconciliation(queueEntryUuid);
+  return verifyEmergencyQueueEntryClosedWithoutTransition(latestResponse, queueEntryUuid);
 }
 
 /**

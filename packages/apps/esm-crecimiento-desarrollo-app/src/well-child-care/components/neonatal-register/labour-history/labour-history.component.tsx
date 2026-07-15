@@ -9,13 +9,13 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { launchWorkspace2, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { credNeonatalEditPrivilege } from '../../../../constants';
+import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useCurrentPregnancy } from '../../../../hooks/useCurrentPregnancy';
-import { formEntryWorkspace } from '../../../../types';
 
 import styles from './labour-history-summary.scss';
 
@@ -37,11 +37,8 @@ const LabourHistorySummary: React.FC<LabourHistorySummaryProps> = ({ patientUuid
   const canEdit = userHasAccess(credNeonatalEditPrivilege, session?.user);
 
   const headerTitle = t('labourHistorySummary', 'Labour history summary');
-  const config = useConfig();
-  const { prenatalEncounter: data, error, isLoading } = useCurrentPregnancy(patientUuid);
-
-  // Configuration for form launch
-  const formPrenatalUuid = config.formsList.deliveryOrAbortion;
+  const { prenatalEncounter: data, error, isLoading, mutate } = useCurrentPregnancy(patientUuid);
+  const { launchForm: launchLabourForm } = useCREDFormLauncher('deliveryOrAbortion');
 
   // Table Headers
   const headers = useMemo(
@@ -105,10 +102,7 @@ const LabourHistorySummary: React.FC<LabourHistorySummaryProps> = ({ patientUuid
 
   // Handler to launch form for additional data
   const handleAddLabourDetails = () => {
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: formPrenatalUuid },
-      encounterUuid: '',
-    });
+    launchLabourForm('', () => void mutate());
   };
 
   // Skeleton Loader Component

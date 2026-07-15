@@ -1,9 +1,8 @@
 import { Button } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { launchWorkspace2 } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import { formEntryWorkspace } from '../../types';
+import { useMaternalFormIdentifierLauncher } from '../../hooks/useMaternalFormLauncher';
 
 type ConfiguredFormButtonProps = {
   formUuid: string;
@@ -12,17 +11,10 @@ type ConfiguredFormButtonProps = {
 };
 
 const ConfiguredFormButton: React.FC<ConfiguredFormButtonProps> = ({ formUuid, label, editPrivilege }) => {
+  const { launchForm } = useMaternalFormIdentifierLauncher(formUuid, label);
   const handleLaunchForm = useCallback(() => {
-    if (!formUuid) {
-      console.warn('Form UUID not configured');
-      return;
-    }
-
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: formUuid },
-      encounterUuid: '',
-    });
-  }, [formUuid]);
+    launchForm();
+  }, [launchForm]);
 
   return (
     <RequirePrivilege privilege={editPrivilege} hideUnauthorized>

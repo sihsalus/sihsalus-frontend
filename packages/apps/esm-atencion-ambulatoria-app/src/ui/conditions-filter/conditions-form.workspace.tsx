@@ -10,7 +10,7 @@ import {
   TextArea,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { launchWorkspace, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, launchWorkspace, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import {
   type AntecedentTypeCode,
   antecedentTypeOptions,
@@ -279,7 +279,14 @@ const ConditionsForm: React.FC<ConditionFormProps> = ({
                 kind="error"
                 lowContrast
                 title={t('errorCreatingAntecedent', 'Error creating antecedent')}
-                subtitle={errorCreating?.message}
+                subtitle={getUserFacingErrorMessage(
+                  errorCreating,
+                  t(
+                    'conditionCreateFailureSafe',
+                    'No se pudo guardar el antecedente. Revise la información e intente nuevamente.',
+                  ),
+                  { log: false },
+                )}
               />
             </div>
           ) : null}
@@ -291,7 +298,14 @@ const ConditionsForm: React.FC<ConditionFormProps> = ({
                 kind="error"
                 lowContrast
                 title={t('errorUpdatingAntecedent', 'Error updating antecedent')}
-                subtitle={errorUpdating?.message}
+                subtitle={getUserFacingErrorMessage(
+                  errorUpdating,
+                  t(
+                    'conditionUpdateFailureSafe',
+                    'No se pudo actualizar el antecedente. Actualice la historia y verifique su estado antes de reintentar.',
+                  ),
+                  { log: false },
+                )}
               />
             </div>
           ) : null}

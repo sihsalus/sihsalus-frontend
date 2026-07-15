@@ -1,7 +1,7 @@
 # Dockerfile
 
 # Stage 1: Build local @sihsalus/* modules — deterministic, no network required
-FROM node:24-alpine AS builder
+FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS builder
 WORKDIR /app
 RUN corepack enable && corepack prepare yarn@4.13.0 --activate
 
@@ -31,7 +31,7 @@ RUN --mount=type=cache,target=/app/node_modules/.cache \
 # SIHSALUS_PUBLIC_SPA_URL),
 # and copies config files. The infra repo mounts a shared volume at SPA_OUTPUT_DIR;
 # a stock nginx serves from it — no runtime substitution needed.
-FROM node:24-alpine AS init
+FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS init
 WORKDIR /app
 
 RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
@@ -64,7 +64,7 @@ CMD ["node", "packages/tooling/scripts/assemble-importmap.js"]
 # Stage 3: Hardened init container image
 # Same runtime behavior as `init`, but runs as a non-root user and keeps the
 # published image target explicit for secure container workflows.
-FROM node:24-alpine AS secure-init
+FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS secure-init
 WORKDIR /app
 
 RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
@@ -123,7 +123,7 @@ COPY assets/ ./assets/
 RUN yarn assemble
 
 # Stage 5: Lightweight precompiled SPA server
-FROM nginx:1.31-alpine AS spa-nginx
+FROM nginx:1.31-alpine@sha256:54f2a904c251d5a34adf545a72d32515a15e08418dae0266e23be2e18c66fefa AS spa-nginx
 
 COPY nginx.spa.conf /etc/nginx/conf.d/default.conf
 COPY --from=spa-artifact /app/dist/spa/ /usr/share/nginx/html/

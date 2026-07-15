@@ -21,7 +21,7 @@ const FuaHtmlViewer: React.FC<FuaHtmlViewerProps> = ({ fuaId, visitUuid, endpoin
   const fuaEndpoint = endpoint ?? config.fuaGeneratorEndpoint;
   const [htmlContent, setHtmlContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [displayMessage, setDisplayMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -29,11 +29,9 @@ const FuaHtmlViewer: React.FC<FuaHtmlViewerProps> = ({ fuaId, visitUuid, endpoin
     const fetchFuaHtml = async () => {
       try {
         setIsLoading(true);
-        setError(null);
+        setDisplayMessage(null);
 
-        const trustedEndpoint = visitUuid
-          ? null
-          : resolveTrustedFuaEndpoint(fuaEndpoint, window.location.origin);
+        const trustedEndpoint = visitUuid ? null : resolveTrustedFuaEndpoint(fuaEndpoint, window.location.origin);
         if (!visitUuid && !trustedEndpoint) {
           throw new Error(
             t(
@@ -68,14 +66,17 @@ const FuaHtmlViewer: React.FC<FuaHtmlViewerProps> = ({ fuaId, visitUuid, endpoin
         setHtmlContent(html);
       } catch (err) {
         if (abortController.signal.aborted) return;
-        const errorMessage =
+        const operatorMessage =
           err instanceof Error && err.message === t('fuaEndpointUnavailable')
-            ? err.message
+            ? t(
+                'fuaEndpointUnavailable',
+                'The FUA viewer requires a secure same-origin endpoint configured by an administrator.',
+              )
             : t('couldNotLoadFuaDocument', 'Could not load FUA document');
-        setError(errorMessage);
+        setDisplayMessage(operatorMessage);
         showSnackbar({
           title: t('error', 'Error'),
-          subtitle: errorMessage,
+          subtitle: operatorMessage,
           kind: 'error',
         });
       } finally {
@@ -98,11 +99,11 @@ const FuaHtmlViewer: React.FC<FuaHtmlViewerProps> = ({ fuaId, visitUuid, endpoin
     );
   }
 
-  if (error) {
+  if (displayMessage) {
     return (
       <div className={styles.errorContainer}>
         <p>{t('couldNotLoadFuaDocument', 'Could not load FUA document')}</p>
-        <p className={styles.errorMessage}>{error}</p>
+        <p className={styles.errorMessage}>{displayMessage}</p>
       </div>
     );
   }

@@ -17,12 +17,19 @@ import {
   Tile,
 } from '@carbon/react';
 import { Renew, View } from '@carbon/react/icons';
-import { formatDate, openmrsFetch, showSnackbar, usePagination } from '@openmrs/esm-framework';
+import {
+  formatDate,
+  getUserFacingErrorMessage,
+  openmrsFetch,
+  showSnackbar,
+  usePagination,
+} from '@openmrs/esm-framework';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FuaFormatRestURL } from '../constant';
 import useFuaFormats, { type FuaFormat } from '../hooks/useFuaFormats';
+import { createInertFuaHtml } from '../utils/fua-html-security';
 
 const loadHtmlInWindow = (targetWindow: Window, html: string) => {
   const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
@@ -77,6 +84,8 @@ const FuaFormatTable: React.FC = () => {
         return;
       }
 
+      fuaWindow.opener = null;
+
       fuaWindow.document.body.textContent = t('loadingFuaDocument', 'Cargando documento FUA...');
 
       try {
@@ -88,14 +97,18 @@ const FuaFormatTable: React.FC = () => {
         });
 
         const html = await response.text();
-        loadHtmlInWindow(fuaWindow, html);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : t('unknownError', 'Error desconocido');
-        fuaWindow.document.body.textContent = errorMessage;
+        loadHtmlInWindow(fuaWindow, createInertFuaHtml(html));
+      } catch (error: unknown) {
+        const operatorMessage = getUserFacingErrorMessage(
+          error,
+          t('couldNotLoadFuaDocument', 'No se pudo cargar el documento FUA'),
+          { logContext: 'Render FUA format preview' },
+        );
+        fuaWindow.document.body.textContent = operatorMessage;
         showSnackbar({
           kind: 'error',
           title: t('errorLoadingFua', 'Error al cargar FUA'),
-          subtitle: errorMessage,
+          subtitle: operatorMessage,
         });
       }
     },

@@ -1,12 +1,12 @@
 import { launchWorkspace2, openmrsFetch, restBaseUrl, showSnackbar, useConfig } from '@openmrs/esm-framework';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
 import { type Form, type FormEncounterResource, formEntryWorkspace } from '../types';
 
-type CREDFormKey = keyof ConfigObject['formsList'];
+export type CREDFormKey = keyof ConfigObject['formsList'];
 
 type CREDFormFallback = {
   display: string;
@@ -165,6 +165,10 @@ export const wellChildControlFormFallbacks = {
 } as const satisfies Partial<Record<CREDFormKey, CREDFormFallback>>;
 
 export const neonatalFormFallbacks = {
+  deliveryOrAbortion: {
+    display: 'OBST-005-PARTO O ABORTO',
+    identifier: 'OBST-005-PARTO O ABORTO',
+  },
   atencionImmediataNewborn: {
     display: '(Página 5) ATENCIÓN INMEDIATA DEL RECIÉN NACIDO',
     identifier: '(Página 5) ATENCIÓN INMEDIATA DEL RECIÉN NACIDO',
@@ -221,7 +225,11 @@ export async function resolveCREDForm(identifier: string, fallbackDisplay: strin
     const response = await openmrsFetch<OpenmrsFormResponse>(
       `${restBaseUrl}/form/${normalizedIdentifier}?v=custom:${formRepresentation}`,
     );
-    return normalizeForm(response.data, fallbackDisplay);
+    const form = normalizeForm(response.data, fallbackDisplay);
+    if (normalizeKey(form.uuid) !== normalizeKey(normalizedIdentifier)) {
+      throw new Error('The OpenMRS form response did not match the requested UUID');
+    }
+    return form;
   }
 
   const searchParams = new URLSearchParams();
@@ -229,36 +237,62 @@ export async function resolveCREDForm(identifier: string, fallbackDisplay: strin
   searchParams.set('v', `custom:${formRepresentation}`);
 
   const response = await openmrsFetch<OpenmrsFormSearchResponse>(`${restBaseUrl}/form?${searchParams.toString()}`);
-  const form = findBestFormMatch(response.data.results ?? [], normalizedIdentifier);
+  if (!Array.isArray(response.data?.results)) {
+    throw new Error('The OpenMRS form search returned an invalid response');
+  }
+  const matchingForms = findExactPublishedFormMatches(response.data.results, normalizedIdentifier);
 
-  if (!form?.uuid) {
+  if (matchingForms.length === 0) {
     throw new Error(`No published CRED form found for "${normalizedIdentifier}"`);
   }
+  if (matchingForms.length > 1) {
+    throw new Error(`Multiple exact published CRED forms found for "${normalizedIdentifier}"`);
+  }
 
-  return normalizeForm(form, fallbackDisplay);
+  return normalizeForm(matchingForms[0], fallbackDisplay);
 }
 
 export function useCREDFormLauncher(formKey: CREDFormKey, fallback = credFormFallbacks[formKey]) {
-  const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const formIdentifier = getCREDFormIdentifier(config?.formsList, formKey, fallback);
   const fallbackDisplay = fallback?.display ?? formKey;
+  return useCREDFormIdentifierLauncher(formIdentifier, fallbackDisplay);
+}
+
+export function useCREDFormIdentifierLauncher(formIdentifier: string | undefined, fallbackDisplay: string) {
+  const { t } = useTranslation();
+  const normalizedFormIdentifier = formIdentifier?.trim() || undefined;
 
   const {
     data: form,
     error,
     isLoading,
-  } = useSWR<Form, Error>(formIdentifier ? `cred-form:${formIdentifier}:${fallbackDisplay}` : null, () =>
-    resolveCREDForm(formIdentifier ?? '', fallbackDisplay),
+  } = useSWR<Form, Error>(
+    normalizedFormIdentifier ? `cred-form:${normalizedFormIdentifier}:${fallbackDisplay}` : null,
+    () => resolveCREDForm(normalizedFormIdentifier ?? '', fallbackDisplay),
   );
+
+  useEffect(() => {
+    if (error) {
+      console.error('Unable to resolve the configured CRED form', error);
+    }
+  }, [error]);
 
   const launchForm = useCallback(
     (encounterUuid = '', handlePostResponse?: () => void) => {
-      if (!formIdentifier) {
+      if (!normalizedFormIdentifier) {
         showSnackbar({
           kind: 'warning',
           title: t('credFormNotConfigured', 'Formulario CRED no configurado'),
           subtitle: t('credFormNotConfiguredSubtitle', 'No se encontró una asociación de formulario para este widget.'),
+        });
+        return;
+      }
+      if (isLoading) {
+        showSnackbar({
+          kind: 'info',
+          title: t('credFormLoading', 'Validando formulario CRED'),
+          subtitle: t('credFormLoadingSubtitle', 'Espere un momento e intente nuevamente.'),
         });
         return;
       }
@@ -281,35 +315,34 @@ export function useCREDFormLauncher(formKey: CREDFormKey, fallback = credFormFal
         handlePostResponse,
       });
     },
-    [error, form, formIdentifier, t],
+    [error, form, isLoading, normalizedFormIdentifier, t],
   );
 
   return {
     error,
     form,
-    formIdentifier,
-    isLoading: Boolean(formIdentifier && isLoading),
+    formIdentifier: normalizedFormIdentifier,
+    isLoading: Boolean(normalizedFormIdentifier && isLoading),
     launchForm,
   };
 }
 
 function normalizeKey(value?: string) {
-  return value?.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+  return value?.normalize('NFC').trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
-function findBestFormMatch(forms: Array<OpenmrsFormResponse>, identifier: string) {
+function findExactPublishedFormMatches(forms: Array<OpenmrsFormResponse>, identifier: string) {
   const normalizedIdentifier = normalizeKey(identifier);
-  const publishedForms = forms.filter((form) => form.published !== false && form.retired !== true);
-  const candidates = publishedForms.length ? publishedForms : forms;
-
-  return (
-    candidates.find((form) =>
-      [form.uuid, form.name, form.display].some((value) => normalizeKey(value) === normalizedIdentifier),
-    ) ?? candidates[0]
+  const publishedForms = forms.filter((form) => form.published === true && form.retired === false);
+  return publishedForms.filter((form) =>
+    [form.uuid, form.name, form.display].some((value) => normalizeKey(value) === normalizedIdentifier),
   );
 }
 
 function normalizeForm(form: OpenmrsFormResponse, fallbackDisplay: string): Form {
+  if (!form?.uuid || form.published !== true || form.retired !== false) {
+    throw new Error('The configured CRED form is unavailable, unpublished or retired');
+  }
   const display = form.display ?? form.name ?? fallbackDisplay;
 
   return {
@@ -317,8 +350,8 @@ function normalizeForm(form: OpenmrsFormResponse, fallbackDisplay: string): Form
     name: form.name ?? display,
     display,
     version: form.version ?? '1.0',
-    published: form.published ?? true,
-    retired: form.retired ?? false,
+    published: true,
+    retired: false,
     resources: form.resources ?? [],
     formCategory: form.formCategory ?? 'CRED',
   };

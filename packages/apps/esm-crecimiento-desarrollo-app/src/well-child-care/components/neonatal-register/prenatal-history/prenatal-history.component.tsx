@@ -10,12 +10,13 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { AddIcon, launchWorkspace2, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { AddIcon, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { credNeonatalEditPrivilege } from '../../../../constants';
+import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { usePrenatalAntecedents } from '../../../../hooks/usePrenatalAntecedents';
 
 import styles from './prenatal-history.scss';
@@ -31,11 +32,12 @@ const PrenatalAntecedents: React.FC<NeonatalSummaryProps> = ({ patientUuid }) =>
   const headerTitle = t('prenatalAntecedents', 'Antecedentes Prenatales');
   const displayText = headerTitle;
 
-  const { data: formattedObs, isLoading, error } = usePrenatalAntecedents(patientUuid);
+  const { data: formattedObs, isLoading, error, mutate } = usePrenatalAntecedents(patientUuid);
+  const { launchForm: launchMaternalHistoryForm } = useCREDFormLauncher('maternalHistory');
 
   const launchPerinatalForm = useCallback(() => {
-    launchWorkspace2('perinatal-register-form', { patientUuid });
-  }, [patientUuid]);
+    launchMaternalHistoryForm('', () => void mutate());
+  }, [launchMaternalHistoryForm, mutate]);
 
   const tableRows = useMemo(() => {
     if (!formattedObs?.length) return [];

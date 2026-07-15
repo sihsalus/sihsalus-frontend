@@ -1,11 +1,14 @@
-import { launchWorkspace2, useConfig, userHasAccess } from '@openmrs/esm-framework';
+import { launchWorkspace2, showSnackbar, useConfig, userHasAccess } from '@openmrs/esm-framework';
 import { FormsSelectorWorkspace } from '@openmrs/esm-patient-common-lib';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { resolveMaternalForm } from '../../hooks/useMaternalFormLauncher';
 import { formEntryWorkspace } from '../../types';
 import MaternalHealthFormsSelectorWorkspace from './maternal-health-forms-selector.workspace';
 
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
+const mockResolveMaternalForm = vi.mocked(resolveMaternalForm);
+const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseConfig = useConfig as vi.Mock;
 const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockFormsSelectorWorkspace = vi.mocked(FormsSelectorWorkspace);
@@ -38,8 +41,27 @@ vi.mock('../../hooks/useCurrentPregnancy', () => ({
   useCurrentPregnancy: vi.fn(() => ({ pregnancyStartDate: '2026-01-01' })),
 }));
 
+vi.mock('../../hooks/useMaternalFormLauncher', () => ({
+  resolveMaternalForm: vi.fn(),
+}));
+
+const resolvedCurrentPregnancyForm = {
+  uuid: 'resolved-current-pregnancy-form-uuid',
+  name: 'OBST-002-EMBARAZO ACTUAL',
+  display: 'Embarazo actual',
+  version: '1.0',
+  published: true,
+  retired: false,
+  resources: [],
+  formCategory: 'Maternal',
+};
+
 describe('MaternalHealthFormsSelectorWorkspace', () => {
   beforeEach(() => {
+    mockLaunchWorkspace2.mockReset();
+    mockShowSnackbar.mockReset();
+    mockResolveMaternalForm.mockReset();
+    mockResolveMaternalForm.mockResolvedValue(resolvedCurrentPregnancyForm);
     mockUserHasAccess.mockReturnValue(true);
     mockUseConfig.mockReturnValue({
       formsList: {
@@ -81,17 +103,39 @@ describe('MaternalHealthFormsSelectorWorkspace', () => {
     );
   });
 
-  it('launches form entry with the selected form uuid and encounter', async () => {
+  it('resolves the selected identifier and launches the complete published form', async () => {
     const user = userEvent.setup();
 
     render(<MaternalHealthFormsSelectorWorkspace {...defaultWorkspaceProps} />);
 
     await user.click(screen.getByRole('button', { name: /embarazo actual/i }));
 
-    expect(mockLaunchWorkspace2).toHaveBeenCalledWith(formEntryWorkspace, {
-      form: { uuid: 'current-pregnancy-form-uuid' },
-      encounterUuid: 'encounter-uuid',
-      handlePostResponse: expect.any(Function),
-    });
+    await waitFor(() =>
+      expect(mockLaunchWorkspace2).toHaveBeenCalledWith(formEntryWorkspace, {
+        form: resolvedCurrentPregnancyForm,
+        encounterUuid: 'encounter-uuid',
+        handlePostResponse: expect.any(Function),
+      }),
+    );
+    expect(mockResolveMaternalForm).toHaveBeenCalledWith('current-pregnancy-form-uuid', 'Embarazo actual');
+  });
+
+  it('does not launch when the configured form cannot be verified', async () => {
+    const user = userEvent.setup();
+    mockResolveMaternalForm.mockRejectedValueOnce(new Error('SQLSTATE 500 internal metadata'));
+
+    render(<MaternalHealthFormsSelectorWorkspace {...defaultWorkspaceProps} />);
+
+    await user.click(screen.getByRole('button', { name: /embarazo actual/i }));
+
+    await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalled());
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        title: expect.not.stringContaining('SQLSTATE'),
+        subtitle: expect.not.stringContaining('SQLSTATE'),
+      }),
+    );
   });
 });

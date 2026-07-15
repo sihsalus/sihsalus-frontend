@@ -9,12 +9,11 @@ import {
   Tag,
 } from '@carbon/react';
 import { formatDate, useConfig } from '@openmrs/esm-framework';
-import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
+import { useOutpatientFormLauncher } from '../hooks/useOutpatientFormLauncher';
 import { useTreatmentPlan } from '../hooks/useTreatmentPlan';
-import { patientFormEntryWorkspace } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface PlanTratamientoProps {
@@ -30,15 +29,12 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
     config.concepts,
   );
 
-  const handleLaunchForm = () => {
-    launchPatientWorkspace(patientFormEntryWorkspace, {
-      mutateForm: mutate,
-      formInfo: {
-        patientUuid,
-        formUuid: config.formsList?.consultaExternaForm,
-      },
-    });
-  };
+  const { launchForm } = useOutpatientFormLauncher({
+    fallbackDisplay: t('treatmentPlan', 'Treatment Plan'),
+    identifier: config.formsList?.consultaExternaForm,
+    onSaved: mutate,
+    patientUuid,
+  });
 
   const sections = [
     { key: 'labOrders', label: t('labOrders', 'Exámenes Auxiliares'), tagType: 'blue' as const },
@@ -63,7 +59,7 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
       isLoading={isLoading}
       isValidating={isValidating}
       loadingVariant="accordion"
-      onAction={handleLaunchForm}
+      onAction={() => void launchForm()}
       pagination={pagination}
     >
       <Accordion>

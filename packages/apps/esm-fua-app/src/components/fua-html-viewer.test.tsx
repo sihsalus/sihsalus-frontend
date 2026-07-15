@@ -65,4 +65,25 @@ describe('FuaHtmlViewer', () => {
     expect(iframe.getAttribute('srcdoc')).toContain("default-src 'none'");
     expect(iframe.getAttribute('srcdoc')).not.toContain('<script');
   });
+
+  it('does not expose HTTP or backend details when the document request fails', async () => {
+    mockUseConfig.mockReturnValue({ fuaGeneratorEndpoint: '/secure/fua-generator' } as Config);
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 503,
+      statusText: 'SQLSTATE 57P01 internal endpoint /ws/rest/v1/fua',
+    });
+
+    render(<FuaHtmlViewer fuaId="clinical-fua-id" />);
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: 'error', subtitle: 'Could not load FUA document' }),
+      ),
+    );
+    expect(screen.queryByText(/SQLSTATE|\/ws\/rest|503/u)).not.toBeInTheDocument();
+    expect(mockShowSnackbar.mock.calls.flatMap(([message]) => message.subtitle ?? []).join(' ')).not.toMatch(
+      /SQLSTATE|\/ws\/rest|503/u,
+    );
+  });
 });

@@ -385,7 +385,10 @@ describe('NationalityField', () => {
 
     renderNationalityField();
 
-    expect(screen.getByText(/must use the org\.openmrs\.Concept format/u)).toBeInTheDocument();
+    expect(
+      screen.getByText('Nationality is not configured correctly. Contact the system administrator.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/org\.openmrs\.Concept/u)).not.toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: /Nacionalidad/u })).not.toBeInTheDocument();
   });
 });

@@ -1,5 +1,5 @@
 import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { type FetchResponse, showSnackbar } from '@openmrs/esm-framework';
+import { type FetchResponse, getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
 import React, { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
@@ -59,14 +59,21 @@ const EmergencyQueueConfirmActionModal: React.FC<EmergencyQueueConfirmActionModa
           mutate((key) => typeof key === 'string' && key.includes('/queue-entry'));
           closeModal();
         } else {
-          throw { message: t('unexpectedServerResponse', 'Respuesta inesperada del servidor') };
+          throw new Error('The emergency queue action returned an unsuccessful response.');
         }
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         showSnackbar({
           title: submitFailureTitle,
           kind: 'error',
-          subtitle: error?.message,
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t(
+              'queueActionFailureSubtitle',
+              'No se pudo confirmar la acción sobre la cola. Actualice y verifique su estado antes de intentarlo nuevamente.',
+            ),
+            { logContext: 'Execute emergency queue action' },
+          ),
         });
       })
       .finally(() => {

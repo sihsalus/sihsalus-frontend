@@ -126,6 +126,16 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({
         );
 
       case isCompleted:
+        if (visitsLoading) {
+          return <InlineLoading description={t('checkingActiveVisit', 'Checking active visit')} />;
+        }
+        if (visitsError || !appointmentVisitAttributeTypeUuid) {
+          return (
+            <Button disabled kind="ghost" size="sm">
+              {t('activeVisitCheckFailed', 'Unable to verify active visit')}
+            </Button>
+          );
+        }
         if (canCheckOut && hasLinkedActiveVisit) {
           return (
             <Button onClick={handleCheckout} kind="tertiary" size="sm">

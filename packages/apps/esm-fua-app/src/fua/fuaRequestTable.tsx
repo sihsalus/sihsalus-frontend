@@ -21,7 +21,14 @@ import {
   Tooltip,
 } from '@carbon/react';
 import { Download, EventSchedule, Renew, View } from '@carbon/react/icons';
-import { formatDate, openmrsFetch, showModal, showSnackbar, usePagination } from '@openmrs/esm-framework';
+import {
+  formatDate,
+  getUserFacingErrorMessage,
+  openmrsFetch,
+  showModal,
+  showSnackbar,
+  usePagination,
+} from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -37,6 +44,7 @@ import useFuaRequests, { type FuaRequest, revalidateFuaRequestCaches, setFuaEsta
 import { useVisit } from '../hooks/useVisit';
 import { FUA_ESTADOS } from '../modals/change-fua-status.modal';
 import { exportFuasToExcel } from '../utils/fua-export';
+import { createInertFuaHtml } from '../utils/fua-html-security';
 
 import { FuaDateRangePicker } from './fua-date-range-picker.component';
 import styles from './fua-request-table.scss';
@@ -202,6 +210,8 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
         return;
       }
 
+      fuaWindow.opener = null;
+
       fuaWindow.document.body.textContent = t('loadingFuaDocument', 'Cargando documento FUA...');
 
       try {
@@ -216,14 +226,18 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
         );
 
         const html = await response.text();
-        loadHtmlInWindow(fuaWindow, html);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : t('unknownError', 'Error desconocido');
-        fuaWindow.document.body.textContent = errorMessage;
+        loadHtmlInWindow(fuaWindow, createInertFuaHtml(html));
+      } catch (error: unknown) {
+        const operatorMessage = getUserFacingErrorMessage(
+          error,
+          t('couldNotLoadFuaDocument', 'No se pudo cargar el documento FUA'),
+          { logContext: 'Render FUA request preview' },
+        );
+        fuaWindow.document.body.textContent = operatorMessage;
         showSnackbar({
           kind: 'error',
           title: t('errorLoadingFua', 'Error al cargar FUA'),
-          subtitle: errorMessage,
+          subtitle: operatorMessage,
         });
       }
     },
@@ -262,12 +276,15 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : t('unknownError', 'Error desconocido');
+      } catch (error: unknown) {
         showSnackbar({
           kind: 'error',
           title: t('errorDownloadingFua', 'Error al descargar FUA'),
-          subtitle: errorMessage,
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('couldNotDownloadFuaDocument', 'No se pudo descargar el documento FUA'),
+            { logContext: 'Download FUA document' },
+          ),
         });
       } finally {
         setDownloadingVisitUuids((current) => {
@@ -314,11 +331,15 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
           title: t('success', 'Éxito'),
           subtitle: t('fuaReset', 'FUA devuelto a Pendiente para corrección'),
         });
-      } catch {
+      } catch (error: unknown) {
         showSnackbar({
           kind: 'error',
           title: t('error', 'Error'),
-          subtitle: t('errorChangingStatus', 'Ocurrió un error al cambiar el estado del FUA'),
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('errorChangingStatus', 'Ocurrió un error al cambiar el estado del FUA'),
+            { logContext: 'Return rejected FUA to pending' },
+          ),
         });
       }
     },

@@ -10,7 +10,7 @@ import {
   Stack,
   Tag,
 } from '@carbon/react';
-import { showSnackbar } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
@@ -126,10 +126,14 @@ const MoveQueueEntryModal: React.FC<MoveQueueEntryModalProps> = ({ queueEntry, c
       showSnackbar({
         title: t('moveError', 'Error al mover paciente'),
         kind: 'error',
-        subtitle:
-          error instanceof Error
-            ? error.message
-            : t('moveErrorGeneric', 'Ocurrió un error al mover la entrada de cola'),
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t(
+            'moveErrorSafe',
+            'No se pudo confirmar el movimiento del paciente. Actualice y verifique ambas colas antes de repetir la acción.',
+          ),
+          { logContext: 'Move emergency queue entry' },
+        ),
       });
     } finally {
       setIsSubmitting(false);

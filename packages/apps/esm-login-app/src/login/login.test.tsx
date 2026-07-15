@@ -6,14 +6,14 @@ import {
   useConnectivity,
   useSession,
 } from '@openmrs/esm-framework';
-import { screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { mockConfig } from '../../../../test-utils/mocks/login-config.mock';
 import renderWithRouter from '../test-helpers/render-with-router';
 import { hardNavigate } from '../navigation';
 
-import Login from './login.component';
+import Login, { type LoginReferrer } from './login.component';
 
 const mockGetSessionStore = vi.mocked(getSessionStore);
 const mockLogin = vi.mocked(refetchCurrentUser);
@@ -30,10 +30,21 @@ vi.mock('../navigation', async (importOriginal) => ({
 const mockBuildInfo = { version: '1.2.3', gitSha: 'abc1234', buildTime: '2026-06-04T00:00:00Z' };
 const openmrsSpaBasePlaceholder = '$' + '{openmrsSpaBase}';
 
+const LocationSelectPage = () => {
+  const state = useLocation().state as LoginReferrer;
+
+  return (
+    <div>
+      Location select page
+      <span data-testid="location-referrer">{state?.referrer}</span>
+    </div>
+  );
+};
+
 const LoginRoutes = () => (
   <Routes>
     <Route path="/login" element={<Login />} />
-    <Route path="/login/location" element={<div>Location select page</div>} />
+    <Route path="/login/location" element={<LocationSelectPage />} />
   </Routes>
 );
 
@@ -241,7 +252,7 @@ describe('Login', () => {
     expect(await screen.findByText('Location select page')).toBeInTheDocument();
   });
 
-  it('sends admission users directly home without selecting a location', async () => {
+  it('requires admission users without a session location to select one', async () => {
     mockLogin.mockResolvedValue({
       session: {
         authenticated: true,
@@ -252,7 +263,14 @@ describe('Login', () => {
       },
     } as SessionStore);
 
-    renderWithRouter(LoginRoutes, {}, { route: '/login' });
+    render(
+      <MemoryRouter
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+        initialEntries={[{ pathname: '/login', state: { referrer: '/patient-registration' } }]}
+      >
+        <LoginRoutes />
+      </MemoryRouter>,
+    );
     const user = userEvent.setup();
 
     await user.type(screen.getByRole('textbox', { name: /Username/i }), 'admision');
@@ -260,8 +278,9 @@ describe('Login', () => {
     await user.type(await screen.findByLabelText(/^password$/i), 'secret');
     await user.click(screen.getByRole('button', { name: /log in/i }));
 
-    await waitFor(() => expect(mockHardNavigate).toHaveBeenCalledWith(mockConfig.links.loginSuccess));
-    expect(screen.queryByText('Location select page')).not.toBeInTheDocument();
+    expect(await screen.findByText('Location select page')).toBeInTheDocument();
+    expect(screen.getByTestId('location-referrer')).toHaveTextContent('/patient-registration');
+    expect(mockHardNavigate).not.toHaveBeenCalled();
   });
 
   it('should render the both the username and password fields when the showPasswordOnSeparateScreen config is false', async () => {

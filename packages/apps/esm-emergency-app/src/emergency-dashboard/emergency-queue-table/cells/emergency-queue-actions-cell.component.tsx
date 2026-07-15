@@ -29,6 +29,7 @@ import { useTranslation } from 'react-i18next';
 import { type Config } from '../../../config-schema';
 import { emergencyEditPrivilege, MODALS, WORKSPACES } from '../../../constants';
 import { useTriageVitalsSavedHandler } from '../../../emergency-workflow/hooks/useTriageVitalsSavedHandler';
+import { loadTriageTransitionCheckpoint } from '../../../emergency-workflow/triage-transition-reconciliation-checkpoint';
 import { useEmergencyConfig } from '../../../hooks/usePriorityConfig';
 import styles from './emergency-queue-actions-cell.scss';
 import { type EmergencyQueueTableCellProps } from './emergency-queue-name-cell.component';
@@ -61,6 +62,18 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
   }, [queueEntry]);
 
   const handleOpenTriage = useCallback(() => {
+    if (loadTriageTransitionCheckpoint(queueEntry.uuid)) {
+      showSnackbar({
+        title: t('triageAlreadySaved', 'Signos vitales ya guardados'),
+        kind: 'warning',
+        subtitle: t(
+          'triageTransitionUnverifiedSafe',
+          'Los signos vitales fueron guardados, pero no se pudo confirmar el envío a atención. No vuelva a guardar los signos ni repita el triaje; revise la cola.',
+        ),
+      });
+      return;
+    }
+
     launchWorkspace2(
       WORKSPACES.TRIAGE_VITALS_FORM,
       {
@@ -73,7 +86,7 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
         patientUuid: queueEntry.patient.uuid,
       },
     );
-  }, [handleTriageVitalsSaved, queueEntry.patient.uuid, triageEncounterTypeUuid]);
+  }, [handleTriageVitalsSaved, queueEntry.patient.uuid, queueEntry.uuid, t, triageEncounterTypeUuid]);
 
   const handleOpenAttention = useCallback(() => {
     launchWorkspace(WORKSPACES.ATTENTION_FORM, {

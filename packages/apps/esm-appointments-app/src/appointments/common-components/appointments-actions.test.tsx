@@ -334,6 +334,44 @@ describe('AppointmentActions', () => {
     expect(screen.getByText('Checked out')).toBeInTheDocument();
   });
 
+  it('does not claim checkout completion while linked visits are still loading', () => {
+    appointment.status = AppointmentStatus.COMPLETED;
+    mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
+    mockUseTodaysVisits.mockReturnValue({
+      visits: [],
+      error: null,
+      isLoading: true,
+      mutateVisit: vi.fn(),
+    });
+
+    render(<AppointmentActions {...defaultProps} />);
+
+    expect(screen.queryByText('Checked out')).not.toBeInTheDocument();
+    expect(screen.getByText(/checking active visit/i)).toBeInTheDocument();
+  });
+
+  it.each([
+    ['the linked-visit request fails', new Error('visit lookup failed'), 'configured-attribute-uuid'],
+    ['the appointment visit-link attribute is not configured', null, ''],
+  ])('does not claim checkout completion when %s', (_case, error, appointmentVisitAttributeTypeUuid) => {
+    appointment.status = AppointmentStatus.COMPLETED;
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentVisitAttributeTypeUuid,
+    });
+    mockUseTodaysVisits.mockReturnValue({
+      visits: [],
+      error,
+      isLoading: false,
+      mutateVisit: vi.fn(),
+    });
+
+    render(<AppointmentActions {...defaultProps} />);
+
+    expect(screen.queryByText('Checked out')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /unable to verify active visit/i })).toBeDisabled();
+  });
+
   it('offers checkout reconciliation when a completed appointment still has an active visit', () => {
     appointment.status = AppointmentStatus.COMPLETED;
     mockUseConfig.mockReturnValue({
@@ -603,6 +641,39 @@ describe('AppointmentActions', () => {
     await waitFor(() => expect(mockGetActiveVisitsForPatient).toHaveBeenCalled());
     expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
     expect(mockEnsureAppointmentVisitLink).not.toHaveBeenCalled();
+  });
+
+  it('does not start a second visit when the fresh active-visit response is malformed', async () => {
+    appointment.status = AppointmentStatus.SCHEDULED;
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentQueueMappings: [
+        {
+          appointmentServiceUuid: appointment.service.uuid,
+          appointmentLocationUuid: appointment.location.uuid,
+          queueUuid: 'mapped-queue-uuid',
+          queueLocationUuid: 'mapped-queue-location-uuid',
+          requiredVisitTypeUuid,
+        },
+      ],
+      checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
+    });
+    mockUseTodaysVisits.mockReturnValue({
+      visits: [],
+      mutateVisit: vi.fn(),
+      error: null,
+      isLoading: false,
+    });
+    mockGetActiveVisitsForPatient.mockResolvedValue({ data: {} } as Awaited<
+      ReturnType<typeof getActiveVisitsForPatient>
+    >);
+
+    render(<AppointmentActions {...defaultProps} />);
+    await userEvent.click(screen.getByRole('button', { name: /check in/i }));
+
+    await waitFor(() => expect(mockGetActiveVisitsForPatient).toHaveBeenCalledOnce());
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
   });
 
   it('blocks reusing an active visit with an incompatible visit type', async () => {

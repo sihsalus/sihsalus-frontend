@@ -39,6 +39,9 @@ jobs:
       - name: Validate Global Route Registration Names
         run: yarn validate:route-names
 
+      - name: Validate Workspace Launch Targets
+        run: yarn validate:workspace-routes
+
       # Repo-wide regression tests cover error exposure, route registration,
       # release/E2E safety and the assembled SPA serving contract.
       - name: Test Tooling

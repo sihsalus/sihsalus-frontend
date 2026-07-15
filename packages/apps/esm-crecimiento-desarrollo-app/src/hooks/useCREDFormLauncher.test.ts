@@ -40,6 +40,12 @@ describe('CRED form launcher resources', () => {
     );
   });
 
+  it('uses the exact delivery form name as the neonatal labour fallback', () => {
+    expect(getCREDFormIdentifier(undefined, 'deliveryOrAbortion', neonatalFormFallbacks.deliveryOrAbortion)).toBe(
+      'OBST-005-PARTO O ABORTO',
+    );
+  });
+
   it('uses the rooming-in form name as the neonatal fallback', () => {
     expect(getCREDFormIdentifier(undefined, 'roomingIn', neonatalFormFallbacks.roomingIn)).toBe(
       '(Página 10) Alojamiento Conjunto',
@@ -135,5 +141,87 @@ describe('CRED form launcher resources', () => {
 
     expect(decodeURIComponent(calledUrl).replace(/\+/g, ' ')).toContain('q=CRED-007-CONSEJERÍA ALIMENTARIA');
     expect(form.uuid).toBe('1fa86795-3d84-304a-ac9e-320a39b69ca7');
+  });
+
+  it('does not fall back to an approximate form search result', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          {
+            uuid: 'different-form-uuid',
+            name: 'CRED-007-CONSEJERÍA GENERAL',
+            published: true,
+            retired: false,
+          },
+        ],
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    await expect(resolveCREDForm('CRED-007-CONSEJERÍA ALIMENTARIA', 'Consejería alimentaria')).rejects.toThrow(
+      /No published CRED form found/u,
+    );
+  });
+
+  it('rejects ambiguous exact published forms', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          {
+            uuid: 'first-form-uuid',
+            name: 'CRED-007-CONSEJERÍA ALIMENTARIA',
+            published: true,
+            retired: false,
+          },
+          {
+            uuid: 'second-form-uuid',
+            name: 'CRED-007-CONSEJERÍA ALIMENTARIA',
+            published: true,
+            retired: false,
+          },
+        ],
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    await expect(resolveCREDForm('CRED-007-CONSEJERÍA ALIMENTARIA', 'Consejería alimentaria')).rejects.toThrow(
+      /Multiple exact published CRED forms/u,
+    );
+  });
+
+  it('rejects a direct UUID response for a different form', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        uuid: '4f9f4a48-3283-4af9-a1d1-00bb4322c899',
+        name: 'CRED-006-EVALUACIÓN NUTRICIONAL',
+        published: true,
+        retired: false,
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    await expect(
+      resolveCREDForm('21f010ce-4876-32ec-8844-27dfedc6705a', 'CRED-006-EVALUACIÓN NUTRICIONAL'),
+    ).rejects.toThrow(/did not match the requested UUID/u);
+  });
+
+  it('rejects an exact form that is retired or unpublished', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        uuid: '21f010ce-4876-32ec-8844-27dfedc6705a',
+        name: 'CRED-006-EVALUACIÓN NUTRICIONAL',
+        published: true,
+        retired: true,
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    await expect(
+      resolveCREDForm('21f010ce-4876-32ec-8844-27dfedc6705a', 'CRED-006-EVALUACIÓN NUTRICIONAL'),
+    ).rejects.toThrow(/unavailable, unpublished or retired/u);
+  });
+
+  it('fails closed when the form search payload is malformed', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: {} } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    await expect(resolveCREDForm('CRED-007-CONSEJERÍA ALIMENTARIA', 'Consejería alimentaria')).rejects.toThrow(
+      /invalid response/u,
+    );
   });
 });

@@ -25,11 +25,12 @@ function main() {
   const sourceFiles = scanRoots.flatMap((scanRoot) =>
     findFiles(scanRoot, (filePath) => sourceExtensions.has(path.extname(filePath))),
   );
+  const productionSourceFiles = sourceFiles.filter(isProductionSourceFile);
   const routeInventory = collectRouteInventory(routesFiles);
   const hardFailures = [
     ...findDuplicateDefinitions(routeInventory),
     ...findInvalidWorkspace2Hierarchy(routeInventory),
-    ...findInvalidLaunchWorkspace2Calls(sourceFiles, routeInventory),
+    ...findInvalidLaunchWorkspace2Calls(productionSourceFiles, routeInventory),
   ];
   const migrationInventory = collectMigrationInventory(sourceFiles, routeInventory);
 
@@ -38,6 +39,11 @@ function main() {
   if (hardFailures.length > 0 && !reportOnly) {
     process.exit(1);
   }
+}
+
+function isProductionSourceFile(filePath) {
+  const normalizedPath = filePath.split(path.sep).join('/');
+  return !/(?:^|\/)(?:__tests__|test-utils)(?:\/|$)|\.(?:test|spec)\.[^/]+$/u.test(normalizedPath);
 }
 
 function printHelp() {

@@ -1,4 +1,5 @@
 import { Button, InlineNotification } from '@carbon/react';
+import { getUserFacingErrorMessage } from '@openmrs/esm-framework';
 import React, { type ErrorInfo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -55,7 +56,14 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, onRetry }) => {
       <InlineNotification
         kind="error"
         title={t('emergencyModuleError', 'Error en el módulo de emergencias')}
-        subtitle={error?.message || t('unexpectedError', 'Ocurrió un error inesperado')}
+        subtitle={getUserFacingErrorMessage(
+          error,
+          t(
+            'emergencyModuleErrorSubtitle',
+            'No se pudo mostrar esta sección de emergencias. Reintente; si el problema continúa, recargue la página o contacte a soporte.',
+          ),
+          { log: false },
+        )}
         lowContrast
         hideCloseButton
       />

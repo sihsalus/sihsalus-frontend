@@ -1,11 +1,11 @@
 import { Button, ContentSwitcher, DataTableSkeleton, IconSwitch, InlineLoading } from '@carbon/react';
 import { Add, Analytics, Table } from '@carbon/react/icons';
-import { formatDate, launchWorkspace2, parseDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { formatDate, parseDate, useLayoutType } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useCurrentPregnancy } from '../../../../hooks/useCurrentPregnancy';
-import { formEntryWorkspace } from '../../../../types';
 import type { LabourHistoryTableRow } from '../../../common/types';
 
 import LabourHistoryChart from './labour-history-chart.component';
@@ -22,16 +22,13 @@ const LabourHistoryOverview: React.FC<LabourHistoryOverviewProps> = ({ patientUu
   const [chartView, setChartView] = useState(false);
   const isTablet = useLayoutType() === 'tablet';
 
-  const config = useConfig();
-  const { prenatalEncounter: data, error, isLoading } = useCurrentPregnancy(patientUuid);
-  const formPrenatalUuid = config.formsList.deliveryOrAbortion;
+  const { prenatalEncounter: data, error, isLoading, mutate } = useCurrentPregnancy(patientUuid);
+  const { launchForm: launchConfiguredLabourForm, isLoading: isFormLoading } =
+    useCREDFormLauncher('deliveryOrAbortion');
 
   const launchLabourForm = useCallback(() => {
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: formPrenatalUuid },
-      encounterUuid: '',
-    });
-  }, [formPrenatalUuid]);
+    launchConfiguredLabourForm('', () => void mutate());
+  }, [launchConfiguredLabourForm, mutate]);
 
   const tableRows: LabourHistoryTableRow[] = useMemo(() => {
     if (!data?.obs) return [];
@@ -72,6 +69,7 @@ const LabourHistoryOverview: React.FC<LabourHistoryOverviewProps> = ({ patientUu
             <span className={styles.divider}>|</span>
             <Button
               kind="ghost"
+              disabled={isFormLoading}
               renderIcon={(props) => <Add size={16} {...props} />}
               iconDescription="Add labour details"
               onClick={launchLabourForm}

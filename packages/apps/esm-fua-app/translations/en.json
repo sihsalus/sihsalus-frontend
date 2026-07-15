@@ -21,6 +21,7 @@
   "contactAdmin": "Contact the system administrator",
   "corsBlocking": "CORS policies blocking the connection",
   "couldNotLoadFuaDocument": "Could not load FUA document",
+  "couldNotDownloadFuaDocument": "Could not download FUA document",
   "createdAt": "Creation date",
   "createFua": "Create FUA",
   "createFuaWorkspaceTitle": "Create FUA",

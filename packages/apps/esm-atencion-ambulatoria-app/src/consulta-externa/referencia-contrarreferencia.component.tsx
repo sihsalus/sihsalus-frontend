@@ -9,12 +9,11 @@ import {
   Tag,
 } from '@carbon/react';
 import { formatDate, useConfig } from '@openmrs/esm-framework';
-import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
+import { useOutpatientFormLauncher } from '../hooks/useOutpatientFormLauncher';
 import { useReferralCounterReferral } from '../hooks/useReferralCounterReferral';
-import { patientFormEntryWorkspace } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface ReferenciaContraReferenciaProps {
@@ -38,15 +37,12 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
     },
   );
 
-  const handleLaunchForm = () => {
-    launchPatientWorkspace(patientFormEntryWorkspace, {
-      mutateForm: mutate,
-      formInfo: {
-        patientUuid,
-        formUuid: config.formsList?.referralForm,
-      },
-    });
-  };
+  const { launchForm } = useOutpatientFormLauncher({
+    fallbackDisplay: t('referralCounterReferral', 'Referral / Counter-referral'),
+    identifier: config.formsList?.referralForm,
+    onSaved: mutate,
+    patientUuid,
+  });
 
   return (
     <ClinicalHistoryCard
@@ -58,7 +54,7 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
       isLoading={isLoading}
       isValidating={isValidating}
       loadingVariant="accordion"
-      onAction={handleLaunchForm}
+      onAction={() => void launchForm()}
       pagination={pagination}
     >
       <Accordion>

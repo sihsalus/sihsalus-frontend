@@ -9,7 +9,7 @@ on:
     tags: ['sihsalus-v*']
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || github.ref }}
+  group: release-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
   cancel-in-progress: false
 
 env:
@@ -32,8 +32,6 @@ jobs:
       contents: write
       packages: write
       security-events: write
-    env:
-      HAS_DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -41,7 +39,7 @@ jobs:
           persist-credentials: false
           # A workflow_run executes in the default-branch context. Pin the
           # checkout to the exact CI commit so a later push cannot change the
-          # source that is published as latest.
+          # source that is published under the immutable commit tag.
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.ref }}
 
       - name: Validate release source
@@ -115,18 +113,22 @@ jobs:
             exit 1
           fi
 
-      # Derive build provenance from git. On a `sihsalus-vX.Y.Z` tag the version is
-      # exact; on branch builds it is `git describe` relative to the last such tag
-      # (e.g. 1.2.0-5-gabc1234), falling back to a dev placeholder.
+      # Derive build provenance from git. A `sihsalus-vX.Y.Z` tag supplies the exact
+      # release version; branch builds use package.json and fall back to a SHA-based
+      # development version only when package metadata is unavailable.
       - name: Compute version
         id: version
         run: |
           GIT_SHA="${{ steps.source.outputs.sha }}"
           SHA_SHORT="$(git rev-parse --short HEAD)"
-          BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          BUILD_TIME="$(git show -s --format=%cI HEAD)"
           PACKAGE_VERSION="$(node -p "require('./package.json').version" 2>/dev/null || true)"
           if [[ "${GITHUB_REF}" == refs/tags/sihsalus-v* ]]; then
             VERSION="${GITHUB_REF#refs/tags/sihsalus-v}"
+            if [[ -z "${PACKAGE_VERSION}" || "${VERSION}" != "${PACKAGE_VERSION}" ]]; then
+              echo "::error::Release tag version ${VERSION} must exactly match package.json version ${PACKAGE_VERSION:-<missing>}."
+              exit 1
+            fi
           elif [[ -n "${PACKAGE_VERSION}" ]]; then
             VERSION="${PACKAGE_VERSION}"
           else
@@ -176,23 +178,6 @@ jobs:
           cache-from: type=gha,scope=release-amd64
           cache-to: type=gha,scope=release-amd64,mode=max
 
-      - name: Scan image before publishing
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: ghcr.io/sihsalus/sihsalus-frontend:sha-${{ steps.version.outputs.git_sha }}
-          format: sarif
-          output: trivy-release-results.sarif
-          severity: HIGH,CRITICAL
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: os,library
-
-      - name: Upload Trivy scan
-        uses: github/codeql-action/upload-sarif@v4
-        if: ${{ always() && hashFiles('trivy-release-results.sarif') != '' }}
-        with:
-          sarif_file: trivy-release-results.sarif
-
       - name: Revalidate branch tip before publishing
         if: github.event_name == 'workflow_run'
         env:
@@ -212,26 +197,134 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish verified image tags
+      - name: Inspect immutable commit image
+        id: immutable
+        env:
+          IMMUTABLE_IMAGE: ghcr.io/sihsalus/sihsalus-frontend:sha-${{ steps.version.outputs.git_sha }}
+        run: |
+          set +e
+          INSPECT_OUTPUT="$(docker buildx imagetools inspect "${IMMUTABLE_IMAGE}" --format '{{.Manifest.Digest}}' 2>&1)"
+          INSPECT_STATUS=$?
+          set -e
+          if [[ "${INSPECT_STATUS}" -eq 0 ]]; then
+            if [[ ! "${INSPECT_OUTPUT}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+              echo "::error::The existing commit image has an invalid registry digest."
+              exit 1
+            fi
+            {
+              echo "exists=true"
+              echo "digest=${INSPECT_OUTPUT}"
+              echo "scan_ref=${IMMUTABLE_IMAGE}@${INSPECT_OUTPUT}"
+            } >> "${GITHUB_OUTPUT}"
+            echo "Reusing immutable commit image ${IMMUTABLE_IMAGE}@${INSPECT_OUTPUT}"
+            exit 0
+          fi
+          if ! grep -Eqi 'not found|manifest unknown' <<< "${INSPECT_OUTPUT}"; then
+            echo "::error::Could not inspect the immutable commit image in the registry."
+            exit 1
+          fi
+          {
+            echo "exists=false"
+            echo "digest="
+            echo "scan_ref=${IMMUTABLE_IMAGE}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Scan exact image before publishing or promotion
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ steps.immutable.outputs.scan_ref }}
+          format: sarif
+          output: trivy-release-results.sarif
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: os,library
+
+      - name: Upload Trivy scan
+        uses: github/codeql-action/upload-sarif@v4
+        if: ${{ always() && hashFiles('trivy-release-results.sarif') != '' }}
+        with:
+          sarif_file: trivy-release-results.sarif
+
+      - name: Publish immutable commit image
+        if: steps.immutable.outputs.exists != 'true'
+        env:
+          IMMUTABLE_IMAGE: ghcr.io/sihsalus/sihsalus-frontend:sha-${{ steps.version.outputs.git_sha }}
+        run: |
+          docker push "${IMMUTABLE_IMAGE}"
+
+      - name: Resolve immutable image digest
+        id: published
+        env:
+          IMMUTABLE_IMAGE: ghcr.io/sihsalus/sihsalus-frontend:sha-${{ steps.version.outputs.git_sha }}
+        run: |
+          PUBLISHED_DIGEST="$(docker buildx imagetools inspect "${IMMUTABLE_IMAGE}" --format '{{.Manifest.Digest}}')"
+          if [[ ! "${PUBLISHED_DIGEST}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::The registry did not return a valid digest for the published commit image."
+            exit 1
+          fi
+          if [[ "${{ steps.immutable.outputs.exists }}" == "true" && "${PUBLISHED_DIGEST}" != "${{ steps.immutable.outputs.digest }}" ]]; then
+            echo "::error::The immutable commit tag changed after registry inspection."
+            exit 1
+          fi
+          echo "digest=${PUBLISHED_DIGEST}" >> "${GITHUB_OUTPUT}"
+
+      - name: Promote verified image aliases
         env:
           IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+          IMMUTABLE_IMAGE: ghcr.io/sihsalus/sihsalus-frontend:sha-${{ steps.version.outputs.git_sha }}
+          IMMUTABLE_SOURCE: ghcr.io/sihsalus/sihsalus-frontend@${{ steps.published.outputs.digest }}
+          PUBLISHED_DIGEST: ${{ steps.published.outputs.digest }}
+          SOURCE_BRANCH: ${{ steps.source.outputs.branch }}
+          VERSION_IMAGE: ghcr.io/sihsalus/sihsalus-frontend:${{ steps.version.outputs.version }}
         run: |
           while IFS= read -r image_tag; do
-            if [[ -n "${image_tag}" ]]; then
-              docker push "${image_tag}"
+            if [[ -z "${image_tag}" || "${image_tag}" == "${IMMUTABLE_IMAGE}" ]]; then
+              continue
+            fi
+
+            if [[ "${SOURCE_BRANCH}" == "tag" && "${image_tag}" == "${VERSION_IMAGE}" ]]; then
+              set +e
+              VERSION_INSPECT="$(docker buildx imagetools inspect "${image_tag}" --format '{{.Manifest.Digest}}' 2>&1)"
+              VERSION_STATUS=$?
+              set -e
+              if [[ "${VERSION_STATUS}" -eq 0 ]]; then
+                if [[ "${VERSION_INSPECT}" != "${PUBLISHED_DIGEST}" ]]; then
+                  echo "::error::The exact release version already points to a different image digest: ${image_tag}"
+                  exit 1
+                fi
+                echo "Exact release version already points to the verified digest: ${image_tag}"
+                continue
+              fi
+              if ! grep -Eqi 'not found|manifest unknown' <<< "${VERSION_INSPECT}"; then
+                echo "::error::Could not inspect the exact release version in the registry: ${image_tag}"
+                exit 1
+              fi
+            fi
+
+            docker buildx imagetools create --tag "${image_tag}" "${IMMUTABLE_SOURCE}"
+            PROMOTED_DIGEST="$(docker buildx imagetools inspect "${image_tag}" --format '{{.Manifest.Digest}}')"
+            if [[ "${PROMOTED_DIGEST}" != "${PUBLISHED_DIGEST}" ]]; then
+              echo "::error::Promoted alias does not resolve to the verified digest: ${image_tag}"
+              exit 1
             fi
           done <<< "${IMAGE_TAGS}"
 
-      - name: Notify sihsalus deployment
-        if: >
-          steps.source.outputs.branch == 'main' &&
-          env.HAS_DEPLOY_TOKEN == 'true'
-        uses: peter-evans/repository-dispatch@v4
-        with:
-          token: ${{ secrets.DEPLOY_TOKEN }}
-          repository: sihsalus/sihsalus-frontend
-          event-type: frontend-published
-          client-payload: '{"image":"ghcr.io/sihsalus/sihsalus-frontend:latest","sha":"${{ steps.version.outputs.git_sha }}"}'
+      # This repository currently has no verified deployment receiver. Record the
+      # immutable, scanned artifact without claiming that production was promoted.
+      - name: Record immutable published artifact
+        env:
+          IMAGE_TAG: ghcr.io/sihsalus/sihsalus-frontend:sha-${{ steps.version.outputs.git_sha }}
+          IMAGE_DIGEST: ghcr.io/sihsalus/sihsalus-frontend@${{ steps.published.outputs.digest }}
+          RELEASE_SHA: ${{ steps.version.outputs.git_sha }}
+        run: |
+          {
+            echo "### Published frontend artifact"
+            echo "- Commit tag: \`${IMAGE_TAG}\`"
+            echo "- Deployment image: \`${IMAGE_DIGEST}\`"
+            echo "- Commit: \`${RELEASE_SHA}\`"
+            echo "- Deployment: not performed by this workflow"
+          } >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Create GitHub Release (on tags)
         if: steps.source.outputs.branch == 'tag'

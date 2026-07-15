@@ -13,7 +13,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { Add, ChartLineSmooth, Table as TableIcon } from '@carbon/react/icons';
-import { formatDate, isDesktop, launchWorkspace2, parseDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { formatDate, isDesktop, parseDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
@@ -21,8 +21,8 @@ import { useTranslation } from 'react-i18next';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import type { ConfigObject } from '../../config-schema';
 import { labourDeliveryEditPrivilege } from '../../constants';
+import { useMaternalFormIdentifierLauncher } from '../../hooks/useMaternalFormLauncher';
 import { usePartograph } from '../../hooks/usePartograph';
-import { formEntryWorkspace } from '../../types';
 
 import styles from './labour-delivery.scss';
 import PartographChart from './partograph-chart';
@@ -48,6 +48,7 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
   const { encounters = [], isLoading, isValidating, error, mutate } = usePartograph(patientUuid);
   const headerTitle = t('partograph', 'Partograph');
   const displayText = t('partographData', 'Vital Components');
+  const { launchForm: launchPartographForm } = useMaternalFormIdentifierLauncher(partography.formUuid, headerTitle);
   const headers = [
     {
       header: t('date', 'Date'),
@@ -146,11 +147,7 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
     [partographRecords],
   );
   const handleAddHistory = () => {
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: partography.formUuid },
-      encounterUuid: '',
-      handlePostResponse: () => void mutate(),
-    });
+    launchPartographForm('', () => void mutate());
   };
 
   if (isLoading) {

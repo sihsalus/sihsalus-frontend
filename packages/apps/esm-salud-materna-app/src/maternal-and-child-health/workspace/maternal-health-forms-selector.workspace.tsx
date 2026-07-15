@@ -2,13 +2,14 @@ import {
   launchWorkspace2,
   openmrsFetch,
   restBaseUrl,
+  showSnackbar,
   useConfig,
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
 import type { CompletedFormInfo, Form } from '@openmrs/esm-patient-common-lib';
 import { FormsSelectorWorkspace } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 import type { ConfigObject } from '../../config-schema';
@@ -20,6 +21,7 @@ import {
   prenatalCareEditPrivilege,
 } from '../../constants';
 import { useCurrentPregnancy } from '../../hooks/useCurrentPregnancy';
+import { resolveMaternalForm } from '../../hooks/useMaternalFormLauncher';
 import { type DefaultPatientWorkspaceProps, formEntryWorkspace } from '../../types';
 import {
   encounterMatchesForm,
@@ -120,6 +122,7 @@ const MaternalHealthFormsSelectorWorkspace: React.FC<DefaultPatientWorkspaceProp
   const session = useSession();
   const workspaceProps = props.workspaceProps ?? {};
   const patientUuid = (props.patientUuid ?? workspaceProps.patientUuid ?? '') as string;
+  const pendingFormResolutions = useRef(new Set<string>());
   const { pregnancyStartDate } = useCurrentPregnancy(patientUuid);
   const encounterUrl = patientUuid
     ? `${restBaseUrl}/encounter?patient=${patientUuid}&limit=100&v=custom:(uuid,encounterDatetime,form:(uuid,name,display))`
@@ -200,17 +203,38 @@ const MaternalHealthFormsSelectorWorkspace: React.FC<DefaultPatientWorkspaceProp
   );
 
   const launchForm = useCallback(
-    (form: Form, encounterUuid: string, onFormSubmitted: () => void) => {
-      launchWorkspace2(formEntryWorkspace, {
-        form: { uuid: form.uuid },
-        encounterUuid,
-        handlePostResponse: () => {
-          onFormSubmitted();
-          void mutateMaternalEncounters();
-        },
-      });
+    async (form: Form, encounterUuid: string, onFormSubmitted: () => void) => {
+      const formIdentifier = form.uuid?.trim();
+      if (!formIdentifier || pendingFormResolutions.current.has(formIdentifier)) {
+        return;
+      }
+
+      pendingFormResolutions.current.add(formIdentifier);
+      try {
+        const resolvedForm = await resolveMaternalForm(formIdentifier, form.display ?? form.name ?? formIdentifier);
+        launchWorkspace2(formEntryWorkspace, {
+          form: resolvedForm,
+          encounterUuid,
+          handlePostResponse: () => {
+            onFormSubmitted();
+            void mutateMaternalEncounters();
+          },
+        });
+      } catch (error) {
+        console.error('Unable to launch the selected maternal form', error);
+        showSnackbar({
+          kind: 'error',
+          title: t('maternalFormNotAvailable', 'Formulario materno no disponible'),
+          subtitle: t(
+            'maternalFormNotAvailableSubtitle',
+            'Revise que el formulario esté publicado y que el UUID o nombre configurado sea exacto.',
+          ),
+        });
+      } finally {
+        pendingFormResolutions.current.delete(formIdentifier);
+      }
     },
-    [mutateMaternalEncounters],
+    [mutateMaternalEncounters, t],
   );
 
   return (

@@ -16,7 +16,7 @@ const FuaViewerPageContent: React.FC = () => {
   const endpoint = config.fuaGeneratorEndpoint;
   const [htmlContent, setHtmlContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [displayMessage, setDisplayMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -24,7 +24,7 @@ const FuaViewerPageContent: React.FC = () => {
     const fetchHtml = async () => {
       try {
         setIsLoading(true);
-        setError(null);
+        setDisplayMessage(null);
 
         const trustedEndpoint = resolveTrustedFuaEndpoint(endpoint, window.location.origin);
         if (!trustedEndpoint) {
@@ -52,14 +52,17 @@ const FuaViewerPageContent: React.FC = () => {
         setHtmlContent(html);
       } catch (err) {
         if (abortController.signal.aborted) return;
-        const errorMessage =
+        const operatorMessage =
           err instanceof Error && err.message === t('fuaEndpointUnavailable')
-            ? err.message
+            ? t(
+                'fuaEndpointUnavailable',
+                'The FUA viewer requires a secure same-origin endpoint configured by an administrator.',
+              )
             : t('errorLoadingFuaViewer', 'Error loading FUA viewer');
-        setError(errorMessage);
+        setDisplayMessage(operatorMessage);
         showSnackbar({
           title: t('errorLoadingFua', 'Error loading FUA'),
-          subtitle: errorMessage,
+          subtitle: operatorMessage,
           kind: 'error',
         });
       } finally {
@@ -82,11 +85,11 @@ const FuaViewerPageContent: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (displayMessage) {
     return (
       <div className={styles.errorContainer}>
         <h3>{t('errorLoadingFuaViewer', 'Error loading FUA viewer')}</h3>
-        <p>{error}</p>
+        <p>{displayMessage}</p>
       </div>
     );
   }

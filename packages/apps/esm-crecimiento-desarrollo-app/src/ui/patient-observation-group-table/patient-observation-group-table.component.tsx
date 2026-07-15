@@ -14,19 +14,11 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import {
-  AddIcon,
-  formatDate,
-  isDesktop,
-  launchWorkspace2,
-  useLayoutType,
-  userHasAccess,
-  useSession,
-} from '@openmrs/esm-framework';
+import { AddIcon, formatDate, isDesktop, useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState, useFilteredEncounter } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formEntryWorkspace } from '../../types';
+import { useCREDFormIdentifierLauncher } from '../../hooks/useCREDFormLauncher';
 
 import ObservationGroupDetails, { type ObservationGroup } from './observation-group-details.component';
 import styles from './patient-observation-group-table.scss';
@@ -86,6 +78,10 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
   const session = useSession();
   const canEdit = userHasAccess(editPrivilege, session?.user);
   const canLaunchForm = Boolean(formWorkspace && (!editPrivilege || canEdit));
+  const { launchForm: launchConfiguredForm, isLoading: isFormLoading } = useCREDFormIdentifierLauncher(
+    formWorkspace,
+    headerTitle,
+  );
 
   const {
     prenatalEncounter: data,
@@ -93,22 +89,11 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
     error,
     mutate,
   } = useFilteredEncounter(patientUuid, encounterType, formUuid);
-  //TODO: MODIFY THIS TO SEND THE CURRENT DATA TO THE WORKSPACE , IT SHOULD BE EDITABLE
   const launchForm = useCallback(() => {
-    try {
-      if (canLaunchForm && formWorkspace) {
-        launchWorkspace2(formEntryWorkspace, {
-          form: { uuid: formWorkspace },
-          encounterUuid: '',
-        });
-      }
-      if (mutate) {
-        setTimeout(() => mutate(), 1000);
-      }
-    } catch (err) {
-      console.error('Failed to launch form:', err);
+    if (canLaunchForm) {
+      launchConfiguredForm('', () => void mutate());
     }
-  }, [canLaunchForm, formWorkspace, mutate]);
+  }, [canLaunchForm, launchConfiguredForm, mutate]);
 
   const parseDisplay = useCallback((display: string) => {
     const [category, ...rest] = display.split(': ');
@@ -194,6 +179,7 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
         {canLaunchForm && (
           <Button
             kind="ghost"
+            disabled={isFormLoading}
             renderIcon={(props) => <AddIcon size={16} {...props} />}
             onClick={launchForm}
             aria-label={t('add', 'Add')}

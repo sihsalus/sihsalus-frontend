@@ -14,7 +14,6 @@ import { Add } from '@carbon/react/icons';
 import {
   CardHeader,
   EmptyState,
-  launchPatientWorkspace,
   launchStartVisitPrompt,
   useVisitOrOfflineVisit,
 } from '@openmrs/esm-patient-common-lib';
@@ -22,6 +21,7 @@ import dayjs from 'dayjs';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
+import { useMaternalFormIdentifierLauncher } from '../../hooks/useMaternalFormLauncher';
 
 import styles from './care-summary-table.scss';
 
@@ -140,24 +140,16 @@ const CareSummaryTable: React.FC<CareSummaryTableProps> = ({
   const { t } = useTranslation();
   const { prenatalEncounters, isValidating, mutate } = useEncountersHook(patientUuid);
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
+  const { launchForm: launchResolvedForm } = useMaternalFormIdentifierLauncher(formUuid, title);
 
   const launchForm = useCallback(() => {
-    try {
-      if (!currentVisit) {
-        launchStartVisitPrompt();
-      } else {
-        if (formUuid) {
-          launchPatientWorkspace('patient-form-entry-workspace', {
-            workspaceTitle: title,
-            mutateForm: mutate,
-            formInfo: { formUuid, patientUuid, additionalProps: {} },
-          });
-        }
-      }
-    } catch (err) {
-      console.error('Failed to launch form:', err);
+    if (!currentVisit) {
+      launchStartVisitPrompt();
+      return;
     }
-  }, [patientUuid, currentVisit, formUuid, title, mutate]);
+
+    launchResolvedForm('', mutate);
+  }, [currentVisit, launchResolvedForm, mutate]);
 
   const activeRows = useMemo(() => {
     if (!prenatalEncounters || prenatalEncounters.length === 0) {

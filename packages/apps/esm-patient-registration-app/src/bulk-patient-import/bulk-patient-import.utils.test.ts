@@ -5,7 +5,13 @@ import { savePatient } from '../patient-registration/patient-registration.resour
 import { peruDniPatientIdentifierTypeUuid } from '../patient-registration/peru-registration-config';
 import type { PatientIdentifierType } from '../patient-registration/patient-registration.types';
 import type { SantaClotildeHeader } from './bulk-patient-import.types';
-import { createPatientFromImportRow, normalizeAndValidateImportRow, normalizeDate } from './bulk-patient-import.utils';
+import {
+  createPatientFromImportRow,
+  getImportErrorMessage,
+  normalizeAndValidateImportRow,
+  normalizeDate,
+  PatientImportUserError,
+} from './bulk-patient-import.utils';
 
 vi.mock('../patient-registration/identity/identity-search.resource', () => ({
   searchLocalIdentityByDocument: vi.fn(),
@@ -116,6 +122,23 @@ describe('bulk patient import safety checks', () => {
       'same-import-attempt-uuid',
     );
     expect(mockSavePatient).not.toHaveBeenCalled();
+  });
+
+  it('keeps controlled import guidance but hides a technical backend failure', () => {
+    expect(
+      getImportErrorMessage(
+        new PatientImportUserError('Only .xlsx Excel files are supported.'),
+        'Safe fallback',
+        'Test import',
+      ),
+    ).toBe('Only .xlsx Excel files are supported.');
+    expect(
+      getImportErrorMessage(
+        new Error('PUT /openmrs/ws/rest/v1/patient failed: SQLSTATE 23505'),
+        'Safe fallback',
+        'Test import',
+      ),
+    ).toBe('Safe fallback');
   });
 });
 

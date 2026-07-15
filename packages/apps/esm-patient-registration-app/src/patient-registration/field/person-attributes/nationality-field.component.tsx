@@ -122,7 +122,7 @@ export function NationalityField({ fieldDefinition }: NationalityFieldProps) {
       <InlineNotification kind="error" title={t('invalidConfiguration', 'Invalid configuration')}>
         {t(
           'nationalityAttributeMustBeCoded',
-          'The nationality person attribute must use the org.openmrs.Concept format.',
+          'Nationality is not configured correctly. Contact the system administrator.',
         )}
       </InlineNotification>
     );
@@ -141,7 +141,7 @@ export function NationalityField({ fieldDefinition }: NationalityFieldProps) {
         title={t('nationalityVerificationUnavailableTitle', 'No se pudo validar la nacionalidad')}
         subtitle={t(
           'nationalityVerificationUnavailableSubtitle',
-          'No se puede registrar un paciente con DNI hasta verificar el concepto Perú en el catálogo. Contacte al administrador.',
+          'No se puede registrar un paciente con DNI hasta verificar la nacionalidad requerida. Contacte al administrador.',
         )}
       />
     );

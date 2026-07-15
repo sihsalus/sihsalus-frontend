@@ -161,6 +161,8 @@
   "credFormNotAvailableSubtitle": "Revise que el formulario esté publicado en OpenMRS y que el UUID o nombre configurado sea correcto.",
   "credFormNotConfigured": "Formulario CRED no configurado",
   "credFormNotConfiguredSubtitle": "No se encontró una asociación de formulario para este widget.",
+  "credFormLoading": "Validando formulario CRED",
+  "credFormLoadingSubtitle": "Espere un momento e intente nuevamente.",
   "credForms": "Formularios Crecimiento y Desarrollo",
   "credFormsInstructions": "Seleccione los formularios que desea completar para este control Crecimiento y Desarrollo.",
   "credFormsSelection": "Selección de Formularios Crecimiento y Desarrollo",

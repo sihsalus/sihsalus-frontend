@@ -99,6 +99,8 @@
   "vitalsAndBiometricsNowAvailable": "They are now visible on the Vitals and Biometrics page",
   "vitalsAndBiometricsRecorded": "Vitals and Biometrics saved",
   "vitalsAndBiometricsSaveError": "Error saving vitals and biometrics",
+  "vitalsSavedDoNotSubmitAgain": "The vitals were saved. Do not submit them again; review the patient chart and the care queue.",
+  "vitalsSavedFollowUpIncomplete": "Vitals saved; workflow incomplete",
   "vitalsHistory": "Vitals history",
   "vitalSignDisplayed": "Vital sign displayed",
   "vitalSigns": "Vital signs",

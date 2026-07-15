@@ -12,6 +12,7 @@ import {
   createPatientFromImportRow,
   downloadImportReport,
   downloadSantaClotildeTemplate,
+  getImportErrorMessage,
   getImportLimits,
   parseSantaClotildeWorkbook,
   summarizeImportRows,
@@ -62,8 +63,17 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
     try {
       const parsedRows = await parseSantaClotildeWorkbook(file);
       setRows(parsedRows);
-    } catch (error) {
-      setParseError(error instanceof Error ? error.message : String(error));
+    } catch (error: unknown) {
+      setParseError(
+        getImportErrorMessage(
+          error,
+          t(
+            'bulkPatientImportParseFailureSafe',
+            'No se pudo procesar el archivo. Verifique que use la plantilla vigente e intente nuevamente.',
+          ),
+          'Parse bulk patient import workbook',
+        ),
+      );
     } finally {
       setIsParsing(false);
       event.target.value = '';
@@ -90,7 +100,14 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
       } catch (error) {
         updateRow(row.id, {
           status: 'failed',
-          importMessage: getImportErrorMessage(error),
+          importMessage: getImportErrorMessage(
+            error,
+            t(
+              'bulkPatientImportRowFailureSafe',
+              'No se pudo confirmar la creación de esta fila. Busque al paciente por documento antes de reintentar.',
+            ),
+            'Create patient from bulk import row',
+          ),
         });
       }
     }
@@ -347,16 +364,6 @@ function StatusTag({ status }: { status: ParsedPatientImportRow['status'] }) {
       {status}
     </Tag>
   );
-}
-
-function getImportErrorMessage(error: unknown) {
-  const responseMessage = (error as { responseBody?: { error?: { message?: string } } })?.responseBody?.error?.message;
-
-  if (responseMessage) {
-    return responseMessage;
-  }
-
-  return error instanceof Error ? error.message : String(error);
 }
 
 export default BulkPatientImport;

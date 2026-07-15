@@ -1,27 +1,24 @@
 import { useConfig } from '@openmrs/esm-framework';
-import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useAnamnesis } from '../hooks/useAnamnesis';
-import { patientFormEntryWorkspace } from '../utils/constants';
+import { useOutpatientFormLauncher } from '../hooks/useOutpatientFormLauncher';
 import Anamnesis from './anamnesis.component';
 
 vi.mock('../hooks/useAnamnesis', () => ({
   useAnamnesis: vi.fn(),
 }));
 
-vi.mock('@openmrs/esm-patient-common-lib', async () => {
-  const actual = await vi.importActual('@openmrs/esm-patient-common-lib');
-
+vi.mock('../hooks/useOutpatientFormLauncher', () => {
   return {
-    ...actual,
-    launchPatientWorkspace: vi.fn(),
+    useOutpatientFormLauncher: vi.fn(),
   };
 });
 
 const mockUseAnamnesis = vi.mocked(useAnamnesis);
-const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
+const mockUseOutpatientFormLauncher = vi.mocked(useOutpatientFormLauncher);
 const mockUseConfig = vi.mocked(useConfig);
+const mockLaunchForm = vi.fn().mockResolvedValue(true);
 const pagination = {
   currentPage: 1,
   totalPages: 1,
@@ -44,6 +41,14 @@ describe('Anamnesis', () => {
         anamnesisUuid: 'anamnesis',
       },
     });
+    mockUseOutpatientFormLauncher.mockReturnValue({
+      error: undefined,
+      form: undefined,
+      formIdentifier: 'CE-ANAM-001-ANAMNESIS',
+      isLaunching: false,
+      isLoading: false,
+      launchForm: mockLaunchForm,
+    });
   });
 
   it('renders the standard empty state and launches anamnesis registration', async () => {
@@ -63,13 +68,13 @@ describe('Anamnesis', () => {
     expect(screen.getByText('Historial de Anamnesis')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /(?:Record|Registrar) anamnesis/i }));
 
-    expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith(patientFormEntryWorkspace, {
-      mutateForm: mutate,
-      formInfo: {
-        patientUuid: 'patient-uuid',
-        formUuid: 'CE-ANAM-001-ANAMNESIS',
-      },
+    expect(mockUseOutpatientFormLauncher).toHaveBeenCalledWith({
+      fallbackDisplay: 'Anamnesis',
+      identifier: 'CE-ANAM-001-ANAMNESIS',
+      onSaved: mutate,
+      patientUuid: 'patient-uuid',
     });
+    expect(mockLaunchForm).toHaveBeenCalledTimes(1);
   });
 
   it('renders anamnesis data and launches the split anamnesis form', async () => {
@@ -112,12 +117,12 @@ describe('Anamnesis', () => {
 
     await user.click(screen.getByRole('button', { name: 'Registrar Anamnesis' }));
 
-    expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith(patientFormEntryWorkspace, {
-      mutateForm: mutate,
-      formInfo: {
-        patientUuid: 'patient-uuid',
-        formUuid: 'CE-ANAM-001-ANAMNESIS',
-      },
+    expect(mockUseOutpatientFormLauncher).toHaveBeenCalledWith({
+      fallbackDisplay: 'Anamnesis',
+      identifier: 'CE-ANAM-001-ANAMNESIS',
+      onSaved: mutate,
+      patientUuid: 'patient-uuid',
     });
+    expect(mockLaunchForm).toHaveBeenCalledTimes(1);
   });
 });

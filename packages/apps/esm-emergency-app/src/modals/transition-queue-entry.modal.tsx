@@ -15,7 +15,7 @@ import {
   TimePicker,
   TimePickerSelect,
 } from '@carbon/react';
-import { OpenmrsDatePicker, showSnackbar } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, OpenmrsDatePicker, showSnackbar } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -167,10 +167,14 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ q
       showSnackbar({
         title: t('transitionError', 'Error en la transición'),
         kind: 'error',
-        subtitle:
-          error instanceof Error
-            ? error.message
-            : t('transitionErrorGeneric', 'Ocurrió un error al transicionar la entrada'),
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t(
+            'transitionErrorSafe',
+            'No se pudo confirmar la transición. Actualice y verifique el estado de la cola antes de repetir la acción.',
+          ),
+          { logContext: 'Transition emergency queue entry' },
+        ),
       });
     } finally {
       setIsSubmitting(false);

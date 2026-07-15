@@ -17,6 +17,12 @@ import { type Resources, ResourcesContext } from '../offline.resources';
 import { FormManager, SavePatientTransactionManager } from './form-manager';
 import { searchLocalIdentityByDocument } from './identity/identity-search.resource';
 import {
+  fetchAndVerifyCreatedPatient,
+  PatientCreationAmbiguousError,
+  PatientRegistrationIncompleteError,
+  reconcilePatientCreation,
+} from './patient-creation-reconciliation';
+import {
   getPatientRegistrationFieldLabel,
   hasMedicalRecordArchivistRole,
   initialFormValues,
@@ -41,6 +47,14 @@ const mockUsePatient = vi.mocked(usePatient);
 const mockUseParams = useParams as vi.Mock;
 const mockUseInitialFormValues = vi.mocked(useInitialFormValues);
 const mockSearchLocalIdentityByDocument = vi.mocked(searchLocalIdentityByDocument);
+const mockFetchAndVerifyCreatedPatient = vi.mocked(fetchAndVerifyCreatedPatient);
+const mockReconcilePatientCreation = vi.mocked(reconcilePatientCreation);
+
+vi.mock('./patient-creation-reconciliation', async () => ({
+  ...(await vi.importActual('./patient-creation-reconciliation')),
+  fetchAndVerifyCreatedPatient: vi.fn(),
+  reconcilePatientCreation: vi.fn(),
+}));
 
 vi.mock('./field/field.resource', async () => ({
   useConcept: vi.fn().mockImplementation((uuid: string) => {
@@ -290,6 +304,16 @@ const getReactText = (node: ReactNode): string => {
 };
 
 beforeEach(() => {
+  globalThis.sessionStorage.clear();
+  mockReconcilePatientCreation.mockReset();
+  mockReconcilePatientCreation
+    .mockResolvedValueOnce(null)
+    .mockResolvedValue({ data: { uuid: 'new-pt-uuid' }, ok: true } as never);
+  mockFetchAndVerifyCreatedPatient.mockReset();
+  mockFetchAndVerifyCreatedPatient.mockImplementation(async (patientUuid) => ({
+    data: { uuid: patientUuid },
+    ok: true,
+  }) as never);
   mockResourcesContextValue.addressTemplate = mockedAddressTemplate as AddressTemplate;
   mockResourcesContextValue.addressTemplateError = undefined;
   mockResourcesContextValue.isLoadingAddressTemplate = false;
@@ -299,7 +323,12 @@ beforeEach(() => {
   mockResourcesContextValue.relationshipTypes = [];
   mockResourcesContextValue.relationshipTypesError = undefined;
   mockResourcesContextValue.isLoadingRelationshipTypes = false;
-  mockResourcesContextValue.currentSession.user = undefined;
+  mockResourcesContextValue.currentSession.user = { uuid: 'user-uuid', roles: [] } as never;
+  mockResourcesContextValue.currentSession.sessionLocation = {
+    uuid: 'location-uuid',
+    display: 'Test location',
+    links: [],
+  };
 });
 
 describe('medical record access', () => {
@@ -396,6 +425,117 @@ describe('Registering a new patient', () => {
     expect(screen.getByRole('button', { name: /register patient/i })).toHaveAttribute('type', 'button');
     expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
     expect(document.querySelector('form')).toHaveAttribute('novalidate');
+  });
+
+  it('blocks registration when the session has no location', async () => {
+    mockResourcesContextValue.currentSession.sessionLocation = undefined;
+
+    render(<PatientRegistration isOffline={false} savePatientForm={vi.fn()} />, { wrapper: Wrapper });
+
+    expect(await screen.findByRole('button', { name: /register patient/i })).toBeDisabled();
+  });
+
+  it('locks the form after an ambiguous create result and never submits it twice', async () => {
+    const user = userEvent.setup();
+    const savePatientForm = vi.fn().mockRejectedValue(new PatientCreationAmbiguousError());
+
+    render(<PatientRegistration isOffline={false} savePatientForm={savePatientForm} />, { wrapper: Wrapper });
+    await fillRequiredFields();
+    const registerButton = screen.getByRole('button', { name: /register patient/i });
+    await user.click(registerButton);
+
+    await waitFor(() => expect(savePatientForm).toHaveBeenCalledTimes(1));
+    expect(registerButton).toBeDisabled();
+    expect(screen.getByText('Registro pendiente de verificación')).toBeInTheDocument();
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      kind: 'warning',
+      subtitle:
+        'No se pudo confirmar si el paciente fue registrado. No vuelva a enviarlo; verifique primero el buscador de pacientes.',
+      title: 'Patient Registration Failed',
+    });
+
+    await user.click(registerButton);
+    expect(savePatientForm).toHaveBeenCalledTimes(1);
+  });
+
+  it('locks the form when the patient exists but post-create writes need verification', async () => {
+    const user = userEvent.setup();
+    const savePatientForm = vi.fn().mockRejectedValue(new PatientRegistrationIncompleteError('patient-uuid'));
+
+    render(<PatientRegistration isOffline={false} savePatientForm={savePatientForm} />, { wrapper: Wrapper });
+    await fillRequiredFields();
+    const registerButton = screen.getByRole('button', { name: /register patient/i });
+    await user.click(registerButton);
+
+    await waitFor(() => expect(savePatientForm).toHaveBeenCalledTimes(1));
+    expect(registerButton).toBeDisabled();
+    expect(
+      screen.getByText(
+        'El paciente ya existe, pero no se confirmó la finalización de relaciones u observaciones. No reenvíe el formulario; abra el paciente y solicite verificación.',
+      ),
+    ).toBeInTheDocument();
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'warning',
+        subtitle:
+          'El paciente ya existe, pero no se confirmó la finalización de relaciones u observaciones. No reenvíe el formulario; abra el paciente y solicite verificación.',
+      }),
+    );
+
+    await user.click(registerButton);
+    expect(savePatientForm).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the trusted duplicate-document message and never calls the patient save', async () => {
+    const user = userEvent.setup();
+    const dniType = {
+      fieldName: 'dni',
+      format: '^[0-9]{8}$',
+      isPrimary: false,
+      name: 'DNI',
+      required: false,
+      uniquenessBehavior: 'UNIQUE' as const,
+      uuid: peruDniPatientIdentifierTypeUuid,
+      identifierSources: [],
+    };
+    mockResourcesContextValue.identifierTypes = [...mockIdentifierTypes, dniType];
+    mockUseInitialFormValues.mockReturnValue([
+      {
+        ...initialFormValues,
+        patientUuid: 'new-patient-uuid',
+        identifiers: {
+          dni: {
+            autoGeneration: false,
+            identifierName: 'DNI',
+            identifierTypeUuid: peruDniPatientIdentifierTypeUuid,
+            identifierValue: '12345678',
+            initialValue: '',
+            preferred: false,
+            required: false,
+            selectedSource: null,
+          },
+        },
+        attributes: { [peruNationalityAttributeTypeUuid]: peruNationalityConceptUuid },
+      } as FormValues,
+      vi.fn(),
+      { isLoading: false },
+    ]);
+    mockSearchLocalIdentityByDocument.mockResolvedValue([
+      { kind: 'patient', uuid: 'existing-patient-uuid', display: 'Paciente existente' },
+    ]);
+    const savePatientForm = vi.fn();
+
+    render(<PatientRegistration isOffline={false} savePatientForm={savePatientForm} />, { wrapper: Wrapper });
+    await fillRequiredFields();
+    await user.click(screen.getByRole('button', { name: /register patient/i }));
+
+    await waitFor(() => expect(mockSearchLocalIdentityByDocument).toHaveBeenCalledTimes(1));
+    expect(savePatientForm).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      kind: 'error',
+      subtitle: 'Ya existe un paciente con este documento. Búsquelo antes de registrar uno nuevo.',
+      title: 'Patient Registration Failed',
+    });
   });
 
   it('does not show the medical record section while creating a patient, even for an archivist', async () => {
@@ -658,7 +798,7 @@ describe('Registering a new patient', () => {
 
     expect(mockShowSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({
-        subtitle: 'Could not complete the registration. Try again or contact the system administrator.',
+        subtitle: 'Could not save the patient details. Try again or contact the system administrator.',
       }),
     );
     expect(mockShowSnackbar).not.toHaveBeenCalledWith(expect.objectContaining({ subtitle: 'an error message' }));
@@ -1025,6 +1165,55 @@ describe('Updating an existing patient record', () => {
       expect.anything(),
       expect.objectContaining({ patientSaved: false }),
       expect.anything(),
+    );
+  });
+
+  it('does not expose backend details when updating a patient fails', async () => {
+    const user = userEvent.setup();
+    const technicalError = 'PUT /ws/rest/v1/patient failed with SQLSTATE 23505';
+    const mockSavePatientForm = vi.fn().mockRejectedValue(new Error(technicalError));
+    const editFormValues = {
+      additionalFamilyName: '',
+      additionalFamilyName2: '',
+      additionalGivenName: '',
+      additionalMiddleName: '',
+      addNameInLocalLanguage: false,
+      address: {},
+      birthdate: new Date(1972, 3, 4),
+      birthdateEstimated: false,
+      deathCause: '',
+      deathDate: undefined,
+      deathTime: undefined,
+      deathTimeFormat: 'AM',
+      familyName: 'Wilson',
+      familyName2: 'Materno',
+      gender: 'male',
+      givenName: 'John',
+      identifiers: mockOpenmrsId,
+      isDead: false,
+      middleName: '',
+      monthsEstimated: 0,
+      nonCodedCauseOfDeath: '',
+      patientUuid: mockPatient.uuid,
+      relationships: [],
+      telephoneNumber: '',
+      yearsEstimated: 0,
+    } as FormValues;
+
+    mockUseInitialFormValues.mockReturnValue([editFormValues, vi.fn(), { isLoading: false }]);
+
+    render(<PatientRegistration isOffline={false} savePatientForm={mockSavePatientForm} />, { wrapper: Wrapper });
+
+    await user.click(await screen.findByRole('button', { name: /update patient/i }));
+
+    await waitFor(() => expect(mockSavePatientForm).toHaveBeenCalledTimes(1));
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      kind: 'error',
+      subtitle: 'Could not save the patient details. Try again or contact the system administrator.',
+      title: 'Patient Details Update Failed',
+    });
+    expect(getReactText(mockShowSnackbar.mock.calls.at(-1)?.[0]?.subtitle)).not.toMatch(
+      /SQLSTATE|23505|\/ws\/rest\/v1\/patient/u,
     );
   });
 });

@@ -1,6 +1,6 @@
 // obstetric-history-base.component.tsx
 import { Button, ContentSwitcher, DataTableSkeleton, IconSwitch, InlineLoading } from '@carbon/react';
-import { AddIcon, launchWorkspace2, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { AddIcon, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,7 @@ import { RequirePrivilege } from '@sihsalus/esm-rbac';
 
 import type { ConfigObject } from '../../config-schema';
 import { prenatalCareEditPrivilege } from '../../constants';
+import { useMaternalFormLauncher } from '../../hooks/useMaternalFormLauncher';
 import { usePrenatalAntecedents, usePrenatalConceptMetadata } from '../../hooks/usePrenatalAntecedents';
 
 import styles from './obstetric-history-base.scss';
@@ -26,14 +27,16 @@ const ObstetricHistoryBase: React.FC<ObstetricHistoryBaseProps> = ({ patientUuid
   const isTablet = useLayoutType() === 'tablet';
 
   const config = useConfig<ConfigObject>();
-  const { data: formattedObs, isLoading, error, isValidating } = usePrenatalAntecedents(patientUuid);
+  const { data: formattedObs, isLoading, error, isValidating, mutate } = usePrenatalAntecedents(patientUuid);
   const { data: conceptUnits } = usePrenatalConceptMetadata();
+  const { launchForm: launchMaternalHistoryForm } = useMaternalFormLauncher(
+    'maternalHistory',
+    'Antecedentes obstétricos',
+  );
 
   const launchObstetricForm = useCallback(() => {
-    launchWorkspace2('perinatal-register-form', {
-      patientUuid,
-    });
-  }, [patientUuid]);
+    launchMaternalHistoryForm('', () => void mutate());
+  }, [launchMaternalHistoryForm, mutate]);
 
   // Preparar datos para ambas vistas
   const obstetricData = useMemo(() => {

@@ -1,18 +1,23 @@
-import { isDesktop, launchWorkspace2, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useMaternalFormIdentifierLauncher } from '../../hooks/useMaternalFormLauncher';
 import { usePartograph } from '../../hooks/usePartograph';
-import { formEntryWorkspace } from '../../types';
 import Partograph from './partograph.component';
 
 const mockUseConfig = useConfig as vi.Mock;
 const mockUseLayoutType = vi.mocked(useLayoutType);
 const mockIsDesktop = vi.mocked(isDesktop);
-const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
+const mockLaunchForm = vi.fn();
+const mockUseMaternalFormIdentifierLauncher = vi.mocked(useMaternalFormIdentifierLauncher);
 const mockUsePartograph = vi.mocked(usePartograph);
 
 vi.mock('../../hooks/usePartograph', () => ({
   usePartograph: vi.fn(),
+}));
+
+vi.mock('../../hooks/useMaternalFormLauncher', () => ({
+  useMaternalFormIdentifierLauncher: vi.fn(),
 }));
 
 vi.mock('./partograph-chart', () => ({
@@ -46,6 +51,8 @@ describe('Partograph', () => {
     mockUseConfig.mockReturnValue({ partography: partographyConfig });
     mockUseLayoutType.mockReturnValue('desktop');
     mockIsDesktop.mockReturnValue(true);
+    mockLaunchForm.mockReset();
+    mockUseMaternalFormIdentifierLauncher.mockReturnValue({ launchForm: mockLaunchForm } as never);
   });
 
   it('opens the configured monitoring form from the empty state', async () => {
@@ -62,11 +69,8 @@ describe('Partograph', () => {
 
     await user.click(screen.getByRole('button', { name: /registrar datos del trabajo de parto/i }));
 
-    expect(mockLaunchWorkspace2).toHaveBeenCalledWith(formEntryWorkspace, {
-      form: { uuid: partographyConfig.formUuid },
-      encounterUuid: '',
-      handlePostResponse: expect.any(Function),
-    });
+    expect(mockUseMaternalFormIdentifierLauncher).toHaveBeenCalledWith(partographyConfig.formUuid, 'Partograph');
+    expect(mockLaunchForm).toHaveBeenCalledWith('', expect.any(Function));
   });
 
   it('renders obstetric monitoring values as partograph rows', () => {

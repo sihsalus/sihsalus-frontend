@@ -61,11 +61,7 @@ describe('ResultsViewer', () => {
 
     const testResultsText = screen.getByRole('heading', { name: /data load error/i });
     expect(testResultsText).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /there was a problem displaying this information/i,
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/there was a problem displaying this information/i)).toBeInTheDocument();
   });
 
   it('should render the Tree wrapper component component', async () => {

@@ -6,18 +6,14 @@ describe('procedure concept sources', () => {
   it('validates coded questions before requesting their answers', () => {
     const source = { uuid: 'procedure-status-uuid', sourceType: 'Answer to' as const };
 
-    expect(buildConceptSourceUrl(source)).toBe(
-      `${restBaseUrl}/concept/procedure-status-uuid?v=custom:(uuid)`,
-    );
+    expect(buildConceptSourceUrl(source)).toBe(`${restBaseUrl}/concept/procedure-status-uuid?v=custom:(uuid)`);
     expect(buildConceptSearchUrl('', source)).toContain('answerTo=procedure-status-uuid');
   });
 
   it('validates concept sets before requesting their members', () => {
     const source = { uuid: 'duration-units-uuid', sourceType: 'Concept set' as const };
 
-    expect(buildConceptSourceUrl(source)).toBe(
-      `${restBaseUrl}/concept/duration-units-uuid?v=custom:(uuid)`,
-    );
+    expect(buildConceptSourceUrl(source)).toBe(`${restBaseUrl}/concept/duration-units-uuid?v=custom:(uuid)`);
     expect(buildConceptSearchUrl('', source)).toContain('memberOf=duration-units-uuid');
   });
 

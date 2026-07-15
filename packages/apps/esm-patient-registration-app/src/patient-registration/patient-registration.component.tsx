@@ -157,7 +157,10 @@ export function getPatientRegistrationFieldLabel(
   }
 
   if (section === 'attributes') {
-    const attributeLabel = path.slice(1).map((pathSegment) => attributeFieldLabels[pathSegment]).find(Boolean);
+    const attributeLabel = path
+      .slice(1)
+      .map((pathSegment) => attributeFieldLabels[pathSegment])
+      .find(Boolean);
     if (attributeLabel) {
       return attributeLabel;
     }
@@ -625,9 +628,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
               <div>
                 <div className={styles.stickyColumn}>
                   <h4>
-                    {inEditMode
-                      ? t('updatePatient', 'Update patient')
-                      : t('createNewPatient', 'Create new patient')}
+                    {inEditMode ? t('updatePatient', 'Update patient') : t('createNewPatient', 'Create new patient')}
                   </h4>
                   {showDummyData && <DummyDataInput setValues={props.setValues} />}
                   {isDesktopLayout && <div className={styles.actionPanel}>{renderActionButtons()}</div>}

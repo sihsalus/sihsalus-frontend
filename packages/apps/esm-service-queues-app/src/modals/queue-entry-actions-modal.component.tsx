@@ -320,7 +320,10 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
                 hideCloseButton
                 kind="error"
                 lowContrast
-                title={t('queueDataLoadErrorMessage', 'No se pudo cargar la información de la cola. Inténtelo de nuevo.')}
+                title={t(
+                  'queueDataLoadErrorMessage',
+                  'No se pudo cargar la información de la cola. Inténtelo de nuevo.',
+                )}
               />
             )}
             {showQueuePicker && (

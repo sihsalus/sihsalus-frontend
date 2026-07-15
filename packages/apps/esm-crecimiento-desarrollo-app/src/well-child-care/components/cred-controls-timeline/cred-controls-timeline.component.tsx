@@ -94,11 +94,7 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
           const isSelected = selectedAgeGroup?.label === group.label;
           const allCompleted = summary && summary.total > 0 && summary.completed === summary.total;
           const hasOverdue = summary && summary.overdue > 0;
-          const hasAvailableControl = canRegisterCREDControlFromAgeGroup(
-            group.label,
-            currentAgeGroup?.label,
-            controls,
-          );
+          const hasAvailableControl = canRegisterCREDControlFromAgeGroup(group.label, currentAgeGroup?.label, controls);
           const tileClassName = classNames(styles.ageTile, {
             [styles.active]: isSelected,
             [styles.current]: isCurrent,

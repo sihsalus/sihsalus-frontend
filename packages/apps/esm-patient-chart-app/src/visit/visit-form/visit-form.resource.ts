@@ -62,9 +62,7 @@ export async function reconcileVisitCreation(
       startIndex: String(startIndex),
       v: 'custom:(uuid,patient:(uuid),visitType:(uuid,display),location:(uuid,display),startDatetime,stopDatetime,attributes:(uuid,value,attributeType:(uuid)))',
     });
-    const response = await openmrsFetch<{ results?: Array<Visit> }>(
-      `${restBaseUrl}/visit?${searchParams.toString()}`,
-    );
+    const response = await openmrsFetch<{ results?: Array<Visit> }>(`${restBaseUrl}/visit?${searchParams.toString()}`);
     const page = response.data?.results ?? [];
     let newVisitCount = 0;
 

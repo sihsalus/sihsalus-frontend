@@ -115,9 +115,9 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
   const filteredIdentifiers = useMemo(
     () =>
       availableIdentifierTypes.filter((identifier) =>
-        normalizeSearchValue([identifier?.name, identifier?.display, identifier?.description].filter(Boolean).join(' ')).includes(
-          normalizeSearchValue(searchString),
-        ),
+        normalizeSearchValue(
+          [identifier?.name, identifier?.display, identifier?.description].filter(Boolean).join(' '),
+        ).includes(normalizeSearchValue(searchString)),
       ),
     [availableIdentifierTypes, searchString],
   );

@@ -262,7 +262,11 @@ describe('endQueueEntry', () => {
       .mockResolvedValueOnce(response({ results: [transitionedEntry] }));
 
     await expect(endQueueEntry(sourceEntry.uuid)).rejects.toBeInstanceOf(QueueEntryTransitionConflictError);
-    expect(mockOpenmrsFetch.mock.calls.some(([url], index) => index > 0 && url === `${restBaseUrl}/queue-entry/${sourceEntry.uuid}`)).toBe(false);
+    expect(
+      mockOpenmrsFetch.mock.calls.some(
+        ([url], index) => index > 0 && url === `${restBaseUrl}/queue-entry/${sourceEntry.uuid}`,
+      ),
+    ).toBe(false);
   });
 });
 

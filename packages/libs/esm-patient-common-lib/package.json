@@ -29,8 +29,10 @@
   },
   "dependencies": {
     "@carbon/react": "^1.83.0",
+    "dayjs": "1.x",
     "jsep": "^1.4.0",
     "lodash-es": "^4.17.23",
+    "swr": "2.x",
     "uuid": "^14.0.0"
   },
   "peerDependencies": {

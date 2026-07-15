@@ -93,9 +93,7 @@ const BirthdateSearchField: React.FC<Omit<SearchFieldProps, 'field'>> = ({ contr
                       minDate={oldestAllowedBirthdate ? calendarDateToLocalDate(oldestAllowedBirthdate) : undefined}
                       maxDate={calendarDateToLocalDate(referenceDate)}
                       invalid={!!error}
-                      invalidText={
-                        dayState.error?.message ?? monthState.error?.message ?? yearState.error?.message
-                      }
+                      invalidText={dayState.error?.message ?? monthState.error?.message ?? yearState.error?.message}
                       size={isTablet ? 'lg' : 'md'}
                     />
                   );

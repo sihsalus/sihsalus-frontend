@@ -74,7 +74,9 @@ const AnemiaScreening: React.FC<AnemiaScreeningProps> = ({ patientUuid }) => {
             </StructuredListRow>
             {lastHb !== null && (
               <StructuredListRow>
-                <StructuredListCell className={styles.label}>{t('interpretation', 'Interpretación')}</StructuredListCell>
+                <StructuredListCell className={styles.label}>
+                  {t('interpretation', 'Interpretación')}
+                </StructuredListCell>
                 <StructuredListCell className={styles.value}>
                   {t('hbRequiresAgeAndAltitude', 'Requiere corte por edad y corrección por altitud')}
                 </StructuredListCell>

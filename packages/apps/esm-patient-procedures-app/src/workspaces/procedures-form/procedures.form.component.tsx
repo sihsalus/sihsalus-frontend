@@ -73,11 +73,7 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
     trigger,
   } = useFormContext<ProceduresFormSchema>();
 
-  const {
-    procedureTypes,
-    isLoading: isLoadingProcedureTypes,
-    error: procedureTypesError,
-  } = useProcedureTypes();
+  const { procedureTypes, isLoading: isLoadingProcedureTypes, error: procedureTypesError } = useProcedureTypes();
 
   const today = useMemo(() => new Date(), []);
   const watchedStartDateTime = useWatch({ control, name: 'startDateTime' });

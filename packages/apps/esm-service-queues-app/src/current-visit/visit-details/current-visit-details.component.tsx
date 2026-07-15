@@ -96,12 +96,7 @@ const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encount
               <StructuredListCell>{t('vitals', 'Vitals')}</StructuredListCell>
               <StructuredListCell>
                 {' '}
-                <Vitals
-                  vitals={vitals}
-                  patientUuid={patientUuid}
-                  visitType={visitTypes.CURRENT}
-                  visit={visit}
-                />
+                <Vitals vitals={vitals} patientUuid={patientUuid} visitType={visitTypes.CURRENT} visit={visit} />
               </StructuredListCell>
             </StructuredListRow>
           </StructuredListBody>

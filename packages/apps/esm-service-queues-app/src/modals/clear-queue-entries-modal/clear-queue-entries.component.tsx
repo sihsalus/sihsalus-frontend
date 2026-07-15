@@ -24,6 +24,7 @@ const ClearQueueEntries: React.FC<ClearQueueEntriesProps> = ({ queueEntries }) =
   return (
     <CanEditServiceQueues>
       <Button
+        disabled={queueEntries.length === 0}
         size={isDesktop(layout) ? 'sm' : 'lg'}
         kind="tertiary"
         onClick={launchClearAllQueueEntriesModal}

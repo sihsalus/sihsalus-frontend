@@ -25,7 +25,7 @@ const MetricsHeader = () => {
     <div className={styles.metricsContainer}>
       <span className={styles.metricsTitle}>{t('clinicMetrics', 'Clinic metrics')}</span>
       <div className={styles.metricsContent}>
-        {queueEntries?.length > 0 && <ClearQueueEntries queueEntries={queueEntries} />}
+        <ClearQueueEntries queueEntries={queueEntries} />
         <AddPatientToQueueButton />
       </div>
     </div>

@@ -15,9 +15,8 @@ import {
   TableRow,
   TableToolbar,
   TableToolbarContent,
-  Tile,
 } from '@carbon/react';
-import { isDesktop, useLayoutType, usePagination } from '@openmrs/esm-framework';
+import { EmptyCardIllustration, isDesktop, useLayoutType, usePagination } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { type FC, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -177,13 +176,12 @@ function QueueTable({
             </Table>
           </TableContainer>
           {rows.length === 0 && (
-            <div className={styles.tileContainer}>
-              <Tile className={styles.tile}>
-                <div className={styles.tileContent}>
-                  <p className={styles.content}>{t('noPatientsToDisplay', 'No patients to display')}</p>
-                  <p className={styles.helper}>{t('checkFilters', 'Check the filters above')}</p>
-                </div>
-              </Tile>
+            <div className={styles.tileContainer} data-testid="queue-empty-state">
+              <div aria-hidden="true" data-testid="queue-empty-state-illustration">
+                <EmptyCardIllustration />
+              </div>
+              <p className={styles.content}>{t('noPatientsToDisplay', 'No patients to display')}</p>
+              <p className={styles.helper}>{t('checkFilters', 'Check the filters above')}</p>
             </div>
           )}
           {paginated && (

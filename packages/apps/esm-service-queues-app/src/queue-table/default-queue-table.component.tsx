@@ -1,5 +1,6 @@
 import { DataTableSkeleton, Dropdown, Layer, TableToolbarSearch } from '@carbon/react';
 import { getUserFacingErrorMessage, isDesktop, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
+import classNames from 'classnames';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueueEntries } from '../hooks/useQueueEntries';
@@ -16,7 +17,7 @@ function DefaultQueueTable() {
 
   return (
     <div className={styles.defaultQueueTable}>
-      <Layer className={styles.tableSection}>
+      <Layer className={classNames(styles.tableSection, styles.container)} data-testid="queue-table-card">
         <div className={styles.headerContainer}>
           <div className={!isDesktop(layout) ? styles.tabletHeading : styles.desktopHeading}>
             <h4>{t('patientsCurrentlyInQueue', 'Patients currently in queue')}</h4>

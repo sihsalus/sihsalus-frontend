@@ -348,9 +348,9 @@ describe('CodedPersonAttributeField', () => {
       </Formik>,
     );
 
-    expect(
-      screen.getByRole('group', { name: /Grupo sanguíneo/ }).closest(`.${styles.fullWidthInDesktopView}`),
-    ).not.toBeNull();
+    const radioGroup = screen.getByRole('group', { name: /Grupo sanguíneo/ });
+    console.info(radioGroup.closest('body')?.innerHTML);
+    expect(radioGroup.closest(`.${styles.fullWidthInDesktopView}`)).not.toBeNull();
     expect(screen.getByRole('radio', { name: 'B' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Not specified' })).not.toBeChecked();
 

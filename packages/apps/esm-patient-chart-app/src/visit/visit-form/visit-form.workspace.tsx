@@ -78,6 +78,7 @@ import {
   updateVisitAttribute,
   useConditionalVisitTypes,
   usePersonAttributesForVisitDefaults,
+  useVisitAttributeTypeExists,
   useVisitFormCallbacks,
   VISIT_PERSISTENCE_CORRELATION_CONFLICT,
   type VisitFormCallbacks,
@@ -210,6 +211,9 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   const visitPersistenceToken = useRef(uuidv4());
   const pendingVisitCreationPayload = useRef<NewVisitPayload | null>(null);
   const pendingVisitCreationError = useRef<unknown>(null);
+  // A missing attribute type would make the backend reject the whole visit payload,
+  // so the correlation token is dropped when the backend does not have it provisioned.
+  const persistenceAttributeTypeExists = useVisitAttributeTypeExists(config.visitPersistenceTokenAttributeTypeUuid);
   const effectiveVisitPersistenceCorrelation = useMemo<VisitPersistenceCorrelation | undefined>(() => {
     if (visitToEdit) {
       return undefined;
@@ -219,13 +223,25 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       return visitPersistenceCorrelation;
     }
 
+    if (!persistenceAttributeTypeExists) {
+      console.warn(
+        `The visit attribute type ${config.visitPersistenceTokenAttributeTypeUuid} configured as visitPersistenceTokenAttributeTypeUuid does not exist on the backend. Visits will be created without the persistence token.`,
+      );
+      return undefined;
+    }
+
     return config.visitPersistenceTokenAttributeTypeUuid
       ? {
           attributeType: config.visitPersistenceTokenAttributeTypeUuid,
           value: visitPersistenceToken.current,
         }
       : undefined;
-  }, [config.visitPersistenceTokenAttributeTypeUuid, visitPersistenceCorrelation, visitToEdit]);
+  }, [
+    config.visitPersistenceTokenAttributeTypeUuid,
+    persistenceAttributeTypeExists,
+    visitPersistenceCorrelation,
+    visitToEdit,
+  ]);
 
   const [errorFetchingResources, setErrorFetchingResources] = useState<{
     blockSavingForm: boolean;

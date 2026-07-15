@@ -1,7 +1,13 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 
-const { assertSafeAppShellSource, getAppShellBuildEnvironment, getAppShellPackageRoot } = require('./build-app-shell');
+const {
+  assertCompatibleAppShellConfig,
+  assertSafeAppShellSource,
+  getAppShellBuildEnvironment,
+  getAppShellPackageRoot,
+  getAppShellWebpackConfig,
+} = require('./build-app-shell');
 
 test('maps SPA deployment settings to app-shell build settings', () => {
   const environment = getAppShellBuildEnvironment({
@@ -34,4 +40,17 @@ test('uses production-safe SIHSALUS defaults', () => {
 
 test('installed app-shell source contains the required source-level fixes', () => {
   assert.doesNotThrow(() => assertSafeAppShellSource(getAppShellPackageRoot()));
+});
+
+test('installed app-shell build provides React and shares the resolved runtime versions', () => {
+  const config = getAppShellWebpackConfig(getAppShellPackageRoot());
+
+  assert.doesNotThrow(() => assertCompatibleAppShellConfig(config));
+});
+
+test('rejects an app-shell config that can emit an unresolved React global', () => {
+  assert.throws(
+    () => assertCompatibleAppShellConfig({ plugins: [] }, { frameworkVersion: '9.0.3', swrVersion: '2.4.1' }),
+    /must provide React/,
+  );
 });

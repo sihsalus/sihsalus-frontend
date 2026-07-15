@@ -4,11 +4,6 @@ import { dispatchToastShown, type ImportMap } from '@openmrs/esm-globals';
 import { getCoreTranslation } from '@openmrs/esm-translations';
 import { getCurrentPageMap, getImportMapOverrideMap, resetImportMapOverrides } from './import-maps';
 
-type WebpackShareScopes = Record<
-  string,
-  Record<string, { loaded?: 1; get: () => Promise<unknown>; from: string; eager: boolean }>
->;
-
 /**
  * @internal
  *
@@ -75,7 +70,9 @@ export async function importDynamic<T = any>(
     throw new Error(error);
   }
 
-  container.init(getWebpackShareScopes().default);
+  // Keep this as Webpack's compile-time global. Reaching through globalThis
+  // prevents Module Federation from replacing it with the active share scope.
+  container.init(__webpack_share_scopes__.default);
 
   const factory = await container.get(share);
   const module = factory();
@@ -185,12 +182,8 @@ export async function getCurrentImportMap() {
 }
 
 interface FederatedModule {
-  init: (scope: WebpackShareScopes['default']) => void;
+  init: (scope: typeof __webpack_share_scopes__.default) => void;
   get: (_export: string) => Promise<() => unknown>;
-}
-
-function getWebpackShareScopes() {
-  return (globalThis as typeof globalThis & { __webpack_share_scopes__: WebpackShareScopes }).__webpack_share_scopes__;
 }
 
 function isFederatedModule(a: unknown): a is FederatedModule {

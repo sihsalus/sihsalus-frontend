@@ -485,7 +485,11 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
             const installedVersion = getInstalledVersion(sharedHostDependency);
             const packageName = getPackageNameForDependency(depName);
             obj[depName] = {
-              requiredVersion: versionSpec,
+              // A '*' spec is meant as "accept anything", but semver ranges exclude
+              // prereleases (e.g. 9.0.3-pre.4728 from the source-built app shell), which
+              // floods the console with "Unsatisfied version" warnings. `false` disables
+              // the version check entirely, matching the intent of '*'.
+              requiredVersion: versionSpec === '*' ? false : versionSpec,
               strictVersion: false,
               singleton: true,
               import: alwaysHostSharedDependencies.has(depName) || isProvidedByFrameworkInternal ? false : depName,

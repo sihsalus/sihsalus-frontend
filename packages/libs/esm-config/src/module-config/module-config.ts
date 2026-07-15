@@ -441,7 +441,11 @@ function computeExtensionConfig(
   const extensionConfig = mergeConfigsFor(nameOfSchemaSource, providedConfigs);
   const combinedConfig = mergeConfigs([extensionConfig, configOverride]);
   const schema = extensionConfigSchema ?? configState.schemas[extensionModuleName];
-  validateStructure(schema, combinedConfig, nameOfSchemaSource);
+  // Same deferral as getConfigForModule: skip unknown-key validation while the extension's
+  // module still holds the implicit schema (lazy module not started yet).
+  if (schema !== implicitConfigSchema) {
+    validateStructure(schema, combinedConfig, nameOfSchemaSource);
+  }
   const config = setDefaults(schema, combinedConfig);
   runAllValidatorsInConfigTree(schema, config, nameOfSchemaSource);
   delete config.extensionSlots;
@@ -651,7 +655,12 @@ function getConfigForModule(
 ): ConfigObject {
   const schema = configState.schemas[moduleName];
   const inputConfig = mergeConfigsFor(moduleName, getProvidedConfigs(configState, tempConfigState));
-  validateStructure(schema, inputConfig, moduleName);
+  // A module registered from the routes registry holds the implicit schema (by reference)
+  // until its startup runs defineConfigSchema. Validating provided keys against the
+  // implicit schema would flag every real key as unknown, so defer until the module loads.
+  if (schema !== implicitConfigSchema) {
+    validateStructure(schema, inputConfig, moduleName);
+  }
   const config = setDefaults(schema, inputConfig);
   runAllValidatorsInConfigTree(schema, config, moduleName);
   delete config.extensionSlots;

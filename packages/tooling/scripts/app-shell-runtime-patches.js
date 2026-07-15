@@ -32,11 +32,23 @@ const userFacingErrorPatches = Object.freeze([
   }),
 ]);
 
+const workspaceTranslationPatches = Object.freeze([
+  Object.freeze({
+    name: 'Spanish workspace close prompt translation',
+    search:
+      '"closeWorkspaces2PromptBody":"Está a punto de cerrar el/los siguiente/s espacio/s de trabajo, el/los cual/es puede/n tener cambios sin guardar:","closeWorkspaces2PromptTitle":"Close workspace(s)"',
+    replacement:
+      '"closeWorkspaces2PromptBody":"Está a punto de cerrar los siguientes espacios de trabajo, que podrían tener cambios sin guardar:","closeWorkspaces2PromptTitle":"Cerrar espacios de trabajo"',
+    required: true,
+  }),
+]);
+
+const appShellRuntimePatches = Object.freeze([...userFacingErrorPatches, ...workspaceTranslationPatches]);
 const patchedAppShellSignatures = Object.freeze([
   extensionParcelTimeouts,
-  ...new Set(userFacingErrorPatches.map(({ replacement }) => replacement)),
+  ...new Set(appShellRuntimePatches.map(({ replacement }) => replacement)),
 ]);
-const unpatchedAppShellSignatures = Object.freeze(userFacingErrorPatches.map(({ search }) => search));
+const unpatchedAppShellSignatures = Object.freeze(appShellRuntimePatches.map(({ search }) => search));
 
 function hasPatchedAppShellSignature(source) {
   return patchedAppShellSignatures.some((signature) => source.includes(signature));
@@ -47,10 +59,12 @@ function hasUnpatchedAppShellSignature(source) {
 }
 
 module.exports = {
+  appShellRuntimePatches,
   extensionParcelTimeouts,
   hasPatchedAppShellSignature,
   hasUnpatchedAppShellSignature,
   patchedAppShellSignatures,
   unpatchedAppShellSignatures,
   userFacingErrorPatches,
+  workspaceTranslationPatches,
 };

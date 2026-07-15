@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const chalk = require('chalk');
+const { hasPatchedAppShellSignature, hasUnpatchedAppShellSignature } = require('./app-shell-runtime-patches');
 
 const logInfo = (msg) => console.log(`${chalk.green.bold('[validate-spa]')} ${msg}`);
 const logWarn = (msg) => console.warn(`${chalk.yellow.bold('[validate-spa]')} ${chalk.yellow(msg)}`);
@@ -117,22 +118,6 @@ if (modulesWithoutRoutes.length > 0) {
   }
 }
 
-const unsafeAppShellPatterns = [
-  'title:"Offline Setup Error",description:',
-  'description:e??"Oops! An unexpected error occurred."',
-  'description:e.reason??"Oops! An unhandled promise rejection occurred."',
-  'r.textContent=(null==e?void 0:e.message)||"No additional information available."',
-  'Offline Setup Error',
-  'Oops! An unexpected error occurred.',
-  'Oops! An unhandled promise rejection occurred.',
-  'No additional information available.',
-];
-const patchedAppShellMarkers = [
-  'Modo sin conexión no disponible',
-  'Ocurrió un error inesperado.',
-  'No se pudo iniciar la aplicación. Intente recargar la página o contacte a soporte.',
-  'timeouts:{bootstrap:{millis:1e4',
-];
 const appShellJavaScriptFiles = fs
   .readdirSync(outDir, { withFileTypes: true })
   .filter((entry) => entry.isFile() && entry.name.endsWith('.js'))
@@ -140,8 +125,8 @@ const appShellJavaScriptFiles = fs
     const source = fs.readFileSync(path.join(outDir, entry.name), 'utf8');
     return {
       name: entry.name,
-      hasRawErrors: unsafeAppShellPatterns.some((pattern) => source.includes(pattern)),
-      isPatchedAppShell: patchedAppShellMarkers.some((marker) => source.includes(marker)),
+      hasRawErrors: hasUnpatchedAppShellSignature(source),
+      isPatchedAppShell: hasPatchedAppShellSignature(source),
     };
   });
 const appShellFilesWithRawErrors = appShellJavaScriptFiles.filter(({ hasRawErrors }) => hasRawErrors);

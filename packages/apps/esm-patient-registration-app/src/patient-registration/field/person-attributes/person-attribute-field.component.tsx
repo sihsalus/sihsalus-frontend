@@ -21,6 +21,7 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
   const registrationContext = useContext(PatientRegistrationContext);
   const { t } = useTranslation(moduleName);
   const readOnly = Boolean(fieldDefinition.readOnlyOnCreate && registrationContext && !registrationContext.inEditMode);
+  const containerClassName = fieldDefinition.codedInputType === 'radio' ? styles.fullWidthInDesktopView : undefined;
 
   useEffect(() => {
     if (!personAttributeType || !fieldDefinition.defaultValue || registrationContext?.inEditMode) {
@@ -114,7 +115,7 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
 
   if (isLoading) {
     return (
-      <div>
+      <div className={containerClassName}>
         {fieldDefinition.showHeading && <h4 className={styles.productiveHeading02Light}>{fieldDefinition?.label}</h4>}
         <TextInputSkeleton />
       </div>
@@ -123,7 +124,7 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
 
   if (error) {
     return (
-      <div>
+      <div className={containerClassName}>
         {fieldDefinition.showHeading && <h4 className={styles.productiveHeading02Light}>{fieldDefinition?.label}</h4>}
         <InlineNotification kind="error" title={t('error', 'Error')}>
           {t('unableToFetch', 'Unable to fetch person attribute type - {{personattributetype}}', {
@@ -135,7 +136,7 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
   }
 
   return (
-    <div style={{ marginBottom: '1rem' }}>
+    <div className={containerClassName} style={{ marginBottom: '1rem' }}>
       {fieldDefinition.showHeading && (
         <h4 className={styles.productiveHeading02Light}>{fieldDefinition?.label ?? personAttributeType?.display}</h4>
       )}

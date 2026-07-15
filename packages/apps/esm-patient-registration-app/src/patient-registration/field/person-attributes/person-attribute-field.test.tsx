@@ -5,6 +5,7 @@ import { Form, Formik } from 'formik';
 import { type FieldDefinition } from '../../../config-schema';
 import { PatientRegistrationContext, type PatientRegistrationContextProps } from '../../patient-registration-context';
 import { useConceptAnswers } from '../field.resource';
+import styles from '../field.scss';
 
 import { PersonAttributeField } from './person-attribute-field.component';
 import { usePersonAttributeType } from './person-attributes.resource';
@@ -17,6 +18,17 @@ vi.mock('./person-attributes.resource', async () => ({
 vi.mock('../field.resource', async () => ({
   ...(await vi.importActual('../field.resource')),
   useConceptAnswers: vi.fn(),
+}));
+
+vi.mock('../field.scss', () => ({
+  default: {
+    codedRadioGroup: 'codedRadioGroup',
+    customField: 'customField',
+    fullWidthInDesktopView: 'fullWidthInDesktopView',
+    halfWidthInDesktopView: 'halfWidthInDesktopView',
+    productiveHeading02Light: 'productiveHeading02Light',
+    searchableCodedField: 'searchableCodedField',
+  },
 }));
 
 const mockUsePersonAttributeType = vi.mocked(usePersonAttributeType);
@@ -150,6 +162,32 @@ describe('PersonAttributeField', () => {
     expect(input.type).toBe('select-one');
     expect(screen.getByText('Option 1')).toBeInTheDocument();
     expect(screen.getByText('Option 2')).toBeInTheDocument();
+  });
+
+  it('makes radio-coded attributes span the full section row', () => {
+    mockUsePersonAttributeType.mockReturnValue({
+      data: { ...mockPersonAttributeType, format: 'org.openmrs.Concept' },
+      isLoading: false,
+      error: null,
+    });
+
+    render(
+      <Formik initialValues={{ attributes: {} }} onSubmit={() => {}}>
+        <Form>
+          <PersonAttributeField
+            fieldDefinition={{
+              ...fieldDefinition,
+              codedInputType: 'radio',
+              customConceptAnswers: [{ uuid: 'answer', label: 'Answer' }],
+            }}
+          />
+        </Form>
+      </Formik>,
+    );
+
+    expect(
+      screen.getByRole('group', { name: /Referred by/i }).closest(`.${styles.fullWidthInDesktopView}`),
+    ).not.toBeNull();
   });
 
   it('locks read-only-on-create coded attributes when creating a new patient', () => {

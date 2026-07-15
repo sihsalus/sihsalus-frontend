@@ -35,6 +35,7 @@ import {
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import utc from 'dayjs/plugin/utc';
+import classNames from 'classnames';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -70,6 +71,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
   const { t } = useTranslation();
   const [pageSize, setPageSize] = useState(25);
   const [searchString, setSearchString] = useState('');
+  const [editingAppointmentUuid, setEditingAppointmentUuid] = useState<string | null>(null);
   const searchResults = useAppointmentSearchResults(appointments, searchString);
   const { results, goTo, currentPage } = usePagination(searchResults, pageSize);
   const { customPatientChartUrl, patientIdentifierType } = useConfig<ConfigObject>();
@@ -254,7 +256,13 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                           const { key, ...rowProps } = getRowProps({ row });
 
                           return (
-                            <TableExpandRow key={key} {...rowProps}>
+                            <TableExpandRow
+                              key={key}
+                              {...rowProps}
+                              className={classNames(rowProps.className, {
+                                [styles.editingRow]: editingAppointmentUuid === matchingAppointment.uuid,
+                              })}
+                            >
                               {row.cells.map((cell) => (
                                 <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
                               ))}
@@ -272,14 +280,15 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                                     <OverflowMenuItem
                                       className={styles.menuItem}
                                       itemText={t('editAppointment', 'Edit appointment')}
-                                      onClick={() =>
+                                      onClick={() => {
+                                        setEditingAppointmentUuid(matchingAppointment.uuid);
                                         launchWorkspace2('appointments-form-workspace', {
                                           patientUuid: matchingAppointment.patient.uuid,
                                           appointment: matchingAppointment,
                                           context: 'editing',
                                           workspaceTitle: t('editAppointment', 'Edit appointment'),
-                                        })
-                                      }
+                                        });
+                                      }}
                                     />
                                   </OverflowMenu>
                                 ) : null}

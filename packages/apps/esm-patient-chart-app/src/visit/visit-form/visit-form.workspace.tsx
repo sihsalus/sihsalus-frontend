@@ -1284,7 +1284,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
               {/* Lists available visit types if no atFacilityVisitType enabled. The content switcher only gets shown when recommended visit types are enabled */}
               {requiredVisitTypeUuid ? (
                 <section>
-                  <h1 className={styles.sectionTitle}>{t('visitType_title', 'Tipo de consulta')}</h1>
+                  <h1 className={styles.sectionTitle}>{`${t('visitType_title', 'Tipo de consulta')} *`}</h1>
                   <div className={styles.sectionField}>
                     <p className={styles.bodyShort02}>
                       {allVisitTypes.find((visitType) => visitType.uuid === requiredVisitTypeUuid)?.display ??
@@ -1294,7 +1294,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                 </section>
               ) : !emrConfiguration?.atFacilityVisitType ? (
                 <section>
-                  <h1 className={styles.sectionTitle}>{t('visitType_title', 'Visit Type')}</h1>
+                  <h1 className={styles.sectionTitle}>{`${t('visitType_title', 'Tipo de consulta')} *`}</h1>
                   <div className={styles.sectionField}>
                     {config.showRecommendedVisitTypeTab ? (
                       <>

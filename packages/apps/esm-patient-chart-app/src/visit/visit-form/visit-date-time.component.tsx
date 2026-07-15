@@ -66,8 +66,9 @@ const VisitDateTimeField: React.FC<VisitDateTimeFieldProps> = ({
                   id={`${dateFieldName}Input`}
                   invalid={Boolean(errors[dateFieldName])}
                   invalidText={errors[dateFieldName]?.message}
-                  labelText={t('date', 'Date')}
+                  labelText={`${t('date', 'Fecha')} *`}
                   placeholder="dd/mm/yyyy"
+                  aria-required="true"
                   style={{ width: '100%' }}
                 />
               </DatePicker>
@@ -85,13 +86,14 @@ const VisitDateTimeField: React.FC<VisitDateTimeFieldProps> = ({
                   id={timeFieldName}
                   invalid={Boolean(errors[timeFieldName])}
                   invalidText={errors[timeFieldName]?.message}
-                  labelText={t('time', 'Time')}
+                  labelText={`${t('time', 'Hora')} *`}
                   onBlur={(event) => {
                     onChange(normalizeVisitTimeInput(event.target.value));
                     onBlur();
                   }}
                   onChange={(event) => onChange(sanitizeVisitTimeInput(event.target.value))}
                   pattern="^(0[1-9]|1[0-2]):([0-5][0-9])$"
+                  aria-required="true"
                   value={value ?? ''}
                 >
                   <Controller
@@ -105,6 +107,7 @@ const VisitDateTimeField: React.FC<VisitDateTimeFieldProps> = ({
                         })}
                         id={`${timeFormatFieldName}Input`}
                         onChange={(event) => onChange(normalizeVisitTimeFormatInput(event.target.value))}
+                        aria-required="true"
                         value={normalizeVisitTimeFormatInput(value) ?? ''}
                       >
                         <SelectItem value="AM" text="AM" />

@@ -1,0 +1,173 @@
+diff --git a/dependencies.json b/dependencies.json
+index 37308c34147258bdfd0ed5adfcdc6305e35101dc..63acdc2504bb59d2b4ffd5c0a121b074cdba0739 100644
+--- a/dependencies.json
++++ b/dependencies.json
+@@ -2,6 +2,7 @@
+   "@carbon/react",
+   "i18next",
+   "dayjs",
++  "@openmrs/esm-styleguide",
+   "react",
+   "react-dom",
+   "react-router-dom",
+diff --git a/src/index.ejs b/src/index.ejs
+index 987b64e17746532efbaaa7eafa089417f10a4685..54a20a1428bebfc28aba0c9cfdff591ece32b151 100644
+--- a/src/index.ejs
++++ b/src/index.ejs
+@@ -1,4 +1,24 @@
+ <!DOCTYPE html>
++<%
++const isSpanish = openmrsDefaultLocale.toLowerCase().startsWith('es');
++const fatalErrorCopy = isSpanish
++  ? {
++      title: 'Error de la aplicación',
++      summary: 'No se pudo iniciar la aplicación. Intente recargar la página.',
++      support: 'Si el problema continúa, contacte al administrador del sistema.',
++      reload: 'Recargar',
++      detail: 'Detalle del error',
++      copied: 'Copiado',
++    }
++  : {
++      title: 'Application error',
++      summary: 'The application could not start. Try reloading the page.',
++      support: 'If the problem continues, contact your system administrator.',
++      reload: 'Reload',
++      detail: 'Error detail',
++      copied: 'Copied',
++    };
++%>
+ <html lang="<%= openmrsDefaultLocale %>" data-default-lang="<%= openmrsDefaultLocale %>">
+   <head>
+     <meta charset="utf-8">
+@@ -12,6 +32,11 @@
+     <meta name="viewport" content="width=device-width, initial-scale=1">
+     <meta name="importmap-type" content="systemjs-importmap">
+     <%= htmlWebpackPlugin.tags.headTags %>
++<% if (openmrsExtraAssets && openmrsExtraAssets.length) { %>
++<% openmrsExtraAssets.filter(function(asset) { return asset.endsWith('.css'); }).forEach(function(asset) { %>
++    <link rel="stylesheet" href="<%= openmrsPublicPath %>/<%= asset %>">
++<% }); %>
++<% } %>
+ <% if (openmrsImportmapDef) { %>
+     <script type="systemjs-importmap"><%= openmrsImportmapDef %></script>
+ <% } else if (openmrsImportmapUrl) { %>
+@@ -43,6 +68,11 @@
+   </head>
+   <body>
+     <%= htmlWebpackPlugin.tags.bodyTags %>
++<% if (openmrsExtraAssets && openmrsExtraAssets.length) { %>
++<% openmrsExtraAssets.filter(function(asset) { return asset.endsWith('.js'); }).forEach(function(asset) { %>
++    <script src="<%= openmrsPublicPath %>/<%= asset %>"></script>
++<% }); %>
++<% } %>
+     <div class="omrs-toasts-container"></div>
+     <div class="omrs-inline-notifications-container"></div>
+     <div class="omrs-actionable-notifications-container"></div>
+@@ -69,21 +99,21 @@
+     </template>
+     <template id="app-error">
+       <div class="omrs-app-error">
+-        <h1>Application Error</h1>
+-        <p>Something went wrong. Please try reloading.</p>
+-        <p>Contact your system administrator if the problem persists.</p>
++        <h1><%= fatalErrorCopy.title %></h1>
++        <p><%= fatalErrorCopy.summary %></p>
++        <p><%= fatalErrorCopy.support %></p>
+         <div id="buttons">
+-          <button class="cds--btn cds--btn--primary" onclick="location.reload()">Reload</button>
++          <button class="cds--btn cds--btn--primary" onclick="location.reload()"><%= fatalErrorCopy.reload %></button>
+         </div>
+         <div class="cds--snippet cds--snippet--single" >
+           <div tabindex="0"  class="cds--snippet-container"
+-            aria-label="Code Snippet Text">
++            aria-label="<%= fatalErrorCopy.detail %>">
+             <pre>
+               <code data-var="message"></code>
+             </pre>
+           </div>
+           <button data-copy-btn class="cds--copy-btn" type="button" tabindex="0" onclick="copyText(this.parentElement)">
+-            <span class="cds--assistive-text cds--copy-btn__feedback">Copied!</span>
++            <span class="cds--assistive-text cds--copy-btn__feedback"><%= fatalErrorCopy.copied %></span>
+             <svg focusable="false" preserveAspectRatio="xMidYMid meet" style="will-change: transform;" xmlns="http://www.w3.org/2000/svg" class="cds--snippet__icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M14,5v9H5V5h9m0-1H5A1,1,0,0,0,4,5v9a1,1,0,0,0,1,1h9a1,1,0,0,0,1-1V5a1,1,0,0,0-1-1Z"></path><path d="M2,9H1V2A1,1,0,0,1,2,1H9V2H2Z"></path></svg>
+           </button>
+         </div>
+diff --git a/src/run.ts b/src/run.ts
+index 5d35660053b7543a164ee1432a37d594ee3f339f..6b7928ab1d797796559778f9f501703b5672ca15 100644
+--- a/src/run.ts
++++ b/src/run.ts
+@@ -9,6 +9,7 @@ import {
+   finishRegisteringAllApps,
+   fireOpenmrsEvent,
+   getConfig,
++  getCoreTranslation,
+   getCurrentUser,
+   integrateBreakpoints,
+   interpolateUrl,
+@@ -229 +230 @@ function renderFatalErrorPage(e?: Error) {
+-      messageContainer.textContent = e?.message || 'No additional information available.';
++      messageContainer.textContent = getCoreTranslation('fatalErrorMessage');
+@@ -328,8 +329,8 @@ async function setupOffline() {
+     console.error('Error while setting up offline mode.', error);
+     showNotification({
+       kind: 'error',
+-      title: 'Offline Setup Error',
+-      description: error.message,
++      title: getCoreTranslation('offlineSetupErrorTitle'),
++      description: getCoreTranslation('offlineSetupGenericError'),
+     });
+   }
+ }
+diff --git a/webpack.config.js b/webpack.config.js
+index c94e881f82ea486079f676315f0750a9c62d4f61..7640f014b20c601f01030ebf0349d0096b281fa2 100644
+--- a/webpack.config.js
++++ b/webpack.config.js
+@@ -4,7 +4,6 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
+ const CopyWebpackPlugin = require('copy-webpack-plugin');
+ const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+ const WebpackPwaManifest = require('webpack-pwa-manifest');
+-const HtmlWebpackTagsPlugin = require('html-webpack-tags-plugin');
+ const { InjectManifest } = require('workbox-webpack-plugin');
+ const { DefinePlugin, container } = require('webpack');
+ const { basename, dirname, resolve } = require('path');
+@@ -26,6 +25,10 @@ const openmrsApiUrl = removeTrailingSlash(process.env.OMRS_API_URL || '/openmrs'
+ const openmrsPublicPath = removeTrailingSlash(process.env.OMRS_PUBLIC_PATH || '/openmrs/spa');
+ const openmrsProxyTarget = process.env.OMRS_PROXY_TARGET || 'https://dev3.openmrs.org/';
+ const openmrsPageTitle = process.env.OMRS_PAGE_TITLE || 'OpenMRS';
++const openmrsPageDescription =
++  process.env.OMRS_PAGE_DESCRIPTION ||
++  'Open source Health IT by and for the entire planet, starting with the developing world.';
++const openmrsThemeColor = process.env.OMRS_THEME_COLOR || '#000000';
+ const openmrsFavicon = process.env.OMRS_FAVICON || `${openmrsPublicPath}/favicon.ico`;
+ const openmrsEnvironment = process.env.OMRS_ENV || process.env.NODE_ENV || '';
+ const openmrsOffline = process.env.OMRS_OFFLINE === 'enable';
+@@ -338,22 +341,19 @@ module.exports = (env, argv = []) => {
+           openmrsConfigUrls,
+           openmrsCoreImportmap: appPatterns.length > 0 && JSON.stringify(coreImportmap),
+           openmrsCoreRoutes: Object.keys(coreRoutes).length > 0 && JSON.stringify(coreRoutes),
++          openmrsExtraAssets: openmrsJsCssAssets.map((fileName) => `assets/${basename(fileName)}`),
+         },
+       }),
+-      new HtmlWebpackTagsPlugin({ tags: openmrsJsCssAssets.map(fileName => 'assets/' + basename(fileName)) }),
+       new WebpackPwaManifest({
+-        name: 'OpenMRS',
+-        short_name: 'OpenMRS',
++        filename: 'manifest.webmanifest',
++        name: openmrsPageTitle,
++        short_name: openmrsPageTitle,
+         publicPath: openmrsPublicPath,
+-        description: 'Open source Health IT by and for the entire planet, starting with the developing world.',
++        description: openmrsPageDescription,
+         background_color: '#ffffff',
+-        theme_color: '#000000',
+-        icons: [
+-          {
+-            src: resolve(__dirname, 'src/assets/logo-512.png'),
+-            sizes: [96, 128, 144, 192, 256, 384, 512],
+-          },
+-        ],
++        theme_color: openmrsThemeColor,
++        // SIHSALUS adds its branded icon after copying deployment assets.
++        icons: [],
+       }),
+       new CopyWebpackPlugin({
+         patterns: [{ from: resolve(__dirname, 'src/assets') }, ...appPatterns, ...assetsPatterns],

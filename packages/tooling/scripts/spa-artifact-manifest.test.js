@@ -20,7 +20,10 @@ test('defines the startup, complete, and precache artifact contracts centrally',
     'importmap.json',
     'frontend.json',
     'service-worker.js',
-    'app-shell-runtime-patches.json',
+    'manifest.webmanifest',
+    'alternative-logo.png',
+    'app-shell-build-info.json',
+    'assembled-precache-revisions.json',
   ]);
   assert.deepEqual(getSpaArtifactFiles('precacheRevision'), [
     'index.html',
@@ -28,6 +31,9 @@ test('defines the startup, complete, and precache artifact contracts centrally',
     'routes.registry.json',
     'importmap.json',
     'frontend.json',
+    'manifest.webmanifest',
+    'alternative-logo.png',
+    'app-shell-build-info.json',
   ]);
 });
 
@@ -90,7 +96,10 @@ test('reports missing, non-file, empty, and unreadable artifacts together', (con
       { file: 'importmap.json', reason: 'empty' },
       { file: 'frontend.json', reason: 'unreadable' },
       { file: 'service-worker.js', reason: 'missing' },
-      { file: 'app-shell-runtime-patches.json', reason: 'missing' },
+      { file: 'manifest.webmanifest', reason: 'missing' },
+      { file: 'alternative-logo.png', reason: 'missing' },
+      { file: 'app-shell-build-info.json', reason: 'missing' },
+      { file: 'assembled-precache-revisions.json', reason: 'missing' },
     ],
   );
   assert.match(formatSpaArtifactIssue(issues[0]), /permission denied/);

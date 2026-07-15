@@ -11,12 +11,30 @@ export const clinicalEncounterRepresentation =
   'names:(uuid,conceptNameType,name))),form:(uuid,name))';
 
 export function useClinicalEncounter(
-  encounterTypeUuid: string,
-  formUuid: string,
-  patientUuid: string,
-  conceptUuid: string[],
+  encounterTypeUuid: string | null | undefined,
+  formUuid: string | null | undefined,
+  patientUuid: string | null | undefined,
+  conceptUuid: Array<string | null | undefined> | null | undefined,
 ) {
-  const url = `/ws/rest/v1/encounter?formUuid=${formUuid}&patient=${patientUuid}&encounterType=${encounterTypeUuid}&conceptUuid=${conceptUuid.toString()}&v=${clinicalEncounterRepresentation}`;
+  const normalizedEncounterTypeUuid = encounterTypeUuid?.trim() ?? '';
+  const normalizedFormUuid = formUuid?.trim() ?? '';
+  const normalizedPatientUuid = patientUuid?.trim() ?? '';
+  const normalizedConceptUuids = conceptUuid?.map((uuid) => uuid?.trim() ?? '') ?? [];
+  const hasRequiredUuids = Boolean(
+    normalizedEncounterTypeUuid &&
+      normalizedFormUuid &&
+      normalizedPatientUuid &&
+      normalizedConceptUuids.length &&
+      normalizedConceptUuids.every(Boolean),
+  );
+  const params = new URLSearchParams({
+    formUuid: normalizedFormUuid,
+    patient: normalizedPatientUuid,
+    encounterType: normalizedEncounterTypeUuid,
+    conceptUuid: normalizedConceptUuids.join(','),
+    v: clinicalEncounterRepresentation,
+  });
+  const url = hasRequiredUuids ? `/ws/rest/v1/encounter?${params.toString()}` : null;
   const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: { results: OpenmrsEncounter[] } }, Error>(
     url,
     openmrsFetch,

@@ -1,5 +1,5 @@
 import { usePatient } from '@openmrs/esm-framework';
-import React, { memo, useMemo } from 'react';
+import { memo, useMemo } from 'react';
 
 import { usePatientEnrollment } from './clinical-view-group.resource';
 import { DashboardGroupExtension } from './dashboard-group.component';

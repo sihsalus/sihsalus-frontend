@@ -5,23 +5,20 @@ import type { PatientProgram } from '../types';
  * Evaluates a given expression using patient data and their program enrollments.
  */
 export const evaluateShowWhenExpression = (
-  expression: string,
+  expression: string | null | undefined,
   patient: fhir.Patient | null | undefined,
   enrollments: Array<PatientProgram> | null | undefined,
 ): boolean => {
-  if (!expression) {
+  const normalizedExpression = expression?.trim();
+  if (!normalizedExpression) {
     return true;
   }
 
-  if (expression.includes('patient') && !patient) {
-    return false;
-  }
+  const enrollment = enrollments?.flatMap((item) => item?.program?.name ?? []).filter(Boolean) ?? [];
+  const programUuids = enrollments?.flatMap((item) => item?.program?.uuid ?? []).filter(Boolean) ?? [];
 
-  const enrollment = enrollments ? enrollments.flatMap((e) => e?.program?.['name']).filter(Boolean) : [];
-  const programUuids = enrollments ? enrollments.flatMap((e) => e?.program?.['uuid']).filter(Boolean) : [];
-
-  return safeEvaluateExpression(expression, {
-    patient: patient ?? {},
+  return safeEvaluateExpression(normalizedExpression, {
+    patient: patient ?? null,
     enrollment,
     programUuids,
   });

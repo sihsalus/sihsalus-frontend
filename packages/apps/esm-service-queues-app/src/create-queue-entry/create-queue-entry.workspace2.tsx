@@ -2,8 +2,8 @@ import { Button, DataTableSkeleton } from '@carbon/react';
 import {
   ArrowLeftIcon,
   ErrorState,
+  getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
   getPatientName,
-  getUserFacingErrorMessage,
   PatientBannerContactDetails,
   PatientBannerPatientInfo,
   PatientBannerToggleContactDetailsButton,
@@ -15,6 +15,7 @@ import {
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
+import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -110,10 +111,11 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
         isLowContrast: false,
         kind: 'error',
         title: t('errorAddingPatientToQueue', 'No se pudo agregar el paciente a la cola'),
-        subtitle: getUserFacingErrorMessage(
+        subtitle: getCompatibleUserFacingErrorMessage(
           launchError,
           t('queueEntryActionErrorMessage', 'No se pudo completar la acción de cola. Intente nuevamente.'),
           { logContext: 'Launch start visit workspace from service queues' },
+          frameworkGetUserFacingErrorMessage,
         ),
       });
     });

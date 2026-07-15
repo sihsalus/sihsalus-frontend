@@ -254,6 +254,7 @@ test('detects technical errors inside translation interpolation and formatters',
 
 test('approved normalizers ignore only their technical input argument', () => {
   const safeFindings = analyze(`
+    import { getCompatibleUserFacingErrorMessage as compatNormalizer } from '@openmrs/esm-utils';
     import { getUserFacingErrorMessage as normalizeError } from '@openmrs/esm-framework';
     import { getUserFacingQueueErrorMessage as normalizeQueueError } from './queue-entry-error.utils';
     import { useUserFacingErrorMessage as useQueueErrorMessage } from '../hooks/useUserFacingErrorMessage';
@@ -261,6 +262,7 @@ test('approved normalizers ignore only their technical input argument', () => {
     const content = (
       <>
         <InlineNotification subtitle={normalizeError(error)} />
+        <InlineNotification subtitle={compatNormalizer(error, 'No disponible', {}, normalizeError)} />
         <InlineNotification subtitle={useQueueErrorMessage(requestError, t('fallback', 'No disponible'))} />
         <InlineNotification subtitle={normalizeQueueError(queueError)} />
       </>
@@ -269,15 +271,23 @@ test('approved normalizers ignore only their technical input argument', () => {
   assert.deepEqual(safeFindings, []);
 
   const unsafeFindings = analyze(`
+    import { getCompatibleUserFacingErrorMessage } from './untrusted-error-message.utils';
+    import { getCompatibleUserFacingErrorMessage as trustedCompat } from '@openmrs/esm-utils';
     import { getUserFacingErrorMessage } from '@openmrs/esm-framework';
     import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
 
     showSnackbar({ subtitle: getUserFacingErrorMessage(error, error.message) });
+    showSnackbar({ subtitle: getCompatibleUserFacingErrorMessage(error, 'No disponible') });
+    showSnackbar({
+      subtitle: getCompatibleUserFacingErrorMessage(error, 'No disponible', {}, (failure) => failure.message),
+    });
+    showSnackbar({ subtitle: trustedCompat(error, 'No disponible', {}, (failure) => failure.message) });
+    showSnackbar({ subtitle: trustedCompat(error, 'No disponible', {}, getUserFacingErrorMessage, error.message) });
     showSnackbar({
       subtitle: useUserFacingErrorMessage(error, { fallback: error.responseBody.error.message }),
     });
   `);
-  assert.equal(unsafeFindings.length, 2);
+  assert.equal(unsafeFindings.length, 6);
 });
 
 test('does not trust local functions that only reuse approved normalizer names', () => {

@@ -220,6 +220,23 @@ export function useVisitFormCallbacks() {
   return useState<Map<string, VisitFormCallbacks>>(new Map());
 }
 
+/**
+ * Confirms that the configured visit attribute type exists on the backend. Returns
+ * `false` only on a definitive 404: sending an unknown attribute type makes the
+ * backend reject the whole visit, so the caller must drop the attribute instead of
+ * blocking every visit creation. While loading or on transient errors it returns
+ * `true` so the correlation token keeps protecting against duplicate visits.
+ */
+export function useVisitAttributeTypeExists(visitAttributeTypeUuid?: string) {
+  const { error } = useSWR<FetchResponse<{ uuid: string }>, { response?: { status?: number } }>(
+    visitAttributeTypeUuid ? `${restBaseUrl}/visitattributetype/${visitAttributeTypeUuid}?v=custom:(uuid)` : null,
+    openmrsFetch,
+    { shouldRetryOnError: false },
+  );
+
+  return Boolean(visitAttributeTypeUuid) && error?.response?.status !== 404;
+}
+
 export function usePersonAttributesForVisitDefaults(patientUuid?: string) {
   const { data, error, isLoading } = useSWR<FetchResponse<{ results: Array<PersonAttributeResponse> }>, Error>(
     patientUuid

@@ -41,6 +41,9 @@ jobs:
       - name: Test Error Exposure Guard
         run: yarn test:error-exposure-guard
 
+      - name: Test Local SPA Server
+        run: yarn test:local-spa-server
+
       - name: Test SPA Runtime Patch Detection
         run: yarn test:spa-runtime-patches
 

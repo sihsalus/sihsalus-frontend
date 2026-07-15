@@ -124,7 +124,7 @@ const appointmentStatusLabels: Record<AppointmentStatus, { key: string; defaultV
   [AppointmentStatus.WAITLIST]: { key: 'waitList', defaultValue: 'Lista de espera' },
   [AppointmentStatus.SCHEDULED]: { key: 'scheduled', defaultValue: 'Programada' },
   [AppointmentStatus.ARRIVED]: { key: 'arrived', defaultValue: 'Llegó' },
-  [AppointmentStatus.CHECKEDIN]: { key: 'checkedIn', defaultValue: 'Cita admitida' },
+  [AppointmentStatus.CHECKEDIN]: { key: 'checkedIn', defaultValue: 'Cita en progreso' },
   [AppointmentStatus.COMPLETED]: { key: 'completed', defaultValue: 'Completada' },
   [AppointmentStatus.CANCELLED]: { key: 'cancelled', defaultValue: 'Cancelada' },
   [AppointmentStatus.MISSED]: { key: 'missed', defaultValue: 'No asistió' },

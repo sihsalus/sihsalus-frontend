@@ -107,6 +107,14 @@ describe('AppointmentsTable', () => {
     expect(getByTextWithMarkup('There are no scheduled appointments to display')).toBeInTheDocument();
   });
 
+  it('uses an in-progress heading for checked-in appointments', async () => {
+    renderAppointmentsTable({ tableHeading: 'checkedIn' });
+
+    await screen.findByRole('heading', { name: /appointments in progress/i });
+
+    expect(getByTextWithMarkup('There are no appointments in progress to display')).toBeInTheDocument();
+  });
+
   it('renders a loading state when fetching data', () => {
     renderAppointmentsTable({ isLoading: true });
 

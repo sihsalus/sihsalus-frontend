@@ -1,3 +1,4 @@
+import esTranslations from '../../translations/es.json';
 import { AppointmentKind, AppointmentStatus } from '../types';
 import { canTransition, getAppointmentKindLabel, getAppointmentStatusLabel, isAppointmentEditable } from './functions';
 
@@ -51,8 +52,12 @@ describe('appointment labels', () => {
   const t = (_key: string, defaultValue: string) => defaultValue;
 
   it('uses localized labels for known backend values', () => {
-    expect(getAppointmentStatusLabel(AppointmentStatus.CHECKEDIN, t)).toBe('Cita admitida');
+    expect(getAppointmentStatusLabel(AppointmentStatus.CHECKEDIN, t)).toBe('Cita en progreso');
     expect(getAppointmentKindLabel(AppointmentKind.WALKIN, t)).toBe('Sin cita');
+  });
+
+  it('uses the in-progress term in the Spanish appointment status tab', () => {
+    expect(esTranslations.checkedIn).toBe('Cita en progreso');
   });
 
   it('does not expose unknown backend values directly', () => {

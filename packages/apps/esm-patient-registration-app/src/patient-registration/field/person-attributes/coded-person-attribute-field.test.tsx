@@ -1,7 +1,8 @@
 import { reportError, useSession } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Form, Formik } from 'formik';
+import { Form, Formik, FormikProvider, useFormikContext } from 'formik';
+import { useCallback } from 'react';
 
 import { useConceptAnswers } from '../field.resource';
 
@@ -48,6 +49,50 @@ describe('CodedPersonAttributeField', () => {
       error: undefined,
     });
   });
+
+  function renderStatefulSearchableField(initialValue = '') {
+    const onSetFieldValue = vi.fn();
+    const fieldName = `attributes.${personAttributeType.uuid}`;
+    const attributes = initialValue ? { [personAttributeType.uuid]: initialValue } : {};
+
+    function StatefulCodedFieldHarness() {
+      const formik = useFormikContext<{ attributes: Record<string, string> }>();
+      const setFieldValue = useCallback(
+        (field: string, value: unknown, shouldValidate?: boolean) => {
+          onSetFieldValue(field, value);
+          return formik.setFieldValue(field, value, shouldValidate);
+        },
+        [formik.setFieldValue],
+      );
+
+      return (
+        <FormikProvider value={{ ...formik, setFieldValue }}>
+          <Form>
+            <button type="button" onClick={() => setFieldValue(fieldName, '1')}>
+              Set programmatically
+            </button>
+            <CodedPersonAttributeField
+              id="attributeId"
+              personAttributeType={personAttributeType}
+              answerConceptSetUuid={answerConceptSetUuid}
+              label={personAttributeType.display}
+              customConceptAnswers={[]}
+              required={false}
+              searchable
+            />
+          </Form>
+        </FormikProvider>
+      );
+    }
+
+    render(
+      <Formik initialValues={{ attributes }} onSubmit={() => {}}>
+        <StatefulCodedFieldHarness />
+      </Formik>,
+    );
+
+    return { fieldName, onSetFieldValue };
+  }
 
   it('renders a non-fatal inline warning if there is no concept answer set provided', () => {
     render(
@@ -161,6 +206,29 @@ describe('CodedPersonAttributeField', () => {
 
     expect(screen.getByRole('combobox', { name: /etnia/i })).toHaveValue('');
     expect(screen.queryByDisplayValue('Option 1')).not.toBeInTheDocument();
+  });
+
+  it('does not rewrite a searchable value when Carbon echoes a programmatic selection', async () => {
+    const user = userEvent.setup();
+    const { fieldName, onSetFieldValue } = renderStatefulSearchableField();
+
+    await user.click(screen.getByRole('button', { name: 'Set programmatically' }));
+
+    await waitFor(() => expect(screen.getByRole('combobox', { name: /referred by/i })).toHaveValue('Option 1'));
+    await waitFor(() => expect(onSetFieldValue).toHaveBeenCalledTimes(1));
+    expect(onSetFieldValue).toHaveBeenLastCalledWith(fieldName, '1');
+  });
+
+  it('writes a genuinely different searchable concept exactly once', async () => {
+    const user = userEvent.setup();
+    const { fieldName, onSetFieldValue } = renderStatefulSearchableField('1');
+
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    await user.click(await screen.findByText('Option 2'));
+
+    await waitFor(() => expect(screen.getByRole('combobox', { name: /referred by/i })).toHaveValue('Option 2'));
+    await waitFor(() => expect(onSetFieldValue).toHaveBeenCalledTimes(1));
+    expect(onSetFieldValue).toHaveBeenLastCalledWith(fieldName, '2');
   });
 
   it('renders set members as select options when the answer concept set is configured as a concept set', () => {

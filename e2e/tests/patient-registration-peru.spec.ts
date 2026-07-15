@@ -125,6 +125,26 @@ test.describe('Peru patient registration', () => {
     await expect(page.locator('#givenName')).toHaveValue('Juan');
   });
 
+  test('clears automatic Peru and unlocks nationality when a DNI becomes incomplete', async ({ page }) => {
+    await gotoPatientRegistration(page);
+
+    const dni = page.locator('input[name="identifiers.dni.identifierValue"]').first();
+    const nationality = page.getByRole('combobox', { name: /Nacionalidad/i });
+
+    await dni.fill('1234567');
+    await dni.pressSequentially('8');
+    await expect(nationality).toHaveValue('Perú');
+    await expect(nationality).toBeDisabled();
+
+    await dni.press('Backspace');
+
+    await expect(dni).toHaveValue('1234567');
+    await expect(nationality).toHaveValue('');
+    await expect(nationality).toBeEnabled();
+    await fillTextbox(page.locator('#givenName'), 'Juana');
+    await expect(page.locator('#givenName')).toHaveValue('Juana');
+  });
+
   test('quick searches residence addresses from the configured address hierarchy', async ({ page }) => {
     await gotoPatientRegistration(page);
 

@@ -199,7 +199,42 @@ describe('NationalityField', () => {
     await user.type(screen.getByRole('textbox', { name: 'DNI' }), '8');
 
     await waitFor(() => expect(screen.getByRole('combobox', { name: /Nacionalidad/u })).toHaveValue('Perú'));
-    expect(onSetFieldValue).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onSetFieldValue).toHaveBeenCalledTimes(1));
+  });
+
+  it('clears and reassigns automatic nationality exactly once as DNI completeness changes', async () => {
+    const user = userEvent.setup();
+    const onSetFieldValue = vi.fn();
+    const initialValues = {
+      attributes: {},
+      identifiers: {
+        dni: buildIdentifier(peruDniPatientIdentifierTypeUuid, '1234567'),
+      },
+    } as unknown as FormValues;
+
+    render(
+      <Formik initialValues={initialValues} onSubmit={() => {}}>
+        <StatefulNationalityFieldTestHarness onSetFieldValue={onSetFieldValue} />
+      </Formik>,
+    );
+
+    const dni = screen.getByRole('textbox', { name: 'DNI' });
+    const nationality = screen.getByRole('combobox', { name: /Nacionalidad/u });
+
+    await user.type(dni, '8');
+    await waitFor(() => expect(nationality).toHaveValue('Perú'));
+    expect(nationality).toBeDisabled();
+    await waitFor(() => expect(onSetFieldValue).toHaveBeenCalledTimes(1));
+
+    await user.type(dni, '{Backspace}');
+    await waitFor(() => expect(nationality).toHaveValue(''));
+    expect(nationality).toBeEnabled();
+    await waitFor(() => expect(onSetFieldValue).toHaveBeenCalledTimes(2));
+
+    await user.type(dni, '8');
+    await waitFor(() => expect(nationality).toHaveValue('Perú'));
+    expect(nationality).toBeDisabled();
+    await waitFor(() => expect(onSetFieldValue).toHaveBeenCalledTimes(3));
   });
 
   it('does not infer nationality from an empty DNI field', () => {

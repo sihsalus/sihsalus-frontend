@@ -47,6 +47,7 @@ function ClinicMetrics() {
   };
 
   const serviceItems: ServiceListItem[] = [defaultServiceItem, ...(services ?? [])];
+  const selectedService = services?.find((service) => service.uuid === selectedServiceUuid);
 
   const handleServiceChange = ({ selectedItem }) => {
     updateSelectedService(selectedItem?.uuid, selectedItem?.display ?? t('all', 'All'));
@@ -79,6 +80,7 @@ function ClinicMetrics() {
             }
             label=""
             onChange={handleServiceChange}
+            selectedItem={selectedService ?? defaultServiceItem}
             size={isDesktop(layout) ? 'sm' : 'lg'}
             titleText={`${t('waitingFor', 'Waiting for')}:`}
             type="inline"

@@ -32,8 +32,13 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
   const { queueLocations, isLoading, error } = useQueueLocations();
   const { dashboardTitle } = useConfig<ConfigObject>();
   const userSession = useSession();
-  const { selectedQueueLocationName, selectedQueueLocationUuid, selectedServiceDisplay } = useServiceQueuesStore();
-  const { queues } = useQueues();
+  const {
+    selectedQueueLocationName,
+    selectedQueueLocationUuid,
+    selectedServiceDisplay,
+    selectedServiceUuid,
+  } = useServiceQueuesStore();
+  const { queues } = useQueues(selectedQueueLocationUuid);
   const shouldShowFilters = showFilters ?? showLocationDropdown ?? false;
   const shouldShowLocationDropdown = shouldShowFilters && queueLocations.length > 1;
   const showServiceDropdown = shouldShowFilters && queues.length > 1;
@@ -49,6 +54,17 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
       }, []);
     return options.length !== 1 ? [{ id: 'all', name: t('all', 'All') }, ...options] : options;
   }, [queues, t]);
+
+  useEffect(() => {
+    if (!selectedServiceUuid || !queues.length) {
+      return;
+    }
+
+    const serviceIsAvailable = queues.some((queue) => queue.service.uuid === selectedServiceUuid);
+    if (!serviceIsAvailable) {
+      updateSelectedService(null, t('all', 'All'));
+    }
+  }, [queues, selectedServiceUuid, t]);
 
   const handleQueueLocationChange = useCallback(
     ({ selectedItem }: OnChangeData<QueueLocationOption>) => {

@@ -125,18 +125,26 @@ function StatusDropdownFilter() {
   const { t } = useTranslation();
   const layout = useLayoutType();
   const { statuses } = useQueueStatuses();
-  const { selectedQueueStatusDisplay } = useServiceQueuesStore();
+  const { selectedQueueStatusDisplay, selectedQueueStatusUuid } = useServiceQueuesStore();
+  const allStatusesOption = { uuid: 'all', display: t('all', 'All') };
+  const statusItems = [allStatusesOption, ...(statuses ?? [])];
+  const selectedStatus = selectedQueueStatusUuid
+    ? statusItems.find((status) => status.uuid === selectedQueueStatusUuid) ?? allStatusesOption
+    : allStatusesOption;
+
   const handleStatusChange = ({ selectedItem }) => {
-    updateSelectedQueueStatus(selectedItem.uuid, selectedItem?.display);
+    const statusUuid = selectedItem?.uuid === 'all' ? null : selectedItem?.uuid;
+    updateSelectedQueueStatus(statusUuid, selectedItem?.display ?? t('all', 'All'));
   };
 
   return (
     <div className={styles.filterContainer}>
       <Dropdown
         id="statusFilter"
-        items={[{ display: `${t('any', 'Any')}` }, ...(statuses ?? [])]}
+        items={statusItems}
         itemToString={(item) => (item ? item.display : '')}
-        label={selectedQueueStatusDisplay ?? t('all', 'All')}
+        label={selectedQueueStatusDisplay ?? selectedStatus.display}
+        selectedItem={selectedStatus}
         onChange={handleStatusChange}
         size={isDesktop(layout) ? 'sm' : 'lg'}
         titleText={t('showPatientsWithStatus', 'Show patients with status:')}

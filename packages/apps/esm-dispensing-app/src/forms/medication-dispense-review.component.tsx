@@ -630,7 +630,7 @@ const MedicationDispenseReview: React.FC<MedicationDispenseReviewProps> = ({
           labelText={
             isFreeTextDosage
               ? t('freeTextDosage', 'Texto libre de dosificación')
-              : t('patientInstructions', 'Patient instructions')
+              : t('patientInstructions', 'Instrucciones para el paciente')
           }
           value={medicationDispense.dosageInstruction[0].text}
           maxLength={65535}

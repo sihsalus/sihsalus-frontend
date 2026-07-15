@@ -1,6 +1,5 @@
 import { Dropdown } from '@carbon/react';
 import { isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import { useQueueEntries } from '../../hooks/useQueueEntries';
@@ -29,9 +28,7 @@ export default function WaitingPatientsExtension() {
 
   const serviceItems: ServiceListItem[] = [defaultServiceItem, ...(services ?? [])];
 
-  const [initialSelectedItem, setInitialSelectItem] = useState(() => {
-    return !selectedServiceDisplay || !selectedServiceUuid;
-  });
+  const selectedService = services?.find((service) => service.uuid === selectedServiceUuid);
 
   const { totalCount, queueEntries } = useQueueEntries({
     service: selectedServiceUuid,
@@ -43,12 +40,8 @@ export default function WaitingPatientsExtension() {
   const urgentCount = queueEntries.filter((entry) => entry.priority?.display?.toLowerCase() === 'urgent').length;
 
   const handleServiceChange = ({ selectedItem }) => {
-    updateSelectedService(selectedItem.uuid, selectedItem.display);
-    if (selectedItem.uuid === undefined) {
-      setInitialSelectItem(true);
-    } else {
-      setInitialSelectItem(false);
-    }
+    const serviceUuid = selectedItem?.uuid ?? null;
+    updateSelectedService(serviceUuid, selectedItem?.display ?? t('all', 'All'));
   };
 
   return (
@@ -62,6 +55,7 @@ export default function WaitingPatientsExtension() {
             item ? `${item.display} ${item.location?.display ? `- ${item.location.display}` : ''}` : ''
           }
           label=""
+          selectedItem={selectedService ?? defaultServiceItem}
           titleText=""
           onChange={handleServiceChange}
           size={isDesktop(layout) ? 'sm' : 'lg'}
@@ -71,7 +65,7 @@ export default function WaitingPatientsExtension() {
       <MetricsCardBody>
         <MetricsCardItem
           label={t('patients', 'Patients')}
-          value={initialSelectedItem ? (Number.isNaN(totalCount) ? '--' : totalCount) : serviceCount}
+          value={!selectedServiceUuid ? (Number.isNaN(totalCount) ? '--' : totalCount) : serviceCount}
         />
         <MetricsCardItem label={t('urgent', 'Urgent')} value={urgentCount > 0 ? urgentCount : null} color="red" small />
       </MetricsCardBody>

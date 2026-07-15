@@ -39,6 +39,7 @@ let selfSignedBackendDispatcher;
 // SIHSALUS_DEV_APPS=none -> serve pre-assembled importmap (no recompilation, just shell + proxy).
 const defaultDevApps = [
   'esm-dispensing-app',
+  'esm-patient-allergies-app',
   'esm-login-app',
   'esm-patient-chart-app',
   'esm-patient-banner-app',

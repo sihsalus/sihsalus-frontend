@@ -127,7 +127,8 @@ index c94e881f82ea486079f676315f0750a9c62d4f61..7640f014b20c601f01030ebf0349d009
  const WebpackPwaManifest = require('webpack-pwa-manifest');
 -const HtmlWebpackTagsPlugin = require('html-webpack-tags-plugin');
  const { InjectManifest } = require('workbox-webpack-plugin');
- const { DefinePlugin, container } = require('webpack');
+-const { DefinePlugin, container } = require('webpack');
++const { DefinePlugin, ProvidePlugin, container } = require('webpack');
  const { basename, dirname, resolve } = require('path');
 @@ -26,6 +25,10 @@ const openmrsApiUrl = removeTrailingSlash(process.env.OMRS_API_URL || '/openmrs'
  const openmrsPublicPath = removeTrailingSlash(process.env.OMRS_PUBLIC_PATH || '/openmrs/spa');
@@ -140,7 +141,7 @@ index c94e881f82ea486079f676315f0750a9c62d4f61..7640f014b20c601f01030ebf0349d009
  const openmrsFavicon = process.env.OMRS_FAVICON || `${openmrsPublicPath}/favicon.ico`;
  const openmrsEnvironment = process.env.OMRS_ENV || process.env.NODE_ENV || '';
  const openmrsOffline = process.env.OMRS_OFFLINE === 'enable';
-@@ -338,22 +341,19 @@ module.exports = (env, argv = []) => {
+@@ -338,28 +341,33 @@ module.exports = (env, argv = []) => {
            openmrsConfigUrls,
            openmrsCoreImportmap: appPatterns.length > 0 && JSON.stringify(coreImportmap),
            openmrsCoreRoutes: Object.keys(coreRoutes).length > 0 && JSON.stringify(coreRoutes),
@@ -171,3 +172,18 @@ index c94e881f82ea486079f676315f0750a9c62d4f61..7640f014b20c601f01030ebf0349d009
        }),
        new CopyWebpackPlugin({
          patterns: [{ from: resolve(__dirname, 'src/assets') }, ...appPatterns, ...assetsPatterns],
+       }),
++      new ProvidePlugin({
++        React: 'react',
++      }),
+       new ModuleFederationPlugin({
+         name,
+         shared: sharedDependencies.reduce((obj, depName) => {
+           // This just attempts to align the requiredVersion with what we usually have in peerDependencies
+-          let version = dependencies[depName];
++          let version =
++            depName === '@openmrs/esm-framework' || depName === '@openmrs/esm-framework/src/internal'
++              ? frameworkVersion
++              : depName === 'swr'
++                ? require('swr/package.json').version
++                : dependencies[depName];

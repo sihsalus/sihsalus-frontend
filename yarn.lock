@@ -4022,7 +4022,7 @@ __metadata:
 
 "@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch::locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A.":
   version: 9.0.2
-  resolution: "@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch::version=9.0.2&hash=31899c&locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A."
+  resolution: "@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch::version=9.0.2&hash=307be9&locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A."
   dependencies:
     "@carbon/react": "npm:^1.92.1"
     "@internationalized/date": "npm:^3.8.0"
@@ -4052,7 +4052,7 @@ __metadata:
     workbox-strategies: "npm:^6.1.5"
     workbox-webpack-plugin: "npm:^6.1.5"
     workbox-window: "npm:^6.1.5"
-  checksum: 10c0/083979e558288d3dd274e47582d9d813871f731d79d11c91285ad119b9f897f826c9175dbcdcd66265b089e91777cbd0ca9ef33fad5462bea375981ce7a91112
+  checksum: 10c0/edcb402ed2f7f15c0c2b07f04e53af21e210a6d3c101c199b45da8b12089d6eb143063d72d32ade8d21c8a0026318919a6cfb149ce00a54d5a93ffb813a2b2a6
   languageName: node
   linkType: hard
 
@@ -9704,9 +9704,11 @@ __metadata:
     "@types/webpack-env": "npm:^1.18.8"
     "@vitest/coverage-v8": "npm:^4.0.18"
     "@vitest/ui": "npm:4.1.0"
+    acorn: "npm:8.16.0"
     chalk: "npm:^4.1.2"
     cross-env: "npm:^10.1.0"
     dotenv: "npm:^17.3.1"
+    eslint-scope: "npm:5.1.1"
     express: "npm:^4.22.0"
     fake-indexeddb: "npm:^4.0.2"
     happy-dom: "npm:^20.9.0"
@@ -11895,7 +11897,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"acorn@npm:^8.0.4, acorn@npm:^8.11.0, acorn@npm:^8.15.0, acorn@npm:^8.16.0, acorn@npm:^8.4.1":
+"acorn@npm:8.16.0, acorn@npm:^8.0.4, acorn@npm:^8.11.0, acorn@npm:^8.15.0, acorn@npm:^8.16.0, acorn@npm:^8.4.1":
   version: 8.16.0
   resolution: "acorn@npm:8.16.0"
   bin:

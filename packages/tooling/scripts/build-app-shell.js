@@ -43,6 +43,45 @@ function getAppShellPackageRoot() {
   return path.dirname(require.resolve('@openmrs/esm-app-shell/package.json'));
 }
 
+function getAppShellWebpackConfig(appShellRoot = getAppShellPackageRoot()) {
+  const configFactory = require(path.join(appShellRoot, 'webpack.config.js'));
+  return configFactory({}, { mode: 'production' });
+}
+
+function assertCompatibleAppShellConfig(
+  config,
+  {
+    frameworkVersion = require('@openmrs/esm-framework/package.json').version,
+    swrVersion = require('swr/package.json').version,
+  } = {},
+) {
+  const plugins = Array.isArray(config?.plugins) ? config.plugins : [];
+  const providePlugin = plugins.find((plugin) => plugin?.constructor?.name === 'ProvidePlugin');
+  if (providePlugin?.definitions?.React !== 'react') {
+    throw new Error('App-shell webpack config must provide React for workspace JSX compiled with the classic runtime');
+  }
+
+  const moduleFederationPlugin = plugins.find((plugin) => plugin?.constructor?.name === 'ModuleFederationPlugin');
+  const shared = moduleFederationPlugin?._options?.shared;
+  if (!shared || typeof shared !== 'object') {
+    throw new Error('App-shell webpack config is missing Module Federation shared dependencies');
+  }
+
+  const expectedVersions = {
+    '@openmrs/esm-framework': frameworkVersion,
+    '@openmrs/esm-framework/src/internal': frameworkVersion,
+    'swr/_internal': swrVersion,
+  };
+  for (const [dependency, expectedVersion] of Object.entries(expectedVersions)) {
+    const requiredVersion = shared[dependency]?.requiredVersion;
+    if (requiredVersion !== expectedVersion) {
+      throw new Error(
+        `App-shell shared dependency ${dependency} requires ${requiredVersion ?? '(missing)'} but resolves ${expectedVersion}`,
+      );
+    }
+  }
+}
+
 function assertSafeAppShellSource(appShellRoot = getAppShellPackageRoot()) {
   const runSource = fs.readFileSync(path.join(appShellRoot, 'src/run.ts'), 'utf8');
   const webpackSource = fs.readFileSync(path.join(appShellRoot, 'webpack.config.js'), 'utf8');
@@ -92,8 +131,8 @@ async function buildAppShell(outputDir) {
   const appShellRoot = getAppShellPackageRoot();
   assertSafeAppShellSource(appShellRoot);
 
-  const configFactory = require(path.join(appShellRoot, 'webpack.config.js'));
-  const config = configFactory({}, { mode: 'production' });
+  const config = getAppShellWebpackConfig(appShellRoot);
+  assertCompatibleAppShellConfig(config);
   config.output.path = resolvedOutputDir;
 
   await new Promise((resolve, reject) => {
@@ -139,8 +178,10 @@ if (require.main === module) {
 }
 
 module.exports = {
+  assertCompatibleAppShellConfig,
   assertSafeAppShellSource,
   buildAppShell,
   getAppShellBuildEnvironment,
   getAppShellPackageRoot,
+  getAppShellWebpackConfig,
 };

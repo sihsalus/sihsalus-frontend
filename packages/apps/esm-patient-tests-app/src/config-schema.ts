@@ -15,18 +15,18 @@ export const configSchema = {
       },
     },
     _default: [
-      {
+      /*{
         conceptUuid: '24305e8e-f3dc-4ac6-bf87-e4f11f3b970e',
         defaultOpen: false,
-      },
+      },*/
       {
         conceptUuid: '7e750f3a-8d5c-45b1-8e94-ebf850208e35',
         defaultOpen: false,
       },
-      {
+      /*{
         conceptUuid: 'df144cc2-6718-4005-9881-f39eafd73315',
         defaultOpen: false,
-      },
+      },*/
       {
         conceptUuid: '339febfd-699e-4a26-927f-1f9a7780bb5e',
         defaultOpen: false,
@@ -35,10 +35,10 @@ export const configSchema = {
         conceptUuid: '241eb982-1fdd-4183-a2b5-763f5ce2d528',
         defaultOpen: false,
       },
-      {
+      /*{
         conceptUuid: '1bcb541a-55e8-4c5d-83fb-d121a9d54d9d',
         defaultOpen: false,
-      },
+      },*/
       {
         conceptUuid: '654b11a8-a326-45c9-885e-2fae6143404a',
         defaultOpen: false,

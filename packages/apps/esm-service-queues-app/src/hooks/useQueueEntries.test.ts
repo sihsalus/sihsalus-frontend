@@ -41,27 +41,34 @@ describe('useMutateQueueEntries', () => {
 
   it('consumes refresh failures and reports one safe loading error', async () => {
     const technicalError = new Error('GET /queue-entry failed with SQL timeout');
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     mockMutate.mockRejectedValue(technicalError);
     mockGetUserFacingErrorMessage.mockReturnValueOnce(undefined as never);
-    const { result } = renderHook(() => useMutateQueueEntries());
 
-    await expect(result.current.mutateQueueEntries()).resolves.toBeUndefined();
+    try {
+      const { result } = renderHook(() => useMutateQueueEntries());
 
-    expect(mockGetUserFacingErrorMessage).toHaveBeenCalledOnce();
-    expect(mockGetUserFacingErrorMessage).toHaveBeenCalledWith(
-      technicalError,
-      'Queue information could not be loaded. Please try again.',
-      { logContext: 'Refresh queue entries' },
-    );
-    expect(mockShowSnackbar).toHaveBeenCalledOnce();
-    expect(mockShowSnackbar).toHaveBeenCalledWith({
-      title: 'Error loading queue entries',
-      kind: 'error',
-      isLowContrast: false,
-      subtitle: 'Queue information could not be loaded. Please try again.',
-    });
-    expect(mockShowSnackbar).not.toHaveBeenCalledWith(
-      expect.objectContaining({ subtitle: expect.stringMatching(/sql|\/queue-entry/i) }),
-    );
+      await expect(result.current.mutateQueueEntries()).resolves.toBeUndefined();
+
+      expect(mockGetUserFacingErrorMessage).toHaveBeenCalledOnce();
+      expect(mockGetUserFacingErrorMessage).toHaveBeenCalledWith(
+        technicalError,
+        'Queue information could not be loaded. Please try again.',
+        { logContext: 'Refresh queue entries' },
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Refresh queue entries:', technicalError);
+      expect(mockShowSnackbar).toHaveBeenCalledOnce();
+      expect(mockShowSnackbar).toHaveBeenCalledWith({
+        title: 'Error loading queue entries',
+        kind: 'error',
+        isLowContrast: false,
+        subtitle: 'Queue information could not be loaded. Please try again.',
+      });
+      expect(mockShowSnackbar).not.toHaveBeenCalledWith(
+        expect.objectContaining({ subtitle: expect.stringMatching(/sql|\/queue-entry/i) }),
+      );
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
   });
 });

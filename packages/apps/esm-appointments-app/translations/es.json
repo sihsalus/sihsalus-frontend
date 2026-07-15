@@ -6,6 +6,7 @@
   "activeVisitTypeMismatch": "El tipo de la consulta activa no corresponde al servicio de la cita. Regularice la consulta antes de continuar.",
   "add": "Agregar",
   "age": "Edad",
+  "all": "Todo",
   "allDay": "Todo el día",
   "appointmentCancelError": "Error al cancelar la cita",
   "appointmentCancellationFailed": "No se pudo cancelar la cita. Revise su estado e intente nuevamente.",

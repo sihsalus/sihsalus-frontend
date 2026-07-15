@@ -1,7 +1,7 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .header {
   background-color: $ui-02;
@@ -18,13 +18,47 @@
   flex-direction: row;
   align-items: center;
   justify-content: flex-end;
-  margin: 0 layout.$spacing-03;
-  column-gap: layout.$spacing-03;
+  margin: 0;
+  column-gap: layout.$spacing-05;
+}
+
+.dateFilter {
+  flex: 0 0 auto;
+
+  :global(.cds--date-picker-container) {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    column-gap: layout.$spacing-05;
+  }
+
+  :global(.cds--label) {
+    @include type.type-style("body-compact-01");
+
+    margin: 0;
+    white-space: nowrap;
+  }
+}
+
+.serviceFilter {
+  flex: 0 0 auto;
+
+  :global(.cds--multi-select__wrapper--inline) {
+    column-gap: layout.$spacing-06;
+  }
 }
 
 .serviceTypeFilter {
-  inline-size: clamp(20rem, 36vw, 36rem);
-  max-inline-size: calc(100vw - #{layout.$spacing-05});
+  :global(.cds--list-box__field) {
+    inline-size: 14rem;
+    overflow: hidden;
+  }
+
+  :global(.cds--list-box__label) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   :global(.cds--list-box__menu) {
     max-block-size: min(32rem, calc(100vh - 8rem));
@@ -46,11 +80,26 @@
   }
 }
 
+@media (max-width: 1056px) {
+  .header {
+    flex-wrap: wrap;
+    height: auto;
+    padding-block: layout.$spacing-05;
+    row-gap: layout.$spacing-03;
+  }
+
+  .rightJustifiedItems {
+    flex: 1 0 100%;
+    justify-content: flex-end;
+  }
+}
+
 @media (max-width: 672px) {
   .header {
     flex-direction: column;
     align-items: stretch;
     height: auto;
+    max-inline-size: 100vw;
     padding: layout.$spacing-05 layout.$spacing-03;
     row-gap: layout.$spacing-03;
   }
@@ -59,17 +108,41 @@
     flex-direction: column;
     align-items: stretch;
     margin: 0;
-    row-gap: layout.$spacing-01;
+    row-gap: layout.$spacing-05;
+  }
+
+  .serviceFilter {
+    inline-size: 100%;
+    max-inline-size: 100%;
+
+    :global(.cds--multi-select__wrapper--inline) {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      inline-size: 100%;
+      row-gap: layout.$spacing-03;
+    }
   }
 
   .serviceTypeFilter {
+    :global(.cds--list-box__field) {
+      inline-size: 100%;
+    }
+  }
+
+  .dateFilter {
     inline-size: 100%;
-    max-inline-size: 100%;
+
+    :global(.cds--date-picker-container) {
+      flex-direction: column;
+      align-items: stretch;
+      row-gap: layout.$spacing-03;
+    }
   }
 }
 
 // Overriding styles for RTL support
-html[dir='rtl'] {
+html[dir="rtl"] {
   .date-and-location {
     & > svg {
       order: -1;

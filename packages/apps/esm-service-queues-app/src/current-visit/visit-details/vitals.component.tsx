@@ -1,11 +1,12 @@
 import { Button, Tile } from '@carbon/react';
 import { ArrowRight, CircleFilled } from '@carbon/react/icons';
-import { launchWorkspace2, useConfig, usePatient, useSession, userHasAccess, type Visit } from '@openmrs/esm-framework';
+import { launchWorkspace2, useConfig, usePatient, useSession, type Visit } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
-import { serviceQueuesEditPrivilege, serviceQueuesPatientVitalsWorkspace } from '../../constants';
+import { serviceQueuesPatientVitalsWorkspace } from '../../constants';
+import { canEditServiceQueues } from '../../permissions';
 import { type PatientVitals } from '../../types/index';
 import { assessValue, calculateBMI, getReferenceRangesForConcept } from '../current-visit.resource';
 import { useVitalsConceptMetadata } from '../hooks/useVitalsConceptMetadata';
@@ -24,7 +25,7 @@ const Vitals: React.FC<VitalsComponentProps> = ({ vitals, patientUuid, visitType
   const config = useConfig<ConfigObject>();
   const { patient } = usePatient(patientUuid);
   const session = useSession();
-  const canEdit = userHasAccess(serviceQueuesEditPrivilege, session?.user);
+  const canEdit = canEditServiceQueues(session?.user);
   const { data: conceptUnits, conceptMetadata } = useVitalsConceptMetadata();
 
   const vitalsToDisplay = vitals.reduce(

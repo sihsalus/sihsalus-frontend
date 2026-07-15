@@ -18,12 +18,11 @@ import {
   ErrorState,
   launchWorkspace2,
   useLayoutType,
-  userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { serviceQueuesEditPrivilege } from '../../constants';
+import { canEditServiceQueues } from '../../permissions';
 import { useQueueRooms, useQueuesMutable } from '../queue-admin.resource';
 import styles from './admin-page.scss';
 import QueueActionMenu from './queue-action-menu.component';
@@ -35,7 +34,7 @@ const AdminPage = () => {
   const isTablet = layout === 'tablet';
   const responsiveSize = isTablet ? 'lg' : 'sm';
   const session = useSession();
-  const canEdit = userHasAccess(serviceQueuesEditPrivilege, session?.user);
+  const canEdit = canEditServiceQueues(session?.user);
 
   const { queues, isLoading: isLoadingQueues, error: queuesError } = useQueuesMutable();
   const { queueRooms, isLoading: isLoadingQueueRooms, error: queueRoomsError } = useQueueRooms();

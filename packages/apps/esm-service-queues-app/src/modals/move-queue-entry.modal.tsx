@@ -6,7 +6,12 @@ import { useMutateQueueEntries } from '../hooks/useQueueEntries';
 import { useQueueEntry } from '../hooks/useQueueEntry';
 import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
 import { type QueueEntry } from '../types';
-import { isQueueEntryTransitionUnchanged, transitionQueueEntry } from './queue-entry-actions.resource';
+import {
+  isQueueEntryCommentOnlyChange,
+  isQueueEntryTransitionUnchanged,
+  transitionQueueEntry,
+  updateActiveQueueEntry,
+} from './queue-entry-actions.resource';
 import QueueEntryActionModal from './queue-entry-actions-modal.component';
 
 interface MoveQueueEntryModalProps {
@@ -109,13 +114,15 @@ const MoveQueueEntryModal: React.FC<MoveQueueEntryModalProps> = ({ queueEntry, c
         submitSuccessText: t('queueEntryTransitionedSuccessfully', 'Queue entry transitioned successfully'),
         submitFailureTitle: t('queueEntryTransitionFailed', 'Error transitioning queue entry'),
         submitAction: (queueEntry, formState) =>
-          transitionQueueEntry({
-            queueEntryToTransition: queueEntry.uuid,
-            newQueue: formState.selectedQueue,
-            newStatus: formState.selectedStatus,
-            newPriority: formState.selectedPriority,
-            newPriorityComment: formState.priorityComment,
-          }),
+          isQueueEntryCommentOnlyChange(queueEntry, formState)
+            ? updateActiveQueueEntry(queueEntry.uuid, { priorityComment: formState.priorityComment })
+            : transitionQueueEntry({
+                queueEntryToTransition: queueEntry.uuid,
+                newQueue: formState.selectedQueue,
+                newStatus: formState.selectedStatus,
+                newPriority: formState.selectedPriority,
+                newPriorityComment: formState.priorityComment,
+              }),
         disableSubmit: (queueEntry, formState) => isQueueEntryTransitionUnchanged(queueEntry, formState),
         isEdit: false,
         showQueuePicker: true,

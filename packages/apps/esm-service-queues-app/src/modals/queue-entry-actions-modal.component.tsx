@@ -26,7 +26,7 @@ import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject, defaultColumnConfig, type PriorityConfig } from '../config-schema';
-import { time12HourFormatRegexPattern } from '../constants';
+import { queueEntryCommentMaxLength, time12HourFormatRegexPattern } from '../constants';
 import { useMutateQueueEntries } from '../hooks/useQueueEntries';
 import { useQueues } from '../hooks/useQueues';
 import QueuePriority from '../queue-table/components/queue-priority.component';
@@ -137,6 +137,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
   } | null>(null);
 
   const selectedQueue = queues.find((q) => q.uuid === formState.selectedQueue);
+  const isCommentTooLong = formState.priorityComment.length > queueEntryCommentMaxLength;
 
   const clearSubmissionError = () => setUserFacingSubmissionError(null);
 
@@ -248,6 +249,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
               error,
               t('queueEntryActionErrorMessage', 'The queue action could not be completed. Please try again.'),
               'Submit queue entry action',
+              t('invalidSubmission', 'La solicitud no es válida.'),
             ),
             title: submitFailureTitle,
           });
@@ -446,6 +448,14 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
                 value={formState.priorityComment}
                 onChange={(e) => setPriorityComment(e.target.value)}
                 placeholder={t('enterCommentHere', 'Enter comment here')}
+                maxLength={queueEntryCommentMaxLength}
+                invalid={isCommentTooLong}
+                invalidText={t('queueEntryCommentTooLong', 'El comentario no puede superar los {{count}} caracteres.', {
+                  count: queueEntryCommentMaxLength,
+                })}
+                helperText={t('queueEntryCommentLimit', 'Máximo {{count}} caracteres.', {
+                  count: queueEntryCommentMaxLength,
+                })}
               />
             </section>
 
@@ -518,6 +528,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
           disabled={
             isSubmitting ||
             !hasValidQueueConfiguration ||
+            isCommentTooLong ||
             disableSubmit(queueEntry, formState) ||
             (isEdit && formState.modifyDefaultTransitionDateTime && timeInvalidMessage !== null)
           }

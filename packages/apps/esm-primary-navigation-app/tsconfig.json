@@ -1,7 +1,6 @@
 {
   "extends": "../../tooling/tsconfig.app.json",
   "compilerOptions": {
-    "moduleResolution": "node",
     "target": "es2015"
   },
   "include": ["src/**/*", "test-utils/**/*", "setup-tests.ts"]

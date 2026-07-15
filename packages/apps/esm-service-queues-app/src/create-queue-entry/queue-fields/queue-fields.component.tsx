@@ -38,6 +38,7 @@ import styles from './queue-fields.scss';
 export interface QueueFieldsProps {
   currentServiceQueueUuid?: string;
   currentQueueLocationUuid?: string;
+  patientGender?: string;
   requestedServiceName?: string;
   onQueueEntryAdded?: () => void | Promise<void>;
   setCallbacks(callbacks: QueueFieldsCallbacks): void;
@@ -54,6 +55,7 @@ export interface QueueFieldsCallbacks {
 const QueueFields: React.FC<QueueFieldsProps> = ({
   currentServiceQueueUuid,
   currentQueueLocationUuid,
+  patientGender,
   requestedServiceName,
   onQueueEntryAdded,
   setCallbacks,
@@ -67,6 +69,18 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
     concepts: { defaultStatusConceptUuid, defaultPriorityConceptUuid, emergencyPriorityConceptUuid },
   } = useConfig<ConfigObject>();
   const [selectedQueueLocation, setSelectedQueueLocation] = useState('');
+  const availableQueueLocations = useMemo(() => {
+    const normalizedGender = patientGender?.trim().toLowerCase();
+    const isMalePatient = normalizedGender === 'm' || normalizedGender === 'male' || normalizedGender === 'masculino';
+
+    if (!isMalePatient) {
+      return queueLocations;
+    }
+
+    return queueLocations.filter(
+      (location) => location.id === currentQueueLocationUuid || !/obst[eé]tric/i.test(location.name ?? ''),
+    );
+  }, [currentQueueLocationUuid, patientGender, queueLocations]);
   const { queues, isLoading: isLoadingQueues } = useQueues(selectedQueueLocation);
   const [selectedService, setSelectedService] = useState('');
   const { currentServiceQueueUuid: contextServiceQueueUuid } = useContext(AddPatientToQueueContext);
@@ -206,9 +220,10 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
       return;
     }
 
-    const defaultLocation = queueLocations.find((location) => location.id === sessionLocationUuid) ?? queueLocations[0];
+    const defaultLocation =
+      availableQueueLocations.find((location) => location.id === sessionLocationUuid) ?? availableQueueLocations[0];
     setSelectedQueueLocation(defaultLocation?.id ?? '');
-  }, [currentQueueLocationUuid, queueLocations, selectedQueueLocation, sessionLocationUuid]);
+  }, [availableQueueLocations, currentQueueLocationUuid, selectedQueueLocation, sessionLocationUuid]);
 
   useEffect(() => {
     const nextPriority = priorities.some((allowedPriority) => allowedPriority.uuid === defaultPriorityConceptUuid)
@@ -260,8 +275,8 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
               {!selectedQueueLocation ? (
                 <SelectItem text={t('selectQueueLocation', 'Select a queue location')} value="" />
               ) : null}
-              {queueLocations?.length > 0 &&
-                queueLocations.map((location) => (
+              {availableQueueLocations?.length > 0 &&
+                availableQueueLocations.map((location) => (
                   <SelectItem key={location.id} text={location.name} value={location.id}>
                     {location.name}
                   </SelectItem>

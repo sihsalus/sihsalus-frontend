@@ -141,6 +141,22 @@ describe('VitalsAndBiometricsInput', () => {
     expect(screen.getByText(/bpm/i)).toBeInTheDocument();
   });
 
+  it('renders the required indicator when requested', () => {
+    renderVitalsBiometricsInput({
+      fieldProperties: [
+        {
+          id: 'temperature',
+          name: 'Temperature',
+          type: 'number',
+        },
+      ],
+      label: 'Temperature',
+      showRequiredIndicator: true,
+    });
+
+    expect(screen.getByText('*')).toBeInTheDocument();
+  });
+
   it('blocks invalid clinical numeric keys and preserves keyboard shortcuts', () => {
     renderVitalsBiometricsInput({
       fieldProperties: [
@@ -189,10 +205,18 @@ describe('VitalsAndBiometricsInput', () => {
     });
 
     for (const value of ['+1', '-1', '1,2', '12@', '1e100', '120.0', '251']) {
-      expect(fireEvent.paste(heartRateInput, { clipboardData: { getData: () => value } })).toBe(false);
+      expect(
+        fireEvent.paste(heartRateInput, {
+          clipboardData: { getData: () => value },
+        }),
+      ).toBe(false);
     }
 
-    expect(fireEvent.paste(heartRateInput, { clipboardData: { getData: () => '120' } })).toBe(true);
+    expect(
+      fireEvent.paste(heartRateInput, {
+        clipboardData: { getData: () => '120' },
+      }),
+    ).toBe(true);
   });
 
   it('keeps decimal-capable clinical fields usable while blocking invalid values', () => {
@@ -218,9 +242,21 @@ describe('VitalsAndBiometricsInput', () => {
     expect(fireEvent.keyDown(temperatureInput, { key: '-' })).toBe(false);
     expect(fireEvent.keyDown(temperatureInput, { key: 'e' })).toBe(false);
 
-    expect(fireEvent.paste(temperatureInput, { clipboardData: { getData: () => '36.5' } })).toBe(true);
-    expect(fireEvent.paste(temperatureInput, { clipboardData: { getData: () => '46' } })).toBe(false);
-    expect(fireEvent.paste(temperatureInput, { clipboardData: { getData: () => '1e2' } })).toBe(false);
+    expect(
+      fireEvent.paste(temperatureInput, {
+        clipboardData: { getData: () => '36.5' },
+      }),
+    ).toBe(true);
+    expect(
+      fireEvent.paste(temperatureInput, {
+        clipboardData: { getData: () => '46' },
+      }),
+    ).toBe(false);
+    expect(
+      fireEvent.paste(temperatureInput, {
+        clipboardData: { getData: () => '1e2' },
+      }),
+    ).toBe(false);
   });
 
   it('renders textarea inputs correctly based on the props provided', () => {

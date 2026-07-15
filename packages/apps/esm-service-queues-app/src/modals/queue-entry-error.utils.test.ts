@@ -31,6 +31,19 @@ describe('queue entry error utilities', () => {
     });
   });
 
+  it('translates the backend Invalid Submission message', () => {
+    mockGetUserFacingErrorMessage.mockReturnValue('Invalid Submission');
+
+    expect(
+      getUserFacingQueueErrorMessage(
+        { message: 'Invalid Submission' },
+        'The queue action could not be completed.',
+        'Queue entry action',
+        'La solicitud no es válida.',
+      ),
+    ).toBe('La solicitud no es válida.');
+  });
+
   it('detects a duplicate entry without exposing its technical message', () => {
     const error = {
       responseBody: { error: { rawMessage: '[queue.entry.error.duplicate] duplicate queue entry' } },

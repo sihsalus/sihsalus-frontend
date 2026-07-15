@@ -63,6 +63,7 @@ interface VitalsAndBiometricsInputProps {
   muacColorCode?: string;
   placeholder?: string;
   readOnly?: boolean;
+  showRequiredIndicator?: boolean;
   showErrorMessage?: boolean;
   unitSymbol?: string;
   useMuacColors?: boolean;
@@ -79,6 +80,7 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
   muacColorCode,
   placeholder,
   readOnly,
+  showRequiredIndicator = false,
   showErrorMessage,
   unitSymbol,
   useMuacColors,
@@ -118,7 +120,12 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
       return;
     }
 
-    if (shouldPreventPlainNumberKey(event.key, { integer: fieldProperty.integer, nonNegative: true })) {
+    if (
+      shouldPreventPlainNumberKey(event.key, {
+        integer: fieldProperty.integer,
+        nonNegative: true,
+      })
+    ) {
       event.preventDefault();
     }
   }
@@ -165,7 +172,14 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
     <>
       <div className={containerClasses} style={{ width: fieldWidth }}>
         <section className={styles.labelContainer}>
-          <span className={styles.label}>{label}</span>
+          <span className={styles.label}>
+            {label}
+            {showRequiredIndicator ? (
+              <span aria-hidden="true" className={styles.requiredIndicator}>
+                {' *'}
+              </span>
+            ) : null}
+          </span>
 
           {hasAbnormalValue ? (
             <span className={styles[interpretation.replace('_', '-')]} title={t('abnormalValue', 'Abnormal value')} />

@@ -10,4 +10,17 @@ describe('service queue route privilege contract', () => {
     expect(legacyWorkspace?.privileges).toEqual(expect.arrayContaining(visitMutationPrivileges));
     expect(workspace?.privileges).toEqual(expect.arrayContaining(visitMutationPrivileges));
   });
+
+  it('allows admission users to load queue editing surfaces', () => {
+    const editingSurfaces = [
+      ...routes.extensions.filter(({ name }) => name.includes('queue') || name.includes('visit')),
+      ...routes.modals,
+      ...routes.workspaces,
+      ...routes.workspaces2,
+    ];
+
+    expect(editingSurfaces.some(({ privileges }) => JSON.stringify(privileges).includes('colasAtencion.editar'))).toBe(
+      false,
+    );
+  });
 });

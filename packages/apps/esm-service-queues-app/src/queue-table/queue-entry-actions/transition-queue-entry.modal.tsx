@@ -4,7 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { type QueueEntry } from '../../types';
 
 import QueueEntryActionModal from './queue-entry-actions.modal';
-import { isQueueEntryTransitionUnchanged, transitionQueueEntry } from './queue-entry-actions.resource';
+import {
+  isQueueEntryCommentOnlyChange,
+  isQueueEntryTransitionUnchanged,
+  transitionQueueEntry,
+  updateActiveQueueEntry,
+} from './queue-entry-actions.resource';
 
 interface TransitionQueueEntryModalProps {
   queueEntry: QueueEntry;
@@ -33,13 +38,20 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({
         submitSuccessText: t('queueEntryTransitionedSuccessfully', 'Queue entry transitioned successfully'),
         submitFailureTitle: t('queueEntryTransitionFailed', 'Error transitioning queue entry'),
         submitAction: (queueEntry, formState) =>
-          transitionQueueEntry({
-            queueEntryToTransition: queueEntry.uuid,
-            newQueue: formState.selectedQueue,
-            newStatus: formState.selectedStatus,
-            newPriority: formState.selectedPriority,
-            newPriorityComment: formState.prioritycomment,
-          }),
+          isQueueEntryCommentOnlyChange(queueEntry, {
+            selectedQueue: formState.selectedQueue,
+            selectedStatus: formState.selectedStatus,
+            selectedPriority: formState.selectedPriority,
+            priorityComment: formState.prioritycomment,
+          })
+            ? updateActiveQueueEntry(queueEntry.uuid, { priorityComment: formState.prioritycomment })
+            : transitionQueueEntry({
+                queueEntryToTransition: queueEntry.uuid,
+                newQueue: formState.selectedQueue,
+                newStatus: formState.selectedStatus,
+                newPriority: formState.selectedPriority,
+                newPriorityComment: formState.prioritycomment,
+              }),
         disableSubmit: (queueEntry, formState) =>
           isQueueEntryTransitionUnchanged(queueEntry, {
             ...formState,

@@ -4,6 +4,7 @@
     "baseUrl": ".",
     "moduleResolution": "node",
     "paths": {
+      "@openmrs/esm-globals/src/public": ["../../../node_modules/@openmrs/esm-globals/dist/public"],
       "@openmrs/*": ["../../../node_modules/@openmrs/*"],
       "tools": ["./tools"]
     }

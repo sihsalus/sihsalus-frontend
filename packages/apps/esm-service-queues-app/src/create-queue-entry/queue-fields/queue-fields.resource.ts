@@ -79,6 +79,12 @@ export class QueueEntryCreationVerificationError extends Error {
   }
 }
 
+interface QueueTicketResponse {
+  visitQueueNumber?: unknown;
+  queueNumber?: unknown;
+  ticketNumber?: unknown;
+}
+
 async function findActiveQueueEntries(params: Record<string, string>): Promise<Array<QueueEntrySummary>> {
   const searchParams = new URLSearchParams({
     ...params,
@@ -137,29 +143,106 @@ export async function generateVisitQueueNumber(
   visitStartDatetime?: string | Date,
 ) {
   const abortController = new AbortController();
+  const url = `${restBaseUrl}/queue-entry-number?${new URLSearchParams({
+    location,
+    queue: queueUuid,
+    visit: visitUuid,
+    visitAttributeType: visitQueueNumberAttributeUuid,
+  })}`;
 
-  const response = await openmrsFetch<{ visitQueueNumber?: string }>(
-    `${restBaseUrl}/queue-entry-number?location=${location}&queue=${queueUuid}&visit=${visitUuid}&visitAttributeType=${visitQueueNumberAttributeUuid}`,
-    {
-      method: 'POST',
+  let response: FetchResponse<QueueTicketResponse>;
+  let usedLegacyMethod = false;
+
+  try {
+    response = await openmrsFetch<QueueTicketResponse>(url, {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
       signal: abortController.signal,
-    },
-  );
+    });
+  } catch (error) {
+    const status = getErrorStatus(error);
+    if (status !== 404 && status !== 405) {
+      throw error;
+    }
 
-  const queueNumber = response.data?.visitQueueNumber?.trim();
-  if (!queueNumber) {
-    throw new QueueTicketGenerationError();
+    // Some queue-module versions expose this endpoint as POST.
+    usedLegacyMethod = true;
+    response = await openmrsFetch<QueueTicketResponse>(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: abortController.signal,
+    });
   }
 
-  const startedAt = getAuthoritativeStartedAt(response.headers?.get?.('Date'), visitStartDatetime);
+  let queueNumber = getQueueNumberFromResponse(response);
+  if (queueNumber) {
+    return {
+      queueNumber,
+      startedAt: getAuthoritativeStartedAt(response.headers?.get?.('Date'), visitStartDatetime),
+    };
+  }
 
-  return {
-    queueNumber,
-    startedAt,
-  };
+  // Some queue-module versions return an empty GET response while still generating
+  // the number as a side effect. Try the alternate method before reading the visit.
+  if (!usedLegacyMethod) {
+    try {
+      const legacyResponse = await openmrsFetch<QueueTicketResponse>(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: abortController.signal,
+      });
+      queueNumber = getQueueNumberFromResponse(legacyResponse);
+      if (queueNumber) {
+        return {
+          queueNumber,
+          startedAt: getAuthoritativeStartedAt(legacyResponse.headers?.get?.('Date'), visitStartDatetime),
+        };
+      }
+    } catch (error) {
+      const status = getErrorStatus(error);
+      if (status !== 404 && status !== 405) {
+        throw error;
+      }
+    }
+  }
+
+  // Some queue-module versions persist the attribute but return an empty body.
+  const persistedTicket = await getPersistedVisitQueueTicket(
+    visitUuid,
+    visitQueueNumberAttributeUuid,
+    visitStartDatetime,
+  );
+  if (persistedTicket.queueNumber) {
+    return persistedTicket;
+  }
+
+  // The queue module may generate the number during this request without returning
+  // it. The following visit-queue-entry request is still required to complete the flow.
+  return persistedTicket;
+}
+
+function getErrorStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== 'object') {
+    return undefined;
+  }
+
+  const candidate = error as { status?: unknown; response?: { status?: unknown } };
+  const status = candidate.status ?? candidate.response?.status;
+  return typeof status === 'number' ? status : undefined;
+}
+
+function getQueueNumberFromResponse(response: FetchResponse<QueueTicketResponse>): string | null {
+  const value = [response.data?.visitQueueNumber, response.data?.queueNumber, response.data?.ticketNumber].find(
+    (candidate) => candidate !== null && candidate !== undefined && String(candidate).trim(),
+  );
+
+  return value ? String(value).trim() : null;
 }
 
 export async function postQueueEntry(

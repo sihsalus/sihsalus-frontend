@@ -149,7 +149,7 @@ const Relationships: React.FC<{ patientId: string }> = ({ patientId }) => {
 
   return (
     <>
-      <p className={styles.heading}>{getCoreTranslation('relationships', 'Relationships')}</p>
+      <p className={styles.heading}>Familiares</p>
       {isLoading ? (
         <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
       ) : (

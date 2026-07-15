@@ -29,6 +29,7 @@
   padding: layout.$spacing-03;
   margin: layout.$spacing-03 0 layout.$spacing-03;
   width: 100%;
+  min-width: 0;
 }
 
 .tabs > :global(.cds--tab-content) {
@@ -45,8 +46,9 @@
 
 .visitContainer {
   background-color: $ui-background;
-  display: grid;
-  grid-template-columns: max-content auto;
+  display: block;
+  width: 100%;
+  min-width: 0;
   min-height: layout.$spacing-13;
 }
 
@@ -56,6 +58,15 @@
 
 .verticalTabs {
   margin: layout.$spacing-04 0;
+  width: 100%;
+  min-width: 0;
+
+  :global(.cds--tabs),
+  :global(.cds--tab-panels),
+  :global(.cds--tab-content) {
+    width: 100%;
+    min-width: 0;
+  }
 
   &:global(.cds--tabs--scrollable .cds--tabs--scrollable__nav-item + .cds--tabs--scrollable__nav-item) {
     margin-left: 0;

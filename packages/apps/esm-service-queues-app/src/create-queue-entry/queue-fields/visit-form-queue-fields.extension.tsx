@@ -1,4 +1,4 @@
-import { type Visit } from '@openmrs/esm-framework';
+import { usePatient, type Visit } from '@openmrs/esm-framework';
 import React from 'react';
 
 import QueueFields from './queue-fields.component';
@@ -33,9 +33,11 @@ const VisitFormQueueFields: React.FC<VisitFormQueueFieldsProps> = (props) => {
     patientChartConfig,
     currentServiceQueueUuid,
     currentQueueLocationUuid,
+    patientUuid,
     requestedServiceName,
     onQueueEntryAdded,
   } = props;
+  const { patient } = usePatient(patientUuid);
   if (
     patientChartConfig.showServiceQueueFields ||
     visitFormOpenedFrom === 'service-queues-add-patient' ||
@@ -45,6 +47,7 @@ const VisitFormQueueFields: React.FC<VisitFormQueueFieldsProps> = (props) => {
       <QueueFields
         currentServiceQueueUuid={currentServiceQueueUuid}
         currentQueueLocationUuid={currentQueueLocationUuid}
+        patientGender={patient?.gender}
         requestedServiceName={requestedServiceName}
         onQueueEntryAdded={onQueueEntryAdded}
         setCallbacks={(callbacks) => setVisitFormCallbacks({ ...callbacks, kind: 'queue-entry' })}

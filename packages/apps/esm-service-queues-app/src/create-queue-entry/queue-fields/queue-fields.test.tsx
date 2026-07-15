@@ -20,7 +20,10 @@ const mockUseSession = vi.mocked(useSession);
 
 vi.mock('../hooks/useQueueLocations', () => ({
   useQueueLocations: vi.fn(() => ({
-    queueLocations: [{ id: '1', name: 'Location 1' }],
+    queueLocations: [
+      { id: '1', name: 'Location 1' },
+      { id: 'obstetric-location', name: 'UPSS - CENTRO OBSTÉTRICO' },
+    ],
   })),
 }));
 
@@ -143,5 +146,11 @@ describe('QueueFields', () => {
     render(<QueueFields setCallbacks={vi.fn()} />);
 
     await waitFor(() => expect(screen.getByLabelText('Select a queue location')).toHaveValue('1'));
+  });
+
+  it('hides obstetric locations for male patients', () => {
+    render(<QueueFields patientGender="M" setCallbacks={vi.fn()} />);
+
+    expect(screen.queryByRole('option', { name: 'UPSS - CENTRO OBSTÉTRICO' })).not.toBeInTheDocument();
   });
 });

@@ -6,13 +6,13 @@ import {
   showModal,
   UserHasAccess,
   useLayoutType,
-  userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { serviceQueuesBasePath, serviceQueuesEditPrivilege } from '../constants';
+import { serviceQueuesBasePath } from '../constants';
+import { canEditServiceQueues } from '../permissions';
 
 import styles from './metrics-header.scss';
 
@@ -24,7 +24,7 @@ const MetricsHeader = () => {
   const metricsTitle = t('clinicMetrics', 'Clinic metrics');
   const queueScreenText = t('queueScreen', 'Call display');
   const providerUuid = currentUserSession?.currentProvider?.uuid;
-  const canEdit = userHasAccess(serviceQueuesEditPrivilege, currentUserSession?.user);
+  const canEdit = canEditServiceQueues(currentUserSession?.user);
 
   const launchAddProviderToRoomModal = useCallback(() => {
     const dispose = showModal('add-provider-to-room-modal', {

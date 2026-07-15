@@ -1,5 +1,5 @@
 import { Button, ButtonSet, Form, Row } from '@carbon/react';
-import { ExtensionSlot, useLayoutType, type Visit } from '@openmrs/esm-framework';
+import { ExtensionSlot, useLayoutType, usePatient, type Visit } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -34,6 +34,10 @@ const ExistingVisitForm: React.FC<ExistingVisitFormProps> = ({
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
+  const { patient } = usePatient(visit.patient?.uuid);
+  const patientGender =
+    (patient as { gender?: string } | undefined)?.gender ??
+    (visit.patient as { gender?: string } | undefined)?.gender;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { mutateQueueEntries } = useMutateQueueEntries();
@@ -80,6 +84,7 @@ const ExistingVisitForm: React.FC<ExistingVisitFormProps> = ({
         <QueueFields
           currentQueueLocationUuid={currentQueueLocationUuid}
           currentServiceQueueUuid={currentServiceQueueUuid}
+          patientGender={patientGender}
           requestedServiceName={requestedServiceName}
           onQueueEntryAdded={onQueueEntryAdded}
           setCallbacks={setCallbacks}

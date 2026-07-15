@@ -4,6 +4,7 @@ import { type QueueEntry } from '../types';
 import {
   batchEndQueueEntries,
   endQueueEntry,
+  isQueueEntryCommentOnlyChange,
   isQueueEntryTransitionUnchanged,
   QUEUE_ENTRY_TRANSITION_CONFLICT,
   QueueEntryTransitionConflictError,
@@ -79,6 +80,30 @@ describe('isQueueEntryTransitionUnchanged', () => {
 
   it('keeps submit disabled when no lifecycle field changed', () => {
     expect(isQueueEntryTransitionUnchanged(sourceEntry, currentSelection)).toBe(true);
+  });
+});
+
+describe('isQueueEntryCommentOnlyChange', () => {
+  it('identifies a comment update without a queue transition', () => {
+    expect(
+      isQueueEntryCommentOnlyChange(sourceEntry, {
+        selectedQueue: sourceEntry.queue.uuid,
+        selectedStatus: sourceEntry.status.uuid,
+        selectedPriority: sourceEntry.priority.uuid,
+        priorityComment: 'Requires assistance',
+      }),
+    ).toBe(true);
+  });
+
+  it('does not classify a status change as a comment-only update', () => {
+    expect(
+      isQueueEntryCommentOnlyChange(sourceEntry, {
+        selectedQueue: sourceEntry.queue.uuid,
+        selectedStatus: 'in-service-status',
+        selectedPriority: sourceEntry.priority.uuid,
+        priorityComment: 'Requires assistance',
+      }),
+    ).toBe(false);
   });
 });
 

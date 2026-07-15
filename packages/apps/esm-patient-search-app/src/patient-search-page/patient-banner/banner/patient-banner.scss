@@ -123,6 +123,14 @@
   display: flex;
 }
 
+.contactDetails {
+  width: 100%;
+  min-height: 4rem;
+  color: $text-02;
+  background-color: $ui-02;
+  border-top: 1px solid $ui-03;
+}
+
 .tabletContactDetails {
   display: block;
 

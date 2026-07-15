@@ -135,7 +135,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
       : appointment.patient.identifier,
     dateTime: formatDatetime(new Date(appointment.startDateTime)),
     serviceType: appointment.service.name,
-    location: appointment.location?.name,
+    location: appointment.location?.name ?? appointment.service.location?.display ?? '—',
     provider: appointment.provider,
     status: <AppointmentActions appointment={appointment} />,
   }));

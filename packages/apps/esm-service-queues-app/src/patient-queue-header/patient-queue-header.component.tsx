@@ -32,14 +32,21 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
   const { queueLocations, isLoading, error } = useQueueLocations();
   const { dashboardTitle } = useConfig<ConfigObject>();
   const userSession = useSession();
-  const { selectedQueueLocationName, selectedQueueLocationUuid, selectedServiceDisplay } = useServiceQueuesStore();
-  const { queues } = useQueues();
+  const {
+    selectedQueueLocationName,
+    selectedQueueLocationUuid,
+    selectedServiceDisplay,
+    selectedServiceUuid,
+  } = useServiceQueuesStore();
+  const { queues } = useQueues(selectedQueueLocationUuid);
+  const availableQueues = queues ?? [];
   const shouldShowFilters = showFilters ?? showLocationDropdown ?? false;
   const shouldShowLocationDropdown = shouldShowFilters && queueLocations.length > 1;
-  const showServiceDropdown = shouldShowFilters && queues.length > 1;
+  const showServiceDropdown = shouldShowFilters && availableQueues.length > 1;
 
   const serviceOptions = useMemo(() => {
-    const options = queues
+    const options = availableQueues
+      .filter((queue) => queue.service?.uuid && queue.service.display)
       .map((queue) => ({ id: queue.service.uuid, name: queue.service.display }))
       .reduce((acc, curr) => {
         if (!acc.some((option) => option.id === curr.id)) {
@@ -48,7 +55,18 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
         return acc;
       }, []);
     return options.length !== 1 ? [{ id: 'all', name: t('all', 'All') }, ...options] : options;
-  }, [queues, t]);
+  }, [availableQueues, t]);
+
+  useEffect(() => {
+    if (!selectedServiceUuid || !availableQueues.length) {
+      return;
+    }
+
+    const serviceIsAvailable = availableQueues.some((queue) => queue.service?.uuid === selectedServiceUuid);
+    if (!serviceIsAvailable) {
+      updateSelectedService(null, t('all', 'All'));
+    }
+  }, [availableQueues, selectedServiceUuid, t]);
 
   const handleQueueLocationChange = useCallback(
     ({ selectedItem }: OnChangeData<QueueLocationOption>) => {

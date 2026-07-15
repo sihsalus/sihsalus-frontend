@@ -1,4 +1,4 @@
-import { ConfigurableLink, getPatientName, interpolateString, PatientPhoto, useConfig } from '@openmrs/esm-framework';
+import { getPatientName, interpolateString, navigate, PatientPhoto, useConfig } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { forwardRef, useCallback, useContext, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
@@ -112,38 +112,43 @@ const ClickablePatientContainer = ({ patient, children }: ClickablePatientContai
   const { nonNavigationSelectPatientAction, patientClickSideEffect } = useContext(PatientSearchContext);
   const config = useConfig<PatientSearchConfig>();
   const isDeceased = Boolean(patient?.person?.deathDate);
+  const selectPatient = useCallback(() => {
+    if (nonNavigationSelectPatientAction) {
+      nonNavigationSelectPatientAction(patient.uuid);
+    } else {
+      navigate({
+        to: interpolateString(config.search.patientChartUrl, {
+          patientUuid: patient.uuid,
+        }),
+      });
+    }
+    patientClickSideEffect?.(patient.uuid);
+  }, [config.search.patientChartUrl, nonNavigationSelectPatientAction, patient, patientClickSideEffect]);
 
-  if (nonNavigationSelectPatientAction) {
-    return (
-      <button
-        type="button"
-        className={classNames(styles.patientSearchResult, styles.patientSearchResultButton, {
-          [styles.deceased]: isDeceased,
-        })}
-        key={patient.uuid}
-        onClick={() => {
-          nonNavigationSelectPatientAction(patient.uuid);
-          patientClickSideEffect?.(patient.uuid);
-        }}
-      >
-        {children}
-      </button>
-    );
-  }
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        selectPatient();
+      }
+    },
+    [selectPatient],
+  );
 
   return (
-    <ConfigurableLink
+    <div
+      aria-label={patient.person.personName.display}
       className={classNames(styles.patientSearchResult, {
         [styles.deceased]: isDeceased,
       })}
       key={patient.uuid}
-      onBeforeNavigate={() => patientClickSideEffect?.(patient.uuid)}
-      to={interpolateString(config.search.patientChartUrl, {
-        patientUuid: patient.uuid,
-      })}
+      onClick={selectPatient}
+      onKeyDown={handleKeyDown}
+      role="link"
+      tabIndex={0}
     >
       {children}
-    </ConfigurableLink>
+    </div>
   );
 };
 

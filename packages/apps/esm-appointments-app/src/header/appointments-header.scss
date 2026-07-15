@@ -26,6 +26,10 @@
   inline-size: clamp(20rem, 36vw, 36rem);
   max-inline-size: calc(100vw - #{layout.$spacing-05});
 
+  :global(.cds--list-box__menu) {
+    max-block-size: min(32rem, calc(100vh - 8rem));
+  }
+
   :global(.cds--list-box__menu-item),
   :global(.cds--list-box__menu-item__option) {
     block-size: auto;

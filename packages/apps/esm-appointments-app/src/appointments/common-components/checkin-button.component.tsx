@@ -58,6 +58,11 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
           mapping.appointmentLocationUuid === appointmentLocationUuid,
       )
     : undefined;
+  const serviceMappings = (appointmentQueueMappings ?? []).filter(
+    (mapping) => mapping.appointmentServiceUuid === appointment.service.uuid,
+  );
+  const visitTypeMapping =
+    queueMapping ?? (serviceMappings.length === 1 ? serviceMappings[0] : undefined);
 
   const showCheckInFailure = (error: unknown) =>
     showSnackbar({
@@ -289,7 +294,7 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
                       uuid: requiredAppointmentLocationUuid,
                       display: appointment.location?.name ?? '',
                     },
-                    requiredVisitTypeUuid: queueMapping?.requiredVisitTypeUuid,
+                    requiredVisitTypeUuid: visitTypeMapping?.requiredVisitTypeUuid,
                     selectedPatientUuid: patientUuid,
                     startVisitWorkspaceName: appointmentsStartVisitWorkspace,
                     visitFormOpenedFrom: 'appointments-check-in',
@@ -324,7 +329,7 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
                     uuid: requiredAppointmentLocationUuid,
                     display: appointment.location?.name ?? '',
                   },
-                  requiredVisitTypeUuid: queueMapping?.requiredVisitTypeUuid,
+                  requiredVisitTypeUuid: visitTypeMapping?.requiredVisitTypeUuid,
                   showPatientHeader: true,
                   openedFrom: 'appointments-check-in',
                   onBeforeVisitSave: (visit?: Visit) => validateBeforePersistence(visit, false),

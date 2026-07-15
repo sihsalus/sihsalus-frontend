@@ -12,4 +12,5 @@ export * from './retry';
 export * from './shallowEqual';
 export * from './storage';
 export * from './test-helpers';
+export * from './user-facing-error-compat';
 export * from './version';

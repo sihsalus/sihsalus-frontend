@@ -18,7 +18,7 @@ import {
   Extension,
   ExtensionSlot,
   formatDatetime,
-  getUserFacingErrorMessage,
+  getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
   type NewVisitPayload,
   saveVisit,
   showSnackbar,
@@ -43,6 +43,7 @@ import {
   time12HourFormatRegex,
   useActivePatientEnrollment,
 } from '@openmrs/esm-patient-common-lib';
+import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import { UnauthorizedState } from '@sihsalus/esm-rbac';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
@@ -635,10 +636,11 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             title,
             kind: 'error',
             isLowContrast: false,
-            subtitle: getUserFacingErrorMessage(
+            subtitle: getCompatibleUserFacingErrorMessage(
               error,
               t('visitAttributeSaveFailed', 'No se pudo guardar el atributo de la consulta. Intente nuevamente.'),
               { logContext: `Persist visit attribute ${attributeType}` },
+              frameworkGetUserFacingErrorMessage,
             ),
           });
           throw error;
@@ -718,7 +720,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                 });
           showSnackbar({
             title: t('visitSaveRequiresReconciliation', 'No se pudo confirmar la consulta'),
-            subtitle: getUserFacingErrorMessage(
+            subtitle: getCompatibleUserFacingErrorMessage(
               recoveryError,
               t(
                 'visitSaveOutcomeUnknown',
@@ -733,6 +735,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                 },
                 logContext: 'Reconcile pending visit creation before retry',
               },
+              frameworkGetUserFacingErrorMessage,
             ),
             kind: 'error',
             isLowContrast: false,
@@ -993,7 +996,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                 : t('errorUpdatingVisitDetails', 'No se pudieron actualizar los datos de la consulta'),
             kind: 'error',
             isLowContrast: false,
-            subtitle: getUserFacingErrorMessage(
+            subtitle: getCompatibleUserFacingErrorMessage(
               error,
               visitWasPersisted
                 ? t(
@@ -1016,6 +1019,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                 },
                 logContext: visitWasPersisted ? 'Complete visit post-submit actions' : 'Save visit',
               },
+              frameworkGetUserFacingErrorMessage,
             ),
           });
         } finally {
@@ -1051,10 +1055,11 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
               title: t('startVisitError', 'No se pudo iniciar la consulta'),
               kind: 'error',
               isLowContrast: false,
-              subtitle: getUserFacingErrorMessage(
+              subtitle: getCompatibleUserFacingErrorMessage(
                 error,
                 t('offlineVisitSaveFailed', 'No se pudo guardar la consulta sin conexión. Intente nuevamente.'),
                 { logContext: 'Save offline visit' },
+                frameworkGetUserFacingErrorMessage,
               ),
             });
           },

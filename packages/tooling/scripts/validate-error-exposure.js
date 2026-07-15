@@ -26,6 +26,7 @@ const notificationSinks = new Set([
   'showToast',
 ]);
 const safeUserFacingErrorNormalizers = new Set([
+  'getCompatibleUserFacingErrorMessage',
   'getUserFacingErrorMessage',
   'getUserFacingQueueErrorMessage',
   'useUserFacingErrorMessage',
@@ -444,8 +445,14 @@ function findTechnicalExposure(expression, sourceFile, context, seen = new Set()
     }
 
     const isSafeNormalizer = isPermittedSafeNormalizerCall(node, sourceFile, context);
-    const firstArgumentToInspect = isSafeNormalizer ? 1 : 0;
-    for (const argument of node.arguments.slice(firstArgumentToInspect)) {
+    const safeNormalizerSymbol = isSafeNormalizer
+      ? resolveImportedSymbol(node.expression, node, sourceFile, context)
+      : null;
+    const argumentsToInspect =
+      safeNormalizerSymbol?.importedName === 'getCompatibleUserFacingErrorMessage'
+        ? [...node.arguments.slice(1, 3), ...node.arguments.slice(4)]
+        : node.arguments.slice(isSafeNormalizer ? 1 : 0);
+    for (const argument of argumentsToInspect) {
       const unsafe = findTechnicalExposure(argument, sourceFile, context, seen);
       if (unsafe) {
         return unsafe;
@@ -1008,6 +1015,23 @@ function isPermittedSafeNormalizerCall(call, sourceFile, context) {
     return false;
   }
 
+  if (symbol.importedName === 'getCompatibleUserFacingErrorMessage') {
+    if (symbol.moduleSpecifier !== '@openmrs/esm-utils') {
+      return false;
+    }
+
+    const runtimeNormalizer = call.arguments[3];
+    if (!runtimeNormalizer) {
+      return true;
+    }
+
+    const runtimeSymbol = resolveImportedSymbol(runtimeNormalizer, call, sourceFile, context);
+    return (
+      runtimeSymbol?.importedName === 'getUserFacingErrorMessage' &&
+      (runtimeSymbol.moduleSpecifier === '@openmrs/esm-error-handling' ||
+        runtimeSymbol.moduleSpecifier === '@openmrs/esm-framework')
+    );
+  }
   if (symbol.importedName === 'getUserFacingErrorMessage') {
     return (
       symbol.moduleSpecifier === '@openmrs/esm-error-handling' || symbol.moduleSpecifier === '@openmrs/esm-framework'

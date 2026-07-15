@@ -3,6 +3,7 @@ import {
   ExtensionSlot,
   type FetchResponse,
   getDefaultsFromConfigSchema,
+  getUserFacingErrorMessage,
   saveVisit,
   showSnackbar,
   updateVisit,
@@ -185,6 +186,7 @@ const testProps = {
 };
 
 const mockSaveVisit = vi.mocked(saveVisit);
+const mockGetUserFacingErrorMessage = vi.mocked(getUserFacingErrorMessage);
 const mockUpdateVisit = vi.mocked(updateVisit);
 const mockExtensionSlot = vi.mocked(ExtensionSlot);
 const mockUseConfig = vi.mocked(useConfig<ChartConfig>);
@@ -1690,9 +1692,10 @@ describe('Visit form', () => {
     });
   });
 
-  it('renders an error message if there was a problem starting a new visit', async () => {
+  it('shows the anti-duplication message when a legacy host cannot normalize a failed visit save', async () => {
     const user = userEvent.setup();
 
+    mockGetUserFacingErrorMessage.mockReturnValueOnce(undefined as never);
     mockSaveVisit.mockRejectedValueOnce({
       status: 500,
       statusText: 'Internal server error',
@@ -1711,12 +1714,12 @@ describe('Visit form', () => {
     await user.click(saveButton);
 
     expect(showSnackbar).toHaveBeenCalledTimes(1);
-    expect(showSnackbar).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kind: 'error',
-        title: 'No se pudo iniciar la consulta',
-      }),
-    );
+    expect(showSnackbar).toHaveBeenCalledWith({
+      isLowContrast: false,
+      kind: 'error',
+      subtitle: 'No repita la admisión. Pulse Reintentar para verificar la consulta antes de continuar.',
+      title: 'No se pudo iniciar la consulta',
+    });
 
     expect(mockOnVisitCreatedOrUpdatedCallback).not.toHaveBeenCalled();
     expect(mockCloseWorkspace).not.toHaveBeenCalled();

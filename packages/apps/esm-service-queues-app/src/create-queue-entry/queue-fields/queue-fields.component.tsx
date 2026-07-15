@@ -8,13 +8,14 @@ import {
   SelectSkeleton,
 } from '@carbon/react';
 import {
-  getUserFacingErrorMessage,
+  getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
   ResponsiveWrapper,
   showSnackbar,
   useConfig,
   useSession,
   type Visit,
 } from '@openmrs/esm-framework';
+import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -118,7 +119,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
               title: t('queueEntryError', 'No se pudo agregar el paciente a la cola'),
               kind: 'error',
               isLowContrast: false,
-              subtitle: getUserFacingErrorMessage(
+              subtitle: getCompatibleUserFacingErrorMessage(
                 error,
                 t('queueEntryActionErrorMessage', 'No se pudo completar la acción de cola. Intente nuevamente.'),
                 {
@@ -146,6 +147,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
                   },
                   logContext: 'Add patient to queue',
                 },
+                frameworkGetUserFacingErrorMessage,
               ),
             });
             throw error;

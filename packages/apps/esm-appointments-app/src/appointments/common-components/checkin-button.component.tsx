@@ -1,12 +1,13 @@
 import { Button } from '@carbon/react';
 import {
-  getUserFacingErrorMessage,
+  getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
   launchWorkspace2,
   navigate,
   showSnackbar,
   useConfig,
   type Visit,
 } from '@openmrs/esm-framework';
+import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import utc from 'dayjs/plugin/utc';
@@ -61,7 +62,7 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
   const showCheckInFailure = (error: unknown) =>
     showSnackbar({
       title: t('checkInFailed', 'No se pudo admitir la cita'),
-      subtitle: getUserFacingErrorMessage(
+      subtitle: getCompatibleUserFacingErrorMessage(
         error,
         t('appointmentCheckInFailed', 'No se pudo completar la admisión de la cita. Intente nuevamente.'),
         {
@@ -101,6 +102,7 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
           },
           logContext: 'Check in appointment',
         },
+        frameworkGetUserFacingErrorMessage,
       ),
       kind: 'error',
       isLowContrast: false,

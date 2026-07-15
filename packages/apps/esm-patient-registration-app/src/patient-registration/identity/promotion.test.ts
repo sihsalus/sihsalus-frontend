@@ -90,19 +90,15 @@ describe('buildDocumentIdentifierForPromotion', () => {
 
   it('rejects a different document number already present for the same identifier type', () => {
     expect(() =>
-      buildDocumentIdentifierForPromotion(
-        buildPerson(),
-        [{ identifier: '11223344', identifierType: peruDniPatientIdentifierTypeUuid, location: 'location-1' }],
-        'location-1',
-      ),
+      buildDocumentIdentifierForPromotion(buildPerson(), [
+        { identifier: '11223344', identifierType: peruDniPatientIdentifierTypeUuid, location: 'location-1' },
+      ]),
     ).toThrow(PromotionDocumentMismatchError);
 
     try {
-      buildDocumentIdentifierForPromotion(
-        buildPerson(),
-        [{ identifier: '11223344', identifierType: peruDniPatientIdentifierTypeUuid, location: 'location-1' }],
-        'location-1',
-      );
+      buildDocumentIdentifierForPromotion(buildPerson(), [
+        { identifier: '11223344', identifierType: peruDniPatientIdentifierTypeUuid, location: 'location-1' },
+      ]);
     } catch (error) {
       expect(error).toMatchObject({
         code: registrationErrorCodes.promotionDocumentMismatch,
@@ -114,11 +110,9 @@ describe('buildDocumentIdentifierForPromotion', () => {
   });
 
   it('recognizes the same document after normalization', () => {
-    const identifier = buildDocumentIdentifierForPromotion(
-      buildPerson(),
-      [{ identifier: '998 877-66', identifierType: peruDniPatientIdentifierTypeUuid, location: 'location-1' }],
-      'location-1',
-    );
+    const identifier = buildDocumentIdentifierForPromotion(buildPerson(), [
+      { identifier: '998 877-66', identifierType: peruDniPatientIdentifierTypeUuid, location: 'location-1' },
+    ]);
 
     expect(identifier).toBeNull();
   });

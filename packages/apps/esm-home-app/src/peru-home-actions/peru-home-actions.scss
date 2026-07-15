@@ -4,7 +4,8 @@
 
 .quickActions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(12.5rem, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(12.5rem, 100%), 20rem));
+  justify-content: start;
   gap: layout.$spacing-04;
   max-width: 100%;
   padding: layout.$spacing-05 layout.$spacing-05 0;
@@ -24,6 +25,9 @@
   grid-template-rows: 3.75rem minmax(0, 1fr);
   gap: layout.$spacing-01;
   aspect-ratio: 1 / 1;
+  width: 100%;
+  max-width: 20rem;
+  max-height: 20rem;
   min-height: 0;
   min-width: 0;
   padding: layout.$spacing-05;

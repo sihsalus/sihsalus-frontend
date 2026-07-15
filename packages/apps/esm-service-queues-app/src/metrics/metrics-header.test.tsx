@@ -43,6 +43,12 @@ describe('MetricsHeader', () => {
 
     render(<MetricsHeader />);
 
+    expect(mockUseQueueEntries).toHaveBeenCalledWith({
+      service: 'service-uuid',
+      location: 'location-uuid',
+      isEnded: false,
+    });
+
     const clearQueueButton = screen.getByRole('button', { name: /clear queue entries/i });
     expect(clearQueueButton).toBeDisabled();
 

@@ -1,4 +1,4 @@
-import { DataTableSkeleton, Dropdown, Layer, TableToolbarSearch } from '@carbon/react';
+import { ContentSwitcher, DataTableSkeleton, Layer, Switch, TableToolbarSearch } from '@carbon/react';
 import { getUserFacingErrorMessage, isDesktop, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { useEffect, useMemo, useState } from 'react';
@@ -17,6 +17,7 @@ function DefaultQueueTable() {
 
   return (
     <div className={styles.defaultQueueTable}>
+      <StatusSwitcher />
       <Layer className={classNames(styles.tableSection, styles.container)} data-testid="queue-table-card">
         <div className={styles.headerContainer}>
           <div className={!isDesktop(layout) ? styles.tabletHeading : styles.desktopHeading}>
@@ -94,58 +95,70 @@ function QueueTableSection() {
       queueUuid={null}
       statusUuid={null}
       tableFilters={
-        <>
-          <StatusDropdownFilter />
-          <TableToolbarSearch
-            className={searchClassName}
-            onChange={(e) => {
-              if (typeof e === 'string') {
-                setSearchTerm(e);
-              } else if (e && 'target' in e) {
-                const target = e.target as HTMLInputElement;
-                setSearchTerm(target.value);
-              }
-            }}
-            placeholder={t('searchThisList', 'Search this list')}
-            size={isDesktop(layout) ? 'sm' : 'lg'}
-            persistent
-          />
-        </>
+        <TableToolbarSearch
+          className={searchClassName}
+          onChange={(e) => {
+            if (typeof e === 'string') {
+              setSearchTerm(e);
+            } else if (e && 'target' in e) {
+              const target = e.target as HTMLInputElement;
+              setSearchTerm(target.value);
+            }
+          }}
+          placeholder={t('searchThisList', 'Search this list')}
+          size={isDesktop(layout) ? 'sm' : 'lg'}
+          persistent
+        />
       }
     />
   );
 }
 
-function StatusDropdownFilter() {
+function StatusSwitcher() {
   const { t } = useTranslation();
   const layout = useLayoutType();
-  const { statuses } = useQueueStatuses();
+  const { statuses, isLoadingQueueStatuses, queueStatusesError } = useQueueStatuses();
   const { selectedQueueStatusDisplay, selectedQueueStatusUuid } = useServiceQueuesStore();
   const allStatusesOption = { uuid: 'all', display: t('all', 'All') };
-  const statusItems = [allStatusesOption, ...(statuses ?? [])];
-  const selectedStatus = selectedQueueStatusUuid
-    ? statusItems.find((status) => status.uuid === selectedQueueStatusUuid) ?? allStatusesOption
-    : allStatusesOption;
+  const hasSelectedStatus = statuses.some((status) => status.uuid === selectedQueueStatusUuid);
+  const persistedStatusOption =
+    selectedQueueStatusUuid && !hasSelectedStatus && (isLoadingQueueStatuses || queueStatusesError)
+      ? {
+          uuid: selectedQueueStatusUuid,
+          display: selectedQueueStatusDisplay ?? t('queueStatus', 'Queue status'),
+        }
+      : null;
+  const statusItems = [allStatusesOption, ...(persistedStatusOption ? [persistedStatusOption] : []), ...statuses];
+  const matchingStatusIndex = selectedQueueStatusUuid
+    ? statusItems.findIndex((status) => status.uuid === selectedQueueStatusUuid)
+    : 0;
+  const selectedIndex = matchingStatusIndex >= 0 ? matchingStatusIndex : 0;
 
-  const handleStatusChange = ({ selectedItem }) => {
-    const statusUuid = selectedItem?.uuid === 'all' ? null : selectedItem?.uuid;
-    updateSelectedQueueStatus(statusUuid, selectedItem?.display ?? t('all', 'All'));
-  };
+  useEffect(() => {
+    if (!isLoadingQueueStatuses && !queueStatusesError && selectedQueueStatusUuid && matchingStatusIndex < 0) {
+      updateSelectedQueueStatus(null, t('all', 'All'));
+    }
+  }, [isLoadingQueueStatuses, matchingStatusIndex, queueStatusesError, selectedQueueStatusUuid, t]);
 
   return (
-    <div className={styles.filterContainer}>
-      <Dropdown
-        id="statusFilter"
-        items={statusItems}
-        itemToString={(item) => (item ? item.display : '')}
-        label={selectedQueueStatusDisplay ?? selectedStatus.display}
-        selectedItem={selectedStatus}
-        onChange={handleStatusChange}
-        size={isDesktop(layout) ? 'sm' : 'lg'}
-        titleText={t('showPatientsWithStatus', 'Show patients with status:')}
-        type="inline"
-      />
-    </div>
+    <ContentSwitcher
+      aria-label={t('queueStatus', 'Queue status')}
+      className={styles.statusSwitcher}
+      onChange={({ name }) => {
+        const selectedStatus = statusItems.find((status) => status.uuid === name) ?? allStatusesOption;
+        updateSelectedQueueStatus(
+          selectedStatus.uuid === allStatusesOption.uuid ? null : selectedStatus.uuid,
+          selectedStatus.display,
+        );
+      }}
+      selectedIndex={selectedIndex}
+      selectionMode="manual"
+      size={isDesktop(layout) ? 'sm' : 'md'}
+    >
+      {statusItems.map((status) => (
+        <Switch key={status.uuid} name={status.uuid} text={status.display} />
+      ))}
+    </ContentSwitcher>
   );
 }
 

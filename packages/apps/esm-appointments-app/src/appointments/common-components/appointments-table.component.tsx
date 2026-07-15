@@ -29,13 +29,13 @@ import {
   useConfig,
   useLayoutType,
   usePagination,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
+import classNames from 'classnames';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import utc from 'dayjs/plugin/utc';
-import classNames from 'classnames';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -89,7 +89,9 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
     /hoy/i.test(translatedTableHeading);
   const appointmentSectionTitle = isTodayAppointmentsTable
     ? t('todaysAppointments', 'Today appointments')
-    : `${translatedTableHeading} ${t('appointments', 'Appointments')}`;
+    : tableHeading === 'checkedIn'
+      ? t('appointmentsInProgress', 'Appointments in progress')
+      : `${translatedTableHeading} ${t('appointments', 'Appointments')}`;
   const emptyDisplayText = isTodayAppointmentsTable
     ? t('appointmentsScheduledForToday', 'appointments scheduled for today')
     : appointmentSectionTitle.toLocaleLowerCase();

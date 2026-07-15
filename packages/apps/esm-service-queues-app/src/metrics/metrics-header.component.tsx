@@ -8,16 +8,15 @@ import styles from './metrics-header.scss';
 
 const MetricsHeader = () => {
   const { t } = useTranslation();
-  const { selectedServiceUuid, selectedQueueLocationUuid, selectedQueueStatusUuid } = useServiceQueuesStore();
+  const { selectedServiceUuid, selectedQueueLocationUuid } = useServiceQueuesStore();
 
   const searchCriteria = useMemo(
     () => ({
       service: selectedServiceUuid,
       location: selectedQueueLocationUuid,
       isEnded: false,
-      status: selectedQueueStatusUuid,
     }),
-    [selectedServiceUuid, selectedQueueLocationUuid, selectedQueueStatusUuid],
+    [selectedServiceUuid, selectedQueueLocationUuid],
   );
   const { queueEntries } = useQueueEntries(searchCriteria);
 

@@ -144,6 +144,30 @@ describe('AdvancedPatientSearchComponent', () => {
     expect(screen.getByText(/2 search result/)).toBeInTheDocument();
   });
 
+  it('uses the configured deceased-patient search policy', () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      includeDead: false,
+    } as PatientSearchConfig);
+
+    renderComponent();
+
+    expect(mockUseInfinitePatientSearch).toHaveBeenCalledWith('Jos', false, true, 50);
+  });
+
+  it('does not offer patient registration in an embedded selection context', () => {
+    mockUseInfinitePatientSearch.mockReturnValue({
+      ...mockSearchResults,
+      data: [],
+      totalResults: 0,
+    });
+
+    renderComponent();
+
+    expect(screen.getByText(/no patient charts were found/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /add patient/i })).not.toBeInTheDocument();
+  });
+
   it('does not show postcode or telephone filters by default', () => {
     renderComponent();
 
@@ -256,7 +280,7 @@ describe('AdvancedPatientSearchComponent', () => {
       await user.click(screen.getByRole('button', { name: /search/i }));
 
       await waitFor(() => {
-        expect(mockUseInfinitePatientSearch).toHaveBeenLastCalledWith('10000001', false, true, 50);
+        expect(mockUseInfinitePatientSearch).toHaveBeenLastCalledWith('10000001', true, true, 50);
       });
     });
 

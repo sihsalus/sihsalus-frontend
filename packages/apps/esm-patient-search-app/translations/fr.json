@@ -11,7 +11,7 @@
   "countOfFiltersApplied_other": "{{count}} filtre(s) appliqué(s)",
   "dayOfBirth": "Jour de naissance",
   "error": "Erreur",
-  "errorCopy": "Désolé, une erreur s'est produite. Vous pouvez tenter de rafraîchir la page, ou bien contacter l'administrateur du site et transmettre le message d'erreur ci-dessus.",
+  "errorCopy": "Désolé, une erreur s'est produite. Veuillez réessayer ou contacter l'administrateur du site.",
   "errorFetchingPatients": "Erreur lors de la récupération des données",
   "errorFetchingUserProperties": "Erreur lors de la récupération des propriétés d'utilisateur",
   "errorLoadingAttribute": "Erreur lors du chargement du type d'attribut : {{attributeUuid}}",

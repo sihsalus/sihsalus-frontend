@@ -8,6 +8,7 @@ import {
   personDocumentTypeAttributeTypeUuid,
 } from './identity/identity-documents';
 import { fetchPersonForPromotion, isPersonAlreadyPatient } from './identity/identity-search.resource';
+import { verifyIdentityForPromotion } from './identity/identity-verification.resource';
 import {
   addPatientIdentifier,
   deletePatientIdentifier,
@@ -40,6 +41,7 @@ import {
   peruNationalityConceptUuid,
   peruPhoneAttributeTypeUuid,
 } from './peru-registration-config';
+import { registrationErrorCodes } from './registration-errors';
 
 vi.mock('./patient-registration.resource', async () => ({
   ...(await vi.importActual('./patient-registration.resource')),
@@ -63,6 +65,10 @@ vi.mock('./identity/identity-search.resource', () => ({
   isPersonAlreadyPatient: vi.fn(),
 }));
 
+vi.mock('./identity/identity-verification.resource', () => ({
+  verifyIdentityForPromotion: vi.fn(),
+}));
+
 const mockGenerateIdentifier = generateIdentifier as vi.Mock;
 const mockAddPatientIdentifier = vi.mocked(addPatientIdentifier);
 const mockDeletePatientIdentifier = vi.mocked(deletePatientIdentifier);
@@ -78,6 +84,7 @@ const mockUpdateRelationship = vi.mocked(updateRelationship);
 const mockUpdatePatientIdentifier = vi.mocked(updatePatientIdentifier);
 const mockFetchPersonForPromotion = vi.mocked(fetchPersonForPromotion);
 const mockIsPersonAlreadyPatient = vi.mocked(isPersonAlreadyPatient);
+const mockVerifyIdentityForPromotion = vi.mocked(verifyIdentityForPromotion);
 
 const formValues: FormValues = {
   patientUuid: '',
@@ -159,16 +166,11 @@ describe('FormManager', () => {
     });
 
     it('rejects active identifiers when the session location is missing', async () => {
-      await expect(FormManager.savePatientIdentifiers(true, undefined, formValues.identifiers, {}, '')).rejects.toEqual(
-        {
-          responseBody: {
-            error: {
-              message:
-                'No se puede registrar al paciente sin una ubicación de sesión. Seleccione una ubicación e intente nuevamente.',
-            },
-          },
-        },
-      );
+      await expect(
+        FormManager.savePatientIdentifiers(true, undefined, formValues.identifiers, {}, ''),
+      ).rejects.toMatchObject({
+        code: registrationErrorCodes.identifierLocationRequired,
+      });
 
       expect(mockGenerateIdentifier).not.toHaveBeenCalled();
       expect(mockAddPatientIdentifier).not.toHaveBeenCalled();
@@ -453,7 +455,7 @@ describe('FormManager', () => {
           transaction,
         ),
       ).rejects.toMatchObject({
-        responseBody: { error: { message: expect.stringContaining('guardado parcialmente') } },
+        code: registrationErrorCodes.partialSavePatientChanged,
       });
 
       expect(mockSavePatient).toHaveBeenCalledTimes(1);
@@ -488,7 +490,8 @@ describe('FormManager', () => {
           new SavePatientTransactionManager(),
         ),
       ).rejects.toMatchObject({
-        responseBody: { error: { message: expect.stringContaining('formulario de registro') } },
+        code: registrationErrorCodes.clinicalConfigurationMissing,
+        technicalDetails: { missingConfiguration: ['formulario de registro'] },
       });
       expect(mockSavePatient).not.toHaveBeenCalled();
       expect(mockSaveEncounter).not.toHaveBeenCalled();
@@ -749,6 +752,7 @@ describe('FormManager', () => {
       }
       mockIsPersonAlreadyPatient.mockResolvedValue(false);
       mockFetchPersonForPromotion.mockResolvedValue(buildPromotionPerson());
+      mockVerifyIdentityForPromotion.mockResolvedValue({ status: 'unavailable' });
       mockPromotePersonToPatient.mockResolvedValue({ ok: true, data: { uuid: personUuid } } as never);
       mockSavePatient.mockResolvedValue({ ok: true, data: { uuid: personUuid } } as never);
     });
@@ -769,7 +773,7 @@ describe('FormManager', () => {
 
     it('rejects a document identifier derived during promotion when the session location is missing', async () => {
       await expect(runPromotion({ ...buildPromotionFormValues(), identifiers: {} }, '')).rejects.toMatchObject({
-        responseBody: { error: { message: expect.stringContaining('ubicación de sesión') } },
+        code: registrationErrorCodes.identifierLocationRequired,
       });
 
       expect(mockPromotePersonToPatient).not.toHaveBeenCalled();
@@ -792,6 +796,28 @@ describe('FormManager', () => {
         (identifier) => identifier.identifierType === '550e8400-e29b-41d4-a716-446655440001',
       );
       expect(dniIdentifiers).toHaveLength(1);
+    });
+
+    it('keeps identity mismatch observations technical and exposes only a stable domain code', async () => {
+      const observation = 'RENIEC returned NAME_MISMATCH for a sensitive source value';
+      mockVerifyIdentityForPromotion.mockResolvedValue({
+        status: 'mismatch',
+        source: 'reniec',
+        verifiedAt: '2026-07-15T15:00:00.000Z',
+        observation,
+      });
+
+      await expect(runPromotion()).rejects.toMatchObject({
+        code: registrationErrorCodes.identityVerificationMismatch,
+        message: expect.stringContaining(observation),
+        technicalDetails: {
+          observation,
+          personUuid,
+          source: 'reniec',
+        },
+      });
+      expect(mockPromotePersonToPatient).not.toHaveBeenCalled();
+      expect(mockSavePatient).not.toHaveBeenCalled();
     });
 
     it('updates demographics with a follow-up call that reuses existing name/address rows and sends no identifiers', async () => {
@@ -853,7 +879,7 @@ describe('FormManager', () => {
       mockIsPersonAlreadyPatient.mockResolvedValue(true);
 
       await expect(runPromotion()).rejects.toMatchObject({
-        responseBody: { error: { message: expect.stringContaining('ya está registrada como paciente') } },
+        code: registrationErrorCodes.promotionAlreadyPatient,
       });
       expect(mockPromotePersonToPatient).not.toHaveBeenCalled();
       expect(mockSavePatient).not.toHaveBeenCalled();
@@ -874,7 +900,7 @@ describe('FormManager', () => {
           new SavePatientTransactionManager(),
         ),
       ).rejects.toMatchObject({
-        responseBody: { error: { message: expect.stringContaining('no está disponible sin conexión') } },
+        code: registrationErrorCodes.promotionOffline,
       });
     });
   });
@@ -983,7 +1009,7 @@ describe('FormManager', () => {
           {},
         ),
       ).rejects.toMatchObject({
-        responseBody: { error: { message: expect.stringContaining('Seleccione o registre una persona') } },
+        code: registrationErrorCodes.relationshipPersonRequired,
       });
 
       expect(mockSavePerson).not.toHaveBeenCalled();

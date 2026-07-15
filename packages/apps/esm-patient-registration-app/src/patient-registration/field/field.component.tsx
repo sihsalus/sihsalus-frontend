@@ -39,7 +39,7 @@ export function Field({ name }: FieldProps) {
   switch (name) {
     case 'reniecLookup':
     case 'minsaLookup':
-      return externalLookupsEnabled ? <IdentityLookupField /> : null;
+      return <IdentityLookupField />;
     case 'sisLookup':
       return externalLookupsEnabled ? <SisLookupField /> : null;
     case 'name':

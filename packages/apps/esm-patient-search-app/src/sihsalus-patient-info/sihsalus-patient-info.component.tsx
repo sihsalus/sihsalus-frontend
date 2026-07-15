@@ -8,7 +8,6 @@ interface SihsalusPatientInfoProps {
 }
 
 const dniIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440001';
-const dniValuePattern = /^\d{8}$/;
 
 function isDniIdentifier(identifier: fhir.Identifier) {
   const type = identifier.type;
@@ -21,8 +20,7 @@ function isDniIdentifier(identifier: fhir.Identifier) {
     typeText === 'dni' ||
     codingDisplay === 'dni' ||
     codingCode === 'dni' ||
-    coding?.code === dniIdentifierTypeUuid ||
-    Boolean(identifier.value && dniValuePattern.test(identifier.value))
+    coding?.code === dniIdentifierTypeUuid
   );
 }
 
@@ -86,7 +84,7 @@ function Identifier({ identifier, highlighted }: { identifier: fhir.Identifier; 
 }
 
 function PatientIdentifiers({ identifiers }: { identifiers?: fhir.Identifier[] }) {
-  const filteredIdentifiers = (identifiers?.filter((identifier) => identifier.value) ?? []).sort(
+  const filteredIdentifiers = [...(identifiers?.filter((identifier) => identifier.value) ?? [])].sort(
     (firstIdentifier, secondIdentifier) => getIdentifierOrder(firstIdentifier) - getIdentifierOrder(secondIdentifier),
   );
   const hasDniIdentifier = filteredIdentifiers.some(isDniIdentifier);

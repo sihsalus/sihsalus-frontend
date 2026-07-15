@@ -1,9 +1,10 @@
-import { getDefaultsFromConfigSchema, reportError, useConfig } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, reportError, useConfig, useFeatureFlag } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 
 const mockReportError = vi.mocked(reportError);
 
 import { Form, Formik } from 'formik';
+import type React from 'react';
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../../config-schema';
 import { type Resources, ResourcesContext } from '../../offline.resources';
@@ -20,6 +21,7 @@ vi.mock('./address/address-hierarchy.resource', async () => ({
 }));
 
 const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
+const mockUseFeatureFlag = vi.mocked(useFeatureFlag);
 
 const predefinedAddressTemplate = {
   uuid: 'test-address-template-uuid',
@@ -118,10 +120,11 @@ const initialContextValues = {
 };
 
 describe('Field', () => {
-  let ContextWrapper;
+  let ContextWrapper: React.ComponentType<React.PropsWithChildren>;
 
   beforeEach(() => {
     mockReportError.mockImplementation(() => undefined);
+    mockUseFeatureFlag.mockReturnValue(true);
 
     ContextWrapper = ({ children }) => (
       <ResourcesContext.Provider value={mockResourcesContextValue}>
@@ -309,6 +312,22 @@ describe('Field', () => {
       </ResourcesContext.Provider>,
     );
     expect(screen.getByText('Identifiers')).toBeInTheDocument();
+  });
+
+  it('renders local identity search when external identity providers are disabled', () => {
+    mockUseFeatureFlag.mockReturnValue(false);
+
+    render(<Field name="reniecLookup" />, { wrapper: ContextWrapper });
+
+    expect(screen.getByRole('button', { name: /buscar en base local$/i })).toBeInTheDocument();
+  });
+
+  it('keeps SIS hidden when external identity providers are disabled', () => {
+    mockUseFeatureFlag.mockReturnValue(false);
+
+    render(<Field name="sisLookup" />, { wrapper: ContextWrapper });
+
+    expect(screen.queryByRole('button', { name: /consultar sis/i })).not.toBeInTheDocument();
   });
 
   it('should return null and report an error for an invalid field name', () => {

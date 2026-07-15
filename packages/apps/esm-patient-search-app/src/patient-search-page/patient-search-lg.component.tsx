@@ -1,8 +1,9 @@
 import { usePagination } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useLogPatientSearchError } from '../hooks/useLogPatientSearchError';
 import type { SearchedPatient } from '../types';
 import Pagination from '../ui-components/pagination/pagination.component';
 
@@ -15,7 +16,10 @@ interface PatientSearchComponentProps {
   stickyPagination?: boolean;
   searchResults: Array<SearchedPatient>;
   isLoading: boolean;
+  isValidating: boolean;
+  hasMore: boolean;
   fetchError: Error | null;
+  showAddPatient?: boolean;
 }
 
 const PatientSearchComponent: React.FC<PatientSearchComponentProps> = ({
@@ -23,7 +27,11 @@ const PatientSearchComponent: React.FC<PatientSearchComponentProps> = ({
   inTabletOrOverlay,
   searchResults,
   isLoading,
+  isValidating,
+  hasMore,
   fetchError,
+  query,
+  showAddPatient = true,
 }) => {
   const { t } = useTranslation();
   const resultsToShow = inTabletOrOverlay ? 15 : 20;
@@ -33,26 +41,31 @@ const PatientSearchComponent: React.FC<PatientSearchComponentProps> = ({
     searchResults,
     resultsToShow,
   );
+  const previousQuery = useRef(query);
+  const lastValidPage = Math.max(1, totalPages);
+  const isCurrentPageOutOfRange = currentPage > lastValidPage;
+  const searchInProgress = isLoading || isValidating || hasMore || isCurrentPageOutOfRange;
+  useLogPatientSearchError(fetchError, 'Patient search request failed');
 
   useEffect(() => {
-    goTo(1);
-  }, [goTo]);
-
-  const searchResultsView = useMemo(() => {
-    if (isLoading) {
-      return <LoadingState />;
+    if (previousQuery.current !== query) {
+      previousQuery.current = query;
+      goTo(1);
+    } else if (isCurrentPageOutOfRange) {
+      goTo(lastValidPage);
     }
+  }, [goTo, isCurrentPageOutOfRange, lastValidPage, query]);
 
-    if (fetchError) {
-      return <ErrorState />;
-    }
-
-    if (!results || results.length === 0) {
-      return <EmptyState />;
-    }
-
-    return <PatientSearchResults searchResults={results} />;
-  }, [fetchError, isLoading, results]);
+  let searchResultsView: React.ReactNode;
+  if (fetchError) {
+    searchResultsView = <ErrorState />;
+  } else if (searchInProgress && (!results || results.length === 0)) {
+    searchResultsView = <LoadingState />;
+  } else if (!results || results.length === 0) {
+    searchResultsView = <EmptyState showAddPatient={showAddPatient} />;
+  } else {
+    searchResultsView = <PatientSearchResults searchResults={results} />;
+  }
 
   return (
     <div
@@ -71,7 +84,7 @@ const PatientSearchComponent: React.FC<PatientSearchComponentProps> = ({
             [styles.leftPaddedResultHeader]: inTabletOrOverlay,
           })}
         >
-          {isLoading
+          {searchInProgress
             ? t('searchingText', 'Searching...')
             : t('searchResultsCount', '{{count}} search result', {
                 count: totalResults,
@@ -79,7 +92,7 @@ const PatientSearchComponent: React.FC<PatientSearchComponentProps> = ({
         </h2>
         {searchResultsView}
       </div>
-      {paginated ? (
+      {paginated && !searchInProgress ? (
         <div
           className={classNames(styles.pagination, {
             [styles.stickyPagination]: stickyPagination,

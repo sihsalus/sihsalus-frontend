@@ -1,4 +1,5 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { navigate, useFeatureFlag } from '@openmrs/esm-framework';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Form, Formik } from 'formik';
 import type React from 'react';
@@ -9,7 +10,12 @@ import {
   personIdentityVerificationSourceAttributeTypeUuid,
   personIdentityVerificationStatusAttributeTypeUuid,
 } from '../../identity/identity-documents';
-import { fetchPersonForPromotion, searchLocalIdentityByDocument } from '../../identity/identity-search.resource';
+import {
+  fetchPersonForPromotion,
+  type LocalPatientIdentityMatch,
+  type LocalPersonIdentityMatch,
+  searchLocalIdentityByDocument,
+} from '../../identity/identity-search.resource';
 import { type FormValues } from '../../patient-registration.types';
 import { PatientRegistrationContext, type PatientRegistrationContextProps } from '../../patient-registration-context';
 import {
@@ -21,8 +27,8 @@ import {
 } from '../../peru-registration-config';
 import { IdentityLookupField } from './identity-lookup-field.component';
 import { lookupReniecIdentityByDni } from './reniec-lookup.resource';
-import { SisLookupField } from './sis-lookup-field.component';
 import { lookupSisInsuranceByDni } from './sis-lookup.resource';
+import { SisLookupField } from './sis-lookup-field.component';
 
 vi.mock('../../identity/identity-search.resource', () => ({
   searchLocalIdentityByDocument: vi.fn(),
@@ -31,6 +37,18 @@ vi.mock('../../identity/identity-search.resource', () => ({
 
 const mockSearchLocalIdentityByDocument = vi.mocked(searchLocalIdentityByDocument);
 const mockFetchPersonForPromotion = vi.mocked(fetchPersonForPromotion);
+const mockNavigate = vi.mocked(navigate);
+const mockUseFeatureFlag = vi.mocked(useFeatureFlag);
+
+function deferred<T>() {
+  let resolve: (value: T) => void = () => {
+    throw new Error('Deferred promise was not initialized');
+  };
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
 
 function buildFormValues(identifierValue = '12345678') {
   return {
@@ -76,40 +94,49 @@ function buildFormValues(identifierValue = '12345678') {
 function renderLookup(component: React.ReactNode, values: FormValues = buildFormValues()) {
   const setFieldValue = vi.fn();
   const setFieldTouched = vi.fn();
-  const contextValues = {
-    currentPhoto: null,
-    identifierTypes: [
-      {
-        fieldName: 'dni',
-        name: 'DNI',
-        uuid: peruDniPatientIdentifierTypeUuid,
-      },
-    ],
-    inEditMode: false,
-    initialFormValues: values,
-    isOffline: false,
-    setCapturePhotoProps: vi.fn(),
+  const renderTree = (currentValues: FormValues) => {
+    const contextValues = {
+      currentPhoto: null,
+      identifierTypes: [
+        {
+          fieldName: 'dni',
+          name: 'DNI',
+          uuid: peruDniPatientIdentifierTypeUuid,
+        },
+      ],
+      inEditMode: false,
+      initialFormValues: values,
+      isOffline: false,
+      setCapturePhotoProps: vi.fn(),
+      setFieldTouched,
+      setFieldValue,
+      validationSchema: null,
+      values: currentValues,
+    } as unknown as PatientRegistrationContextProps;
+
+    return (
+      <Formik initialValues={{}} onSubmit={vi.fn()}>
+        <Form>
+          <PatientRegistrationContext.Provider value={contextValues}>{component}</PatientRegistrationContext.Provider>
+        </Form>
+      </Formik>
+    );
+  };
+
+  const rendered = render(renderTree(values));
+
+  return {
+    rerenderValues: (nextValues: FormValues) => rendered.rerender(renderTree(nextValues)),
     setFieldTouched,
     setFieldValue,
-    validationSchema: null,
-    values,
-  } as unknown as PatientRegistrationContextProps;
-
-  render(
-    <Formik initialValues={{}} onSubmit={vi.fn()}>
-      <Form>
-        <PatientRegistrationContext.Provider value={contextValues}>{component}</PatientRegistrationContext.Provider>
-      </Form>
-    </Formik>,
-  );
-
-  return { setFieldTouched, setFieldValue };
+  };
 }
 
 const lookupButtonName = /buscar en base local y reniec/i;
 
 beforeEach(() => {
   globalThis.spaEnv = 'development';
+  mockUseFeatureFlag.mockReturnValue(true);
 });
 
 describe('IdentityLookupField', () => {
@@ -133,7 +160,14 @@ describe('IdentityLookupField', () => {
     await user.click(screen.getByRole('button', { name: lookupButtonName }));
 
     await waitFor(() => expect(screen.getByText(/ya existe un paciente con este documento/i)).toBeInTheDocument());
-    expect(screen.getByRole('button', { name: /abrir paciente existente/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /abrir paciente existente/i }));
+
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith({
+        to: `\${openmrsSpaBase}/patient/patient-uuid/chart`,
+      }),
+    );
+    expect(mockSearchLocalIdentityByDocument).toHaveBeenCalledTimes(2);
     expect(setFieldValue).not.toHaveBeenCalled();
   });
 
@@ -170,6 +204,166 @@ describe('IdentityLookupField', () => {
     expect(setFieldValue).toHaveBeenCalledWith('givenName', 'Rosa', false);
     expect(setFieldValue).toHaveBeenCalledWith('familyName', 'Flores', false);
     expect(setFieldValue).toHaveBeenCalledWith('gender', 'female', false);
+    expect(mockSearchLocalIdentityByDocument).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps every lookup action busy while promotion is being revalidated', async () => {
+    const user = userEvent.setup();
+    const promotionRevalidation = deferred<Array<LocalPatientIdentityMatch | LocalPersonIdentityMatch>>();
+    const personMatch: LocalPersonIdentityMatch = {
+      kind: 'person',
+      uuid: 'person-uuid',
+      display: 'Rosa Flores',
+      documentNumber: '12345678',
+    };
+    mockSearchLocalIdentityByDocument
+      .mockResolvedValueOnce([personMatch])
+      .mockImplementationOnce(() => promotionRevalidation.promise);
+    mockFetchPersonForPromotion.mockResolvedValue({
+      uuid: 'person-uuid',
+      display: 'Rosa Flores',
+      gender: 'F',
+      birthdate: '1986-01-01',
+      birthdateEstimated: false,
+      names: [{ uuid: 'name-uuid', preferred: true, givenName: 'Rosa', familyName: 'Flores' }],
+      addresses: [],
+      attributes: [],
+    });
+    const { setFieldValue } = renderLookup(<IdentityLookupField />);
+
+    await user.click(screen.getByRole('button', { name: lookupButtonName }));
+    const promoteButton = await screen.findByRole('button', { name: /registrar como paciente/i });
+    await user.click(promoteButton);
+
+    const lookupButton = screen.getByRole('button', { name: lookupButtonName });
+    expect(lookupButton).toBeDisabled();
+    expect(promoteButton).toBeDisabled();
+    expect(screen.getByText(/cargando persona/i)).toBeInTheDocument();
+
+    await user.click(lookupButton);
+    expect(mockSearchLocalIdentityByDocument).toHaveBeenCalledTimes(2);
+    const activePromotionRequest = mockSearchLocalIdentityByDocument.mock.calls[1][1];
+    expect(activePromotionRequest?.signal.aborted).toBe(false);
+
+    await act(async () => {
+      promotionRevalidation.resolve([personMatch]);
+      await promotionRevalidation.promise;
+    });
+
+    await waitFor(() => expect(setFieldValue).toHaveBeenCalledWith('personUuidToPromote', 'person-uuid', false));
+    expect(lookupButton).toBeEnabled();
+    expect(screen.queryByText(/cargando persona/i)).not.toBeInTheDocument();
+  });
+
+  it('invalidates a match when the normalized document key changes', async () => {
+    const user = userEvent.setup();
+    mockSearchLocalIdentityByDocument.mockResolvedValue([
+      {
+        kind: 'patient',
+        uuid: 'patient-a',
+        display: 'Paciente A',
+        identifier: '12345678',
+        identifierTypeUuid: peruDniPatientIdentifierTypeUuid,
+      },
+    ]);
+    const { rerenderValues } = renderLookup(<IdentityLookupField />);
+
+    await user.click(screen.getByRole('button', { name: lookupButtonName }));
+    await waitFor(() => expect(screen.getByText('Paciente A')).toBeInTheDocument());
+
+    rerenderValues(buildFormValues('87654321'));
+
+    await waitFor(() => expect(screen.queryByText('Paciente A')).not.toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: /abrir paciente existente/i })).not.toBeInTheDocument();
+  });
+
+  it('ignores an older lookup response that resolves after the current document lookup', async () => {
+    const user = userEvent.setup();
+    const firstLookup = deferred<Array<LocalPatientIdentityMatch>>();
+    const secondLookup = deferred<Array<LocalPatientIdentityMatch>>();
+    mockSearchLocalIdentityByDocument.mockImplementation((documentNumber) =>
+      documentNumber === '12345678' ? firstLookup.promise : secondLookup.promise,
+    );
+    const { rerenderValues } = renderLookup(<IdentityLookupField />);
+
+    await user.click(screen.getByRole('button', { name: lookupButtonName }));
+    rerenderValues(buildFormValues('87654321'));
+    await waitFor(() => expect(screen.getByRole('button', { name: lookupButtonName })).toBeEnabled());
+    await user.click(screen.getByRole('button', { name: lookupButtonName }));
+
+    await act(async () => {
+      secondLookup.resolve([
+        {
+          kind: 'patient',
+          uuid: 'patient-b',
+          display: 'Paciente B',
+          identifier: '87654321',
+          identifierTypeUuid: peruDniPatientIdentifierTypeUuid,
+        },
+      ]);
+      await secondLookup.promise;
+    });
+    await waitFor(() => expect(screen.getByText('Paciente B')).toBeInTheDocument());
+
+    await act(async () => {
+      firstLookup.resolve([
+        {
+          kind: 'patient',
+          uuid: 'patient-a',
+          display: 'Paciente A',
+          identifier: '12345678',
+          identifierTypeUuid: peruDniPatientIdentifierTypeUuid,
+        },
+      ]);
+      await firstLookup.promise;
+    });
+
+    expect(screen.getByText('Paciente B')).toBeInTheDocument();
+    expect(screen.queryByText('Paciente A')).not.toBeInTheDocument();
+  });
+
+  it('revalidates a person and stops promotion when the document now belongs to a patient', async () => {
+    const user = userEvent.setup();
+    mockSearchLocalIdentityByDocument
+      .mockResolvedValueOnce([
+        {
+          kind: 'person',
+          uuid: 'person-uuid',
+          display: 'Rosa Flores',
+          documentNumber: '12345678',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          kind: 'patient',
+          uuid: 'person-uuid',
+          display: 'Rosa Flores',
+          identifier: '12345678',
+          identifierTypeUuid: peruDniPatientIdentifierTypeUuid,
+        },
+      ]);
+    const { setFieldValue } = renderLookup(<IdentityLookupField />);
+
+    await user.click(screen.getByRole('button', { name: lookupButtonName }));
+    await user.click(await screen.findByRole('button', { name: /registrar como paciente/i }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /abrir paciente existente/i })).toBeInTheDocument());
+    expect(mockFetchPersonForPromotion).not.toHaveBeenCalled();
+    expect(setFieldValue).not.toHaveBeenCalledWith('personUuidToPromote', expect.anything(), false);
+  });
+
+  it('keeps local identity search available while RENIEC is disabled', async () => {
+    const user = userEvent.setup();
+    mockUseFeatureFlag.mockReturnValue(false);
+    const { setFieldValue } = renderLookup(<IdentityLookupField />);
+
+    await user.click(screen.getByRole('button', { name: /buscar en base local$/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/^sin coincidencias locales\. registre los datos manualmente\.$/i)).toBeInTheDocument(),
+    );
+    expect(setFieldValue).not.toHaveBeenCalled();
+    expect(screen.queryByText(/datos reniec cargados/i)).not.toBeInTheDocument();
   });
 
   it('falls back to RENIEC and marks the identity as verified when there are no local matches', async () => {

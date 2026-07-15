@@ -1,8 +1,11 @@
+import { useConfig } from '@openmrs/esm-framework';
 import { parsePatientBirthdate } from '@openmrs/esm-utils';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 
+import { type PatientSearchConfig } from '../config-schema';
 import { useInfinitePatientSearch } from '../patient-search.resource';
+import { PatientSearchContext, usePatientSearchContext2 } from '../patient-search-context';
 import { type AdvancedPatientSearchState } from '../types';
 
 import styles from './advanced-patient-search.scss';
@@ -24,6 +27,10 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
 }) => {
   const [filters, setFilters] = useState<AdvancedPatientSearchState>(initialFilters);
   const [activeQuery, setActiveQuery] = useState(query);
+  const config = useConfig<PatientSearchConfig>();
+  const { nonNavigationSelectPatientAction } = useContext(PatientSearchContext);
+  const patientSearchContext2 = usePatientSearchContext2();
+  const isEmbeddedSelection = Boolean(nonNavigationSelectPatientAction || patientSearchContext2?.onPatientSelected);
 
   useEffect(() => {
     setActiveQuery(query);
@@ -49,8 +56,9 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
     setPage,
     hasMore,
     isLoading,
+    isValidating,
     fetchError,
-  } = useInfinitePatientSearch(activeQuery, false, !!activeQuery, 50);
+  } = useInfinitePatientSearch(activeQuery, config.includeDead, !!activeQuery, 50);
 
   useEffect(() => {
     if (searchResults?.length === currentPage * 50 && hasMore) {
@@ -169,8 +177,11 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
           stickyPagination={stickyPagination}
           inTabletOrOverlay={inTabletOrOverlay}
           isLoading={isLoading}
+          isValidating={isValidating}
+          hasMore={hasMore}
           fetchError={fetchError}
           searchResults={filteredResults ?? []}
+          showAddPatient={!isEmbeddedSelection}
         />
       </div>
       {inTabletOrOverlay && (

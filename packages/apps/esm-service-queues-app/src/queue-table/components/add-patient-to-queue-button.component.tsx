@@ -13,7 +13,7 @@ const AddPatientToQueueButton: React.FC = () => {
   return (
     <CanEditServiceQueues>
       <Button
-        kind="secondary"
+        kind="primary"
         renderIcon={(props) => <AddIcon size={16} {...props} />}
         size="sm"
         onClick={() =>

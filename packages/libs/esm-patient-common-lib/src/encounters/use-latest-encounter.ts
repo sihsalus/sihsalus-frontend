@@ -1,14 +1,13 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import pickBy from 'lodash-es/pickBy';
 import { useMemo } from 'react';
 import useSWR, { type KeyedMutator } from 'swr';
+import { validate as isUuid } from 'uuid';
 
 import type { OpenmrsEncounter } from '../encounter-list/types';
 
 const latestEncounterRepresentation =
   'custom:(uuid,encounterDatetime,encounterType:(uuid,display),location:(uuid,display),patient:(uuid,display),' +
   'obs:(uuid,obsDatetime,concept:(uuid,display),value:(uuid,display,name:(uuid,name)),groupMembers:(uuid,concept:(uuid,display),value:(uuid,display))),form:(uuid,name,display))';
-
 interface UseLatestEncounterResponse {
   encounter: OpenmrsEncounter | undefined;
   isLoading: boolean;
@@ -21,57 +20,63 @@ export const useLatestValidEncounter = (
   encounterTypeUuid: string,
   formIdentifier?: string,
 ): UseLatestEncounterResponse => {
-  const params = new URLSearchParams(
-    pickBy(
-      {
-        patient: patientUuid,
-        encounterType: encounterTypeUuid,
-        v: latestEncounterRepresentation,
-        limit: '100',
-      },
-      (value) => value,
-    ),
-  );
+  const url = useMemo(() => {
+    const normalizedPatientUuid = patientUuid?.trim();
+    const normalizedEncounterTypeUuid = encounterTypeUuid?.trim();
+    const normalizedFormIdentifier = formIdentifier?.trim();
 
-  // Define the URL only if both parameters are valid, otherwise null
-  const url = patientUuid && encounterTypeUuid ? `${restBaseUrl}/encounter?${params.toString()}` : null;
+    if (!normalizedPatientUuid || !normalizedEncounterTypeUuid) {
+      return null;
+    }
 
-  // Always call useSWR, but with a key that may be null
+    const formUuid = normalizedFormIdentifier && isUuid(normalizedFormIdentifier) ? normalizedFormIdentifier : undefined;
+    const params = new URLSearchParams({
+      patient: normalizedPatientUuid,
+      encounterType: normalizedEncounterTypeUuid,
+      v: latestEncounterRepresentation,
+      order: 'desc',
+      limit: formUuid ? '1' : '100',
+      startIndex: '0',
+    });
+    if (formUuid) {
+      params.set('form', formUuid);
+    }
+
+    return `${restBaseUrl}/encounter?${params.toString()}`;
+  }, [encounterTypeUuid, formIdentifier, patientUuid]);
+
   const {
     data,
     isLoading,
     error: swrError,
     mutate,
-  } = useSWR<FetchResponse<{ results: OpenmrsEncounter[] }>, Error>(
-    url,
-    async (url) => {
-      const response = await openmrsFetch(url);
-      return response;
-    },
-    {
-      revalidateIfStale: true,
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-      dedupingInterval: 2000,
-    },
-  );
+  } = useSWR<FetchResponse<{ results: OpenmrsEncounter[] }>, Error>(url, openmrsFetch, {
+    revalidateIfStale: true,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    dedupingInterval: 2000,
+  });
 
-  // Set final error: custom error if URL is null, otherwise use SWR error (or null if undefined)
   const finalError = !url ? new Error('patientUuid and encounterTypeUuid are required') : swrError || null;
 
   const encounter = useMemo(() => {
-    const normalizedFormIdentifier = formIdentifier?.trim().toLocaleLowerCase();
+    const normalizedFormIdentifier = formIdentifier?.trim().toLowerCase();
     const encounters = normalizedFormIdentifier
       ? (data?.data?.results ?? []).filter((candidate) =>
           [candidate.form?.uuid, candidate.form?.name, candidate.form?.display]
-            .filter(Boolean)
-            .some((value) => value?.trim().toLocaleLowerCase() === normalizedFormIdentifier),
+            .filter((value): value is string => Boolean(value))
+            .some((value) => value.trim().toLowerCase() === normalizedFormIdentifier),
         )
       : (data?.data?.results ?? []);
 
-    return encounters.sort(
-      (first, second) => new Date(second.encounterDatetime).getTime() - new Date(first.encounterDatetime).getTime(),
-    )[0];
+    return encounters.slice().sort((first, second) => {
+      const firstTime = Date.parse(first.encounterDatetime);
+      const secondTime = Date.parse(second.encounterDatetime);
+
+      if (!Number.isFinite(firstTime)) return Number.isFinite(secondTime) ? 1 : 0;
+      if (!Number.isFinite(secondTime)) return -1;
+      return secondTime - firstTime;
+    })[0];
   }, [data?.data?.results, formIdentifier]);
 
   return {

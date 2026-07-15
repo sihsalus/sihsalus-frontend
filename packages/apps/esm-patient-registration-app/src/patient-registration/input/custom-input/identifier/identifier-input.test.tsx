@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Form, Formik } from 'formik';
 
@@ -108,6 +108,49 @@ describe('identifier input', () => {
     openmrsID.autoGeneration = false;
     setupIdentifierInput(openmrsID as PatientIdentifierValue);
     expect(screen.getByLabelText(openmrsID.identifierName)).toBeInTheDocument();
+  });
+
+  it('allows Ctrl and Command clipboard shortcuts in the DNI input', () => {
+    const dniIdentifier = {
+      ...openmrsID,
+      autoGeneration: false,
+      identifierName: 'DNI',
+      identifierTypeUuid: 'dni-uuid',
+      identifierValue: '',
+      initialValue: '',
+      required: true,
+    };
+    setupIdentifierInput(dniIdentifier);
+    const input = screen.getByRole('textbox', { name: 'DNI' });
+
+    for (const modifier of ['ctrlKey', 'metaKey'] as const) {
+      for (const key of ['a', 'c', 'v', 'x']) {
+        expect(fireEvent.keyDown(input, { key, [modifier]: true })).toBe(true);
+      }
+    }
+  });
+
+  it('accepts and sanitizes a pasted eight-digit DNI', async () => {
+    const user = userEvent.setup();
+    const dniIdentifier = {
+      ...openmrsID,
+      autoGeneration: false,
+      identifierName: 'DNI',
+      identifierTypeUuid: 'dni-uuid',
+      identifierValue: '',
+      initialValue: '',
+      required: true,
+    };
+    setupIdentifierInput(dniIdentifier);
+    const input = screen.getByRole('textbox', { name: 'DNI' });
+
+    await user.click(input);
+    await user.paste('12345678');
+
+    expect(mockContextValues.setFieldValue).toHaveBeenLastCalledWith(
+      `identifiers.${fieldName}.identifierValue`,
+      '12345678',
+    );
   });
 
   it('displays an edit button when there is an initial value', async () => {

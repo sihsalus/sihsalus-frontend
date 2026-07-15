@@ -109,7 +109,14 @@ export const SisLookupField = () => {
         {dni ? <span className={styles.externalLookupDocument}>DNI {dni}</span> : null}
       </div>
       <div className={styles.externalLookupAction}>
-        <Button kind="tertiary" size="sm" renderIcon={Search} onClick={handleLookup} disabled={isLoading || isOffline}>
+        <Button
+          className={styles.externalLookupButton}
+          kind="tertiary"
+          size="sm"
+          renderIcon={Search}
+          onClick={handleLookup}
+          disabled={isLoading || isOffline}
+        >
           {t('sisLookupButton', 'Consultar SIS')}
         </Button>
         {isLoading ? <InlineLoading description={t('sisLookupLoading', 'Consultando SIS')} /> : null}

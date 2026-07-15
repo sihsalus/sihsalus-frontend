@@ -55,9 +55,10 @@ export function useAnemiaScreening(patientUuid: string): AnemiaScreeningResult {
     const hbValue = typeof obs.value === 'number' ? obs.value : parseFloat(obs.value);
     const obsDate = obs.obsDatetime ? dayjs(obs.obsDatetime).format('DD/MM/YYYY') : null;
     const intervalMonths = getAnemiaScreeningIntervalMonths(patient?.birthDate, obs.obsDatetime);
-    const nextDueDate = obs.obsDatetime && intervalMonths
-      ? dayjs(obs.obsDatetime).add(intervalMonths, 'months').format('DD/MM/YYYY')
-      : null;
+    const nextDueDate =
+      obs.obsDatetime && intervalMonths
+        ? dayjs(obs.obsDatetime).add(intervalMonths, 'months').format('DD/MM/YYYY')
+        : null;
 
     return {
       lastHb: Number.isNaN(hbValue) ? null : hbValue,

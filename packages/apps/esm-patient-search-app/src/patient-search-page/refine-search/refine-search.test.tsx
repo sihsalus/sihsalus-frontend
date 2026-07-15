@@ -259,6 +259,5 @@ describe('RefineSearch', () => {
         }),
       );
     });
-
   });
 });

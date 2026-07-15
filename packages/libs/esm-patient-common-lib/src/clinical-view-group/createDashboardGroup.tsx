@@ -1,10 +1,9 @@
 import { usePatient } from '@openmrs/esm-framework';
 import { memo, useMemo } from 'react';
 
-import { evaluateExpression } from '../utils/expression-helper';
-
 import { usePatientEnrollment } from './clinical-view-group.resource';
 import { DashboardGroupExtension } from './dashboard-group.component';
+import { evaluateShowWhenExpression } from './evaluate-show-when-expression';
 
 type DashboardGroupProps = {
   title: string;
@@ -21,7 +20,7 @@ const DashboardGroup = memo(
     const { activePatientEnrollment, isLoading: isLoadingActiveEnrollment } = usePatientEnrollment(patient?.id);
 
     const showGroup = useMemo(
-      () => evaluateExpression(showWhenExpression, patient, activePatientEnrollment),
+      () => evaluateShowWhenExpression(showWhenExpression, patient, activePatientEnrollment),
       [showWhenExpression, patient, activePatientEnrollment],
     );
 
@@ -42,7 +41,7 @@ const DashboardGroup = memo(
   },
 );
 
-export const createDashboardGroup = ({
+export const createClinicalDashboardGroup = ({
   title,
   slotName,
   isExpanded,

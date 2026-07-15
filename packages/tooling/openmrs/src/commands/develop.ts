@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
+import { createSpaStaticOptions, isSpaIndexRequestPath } from '../../spa-static-options';
 import {
   type ImportmapDeclaration,
   logInfo,
@@ -100,7 +101,7 @@ export async function runDevelop(args: DevelopArgs) {
 
   // Route for custom `importmap.json` goes above static assets
   if (importmap.type === 'inline') {
-    app.get(`${spaPath}/importmap.json`, (_, res) => {
+    app.get(`${spaPath}/importmap.json`, indexRateLimit, (_, res) => {
       res.contentType('application/json').send(importmap.value);
     });
   }
@@ -131,7 +132,7 @@ export async function runDevelop(args: DevelopArgs) {
       });
     }
 
-    app.get(`${spaPath}/routes.registry.json`, (_, res) => {
+    app.get(`${spaPath}/routes.registry.json`, indexRateLimit, (_, res) => {
       res.contentType('application/json').send(stringifiedRoutes);
     });
   }
@@ -150,16 +151,18 @@ export async function runDevelop(args: DevelopArgs) {
     });
   });
 
-  // Return our custom `index.html` for all requests beginning with spaPath
-  // and not ending in `.js`, `.woff`, `.woff2`, `.json`, or any two- or three-character
-  // extension.
-  const indexHtmlPathMatcher = /\/openmrs\/spa\/(?!.*\.(js|woff2?|json|.{2,3}$)).*$/;
+  const shouldServeSpaIndex = (requestPath: string) => isSpaIndexRequestPath(requestPath, spaPath);
 
   // Route for custom `index.html` goes above static assets
-  app.get(indexHtmlPathMatcher, indexRateLimit, (_, res) => res.contentType('text/html').send(indexContent));
+  app.get([spaPath, `${spaPath}/*`], indexRateLimit, (req, res, next) => {
+    if (!shouldServeSpaIndex(req.originalUrl || req.path)) {
+      return next();
+    }
+    res.contentType('text/html').send(indexContent);
+  });
 
   // Return static assets for any request for which we have one, except importmap.json and index.html
-  app.use(spaPath, express.static(source, { index: false }));
+  app.use(spaPath, express.static(source, createSpaStaticOptions({ index: false })));
 
   // Proxy requests beginning with `apiUrl` but which should not serve `index.html`.
   // This may include the JS bundles when using an import map that refers to
@@ -169,7 +172,7 @@ export async function runDevelop(args: DevelopArgs) {
     apiRateLimit,
     createProxyMiddleware(
       (path) => {
-        return new RegExp(`${apiUrl}/.*`).test(path) && !indexHtmlPathMatcher.test(path);
+        return new RegExp(`${apiUrl}/.*`).test(path) && !shouldServeSpaIndex(path);
       },
       {
         target: backend,

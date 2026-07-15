@@ -1,6 +1,7 @@
 import {
   buildNationalityAttribute,
   getAutomaticNationalityUpdate,
+  getNationalitySelectionUpdate,
   isCompletedPeruDni,
   isNationalityConceptUuid,
 } from './patient-nationality';
@@ -78,6 +79,42 @@ describe('patient nationality', () => {
         wasAutoAssigned: true,
       }),
     ).toEqual({ nationality: '', shouldUpdate: true, wasAutoAssigned: false });
+  });
+
+  it('preserves automatic provenance when Carbon echoes the controlled Peru selection', () => {
+    const assigned = getAutomaticNationalityUpdate({
+      currentNationality: '',
+      hasCompletedDni: true,
+      isUnknown: false,
+      peruConceptUuid,
+      wasAutoAssigned: false,
+    });
+    const echoed = getNationalitySelectionUpdate({
+      currentNationality: assigned.nationality,
+      selectedNationality: peruConceptUuid,
+      wasAutoAssigned: assigned.wasAutoAssigned,
+    });
+
+    expect(echoed).toEqual({ nationality: peruConceptUuid, shouldUpdate: false, wasAutoAssigned: true });
+    expect(
+      getAutomaticNationalityUpdate({
+        currentNationality: echoed.nationality,
+        hasCompletedDni: false,
+        isUnknown: false,
+        peruConceptUuid,
+        wasAutoAssigned: echoed.wasAutoAssigned,
+      }),
+    ).toEqual({ nationality: '', shouldUpdate: true, wasAutoAssigned: false });
+  });
+
+  it('marks a genuinely different nationality selection as manual', () => {
+    expect(
+      getNationalitySelectionUpdate({
+        currentNationality: peruConceptUuid,
+        selectedNationality: colombiaConceptUuid,
+        wasAutoAssigned: true,
+      }),
+    ).toEqual({ nationality: colombiaConceptUuid, shouldUpdate: true, wasAutoAssigned: false });
   });
 
   it('preserves explicitly selected nationalities and clears unknown-patient nationality', () => {

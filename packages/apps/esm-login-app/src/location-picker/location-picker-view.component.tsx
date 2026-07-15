@@ -14,6 +14,7 @@ import { type Location, useLocation, useSearchParams } from 'react-router-dom';
 
 import type { ConfigSchema } from '../config-schema';
 import type { LoginReferrer } from '../login/login.component';
+import { LoginArtwork } from '../login-artwork.component';
 import { buildSpaNavigationTarget, hardNavigate } from '../navigation';
 
 import { useDefaultLocation, useLocationCount } from './location-picker.resource';
@@ -50,9 +51,6 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
     }),
     [user],
   );
-  const loginImageAvifSrc = `${globalThis.getOpenmrsSpaBase()}login.avif`;
-  const loginImageSrc = `${globalThis.getOpenmrsSpaBase()}login.png`;
-
   const [activeLocation, setActiveLocation] = useState(() => {
     if (currentLocationUuid && hideWelcomeMessage) {
       return currentLocationUuid;
@@ -110,7 +108,14 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
         console.error('Expected location data is missing', { firstLocationResourceId, locationCount });
       }
     }
-  }, [admissionUser, changeLocation, chooseLocation.enabled, firstLocationResourceId, isLoadingLocationCount, locationCount]);
+  }, [
+    admissionUser,
+    changeLocation,
+    chooseLocation.enabled,
+    firstLocationResourceId,
+    isLoadingLocationCount,
+    locationCount,
+  ]);
 
   // Handle cases where the login location is present in the userProperties.
   useEffect(() => {
@@ -142,10 +147,7 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
 
   return (
     <div className={styles.locationPickerContainer}>
-      <picture className={styles.backgroundMedia}>
-        <source srcSet={loginImageAvifSrc} type="image/avif" />
-        <img src={loginImageSrc} alt="" width="1672" height="941" />
-      </picture>
+      <LoginArtwork className={styles.backgroundMedia} />
       <form className={styles.locationPickerForm} onSubmit={handleSubmit}>
         <div className={styles.locationCard}>
           <div className={styles.paddedContainer}>

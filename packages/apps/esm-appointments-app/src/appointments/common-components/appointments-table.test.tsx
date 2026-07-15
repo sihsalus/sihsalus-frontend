@@ -166,7 +166,8 @@ describe('AppointmentsTable', () => {
 
     renderAppointmentsTable({ appointments: [editableAppointment] });
 
-    expect(screen.getByRole('button', { name: /options/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /actions/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /options/i })).not.toBeInTheDocument();
   });
 
   it.each([
@@ -183,7 +184,7 @@ describe('AppointmentsTable', () => {
 
     renderAppointmentsTable({ appointments: [nonEditableAppointment] });
 
-    expect(screen.queryByRole('button', { name: /options/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /actions/i })).not.toBeInTheDocument();
   });
 });
 

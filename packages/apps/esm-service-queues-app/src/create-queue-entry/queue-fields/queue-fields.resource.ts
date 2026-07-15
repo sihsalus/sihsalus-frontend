@@ -96,9 +96,7 @@ function getVisitQueueNumber(
   attributes: Array<VisitAttributeSummary> | undefined,
   visitQueueNumberAttributeUuid: string,
 ): string | null {
-  const value = attributes?.find(
-    (attribute) => attribute.attributeType?.uuid === visitQueueNumberAttributeUuid,
-  )?.value;
+  const value = attributes?.find((attribute) => attribute.attributeType?.uuid === visitQueueNumberAttributeUuid)?.value;
   const queueNumber = value === null || value === undefined ? '' : String(value).trim();
   return queueNumber || null;
 }
@@ -119,12 +117,8 @@ async function getPersistedVisitQueueTicket(
   visitQueueNumberAttributeUuid: string,
   visitStartDatetime?: string | Date,
 ): Promise<{ queueNumber: string | null; startedAt: Date }> {
-  const representation = encodeURIComponent(
-    'custom:(uuid,startDatetime,attributes:(value,attributeType:(uuid)))',
-  );
-  const response = await openmrsFetch<VisitQueueTicketSummary>(
-    `${restBaseUrl}/visit/${visitUuid}?v=${representation}`,
-  );
+  const representation = encodeURIComponent('custom:(uuid,startDatetime,attributes:(value,attributeType:(uuid)))');
+  const response = await openmrsFetch<VisitQueueTicketSummary>(`${restBaseUrl}/visit/${visitUuid}?v=${representation}`);
 
   return {
     queueNumber: getVisitQueueNumber(response.data?.attributes, visitQueueNumberAttributeUuid),
@@ -254,7 +248,6 @@ export async function postQueueEntry(
         },
       },
     });
-
   } catch (error) {
     try {
       const entriesCreatedConcurrently = await findActiveQueueEntries({ visit: visitUuid });

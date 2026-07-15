@@ -49,10 +49,7 @@ export const useConceptSearch = (query: string, source: ConceptSource) => {
   } = useSWR<{ data: { uuid: string } }, Error>(sourceUrl, openmrsFetch);
   const isSourceReady = !sourceUrl || Boolean(sourceData?.data?.uuid);
   const searchUrl = isSourceReady && (query || hasSourceFilter) ? buildConceptSearchUrl(query, source) : null;
-  const { data, error, isLoading } = useSWR<{ data: { results: ConceptReference[] } }, Error>(
-    searchUrl,
-    openmrsFetch,
-  );
+  const { data, error, isLoading } = useSWR<{ data: { results: ConceptReference[] } }, Error>(searchUrl, openmrsFetch);
 
   const results = data?.data?.results ?? [];
 

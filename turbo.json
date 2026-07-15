@@ -18,7 +18,8 @@
         ".swcrc",
         "postcss.config.js",
         "translations/**",
-        "dependencies.json"
+        "dependencies.json",
+        "spa-static-options.*"
       ],
       "outputs": ["dist/**"],
       "env": ["NODE_ENV", "NODE_OPTIONS", "SIHSALUS_AUTH_MODE", "SIHSALUS_FHIR_BASE"]
@@ -45,6 +46,7 @@
         "mock-vitest.tsx",
         "setup-tests.ts",
         "src/setup-tests.ts",
+        "spa-static-options.*",
         "vitest.config.ts",
         "vitest.config.js"
       ],

@@ -96,11 +96,7 @@ it('renders an error state view if there is a problem fetching antecedents data'
 
   expect(screen.queryByRole('table')).not.toBeInTheDocument();
   expect(screen.queryAllByText(/Error 401: Unauthorized/i)).toHaveLength(0);
-  expect(
-    screen.getAllByText(
-      /there was a problem displaying this information/i,
-    ).length,
-  ).toBeGreaterThan(0);
+  expect(screen.getAllByText(/there was a problem displaying this information/i).length).toBeGreaterThan(0);
 });
 
 it("renders a detailed summary of the patient's antecedents when present", async () => {

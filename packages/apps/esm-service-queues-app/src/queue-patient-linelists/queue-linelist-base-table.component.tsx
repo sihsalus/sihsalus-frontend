@@ -142,7 +142,8 @@ const QueuePatientBaseTable: React.FC<QueuePatientTableProps> = ({
             {title} {serviceType}
           </p>
           <p className={styles.subTitle}>
-            {patientData?.length} · {t('lastUpdated', 'Last updated')}: {formatDatetime(new Date(), { mode: 'standard' })}
+            {patientData?.length} · {t('lastUpdated', 'Last updated')}:{' '}
+            {formatDatetime(new Date(), { mode: 'standard' })}
           </p>
         </div>
 

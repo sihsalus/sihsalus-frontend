@@ -36,14 +36,7 @@ describe('Concept Search Field', () => {
 
   it('associates an inline validation message with the search input', () => {
     const field = createMockField();
-    render(
-      <ConceptSearchField
-        {...defaultProps}
-        field={field}
-        invalid
-        invalidText="A procedure is required"
-      />,
-    );
+    render(<ConceptSearchField {...defaultProps} field={field} invalid invalidText="A procedure is required" />);
 
     const searchInput = screen.getByRole('searchbox', { name: /procedure/i });
     const validationMessage = screen.getByText('A procedure is required');

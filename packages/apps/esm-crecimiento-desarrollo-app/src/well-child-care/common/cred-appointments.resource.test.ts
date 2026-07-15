@@ -44,13 +44,7 @@ describe('createCREDAppointments', () => {
       ReturnType<typeof openmrsFetch>
     >);
 
-    const result = await createCREDAppointments(
-      'patient-uuid',
-      [futureControl],
-      'service-uuid',
-      'location-uuid',
-      30,
-    );
+    const result = await createCREDAppointments('patient-uuid', [futureControl], 'service-uuid', 'location-uuid', 30);
 
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(
       '/ws/rest/v1/appointment',

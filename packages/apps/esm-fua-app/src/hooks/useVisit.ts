@@ -61,18 +61,15 @@ async function requestFuaGeneration(visitUuid: string): Promise<Response> {
   try {
     // The FUA endpoint can return 401 for domain/configuration failures. openmrsFetch
     // treats every 401 as an expired session and redirects, so handle this request locally.
-    response = await window.fetch(
-      makeUrl(`${ModuleFuaRestURL}/generateFromVisit/${encodeURIComponent(visitUuid)}`),
-      {
-        method: 'POST',
-        credentials: 'same-origin',
-        redirect: 'manual',
-        headers: {
-          Accept: 'application/json',
-          'Disable-WWW-Authenticate': 'true',
-        },
+    response = await window.fetch(makeUrl(`${ModuleFuaRestURL}/generateFromVisit/${encodeURIComponent(visitUuid)}`), {
+      method: 'POST',
+      credentials: 'same-origin',
+      redirect: 'manual',
+      headers: {
+        Accept: 'application/json',
+        'Disable-WWW-Authenticate': 'true',
       },
-    );
+    });
   } catch (error) {
     throw new FuaGenerationError(null, error);
   }

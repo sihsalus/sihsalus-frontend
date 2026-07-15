@@ -3,13 +3,15 @@
 const { spawn, spawnSync } = require('node:child_process');
 const { existsSync, readFileSync, statSync } = require('node:fs');
 const net = require('node:net');
-const { extname, join, resolve } = require('node:path');
+const { join, relative, resolve } = require('node:path');
 
 const envPath = resolve(process.cwd(), '.env');
 const hadBackendBeforeDotenv = Boolean(process.env.SIHSALUS_BACKEND_URL);
 const dotenvResult = require('dotenv').config({ path: envPath, quiet: true });
 
 const chalk = require('chalk');
+const { createSpaStaticOptions, isSpaIndexRequestPath } = require('../openmrs/spa-static-options');
+const { formatSpaArtifactIssue, inspectSpaArtifacts } = require('./spa-artifact-manifest');
 const logInfo = (msg) => console.log(`${chalk.green.bold('[start-dev]')} ${msg}`);
 const logWarn = (msg) => console.warn(`${chalk.yellow.bold('[start-dev]')} ${chalk.yellow(msg)}`);
 const logFail = (msg) => console.error(`${chalk.red.bold('[start-dev]')} ${chalk.red(msg)}`);
@@ -110,6 +112,16 @@ function logStartupSummary({ mode, apps = [] }) {
 if (requireBackendUrl && backendSource === 'default') {
   logFail('SIHSALUS_BACKEND_URL is required because SIHSALUS_REQUIRE_BACKEND_URL=true.');
   logFail('  Set SIHSALUS_BACKEND_URL in the shell or in .env.');
+  process.exit(1);
+}
+
+const invalidSpaArtifacts = inspectSpaArtifacts(distSpa, 'startup');
+if (invalidSpaArtifacts.length > 0) {
+  logFail('The assembled SPA is incomplete:');
+  for (const issue of invalidSpaArtifacts) {
+    logFail(`  - ${formatSpaArtifactIssue({ ...issue, filePath: relative(process.cwd(), issue.filePath) })}`);
+  }
+  logFail('Run yarn assemble, then restart yarn start.');
   process.exit(1);
 }
 
@@ -296,7 +308,7 @@ async function startWithProxy(cliArgs) {
   const cliManagedPaths = new Set(['/importmap.json', '/routes.registry.json', '/routes.json']);
 
   const app = express();
-  const staticHandler = express.static(distSpa);
+  const staticHandler = express.static(distSpa, createSpaStaticOptions());
   const spaIndexHtml = readFileSync(join(distSpa, 'index.html'), 'utf8');
   const spaIndexRateLimit = createInMemoryRateLimit({
     windowMs: readRateLimitEnv('SIHSALUS_SPA_RATE_LIMIT_WINDOW_MS', 60_000),
@@ -366,8 +378,8 @@ async function startWithProxy(cliArgs) {
     staticHandler(req, res, next);
   });
 
-  app.get(`${spaPath}/*`, spaIndexRateLimit, (req, res, next) => {
-    if (cliManagedPaths.has(req.path) || extname(req.path)) {
+  app.get([spaPath, `${spaPath}/*`], spaIndexRateLimit, (req, res, next) => {
+    if (cliManagedPaths.has(req.path) || !isSpaIndexRequestPath(req.originalUrl || req.path, spaPath)) {
       return next();
     }
     res.type('html').send(spaIndexHtml);
@@ -415,48 +427,26 @@ if (devAppsEnv) {
   });
   logStartupSummary({ mode: 'hot reload', apps });
 
-  if (existsSync(assembledImportmap) && existsSync(assembledRoutes)) {
-    const importmapAge = Date.now() - statSync(assembledImportmap).mtimeMs;
-    const hoursOld = Math.floor(importmapAge / 3_600_000);
-    if (hoursOld >= 24) {
-      logWarn(`Assembled importmap is ${hoursOld}h old. Consider running: yarn assemble`);
-    }
-
-    // Use reverse proxy: dist/spa bundles + chunks served from same origin
-    startWithProxy(
-      withSharedDependencies([
-        '--importmap',
-        assembledImportmap,
-        '--routes',
-        assembledRoutes,
-        '--config-file',
-        frontendConfig,
-        ...sourcesArgs,
-      ]),
-    );
-  } else {
-    logWarn('No assembled importmap found. Only apps in SIHSALUS_DEV_APPS will be available.');
-    logWarn('For all apps: yarn assemble');
-    startCli(
-      withSharedDependencies([
-        '--importmap',
-        '{"imports":{}}',
-        '--routes',
-        '{}',
-        '--config-file',
-        frontendConfig,
-        ...sourcesArgs,
-      ]),
-    );
+  const importmapAge = Date.now() - statSync(assembledImportmap).mtimeMs;
+  const hoursOld = Math.floor(importmapAge / 3_600_000);
+  if (hoursOld >= 24) {
+    logWarn(`Assembled importmap is ${hoursOld}h old. Consider running: yarn assemble`);
   }
+
+  // Use reverse proxy: dist/spa bundles + chunks served from same origin
+  startWithProxy(
+    withSharedDependencies([
+      '--importmap',
+      assembledImportmap,
+      '--routes',
+      assembledRoutes,
+      '--config-file',
+      frontendConfig,
+      ...sourcesArgs,
+    ]),
+  );
 } else {
   // No apps to hot-reload: serve the pre-assembled SPA purely via proxy + static files
-  if (!existsSync(assembledImportmap)) {
-    logFail('No assembled importmap found.');
-    logFail('  Run: yarn assemble   (builds the importmap from local packages)');
-    logFail('  Or set SIHSALUS_DEV_APPS=esm-login-app,... for hot-reload');
-    process.exit(1);
-  }
   logStartupSummary({ mode: 'pre-assembled SPA' });
   logInfo('Serving pre-assembled SPA (no hot-reload). Set SIHSALUS_DEV_APPS for development.');
   // Avoid the CLI defaulting to "." as a dev source. In pre-assembled mode the

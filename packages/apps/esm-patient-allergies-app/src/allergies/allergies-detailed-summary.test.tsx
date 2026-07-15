@@ -43,11 +43,7 @@ describe('AllergiesDetailedSummary', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /allergies/i })).toBeInTheDocument();
     expect(screen.queryByText(/Error 401: Unauthorized/i)).not.toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /there was a problem displaying this information/i,
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/there was a problem displaying this information/i)).toBeInTheDocument();
   });
 
   it("renders a detailed summary of the patient's allergic reactions and their manifestations", async () => {

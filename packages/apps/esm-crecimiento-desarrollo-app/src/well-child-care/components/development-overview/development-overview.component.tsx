@@ -23,10 +23,8 @@ const DevelopmentOverview: React.FC<DevelopmentOverviewProps> = ({ patientUuid }
   const { patient } = usePatient(patientUuid);
   const ageInMonths = patient?.birthDate ? calculateAgeInMonths(patient.birthDate) : null;
   const { launchForm: launchEdi, isLoading: isEdiLoading } = useCREDFormLauncher('ediDevelopmentForm');
-  const { launchForm: launchHuanca, isLoading: isHuancaLoading } =
-    useCREDFormLauncher('huancaNeurodevelopmentForm');
-  const { launchForm: launchSkills, isLoading: isSkillsLoading } =
-    useCREDFormLauncher('expectedSkillsBehaviorsForm');
+  const { launchForm: launchHuanca, isLoading: isHuancaLoading } = useCREDFormLauncher('huancaNeurodevelopmentForm');
+  const { launchForm: launchSkills, isLoading: isSkillsLoading } = useCREDFormLauncher('expectedSkillsBehaviorsForm');
   const { launchForm: launchMchat, isLoading: isMchatLoading } = useCREDFormLauncher('autismScreeningForm');
 
   const actions = [

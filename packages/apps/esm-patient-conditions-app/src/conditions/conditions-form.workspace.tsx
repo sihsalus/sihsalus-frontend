@@ -88,18 +88,19 @@ const ConditionsForm: React.FC<ConditionsWorkspaceProps> = (props) => {
   const isEditing = formContext === 'editing';
 
   const matchingCondition = conditions?.find((c) => c?.id === condition?.id);
+  const editableCondition = matchingCondition ?? condition;
 
   const schema = createSchema(formContext, t);
 
   const defaultValues = {
     abatementDateTime:
-      isEditing && matchingCondition?.abatementDateTime ? new Date(matchingCondition?.abatementDateTime) : null,
-    antecedentType: isEditing ? (matchingCondition?.antecedentType ?? '') : (defaultAntecedentType ?? ''),
+      isEditing && editableCondition?.abatementDateTime ? new Date(editableCondition.abatementDateTime) : null,
+    antecedentType: isEditing ? (editableCondition?.antecedentType ?? '') : (defaultAntecedentType ?? ''),
     conditionName: '',
     clinicalStatus: isEditing
-      ? (matchingCondition?.clinicalStatus?.toLowerCase() ?? '')
+      ? (editableCondition?.clinicalStatus?.toLowerCase() ?? '')
       : (defaultClinicalStatus ?? ''),
-    onsetDateTime: isEditing && matchingCondition?.onsetDateTime ? new Date(matchingCondition?.onsetDateTime) : null,
+    onsetDateTime: isEditing && editableCondition?.onsetDateTime ? new Date(editableCondition.onsetDateTime) : null,
   };
 
   const methods = useForm<ConditionsFormSchema>({

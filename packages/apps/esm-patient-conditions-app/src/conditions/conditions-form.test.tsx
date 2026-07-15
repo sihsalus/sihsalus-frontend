@@ -1,10 +1,16 @@
-import { type FetchResponse, openmrsFetch, showSnackbar } from '@openmrs/esm-framework';
+import { type FetchResponse, openmrsFetch, showSnackbar, useSession } from '@openmrs/esm-framework';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-import { getByTextWithMarkup, mockFhirConditionsResponse, mockPatient, searchedCondition } from 'test-utils';
+import {
+  getByTextWithMarkup,
+  mockFhirConditionsResponse,
+  mockPatient,
+  mockSessionDataResponse,
+  searchedCondition,
+} from 'test-utils';
 import { createCondition, useConditionsSearch } from './conditions.resource';
 import ConditionsForm, { type ConditionFormProps } from './conditions-form.workspace';
 
@@ -45,6 +51,7 @@ const mockCreateCondition = vi.mocked(createCondition);
 const mockUseConditionsSearch = vi.mocked(useConditionsSearch);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockUseSession = vi.mocked(useSession);
 
 vi.mock('./conditions.resource', async () => ({
   ...(await vi.importActual('./conditions.resource')),
@@ -63,6 +70,10 @@ mockUseConditionsSearch.mockReturnValue({
 mockCreateCondition.mockResolvedValue({ status: 201, body: 'Condition created' } as unknown as FetchResponse);
 
 describe('Conditions form', () => {
+  beforeEach(() => {
+    mockUseSession.mockReturnValue(mockSessionDataResponse.data);
+  });
+
   it('renders the conditions form with all the relevant fields and values', () => {
     renderConditionsForm();
 
@@ -181,8 +192,34 @@ describe('Conditions form', () => {
       expect.objectContaining({
         antecedentType: 'pathological',
         clinicalStatus: 'active',
+        providerUuid: mockSessionDataResponse.data.currentProvider.uuid,
       }),
     );
+  });
+
+  it('does not submit a FHIR Condition when the session has no clinical provider', async () => {
+    const user = userEvent.setup();
+
+    mockUseSession.mockReturnValue({
+      ...mockSessionDataResponse.data,
+      currentProvider: undefined,
+    });
+    mockUseConditionsSearch.mockReturnValue({
+      searchResults: searchedCondition,
+      error: null,
+      isSearching: false,
+    });
+
+    renderConditionsForm();
+
+    await user.click(screen.getByRole('radio', { name: /patol|patholog/i }));
+    await user.type(screen.getByRole('searchbox', { name: /enter antecedent/i }), 'Headache');
+    await user.click(screen.getByRole('button', { name: /headache/i }));
+    await user.click(screen.getByLabelText(/^active/i));
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+
+    expect(await screen.findByText(/session is not linked to a clinical provider/i)).toBeInTheDocument();
+    expect(mockCreateCondition).not.toHaveBeenCalled();
   });
 
   it('preconfigures procedure and surgery workspaces before posting to the backend resource', async () => {

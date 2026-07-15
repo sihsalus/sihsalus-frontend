@@ -85,11 +85,13 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
   const searchInputRef = useRef(null);
   const clinicalStatus = watch('clinicalStatus');
   const matchingCondition = conditions?.find((condition) => condition?.id === conditionToEdit?.id);
+  const editableCondition = matchingCondition ?? conditionToEdit;
 
-  const displayName = conditionToEdit?.display;
-  const editableClinicalStatus = conditionToEdit?.clinicalStatus;
-  const editableAbatementDateTime = conditionToEdit?.abatementDateTime;
-  const editableAntecedentType = matchingCondition?.antecedentType ?? conditionToEdit?.antecedentType;
+  const editableConditionId = editableCondition?.id;
+  const editableConceptId = editableCondition?.conceptId;
+  const displayName = editableCondition?.display;
+  const editableClinicalStatus = editableCondition?.clinicalStatus;
+  const editableAntecedentType = editableCondition?.antecedentType;
   const [selectedCondition, setSelectedCondition] = useState<CodedCondition>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm);
@@ -108,17 +110,37 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
 
   const handleCreate = useCallback(async () => {
     if (!selectedCondition) {
+      setIsSubmittingForm(false);
       return;
     }
 
+    const providerUuid = session?.currentProvider?.uuid;
+    if (!providerUuid) {
+      setIsSubmittingForm(false);
+      setErrorCreating?.(
+        new Error(
+          t(
+            'clinicalProviderRequiredForAntecedent',
+            'Your session is not linked to a clinical provider. Sign in with a clinical account and try again.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    const selectedClinicalStatus = getValues('clinicalStatus');
+
     const payload: FormFields = {
-      clinicalStatus: getValues('clinicalStatus'),
+      clinicalStatus: selectedClinicalStatus,
       conceptId: selectedCondition?.uuid,
       display: selectedCondition?.display,
-      abatementDateTime: getValues('abatementDateTime') ? dayjs(getValues('abatementDateTime')).format() : null,
-      onsetDateTime: getValues('onsetDateTime') ? dayjs(getValues('onsetDateTime')).format() : null,
+      abatementDateTime:
+        selectedClinicalStatus === 'inactive' && getValues('abatementDateTime')
+          ? dayjs(getValues('abatementDateTime')).format()
+          : undefined,
+      onsetDateTime: getValues('onsetDateTime') ? dayjs(getValues('onsetDateTime')).format() : undefined,
       patientId: patientUuid,
-      userId: session?.user?.uuid,
+      providerUuid,
       antecedentType: getValues('antecedentType') as AntecedentTypeCode,
     };
 
@@ -143,30 +165,52 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
     mutate,
     patientUuid,
     selectedCondition,
-    session?.user?.uuid,
+    session?.currentProvider?.uuid,
     setErrorCreating,
     setIsSubmittingForm,
     t,
   ]);
 
   const handleUpdate = useCallback(async () => {
+    const providerUuid = session?.currentProvider?.uuid;
+    if (!providerUuid) {
+      setIsSubmittingForm(false);
+      setErrorUpdating?.(
+        new Error(
+          t(
+            'clinicalProviderRequiredForAntecedent',
+            'Your session is not linked to a clinical provider. Sign in with a clinical account and try again.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (!editableConditionId || !editableConceptId || !displayName) {
+      setIsSubmittingForm(false);
+      setErrorUpdating?.(
+        new Error(t('antecedentDataUnavailable', 'The antecedent data could not be loaded. Reopen it and try again.')),
+      );
+      return;
+    }
+
+    const selectedClinicalStatus = isEditing ? getValues('clinicalStatus') : editableClinicalStatus;
     const payload: FormFields = {
-      clinicalStatus: isEditing ? getValues('clinicalStatus') : editableClinicalStatus,
-      conceptId: matchingCondition?.conceptId,
+      clinicalStatus: selectedClinicalStatus,
+      conceptId: editableConceptId,
       display: displayName,
-      abatementDateTime: isEditing
-        ? getValues('abatementDateTime')
+      abatementDateTime:
+        selectedClinicalStatus === 'inactive' && getValues('abatementDateTime')
           ? dayjs(getValues('abatementDateTime')).format()
-          : editableAbatementDateTime
-        : null,
-      onsetDateTime: getValues('onsetDateTime') ? dayjs(getValues('onsetDateTime')).format() : null,
+          : undefined,
+      onsetDateTime: getValues('onsetDateTime') ? dayjs(getValues('onsetDateTime')).format() : undefined,
       patientId: patientUuid,
-      userId: session?.user?.uuid,
+      providerUuid,
       antecedentType: getValues('antecedentType') as AntecedentTypeCode,
     };
 
     try {
-      await updateCondition(conditionToEdit?.id, payload);
+      await updateCondition(editableConditionId, payload);
       await mutate();
 
       showSnackbar({
@@ -182,19 +226,18 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
     }
   }, [
     closeWorkspaceWithSavedChanges,
-    conditionToEdit?.id,
     displayName,
     editableClinicalStatus,
+    editableConceptId,
+    editableConditionId,
     isEditing,
     getValues,
-    matchingCondition?.conceptId,
     mutate,
     patientUuid,
-    session?.user?.uuid,
+    session?.currentProvider?.uuid,
     setErrorUpdating,
     setIsSubmittingForm,
     t,
-    editableAbatementDateTime,
   ]);
 
   const focusOnSearchInput = useCallback(() => {
@@ -375,7 +418,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
                       {...field}
                       id="endDate"
                       data-testid="endDate"
-                      minDate={new Date(watch('onsetDateTime'))}
+                      minDate={watch('onsetDateTime') ? new Date(watch('onsetDateTime')) : undefined}
                       maxDate={new Date()}
                       labelText={t('endDate', 'End date')}
                       invalid={Boolean(fieldState?.error?.message)}

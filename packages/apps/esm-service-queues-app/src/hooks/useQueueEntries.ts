@@ -1,10 +1,11 @@
 import {
   type FetchResponse,
-  getUserFacingErrorMessage,
+  getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
   openmrsFetch,
   restBaseUrl,
   showSnackbar,
 } from '@openmrs/esm-framework';
+import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import isEqual from 'lodash-es/isEqual';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -76,10 +77,11 @@ export function useMutateQueueEntries() {
         title: t('errorLoadingQueueEntries', 'Error loading queue entries'),
         kind: 'error',
         isLowContrast: false,
-        subtitle: getUserFacingErrorMessage(
+        subtitle: getCompatibleUserFacingErrorMessage(
           error,
           t('queueDataLoadErrorMessage', 'Queue information could not be loaded. Please try again.'),
           { logContext: 'Refresh queue entries' },
+          frameworkGetUserFacingErrorMessage,
         ),
       });
     }

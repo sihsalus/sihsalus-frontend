@@ -99,32 +99,17 @@
       "name": "transition-overflow-menu-item",
       "component": "transitionOverflowMenuItem",
       "slot": "transition-overflow-menu-item-slot",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
     },
     {
       "name": "remove-queue-entry",
       "component": "removeQueueEntry",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
     },
     {
       "name": "clear-all-queue-entries",
       "component": "clearAllQueueEntries",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
     },
     {
       "name": "previous-visit-summary-widget",
@@ -136,12 +121,7 @@
       "name": "active-visits-row-actions",
       "component": "activeVisitsRowActions",
       "slot": "queue-table-serve-patient-slot",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
     },
     {
       "name": "visit-form-queue-fields",
@@ -160,159 +140,82 @@
     {
       "name": "add-provider-to-room-modal",
       "component": "addProviderToRoomModal",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Rooms",
-        "Manage Queue Rooms"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Rooms", "Manage Queue Rooms"]
     },
     {
       "name": "edit-queue-entry-modal",
       "component": "editQueueEntryModal",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
     },
     {
       "name": "call-queue-entry-modal",
       "component": "callQueueEntryModal",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
     },
     {
       "name": "clear-all-queue-entries-modal",
       "component": "clearAllQueueEntriesModal",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
     },
     {
       "name": "move-queue-entry-modal",
       "component": "moveQueueEntryModal",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
     },
     {
       "name": "remove-queue-entry-modal",
       "component": "removeQueueEntryModal",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
     },
     {
       "name": "delete-queue-entry-modal",
       "component": "deleteQueueEntryModal",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
     },
     {
       "name": "delete-queue-modal",
       "component": "deleteQueueModal",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queues",
-        "Manage Queues"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queues", "Manage Queues"]
     },
     {
       "name": "delete-queue-room-modal",
       "component": "deleteQueueRoomModal",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Rooms",
-        "Manage Queue Rooms"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Rooms", "Manage Queue Rooms"]
     },
     {
       "name": "edit-queue-entry-status-modal",
       "component": "editQueueEntryStatusModal",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
     },
     {
       "name": "end-queue-entry-modal",
       "component": "endQueueEntryModal",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
     },
     {
       "name": "transition-patient-to-latest-queue-modal",
       "component": "addOrMoveModal",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
     },
     {
       "name": "transition-queue-entry-modal",
       "component": "transitionQueueEntryModal",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
     },
     {
       "name": "transition-queue-entry-status-modal",
       "component": "transitionQueueEntryStatusModal",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
     },
     {
       "name": "undo-transition-queue-entry-modal",
       "component": "undoTransitionQueueEntryModal",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
     },
     {
       "name": "void-queue-entry-modal",
       "component": "voidQueueEntryModal",
-      "privileges": [
-        "app:home.colasAtencion.editar",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.colasAtencion.editar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
     }
   ],
   "workspaces": [

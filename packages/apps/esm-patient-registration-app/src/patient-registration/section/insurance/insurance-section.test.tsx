@@ -54,7 +54,9 @@ describe('InsuranceSection', () => {
     expect(screen.getByTestId('field-insuranceCode')).toBeInTheDocument();
     expect(screen.getByTestId('field-insuranceAccreditationStatus')).toBeInTheDocument();
     expect(screen.queryByTestId('field-insuranceAccreditationCheckedAt')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /copy responsible data|copiar seguro del responsable/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /copy responsible data|copiar seguro del responsable/i }),
+    ).not.toBeInTheDocument();
   });
 
   it.each([

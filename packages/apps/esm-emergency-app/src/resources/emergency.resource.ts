@@ -177,12 +177,7 @@ export function useEmergencyQueueEntries(
       serviceQueuesFilters.locationUuid ??
       config?.upssEmergencyLocationUuid ??
       config?.emergencyLocationUuid,
-    [
-      locationUuid,
-      serviceQueuesFilters.locationUuid,
-      config?.upssEmergencyLocationUuid,
-      config?.emergencyLocationUuid,
-    ],
+    [locationUuid, serviceQueuesFilters.locationUuid, config?.upssEmergencyLocationUuid, config?.emergencyLocationUuid],
   );
 
   const actualServiceUuid = useMemo(

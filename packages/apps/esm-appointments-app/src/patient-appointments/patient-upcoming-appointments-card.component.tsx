@@ -36,7 +36,9 @@ const PatientUpcomingAppointmentsCard: React.FC<PatientUpcomingAppointmentsProps
   patientChartConfig,
 }) => {
   const { t } = useTranslation();
-  const startDate = dayjs(new Date().toISOString()).subtract(6, 'month').toISOString();
+  // The date is part of the SWR key; recomputing it per render restarts the request on
+  // every render and floods the backend with POST /appointments/search calls.
+  const startDate = useMemo(() => dayjs().subtract(6, 'month').toISOString(), []);
   const headerTitle = t('upcomingAppointments', 'Upcoming appointments');
   const ac = useMemo<AbortController>(() => new AbortController(), []);
   useEffect(() => () => ac.abort(), [ac]);

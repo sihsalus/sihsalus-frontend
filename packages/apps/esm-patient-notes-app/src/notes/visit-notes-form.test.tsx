@@ -155,9 +155,7 @@ test('closes the visit summary workspace without rendering it for admission user
   render(<VisitNotesForm {...defaultProps} closeWorkspace={closeWorkspace} />);
 
   expect(screen.queryByText(/visit note/i)).not.toBeInTheDocument();
-  await waitFor(() =>
-    expect(closeWorkspace).toHaveBeenCalledWith({ closeWindow: true, discardUnsavedChanges: true }),
-  );
+  await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ closeWindow: true, discardUnsavedChanges: true }));
 });
 
 test('renders the visit notes form with all the relevant fields and values', () => {

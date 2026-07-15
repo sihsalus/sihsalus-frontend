@@ -21,6 +21,12 @@ interface GetAutomaticNationalityUpdateOptions {
   wasAutoAssigned: boolean;
 }
 
+interface GetNationalitySelectionUpdateOptions {
+  currentNationality?: string;
+  selectedNationality: string;
+  wasAutoAssigned: boolean;
+}
+
 export interface AutomaticNationalityUpdate {
   nationality: string;
   shouldUpdate: boolean;
@@ -67,6 +73,18 @@ export function getAutomaticNationalityUpdate({
   }
 
   return { nationality: currentNationality, shouldUpdate: false, wasAutoAssigned: false };
+}
+
+export function getNationalitySelectionUpdate({
+  currentNationality = '',
+  selectedNationality,
+  wasAutoAssigned,
+}: GetNationalitySelectionUpdateOptions): AutomaticNationalityUpdate {
+  if (selectedNationality === currentNationality) {
+    return { nationality: currentNationality, shouldUpdate: false, wasAutoAssigned };
+  }
+
+  return { nationality: selectedNationality, shouldUpdate: true, wasAutoAssigned: false };
 }
 
 export function buildNationalityAttribute({

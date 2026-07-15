@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { type ConfigSchema } from '../config-schema';
+import { LoginArtwork } from '../login-artwork.component';
 import Logo from '../logo.component';
 import { buildSpaNavigationTarget, hardNavigate } from '../navigation';
 
@@ -130,8 +131,6 @@ const Login: React.FC = () => {
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const recoveryInputRef = useRef<HTMLInputElement>(null);
   const usernameInputRef = useRef<HTMLInputElement>(null);
-  const loginImageAvifSrc = `${globalThis.getOpenmrsSpaBase()}login.avif`;
-  const loginImageSrc = `${globalThis.getOpenmrsSpaBase()}login.png`;
   const openmrsLogoSrc = `${globalThis.getOpenmrsSpaBase()}logos/logo-openmrs.svg`;
   const pucpLogoSrc = `${globalThis.getOpenmrsSpaBase()}logos/logo-pucp.svg`;
   const santaClotildeLogoSrc = `${globalThis.getOpenmrsSpaBase()}logos/logo-santa-clotilde.png`;
@@ -343,10 +342,7 @@ const Login: React.FC = () => {
         <main className={styles.loginLayout}>
           <h1 className={styles.srOnly}>{t('login', 'Log in')}</h1>
           <div className={styles.imagePanel} aria-hidden="true">
-            <picture>
-              <source srcSet={loginImageAvifSrc} type="image/avif" />
-              <img className={styles.loginMedia} src={loginImageSrc} alt="" width="1672" height="941" />
-            </picture>
+            <LoginArtwork imageClassName={styles.loginMedia} />
           </div>
           <div className={styles.formPanel}>
             <LanguageSwitcher locales={languageSwitcher.locales} />

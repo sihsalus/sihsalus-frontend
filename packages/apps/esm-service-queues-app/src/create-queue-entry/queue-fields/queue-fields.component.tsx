@@ -8,13 +8,14 @@ import {
   SelectSkeleton,
 } from '@carbon/react';
 import {
-  getUserFacingErrorMessage,
+  getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
   ResponsiveWrapper,
   showSnackbar,
   useConfig,
   useSession,
   type Visit,
 } from '@openmrs/esm-framework';
+import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -60,6 +61,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   const { t } = useTranslation();
   const { queueLocations, isLoading: isLoadingQueueLocations } = useQueueLocations();
   const { sessionLocation } = useSession();
+  const sessionLocationUuid = sessionLocation?.uuid;
   const {
     visitQueueNumberAttributeUuid,
     concepts: { defaultStatusConceptUuid, defaultPriorityConceptUuid, emergencyPriorityConceptUuid },
@@ -117,7 +119,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
               title: t('queueEntryError', 'No se pudo agregar el paciente a la cola'),
               kind: 'error',
               isLowContrast: false,
-              subtitle: getUserFacingErrorMessage(
+              subtitle: getCompatibleUserFacingErrorMessage(
                 error,
                 t('queueEntryActionErrorMessage', 'No se pudo completar la acción de cola. Intente nuevamente.'),
                 {
@@ -145,6 +147,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
                   },
                   logContext: 'Add patient to queue',
                 },
+                frameworkGetUserFacingErrorMessage,
               ),
             });
             throw error;
@@ -203,10 +206,9 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
       return;
     }
 
-    const defaultLocation =
-      queueLocations.find((location) => location.id === sessionLocation.uuid) ?? queueLocations[0];
+    const defaultLocation = queueLocations.find((location) => location.id === sessionLocationUuid) ?? queueLocations[0];
     setSelectedQueueLocation(defaultLocation?.id ?? '');
-  }, [currentQueueLocationUuid, queueLocations, selectedQueueLocation, sessionLocation.uuid]);
+  }, [currentQueueLocationUuid, queueLocations, selectedQueueLocation, sessionLocationUuid]);
 
   useEffect(() => {
     const nextPriority = priorities.some((allowedPriority) => allowedPriority.uuid === defaultPriorityConceptUuid)

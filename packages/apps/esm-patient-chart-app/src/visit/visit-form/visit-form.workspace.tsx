@@ -18,7 +18,7 @@ import {
   Extension,
   ExtensionSlot,
   formatDatetime,
-  getUserFacingErrorMessage,
+  getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
   type NewVisitPayload,
   saveVisit,
   showSnackbar,
@@ -43,6 +43,7 @@ import {
   time12HourFormatRegex,
   useActivePatientEnrollment,
 } from '@openmrs/esm-patient-common-lib';
+import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import { UnauthorizedState } from '@sihsalus/esm-rbac';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
@@ -77,6 +78,7 @@ import {
   updateVisitAttribute,
   useConditionalVisitTypes,
   usePersonAttributesForVisitDefaults,
+  useVisitAttributeTypeExists,
   useVisitFormCallbacks,
   VISIT_PERSISTENCE_CORRELATION_CONFLICT,
   type VisitFormCallbacks,
@@ -209,6 +211,9 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   const visitPersistenceToken = useRef(uuidv4());
   const pendingVisitCreationPayload = useRef<NewVisitPayload | null>(null);
   const pendingVisitCreationError = useRef<unknown>(null);
+  // A missing attribute type would make the backend reject the whole visit payload,
+  // so the correlation token is dropped when the backend does not have it provisioned.
+  const persistenceAttributeTypeExists = useVisitAttributeTypeExists(config.visitPersistenceTokenAttributeTypeUuid);
   const effectiveVisitPersistenceCorrelation = useMemo<VisitPersistenceCorrelation | undefined>(() => {
     if (visitToEdit) {
       return undefined;
@@ -218,13 +223,25 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       return visitPersistenceCorrelation;
     }
 
+    if (!persistenceAttributeTypeExists) {
+      console.warn(
+        `The visit attribute type ${config.visitPersistenceTokenAttributeTypeUuid} configured as visitPersistenceTokenAttributeTypeUuid does not exist on the backend. Visits will be created without the persistence token.`,
+      );
+      return undefined;
+    }
+
     return config.visitPersistenceTokenAttributeTypeUuid
       ? {
           attributeType: config.visitPersistenceTokenAttributeTypeUuid,
           value: visitPersistenceToken.current,
         }
       : undefined;
-  }, [config.visitPersistenceTokenAttributeTypeUuid, visitPersistenceCorrelation, visitToEdit]);
+  }, [
+    config.visitPersistenceTokenAttributeTypeUuid,
+    persistenceAttributeTypeExists,
+    visitPersistenceCorrelation,
+    visitToEdit,
+  ]);
 
   const [errorFetchingResources, setErrorFetchingResources] = useState<{
     blockSavingForm: boolean;
@@ -635,10 +652,11 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             title,
             kind: 'error',
             isLowContrast: false,
-            subtitle: getUserFacingErrorMessage(
+            subtitle: getCompatibleUserFacingErrorMessage(
               error,
               t('visitAttributeSaveFailed', 'No se pudo guardar el atributo de la consulta. Intente nuevamente.'),
               { logContext: `Persist visit attribute ${attributeType}` },
+              frameworkGetUserFacingErrorMessage,
             ),
           });
           throw error;
@@ -718,7 +736,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                 });
           showSnackbar({
             title: t('visitSaveRequiresReconciliation', 'No se pudo confirmar la consulta'),
-            subtitle: getUserFacingErrorMessage(
+            subtitle: getCompatibleUserFacingErrorMessage(
               recoveryError,
               t(
                 'visitSaveOutcomeUnknown',
@@ -733,6 +751,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                 },
                 logContext: 'Reconcile pending visit creation before retry',
               },
+              frameworkGetUserFacingErrorMessage,
             ),
             kind: 'error',
             isLowContrast: false,
@@ -993,7 +1012,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                 : t('errorUpdatingVisitDetails', 'No se pudieron actualizar los datos de la consulta'),
             kind: 'error',
             isLowContrast: false,
-            subtitle: getUserFacingErrorMessage(
+            subtitle: getCompatibleUserFacingErrorMessage(
               error,
               visitWasPersisted
                 ? t(
@@ -1016,6 +1035,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                 },
                 logContext: visitWasPersisted ? 'Complete visit post-submit actions' : 'Save visit',
               },
+              frameworkGetUserFacingErrorMessage,
             ),
           });
         } finally {
@@ -1051,10 +1071,11 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
               title: t('startVisitError', 'No se pudo iniciar la consulta'),
               kind: 'error',
               isLowContrast: false,
-              subtitle: getUserFacingErrorMessage(
+              subtitle: getCompatibleUserFacingErrorMessage(
                 error,
                 t('offlineVisitSaveFailed', 'No se pudo guardar la consulta sin conexión. Intente nuevamente.'),
                 { logContext: 'Save offline visit' },
+                frameworkGetUserFacingErrorMessage,
               ),
             });
           },
@@ -1307,10 +1328,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           </div>
         </fieldset>
         {/* Preserve the queue selection used by the first persistence attempt once the visit exists. */}
-        <fieldset
-          className={styles.persistedVisitFields}
-          disabled={Boolean(persistedVisitPendingPostSubmit)}
-        >
+        <fieldset className={styles.persistedVisitFields} disabled={Boolean(persistedVisitPendingPostSubmit)}>
           <Stack gap={1} className={styles.container}>
             <section className={styles.queueSection}>
               <div className={styles.sectionTitle} />

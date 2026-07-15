@@ -103,4 +103,45 @@ describe('QueueFields', () => {
     await act(async () => expect(callbacks?.onBeforeVisitSave()).toBe(false));
     expect(mockPostQueueEntry).not.toHaveBeenCalled();
   });
+
+  it('uses the appointment queue location while the session location is unavailable', async () => {
+    const user = userEvent.setup();
+    let callbacks: QueueFieldsCallbacks | undefined;
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      sessionLocation: null,
+    } as unknown as ReturnType<typeof useSession>);
+
+    render(<QueueFields currentQueueLocationUuid="1" setCallbacks={(value) => (callbacks = value)} />);
+
+    await waitFor(() => expect(screen.getByLabelText('Select a queue location')).toHaveValue('1'));
+
+    const queueUuid = 'e2ec9cf0-ec38-4d2b-af6c-59c82fa30b90';
+    await user.selectOptions(screen.getByLabelText('Select a service'), queueUuid);
+    await waitFor(() => expect(callbacks?.onBeforeVisitSave()).toBe(true));
+    await callbacks?.onVisitCreatedOrUpdated(mockVisitAlice);
+
+    expect(mockPostQueueEntry).toHaveBeenCalledWith(
+      mockVisitAlice.uuid,
+      queueUuid,
+      mockVisitAlice.patient.uuid,
+      '197852c7-5fd4-4b33-89cc-7bae6848c65a',
+      '176052c7-5fd4-4b33-89cc-7bae6848c65a',
+      0,
+      '1',
+      'queue-number-attribute-uuid',
+      mockVisitAlice.startDatetime,
+    );
+  });
+
+  it('falls back to the first queue location while the session location is unavailable', async () => {
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      sessionLocation: null,
+    } as unknown as ReturnType<typeof useSession>);
+
+    render(<QueueFields setCallbacks={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByLabelText('Select a queue location')).toHaveValue('1'));
+  });
 });

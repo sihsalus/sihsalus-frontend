@@ -1,8 +1,9 @@
 import { SideNavItems, SideNavMenu } from '@carbon/react';
 import { ExtensionSlot, useLayoutType } from '@openmrs/esm-framework';
-import { registerNavGroup } from '@openmrs/esm-patient-common-lib';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import { registerNavGroup } from '../nav-group/nav-group';
 
 import styles from './dashboard-group.scss';
 

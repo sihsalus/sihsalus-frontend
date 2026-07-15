@@ -1,3 +1,5 @@
+import { renderHook, waitFor } from '@testing-library/react';
+
 import { type FetchResponse, openmrsFetch, type Visit } from '@openmrs/esm-framework';
 
 import {
@@ -6,6 +8,7 @@ import {
   normalizeVisitTimeInput,
   reconcileVisitCreation,
   sanitizeVisitTimeInput,
+  useVisitAttributeTypeExists,
   VISIT_PERSISTENCE_CORRELATION_CONFLICT,
 } from './visit-form.resource';
 
@@ -338,5 +341,44 @@ describe('getDefaultVisitAttributesFromPatientAddress', () => {
     expect(defaults).toEqual({
       [provenanceVisitAttributeTypeUuid]: 'Napo, Loreto, PERU',
     });
+  });
+});
+
+describe('useVisitAttributeTypeExists', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns false without querying when no attribute type is configured', () => {
+    const { result } = renderHook(() => useVisitAttributeTypeExists(undefined));
+
+    expect(result.current).toBe(false);
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+  });
+
+  it('returns false when the backend does not have the attribute type', async () => {
+    mockOpenmrsFetch.mockRejectedValue({ response: { status: 404 } });
+
+    const { result } = renderHook(() => useVisitAttributeTypeExists('missing-attribute-type-uuid'));
+
+    await waitFor(() => expect(result.current).toBe(false));
+  });
+
+  it('returns true when the attribute type exists', async () => {
+    mockOpenmrsFetch.mockResolvedValue({ data: { uuid: 'existing-attribute-type-uuid' } } as unknown as FetchResponse<unknown>);
+
+    const { result } = renderHook(() => useVisitAttributeTypeExists('existing-attribute-type-uuid'));
+
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalled());
+    expect(result.current).toBe(true);
+  });
+
+  it('keeps the attribute on transient errors', async () => {
+    mockOpenmrsFetch.mockRejectedValue({ response: { status: 500 } });
+
+    const { result } = renderHook(() => useVisitAttributeTypeExists('unreachable-attribute-type-uuid'));
+
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalled());
+    expect(result.current).toBe(true);
   });
 });

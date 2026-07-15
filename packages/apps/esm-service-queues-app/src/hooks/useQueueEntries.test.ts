@@ -42,6 +42,7 @@ describe('useMutateQueueEntries', () => {
   it('consumes refresh failures and reports one safe loading error', async () => {
     const technicalError = new Error('GET /queue-entry failed with SQL timeout');
     mockMutate.mockRejectedValue(technicalError);
+    mockGetUserFacingErrorMessage.mockReturnValueOnce(undefined as never);
     const { result } = renderHook(() => useMutateQueueEntries());
 
     await expect(result.current.mutateQueueEntries()).resolves.toBeUndefined();

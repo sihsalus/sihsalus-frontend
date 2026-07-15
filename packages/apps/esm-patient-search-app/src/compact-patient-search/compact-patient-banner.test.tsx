@@ -1,5 +1,6 @@
 import { getDefaultsFromConfigSchema, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
 
 import { configSchema, type PatientSearchConfig } from '../config-schema';
@@ -69,8 +70,46 @@ describe('CompactPatientBanner', () => {
 
     const patientLink = screen.getByRole('link');
     expect(patientLink).toHaveAttribute('aria-label', 'Smith, John Doe');
+    expect(patientLink).toHaveAttribute('href', '/openmrs/spa/patient/test-patient-uuid/chart/');
     expect(within(patientLink).getByText(/Smith, John Doe/)).toBeInTheDocument();
     expect(within(patientLink).getByText(/1000NLY/)).toBeInTheDocument();
     expect(screen.getByRole('img')).toBeInTheDocument();
+  });
+
+  it('runs the patient click side effect before navigating', async () => {
+    const patientClickSideEffect = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <PatientSearchContext.Provider value={{ patientClickSideEffect }}>
+        <CompactPatientBanner patients={patients} />
+      </PatientSearchContext.Provider>,
+    );
+
+    await user.click(screen.getByRole('link', { name: 'Smith, John Doe' }));
+
+    expect(patientClickSideEffect).toHaveBeenCalledOnce();
+    expect(patientClickSideEffect).toHaveBeenCalledWith('test-patient-uuid');
+  });
+
+  it('uses a button and selects without navigation when an action is provided', async () => {
+    const nonNavigationSelectPatientAction = vi.fn();
+    const patientClickSideEffect = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <PatientSearchContext.Provider value={{ nonNavigationSelectPatientAction, patientClickSideEffect }}>
+        <CompactPatientBanner patients={patients} />
+      </PatientSearchContext.Provider>,
+    );
+
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    const patientButton = screen.getByRole('button', { name: 'Smith, John Doe' });
+    await user.click(patientButton);
+
+    expect(nonNavigationSelectPatientAction).toHaveBeenCalledOnce();
+    expect(nonNavigationSelectPatientAction).toHaveBeenCalledWith('test-patient-uuid');
+    expect(patientClickSideEffect).toHaveBeenCalledOnce();
+    expect(patientClickSideEffect).toHaveBeenCalledWith('test-patient-uuid');
   });
 });

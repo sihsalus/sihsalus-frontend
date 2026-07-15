@@ -3,7 +3,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const chalk = require('chalk');
-const { appShellRuntimePatches, extensionParcelTimeouts } = require('./app-shell-runtime-patches');
+const { extensionParcelTimeouts, userFacingErrorPatches } = require('./app-shell-runtime-patches');
 
 const logInfo = (msg) => console.log(`${chalk.green.bold('[assemble]')} ${msg}`);
 const logWarn = (msg) => console.warn(`${chalk.yellow.bold('[assemble]')} ${chalk.yellow(msg)}`);
@@ -386,7 +386,7 @@ function patchAppShellRuntime() {
       replacement: duplicateSlotNoop,
       required: false,
     },
-    ...appShellRuntimePatches,
+    ...userFacingErrorPatches,
   ];
   const patchedJsFiles = new Set();
 

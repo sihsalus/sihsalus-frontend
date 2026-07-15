@@ -44,5 +44,13 @@
         "requiredVisitTypeUuid": "110001d9-7f3a-4e7b-91a2-580b216a7c42"
       }
     ]
+  },
+  "core": {
+    "Translation overrides": {
+      "es": {
+        "closeWorkspaces2PromptBody": "Está a punto de cerrar los siguientes espacios de trabajo, que podrían tener cambios sin guardar:",
+        "closeWorkspaces2PromptTitle": "Cerrar espacios de trabajo"
+      }
+    }
   }
 }

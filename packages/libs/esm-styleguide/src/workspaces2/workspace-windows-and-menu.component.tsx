@@ -86,10 +86,7 @@ function WorkspaceWindowsAndMenu() {
       (window): window is Required<typeof window> =>
         window.group === groupName &&
         window.icon !== undefined &&
-        canDisplayWorkspaceWindow(
-          (window as typeof window & { privileges?: string | Array<string> }).privileges,
-          user,
-        ),
+        canDisplayWorkspaceWindow((window as typeof window & { privileges?: string | Array<string> }).privileges, user),
     )
     .sort((a, b) => (a.order ?? Number.MAX_VALUE) - (b.order ?? Number.MAX_VALUE));
   const showActionMenu = windowsWithIcons.length > 0;

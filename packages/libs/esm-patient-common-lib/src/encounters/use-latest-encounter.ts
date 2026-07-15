@@ -29,7 +29,8 @@ export const useLatestValidEncounter = (
       return null;
     }
 
-    const formUuid = normalizedFormIdentifier && isUuid(normalizedFormIdentifier) ? normalizedFormIdentifier : undefined;
+    const formUuid =
+      normalizedFormIdentifier && isUuid(normalizedFormIdentifier) ? normalizedFormIdentifier : undefined;
     const params = new URLSearchParams({
       patient: normalizedPatientUuid,
       encounterType: normalizedEncounterTypeUuid,

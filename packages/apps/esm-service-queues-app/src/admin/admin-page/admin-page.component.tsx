@@ -13,13 +13,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import {
-  EmptyCardIllustration,
-  ErrorState,
-  launchWorkspace2,
-  useLayoutType,
-  useSession,
-} from '@openmrs/esm-framework';
+import { EmptyCardIllustration, ErrorState, launchWorkspace2, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { canEditServiceQueues } from '../../permissions';

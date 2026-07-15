@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const chalk = require('chalk');
-const { findUnboundReactReferences } = require('./javascript-runtime-contract');
+const { findInvalidWebpackShareScopeReferences, findUnboundReactReferences } = require('./javascript-runtime-contract');
 const { formatSpaArtifactIssue, getSpaArtifactFiles, inspectSpaArtifacts } = require('./spa-artifact-manifest');
 
 const logInfo = (msg) => console.log(`${chalk.green.bold('[validate-spa]')} ${msg}`);
@@ -121,6 +121,10 @@ for (const { name, source } of appShellJavaScriptFiles) {
     const unboundReactReferences = findUnboundReactReferences(source);
     if (unboundReactReferences.length > 0) {
       fail(`${name} contains ${unboundReactReferences.length} unresolved React global reference(s)`);
+    }
+    const invalidShareScopeReferences = findInvalidWebpackShareScopeReferences(source);
+    if (invalidShareScopeReferences.length > 0) {
+      fail(`${name} contains ${invalidShareScopeReferences.length} unresolved Webpack share scope reference(s)`);
     }
   } catch (error) {
     fail(`${name} could not be checked for unresolved runtime globals: ${error.message}`);

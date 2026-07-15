@@ -29,7 +29,26 @@ function findUnboundReactReferences(source) {
   return findUnboundGlobalReferences(source, ['React']);
 }
 
+function findInvalidWebpackShareScopeReferences(source) {
+  const references = findUnboundGlobalReferences(source, ['__webpack_share_scopes__']);
+  const globalPropertyPattern =
+    /\b(?:globalThis|self|window)\s*(?:\.\s*__webpack_share_scopes__|\[\s*['"]__webpack_share_scopes__['"]\s*\])/g;
+
+  for (const match of source.matchAll(globalPropertyPattern)) {
+    const beforeMatch = source.slice(0, match.index);
+    const lines = beforeMatch.split('\n');
+    references.push({
+      column: lines.at(-1)?.length ?? 0,
+      line: lines.length,
+      name: '__webpack_share_scopes__',
+    });
+  }
+
+  return references;
+}
+
 module.exports = {
+  findInvalidWebpackShareScopeReferences,
   findUnboundGlobalReferences,
   findUnboundReactReferences,
 };

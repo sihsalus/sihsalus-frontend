@@ -10,6 +10,7 @@ const hadBackendBeforeDotenv = Boolean(process.env.SIHSALUS_BACKEND_URL);
 const dotenvResult = require('dotenv').config({ path: envPath, quiet: true });
 
 const chalk = require('chalk');
+const { setLocalStaticAssetHeaders } = require('./local-static-asset-headers');
 const logInfo = (msg) => console.log(`${chalk.green.bold('[start-dev]')} ${msg}`);
 const logWarn = (msg) => console.warn(`${chalk.yellow.bold('[start-dev]')} ${chalk.yellow(msg)}`);
 const logFail = (msg) => console.error(`${chalk.red.bold('[start-dev]')} ${chalk.red(msg)}`);
@@ -296,7 +297,7 @@ async function startWithProxy(cliArgs) {
   const cliManagedPaths = new Set(['/importmap.json', '/routes.registry.json', '/routes.json']);
 
   const app = express();
-  const staticHandler = express.static(distSpa);
+  const staticHandler = express.static(distSpa, { setHeaders: setLocalStaticAssetHeaders });
   const spaIndexHtml = readFileSync(join(distSpa, 'index.html'), 'utf8');
   const spaIndexRateLimit = createInMemoryRateLimit({
     windowMs: readRateLimitEnv('SIHSALUS_SPA_RATE_LIMIT_WINDOW_MS', 60_000),

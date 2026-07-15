@@ -8,9 +8,7 @@ export function getUserFacingQueueErrorMessage(
   invalidSubmissionMessage = 'Invalid submission',
 ): string {
   const userFacingMessage = getUserFacingErrorMessage(error, fallback, { logContext });
-  return userFacingMessage.trim().toLowerCase() === 'invalid submission'
-    ? invalidSubmissionMessage
-    : userFacingMessage;
+  return userFacingMessage.trim().toLowerCase() === 'invalid submission' ? invalidSubmissionMessage : userFacingMessage;
 }
 
 function getTechnicalErrorMessage(error: unknown): string {

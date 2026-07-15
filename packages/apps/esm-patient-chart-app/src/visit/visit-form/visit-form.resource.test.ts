@@ -365,7 +365,9 @@ describe('useVisitAttributeTypeExists', () => {
   });
 
   it('returns true when the attribute type exists', async () => {
-    mockOpenmrsFetch.mockResolvedValue({ data: { uuid: 'existing-attribute-type-uuid' } } as unknown as FetchResponse<unknown>);
+    mockOpenmrsFetch.mockResolvedValue({
+      data: { uuid: 'existing-attribute-type-uuid' },
+    } as unknown as FetchResponse<unknown>);
 
     const { result } = renderHook(() => useVisitAttributeTypeExists('existing-attribute-type-uuid'));
 

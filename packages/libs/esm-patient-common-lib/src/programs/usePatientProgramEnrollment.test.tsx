@@ -32,7 +32,12 @@ describe('useActivePatientEnrollment', () => {
     expect(result.current).toEqual({ activePatientEnrollment, error, isLoading: true });
   });
 
-  it.each([undefined, null, '', '   '])('passes an absent patient UUID to the guarded shared hook (%s)', (patientUuid) => {
+  it.each([
+    undefined,
+    null,
+    '',
+    '   ',
+  ])('passes an absent patient UUID to the guarded shared hook (%s)', (patientUuid) => {
     mockUsePatientEnrollment.mockReturnValue({
       activePatientEnrollment: [],
       patientEnrollments: [],

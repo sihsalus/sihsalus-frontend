@@ -36,8 +36,7 @@ const ExistingVisitForm: React.FC<ExistingVisitFormProps> = ({
   const isTablet = useLayoutType() === 'tablet';
   const { patient } = usePatient(visit.patient?.uuid);
   const patientGender =
-    (patient as { gender?: string } | undefined)?.gender ??
-    (visit.patient as { gender?: string } | undefined)?.gender;
+    (patient as { gender?: string } | undefined)?.gender ?? (visit.patient as { gender?: string } | undefined)?.gender;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { mutateQueueEntries } = useMutateQueueEntries();

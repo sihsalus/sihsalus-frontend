@@ -2,10 +2,7 @@ import { Button } from '@carbon/react';
 import { AddIcon, launchWorkspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  serviceQueuesPatientSearchWorkspace,
-  serviceQueuesStartVisitWorkspace,
-} from '../../constants';
+import { serviceQueuesPatientSearchWorkspace, serviceQueuesStartVisitWorkspace } from '../../constants';
 import { CanEditServiceQueues } from '../../permissions';
 import { useServiceQueuesStore } from '../../store/store';
 

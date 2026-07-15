@@ -147,7 +147,9 @@ export function CodedPersonAttributeField({
 
   return (
     <div
-      className={classNames(styles.customField, styles.halfWidthInDesktopView, {
+      className={classNames(styles.customField, {
+        [styles.fullWidthInDesktopView]: codedInputType === 'radio',
+        [styles.halfWidthInDesktopView]: codedInputType !== 'radio',
         [styles.searchableCodedField]: searchable,
       })}
     >

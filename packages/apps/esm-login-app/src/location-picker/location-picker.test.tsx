@@ -18,8 +18,8 @@ import {
   validatingLocationSuccessResponse,
 } from '../../../../test-utils/mocks/locations.mock';
 import { mockConfig } from '../../../../test-utils/mocks/login-config.mock';
-import renderWithRouter from '../test-helpers/render-with-router';
 import { hardNavigate } from '../navigation';
+import renderWithRouter from '../test-helpers/render-with-router';
 
 import { useDefaultLocation, useLocationCount } from './location-picker.resource';
 import LocationPickerView from './location-picker-view.component';
@@ -159,7 +159,7 @@ describe('LocationPickerView', () => {
     ).toBeInTheDocument();
   });
 
-  it('redirects admission users home without rendering the location picker', async () => {
+  it('allows admission users without a session location to select one', () => {
     mockUseSession.mockReturnValue({
       user: {
         display: 'Admision',
@@ -171,8 +171,8 @@ describe('LocationPickerView', () => {
 
     renderWithRouter(LocationPickerView, {});
 
-    await waitFor(() => expect(mockHardNavigate).toHaveBeenCalledWith(mockConfig.links.loginSuccess));
-    expect(screen.queryByRole('button', { name: /confirm/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /confirm/i })).toBeInTheDocument();
+    expect(mockHardNavigate).not.toHaveBeenCalled();
   });
 
   it('disables the confirm button when no location is selected', () => {
@@ -180,6 +180,23 @@ describe('LocationPickerView', () => {
 
     const confirmButton = screen.getByRole('button', { name: /confirm/i });
     expect(confirmButton).toBeDisabled();
+  });
+
+  it('stays on the picker when no login locations are available', () => {
+    mockedValidatedDefaultLocation = firstLocation.uuid;
+    mockUseLocationCount.mockReturnValue({
+      isLoading: false,
+      locationCount: 0,
+      firstLocation: null,
+      error: null,
+    } as ReturnType<typeof useLocationCount>);
+
+    renderWithRouter(LocationPickerView, {});
+
+    expect(screen.getByText(/No login locations available/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /confirm/i })).toBeDisabled();
+    expect(mockSetSessionLocation).not.toHaveBeenCalled();
+    expect(mockHardNavigate).not.toHaveBeenCalled();
   });
 
   it('enables the confirm button when a location is selected', async () => {

@@ -120,8 +120,11 @@ export async function performLogin(username: string, password: string): Promise<
     return res;
   });
 }
-export function useValidateLocationUuid(userPreferredLocationUuid: string) {
-  const url = userPreferredLocationUuid ? `${fhirBaseUrl}/Location?_id=${userPreferredLocationUuid}` : null;
+export function useValidateLocationUuid(userPreferredLocationUuid: string, requireLoginLocationTag = false) {
+  const loginLocationFilter = requireLoginLocationTag ? '&_tag=Login%20Location' : '';
+  const url = userPreferredLocationUuid
+    ? `${fhirBaseUrl}/Location?_id=${userPreferredLocationUuid}${loginLocationFilter}`
+    : null;
   const { data, error, isLoading } = useSwrImmutable<FetchResponse<LocationResponse>>(url, openmrsFetch, {
     shouldRetryOnError(err) {
       if (err?.response?.status) {

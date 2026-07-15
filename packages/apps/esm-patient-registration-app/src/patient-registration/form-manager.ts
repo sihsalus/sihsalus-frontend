@@ -27,8 +27,8 @@ import {
 } from './identity/promotion';
 import {
   addPatientIdentifier,
-  deletePersonAttribute,
   deletePatientIdentifier,
+  deletePersonAttribute,
   deletePersonName,
   deleteRelationship,
   generateIdentifier,
@@ -217,6 +217,24 @@ function registrationError(message: string) {
   };
 }
 
+const missingIdentifierLocationMessage =
+  'No se puede registrar al paciente sin una ubicación de sesión. Seleccione una ubicación e intente nuevamente.';
+
+function assertLocationForIdentifiers(hasIdentifiers: boolean, location: string) {
+  if (hasIdentifiers && !location?.trim()) {
+    throw registrationError(missingIdentifierLocationMessage);
+  }
+}
+
+function assertIdentifierLocation(identifiers: FormValues['identifiers'], location: string) {
+  const hasActiveIdentifiers = Object.values(identifiers ?? {}).some(
+    ({ identifierValue, autoGeneration, selectedSource }) =>
+      Boolean(identifierValue || (autoGeneration && selectedSource)),
+  );
+
+  assertLocationForIdentifiers(hasActiveIdentifiers, location);
+}
+
 function ensureTransactionState(transactionManager: SavePatientTransactionManager) {
   transactionManager.deletedAttributeUuids ??= {};
   transactionManager.deletedIdentifierUuids ??= {};
@@ -272,6 +290,8 @@ export class FormManager {
         },
       };
     }
+
+    assertIdentifierLocation(values.identifiers, currentLocation);
 
     const syncItem: PatientRegistration = {
       fhirPatient: FormManager.mapPatientToFhirPatient(
@@ -586,6 +606,7 @@ export class FormManager {
         identifiers.push(documentIdentifier);
       }
 
+      assertLocationForIdentifiers(identifiers.length > 0, currentLocation);
       await promotePersonToPatient(personUuid, identifiers, signal);
     }
 
@@ -848,6 +869,7 @@ export class FormManager {
     signal?: AbortSignal,
   ): Promise<Array<PatientIdentifier>> {
     ensureTransactionState(transactionManager);
+    assertIdentifierLocation(patientIdentifiers, location);
 
     const initializeIdentifierRow = (
       identifierFieldName: string,

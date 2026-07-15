@@ -6,7 +6,7 @@ import useSwrImmutable from 'swr/immutable';
 import { useValidateLocationUuid } from '../login.resource';
 import { type LocationResponse } from '../types';
 
-export function useDefaultLocation(isUpdateFlow: boolean) {
+export function useDefaultLocation(isUpdateFlow: boolean, requireLoginLocationTag = false) {
   const { t } = useTranslation();
   const { user } = useSession();
   const { userUuid, userProperties } = useMemo(
@@ -20,7 +20,10 @@ export function useDefaultLocation(isUpdateFlow: boolean) {
 
   const defaultLocation = useMemo(() => userProperties?.defaultLocation, [userProperties?.defaultLocation]);
 
-  const { isLocationValid, defaultLocation: defaultLocationFhir } = useValidateLocationUuid(defaultLocation);
+  const { isLocationValid, defaultLocation: defaultLocationFhir } = useValidateLocationUuid(
+    defaultLocation,
+    requireLoginLocationTag,
+  );
 
   useEffect(() => {
     if (defaultLocation) {

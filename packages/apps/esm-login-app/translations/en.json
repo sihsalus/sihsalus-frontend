@@ -29,6 +29,8 @@
   "madeInCollaboration": "Made in collaboration",
   "newPassword": "New password",
   "newPasswordRequired": "New password is required",
+  "noLoginLocationsAvailable": "No login locations available",
+  "noLoginLocationsAvailableMessage": "Contact an administrator to configure at least one login location.",
   "oldPassword": "Old password",
   "oldPasswordRequired": "Old password is required",
   "openmrsLogo": "OpenMRS logo",

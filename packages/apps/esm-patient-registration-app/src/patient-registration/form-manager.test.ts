@@ -158,6 +158,22 @@ describe('FormManager', () => {
       ]);
     });
 
+    it('rejects active identifiers when the session location is missing', async () => {
+      await expect(FormManager.savePatientIdentifiers(true, undefined, formValues.identifiers, {}, '')).rejects.toEqual(
+        {
+          responseBody: {
+            error: {
+              message:
+                'No se puede registrar al paciente sin una ubicación de sesión. Seleccione una ubicación e intente nuevamente.',
+            },
+          },
+        },
+      );
+
+      expect(mockGenerateIdentifier).not.toHaveBeenCalled();
+      expect(mockAddPatientIdentifier).not.toHaveBeenCalled();
+    });
+
     it('should generate identifier if it has autoGeneration and manual entry disabled', async () => {
       const identifiers = {
         foo: {
@@ -710,7 +726,7 @@ describe('FormManager', () => {
       };
     }
 
-    async function runPromotion(values = buildPromotionFormValues()) {
+    async function runPromotion(values = buildPromotionFormValues(), currentLocation = 'location-1') {
       const config = getPeruRegistrationConfig();
       return FormManager.savePatientFormOnline(
         true,
@@ -718,7 +734,7 @@ describe('FormManager', () => {
         {},
         {},
         null,
-        'location-1',
+        currentLocation,
         {},
         {} as Session,
         config,
@@ -749,6 +765,14 @@ describe('FormManager', () => {
         expect.arrayContaining([expect.objectContaining({ identifier: 'foo', identifierType: 'identifierType' })]),
       );
       expect(result).toBe(personUuid);
+    });
+
+    it('rejects a document identifier derived during promotion when the session location is missing', async () => {
+      await expect(runPromotion({ ...buildPromotionFormValues(), identifiers: {} }, '')).rejects.toMatchObject({
+        responseBody: { error: { message: expect.stringContaining('ubicación de sesión') } },
+      });
+
+      expect(mockPromotePersonToPatient).not.toHaveBeenCalled();
     });
 
     it('maps the person document attributes to a patient identifier without duplicating types', async () => {

@@ -48,8 +48,8 @@ import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import type { Config } from '../config-schema';
 import { generateIdentifier, saveEmergencyPatient } from '../resources/patient-registration.resource';
+import { EmergencyNationalityField } from './components/emergency-nationality-field.component';
 import InitialPrioritySelector, { type InitialPriority } from './components/initial-priority-selector.component';
-import { NationalityConceptField } from './components/nationality-concept-field.component';
 import { getEmergencyIdentityDocumentTypes } from './emergency-identity-documents';
 import { getAutomaticNationalityUpdate, isCompletedPeruDni } from './patient-nationality';
 import { useNationalityConceptAnswers } from './patient-nationality.resource';
@@ -913,20 +913,15 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                               name="nationality"
                               control={control}
                               render={({ field }) => (
-                                <NationalityConceptField
+                                <EmergencyNationalityField
                                   value={field.value}
                                   options={nationalityOptions}
                                   isLoading={isLoadingNationalityOptions}
                                   error={nationalityOptionsError}
                                   invalidText={errors.nationality?.message}
                                   disabled={isRegistering || shouldLockNationalityToPeru}
-                                  onChange={(conceptUuid) => {
-                                    if (conceptUuid === (field.value ?? '')) {
-                                      return;
-                                    }
-                                    nationalityWasAutoAssigned.current = false;
-                                    field.onChange(conceptUuid);
-                                  }}
+                                  nationalityWasAutoAssigned={nationalityWasAutoAssigned}
+                                  onChange={field.onChange}
                                 />
                               )}
                             />

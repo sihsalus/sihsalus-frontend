@@ -394,7 +394,10 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
         <Button kind="secondary" onClick={closeModal}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button disabled={isSubmitting || isCommentTooLong || disableSubmit(queueEntry, formState)} onClick={submitForm}>
+        <Button
+          disabled={isSubmitting || isCommentTooLong || disableSubmit(queueEntry, formState)}
+          onClick={submitForm}
+        >
           {submitButtonText}
         </Button>
       </ModalFooter>

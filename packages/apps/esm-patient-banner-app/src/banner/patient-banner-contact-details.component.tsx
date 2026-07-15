@@ -382,11 +382,11 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
                   attribute.attributeType.uuid === nationalityAttributeTypeUuid
                     ? t('nationalityCountry', 'País de nacionalidad')
                     : attribute.attributeType.display
-                    ? getCoreTranslation(
-                        attribute.attributeType.display as CoreTranslationKey,
-                        attribute.attributeType.display,
-                      )
-                    : t('attribute', 'Attribute')
+                      ? getCoreTranslation(
+                          attribute.attributeType.display as CoreTranslationKey,
+                          attribute.attributeType.display,
+                        )
+                      : t('attribute', 'Attribute')
                 }
                 value={getDisplayValue(attribute.value)}
               />

@@ -87,6 +87,11 @@ describe('QueueTable', () => {
     for (let i = 0; i < headers.length; i++) {
       expect(headers[i]).toHaveTextContent(expectedHeaders[i]);
     }
+
+    const emptyState = screen.getByTestId('queue-empty-state');
+    expect(within(emptyState).getByTestId('empty-card-illustration')).toBeInTheDocument();
+    expect(within(emptyState).getByText(/no patients to display/i)).toBeInTheDocument();
+    expect(within(emptyState).getByText(/check the filters above/i)).toBeInTheDocument();
   });
 
   it('renders queue entries with default columns', () => {

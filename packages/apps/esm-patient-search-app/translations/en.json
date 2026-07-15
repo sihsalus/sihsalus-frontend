@@ -14,7 +14,7 @@
   "dayOfBirth": "Day of Birth",
   "dateOfBirth": "Date of birth",
   "error": "Error",
-  "errorCopy": "Sorry, there was a an error. You can try to reload this page, or contact the site administrator and quote the error code above.",
+  "errorCopy": "Sorry, there was an error. Please try again or contact the site administrator.",
   "errorFetchingPatients": "Error fetching patients",
   "errorFetchingUserProperties": "Error fetching user properties",
   "errorLoadingAttribute": "Error loading attribute type {{attributeUuid}}",

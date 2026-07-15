@@ -27,8 +27,8 @@ import {
 } from './identity/promotion';
 import {
   addPatientIdentifier,
-  deletePersonAttribute,
   deletePatientIdentifier,
+  deletePersonAttribute,
   deletePersonName,
   deleteRelationship,
   generateIdentifier,
@@ -62,6 +62,7 @@ import {
   birthAddressMarker,
   birthAddressMarkerField,
 } from './patient-registration-utils';
+import { isRegistrationDomainError, RegistrationDomainError, registrationErrorCodes } from './registration-errors';
 import { buildResponsiblePersonPayload } from './section/patient-relationships/responsible-person.utils';
 
 const familyName2ExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/patient-family-name2';
@@ -209,12 +210,25 @@ function getPatientPayloadSignature(patient: Patient) {
   return JSON.stringify(demographicPayload);
 }
 
-function registrationError(message: string) {
-  return {
-    responseBody: {
-      error: { message },
-    },
-  };
+const missingIdentifierLocationMessage =
+  'No se puede registrar al paciente sin una ubicación de sesión. Seleccione una ubicación e intente nuevamente.';
+
+function assertLocationForIdentifiers(hasIdentifiers: boolean, location: string) {
+  if (hasIdentifiers && !location?.trim()) {
+    throw new RegistrationDomainError(
+      registrationErrorCodes.identifierLocationRequired,
+      missingIdentifierLocationMessage,
+    );
+  }
+}
+
+function assertIdentifierLocation(identifiers: FormValues['identifiers'], location: string) {
+  const hasActiveIdentifiers = Object.values(identifiers ?? {}).some(
+    ({ identifierValue, autoGeneration, selectedSource }) =>
+      Boolean(identifierValue || (autoGeneration && selectedSource)),
+  );
+
+  assertLocationForIdentifiers(hasActiveIdentifiers, location);
 }
 
 function ensureTransactionState(transactionManager: SavePatientTransactionManager) {
@@ -263,15 +277,13 @@ export class FormManager {
       // Promotion needs the live backend: the already-a-patient pre-check and duplicate
       // detection cannot run offline, and a queued promotion could collide with another
       // operator promoting the same person.
-      throw {
-        responseBody: {
-          error: {
-            message:
-              'La promoción de una persona existente a paciente no está disponible sin conexión. Conéctese e intente nuevamente.',
-          },
-        },
-      };
+      throw new RegistrationDomainError(
+        registrationErrorCodes.promotionOffline,
+        'Existing-person promotion was attempted while offline.',
+      );
     }
+
+    assertIdentifierLocation(values.identifiers, currentLocation);
 
     const syncItem: PatientRegistration = {
       fhirPatient: FormManager.mapPatientToFhirPatient(
@@ -327,7 +339,8 @@ export class FormManager {
       savePatientTransactionManager.newPatientIdentifierSignature &&
       savePatientTransactionManager.newPatientIdentifierSignature !== getIdentifierFormSignature(values.identifiers)
     ) {
-      throw registrationError(
+      throw new RegistrationDomainError(
+        registrationErrorCodes.partialCreateIdentifierChanged,
         'El paciente ya fue creado parcialmente y sus identificadores cambiaron. Abra el paciente existente para editar su identificación.',
       );
     }
@@ -405,7 +418,8 @@ export class FormManager {
       savePatientTransactionManager.patientPayloadSignature &&
       savePatientTransactionManager.patientPayloadSignature !== patientPayloadSignature
     ) {
-      throw registrationError(
+      throw new RegistrationDomainError(
+        registrationErrorCodes.partialSavePatientChanged,
         'El paciente ya fue guardado parcialmente y sus datos cambiaron. Recargue el paciente antes de continuar para evitar registros duplicados.',
       );
     }
@@ -519,14 +533,10 @@ export class FormManager {
     signal?: AbortSignal,
   ): Promise<{ patientUuidMap: PatientUuidMapType; verificationAttributes: Array<AttributeValue> }> {
     if (!alreadyPromotedInSession && (await isPersonAlreadyPatient(personUuid))) {
-      throw {
-        responseBody: {
-          error: {
-            message:
-              'Esta persona ya está registrada como paciente (posiblemente otro usuario la promovió). Búsquela en el buscador de pacientes en lugar de registrarla de nuevo.',
-          },
-        },
-      };
+      throw new RegistrationDomainError(
+        registrationErrorCodes.promotionAlreadyPatient,
+        `Person ${personUuid} is already registered as a patient and cannot be promoted again.`,
+      );
     }
 
     const person = await fetchPersonForPromotion(personUuid);
@@ -560,16 +570,14 @@ export class FormManager {
             { attributeType: personIdentityVerifiedAtAttributeTypeUuid, value: outcome.verifiedAt },
           );
         } else if (outcome.status === 'mismatch') {
-          throw {
-            responseBody: {
-              error: {
-                message: `Los datos de la persona no coinciden con la fuente de verificación: ${outcome.observation}. Resuelva la discrepancia antes de promover.`,
-              },
-            },
-          };
+          throw new RegistrationDomainError(
+            registrationErrorCodes.identityVerificationMismatch,
+            `Identity verification mismatch while promoting ${personUuid}: ${outcome.observation}`,
+            { technicalDetails: { observation: outcome.observation, personUuid, source: outcome.source } },
+          );
         }
       } catch (error) {
-        if (typeof error === 'object' && error !== null && 'responseBody' in error) {
+        if (isRegistrationDomainError(error)) {
           throw error;
         }
         // Verification unavailability must never block registration (doc: "no bloquear
@@ -586,6 +594,7 @@ export class FormManager {
         identifiers.push(documentIdentifier);
       }
 
+      assertLocationForIdentifiers(identifiers.length > 0, currentLocation);
       await promotePersonToPatient(personUuid, identifiers, signal);
     }
 
@@ -645,13 +654,19 @@ export class FormManager {
       relatedPersonUuid = savePersonResponse?.data?.uuid;
 
       if (!relatedPersonUuid) {
-        throw new Error('The backend did not return a person UUID for the new responsible person');
+        throw new RegistrationDomainError(
+          registrationErrorCodes.responsiblePersonCreationFailed,
+          'The backend did not return a person UUID for the new responsible person.',
+        );
       }
       state.relatedPersonUuid = relatedPersonUuid;
     }
 
     if (!relatedPersonUuid && action !== 'DELETE') {
-      throw registrationError('Seleccione o registre una persona antes de guardar la relación.');
+      throw new RegistrationDomainError(
+        registrationErrorCodes.relationshipPersonRequired,
+        'No related person was selected or registered before saving the relationship.',
+      );
     }
 
     const [type, direction] = relationshipType.split('/');
@@ -664,7 +679,8 @@ export class FormManager {
     const mainSignature = getMainRelationshipTransactionSignature(relationship, relatedPersonUuid);
 
     if (state.mainCompleted && state.mainSignature !== mainSignature) {
-      throw registrationError(
+      throw new RegistrationDomainError(
+        registrationErrorCodes.relationshipRetryChanged,
         'La relación cambió después de guardarse parcialmente. Restablezca sus datos anteriores y vuelva a intentar.',
       );
     }
@@ -681,7 +697,10 @@ export class FormManager {
         }
         case 'UPDATE':
           if (!relationshipUuid) {
-            throw new Error('An existing relationship UUID is required for update');
+            throw new RegistrationDomainError(
+              registrationErrorCodes.relationshipUpdateInvalid,
+              'An existing relationship UUID is required for update.',
+            );
           }
           if (signal) {
             await updateRelationship(relationshipUuid, relationshipToSave, signal);
@@ -832,8 +851,10 @@ export class FormManager {
     }
 
     if (missingConfiguration.length) {
-      throw registrationError(
+      throw new RegistrationDomainError(
+        registrationErrorCodes.clinicalConfigurationMissing,
         `No se puede guardar la información clínica del registro. Falta configurar: ${missingConfiguration.join(', ')}.`,
+        { technicalDetails: { missingConfiguration } },
       );
     }
   }
@@ -848,6 +869,7 @@ export class FormManager {
     signal?: AbortSignal,
   ): Promise<Array<PatientIdentifier>> {
     ensureTransactionState(transactionManager);
+    assertIdentifierLocation(patientIdentifiers, location);
 
     const initializeIdentifierRow = (
       identifierFieldName: string,
@@ -923,8 +945,10 @@ export class FormManager {
             state.resourceUuid = response?.data?.uuid;
           } else if (state.persistedValue !== identifier) {
             if (!state.resourceUuid) {
-              throw registrationError(
+              throw new RegistrationDomainError(
+                registrationErrorCodes.identifierRetryUpdateUnavailable,
                 `No se puede modificar el identificador ${identifierFieldName} durante este reintento. Recargue el paciente e intente nuevamente.`,
+                { technicalDetails: { identifierFieldName } },
               );
             }
             await updatePatientIdentifier(patientUuid, state.resourceUuid, identifierToCreate.identifier, signal);
@@ -952,8 +976,10 @@ export class FormManager {
           continue;
         }
         if (!state.resourceUuid) {
-          throw registrationError(
+          throw new RegistrationDomainError(
+            registrationErrorCodes.identifierRetryDeleteUnavailable,
             `No se puede eliminar el identificador ${identifierFieldName} durante este reintento. Recargue el paciente e intente nuevamente.`,
+            { technicalDetails: { identifierFieldName } },
           );
         }
         if (!transactionManager.deletedIdentifierUuids[state.resourceUuid]) {

@@ -102,10 +102,9 @@ describe('useFilteredEncounter', () => {
       },
     } as Awaited<ReturnType<typeof openmrsFetch>>);
 
-    const { result } = renderHook(
-      () => useFilteredEncounter('patient-uuid', 'encounter-type', `  ${formUuid}  `),
-      { wrapper: swrWrapper },
-    );
+    const { result } = renderHook(() => useFilteredEncounter('patient-uuid', 'encounter-type', `  ${formUuid}  `), {
+      wrapper: swrWrapper,
+    });
 
     await waitFor(() => expect(result.current.prenatalEncounter?.uuid).toBe('matching'));
 

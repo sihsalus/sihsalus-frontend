@@ -43,7 +43,8 @@ export function useRelationships(patientUuid: string) {
   const familyRelationships = data?.data?.results?.filter(
     (relationship) =>
       relationship.relationshipType.uuid !== companionRelationshipTypeUuid &&
-      ((relationship.relationshipType.weight ?? 0) >= 1 || familyRelationshipTypes.has(relationship.relationshipType.uuid)),
+      ((relationship.relationshipType.weight ?? 0) >= 1 ||
+        familyRelationshipTypes.has(relationship.relationshipType.uuid)),
   );
   const formattedRelationships = familyRelationships?.length
     ? extractRelationshipData(patientUuid, familyRelationships)

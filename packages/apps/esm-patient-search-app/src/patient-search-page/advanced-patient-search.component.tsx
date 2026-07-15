@@ -1,8 +1,11 @@
+import { useConfig } from '@openmrs/esm-framework';
 import { parsePatientBirthdate } from '@openmrs/esm-utils';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 
+import { type PatientSearchConfig } from '../config-schema';
 import { useInfinitePatientSearch } from '../patient-search.resource';
+import { PatientSearchContext, usePatientSearchContext2 } from '../patient-search-context';
 import { type AdvancedPatientSearchState } from '../types';
 
 import styles from './advanced-patient-search.scss';
@@ -24,6 +27,10 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
 }) => {
   const [filters, setFilters] = useState<AdvancedPatientSearchState>(initialFilters);
   const [activeQuery, setActiveQuery] = useState(query);
+  const config = useConfig<PatientSearchConfig>();
+  const { nonNavigationSelectPatientAction } = useContext(PatientSearchContext);
+  const patientSearchContext2 = usePatientSearchContext2();
+  const isEmbeddedSelection = Boolean(nonNavigationSelectPatientAction || patientSearchContext2?.onPatientSelected);
 
   useEffect(() => {
     setActiveQuery(query);
@@ -45,18 +52,21 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
 
   const {
     data: searchResults,
-    currentPage,
     setPage,
     hasMore,
     isLoading,
+    isValidating,
     fetchError,
-  } = useInfinitePatientSearch(activeQuery, false, !!activeQuery, 50);
+  } = useInfinitePatientSearch(activeQuery, config.includeDead, !!activeQuery, 50);
 
   useEffect(() => {
-    if (searchResults?.length === currentPage * 50 && hasMore) {
+    // hasMore reflects the last fetched page's `next` link, so advancing on it
+    // (instead of an exact page-size match) still terminates and keeps loading
+    // when the server returns short pages (e.g. voided patients filtered out).
+    if (hasMore && !isLoading && !isValidating && !fetchError) {
       setPage((page) => page + 1);
     }
-  }, [searchResults, currentPage, hasMore, setPage]);
+  }, [fetchError, hasMore, isLoading, isValidating, setPage]);
 
   const filteredResults = useMemo(() => {
     if (searchResults && filtersApplied) {
@@ -169,8 +179,11 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
           stickyPagination={stickyPagination}
           inTabletOrOverlay={inTabletOrOverlay}
           isLoading={isLoading}
+          isValidating={isValidating}
+          hasMore={hasMore}
           fetchError={fetchError}
           searchResults={filteredResults ?? []}
+          showAddPatient={!isEmbeddedSelection}
         />
       </div>
       {inTabletOrOverlay && (

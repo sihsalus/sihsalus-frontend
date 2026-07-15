@@ -1,7 +1,7 @@
 import { MultiSelect } from '@carbon/react';
 import { AppointmentsPictogram, OpenmrsDatePicker, PageHeader, PageHeaderContent } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
-import React, { useCallback, useContext, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { omrsDateFormat } from '../constants';
@@ -13,20 +13,22 @@ import styles from './appointments-header.scss';
 interface AppointmentHeaderProps {
   title: string;
   appointmentServiceTypes?: Array<string>;
-  onChange?: (evt) => void;
+  onChange?: (selectedServiceTypes: Array<string>) => void;
 }
 
-const AppointmentsHeader: React.FC<AppointmentHeaderProps> = ({ title, onChange }) => {
+type ServiceTypeOption = {
+  id: string;
+  label: string;
+};
+
+const AppointmentsHeader: React.FC<AppointmentHeaderProps> = ({ appointmentServiceTypes = [], title, onChange }) => {
   const { t } = useTranslation();
   const { selectedDate, setSelectedDate } = useContext(SelectedDateContext);
   const { serviceTypes } = useAppointmentServices();
 
-  const [, setSelectedItems] = useState([]);
-
   const handleMultiSelectChange = useCallback(
-    ({ selectedItems }) => {
-      const selectedUuids = selectedItems.map((item) => item.id);
-      setSelectedItems(selectedUuids);
+    ({ selectedItems }: { selectedItems: Array<ServiceTypeOption> | null }) => {
+      const selectedUuids = selectedItems?.map((item) => item.id) ?? [];
       onChange?.(selectedUuids);
     },
     [onChange],
@@ -37,29 +39,40 @@ const AppointmentsHeader: React.FC<AppointmentHeaderProps> = ({ title, onChange 
     [serviceTypes],
   );
 
+  const selectedServiceTypes = useMemo(
+    () => serviceTypeOptions.filter((serviceType) => appointmentServiceTypes.includes(serviceType.id)),
+    [appointmentServiceTypes, serviceTypeOptions],
+  );
+
   return (
     <PageHeader className={styles.header} data-testid="appointments-header">
       <PageHeaderContent illustration={<AppointmentsPictogram />} title={title} />
       <div className={styles.rightJustifiedItems}>
+        {typeof onChange === 'function' && (
+          <div className={styles.serviceFilter}>
+            <MultiSelect
+              autoAlign
+              className={styles.serviceTypeFilter}
+              id="serviceTypeMultiSelect"
+              items={serviceTypeOptions}
+              itemToString={(item) => (item ? item.label : '')}
+              label={t('all', 'All')}
+              onChange={handleMultiSelectChange}
+              selectedItems={selectedServiceTypes}
+              titleText={t('service', 'Service')}
+              type="inline"
+              useTitleInItem
+            />
+          </div>
+        )}
         <OpenmrsDatePicker
+          className={styles.dateFilter}
           data-testid="appointment-date-picker"
           id="appointment-date-picker"
-          labelText=""
+          labelText={t('date', 'Date')}
           onChange={(date) => setSelectedDate(dayjs(date).startOf('day').format(omrsDateFormat))}
           value={dayjs(selectedDate).toDate()}
         />
-        {typeof onChange === 'function' && (
-          <MultiSelect
-            className={styles.serviceTypeFilter}
-            id="serviceTypeMultiSelect"
-            items={serviceTypeOptions}
-            itemToString={(item) => (item ? item.label : '')}
-            label={t('filterAppointmentsByServiceType', 'Filter appointments by service type')}
-            onChange={handleMultiSelectChange}
-            type="inline"
-            useTitleInItem
-          />
-        )}
       </div>
     </PageHeader>
   );

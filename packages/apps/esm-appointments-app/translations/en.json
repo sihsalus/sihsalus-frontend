@@ -6,6 +6,7 @@
   "activeVisitTypeMismatch": "The active visit type does not match the appointment service. Correct the visit before continuing.",
   "add": "Add",
   "age": "Age",
+  "all": "All",
   "allDay": "All day",
   "appointmentCancelError": "Error cancelling appointment",
   "appointmentCancellationFailed": "The appointment could not be cancelled. Review its status and try again.",

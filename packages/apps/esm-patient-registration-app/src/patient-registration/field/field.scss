@@ -213,6 +213,12 @@
   gap: layout.$spacing-04;
 }
 
+.externalLookupButton {
+  inline-size: 100%;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+
 .externalLookupNotification {
   margin: 0;
   max-width: 32rem;

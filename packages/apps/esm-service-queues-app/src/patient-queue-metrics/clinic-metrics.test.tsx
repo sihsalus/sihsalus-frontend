@@ -7,7 +7,7 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
-import { mockLocations, mockMetrics, mockServiceTypes, mockSession } from 'test-utils';
+import { mockLocations, mockMetrics, mockQueues, mockSession } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../config-schema';
 
@@ -22,12 +22,12 @@ const mockUseAverageWaitTime = vi.mocked(useAverageWaitTime);
 
 vi.mock('./queue-metrics.resource', async () => ({
   ...(await vi.importActual('./queue-metrics.resource')),
-  useServiceMetricsCount: vi.fn().mockReturnValue(5),
+  useServiceMetricsCount: vi.fn().mockReturnValue({ serviceCount: 5 }),
 }));
 
 vi.mock('../hooks/useQueues', async () => {
   return {
-    useQueues: vi.fn().mockReturnValue({ queues: mockServiceTypes.data }),
+    useQueues: vi.fn().mockReturnValue({ queues: mockQueues, isLoading: false }),
   };
 });
 

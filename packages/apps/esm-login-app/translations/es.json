@@ -29,6 +29,8 @@
   "madeInCollaboration": "Hecho en colaboración",
   "newPassword": "Nueva contraseña",
   "newPasswordRequired": "Se requiere una nueva contraseña",
+  "noLoginLocationsAvailable": "No hay ubicaciones de inicio de sesión disponibles",
+  "noLoginLocationsAvailableMessage": "Contacte a un administrador para configurar al menos una ubicación de inicio de sesión.",
   "oldPassword": "Contraseña anterior",
   "oldPasswordRequired": "Se requiere la contraseña anterior",
   "openmrsLogo": "Logo de OpenMRS",

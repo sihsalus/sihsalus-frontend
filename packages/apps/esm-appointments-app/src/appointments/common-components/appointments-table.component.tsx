@@ -266,6 +266,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                                     align="left"
                                     aria-label={t('actions', 'Actions')}
                                     flipped
+                                    iconDescription={t('actions', 'Actions')}
                                     size={responsiveSize}
                                   >
                                     <OverflowMenuItem

@@ -60,6 +60,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   const { t } = useTranslation();
   const { queueLocations, isLoading: isLoadingQueueLocations } = useQueueLocations();
   const { sessionLocation } = useSession();
+  const sessionLocationUuid = sessionLocation?.uuid;
   const {
     visitQueueNumberAttributeUuid,
     concepts: { defaultStatusConceptUuid, defaultPriorityConceptUuid, emergencyPriorityConceptUuid },
@@ -203,10 +204,9 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
       return;
     }
 
-    const defaultLocation =
-      queueLocations.find((location) => location.id === sessionLocation.uuid) ?? queueLocations[0];
+    const defaultLocation = queueLocations.find((location) => location.id === sessionLocationUuid) ?? queueLocations[0];
     setSelectedQueueLocation(defaultLocation?.id ?? '');
-  }, [currentQueueLocationUuid, queueLocations, selectedQueueLocation, sessionLocation.uuid]);
+  }, [currentQueueLocationUuid, queueLocations, selectedQueueLocation, sessionLocationUuid]);
 
   useEffect(() => {
     const nextPriority = priorities.some((allowedPriority) => allowedPriority.uuid === defaultPriorityConceptUuid)

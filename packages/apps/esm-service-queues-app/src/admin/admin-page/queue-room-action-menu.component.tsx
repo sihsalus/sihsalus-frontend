@@ -29,7 +29,13 @@ const QueueRoomActionMenu: React.FC<QueueRoomActionMenuProps> = ({ queueRoom }) 
   return (
     <RequirePrivilege privilege={serviceQueuesEditPrivilege} hideUnauthorized>
       <Layer>
-        <OverflowMenu aria-label={t('actions', 'Actions')} size={isTablet ? 'lg' : 'sm'} flipped align="left">
+        <OverflowMenu
+          aria-label={t('actions', 'Actions')}
+          iconDescription={t('actions', 'Actions')}
+          size={isTablet ? 'lg' : 'sm'}
+          flipped
+          align="left"
+        >
           <OverflowMenuItem className={styles.menuitem} itemText={t('edit', 'Edit')} onClick={handleEditQueueRoom} />
           <OverflowMenuItem
             className={styles.menuitem}

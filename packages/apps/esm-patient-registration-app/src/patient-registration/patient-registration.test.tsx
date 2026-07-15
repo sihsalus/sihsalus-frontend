@@ -1,5 +1,6 @@
 import {
   type FetchResponse,
+  getUserFacingErrorMessage,
   getDefaultsFromConfigSchema,
   showSnackbar,
   useConfig,
@@ -26,11 +27,13 @@ import {
 import { generateIdentifier, saveEncounter, savePatient } from './patient-registration.resource';
 import type { AddressTemplate, Encounter, FormValues } from './patient-registration.types';
 import { useInitialFormValues } from './patient-registration-hooks';
-import { peruDniPatientIdentifierTypeUuid } from './peru-registration-config';
+import { peruDniPatientIdentifierTypeUuid, peruPassportPatientIdentifierTypeUuid } from './peru-registration-config';
+import { RegistrationDomainError, registrationErrorCodes } from './registration-errors';
 
 const mockSaveEncounter = vi.mocked(saveEncounter);
 const mockGenerateIdentifier = vi.mocked(generateIdentifier);
 const mockSavePatient = savePatient as vi.Mock;
+const mockGetUserFacingErrorMessage = vi.mocked(getUserFacingErrorMessage);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
 const mockUsePatient = vi.mocked(usePatient);
@@ -295,7 +298,25 @@ beforeEach(() => {
   mockResourcesContextValue.relationshipTypes = [];
   mockResourcesContextValue.relationshipTypesError = undefined;
   mockResourcesContextValue.isLoadingRelationshipTypes = false;
+  mockResourcesContextValue.currentSession.sessionLocation = {
+    uuid: 'location-uuid',
+    display: 'Test location',
+    links: [],
+  };
   mockResourcesContextValue.currentSession.user = undefined;
+  mockGetUserFacingErrorMessage.mockImplementation((error, fallback, options) => {
+    const errorRecord = typeof error === 'object' && error !== null ? (error as Record<string, unknown>) : undefined;
+    const code = errorRecord?.code;
+    const status = errorRecord?.status;
+
+    if ((typeof code === 'string' || typeof code === 'number') && options?.codeMessages?.[code]) {
+      return options.codeMessages[code];
+    }
+    if ((typeof status === 'string' || typeof status === 'number') && options?.statusMessages?.[status]) {
+      return options.statusMessages[status];
+    }
+    return fallback;
+  });
 });
 
 describe('medical record access', () => {
@@ -392,6 +413,15 @@ describe('Registering a new patient', () => {
     expect(screen.getByRole('button', { name: /register patient/i })).toHaveAttribute('type', 'button');
     expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
     expect(document.querySelector('form')).toHaveAttribute('novalidate');
+  });
+
+  it('blocks registration before data entry when the session has no location', async () => {
+    mockResourcesContextValue.currentSession.sessionLocation = undefined;
+
+    render(<PatientRegistration isOffline={false} savePatientForm={vi.fn()} />, { wrapper: Wrapper });
+
+    expect(await screen.findByText(/select a session location/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /register patient/i })).toBeDisabled();
   });
 
   it('does not show the medical record section while creating a patient, even for an archivist', async () => {
@@ -527,6 +557,133 @@ describe('Registering a new patient', () => {
     expect(mockSearchLocalIdentityByDocument).toHaveBeenCalledTimes(1);
   });
 
+  it('checks every civil document and offers the existing patient when any document is duplicated', async () => {
+    const user = userEvent.setup();
+    const passportType = {
+      fieldName: 'passport',
+      format: '^[A-Za-z0-9-]{6,20}$',
+      identifierSources: [],
+      isPrimary: false,
+      name: 'Passport',
+      required: false,
+      uniquenessBehavior: 'UNIQUE' as const,
+      uuid: peruPassportPatientIdentifierTypeUuid,
+    };
+    const dniType = {
+      ...passportType,
+      fieldName: 'dni',
+      format: '^[0-9]{8}$',
+      name: 'DNI',
+      uuid: peruDniPatientIdentifierTypeUuid,
+    };
+    mockResourcesContextValue.identifierTypes = [...mockIdentifierTypes, dniType, passportType];
+    mockUseInitialFormValues.mockReturnValue([
+      {
+        ...initialFormValues,
+        patientUuid: 'new-patient-uuid',
+        identifiers: {
+          dni: {
+            identifierName: 'DNI',
+            identifierTypeUuid: peruDniPatientIdentifierTypeUuid,
+            identifierValue: '12345678',
+            preferred: false,
+            required: true,
+          },
+          passport: {
+            identifierName: 'Passport',
+            identifierTypeUuid: peruPassportPatientIdentifierTypeUuid,
+            identifierValue: 'PA123456',
+            preferred: false,
+            required: false,
+          },
+        },
+      } as unknown as FormValues,
+      vi.fn(),
+      { isLoading: false },
+    ]);
+    mockSearchLocalIdentityByDocument
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ kind: 'patient', uuid: 'existing-patient', display: 'Existing Patient' }]);
+    const savePatientForm = vi.fn();
+
+    render(<PatientRegistration isOffline={false} savePatientForm={savePatientForm} />, { wrapper: Wrapper });
+    await fillRequiredFields();
+    await user.click(screen.getByRole('button', { name: /register patient/i }));
+
+    await waitFor(() => expect(mockSearchLocalIdentityByDocument).toHaveBeenCalledTimes(2));
+    expect(mockSearchLocalIdentityByDocument).toHaveBeenNthCalledWith(
+      1,
+      '12345678',
+      expect.any(AbortController),
+      expect.objectContaining({ patientIdentifierTypeUuid: peruDniPatientIdentifierTypeUuid }),
+    );
+    expect(mockSearchLocalIdentityByDocument).toHaveBeenNthCalledWith(
+      2,
+      'PA123456',
+      expect.any(AbortController),
+      expect.objectContaining({ patientIdentifierTypeUuid: peruPassportPatientIdentifierTypeUuid }),
+    );
+    expect(savePatientForm).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actionButtonLabel: 'Open existing patient',
+        kind: 'error',
+        onActionButtonClick: expect.any(Function),
+        subtitle: 'A patient already exists with this document. Find the existing patient before registering a new one.',
+      }),
+    );
+    expect(mockGetUserFacingErrorMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: registrationErrorCodes.duplicatePatientDocument,
+        existingPatientUuid: 'existing-patient',
+      }),
+      'The patient could not be saved. Please try again.',
+      expect.objectContaining({
+        codeMessages: expect.objectContaining({
+          [registrationErrorCodes.duplicatePatientDocument]:
+            'A patient already exists with this document. Find the existing patient before registering a new one.',
+        }),
+      }),
+    );
+  });
+
+  it('maps a domain error through the central normalizer without exposing identity verification details', async () => {
+    const user = userEvent.setup();
+    const technicalObservation = 'RENIEC: apellido materno no coincide (valor recibido: SECRETO)';
+    const domainError = new RegistrationDomainError(
+      registrationErrorCodes.identityVerificationMismatch,
+      technicalObservation,
+      { technicalDetails: { observation: technicalObservation } },
+    );
+    const savePatientForm = vi.fn().mockRejectedValue(domainError);
+
+    render(<PatientRegistration isOffline={false} savePatientForm={savePatientForm} />, { wrapper: Wrapper });
+    await fillRequiredFields();
+    await user.click(screen.getByRole('button', { name: /register patient/i }));
+
+    await waitFor(() => expect(savePatientForm).toHaveBeenCalled());
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        subtitle:
+          "The person's information does not match the identity verification source. Resolve the discrepancy before promoting them.",
+      }),
+    );
+    const errorSnackbar = mockShowSnackbar.mock.calls.find(([snackbar]) => snackbar.kind === 'error')?.[0];
+    expect(errorSnackbar?.subtitle).not.toContain('SECRETO');
+    expect(mockGetUserFacingErrorMessage).toHaveBeenCalledWith(
+      domainError,
+      'The patient could not be saved. Please try again.',
+      expect.objectContaining({
+        codeMessages: expect.objectContaining({
+          [registrationErrorCodes.identityVerificationMismatch]:
+            "The person's information does not match the identity verification source. Resolve the discrepancy before promoting them.",
+        }),
+        logContext: 'Patient registration submission failed',
+      }),
+    );
+  });
+
   it('should not save the patient if validation fails', async () => {
     const user = userEvent.setup();
     const mockSavePatientForm = vi.fn();
@@ -643,6 +800,9 @@ describe('Registering a new patient', () => {
     await user.type(weight, '-999');
 
     mockSaveEncounter.mockRejectedValue({ status: 400, responseBody: { error: { message: 'an error message' } } });
+    mockGetUserFacingErrorMessage.mockReturnValueOnce(
+      'Some information is invalid. Review the form and try again.',
+    );
 
     const registerPatientButton = screen.getByText(/Register Patient/i);
 
@@ -651,7 +811,18 @@ describe('Registering a new patient', () => {
     await waitFor(() => expect(mockSavePatient).toHaveBeenCalledTimes(1));
     expect(mockSaveEncounter).toHaveBeenCalledTimes(1);
 
-    expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ subtitle: 'an error message' }));
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ subtitle: 'Some information is invalid. Review the form and try again.' }),
+    );
+    expect(mockGetUserFacingErrorMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 400 }),
+      'The patient could not be saved. Please try again.',
+      expect.objectContaining({
+        statusMessages: expect.objectContaining({
+          400: 'Some information is invalid. Review the form and try again.',
+        }),
+      }),
+    );
     mockSaveEncounter.mockResolvedValue({} as FetchResponse);
 
     await user.click(registerPatientButton);

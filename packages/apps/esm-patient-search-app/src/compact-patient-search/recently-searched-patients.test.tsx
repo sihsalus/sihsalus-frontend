@@ -106,7 +106,7 @@ describe('RecentlySearchedPatients', () => {
       isLoading: false,
     });
 
-    expect(screen.getByText(/sorry, there was an error. You can try to reload this page/i)).toBeInTheDocument();
+    expect(screen.getByText(/sorry, there was an error. Please try again/i)).toBeInTheDocument();
     expect(screen.queryByText(/recent search result/i)).not.toBeInTheDocument();
   });
 

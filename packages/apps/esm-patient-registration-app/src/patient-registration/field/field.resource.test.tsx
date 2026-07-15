@@ -1,4 +1,4 @@
-import { showSnackbar } from '@openmrs/esm-framework';
+import { logError, showSnackbar } from '@openmrs/esm-framework';
 import { renderHook, waitFor } from '@testing-library/react';
 import useSWRImmutable from 'swr/immutable';
 
@@ -8,14 +8,21 @@ vi.mock('swr/immutable', () => ({
   default: vi.fn(),
 }));
 
+const mockLogError = vi.mocked(logError);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseSWRImmutable = vi.mocked(useSWRImmutable);
 
 describe('useConceptAnswers', () => {
+  beforeEach(() => {
+    mockLogError.mockClear();
+    mockShowSnackbar.mockClear();
+  });
+
   it('does not show a global error for a forbidden concept response', () => {
+    const error = Object.assign(new Error('Forbidden'), { response: { status: 403 } });
     mockUseSWRImmutable.mockReturnValue({
       data: undefined,
-      error: Object.assign(new Error('Forbidden'), { response: { status: 403 } }),
+      error,
       isLoading: false,
     } as ReturnType<typeof useSWRImmutable>);
 
@@ -23,10 +30,11 @@ describe('useConceptAnswers', () => {
 
     expect(result.current.data).toEqual([]);
     expect(result.current.error).toEqual(expect.objectContaining({ message: 'Forbidden' }));
+    expect(mockLogError).toHaveBeenCalledWith(error, 'Patient registration concept request failed');
     expect(mockShowSnackbar).not.toHaveBeenCalled();
   });
 
-  it('shows one global error for other concept request failures', async () => {
+  it('logs concept request failures and shows a generic localized error', async () => {
     const error = new Error('Server error');
     mockUseSWRImmutable.mockReturnValue({
       data: undefined,
@@ -41,8 +49,9 @@ describe('useConceptAnswers', () => {
     });
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       title: 'Error',
-      subtitle: 'Server error',
+      subtitle: 'Try refreshing the page or contact your system administrator',
       kind: 'error',
     });
+    expect(mockLogError).toHaveBeenCalledWith(error, 'Patient registration concept request failed');
   });
 });

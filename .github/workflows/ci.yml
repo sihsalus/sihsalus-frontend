@@ -6,9 +6,12 @@ on:
   push:
     branches: [main]
 
+# Never cancel main runs: a cancelled run skips the Turbo cache save, so
+# back-to-back merges leave main with a stale cache and each verify pays
+# for every merge since the last completed run (~24 min instead of ~4).
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
   IBM_TELEMETRY_DISABLED: 'true'
@@ -80,8 +83,8 @@ jobs:
       - name: Clean generated artifacts
         run: yarn clean
 
-      - name: Turbo Cache
-        uses: actions/cache@v6
+      - name: Restore Turbo Cache
+        uses: actions/cache/restore@v6
         with:
           path: .turbo
           key: turbo-${{ runner.os }}-${{ github.sha }}
@@ -111,6 +114,16 @@ jobs:
         if: github.event_name == 'push'
         run: yarn verify
 
+      # Save even on failure or cancellation: partial Turbo results still let
+      # the next run skip everything that already passed. The combined
+      # actions/cache post step only saves on job success.
+      - name: Save Turbo Cache
+        if: always()
+        uses: actions/cache/save@v6
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -124,8 +137,10 @@ jobs:
 
       - uses: ./.github/actions/setup-node-env
 
-      - name: Turbo Cache
-        uses: actions/cache@v6
+      # Restore-only: quality already saved this sha's cache, and this job
+      # adds no new task results worth persisting.
+      - name: Restore Turbo Cache
+        uses: actions/cache/restore@v6
         with:
           path: .turbo
           key: turbo-${{ runner.os }}-${{ github.sha }}

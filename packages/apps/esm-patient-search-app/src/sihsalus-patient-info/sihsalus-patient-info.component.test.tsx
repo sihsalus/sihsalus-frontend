@@ -44,4 +44,25 @@ describe('SihsalusPatientInfo', () => {
     expect(clinicalHistory.tagName).toBe('SPAN');
     expect(dni.compareDocumentPosition(clinicalHistory) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
+
+  it('does not classify an eight-digit clinical history number as DNI', () => {
+    const patientWithoutDni = {
+      ...patient,
+      identifier: [
+        {
+          type: { coding: [{ code: 'clinical-history-type' }], text: 'Historia Clinica' },
+          value: '12345678',
+        },
+        {
+          type: { coding: [{ code: 'foreign-id-type' }], text: 'Carné de extranjería' },
+          value: 'CE-1234',
+        },
+      ],
+    } as fhir.Patient;
+
+    render(<SihsalusPatientInfo patient={patientWithoutDni} renderedFrom="patient-search" />);
+
+    expect(screen.getByText('CE-1234').tagName).toBe('STRONG');
+    expect(screen.getByText('12345678').tagName).toBe('SPAN');
+  });
 });

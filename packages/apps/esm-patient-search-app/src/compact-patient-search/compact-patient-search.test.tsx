@@ -90,4 +90,43 @@ describe('CompactPatientSearchComponent', () => {
 
     expect(mockNavigate).toHaveBeenCalledWith({ to: expect.stringMatching(/.*\/search\?query=80526377/) });
   });
+
+  it('hides results from the previous query while the new query is debouncing', async () => {
+    const user = userEvent.setup();
+    const config = getDefaultsFromConfigSchema(configSchema) as PatientSearchConfig;
+    mockUseConfig.mockReturnValue({
+      ...config,
+      search: { ...config.search, showRecentlySearchedPatients: false },
+    });
+    mockUseDebounce.mockReturnValue('John');
+    renderWithRouter(CompactPatientSearchComponent, {
+      isSearchPage: false,
+      initialSearchTerm: 'John',
+    });
+    const searchbox = screen.getByRole('searchbox');
+
+    expect(screen.getByTestId('floatingSearchResultsContainer')).toBeInTheDocument();
+    await user.clear(searchbox);
+    await user.type(searchbox, 'Jane');
+
+    expect(screen.queryByTestId('floatingSearchResultsContainer')).not.toBeInTheDocument();
+  });
+
+  it('removes search results immediately when the query is cleared', async () => {
+    const user = userEvent.setup();
+    const config = getDefaultsFromConfigSchema(configSchema) as PatientSearchConfig;
+    mockUseConfig.mockReturnValue({
+      ...config,
+      search: { ...config.search, showRecentlySearchedPatients: false },
+    });
+    mockUseDebounce.mockReturnValue('John');
+    renderWithRouter(CompactPatientSearchComponent, {
+      isSearchPage: false,
+      initialSearchTerm: 'John',
+    });
+
+    await user.click(screen.getByRole('button', { name: /clear/i }));
+
+    expect(screen.queryByTestId('floatingSearchResultsContainer')).not.toBeInTheDocument();
+  });
 });

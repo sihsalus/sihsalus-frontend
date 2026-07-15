@@ -4,10 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueueEntries } from '../hooks/useQueueEntries';
 import useQueueStatuses from '../hooks/useQueueStatuses';
-import ClearQueueEntries from '../modals/clear-queue-entries-modal/clear-queue-entries.component';
 import { updateSelectedQueueStatus, useServiceQueuesStore } from '../store/store';
 import { useColumns } from './cells/columns.resource';
-import AddPatientToQueueButton from './components/add-patient-to-queue-button.component';
 import QueueTable from './queue-table.component';
 import styles from './queue-table.scss';
 import QueueTableExpandedRow from './queue-table-expanded-row.component';
@@ -21,10 +19,7 @@ function DefaultQueueTable() {
       <Layer className={styles.tableSection}>
         <div className={styles.headerContainer}>
           <div className={!isDesktop(layout) ? styles.tabletHeading : styles.desktopHeading}>
-            <h2>{t('patientsCurrentlyInQueue', 'Patients currently in queue')}</h2>
-          </div>
-          <div className={styles.headerButtons}>
-            <AddPatientToQueueButton />
+            <h4>{t('patientsCurrentlyInQueue', 'Patients currently in queue')}</h4>
           </div>
         </div>
         <QueueTableSection />
@@ -99,7 +94,6 @@ function QueueTableSection() {
       statusUuid={null}
       tableFilters={
         <>
-          {filteredQueueEntries?.length > 0 && <ClearQueueEntries queueEntries={filteredQueueEntries} />}
           <StatusDropdownFilter />
           <TableToolbarSearch
             className={searchClassName}

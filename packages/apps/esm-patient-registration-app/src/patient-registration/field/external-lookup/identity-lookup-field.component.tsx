@@ -1,11 +1,11 @@
 import { Button, InlineLoading, InlineNotification } from '@carbon/react';
 import { Search, UserFollow } from '@carbon/react/icons';
-import { navigate } from '@openmrs/esm-framework';
-import { useContext, useMemo, useState } from 'react';
+import { navigate, useFeatureFlag } from '@openmrs/esm-framework';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { v4 } from 'uuid';
 
-import { moduleName } from '../../../constants';
+import { externalIdentityLookupsFlag, moduleName } from '../../../constants';
 import {
   documentTypeConceptUuids,
   getDocumentTypeDefinitionByIdentifierType,
@@ -30,9 +30,17 @@ import { getDocumentIdentifierEntry } from './dni-identifier';
 import { lookupReniecIdentityByDni, type ReniecIdentityLookupResult } from './reniec-lookup.resource';
 
 type LookupStatus = {
+  documentKey: string;
   kind: 'success' | 'warning' | 'error' | 'info';
   title: string;
 };
+
+type KeyedIdentityMatch<TMatch> = {
+  documentKey: string;
+  match: TMatch;
+};
+
+type PendingIdentityAction = 'lookup' | 'promotion' | null;
 
 function parseLocalDate(isoDate: string) {
   const [year, month, day] = isoDate.split('-').map(Number);
@@ -78,12 +86,16 @@ export function applyReniecIdentityToForm(
  */
 export const IdentityLookupField = () => {
   const { t } = useTranslation(moduleName);
+  const externalLookupsEnabled = useFeatureFlag(externalIdentityLookupsFlag);
   const { identifierTypes, values, setFieldValue, setFieldTouched, isOffline } = useContext(PatientRegistrationContext);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isActivatingPromotion, setIsActivatingPromotion] = useState(false);
-  const [status, setStatus] = useState<LookupStatus | null>(null);
-  const [patientMatch, setPatientMatch] = useState<LocalPatientIdentityMatch | null>(null);
-  const [personMatch, setPersonMatch] = useState<LocalPersonIdentityMatch | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingIdentityAction>(null);
+  const [lookupStatus, setLookupStatus] = useState<LookupStatus | null>(null);
+  const [patientMatchState, setPatientMatchState] = useState<KeyedIdentityMatch<LocalPatientIdentityMatch> | null>(
+    null,
+  );
+  const [personMatchState, setPersonMatchState] = useState<KeyedIdentityMatch<LocalPersonIdentityMatch> | null>(null);
+  const activeRequest = useRef<{ abortController: AbortController; id: number } | null>(null);
+  const requestSequence = useRef(0);
 
   const documentEntry = useMemo(
     () => getDocumentIdentifierEntry(values.identifiers ?? {}, identifierTypes ?? []),
@@ -91,49 +103,146 @@ export const IdentityLookupField = () => {
   );
   const documentValue = documentEntry?.[1]?.identifierValue?.trim() ?? '';
   const documentName = documentEntry?.[1]?.identifierName ?? '';
+  const documentIdentifierType = documentEntry
+    ? identifierTypes?.find(
+        (identifierType) =>
+          identifierType.fieldName === documentEntry[0] || identifierType.uuid === documentEntry[1].identifierTypeUuid,
+      )
+    : undefined;
+  const documentIdentifierTypeUuid = documentEntry?.[1]?.identifierTypeUuid ?? documentIdentifierType?.uuid;
+  const documentDefinition = getDocumentTypeDefinitionByIdentifierType(documentIdentifierTypeUuid);
+  const normalizedDocumentNumber = normalizeDocumentNumber(documentValue, documentDefinition);
+  const documentKey = documentEntry ? `${documentIdentifierTypeUuid ?? ''}:${normalizedDocumentNumber}` : '';
+  const currentDocumentKey = useRef(documentKey);
+  const previousDocumentKey = useRef(documentKey);
+  currentDocumentKey.current = documentKey;
   const promotionActive = !!values.personUuidToPromote;
+  const patientMatch = patientMatchState?.documentKey === documentKey ? patientMatchState.match : null;
+  const personMatch = personMatchState?.documentKey === documentKey ? personMatchState.match : null;
+  const status = lookupStatus?.documentKey === documentKey ? lookupStatus : null;
+  const isBusy = pendingAction !== null;
+  const isLoading = pendingAction === 'lookup';
+  const isActivatingPromotion = pendingAction === 'promotion';
 
   const resetMatches = () => {
-    setPatientMatch(null);
-    setPersonMatch(null);
+    setPatientMatchState(null);
+    setPersonMatchState(null);
   };
+
+  const startIdentityRequest = (action: Exclude<PendingIdentityAction, null>) => {
+    activeRequest.current?.abortController.abort();
+    const request = {
+      abortController: new AbortController(),
+      id: ++requestSequence.current,
+    };
+    activeRequest.current = request;
+    setPendingAction(action);
+    return request;
+  };
+
+  const isCurrentRequest = (request: { id: number }, expectedDocumentKey: string) =>
+    request.id === activeRequest.current?.id && expectedDocumentKey === currentDocumentKey.current;
+
+  const searchDocument = (request: { abortController: AbortController }, expectedDocumentNumber: string) =>
+    searchLocalIdentityByDocument(expectedDocumentNumber, request.abortController, {
+      patientIdentifierTypeUuid: documentDefinition?.patientIdentifierTypeUuid ?? undefined,
+      personDocumentTypeConceptUuid: documentDefinition?.documentTypeConceptUuid,
+    });
+
+  const showChangedLookupResult = (
+    matches: Array<LocalPatientIdentityMatch | LocalPersonIdentityMatch>,
+    expectedDocumentKey: string,
+  ) => {
+    const foundPatient = matches.find((match): match is LocalPatientIdentityMatch => match.kind === 'patient');
+    const foundPerson = matches.find((match): match is LocalPersonIdentityMatch => match.kind === 'person');
+    setPatientMatchState(foundPatient ? { documentKey: expectedDocumentKey, match: foundPatient } : null);
+    setPersonMatchState(foundPerson ? { documentKey: expectedDocumentKey, match: foundPerson } : null);
+    setLookupStatus({
+      documentKey: expectedDocumentKey,
+      kind: 'warning',
+      title: t(
+        'identityLookupResultChanged',
+        'La coincidencia cambió o ya no está disponible. Revise el documento y vuelva a buscar antes de continuar.',
+      ),
+    });
+  };
+
+  useEffect(() => {
+    if (previousDocumentKey.current === documentKey) {
+      return;
+    }
+
+    previousDocumentKey.current = documentKey;
+    activeRequest.current?.abortController.abort();
+    activeRequest.current = null;
+    requestSequence.current += 1;
+    setPendingAction(null);
+    setPatientMatchState(null);
+    setPersonMatchState(null);
+    // An active promotion selection lives in the form values, so it survives a
+    // document edit; save-time guards reject the mismatch, but warn now so the
+    // operator does not find out only when the registration fails.
+    setLookupStatus(
+      promotionActive
+        ? {
+            documentKey,
+            kind: 'warning',
+            title: t(
+              'identityLookupPromotionDocumentChanged',
+              'El documento cambió después de seleccionar una persona para promover. Verifique la selección o quítela antes de guardar.',
+            ),
+          }
+        : null,
+    );
+  }, [documentKey, promotionActive, t]);
+
+  useEffect(
+    () => () => {
+      activeRequest.current?.abortController.abort();
+      activeRequest.current = null;
+      requestSequence.current += 1;
+    },
+    [],
+  );
 
   const handleLookup = async () => {
     resetMatches();
 
     if (!documentEntry) {
-      setStatus({
+      setLookupStatus({
+        documentKey,
         kind: 'warning',
         title: t('identityLookupNoDocument', 'Ingrese un número de documento (DNI, CE, pasaporte, DIE o CNV)'),
       });
       return;
     }
 
-    const definition = getDocumentTypeDefinitionByIdentifierType(documentEntry[1].identifierTypeUuid);
-    const normalizedNumber = normalizeDocumentNumber(documentValue, definition);
-
-    if (!isValidDocumentNumber(normalizedNumber, definition)) {
-      setStatus({
+    if (!isValidDocumentNumber(normalizedDocumentNumber, documentDefinition)) {
+      setLookupStatus({
+        documentKey,
         kind: 'warning',
         title: t('identityLookupInvalidDocument', 'El número no tiene el formato esperado para este documento'),
       });
       return;
     }
 
-    setIsLoading(true);
-    setStatus(null);
+    const request = startIdentityRequest('lookup');
+    const expectedDocumentKey = documentKey;
+    setLookupStatus(null);
 
     try {
-      const matches = await searchLocalIdentityByDocument(normalizedNumber, undefined, {
-        patientIdentifierTypeUuid: definition?.patientIdentifierTypeUuid ?? undefined,
-        personDocumentTypeConceptUuid: definition?.documentTypeConceptUuid,
-      });
+      const matches = await searchDocument(request, normalizedDocumentNumber);
+      if (!isCurrentRequest(request, expectedDocumentKey)) {
+        return;
+      }
+
       const foundPatient = matches.find((match): match is LocalPatientIdentityMatch => match.kind === 'patient');
       const foundPerson = matches.find((match): match is LocalPersonIdentityMatch => match.kind === 'person');
 
       if (foundPatient) {
-        setPatientMatch(foundPatient);
-        setStatus({
+        setPatientMatchState({ documentKey: expectedDocumentKey, match: foundPatient });
+        setLookupStatus({
+          documentKey: expectedDocumentKey,
           kind: 'warning',
           title: t('identityLookupPatientExists', 'Ya existe un paciente con este documento. No lo registre de nuevo.'),
         });
@@ -141,8 +250,9 @@ export const IdentityLookupField = () => {
       }
 
       if (foundPerson) {
-        setPersonMatch(foundPerson);
-        setStatus({
+        setPersonMatchState({ documentKey: expectedDocumentKey, match: foundPerson });
+        setLookupStatus({
+          documentKey: expectedDocumentKey,
           kind: 'info',
           title: t(
             'identityLookupPersonExists',
@@ -152,19 +262,24 @@ export const IdentityLookupField = () => {
         return;
       }
 
-      if (definition?.documentTypeConceptUuid === documentTypeConceptUuids.dni) {
-        const identity = await lookupReniecIdentityByDni(normalizedNumber);
+      if (externalLookupsEnabled && documentDefinition?.documentTypeConceptUuid === documentTypeConceptUuids.dni) {
+        const identity = await lookupReniecIdentityByDni(normalizedDocumentNumber);
+        if (!isCurrentRequest(request, expectedDocumentKey)) {
+          return;
+        }
 
         if (identity) {
           applyReniecIdentityToForm(identity, setFieldValue, setFieldTouched);
-          setStatus({
+          setLookupStatus({
+            documentKey: expectedDocumentKey,
             kind: 'success',
             title: t('reniecLookupSuccess', 'Datos RENIEC cargados'),
           });
           return;
         }
 
-        setStatus({
+        setLookupStatus({
+          documentKey: expectedDocumentKey,
           kind: 'warning',
           title: t(
             'identityLookupNoMatches',
@@ -174,42 +289,118 @@ export const IdentityLookupField = () => {
         return;
       }
 
-      setStatus({
+      setLookupStatus({
+        documentKey: expectedDocumentKey,
         kind: 'info',
-        title: t(
-          'identityLookupNoLocalMatches',
-          'Sin coincidencias locales. Registre los datos manualmente (RENIEC solo aplica a DNI).',
-        ),
+        title: externalLookupsEnabled
+          ? t(
+              'identityLookupNoLocalMatches',
+              'Sin coincidencias locales. Registre los datos manualmente (RENIEC solo aplica a DNI).',
+            )
+          : t('identityLookupNoLocalMatchesManual', 'Sin coincidencias locales. Registre los datos manualmente.'),
       });
     } catch (error) {
+      if (!isCurrentRequest(request, expectedDocumentKey)) {
+        return;
+      }
       console.error('Local identity search failed', error);
-      setStatus({
+      setLookupStatus({
+        documentKey: expectedDocumentKey,
         kind: 'error',
         title: t('identityLookupError', 'No se pudo buscar la identidad. Intente nuevamente.'),
       });
     } finally {
-      setIsLoading(false);
+      if (isCurrentRequest(request, expectedDocumentKey)) {
+        setPendingAction(null);
+      }
     }
   };
 
-  const handleOpenExistingPatient = () => {
-    if (patientMatch) {
-      navigate({ to: `\${openmrsSpaBase}/patient/${patientMatch.uuid}/chart` });
+  const handleOpenExistingPatient = async () => {
+    if (!patientMatchState || patientMatchState.documentKey !== documentKey || !patientMatch) {
+      return;
+    }
+
+    const expectedDocumentKey = patientMatchState.documentKey;
+    const request = startIdentityRequest('lookup');
+
+    try {
+      const matches = await searchDocument(request, normalizedDocumentNumber);
+      if (!isCurrentRequest(request, expectedDocumentKey)) {
+        return;
+      }
+
+      const verifiedPatient = matches.find(
+        (match): match is LocalPatientIdentityMatch => match.kind === 'patient' && match.uuid === patientMatch.uuid,
+      );
+      if (!verifiedPatient) {
+        showChangedLookupResult(matches, expectedDocumentKey);
+        return;
+      }
+
+      navigate({ to: `\${openmrsSpaBase}/patient/${verifiedPatient.uuid}/chart` });
+    } catch (error) {
+      if (!isCurrentRequest(request, expectedDocumentKey)) {
+        return;
+      }
+      console.error('Could not revalidate the patient identity match', error);
+      setLookupStatus({
+        documentKey: expectedDocumentKey,
+        kind: 'error',
+        title: t('identityLookupRevalidationError', 'No se pudo confirmar la coincidencia. Vuelva a buscar.'),
+      });
+    } finally {
+      if (isCurrentRequest(request, expectedDocumentKey)) {
+        setPendingAction(null);
+      }
     }
   };
 
   const handlePromotePerson = async () => {
-    if (!personMatch) {
+    if (!personMatchState || personMatchState.documentKey !== documentKey || !personMatch) {
       return;
     }
 
-    setIsActivatingPromotion(true);
+    const expectedDocumentKey = personMatchState.documentKey;
+    const request = startIdentityRequest('promotion');
 
     try {
-      const person = await fetchPersonForPromotion(personMatch.uuid);
+      const matches = await searchDocument(request, normalizedDocumentNumber);
+      if (!isCurrentRequest(request, expectedDocumentKey)) {
+        return;
+      }
+
+      const patientNowUsingDocument = matches.find(
+        (match): match is LocalPatientIdentityMatch => match.kind === 'patient',
+      );
+      if (patientNowUsingDocument) {
+        setPatientMatchState({ documentKey: expectedDocumentKey, match: patientNowUsingDocument });
+        setPersonMatchState(null);
+        setLookupStatus({
+          documentKey: expectedDocumentKey,
+          kind: 'warning',
+          title: t('identityLookupPatientExists', 'Ya existe un paciente con este documento. No lo registre de nuevo.'),
+        });
+        return;
+      }
+
+      const verifiedPerson = matches.find(
+        (match): match is LocalPersonIdentityMatch => match.kind === 'person' && match.uuid === personMatch.uuid,
+      );
+      if (!verifiedPerson) {
+        showChangedLookupResult(matches, expectedDocumentKey);
+        return;
+      }
+
+      const person = await fetchPersonForPromotion(verifiedPerson.uuid, request.abortController);
+      if (!isCurrentRequest(request, expectedDocumentKey)) {
+        return;
+      }
+
       applyPersonToRegistrationForm(person, setFieldValue, setFieldTouched);
-      setPersonMatch(null);
-      setStatus({
+      setPersonMatchState(null);
+      setLookupStatus({
+        documentKey: expectedDocumentKey,
         kind: 'success',
         title: t(
           'identityLookupPromotionReady',
@@ -217,19 +408,25 @@ export const IdentityLookupField = () => {
         ),
       });
     } catch (error) {
+      if (!isCurrentRequest(request, expectedDocumentKey)) {
+        return;
+      }
       console.error('Could not load the person for promotion', error);
-      setStatus({
+      setLookupStatus({
+        documentKey: expectedDocumentKey,
         kind: 'error',
         title: t('identityLookupPromotionError', 'No se pudo cargar la persona seleccionada'),
       });
     } finally {
-      setIsActivatingPromotion(false);
+      if (isCurrentRequest(request, expectedDocumentKey)) {
+        setPendingAction(null);
+      }
     }
   };
 
   const handleClearPromotion = () => {
     clearPromotionSelection(v4(), setFieldValue);
-    setStatus(null);
+    setLookupStatus(null);
   };
 
   return (
@@ -249,9 +446,11 @@ export const IdentityLookupField = () => {
           size="sm"
           renderIcon={Search}
           onClick={handleLookup}
-          disabled={isLoading || isOffline}
+          disabled={isBusy || isOffline}
         >
-          {t('identityLookupButton', 'Buscar en base local y RENIEC')}
+          {externalLookupsEnabled
+            ? t('identityLookupButton', 'Buscar en base local y RENIEC')
+            : t('identityLookupLocalButton', 'Buscar en base local')}
         </Button>
         {isLoading ? <InlineLoading description={t('identityLookupLoading', 'Buscando identidad')} /> : null}
       </div>
@@ -260,7 +459,11 @@ export const IdentityLookupField = () => {
           className={styles.externalLookupNotification}
           kind="info"
           lowContrast
-          title={t('identityLookupOffline', 'Sin conexión: la búsqueda local y RENIEC no están disponibles.')}
+          title={
+            externalLookupsEnabled
+              ? t('identityLookupOffline', 'Sin conexión: la búsqueda local y RENIEC no están disponibles.')
+              : t('identityLookupLocalOffline', 'Sin conexión: la búsqueda local no está disponible.')
+          }
         />
       ) : null}
       {status ? (
@@ -274,7 +477,7 @@ export const IdentityLookupField = () => {
       {patientMatch ? (
         <div className={styles.externalLookupAction}>
           <span>{patientMatch.display}</span>
-          <Button kind="ghost" size="sm" onClick={handleOpenExistingPatient}>
+          <Button kind="ghost" size="sm" onClick={handleOpenExistingPatient} disabled={isBusy}>
             {t('identityLookupOpenPatient', 'Abrir paciente existente')}
           </Button>
         </div>
@@ -287,7 +490,7 @@ export const IdentityLookupField = () => {
             size="sm"
             renderIcon={UserFollow}
             onClick={handlePromotePerson}
-            disabled={isActivatingPromotion}
+            disabled={isBusy}
           >
             {t('identityLookupPromoteAction', 'Registrar como paciente (reutiliza su registro)')}
           </Button>

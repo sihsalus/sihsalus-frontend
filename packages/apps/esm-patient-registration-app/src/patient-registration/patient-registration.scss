@@ -19,6 +19,11 @@
   display: block;
 }
 
+.sessionLocationWarning {
+  margin: layout.$spacing-05 0 0;
+  max-width: min(88rem, calc(100vw - #{layout.$spacing-07}));
+}
+
 .infoGrid {
   width: 100%;
   min-width: 0;

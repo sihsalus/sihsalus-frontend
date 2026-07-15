@@ -1,5 +1,5 @@
 import { Button, Search } from '@carbon/react';
-import { interpolateString, navigate, useConfig } from '@openmrs/esm-framework';
+import { interpolateString, navigate, useConfig, useDebounce } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -26,11 +26,18 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
   const { t } = useTranslation();
   const config = useConfig<PatientSearchConfig>();
   const inputRef = useRef<HTMLInputElement>(null);
-  const bannerContainerRef = useRef(null);
+  const bannerContainerRef = useRef<HTMLDivElement>(null);
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
-  const showSearchResults = useMemo(() => !!searchTerm?.trim(), [searchTerm]);
-  const patientSearchResponse = useInfinitePatientSearch(searchTerm, config.includeDead, showSearchResults);
+  const normalizedSearchTerm = useMemo(() => searchTerm?.trim() ?? '', [searchTerm]);
+  const debouncedSearchTerm = useDebounce(normalizedSearchTerm);
+  const shouldSearch = Boolean(normalizedSearchTerm) && normalizedSearchTerm === debouncedSearchTerm;
+  const patientSearchResponse = useInfinitePatientSearch(
+    debouncedSearchTerm,
+    config.includeDead,
+    shouldSearch,
+  );
   const { data: patients } = patientSearchResponse;
+  const visiblePatients = shouldSearch ? patients : null;
 
   const handleChange = useCallback((val) => setSearchTerm(val), []);
 
@@ -43,32 +50,52 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
    */
   const handlePatientSelection = useCallback(
     (event, index: number) => {
+      const patient = visiblePatients?.[index];
+      if (!patient) {
+        return;
+      }
+
       event.preventDefault();
       if (selectPatientAction) {
-        selectPatientAction(patients[index].uuid);
+        selectPatientAction(patient.uuid);
       } else {
         navigate({
           to: interpolateString(config.search.patientChartUrl, {
-            patientUuid: patients[index].uuid,
+            patientUuid: patient.uuid,
           }),
         });
       }
       handleClear();
     },
-    [config.search, selectPatientAction, patients, handleClear],
+    [config.search, selectPatientAction, visiblePatients, handleClear],
   );
 
   const handleFocusToInput = useCallback(() => {
-    const len = inputRef.current.value?.length ?? 0;
-    inputRef.current.setSelectionRange(len, len);
-    inputRef.current.focus();
+    if (inputRef.current) {
+      const len = inputRef.current.value?.length ?? 0;
+      inputRef.current.setSelectionRange(len, len);
+      inputRef.current.focus();
+    }
   }, []);
 
-  const focusedResult = useArrowNavigation(patients?.length ?? 0, handlePatientSelection, handleFocusToInput, -1);
+  const isEventFromFocusedResult = useCallback((event: React.KeyboardEvent<HTMLElement>, index: number) => {
+    const result = bannerContainerRef.current?.children.item(index);
+    return Boolean(result?.contains(event.target as Node));
+  }, []);
+
+  const { focusedResult, handleKeyPress, resetFocusedResult } = useArrowNavigation(
+    visiblePatients?.length ?? 0,
+    handlePatientSelection,
+    handleFocusToInput,
+    {
+      isEventFromFocusedResult,
+      resetKey: normalizedSearchTerm,
+    },
+  );
 
   useEffect(() => {
     if (bannerContainerRef.current && focusedResult > -1) {
-      bannerContainerRef.current.children?.[focusedResult]?.focus();
+      (bannerContainerRef.current.children?.[focusedResult] as HTMLElement | undefined)?.focus();
       bannerContainerRef.current.children?.[focusedResult]?.scrollIntoView({
         behavior: 'smooth',
         block: 'end',
@@ -80,7 +107,12 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
   }, [focusedResult, handleFocusToInput]);
 
   return (
-    <div className={styles.patientSearchBar}>
+    <div
+      aria-label={t('patientSearch', 'Patient search')}
+      className={styles.patientSearchBar}
+      onKeyDown={handleKeyPress}
+      role="group"
+    >
       <form onSubmit={(event) => event.preventDefault()} className={styles.searchArea}>
         <Search
           autoFocus
@@ -89,6 +121,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
           labelText=""
           onChange={(event) => handleChange(event.target.value)}
           onClear={handleClear}
+          onFocus={resetFocusedResult}
           placeholder={t('searchForPatient', 'Search for a patient by name or identifier number')}
           ref={inputRef}
           size="lg"
@@ -98,7 +131,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
           {t('search', 'Search')}
         </Button>
       </form>
-      {showSearchResults && (
+      {shouldSearch && (
         <PatientSearchContext.Provider
           value={{
             nonNavigationSelectPatientAction: selectPatientAction,
@@ -106,7 +139,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
           }}
         >
           <div className={styles.floatingSearchResultsContainer}>
-            <PatientSearch query={searchTerm} ref={bannerContainerRef} {...patientSearchResponse} />
+            <PatientSearch query={debouncedSearchTerm} ref={bannerContainerRef} {...patientSearchResponse} />
           </div>
         </PatientSearchContext.Provider>
       )}

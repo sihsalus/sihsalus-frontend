@@ -3,15 +3,15 @@
 const { spawn, spawnSync } = require('node:child_process');
 const { existsSync, readFileSync, statSync } = require('node:fs');
 const net = require('node:net');
-const { extname, join, relative, resolve } = require('node:path');
+const { join, relative, resolve } = require('node:path');
 
 const envPath = resolve(process.cwd(), '.env');
 const hadBackendBeforeDotenv = Boolean(process.env.SIHSALUS_BACKEND_URL);
 const dotenvResult = require('dotenv').config({ path: envPath, quiet: true });
 
 const chalk = require('chalk');
-const { findMissingSpaArtifacts } = require('./local-spa-preflight');
-const { setLocalStaticAssetHeaders } = require('./local-static-asset-headers');
+const { createSpaStaticOptions, isSpaIndexRequestPath } = require('../openmrs/spa-static-options');
+const { formatSpaArtifactIssue, inspectSpaArtifacts } = require('./spa-artifact-manifest');
 const logInfo = (msg) => console.log(`${chalk.green.bold('[start-dev]')} ${msg}`);
 const logWarn = (msg) => console.warn(`${chalk.yellow.bold('[start-dev]')} ${chalk.yellow(msg)}`);
 const logFail = (msg) => console.error(`${chalk.red.bold('[start-dev]')} ${chalk.red(msg)}`);
@@ -57,8 +57,6 @@ const devAppsEnv =
 const assembledImportmap = resolve(__dirname, '..', '..', '..', 'dist', 'spa', 'importmap.json');
 const assembledRoutes = resolve(__dirname, '..', '..', '..', 'dist', 'spa', 'routes.registry.json');
 const distSpa = resolve(__dirname, '..', '..', '..', 'dist', 'spa');
-const assembledIndex = join(distSpa, 'index.html');
-const requiredAssembledSpaArtifacts = [assembledImportmap, assembledRoutes, assembledIndex];
 const frontendConfig = resolve(__dirname, '..', '..', '..', 'config', 'frontend.json');
 const spaPath = '/openmrs/spa';
 const sessionPath = '/openmrs/ws/rest/v1/session';
@@ -117,11 +115,11 @@ if (requireBackendUrl && backendSource === 'default') {
   process.exit(1);
 }
 
-const missingSpaArtifacts = findMissingSpaArtifacts(requiredAssembledSpaArtifacts);
-if (missingSpaArtifacts.length > 0) {
-  logFail('The assembled SPA is incomplete. Missing:');
-  for (const artifactPath of missingSpaArtifacts) {
-    logFail(`  - ${relative(process.cwd(), artifactPath)}`);
+const invalidSpaArtifacts = inspectSpaArtifacts(distSpa, 'startup');
+if (invalidSpaArtifacts.length > 0) {
+  logFail('The assembled SPA is incomplete:');
+  for (const issue of invalidSpaArtifacts) {
+    logFail(`  - ${formatSpaArtifactIssue({ ...issue, filePath: relative(process.cwd(), issue.filePath) })}`);
   }
   logFail('Run yarn assemble, then restart yarn start.');
   process.exit(1);
@@ -310,7 +308,7 @@ async function startWithProxy(cliArgs) {
   const cliManagedPaths = new Set(['/importmap.json', '/routes.registry.json', '/routes.json']);
 
   const app = express();
-  const staticHandler = express.static(distSpa, { setHeaders: setLocalStaticAssetHeaders });
+  const staticHandler = express.static(distSpa, createSpaStaticOptions());
   const spaIndexHtml = readFileSync(join(distSpa, 'index.html'), 'utf8');
   const spaIndexRateLimit = createInMemoryRateLimit({
     windowMs: readRateLimitEnv('SIHSALUS_SPA_RATE_LIMIT_WINDOW_MS', 60_000),
@@ -380,8 +378,8 @@ async function startWithProxy(cliArgs) {
     staticHandler(req, res, next);
   });
 
-  app.get(`${spaPath}/*`, spaIndexRateLimit, (req, res, next) => {
-    if (cliManagedPaths.has(req.path) || extname(req.path)) {
+  app.get([spaPath, `${spaPath}/*`], spaIndexRateLimit, (req, res, next) => {
+    if (cliManagedPaths.has(req.path) || !isSpaIndexRequestPath(req.originalUrl || req.path, spaPath)) {
       return next();
     }
     res.type('html').send(spaIndexHtml);

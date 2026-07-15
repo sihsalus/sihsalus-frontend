@@ -3,6 +3,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const chalk = require('chalk');
+const { extensionParcelTimeouts, userFacingErrorPatches } = require('./app-shell-runtime-patches');
 
 const logInfo = (msg) => console.log(`${chalk.green.bold('[assemble]')} ${msg}`);
 const logWarn = (msg) => console.warn(`${chalk.yellow.bold('[assemble]')} ${chalk.yellow(msg)}`);
@@ -362,8 +363,6 @@ function patchAppShellRuntime() {
   )}-${minifiedTemplateVariable('f')}`;
   const extensionParcelProps =
     '{...l,_meta:o,_extensionContext:{extensionId:c,extensionSlotName:t,extensionSlotModuleName:n,extensionModuleName:m},domElement:e}';
-  const extensionParcelTimeouts =
-    'timeouts:{bootstrap:{millis:1e4,dieOnTimeout:!1,warningMillis:1e4},mount:{millis:1e4,dieOnTimeout:!1,warningMillis:1e4},update:{millis:1e4,dieOnTimeout:!1,warningMillis:1e4},unmount:{millis:1e4,dieOnTimeout:!1,warningMillis:1e4}}';
   const extensionParcelMount = `p=(0,r.mountRootParcel)(u({...s,name:\`${extensionParcelName}\`}),${extensionParcelProps})`;
   const extensionParcelMountWithTimeouts = `p=(0,r.mountRootParcel)(u({...s,name:\`${extensionParcelName}\`,${extensionParcelTimeouts}}),${extensionParcelProps})`;
 
@@ -373,20 +372,6 @@ function patchAppShellRuntime() {
     'o',
   )}.\`),r;`;
   const duplicateSlotNoop = 'if(o&&o!=e)return r;';
-  const offlineSetupTechnicalError = 'title:"Offline Setup Error",description:e.message';
-  const offlineSetupSafeError =
-    'title:document.documentElement.lang.toLowerCase().startsWith("es")?"Modo sin conexión no disponible":"Offline setup unavailable",description:document.documentElement.lang.toLowerCase().startsWith("es")?"No se pudo activar el modo sin conexión. Puede iniciar sesión y trabajar en línea. Si el problema continúa, contacte a soporte.":"Offline mode could not be enabled. You can still sign in and work online. If this continues, contact support."';
-  const globalUnexpectedTechnicalError =
-    'description:e??"Oops! An unexpected error occurred.",kind:"error",title:"Error"';
-  const globalUnexpectedSafeError =
-    'description:document.documentElement.lang.toLowerCase().startsWith("es")?"Ocurrió un error inesperado.":"An unexpected error occurred.",kind:"error",title:"Error"';
-  const globalRejectionTechnicalError =
-    'description:e.reason??"Oops! An unhandled promise rejection occurred.",kind:"error",title:"Error"';
-  const globalRejectionSafeError =
-    'description:document.documentElement.lang.toLowerCase().startsWith("es")?"Ocurrió un error inesperado.":"An unexpected error occurred.",kind:"error",title:"Error"';
-  const fatalTechnicalError = 'r.textContent=(null==e?void 0:e.message)||"No additional information available."';
-  const fatalSafeError =
-    'r.textContent=document.documentElement.lang.toLowerCase().startsWith("es")?"No se pudo iniciar la aplicación. Intente recargar la página o contacte a soporte.":"The application could not start. Try reloading the page or contact support."';
 
   const patches = [
     {
@@ -401,30 +386,7 @@ function patchAppShellRuntime() {
       replacement: duplicateSlotNoop,
       required: false,
     },
-    {
-      name: 'offline setup user-facing error',
-      search: offlineSetupTechnicalError,
-      replacement: offlineSetupSafeError,
-      required: true,
-    },
-    {
-      name: 'global unexpected error message',
-      search: globalUnexpectedTechnicalError,
-      replacement: globalUnexpectedSafeError,
-      required: true,
-    },
-    {
-      name: 'global rejected promise message',
-      search: globalRejectionTechnicalError,
-      replacement: globalRejectionSafeError,
-      required: true,
-    },
-    {
-      name: 'fatal startup error message',
-      search: fatalTechnicalError,
-      replacement: fatalSafeError,
-      required: true,
-    },
+    ...userFacingErrorPatches,
   ];
   const patchedJsFiles = new Set();
 

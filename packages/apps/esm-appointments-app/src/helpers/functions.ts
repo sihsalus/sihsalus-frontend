@@ -1,6 +1,6 @@
 import dayjs, { type Dayjs } from 'dayjs';
 
-import { type AppointmentCountMap, AppointmentStatus, type AppointmentSummary } from '../types';
+import { type AppointmentCountMap, AppointmentKind, AppointmentStatus, type AppointmentSummary } from '../types';
 
 type AppointmentServiceLoadSummary = {
   serviceName: string;
@@ -85,21 +85,75 @@ export const getGender = (gender: string, t: (key: string, defaultValue: string)
   }
 };
 
-/**
- * Return whether we can transition from one appointment status to another,
- * based on logic in backend. See:
- * https://github.com/Bahmni/openmrs-module-appointments/blob/master/api/src/main/java/org/openmrs/module/appointments/model/AppointmentStatus.java
- * https://github.com/Bahmni/openmrs-module-appointments/blob/master/api/src/main/java/org/openmrs/module/appointments/validator/impl/DefaultAppointmentStatusChangeValidator.java
- */
-export const canTransition = (fromStatus: AppointmentStatus, toStatus: AppointmentStatus): boolean => {
-  const sequences = {
-    [AppointmentStatus.REQUESTED]: 0,
-    [AppointmentStatus.SCHEDULED]: 1,
-    [AppointmentStatus.CHECKEDIN]: 3,
-    [AppointmentStatus.COMPLETED]: 4,
-    [AppointmentStatus.CANCELLED]: 4,
-    [AppointmentStatus.MISSED]: 4,
-  };
+const allowedAppointmentStatusTransitions: Record<AppointmentStatus, ReadonlySet<AppointmentStatus>> = {
+  [AppointmentStatus.REQUESTED]: new Set([AppointmentStatus.SCHEDULED, AppointmentStatus.CANCELLED]),
+  // Appointments 2.1.0 requires the broad Reset Appointment Status privilege for WaitList -> Scheduled.
+  // Keep this transition out of the routine UI until the backend offers a narrower authorization rule.
+  [AppointmentStatus.WAITLIST]: new Set([AppointmentStatus.CANCELLED]),
+  [AppointmentStatus.SCHEDULED]: new Set([
+    AppointmentStatus.ARRIVED,
+    AppointmentStatus.CHECKEDIN,
+    AppointmentStatus.CANCELLED,
+    AppointmentStatus.MISSED,
+  ]),
+  [AppointmentStatus.ARRIVED]: new Set([
+    AppointmentStatus.CHECKEDIN,
+    AppointmentStatus.CANCELLED,
+    AppointmentStatus.MISSED,
+  ]),
+  [AppointmentStatus.CHECKEDIN]: new Set([AppointmentStatus.COMPLETED]),
+  [AppointmentStatus.COMPLETED]: new Set(),
+  [AppointmentStatus.CANCELLED]: new Set(),
+  [AppointmentStatus.MISSED]: new Set(),
+};
 
-  return sequences[fromStatus] < sequences[toStatus] || toStatus === AppointmentStatus.SCHEDULED;
+/** Restricts routine UI actions to the hospital workflow, even though the OMOD accepts broader forward jumps. */
+export const canTransition = (fromStatus: AppointmentStatus, toStatus: AppointmentStatus): boolean => {
+  return allowedAppointmentStatusTransitions[fromStatus]?.has(toStatus) ?? false;
+};
+
+/** Appointment details become immutable once check-in creates visit and queue associations. */
+export const isAppointmentEditable = (status: AppointmentStatus | string | null | undefined): boolean =>
+  status === AppointmentStatus.REQUESTED ||
+  status === AppointmentStatus.WAITLIST ||
+  status === AppointmentStatus.SCHEDULED ||
+  status === AppointmentStatus.ARRIVED;
+
+const appointmentStatusLabels: Record<AppointmentStatus, { key: string; defaultValue: string }> = {
+  [AppointmentStatus.REQUESTED]: { key: 'requested', defaultValue: 'Solicitada' },
+  [AppointmentStatus.WAITLIST]: { key: 'waitList', defaultValue: 'Lista de espera' },
+  [AppointmentStatus.SCHEDULED]: { key: 'scheduled', defaultValue: 'Programada' },
+  [AppointmentStatus.ARRIVED]: { key: 'arrived', defaultValue: 'Llegó' },
+  [AppointmentStatus.CHECKEDIN]: { key: 'checkedIn', defaultValue: 'Cita admitida' },
+  [AppointmentStatus.COMPLETED]: { key: 'completed', defaultValue: 'Completada' },
+  [AppointmentStatus.CANCELLED]: { key: 'cancelled', defaultValue: 'Cancelada' },
+  [AppointmentStatus.MISSED]: { key: 'missed', defaultValue: 'No asistió' },
+};
+
+export const getAppointmentStatusLabel = (
+  status: AppointmentStatus | string | null | undefined,
+  t: (key: string, defaultValue: string) => string,
+) => {
+  if (!status) {
+    return '';
+  }
+  const label = appointmentStatusLabels[status as AppointmentStatus];
+  return label ? t(label.key, label.defaultValue) : t('unknownAppointmentStatus', 'Estado no reconocido');
+};
+
+const appointmentKindLabels: Record<AppointmentKind, { key: string; defaultValue: string }> = {
+  [AppointmentKind.SCHEDULED]: { key: 'scheduled', defaultValue: 'Programada' },
+  [AppointmentKind.WALKIN]: { key: 'walkIn', defaultValue: 'Sin cita' },
+  [AppointmentKind.VIRTUAL]: { key: 'virtual', defaultValue: 'Virtual' },
+};
+
+export const getAppointmentKindLabel = (
+  kind: AppointmentKind | string | null | undefined,
+  t: (key: string, defaultValue: string) => string,
+) => {
+  if (!kind) {
+    return '';
+  }
+  const label = appointmentKindLabels[kind as AppointmentKind];
+  return label ? t(label.key, label.defaultValue) : t('unknownAppointmentType', 'Tipo no reconocido');
 };

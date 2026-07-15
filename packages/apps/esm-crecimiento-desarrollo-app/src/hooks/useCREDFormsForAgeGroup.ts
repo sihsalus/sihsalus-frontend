@@ -10,7 +10,7 @@ import {
   credNutritionEditPrivilege,
 } from '../constants';
 import type { CompletedFormInfo } from '../types';
-import { calculateAgeInDays, calculateAgeInMonths, getAgeGroup } from '../utils/age-group-utils';
+import { getConfiguredAgeGroupFromBirthDate } from '../utils/age-group-utils';
 
 type CredFormKey = keyof ConfigObject['formsList'];
 type CompletedCREDFormInfo = CompletedFormInfo & {
@@ -109,26 +109,7 @@ export function getCREDFormsForAgeGroup(
 
   if (!birthDate || !credFormsByAgeGroup || !formsList) return [];
 
-  const days = calculateAgeInDays(birthDate, referenceDate);
-  const months = calculateAgeInMonths(birthDate, referenceDate);
-  const dayRangeGroup = credFormsByAgeGroup.find(
-    (group) =>
-      group.minDays !== undefined &&
-      group.maxDays !== undefined &&
-      days >= group.minDays &&
-      days <= group.maxDays,
-  );
-  const matchedGroup =
-    dayRangeGroup ??
-    getAgeGroup(
-      months,
-      credFormsByAgeGroup.filter((group) => group.minMonths !== undefined && group.maxMonths !== undefined),
-    ) ??
-    // Calendar months can leave a short 360-365 day gap before the first birthday.
-    // Keep the child in the last infant band until the 12-month group is reached.
-    (days >= 360 && months < 12
-      ? credFormsByAgeGroup.find((group) => group.minDays === 270 && group.maxDays === 359)
-      : null);
+  const matchedGroup = getConfiguredAgeGroupFromBirthDate(birthDate, credFormsByAgeGroup, referenceDate);
 
   if (!matchedGroup || !matchedGroup.forms) return [];
 

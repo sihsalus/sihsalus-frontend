@@ -44,8 +44,12 @@
   text-align: center;
   padding: layout.$spacing-03;
   border: 1px solid colors.$gray-30;
-  cursor: pointer;
+  cursor: default;
   flex: 1 1 120px;
+
+  &.actionable {
+    cursor: pointer;
+  }
 
   &.active {
     border-color: colors.$blue-60;

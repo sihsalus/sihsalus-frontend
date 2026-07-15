@@ -38,15 +38,15 @@ const diagnosisTagConfigSchema: ConfigSchema = {
 
 export const esmStyleGuideSchema: ConfigSchema = {
   'Brand color #1': {
-    _default: '#005d5d',
+    _default: '#27348b',
     _type: Type.String,
   },
   'Brand color #2': {
-    _default: '#004144',
+    _default: '#17205f',
     _type: Type.String,
   },
   'Brand color #3': {
-    _default: '#007d79',
+    _default: '#2c7d35',
     _type: Type.String,
   },
   excludePatientIdentifierCodeTypes: {
@@ -62,11 +62,11 @@ export const esmStyleGuideSchema: ConfigSchema = {
   implementationName: {
     _type: Type.String,
     _description: 'A name of the place (or authority) where all possible locations a user can choose are located.',
-    _default: 'Clinic',
+    _default: 'SIHSALUS',
   },
   patientPhotoConceptUuid: {
     _type: Type.ConceptUuid,
-    _default: '736e8771-e501-4615-bfa7-570c03f4bef5',
+    _default: '7cac8397-53cd-4f00-a6fe-028e8d743f8e',
     _description:
       "Used to look up the patient photo, which is stored as an attachment obs. Set to `null` in order to disable the feature and use only generated avatars. To remove the avatars entirely, use extension configuration's `remove` feature.",
   },

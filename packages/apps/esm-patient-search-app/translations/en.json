@@ -35,7 +35,6 @@
   "noPatientChartsFoundMessage": "Sorry, no patient charts were found",
   "other": "Other",
   "patientSearchCriteria": "Last names and given names or identity document",
-  "patientSearchCriteriaPlaceholder": "Enter last names, given names, medical record number, DNI, CE, passport, CNV, DIE, SIS code, or another document",
   "postcode": "Postcode",
   "previousPage": "Previous page",
   "recentSearchResultsCount_one": "{{count}} recent search result",

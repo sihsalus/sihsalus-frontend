@@ -281,6 +281,7 @@ export function getMutableSessionProps(context: FormContextProps): {
 } {
   const {
     formFields,
+    formJson,
     location,
     currentProvider,
     customDependencies,
@@ -303,13 +304,18 @@ export function getMutableSessionProps(context: FormContextProps): {
       : typeof encounter?.encounterDatetime === 'string'
         ? new Date(encounter.encounterDatetime)
         : undefined;
+  const defaultEncounterDatetime = isDateValue(formJson.defaultEncounterDatetime)
+    ? formJson.defaultEncounterDatetime
+    : isStringValue(formJson.defaultEncounterDatetime) && dayjs(formJson.defaultEncounterDatetime).isValid()
+      ? dayjs(formJson.defaultEncounterDatetime).toDate()
+      : undefined;
   const defaultEncounterDate = visit?.stopDatetime ? sessionDate : undefined;
   return {
     encounterRole: isStringValue(encounterRoleValue) ? encounterRoleValue : getResourceUuid(defaultEncounterRole),
     encounterProvider: isStringValue(encounterProviderValue) ? encounterProviderValue : currentProvider.uuid,
     encounterDate: isDateValue(encounterDateValue)
       ? encounterDateValue
-      : (existingEncounterDatetime ?? defaultEncounterDate),
+      : (existingEncounterDatetime ?? defaultEncounterDatetime ?? defaultEncounterDate),
     encounterLocation: isStringValue(encounterLocationValue)
       ? encounterLocationValue
       : (getResourceUuid(encounter?.location) ?? location.uuid),

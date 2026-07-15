@@ -45,14 +45,16 @@ const PatientAppointmentsBase: React.FC<PatientAppointmentsBaseProps> = ({ patie
   } = usePatientAppointments(patientUuid, startDate, new AbortController());
 
   const handleLaunchAppointmentsForm = () => {
+    const workspaceProps = {
+      context: 'creating',
+      patientUuid,
+      workspaceTitle: t('createNewAppointment', 'Create new appointment'),
+    };
+
     if (patientAppointmentContext === PatientAppointmentContextTypes.PATIENT_CHART) {
-      launchPatientWorkspace('appointments-form-workspace');
+      launchPatientWorkspace('patient-chart-appointments-form-workspace', workspaceProps);
     } else {
-      launchWorkspace2('appointments-form-workspace', {
-        context: 'creating',
-        patientUuid,
-        workspaceTitle: t('createNewAppointment', 'Create new appointment'),
-      });
+      launchWorkspace2('appointments-form-workspace', workspaceProps);
     }
   };
 

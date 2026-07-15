@@ -44,6 +44,7 @@ const conceptAnswersBySetUuid = {
   'e47c3ef7-c7e2-4d35-b2fa-934df43df2a5': [
     { uuid: 'bdb57e2a-d8fd-4e2b-8622-1ba60dcd3024', display: 'No identificado' },
     { uuid: '9e42f0f1-d989-4604-902e-8a33f474f01e', display: 'Identificación confirmada' },
+    { uuid: '8e9518a2-828d-4e50-a110-d964b63e51e2', display: 'Fusionado con registro existente' },
   ],
 };
 
@@ -182,6 +183,61 @@ describe('AdvancedPatientSearchComponent', () => {
       const patientBanners = screen.getAllByRole('banner');
       expect(patientBanners).toHaveLength(1);
       expect(within(patientBanners[0]).getByText(/Joshua Johnson/)).toBeInTheDocument();
+    });
+
+    it('filters admission identification status across concept and legacy values', async () => {
+      const admissionStatusAttributeType = {
+        uuid: '787f1ea9-1792-45e5-9076-699b1a0638cb',
+        display: 'Estado de Identificación en Admisión',
+      };
+      const patients = [
+        {
+          ...mockAdvancedSearchResults[0],
+          uuid: 'merged-concept-patient',
+          attributes: [
+            ...mockAdvancedSearchResults[0].attributes.filter(
+              ({ attributeType }) => attributeType.uuid !== admissionStatusAttributeType.uuid,
+            ),
+            {
+              value: {
+                uuid: '8e9518a2-828d-4e50-a110-d964b63e51e2',
+                display: 'Fusionado con registro existente',
+              },
+              attributeType: admissionStatusAttributeType,
+            },
+          ],
+        },
+        {
+          ...mockAdvancedSearchResults[1],
+          uuid: 'merged-legacy-patient',
+          attributes: [
+            ...mockAdvancedSearchResults[1].attributes.filter(
+              ({ attributeType }) => attributeType.uuid !== admissionStatusAttributeType.uuid,
+            ),
+            { value: 'merged', attributeType: admissionStatusAttributeType },
+          ],
+        },
+        {
+          ...mockAdvancedSearchResults[0],
+          uuid: 'missing-status-value-patient',
+          attributes: [
+            ...mockAdvancedSearchResults[0].attributes.filter(
+              ({ attributeType }) => attributeType.uuid !== admissionStatusAttributeType.uuid,
+            ),
+            { value: null, attributeType: admissionStatusAttributeType },
+          ],
+        },
+      ] as unknown as NonNullable<PatientSearchResponse['data']>;
+      mockUseInfinitePatientSearch.mockReturnValue({ ...mockSearchResults, data: patients, totalResults: 3 });
+
+      renderComponent();
+
+      await user.click(screen.getByRole('combobox', { name: /estado de identificaci.n en admisi.n/i }));
+      await user.click(screen.getByRole('option', { name: 'Fusionado con registro existente' }));
+      await user.click(screen.getByRole('button', { name: /search/i }));
+
+      expect(screen.getByText(/2 search result/)).toBeInTheDocument();
+      expect(screen.getAllByRole('banner')).toHaveLength(2);
     });
 
     it('matches document numbers exactly when refining a name search', async () => {

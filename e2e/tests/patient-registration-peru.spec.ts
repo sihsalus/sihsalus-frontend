@@ -110,6 +110,21 @@ test.describe('Peru patient registration', () => {
     await expect(contact.getByText(/Entrada inv[aá]lida|Invalid Input/i)).toBeVisible({ timeout: 10_000 });
   });
 
+  test('completes a DNI and assigns Peru without blocking the registration form', async ({ page }) => {
+    await gotoPatientRegistration(page);
+
+    const dni = page.locator('input[name="identifiers.dni.identifierValue"]').first();
+    await dni.fill('1234567');
+    await expect(dni).toHaveValue('1234567');
+
+    await dni.pressSequentially('8');
+
+    await expect(dni).toHaveValue('12345678');
+    await expect(page.getByRole('combobox', { name: /Nacionalidad/i })).toHaveValue('Perú');
+    await fillTextbox(page.locator('#givenName'), 'Juan');
+    await expect(page.locator('#givenName')).toHaveValue('Juan');
+  });
+
   test('quick searches residence addresses from the configured address hierarchy', async ({ page }) => {
     await gotoPatientRegistration(page);
 

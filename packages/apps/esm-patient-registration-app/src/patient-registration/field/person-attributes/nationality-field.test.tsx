@@ -1,7 +1,8 @@
 import { useSession } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Form, Formik } from 'formik';
+import { Field, Form, Formik, FormikProvider, useFormikContext } from 'formik';
+import { useCallback } from 'react';
 
 import type { FieldDefinition } from '../../../config-schema';
 import { type FormValues } from '../../patient-registration.types';
@@ -99,6 +100,36 @@ function renderNationalityField(values: Partial<FormValues> = {}) {
   };
 }
 
+function StatefulNationalityFieldTestHarness({ onSetFieldValue }: { onSetFieldValue: () => void }) {
+  const formik = useFormikContext<FormValues>();
+  const setFieldValue = useCallback(
+    (field: string, value: unknown, shouldValidate?: boolean) => {
+      onSetFieldValue();
+      return formik.setFieldValue(field, value, shouldValidate);
+    },
+    [formik.setFieldValue, onSetFieldValue],
+  );
+
+  return (
+    <FormikProvider value={{ ...formik, setFieldValue }}>
+      <Form>
+        <PatientRegistrationContext.Provider
+          value={
+            {
+              inEditMode: false,
+              setFieldValue,
+              values: formik.values,
+            } as unknown as PatientRegistrationContextProps
+          }
+        >
+          <Field aria-label="DNI" name="identifiers.dni.identifierValue" />
+          <NationalityField fieldDefinition={nationalityFieldDefinition} />
+        </PatientRegistrationContext.Provider>
+      </Form>
+    </FormikProvider>
+  );
+}
+
 describe('NationalityField', () => {
   beforeEach(() => {
     mockUseSession.mockReturnValue({
@@ -147,6 +178,28 @@ describe('NationalityField', () => {
         peruNationalityConceptUuid,
       ),
     );
+  });
+
+  it('assigns Peru once without recursively rewriting Formik when the DNI is completed', async () => {
+    const user = userEvent.setup();
+    const onSetFieldValue = vi.fn();
+    const initialValues = {
+      attributes: {},
+      identifiers: {
+        dni: buildIdentifier(peruDniPatientIdentifierTypeUuid, '1234567'),
+      },
+    } as unknown as FormValues;
+
+    render(
+      <Formik initialValues={initialValues} onSubmit={() => {}}>
+        <StatefulNationalityFieldTestHarness onSetFieldValue={onSetFieldValue} />
+      </Formik>,
+    );
+
+    await user.type(screen.getByRole('textbox', { name: 'DNI' }), '8');
+
+    await waitFor(() => expect(screen.getByRole('combobox', { name: /Nacionalidad/u })).toHaveValue('Perú'));
+    expect(onSetFieldValue).toHaveBeenCalledTimes(1);
   });
 
   it('does not infer nationality from an empty DNI field', () => {

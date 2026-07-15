@@ -11,21 +11,23 @@ import {
 } from '@carbon/react';
 import {
   getCoreTranslation,
+  getUserFacingErrorMessage,
   isDesktop,
   showSnackbar,
-  updateVisit,
-  useConfig,
   useLayoutType,
 } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { type ConfigObject } from '../../config-schema';
 import { useMutateAppointments } from '../../form/appointments-form.resource';
-import { canTransition } from '../../helpers';
-import { changeAppointmentStatus } from '../../patient-appointments/patient-appointments.resource';
+import { canTransition, getAppointmentStatusLabel } from '../../helpers';
+import {
+  changeAppointmentStatus,
+  getAppointmentStatus,
+} from '../../patient-appointments/patient-appointments.resource';
 import { type Appointment, AppointmentStatus } from '../../types';
-import { getActiveVisitsForPatient } from './batch-change-appointment-statuses.resources';
 import styles from './batch-change-appointment-statuses.scss';
+
+const BATCH_APPOINTMENT_STATUS_CONFLICT = 'BATCH_APPOINTMENT_STATUS_CONFLICT';
 
 interface BatchChangeAppointmentStatusesModalProps {
   appointments: Array<Appointment>;
@@ -38,7 +40,7 @@ interface BatchChangeAppointmentStatusesModalProps {
  *
  * Note:
  * - The "CheckedIn" status is not available as selection as it requires filling out a form for each patient
- * - The "Completed" status is only available as selection if the config value `checkOutButton.enabled` is true.
+ * - The "Completed" status is not available because checkout must close and reconcile each patient's visit first.
  */
 const BatchChangeAppointmentStatusesModal: React.FC<BatchChangeAppointmentStatusesModalProps> = ({
   appointments,
@@ -48,83 +50,70 @@ const BatchChangeAppointmentStatusesModal: React.FC<BatchChangeAppointmentStatus
   const { mutateAppointments } = useMutateAppointments();
   const isTablet = !isDesktop(useLayoutType());
   const [status, setStatus] = useState<AppointmentStatus>();
-  const { checkOutButton } = useConfig<ConfigObject>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const invalidAppointment =
     status != null ? appointments.find((a) => a.status !== status && !canTransition(a.status, status)) : undefined;
 
   const submit = useCallback(() => {
-    const updateAppointment = (appointment: Appointment) => {
+    if (!status) {
+      return;
+    }
+
+    const updateAppointment = async (appointment: Appointment) => {
+      const currentStatus = await getAppointmentStatus(appointment.uuid);
       // server throws an exception if we make a call to change the appointment status to its current
       // status, so we just do nothing if that's the case
-      if (status === appointment.status) {
-        return Promise.resolve();
+      if (status === currentStatus) {
+        return;
       }
 
-      return changeAppointmentStatus(status, appointment.uuid).then((res) => {
-        if (status === AppointmentStatus.COMPLETED) {
-          return getActiveVisitsForPatient(appointment.patient.uuid)
-            .then((response) => {
-              const activeVisit = response.data.results?.[0];
-              if (activeVisit) {
-                const abortController = new AbortController();
-                const endVisitPayload = { stopDatetime: new Date() };
+      if (!canTransition(currentStatus as AppointmentStatus, status)) {
+        throw Object.assign(new Error('Appointment status changed before the batch update.'), {
+          code: BATCH_APPOINTMENT_STATUS_CONFLICT,
+        });
+      }
 
-                return updateVisit(activeVisit.uuid, endVisitPayload, abortController);
-              }
-            })
-            .catch(() => {
-              showSnackbar({
-                title: t('failedToUpdateVisit', 'Failed to update visit'),
-                subtitle: t('failedToEndActiveVisit', 'Failed to end active visit for {{patient}}', {
-                  patient: appointment.patient.name,
-                }),
-              });
-              return res;
-            });
-        } else {
-          return res;
-        }
-      });
+      return changeAppointmentStatus(status, appointment.uuid);
     };
 
     setIsSubmitting(true);
     Promise.allSettled(appointments.map(updateAppointment))
-      .then(async (results) => {
+      .then((results) => {
         const hasFailedResults = results.some((result) => result.status === 'rejected');
         if (hasFailedResults) {
-          for (let i = 0; i < results.length; i++) {
-            const result = results[i];
+          results.forEach((result, index) => {
             if (result.status === 'rejected') {
-              const errorResponse = await result.reason.response.json();
-              const appointment = appointments[i];
+              const appointment = appointments[index];
 
               showSnackbar({
-                title: t('appointmentsUpdateFailed', 'Appointments update failed'),
+                title: t('appointmentsUpdateFailed', 'No se pudo actualizar la cita'),
                 kind: 'error',
-                subtitle: (
-                  <div>
-                    {t(
-                      'appointmentsUpdateFailedMessage',
-                      'Appointments update failed for {{patient}}. Reason: {{reason}}',
-                      {
-                        patient: appointment.patient.name,
-                        reason: errorResponse.error.translatedMessage,
-                      },
-                    )}
-                  </div>
+                isLowContrast: false,
+                subtitle: getUserFacingErrorMessage(
+                  result.reason,
+                  t(
+                    'appointmentsUpdateFailedSafeMessage',
+                    'No se pudo actualizar la cita de {{patient}}. Revise su estado e intente nuevamente.',
+                    { patient: appointment.patient.name },
+                  ),
+                  {
+                    codeMessages: {
+                      [BATCH_APPOINTMENT_STATUS_CONFLICT]: t(
+                        'appointmentBatchStatusChanged',
+                        'El estado de la cita cambió. Actualice la lista antes de volver a intentar.',
+                      ),
+                    },
+                    logContext: `Batch appointment status update: ${appointment.uuid}`,
+                  },
                 ),
               });
             }
-          }
+          });
         } else {
           showSnackbar({
-            title: t('appointmentsUpdated', 'Appointments updated'),
-            subtitle: t(
-              'appointmentsUpdatedMessage',
-              'Appointments for selected patients have been successfully updated',
-            ),
+            title: t('appointmentsUpdated', 'Citas actualizadas'),
+            subtitle: t('appointmentsUpdatedMessage', 'Las citas seleccionadas fueron actualizadas correctamente.'),
           });
         }
       })
@@ -149,10 +138,11 @@ const BatchChangeAppointmentStatusesModal: React.FC<BatchChangeAppointmentStatus
                   values={{
                     patientName: appointment.patient.name,
                     serviceName: appointment.service.name,
-                    currentStatus: appointment.status,
+                    currentStatus: getAppointmentStatusLabel(appointment.status, t),
                   }}
                 >
-                  <strong>{appointment.patient.name}</strong> - {appointment.service.name} - {appointment.status}
+                  <strong>{appointment.patient.name}</strong> - {appointment.service.name} -{' '}
+                  {getAppointmentStatusLabel(appointment.status, t)}
                 </Trans>
               </li>
             ))}
@@ -168,26 +158,12 @@ const BatchChangeAppointmentStatusesModal: React.FC<BatchChangeAppointmentStatus
                 { id: AppointmentStatus.SCHEDULED, label: t('scheduled', 'Scheduled') },
                 { id: AppointmentStatus.CANCELLED, label: t('cancelled', 'Cancelled') },
                 { id: AppointmentStatus.MISSED, label: t('missed', 'Missed') },
-                ...(checkOutButton.enabled
-                  ? [{ id: AppointmentStatus.COMPLETED, label: t('completed', 'Completed') }]
-                  : []),
               ]}
               itemToString={(item) => (item ? item.label : '')}
               onChange={(e) => setStatus(e.selectedItem.id)}
               size={isTablet ? 'lg' : 'sm'}
             />
           </Layer>
-          {status === AppointmentStatus.COMPLETED && (
-            <InlineNotification
-              kind="warning"
-              lowContrast
-              hideCloseButton
-              title={t(
-                'markAppointmentAsCompletedMessage',
-                'Marking appointment as completed will end the active visit of the patient',
-              )}
-            />
-          )}
           {status && invalidAppointment && (
             <InlineNotification
               kind="warning"
@@ -197,8 +173,8 @@ const BatchChangeAppointmentStatusesModal: React.FC<BatchChangeAppointmentStatus
                 'invalidAppointmentStatusChange',
                 'Cannot transition appointment with status {{currentStatus}} to status {{newStatus}}',
                 {
-                  currentStatus: invalidAppointment.status,
-                  newStatus: status,
+                  currentStatus: getAppointmentStatusLabel(invalidAppointment.status, t),
+                  newStatus: getAppointmentStatusLabel(status, t),
                 },
               )}
             />

@@ -2,7 +2,14 @@ import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { renderHook, waitFor } from '@testing-library/react';
 import React from 'react';
 import { SWRConfig } from 'swr';
-import { usePatientAppointments } from './queue-linelist.resource';
+import { useAppointments, useCheckedInAppointments, usePatientAppointments } from './queue-linelist.resource';
+
+const mockGetStartOfDay = vi.hoisted(() => vi.fn());
+
+vi.mock('../constants', async () => ({
+  ...(await vi.importActual('../constants')),
+  getStartOfDay: mockGetStartOfDay,
+}));
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockFetchResponse = (data: Array<unknown>) => ({ data }) as Awaited<ReturnType<typeof openmrsFetch>>;
@@ -19,6 +26,39 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
     {children}
   </SWRConfig>
 );
+
+describe('today appointment resources', () => {
+  let currentStartOfDay: string;
+
+  beforeEach(() => {
+    currentStartOfDay = '2026-07-14T05:00:00.000Z';
+    mockGetStartOfDay.mockImplementation(() => currentStartOfDay);
+    mockOpenmrsFetch.mockReset();
+    mockOpenmrsFetch.mockResolvedValue(mockFetchResponse([]));
+  });
+
+  it.each([
+    ['appointments', useAppointments, `${restBaseUrl}/appointment/all?forDate=`],
+    ['checked-in appointments', useCheckedInAppointments, `${restBaseUrl}/appointment/appointmentStatus?forDate=`],
+  ])('refreshes %s with the new local date after midnight', async (_label, useResource, urlPrefix) => {
+    const { rerender } = renderHook(() => useResource(), { wrapper });
+
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1));
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+      1,
+      `${urlPrefix}2026-07-14T05:00:00.000Z${useResource === useCheckedInAppointments ? '&status=CheckedIn' : ''}`,
+    );
+
+    currentStartOfDay = '2026-07-15T05:00:00.000Z';
+    rerender();
+
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2));
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+      2,
+      `${urlPrefix}2026-07-15T05:00:00.000Z${useResource === useCheckedInAppointments ? '&status=CheckedIn' : ''}`,
+    );
+  });
+});
 
 describe('usePatientAppointments', () => {
   beforeEach(() => {

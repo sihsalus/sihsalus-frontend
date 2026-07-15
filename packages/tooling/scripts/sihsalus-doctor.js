@@ -48,6 +48,13 @@ const brandAssets = [
   'assets/resources/sihsalus-vertical.svg',
 ];
 
+const defaultBranding = {
+  'Brand color #1': '#27348b',
+  'Brand color #2': '#17205f',
+  'Brand color #3': '#2c7d35',
+  implementationName: 'SIHSALUS',
+};
+
 const counts = {
   pass: 0,
   warn: 0,
@@ -209,10 +216,10 @@ function checkBranding(frontendConfig) {
     return;
   }
 
-  const styleguide = frontendConfig['@openmrs/esm-styleguide'];
-  if (!styleguide) {
-    fail('config/frontend.json is missing @openmrs/esm-styleguide');
-    return;
+  const configuredStyleguide = frontendConfig['@openmrs/esm-styleguide'];
+  const styleguide = { ...defaultBranding, ...(configuredStyleguide ?? {}) };
+  if (!configuredStyleguide) {
+    pass('Using SIHSALUS branding defaults from esm-styleguide');
   }
 
   for (const key of ['Brand color #1', 'Brand color #2', 'Brand color #3']) {
@@ -229,14 +236,7 @@ function checkBranding(frontendConfig) {
   if (!styleguide.implementationName) {
     fail('implementationName is missing');
   } else if (styleguide.implementationName === 'Clinic') {
-    const overrides = frontendConfig.core?.['Translation overrides'];
-    const mapsToSihsalus =
-      overrides?.en?.Clinic?.toUpperCase() === 'SIHSALUS' || overrides?.es?.Clinic?.toUpperCase() === 'SIHSALUS';
-    if (mapsToSihsalus) {
-      warn('implementationName uses "Clinic", but translation overrides map it to SIHSALUS');
-    } else {
-      warn('implementationName is still the generic "Clinic" label');
-    }
+    warn('implementationName is still the generic "Clinic" label');
   } else {
     pass(`implementationName is ${styleguide.implementationName}`);
   }

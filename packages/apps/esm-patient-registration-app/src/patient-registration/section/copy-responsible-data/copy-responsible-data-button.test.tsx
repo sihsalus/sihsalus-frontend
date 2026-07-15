@@ -1,11 +1,11 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Form, Formik } from 'formik';
 import type React from 'react';
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../../../config-schema';
-import { fetchPersonRegistrationCopyData } from '../../patient-registration.resource';
+import { fetchPersonRegistrationCopyData, type PersonRegistrationCopyData } from '../../patient-registration.resource';
 import { type FormValues } from '../../patient-registration.types';
 import { PatientRegistrationContext, type PatientRegistrationContextProps } from '../../patient-registration-context';
 import { birthAddressMarker, birthAddressMarkerField } from '../../patient-registration-utils';
@@ -81,7 +81,7 @@ function renderCopyButton(mode: React.ComponentProps<typeof CopyResponsibleDataB
     values,
   } as unknown as PatientRegistrationContextProps;
 
-  render(
+  const view = render(
     <Formik initialValues={{}} onSubmit={vi.fn()}>
       <Form>
         <PatientRegistrationContext.Provider value={contextValues}>
@@ -91,7 +91,7 @@ function renderCopyButton(mode: React.ComponentProps<typeof CopyResponsibleDataB
     </Formik>,
   );
 
-  return { setFieldTouched, setFieldValue };
+  return { ...view, setFieldTouched, setFieldValue };
 }
 
 describe('CopyResponsibleDataButton', () => {
@@ -197,7 +197,12 @@ describe('CopyResponsibleDataButton', () => {
 
     await user.click(screen.getByRole('button', { name: /copiar residencia y contacto del responsable/i }));
 
-    await waitFor(() => expect(mockFetchPersonRegistrationCopyData).toHaveBeenCalledWith('responsible-person-uuid'));
+    await waitFor(() =>
+      expect(mockFetchPersonRegistrationCopyData).toHaveBeenCalledWith(
+        'responsible-person-uuid',
+        expect.any(AbortSignal),
+      ),
+    );
     expect(setFieldValue).toHaveBeenCalledWith('address.country', 'PERU', false);
     expect(setFieldValue).toHaveBeenCalledWith('address.stateProvince', 'HUANCAVELICA', false);
     expect(setFieldValue).toHaveBeenCalledWith('address.countyDistrict', 'CHURCAMPA', false);
@@ -222,7 +227,12 @@ describe('CopyResponsibleDataButton', () => {
       screen.getByRole('button', { name: /copiar residencia del responsable como lugar de nacimiento/i }),
     );
 
-    await waitFor(() => expect(mockFetchPersonRegistrationCopyData).toHaveBeenCalledWith('responsible-person-uuid'));
+    await waitFor(() =>
+      expect(mockFetchPersonRegistrationCopyData).toHaveBeenCalledWith(
+        'responsible-person-uuid',
+        expect.any(AbortSignal),
+      ),
+    );
     expect(setFieldValue).toHaveBeenCalledWith('birthAddress.country', 'PERU', false);
     expect(setFieldValue).toHaveBeenCalledWith('birthAddress.stateProvince', 'HUANCAVELICA', false);
     expect(setFieldValue).toHaveBeenCalledWith('birthAddress.countyDistrict', 'CHURCAMPA', false);
@@ -242,7 +252,12 @@ describe('CopyResponsibleDataButton', () => {
 
     await user.click(screen.getByRole('button', { name: /copiar seguro del responsable/i }));
 
-    await waitFor(() => expect(mockFetchPersonRegistrationCopyData).toHaveBeenCalledWith('responsible-person-uuid'));
+    await waitFor(() =>
+      expect(mockFetchPersonRegistrationCopyData).toHaveBeenCalledWith(
+        'responsible-person-uuid',
+        expect.any(AbortSignal),
+      ),
+    );
     expect(setFieldValue).toHaveBeenCalledWith(
       `attributes.${peruInsuranceTypeAttributeTypeUuid}`,
       'b61a9ff9-1485-4388-9f67-9c341f847f85',
@@ -318,7 +333,105 @@ describe('CopyResponsibleDataButton', () => {
     await user.selectOptions(screen.getByLabelText('Responsable de origen'), 'second-responsible-uuid');
     await user.click(screen.getByRole('button', { name: /copiar seguro del responsable/i }));
 
-    await waitFor(() => expect(mockFetchPersonRegistrationCopyData).toHaveBeenCalledWith('second-responsible-uuid'));
+    await waitFor(() =>
+      expect(mockFetchPersonRegistrationCopyData).toHaveBeenCalledWith(
+        'second-responsible-uuid',
+        expect.any(AbortSignal),
+      ),
+    );
+  });
+
+  it('aborts an in-flight copy when the selected responsible person changes', async () => {
+    const user = userEvent.setup();
+    const relationshipType = '057de23f-3d9c-4314-9391-4452970739c6/aIsToB';
+    let resolveFirstRequest: (person: PersonRegistrationCopyData) => void = () => {};
+    const firstRequest = new Promise<PersonRegistrationCopyData>((resolve) => {
+      resolveFirstRequest = resolve;
+    });
+    mockFetchPersonRegistrationCopyData
+      .mockReset()
+      .mockReturnValueOnce(firstRequest)
+      .mockResolvedValueOnce({
+        uuid: 'second-responsible-uuid',
+        attributes: [
+          {
+            uuid: 'second-insurance-code',
+            display: 'Código de seguro = SECOND',
+            attributeType: {
+              uuid: peruInsuranceCodeAttributeTypeUuid,
+              display: 'Código de seguro',
+              format: 'java.lang.String',
+            },
+            value: 'SECOND',
+          },
+        ],
+      });
+    const { setFieldValue } = renderCopyButton('insurance', {
+      ...baseValues,
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonName: 'María Quispe',
+          relatedPersonUuid: 'responsible-person-uuid',
+          relationshipType,
+        },
+        {
+          action: 'ADD',
+          relatedPersonName: 'Juan Quispe',
+          relatedPersonUuid: 'second-responsible-uuid',
+          relationshipType,
+        },
+      ],
+    });
+    const sourceSelect = screen.getByLabelText('Responsable de origen');
+    const copyButton = screen.getByRole('button', { name: /copiar seguro del responsable/i });
+
+    await user.selectOptions(sourceSelect, 'responsible-person-uuid');
+    await user.click(copyButton);
+    await waitFor(() => expect(mockFetchPersonRegistrationCopyData).toHaveBeenCalledTimes(1));
+    const firstSignal = mockFetchPersonRegistrationCopyData.mock.calls[0][1];
+
+    await user.selectOptions(sourceSelect, 'second-responsible-uuid');
+    expect(firstSignal?.aborted).toBe(true);
+    await user.click(copyButton);
+
+    await waitFor(() =>
+      expect(setFieldValue).toHaveBeenCalledWith(`attributes.${peruInsuranceCodeAttributeTypeUuid}`, 'SECOND', false),
+    );
+
+    await act(async () => {
+      resolveFirstRequest({
+        uuid: 'responsible-person-uuid',
+        attributes: [
+          {
+            uuid: 'first-insurance-code',
+            display: 'Código de seguro = FIRST',
+            attributeType: {
+              uuid: peruInsuranceCodeAttributeTypeUuid,
+              display: 'Código de seguro',
+              format: 'java.lang.String',
+            },
+            value: 'FIRST',
+          },
+        ],
+      });
+    });
+    expect(setFieldValue).not.toHaveBeenCalledWith(`attributes.${peruInsuranceCodeAttributeTypeUuid}`, 'FIRST', false);
+  });
+
+  it('aborts an in-flight copy when the component unmounts', async () => {
+    const user = userEvent.setup();
+    mockFetchPersonRegistrationCopyData.mockReset().mockReturnValue(new Promise(() => {}));
+    const { unmount } = renderCopyButton('residenceContact');
+
+    await user.click(screen.getByRole('button', { name: /copiar residencia y contacto del responsable/i }));
+    await waitFor(() => expect(mockFetchPersonRegistrationCopyData).toHaveBeenCalledTimes(1));
+    const signal = mockFetchPersonRegistrationCopyData.mock.calls[0][1];
+    expect(signal?.aborted).toBe(false);
+
+    unmount();
+
+    expect(signal?.aborted).toBe(true);
   });
 
   it('does not show copy actions for adult patients', () => {

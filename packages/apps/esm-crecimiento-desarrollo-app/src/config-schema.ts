@@ -473,8 +473,8 @@ export const configSchema = {
     },
     controlNumber: {
       _type: Type.ConceptUuid,
-      _description: 'Número de control CRED; vacío hasta publicar/importar el concepto en content',
-      _default: '',
+      _description: 'Número secuencial del control CRED registrado en cada encuentro del control',
+      _default: 'ce8b07e8-712f-406a-b44d-2fa69167f5ea',
     },
   },
 
@@ -1073,8 +1073,8 @@ export const configSchema = {
     },
     lookaheadCount: {
       _type: Type.Number,
-      _description: 'Cantidad de citas futuras a generar por defecto',
-      _default: 3,
+      _description: 'Compatibilidad legada: el flujo normativo genera siempre una única próxima cita',
+      _default: 1,
     },
     defaultAppointmentDurationMins: {
       _type: Type.Number,

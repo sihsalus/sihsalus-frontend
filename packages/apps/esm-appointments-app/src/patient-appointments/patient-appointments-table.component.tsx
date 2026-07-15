@@ -16,7 +16,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-
+import { getAppointmentKindLabel, getAppointmentStatusLabel } from '../helpers';
 import { type Appointment } from '../types';
 
 import { PatientAppointmentsActionMenu } from './patient-appointments-action-menu.component';
@@ -74,12 +74,12 @@ const PatientAppointmentsTable: React.FC<AppointmentTableProps> = ({
           date: formatDatetime(new Date(appointment.startDateTime), { mode: 'wide' }),
           location: appointment?.location?.name ? appointment?.location?.name : '——',
           service: appointment.service.name,
-          status: appointment.status,
-          type: appointment.appointmentKind ? appointment.appointmentKind : '——',
+          status: getAppointmentStatusLabel(appointment.status, t),
+          type: appointment.appointmentKind ? getAppointmentKindLabel(appointment.appointmentKind, t) : '——',
           notes: appointment.comments ? appointment.comments : '——',
         };
       }),
-    [paginatedAppointments],
+    [paginatedAppointments, t],
   );
 
   return (

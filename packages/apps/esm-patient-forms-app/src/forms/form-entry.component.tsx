@@ -43,6 +43,7 @@ export interface FormEntryProps {
   closeWorkspaceWithSavedChanges?: () => void;
   promptBeforeClosing?: (fn: () => boolean) => void;
   handlePostResponse?: (encounter: Encounter) => void;
+  handleEncounterCreate?: FormRendererProps['handleEncounterCreate'];
   hideControls?: boolean;
   hidePatientBanner?: boolean;
   preFilledQuestions?: Record<string, string>;
@@ -61,6 +62,7 @@ const FormEntry: React.FC<FormEntryProps> = ({
   closeWorkspaceWithSavedChanges,
   promptBeforeClosing,
   handlePostResponse,
+  handleEncounterCreate,
   hideControls,
   hidePatientBanner,
   preFilledQuestions,
@@ -151,6 +153,7 @@ const FormEntry: React.FC<FormEntryProps> = ({
         visit: effectiveVisitContext ?? null,
         additionalProps: additionalProps ?? {},
         handlePostResponse: handleFormPostResponse,
+        handleEncounterCreate,
         hideControls,
         hidePatientBanner,
         preFilledQuestions,
@@ -167,6 +170,7 @@ const FormEntry: React.FC<FormEntryProps> = ({
       handleCloseWorkspace,
       handleCloseWorkspaceWithSavedChanges,
       handleFormPostResponse,
+      handleEncounterCreate,
       handlePromptBeforeClosing,
       handleSetHasUnsavedChanges,
       hideControls,

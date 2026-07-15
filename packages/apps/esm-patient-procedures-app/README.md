@@ -51,7 +51,7 @@ The app is configured through the [OpenMRS config system](https://o3-docs.openmr
 | `statusConceptUuid` | UUID | `f0d47b45-…` (CIEL 170800) | Scopes the status concept search to the Procedure status question. |
 | `statusConceptSourceType` | String | `Answer to` | Same options as above. |
 | `durationUnitConceptUuid` | UUID | `1732AAAAA…` | Scopes the duration-unit concept search. |
-| `durationUnitConceptSourceType` | String | `Answer to` | Same options as above. |
+| `durationUnitConceptSourceType` | String | `Concept set` | Same options as above. |
 
 ---
 
@@ -71,7 +71,7 @@ The expected CIEL answers are Preparation, In progress, On hold, Completed, Not 
 
 Before querying members or answers, the frontend verifies that the configured source exists. This prevents OpenMRS REST implementations that ignore an unknown `answerTo` filter from returning unrelated concepts as clinical options.
 
-SIH Salus dev currently imports `1732AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` as a concept set named `Unidad de Tiempo`, so `config/frontend.json` overrides `durationUnitConceptSourceType` to `Concept set`. Its `memberOf` results provide seconds, minutes, hours, days, weeks, months, and years.
+SIH Salus imports `1732AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` as a concept set named `Unidad de Tiempo`, so `Concept set` is the default. Its members provide seconds, minutes, hours, days, weeks, months, and years.
 
 Procedure types are OpenMRS metadata, not concepts. The backend must also seed at least one `/ws/rest/v1/proceduretype`; the Reference Application demo content provides Diagnostic, Surgical, Laboratory, Imaging, Therapeutic, Nursing, Dental, Obstetric, Emergency, Vaccination, Referral, and Other.
 

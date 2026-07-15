@@ -1,12 +1,132 @@
+import { type FetchResponse, openmrsFetch, type Visit } from '@openmrs/esm-framework';
+
 import {
   getDefaultVisitAttributesFromPatientAddress,
   normalizeVisitTimeFormatInput,
   normalizeVisitTimeInput,
+  reconcileVisitCreation,
   sanitizeVisitTimeInput,
+  VISIT_PERSISTENCE_CORRELATION_CONFLICT,
 } from './visit-form.resource';
 
 const provenanceVisitAttributeTypeUuid = '9b640334-69e7-49a8-bc8d-1a379742f2f1';
 const addressExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/address';
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+
+describe('reconcileVisitCreation', () => {
+  const patientUuid = 'patient-uuid';
+  const correlation = { attributeType: 'appointment-link-type', value: 'appointment-uuid' };
+  const payload = {
+    patient: patientUuid,
+    location: 'location-uuid',
+    visitType: 'visit-type-uuid',
+    startDatetime: new Date('2026-07-14T14:00:00.000Z'),
+    attributes: [correlation],
+  };
+  const correlatedVisit = {
+    uuid: 'visit-uuid',
+    patient: { uuid: patientUuid },
+    location: { uuid: payload.location },
+    visitType: { uuid: payload.visitType, display: 'Consulta externa' },
+    startDatetime: '2026-07-14T14:00:02.000Z',
+    stopDatetime: null,
+    attributes: [
+      {
+        uuid: 'link-attribute-uuid',
+        attributeType: { uuid: correlation.attributeType },
+        value: correlation.value,
+      },
+    ],
+  } as unknown as Visit;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const mockVisitSearch = (results: Array<Visit>) =>
+    mockOpenmrsFetch.mockResolvedValue({ data: { results } } as unknown as FetchResponse<unknown>);
+
+  it('returns the unique active visit with the exact appointment correlation and context', async () => {
+    mockVisitSearch([correlatedVisit]);
+
+    await expect(reconcileVisitCreation(patientUuid, payload, correlation)).resolves.toEqual(correlatedVisit);
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      expect.stringContaining(`/visit?patient=${patientUuid}&includeInactive=true`),
+    );
+  });
+
+  it('returns null when no active visit has the correlation', async () => {
+    mockVisitSearch([]);
+
+    await expect(reconcileVisitCreation(patientUuid, payload, correlation)).resolves.toBeNull();
+  });
+
+  it('searches every visit page and deduplicates visits before correlating', async () => {
+    const firstPage = Array.from({ length: 100 }, (_, index) => ({
+      ...correlatedVisit,
+      uuid: `uncorrelated-visit-${index}`,
+      attributes: [],
+    })) as Array<Visit>;
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: firstPage } } as unknown as FetchResponse<unknown>)
+      .mockResolvedValueOnce({
+        data: { results: [firstPage[99], correlatedVisit] },
+      } as unknown as FetchResponse<unknown>);
+
+    await expect(reconcileVisitCreation(patientUuid, payload, correlation)).resolves.toEqual(correlatedVisit);
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
+    expect(mockOpenmrsFetch).toHaveBeenLastCalledWith(expect.stringContaining('startIndex=100'));
+  });
+
+  it('accepts a stopped correlated visit when the creation payload is stopped', async () => {
+    const stoppedPayload = {
+      ...payload,
+      stopDatetime: new Date('2026-07-14T15:00:00.000Z'),
+    };
+    const stoppedVisit = {
+      ...correlatedVisit,
+      stopDatetime: '2026-07-14T15:00:00.000Z',
+    } as Visit;
+    mockVisitSearch([stoppedVisit]);
+
+    await expect(reconcileVisitCreation(patientUuid, stoppedPayload, correlation)).resolves.toEqual(stoppedVisit);
+  });
+
+  it('rejects an active correlated visit when the creation payload is stopped', async () => {
+    mockVisitSearch([correlatedVisit]);
+
+    await expect(
+      reconcileVisitCreation(
+        patientUuid,
+        { ...payload, stopDatetime: new Date('2026-07-14T15:00:00.000Z') },
+        correlation,
+      ),
+    ).rejects.toMatchObject({
+      code: VISIT_PERSISTENCE_CORRELATION_CONFLICT,
+    });
+  });
+
+  it('fails closed when more than one active visit has the same correlation', async () => {
+    mockVisitSearch([correlatedVisit, { ...correlatedVisit, uuid: 'second-visit-uuid' }]);
+
+    await expect(reconcileVisitCreation(patientUuid, payload, correlation)).rejects.toMatchObject({
+      code: VISIT_PERSISTENCE_CORRELATION_CONFLICT,
+    });
+  });
+
+  it.each([
+    ['patient', { patient: { uuid: 'other-patient' } }],
+    ['location', { location: { uuid: 'other-location' } }],
+    ['visit type', { visitType: { uuid: 'other-type', display: 'Otro tipo' } }],
+    ['active state', { stopDatetime: '2026-07-14T15:00:00.000Z' }],
+  ])('fails closed when the correlated visit has a different %s', async (_field, override) => {
+    mockVisitSearch([{ ...correlatedVisit, ...override } as Visit]);
+
+    await expect(reconcileVisitCreation(patientUuid, payload, correlation)).rejects.toMatchObject({
+      code: VISIT_PERSISTENCE_CORRELATION_CONFLICT,
+    });
+  });
+});
 
 describe('visit time helpers', () => {
   it('removes non-time characters from the time input', () => {

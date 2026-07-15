@@ -1,9 +1,9 @@
 import type { OdontogramConfig } from '../config-schema';
 
 export const defaultAmpathOdontogramFormPersistence: Required<OdontogramConfig>['ampathFormPersistence'] = {
-  formUuid: 'c1130000-0000-4000-8000-000000000001',
-  baseFormUuid: 'c1130000-0000-4000-8000-000000000001',
-  attentionFormUuid: 'c1130000-0000-4000-8000-000000000002',
+  formUuid: '1d4ca5a3-79d9-3380-8974-e87af3105631',
+  baseFormUuid: '1d4ca5a3-79d9-3380-8974-e87af3105631',
+  attentionFormUuid: 'a48b004b-526e-32b5-8965-7dc4ffcb52f1',
   concepts: {
     snapshot: 'c1130000-0000-4000-8000-000000000101',
     recordType: 'c1130000-0000-4000-8000-000000000102',

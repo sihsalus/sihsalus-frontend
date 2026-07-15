@@ -2,12 +2,12 @@ import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import useSWR from 'swr';
 
-import { startOfDay } from '../constants';
+import { getStartOfDay } from '../constants';
 import { type Provider } from '../types';
 import { type Appointment, type AppointmentsFetchResponse } from '../types/index';
 
 export function useAppointments() {
-  const apiUrl = `${restBaseUrl}/appointment/all?forDate=${startOfDay}`;
+  const apiUrl = `${restBaseUrl}/appointment/all?forDate=${getStartOfDay()}`;
   const { data, error, isLoading, isValidating } = useSWR<{ data: Array<Appointment> }, Error>(apiUrl, openmrsFetch);
 
   return {
@@ -19,7 +19,7 @@ export function useAppointments() {
 }
 
 export function useCheckedInAppointments() {
-  const apiUrl = `${restBaseUrl}/appointment/appointmentStatus?forDate=${startOfDay}&status=CheckedIn`;
+  const apiUrl = `${restBaseUrl}/appointment/appointmentStatus?forDate=${getStartOfDay()}&status=CheckedIn`;
 
   const { data, error, isLoading, isValidating } = useSWR<{ data: Array<Appointment> }, Error>(apiUrl, openmrsFetch);
 

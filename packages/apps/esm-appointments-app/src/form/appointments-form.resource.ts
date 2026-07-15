@@ -24,7 +24,7 @@ export function useMutateAppointments() {
       mutate((key) => {
         return (
           (typeof key === 'string' && key.startsWith(appointmentUrlMatcher)) ||
-          (Array.isArray(key) && key[0].startsWith(appointmentUrlMatcher))
+          (Array.isArray(key) && typeof key[0] === 'string' && key[0].startsWith(appointmentUrlMatcher))
         );
       }),
     [mutate],
@@ -157,6 +157,7 @@ export const checkAppointmentConflict = async (appointmentPayload: AppointmentPa
   return await openmrsFetch(`${restBaseUrl}/appointments/conflicts`, {
     method: 'POST',
     body: {
+      uuid: appointmentPayload.uuid,
       patientUuid: appointmentPayload.patientUuid,
       serviceUuid: appointmentPayload.serviceUuid,
       startDateTime: appointmentPayload.startDateTime,

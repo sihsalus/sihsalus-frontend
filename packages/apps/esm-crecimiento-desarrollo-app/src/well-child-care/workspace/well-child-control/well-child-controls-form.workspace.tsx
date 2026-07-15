@@ -11,6 +11,7 @@ import {
   useVisit,
 } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
+import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -18,25 +19,117 @@ import { z } from 'zod';
 import type { ConfigObject } from '../../../config-schema';
 import { credCourseLifeEditPrivilege } from '../../../constants';
 import { useAgeGroups } from '../../../hooks/useAgeGroups';
-import { groupCREDControlEncounters } from '../../../hooks/useCREDSchedule';
 import { useCREDFormsForAgeGroup } from '../../../hooks/useCREDFormsForAgeGroup';
-import useCREDEncounters from '../../../hooks/useEncountersCRED';
+import { groupCREDControlEncounters } from '../../../hooks/useCREDSchedule';
+import useCREDEncounters, { type CREDEncounter } from '../../../hooks/useEncountersCRED';
 import { type DefaultPatientWorkspaceProps } from '../../../types';
 import EncounterDateTimeSection from '../../../ui/encounter-date-time/encounter-date-time.component';
+import { getNextCREDMinimumDate } from '../../../utils/cred-control-intervals';
 
 import styles from './well-child-controls-form.scss';
 
-const createCREDControlsSchema = (t: (key: string, fallback: string) => string) =>
-  z.object({
-    visitStartDate: z.date({
-      required_error: t('consultationDateRequired', 'Fecha de atención es requerida'),
-    }),
-    visitStartTime: z
-      .string()
-      .regex(/^(0[1-9]|1[0-2]):([0-5][0-9])$/, t('consultationTimeRequired', 'Hora de atención es requerida')),
-    visitStartTimeFormat: z.enum(['AM', 'PM']),
-    controlNumber: z.string().optional(),
-  });
+export const createCREDControlsSchema = (
+  t: (key: string, fallback: string) => string,
+  patientBirthDate?: string | Date,
+  visitStartDatetime?: string | Date,
+  visitStopDatetime?: string | Date,
+  getMinimumControlDate?: (consultationDate: Date) => string | Date | undefined,
+) =>
+  z
+    .object({
+      visitStartDate: z.date({
+        required_error: t('consultationDateRequired', 'Fecha de atención es requerida'),
+      }),
+      visitStartTime: z
+        .string()
+        .regex(/^(0[1-9]|1[0-2]):([0-5][0-9])$/, t('consultationTimeRequired', 'Hora de atención es requerida')),
+      visitStartTimeFormat: z.enum(['AM', 'PM']),
+      controlNumber: z.string().optional(),
+    })
+    .superRefine((data, context) => {
+      const consultationDatetime = getConsultationDatetime(data);
+      const chronologyError = getCREDConsultationChronologyError(
+        consultationDatetime,
+        patientBirthDate,
+        new Date(),
+        visitStartDatetime,
+        visitStopDatetime,
+      );
+      const minimumControlDate = getMinimumControlDate?.(data.visitStartDate);
+
+      if (chronologyError === 'beforeBirth') {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['visitStartDate'],
+          message: t(
+            'credConsultationBeforeBirth',
+            'La fecha de atención no puede ser anterior a la fecha de nacimiento del paciente.',
+          ),
+        });
+      }
+
+      if (chronologyError === 'future') {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['visitStartTime'],
+          message: t('credConsultationInFuture', 'La fecha y hora de atención no puede estar en el futuro.'),
+        });
+      }
+
+      if (chronologyError === 'afterCredAgeLimit') {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['visitStartDate'],
+          message: t(
+            'credConsultationAfterAgeLimit',
+            'La atención CRED solo corresponde hasta los 11 años, 11 meses y 29 días.',
+          ),
+        });
+      }
+
+      if (chronologyError === 'beforeVisit') {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path:
+            visitStartDatetime && dayjs(consultationDatetime).isSame(dayjs(visitStartDatetime), 'day')
+              ? ['visitStartTime']
+              : ['visitStartDate'],
+          message: t(
+            'credConsultationBeforeVisit',
+            'La fecha y hora de atención no puede ser anterior al inicio de la visita.',
+          ),
+        });
+      }
+
+      if (chronologyError === 'afterVisit') {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path:
+            visitStopDatetime && dayjs(consultationDatetime).isSame(dayjs(visitStopDatetime), 'day')
+              ? ['visitStartTime']
+              : ['visitStartDate'],
+          message: t(
+            'credConsultationAfterVisit',
+            'La fecha y hora de atención no puede ser posterior al cierre de la visita.',
+          ),
+        });
+      }
+
+      if (
+        minimumControlDate &&
+        dayjs(minimumControlDate).isValid() &&
+        dayjs(consultationDatetime).isBefore(dayjs(minimumControlDate), 'day')
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['visitStartDate'],
+          message: t(
+            'credConsultationBeforeMinimumInterval',
+            'La fecha de atención no puede ser anterior al intervalo mínimo del siguiente control CRED.',
+          ),
+        });
+      }
+    });
 
 type CREDControlsFormType = z.infer<ReturnType<typeof createCREDControlsSchema>>;
 
@@ -53,6 +146,105 @@ export function getConsultationDatetime({
   return consultationDatetime;
 }
 
+export type CREDConsultationChronologyError =
+  | 'beforeBirth'
+  | 'afterCredAgeLimit'
+  | 'future'
+  | 'beforeVisit'
+  | 'afterVisit'
+  | null;
+
+export function getCREDConsultationChronologyError(
+  consultationDatetime: Date,
+  patientBirthDate?: string | Date,
+  now = new Date(),
+  visitStartDatetime?: string | Date,
+  visitStopDatetime?: string | Date,
+): CREDConsultationChronologyError {
+  if (
+    patientBirthDate &&
+    dayjs(patientBirthDate).isValid() &&
+    dayjs(consultationDatetime).isBefore(dayjs(patientBirthDate), 'day')
+  ) {
+    return 'beforeBirth';
+  }
+
+  if (
+    patientBirthDate &&
+    dayjs(patientBirthDate).isValid() &&
+    !dayjs(consultationDatetime).isBefore(dayjs(patientBirthDate).add(144, 'month'), 'day')
+  ) {
+    return 'afterCredAgeLimit';
+  }
+
+  if (consultationDatetime > now) return 'future';
+
+  if (
+    visitStartDatetime &&
+    dayjs(visitStartDatetime).isValid() &&
+    dayjs(consultationDatetime).isBefore(dayjs(visitStartDatetime))
+  ) {
+    return 'beforeVisit';
+  }
+
+  if (
+    visitStopDatetime &&
+    dayjs(visitStopDatetime).isValid() &&
+    dayjs(consultationDatetime).isAfter(dayjs(visitStopDatetime))
+  ) {
+    return 'afterVisit';
+  }
+
+  return null;
+}
+
+export function getCREDMinimumConsultationDate(
+  patientBirthDate?: string | Date,
+  visitStartDatetime?: string | Date,
+): string | Date | undefined {
+  return [patientBirthDate, visitStartDatetime]
+    .filter((candidate): candidate is string | Date => Boolean(candidate) && dayjs(candidate).isValid())
+    .reduce<string | Date | undefined>(
+      (latest, candidate) => (!latest || dayjs(candidate).isAfter(dayjs(latest)) ? candidate : latest),
+      undefined,
+    );
+}
+
+export function resolveCREDControlNumber(
+  encounters: CREDEncounter[],
+  consultationDate: Date,
+  visitUuid?: string,
+): number | null {
+  const sortedEncounters = [...encounters]
+    .filter((encounter) => encounter.encounterDatetime)
+    .sort(
+      (first, second) =>
+        new Date(first.encounterDatetime ?? 0).getTime() - new Date(second.encounterDatetime ?? 0).getTime(),
+    );
+  const matchingControlIndex = sortedEncounters.findIndex(
+    (encounter) =>
+      encounter.visit?.uuid === visitUuid && dayjs(encounter.encounterDatetime).isSame(dayjs(consultationDate), 'day'),
+  );
+
+  if (matchingControlIndex >= 0) {
+    const persistedControlNumber = sortedEncounters[matchingControlIndex].controlNumber;
+    return typeof persistedControlNumber === 'number' && persistedControlNumber >= 1 && persistedControlNumber <= 27
+      ? persistedControlNumber
+      : Math.min(matchingControlIndex + 1, 27);
+  }
+
+  const highestPersistedControlNumber = sortedEncounters.reduce(
+    (highest, encounter) =>
+      Number.isInteger(encounter.controlNumber) && Number(encounter.controlNumber) >= 1
+        ? Math.max(highest, Number(encounter.controlNumber))
+        : highest,
+    0,
+  );
+  const nextControlNumber = Math.max(sortedEncounters.length, highestPersistedControlNumber) + 1;
+
+  return nextControlNumber <= 27 ? nextControlNumber : null;
+}
+
 const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   closeWorkspace,
   workspaceProps,
@@ -60,7 +252,6 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 }) => {
   const patientUuid = directPatientUuid ?? workspaceProps?.patientUuid ?? '';
   const { t } = useTranslation();
-  const CREDControlsSchema = useMemo(() => createCREDControlsSchema(t), [t]);
   const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<ConfigObject>();
   const { patient, isLoading: isPatientLoading } = usePatient(patientUuid);
@@ -68,6 +259,28 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   const visit = currentVisit ?? activeVisit;
   const { encounters: rawEncounters, isLoading: isEncountersLoading } = useCREDEncounters(patientUuid);
   const encounters = useMemo(() => groupCREDControlEncounters(rawEncounters ?? []), [rawEncounters]);
+  const nextControlMinimumDate = useMemo(
+    () => (patient?.birthDate ? getNextCREDMinimumDate(patient.birthDate, encounters) : null),
+    [encounters, patient?.birthDate],
+  );
+  const getMinimumControlDate = useCallback(
+    (consultationDate: Date) => {
+      const resumesExistingControl = encounters.some(
+        (encounter) =>
+          Boolean(visit?.uuid) &&
+          encounter.visit?.uuid === visit?.uuid &&
+          dayjs(encounter.encounterDatetime).isSame(dayjs(consultationDate), 'day'),
+      );
+
+      return resumesExistingControl ? undefined : (nextControlMinimumDate ?? undefined);
+    },
+    [encounters, nextControlMinimumDate, visit?.uuid],
+  );
+  const CREDControlsSchema = useMemo(
+    () =>
+      createCREDControlsSchema(t, patient?.birthDate, visit?.startDatetime, visit?.stopDatetime, getMinimumControlDate),
+    [getMinimumControlDate, patient?.birthDate, t, visit?.startDatetime, visit?.stopDatetime],
+  );
   const { getAgeGroupForForms } = useAgeGroups();
   const [showErrorNotification, setShowErrorNotification] = useState(false);
 
@@ -94,35 +307,45 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
     },
   });
 
-  const credControlNumber = useMemo(() => Math.min(encounters.length + 1, 27), [encounters.length]);
+  const consultationDate = watch('visitStartDate');
+  const credControlNumber = useMemo(
+    () => resolveCREDControlNumber(encounters, consultationDate, visit?.uuid),
+    [consultationDate, encounters, visit?.uuid],
+  );
 
   const ageGroup = useMemo(() => {
     if (!patient?.birthDate) return null;
     try {
-      return getAgeGroupForForms(patient.birthDate);
+      return getAgeGroupForForms(patient.birthDate, consultationDate);
     } catch (error) {
       console.warn('Error getting age group:', error);
       return null;
     }
-  }, [patient?.birthDate, getAgeGroupForForms]);
+  }, [consultationDate, patient?.birthDate, getAgeGroupForForms]);
 
-  const formattedAge = useMemo(() => (patient?.birthDate ? age(patient.birthDate) : ''), [patient?.birthDate]);
+  const formattedAge = useMemo(
+    () => (patient?.birthDate ? age(patient.birthDate, consultationDate) : ''),
+    [consultationDate, patient?.birthDate],
+  );
 
-  const consultationDate = watch('visitStartDate');
   const allAvailableForms = useCREDFormsForAgeGroup(config, patient?.birthDate, consultationDate);
+  const minimumConsultationDate = useMemo(
+    () => getCREDMinimumConsultationDate(patient?.birthDate, visit?.startDatetime),
+    [patient?.birthDate, visit?.startDatetime],
+  );
 
   const handleStartControl = useCallback(
     (consultationData: CREDControlsFormType) => {
-      if (!consultationData.visitStartDate || !consultationData.visitStartTime || !visit) {
+      if (
+        !consultationData.visitStartDate ||
+        !consultationData.visitStartTime ||
+        !visit ||
+        credControlNumber === null
+      ) {
         setShowErrorNotification(true);
         return;
       }
       const consultationDatetime = getConsultationDatetime(consultationData);
-
-      if (consultationDatetime > new Date()) {
-        setShowErrorNotification(true);
-        return;
-      }
       setShowErrorNotification(false);
 
       launchWorkspace2('forms-selector-workspace', {
@@ -140,15 +363,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
         backWorkspace: 'wellchild-control-form',
       });
     },
-    [
-      patientUuid,
-      visit,
-      allAvailableForms,
-      formattedAge,
-      patient?.birthDate,
-      credControlNumber,
-      t,
-    ],
+    [patientUuid, visit, allAvailableForms, formattedAge, patient?.birthDate, credControlNumber, t],
   );
 
   useEffect(() => {
@@ -165,7 +380,10 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
         .split(' ')[0],
     );
     setValue('visitStartTimeFormat', now.getHours() >= 12 ? 'PM' : 'AM');
-    setValue('controlNumber', credControlNumber.toString());
+  }, [setValue]);
+
+  useEffect(() => {
+    setValue('controlNumber', credControlNumber?.toString() ?? '');
   }, [setValue, credControlNumber]);
 
   if (isPatientLoading || isEncountersLoading) {
@@ -180,12 +398,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
     <RequirePrivilege privilege={credCourseLifeEditPrivilege}>
       <Form className={styles.form} onSubmit={handleSubmit(handleStartControl, () => setShowErrorNotification(true))}>
         <div className={styles.grid}>
-          <EncounterDateTimeSection
-            control={control}
-            firstEncounterDateTime={
-              encounters[0]?.encounterDatetime ? new Date(encounters[0].encounterDatetime).getTime() : undefined
-            }
-          />
+          <EncounterDateTimeSection control={control} minDate={minimumConsultationDate} />
 
           <div>
             <div className={styles.sectionTitle}>{t('detailsOfLastControl', 'Detalles del Último Control')}</div>
@@ -207,10 +420,14 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
               <TextInput
                 id="controlNumber"
                 labelText={t('controlNumber', 'Control number')}
-                value={credControlNumber.toString()}
+                value={credControlNumber?.toString() ?? t('notAvailable', 'No disponible')}
                 readOnly
                 disabled
-                helperText={t('controlNumberHelper', '* Calculado automáticamente')}
+                helperText={
+                  credControlNumber === null
+                    ? t('credControlLimitReached', '* Se alcanzó el máximo de 27 controles CRED')
+                    : t('controlNumberHelper', '* Calculado automáticamente')
+                }
                 {...register('controlNumber')}
               />
             </Column>
@@ -224,7 +441,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
                 value={ageGroup ? ageGroup.label : t('unknownAgeGroup', 'No determinado')}
                 readOnly
                 disabled
-                helperText={t('ageGroupHelper', '* Grupo etario basado en la edad del paciente')}
+                helperText={t('ageGroupHelper', '* Grupo etario calculado a la fecha de atención')}
               />
             </Column>
             <Tooltip
@@ -250,16 +467,27 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
             </Tooltip>
           </div>
 
+          {credControlNumber === null && (
+            <InlineNotification
+              className={styles.errorNotification}
+              hideCloseButton
+              kind="warning"
+              lowContrast={false}
+              title={t('credControlLimitTitle', 'No se pueden registrar más controles CRED')}
+              subtitle={t(
+                'credControlLimitSubtitle',
+                'El paciente ya alcanzó el máximo normativo de 27 controles registrados.',
+              )}
+            />
+          )}
+
           {showErrorNotification && (
             <InlineNotification
               className={styles.errorNotification}
               lowContrast={false}
               onClose={() => setShowErrorNotification(false)}
               title={t('error', 'Error')}
-              subtitle={t(
-                'completeRequiredFields',
-                'Por favor complete los campos requeridos (Fecha y Hora de atención).',
-              )}
+              subtitle={t('completeRequiredFields', 'Revise los campos marcados en rojo y corrija la información.')}
             />
           )}
         </div>
@@ -268,7 +496,12 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
           <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
             {t('discard', 'Discard')}
           </Button>
-          <Button className={styles.button} kind="primary" disabled={!visit || isSubmitting} type="submit">
+          <Button
+            className={styles.button}
+            kind="primary"
+            disabled={!visit || isSubmitting || credControlNumber === null}
+            type="submit"
+          >
             {t('startControl', 'Empezar Control')}
           </Button>
         </ButtonSet>

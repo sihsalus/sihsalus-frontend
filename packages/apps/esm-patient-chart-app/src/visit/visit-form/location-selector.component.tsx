@@ -22,9 +22,10 @@ import styles from './visit-form.scss';
 
 interface LocationSelectorProps {
   control: Control<VisitFormData>;
+  lockedLocation?: Pick<Location, 'uuid' | 'display'>;
 }
 
-const LocationSelector: React.FC<LocationSelectorProps> = ({ control }) => {
+const LocationSelector: React.FC<LocationSelectorProps> = ({ control, lockedLocation }) => {
   const { t } = useTranslation();
   const config = useConfig<ChartConfig>();
   const {
@@ -42,7 +43,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ control }) => {
     searchTerm,
   );
   const { defaultFacility, isLoading: loadingDefaultFacility } = useDefaultFacilityLocation();
-  const disableChangingVisitLocation = config?.disableChangingVisitLocation;
+  const disableChangingVisitLocation = Boolean(lockedLocation) || config?.disableChangingVisitLocation;
   const locationsToShow: Array<OpenmrsResource> =
     !loadingDefaultFacility && !isEmpty(defaultFacility) ? [defaultFacility] : locations ? locations : [];
 
@@ -82,7 +83,9 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ control }) => {
             )}
           />
         ) : (
-          <p className={styles.bodyShort02}>{defaultVisitLocation?.display ?? sessionLocation?.display ?? ''}</p>
+          <p className={styles.bodyShort02}>
+            {lockedLocation?.display ?? defaultVisitLocation?.display ?? sessionLocation?.display ?? ''}
+          </p>
         )}
       </div>
     </section>

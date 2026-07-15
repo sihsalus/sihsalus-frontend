@@ -1,7 +1,7 @@
 import { Button, InlineLoading, InlineNotification, Select, SelectItem } from '@carbon/react';
 import { Copy } from '@carbon/react/icons';
 import { useConfig } from '@openmrs/esm-framework';
-import { useContext, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type RegistrationConfig } from '../../../config-schema';
@@ -90,6 +90,7 @@ export function CopyResponsibleDataButton({ mode }: CopyResponsibleDataButtonPro
   const registrationContext = useContext(PatientRegistrationContext);
   const [status, setStatus] = useState<'idle' | 'copying' | 'success' | 'warning' | 'error'>('idle');
   const [selectedResponsiblePersonUuid, setSelectedResponsiblePersonUuid] = useState('');
+  const copyAbortControllerRef = useRef<AbortController | null>(null);
   const isMinor = registrationContext?.values ? isMinorPatient(registrationContext.values) : false;
 
   const responsibleRelationships = useMemo(() => {
@@ -109,6 +110,18 @@ export function CopyResponsibleDataButton({ mode }: CopyResponsibleDataButtonPro
           )
         ? selectedResponsiblePersonUuid
         : '';
+
+  const abortPendingCopy = useCallback(() => {
+    copyAbortControllerRef.current?.abort();
+    copyAbortControllerRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    setStatus('idle');
+    if (responsiblePersonUuid) {
+      return abortPendingCopy;
+    }
+  }, [abortPendingCopy, responsiblePersonUuid]);
 
   const copyAddress = (fieldPrefix: 'address' | 'birthAddress', address?: PatientAddress) => {
     let copied = 0;
@@ -142,9 +155,16 @@ export function CopyResponsibleDataButton({ mode }: CopyResponsibleDataButtonPro
       return;
     }
 
+    abortPendingCopy();
+    const abortController = new AbortController();
+    copyAbortControllerRef.current = abortController;
     setStatus('copying');
     try {
-      const person = await fetchPersonRegistrationCopyData(responsiblePersonUuid);
+      const person = await fetchPersonRegistrationCopyData(responsiblePersonUuid, abortController.signal);
+      if (abortController.signal.aborted || copyAbortControllerRef.current !== abortController) {
+        return;
+      }
+
       const residenceAddress = getResidenceAddress(person.addresses);
       const attributes = person.attributes ?? [];
       let copied = 0;
@@ -173,8 +193,16 @@ export function CopyResponsibleDataButton({ mode }: CopyResponsibleDataButtonPro
 
       setStatus(copied > 0 ? 'success' : 'warning');
     } catch (error) {
+      if (abortController.signal.aborted || copyAbortControllerRef.current !== abortController) {
+        return;
+      }
+
       console.error('Could not copy responsible person data', error);
       setStatus('error');
+    } finally {
+      if (copyAbortControllerRef.current === abortController) {
+        copyAbortControllerRef.current = null;
+      }
     }
   };
 
@@ -193,6 +221,7 @@ export function CopyResponsibleDataButton({ mode }: CopyResponsibleDataButtonPro
           labelText={t('copyResponsibleData.sourceLabel', 'Responsable de origen')}
           value={selectedResponsiblePersonUuid}
           onChange={(event) => {
+            abortPendingCopy();
             setSelectedResponsiblePersonUuid(event.target.value);
             setStatus('idle');
           }}

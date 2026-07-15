@@ -1,6 +1,6 @@
 # Auditoria CRED frente a NTS 238
 
-Fecha de revision: 2026-07-10
+Fecha de revision: 2026-07-14
 
 ## Fuentes normativas
 
@@ -22,23 +22,27 @@ Enlaces oficiales:
 2. El calendario ideal contiene 27 controles: 3 neonatales, 7 durante el primer ano,
    4 durante el segundo ano de vida, 6 semestrales entre 2 y 4 anos y 7 anuales entre
    5 y 11 anos.
-3. Las actividades se eligen por edad cronologica en la fecha real de atencion, no por
+3. El siguiente control se calcula desde la fecha del ultimo control real: 7 dias en el
+   periodo neonatal; 30, 60 o 90 dias segun la banda durante los primeros 24 meses;
+   180 dias entre 2 y 4 anos; y 360 dias entre 5 y 11 anos. Tambien debe respetar la
+   siguiente banda etaria y el limite anterior al cumpleanos 12.
+4. Las actividades se eligen por edad cronologica en la fecha real de atencion, no por
    el numero ni la fecha ideal del control. Si la primera consulta ocurre a los 6 meses,
    se registra como control real 1 y se realizan las actividades de 6 meses.
-4. El riesgo identificado permite adelantar una prueba o intervencion, con sustento en
+5. El riesgo identificado permite adelantar una prueba o intervencion, con sustento en
    la historia clinica.
-5. Desarrollo: EDI a 1, 6, 9, 18, 30, 42 y 60 meses; vigilancia Huanca a 2, 3, 4,
+6. Desarrollo: EDI a 1, 6, 9, 18, 30, 42 y 60 meses; vigilancia Huanca a 2, 3, 4,
    7, 12, 15, 21, 24 y 36 meses; lista de habilidades a 48 meses y anualmente de 6 a
    11 anos.
-6. M-CHAT-R/F es universal a los 24 meses y puede aplicarse de 18 a 30 meses por riesgo.
-7. Salud mental del cuidador corresponde a 1 y 12 meses y anualmente de 2 a 4 anos.
+7. M-CHAT-R/F es universal a los 24 meses y puede aplicarse de 18 a 30 meses por riesgo.
+8. Salud mental del cuidador corresponde a 1 y 12 meses y anualmente de 2 a 4 anos.
    El tamizaje del nino corresponde anualmente de 3 a 11 anos.
-8. Descarte de parasitosis corresponde anualmente desde el ano de edad.
-9. Vitamina A solo corresponde en zonas de riesgo: 100 000 UI a los 6 meses y 200 000 UI
+9. Descarte de parasitosis corresponde anualmente desde el ano de edad.
+10. Vitamina A solo corresponde en zonas de riesgo: 100 000 UI a los 6 meses y 200 000 UI
    a 12, 18, 24, 30, 36, 42, 48 y 54 meses.
-10. El examen fisico integral y las evaluaciones oral, visual, auditiva, neurologica,
+11. El examen fisico integral y las evaluaciones oral, visual, auditiva, neurologica,
     de cadera, cancer, metales y violencia forman parte de la evaluacion segun edad/riesgo.
-11. La hemoglobina debe interpretarse con corte por edad y correccion por altitud cuando
+12. La hemoglobina debe interpretarse con corte por edad y correccion por altitud cuando
     la residencia esta sobre 500 msnm. Entre 6 y 23 meses se controla al inicio, tercer mes
     y termino de la suplementacion; entre 24 y 59 meses, dos veces al ano; y entre 5 y 11
     anos, una vez al ano. Prematuros y ninos con bajo peso tienen un esquema particular.
@@ -48,17 +52,17 @@ Enlaces oficiales:
 | Area | Estado | Evidencia o limite |
 | --- | --- | --- |
 | Seleccion por edad | Implementado | La fecha real de atencion alimenta `useCREDFormsForAgeGroup`; ya no se usa la fecha ideal atrasada. |
-| Numero real de control | Implementado | Se calcula con controles registrados + 1, independientemente de la posicion ideal del calendario. |
-| Encuentro nuevo | Implementado | El selector muestra historial, pero lanza formularios nuevos con `encounterUuid` vacio. |
+| Numero real de control | Implementado | Se calcula con controles registrados + 1, se persiste en cada encuentro con `Número de control CRED` (`ce8b07e8-712f-406a-b44d-2fa69167f5ea`) y no permite crear un control 28. Reabrir el mismo control conserva su numero. |
+| Encuentro nuevo / edicion | Implementado | Un control nuevo usa `encounterUuid` vacio. Al reabrir un formulario, solo se edita el encounter que coincide con el mismo formulario y `Número de control CRED`; un encounter historico de otro control nunca se reutiliza. |
 | Matriz Anexo 18 | Implementado en frontend | Matriz central `cred-nts238-form-groups.ts`, con cortes de 42 y 54 meses e instrumentos vigentes. |
-| Calendario | Implementado | 27 edades ideales con meses calendario y ventana neonatal; no usa aproximaciones de 365 dias. |
-| Citas | Implementado | Solo se programan controles futuros y el recurso rechaza fechas pasadas. |
+| Calendario | Implementado en frontend | Conserva como referencia las 27 edades ideales y calcula por separado el siguiente control real desde la ultima atencion, aplicando los intervalos de los numerales 6.3 y 6.4, la siguiente banda etaria y el limite anterior al cumpleanos 12. El registro rechaza fechas anteriores a ese minimo. |
+| Citas | Implementado en frontend | Programa solo la siguiente recomendacion real cuando su fecha es futura; no crea cadenas especulativas ni citas historicas. Reconoce la primera cita CRED activa posterior al minimo y descarta citas desde el cumpleanos 12. Un control vencido se registra primero y luego se recalcula la siguiente cita. |
 | Desarrollo vigente | Implementado con limites de contenido | Huanca, EDI, M-CHAT y habilidades sustituyen el acceso TEPSI como evaluaciones vigentes. |
 | Codigo TEPSI simulado | Retirado | Se elimino el workspace sin persistencia; los identificadores legados quedan solo para lectura historica. |
 | Anemia | Parcial seguro | El formulario 1.16.3 exige edad, altitud y clasificacion ajustada; el widget muestra Hb sin inventar diagnostico. Falta calcular Hb ajustada con conceptos especificos. |
 | Crecimiento escolar | Bloqueado de forma segura | No se reutilizan curvas OMS 0-5 en escolares; faltan IMC/edad y talla/edad 5-19. |
 | Tamizajes | Parcial seguro | El widget se presenta como historial, no como cumplimiento obligatorio por haber ocurrido alguna vez. |
-| Persistencia DEV | No verificada | El backend DEV no acepto conexion durante esta auditoria; no se ejecuto un guardado E2E. |
+| Persistencia DEV | Verificada | Se guardaron y editaron formularios CRED en un paciente sintetico; se conservaron fecha, visita, formulario y observaciones sin duplicar el encuentro editado. El concepto numerico de control y su lectura por encounter tambien se validaron. |
 
 ## Auditoria de contenido y conceptos
 
@@ -94,6 +98,9 @@ No declarar CRED como totalmente conforme hasta completar lo siguiente:
 4. Probar la recurrencia de anemia, salud mental, parasitosis y tamizajes por edad/riesgo.
 5. Incorporar referencias OMS 5-19 para IMC/edad y talla/edad antes de habilitar curvas escolares.
 6. Validar la matriz y los formularios resumidos con el responsable clinico CRED del hospital.
+7. Validar en DEV el recalculo del siguiente control y la cita luego de una atencion real,
+   incluido el bloqueo de una fecha demasiado temprana, la reanudacion del mismo control y
+   los limites de 27 controles y 12 anos.
 
 El schema CRED duplicado en `esm-salud-materna-app` no tiene consumidores de runtime en
 ese microfrontend. Se mantiene fuera de este cambio para no ampliar el contrato publico;

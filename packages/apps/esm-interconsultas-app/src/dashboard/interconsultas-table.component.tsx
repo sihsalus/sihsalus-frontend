@@ -18,7 +18,6 @@ import {
   TableToolbarContent,
   TableToolbarSearch,
   Tag,
-  Tile,
 } from '@carbon/react';
 import {
   ConfigurableLink,
@@ -34,6 +33,7 @@ import { useTranslation } from 'react-i18next';
 import { deriveStatus, useInterconsultas } from '../interconsultas.resource';
 import type { InterconsultaOrder, InterconsultaTrayFilter } from '../types';
 import { getStatusDisplay, getStatusTagType, getUrgencyDisplay } from '../utils/status';
+import InterconsultasEmptyState from './interconsultas-empty-state.component';
 import styles from './interconsultas-table.scss';
 
 const pageSizes = [10, 20, 30, 40, 50];
@@ -284,16 +284,10 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
             </TableBody>
           </Table>
           {rows.length === 0 ? (
-            <div className={styles.tileContainer}>
-              <Tile className={styles.tile}>
-                <p className={styles.emptyStateText}>
-                  {t('noInterconsultasFound', 'No hay interconsultas en esta bandeja')}
-                </p>
-                <p className={styles.emptyStateHelperText}>
-                  {t('checkFilters', 'Revise los filtros e intente nuevamente')}
-                </p>
-              </Tile>
-            </div>
+            <InterconsultasEmptyState
+              title={t('noInterconsultasFound', 'No hay interconsultas para mostrar')}
+              helperText={t('checkFilters', 'Comprobar los filtros anteriores')}
+            />
           ) : (
             <Pagination
               forwardText={t('nextPage', 'Página siguiente')}

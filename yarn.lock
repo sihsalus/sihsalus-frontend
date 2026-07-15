@@ -4416,6 +4416,7 @@ __metadata:
     "@sihsalus/esm-form-engine-lib": "workspace:*"
     jsep: "npm:^1.4.0"
     lodash-es: "npm:^4.17.23"
+    swr: "npm:2.x"
     typescript: "npm:6.0.3"
     uuid: "npm:^14.0.0"
     vitest: "npm:^4.1.7"

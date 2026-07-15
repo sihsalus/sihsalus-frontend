@@ -12,6 +12,7 @@
   "notifications": "Notifications",
   "searchModule": "Buscar módulo...",
   "userMenu": "User menu",
+  "userMenuFor": "My account: {{user}}",
   "userMenuOptions": "User menu options",
   "userMenuTooltip": "My Account"
 }

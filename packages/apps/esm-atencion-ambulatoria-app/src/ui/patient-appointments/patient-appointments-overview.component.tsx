@@ -3,7 +3,7 @@ import { isDesktop, useLayoutType, usePatient, WorkspaceContainer } from '@openm
 import React from 'react';
 import { useParams } from 'react-router-dom';
 
-import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../../hooks/patientAppointmentContext';
+import { PatientAppointmentContext, PatientAppointmentContextTypes } from '@openmrs/esm-patient-common-lib';
 
 import PatientAppointmentsBase from './patient-appointments-base.component';
 import PatientAppointmentsHeader from './patient-appointments-header';

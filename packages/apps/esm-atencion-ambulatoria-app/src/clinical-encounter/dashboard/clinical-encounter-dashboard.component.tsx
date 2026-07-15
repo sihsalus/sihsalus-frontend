@@ -4,8 +4,9 @@ import { useConfig, useVisit } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useClinicalEncounter } from '@openmrs/esm-patient-common-lib';
+
 import type { ConfigObject } from '../../config-schema';
-import { useClinicalEncounter } from '../../hooks/useClinicalEncounter';
 import ClinicalEncounter from '../clinical-enc.component';
 import InPatientSummary from '../summary/in-patient-medical-summary/in-patient-medical-summary.component';
 import OutPatientMedicalHistory from '../summary/out-patient-summary/patient-medical-history.component';

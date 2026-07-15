@@ -26,7 +26,8 @@ import {
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useFilteredEncounter } from '../../hooks/useFilteredEncounter';
+import { useFilteredEncounter } from '@openmrs/esm-patient-common-lib';
+
 import { patientFormEntryWorkspace } from '../../utils/constants';
 
 import ObservationGroupDetails, { type ObservationGroup } from './observation-group-details.component';

@@ -3,7 +3,8 @@ import { launchWorkspace2, showModal, useLayoutType } from '@openmrs/esm-framewo
 import { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../../hooks/patientAppointmentContext';
+import { PatientAppointmentContext, PatientAppointmentContextTypes } from '@openmrs/esm-patient-common-lib';
+
 import type { Appointment } from '../../types';
 
 import styles from './patient-appointments-action-menu.scss';

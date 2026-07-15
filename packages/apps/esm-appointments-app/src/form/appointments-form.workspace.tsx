@@ -4,6 +4,7 @@ import {
   DatePicker,
   DatePickerInput,
   Form,
+  InlineNotification,
   InlineLoading,
   MultiSelect,
   NumberInput,
@@ -651,7 +652,7 @@ const AppointmentsForm: React.FC<
       ? dayjs(startDate).endOf('day')
       : startDateTime.add(duration ?? 0, 'minutes');
     const effectiveDateAppointmentScheduled = resolveAppointmentIssuedDate(
-      canEditAppointmentIssuedDate,
+      context !== 'editing' && canEditAppointmentIssuedDate,
       dateAppointmentScheduled,
       defaultDateAppointmentScheduled,
     );
@@ -706,6 +707,15 @@ const AppointmentsForm: React.FC<
     <Workspace2 title={title} hasUnsavedChanges={isDirty && !isSuccessful}>
       <Form onSubmit={handleSubmit(handleSaveAppointment)}>
         <Stack gap={4}>
+          {Object.keys(errors).length > 0 && (
+            <InlineNotification
+              className={styles.formErrorSummary}
+              kind="error"
+              lowContrast={false}
+              title={t('appointmentFormValidationTitle', 'Revise los campos marcados')}
+              subtitle={getAppointmentValidationSummary(errors, t)}
+            />
+          )}
           {patient && (
             <ExtensionSlot
               name="patient-header-slot"
@@ -1080,7 +1090,7 @@ const AppointmentsForm: React.FC<
                       maxDate={new Date()}
                       id="dateAppointmentScheduledPickerInput"
                       data-testid="dateAppointmentScheduledPickerInput"
-                      isReadOnly={!canEditAppointmentIssuedDate}
+                      isReadOnly={context === 'editing' || !canEditAppointmentIssuedDate}
                       labelText={t('dateScheduledDetail', 'Date appointment issued')}
                       style={{ width: '100%' }}
                     />
@@ -1213,6 +1223,29 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
       </ResponsiveWrapper>
     </>
   );
+}
+
+function getAppointmentValidationSummary(errors: Record<string, unknown>, t: (key: string, fallback: string) => string) {
+  const labels: Record<string, string> = {
+    location: t('location', 'Ubicación'),
+    selectedService: t('service', 'Servicio'),
+    appointmentType: t('appointmentType', 'Tipo de cita'),
+    provider: t('provider', 'Personal de salud'),
+    startTime: t('time', 'Hora'),
+    duration: t('duration', 'Duración'),
+    dateAppointmentScheduled: t('dateScheduled', 'Fecha de emisión de la cita'),
+  };
+
+  return Object.entries(errors)
+    .map(([key, error]) => {
+      const message =
+        error && typeof error === 'object' && 'message' in error
+          ? String((error as { message?: unknown }).message ?? '')
+          : '';
+      return message ? `${labels[key] ?? key}: ${message}` : null;
+    })
+    .filter(Boolean)
+    .join(' • ');
 }
 
 export default AppointmentsForm;

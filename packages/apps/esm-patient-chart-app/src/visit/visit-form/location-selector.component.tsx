@@ -59,7 +59,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ control, lockedLoca
 
   return (
     <section data-testid="combo">
-      <div className={styles.sectionTitle}>{t('visitLocation', 'Visit Location')}</div>
+      <div className={styles.sectionTitle}>{`${t('visitLocation', 'Ubicación de la consulta')} *`}</div>
       <div className={classNames(styles.selectContainer, styles.sectionField)}>
         {!disableChangingVisitLocation ? (
           <Controller
@@ -77,6 +77,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ control, lockedLoca
                 onChange={({ selectedItem }) => onChange(selectedItem)}
                 onInputChange={(searchTerm) => handleSearch(searchTerm)}
                 readOnly={disableChangingVisitLocation}
+                required
                 selectedItem={value ?? null}
                 titleText={t('selectLocation', 'Select a location')}
               />

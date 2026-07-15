@@ -41,6 +41,7 @@ const defaultDevApps = [
   'esm-dispensing-app',
   'esm-login-app',
   'esm-patient-chart-app',
+  'esm-patient-banner-app',
   'esm-patient-registration-app',
   'esm-patient-search-app',
   'esm-patient-vitals-app',

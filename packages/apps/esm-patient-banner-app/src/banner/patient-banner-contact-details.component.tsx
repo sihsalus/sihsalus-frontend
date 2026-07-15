@@ -280,6 +280,7 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
     ethnicIdentityAttributeTypeUuid,
     ethnicIdentityConceptUuid,
     occupationAttributeTypeUuid,
+    nationalityAttributeTypeUuid,
   } = useConfig<ConfigObject>();
   const { additionalAttributes, identifiers, isLoading, person } = usePatientAdditionalAttributes(patientUuid);
   const { currentValue: ethnicIdentity, isLoading: isLoadingEthnicIdentity } = useEthnicIdentity(
@@ -378,7 +379,9 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
               <DetailItem
                 key={attribute.uuid}
                 label={
-                  attribute.attributeType.display
+                  attribute.attributeType.uuid === nationalityAttributeTypeUuid
+                    ? t('nationalityCountry', 'País de nacionalidad')
+                    : attribute.attributeType.display
                     ? getCoreTranslation(
                         attribute.attributeType.display as CoreTranslationKey,
                         attribute.attributeType.display,
@@ -404,7 +407,7 @@ const Relationships: React.FC<{ patientId: string }> = ({ patientId }) => {
 
   return (
     <>
-      <p className={styles.heading}>{getCoreTranslation('relationships', 'Relationships')}</p>
+      <p className={styles.heading}>Familiares</p>
       {showLoading ? (
         <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
       ) : relationships && relationships.length > 0 ? (
@@ -420,7 +423,6 @@ const Relationships: React.FC<{ patientId: string }> = ({ patientId }) => {
                     label={t('relationship', 'Relationship')}
                     value={relationship.relationshipType}
                   />
-                  <RelationshipMetaItem label="DNI" value={relationship.dni} />
                   <RelationshipMetaItem
                     label={t('age', 'Age')}
                     value={

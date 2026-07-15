@@ -2,12 +2,11 @@ import { Button } from '@carbon/react';
 import { AddIcon, launchWorkspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import {
-  serviceQueuesEditPrivilege,
   serviceQueuesPatientSearchWorkspace,
   serviceQueuesStartVisitWorkspace,
 } from '../../constants';
+import { CanEditServiceQueues } from '../../permissions';
 import { useServiceQueuesStore } from '../../store/store';
 
 const AddPatientToQueueButton: React.FC = () => {
@@ -15,7 +14,7 @@ const AddPatientToQueueButton: React.FC = () => {
   const { selectedServiceUuid } = useServiceQueuesStore();
 
   return (
-    <RequirePrivilege privilege={serviceQueuesEditPrivilege} hideUnauthorized>
+    <CanEditServiceQueues>
       <Button
         kind="secondary"
         renderIcon={(props) => <AddIcon size={16} {...props} />}
@@ -52,7 +51,7 @@ const AddPatientToQueueButton: React.FC = () => {
       >
         {t('addPatientToQueue', 'Add patient to queue')}
       </Button>
-    </RequirePrivilege>
+    </CanEditServiceQueues>
   );
 };
 

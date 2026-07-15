@@ -10,7 +10,6 @@ import {
   postQueueEntry,
   QUEUE_ENTRY_CREATION_UNVERIFIED,
   QueueEntryCreationVerificationError,
-  QueueTicketGenerationError,
 } from './queue-fields.resource';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
@@ -107,7 +106,7 @@ describe('postQueueEntry', () => {
     expect(mockOpenmrsFetch).toHaveBeenCalledTimes(6);
     expect(mockOpenmrsFetch.mock.calls[2][0]).toContain(`/visit/${input.visitUuid}?v=`);
     expect(mockOpenmrsFetch.mock.calls[3][0]).toContain('/queue-entry-number?');
-    expect(mockOpenmrsFetch.mock.calls[3][1]).toMatchObject({ method: 'POST' });
+    expect(mockOpenmrsFetch.mock.calls[3][1]).toMatchObject({ method: 'GET' });
     expect(mockOpenmrsFetch.mock.calls[4][0]).toContain('/visit-queue-entry');
     expect(mockOpenmrsFetch.mock.calls[4][1]).toMatchObject({ method: 'POST' });
     expect(mockOpenmrsFetch.mock.calls[4][1]?.body).toMatchObject({
@@ -260,16 +259,49 @@ describe('postQueueEntry', () => {
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });
 
-  it('does not create a queue entry when the module returns an empty ticket number', async () => {
+  it('creates the entry when ticket generation returns an empty body', async () => {
     mockOpenmrsFetch
       .mockResolvedValueOnce({ data: { results: [] } } as never)
       .mockResolvedValueOnce({ data: { results: [] } } as never)
       .mockResolvedValueOnce(visitWithoutQueueTicket)
-      .mockResolvedValueOnce({ data: { visitQueueNumber: '' } } as never);
+      .mockResolvedValueOnce({ data: { visitQueueNumber: '' } } as never)
+      .mockResolvedValueOnce({ data: {} } as never)
+      .mockResolvedValueOnce({
+        data: { uuid: input.visitUuid, startDatetime: '2026-07-14T14:00:00.000Z', attributes: [] },
+      } as never)
+      .mockResolvedValueOnce({ data: { uuid: 'new-entry' }, status: 201 } as never)
+      .mockResolvedValueOnce({ data: { results: [createdActiveEntry] } } as never);
 
-    await expect(createQueueEntry()).rejects.toBeInstanceOf(QueueTicketGenerationError);
-    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(4);
-    expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('/visit-queue-entry'))).toBe(false);
+    await expect(createQueueEntry()).resolves.toMatchObject({ created: true });
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(8);
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('/visit-queue-entry'))).toBe(true);
+  });
+
+  it('uses a ticket persisted by the queue module when generation returns an empty body', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce(visitWithoutQueueTicket)
+      .mockResolvedValueOnce({ data: {} } as never)
+      .mockResolvedValueOnce({ data: {} } as never)
+      .mockResolvedValueOnce({
+        data: {
+          uuid: input.visitUuid,
+          startDatetime: '2026-07-14T14:00:00.000Z',
+          attributes: [
+            {
+              attributeType: { uuid: input.visitQueueNumberAttributeUuid },
+              value: 'A-09',
+            },
+          ],
+        },
+      } as never)
+      .mockResolvedValueOnce({ data: { uuid: 'new-entry' }, status: 201 } as never)
+      .mockResolvedValueOnce({ data: { results: [createdActiveEntry] } } as never);
+
+    await expect(createQueueEntry()).resolves.toMatchObject({ created: true });
+    expect(mockOpenmrsFetch.mock.calls[5][0]).toContain(`/visit/${input.visitUuid}?v=`);
+    expect(mockOpenmrsFetch.mock.calls[6][0]).toContain('/visit-queue-entry');
   });
 
   it('repairs a missing ticket on an existing active entry', async () => {

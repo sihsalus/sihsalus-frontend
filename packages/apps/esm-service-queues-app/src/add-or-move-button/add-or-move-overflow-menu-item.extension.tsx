@@ -2,8 +2,7 @@ import { OverflowMenuItem, SkeletonText } from '@carbon/react';
 import { showModal, useVisit } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import { serviceQueuesEditPrivilege } from '../constants';
+import { CanEditServiceQueues } from '../permissions';
 
 interface AddOrMoveOverflowMenuItemProps {
   patientUuid: string;
@@ -29,9 +28,9 @@ const AddOrMoveOverflowMenuItem: React.FC<AddOrMoveOverflowMenuItemProps> = ({ p
   }
 
   return (
-    <RequirePrivilege privilege={serviceQueuesEditPrivilege} hideUnauthorized>
+    <CanEditServiceQueues>
       <OverflowMenuItem itemText={t('transitionPatientAction', 'Transition patient')} onClick={handleLaunchModal} />
-    </RequirePrivilege>
+    </CanEditServiceQueues>
   );
 };
 

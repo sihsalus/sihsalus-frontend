@@ -6,7 +6,7 @@ import { useQueues } from '../../hooks/useQueues';
 import { type QueueEntry } from '../../types';
 
 import QueueEntryActionModal from './queue-entry-actions.modal';
-import { updateQueueEntry } from './queue-entry-actions.resource';
+import { transitionQueueEntry, updateQueueEntry } from './queue-entry-actions.resource';
 
 interface EditQueueEntryModalProps {
   queueEntry: QueueEntry;
@@ -33,13 +33,38 @@ const EditQueueEntryModal: React.FC<EditQueueEntryModalProps> = ({ queueEntry, c
           const statuses = selectedQueue?.allowedStatuses;
           const priorities = selectedQueue?.allowedPriorities;
 
+          if (!selectedQueue || !statuses?.length || !priorities?.length) {
+            return Promise.reject(new Error('The selected queue configuration is not available.'));
+          }
+
+          const status = statuses.find((s) => s.uuid === formState.selectedStatus);
+          const priority = priorities.find((p) => p.uuid === formState.selectedPriority);
+
+          if (!status || !priority) {
+            return Promise.reject(new Error('The selected queue configuration is not available.'));
+          }
+
+          const queueChanged = selectedQueue.uuid !== queueEntry.queue.uuid;
+          const statusChanged = status.uuid !== queueEntry.status.uuid;
+          const priorityChanged = priority.uuid !== queueEntry.priority.uuid;
+
+          if (queueChanged || statusChanged || priorityChanged) {
+            return transitionQueueEntry({
+              queueEntryToTransition: queueEntry.uuid,
+              newQueue: selectedQueue.uuid,
+              newStatus: status.uuid,
+              newPriority: priority.uuid,
+              newPriorityComment: formState.prioritycomment,
+            });
+          }
+
           const startAtDate = new Date(formState.transitionDate);
           const [hour, minute] = convertTime12to24(formState.transitionTime, formState.transitionTimeFormat);
           startAtDate.setHours(hour, minute, 0, 0);
 
           return updateQueueEntry(queueEntry.uuid, {
-            status: statuses.find((s) => s.uuid === formState.selectedStatus),
-            priority: priorities.find((p) => p.uuid === formState.selectedPriority),
+            status,
+            priority,
             priorityComment: formState.prioritycomment,
             ...(formState.modifyDefaultTransitionDateTime ? { startedAt: startAtDate.toISOString() } : {}),
           });

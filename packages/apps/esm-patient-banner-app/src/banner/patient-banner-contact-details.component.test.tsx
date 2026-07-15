@@ -165,7 +165,7 @@ describe('PatientBannerContactDetails', () => {
     render(<PatientBannerContactDetails patientId={patientId} deceased={false} />);
 
     const identifiersSection = screen.getByText('Identifiers').parentElement;
-    const relationshipsSection = screen.getByText('Relationships').parentElement;
+    const relationshipsSection = screen.getByText('Familiares').parentElement;
     if (!identifiersSection || !relationshipsSection) {
       throw new Error('Expected identifiers and relationships sections to render');
     }
@@ -214,7 +214,6 @@ describe('PatientBannerContactDetails', () => {
     mockUseRelationships.mockReturnValue({
       data: [
         {
-          dni: '76543210',
           display: 'Juan Perez',
           relationshipType: 'Father',
           relativeAge: 60,
@@ -228,7 +227,7 @@ describe('PatientBannerContactDetails', () => {
     rerender(<PatientBannerContactDetails patientId={patientId} deceased={false} />);
 
     const identifiersSection = screen.getByText('Identifiers').parentElement;
-    const relationshipsSection = screen.getByText('Relationships').parentElement;
+    const relationshipsSection = screen.getByText('Familiares').parentElement;
     if (!identifiersSection || !relationshipsSection) {
       throw new Error('Expected identifiers and relationships sections to render');
     }
@@ -237,7 +236,7 @@ describe('PatientBannerContactDetails', () => {
     expect(screen.getByText(/Preferred/i)).toBeInTheDocument();
     expect(within(relationshipsSection).getByRole('link', { name: 'Juan Perez' })).toBeInTheDocument();
     expect(within(relationshipsSection).getByText('Juan Perez').closest('li')).toHaveTextContent(
-      /Relationship:\s*Father.*DNI:\s*76543210.*Age:\s*60 yrs/,
+      /Relationship:\s*Father.*Age:\s*60 yrs/,
     );
   });
 

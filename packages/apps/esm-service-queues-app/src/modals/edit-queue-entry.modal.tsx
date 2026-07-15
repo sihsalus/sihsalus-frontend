@@ -7,7 +7,7 @@ import { useQueueEntry } from '../hooks/useQueueEntry';
 import { useQueues } from '../hooks/useQueues';
 import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
 import { type QueueEntry } from '../types';
-import { updateActiveQueueEntry } from './queue-entry-actions.resource';
+import { transitionQueueEntry, updateActiveQueueEntry } from './queue-entry-actions.resource';
 import QueueEntryActionModal from './queue-entry-actions-modal.component';
 import { convertTime12to24 } from './time-helpers';
 
@@ -122,6 +122,20 @@ const EditQueueEntryModal: React.FC<EditQueueEntryModalProps> = ({ queueEntry, c
             return Promise.reject(new Error('The selected queue configuration is not available.'));
           }
 
+          const queueChanged = selectedQueue.uuid !== queueEntry.queue.uuid;
+          const statusChanged = status.uuid !== queueEntry.status.uuid;
+          const priorityChanged = priority.uuid !== queueEntry.priority.uuid;
+
+          if (queueChanged || statusChanged || priorityChanged) {
+            return transitionQueueEntry({
+              queueEntryToTransition: queueEntry.uuid,
+              newQueue: selectedQueue.uuid,
+              newStatus: status.uuid,
+              newPriority: priority.uuid,
+              newPriorityComment: formState.priorityComment,
+            });
+          }
+
           const startAtDate = new Date(formState.transitionDate);
           const [hour, minute] = convertTime12to24(formState.transitionTime, formState.transitionTimeFormat);
           startAtDate.setHours(hour, minute, 0, 0);
@@ -135,7 +149,7 @@ const EditQueueEntryModal: React.FC<EditQueueEntryModalProps> = ({ queueEntry, c
         },
         disableSubmit: () => false,
         isEdit: true,
-        showQueuePicker: false,
+        showQueuePicker: true,
         showStatusPicker: true,
       }}
     />

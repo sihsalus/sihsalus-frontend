@@ -5,8 +5,12 @@ export function getUserFacingQueueErrorMessage(
   error: unknown,
   fallback: string,
   logContext = 'Queue entry action',
+  invalidSubmissionMessage = 'Invalid submission',
 ): string {
-  return getUserFacingErrorMessage(error, fallback, { logContext });
+  const userFacingMessage = getUserFacingErrorMessage(error, fallback, { logContext });
+  return userFacingMessage.trim().toLowerCase() === 'invalid submission'
+    ? invalidSubmissionMessage
+    : userFacingMessage;
 }
 
 function getTechnicalErrorMessage(error: unknown): string {

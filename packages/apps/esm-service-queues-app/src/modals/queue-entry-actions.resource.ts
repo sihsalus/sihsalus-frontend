@@ -18,6 +18,18 @@ export interface QueueEntryTransitionSelection {
   priorityComment: string;
 }
 
+export function isQueueEntryCommentOnlyChange(
+  queueEntry: QueueEntry,
+  selection: QueueEntryTransitionSelection,
+): boolean {
+  return (
+    selection.selectedQueue === queueEntry.queue.uuid &&
+    selection.selectedStatus === queueEntry.status.uuid &&
+    selection.selectedPriority === queueEntry.priority.uuid &&
+    selection.priorityComment !== (queueEntry.priorityComment ?? '')
+  );
+}
+
 export function isQueueEntryTransitionUnchanged(
   queueEntry: QueueEntry,
   selection: QueueEntryTransitionSelection,

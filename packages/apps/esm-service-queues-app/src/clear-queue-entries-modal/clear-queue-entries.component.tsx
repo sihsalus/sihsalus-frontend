@@ -3,9 +3,7 @@ import { TrashCan } from '@carbon/react/icons';
 import { isDesktop, showModal, useLayoutType } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RequirePrivilege } from '@sihsalus/esm-rbac';
-
-import { serviceQueuesEditPrivilege } from '../constants';
+import { CanEditServiceQueues } from '../permissions';
 import { type QueueEntry } from '../types';
 
 interface ClearQueueEntriesProps {
@@ -31,7 +29,7 @@ const ClearQueueEntries: React.FC<ClearQueueEntriesProps> = ({ queueEntries }) =
   }, [queueEntries]);
 
   return (
-    <RequirePrivilege privilege={serviceQueuesEditPrivilege} hideUnauthorized>
+    <CanEditServiceQueues>
       <Button
         size={isDesktop(layout) ? 'sm' : 'lg'}
         kind="danger--tertiary"
@@ -41,7 +39,7 @@ const ClearQueueEntries: React.FC<ClearQueueEntriesProps> = ({ queueEntries }) =
       >
         {t('clearQueue', 'Clear queue')}
       </Button>
-    </RequirePrivilege>
+    </CanEditServiceQueues>
   );
 };
 

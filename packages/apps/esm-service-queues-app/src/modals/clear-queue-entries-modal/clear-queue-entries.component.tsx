@@ -2,8 +2,7 @@ import { Button } from '@carbon/react';
 import { isDesktop, showModal, useLayoutType } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import { serviceQueuesEditPrivilege } from '../../constants';
+import { CanEditServiceQueues } from '../../permissions';
 import { type QueueEntry } from '../../types';
 import styles from './clear-queue-entries.scss';
 
@@ -24,7 +23,7 @@ const ClearQueueEntries: React.FC<ClearQueueEntriesProps> = ({ queueEntries }) =
   }, [queueEntries]);
 
   return (
-    <RequirePrivilege privilege={serviceQueuesEditPrivilege} hideUnauthorized>
+    <CanEditServiceQueues>
       <Button
         className={styles.clearQueueButton}
         size={isDesktop(layout) ? 'sm' : 'lg'}
@@ -34,7 +33,7 @@ const ClearQueueEntries: React.FC<ClearQueueEntriesProps> = ({ queueEntries }) =
       >
         {t('clearQueueEntries', 'Clear queue entries')}
       </Button>
-    </RequirePrivilege>
+    </CanEditServiceQueues>
   );
 };
 

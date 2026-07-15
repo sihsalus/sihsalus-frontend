@@ -2,8 +2,7 @@ import { Layer, OverflowMenu, OverflowMenuItem } from '@carbon/react';
 import { launchWorkspace2, showModal, useLayoutType } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import { serviceQueuesEditPrivilege } from '../../constants';
+import { CanEditServiceQueues } from '../../permissions';
 import type { QueueRoom } from '../../types';
 import styles from './admin-page.scss';
 
@@ -27,7 +26,7 @@ const QueueRoomActionMenu: React.FC<QueueRoomActionMenuProps> = ({ queueRoom }) 
   }, [queueRoom]);
 
   return (
-    <RequirePrivilege privilege={serviceQueuesEditPrivilege} hideUnauthorized>
+    <CanEditServiceQueues>
       <Layer>
         <OverflowMenu
           aria-label={t('actions', 'Actions')}
@@ -45,7 +44,7 @@ const QueueRoomActionMenu: React.FC<QueueRoomActionMenuProps> = ({ queueRoom }) 
           />
         </OverflowMenu>
       </Layer>
-    </RequirePrivilege>
+    </CanEditServiceQueues>
   );
 };
 

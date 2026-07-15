@@ -16,16 +16,17 @@ import {
   TimePicker,
   TimePickerSelect,
 } from '@carbon/react';
-import { type FetchResponse, getUserFacingErrorMessage, OpenmrsDatePicker, showSnackbar } from '@openmrs/esm-framework';
+import { type FetchResponse, OpenmrsDatePicker, showSnackbar } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { time12HourFormatRegexPattern } from '../../constants';
+import { queueEntryCommentMaxLength, time12HourFormatRegexPattern } from '../../constants';
 import { type amPm, convertTime12to24 } from '../../helpers/time-helpers';
 import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
 import { useQueues } from '../../hooks/useQueues';
 import { type QueueEntry } from '../../types';
+import { getUserFacingQueueErrorMessage } from '../../modals/queue-entry-error.utils';
 
 import styles from './queue-entry-actions.scss';
 
@@ -92,6 +93,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
   });
   const { queues } = useQueues();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isCommentTooLong = formState.prioritycomment.length > queueEntryCommentMaxLength;
 
   const selectedQueue = queues.find((q) => q.uuid === formState.selectedQueue);
 
@@ -164,10 +166,11 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
         showSnackbar({
           title: submitFailureTitle,
           kind: 'error',
-          subtitle: getUserFacingErrorMessage(
+          subtitle: getUserFacingQueueErrorMessage(
             error,
             t('queueEntryActionErrorMessage', 'The queue action could not be completed. Please try again.'),
-            { logContext: 'Submit legacy queue entry action' },
+            'Submit legacy queue entry action',
+            t('invalidSubmission', 'La solicitud no es válida.'),
           ),
         });
       })
@@ -328,6 +331,14 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
                 value={formState.prioritycomment}
                 onChange={(e) => setPriorityComment(e.target.value)}
                 placeholder={t('enterCommentHere', 'Enter comment here')}
+                maxLength={queueEntryCommentMaxLength}
+                invalid={isCommentTooLong}
+                invalidText={t('queueEntryCommentTooLong', 'El comentario no puede superar los {{count}} caracteres.', {
+                  count: queueEntryCommentMaxLength,
+                })}
+                helperText={t('queueEntryCommentLimit', 'Máximo {{count}} caracteres.', {
+                  count: queueEntryCommentMaxLength,
+                })}
               />
             </section>
 
@@ -383,7 +394,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
         <Button kind="secondary" onClick={closeModal}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button disabled={isSubmitting || disableSubmit(queueEntry, formState)} onClick={submitForm}>
+        <Button disabled={isSubmitting || isCommentTooLong || disableSubmit(queueEntry, formState)} onClick={submitForm}>
           {submitButtonText}
         </Button>
       </ModalFooter>

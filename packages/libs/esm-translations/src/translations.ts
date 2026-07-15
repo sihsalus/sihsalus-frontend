@@ -76,6 +76,7 @@ export const coreTranslations = {
     'Unable to load login locations. Please try again or contact support if the problem persists.',
   fatalErrorMessage: 'The application could not start. Try reloading the page or contact support.',
   female: 'Female',
+  familyMembers: 'Family members',
   leftNavigation: 'Left navigation',
   loading: 'Loading',
   male: 'Male',

@@ -1308,6 +1308,31 @@ describe('extension config', () => {
     expect(console.error).toHaveBeenCalledWith(expect.stringMatching(/unknown config key 'ext-mod.beef' provided.*/i));
   });
 
+  it('does not report unknown keys for extensions of modules that have not defined their schema yet', () => {
+    configExtensionStore.setState({
+      mountedExtensions: [
+        {
+          slotModuleName: 'slot-mod',
+          extensionModuleName: 'lazy-mod',
+          slotName: 'barSlot',
+          extensionId: 'lazyExt',
+        },
+      ],
+    });
+    // The module is known from the routes registry (implicit schema) but its code —
+    // and therefore its defineConfigSchema call — has not run yet.
+    Config.registerModuleWithConfigSystem('lazy-mod');
+    Config.provide({ 'lazy-mod': { lazyKey: true } });
+    expect(console.error).not.toHaveBeenCalled();
+
+    Config.defineConfigSchema('lazy-mod', {
+      lazyKey: { _default: false, _type: Type.Boolean },
+    });
+    const result = getExtensionConfig('barSlot', 'lazyExt').getState().config;
+    expect(result.lazyKey).toBe(true);
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
   it('returns the extension config if an extension config schema is defined', async () => {
     updateConfigExtensionStore('fooExt');
     Config.defineExtensionConfigSchema('fooExt', {

@@ -432,9 +432,9 @@ describe('Visit form', () => {
 
     renderVisitForm();
 
-    expect(screen.getByRole('textbox', { name: /Date/i })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: /Time/i })).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: /Time/i })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /Fecha/i })).toBeRequired();
+    expect(screen.getByRole('textbox', { name: /Hora/i })).toBeRequired();
+    expect(screen.getByRole('combobox', { name: /Time Format/i })).toBeRequired();
     expect(screen.getByRole('combobox', { name: /Select a location/i })).toBeInTheDocument();
     const visitTypeCategory = screen.getByRole('combobox', { name: /categoría de consulta/i });
     expect(visitTypeCategory).toBeInTheDocument();
@@ -476,8 +476,8 @@ describe('Visit form', () => {
 
     renderVisitForm(undefined, { openedFrom: 'service-queues-add-patient' });
 
-    expect(screen.queryByRole('textbox', { name: /Date/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('textbox', { name: /Time/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /Fecha/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /Hora/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Add patient to queue/i })).toBeInTheDocument();
 
     await selectVisitType(user);
@@ -535,8 +535,8 @@ describe('Visit form', () => {
 
     renderVisitForm();
 
-    const dateInput = screen.getByRole('textbox', { name: /date/i });
-    const timeInput = screen.getByRole('textbox', { name: /time/i });
+    const dateInput = screen.getByRole('textbox', { name: /fecha/i });
+    const timeInput = screen.getByRole('textbox', { name: /hora/i });
     const amPmSelect = screen.getByRole('combobox', { name: /time format/i });
     const locationPicker = screen.getByRole('combobox', {
       name: /select a location/i,
@@ -558,7 +558,7 @@ describe('Visit form', () => {
 
     renderVisitForm();
 
-    const dateInput = screen.getByRole('textbox', { name: /date/i });
+    const dateInput = screen.getByRole('textbox', { name: /fecha/i });
     const locationPicker = screen.getByRole('combobox', {
       name: /select a location/i,
     });
@@ -578,7 +578,7 @@ describe('Visit form', () => {
 
     renderVisitForm();
 
-    const timeInput = screen.getByRole('textbox', { name: /time/i });
+    const timeInput = screen.getByRole('textbox', { name: /hora/i });
     const amPmSelect = screen.getByRole('combobox', { name: /time format/i });
     const locationPicker = screen.getByRole('combobox', {
       name: /select a location/i,
@@ -1278,7 +1278,7 @@ describe('Visit form', () => {
     );
   });
 
-  it('prefills visit attributes from matching patient person attributes', async () => {
+  it('prefills editable visit attributes from matching patient person attributes', async () => {
     const user = userEvent.setup();
 
     mockUseConfig.mockReturnValue({
@@ -1320,10 +1320,13 @@ describe('Visit form', () => {
     renderVisitForm();
 
     const insuranceNumberInput = screen.getByRole('textbox', {
-      name: 'Insurance Policy Number',
+      name: 'Insurance Policy Number (optional)',
     });
     await waitFor(() => expect(insuranceNumberInput).toHaveValue('SIS-183299'));
-    expect(insuranceNumberInput).toHaveAttribute('readonly');
+    expect(insuranceNumberInput).not.toHaveAttribute('readonly');
+
+    await user.clear(insuranceNumberInput);
+    await user.type(insuranceNumberInput, 'SIS-UPDATED');
 
     await selectVisitType(user);
 
@@ -1338,7 +1341,7 @@ describe('Visit form', () => {
       expect(mockCreateVisitAttribute).toHaveBeenCalledWith(
         visitUuid,
         visitAttributes.insurancePolicyNumber.uuid,
-        'SIS-183299',
+        'SIS-UPDATED',
       ),
     );
   });

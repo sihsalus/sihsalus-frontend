@@ -243,7 +243,14 @@ export const IdentityLookupField = () => {
         ) : null}
       </div>
       <div className={styles.externalLookupAction}>
-        <Button kind="tertiary" size="sm" renderIcon={Search} onClick={handleLookup} disabled={isLoading || isOffline}>
+        <Button
+          className={styles.externalLookupButton}
+          kind="tertiary"
+          size="sm"
+          renderIcon={Search}
+          onClick={handleLookup}
+          disabled={isLoading || isOffline}
+        >
           {t('identityLookupButton', 'Buscar en base local y RENIEC')}
         </Button>
         {isLoading ? <InlineLoading description={t('identityLookupLoading', 'Buscando identidad')} /> : null}

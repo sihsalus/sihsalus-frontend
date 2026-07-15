@@ -4,6 +4,8 @@ import {
   getUserFacingErrorMessage,
   interpolateUrl,
   isDesktop,
+  logError,
+  navigate,
   showSnackbar,
   useConfig,
   useLayoutType,
@@ -21,8 +23,8 @@ import { builtInSections, type RegistrationConfig, type SectionDefinition } from
 import { moduleName } from '../constants';
 import { ResourcesContext } from '../offline.resources';
 import BeforeSavePrompt from './before-save-prompt';
-import { getDocumentIdentifierEntry } from './field/external-lookup/dni-identifier';
-import { REGISTRATION_DOMAIN_ERROR, type SavePatientForm, SavePatientTransactionManager } from './form-manager';
+import { getDocumentIdentifierEntries } from './field/external-lookup/dni-identifier';
+import { type SavePatientForm, SavePatientTransactionManager } from './form-manager';
 import { getDocumentTypeDefinitionByIdentifierType, normalizeDocumentNumber } from './identity/identity-documents';
 import { fetchPersonForPromotion, searchLocalIdentityByDocument } from './identity/identity-search.resource';
 import { applyPersonToRegistrationForm } from './identity/promotion';
@@ -45,6 +47,13 @@ import {
   PATIENT_REGISTRATION_INCOMPLETE,
 } from './patient-creation-reconciliation';
 import { getEffectiveRegistrationConfig } from './peru-registration-config';
+import {
+  getExistingPatientUuid,
+  RegistrationDomainError,
+  type RegistrationErrorCode,
+  registrationErrorCodes,
+} from './registration-errors';
+import { resolveRegistrationAfterUrl } from './registration-redirect';
 import { SectionWrapper } from './section/section-wrapper.component';
 import { getValidationSchema, requiresDniNationalityVerification } from './validation/patient-registration-validation';
 
@@ -97,6 +106,7 @@ export function preserveMedicalRecordAttributes(
 
 interface RegistrationSubmitError {
   code?: string;
+  responseStatus?: number;
   status?: number;
   message?: string;
   responseBody?: {
@@ -106,33 +116,15 @@ interface RegistrationSubmitError {
   };
 }
 
-function createRegistrationDomainError(message: string): RegistrationSubmitError {
-  return { code: REGISTRATION_DOMAIN_ERROR, responseBody: { error: { message } } };
-}
-
 function getRegistrationErrorCode(error: unknown) {
   return error && typeof error === 'object' && 'code' in error ? String(error.code) : undefined;
 }
-
-function getTrustedRegistrationDomainMessage(error: unknown) {
-  if (
-    error &&
-    typeof error === 'object' &&
-    'code' in error &&
-    error.code === REGISTRATION_DOMAIN_ERROR &&
-    'responseBody' in error
-  ) {
-    return (error as RegistrationSubmitError).responseBody?.error?.message;
-  }
-  return undefined;
-}
-
 function isSessionExpired(error: unknown): boolean {
   if (typeof error !== 'object' || error === null) {
     return false;
   }
 
-  const typedError = error as RegistrationSubmitError & { responseStatus?: number; message?: string };
+  const typedError = error as RegistrationSubmitError;
   const status = typedError.status ?? typedError.responseStatus;
   const lowerCaseMessage = `${typedError.message ?? ''} ${typedError.responseBody?.error?.message ?? ''}`.toLowerCase();
   return status === 401 || lowerCaseMessage.includes('session expired') || lowerCaseMessage.includes('sesión expirada');
@@ -253,6 +245,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
     useInitialAddressFieldValues(patientUuidToEdit);
   const [patientUuidMap, , patientUuidMapState = { isLoading: false }] = usePatientUuidMap(patientUuidToEdit);
   const location = currentSession?.sessionLocation?.uuid;
+  const isSessionLocationMissing = Boolean(currentSession && !isOffline && !location);
   const layout = useLayoutType();
   const isDesktopLayout = isDesktop(layout);
   const hasPatientRoute = !!uuidOfPatientToEdit;
@@ -386,10 +379,23 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
     };
     try {
       if (isNewPatient && !isOffline && !savePatientTransactionManager.current.patientSaved) {
-        const documentEntry = getDocumentIdentifierEntry(updatedFormValues.identifiers, identifierTypes ?? []);
-        if (documentEntry?.[1]?.identifierValue) {
-          const definition = getDocumentTypeDefinitionByIdentifierType(documentEntry[1].identifierTypeUuid);
-          const documentNumber = normalizeDocumentNumber(documentEntry[1].identifierValue, definition);
+        const checkedDocuments = new Set<string>();
+        const documentEntries = getDocumentIdentifierEntries(updatedFormValues.identifiers, identifierTypes ?? []);
+
+        for (const [fieldName, identifier] of documentEntries) {
+          const identifierType = identifierTypes?.find(
+            (type) => type.fieldName === fieldName || type.uuid === identifier.identifierTypeUuid,
+          );
+          const identifierTypeUuid = identifier.identifierTypeUuid ?? identifierType?.uuid;
+          const definition = getDocumentTypeDefinitionByIdentifierType(identifierTypeUuid);
+          const documentNumber = normalizeDocumentNumber(identifier.identifierValue, definition);
+          const documentKey = `${identifierTypeUuid ?? ''}:${documentNumber}`;
+
+          if (!documentNumber || checkedDocuments.has(documentKey)) {
+            continue;
+          }
+          checkedDocuments.add(documentKey);
+
           const identityMatches = await searchLocalIdentityByDocument(documentNumber, abortController, {
             patientIdentifierTypeUuid: definition?.patientIdentifierTypeUuid ?? undefined,
             personDocumentTypeConceptUuid: definition?.documentTypeConceptUuid,
@@ -398,20 +404,17 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
           const existingPerson = identityMatches.find((match) => match.kind === 'person');
 
           if (existingPatient) {
-            throw createRegistrationDomainError(
-              t(
-                'duplicatePatientDocumentError',
-                'Ya existe un paciente con este documento. Búsquelo antes de registrar uno nuevo.',
-              ),
+            throw new RegistrationDomainError(
+              registrationErrorCodes.duplicatePatientDocument,
+              `Duplicate patient ${existingPatient.uuid} found during document preflight.`,
+              { existingPatientUuid: existingPatient.uuid },
             );
           }
 
           if (existingPerson && existingPerson.uuid !== updatedFormValues.personUuidToPromote) {
-            throw createRegistrationDomainError(
-              t(
-                'duplicatePersonDocumentError',
-                'Ya existe una persona con este documento. Use la opción de promover persona para evitar duplicados.',
-              ),
+            throw new RegistrationDomainError(
+              registrationErrorCodes.duplicatePersonDocument,
+              `Duplicate person ${existingPerson.uuid} found during document preflight.`,
             );
           }
         }
@@ -446,11 +449,10 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       });
 
       const rawAfterUrl = new URLSearchParams(search).get('afterUrl');
-      // Only allow relative paths (must start with /) to prevent open redirect
-      const afterUrl = rawAfterUrl && rawAfterUrl.startsWith('/') ? rawAfterUrl : null;
-      const redirectUrl = interpolateUrl(afterUrl || config.links.submitButton, {
-        patientUuid: savedPatientUuid ?? updatedFormValues.patientUuid,
-      });
+      const savedOrExistingPatientUuid = savedPatientUuid ?? updatedFormValues.patientUuid;
+      const afterUrl = resolveRegistrationAfterUrl(rawAfterUrl, savedOrExistingPatientUuid);
+      const redirectUrl =
+        afterUrl ?? interpolateUrl(config.links.submitButton, { patientUuid: savedOrExistingPatientUuid });
 
       setTarget(redirectUrl);
     } catch (error: unknown) {
@@ -504,23 +506,104 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
           kind: 'error',
         });
       } else {
-        const trustedDomainMessage = getTrustedRegistrationDomainMessage(error);
+        const existingPatientUuid = getExistingPatientUuid(error);
+        if (patientCreationSafetyMessage) {
+          logError(error, 'Patient registration submission failed');
+        }
         showSnackbar({
           title: errorTitle,
           subtitle:
-            trustedDomainMessage ??
             patientCreationSafetyMessage ??
             getUserFacingErrorMessage(
               error,
-              t(
-                'patientSaveSafeError',
-                'Could not save the patient details. Try again or contact the system administrator.',
-              ),
+              t('unexpectedRegistrationError', 'The patient could not be saved. Please try again.'),
               {
-                logContext: inEditMode ? 'Update patient registration' : 'Create patient registration',
+                codeMessages: {
+                  [registrationErrorCodes.clinicalConfigurationMissing]: t(
+                    'registrationClinicalConfigurationError',
+                    'The clinical information could not be saved because the system configuration is incomplete. Contact the system administrator.',
+                  ),
+                  [registrationErrorCodes.duplicatePatientDocument]: t(
+                    'duplicatePatientDocumentError',
+                    'A patient already exists with this document. Find the existing patient before registering a new one.',
+                  ),
+                  [registrationErrorCodes.duplicatePersonDocument]: t(
+                    'duplicatePersonDocumentError',
+                    'A person already exists with this document. Use person promotion to avoid a duplicate.',
+                  ),
+                  [registrationErrorCodes.identifierLocationRequired]: t(
+                    'sessionLocationRequiredSubtitle',
+                    'Choose your current care location from the top navigation before registering the patient.',
+                  ),
+                  [registrationErrorCodes.identifierRetryDeleteUnavailable]: t(
+                    'identifierRetryDeleteError',
+                    'An identifier was removed during a retry. Reload the patient and try again.',
+                  ),
+                  [registrationErrorCodes.identifierRetryUpdateUnavailable]: t(
+                    'identifierRetryUpdateError',
+                    'Identification data changed during a retry. Reload the patient and try again.',
+                  ),
+                  [registrationErrorCodes.identityVerificationMismatch]: t(
+                    'identityVerificationMismatchError',
+                    "The person's information does not match the identity verification source. Resolve the discrepancy before promoting them.",
+                  ),
+                  [registrationErrorCodes.partialCreateIdentifierChanged]: t(
+                    'partialRegistrationIdentifiersChangedError',
+                    'The patient was partially created and the identification data changed. Open the existing patient to update the identification.',
+                  ),
+                  [registrationErrorCodes.partialSavePatientChanged]: t(
+                    'partialRegistrationDataChangedError',
+                    'The patient was partially saved and the information changed. Reload the patient before continuing.',
+                  ),
+                  [registrationErrorCodes.promotionAlreadyPatient]: t(
+                    'promotionAlreadyPatientError',
+                    'This person is already registered as a patient. Find the existing patient instead of registering them again.',
+                  ),
+                  [registrationErrorCodes.promotionDocumentMismatch]: t(
+                    'promotionDocumentMismatchError',
+                    "The entered document does not match the selected person's document. Review it or clear the promotion and search again.",
+                  ),
+                  [registrationErrorCodes.promotionOffline]: t(
+                    'promotionOfflineSubtitle',
+                    'Promoting an existing person to patient requires a connection.',
+                  ),
+                  [registrationErrorCodes.relationshipPersonRequired]: t(
+                    'relationshipPersonRequiredError',
+                    'Select or register a person before saving the relationship.',
+                  ),
+                  [registrationErrorCodes.relationshipRetryChanged]: t(
+                    'relationshipRetryChangedError',
+                    'The relationship changed after it was partially saved. Restore the previous information or reload before trying again.',
+                  ),
+                  [registrationErrorCodes.relationshipUpdateInvalid]: t(
+                    'relationshipUpdateInvalidError',
+                    'The relationship cannot be updated because its saved identifier is missing. Reload and try again.',
+                  ),
+                  [registrationErrorCodes.responsiblePersonCreationFailed]: t(
+                    'responsiblePersonCreationError',
+                    'The related person could not be saved. Try again.',
+                  ),
+                } satisfies Record<RegistrationErrorCode, string>,
+                logContext: 'Patient registration submission failed',
+                statusMessages: {
+                  400: t('invalidRegistrationData', 'Some information is invalid. Review the form and try again.'),
+                  403: t('registrationForbidden', 'You do not have permission to save this patient.'),
+                  409: t('duplicatePatientConflict', 'This patient conflicts with an existing record.'),
+                },
               },
             ),
           kind: outcomeIsAmbiguous ? 'warning' : 'error',
+          ...(existingPatientUuid
+            ? {
+                actionButtonLabel: t('identityLookupOpenPatient', 'Open existing patient'),
+                onActionButtonClick: () =>
+                  navigate({
+                    to: interpolateUrl(config.links.submitButton, {
+                      patientUuid: encodeURIComponent(existingPatientUuid),
+                    }),
+                  }),
+              }
+            : {}),
         });
       }
 
@@ -617,6 +700,12 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   };
 
   const initialDataError = initialFormState.error ?? initialAddressState.error ?? patientUuidMapState.error;
+  useEffect(() => {
+    if (initialDataError) {
+      logError(initialDataError, 'Patient registration initial data failed');
+    }
+  }, [initialDataError]);
+
   const hasStaleInitialData = [initialFormState, initialAddressState, patientUuidMapState].some(
     (state) => state.hydratedPatientUuid && state.hydratedPatientUuid !== patientUuidToEdit,
   );
@@ -642,7 +731,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
         subtitle={getUserFacingErrorMessage(
           initialDataError,
           t('patientRegistrationLoadErrorSubtitle', 'Recargue la página o contacte al administrador del sistema.'),
-          { logContext: 'Load patient registration' },
+          { log: false },
         )}
       />
     );
@@ -675,7 +764,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
               // user should be blocked to register the patient.
               disabled={
                 !currentSession ||
-                !currentSession.sessionLocation?.uuid ||
+                isSessionLocationMissing ||
                 areIdentifiersUnavailableForSubmit(!!Object.keys(props.values.identifiers ?? {}).length) ||
                 isDniNationalityVerificationPending ||
                 isSaveOutcomeAmbiguous ||
@@ -703,6 +792,19 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
         return (
           <Form className={styles.form} noValidate>
             <BeforeSavePrompt when={Object.keys(props.touched).length > 0} redirect={target} />
+            {isSessionLocationMissing ? (
+              <InlineNotification
+                className={styles.sessionLocationWarning}
+                hideCloseButton
+                kind="warning"
+                lowContrast
+                title={t('sessionLocationRequiredTitle', 'Select a session location')}
+                subtitle={t(
+                  'sessionLocationRequiredSubtitle',
+                  'Choose your current care location from the top navigation before registering the patient.',
+                )}
+              />
+            ) : null}
             {isSaveOutcomeAmbiguous && (
               <InlineNotification
                 hideCloseButton

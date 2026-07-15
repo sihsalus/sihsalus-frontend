@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig, useSession } from '@openmrs/esm-framework';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import {
   mockLocationSurgery,
   mockLocationTriage,
@@ -43,6 +43,10 @@ vi.mock('../hooks/useQueueEntries', async () => ({
   useQueueEntries: vi.fn(),
 }));
 
+vi.mock('./queue-table.scss', () => ({
+  default: new Proxy({}, { get: (_target, property) => String(property) }),
+}));
+
 describe('DefaultQueueTable', () => {
   beforeEach(() => {
     mockUseConfig.mockReturnValue({
@@ -72,6 +76,11 @@ describe('DefaultQueueTable', () => {
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByText(/patients currently in queue/i)).toBeInTheDocument();
     expect(screen.getByText(/no patients to display/i)).toBeInTheDocument();
+
+    const queueTableCard = screen.getByTestId('queue-table-card');
+    expect(queueTableCard).toHaveClass('container');
+    expect(within(queueTableCard).getByRole('table')).toBeInTheDocument();
+    expect(within(queueTableCard).getByTestId('queue-empty-state')).toBeInTheDocument();
   });
 
   it('renders a tabular overview of visit queue entry data when available', async () => {

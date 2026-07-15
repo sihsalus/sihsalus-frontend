@@ -2,6 +2,7 @@ import { Layer, Loading, Tile } from '@carbon/react';
 import React, { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useLogPatientSearchError } from '../hooks/useLogPatientSearchError';
 import { type PatientSearchResponse } from '../types';
 import EmptyDataIllustration from '../ui-components/empty-data-illustration.component';
 
@@ -17,6 +18,7 @@ const PatientSearch = React.forwardRef<HTMLDivElement, PatientSearchProps>(
   ({ data: searchResults, fetchError, hasMore, isLoading, isValidating, setPage, totalResults }, ref) => {
     const { t } = useTranslation();
     const observer = useRef(null);
+    useLogPatientSearchError(fetchError, 'Compact patient search request failed');
 
     const loadingIconRef = useCallback(
       (node: HTMLDivElement | null) => {
@@ -72,7 +74,7 @@ const PatientSearch = React.forwardRef<HTMLDivElement, PatientSearchProps>(
                 <p className={styles.errorCopy}>
                   {t(
                     'errorCopy',
-                    'Sorry, there was an error. You can try to reload this page, or contact the site administrator and quote the error code above.',
+                    'Sorry, there was an error. Please try again or contact the site administrator.',
                   )}
                 </p>
               </div>

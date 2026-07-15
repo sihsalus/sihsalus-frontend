@@ -1,4 +1,4 @@
-import { type FetchResponse, openmrsFetch, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
+import { type FetchResponse, logError, openmrsFetch, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWRImmutable from 'swr/immutable';
@@ -25,7 +25,13 @@ function useConceptErrorSnackbar(error: Error | undefined) {
   const { t } = useTranslation(moduleName);
 
   useEffect(() => {
-    if (error && !isForbiddenConceptError(error)) {
+    if (!error) {
+      return;
+    }
+
+    logError(error, 'Patient registration concept request failed');
+
+    if (!isForbiddenConceptError(error)) {
       showSnackbar({
         title: t('conceptCatalogLoadErrorTitle', 'No se pudo cargar el catálogo configurado'),
         subtitle: t('conceptCatalogLoadErrorSubtitle', 'Intente nuevamente o contacte al administrador del sistema.'),

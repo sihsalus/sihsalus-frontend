@@ -36,10 +36,15 @@ export class PatientImportUserError extends Error {
   }
 }
 
-export function getImportErrorMessage(error: unknown, fallback: string, logContext: string) {
+export function getImportErrorMessage(
+  error: unknown,
+  fallback: string,
+  logContext: string,
+  options: { log?: boolean } = {},
+) {
   return error instanceof PatientImportUserError
     ? error.message
-    : getUserFacingErrorMessage(error, fallback, { logContext });
+    : getUserFacingErrorMessage(error, fallback, { log: options.log, logContext });
 }
 
 const headerAliases: Record<SantaClotildeHeader, Array<string>> = {

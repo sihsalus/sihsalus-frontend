@@ -70,7 +70,7 @@ const RecentlySearchedPatients = React.forwardRef<HTMLDivElement, RecentPatientS
                 <p className={styles.errorCopy}>
                   {t(
                     'errorCopy',
-                    'Sorry, there was an error. You can try to reload this page, or contact the site administrator and quote the error code above.',
+                    'Sorry, there was an error. Please try again or contact the site administrator.',
                   )}
                 </p>
               </div>

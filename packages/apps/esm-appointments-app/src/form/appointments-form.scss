@@ -4,6 +4,12 @@
 
 $openmrs-background-grey: #ededed;
 
+// Same required-field marker used by patient registration.
+.requiredLabel::after {
+  content: ' *';
+  color: colors.$red-60;
+}
+
 .formGroup {
   display: flex;
   margin-bottom: layout.$spacing-02;

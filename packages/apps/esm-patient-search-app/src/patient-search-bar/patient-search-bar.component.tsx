@@ -9,12 +9,13 @@ interface PatientSearchBarProps {
   initialSearchTerm?: string;
   onChange?: (searchTerm: string) => void;
   onClear: () => void;
+  onInputFocus?: React.FocusEventHandler<HTMLInputElement>;
   onSubmit: (searchTerm: string) => void;
   isCompact?: boolean;
 }
 
 const PatientSearchBar = React.forwardRef<HTMLInputElement, React.PropsWithChildren<PatientSearchBarProps>>(
-  ({ buttonProps, initialSearchTerm = '', onChange, onClear, onSubmit, isCompact }, ref) => {
+  ({ buttonProps, initialSearchTerm = '', onChange, onClear, onInputFocus, onSubmit, isCompact }, ref) => {
     const { t } = useTranslation();
     const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
     const responsiveSize = isCompact ? 'sm' : 'lg';
@@ -47,6 +48,7 @@ const PatientSearchBar = React.forwardRef<HTMLInputElement, React.PropsWithChild
           labelText=""
           onChange={(event) => handleChange(event.target.value)}
           onClear={onClear}
+          onFocus={onInputFocus}
           placeholder={t('searchForPatient', 'Search for a patient by name or identifier number')}
           ref={ref}
           size={responsiveSize}

@@ -18,8 +18,8 @@ import {
   validatingLocationSuccessResponse,
 } from '../../../../test-utils/mocks/locations.mock';
 import { mockConfig } from '../../../../test-utils/mocks/login-config.mock';
-import renderWithRouter from '../test-helpers/render-with-router';
 import { hardNavigate } from '../navigation';
+import renderWithRouter from '../test-helpers/render-with-router';
 
 import { useDefaultLocation, useLocationCount } from './location-picker.resource';
 import LocationPickerView from './location-picker-view.component';

@@ -1,6 +1,6 @@
 import { Button, ButtonSet, Column, Grid, InlineLoading, InlineNotification, Modal, Stack, Tag } from '@carbon/react';
 import { Download, Upload } from '@carbon/react/icons';
-import { showSnackbar } from '@openmrs/esm-framework';
+import { logError, showSnackbar } from '@openmrs/esm-framework';
 import React, { useContext, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -30,7 +30,7 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
   const { currentSession, identifierTypes, isLoadingIdentifierTypes } = useContext(ResourcesContext);
   const locationUuid = currentSession?.sessionLocation?.uuid;
   const [rows, setRows] = useState<Array<ParsedPatientImportRow>>([]);
-  const [parseError, setParseError] = useState('');
+  const [hasParseError, setHasParseError] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -57,23 +57,24 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
 
     setIsParsing(true);
     setRows([]);
-    setParseError('');
+    setHasParseError(false);
     setCurrentImportRow(0);
 
     try {
       const parsedRows = await parseSantaClotildeWorkbook(file);
       setRows(parsedRows);
     } catch (error: unknown) {
-      setParseError(
-        getImportErrorMessage(
-          error,
-          t(
-            'bulkPatientImportParseFailureSafe',
-            'No se pudo procesar el archivo. Verifique que use la plantilla vigente e intente nuevamente.',
-          ),
-          'Parse bulk patient import workbook',
+      logError(error, 'Bulk patient import file parsing failed');
+      getImportErrorMessage(
+        error,
+        t(
+          'bulkPatientImportParseFailureSafe',
+          'No se pudo procesar el archivo. Verifique que use la plantilla vigente e intente nuevamente.',
         ),
+        'Bulk patient import file parsing failed',
+        { log: false },
       );
+      setHasParseError(true);
     } finally {
       setIsParsing(false);
       event.target.value = '';
@@ -98,6 +99,7 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
           importMessage: t('bulkPatientImportCreatedMessage', 'Paciente creado.'),
         });
       } catch (error) {
+        logError(error, `Bulk patient import failed for row ${row.rowNumber}`);
         updateRow(row.id, {
           status: 'failed',
           importMessage: getImportErrorMessage(
@@ -106,7 +108,8 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
               'bulkPatientImportRowFailureSafe',
               'No se pudo confirmar la creación de esta fila. Busque al paciente por documento antes de reintentar.',
             ),
-            'Create patient from bulk import row',
+            `Bulk patient import failed for row ${row.rowNumber}`,
+            { log: false },
           ),
         });
       }
@@ -178,12 +181,12 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
 
           {isParsing ? <InlineLoading description={t('bulkPatientImportParsing', 'Leyendo archivo...')} /> : null}
 
-          {parseError ? (
+          {hasParseError ? (
             <InlineNotification
               kind="error"
               lowContrast
               title={t('bulkPatientImportParseErrorTitle', 'No se pudo leer el archivo')}
-              subtitle={parseError}
+              subtitle={t('refreshOrContactAdmin', 'Try refreshing the page or contact your system administrator')}
             />
           ) : null}
 

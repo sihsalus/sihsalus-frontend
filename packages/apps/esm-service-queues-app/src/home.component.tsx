@@ -1,6 +1,7 @@
 import { ExtensionSlot } from '@openmrs/esm-framework';
 import React from 'react';
 import ClinicMetrics from './metrics/metrics-container.component';
+import MetricsHeader from './metrics/metrics-header.component';
 import PatientQueueHeader from './patient-queue-header/patient-queue-header.component';
 import DefaultQueueTable from './queue-table/default-queue-table.component';
 
@@ -12,6 +13,7 @@ const Home: React.FC = () => {
       <ExtensionSlot name="service-queues-emergency-alerts-slot" />
       <ExtensionSlot name="service-queues-emergency-priority-cards-slot" />
       <div data-standard-metrics-container>
+        <MetricsHeader />
         <ClinicMetrics />
       </div>
       <ExtensionSlot name="service-queues-emergency-metrics-slot" />

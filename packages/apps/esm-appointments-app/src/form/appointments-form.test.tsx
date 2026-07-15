@@ -26,7 +26,11 @@ import {
 } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../config-schema';
-import { appointmentIssuedDateEditPrivilege, appointmentNoteMaxLength } from '../constants';
+import {
+  appointmentIssuedDateEditPrivilege,
+  appointmentNoteMaxLength,
+  appointmentStartDateEditPrivilege,
+} from '../constants';
 import { useProviders } from '../hooks/useProviders';
 import { getAppointmentStatus } from '../patient-appointments/patient-appointments.resource';
 import { type Appointment, AppointmentKind, AppointmentStatus } from '../types';
@@ -1226,6 +1230,28 @@ describe('AppointmentForm', () => {
     expect(screen.getByTestId('dateAppointmentScheduledPickerInput')).toHaveAttribute('readonly');
   });
 
+  it('keeps the appointment start date read-only without the start-date privilege', async () => {
+    mockOpenmrsFetch.mockResolvedValue(mockUseAppointmentServiceData as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+
+    expect(mockUserHasAccess).toHaveBeenCalledWith(appointmentStartDateEditPrivilege, mockSession.data.user);
+    expect(screen.getByTestId('datePickerInput')).toHaveAttribute('readonly');
+  });
+
+  it('allows editing the appointment start date with the start-date privilege', async () => {
+    mockUserHasAccess.mockImplementation((privilege) => privilege === appointmentStartDateEditPrivilege);
+    mockOpenmrsFetch.mockResolvedValue(mockUseAppointmentServiceData as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.getByTestId('datePickerInput')).not.toHaveAttribute('readonly');
+  });
+
   it('persists an authorized appointment issue date change', async () => {
     const user = userEvent.setup();
     const appointment = makeEditableAppointment();
@@ -1291,6 +1317,34 @@ describe('AppointmentForm', () => {
     expect(dayjs(mockSaveAppointment.mock.calls[0][0].dateAppointmentScheduled).format('DD/MM/YYYY')).toBe(
       trustedIssueDate,
     );
+  });
+
+  it('preselects the responsible provider from the session when the user has a provider account', async () => {
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      currentProvider: { ...mockSession.data.currentProvider, uuid: mockProviders.data[0].uuid },
+    } as ReturnType<typeof useSession>);
+    mockOpenmrsFetch.mockResolvedValue(mockUseAppointmentServiceData as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.getByRole('combobox', { name: /select a provider/i })).toHaveValue(mockProviders.data[0].uuid);
+  });
+
+  it('leaves the responsible provider unselected when the user has no provider account', async () => {
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      currentProvider: undefined,
+    } as unknown as ReturnType<typeof useSession>);
+    mockOpenmrsFetch.mockResolvedValue(mockUseAppointmentServiceData as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.getByRole('combobox', { name: /select a provider/i })).toHaveValue('');
   });
 
   it('preserves the original issue date when a read-only form value is tampered with', async () => {

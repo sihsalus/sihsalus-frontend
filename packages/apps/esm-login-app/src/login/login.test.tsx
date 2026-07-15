@@ -10,8 +10,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { mockConfig } from '../../../../test-utils/mocks/login-config.mock';
-import renderWithRouter from '../test-helpers/render-with-router';
 import { hardNavigate } from '../navigation';
+import renderWithRouter from '../test-helpers/render-with-router';
 
 import Login, { type LoginReferrer } from './login.component';
 

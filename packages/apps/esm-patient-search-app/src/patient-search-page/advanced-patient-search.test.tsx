@@ -144,6 +144,52 @@ describe('AdvancedPatientSearchComponent', () => {
     expect(screen.getByText(/2 search result/)).toBeInTheDocument();
   });
 
+  it('uses the configured deceased-patient search policy', () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      includeDead: false,
+    } as PatientSearchConfig);
+
+    renderComponent();
+
+    expect(mockUseInfinitePatientSearch).toHaveBeenCalledWith('Jos', false, true, 50);
+  });
+
+  it('keeps fetching server pages while the last page reports more results', () => {
+    const setPage = vi.fn();
+    mockUseInfinitePatientSearch.mockReturnValue({ ...mockSearchResults, hasMore: true, setPage });
+
+    renderComponent();
+
+    expect(setPage).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['a page is still loading', { isLoading: true }],
+    ['a page is validating', { isValidating: true }],
+    ['a page failed to fetch', { fetchError: new Error('SQL timeout') }],
+  ])('does not request another server page while %s', (_description, state) => {
+    const setPage = vi.fn();
+    mockUseInfinitePatientSearch.mockReturnValue({ ...mockSearchResults, hasMore: true, setPage, ...state });
+
+    renderComponent();
+
+    expect(setPage).not.toHaveBeenCalled();
+  });
+
+  it('does not offer patient registration in an embedded selection context', () => {
+    mockUseInfinitePatientSearch.mockReturnValue({
+      ...mockSearchResults,
+      data: [],
+      totalResults: 0,
+    });
+
+    renderComponent();
+
+    expect(screen.getByText(/no patient charts were found/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /add patient/i })).not.toBeInTheDocument();
+  });
+
   it('does not show postcode or telephone filters by default', () => {
     renderComponent();
 
@@ -289,7 +335,7 @@ describe('AdvancedPatientSearchComponent', () => {
       await user.click(screen.getByRole('button', { name: /search/i }));
 
       await waitFor(() => {
-        expect(mockUseInfinitePatientSearch).toHaveBeenLastCalledWith('10000001', false, true, 50);
+        expect(mockUseInfinitePatientSearch).toHaveBeenLastCalledWith('10000001', true, true, 50);
       });
     });
 

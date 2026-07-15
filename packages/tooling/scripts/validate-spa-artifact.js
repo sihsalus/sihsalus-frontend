@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const chalk = require('chalk');
+const { findUnboundReactReferences } = require('./javascript-runtime-contract');
 const { formatSpaArtifactIssue, getSpaArtifactFiles, inspectSpaArtifacts } = require('./spa-artifact-manifest');
 
 const logInfo = (msg) => console.log(`${chalk.green.bold('[validate-spa]')} ${msg}`);
@@ -106,11 +107,26 @@ if (modulesWithoutRoutes.length > 0) {
   }
 }
 
-const appShellJavaScript = fs
+const appShellJavaScriptFiles = fs
   .readdirSync(outDir, { withFileTypes: true })
   .filter((entry) => entry.isFile() && entry.name.endsWith('.js'))
-  .map((entry) => fs.readFileSync(path.join(outDir, entry.name), 'utf8'))
-  .join('\n');
+  .map((entry) => ({
+    name: entry.name,
+    source: fs.readFileSync(path.join(outDir, entry.name), 'utf8'),
+  }));
+const appShellJavaScript = appShellJavaScriptFiles.map(({ source }) => source).join('\n');
+
+for (const { name, source } of appShellJavaScriptFiles) {
+  try {
+    const unboundReactReferences = findUnboundReactReferences(source);
+    if (unboundReactReferences.length > 0) {
+      fail(`${name} contains ${unboundReactReferences.length} unresolved React global reference(s)`);
+    }
+  } catch (error) {
+    fail(`${name} could not be checked for unresolved runtime globals: ${error.message}`);
+  }
+}
+
 const forbiddenAppShellCopy = [
   'Offline Setup Error',
   'Oops! An unexpected error occurred.',

@@ -1,9 +1,10 @@
 import { useLeftNav } from '@openmrs/esm-framework';
+import { modulePrivileges, RequireModulePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import Dashboard from './dashboard/home-dashboard.component';
 
-const Root: React.FC = () => {
+const StockManagementContent: React.FC = () => {
   const spaBasePath = `${window.spaBase}/stock-management`;
 
   useLeftNav({
@@ -22,5 +23,11 @@ const Root: React.FC = () => {
     </main>
   );
 };
+
+const Root: React.FC = () => (
+  <RequireModulePrivilege privilege={modulePrivileges.stockManagement}>
+    <StockManagementContent />
+  </RequireModulePrivilege>
+);
 
 export default Root;

@@ -143,6 +143,7 @@
       "name": "stock-management-app-menu-item",
       "slot": "app-menu-item-slot",
       "component": "stockManagementAppMenuItem",
+      "privileges": "app:gestionInventario",
       "order": 30
     },
     {

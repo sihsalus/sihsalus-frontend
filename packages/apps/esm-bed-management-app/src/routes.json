@@ -20,6 +20,7 @@
       "component": "bedManagementAppMenuItem",
       "name": "bed-management-app-menu-item",
       "slot": "app-menu-item-slot",
+      "privileges": "app:administracionCamas",
       "order": 95
     },
     {

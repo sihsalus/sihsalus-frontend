@@ -1,5 +1,5 @@
 import { useLeftNav } from '@openmrs/esm-framework';
-import { AppErrorBoundary } from '@sihsalus/esm-rbac';
+import { AppErrorBoundary, modulePrivileges, RequireModulePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
@@ -20,7 +20,7 @@ function getOpenmrsSpaBase(): string {
   return typeof value === 'string' ? value : '';
 }
 
-const Root: React.FC = () => {
+const BedManagementContent: React.FC = () => {
   const spaBasePath = getSpaBasePath();
   const bedManagementBasename = `${getOpenmrsSpaBase()}bed-management`;
 
@@ -46,5 +46,11 @@ const Root: React.FC = () => {
     </AppErrorBoundary>
   );
 };
+
+const Root: React.FC = () => (
+  <RequireModulePrivilege privilege={modulePrivileges.bedManagement}>
+    <BedManagementContent />
+  </RequireModulePrivilege>
+);
 
 export default Root;

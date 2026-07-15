@@ -16,8 +16,8 @@ describe('active visits route privilege contract', () => {
     expect(extension('visit-summary-widget')).toMatchObject({ privileges: chartPrivilege });
   });
 
-  it('keeps aggregate visit metrics available without chart access', () => {
-    expect(extension('active-visits-tile')).not.toHaveProperty('privileges');
-    expect(extension('total-visits-tile')).not.toHaveProperty('privileges');
+  it('protects both aggregate visit metrics with the same privilege as their table', () => {
+    expect(extension('active-visits-tile')).toMatchObject({ privileges: activeVisitsPrivilege });
+    expect(extension('total-visits-tile')).toMatchObject({ privileges: activeVisitsPrivilege });
   });
 });

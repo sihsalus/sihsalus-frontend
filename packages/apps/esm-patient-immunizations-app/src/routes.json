@@ -12,7 +12,7 @@
       "order": 35,
       "online": true,
       "offline": true,
-      "privileges": "app:hoja.clinica.inmunizaciones.editar"
+      "privileges": "app:gestorCalendarioVacunacion"
     },
     {
       "name": "vacunacion-overview-widget",

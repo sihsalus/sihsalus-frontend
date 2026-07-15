@@ -11,6 +11,7 @@
       "name": "reports-app-menu-item",
       "slot": "app-menu-item-slot",
       "component": "reportsAppMenuItem",
+      "privileges": "app:reportes",
       "order": 50
     },
     {

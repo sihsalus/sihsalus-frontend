@@ -58,7 +58,8 @@
       "slot": "app-menu-item-slot",
       "meta": {
         "name": "Billable Services"
-      }
+      },
+      "privileges": "app:serviciosFacturables"
     },
     {
       "slot": "legacy-system-admin-page-card-link-slot",

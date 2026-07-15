@@ -73,6 +73,7 @@
     "vitest": "^4.1.7"
   },
   "dependencies": {
+    "@sihsalus/esm-rbac": "workspace:*",
     "dotenv": "^16.4.7",
     "playwright": "^1.50.1",
     "react-hook-form": "^7.34.2",

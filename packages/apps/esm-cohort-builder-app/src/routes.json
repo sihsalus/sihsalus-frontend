@@ -20,6 +20,7 @@
       "slot": "app-menu-item-slot",
       "component": "cohortBuilderAppMenuItem",
       "order": 40,
+      "privileges": "app:constructorCohortes",
       "online": true,
       "offline": true
     }

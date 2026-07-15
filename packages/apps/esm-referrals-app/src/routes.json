@@ -14,6 +14,7 @@
       "name": "referrals-app-menu-item",
       "component": "referralsAppMenuItem",
       "slot": "app-menu-item-slot",
+      "privileges": "app:referencias",
       "order": 15
     }
   ],

@@ -18,7 +18,8 @@
       "component": "offlineToolsAppMenuItem",
       "order": 80,
       "online": true,
-      "offline": true
+      "offline": true,
+      "privileges": "app:herramientasSinInternet"
     },
     {
       "name": "offline-tools-nav-items",

@@ -26,7 +26,7 @@
       "@openmrs/esm-translations/src/public": ["../../../node_modules/@openmrs/esm-translations/dist/public"],
       "@openmrs/esm-styleguide": ["../esm-audit-logger/types/styleguide-stub"],
       "@openmrs/esm-styleguide/src/internal": ["../esm-audit-logger/types/styleguide-stub"],
-      "@openmrs/esm-styleguide/src/public": ["../esm-audit-logger/types/styleguide-stub"],
+      "@openmrs/esm-styleguide/src/public": ["../../../node_modules/@openmrs/esm-styleguide/dist/public"],
       "@openmrs/esm-styleguide/src/*": ["../esm-audit-logger/types/styleguide-stub"]
     }
   }

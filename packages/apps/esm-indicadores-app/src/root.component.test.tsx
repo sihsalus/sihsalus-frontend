@@ -1,5 +1,8 @@
 import { render } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import RootComponent from './root.component';
+
+const mockRequireModulePrivilege = vi.hoisted(() => vi.fn(({ children }: { children: ReactNode }) => <>{children}</>));
 
 vi.mock('./hooks/useIndicatorsHealth', () => ({
   useIndicatorsHealth: vi.fn(),
@@ -10,7 +13,9 @@ vi.mock('./api/mock-mode', () => ({
 }));
 
 vi.mock('@sihsalus/esm-rbac', () => ({
-  AppErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  AppErrorBoundary: ({ children }: { children: ReactNode }) => <>{children}</>,
+  modulePrivileges: { indicators: 'app:indicadores' },
+  RequireModulePrivilege: (props: { children: ReactNode; privilege: string }) => mockRequireModulePrivilege(props),
 }));
 
 import { useIndicatorsHealth } from './hooks/useIndicatorsHealth';
@@ -26,6 +31,7 @@ describe('RootComponent health-check wiring', () => {
   it('calls useIndicatorsHealth on mount', () => {
     render(<RootComponent />);
     expect(mockUseIndicatorsHealth).toHaveBeenCalledTimes(1);
+    expect(mockRequireModulePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'app:indicadores' }));
   });
 
   it('calls useIndicatorsHealth exactly once after re-render', () => {

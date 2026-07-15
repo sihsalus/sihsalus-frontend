@@ -4,7 +4,7 @@
 
 .quickActions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(12.5rem, 100%), 20rem));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   justify-content: start;
   gap: layout.$spacing-04;
   max-width: 100%;
@@ -28,6 +28,7 @@
   width: 100%;
   max-width: 20rem;
   max-height: 20rem;
+  justify-self: center;
   min-height: 0;
   min-width: 0;
   padding: layout.$spacing-05;
@@ -178,6 +179,12 @@
   .actionIllustration {
     width: clamp(5.25rem, 58%, 7.25rem);
     height: clamp(5.25rem, 58%, 7.25rem);
+  }
+}
+
+@media (max-width: 64rem) {
+  .quickActions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

@@ -23,10 +23,9 @@ import {
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { CardHeader, EmptyState, ErrorState, useFilteredEncounter } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFilteredEncounter } from '../../hooks/useFilteredEncounter';
 import { formEntryWorkspace } from '../../types';
 
 import ObservationGroupDetails, { type ObservationGroup } from './observation-group-details.component';

@@ -62,11 +62,7 @@ describe('NotesOverview', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /notes/i })).toBeInTheDocument();
     expect(screen.queryByText(/Error 401: Unauthorized/i)).not.toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /there was a problem displaying this information/i,
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/there was a problem displaying this information/i)).toBeInTheDocument();
   });
 
   test("renders a tabular overview of the patient's visit notes when present", async () => {

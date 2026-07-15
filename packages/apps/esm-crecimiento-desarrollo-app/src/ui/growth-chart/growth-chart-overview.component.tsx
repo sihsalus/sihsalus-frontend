@@ -29,8 +29,7 @@ const GrowthChartOverview: React.FC<GrowthChartProps> = ({ patient, patientUuid 
   const formWorkspace = 'patient-vitals-biometrics-form-workspace';
   const session = useSession();
   const canEdit =
-    userHasAccess(credNeonatalEditPrivilege, session?.user) ||
-    userHasAccess(credWellChildEditPrivilege, session?.user);
+    userHasAccess(credNeonatalEditPrivilege, session?.user) || userHasAccess(credWellChildEditPrivilege, session?.user);
 
   // Estado para controlar el modo de visualización (percentiles vs z-scores)
   const [isPercentiles, setIsPercentiles] = useState(true);

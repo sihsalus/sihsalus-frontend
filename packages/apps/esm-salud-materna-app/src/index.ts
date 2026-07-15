@@ -1,8 +1,10 @@
 import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
-import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
+import {
+  createClinicalDashboardGroup as createDashboardGroup,
+  createDashboardLink,
+} from '@openmrs/esm-patient-common-lib';
 import type React from 'react';
 
-import { createDashboardGroup } from './clinical-view-group/createDashboardGroup';
 import { configSchema } from './config-schema';
 
 // Maternal and Child Health Components

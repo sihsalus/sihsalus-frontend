@@ -12,10 +12,7 @@ describe('hasClinicalChartAccess', () => {
       'localized System Developer role',
       { privileges: [], roles: [{ name: 'System Developer', display: 'Desarrollador del sistema' }] },
     ],
-    [
-      'inherited superuser role',
-      { privileges: [], roles: [{ display: 'Application: Has Super User Privileges' }] },
-    ],
+    ['inherited superuser role', { privileges: [], roles: [{ display: 'Application: Has Super User Privileges' }] }],
   ])('allows access for %s', (_case, user) => {
     expect(hasClinicalChartAccess(user)).toBe(true);
   });
@@ -24,10 +21,7 @@ describe('hasClinicalChartAccess', () => {
     ['no user', undefined],
     ['no privileges', { privileges: [], roles: [] }],
     ['only a child privilege', { privileges: [{ display: 'app:hoja.clinica.resumen' }], roles: [] }],
-    [
-      'unrelated administrative role',
-      { privileges: [], roles: [{ display: 'Organizational: System Administrator' }] },
-    ],
+    ['unrelated administrative role', { privileges: [], roles: [{ display: 'Organizational: System Administrator' }] }],
   ])('denies access for %s', (_case, user) => {
     expect(hasClinicalChartAccess(user)).toBe(false);
   });

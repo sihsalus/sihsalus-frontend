@@ -94,7 +94,9 @@ export function buildOdontogramRecords(
     type: recordType,
     date: encounter.encounterDatetime,
     label:
-      recordType === 'base' ? formatBaseLabel(encounter.encounterDatetime) : formatAttentionLabel(encounter.encounterDatetime),
+      recordType === 'base'
+        ? formatBaseLabel(encounter.encounterDatetime)
+        : formatAttentionLabel(encounter.encounterDatetime),
     data,
     parentBaseEncounterUuid:
       recordType === 'attention' ? getParentBaseEncounterUuidFromEncounter(encounter, config) : undefined,

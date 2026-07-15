@@ -19,9 +19,7 @@ function resourceHasIdentifier(resource: NamedResource, identifiers: ReadonlySet
   );
 }
 
-export function hasClinicalChartAccess(
-  user: ClinicalChartAccessUser | null | undefined,
-): boolean {
+export function hasClinicalChartAccess(user: ClinicalChartAccessUser | null | undefined): boolean {
   if (!user) {
     return false;
   }

@@ -82,10 +82,7 @@ describe('VitalsHeader', () => {
       ...mockSession.data,
       user: {
         ...mockSession.data.user,
-        privileges: [
-          ...mockSession.data.user.privileges,
-          { display: 'app:hoja.clinica.signosVitales.editar' },
-        ],
+        privileges: [...mockSession.data.user.privileges, { display: 'app:hoja.clinica.signosVitales.editar' }],
       },
     } as never);
     mockUseConfig.mockReturnValue({

@@ -93,11 +93,7 @@ describe('ProgramsDetailedSummary', () => {
     await waitForLoadingToFinish();
 
     expect(screen.getByText(/Care Programs/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /there was a problem displaying this information/i,
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/there was a problem displaying this information/i)).toBeInTheDocument();
   });
 
   it('renders a detailed tabular summary of the patient program enrollments', async () => {

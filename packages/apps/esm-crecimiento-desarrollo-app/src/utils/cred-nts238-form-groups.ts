@@ -42,11 +42,7 @@ export const CRED_NTS238_FORM_GROUPS: CREDFormAgeGroup[] = [
     minDays: 0,
     maxDays: 6,
     neonatalControl: 1,
-    forms: [
-      'newbornNeuroEval',
-      'breastfeedingObservation',
-      ...withCommonUnder30Months(),
-    ],
+    forms: ['newbornNeuroEval', 'breastfeedingObservation', ...withCommonUnder30Months()],
   },
   {
     label: 'RN - 7 a 13 días',

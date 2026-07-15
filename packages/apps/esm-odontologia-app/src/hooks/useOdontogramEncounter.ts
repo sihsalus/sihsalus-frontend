@@ -2,7 +2,10 @@ import { useConfig } from '@openmrs/esm-framework';
 import { useState } from 'react';
 
 import type { OdontogramConfig } from '../config-schema';
-import { applyExistingObsUuids, mapToAmpathOdontogramEncounterPayload } from '../odontogram/ampath-form-odontogram-mapper';
+import {
+  applyExistingObsUuids,
+  mapToAmpathOdontogramEncounterPayload,
+} from '../odontogram/ampath-form-odontogram-mapper';
 import type { OdontogramData } from '../odontogram/types/odontogram';
 import { fetchEncounterObs, saveEncounter, updateEncounter } from '../odontogram.resource';
 import type { OdontogramRecordType } from '../types/odontogram-record';

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../../config-schema'; // Ajusta la ruta
 import { credNeonatalEditPrivilege } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
-import { useLatestValidEncounter } from '../../../../hooks/useLatestEncounter'; // Ajusta la ruta
+import { useLatestValidEncounter } from '@openmrs/esm-patient-common-lib';
 import PatientSummaryTable from '../../../../ui/patient-summary-table/patient-summary-table.component';
 
 interface PregnancyBirthProps {

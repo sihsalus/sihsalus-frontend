@@ -2,12 +2,7 @@ import { showSnackbar } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
-import {
-  FuaGenerationError,
-  generateFuaFromVisit,
-  generateFuasFromVisits,
-  useVisits,
-} from '../hooks/useVisit';
+import { FuaGenerationError, generateFuaFromVisit, generateFuasFromVisits, useVisits } from '../hooks/useVisit';
 
 import VisitTable from './visitTable';
 

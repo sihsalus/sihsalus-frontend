@@ -506,9 +506,7 @@ export function getPrescriptionTableEndpoint(
   location: string,
 ): string {
   const normalizedPatientSearchTerm = patientSearchTerm?.trim();
-  const encodedPatientSearchTerm = normalizedPatientSearchTerm
-    ? encodeURIComponent(normalizedPatientSearchTerm)
-    : '';
+  const encodedPatientSearchTerm = normalizedPatientSearchTerm ? encodeURIComponent(normalizedPatientSearchTerm) : '';
 
   if (customPrescriptionsTableEndpoint) {
     return interpolatePrescriptionEndpoint(customPrescriptionsTableEndpoint, {

@@ -169,8 +169,7 @@ export function useInitialFormValues(
     isLoading: isLoadingQueuedRegistration,
     registration: queuedPatientRegistration,
   } = useQueuedPatientRegistration(patientUuid);
-  const hasLoadedServerPatient =
-    !!patientUuid && !isLoadingPatientToEdit && patientToEdit?.id === patientUuid;
+  const hasLoadedServerPatient = !!patientUuid && !isLoadingPatientToEdit && patientToEdit?.id === patientUuid;
   const shouldLoadServerSupplementaryData = !isLoadingQueuedRegistration && hasLoadedServerPatient;
   const serverPatientUuid = shouldLoadServerSupplementaryData ? patientUuid : '';
   const {
@@ -263,8 +262,7 @@ export function useInitialFormValues(
     const estimatedAgeInMonths =
       calculatedAgeInMonths != null ? Math.min(calculatedAgeInMonths, MAX_PATIENT_AGE_YEARS * 12) : null;
     const yearsEstimated = estimatedAgeInMonths != null ? Math.floor(estimatedAgeInMonths / 12) : 0;
-    const monthsEstimated =
-      estimatedMonthsAvailable && estimatedAgeInMonths != null ? estimatedAgeInMonths % 12 : 0;
+    const monthsEstimated = estimatedMonthsAvailable && estimatedAgeInMonths != null ? estimatedAgeInMonths % 12 : 0;
     const deathDatetime = deathInfo?.dead && deathInfo.deathDate ? new Date(deathInfo.deathDate) : undefined;
 
     setInitialFormValues({

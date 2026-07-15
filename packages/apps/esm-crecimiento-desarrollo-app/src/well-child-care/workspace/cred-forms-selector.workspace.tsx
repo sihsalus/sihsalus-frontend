@@ -161,15 +161,7 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
         });
       }
     },
-    [
-      config.CRED?.controlNumber,
-      consultationDatetime,
-      controlNumber,
-      encounters,
-      mutateCREDEncounters,
-      patientUuid,
-      t,
-    ],
+    [config.CRED?.controlNumber, consultationDatetime, controlNumber, encounters, mutateCREDEncounters, patientUuid, t],
   );
   const handleComplete = useCallback(() => {
     void mutateCREDEncounters();

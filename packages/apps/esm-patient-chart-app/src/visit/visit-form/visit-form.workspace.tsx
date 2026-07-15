@@ -1328,10 +1328,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           </div>
         </fieldset>
         {/* Preserve the queue selection used by the first persistence attempt once the visit exists. */}
-        <fieldset
-          className={styles.persistedVisitFields}
-          disabled={Boolean(persistedVisitPendingPostSubmit)}
-        >
+        <fieldset className={styles.persistedVisitFields} disabled={Boolean(persistedVisitPendingPostSubmit)}>
           <Stack gap={1} className={styles.container}>
             <section className={styles.queueSection}>
               <div className={styles.sectionTitle} />

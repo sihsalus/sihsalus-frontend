@@ -28,8 +28,8 @@ const AppointmentTabs: React.FC<AppointmentTabsProps> = ({ appointmentServiceTyp
         <div className={styles.tabs}>
           <Tabs selectedIndex={activeTabIndex} onChange={handleTabChange}>
             <TabList style={{ paddingLeft: '1rem' }} aria-label="Appointment tabs" contained>
-              <Tab className={styles.tab}>{t('scheduled', 'Scheduled')}</Tab>
-              <Tab className={styles.tab}>{t('unscheduled', 'Unscheduled')}</Tab>
+              <Tab className={styles.tab}>{t('scheduledAppointmentsTab', 'Scheduled')}</Tab>
+              <Tab className={styles.tab}>{t('unscheduledAppointmentsTab', 'Unscheduled')}</Tab>
             </TabList>
             <TabPanels>
               <TabPanel className={styles.tabPanel}>

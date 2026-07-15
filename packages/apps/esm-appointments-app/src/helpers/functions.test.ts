@@ -56,8 +56,16 @@ describe('appointment labels', () => {
     expect(getAppointmentKindLabel(AppointmentKind.WALKIN, t)).toBe('Sin cita');
   });
 
-  it('uses the in-progress term in the Spanish appointment status tab', () => {
+  it('uses grammatical Spanish labels for appointment tabs and collections', () => {
     expect(esTranslations.checkedIn).toBe('Cita en progreso');
+    expect(esTranslations.expectedAppointmentsTab).toBe('Esperadas');
+    expect(esTranslations.inProgressAppointmentsTab).toBe('En progreso');
+    expect(esTranslations.completedAppointmentsTab).toBe('Completadas');
+    expect(esTranslations.cancelledAppointmentsTab).toBe('Canceladas');
+    expect(esTranslations.expectedAppointments).toBe('Citas esperadas');
+    expect(esTranslations.appointmentsInProgress).toBe('Citas en progreso');
+    expect(esTranslations.completedAppointments).toBe('Citas completadas');
+    expect(esTranslations.cancelledAppointments).toBe('Citas canceladas');
   });
 
   it('does not expose unknown backend values directly', () => {

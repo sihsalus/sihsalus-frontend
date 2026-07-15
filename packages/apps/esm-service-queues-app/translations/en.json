@@ -38,7 +38,7 @@
   "clearAllQueueEntriesWarningMessage": "Clearing all queue entries will remove  all the patients from the queues",
   "clearQueue": "Clear queue",
   "clearQueueEntries": "Clear queue entries",
-  "clinicMetrics": "Clinic metrics",
+  "clinicMetrics": "Queue service metrics",
   "comment": "Comment",
   "comingFrom": "Coming from",
   "configurePriorities": "Please configure priorities to continue.",

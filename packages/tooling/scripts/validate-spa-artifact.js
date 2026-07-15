@@ -4,7 +4,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const chalk = require('chalk');
-const { hasPatchedAppShellSignature, hasUnpatchedAppShellSignature } = require('./app-shell-runtime-patches');
 const { formatSpaArtifactIssue, getSpaArtifactFiles, inspectSpaArtifacts } = require('./spa-artifact-manifest');
 
 const logInfo = (msg) => console.log(`${chalk.green.bold('[validate-spa]')} ${msg}`);
@@ -107,37 +106,36 @@ if (modulesWithoutRoutes.length > 0) {
   }
 }
 
-const appShellJavaScriptFiles = fs
+const appShellJavaScript = fs
   .readdirSync(outDir, { withFileTypes: true })
   .filter((entry) => entry.isFile() && entry.name.endsWith('.js'))
-  .map((entry) => {
-    const source = fs.readFileSync(path.join(outDir, entry.name), 'utf8');
-    return {
-      name: entry.name,
-      hasRawErrors: hasUnpatchedAppShellSignature(source),
-      isPatchedAppShell: hasPatchedAppShellSignature(source),
-    };
-  });
-const appShellFilesWithRawErrors = appShellJavaScriptFiles.filter(({ hasRawErrors }) => hasRawErrors);
-
-if (appShellFilesWithRawErrors.length > 0) {
-  fail(`App shell still exposes technical errors in: ${appShellFilesWithRawErrors.map(({ name }) => name).join(', ')}`);
+  .map((entry) => fs.readFileSync(path.join(outDir, entry.name), 'utf8'))
+  .join('\n');
+const forbiddenAppShellCopy = [
+  'Offline Setup Error',
+  'Oops! An unexpected error occurred.',
+  'Oops! An unhandled promise rejection occurred.',
+  'No additional information available.',
+];
+for (const text of forbiddenAppShellCopy) {
+  if (appShellJavaScript.includes(text)) {
+    fail(`Source-built app shell still exposes technical copy: ${text}`);
+  }
 }
 
 const requiredSafeAppShellMarkers = [
-  { marker: 'Modo sin conexión no disponible', minimumOccurrences: 1 },
-  { marker: 'Offline setup unavailable', minimumOccurrences: 1 },
-  { marker: 'Ocurrió un error inesperado.', minimumOccurrences: 2 },
-  { marker: 'An unexpected error occurred.', minimumOccurrences: 2 },
-  {
-    marker: 'No se pudo iniciar la aplicación. Intente recargar la página o contacte a soporte.',
-    minimumOccurrences: 1,
-  },
-  {
-    marker: 'The application could not start. Try reloading the page or contact support.',
-    minimumOccurrences: 1,
-  },
+  'Modo sin conexión no disponible',
+  'Offline setup unavailable',
+  'Ocurrió un error inesperado.',
+  'An unexpected error occurred.',
+  'No se pudo iniciar la aplicación. Intente recargar la página o contacte a soporte.',
+  'The application could not start. Try reloading the page or contact support.',
 ];
+for (const marker of requiredSafeAppShellMarkers) {
+  if (!appShellJavaScript.includes(marker)) {
+    fail(`Source-built app shell is missing required safe error handling: ${marker}`);
+  }
+}
 
 function parseWorkboxPrecacheEntries(serviceWorker) {
   const entryPattern =
@@ -153,39 +151,36 @@ function getPrecacheFileName(url) {
   return path.posix.basename(url.split(/[?#]/, 1)[0]);
 }
 
-const runtimePatchManifestPath = path.join(outDir, 'app-shell-runtime-patches.json');
+const revisionManifestPath = path.join(outDir, 'assembled-precache-revisions.json');
 const serviceWorkerPath = path.join(outDir, 'service-worker.js');
-const runtimePatchManifest = invalidRequiredArtifacts.has('app-shell-runtime-patches.json')
+const revisionManifest = invalidRequiredArtifacts.has('assembled-precache-revisions.json')
   ? null
-  : readJson(runtimePatchManifestPath);
+  : readJson(revisionManifestPath);
 const serviceWorker = invalidRequiredArtifacts.has('service-worker.js')
   ? ''
   : fs.readFileSync(serviceWorkerPath, 'utf8');
 const workboxEntries = parseWorkboxPrecacheEntries(serviceWorker);
 const requiredRevisionFiles = getSpaArtifactFiles('precacheRevision');
-const patchedAppShellFiles = appShellJavaScriptFiles
-  .filter(({ isPatchedAppShell }) => isPatchedAppShell)
-  .map(({ name }) => name);
 
 if (workboxEntries.length === 0) {
   fail('service-worker.js does not contain a recognizable Workbox precache manifest');
 }
 
 if (
-  !runtimePatchManifest ||
-  runtimePatchManifest.schemaVersion !== 1 ||
-  runtimePatchManifest.algorithm !== 'sha256' ||
-  !Array.isArray(runtimePatchManifest.files)
+  !revisionManifest ||
+  revisionManifest.schemaVersion !== 1 ||
+  revisionManifest.algorithm !== 'sha256' ||
+  !Array.isArray(revisionManifest.files)
 ) {
-  fail('app-shell-runtime-patches.json does not match the required schema');
+  fail('assembled-precache-revisions.json does not match the required schema');
 } else {
-  const manifestFiles = runtimePatchManifest.files;
+  const manifestFiles = revisionManifest.files;
   const seenFiles = new Set();
   const seenUrls = new Set();
 
   for (const entry of manifestFiles) {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
-      fail('app-shell-runtime-patches.json contains a non-object file entry');
+      fail('assembled-precache-revisions.json contains a non-object file entry');
       continue;
     }
 
@@ -201,12 +196,12 @@ if (
       typeof sha256 !== 'string' ||
       !/^[a-f0-9]{64}$/.test(sha256)
     ) {
-      fail('app-shell-runtime-patches.json contains an invalid file entry');
+      fail('assembled-precache-revisions.json contains an invalid file entry');
       continue;
     }
 
     if (seenFiles.has(file) || seenUrls.has(url)) {
-      fail(`app-shell-runtime-patches.json contains a duplicate entry: ${file}`);
+      fail(`assembled-precache-revisions.json contains a duplicate entry: ${file}`);
       continue;
     }
     seenFiles.add(file);
@@ -236,29 +231,40 @@ if (
     }
   }
 
-  for (const file of [...requiredRevisionFiles, ...patchedAppShellFiles]) {
+  for (const file of requiredRevisionFiles) {
     if (!seenFiles.has(file)) {
-      fail(`app-shell-runtime-patches.json does not revision required file: ${file}`);
+      fail(`assembled-precache-revisions.json does not revision required file: ${file}`);
     }
   }
+}
 
-  if (!manifestFiles.some((entry) => typeof entry?.file === 'string' && entry.file.endsWith('.js'))) {
-    fail('app-shell-runtime-patches.json does not revision any patched app-shell JavaScript bundle');
-  }
+const appShellBuildInfoPath = path.join(outDir, 'app-shell-build-info.json');
+const appShellBuildInfo = invalidRequiredArtifacts.has('app-shell-build-info.json')
+  ? null
+  : readJson(appShellBuildInfoPath);
+if (
+  !appShellBuildInfo ||
+  appShellBuildInfo.schemaVersion !== 1 ||
+  appShellBuildInfo.sourceBuild !== true ||
+  typeof appShellBuildInfo.appShellVersion !== 'string' ||
+  typeof appShellBuildInfo.frameworkVersion !== 'string'
+) {
+  fail('app-shell-build-info.json does not prove a source-built app shell');
+}
 
-  const revisionedAppShellJavaScript = [...seenFiles]
-    .filter((file) => {
-      const filePath = path.join(outDir, file);
-      return file.endsWith('.js') && fs.existsSync(filePath) && fs.statSync(filePath).isFile();
-    })
-    .map((file) => fs.readFileSync(path.join(outDir, file), 'utf8'))
-    .join('\n');
-  for (const { marker, minimumOccurrences } of requiredSafeAppShellMarkers) {
-    const occurrences = revisionedAppShellJavaScript.split(marker).length - 1;
-    if (occurrences < minimumOccurrences) {
-      fail(`App shell is missing required safe error handling: ${marker}`);
-    }
-  }
+const pwaManifestPath = path.join(outDir, 'manifest.webmanifest');
+const pwaManifest = invalidRequiredArtifacts.has('manifest.webmanifest') ? null : readJson(pwaManifestPath);
+if (
+  !pwaManifest ||
+  pwaManifest.name !== 'SIH.SALUS' ||
+  pwaManifest.short_name !== 'SIH.SALUS' ||
+  pwaManifest.description !== 'Sistema de información en salud' ||
+  pwaManifest.theme_color !== '#27348b' ||
+  !Array.isArray(pwaManifest.icons) ||
+  pwaManifest.icons.length !== 1 ||
+  pwaManifest.icons[0]?.src !== 'alternative-logo.png'
+) {
+  fail('manifest.webmanifest does not contain the required SIHSALUS branding');
 }
 
 const indexHtmlPath = path.join(outDir, 'index.html');

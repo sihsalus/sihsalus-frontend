@@ -8,7 +8,10 @@ const spaArtifactManifest = Object.freeze([
   Object.freeze({ file: 'importmap.json', roles: Object.freeze(['startup', 'complete', 'precacheRevision']) }),
   Object.freeze({ file: 'frontend.json', roles: Object.freeze(['complete', 'precacheRevision']) }),
   Object.freeze({ file: 'service-worker.js', roles: Object.freeze(['complete']) }),
-  Object.freeze({ file: 'app-shell-runtime-patches.json', roles: Object.freeze(['complete']) }),
+  Object.freeze({ file: 'manifest.webmanifest', roles: Object.freeze(['complete', 'precacheRevision']) }),
+  Object.freeze({ file: 'alternative-logo.png', roles: Object.freeze(['complete', 'precacheRevision']) }),
+  Object.freeze({ file: 'app-shell-build-info.json', roles: Object.freeze(['complete', 'precacheRevision']) }),
+  Object.freeze({ file: 'assembled-precache-revisions.json', roles: Object.freeze(['complete']) }),
 ]);
 
 const spaArtifactRoles = new Set(spaArtifactManifest.flatMap(({ roles }) => roles));

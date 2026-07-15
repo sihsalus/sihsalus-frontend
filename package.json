@@ -140,7 +140,7 @@
     "turbo@npm:^2.5.2": "npm:2.9.16",
     "turbo@npm:^2.9.1": "npm:2.9.16",
     "turbo@npm:^2.9.14": "npm:2.9.16",
-    "@openmrs/esm-app-shell@npm:9.0.2": "patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-form-stack-sharing.patch",
+    "@openmrs/esm-app-shell@npm:9.0.2": "patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch",
     "@openmrs/esm-offline": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
     "@openmrs/esm-api": "workspace:*",

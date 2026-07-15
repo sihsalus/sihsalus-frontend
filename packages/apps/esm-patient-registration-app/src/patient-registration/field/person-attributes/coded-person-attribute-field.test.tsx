@@ -347,6 +347,8 @@ describe('CodedPersonAttributeField', () => {
       </Formik>,
     );
 
+    const radioGroup = screen.getByRole('group', { name: /Grupo sanguíneo/ });
+    expect(radioGroup).toHaveClass('cds--radio-button-group');
     expect(screen.getByRole('radio', { name: 'B' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Not specified' })).not.toBeChecked();
 

@@ -97,6 +97,22 @@ test.describe('Peru patient registration', () => {
     await expect(responsiblePerson.getByText(/Parentesco del acompa[nñ]ante o responsable/i)).toHaveCount(0);
   });
 
+  test('stacks blood group and Rh factor as separate types', async ({ page }) => {
+    await gotoPatientRegistration(page);
+
+    const bloodData = await expectSectionVisible(page, 'bloodData', /Grupo sangu[ií]neo y factor Rh/i);
+    const bloodGroup = bloodData.getByRole('group', { name: /Grupo sangu[ií]neo/i });
+    const rhFactor = bloodData.getByRole('group', { name: /Factor Rh/i });
+    await expect(bloodGroup).toBeVisible();
+    await expect(rhFactor).toBeVisible();
+
+    const [bloodGroupBottom, rhFactorTop] = await Promise.all([
+      bloodGroup.evaluate((element) => element.getBoundingClientRect().bottom),
+      rhFactor.evaluate((element) => element.getBoundingClientRect().top),
+    ]);
+    expect(rhFactorTop, 'Factor Rh should render below blood group').toBeGreaterThanOrEqual(bloodGroupBottom);
+  });
+
   test('validates contact fields before registration submit', async ({ page }) => {
     await gotoPatientRegistration(page);
 

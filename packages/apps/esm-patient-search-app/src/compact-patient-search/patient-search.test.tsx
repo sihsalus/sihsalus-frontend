@@ -1,4 +1,4 @@
-import { getDefaultsFromConfigSchema, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, logError, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { render, screen, within } from '@testing-library/react';
 import dayjs from 'dayjs';
 
@@ -21,9 +21,13 @@ const defaultProps = {
 };
 
 const mockUseConfig = vi.mocked(useConfig);
+const mockLogError = vi.mocked(logError);
 
 describe('PatientSearch', () => {
-  beforeEach(() => mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema)));
+  beforeEach(() => {
+    mockLogError.mockClear();
+    mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
+  });
 
   it('renders a loading state when search results are being fetched', () => {
     renderPatientSearch({
@@ -46,21 +50,22 @@ describe('PatientSearch', () => {
   });
 
   it('renders an error state when search results fail to fetch', () => {
-    const error = {
-      message: 'You are not logged in',
+    const error = Object.assign(new Error('You are not logged in'), {
       response: {
         status: 401,
         statusText: 'Unauthorized',
       },
-    };
+    });
 
     renderPatientSearch({
       fetchError: error,
       isLoading: false,
     });
 
-    expect(screen.getByText(/sorry, there was an error. You can try to reload this page/i)).toBeInTheDocument();
+    expect(screen.getByText(/sorry, there was an error. Please try again/i)).toBeInTheDocument();
+    expect(screen.queryByText('You are not logged in')).not.toBeInTheDocument();
     expect(screen.queryByText(/recent search result/i)).not.toBeInTheDocument();
+    expect(mockLogError).toHaveBeenCalledWith(error, 'Compact patient search request failed');
   });
 
   it('renders a list of recently searched patients', () => {

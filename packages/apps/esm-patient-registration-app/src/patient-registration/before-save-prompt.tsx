@@ -4,10 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../constants';
 
-function getUrlWithoutPrefix(url: string) {
-  return url.split(window['getOpenmrsSpaBase']())?.[1];
-}
-
 interface BeforeSavePromptProps {
   when: boolean;
   redirect?: string;
@@ -64,7 +60,7 @@ const BeforeSavePrompt: React.FC<BeforeSavePromptProps> = ({ when, redirect }) =
 
   useEffect(() => {
     if (typeof target === 'string') {
-      navigate({ to: `${globalThis.spaBase}/${getUrlWithoutPrefix(target)}` });
+      navigate({ to: target });
     }
   }, [target]);
 

@@ -11,7 +11,7 @@
   "countOfFiltersApplied_other": "{{count}} filtros aplicados",
   "dayOfBirth": "Dia de Nascimento",
   "error": "Erro",
-  "errorCopy": "Desculpe, ocorreu um erro. Você pode tentar recarregar esta página ou entrar em contato com o administrador do sistema providenciando o código de erro acima",
+  "errorCopy": "Desculpe, ocorreu um erro. Tente novamente ou entre em contato com o administrador do sistema.",
   "errorFetchingPatients": "Erro ao buscar utentes",
   "errorFetchingUserProperties": "Erro ao buscar propriedades dos utilizadores",
   "errorLoadingAttribute": "Erro ao carregar tipo de atributo {{attributeUuid}}",

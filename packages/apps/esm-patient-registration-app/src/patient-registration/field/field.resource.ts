@@ -1,7 +1,9 @@
-import { type FetchResponse, openmrsFetch, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
+import { type FetchResponse, logError, openmrsFetch, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
 import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import useSWRImmutable from 'swr/immutable';
 
+import { moduleName } from '../../constants';
 import { type ConceptAnswers, type ConceptResponse } from '../patient-registration.types';
 
 function getErrorStatus(error: unknown) {
@@ -20,15 +22,23 @@ export function isMissingConceptError(error: unknown) {
 }
 
 function useConceptErrorSnackbar(error: Error | undefined) {
+  const { t } = useTranslation(moduleName);
+
   useEffect(() => {
-    if (error && !isForbiddenConceptError(error)) {
+    if (!error) {
+      return;
+    }
+
+    logError(error, 'Patient registration concept request failed');
+
+    if (!isForbiddenConceptError(error)) {
       showSnackbar({
-        title: error.name,
-        subtitle: error.message,
+        title: t('error', 'Error'),
+        subtitle: t('refreshOrContactAdmin', 'Try refreshing the page or contact your system administrator'),
         kind: 'error',
       });
     }
-  }, [error]);
+  }, [error, t]);
 }
 
 export function useConcept(conceptUuid: string): { data?: ConceptResponse; error?: Error; isLoading: boolean } {

@@ -15,7 +15,7 @@
   "dayOfBirth": "Día de Nacimiento",
   "dateOfBirth": "Fecha de nacimiento",
   "error": "Error",
-  "errorCopy": "Lo sentimos, hubo un error. Puede intentar recargar esta página o contactar al administrador del sitio y hacer referencia al código de error que aparece arriba.",
+  "errorCopy": "Lo sentimos, ocurrió un error. Inténtelo nuevamente o contacte al administrador del sistema.",
   "errorFetchingPatients": "Error al obtener pacientes",
   "errorFetchingUserProperties": "Error al obtener propiedades del usuario",
   "errorLoadingAttribute": "Error al cargar el tipo de atributo {{attributeUuid}}",

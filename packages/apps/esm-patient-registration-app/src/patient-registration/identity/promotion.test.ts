@@ -1,4 +1,5 @@
 import { peruDniPatientIdentifierTypeUuid } from '../peru-registration-config';
+import { registrationErrorCodes } from '../registration-errors';
 import {
   documentTypeConceptUuids,
   getDocumentTypeDefinitionByConcept,
@@ -12,6 +13,8 @@ import {
   applyPersonToRegistrationForm,
   buildDocumentIdentifierForPromotion,
   clearPromotionSelection,
+  PromotionDocumentMismatchError,
+  promotionDocumentMismatchMessage,
 } from './promotion';
 
 const dniDefinition = getDocumentTypeDefinitionByConcept(documentTypeConceptUuids.dni);
@@ -82,6 +85,41 @@ describe('buildDocumentIdentifierForPromotion', () => {
     const identifier = buildDocumentIdentifierForPromotion(
       buildPerson(),
       [{ identifier: '99887766', identifierType: peruDniPatientIdentifierTypeUuid, location: 'location-1' }],
+      'location-1',
+    );
+
+    expect(identifier).toBeNull();
+  });
+
+  it('rejects a different document number already present for the same identifier type', () => {
+    expect(() =>
+      buildDocumentIdentifierForPromotion(
+        buildPerson(),
+        [{ identifier: '11223344', identifierType: peruDniPatientIdentifierTypeUuid, location: 'location-1' }],
+        'location-1',
+      ),
+    ).toThrow(PromotionDocumentMismatchError);
+
+    try {
+      buildDocumentIdentifierForPromotion(
+        buildPerson(),
+        [{ identifier: '11223344', identifierType: peruDniPatientIdentifierTypeUuid, location: 'location-1' }],
+        'location-1',
+      );
+    } catch (error) {
+      expect(error).toMatchObject({
+        code: registrationErrorCodes.promotionDocumentMismatch,
+        message: promotionDocumentMismatchMessage,
+      });
+      expect(promotionDocumentMismatchMessage).not.toContain('11223344');
+      expect(promotionDocumentMismatchMessage).not.toContain('99887766');
+    }
+  });
+
+  it('recognizes the same document after normalization', () => {
+    const identifier = buildDocumentIdentifierForPromotion(
+      buildPerson(),
+      [{ identifier: '998 877-66', identifierType: peruDniPatientIdentifierTypeUuid, location: 'location-1' }],
       'location-1',
     );
 

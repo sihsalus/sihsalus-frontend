@@ -2,7 +2,8 @@ import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import React, { useContext } from 'react';
 
-import SelectedDateContext from '../../../hooks/selectedDateContext';
+import { SelectedDateContext } from '@openmrs/esm-patient-common-lib';
+
 import type { PatientAppointment } from '../../../types';
 import { monthDays } from '../../../utils/utils';
 import styles from '../appointments-calendar-view-view.scss';

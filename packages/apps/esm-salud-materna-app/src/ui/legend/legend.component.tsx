@@ -3,8 +3,9 @@ import { ErrorState, useConfig } from '@openmrs/esm-framework';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useSchemasConceptSet } from '@openmrs/esm-patient-common-lib';
+
 import { type ConfigObject } from '../../config-schema';
-import { useSchemasConceptSet } from '../../hooks/useSchemasConceptSet';
 
 import styles from './legend.scss';
 

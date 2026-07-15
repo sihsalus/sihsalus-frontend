@@ -19,16 +19,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: layout.$spacing-05;
-  background-color: colors.$gray-10;
-}
-
-.headerButtons {
-  display: flex;
-
-  .filterSearch {
-    margin-left: layout.$spacing-05;
-  }
+  padding: layout.$spacing-04 layout.$spacing-05;
+  background-color: colors.$white-0;
 }
 
 .loaderContainer {
@@ -145,7 +137,6 @@
 .tabletHeading {
   text-align: left;
   text-transform: capitalize;
-  margin-bottom: layout.$spacing-05;
 
   h4:after {
     content: "";

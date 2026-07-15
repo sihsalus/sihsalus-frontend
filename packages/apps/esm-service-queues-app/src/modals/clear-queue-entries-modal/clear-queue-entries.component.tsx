@@ -4,7 +4,6 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CanEditServiceQueues } from '../../permissions';
 import { type QueueEntry } from '../../types';
-import styles from './clear-queue-entries.scss';
 
 interface ClearQueueEntriesProps {
   queueEntries: Array<QueueEntry>;
@@ -25,9 +24,8 @@ const ClearQueueEntries: React.FC<ClearQueueEntriesProps> = ({ queueEntries }) =
   return (
     <CanEditServiceQueues>
       <Button
-        className={styles.clearQueueButton}
         size={isDesktop(layout) ? 'sm' : 'lg'}
-        kind="ghost"
+        kind="tertiary"
         onClick={launchClearAllQueueEntriesModal}
         iconDescription={t('clearQueueEntries', 'Clear queue entries')}
       >

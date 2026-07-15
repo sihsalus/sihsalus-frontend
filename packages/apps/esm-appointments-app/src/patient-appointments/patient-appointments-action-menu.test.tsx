@@ -34,7 +34,7 @@ function renderMenu(context: PatientAppointmentContextTypes, status = Appointmen
 }
 
 async function chooseMenuItem(id: 'editAppointment' | 'cancelAppointment') {
-  await userEvent.click(screen.getByRole('button', { name: /options/i }));
+  await userEvent.click(screen.getByRole('button', { name: /actions/i }));
   const menuItem = document.getElementById(id);
   expect(menuItem).toBeInTheDocument();
   await userEvent.click(menuItem);
@@ -50,6 +50,7 @@ describe('PatientAppointmentsActionMenu', () => {
   it('uses the home privilege and workspace in the appointments app', async () => {
     renderMenu(PatientAppointmentContextTypes.APPOINTMENTS_APP);
 
+    expect(screen.queryByRole('button', { name: /options/i })).not.toBeInTheDocument();
     await chooseMenuItem('editAppointment');
 
     expect(mockUserHasAccess).toHaveBeenCalledWith(appointmentsEditPrivilege, expect.anything());
@@ -95,6 +96,6 @@ describe('PatientAppointmentsActionMenu', () => {
   ])('does not expose edit or cancellation actions for %s appointments', (status) => {
     renderMenu(PatientAppointmentContextTypes.APPOINTMENTS_APP, status);
 
-    expect(screen.queryByRole('button', { name: /options/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /actions/i })).not.toBeInTheDocument();
   });
 });

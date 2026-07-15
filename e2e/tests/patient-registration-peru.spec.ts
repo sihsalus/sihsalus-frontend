@@ -61,40 +61,46 @@ test.describe('Peru patient registration', () => {
     const contact = await expectSectionVisible(page, 'contact', /Residencia, nacimiento y contacto/i);
     const filiation = await expectSectionVisible(page, 'filiation', /Datos de filiaci[oó]n/i);
     const bloodData = await expectSectionVisible(page, 'bloodData', /Grupo sangu[ií]neo y factor Rh/i);
-    await expectSectionVisible(page, 'insurance', /Seguro/i);
-    const responsiblePerson = await expectSectionVisible(page, 'responsiblePerson', /Acompa[nñ]ante o responsable/i);
-    await expectSectionVisible(page, 'medicalRecord', /Historia cl[ií]nica/i);
+    await expectSectionVisible(page, 'insurance', /Financiador|Funder/i);
+    const responsiblePerson = await expectSectionVisible(
+      page,
+      'responsiblePerson',
+      /V[ií]nculos y responsable|Family links and responsible person/i,
+    );
 
     await expectSectionOrder(page, [
       'demographics',
+      'responsiblePerson',
       'contact',
       'filiation',
       'bloodData',
       'insurance',
-      'responsiblePerson',
-      'medicalRecord',
     ]);
 
     await expect(page.locator('div[id="birthplace"]')).toHaveCount(0);
     await expect(contact.getByRole('heading', { name: /Direcci[oó]n de residencia/i })).toBeVisible();
     await expect(contact.getByRole('heading', { name: /Lugar de nacimiento/i })).toBeVisible();
     await expect(contact.getByLabel(/N[uú]mero de Tel[eé]fono/i)).toBeVisible();
-    await expect(contact.getByLabel(/N[uú]mero de Celular/i)).toBeVisible();
+    await expect(contact.getByLabel(/^Celular/i)).toBeVisible();
     await expect(filiation.getByText(/Estado civil/i)).toBeVisible();
     await expect(filiation.getByText(/Grupo sangu[ií]neo/i)).toHaveCount(0);
     await expect(filiation.getByText(/Factor Rh/i)).toHaveCount(0);
-    await expect(bloodData.getByRole('combobox', { name: /Grupo sangu[ií]neo/i })).toBeVisible();
-    await expect(bloodData.getByRole('combobox', { name: /Factor Rh/i })).toBeVisible();
-    await expect(responsiblePerson.getByText(/Registrar persona nueva|Register new person/i)).toBeVisible();
-    await expect(responsiblePerson.getByText(/Buscar persona existente|Search existing person/i)).toBeVisible();
-    await expect(responsiblePerson.getByRole('combobox', { name: /Relaci[oó]n|Relationship/i })).toBeVisible();
-    await expect(responsiblePerson.getByRole('textbox', { name: /Primer nombre|First name/i })).toBeVisible();
-    await expect(responsiblePerson.getByRole('textbox', { name: /Apellido paterno|Family name/i })).toBeVisible();
-    await expect(responsiblePerson.getByRole('combobox', { name: /Sexo|Sex/i })).toBeVisible();
-    await expect(responsiblePerson.getByRole('textbox', { name: /Edad aproximada|Approximate age/i })).toBeVisible();
-    await expect(responsiblePerson.getByText(/Nombre del acompa[nñ]ante o responsable/i)).toHaveCount(0);
-    await expect(responsiblePerson.getByText(/Edad del acompa[nñ]ante o responsable/i)).toHaveCount(0);
-    await expect(responsiblePerson.getByText(/Parentesco del acompa[nñ]ante o responsable/i)).toHaveCount(0);
+    await expect(bloodData.getByRole('group', { name: /Grupo sangu[ií]neo/i })).toBeVisible();
+    await expect(bloodData.getByRole('group', { name: /Factor Rh/i })).toBeVisible();
+    await expect(
+      responsiblePerson.getByRole('heading', { name: /V[ií]nculos del paciente|Patient family links/i }),
+    ).toBeVisible();
+    await expect(
+      responsiblePerson.getByRole('button', { name: /Agregar v[ií]nculo familiar|Add family link/i }),
+    ).toBeVisible();
+    await expect(
+      responsiblePerson.getByRole('heading', { name: /Responsable del paciente|Patient responsible person/i }),
+    ).toBeVisible();
+    await expect(
+      responsiblePerson.getByText(
+        /Agregue un v[ií]nculo familiar antes de seleccionar al responsable principal|Add a family link before selecting the primary responsible person/i,
+      ),
+    ).toBeVisible();
   });
 
   test('stacks blood group and Rh factor as separate types', async ({ page }) => {

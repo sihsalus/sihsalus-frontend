@@ -277,6 +277,19 @@ describe('IdentityLookupField', () => {
     expect(screen.queryByRole('button', { name: /abrir paciente existente/i })).not.toBeInTheDocument();
   });
 
+  it('warns when the document changes while a promotion selection is active', async () => {
+    const promotionValues = { ...buildFormValues('12345678'), personUuidToPromote: 'person-uuid' } as FormValues;
+    const { rerenderValues } = renderLookup(<IdentityLookupField />, promotionValues);
+
+    rerenderValues({ ...buildFormValues('87654321'), personUuidToPromote: 'person-uuid' } as FormValues);
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/el documento cambió después de seleccionar una persona para promover/i),
+      ).toBeInTheDocument(),
+    );
+  });
+
   it('ignores an older lookup response that resolves after the current document lookup', async () => {
     const user = userEvent.setup();
     const firstLookup = deferred<Array<LocalPatientIdentityMatch>>();

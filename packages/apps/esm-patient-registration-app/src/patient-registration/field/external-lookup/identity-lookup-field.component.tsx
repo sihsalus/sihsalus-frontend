@@ -177,10 +177,24 @@ export const IdentityLookupField = () => {
     activeRequest.current = null;
     requestSequence.current += 1;
     setPendingAction(null);
-    setLookupStatus(null);
     setPatientMatchState(null);
     setPersonMatchState(null);
-  }, [documentKey]);
+    // An active promotion selection lives in the form values, so it survives a
+    // document edit; save-time guards reject the mismatch, but warn now so the
+    // operator does not find out only when the registration fails.
+    setLookupStatus(
+      promotionActive
+        ? {
+            documentKey,
+            kind: 'warning',
+            title: t(
+              'identityLookupPromotionDocumentChanged',
+              'El documento cambió después de seleccionar una persona para promover. Verifique la selección o quítela antes de guardar.',
+            ),
+          }
+        : null,
+    );
+  }, [documentKey, promotionActive, t]);
 
   useEffect(
     () => () => {

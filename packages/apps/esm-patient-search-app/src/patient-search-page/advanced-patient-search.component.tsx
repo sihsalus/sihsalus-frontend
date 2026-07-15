@@ -52,7 +52,6 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
 
   const {
     data: searchResults,
-    currentPage,
     setPage,
     hasMore,
     isLoading,
@@ -61,10 +60,13 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
   } = useInfinitePatientSearch(activeQuery, config.includeDead, !!activeQuery, 50);
 
   useEffect(() => {
-    if (searchResults?.length === currentPage * 50 && hasMore) {
+    // hasMore reflects the last fetched page's `next` link, so advancing on it
+    // (instead of an exact page-size match) still terminates and keeps loading
+    // when the server returns short pages (e.g. voided patients filtered out).
+    if (hasMore && !isLoading && !isValidating && !fetchError) {
       setPage((page) => page + 1);
     }
-  }, [searchResults, currentPage, hasMore, setPage]);
+  }, [fetchError, hasMore, isLoading, isValidating, setPage]);
 
   const filteredResults = useMemo(() => {
     if (searchResults && filtersApplied) {

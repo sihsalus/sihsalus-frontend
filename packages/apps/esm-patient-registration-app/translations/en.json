@@ -208,6 +208,7 @@
   "identityLookupPersonExists": "A registered person (not a patient) with this document exists, e.g. a responsible person or companion.",
   "identityLookupPromoteAction": "Register as patient (reuses their record)",
   "identityLookupPromotionActive": "An existing person's record will be reused: on save, that person becomes a patient without creating duplicates.",
+  "identityLookupPromotionDocumentChanged": "The document changed after selecting a person to promote. Verify the selection or clear it before saving.",
   "identityLookupPromotionError": "Could not load the selected person",
   "identityLookupPromotionReady": "Person loaded. On save they will become a patient, keeping their record and relationships.",
   "identityLookupResultChanged": "The match changed or is no longer available. Review the document and search again before continuing.",

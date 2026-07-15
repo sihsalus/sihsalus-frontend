@@ -155,6 +155,28 @@ describe('AdvancedPatientSearchComponent', () => {
     expect(mockUseInfinitePatientSearch).toHaveBeenCalledWith('Jos', false, true, 50);
   });
 
+  it('keeps fetching server pages while the last page reports more results', () => {
+    const setPage = vi.fn();
+    mockUseInfinitePatientSearch.mockReturnValue({ ...mockSearchResults, hasMore: true, setPage });
+
+    renderComponent();
+
+    expect(setPage).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['a page is still loading', { isLoading: true }],
+    ['a page is validating', { isValidating: true }],
+    ['a page failed to fetch', { fetchError: new Error('SQL timeout') }],
+  ])('does not request another server page while %s', (_description, state) => {
+    const setPage = vi.fn();
+    mockUseInfinitePatientSearch.mockReturnValue({ ...mockSearchResults, hasMore: true, setPage, ...state });
+
+    renderComponent();
+
+    expect(setPage).not.toHaveBeenCalled();
+  });
+
   it('does not offer patient registration in an embedded selection context', () => {
     mockUseInfinitePatientSearch.mockReturnValue({
       ...mockSearchResults,

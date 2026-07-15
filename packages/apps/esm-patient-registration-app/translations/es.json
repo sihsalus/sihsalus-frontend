@@ -210,6 +210,7 @@
   "identityLookupPersonExists": "Existe una persona registrada (no paciente) con este documento, por ejemplo un responsable o acompañante.",
   "identityLookupPromoteAction": "Registrar como paciente (reutiliza su registro)",
   "identityLookupPromotionActive": "Se reutilizará el registro de una persona existente: al guardar, esa persona se convertirá en paciente sin crear duplicados.",
+  "identityLookupPromotionDocumentChanged": "El documento cambió después de seleccionar una persona para promover. Verifique la selección o quítela antes de guardar.",
   "identityLookupPromotionError": "No se pudo cargar la persona seleccionada",
   "identityLookupPromotionReady": "Persona cargada. Al guardar se convertirá en paciente conservando su registro y sus relaciones.",
   "identityLookupResultChanged": "La coincidencia cambió o ya no está disponible. Revise el documento y vuelva a buscar antes de continuar.",

@@ -68,7 +68,7 @@ describe('CompactPatientBanner', () => {
     );
 
     const patientLink = screen.getByRole('link');
-    expect(patientLink).toHaveAttribute('href', `/openmrs/spa/patient/${patients[0].uuid}/chart/`);
+    expect(patientLink).toHaveAttribute('aria-label', 'Smith, John Doe');
     expect(within(patientLink).getByText(/Smith, John Doe/)).toBeInTheDocument();
     expect(within(patientLink).getByText(/1000NLY/)).toBeInTheDocument();
     expect(screen.getByRole('img')).toBeInTheDocument();

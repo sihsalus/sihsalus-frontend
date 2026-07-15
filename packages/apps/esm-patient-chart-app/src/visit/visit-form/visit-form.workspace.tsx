@@ -62,7 +62,7 @@ import { canEditVisit, canStartVisit } from '../visit-access';
 import { invalidateUseVisits, useInfiniteVisits } from '../visits-widget/visit.resource';
 
 import BaseVisitType from './base-visit-type.component';
-import CompanionList from './companion-list.component';
+import CompanionList, { usePatientCompanions } from './companion-list.component';
 import LocationSelector from './location-selector.component';
 import { MemoizedRecommendedVisitType } from './recommended-visit-type.component';
 import VisitAttributeTypeFields from './visit-attribute-type.component';
@@ -196,6 +196,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   );
   const { emrConfiguration } = useEmrConfiguration(isEmrApiModuleInstalled);
   const { patientUuid, patient } = usePatient(initialPatientUuid);
+  const { companions, isLoading: isLoadingCompanions, companionRelationshipTypeUuid } = usePatientCompanions(patientUuid);
   const [contentSwitcherIndex, setContentSwitcherIndex] = useState(config.showRecommendedVisitTypeTab ? 0 : 1);
   const visitHeaderSlotState = useMemo(() => ({ patientUuid }), [patientUuid]);
   const { activePatientEnrollment, isLoading } = useActivePatientEnrollment(patientUuid);
@@ -275,6 +276,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     const birthDate = dayjs(birthDateValue);
     return birthDate.isValid() ? birthDate.startOf('day') : null;
   }, [patientBirthDateValue]);
+  const isMinorPatient = Boolean(patientBirthDate && dayjs().diff(patientBirthDate, 'year') < 18);
+  const companionRequired = !visitToEdit && isMinorPatient && Boolean(companionRelationshipTypeUuid);
 
   const visitFormSchema = useMemo(() => {
     const createVisitAttributeSchema = (required: boolean) =>
@@ -671,6 +674,29 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   const onSubmit = useCallback(
     async (data: VisitFormData) => {
       if (visitToEdit && !validateVisitStartStopDatetime()) {
+        return;
+      }
+
+      if (companionRequired && isLoadingCompanions) {
+        showSnackbar({
+          title: t('companionsLoading', 'No se pudo validar el acompañante'),
+          subtitle: t('companionsLoadingMessage', 'Espere a que se carguen los acompañantes e intente nuevamente.'),
+          kind: 'error',
+          isLowContrast: false,
+        });
+        return;
+      }
+
+      if (companionRequired && companions.length === 0) {
+        showSnackbar({
+          title: t('companionRequiredForMinorTitle', 'Acompañante obligatorio'),
+          subtitle: t(
+            'companionRequiredForMinor',
+            'Para iniciar la consulta de un menor de edad debe existir al menos un acompañante registrado.',
+          ),
+          kind: 'error',
+          isLowContrast: false,
+        });
         return;
       }
 
@@ -1108,6 +1134,9 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       t,
       validateVisitStartStopDatetime,
       visitToEdit,
+      companionRequired,
+      companions.length,
+      isLoadingCompanions,
     ],
   );
 
@@ -1217,7 +1246,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
               <LocationSelector control={control} lockedLocation={requiredVisitLocation} />
 
               {/* Lists the patient's companions (Acompañante relationships). */}
-              <CompanionList patientUuid={patientUuid} />
+              <CompanionList patientUuid={patientUuid} required={companionRequired} />
 
               {/* Lists available program types. This feature is dependent on the `showRecommendedVisitTypeTab` config being set
           to true. */}

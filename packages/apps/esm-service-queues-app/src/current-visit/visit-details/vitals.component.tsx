@@ -20,7 +20,7 @@ interface VitalsComponentProps {
   visit?: Visit;
 }
 
-const Vitals: React.FC<VitalsComponentProps> = ({ vitals, patientUuid, visitType, visit }) => {
+const Vitals: React.FC<VitalsComponentProps> = ({ vitals = [], patientUuid, visitType, visit }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const { patient } = usePatient(patientUuid);

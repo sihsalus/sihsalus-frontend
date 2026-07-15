@@ -24,8 +24,13 @@ export function PatientBannerToggleContactDetailsButton({
       className={className}
       iconDescription="Toggle contact details"
       kind="ghost"
-      onClick={toggleContactDetails}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleContactDetails(event);
+      }}
       renderIcon={showContactDetails ? ChevronUpIcon : ChevronDownIcon}
+      type="button"
     >
       {showContactDetails ? getCoreTranslation('showLess', 'Show less') : getCoreTranslation('showMore', 'Show more')}
     </Button>

@@ -6,6 +6,7 @@ export const appointmentLocationTagName = 'Appointment Location';
 export const appointmentsPrivilege = 'app:home.citas';
 export const appointmentsEditPrivilege = 'app:home.citas.editar';
 export const appointmentIssuedDateEditPrivilege = 'app:appointments.issueDate.edit';
+export const appointmentStartDateEditPrivilege = 'app:appointments.startDate.edit';
 export const chartAppointmentsReadPrivilege = 'app:hoja.clinica.citas';
 export const chartAppointmentsEditPrivilege = 'app:hoja.clinica.citas.editar';
 export const appointmentNoteMaxLength = 500;

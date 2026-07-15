@@ -53,6 +53,7 @@ import {
   appointmentLocationTagName,
   appointmentNoteMaxLength,
   appointmentIssuedDateEditPrivilege,
+  appointmentStartDateEditPrivilege,
   dateFormat,
   datePickerFormat,
   datePickerPlaceHolder,
@@ -134,6 +135,11 @@ const DEFAULT_APPOINTMENT_DURATION_MINUTES = 30;
 const APPOINTMENT_EDIT_STATUS_CONFLICT = 'APPOINTMENT_EDIT_STATUS_CONFLICT';
 
 const time12HourFormatRegexPattern = '^(1[0-2]|0?[1-9]):[0-5][0-9]$';
+
+// Same visual convention as patient registration: a red asterisk on required fields.
+function RequiredFieldLabel({ label }: { label: string }) {
+  return <span className={styles.requiredLabel}>{label}</span>;
+}
 
 const isValidTime = (timeStr: string) => timeStr.match(new RegExp(time12HourFormatRegexPattern));
 
@@ -263,6 +269,7 @@ const AppointmentsForm: React.FC<
   const providers = useProviders();
   const session = useSession();
   const canEditAppointmentIssuedDate = userHasAccess(appointmentIssuedDateEditPrivilege, session?.user);
+  const canEditAppointmentStartDate = userHasAccess(appointmentStartDateEditPrivilege, session?.user);
   const { selectedDate } = useContext(SelectedDateContext);
   const { data: services, isLoading } = useAppointmentService();
   const { appointmentTypes, allowAllDayAppointments } = useConfig<ConfigObject>();
@@ -737,7 +744,7 @@ const AppointmentsForm: React.FC<
                     id="location"
                     invalid={!!errors?.location}
                     invalidText={errors?.location?.message}
-                    labelText={t('selectALocation', 'Select a location')}
+                    labelText={<RequiredFieldLabel label={t('selectALocation', 'Select a location')} />}
                     onChange={onChange}
                     onBlur={onBlur}
                     ref={ref}
@@ -766,7 +773,7 @@ const AppointmentsForm: React.FC<
                     id="service"
                     invalid={!!errors?.selectedService}
                     invalidText={errors?.selectedService?.message}
-                    labelText={t('selectService', 'Select a service')}
+                    labelText={<RequiredFieldLabel label={t('selectService', 'Select a service')} />}
                     onBlur={onBlur}
                     onChange={(event) => {
                       if (context === 'creating') {
@@ -814,7 +821,7 @@ const AppointmentsForm: React.FC<
                     id="appointmentType"
                     invalid={!!errors?.appointmentType}
                     invalidText={errors?.appointmentType?.message}
-                    labelText={t('selectAppointmentType', 'Select the type of appointment')}
+                    labelText={<RequiredFieldLabel label={t('selectAppointmentType', 'Select the type of appointment')} />}
                     onBlur={onBlur}
                     onChange={onChange}
                     ref={ref}
@@ -1017,7 +1024,8 @@ const AppointmentsForm: React.FC<
                           }}
                           id="datePickerInput"
                           data-testid="datePickerInput"
-                          labelText={t('date', 'Date')}
+                          isReadOnly={!canEditAppointmentStartDate}
+                          labelText={<RequiredFieldLabel label={t('date', 'Date')} />}
                           style={{ width: '100%' }}
                           invalid={Boolean(fieldState?.error?.message)}
                           invalidText={fieldState?.error?.message}
@@ -1048,7 +1056,7 @@ const AppointmentsForm: React.FC<
           )}
 
           <section className={styles.formGroup}>
-            <span className={styles.heading}>{t('provider', 'Provider')}</span>
+            <span className={styles.heading}>{t('responsibleProvider', 'Responsible provider')}</span>
             <ResponsiveWrapper>
               <Controller
                 name="provider"
@@ -1056,8 +1064,9 @@ const AppointmentsForm: React.FC<
                 render={({ field: { onChange, value, onBlur, ref } }) => (
                   <Select
                     id="provider"
-                    invalidText={t('required', 'Required')}
-                    labelText={t('selectProvider', 'Select a provider')}
+                    invalid={!!errors?.provider}
+                    invalidText={errors?.provider?.message}
+                    labelText={<RequiredFieldLabel label={t('selectProvider', 'Select a provider')} />}
                     onChange={onChange}
                     onBlur={onBlur}
                     value={value}
@@ -1149,7 +1158,7 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
               pattern={time12HourFormatRegexPattern}
               invalid={!!errors?.startTime}
               invalidText={errors?.startTime?.message}
-              labelText={t('time', 'Time')}
+              labelText={<RequiredFieldLabel label={t('time', 'Time')} />}
               onChange={(event) => {
                 onChange(event.target.value);
               }}
@@ -1186,7 +1195,7 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
               id="duration"
               invalid={!!errors?.duration}
               invalidText={errors?.duration?.message}
-              label={t('durationInMinutes', 'Duration (minutes)')}
+              label={<RequiredFieldLabel label={t('durationInMinutes', 'Duration (minutes)')} />}
               max={1440}
               min={0}
               onBlur={onBlur}
@@ -1230,7 +1239,7 @@ function getAppointmentValidationSummary(errors: Record<string, unknown>, t: (ke
     location: t('location', 'Ubicación'),
     selectedService: t('service', 'Servicio'),
     appointmentType: t('appointmentType', 'Tipo de cita'),
-    provider: t('provider', 'Personal de salud'),
+    provider: t('responsibleProvider', 'Personal de salud responsable'),
     startTime: t('time', 'Hora'),
     duration: t('duration', 'Duración'),
     dateAppointmentScheduled: t('dateScheduled', 'Fecha de emisión de la cita'),

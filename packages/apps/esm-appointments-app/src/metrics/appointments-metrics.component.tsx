@@ -1,4 +1,5 @@
 import { ErrorState, formatDate, parseDate } from '@openmrs/esm-framework';
+import dayjs from 'dayjs';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -23,6 +24,9 @@ const AppointmentsMetrics: React.FC<AppointmentMetricsProps> = ({ appointmentSer
 
   const { selectedDate } = useContext(SelectedDateContext);
   const formattedStartDate = formatDate(parseDate(selectedDate), { mode: 'standard', time: false });
+  const scheduledAppointmentsLabel = dayjs(selectedDate).isSame(dayjs(), 'day')
+    ? t('scheduledForToday', 'Appointments scheduled today')
+    : t('scheduledAppointments', 'Scheduled appointments');
 
   // TODO we will need rework these after we discuss the logic we want to use
   const { appointmentList: arrivedAppointments } = useAppointmentList('CheckedIn');
@@ -50,7 +54,7 @@ const AppointmentsMetrics: React.FC<AppointmentMetricsProps> = ({ appointmentSer
       <section className={styles.cardContainer}>
         <MetricsCard
           count={{ pendingAppointments: filteredPendingAppointments, arrivedAppointments: filteredArrivedAppointments }}
-          headerLabel={t('scheduledAppointments', 'Scheduled appointments')}
+          headerLabel={scheduledAppointmentsLabel}
           label={t('appointments', 'Appointments')}
           value={totalScheduledAppointments}
         />

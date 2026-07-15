@@ -65,6 +65,8 @@ describe('MetricsHeader', () => {
 
     const clearQueueButton = screen.getByRole('button', { name: /clear queue entries/i });
     expect(clearQueueButton).toBeEnabled();
+    expect(clearQueueButton).toHaveClass('cds--btn--danger--ghost');
+    expect(clearQueueButton.querySelector('svg')).toBeInTheDocument();
 
     await user.click(clearQueueButton);
 

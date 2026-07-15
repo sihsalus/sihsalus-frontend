@@ -12,7 +12,7 @@ describe('Appointments', () => {
     expect(within(screen.getByTestId('appointments-header')).getByText(/^service$/i)).toBeInTheDocument();
     expect(within(screen.getByTestId('appointments-header')).getByText(/^date$/i)).toBeInTheDocument();
     expect(screen.getByText(/appointment metrics/i)).toBeInTheDocument();
-    expect(screen.getByText(/scheduled appointments/i)).toBeInTheDocument();
+    expect(screen.getByText(/appointments scheduled today/i)).toBeInTheDocument();
     expect(screen.getByText(/highest volume service/i)).toBeInTheDocument();
     expect(screen.getByText(/providers booked/i)).toBeInTheDocument();
   });

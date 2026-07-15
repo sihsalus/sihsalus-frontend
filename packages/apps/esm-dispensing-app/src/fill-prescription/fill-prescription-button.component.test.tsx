@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { dispensingEditPrivilege, PRIVILEGE_CREATE_DISPENSE } from '../constants';
+import { dispensingEditPrivilege } from '../constants';
 
 import FillPrescriptionButton from './fill-prescription-button.component';
 
@@ -28,26 +28,20 @@ vi.mock('react-i18next', () => ({
 describe('FillPrescriptionButton', () => {
   beforeEach(() => {
     mockUseSession.mockReturnValue({ user: { uuid: 'user-1' } });
-    mockUserHasAccess.mockImplementation(
-      (privilege) => privilege === dispensingEditPrivilege || privilege === PRIVILEGE_CREATE_DISPENSE,
-    );
+    mockUserHasAccess.mockImplementation((privilege) => privilege === dispensingEditPrivilege);
   });
 
-  it('requires the dispensing create privilege', () => {
+  it('shows the action with the frontend edit privilege', () => {
     render(<FillPrescriptionButton />);
 
     expect(mockUserHasAccess).toHaveBeenCalledWith(
       dispensingEditPrivilege,
       expect.objectContaining({ uuid: 'user-1' }),
     );
-    expect(mockUserHasAccess).toHaveBeenCalledWith(
-      PRIVILEGE_CREATE_DISPENSE,
-      expect.objectContaining({ uuid: 'user-1' }),
-    );
     expect(screen.getByRole('button', { name: 'Fill prescription' })).toBeInTheDocument();
   });
 
-  it('hides the action when the user cannot create dispenses', () => {
+  it('hides the action when the user lacks the frontend edit privilege', () => {
     mockUserHasAccess.mockReturnValue(false);
 
     render(<FillPrescriptionButton />);

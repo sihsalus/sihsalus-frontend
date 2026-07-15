@@ -15,11 +15,11 @@
 
 .rightJustifiedItems {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  flex-direction: row;
+  align-items: center;
   justify-content: flex-end;
   margin: 0 layout.$spacing-03;
-  row-gap: layout.$spacing-01;
+  column-gap: layout.$spacing-03;
 }
 
 .serviceTypeFilter {
@@ -39,6 +39,28 @@
     padding-block: layout.$spacing-03;
     text-overflow: clip;
     white-space: normal;
+  }
+}
+
+@media (max-width: 672px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    height: auto;
+    padding: layout.$spacing-05 layout.$spacing-03;
+    row-gap: layout.$spacing-03;
+  }
+
+  .rightJustifiedItems {
+    flex-direction: column;
+    align-items: stretch;
+    margin: 0;
+    row-gap: layout.$spacing-01;
+  }
+
+  .serviceTypeFilter {
+    inline-size: 100%;
+    max-inline-size: 100%;
   }
 }
 

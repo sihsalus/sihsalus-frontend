@@ -3,6 +3,7 @@ import { basename, resolve } from 'node:path';
 
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
+import { createSpaStaticOptions, isSpaIndexRequestPath } from '../../spa-static-options';
 
 import { logInfo, logWarn, removeTrailingSlash, shouldAllowSelfSignedTls } from '../utils';
 
@@ -231,20 +232,26 @@ export async function runStart(args: StartArgs) {
     res.contentType('application/json').send(routesJson);
   });
 
+  const shouldServeSpaIndex = (requestPath: string) => isSpaIndexRequestPath(requestPath, spaPath);
+
   // Serve rewritten index.html for SPA routes (before static assets)
-  const indexHtmlPathMatcher = /\/openmrs\/spa\/(?!.*\.(js|woff2?|json|css|.{2,3}$)).*$/;
-  expressApp.get(indexHtmlPathMatcher, (_, res) => res.contentType('text/html').send(indexContent));
+  expressApp.get([spaPath, `${spaPath}/*`], (req, res, next) => {
+    if (!shouldServeSpaIndex(req.originalUrl || req.path)) {
+      return next();
+    }
+    res.contentType('text/html').send(indexContent);
+  });
 
   // Serve local module dist directories (auto-discovered from packages/apps/)
   for (const distDir of discovery.distDirs) {
-    expressApp.use(spaPath, express.static(distDir, { index: false }));
+    expressApp.use(spaPath, express.static(distDir, createSpaStaticOptions({ index: false })));
   }
 
   // Fallback to dist/spa if it exists (from yarn assemble)
   if (existsSync(spaDist)) {
-    expressApp.use(spaPath, express.static(spaDist, { index: false }));
+    expressApp.use(spaPath, express.static(spaDist, createSpaStaticOptions({ index: false })));
   }
-  expressApp.use(spaPath, express.static(shellDist, { index: false }));
+  expressApp.use(spaPath, express.static(shellDist, createSpaStaticOptions({ index: false })));
 
   // Proxy all /openmrs/* API requests to the backend (except /openmrs/spa/**)
   expressApp.use(
@@ -275,8 +282,13 @@ export async function runStart(args: StartArgs) {
     }),
   );
 
-  // Fallback: serve index.html for any unmatched route (SPA client-side routing)
-  expressApp.get('/*', (_, res) => res.contentType('text/html').send(indexContent));
+  // Fallback: serve index.html only for client-side routes, never for missing assets.
+  expressApp.get('/*', (req, res, next) => {
+    if (!shouldServeSpaIndex(req.originalUrl || req.path)) {
+      return next();
+    }
+    res.contentType('text/html').send(indexContent);
+  });
 
   // Bind to 0.0.0.0 to listen on both IPv4 and IPv6, avoiding issues where
   // "localhost" resolves to only ::1 (IPv6) but the browser tries 127.0.0.1 first.

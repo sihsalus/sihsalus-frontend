@@ -38,14 +38,8 @@ jobs:
       # Existing raw error rendering is migrated incrementally. This AST guard
       # compares the PR/push with its Git base and rejects new exposures while
       # allowing controlled React Hook Form validation messages.
-      - name: Test Error Exposure Guard
-        run: yarn test:error-exposure-guard
-
-      - name: Test Local SPA Server
-        run: yarn test:local-spa-server
-
-      - name: Test SPA Runtime Patch Detection
-        run: yarn test:spa-runtime-patches
+      - name: Test Tooling
+        run: yarn test:tooling
 
       - name: Validate Error Exposure
         run: |

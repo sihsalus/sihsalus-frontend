@@ -54,7 +54,7 @@ ENV BUILD_TIME=${BUILD_TIME}
 
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/apps ./packages/apps
-COPY --from=builder /app/packages/tooling/scripts/assemble-importmap.js ./packages/tooling/scripts/assemble-importmap.js
+COPY --from=builder /app/packages/tooling/scripts/ ./packages/tooling/scripts/
 COPY config/ ./config/
 COPY assets/ ./assets/
 
@@ -86,7 +86,7 @@ ENV BUILD_TIME=${BUILD_TIME}
 
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/packages/apps ./packages/apps
-COPY --from=builder --chown=node:node /app/packages/tooling/scripts/assemble-importmap.js ./packages/tooling/scripts/assemble-importmap.js
+COPY --from=builder --chown=node:node /app/packages/tooling/scripts/ ./packages/tooling/scripts/
 COPY --chown=node:node config/ ./config/
 COPY --chown=node:node assets/ ./assets/
 

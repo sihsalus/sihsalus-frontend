@@ -5,6 +5,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const chalk = require('chalk');
 const { hasPatchedAppShellSignature, hasUnpatchedAppShellSignature } = require('./app-shell-runtime-patches');
+const { formatSpaArtifactIssue, getSpaArtifactFiles, inspectSpaArtifacts } = require('./spa-artifact-manifest');
 
 const logInfo = (msg) => console.log(`${chalk.green.bold('[validate-spa]')} ${msg}`);
 const logWarn = (msg) => console.warn(`${chalk.yellow.bold('[validate-spa]')} ${chalk.yellow(msg)}`);
@@ -12,15 +13,6 @@ const logFail = (msg) => console.error(`${chalk.red.bold('[validate-spa]')} ${ch
 
 const outDir = process.env.SPA_OUTPUT_DIR || 'dist/spa';
 const assembleConfigPath = process.env.SPA_ASSEMBLE_CONFIG || 'config/spa-assemble-config.json';
-const requiredFiles = [
-  'index.html',
-  'importmap.json',
-  'routes.registry.json',
-  'frontend.json',
-  'service-worker.js',
-  'app-shell-runtime-patches.json',
-];
-
 let failed = false;
 
 function fail(message) {
@@ -44,19 +36,16 @@ if (!fs.existsSync(outDir)) {
   process.exit(1);
 }
 
-for (const file of requiredFiles) {
-  const filePath = path.join(outDir, file);
-  if (!fs.existsSync(filePath)) {
-    fail(`Missing required file: ${filePath}`);
-  } else if (fs.statSync(filePath).size === 0) {
-    fail(`Required file is empty: ${filePath}`);
-  }
+const requiredArtifactIssues = inspectSpaArtifacts(outDir, 'complete');
+const invalidRequiredArtifacts = new Set(requiredArtifactIssues.map(({ file }) => file));
+for (const issue of requiredArtifactIssues) {
+  fail(formatSpaArtifactIssue(issue));
 }
 
 const importmapPath = path.join(outDir, 'importmap.json');
 const routesPath = path.join(outDir, 'routes.registry.json');
-const importmap = fs.existsSync(importmapPath) ? readJson(importmapPath) : null;
-const routesRegistry = fs.existsSync(routesPath) ? readJson(routesPath) : null;
+const importmap = invalidRequiredArtifacts.has('importmap.json') ? null : readJson(importmapPath);
+const routesRegistry = invalidRequiredArtifacts.has('routes.registry.json') ? null : readJson(routesPath);
 
 const imports = importmap?.imports || {};
 const routes = routesRegistry || {};
@@ -166,10 +155,14 @@ function getPrecacheFileName(url) {
 
 const runtimePatchManifestPath = path.join(outDir, 'app-shell-runtime-patches.json');
 const serviceWorkerPath = path.join(outDir, 'service-worker.js');
-const runtimePatchManifest = fs.existsSync(runtimePatchManifestPath) ? readJson(runtimePatchManifestPath) : null;
-const serviceWorker = fs.existsSync(serviceWorkerPath) ? fs.readFileSync(serviceWorkerPath, 'utf8') : '';
+const runtimePatchManifest = invalidRequiredArtifacts.has('app-shell-runtime-patches.json')
+  ? null
+  : readJson(runtimePatchManifestPath);
+const serviceWorker = invalidRequiredArtifacts.has('service-worker.js')
+  ? ''
+  : fs.readFileSync(serviceWorkerPath, 'utf8');
 const workboxEntries = parseWorkboxPrecacheEntries(serviceWorker);
-const requiredRevisionFiles = ['index.html', 'favicon.ico', 'routes.registry.json', 'importmap.json', 'frontend.json'];
+const requiredRevisionFiles = getSpaArtifactFiles('precacheRevision');
 const patchedAppShellFiles = appShellJavaScriptFiles
   .filter(({ isPatchedAppShell }) => isPatchedAppShell)
   .map(({ name }) => name);

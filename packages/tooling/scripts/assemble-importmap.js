@@ -4,6 +4,7 @@ const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const chalk = require('chalk');
 const { extensionParcelTimeouts, userFacingErrorPatches } = require('./app-shell-runtime-patches');
+const { getSpaArtifactFiles } = require('./spa-artifact-manifest');
 
 const logInfo = (msg) => console.log(`${chalk.green.bold('[assemble]')} ${msg}`);
 const logWarn = (msg) => console.warn(`${chalk.yellow.bold('[assemble]')} ${chalk.yellow(msg)}`);
@@ -439,7 +440,7 @@ function revisionAssembledPrecacheFiles(patchedJsFiles) {
   }
 
   let serviceWorker = fs.readFileSync(serviceWorkerPath, 'utf8');
-  const requiredFiles = ['index.html', 'favicon.ico', 'routes.registry.json', 'importmap.json', 'frontend.json'];
+  const requiredFiles = getSpaArtifactFiles('precacheRevision');
   const files = [...new Set([...requiredFiles, ...[...patchedJsFiles].map((file) => path.basename(file)).sort()])];
 
   for (const file of files) {

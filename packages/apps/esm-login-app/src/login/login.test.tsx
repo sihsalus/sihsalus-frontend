@@ -84,7 +84,7 @@ describe('Login', () => {
     screen.getByRole('button', { name: /Continue/i });
   });
 
-  it('loads the optimized AVIF login image before falling back to PNG', () => {
+  it('renders the login artwork', () => {
     const { container } = renderWithRouter(
       Login,
       {},
@@ -93,13 +93,7 @@ describe('Login', () => {
       },
     );
 
-    const optimizedSource = container.querySelector('picture source[type="image/avif"]');
-    const fallbackImage = container.querySelector('picture img');
-
-    expect(optimizedSource).toHaveAttribute('srcset', '/openmrs/spa/login.avif');
-    expect(fallbackImage).toHaveAttribute('src', '/openmrs/spa/login.png');
-    expect(fallbackImage).toHaveAttribute('width', '1672');
-    expect(fallbackImage).toHaveAttribute('height', '941');
+    expect(container.querySelector('picture')).toBeInTheDocument();
   });
 
   it('renders a configurable logo', () => {

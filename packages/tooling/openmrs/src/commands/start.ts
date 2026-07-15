@@ -282,14 +282,6 @@ export async function runStart(args: StartArgs) {
     }),
   );
 
-  // Fallback: serve index.html only for client-side routes, never for missing assets.
-  expressApp.get('/*', (req, res, next) => {
-    if (!shouldServeSpaIndex(req.originalUrl || req.path)) {
-      return next();
-    }
-    res.contentType('text/html').send(indexContent);
-  });
-
   // Bind to 0.0.0.0 to listen on both IPv4 and IPv6, avoiding issues where
   // "localhost" resolves to only ::1 (IPv6) but the browser tries 127.0.0.1 first.
   const listenHost = host === 'localhost' ? '0.0.0.0' : host;

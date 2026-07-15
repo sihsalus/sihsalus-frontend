@@ -139,7 +139,6 @@ export function clearPromotionSelection(freshPatientUuid: string, setFieldValue:
 export function buildDocumentIdentifierForPromotion(
   person: PersonForPromotion,
   identifiersInPayload: Array<PatientIdentifier>,
-  location: string,
 ): PatientIdentifier | null {
   const { documentTypeConceptUuid, documentNumber } = getPersonDocument(person);
   const definition = getDocumentTypeDefinitionByConcept(documentTypeConceptUuid);
@@ -169,7 +168,6 @@ export function buildDocumentIdentifierForPromotion(
   return {
     identifier: normalizedNumber,
     identifierType: definition.patientIdentifierTypeUuid,
-    location,
     preferred: false,
   };
 }

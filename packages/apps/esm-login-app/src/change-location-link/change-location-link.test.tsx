@@ -45,7 +45,7 @@ describe('ChangeLocationLink', () => {
     });
   });
 
-  it('allows admission users to see and change their current location', () => {
+  it('does not display the location for admission users', () => {
     mockUseSession.mockReturnValue({
       user: {
         roles: [{ display: 'Admisión' }],
@@ -58,7 +58,7 @@ describe('ChangeLocationLink', () => {
 
     render(<ChangeLocationLink />);
 
-    expect(screen.getByRole('button', { name: /Change/i })).toBeInTheDocument();
-    expect(screen.getByText(/UPSS - CONSULTA EXTERNA/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Change/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/UPSS - CONSULTA EXTERNA/i)).not.toBeInTheDocument();
   });
 });

@@ -52,6 +52,7 @@ import {
   type Patient,
   type PatientAddress,
   type PatientIdentifier,
+  type PatientIdentifierType,
   type PatientRegistration,
   type PatientUuidMapType,
   type RelationshipValue,
@@ -218,7 +219,7 @@ function registrationError(message: string) {
 }
 
 const missingIdentifierLocationMessage =
-  'No se puede registrar al paciente sin una ubicación de sesión. Seleccione una ubicación e intente nuevamente.';
+  'No se puede registrar al paciente porque un tipo de identificador requiere una ubicación que no está disponible. Contacte a un administrador.';
 
 function assertLocationForIdentifiers(hasIdentifiers: boolean, location: string) {
   if (hasIdentifiers && !location?.trim()) {
@@ -226,13 +227,39 @@ function assertLocationForIdentifiers(hasIdentifiers: boolean, location: string)
   }
 }
 
-function assertIdentifierLocation(identifiers: FormValues['identifiers'], location: string) {
-  const hasActiveIdentifiers = Object.values(identifiers ?? {}).some(
-    ({ identifierValue, autoGeneration, selectedSource }) =>
-      Boolean(identifierValue || (autoGeneration && selectedSource)),
+function identifierTypeUsesLocation(
+  identifierTypeUuid: string | undefined,
+  identifierTypes: Array<PatientIdentifierType>,
+) {
+  return identifierTypes.find(({ uuid }) => uuid === identifierTypeUuid)?.locationBehavior !== 'NOT_USED';
+}
+
+function assertIdentifierLocation(
+  identifiers: FormValues['identifiers'],
+  location: string,
+  identifierTypes: Array<PatientIdentifierType>,
+) {
+  const hasActiveIdentifiersRequiringLocation = Object.values(identifiers ?? {}).some(
+    ({ identifierTypeUuid, identifierValue, autoGeneration, selectedSource }) =>
+      Boolean(identifierValue || (autoGeneration && selectedSource)) &&
+      identifierTypeUsesLocation(identifierTypeUuid, identifierTypes),
   );
 
-  assertLocationForIdentifiers(hasActiveIdentifiers, location);
+  assertLocationForIdentifiers(hasActiveIdentifiersRequiringLocation, location);
+}
+
+function applyIdentifierLocation(
+  identifier: PatientIdentifier,
+  location: string,
+  identifierTypes: Array<PatientIdentifierType>,
+): PatientIdentifier {
+  if (!identifierTypeUsesLocation(identifier.identifierType, identifierTypes)) {
+    const { location: _location, ...identifierWithoutLocation } = identifier;
+    return identifierWithoutLocation;
+  }
+
+  assertLocationForIdentifiers(true, location);
+  return { ...identifier, location };
 }
 
 function ensureTransactionState(transactionManager: SavePatientTransactionManager) {
@@ -261,6 +288,7 @@ export type SavePatientForm = (
   currentUser: Session,
   config: RegistrationConfig,
   savePatientTransactionManager: SavePatientTransactionManager,
+  identifierTypes?: Array<PatientIdentifierType>,
   abortController?: AbortController,
 ) => Promise<string | null>;
 
@@ -276,6 +304,7 @@ export class FormManager {
     currentUser,
     config,
     savePatientTransactionManager,
+    identifierTypes = [],
   ) => {
     if (values.personUuidToPromote) {
       // Promotion needs the live backend: the already-a-patient pre-check and duplicate
@@ -291,7 +320,7 @@ export class FormManager {
       };
     }
 
-    assertIdentifierLocation(values.identifiers, currentLocation);
+    assertIdentifierLocation(values.identifiers, currentLocation, identifierTypes);
 
     const syncItem: PatientRegistration = {
       fhirPatient: FormManager.mapPatientToFhirPatient(
@@ -305,6 +334,7 @@ export class FormManager {
         initialAddressFieldValues,
         capturePhotoProps,
         currentLocation,
+        identifierTypes,
         initialIdentifierValues,
         currentUser,
         config,
@@ -335,6 +365,7 @@ export class FormManager {
     currentUser,
     config,
     savePatientTransactionManager,
+    identifierTypes = [],
     abortController,
   ) => {
     savePatientTransactionManager ??= new SavePatientTransactionManager();
@@ -367,6 +398,7 @@ export class FormManager {
       initialIdentifierValues,
       currentLocation,
       savePatientTransactionManager,
+      identifierTypes,
       signal,
     );
 
@@ -383,6 +415,7 @@ export class FormManager {
             personUuidToPromote,
             patientIdentifiers,
             currentLocation,
+            identifierTypes,
             savePatientTransactionManager.patientSaved,
             signal,
           );
@@ -535,6 +568,7 @@ export class FormManager {
     personUuid: string,
     patientIdentifiers: Array<PatientIdentifier>,
     currentLocation: string,
+    identifierTypes: Array<PatientIdentifierType>,
     alreadyPromotedInSession: boolean,
     signal?: AbortSignal,
   ): Promise<{ patientUuidMap: PatientUuidMapType; verificationAttributes: Array<AttributeValue> }> {
@@ -600,13 +634,16 @@ export class FormManager {
 
     if (!alreadyPromotedInSession) {
       const identifiers = [...patientIdentifiers];
-      const documentIdentifier = buildDocumentIdentifierForPromotion(person, identifiers, currentLocation);
+      const documentIdentifier = buildDocumentIdentifierForPromotion(person, identifiers);
 
       if (documentIdentifier) {
-        identifiers.push(documentIdentifier);
+        identifiers.push(applyIdentifierLocation(documentIdentifier, currentLocation, identifierTypes));
       }
 
-      assertLocationForIdentifiers(identifiers.length > 0, currentLocation);
+      assertLocationForIdentifiers(
+        identifiers.some(({ identifierType }) => identifierTypeUsesLocation(identifierType, identifierTypes)),
+        currentLocation,
+      );
       await promotePersonToPatient(personUuid, identifiers, signal);
     }
 
@@ -866,10 +903,11 @@ export class FormManager {
     initialIdentifierValues: FormValues['identifiers'], // Initial identifiers assigned to the patient
     location: string,
     transactionManager: SavePatientTransactionManager = new SavePatientTransactionManager(),
+    identifierTypes: Array<PatientIdentifierType> = [],
     signal?: AbortSignal,
   ): Promise<Array<PatientIdentifier>> {
     ensureTransactionState(transactionManager);
-    assertIdentifierLocation(patientIdentifiers, location);
+    assertIdentifierLocation(patientIdentifiers, location, identifierTypes);
 
     const initializeIdentifierRow = (
       identifierFieldName: string,
@@ -923,13 +961,16 @@ export class FormManager {
           }
         }
 
-        const identifierToCreate = {
-          uuid: identifierUuid,
-          identifier,
-          identifierType: identifierTypeUuid,
+        const identifierToCreate = applyIdentifierLocation(
+          {
+            uuid: identifierUuid,
+            identifier,
+            identifierType: identifierTypeUuid,
+            preferred,
+          },
           location,
-          preferred,
-        };
+          identifierTypes,
+        );
 
         if (!isNewPatient) {
           const state = initializeIdentifierRow(identifierFieldName, initialIdentifierValues?.[identifierFieldName]);

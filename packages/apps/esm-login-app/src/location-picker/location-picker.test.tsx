@@ -159,7 +159,7 @@ describe('LocationPickerView', () => {
     ).toBeInTheDocument();
   });
 
-  it('allows admission users without a session location to select one', () => {
+  it('redirects admission users home without rendering the location picker', async () => {
     mockUseSession.mockReturnValue({
       user: {
         display: 'Admision',
@@ -171,8 +171,9 @@ describe('LocationPickerView', () => {
 
     renderWithRouter(LocationPickerView, {});
 
-    expect(screen.getByRole('button', { name: /confirm/i })).toBeInTheDocument();
-    expect(mockHardNavigate).not.toHaveBeenCalled();
+    await waitFor(() => expect(mockHardNavigate).toHaveBeenCalledWith(mockConfig.links.loginSuccess));
+    expect(screen.queryByRole('button', { name: /confirm/i })).not.toBeInTheDocument();
+    expect(mockSetSessionLocation).not.toHaveBeenCalled();
   });
 
   it('disables the confirm button when no location is selected', () => {

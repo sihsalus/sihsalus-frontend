@@ -942,6 +942,7 @@ describe('Updating an existing patient record', () => {
       expect.anything(),
       expect.objectContaining({ patientSaved: false }),
       expect.anything(),
+      expect.anything(),
     );
   });
 
@@ -1000,6 +1001,7 @@ describe('Updating an existing patient record', () => {
       expect.anything(),
       expect.anything(),
       expect.objectContaining({ patientSaved: false }),
+      expect.anything(),
       expect.anything(),
     );
   });

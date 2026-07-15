@@ -101,6 +101,7 @@ export async function syncPatientRegistration(
     queuedPatient._patientRegistrationData.currentUser,
     queuedPatient._patientRegistrationData.config,
     queuedPatient._patientRegistrationData.savePatientTransactionManager,
+    queuedPatient._patientRegistrationData.identifierTypes,
     options.abort,
   );
 }

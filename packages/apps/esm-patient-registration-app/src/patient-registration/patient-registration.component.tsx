@@ -404,6 +404,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
         currentSession,
         config,
         savePatientTransactionManager.current,
+        identifierTypes,
         abortController,
       );
 

@@ -23,7 +23,7 @@ import {
   updatePatientIdentifier,
   updateRelationship,
 } from './patient-registration.resource';
-import { type FormValues } from './patient-registration.types';
+import { type FormValues, type PatientIdentifierType } from './patient-registration.types';
 import {
   addressUbigeoField,
   addressUbigeoPathField,
@@ -158,20 +158,64 @@ describe('FormManager', () => {
       ]);
     });
 
-    it('rejects active identifiers when the session location is missing', async () => {
-      await expect(FormManager.savePatientIdentifiers(true, undefined, formValues.identifiers, {}, '')).rejects.toEqual(
-        {
-          responseBody: {
-            error: {
-              message:
-                'No se puede registrar al paciente sin una ubicación de sesión. Seleccione una ubicación e intente nuevamente.',
-            },
+    it('rejects active identifiers that require a missing session location', async () => {
+      const identifierTypes = [{ uuid: 'identifierType', locationBehavior: 'REQUIRED' } as PatientIdentifierType];
+
+      await expect(
+        FormManager.savePatientIdentifiers(
+          true,
+          undefined,
+          formValues.identifiers,
+          {},
+          '',
+          new SavePatientTransactionManager(),
+          identifierTypes,
+        ),
+      ).rejects.toEqual({
+        responseBody: {
+          error: {
+            message:
+              'No se puede registrar al paciente porque un tipo de identificador requiere una ubicación que no está disponible. Contacte a un administrador.',
           },
         },
-      );
+      });
 
       expect(mockGenerateIdentifier).not.toHaveBeenCalled();
       expect(mockAddPatientIdentifier).not.toHaveBeenCalled();
+    });
+
+    it('fails closed when identifier location metadata is unavailable', async () => {
+      await expect(
+        FormManager.savePatientIdentifiers(true, undefined, formValues.identifiers, {}, ''),
+      ).rejects.toMatchObject({
+        responseBody: { error: { message: expect.stringContaining('requiere una ubicación') } },
+      });
+
+      expect(mockGenerateIdentifier).not.toHaveBeenCalled();
+      expect(mockAddPatientIdentifier).not.toHaveBeenCalled();
+    });
+
+    it('omits location for identifier types configured with locationBehavior NOT_USED', async () => {
+      const identifierTypes = [{ uuid: 'identifierType', locationBehavior: 'NOT_USED' } as PatientIdentifierType];
+
+      const result = await FormManager.savePatientIdentifiers(
+        true,
+        undefined,
+        formValues.identifiers,
+        {},
+        '',
+        new SavePatientTransactionManager(),
+        identifierTypes,
+      );
+
+      expect(result).toEqual([
+        {
+          uuid: 'aUuid',
+          identifier: 'foo',
+          identifierType: 'identifierType',
+          preferred: true,
+        },
+      ]);
     });
 
     it('should generate identifier if it has autoGeneration and manual entry disabled', async () => {
@@ -726,7 +770,11 @@ describe('FormManager', () => {
       };
     }
 
-    async function runPromotion(values = buildPromotionFormValues(), currentLocation = 'location-1') {
+    async function runPromotion(
+      values = buildPromotionFormValues(),
+      currentLocation = 'location-1',
+      identifierTypes: Array<PatientIdentifierType> = [],
+    ) {
       const config = getPeruRegistrationConfig();
       return FormManager.savePatientFormOnline(
         true,
@@ -739,6 +787,7 @@ describe('FormManager', () => {
         {} as Session,
         config,
         new SavePatientTransactionManager(),
+        identifierTypes,
       );
     }
 
@@ -767,9 +816,40 @@ describe('FormManager', () => {
       expect(result).toBe(personUuid);
     });
 
-    it('rejects a document identifier derived during promotion when the session location is missing', async () => {
-      await expect(runPromotion({ ...buildPromotionFormValues(), identifiers: {} }, '')).rejects.toMatchObject({
-        responseBody: { error: { message: expect.stringContaining('ubicación de sesión') } },
+    it('omits location from a promotion-derived document when its type does not use locations', async () => {
+      const identifierTypes = [
+        {
+          uuid: '550e8400-e29b-41d4-a716-446655440001',
+          locationBehavior: 'NOT_USED',
+        } as PatientIdentifierType,
+      ];
+
+      await expect(runPromotion({ ...buildPromotionFormValues(), identifiers: {} }, '', identifierTypes)).resolves.toBe(
+        personUuid,
+      );
+
+      const [, identifiers] = mockPromotePersonToPatient.mock.calls[0];
+      expect(identifiers).toEqual([
+        expect.objectContaining({
+          identifier: '99887766',
+          identifierType: '550e8400-e29b-41d4-a716-446655440001',
+        }),
+      ]);
+      expect(identifiers[0]).not.toHaveProperty('location');
+    });
+
+    it('rejects a promotion-derived document when its type requires a missing session location', async () => {
+      const identifierTypes = [
+        {
+          uuid: '550e8400-e29b-41d4-a716-446655440001',
+          locationBehavior: 'REQUIRED',
+        } as PatientIdentifierType,
+      ];
+
+      await expect(
+        runPromotion({ ...buildPromotionFormValues(), identifiers: {} }, '', identifierTypes),
+      ).rejects.toMatchObject({
+        responseBody: { error: { message: expect.stringContaining('requiere una ubicación') } },
       });
 
       expect(mockPromotePersonToPatient).not.toHaveBeenCalled();

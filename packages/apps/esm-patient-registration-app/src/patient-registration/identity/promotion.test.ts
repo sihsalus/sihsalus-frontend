@@ -68,22 +68,19 @@ describe('isValidDocumentNumber', () => {
 
 describe('buildDocumentIdentifierForPromotion', () => {
   it('maps the DNI person attribute to a DNI patient identifier', () => {
-    const identifier = buildDocumentIdentifierForPromotion(buildPerson(), [], 'location-1');
+    const identifier = buildDocumentIdentifierForPromotion(buildPerson(), []);
 
     expect(identifier).toEqual({
       identifier: '99887766',
       identifierType: peruDniPatientIdentifierTypeUuid,
-      location: 'location-1',
       preferred: false,
     });
   });
 
   it('does not duplicate an identifier type already present in the payload', () => {
-    const identifier = buildDocumentIdentifierForPromotion(
-      buildPerson(),
-      [{ identifier: '99887766', identifierType: peruDniPatientIdentifierTypeUuid, location: 'location-1' }],
-      'location-1',
-    );
+    const identifier = buildDocumentIdentifierForPromotion(buildPerson(), [
+      { identifier: '99887766', identifierType: peruDniPatientIdentifierTypeUuid, location: 'location-1' },
+    ]);
 
     expect(identifier).toBeNull();
   });
@@ -104,7 +101,7 @@ describe('buildDocumentIdentifierForPromotion', () => {
       ],
     });
 
-    expect(buildDocumentIdentifierForPromotion(person, [], 'location-1')).toBeNull();
+    expect(buildDocumentIdentifierForPromotion(person, [])).toBeNull();
   });
 
   it('creates no identifier for undocumented persons', () => {
@@ -118,7 +115,7 @@ describe('buildDocumentIdentifierForPromotion', () => {
       ],
     });
 
-    expect(buildDocumentIdentifierForPromotion(person, [], 'location-1')).toBeNull();
+    expect(buildDocumentIdentifierForPromotion(person, [])).toBeNull();
   });
 });
 

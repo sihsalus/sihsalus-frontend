@@ -19,6 +19,7 @@ interface PatientIdentifierTypeResponse {
   description?: string;
   display: string;
   format: string;
+  locationBehavior: FetchedPatientIdentifierType['locationBehavior'];
   name: string;
   required: boolean;
   uniquenessBehavior: FetchedPatientIdentifierType['uniquenessBehavior'];
@@ -170,7 +171,7 @@ export async function fetchPatientIdentifierTypesWithSources(): Promise<Array<Pa
 async function fetchPatientIdentifierTypes(): Promise<Array<FetchedPatientIdentifierType>> {
   try {
     const patientIdentifierTypesResponse = await cacheAndFetch<{ results: Array<PatientIdentifierTypeResponse> }>(
-      `${restBaseUrl}/patientidentifiertype?v=custom:(display,uuid,name,description,format,required,uniquenessBehavior)`,
+      `${restBaseUrl}/patientidentifiertype?v=custom:(display,uuid,name,description,format,required,locationBehavior,uniquenessBehavior)`,
     );
     const primaryIdentifierTypeResponse = await cacheAndFetch<{
       results: Array<{ metadataUuid?: string }>;
@@ -269,6 +270,7 @@ function mapPatientIdentifierType(patientIdentifierType: PatientIdentifierTypeRe
     uuid: patientIdentifierType.uuid,
     format: patientIdentifierType.format,
     isPrimary,
+    locationBehavior: patientIdentifierType.locationBehavior,
     uniquenessBehavior: patientIdentifierType.uniquenessBehavior,
   };
 }

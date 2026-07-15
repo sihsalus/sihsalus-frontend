@@ -31,6 +31,8 @@ export interface FetchedPatientIdentifierType {
   fieldName: string;
   format: string;
   isPrimary: boolean;
+  /** See: https://github.com/openmrs/openmrs-core/blob/e3fb1ac0a052aeff0f957a150731757dd319693b/api/src/main/java/org/openmrs/PatientIdentifierType.java#L28 */
+  locationBehavior?: null | 'REQUIRED' | 'NOT_USED';
   /** See: https://github.com/openmrs/openmrs-core/blob/e3fb1ac0a052aeff0f957a150731757dd319693b/api/src/main/java/org/openmrs/PatientIdentifierType.java#L41 */
   uniquenessBehavior: undefined | null | 'UNIQUE' | 'NON_UNIQUE' | 'LOCATION';
 }
@@ -93,6 +95,7 @@ export interface PatientRegistration {
     initialAddressFieldValues: Record<string, unknown>;
     capturePhotoProps: CapturePhotoProps | null;
     currentLocation: string;
+    identifierTypes?: Array<PatientIdentifierType>;
     initialIdentifierValues: FormValues['identifiers'];
     currentUser: Session;
     config: RegistrationConfig;

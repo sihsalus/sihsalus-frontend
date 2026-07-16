@@ -53,13 +53,24 @@ triajes de emergencia). No relabelar el histórico completo:
 
 ## Pendientes que exceden este repositorio (backend / content package)
 
+Verificado contra `sihsalus-content` @ 1c3b47a (content 1.18.0, 2026-07-16). Lo que
+**sí está alineado**: estados de cola, prioridades I-IV, Glasgow completo (preguntas,
+19 respuestas y total), circunferencias, IMC, set de vitales `1114…`, concepto de
+urgencia pre-triaje, visit type Emergencia, `visitQueueNumberAttributeUuid`,
+ubicación UPSS-EMERGENCIA, encounter role Unknown, encounter type "Atención en
+Emergencia", y los identifier types `550e8400-…` (que **sí están provisionados** en
+`patientidentifiertypes.csv` — corrige una versión anterior de este documento que
+los llamaba placeholders).
+
 | Pendiente | Detalle |
 |---|---|
-| Encounter types nuevos | "Registro de signos vitales y antropometría" y "Triaje de emergencia" (ver arriba). |
+| **Colas de emergencia** | El flujo de dos colas del frontend (triaje `b1c5bb01-…7cf0` + atención `ebd44a3d-…3ffe`) **no existe en el content** (`queues/sihsalus-queues.csv` solo define "Cola de Emergencia" `b8c9d0e1-…` en UPSS-EMERGENCIA y una "Cola de Triaje" genérica `c3d4e5f6-…` en otra ubicación), y `frontend_configuration/config.json` no sobreescribe esos UUIDs. Solo funciona donde las colas se crearon a mano (dev); un despliegue limpio desde content rompe el flujo. Decidir: provisionar ambas colas en content con los UUIDs del frontend, o re-apuntar el frontend a colas del content (creando la cola de atención que falta). |
+| Encounter types nuevos | "Registro de signos vitales y antropometría" y "Triaje de emergencia" (ver arriba). Verificado: `encountertypes.csv` sigue con "Triaje" `67a71486-…` citando NTS 021 y con privilegios vacíos. |
+| Conceptos faltantes | `emergencyConceptUuid` `b0cdc710-…` (pre-triaje "Emergencia") no existe en los zips OCL — hoy casi código muerto porque la ruta directa usa Prioridad I; limpiar del schema o provisionar. `emergencyServiceUuid` `d62d58e9-…` tampoco existe (el servicio de la cola de emergencia en content es `e5f6a7b8-…7e05`); es config sin consumidores. |
 | RBAC de backend | Los privilegios `view/edit` de los encounter types están vacíos en content; ocultar botones en frontend no es autorización. Definirlos y asignarlos a los roles clínicos. |
-| Rangos de referencia | Corregir en content los rangos que hoy describen valores patológicos registrables como imposibles (peso >40 kg a los 12 años, temperatura <35 °C, PC <31 cm en RN, extremos de MUAC). El frontend ya solo advierte (no bloquea), pero los rangos deben reflejar límites absolutos reales. SpO₂: `hiCritical=100` junto a `hiNormal=100` ya no marca 100 % como crítico por el fix de frontend, pero lo limpio es dejar `hiCritical` nulo. |
-| Vital Signs concept set | Quitar Karnofsky del set y añadir los conceptos que el frontend usa y faltan (circunferencias, Glasgow total). |
-| Identifier types placeholder | `550e8400-e29b-41d4-a716-44665544000X` (DNI/CE/Pasaporte/Otros) en `esm-emergency-app/config-schema.ts` son UUIDs de ejemplo; provisionar los reales. |
+| Rol de triaje | Existe "Enfermera de Triaje" `bd16c32b-…` en `encounterroles.csv` (NT 042). El default del frontend (`vitals.encounterRoleUuid` = Unknown) es válido pero genérico; configurar el rol de triaje para el perfil de emergencia cuando se separe el contrato. |
+| Rangos de referencia | Corregir en content los rangos que describen valores patológicos registrables como imposibles (peso >40 kg a los 12 años, temperatura <35 °C, PC <31 cm en RN, extremos de MUAC). El frontend ya solo advierte (no bloquea). SpO₂: content define `Normal high = Critical high = 100`; el fix de `assessValue` trata 100 % como normal, pero lo limpio es dejar `Critical high` nulo. |
+| Vital Signs concept set | Quitar Karnofsky del set (verificado presente en el zip OCL 10) y añadir los conceptos que el frontend usa y faltan. |
 
 ## Pendientes de frontend no cubiertos aún
 

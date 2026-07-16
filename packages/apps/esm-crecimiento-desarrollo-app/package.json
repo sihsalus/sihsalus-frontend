@@ -74,7 +74,7 @@
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@rspack/cli": "1.7.11",
-    "@rspack/core": "1.7.11",
+    "@rspack/core": "2.1.4",
     "dayjs": "^1.11.13",
     "i18next": "^25.7.2",
     "openmrs": "workspace:*",

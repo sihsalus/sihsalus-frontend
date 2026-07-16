@@ -10,7 +10,7 @@ interface BiometricsProps {
 const BiometricsMain: React.FC<BiometricsProps> = ({ patientUuid }) => {
   const pageSize = 10;
   const { t } = useTranslation();
-  const pageUrl: string = `$\{openmrsSpaBase}/patient/${patientUuid}/chart`;
+  const pageUrl: string = `${globalThis.spaBase}/patient/${patientUuid}/chart`;
   const urlLabel = t('goToSummary', 'Go to Summary');
 
   return <BiometricsBase patientUuid={patientUuid} pageSize={pageSize} urlLabel={urlLabel} pageUrl={pageUrl} />;

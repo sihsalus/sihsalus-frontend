@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { IndicadorDetail, IndicadorMeta, IndicadorMetaCreatePayload } from '../api/types';
 import { useIndicadores } from '../features/indicadores/hooks';
+import styles from '../indicators-dashboard.module.scss';
 
 interface MetaFormModalProps {
   isOpen: boolean;
@@ -117,9 +118,9 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
       onRequestClose={onClose}
       onRequestSubmit={handleSubmit}
     >
-      <div style={{ display: 'grid', gap: '1.25rem' }}>
+      <div className={styles.modalBody}>
         {validationMessage ? (
-          <div role="alert" style={{ color: '#da1e28' }}>
+          <div role="alert" className={styles.validationError}>
             {validationMessage}
           </div>
         ) : null}

@@ -5,8 +5,8 @@ import {
   formatDate,
   parseDate,
   useConfig,
-  useSession,
   userHasAccess,
+  useSession,
   type Visit,
 } from '@openmrs/esm-framework';
 import { ErrorState, useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
@@ -172,7 +172,7 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
             {!hideLinks && (
               <ConfigurableLink
                 className={styles.link}
-                to={`${globalThis.spaBase}/patient/${patientUuid}/chart/Vitals & Biometrics`}
+                to={`${globalThis.spaBase}/patient/${patientUuid}/chart/vitals-and-biometrics`}
               >
                 {t('vitalsHistory', 'Vitals history')}
               </ConfigurableLink>

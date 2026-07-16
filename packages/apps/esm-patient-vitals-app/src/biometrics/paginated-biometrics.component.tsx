@@ -24,6 +24,10 @@ interface PaginatedBiometricsProps {
   pageUrl: string;
   urlLabel: string;
   tableHeaders: Array<BiometricsTableHeader>;
+  /** Whether the server has more observation pages beyond the rows loaded so far */
+  hasMoreData?: boolean;
+  isLoadingMoreData?: boolean;
+  onLoadMoreData?: () => void;
 }
 
 const PaginatedBiometrics: React.FC<PaginatedBiometricsProps> = ({
@@ -32,6 +36,9 @@ const PaginatedBiometrics: React.FC<PaginatedBiometricsProps> = ({
   pageUrl,
   urlLabel,
   tableHeaders,
+  hasMoreData,
+  isLoadingMoreData,
+  onLoadMoreData,
 }) => {
   const isTablet = useLayoutType() === 'tablet';
   const renderHeader = (header: React.ReactNode | { content?: React.ReactNode }): React.ReactNode => {
@@ -90,6 +97,15 @@ const PaginatedBiometrics: React.FC<PaginatedBiometricsProps> = ({
   }, [tableRows, tableHeaders, sortParams]);
 
   const { results: paginatedBiometrics, goTo, currentPage } = usePagination(sortedData, pageSize);
+
+  // The history is truncated to the FHIR pages loaded so far; when the user reaches the
+  // last locally-available page, request the next server page so records keep appearing.
+  const lastLocalPage = Math.max(1, Math.ceil(sortedData.length / pageSize));
+  useEffect(() => {
+    if (onLoadMoreData && hasMoreData && !isLoadingMoreData && currentPage >= lastLocalPage) {
+      onLoadMoreData();
+    }
+  }, [currentPage, lastLocalPage, hasMoreData, isLoadingMoreData, onLoadMoreData]);
 
   return (
     <>

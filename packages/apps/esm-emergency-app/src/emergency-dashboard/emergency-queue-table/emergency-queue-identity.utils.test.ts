@@ -1,3 +1,4 @@
+import type { Config } from '../../config-schema';
 import { type EmergencyQueueEntry } from '../../resources/emergency.resource';
 import {
   getQueueEntryDocumentNumber,
@@ -5,7 +6,6 @@ import {
   getQueueEntryMedicalRecordNumber,
   getQueueEntryResponsibleName,
 } from './emergency-queue-identity.utils';
-import type { Config } from '../../config-schema';
 
 function createQueueEntry(overrides: Partial<EmergencyQueueEntry> = {}): EmergencyQueueEntry {
   return {

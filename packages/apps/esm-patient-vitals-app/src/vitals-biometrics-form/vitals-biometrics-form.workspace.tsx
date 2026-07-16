@@ -12,14 +12,17 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   age,
+  createErrorHandler,
   ExtensionSlot,
-  getUserFacingErrorMessage,
+  getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
   showSnackbar,
   useConfig,
   useLayoutType,
   usePatient,
+  useSession,
   Workspace2,
 } from '@openmrs/esm-framework';
+import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import {
   type DefaultPatientWorkspaceProps,
   type PatientWorkspace2DefinitionProps,
@@ -39,7 +42,7 @@ import {
   saveVitalsAndBiometrics as savePatientVitals,
   useVitalsConceptMetadata,
 } from '../common';
-import type { ConfigObject } from '../config-schema';
+import type { ConfigObject, GlasgowComaScaleAnswerUuids } from '../config-schema';
 
 import styles from './vitals-biometrics-form.scss';
 import {
@@ -63,50 +66,36 @@ interface GlasgowComaScaleOption {
   value: string;
 }
 
-const GLASGOW_ANSWER_UUIDS = {
-  eyeOpeningSpontaneous: 'faff1dec-14df-44d4-8695-b337dced2274',
-  eyeOpeningToSpeech: '2120199e-03ed-4986-892f-52a3d13b92c0',
-  eyeOpeningToPain: '1633ea34-bc65-4a87-9fec-8fef231b85cf',
-  eyeOpeningNone: '8b4ee185-b709-4cfa-b3db-f15d565ddc04',
-  eyeOpeningNotTestable: '25c71769-dddb-4d06-a858-cde05e2087e2',
-  verbalResponseOriented: '6440f83b-657e-4c5c-bac5-e3f67660ea4e',
-  verbalResponseConfused: '52066114-63ee-48ca-a09b-fa9c0c7f73ba',
-  verbalResponseInappropriateWords: '0b5820f1-f968-4950-bc62-ad54c6166723',
-  verbalResponseIncomprehensibleSounds: '245c6329-b810-4db3-bdc1-62bb9cdc0f31',
-  verbalResponseNone: '1d01f180-1acd-4121-b380-049f4bbb4af7',
-  verbalResponseNotTestable: 'fd4b9335-0f74-453e-b787-46d303a9b3b5',
-  motorResponseObeysCommands: 'bddbf4e2-c870-4515-924e-d98cfcb7948f',
-  motorResponseLocalizesPain: '355eb0e2-c319-4536-9837-43bf3c23f592',
-  motorResponseWithdrawsFromPain: 'a815a9d0-a033-48bc-89e9-836a15b9a3b2',
-  motorResponseAbnormalFlexion: '795e56c8-e783-470e-8b83-3ee11300f4a7',
-  motorResponseExtension: 'b4e10f1d-09e2-4b6b-8471-466c25da1b79',
-  motorResponseNone: '7e16856d-c686-4921-ba7f-65f7bf15771a',
-  motorResponseNotTestable: '09957de5-8eb7-4865-8e29-e946cf895bc4',
-} as const;
-
-const GLASGOW_SCORE_BY_ANSWER_UUID: Record<string, number | undefined> = {
-  [GLASGOW_ANSWER_UUIDS.eyeOpeningSpontaneous]: 4,
-  [GLASGOW_ANSWER_UUIDS.eyeOpeningToSpeech]: 3,
-  [GLASGOW_ANSWER_UUIDS.eyeOpeningToPain]: 2,
-  [GLASGOW_ANSWER_UUIDS.eyeOpeningNone]: 1,
-  [GLASGOW_ANSWER_UUIDS.eyeOpeningNotTestable]: undefined,
-  [GLASGOW_ANSWER_UUIDS.verbalResponseOriented]: 5,
-  [GLASGOW_ANSWER_UUIDS.verbalResponseConfused]: 4,
-  [GLASGOW_ANSWER_UUIDS.verbalResponseInappropriateWords]: 3,
-  [GLASGOW_ANSWER_UUIDS.verbalResponseIncomprehensibleSounds]: 2,
-  [GLASGOW_ANSWER_UUIDS.verbalResponseNone]: 1,
-  [GLASGOW_ANSWER_UUIDS.verbalResponseNotTestable]: undefined,
-  [GLASGOW_ANSWER_UUIDS.motorResponseObeysCommands]: 6,
-  [GLASGOW_ANSWER_UUIDS.motorResponseLocalizesPain]: 5,
-  [GLASGOW_ANSWER_UUIDS.motorResponseWithdrawsFromPain]: 4,
-  [GLASGOW_ANSWER_UUIDS.motorResponseAbnormalFlexion]: 3,
-  [GLASGOW_ANSWER_UUIDS.motorResponseExtension]: 2,
-  [GLASGOW_ANSWER_UUIDS.motorResponseNone]: 1,
-  [GLASGOW_ANSWER_UUIDS.motorResponseNotTestable]: undefined,
+// The scores are intrinsic to the Glasgow Coma Scale; only the concept answer UUIDs
+// vary per installation and come from config (vitals.glasgowComaScale.answerUuids).
+const GLASGOW_SCORE_BY_ANSWER_KEY: Record<keyof GlasgowComaScaleAnswerUuids, number | undefined> = {
+  eyeOpeningSpontaneous: 4,
+  eyeOpeningToSpeech: 3,
+  eyeOpeningToPain: 2,
+  eyeOpeningNone: 1,
+  eyeOpeningNotTestable: undefined,
+  verbalResponseOriented: 5,
+  verbalResponseConfused: 4,
+  verbalResponseInappropriateWords: 3,
+  verbalResponseIncomprehensibleSounds: 2,
+  verbalResponseNone: 1,
+  verbalResponseNotTestable: undefined,
+  motorResponseObeysCommands: 6,
+  motorResponseLocalizesPain: 5,
+  motorResponseWithdrawsFromPain: 4,
+  motorResponseAbnormalFlexion: 3,
+  motorResponseExtension: 2,
+  motorResponseNone: 1,
+  motorResponseNotTestable: undefined,
 };
 
-function getGlasgowScore(value: string | undefined) {
-  return value ? GLASGOW_SCORE_BY_ANSWER_UUID[value] : undefined;
+function buildGlasgowScoreByAnswerUuid(answerUuids: GlasgowComaScaleAnswerUuids): Record<string, number | undefined> {
+  return Object.fromEntries(
+    Object.entries(GLASGOW_SCORE_BY_ANSWER_KEY).map(([key, score]) => [
+      answerUuids[key as keyof GlasgowComaScaleAnswerUuids],
+      score,
+    ]),
+  );
 }
 
 const VitalsAndBiometricFormSchema = z
@@ -141,12 +130,23 @@ const VitalsAndBiometricFormSchema = z
       path: ['glasgowComaScale'],
     },
   )
+  .refine((fields) => (fields.systolicBloodPressure == null) === (fields.diastolicBloodPressure == null), {
+    message: 'Blood pressure requires both systolic and diastolic values',
+    path: ['bloodPressureIncomplete'],
+  })
   .refine(
     (fields) => {
-      return Object.values(fields).some((value) => value != null && value !== '');
+      // A note alone must not create an encounter; require at least one measurement
+      const {
+        generalPatientNote: _note,
+        computedBodyMassIndex: _bmi,
+        glasgowTotal: _glasgowTotal,
+        ...measurements
+      } = fields;
+      return Object.values(measurements).some((value) => value != null && value !== '');
     },
     {
-      message: 'Please fill at least one field',
+      message: 'Please record at least one measurement',
       path: ['oneFieldRequired'],
     },
   );
@@ -187,6 +187,9 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   const biometricsUnitsSymbols = config.biometrics;
   const useMuacColorStatus = config.vitals.useMuacColors;
 
+  // The session is used only to attribute the provider; the encounter location
+  // comes from the visit (or an explicit workspace override), never from the session.
+  const session = useSession();
   const patient = usePatient(patientUuid);
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
   const { data: conceptUnits, conceptMetadata, conceptRanges, isLoading } = useVitalsConceptMetadata();
@@ -199,6 +202,11 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       config.concepts.abdominalCircumferenceUuid,
       config.concepts.headCircumferenceUuid,
       config.concepts.chestCircumferenceUuid,
+      config.concepts.systolicBloodPressureUuid,
+      config.concepts.diastolicBloodPressureUuid,
+      config.concepts.pulseUuid,
+      config.concepts.respiratoryRateUuid,
+      config.concepts.oxygenSaturationUuid,
     ],
     [
       config.concepts.temperatureUuid,
@@ -208,19 +216,23 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       config.concepts.abdominalCircumferenceUuid,
       config.concepts.headCircumferenceUuid,
       config.concepts.chestCircumferenceUuid,
+      config.concepts.systolicBloodPressureUuid,
+      config.concepts.diastolicBloodPressureUuid,
+      config.concepts.pulseUuid,
+      config.concepts.respiratoryRateUuid,
+      config.concepts.oxygenSaturationUuid,
     ],
   );
   const { ranges: patientReferenceRanges, isLoading: isLoadingReferenceRanges } = useReferenceRanges(
     patientUuid,
     referenceRangeConceptUuids,
   );
-  const [hasInvalidVitals, setHasInvalidVitals] = useState(false);
+  const [outOfRangeFieldKeys, setOutOfRangeFieldKeys] = useState<Array<string>>([]);
+  const confirmedOutOfRangeTokenRef = useRef<string | null>(null);
   const [muacColorCode, setMuacColorCode] = useState('');
   const [showErrorNotification, setShowErrorNotification] = useState(false);
   const [showErrorMessage, setShowErrorMessage] = useState(false);
   const [formErrorMessage, setFormErrorMessage] = useState('');
-  const [vitalsWereSaved, setVitalsWereSaved] = useState(false);
-  const saveInProgressRef = useRef(false);
 
   const {
     control,
@@ -242,7 +254,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       return;
     }
 
-    await props.closeWorkspace();
+    props.closeWorkspace();
   }, [props]);
 
   const closeCurrentWorkspaceWithSavedChanges = useCallback(async () => {
@@ -251,7 +263,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       return;
     }
 
-    await props.closeWorkspaceWithSavedChanges();
+    props.closeWorkspaceWithSavedChanges();
   }, [props]);
 
   const renderWorkspace = useCallback(
@@ -294,6 +306,16 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   const glasgowEyeOpening = watch('glasgowEyeOpening');
   const glasgowVerbalResponse = watch('glasgowVerbalResponse');
   const glasgowMotorResponse = watch('glasgowMotorResponse');
+
+  const glasgowAnswerUuids = config.vitals.glasgowComaScale.answerUuids;
+  const glasgowScoreByAnswerUuid = useMemo(
+    () => buildGlasgowScoreByAnswerUuid(glasgowAnswerUuids),
+    [glasgowAnswerUuids],
+  );
+  const getGlasgowScore = useCallback(
+    (value: string | undefined) => (value ? glasgowScoreByAnswerUuid[value] : undefined),
+    [glasgowScoreByAnswerUuid],
+  );
 
   const workspaceOverrides: VitalsBiometricsWorkspaceOverrides = isWorkspace2Props(props)
     ? (props.workspaceProps ?? {})
@@ -347,12 +369,21 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
         shouldTouch: false,
       },
     );
-  }, [glasgowEyeOpening, glasgowMotorResponse, glasgowVerbalResponse, setValue]);
+  }, [getGlasgowScore, glasgowEyeOpening, glasgowMotorResponse, glasgowVerbalResponse, setValue]);
 
   function onError(err: Record<string, { message?: string }>) {
     if (err?.oneFieldRequired) {
       setShowErrorMessage(false);
-      setFormErrorMessage(t('pleaseFillField', 'Please fill at least one field'));
+      setFormErrorMessage(
+        t('atLeastOneMeasurementRequired', 'Please record at least one measurement. A note alone cannot be saved'),
+      );
+      setShowErrorNotification(true);
+      return;
+    }
+
+    if (err?.bloodPressureIncomplete) {
+      setShowErrorMessage(false);
+      setFormErrorMessage(t('bloodPressureIncomplete', 'Blood pressure requires both systolic and diastolic values'));
       setShowErrorNotification(true);
       return;
     }
@@ -417,10 +448,6 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
 
   const savePatientVitalsAndBiometrics = useCallback(
     async (data: VitalsBiometricsFormData) => {
-      if (saveInProgressRef.current || vitalsWereSaved) {
-        return;
-      }
-
       const { computedBodyMassIndex: _bmi, glasgowTotal: _glasgowTotal, ...rawFormData } = data;
       const computedGlasgowTotal = calculateGlasgowComaScaleTotal(
         getGlasgowScore(rawFormData.glasgowEyeOpening),
@@ -431,18 +458,17 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
         ...rawFormData,
         ...(computedGlasgowTotal != null ? { glasgowTotal: computedGlasgowTotal } : {}),
       };
-      setShowErrorMessage(true);
       setShowErrorNotification(false);
       setFormErrorMessage('');
 
-      const allFieldsAreValid = Object.entries(formData)
+      const outOfRangeEntries = Object.entries(formData)
         .filter(([, value]) => value != null && value !== '')
-        .every(([key, value]) => {
+        .filter(([key, value]) => {
           const conceptUuid = config.concepts[`${key}Uuid`];
           if (!conceptUuid) {
-            return true;
+            return false;
           }
-          return isValueWithinReferenceRange(
+          return !isValueWithinReferenceRange(
             conceptMetadata,
             conceptUuid,
             value,
@@ -450,135 +476,104 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
           );
         });
 
-      if (allFieldsAreValid) {
-        setShowErrorMessage(false);
+      // Pathological values must remain recordable: values outside the absolute range
+      // warn and require pressing save a second time instead of being rejected.
+      const outOfRangeToken = JSON.stringify(outOfRangeEntries);
+      if (outOfRangeEntries.length > 0 && confirmedOutOfRangeTokenRef.current !== outOfRangeToken) {
+        confirmedOutOfRangeTokenRef.current = outOfRangeToken;
+        setOutOfRangeFieldKeys(outOfRangeEntries.map(([key]) => key));
+        setShowErrorMessage(true);
+        return;
+      }
 
-        if (!currentVisit?.uuid || currentVisit.stopDatetime) {
-          showSnackbar({
-            title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
-            kind: 'error',
-            isLowContrast: false,
-            subtitle: t('noActiveVisit', 'An active visit is required to record vitals and biometrics.'),
-          });
-          return;
-        }
+      confirmedOutOfRangeTokenRef.current = null;
+      setOutOfRangeFieldKeys([]);
+      setShowErrorMessage(false);
 
-        const locationUuid = workspaceOverrides.locationUuid ?? currentVisit.location?.uuid;
-        if (!locationUuid) {
-          showSnackbar({
-            title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
-            kind: 'error',
-            isLowContrast: false,
-            subtitle: t('noVisitLocation', 'Could not determine the active visit location.'),
-          });
-          return;
-        }
-
-        saveInProgressRef.current = true;
-        const abortController = new AbortController();
-        let response: Awaited<ReturnType<typeof savePatientVitals>>;
-
-        try {
-          response = await savePatientVitals(
-            encounterTypeUuid,
-            config.concepts,
-            patientUuid,
-            formData,
-            abortController,
-            locationUuid,
-            currentVisit.uuid,
-          );
-        } catch (error: unknown) {
-          showSnackbar({
-            title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
-            kind: 'error',
-            isLowContrast: false,
-            subtitle: getUserFacingErrorMessage(
-              error,
-              t('unexpectedError', 'An unexpected error occurred. Please try again.'),
-              { logContext: 'Save patient vitals and biometrics' },
-            ),
-          });
-          saveInProgressRef.current = false;
-          return;
-        }
-
-        if (response.status < 200 || response.status >= 300) {
-          showSnackbar({
-            title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
-            kind: 'error',
-            isLowContrast: false,
-            subtitle: t('unexpectedError', 'An unexpected error occurred. Please try again.'),
-          });
-          saveInProgressRef.current = false;
-          return;
-        }
-
-        // From this point on the clinical encounter has been persisted. Keep the
-        // form locked even if a secondary workspace or queue action fails.
-        setVitalsWereSaved(true);
-        invalidateCachedVitalsAndBiometrics();
+      if (!currentVisit?.uuid || currentVisit.stopDatetime) {
         showSnackbar({
-          isLowContrast: true,
-          kind: 'success',
-          title: t('vitalsAndBiometricsRecorded', 'Vitals and Biometrics saved'),
-          subtitle: t(
-            'vitalsAndBiometricsNowAvailable',
-            'They are now visible on the Vitals and Biometrics page',
-          ),
+          title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
+          kind: 'error',
+          isLowContrast: false,
+          subtitle: t('noActiveVisit', 'An active visit is required to record vitals and biometrics.'),
         });
+        return;
+      }
 
-        const postSaveErrors: Array<{ context: string; error: unknown }> = [];
+      const locationUuid = workspaceOverrides.locationUuid ?? currentVisit.location?.uuid;
+      if (!locationUuid) {
+        showSnackbar({
+          title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
+          kind: 'error',
+          isLowContrast: false,
+          subtitle: t('noVisitLocation', 'Could not determine the active visit location.'),
+        });
+        return;
+      }
 
-        try {
-          await closeCurrentWorkspaceWithSavedChanges();
-        } catch (error: unknown) {
-          postSaveErrors.push({ context: 'Close workspace after saving patient vitals and biometrics', error });
-        }
+      const abortController = new AbortController();
 
-        try {
+      try {
+        const response = await savePatientVitals(
+          encounterTypeUuid,
+          config.concepts,
+          patientUuid,
+          formData,
+          abortController,
+          locationUuid,
+          currentVisit.uuid,
+          {
+            encounterDatetime: new Date(),
+            providerUuid: session?.currentProvider?.uuid,
+            encounterRoleUuid: config.vitals.encounterRoleUuid,
+          },
+        );
+
+        if (response.status === 201 || response.status === 200) {
           await workspaceOverrides.onVitalsSaved?.({
             encounterTypeUuid,
             formData,
             patientUuid,
             visitUuid: currentVisit.uuid,
           });
-        } catch (error: unknown) {
-          postSaveErrors.push({ context: 'Run workflow after saving patient vitals and biometrics', error });
-        }
-
-        saveInProgressRef.current = false;
-
-        if (postSaveErrors.length > 0) {
-          for (const { context, error } of postSaveErrors) {
-            getUserFacingErrorMessage(error, '', { logContext: context });
-          }
+          invalidateCachedVitalsAndBiometrics();
+          await closeCurrentWorkspaceWithSavedChanges();
           showSnackbar({
-            title: t('vitalsSavedFollowUpIncomplete', 'Vitals saved; workflow incomplete'),
-            kind: 'warning',
-            isLowContrast: false,
-            subtitle: t(
-              'vitalsSavedDoNotSubmitAgain',
-              'The vitals were saved. Do not submit them again; review the patient chart and the care queue.',
-            ),
+            isLowContrast: true,
+            kind: 'success',
+            title: t('vitalsAndBiometricsRecorded', 'Vitals and Biometrics saved'),
+            subtitle: t('vitalsAndBiometricsNowAvailable', 'They are now visible on the Vitals and Biometrics page'),
           });
         }
-      } else {
-        setHasInvalidVitals(true);
+      } catch (error) {
+        createErrorHandler()(error);
+        showSnackbar({
+          title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
+          kind: 'error',
+          isLowContrast: false,
+          subtitle: getCompatibleUserFacingErrorMessage(
+            error,
+            t('unexpectedError', 'An unexpected error occurred. Please try again.'),
+            { logContext: 'Save vitals and biometrics' },
+            frameworkGetUserFacingErrorMessage,
+          ),
+        });
       }
     },
     [
       closeCurrentWorkspaceWithSavedChanges,
       conceptMetadata,
       config.concepts,
+      config.vitals.encounterRoleUuid,
       currentVisit?.location?.uuid,
       currentVisit?.stopDatetime,
       currentVisit?.uuid,
       encounterTypeUuid,
+      getGlasgowScore,
       getPatientReferenceRange,
       patientUuid,
+      session?.currentProvider?.uuid,
       t,
-      vitalsWereSaved,
       workspaceOverrides,
     ],
   );
@@ -586,105 +581,124 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   const glasgowEyeOpeningOptions = useMemo<Array<GlasgowComaScaleOption>>(
     () => [
       {
-        value: GLASGOW_ANSWER_UUIDS.eyeOpeningSpontaneous,
+        value: glasgowAnswerUuids.eyeOpeningSpontaneous,
         score: 4,
         label: t('glasgowEyeOpeningSpontaneous', '4 - Spontaneous'),
       },
       {
-        value: GLASGOW_ANSWER_UUIDS.eyeOpeningToSpeech,
+        value: glasgowAnswerUuids.eyeOpeningToSpeech,
         score: 3,
         label: t('glasgowEyeOpeningToSpeech', '3 - To speech'),
       },
       {
-        value: GLASGOW_ANSWER_UUIDS.eyeOpeningToPain,
+        value: glasgowAnswerUuids.eyeOpeningToPain,
         score: 2,
         label: t('glasgowEyeOpeningToPain', '2 - To pain'),
       },
       {
-        value: GLASGOW_ANSWER_UUIDS.eyeOpeningNone,
+        value: glasgowAnswerUuids.eyeOpeningNone,
         score: 1,
         label: t('glasgowEyeOpeningNone', '1 - None'),
       },
       {
-        value: GLASGOW_ANSWER_UUIDS.eyeOpeningNotTestable,
+        value: glasgowAnswerUuids.eyeOpeningNotTestable,
         label: t('glasgowEyeOpeningNotTestable', 'Not testable'),
       },
     ],
-    [t],
+    [glasgowAnswerUuids, t],
   );
 
   const glasgowVerbalResponseOptions = useMemo<Array<GlasgowComaScaleOption>>(
     () => [
       {
-        value: GLASGOW_ANSWER_UUIDS.verbalResponseOriented,
+        value: glasgowAnswerUuids.verbalResponseOriented,
         score: 5,
         label: t('glasgowVerbalResponseOriented', '5 - Oriented'),
       },
       {
-        value: GLASGOW_ANSWER_UUIDS.verbalResponseConfused,
+        value: glasgowAnswerUuids.verbalResponseConfused,
         score: 4,
         label: t('glasgowVerbalResponseConfused', '4 - Confused'),
       },
       {
-        value: GLASGOW_ANSWER_UUIDS.verbalResponseInappropriateWords,
+        value: glasgowAnswerUuids.verbalResponseInappropriateWords,
         score: 3,
         label: t('glasgowVerbalResponseInappropriateWords', '3 - Inappropriate words'),
       },
       {
-        value: GLASGOW_ANSWER_UUIDS.verbalResponseIncomprehensibleSounds,
+        value: glasgowAnswerUuids.verbalResponseIncomprehensibleSounds,
         score: 2,
         label: t('glasgowVerbalResponseIncomprehensibleSounds', '2 - Incomprehensible sounds'),
       },
       {
-        value: GLASGOW_ANSWER_UUIDS.verbalResponseNone,
+        value: glasgowAnswerUuids.verbalResponseNone,
         score: 1,
         label: t('glasgowVerbalResponseNone', '1 - None'),
       },
       {
-        value: GLASGOW_ANSWER_UUIDS.verbalResponseNotTestable,
+        value: glasgowAnswerUuids.verbalResponseNotTestable,
         label: t('glasgowVerbalResponseNotTestable', 'Not testable'),
       },
     ],
-    [t],
+    [glasgowAnswerUuids, t],
   );
 
   const glasgowMotorResponseOptions = useMemo<Array<GlasgowComaScaleOption>>(
     () => [
       {
-        value: GLASGOW_ANSWER_UUIDS.motorResponseObeysCommands,
+        value: glasgowAnswerUuids.motorResponseObeysCommands,
         score: 6,
         label: t('glasgowMotorResponseObeysCommands', '6 - Obeys commands'),
       },
       {
-        value: GLASGOW_ANSWER_UUIDS.motorResponseLocalizesPain,
+        value: glasgowAnswerUuids.motorResponseLocalizesPain,
         score: 5,
         label: t('glasgowMotorResponseLocalizesPain', '5 - Localizes pain'),
       },
       {
-        value: GLASGOW_ANSWER_UUIDS.motorResponseWithdrawsFromPain,
+        value: glasgowAnswerUuids.motorResponseWithdrawsFromPain,
         score: 4,
         label: t('glasgowMotorResponseWithdrawsFromPain', '4 - Withdraws from pain'),
       },
       {
-        value: GLASGOW_ANSWER_UUIDS.motorResponseAbnormalFlexion,
+        value: glasgowAnswerUuids.motorResponseAbnormalFlexion,
         score: 3,
         label: t('glasgowMotorResponseAbnormalFlexion', '3 - Abnormal flexion'),
       },
       {
-        value: GLASGOW_ANSWER_UUIDS.motorResponseExtension,
+        value: glasgowAnswerUuids.motorResponseExtension,
         score: 2,
         label: t('glasgowMotorResponseExtension', '2 - Extension'),
       },
       {
-        value: GLASGOW_ANSWER_UUIDS.motorResponseNone,
+        value: glasgowAnswerUuids.motorResponseNone,
         score: 1,
         label: t('glasgowMotorResponseNone', '1 - None'),
       },
       {
-        value: GLASGOW_ANSWER_UUIDS.motorResponseNotTestable,
+        value: glasgowAnswerUuids.motorResponseNotTestable,
         label: t('glasgowMotorResponseNotTestable', 'Not testable'),
       },
     ],
+    [glasgowAnswerUuids, t],
+  );
+
+  const vitalsFieldLabels: Record<string, string> = useMemo(
+    () => ({
+      systolicBloodPressure: t('systolic', 'systolic'),
+      diastolicBloodPressure: t('diastolic', 'diastolic'),
+      respiratoryRate: t('respirationRate', 'Respiration rate'),
+      oxygenSaturation: t('spo2', 'SpO2'),
+      pulse: t('heartRate', 'Heart rate'),
+      temperature: t('temperature', 'Temperature'),
+      weight: t('weight', 'Weight'),
+      height: t('height', 'Height'),
+      midUpperArmCircumference: t('muac', 'MUAC'),
+      abdominalCircumference: t('abdominalCircumference', 'Abdominal circumference'),
+      headCircumference: t('headCircumference', 'Head circumference'),
+      chestCircumference: t('chestCircumference', 'Chest circumference'),
+      glasgowTotal: t('glasgowTotal', 'Glasgow total'),
+    }),
     [t],
   );
 
@@ -809,6 +823,14 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                     diastolicBloodPressure,
                     config.concepts,
                     conceptMetadata,
+                    assessValue(
+                      systolicBloodPressure,
+                      getPatientReferenceRange(config.concepts.systolicBloodPressureUuid),
+                    ),
+                    assessValue(
+                      diastolicBloodPressure,
+                      getPatientReferenceRange(config.concepts.diastolicBloodPressureUuid),
+                    ),
                   )
                 }
                 isValueWithinReferenceRange={
@@ -818,11 +840,13 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                     conceptMetadata,
                     config.concepts.systolicBloodPressureUuid,
                     systolicBloodPressure,
+                    getPatientReferenceRange(config.concepts.systolicBloodPressureUuid),
                   ) &&
                   isValueWithinReferenceRange(
                     conceptMetadata,
                     config.concepts.diastolicBloodPressureUuid,
                     diastolicBloodPressure,
+                    getPatientReferenceRange(config.concepts.diastolicBloodPressureUuid),
                   )
                 }
                 showErrorMessage={showErrorMessage}
@@ -845,11 +869,16 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   },
                 ]}
                 interpretation={
-                  pulse != null &&
-                  assessValue(pulse, getReferenceRangesForConcept(config.concepts.pulseUuid, conceptMetadata))
+                  pulse != null && assessValue(pulse, getPatientReferenceRange(config.concepts.pulseUuid))
                 }
                 isValueWithinReferenceRange={
-                  pulse != null && isValueWithinReferenceRange(conceptMetadata, config.concepts['pulseUuid'], pulse)
+                  pulse != null &&
+                  isValueWithinReferenceRange(
+                    conceptMetadata,
+                    config.concepts.pulseUuid,
+                    pulse,
+                    getPatientReferenceRange(config.concepts.pulseUuid),
+                  )
                 }
                 label={t('heartRate', 'Heart rate')}
                 showRequiredIndicator={workspaceProfile === 'emergency-triage'}
@@ -872,14 +901,16 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                 ]}
                 interpretation={
                   respiratoryRate != null &&
-                  assessValue(
-                    respiratoryRate,
-                    getReferenceRangesForConcept(config.concepts.respiratoryRateUuid, conceptMetadata),
-                  )
+                  assessValue(respiratoryRate, getPatientReferenceRange(config.concepts.respiratoryRateUuid))
                 }
                 isValueWithinReferenceRange={
                   respiratoryRate != null &&
-                  isValueWithinReferenceRange(conceptMetadata, config.concepts['respiratoryRateUuid'], respiratoryRate)
+                  isValueWithinReferenceRange(
+                    conceptMetadata,
+                    config.concepts.respiratoryRateUuid,
+                    respiratoryRate,
+                    getPatientReferenceRange(config.concepts.respiratoryRateUuid),
+                  )
                 }
                 showErrorMessage={showErrorMessage}
                 showRequiredIndicator={workspaceProfile === 'emergency-triage'}
@@ -902,17 +933,15 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                 ]}
                 interpretation={
                   oxygenSaturation != null &&
-                  assessValue(
-                    oxygenSaturation,
-                    getReferenceRangesForConcept(config.concepts.oxygenSaturationUuid, conceptMetadata),
-                  )
+                  assessValue(oxygenSaturation, getPatientReferenceRange(config.concepts.oxygenSaturationUuid))
                 }
                 isValueWithinReferenceRange={
                   oxygenSaturation != null &&
                   isValueWithinReferenceRange(
                     conceptMetadata,
-                    config.concepts['oxygenSaturationUuid'],
+                    config.concepts.oxygenSaturationUuid,
                     oxygenSaturation,
+                    getPatientReferenceRange(config.concepts.oxygenSaturationUuid),
                   )
                 }
                 showErrorMessage={showErrorMessage}
@@ -1247,14 +1276,21 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
         </Column>
       )}
 
-      {hasInvalidVitals && (
+      {outOfRangeFieldKeys.length > 0 && (
         <Column className={styles.errorContainer}>
           <InlineNotification
             className={styles.errorNotification}
+            kind="warning"
             lowContrast={false}
-            onClose={() => setHasInvalidVitals(false)}
-            title={t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics')}
-            subtitle={t('checkForValidity', 'Some of the values entered are invalid')}
+            onClose={() => setOutOfRangeFieldKeys([])}
+            title={t('valuesOutOfRangeTitle', 'Values outside the expected range')}
+            subtitle={t(
+              'valuesOutOfRangeConfirm',
+              'Review the following values: {{fields}}. If they are correct, press "Save and close" again to record them.',
+              {
+                fields: outOfRangeFieldKeys.map((key) => vitalsFieldLabels[key] ?? key).join(', '),
+              },
+            )}
           />
         </Column>
       )}
@@ -1267,7 +1303,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
           className={styles.button}
           kind="primary"
           onClick={handleSubmit(savePatientVitalsAndBiometrics, onError)}
-          disabled={isSubmitting || vitalsWereSaved}
+          disabled={isSubmitting}
           type="submit"
         >
           {t('saveAndClose', 'Save and close')}

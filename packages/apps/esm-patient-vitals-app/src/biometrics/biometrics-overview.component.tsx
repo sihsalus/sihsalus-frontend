@@ -12,7 +12,7 @@ interface BiometricsProps {
 const BiometricsOverview: React.FC<BiometricsProps> = ({ patientUuid, basePath: _basePath, patient }) => {
   const { t } = useTranslation();
   const pageSize = 5;
-  const pageUrl = `${globalThis.spaBase}/patient/${patientUuid}/chart/Vitals & Biometrics`;
+  const pageUrl = `${globalThis.spaBase}/patient/${patientUuid}/chart/vitals-and-biometrics`;
   const urlLabel = t('seeAll', 'See all');
 
   return (

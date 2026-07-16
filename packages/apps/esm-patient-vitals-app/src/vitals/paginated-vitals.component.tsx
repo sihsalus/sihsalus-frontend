@@ -37,6 +37,10 @@ interface PaginatedVitalsProps {
   tableRows: Array<VitalsTableRow>;
   urlLabel: string;
   patient?: fhir.Patient;
+  /** Whether the server has more observation pages beyond the rows loaded so far */
+  hasMoreData?: boolean;
+  isLoadingMoreData?: boolean;
+  onLoadMoreData?: () => void;
 }
 
 const PaginatedVitals: React.FC<PaginatedVitalsProps> = ({
@@ -46,6 +50,9 @@ const PaginatedVitals: React.FC<PaginatedVitalsProps> = ({
   tableHeaders,
   tableRows,
   urlLabel,
+  hasMoreData,
+  isLoadingMoreData,
+  onLoadMoreData,
 }) => {
   const isTablet = useLayoutType() === 'tablet';
   const interpretationKeyByHeaderKey: Partial<Record<VitalsTableHeader['key'], VitalsInterpretationKey>> = {
@@ -132,6 +139,15 @@ const PaginatedVitals: React.FC<PaginatedVitalsProps> = ({
   }, [tableHeaders, tableRows, sortParams]);
 
   const { results: paginatedVitals, goTo, currentPage } = usePagination(sortedData, pageSize);
+
+  // The history is truncated to the FHIR pages loaded so far; when the user reaches the
+  // last locally-available page, request the next server page so records keep appearing.
+  const lastLocalPage = Math.max(1, Math.ceil(sortedData.length / pageSize));
+  useEffect(() => {
+    if (onLoadMoreData && hasMoreData && !isLoadingMoreData && currentPage >= lastLocalPage) {
+      onLoadMoreData();
+    }
+  }, [currentPage, lastLocalPage, hasMoreData, isLoadingMoreData, onLoadMoreData]);
 
   const displayRows = isPrinting ? sortedData : paginatedVitals;
   const displayRowsById = useMemo(() => new Map(displayRows.map((row) => [row.id, row])), [displayRows]);

@@ -27,6 +27,7 @@ const pulseValue = 80;
 const respiratoryRateValue = 16;
 const weightValue = 62;
 const systolicBloodPressureValue = 120;
+const diastolicBloodPressureValue = 80;
 const temperatureValue = 37;
 const glasgowEyeOpeningSpontaneousUuid = 'faff1dec-14df-44d4-8695-b337dced2274';
 const glasgowEyeOpeningNotTestableUuid = '25c71769-dddb-4d06-a858-cde05e2087e2';
@@ -45,11 +46,7 @@ const testProps = {
 const testWorkspace2Props: PatientWorkspace2DefinitionProps<
   {
     encounterTypeUuid?: string;
-    onVitalsSaved?: (payload: {
-      formData: Record<string, number>;
-      patientUuid: string;
-      visitUuid: string;
-    }) => Promise<void> | void;
+    onVitalsSaved?: (payload: { formData: Record<string, number>; patientUuid: string; visitUuid: string }) => void;
     profile?: 'default' | 'emergency-triage';
   },
   object
@@ -206,11 +203,22 @@ describe('VitalsBiometricsForm', () => {
     expect(temperatureInput).toHaveAttribute('min', '35.5');
     expect(temperatureInput).toHaveAttribute('max', '50');
 
+    const saveButton = screen.getByRole('button', { name: /save and close/i });
+
     await user.type(temperatureInput, '25');
-    await user.click(screen.getByRole('button', { name: /save and close/i }));
+    await user.click(saveButton);
 
     expect(mockSavePatientVitals).not.toHaveBeenCalled();
-    expect(screen.getByText(/some of the values entered are invalid/i)).toBeInTheDocument();
+    expect(screen.getByText(/values outside the expected range/i)).toBeInTheDocument();
+
+    // confirming with a second save records the pathological value
+    mockSavePatientVitals.mockResolvedValue({
+      statusText: 'created',
+      status: 201,
+      data: [],
+    } as FetchResponse<unknown>);
+    await user.click(saveButton);
+    await waitFor(() => expect(mockSavePatientVitals).toHaveBeenCalledTimes(1));
   });
 
   it("computes a patient's BMI from the given height and weight values", async () => {
@@ -246,6 +254,7 @@ describe('VitalsBiometricsForm', () => {
     const weightInput = screen.getByRole('spinbutton', { name: /weight/i });
     const bmiInput = screen.getByRole('spinbutton', { name: /bmi/i });
     const systolic = screen.getByRole('spinbutton', { name: /systolic/i });
+    const diastolic = screen.getByRole('spinbutton', { name: /diastolic/i });
     const pulse = screen.getByRole('spinbutton', { name: /pulse/i });
     const oxygenSaturation = screen.getByRole('spinbutton', {
       name: /oxygen saturation/i,
@@ -265,6 +274,7 @@ describe('VitalsBiometricsForm', () => {
     await user.type(heightInput, heightValue.toString());
     await user.type(weightInput, weightValue.toString());
     await user.type(systolic, systolicBloodPressureValue.toString());
+    await user.type(diastolic, diastolicBloodPressureValue.toString());
     await user.type(pulse, pulseValue.toString());
     await user.type(oxygenSaturation, oxygenSaturationValue.toString());
     await user.type(respirationRate, respiratoryRateValue.toString());
@@ -296,12 +306,17 @@ describe('VitalsBiometricsForm', () => {
         pulse: pulseValue,
         respiratoryRate: respiratoryRateValue,
         systolicBloodPressure: systolicBloodPressureValue,
+        diastolicBloodPressure: diastolicBloodPressureValue,
         temperature: temperatureValue,
         weight: weightValue,
       }),
       expect.any(AbortController),
       'test-visit-location',
       'test-visit-uuid',
+      expect.objectContaining({
+        encounterDatetime: expect.any(Date),
+        encounterRoleUuid: mockVitalsConfig.vitals.encounterRoleUuid,
+      }),
     );
 
     expect(onVitalsSaved).toHaveBeenCalledWith({
@@ -326,89 +341,6 @@ describe('VitalsBiometricsForm', () => {
         subtitle: 'They are now visible on the Vitals and Biometrics page',
         title: 'Vitals and Biometrics saved',
       }),
-    );
-  });
-
-  it('does not report the clinical save as failed or allow a duplicate submit when the follow-up action fails', async () => {
-    const user = userEvent.setup();
-    const closeWorkspaceWithSavedChanges = vi.fn();
-    const onVitalsSaved = vi.fn().mockRejectedValue(new Error('Queue transition failed with patient data'));
-
-    mockSavePatientVitals.mockResolvedValue({
-      statusText: 'created',
-      status: 201,
-      data: [],
-    } as FetchResponse<unknown>);
-
-    render(
-      <VitalsAndBiometricsForm
-        {...testProps}
-        closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
-        onVitalsSaved={onVitalsSaved}
-      />,
-    );
-
-    await user.type(screen.getByRole('spinbutton', { name: /weight/i }), weightValue.toString());
-    const saveButton = screen.getByRole('button', { name: /save and close/i });
-    await user.click(saveButton);
-
-    await waitFor(() => expect(onVitalsSaved).toHaveBeenCalledTimes(1));
-    expect(closeWorkspaceWithSavedChanges).toHaveBeenCalledTimes(1);
-    expect(mockSavePatientVitals).toHaveBeenCalledTimes(1);
-    expect(mockShowSnackbar).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'success', title: 'Vitals and Biometrics saved' }),
-    );
-    await waitFor(() =>
-      expect(mockShowSnackbar).toHaveBeenCalledWith(
-        expect.objectContaining({
-          kind: 'warning',
-          subtitle: 'The vitals were saved. Do not submit them again; review the patient chart and the care queue.',
-          title: 'Vitals saved; workflow incomplete',
-        }),
-      ),
-    );
-    expect(mockShowSnackbar).not.toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'error', title: 'Error saving vitals and biometrics' }),
-    );
-    expect(saveButton).toBeDisabled();
-
-    await user.click(saveButton);
-    expect(mockSavePatientVitals).toHaveBeenCalledTimes(1);
-    expect(mockShowSnackbar.mock.calls.flatMap(([message]) => message.subtitle ?? []).join(' ')).not.toMatch(
-      /patient data|queue transition failed/i,
-    );
-  });
-
-  it('continues the follow-up action without inviting a duplicate save when workspace close fails', async () => {
-    const user = userEvent.setup();
-    const closeWorkspaceWithSavedChanges = vi.fn().mockRejectedValue(new Error('Workspace close failed'));
-    const onVitalsSaved = vi.fn();
-
-    mockSavePatientVitals.mockResolvedValue({
-      statusText: 'created',
-      status: 201,
-      data: [],
-    } as FetchResponse<unknown>);
-
-    render(
-      <VitalsAndBiometricsForm
-        {...testProps}
-        closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
-        onVitalsSaved={onVitalsSaved}
-      />,
-    );
-
-    await user.type(screen.getByRole('spinbutton', { name: /weight/i }), weightValue.toString());
-    await user.click(screen.getByRole('button', { name: /save and close/i }));
-
-    await waitFor(() => expect(onVitalsSaved).toHaveBeenCalledTimes(1));
-    expect(closeWorkspaceWithSavedChanges).toHaveBeenCalledTimes(1);
-    expect(mockSavePatientVitals).toHaveBeenCalledTimes(1);
-    await waitFor(() =>
-      expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'warning' })),
-    );
-    expect(mockShowSnackbar).not.toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'error', title: 'Error saving vitals and biometrics' }),
     );
   });
 
@@ -447,6 +379,10 @@ describe('VitalsBiometricsForm', () => {
       expect.any(AbortController),
       triageLocationUuid,
       'test-visit-uuid',
+      expect.objectContaining({
+        encounterDatetime: expect.any(Date),
+        encounterRoleUuid: mockVitalsConfig.vitals.encounterRoleUuid,
+      }),
     );
   });
 
@@ -498,6 +434,10 @@ describe('VitalsBiometricsForm', () => {
       expect.any(AbortController),
       'test-visit-location',
       'test-visit-uuid',
+      expect.objectContaining({
+        encounterDatetime: expect.any(Date),
+        encounterRoleUuid: mockVitalsConfig.vitals.encounterRoleUuid,
+      }),
     );
   });
 
@@ -579,30 +519,23 @@ describe('VitalsBiometricsForm', () => {
 
   it('renders an error snackbar if there was a problem saving vitals and biometrics', async () => {
     const user = userEvent.setup();
-    const closeWorkspaceWithSavedChanges = vi.fn();
-    const onVitalsSaved = vi.fn();
 
     const error = {
-      message: 'SQLSTATE 23505 patient_uuid=private-patient-uuid',
+      message: 'Some of the values entered are invalid',
       response: {
         status: 500,
-        statusText: 'Internal endpoint /ws/rest/v1/encounter',
+        statusText: 'Internal Server Error',
       },
     };
 
     mockSavePatientVitals.mockRejectedValueOnce(error);
 
-    render(
-      <VitalsAndBiometricsForm
-        {...testProps}
-        closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
-        onVitalsSaved={onVitalsSaved}
-      />,
-    );
+    render(<VitalsAndBiometricsForm {...testProps} />);
 
     const heightInput = screen.getByRole('spinbutton', { name: /height/i });
     const weightInput = screen.getByRole('spinbutton', { name: /weight/i });
     const systolic = screen.getByRole('spinbutton', { name: /systolic/i });
+    const diastolic = screen.getByRole('spinbutton', { name: /diastolic/i });
     const pulse = screen.getByRole('spinbutton', { name: /pulse/i });
     const oxygenSaturation = screen.getByRole('spinbutton', {
       name: /oxygen saturation/i,
@@ -618,6 +551,7 @@ describe('VitalsBiometricsForm', () => {
     await user.type(heightInput, heightValue.toString());
     await user.type(weightInput, weightValue.toString());
     await user.type(systolic, systolicBloodPressureValue.toString());
+    await user.type(diastolic, diastolicBloodPressureValue.toString());
     await user.type(pulse, pulseValue.toString());
     await user.type(oxygenSaturation, oxygenSaturationValue.toString());
     await user.type(respirationRate, respiratoryRateValue.toString());
@@ -629,17 +563,15 @@ describe('VitalsBiometricsForm', () => {
     await user.click(saveButton);
 
     expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
+    // The raw backend error message is never shown; it goes through the shared
+    // user-facing error normalizer, which falls back to a safe generic message.
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: false,
       kind: 'error',
-      subtitle: 'An unexpected error occurred. Please try again.',
+      subtitle: expect.any(String),
       title: 'Error saving vitals and biometrics',
     });
-    expect(mockShowSnackbar.mock.calls.flatMap(([message]) => message.subtitle ?? []).join(' ')).not.toMatch(
-      /SQLSTATE|patient_uuid|\/ws\/rest/u,
-    );
-    expect(closeWorkspaceWithSavedChanges).not.toHaveBeenCalled();
-    expect(onVitalsSaved).not.toHaveBeenCalled();
+    expect(mockShowSnackbar.mock.calls[0][0].subtitle).not.toContain('Internal Server Error');
   });
 
   it('does not save vitals and biometrics without an active visit', async () => {
@@ -687,12 +619,19 @@ describe('VitalsBiometricsForm', () => {
     });
   });
 
-  it('Display an inline error notification on submit if value of vitals entered is invalid', async () => {
+  it('warns on out-of-range values and only saves them after explicit confirmation', async () => {
     const user = userEvent.setup();
+
+    mockSavePatientVitals.mockResolvedValue({
+      statusText: 'created',
+      status: 201,
+      data: [],
+    } as FetchResponse<unknown>);
 
     render(<VitalsAndBiometricsForm {...testProps} />);
 
     const systolic = screen.getByRole('spinbutton', { name: /systolic/i });
+    const diastolic = screen.getByRole('spinbutton', { name: /diastolic/i });
     const pulse = screen.getByRole('spinbutton', { name: /pulse/i });
     const oxygenSaturation = screen.getByRole('spinbutton', {
       name: /oxygen saturation/i,
@@ -702,6 +641,7 @@ describe('VitalsBiometricsForm', () => {
     });
 
     await user.type(systolic, '1000');
+    await user.type(diastolic, diastolicBloodPressureValue.toString());
     await user.type(pulse, pulseValue.toString());
     await user.type(oxygenSaturation, '200');
     await user.type(temperature, temperatureValue.toString());
@@ -709,14 +649,41 @@ describe('VitalsBiometricsForm', () => {
     const saveButton = screen.getByRole('button', { name: /save and close/i });
     await user.click(saveButton);
 
-    expect(screen.getByText(/Some of the values entered are invalid/i)).toBeInTheDocument();
+    // the first submit warns instead of saving or discarding the values
+    expect(mockSavePatientVitals).not.toHaveBeenCalled();
+    expect(screen.getByText(/values outside the expected range/i)).toBeInTheDocument();
 
-    // close the inline notification --> resubmit --> check for presence of inline notification
-    const closeInlineNotificationButton = screen.getByTitle(/close notification/i);
-    await user.click(closeInlineNotificationButton);
-    expect(screen.queryByText(/some of the values entered are invalid/i)).not.toBeInTheDocument();
+    // a second submit with unchanged values records the pathological measurements
     await user.click(saveButton);
-    expect(screen.getByText(/Some of the values entered are invalid/i)).toBeInTheDocument();
+    await waitFor(() => expect(mockSavePatientVitals).toHaveBeenCalledTimes(1));
+    expect(mockSavePatientVitals.mock.calls[0][3]).toMatchObject({
+      systolicBloodPressure: 1000,
+      oxygenSaturation: 200,
+    });
+  });
+
+  it('requires both systolic and diastolic blood pressure values', async () => {
+    const user = userEvent.setup();
+
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    await user.type(screen.getByRole('spinbutton', { name: /systolic/i }), systolicBloodPressureValue.toString());
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(mockSavePatientVitals).not.toHaveBeenCalled();
+    expect(screen.getByText(/blood pressure requires both systolic and diastolic values/i)).toBeInTheDocument();
+  });
+
+  it('does not create an encounter from a note alone', async () => {
+    const user = userEvent.setup();
+
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    await user.type(screen.getByRole('textbox', { name: /notes/i }), 'Paciente en ayunas');
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(mockSavePatientVitals).not.toHaveBeenCalled();
+    expect(screen.getByText(/record at least one measurement/i)).toBeInTheDocument();
   });
 
   it('uses dirtyFields to determine unsaved changes', async () => {

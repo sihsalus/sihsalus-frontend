@@ -182,7 +182,10 @@ export function useVitalsAndBiometrics(patientUuid: string, mode: VitalsAndBiome
     },
     getObservationFields: ({ code, key, value }) => ({
       [key]: value,
-      [getInterpretationKey(key)]: assessValue(value, getReferenceRangesForConcept(code, conceptMetadata)),
+      [getInterpretationKey(key)]: assessValue(
+        typeof value === 'number' ? value : undefined,
+        getReferenceRangesForConcept(code, conceptMetadata),
+      ),
     }),
     getObservationKey: getVitalsMapKey,
     patientUuid,

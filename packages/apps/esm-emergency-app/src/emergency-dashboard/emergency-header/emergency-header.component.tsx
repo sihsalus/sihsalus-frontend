@@ -7,8 +7,8 @@ import {
   PageHeaderContent,
   ServiceQueuesPictogram,
   useLayoutType,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';

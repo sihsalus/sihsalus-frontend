@@ -1,4 +1,4 @@
-import { launchWorkspace2, useLocations } from '@openmrs/esm-framework';
+import { launchWorkspace2, useLocations, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { PropsWithChildren } from 'react';
@@ -42,7 +42,15 @@ describe('AddPatientToQueueButton', () => {
     await user.click(screen.getByRole('button', { name: /add patient to queue/i }));
 
     const [, searchWorkspaceProps, launchOptions] = mockLaunchWorkspace2.mock.calls[0];
-    searchWorkspaceProps.onPatientSelected(
+    const { onPatientSelected } = searchWorkspaceProps as {
+      onPatientSelected: (
+        patientUuid: string,
+        patient: fhir.Patient,
+        launchChildWorkspace: Workspace2DefinitionProps['launchChildWorkspace'],
+        closeWorkspace: Workspace2DefinitionProps['closeWorkspace'],
+      ) => void;
+    };
+    onPatientSelected(
       'patient-uuid',
       { id: 'patient-uuid' } as fhir.Patient,
       launchChildWorkspace,

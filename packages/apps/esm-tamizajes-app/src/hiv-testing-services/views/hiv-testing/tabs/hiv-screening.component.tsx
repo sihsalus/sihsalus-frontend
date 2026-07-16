@@ -72,19 +72,6 @@ const HivScreeningEncounters: React.FC<HivScreeningEncounterProps> = ({ patientU
           return getObsFromEncounter(encounter, testingRecommendedConcept);
         },
       },
-      {
-        key: 'actions',
-        header: t('actions', 'Actions'),
-        getValue: (encounter) => [
-          {
-            form: { name: 'Prenatal Form', package: 'maternal_health' },
-            encounterUuid: encounter.uuid,
-            intent: '*',
-            label: t('editForm', 'Edit Form'),
-            mode: 'edit',
-          },
-        ],
-      },
     ],
     [departmentConcept, disabilityListConcept, eligibilityConcept, populationTypeConcept, t, testingRecommendedConcept],
   );
@@ -93,16 +80,15 @@ const HivScreeningEncounters: React.FC<HivScreeningEncounterProps> = ({ patientU
     <EncounterList
       patientUuid={patientUuid}
       encounterType={htsEncounterTypeUUID}
-      formList={[{ name: 'HTS screening Form' }]}
       columns={columns}
       description={headerTitle}
       headerTitle={headerTitle}
       launchOptions={{
-        displayText: t('add', 'Add'),
+        hideFormLauncher: true,
         moduleName: 'HTS Clinical View',
       }}
       filter={(encounter) => {
-        return encounter.form.uuid === htsScreeningFormUUID;
+        return encounter.form?.uuid === htsScreeningFormUUID;
       }}
       formConceptMap={hivScreeningConceptMap}
     />

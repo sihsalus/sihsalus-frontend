@@ -1,7 +1,14 @@
 import { Button, ClickableTile, Tag } from '@carbon/react';
 import { ArrowRight, CheckmarkOutline, Pending, Search } from '@carbon/react/icons';
-import { PageHeader, PageHeaderContent, PatientSearchPictogram } from '@openmrs/esm-framework';
-import React from 'react';
+import {
+  launchWorkspace2,
+  navigate,
+  PageHeader,
+  PageHeaderContent,
+  PatientSearchPictogram,
+  type Workspace2DefinitionProps,
+} from '@openmrs/esm-framework';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import styles from './home.scss';
@@ -15,7 +22,7 @@ const screeningDomains = [
     descriptionDefault:
       'Revisión de tamizaje, prueba inicial y resultados HTS registrados en la historia del paciente.',
     statusKey: 'available',
-    statusDefault: 'Disponible',
+    statusDefault: 'Historial disponible',
     enabled: true,
   },
   {
@@ -53,6 +60,28 @@ const screeningDomains = [
 const Home: React.FC = () => {
   const { t } = useTranslation();
 
+  const launchPatientSearch = useCallback(() => {
+    launchWorkspace2(
+      'tamizajes-patient-search-workspace',
+      {
+        initialQuery: '',
+        onPatientSelected(
+          patientUuid: string,
+          _patient: fhir.Patient,
+          _launchChildWorkspace: Workspace2DefinitionProps['launchChildWorkspace'],
+          closeWorkspace: Workspace2DefinitionProps['closeWorkspace'],
+        ) {
+          closeWorkspace();
+          navigate({
+            to: `${globalThis.getOpenmrsSpaBase()}patient/${patientUuid}/chart/tamizajes`,
+          });
+        },
+        workspaceTitle: t('selectPatientForScreening', 'Seleccionar paciente para revisar tamizajes'),
+      },
+      {},
+    );
+  }, [t]);
+
   return (
     <main className="omrs-main-content">
       <PageHeader className={styles.header}>
@@ -66,17 +95,22 @@ const Home: React.FC = () => {
             <p className={styles.description}>
               {t(
                 'screeningWorklistDescription',
-                'Acceso operativo para registrar, revisar y organizar tamizajes que pueden derivar a seguimiento de casos o atención especializada.',
+                'Busque un paciente para revisar los tamizajes registrados en su historia clínica. Los nuevos dominios se habilitarán cuando cuenten con formularios y datos clínicos validados.',
               )}
             </p>
           </div>
-          <Button kind="primary" renderIcon={Search} disabled>
-            {t('searchPatientToScreen', 'Buscar paciente para tamizaje')}
+          <Button kind="primary" renderIcon={Search} onClick={launchPatientSearch}>
+            {t('searchPatientToScreen', 'Buscar paciente para revisar tamizajes')}
           </Button>
         </div>
         <div className={styles.grid}>
           {screeningDomains.map((domain) => (
-            <ClickableTile key={domain.key} className={styles.tile} disabled={!domain.enabled}>
+            <ClickableTile
+              key={domain.key}
+              className={styles.tile}
+              disabled={!domain.enabled}
+              onClick={domain.enabled ? launchPatientSearch : undefined}
+            >
               <div className={styles.tileHeader}>
                 <h3>{t(domain.titleKey, domain.titleDefault)}</h3>
                 <Tag type={domain.enabled ? 'green' : 'gray'}>
@@ -87,7 +121,7 @@ const Home: React.FC = () => {
               <p>{t(domain.descriptionKey, domain.descriptionDefault)}</p>
               <span className={styles.tileAction}>
                 {domain.enabled
-                  ? t('reviewInPatientChart', 'Revisar desde la historia del paciente')
+                  ? t('selectPatientAndReview', 'Seleccionar paciente y revisar')
                   : t('comingSoon', 'Próximamente')}
                 <ArrowRight size={16} />
               </span>

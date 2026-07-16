@@ -1112,6 +1112,7 @@ const AppointmentsForm: React.FC<
                     value={value}
                     enableCounter
                     maxCount={appointmentNoteMaxLength}
+                    maxLength={appointmentNoteMaxLength}
                     labelText={t('appointmentNoteLabel', 'Write an additional note')}
                     placeholder={t('appointmentNotePlaceholder', 'Write any additional points here')}
                     onChange={onChange}

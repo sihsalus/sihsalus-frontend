@@ -8,6 +8,15 @@ $openmrs-background-grey: #ededed;
   display: flex;
   margin-bottom: layout.$spacing-02;
   padding: layout.$spacing-05;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.form {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 :global(.omrs-breakpoint-gt-tablet) .formGroup {
@@ -15,14 +24,30 @@ $openmrs-background-grey: #ededed;
 }
 
 :global(.omrs-breakpoint-lt-desktop) .formGroup {
-  flex-direction: row;
+  flex-direction: column;
 
-  .heading {
-    flex: 1;
+  > div {
+    flex: none;
+    width: 100%;
+    min-width: 0;
   }
 
-  div {
-    flex: 3;
+  .inputContainer,
+  .dateTimeFields {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .inputContainer {
+    flex-direction: column;
+    align-items: stretch;
+
+    > * {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+    }
   }
 }
 

@@ -21,6 +21,7 @@ interface PatientQueueHeaderProps {
 }
 
 type QueueLocationOption = { id?: string; name?: string };
+type ServiceOption = { id: string; name: string };
 
 const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
   title,
@@ -32,23 +33,57 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
   const { queueLocations, isLoading, error } = useQueueLocations();
   const { dashboardTitle } = useConfig<ConfigObject>();
   const userSession = useSession();
-  const { selectedQueueLocationName, selectedQueueLocationUuid, selectedServiceDisplay } = useServiceQueuesStore();
-  const { queues } = useQueues();
+  const {
+    selectedQueueLocationName,
+    selectedQueueLocationUuid,
+    selectedServiceDisplay,
+    selectedServiceUuid,
+  } = useServiceQueuesStore();
+  const { queues, isLoading: isLoadingQueues, error: queuesError } = useQueues(selectedQueueLocationUuid);
+  const availableQueues = queues ?? [];
   const shouldShowFilters = showFilters ?? showLocationDropdown ?? false;
   const shouldShowLocationDropdown = shouldShowFilters && queueLocations.length > 1;
-  const showServiceDropdown = shouldShowFilters && queues.length > 1;
+  const showServiceDropdown = shouldShowFilters;
 
-  const serviceOptions = useMemo(() => {
-    const options = queues
+  const availableServiceOptions = useMemo(() => {
+    return availableQueues
+      .filter((queue) => queue.service?.uuid && queue.service.display)
       .map((queue) => ({ id: queue.service.uuid, name: queue.service.display }))
-      .reduce((acc, curr) => {
+      .reduce<Array<ServiceOption>>((acc, curr) => {
         if (!acc.some((option) => option.id === curr.id)) {
           acc.push(curr);
         }
         return acc;
       }, []);
-    return options.length !== 1 ? [{ id: 'all', name: t('all', 'All') }, ...options] : options;
-  }, [queues, t]);
+  }, [availableQueues]);
+
+  const serviceOptions = useMemo(() => {
+    const allServicesOption = { id: 'all', name: t('all', 'All') };
+    const selectedServiceIsAvailable = availableServiceOptions.some(
+      (option) => option.id === selectedServiceUuid,
+    );
+    const persistedServiceOption =
+      selectedServiceUuid && !selectedServiceIsAvailable && (isLoadingQueues || queuesError)
+        ? { id: selectedServiceUuid, name: selectedServiceDisplay ?? t('service', 'Service') }
+        : null;
+
+    return [allServicesOption, ...(persistedServiceOption ? [persistedServiceOption] : []), ...availableServiceOptions];
+  }, [availableServiceOptions, isLoadingQueues, queuesError, selectedServiceDisplay, selectedServiceUuid, t]);
+
+  const selectedService = selectedServiceUuid
+    ? serviceOptions.find((option) => option.id === selectedServiceUuid) ?? serviceOptions[0]
+    : serviceOptions[0];
+
+  useEffect(() => {
+    if (!selectedServiceUuid || isLoadingQueues || queuesError) {
+      return;
+    }
+
+    const serviceIsAvailable = availableServiceOptions.some((option) => option.id === selectedServiceUuid);
+    if (!serviceIsAvailable) {
+      updateSelectedService(null, t('all', 'All'));
+    }
+  }, [availableServiceOptions, isLoadingQueues, queuesError, selectedServiceUuid, t]);
 
   const handleQueueLocationChange = useCallback(
     ({ selectedItem }: OnChangeData<QueueLocationOption>) => {
@@ -69,7 +104,7 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
   );
 
   const handleServiceChange = useCallback(
-    (data: OnChangeData<{ id: string; name: string }>) => {
+    (data: OnChangeData<ServiceOption>) => {
       const selectedItem = data.selectedItem;
       if (selectedItem) {
         if (selectedItem.id === 'all') {
@@ -145,10 +180,12 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
           <Dropdown
             aria-label={t('selectService', 'Select a service')}
             className={styles.dropdown}
+            disabled={isLoadingQueues || Boolean(queuesError) || availableServiceOptions.length === 0}
             id="serviceDropdown"
-            label={selectedServiceDisplay ?? t('all', 'All')}
+            label={selectedService?.name ?? t('all', 'All')}
             items={serviceOptions}
-            itemToString={(item) => item?.name}
+            itemToString={(item) => item?.name ?? ''}
+            selectedItem={selectedService}
             titleText={t('service', 'Service')}
             type="inline"
             onChange={handleServiceChange}

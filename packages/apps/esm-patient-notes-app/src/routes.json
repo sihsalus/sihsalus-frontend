@@ -42,6 +42,7 @@
       "name": "visit-note",
       "icon": "visitNotesActionButton",
       "group": "patient-chart",
+      "privileges": "app:hoja.clinica.resumenConsulta",
       "order": 1
     }
   ]

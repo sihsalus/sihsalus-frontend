@@ -131,7 +131,7 @@ describe('ContactDetails', () => {
 
     expect(screen.getByText(/address/i)).toBeInTheDocument();
     expect(screen.getByText(/contact details/i)).toBeInTheDocument();
-    expect(screen.getByText(/relationships/i)).toBeInTheDocument();
+    expect(screen.getByText(/familiares/i)).toBeInTheDocument();
     expect(screen.getByText(/Amanda Robinson/)).toBeInTheDocument();
     expect(screen.getByText(/Sibling/i)).toBeInTheDocument();
     expect(screen.getByText(/24 years/i)).toBeInTheDocument();
@@ -187,7 +187,7 @@ describe('ContactDetails', () => {
     renderWithSwr(<PatientBannerContactDetails patientId={'some-uuid'} deceased={false} />);
 
     expect(screen.getByText(/address/i)).toBeInTheDocument();
-    expect(screen.getByText(/relationships/i)).toBeInTheDocument();
+    expect(screen.getByText(/familiares/i)).toBeInTheDocument();
     expect(screen.getByText(/contact details/i)).toBeInTheDocument();
     expect(screen.getByText(/patient lists/i)).toBeInTheDocument();
     expect(screen.getAllByText('--').length).toBe(4);

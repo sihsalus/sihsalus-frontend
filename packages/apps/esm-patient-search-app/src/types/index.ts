@@ -19,7 +19,8 @@ export interface SearchedPatient {
     };
   };
   attributes: Array<{
-    value: OpenmrsResource | string;
+    display?: string;
+    value: OpenmrsResource | string | null;
     attributeType: { uuid: string; display: string };
   }>;
 }
@@ -97,12 +98,13 @@ export interface PatientSearchResponse {
 }
 
 export interface AdvancedPatientSearchState {
+  query: string;
   gender: 'any' | 'male' | 'female' | 'other' | 'unknown';
-  dateOfBirth: number;
-  monthOfBirth: number;
-  yearOfBirth: number;
+  dateOfBirth: number | null;
+  monthOfBirth: number | null;
+  yearOfBirth: number | null;
   postcode: string;
-  age: number;
+  age: number | null;
   attributes: {
     [key: string]: string;
   };

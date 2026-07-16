@@ -22,6 +22,11 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => {
 const mockUseAnamnesis = vi.mocked(useAnamnesis);
 const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
 const mockUseConfig = vi.mocked(useConfig);
+const pagination = {
+  currentPage: 1,
+  totalPages: 1,
+  onPageChange: vi.fn(),
+};
 
 describe('Anamnesis', () => {
   beforeEach(() => {
@@ -41,22 +46,35 @@ describe('Anamnesis', () => {
     });
   });
 
-  it('renders empty state when the patient has no anamnesis entries', () => {
+  it('renders the standard empty state and launches anamnesis registration', async () => {
+    const user = userEvent.setup();
+    const mutate = vi.fn();
     mockUseAnamnesis.mockReturnValue({
       anamnesisEntries: [],
       isLoading: false,
+      isValidating: false,
       error: undefined,
-      mutate: vi.fn(),
+      mutate,
+      pagination,
     });
 
     render(<Anamnesis patientUuid="patient-uuid" />);
 
     expect(screen.getByText('Historial de Anamnesis')).toBeInTheDocument();
-    expect(screen.getByText('No hay anamnesis registrada para este paciente.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /(?:Record|Registrar) anamnesis/i }));
+
+    expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith(patientFormEntryWorkspace, {
+      mutateForm: mutate,
+      formInfo: {
+        patientUuid: 'patient-uuid',
+        formUuid: 'CE-ANAM-001-ANAMNESIS',
+      },
+    });
   });
 
   it('renders anamnesis data and launches the split anamnesis form', async () => {
     const user = userEvent.setup();
+    const mutate = vi.fn();
     mockUseAnamnesis.mockReturnValue({
       anamnesisEntries: [
         {
@@ -79,8 +97,10 @@ describe('Anamnesis', () => {
         },
       ],
       isLoading: false,
+      isValidating: false,
       error: undefined,
-      mutate: vi.fn(),
+      mutate,
+      pagination,
     });
 
     render(<Anamnesis patientUuid="patient-uuid" />);
@@ -88,10 +108,12 @@ describe('Anamnesis', () => {
     expect(screen.getByText('Dolor abdominal')).toBeInTheDocument();
     expect(screen.getByText('Dolor posterior a ingesta de alimentos.')).toBeInTheDocument();
     expect(screen.getByText(/Disminuido/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Dra\. Perez/ })).toHaveTextContent(/\d{1,2}:\d{2}/);
 
     await user.click(screen.getByRole('button', { name: 'Registrar Anamnesis' }));
 
     expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith(patientFormEntryWorkspace, {
+      mutateForm: mutate,
       formInfo: {
         patientUuid: 'patient-uuid',
         formUuid: 'CE-ANAM-001-ANAMNESIS',

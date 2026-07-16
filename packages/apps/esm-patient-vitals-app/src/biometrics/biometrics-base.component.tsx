@@ -25,7 +25,7 @@ interface BiometricsBaseProps {
 const BiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pageSize, urlLabel, pageUrl, patient }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = userHasAccess('app:clinical.chart.vitals.edit', session?.user);
+  const canEdit = userHasAccess('app:hoja.clinica.signosVitales.editar', session?.user);
   const displayText = t('biometrics_lower', 'biometrics');
   const headerTitle = t('biometrics', 'Biometrics');
   const [chartView, setChartView] = useState(false);

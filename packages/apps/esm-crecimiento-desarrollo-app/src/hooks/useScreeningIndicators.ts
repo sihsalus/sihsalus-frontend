@@ -1,9 +1,10 @@
-import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { useConfig } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import { useMemo } from 'react';
-import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
+
+import useEncountersCRED, { encounterMatchesFormIdentifier } from './useEncountersCRED';
 
 interface ScreeningItem {
   name: string;
@@ -23,93 +24,79 @@ interface ScreeningIndicatorsResult {
   mutate: () => void;
 }
 
-/**
- * Hook para tamizajes obligatorios:
- * - CRED (NTS 238): Hemoglobina, desarrollo (EDI/vigilancia), violencia, visual, auditivo
- * - Prenatal (NTS 159): VIH, Sífilis (RPR/VDRL), Hepatitis B (HBsAg)
- *
- * Usa: config.anemiaScreening.hemoglobinaConceptUuid para Hb
- *      config.prenatalScreening.{vihResultConceptUuid, sifilisResultConceptUuid, hepatitisBResultConceptUuid}
- */
+const screeningDefinitions = [
+  {
+    formKey: 'anemiaScreeningForm',
+    name: 'Hemoglobina',
+    translationKey: 'screeningHemoglobin',
+  },
+  {
+    formKey: 'ediDevelopmentForm',
+    name: 'Desarrollo infantil',
+    translationKey: 'screeningDevelopment',
+  },
+  {
+    formKey: 'violenceDisciplineScreeningForm',
+    name: 'Violencia y maltrato',
+    translationKey: 'screeningViolence',
+  },
+  {
+    formKey: 'visualScreeningForm',
+    name: 'Tamizaje visual',
+    translationKey: 'screeningVisual',
+  },
+  {
+    formKey: 'hearingScreeningForm',
+    name: 'Evaluación auditiva',
+    translationKey: 'screeningHearing',
+  },
+] as const satisfies ReadonlyArray<{
+  formKey: keyof ConfigObject['formsList'];
+  name: string;
+  translationKey: string;
+}>;
+
+/** Returns the latest known record for each screening category. */
 export function useScreeningIndicators(patientUuid: string): ScreeningIndicatorsResult {
   const config = useConfig<ConfigObject>();
-
-  const screeningConcepts = useMemo(() => {
-    const concepts: Array<{ name: string; translationKey: string; uuid: string }> = [];
-
-    if (config.anemiaScreening?.hemoglobinaConceptUuid) {
-      concepts.push({
-        name: 'Hemoglobina',
-        translationKey: 'screeningHemoglobin',
-        uuid: config.anemiaScreening.hemoglobinaConceptUuid,
-      });
-    }
-    if (config.prenatalScreening?.vihResultConceptUuid) {
-      concepts.push({
-        name: 'VIH',
-        translationKey: 'screeningHiv',
-        uuid: config.prenatalScreening.vihResultConceptUuid,
-      });
-    }
-    if (config.prenatalScreening?.sifilisResultConceptUuid) {
-      concepts.push({
-        name: 'Sífilis (RPR/VDRL)',
-        translationKey: 'screeningSyphilis',
-        uuid: config.prenatalScreening.sifilisResultConceptUuid,
-      });
-    }
-    if (config.prenatalScreening?.hepatitisBResultConceptUuid) {
-      concepts.push({
-        name: 'Hepatitis B (HBsAg)',
-        translationKey: 'screeningHepatitisB',
-        uuid: config.prenatalScreening.hepatitisBResultConceptUuid,
-      });
-    }
-
-    return concepts;
-  }, [config]);
-
-  const urls = useMemo(() => {
-    if (!patientUuid || screeningConcepts.length === 0) return null;
-    return screeningConcepts.map(
-      (c) =>
-        `${restBaseUrl}/obs?patient=${patientUuid}&concept=${c.uuid}&v=custom:(uuid,value,obsDatetime,display)&limit=1&sort=desc`,
-    );
-  }, [patientUuid, screeningConcepts]);
-
-  const { data, isLoading, error, mutate } = useSWR(urls, async (fetchUrls: string[]) => {
-    const responses = await Promise.all(fetchUrls.map((u) => openmrsFetch(u)));
-    return responses.map((r) => r?.data);
-  });
+  const { encounters, isLoading, error, mutate } = useEncountersCRED(patientUuid);
 
   const result = useMemo(() => {
-    if (!data || data.length === 0) {
-      return { screenings: [], completedCount: 0, totalRequired: screeningConcepts.length, percentage: 0 };
-    }
+    const screenings = screeningDefinitions.map((definition): ScreeningItem => {
+      const formIdentifier = config.formsList[definition.formKey];
+      const latestEncounter = (encounters ?? [])
+        .filter((encounter) => encounterMatchesFormIdentifier(encounter, formIdentifier))
+        .sort(
+          (first, second) =>
+            new Date(second.encounterDatetime ?? 0).getTime() - new Date(first.encounterDatetime ?? 0).getTime(),
+        )[0];
 
-    const screenings: ScreeningItem[] = screeningConcepts.map((concept, idx) => {
-      const obs = data[idx]?.results?.[0];
       return {
-        name: concept.name,
-        translationKey: concept.translationKey,
-        completed: !!obs,
-        date: obs?.obsDatetime ? dayjs(obs.obsDatetime).format('DD/MM/YYYY') : null,
-        result: obs?.display ?? null,
+        name: definition.name,
+        translationKey: definition.translationKey,
+        completed: Boolean(latestEncounter),
+        date: latestEncounter?.encounterDatetime ? dayjs(latestEncounter.encounterDatetime).format('DD/MM/YYYY') : null,
+        result: latestEncounter?.form?.display ?? latestEncounter?.form?.name ?? null,
       };
     });
-
-    const completedCount = screenings.filter((s) => s.completed).length;
+    const completedCount = screenings.filter((screening) => screening.completed).length;
     const totalRequired = screenings.length;
-    const percentage = totalRequired > 0 ? (completedCount / totalRequired) * 100 : 0;
 
-    return { screenings, completedCount, totalRequired, percentage };
-  }, [data, screeningConcepts]);
+    return {
+      screenings,
+      completedCount,
+      totalRequired,
+      percentage: totalRequired > 0 ? (completedCount / totalRequired) * 100 : 0,
+    };
+  }, [config.formsList, encounters]);
 
   return {
     ...result,
     isLoading,
     error,
-    mutate,
+    mutate: () => {
+      void mutate();
+    },
   };
 }
 

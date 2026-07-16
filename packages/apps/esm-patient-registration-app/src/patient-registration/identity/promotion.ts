@@ -1,6 +1,12 @@
-import dayjs from 'dayjs';
+import {
+  calculatePatientAgeInMonths,
+  calendarDateToLocalDate,
+  MAX_PATIENT_AGE_YEARS,
+  parsePatientBirthdate,
+} from '@openmrs/esm-utils';
 
 import { type PatientIdentifier } from '../patient-registration.types';
+import { RegistrationDomainError, registrationErrorCodes } from '../registration-errors';
 import {
   getDocumentTypeDefinitionByConcept,
   isValidDocumentNumber,
@@ -23,12 +29,22 @@ const genderCodeToFormValue: Record<string, string> = {
  * UTC (Peru is UTC-5), so only the date part is used to build a local date.
  */
 function parseBirthdateAsLocalDate(birthdate: string) {
-  const [year, month, day] = birthdate.slice(0, 10).split('-').map(Number);
-  return new Date(year, month - 1, day);
+  const parsedBirthdate = parsePatientBirthdate(birthdate);
+  return parsedBirthdate ? calendarDateToLocalDate(parsedBirthdate) : null;
 }
 
 type SetFieldValue = (field: string, value: unknown, shouldValidate?: boolean) => void;
 type SetFieldTouched = (field: string, isTouched?: boolean, shouldValidate?: boolean) => void;
+
+export const promotionDocumentMismatchMessage =
+  'El documento ingresado no coincide con el documento de la persona seleccionada. Revise el número o quite la promoción y vuelva a buscar.';
+
+export class PromotionDocumentMismatchError extends RegistrationDomainError {
+  constructor() {
+    super(registrationErrorCodes.promotionDocumentMismatch, promotionDocumentMismatchMessage);
+    this.name = 'PromotionDocumentMismatchError';
+  }
+}
 
 export function getPreferredName(person: PersonForPromotion) {
   return person.names?.find((name) => name.preferred) ?? person.names?.[0];
@@ -68,9 +84,12 @@ export function applyPersonToRegistrationForm(
 ) {
   const preferredName = getPreferredName(person);
   const birthdateEstimated = !!person.birthdateEstimated;
-  const yearsEstimated =
-    birthdateEstimated && person.birthdate ? Math.floor(dayjs().diff(person.birthdate, 'month') / 12) : 0;
-  const monthsEstimated = birthdateEstimated && person.birthdate ? dayjs().diff(person.birthdate, 'month') % 12 : 0;
+  const estimatedBirthdate = birthdateEstimated && person.birthdate ? parsePatientBirthdate(person.birthdate) : null;
+  const calculatedAgeInMonths = estimatedBirthdate ? calculatePatientAgeInMonths(estimatedBirthdate) : null;
+  const estimatedAgeInMonths =
+    calculatedAgeInMonths != null ? Math.min(calculatedAgeInMonths, MAX_PATIENT_AGE_YEARS * 12) : null;
+  const yearsEstimated = estimatedAgeInMonths != null ? Math.floor(estimatedAgeInMonths / 12) : 0;
+  const monthsEstimated = estimatedAgeInMonths != null ? estimatedAgeInMonths % 12 : 0;
 
   const fieldValues: Array<[string, unknown]> = [
     ['patientUuid', person.uuid],
@@ -123,10 +142,11 @@ export function clearPromotionSelection(freshPatientUuid: string, setFieldValue:
 
 /**
  * Maps the person's primary civil document (person attributes) to a patient identifier
- * during promotion. Skips the document when the form already provides an identifier of
- * the same type (the operator typically searched by that same number) and when the
- * number does not pass the PatientIdentifierType regex — the backend would reject the
- * whole promotion otherwise, and the number remains available as a person attribute.
+ * during promotion. Skips the document when the form already provides the same
+ * normalized identifier. A different number for the same identifier type is rejected:
+ * silently keeping the form value would promote the wrong person under that document.
+ * Invalid person attributes are left as attributes because the backend would reject the
+ * whole promotion if they were copied to a patient identifier.
  */
 export function buildDocumentIdentifierForPromotion(
   person: PersonForPromotion,
@@ -150,11 +170,19 @@ export function buildDocumentIdentifierForPromotion(
     return null;
   }
 
-  const alreadyInPayload = identifiersInPayload.some(
+  const identifiersOfSameType = identifiersInPayload.filter(
     (identifier) => identifier.identifierType === definition.patientIdentifierTypeUuid,
   );
 
-  if (alreadyInPayload) {
+  if (
+    identifiersOfSameType.some(
+      (identifier) => normalizeDocumentNumber(identifier.identifier ?? '', definition) !== normalizedNumber,
+    )
+  ) {
+    throw new PromotionDocumentMismatchError();
+  }
+
+  if (identifiersOfSameType.length) {
     return null;
   }
 

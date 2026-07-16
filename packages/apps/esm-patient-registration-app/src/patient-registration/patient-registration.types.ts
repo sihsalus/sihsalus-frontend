@@ -15,6 +15,7 @@ interface NameValue {
 
 export interface AttributeValue {
   attributeType: string;
+  uuid?: string;
   value: string;
 }
 
@@ -166,13 +167,13 @@ export interface RelationshipValue {
   initialrelationshipTypeValue?: string;
   uuid?: string;
   /**
-   * When true, also creates a companion (Acompañante) relationship for the
-   * same related person on registration.
+   * Marks this family link as the patient's primary responsible person. It is
+   * persisted as the companion relationship consumed by the existing backend flows.
    */
   isCompanion?: boolean;
   /**
-   * UUID of the existing companion (Acompañante) relationship, if any, so it
-   * can be deleted when the companion checkbox is unticked while editing.
+   * UUID of the persisted primary-responsible relationship, if any, so it can
+   * be deleted when the person is unmarked while editing.
    */
   companionRelationshipUuid?: string;
   /**
@@ -243,6 +244,7 @@ export interface FormValues {
 }
 
 export interface PatientUuidMapType {
+  [attributeKey: `attribute.${string}`]: string | undefined;
   additionalNameUuid?: string;
   birthAddressUuid?: string;
   preferredNameUuid?: string;

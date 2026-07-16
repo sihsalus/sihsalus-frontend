@@ -1,12 +1,22 @@
 import { openmrsFetch, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { act, renderHook } from '@testing-library/react';
 import { mockSession } from 'test-utils';
+import useSWRInfinite from 'swr/infinite';
 
-import { isForbiddenUserPropertiesError, useRecentlyViewedPatients } from './patient-search.resource';
+import {
+  isForbiddenUserPropertiesError,
+  useInfinitePatientSearch,
+  useRecentlyViewedPatients,
+} from './patient-search.resource';
+
+vi.mock('swr/infinite', () => ({
+  default: vi.fn(),
+}));
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockUseSession = vi.mocked(useSession);
+const mockUseSWRInfinite = vi.mocked(useSWRInfinite);
 
 describe('patient search resource', () => {
   beforeEach(() => {
@@ -31,6 +41,14 @@ describe('patient search resource', () => {
       },
     });
     mockUserHasAccess.mockReturnValue(true);
+    mockUseSWRInfinite.mockReturnValue({
+      data: undefined,
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+      setSize: vi.fn(),
+      size: 1,
+    } as unknown as ReturnType<typeof useSWRInfinite>);
   });
 
   it('reads recently viewed patients from the current session without fetching the user resource', () => {
@@ -103,5 +121,20 @@ describe('patient search resource', () => {
       isForbiddenUserPropertiesError(new Error('Server responded with 403 () for url /openmrs/ws/rest/v1/user/u')),
     ).toBe(true);
     expect(isForbiddenUserPropertiesError({ response: { status: 500 } })).toBe(false);
+  });
+
+  it('trims the patient query at the REST resource boundary', () => {
+    renderHook(() => useInfinitePatientSearch('  80526377  ', true));
+
+    const getUrl = mockUseSWRInfinite.mock.calls.at(-1)?.[0] as (page: number, previousPageData: null) => string;
+    const url = new URL(getUrl(0, null), 'http://localhost');
+
+    expect(url.searchParams.get('q')).toBe('80526377');
+  });
+
+  it('does not fetch a whitespace-only query', () => {
+    renderHook(() => useInfinitePatientSearch('   ', true));
+
+    expect(mockUseSWRInfinite.mock.calls.at(-1)?.[0]).toBeNull();
   });
 });

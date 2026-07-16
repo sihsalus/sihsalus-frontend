@@ -18,6 +18,7 @@ export interface WorkspaceRegistration {
   load(): Promise<LifeCycles>;
   moduleName: string;
   groups: Array<string>;
+  privileges?: string | Array<string>;
 }
 
 export type WorkspaceGroupRegistration = WorkspaceGroupDefinition & {
@@ -52,6 +53,7 @@ export interface RegisterWorkspaceOptions {
   component: string;
   moduleName: string;
   groups?: Array<string>;
+  privileges?: string | Array<string>;
   load(): Promise<LifeCycles>;
 }
 
@@ -144,6 +146,7 @@ export function getWorkspaceRegistration(name: string): WorkspaceRegistration {
         canMaximize: workspaceExtension.meta?.canMaximize ?? false,
         width: workspaceExtension.meta?.width ?? 'narrow',
         groups: workspaceExtension.meta?.groups ?? [],
+        privileges: workspaceExtension.privileges,
       };
     } else {
       throw new Error(`No workspace named '${name}' has been registered.`);

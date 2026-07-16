@@ -44,6 +44,10 @@ export const importDynamic = vi.fn();
 /* esm-error-handling */
 export const createErrorHandler = () => vi.fn().mockReturnValue(NEVER);
 
+export const getUserFacingErrorMessage = vi.fn((_error: unknown, fallback: string) => fallback);
+
+export const logError = vi.fn();
+
 export const reportError = vi.fn();
 
 /* esm-feature-flags */
@@ -162,6 +166,7 @@ interface OpenmrsDatePickerMockProps extends InputHTMLAttributes<HTMLInputElemen
   invalid?: boolean;
   invalidText?: ReactNode;
   isInvalid?: boolean;
+  isReadOnly?: boolean;
   isRequired?: boolean;
   labelText?: ReactNode;
   maxDate?: Date;
@@ -180,6 +185,7 @@ export const OpenmrsDatePicker = forwardRef<HTMLInputElement, OpenmrsDatePickerM
       invalid,
       isInvalid,
       invalidText,
+      isReadOnly,
       isRequired,
       maxDate: _maxDate,
       minDate: _minDate,
@@ -197,6 +203,7 @@ export const OpenmrsDatePicker = forwardRef<HTMLInputElement, OpenmrsDatePickerM
           {...props}
           id={id}
           ref={ref}
+          readOnly={isReadOnly}
           required={required ?? isRequired}
           type="text"
           value={value ? dayjs(value).format('DD/MM/YYYY') : ''}

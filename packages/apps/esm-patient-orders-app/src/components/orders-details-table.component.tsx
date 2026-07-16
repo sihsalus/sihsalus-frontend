@@ -96,17 +96,17 @@ const getPriorityColor = (urgency: string | undefined): string => {
 };
 
 const resultsViewerConcepts = [
-  '24305e8e-f3dc-4ac6-bf87-e4f11f3b970e', // Hemograma completo
+  //'24305e8e-f3dc-4ac6-bf87-e4f11f3b970e', // Hemograma completo
   '7e750f3a-8d5c-45b1-8e94-ebf850208e35', // Examen completo de orina
-  'df144cc2-6718-4005-9881-f39eafd73315', // Examen de heces (panel)
+  //'df144cc2-6718-4005-9881-f39eafd73315', // Examen de heces (panel)
   '339febfd-699e-4a26-927f-1f9a7780bb5e', // Panel de Química del Suero
-  '241eb982-1fdd-4183-a2b5-763f5ce2d528',
-  '1bcb541a-55e8-4c5d-83fb-d121a9d54d9d',
-  '654b11a8-a326-45c9-885e-2fae6143404a',
-  '968c8a41-ab1b-426c-86ee-761b88c26e40',
-  'ef0a9d25-658b-466b-9b7e-4571673b28b0',
-  '7969c932-60db-4a38-8723-2f3a5bba8c16',
-  'bb3af485-89b6-4c04-848c-8d024a6b4a7a',
+  '241eb982-1fdd-4183-a2b5-763f5ce2d528', //Otras pruebas de laboratorio
+  //'1bcb541a-55e8-4c5d-83fb-d121a9d54d9d',// Pruebas de tipificacion sanguinea
+  '654b11a8-a326-45c9-885e-2fae6143404a', //Determinacion de leucocitos en heces como reaccion inflamatoria
+  '968c8a41-ab1b-426c-86ee-761b88c26e40', //Tincion con colorante de Wright y diferenciacion de celulas
+  'ef0a9d25-658b-466b-9b7e-4571673b28b0', //Prueba de KOH de diagnostico de hongos
+  '7969c932-60db-4a38-8723-2f3a5bba8c16', //Prueba de Látex PCR Directo
+  'bb3af485-89b6-4c04-848c-8d024a6b4a7a', //Examen Parasitológico en heces
 ];
 
 interface LabsetMember {
@@ -173,8 +173,8 @@ function getCellContent(value: ReactNode) {
 const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddButton, showPrintButton, title }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEditOrders = userHasAccess('app:clinical.chart.orders.edit', session?.user);
-  const canEditResults = userHasAccess('app:clinical.chart.results.edit', session?.user);
+  const canEditOrders = userHasAccess('app:hoja.clinica.ordenes.editar', session?.user);
+  const canEditResults = userHasAccess('app:hoja.clinica.resultados.editar', session?.user);
   const locale = getLocale() ?? 'en';
   const defaultPageSize = 10;
   const headerTitle = t('orders', 'Orders');

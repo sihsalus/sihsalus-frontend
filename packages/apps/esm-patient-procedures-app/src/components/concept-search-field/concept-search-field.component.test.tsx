@@ -34,6 +34,17 @@ describe('Concept Search Field', () => {
     expect(screen.getByPlaceholderText('Search for a procedure')).toBeInTheDocument();
   });
 
+  it('associates an inline validation message with the search input', () => {
+    const field = createMockField();
+    render(<ConceptSearchField {...defaultProps} field={field} invalid invalidText="A procedure is required" />);
+
+    const searchInput = screen.getByRole('searchbox', { name: /procedure/i });
+    const validationMessage = screen.getByText('A procedure is required');
+
+    expect(searchInput).toHaveAttribute('aria-invalid', 'true');
+    expect(searchInput).toHaveAttribute('aria-describedby', validationMessage.id);
+  });
+
   it('typing calls setSearchTerm', async () => {
     const user = userEvent.setup();
     const field = createMockField();

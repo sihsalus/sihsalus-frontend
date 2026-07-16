@@ -14,7 +14,7 @@ export function useQueueRooms(location?: string | null, queueUuid?: string | nul
   );
   return {
     rooms: data ? data?.data?.results : [],
-    error: error?.message.replaceAll('[', '').replaceAll(']', '') ?? error?.message,
+    error,
     isLoading,
   };
 }

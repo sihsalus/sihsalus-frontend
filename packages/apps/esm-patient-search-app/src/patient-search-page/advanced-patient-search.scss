@@ -1,5 +1,5 @@
-@use '@carbon/layout';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .advancedPatientSearchDesktop {
   display: flex;
@@ -17,7 +17,7 @@
 
 .refineSearchDesktop {
   margin-right: layout.$spacing-09;
-  width: 18rem;
+  width: 22rem;
 }
 
 .patientSearchResultsDesktop {

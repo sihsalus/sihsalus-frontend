@@ -100,6 +100,8 @@
   "ordersForHomeDelivery": "Orders for home delivery",
   "patientInstructions": "Patient instructions",
   "patientName": "Patient name",
+  "patientSearchCriteria": "Last names and given names or identity document",
+  "patientSearchPlaceholder": "Enter last names, given names, DNI, CE, or passport",
   "pause": "Pause",
   "paused": "Paused",
   "pausedDispense": "paused dispense",

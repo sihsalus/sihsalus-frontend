@@ -64,7 +64,7 @@ const PertenenciaEtnica: React.FC<PertenenciaEtnicaProps> = ({ patientUuid }) =>
           <StructuredListHead>
             <StructuredListRow head>
               <StructuredListCell head>{t('currentIdentity', 'Identificación Actual')}</StructuredListCell>
-              <StructuredListCell head>{t('dateRecorded', 'Fecha de Registro')}</StructuredListCell>
+              <StructuredListCell head>{t('dateAndTimeRecorded', 'Fecha y hora de registro')}</StructuredListCell>
             </StructuredListRow>
           </StructuredListHead>
           <StructuredListBody>
@@ -75,7 +75,7 @@ const PertenenciaEtnica: React.FC<PertenenciaEtnicaProps> = ({ patientUuid }) =>
                     {entry.value}
                   </Tag>
                 </StructuredListCell>
-                <StructuredListCell>{formatDate(new Date(entry.encounterDatetime))}</StructuredListCell>
+                <StructuredListCell>{formatDate(new Date(entry.encounterDatetime), { time: true })}</StructuredListCell>
               </StructuredListRow>
             ))}
           </StructuredListBody>

@@ -2,6 +2,7 @@ import {
   type AgeGroup,
   calculateAgeInDays,
   calculateAgeInMonths,
+  getConfiguredAgeGroupFromBirthDate,
   getAgeGroup,
   getAgeGroupFromBirthDate,
   getAgeGroupInDays,
@@ -38,9 +39,25 @@ describe('age-group-utils', () => {
     expect(getAgeGroup(30, ageGroups)).toBeNull();
   });
 
+  it('uses an exclusive upper month boundary between adjacent age groups', () => {
+    expect(getAgeGroup(12, ageGroups)).toEqual(ageGroups[2]);
+    expect(getAgeGroup(24, ageGroups)).toBeNull();
+  });
+
   it('finds the matching age group from days with inclusive boundaries', () => {
     expect(getAgeGroupInDays(28, ageGroups)).toEqual(ageGroups[0]);
     expect(getAgeGroupInDays(29, ageGroups)).toEqual(ageGroups[1]);
     expect(getAgeGroupInDays(999, ageGroups)).toBeNull();
+  });
+
+  it('resolves mixed CRED age groups using the consultation date', () => {
+    const credGroups: AgeGroup[] = [
+      { label: 'RN', minDays: 0, maxDays: 28 },
+      { label: '1 MES', minDays: 29, maxDays: 59 },
+      { label: '12 A 14 MESES', minMonths: 12, maxMonths: 15 },
+    ];
+
+    expect(getConfiguredAgeGroupFromBirthDate('2024-01-01', credGroups, '2024-02-10')).toEqual(credGroups[1]);
+    expect(getConfiguredAgeGroupFromBirthDate('2024-01-01', credGroups, '2025-01-01')).toEqual(credGroups[2]);
   });
 });

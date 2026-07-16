@@ -14,7 +14,8 @@ import type {
   PatientIdentifierValue,
 } from '../../patient-registration.types';
 import { PatientRegistrationContext } from '../../patient-registration-context';
-import { getEffectiveRegistrationConfig } from '../../peru-registration-config';
+import { getDocumentTypeDefinitionByIdentifierType } from '../../identity/identity-documents';
+import { getEffectiveRegistrationConfig, peruOtherPatientIdentifierTypeUuid } from '../../peru-registration-config';
 import styles from '../field.scss';
 import IdentifierSelectionOverlay from './identifier-selection-overlay.component';
 
@@ -66,6 +67,17 @@ export function isIdentityDocumentIdentifier(
   const identifierType = identifierTypes.find(
     (type) => type.fieldName === identifierFieldName || type.uuid === identifier?.identifierTypeUuid,
   );
+
+  const usesPeruIdentityDocuments = identifierTypes.some(
+    (type) => !!getDocumentTypeDefinitionByIdentifierType(type.uuid),
+  );
+
+  if (usesPeruIdentityDocuments && identifierType) {
+    return (
+      identifierType.uuid === peruOtherPatientIdentifierTypeUuid ||
+      !!getDocumentTypeDefinitionByIdentifierType(identifierType.uuid)
+    );
+  }
 
   return identifierType ? !identifierType.isPrimary && !identifierType.required : !identifier?.required;
 }
@@ -211,7 +223,7 @@ export const Identifiers: React.FC = () => {
           )}
         />
       ) : null}
-      <UserHasAccess privilege="app:topnav.registerPatient">
+      <UserHasAccess privilege="app:opciones.registrarPaciente">
         <div className={styles.identifierLabelText}>
           <h4 className={styles.productiveHeading02Light}>{t('idFieldLabelText', 'Identifiers')}</h4>
           {identifierTypes.length ? (

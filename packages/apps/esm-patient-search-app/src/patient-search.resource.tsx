@@ -17,7 +17,7 @@ const patientProperties = [
   'display',
   'patientIdentifier:(uuid,identifier)',
   'person:(gender,age,birthdate,birthdateEstimated,personName:(display,givenName,middleName,familyName,familyName2),addresses,display,dead,deathDate)',
-  'attributes:(value,attributeType:(uuid,display))',
+  'attributes:(display,value,attributeType:(uuid,display))',
 ];
 
 const patientSearchCustomRepresentation = `custom:(${patientProperties.join(',')})`;
@@ -60,6 +60,7 @@ export function useInfinitePatientSearch(
   resultsToFetch: number = 10,
   customRepresentation: string = patientSearchCustomRepresentation,
 ): PatientSearchResponse {
+  const normalizedSearchQuery = searchQuery?.trim() ?? '';
   const getUrl = useCallback(
     (
       page: number,
@@ -71,7 +72,7 @@ export function useInfinitePatientSearch(
 
       const baseUrl = `${restBaseUrl}/patient`;
       const params = new URLSearchParams({
-        q: searchQuery,
+        q: normalizedSearchQuery,
         v: customRepresentation,
         includeDead: includeDead.toString(),
         limit: resultsToFetch.toString(),
@@ -81,10 +82,10 @@ export function useInfinitePatientSearch(
 
       return `${baseUrl}?${params.toString()}`;
     },
-    [searchQuery, customRepresentation, includeDead, resultsToFetch],
+    [normalizedSearchQuery, customRepresentation, includeDead, resultsToFetch],
   );
 
-  const shouldFetch = isSearching && searchQuery;
+  const shouldFetch = isSearching && Boolean(normalizedSearchQuery);
 
   const { data, isLoading, isValidating, setSize, error, size } = useSWRInfinite<InfinitePatientSearchResponse, Error>(
     shouldFetch ? getUrl : null,

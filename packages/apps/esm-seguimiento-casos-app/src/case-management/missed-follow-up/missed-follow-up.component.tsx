@@ -13,7 +13,7 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
+import { formatDate, parseDate, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import {
   CardHeader,
   EmptyState,
@@ -25,7 +25,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ConfigObject } from '../../config-schema';
-import { patientFormEntryWorkspace } from '../../utils/constants';
+import { missedFollowUpEditPrivilege, patientFormEntryWorkspace } from '../../utils/constants';
 import { useMissedFollowUp } from './missed-follow-up.resource';
 
 import styles from './missed-follow-up.scss';
@@ -39,6 +39,8 @@ const MissedFollowUp: React.FC<MissedFollowUpProps> = ({ patientUuid }) => {
   const { concepts, formsList } = useConfig<ConfigObject>();
   const headerTitle = t('missedFollowUp', 'Pérdida en el seguimiento');
   const { encounters, isLoading, error, mutate } = useMissedFollowUp(patientUuid);
+  const session = useSession();
+  const canEdit = userHasAccess(missedFollowUpEditPrivilege, session?.user);
 
   const openMissedFollowUpForm = (encounterUuid = '') => {
     launchPatientWorkspace(patientFormEntryWorkspace, {
@@ -107,21 +109,29 @@ const MissedFollowUp: React.FC<MissedFollowUpProps> = ({ patientUuid }) => {
   }
 
   if (encounters.length === 0) {
-    return <EmptyState displayText={headerTitle} headerTitle={headerTitle} launchForm={openMissedFollowUpForm} />;
+    return (
+      <EmptyState
+        displayText={headerTitle}
+        headerTitle={headerTitle}
+        launchForm={canEdit ? openMissedFollowUpForm : undefined}
+      />
+    );
   }
 
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        <Button
-          size="md"
-          kind="ghost"
-          onClick={() => openMissedFollowUpForm()}
-          renderIcon={(props) => <Add size={24} {...props} />}
-          iconDescription={t('add', 'Add')}
-        >
-          {t('add', 'Add')}
-        </Button>
+        {canEdit ? (
+          <Button
+            size="md"
+            kind="ghost"
+            onClick={() => openMissedFollowUpForm()}
+            renderIcon={(props) => <Add size={24} {...props} />}
+            iconDescription={t('add', 'Add')}
+          >
+            {t('add', 'Add')}
+          </Button>
+        ) : null}
       </CardHeader>
       <DataTable
         useZebraStyles
@@ -138,7 +148,7 @@ const MissedFollowUp: React.FC<MissedFollowUpProps> = ({ patientUuid }) => {
                       {header.header}
                     </TableHeader>
                   ))}
-                  <TableHeader aria-label={t('actions', 'Actions')} />
+                  {canEdit ? <TableHeader aria-label={t('actions', 'Actions')} /> : null}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -147,14 +157,16 @@ const MissedFollowUp: React.FC<MissedFollowUpProps> = ({ patientUuid }) => {
                     {row.cells.map((cell) => (
                       <TableCell key={cell.id}>{cell.value}</TableCell>
                     ))}
-                    <TableCell className="cds--table-column-menu">
-                      <OverflowMenu aria-label={t('actions', 'Actions')} flipped={false}>
-                        <OverflowMenuItem
-                          onClick={() => openMissedFollowUpForm(encounters[index]?.uuid)}
-                          itemText={t('edit', 'Edit')}
-                        />
-                      </OverflowMenu>
-                    </TableCell>
+                    {canEdit ? (
+                      <TableCell className="cds--table-column-menu">
+                        <OverflowMenu aria-label={t('actions', 'Actions')} flipped={false}>
+                          <OverflowMenuItem
+                            onClick={() => openMissedFollowUpForm(encounters[index]?.uuid)}
+                            itemText={t('edit', 'Edit')}
+                          />
+                        </OverflowMenu>
+                      </TableCell>
+                    ) : null}
                   </TableRow>
                 ))}
               </TableBody>

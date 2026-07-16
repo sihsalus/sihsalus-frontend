@@ -58,16 +58,15 @@
       "component": "userMenuButton",
       "online": true,
       "offline": true,
-      "slot": "top-nav-actions-slot",
-      "order": 40
+      "slot": "top-nav-app-menu-slot",
+      "order": 100
     },
     {
       "name": "app-menu-button",
       "component": "appMenuButton",
       "online": true,
       "offline": true,
-      "slot": "top-nav-app-menu-slot",
-      "privileges": "app:topnav.moduleSwitcher"
+      "slot": "top-nav-app-menu-slot"
     }
   ],
   "modals": [

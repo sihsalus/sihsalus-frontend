@@ -81,6 +81,11 @@
   margin: layout.$spacing-05;
 }
 
+.form :global(.cds--label) {
+  font-size: 0.875rem !important;
+  line-height: 1.25rem;
+}
+
 .form {
   display: flex;
   flex-direction: column;

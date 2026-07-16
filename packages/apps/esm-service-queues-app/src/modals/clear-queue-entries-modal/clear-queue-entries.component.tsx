@@ -1,9 +1,10 @@
 import { Button } from '@carbon/react';
+import { TrashCan } from '@carbon/react/icons';
 import { isDesktop, showModal, useLayoutType } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { CanEditServiceQueues } from '../../permissions';
 import { type QueueEntry } from '../../types';
-import styles from './clear-queue-entries.scss';
 
 interface ClearQueueEntriesProps {
   queueEntries: Array<QueueEntry>;
@@ -22,15 +23,18 @@ const ClearQueueEntries: React.FC<ClearQueueEntriesProps> = ({ queueEntries }) =
   }, [queueEntries]);
 
   return (
-    <Button
-      className={styles.clearQueueButton}
-      size={isDesktop(layout) ? 'sm' : 'lg'}
-      kind="ghost"
-      onClick={launchClearAllQueueEntriesModal}
-      iconDescription={t('clearQueueEntries', 'Clear queue entries')}
-    >
-      {t('clearQueueEntries', 'Clear queue entries')}
-    </Button>
+    <CanEditServiceQueues>
+      <Button
+        disabled={queueEntries.length === 0}
+        size={isDesktop(layout) ? 'sm' : 'lg'}
+        kind="danger--ghost"
+        onClick={launchClearAllQueueEntriesModal}
+        iconDescription={t('clearQueueEntries', 'Clear queue entries')}
+        renderIcon={TrashCan}
+      >
+        {t('clearQueueEntries', 'Clear queue entries')}
+      </Button>
+    </CanEditServiceQueues>
   );
 };
 

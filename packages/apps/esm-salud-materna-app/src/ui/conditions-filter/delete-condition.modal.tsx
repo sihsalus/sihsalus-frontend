@@ -1,8 +1,9 @@
 import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { showSnackbar } from '@openmrs/esm-framework';
-import React, { useCallback, useState } from 'react';
+import { showSnackbar, userHasAccess, useSession } from '@openmrs/esm-framework';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { prenatalCareEditPrivilege } from '../../constants';
 import { deleteCondition, useConditions } from './conditions.resource';
 import styles from './delete-condition.scss';
 
@@ -16,6 +17,8 @@ const DeleteConditionModal: React.FC<DeleteConditionModalProps> = ({ closeDelete
   const { t } = useTranslation();
   const { mutate } = useConditions(patientUuid);
   const [isDeleting, setIsDeleting] = useState(false);
+  const session = useSession();
+  const canEdit = userHasAccess(prenatalCareEditPrivilege, session?.user);
 
   const handleDelete = useCallback(async () => {
     setIsDeleting(true);
@@ -41,6 +44,16 @@ const DeleteConditionModal: React.FC<DeleteConditionModalProps> = ({ closeDelete
       });
     }
   }, [closeDeleteModal, conditionId, mutate, t]);
+
+  useEffect(() => {
+    if (!canEdit) {
+      closeDeleteModal();
+    }
+  }, [canEdit, closeDeleteModal]);
+
+  if (!canEdit) {
+    return null;
+  }
 
   return (
     <div>

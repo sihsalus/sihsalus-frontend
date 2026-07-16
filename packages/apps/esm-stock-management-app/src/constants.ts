@@ -25,7 +25,33 @@ export const StockFilters = Object.freeze({
   STATUS: 'Status',
 });
 
-// privileges
+// SIHSALUS Stock Management UI privileges
+export const stockManagementOverviewPrivilege = 'app:gestionInventario.resumen';
+export const stockManagementItemsPrivilege = 'app:gestionInventario.articulos';
+export const stockManagementItemsEditPrivilege = 'app:gestionInventario.articulos.editar';
+export const stockManagementOperationsPrivilege = 'app:gestionInventario.operaciones';
+export const stockManagementOperationsEditPrivilege = 'app:gestionInventario.operaciones.editar';
+export const stockManagementSourcesPrivilege = 'app:gestionInventario.fuentes';
+export const stockManagementSourcesEditPrivilege = 'app:gestionInventario.fuentes.editar';
+export const stockManagementRoleScopesPrivilege = 'app:gestionInventario.ambitosRoles';
+export const stockManagementRoleScopesEditPrivilege = 'app:gestionInventario.ambitosRoles.editar';
+export const stockManagementReportsPrivilege = 'app:gestionInventario.reportes';
+export const stockManagementReportsEditPrivilege = 'app:gestionInventario.reportes.editar';
+export const stockManagementSettingsPrivilege = 'app:gestionInventario.configuracion';
+export const stockManagementSettingsEditPrivilege = 'app:gestionInventario.configuracion.editar';
+
+export const stockManagementDashboardPrivileges: Readonly<Record<string, string>> = Object.freeze({
+  'stock-management': stockManagementOverviewPrivilege,
+  overview: stockManagementOverviewPrivilege,
+  operations: stockManagementOperationsPrivilege,
+  items: stockManagementItemsPrivilege,
+  'user-scopes': stockManagementRoleScopesPrivilege,
+  sources: stockManagementSourcesPrivilege,
+  reports: stockManagementReportsPrivilege,
+  settings: stockManagementSettingsPrivilege,
+});
+
+// Native Stock Management backend privileges
 /** @type {string}: App: stockmanagement.dashboard, Able to view stock management application dashboard*/
 export const APP_STOCKMANAGEMENT_DASHBOARD = 'App: stockmanagement.dashboard';
 

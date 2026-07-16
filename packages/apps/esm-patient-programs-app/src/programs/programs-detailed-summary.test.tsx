@@ -93,11 +93,7 @@ describe('ProgramsDetailedSummary', () => {
     await waitForLoadingToFinish();
 
     expect(screen.getByText(/Care Programs/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /Sorry, there was a problem displaying this information. You can try to reload this page, or contact the site administrator and quote the error code above./,
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/there was a problem displaying this information/i)).toBeInTheDocument();
   });
 
   it('renders a detailed tabular summary of the patient program enrollments', async () => {

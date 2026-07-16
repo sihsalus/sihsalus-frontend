@@ -1,9 +1,11 @@
+import { useSession } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import { Form, Formik } from 'formik';
 
 import { type FieldDefinition } from '../../../config-schema';
 import { PatientRegistrationContext, type PatientRegistrationContextProps } from '../../patient-registration-context';
 import { useConceptAnswers } from '../field.resource';
+import styles from '../field.scss';
 
 import { PersonAttributeField } from './person-attribute-field.component';
 import { usePersonAttributeType } from './person-attributes.resource';
@@ -18,8 +20,20 @@ vi.mock('../field.resource', async () => ({
   useConceptAnswers: vi.fn(),
 }));
 
+vi.mock('../field.scss', () => ({
+  default: {
+    codedRadioGroup: 'codedRadioGroup',
+    customField: 'customField',
+    fullWidthInDesktopView: 'fullWidthInDesktopView',
+    halfWidthInDesktopView: 'halfWidthInDesktopView',
+    productiveHeading02Light: 'productiveHeading02Light',
+    searchableCodedField: 'searchableCodedField',
+  },
+}));
+
 const mockUsePersonAttributeType = vi.mocked(usePersonAttributeType);
 const mockUseConceptAnswers = vi.mocked(useConceptAnswers);
+const mockUseSession = vi.mocked(useSession);
 
 const mockPersonAttributeType = {
   format: 'java.lang.String',
@@ -47,6 +61,13 @@ let fieldDefinition: FieldDefinition = { ...baseFieldDefinition };
 describe('PersonAttributeField', () => {
   beforeEach(() => {
     fieldDefinition = { ...baseFieldDefinition };
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionId: 'session-id',
+      user: {
+        privileges: [{ display: 'Get Concepts', name: 'Get Concepts' }],
+      },
+    } as ReturnType<typeof useSession>);
     mockUsePersonAttributeType.mockReturnValue({
       data: mockPersonAttributeType,
       isLoading: false,
@@ -141,6 +162,32 @@ describe('PersonAttributeField', () => {
     expect(input.type).toBe('select-one');
     expect(screen.getByText('Option 1')).toBeInTheDocument();
     expect(screen.getByText('Option 2')).toBeInTheDocument();
+  });
+
+  it('makes radio-coded attributes span the full section row', () => {
+    mockUsePersonAttributeType.mockReturnValue({
+      data: { ...mockPersonAttributeType, format: 'org.openmrs.Concept' },
+      isLoading: false,
+      error: null,
+    });
+
+    render(
+      <Formik initialValues={{ attributes: {} }} onSubmit={() => {}}>
+        <Form>
+          <PersonAttributeField
+            fieldDefinition={{
+              ...fieldDefinition,
+              codedInputType: 'radio',
+              customConceptAnswers: [{ uuid: 'answer', label: 'Answer' }],
+            }}
+          />
+        </Form>
+      </Formik>,
+    );
+
+    expect(
+      screen.getByRole('group', { name: /Referred by/i }).closest(`.${styles.fullWidthInDesktopView}`),
+    ).not.toBeNull();
   });
 
   it('locks read-only-on-create coded attributes when creating a new patient', () => {

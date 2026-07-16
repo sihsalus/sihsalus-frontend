@@ -110,7 +110,8 @@ describe('getCREDFormsForAgeGroup', () => {
 
     const forms = getCREDFormsForAgeGroup(configWithoutFormGroups, '2026-02-04', '2026-02-07T05:00:00.000Z');
 
-    expect(forms.map(({ form }) => form.uuid).slice(0, 2)).toEqual(['ATENCION-RN', 'EVAL-RN']);
+    expect(forms.map(({ form }) => form.uuid)).toContain('EVAL-RN');
+    expect(forms.map(({ form }) => form.uuid)).not.toContain('ATENCION-RN');
   });
 
   it('attaches the section edit privilege required to launch each form', () => {
@@ -120,6 +121,47 @@ describe('getCREDFormsForAgeGroup', () => {
       credNeonatalEditPrivilege,
       credNeonatalEditPrivilege,
     ]);
+  });
+
+  it.each([
+    ['2026-03-06', 'ediDevelopmentForm', 'huancaNeurodevelopmentForm'],
+    ['2026-04-06', 'huancaNeurodevelopmentForm', 'ediDevelopmentForm'],
+    ['2029-08-05', 'ediDevelopmentForm', 'huancaNeurodevelopmentForm'],
+    ['2029-03-05', 'anemiaScreeningForm', 'huancaNeurodevelopmentForm'],
+    ['2030-02-05', 'expectedSkillsBehaviorsForm', 'ediDevelopmentForm'],
+    ['2030-08-05', 'vitaminAAdministrationForm', 'expectedSkillsBehaviorsForm'],
+    ['2031-03-05', 'childMentalHealthForm', 'ediDevelopmentForm'],
+  ])('uses the NTS 238 activity matrix at %s', (referenceDate, expectedForm, unexpectedForm) => {
+    const defaultMatrixConfig = {
+      formsList: {},
+      CREDFormsByAgeGroup: [],
+    } as unknown as ConfigObject;
+
+    const formKeys = getCREDFormsForAgeGroup(defaultMatrixConfig, '2026-02-05', referenceDate).map(
+      ({ formKey }) => formKey,
+    );
+
+    expect(formKeys).toContain(expectedForm);
+    expect(formKeys).not.toContain(unexpectedForm);
+  });
+
+  it('uses day ranges before month ranges at the 59/60-day boundary', () => {
+    const defaultMatrixConfig = {
+      formsList: {},
+      CREDFormsByAgeGroup: [],
+    } as unknown as ConfigObject;
+
+    const at59Days = getCREDFormsForAgeGroup(defaultMatrixConfig, '2026-02-05', '2026-04-05').map(
+      ({ formKey }) => formKey,
+    );
+    const at60Days = getCREDFormsForAgeGroup(defaultMatrixConfig, '2026-02-05', '2026-04-06').map(
+      ({ formKey }) => formKey,
+    );
+
+    expect(at59Days).toContain('ediDevelopmentForm');
+    expect(at59Days).not.toContain('huancaNeurodevelopmentForm');
+    expect(at60Days).toContain('huancaNeurodevelopmentForm');
+    expect(at60Days).not.toContain('ediDevelopmentForm');
   });
 });
 

@@ -11,15 +11,14 @@ import {
   TableRow,
   Tag,
 } from '@carbon/react';
-import { Add, CheckmarkFilled, Time } from '@carbon/react/icons';
-import { launchWorkspace2, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { Add, Document, Time } from '@carbon/react/icons';
+import { userHasAccess, useSession } from '@openmrs/esm-framework';
+import { CardHeader, ErrorState, useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ConfigObject } from '../../../config-schema';
-import { credNutritionEditPrivilege } from '../../../constants';
+import { credCourseLifeEditPrivilege } from '../../../constants';
+import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
 import { useScreeningIndicators } from '../../../hooks/useScreeningIndicators';
-import { formEntryWorkspace } from '../../../types';
 
 import styles from './screening-indicators.scss';
 
@@ -30,22 +29,19 @@ interface ScreeningIndicatorsProps {
 const ScreeningIndicators: React.FC<ScreeningIndicatorsProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
-  const config = useConfig<ConfigObject>();
+  const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);
+  const { nextDueControl } = useCREDSchedule(patientUuid);
+  const launchControlWorkspace = useLaunchWorkspaceRequiringVisit<{ control: typeof nextDueControl }>(
+    patientUuid,
+    'wellchild-control-form',
+  );
   const { screenings, completedCount, totalRequired, isLoading, error } = useScreeningIndicators(patientUuid);
-  const headerTitle = t('screeningIndicators', 'Tamizajes Obligatorios');
+  const headerTitle = t('screeningIndicators', 'Historial de tamizajes');
 
-  const handleAdd = useCallback(() => {
-    const formUuid = config.formsList.screeningIndicatorsForm;
-    if (!formUuid) {
-      console.warn('Form UUID not configured for screeningIndicatorsForm');
-      return;
-    }
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: formUuid },
-      encounterUuid: '',
-    });
-  }, [config.formsList.screeningIndicatorsForm]);
+  const handleAdd = useCallback(
+    () => launchControlWorkspace({ control: nextDueControl }),
+    [launchControlWorkspace, nextDueControl],
+  );
 
   const tableHeaders = useMemo(
     () => [
@@ -61,7 +57,7 @@ const ScreeningIndicators: React.FC<ScreeningIndicatorsProps> = ({ patientUuid }
       screenings.map((screening, idx) => ({
         id: `screening-${idx}`,
         status: screening.completed ? (
-          <CheckmarkFilled size={16} className={styles.iconSuccess} />
+          <Document size={16} className={styles.iconRecorded} />
         ) : (
           <Time size={16} className={styles.iconPending} />
         ),
@@ -79,17 +75,14 @@ const ScreeningIndicators: React.FC<ScreeningIndicatorsProps> = ({ patientUuid }
     return <ErrorState error={error} headerTitle={headerTitle} />;
   }
 
-  if (screenings.length === 0) {
-    return (
-      <EmptyState displayText={t('noScreeningData', 'Sin datos de tamizaje registrados')} headerTitle={headerTitle} />
-    );
-  }
-
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        <Tag type={completedCount === totalRequired ? 'green' : 'gray'} size="sm">
-          {completedCount}/{totalRequired}
+        <Tag type="gray" size="sm">
+          {t('screeningTypesRecorded', '{{completed}}/{{total}} tipos con registro', {
+            completed: completedCount,
+            total: totalRequired,
+          })}
         </Tag>
         {canEdit && (
           <Button kind="ghost" size="sm" renderIcon={Add} onClick={handleAdd} iconDescription={t('add', 'Add')}>
@@ -111,17 +104,13 @@ const ScreeningIndicators: React.FC<ScreeningIndicatorsProps> = ({ patientUuid }
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row) => {
-                  const idx = parseInt(row.id.replace('screening-', ''), 10);
-                  const isCompleted = screenings[idx]?.completed;
-                  return (
-                    <TableRow key={row.id} className={isCompleted ? styles.rowCompleted : styles.rowPending}>
-                      {row.cells.map((cell) => (
-                        <TableCell key={cell.id}>{cell.value}</TableCell>
-                      ))}
-                    </TableRow>
-                  );
-                })}
+                {rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.cells.map((cell) => (
+                      <TableCell key={cell.id}>{cell.value}</TableCell>
+                    ))}
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </TableContainer>

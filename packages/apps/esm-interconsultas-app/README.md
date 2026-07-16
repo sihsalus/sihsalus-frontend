@@ -10,6 +10,8 @@ Microfrontend independiente para el flujo de **Interconsultas** (NTS 030-MINSA, 
 - **Pickup por otro profesional**: acciones Recibir → Atender → Responder/Rechazar desde la bandeja, sin pasar por el chart del paciente.
 - **Widget en el chart** (`patient-chart-dashboard-slot` → Interconsultas) que muestra cada solicitud, su estado y la respuesta.
 
+Los escenarios funcionales y sus criterios verificables están definidos en [ACCEPTANCE.md](./ACCEPTANCE.md). Esa matriz es el contrato para las pruebas unitarias, de componentes y E2E; el flujo no se considera cerrado mientras conserve casos marcados como parciales o pendientes.
+
 ## Principio de no duplicación
 
 La interconsulta **solo referencia** recursos existentes:
@@ -43,7 +45,7 @@ Recurso base: **Order** con order type `Interconsulta` (`f3c2e4b6-8b5a-11e5-8e9b
 
 Todos los UUIDs son configurables vía `config-schema.ts`.
 
-La distribución SIHSALUS configura explícitamente:
+Los defaults de la distribución SIHSALUS son:
 
 - `interconsultaOrderTypeUuid`: `f3c2e4b6-8b5a-11e5-8e9b-12345678901b`
 - `orderableConceptSets`: `4bf3f465-ac91-44fa-9b1f-173daf0c89a0` (`Tipo de Servicio`)

@@ -62,16 +62,14 @@ function dataURItoFile(dataURI: string) {
   return new File([blob], 'patient-photo.png', { type: mimeString });
 }
 
-export function savePatient(patient: Patient | null, updatePatientUuid?: string) {
-  const abortController = new AbortController();
-
+export function savePatient(patient: Patient | null, updatePatientUuid?: string, signal?: AbortSignal) {
   return openmrsFetch(`${restBaseUrl}/patient/${updatePatientUuid || ''}`, {
     headers: {
       'Content-Type': 'application/json',
     },
     method: 'POST',
     body: patient,
-    signal: abortController.signal,
+    signal,
   });
 }
 
@@ -80,9 +78,11 @@ export function savePatient(patient: Patient | null, updatePatientUuid?: string)
  * string — sending a nested `person: { uuid }` object would make the backend try to
  * create a brand-new person. The promoted patient keeps the same UUID as the person.
  */
-export function promotePersonToPatient(personUuid: string, identifiers: Array<PatientIdentifier>) {
-  const abortController = new AbortController();
-
+export function promotePersonToPatient(
+  personUuid: string,
+  identifiers: Array<PatientIdentifier>,
+  signal?: AbortSignal,
+) {
   return openmrsFetch(`${restBaseUrl}/patient`, {
     headers: {
       'Content-Type': 'application/json',
@@ -92,93 +92,90 @@ export function promotePersonToPatient(personUuid: string, identifiers: Array<Pa
       person: personUuid,
       identifiers,
     },
-    signal: abortController.signal,
+    signal,
   });
 }
 
-export function saveEncounter(encounter: Encounter) {
-  const abortController = new AbortController();
-
+export function saveEncounter(encounter: Encounter, signal?: AbortSignal) {
   return openmrsFetch(`${restBaseUrl}/encounter`, {
     headers: {
       'Content-Type': 'application/json',
     },
     method: 'POST',
     body: encounter,
-    signal: abortController.signal,
+    signal,
   });
 }
 
-export function generateIdentifier(source: string) {
-  const abortController = new AbortController();
-
+export function generateIdentifier(source: string, signal?: AbortSignal) {
   return openmrsFetch(`${restBaseUrl}/idgen/identifiersource/${source}/identifier`, {
     headers: {
       'Content-Type': 'application/json',
     },
     method: 'POST',
     body: {},
-    signal: abortController.signal,
+    signal,
   });
 }
 
-export function deletePersonName(nameUuid: string, personUuid: string) {
-  const abortController = new AbortController();
-
+export function deletePersonName(nameUuid: string, personUuid: string, signal?: AbortSignal) {
   return openmrsFetch(`${restBaseUrl}/person/${personUuid}/name/${nameUuid}`, {
     method: 'DELETE',
-    signal: abortController.signal,
+    signal,
   });
 }
 
-export function savePerson(person: SavePersonPayload) {
-  const abortController = new AbortController();
+export function deletePersonAttribute(personUuid: string, attributeUuid: string, signal?: AbortSignal) {
+  return openmrsFetch(`${restBaseUrl}/person/${personUuid}/attribute/${attributeUuid}`, {
+    method: 'DELETE',
+    signal,
+  });
+}
 
+export function savePerson(person: SavePersonPayload, signal?: AbortSignal) {
   return openmrsFetch(`${restBaseUrl}/person`, {
     headers: {
       'Content-Type': 'application/json',
     },
     method: 'POST',
     body: person,
-    signal: abortController.signal,
+    signal,
   });
 }
 
-export function saveRelationship(relationship: Relationship) {
-  const abortController = new AbortController();
-
+export function saveRelationship(relationship: Relationship, signal?: AbortSignal) {
   return openmrsFetch(`${restBaseUrl}/relationship`, {
     headers: {
       'Content-Type': 'application/json',
     },
     method: 'POST',
     body: relationship,
-    signal: abortController.signal,
+    signal,
   });
 }
 
-export function updateRelationship(relationshipUuid, relationship: { relationshipType: string }) {
-  const abortController = new AbortController();
-
+export function updateRelationship(
+  relationshipUuid: string,
+  relationship: { relationshipType: string },
+  signal?: AbortSignal,
+) {
   return openmrsFetch(`${restBaseUrl}/relationship/${relationshipUuid}`, {
     headers: {
       'Content-Type': 'application/json',
     },
     method: 'POST',
     body: { relationshipType: relationship.relationshipType },
-    signal: abortController.signal,
+    signal,
   });
 }
 
-export function deleteRelationship(relationshipUuid) {
-  const abortController = new AbortController();
-
+export function deleteRelationship(relationshipUuid: string, signal?: AbortSignal) {
   return openmrsFetch(`${restBaseUrl}/relationship/${relationshipUuid}`, {
     headers: {
       'Content-Type': 'application/json',
     },
     method: 'DELETE',
-    signal: abortController.signal,
+    signal,
   });
 }
 
@@ -188,8 +185,8 @@ export async function savePatientPhoto(
   url: string,
   date: string,
   conceptUuid: string,
+  signal?: AbortSignal,
 ) {
-  const abortController = new AbortController();
   const patientPhoto = dataURItoFile(content);
 
   const formData = new FormData();
@@ -210,7 +207,7 @@ export async function savePatientPhoto(
 
   return openmrsFetch(url, {
     method: 'POST',
-    signal: abortController.signal,
+    signal,
     body: formData,
   });
 }
@@ -265,53 +262,62 @@ export async function fetchPerson(query: string, abortController: AbortControlle
   return results;
 }
 
-export async function fetchPersonRegistrationCopyData(personUuid: string) {
-  const abortController = new AbortController();
+export async function fetchPersonRegistrationCopyData(personUuid: string, signal?: AbortSignal) {
   const representation =
     'custom:(uuid,display,addresses:(uuid,preferred,address1,address2,address3,address4,address5,address6,address7,address8,address9,address10,address11,address12,address13,address14,address15,cityVillage,stateProvince,countyDistrict,postalCode,country),attributes:(uuid,display,attributeType:(uuid,display,format),value))';
 
   const response = await openmrsFetch<PersonRegistrationCopyData>(
     `${restBaseUrl}/person/${personUuid}?v=${representation}`,
     {
-      signal: abortController.signal,
+      signal,
     },
   );
 
   return response.data;
 }
 
-export async function addPatientIdentifier(patientUuid: string, patientIdentifier: PatientIdentifier) {
-  const abortController = new AbortController();
+export async function addPatientIdentifier(
+  patientUuid: string,
+  patientIdentifier: PatientIdentifier,
+  signal?: AbortSignal,
+) {
   return openmrsFetch(`${restBaseUrl}/patient/${patientUuid}/identifier/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    signal: abortController.signal,
+    signal,
     body: patientIdentifier,
   });
 }
 
-export async function updatePatientIdentifier(patientUuid: string, identifierUuid: string, identifier: string) {
-  const abortController = new AbortController();
+export async function updatePatientIdentifier(
+  patientUuid: string,
+  identifierUuid: string,
+  identifier: string,
+  signal?: AbortSignal,
+) {
   return openmrsFetch(`${restBaseUrl}/patient/${patientUuid}/identifier/${identifierUuid}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    signal: abortController.signal,
+    signal,
     body: { identifier },
   });
 }
 
-export async function deletePatientIdentifier(patientUuid: string, patientIdentifierUuid: string) {
-  const abortController = new AbortController();
+export async function deletePatientIdentifier(
+  patientUuid: string,
+  patientIdentifierUuid: string,
+  signal?: AbortSignal,
+) {
   return openmrsFetch(`${restBaseUrl}/patient/${patientUuid}/identifier/${patientIdentifierUuid}?purge`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
     },
-    signal: abortController.signal,
+    signal,
   });
 }
 

@@ -36,6 +36,7 @@ const AppointmentsList: React.FC<AppointmentsListProps> = ({
 
   return (
     <AppointmentsTable
+      appointmentStatus={status}
       appointments={activeAppointments}
       hasActiveFilters={appointmentServiceTypes?.length > 0}
       isLoading={isLoading}

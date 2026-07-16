@@ -1,5 +1,5 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import useSWR from 'swr';
+import { restBaseUrl } from '@openmrs/esm-framework';
+import { useClinicalHistoryPagination } from './useClinicalHistoryPagination';
 
 interface TreatmentPlanEntry {
   encounterUuid: string;
@@ -46,10 +46,10 @@ function uniqueConceptUuids(values: Array<string | undefined>) {
 export function useTreatmentPlan(patientUuid: string, encounterTypeUuid: string, concepts: Record<string, string>) {
   const url =
     patientUuid && encounterTypeUuid
-      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&v=custom:(uuid,encounterDatetime,encounterProviders:(display),obs:(uuid,concept:(uuid,display),value,display,formFieldPath))&limit=20`
+      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&order=desc&v=custom:(uuid,encounterDatetime,encounterProviders:(display),obs:(uuid,concept:(uuid,display),value,display,formFieldPath))`
       : null;
 
-  const { data, error, isLoading, mutate } = useSWR<{ data: { results: Encounter[] } }>(url, openmrsFetch);
+  const { data, error, isLoading, isValidating, mutate, pagination } = useClinicalHistoryPagination<Encounter>(url);
 
   const getObsValue = (
     obs: Obs[] | undefined,
@@ -71,7 +71,7 @@ export function useTreatmentPlan(patientUuid: string, encounterTypeUuid: string,
     return typeof match.value === 'string' ? match.value : (match.value?.display ?? match.display ?? null);
   };
 
-  const treatmentPlans: TreatmentPlanEntry[] = (data?.data?.results ?? [])
+  const treatmentPlans: TreatmentPlanEntry[] = data
     .map((encounter) => ({
       encounterUuid: encounter.uuid,
       encounterDatetime: encounter.encounterDatetime,
@@ -111,7 +111,9 @@ export function useTreatmentPlan(patientUuid: string, encounterTypeUuid: string,
   return {
     treatmentPlans,
     isLoading,
+    isValidating,
     error,
     mutate,
+    pagination,
   };
 }

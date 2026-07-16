@@ -58,16 +58,8 @@ interface VisitAttributeTypeFieldsProps {
 }
 
 const VisitAttributeTypeFields: React.FC<VisitAttributeTypeFieldsProps> = ({ setErrorFetchingResources }) => {
-  const { defaultVisitAttributesFromPersonAttributes, visitAttributeTypes } = useConfig<ChartConfig>();
+  const { visitAttributeTypes } = useConfig<ChartConfig>();
   const { control, getValues } = useFormContext<VisitFormData>();
-  const readonlyVisitAttributeUuids = useMemo(
-    () =>
-      new Set(
-        (defaultVisitAttributesFromPersonAttributes ?? []).map(({ visitAttributeTypeUuid }) => visitAttributeTypeUuid),
-      ),
-    [defaultVisitAttributesFromPersonAttributes],
-  );
-
   if (visitAttributeTypes?.length) {
     const { visitAttributes } = getValues();
 
@@ -90,7 +82,8 @@ const VisitAttributeTypeFields: React.FC<VisitAttributeTypeFieldsProps> = ({ set
                   <AttributeTypeField
                     key={attributeType.uuid}
                     attributeType={attributeType}
-                    readOnly={readonlyVisitAttributeUuids.has(attributeType.uuid)}
+                    // Person-attribute defaults are initial values only; they must remain editable in the visit form.
+                    readOnly={false}
                     setErrorFetchingResources={setErrorFetchingResources}
                     fieldProps={field}
                   />

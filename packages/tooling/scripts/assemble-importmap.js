@@ -1,7 +1,11 @@
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const chalk = require('chalk');
+const { getSpaArtifactFiles } = require('./spa-artifact-manifest');
+const { getAppShellBuildEnvironment } = require('./build-app-shell');
 
 const logInfo = (msg) => console.log(`${chalk.green.bold('[assemble]')} ${msg}`);
 const logWarn = (msg) => console.warn(`${chalk.yellow.bold('[assemble]')} ${chalk.yellow(msg)}`);
@@ -310,23 +314,29 @@ async function downloadNpmModules() {
   fs.rmSync(tmpBase, { recursive: true, force: true });
 }
 
-// ── Phase 3: Copy app-shell dist ──────────────────────────────────────
-function copyAppShell() {
+// ── Phase 3: Build app shell from source ──────────────────────────────
+function buildAppShellFromSource() {
   logInfo('Phase 3: App shell');
-  let shellDist;
+  const stagingDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sihsalus-app-shell-'));
+  const buildEnvironment = getAppShellBuildEnvironment(process.env);
+
   try {
-    shellDist = path.join(path.dirname(require.resolve('@openmrs/esm-app-shell/package.json')), 'dist');
-  } catch {
-    logWarn('@openmrs/esm-app-shell not found — SPA will have no shell');
-    return;
+    execFileSync(process.execPath, [path.join(__dirname, 'build-app-shell.js')], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        ...buildEnvironment,
+        APP_SHELL_OUTPUT_DIR: stagingDir,
+      },
+      stdio: 'inherit',
+    });
+    fs.cpSync(stagingDir, outDir, { recursive: true, force: false });
+  } finally {
+    fs.rmSync(stagingDir, { recursive: true, force: true });
   }
 
-  if (fs.existsSync(shellDist)) {
-    fs.cpSync(shellDist, outDir, { recursive: true, force: false });
-    logInfo('OK app-shell dist copied');
-    stripRootCssSourceMapComments();
-    patchAppShellRuntime();
-  }
+  stripRootCssSourceMapComments();
+  logInfo('OK app-shell compiled from source');
 }
 
 function stripRootCssSourceMapComments() {
@@ -347,62 +357,80 @@ function stripRootCssSourceMapComments() {
   }
 }
 
-function patchAppShellRuntime() {
-  const minifiedTemplateVariable = (name) => '$' + `{${name}}`;
-  const jsFiles = fs
-    .readdirSync(outDir, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name.endsWith('.js'))
-    .map((entry) => path.join(outDir, entry.name));
+function parseWorkboxPrecacheEntries(serviceWorker) {
+  const entryPattern =
+    /\{\s*['"]revision['"]\s*:\s*(?:null|['"][^'"]*['"])\s*,\s*['"]url['"]\s*:\s*['"]([^'"]+)['"]\s*\}/g;
 
-  const extensionParcelName = `${minifiedTemplateVariable('t')}/${minifiedTemplateVariable(
-    'd',
-  )}-${minifiedTemplateVariable('f')}`;
-  const extensionParcelProps =
-    '{...l,_meta:o,_extensionContext:{extensionId:c,extensionSlotName:t,extensionSlotModuleName:n,extensionModuleName:m},domElement:e}';
-  const extensionParcelTimeouts =
-    'timeouts:{bootstrap:{millis:1e4,dieOnTimeout:!1,warningMillis:1e4},mount:{millis:1e4,dieOnTimeout:!1,warningMillis:1e4},update:{millis:1e4,dieOnTimeout:!1,warningMillis:1e4},unmount:{millis:1e4,dieOnTimeout:!1,warningMillis:1e4}}';
-  const extensionParcelMount = `p=(0,r.mountRootParcel)(u({...s,name:\`${extensionParcelName}\`}),${extensionParcelProps})`;
-  const extensionParcelMountWithTimeouts = `p=(0,r.mountRootParcel)(u({...s,name:\`${extensionParcelName}\`,${extensionParcelTimeouts}}),${extensionParcelProps})`;
+  return [...serviceWorker.matchAll(entryPattern)].map((match) => ({
+    raw: match[0],
+    url: match[1],
+  }));
+}
 
-  const duplicateSlotWarning = `if(o&&o!=e)return console.warn(\`An extension slot with the name '${minifiedTemplateVariable(
-    't',
-  )}' already exists. Refusing to register the same slot name twice (in "registerExtensionSlot"). The existing one is from module ${minifiedTemplateVariable(
-    'o',
-  )}.\`),r;`;
-  const duplicateSlotNoop = 'if(o&&o!=e)return r;';
+function getPrecacheFileName(url) {
+  return path.posix.basename(url.split(/[?#]/, 1)[0]);
+}
 
-  const patches = [
-    {
-      name: 'extension parcel lifecycle timeout',
-      search: extensionParcelMount,
-      replacement: extensionParcelMountWithTimeouts,
-    },
-    {
-      name: 'duplicate extension slot warning',
-      search: duplicateSlotWarning,
-      replacement: duplicateSlotNoop,
-    },
-  ];
+function revisionAssembledPrecacheFiles() {
+  const serviceWorkerPath = path.join(outDir, 'service-worker.js');
+  const manifestPath = path.join(outDir, 'assembled-precache-revisions.json');
 
-  for (const patch of patches) {
-    let applied = 0;
+  if (!fs.existsSync(serviceWorkerPath)) {
+    throw new Error('Cannot revision assembled files because service-worker.js is missing');
+  }
 
-    for (const jsFile of jsFiles) {
-      const source = fs.readFileSync(jsFile, 'utf8');
-      if (!source.includes(patch.search)) {
-        continue;
-      }
+  let serviceWorker = fs.readFileSync(serviceWorkerPath, 'utf8');
+  const files = getSpaArtifactFiles('precacheRevision');
 
-      fs.writeFileSync(jsFile, source.split(patch.search).join(patch.replacement));
-      applied++;
-    }
-
-    if (applied > 0) {
-      logInfo(`OK patched app-shell ${patch.name} (${applied} file${applied === 1 ? '' : 's'})`);
-    } else {
-      logWarn(`app-shell ${patch.name} patch not applied; expected runtime pattern was not found`);
+  for (const file of files) {
+    if (!fs.existsSync(path.join(outDir, file))) {
+      throw new Error(`Cannot revision missing assembled file: ${file}`);
     }
   }
+
+  let entries = parseWorkboxPrecacheEntries(serviceWorker);
+  if (entries.length === 0) {
+    throw new Error('Cannot find the Workbox precache manifest in service-worker.js');
+  }
+
+  const missingFiles = files.filter((file) => !entries.some((entry) => getPrecacheFileName(entry.url) === file));
+  if (missingFiles.length > 0) {
+    const anchor = entries[0].raw;
+    const additions = missingFiles.map((file) => JSON.stringify({ revision: null, url: file })).join(',');
+    serviceWorker = serviceWorker.replace(anchor, `${anchor},${additions}`);
+    entries = parseWorkboxPrecacheEntries(serviceWorker);
+  }
+
+  const revisions = files.map((file) => {
+    const matchingEntries = entries.filter((entry) => getPrecacheFileName(entry.url) === file);
+    if (matchingEntries.length !== 1) {
+      throw new Error(`Expected exactly one Workbox precache entry for ${file}, found ${matchingEntries.length}`);
+    }
+
+    const contents = fs.readFileSync(path.join(outDir, file));
+    const sha256 = crypto.createHash('sha256').update(contents).digest('hex');
+    const revision = `sihsalus-${sha256.slice(0, 16)}`;
+    const { raw } = matchingEntries[0];
+    const url = file;
+    serviceWorker = serviceWorker.replace(raw, JSON.stringify({ revision, url }));
+
+    return { file, url, revision, sha256 };
+  });
+
+  const remainingEntries = parseWorkboxPrecacheEntries(serviceWorker);
+  for (const { file, revision, url } of revisions) {
+    const matchingEntries = remainingEntries.filter((entry) => entry.url === url && entry.raw.includes(revision));
+    if (matchingEntries.length !== 1) {
+      throw new Error(`Failed to revision Workbox precache entry for ${file}`);
+    }
+  }
+
+  fs.writeFileSync(serviceWorkerPath, serviceWorker);
+  fs.writeFileSync(
+    manifestPath,
+    `${JSON.stringify({ schemaVersion: 1, algorithm: 'sha256', files: revisions }, null, 2)}\n`,
+  );
+  logInfo(`OK revisioned ${revisions.length} assembled precache file${revisions.length === 1 ? '' : 's'}`);
 }
 
 // ── Phase 4: Write importmap.json and routes ──────────────────────────
@@ -484,6 +512,35 @@ function copyAssets() {
   copyAssetDir(assetsDir);
 }
 
+function updatePwaManifest() {
+  const manifestPath = path.join(outDir, 'manifest.webmanifest');
+  const iconFile = 'alternative-logo.png';
+  const iconPath = path.join(outDir, iconFile);
+
+  if (!fs.existsSync(manifestPath)) {
+    throw new Error('Source-built app shell did not emit manifest.webmanifest');
+  }
+  if (!fs.existsSync(iconPath)) {
+    throw new Error(`PWA icon is missing: ${iconFile}`);
+  }
+
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  manifest.name = 'SIH.SALUS';
+  manifest.short_name = 'SIH.SALUS';
+  manifest.description = 'Sistema de información en salud';
+  manifest.theme_color = '#27348b';
+  manifest.icons = [
+    {
+      src: iconFile,
+      sizes: '1080x1080',
+      type: 'image/png',
+    },
+  ];
+
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  logInfo('OK manifest.webmanifest branded');
+}
+
 // ── Phase 7: Patch index.html — port of startup.sh envsubst logic ─────
 // Injects SPA_PATH, API_URL, SPA_CONFIG_URLS, SPA_DEFAULT_LOCALE, IMPORTMAP_URL
 // so nginx serves a fully-resolved index.html with no runtime substitution needed.
@@ -498,11 +555,11 @@ function joinUrl(baseUrl, pathSegment) {
 function patchIndexHtml() {
   const indexPath = path.join(outDir, 'index.html');
   if (!fs.existsSync(indexPath)) {
-    logWarn('Phase 6: index.html not found — skipping');
+    logWarn('Phase 7: index.html not found — skipping');
     return;
   }
 
-  logInfo('Phase 6: Patching index.html');
+  logInfo('Phase 7: Patching index.html');
 
   const importmapUrl = process.env.IMPORTMAP_URL || '';
   const spaPath = process.env.SPA_PATH || '/openmrs/spa';
@@ -541,6 +598,11 @@ function patchIndexHtml() {
 
   let html = fs.readFileSync(indexPath, 'utf8');
 
+  html = html.replace(
+    /<html\s+lang="[^"]*"\s+data-default-lang="[^"]*"/i,
+    `<html lang="${escapeHtmlAttribute(defaultLocale)}" data-default-lang="${escapeHtmlAttribute(defaultLocale)}"`,
+  );
+
   html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${socialPreviewTitle}</title>`);
   html = html.replace(/<!-- SIHSALUS social preview -->[\s\S]*?<!-- \/SIHSALUS social preview -->\s*/g, '');
   html = html.replace('</head>', `${socialPreviewTags}</head>`);
@@ -566,15 +628,21 @@ function patchIndexHtml() {
     );
   }
 
+  function isSpanishLocale() {
+    return document.documentElement.lang.toLowerCase().indexOf('es') === 0;
+  }
+
   function showMicrofrontendLoadError(error) {
     console.error('[sihsalus] Microfrontend load failure:', error);
     window.dispatchEvent(
       new CustomEvent('openmrs:toast-shown', {
         detail: {
           kind: 'error',
-          title: 'No se pudo cargar la página',
+          title: isSpanishLocale() ? 'No se pudo cargar la página' : 'The page could not be loaded',
           description:
-            'No se pudo cargar un módulo de la aplicación. Recarga la página. Si el problema continúa, contacta a soporte.',
+            isSpanishLocale()
+              ? 'No se pudo cargar un módulo de la aplicación. Recargue la página. Si el problema continúa, contacte a soporte.'
+              : 'An application module could not be loaded. Reload the page. If the problem continues, contact support.',
         },
       }),
     );
@@ -749,12 +817,14 @@ function writeBuildInfo() {
 // ── Main ──────────────────────────────────────────────────────────────
 (async () => {
   await downloadNpmModules();
-  copyAppShell();
+  buildAppShellFromSource();
   writeOutputs();
   copyConfigFiles();
   copyAssets();
+  updatePwaManifest();
   patchIndexHtml();
   writeBuildInfo();
+  revisionAssembledPrecacheFiles();
   logInfo('Done! dist/spa/ is self-contained.');
 })().catch((err) => {
   logFail(err.message);

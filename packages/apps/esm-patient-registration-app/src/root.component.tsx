@@ -17,7 +17,8 @@ import { FormManager } from './patient-registration/form-manager';
 import { PatientRegistration } from './patient-registration/patient-registration.component';
 import styles from './root.scss';
 
-const registerPatientPrivilege = 'app:topnav.registerPatient';
+const registerPatientPrivilege = 'app:opciones.registrarPaciente';
+const bulkPatientImportPrivilege = 'Manage Patients';
 
 export default function Root() {
   const isOnline = useConnectivity();
@@ -44,46 +45,65 @@ export default function Root() {
 
   return (
     <AppErrorBoundary appName="esm-patient-registration-app">
-      <RequirePrivilege
-        privilege={registerPatientPrivilege}
-        description="Necesita permisos para acceder al flujo de registro de pacientes."
-      >
-        <main className={classNames('omrs-main-content', styles.root)}>
-          <Grid className={styles.grid}>
-            <Row>
-              <ExtensionSlot name="breadcrumbs-slot" />
-            </Row>
-            <ResourcesContext.Provider
-              value={{
-                addressTemplate,
-                addressTemplateError,
-                isLoadingAddressTemplate,
-                relationshipTypes,
-                relationshipTypesError,
-                isLoadingRelationshipTypes,
-                identifierTypes: identifierTypes ?? [],
-                identifierTypesError,
-                isLoadingIdentifierTypes,
-                currentSession,
-              }}
-            >
-              <BrowserRouter basename={globalThis.getOpenmrsSpaBase()}>
-                <Routes>
-                  <Route
-                    path="patient-registration"
-                    element={<PatientRegistration savePatientForm={savePatientForm} isOffline={!isOnline} />}
-                  />
-                  <Route
-                    path="patient/:patientUuid/edit"
-                    element={<PatientRegistration savePatientForm={savePatientForm} isOffline={!isOnline} />}
-                  />
-                  <Route path="patient-import" element={<BulkPatientImport isOffline={!isOnline} />} />
-                </Routes>
-              </BrowserRouter>
-            </ResourcesContext.Provider>
-          </Grid>
-        </main>
-      </RequirePrivilege>
+      <main className={classNames('omrs-main-content', styles.root)}>
+        <Grid className={styles.grid}>
+          <Row>
+            <ExtensionSlot name="breadcrumbs-slot" />
+          </Row>
+          <ResourcesContext.Provider
+            value={{
+              addressTemplate,
+              addressTemplateError,
+              isLoadingAddressTemplate,
+              relationshipTypes,
+              relationshipTypesError,
+              isLoadingRelationshipTypes,
+              identifierTypes: identifierTypes ?? [],
+              identifierTypesError,
+              isLoadingIdentifierTypes,
+              currentSession,
+            }}
+          >
+            <BrowserRouter basename={globalThis.getOpenmrsSpaBase()}>
+              <Routes>
+                <Route
+                  path="patient-registration"
+                  element={
+                    <RequirePrivilege
+                      privilege={registerPatientPrivilege}
+                      description="Necesita permisos para acceder al flujo de registro de pacientes."
+                    >
+                      <PatientRegistration savePatientForm={savePatientForm} isOffline={!isOnline} />
+                    </RequirePrivilege>
+                  }
+                />
+                <Route
+                  path="patient/:patientUuid/edit"
+                  element={
+                    <RequirePrivilege
+                      privilege={registerPatientPrivilege}
+                      description="Necesita permisos para acceder al flujo de registro de pacientes."
+                    >
+                      <PatientRegistration savePatientForm={savePatientForm} isOffline={!isOnline} />
+                    </RequirePrivilege>
+                  }
+                />
+                <Route
+                  path="patient-import"
+                  element={
+                    <RequirePrivilege
+                      privilege={bulkPatientImportPrivilege}
+                      description="Necesita permisos de administración de pacientes para realizar una importación masiva."
+                    >
+                      <BulkPatientImport isOffline={!isOnline} />
+                    </RequirePrivilege>
+                  }
+                />
+              </Routes>
+            </BrowserRouter>
+          </ResourcesContext.Provider>
+        </Grid>
+      </main>
     </AppErrorBoundary>
   );
 }

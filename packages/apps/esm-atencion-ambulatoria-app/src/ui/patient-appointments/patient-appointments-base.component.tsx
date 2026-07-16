@@ -1,12 +1,17 @@
 import { Button, ContentSwitcher, DataTableSkeleton, InlineLoading, Layer, Switch, Tile } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
 import { launchWorkspace2, useLayoutType } from '@openmrs/esm-framework';
-import { CardHeader, EmptyDataIllustration, ErrorState } from '@openmrs/esm-patient-common-lib';
+import {
+  CardHeader,
+  EmptyDataIllustration,
+  ErrorState,
+  PatientAppointmentContext,
+  PatientAppointmentContextTypes,
+} from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../../hooks/patientAppointmentContext';
 import { usePatientAppointments } from './patient-appointments.resource';
 import styles from './patient-appointments-base.scss';
 import PatientAppointmentsTable from './patient-appointments-table.component';

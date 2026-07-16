@@ -1,5 +1,11 @@
 import { HeaderGlobalAction } from '@carbon/react';
-import { CloseIcon, UserAvatarIcon, useAssignedExtensions, useOnClickOutside } from '@openmrs/esm-framework';
+import {
+  CloseIcon,
+  UserAvatarIcon,
+  useAssignedExtensions,
+  useOnClickOutside,
+  useSession,
+} from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,15 +22,21 @@ const UserMenuButton: React.FC<MenuButtonProps> = ({ isActivePanel, togglePanel,
   const userMenuItems = useAssignedExtensions('user-panel-slot');
   const showUserMenu = useMemo(() => userMenuItems.length > 0, [userMenuItems.length]);
   const { t } = useTranslation();
+  const session = useSession();
+  const userDisplay = session?.user?.person?.display ?? session?.user?.display ?? '';
   const userMenuRef = useOnClickOutside<HTMLDivElement>(hidePanel('userMenu'), isActivePanel('userMenu'));
 
   return (
     showUserMenu && (
       <div ref={userMenuRef} className={styles.panelWrapper}>
         <HeaderGlobalAction
-          aria-label={t('userMenuTooltip', 'My Account')}
-          aria-labelledby="Users Avatar Icon"
+          aria-label={
+            userDisplay
+              ? t('userMenuFor', 'Mi cuenta: {{user}}', { user: userDisplay })
+              : t('userMenuTooltip', 'My Account')
+          }
           className={classNames({
+            [styles.userMenuButton]: true,
             [styles.headerGlobalBarButton]: isActivePanel('userMenu'),
             [styles.activePanel]: !isActivePanel('userMenu'),
           })}
@@ -35,6 +47,7 @@ const UserMenuButton: React.FC<MenuButtonProps> = ({ isActivePanel, togglePanel,
           }}
         >
           {isActivePanel('userMenu') ? <CloseIcon size={20} /> : <UserAvatarIcon size={20} />}
+          {userDisplay ? <span className={styles.userDisplayName}>{userDisplay}</span> : null}
         </HeaderGlobalAction>
         <UserMenuPanel expanded={isActivePanel('userMenu')} hidePanel={hidePanel('userMenu')} />
       </div>

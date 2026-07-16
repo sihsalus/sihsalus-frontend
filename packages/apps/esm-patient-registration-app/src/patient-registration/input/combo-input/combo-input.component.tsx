@@ -36,7 +36,7 @@ const ComboInput: React.FC<ComboInputProps> = ({
 }) => {
   const { t } = useTranslation(moduleName);
   const [highlightedEntry, setHighlightedEntry] = useState(-1);
-  const { value = '' } = fieldProps;
+  const { required, value = '', ...inputProps } = fieldProps;
   const [showEntries, setShowEntries] = useState(false);
   const comboInputRef = useRef<HTMLDivElement>(null);
 
@@ -134,7 +134,9 @@ const ComboInput: React.FC<ComboInputProps> = ({
     <div className={styles.comboInput} ref={comboInputRef}>
       <Layer>
         <TextInput
-          {...fieldProps}
+          {...inputProps}
+          value={value}
+          aria-required={required || undefined}
           id={fieldProps.id ?? fieldProps.name ?? 'combo-input'}
           onChange={(e) => {
             setHighlightedEntry(-1);

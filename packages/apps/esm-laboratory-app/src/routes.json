@@ -14,7 +14,7 @@
       "name": "laboratory-dashboard",
       "slot": "laboratory-dashboard-slot",
       "component": "root",
-      "privileges": "app:laboratory"
+      "privileges": "app:home.laboratorio"
     },
     {
       "name": "laboratory-dashboard-link",
@@ -25,7 +25,7 @@
         "slot": "laboratory-dashboard-slot",
         "title": "Laboratory"
       },
-      "privileges": "app:laboratory",
+      "privileges": "app:home.laboratorio",
       "order": 30
     },
     {

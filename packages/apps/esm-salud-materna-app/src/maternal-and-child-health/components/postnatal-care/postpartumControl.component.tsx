@@ -16,7 +16,9 @@ import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import type { ConfigObject } from '../../../config-schema';
+import { postnatalCareEditPrivilege } from '../../../constants';
 import { usePostpartumControlTable } from '../../../hooks/usePostpartumControl';
 import { formEntryWorkspace } from '../../../types';
 
@@ -43,7 +45,7 @@ const PostpartumControlTable: React.FC<ProgramsDetailedSummaryProps> = ({ patien
   const isTablet = layout === 'tablet';
   const headerTitle = t('controlPuerperio', 'Control Puerperio');
   const config = useConfig() as ConfigObject;
-  const { prenatalEncounters, isValidating } = usePostpartumControlTable(patientUuid);
+  const { prenatalEncounters, isValidating, mutate } = usePostpartumControlTable(patientUuid);
 
   const formPrenatalUuid = config.formsList.postpartumControl;
 
@@ -51,6 +53,7 @@ const PostpartumControlTable: React.FC<ProgramsDetailedSummaryProps> = ({ patien
     launchWorkspace2(formEntryWorkspace, {
       form: { uuid: formPrenatalUuid },
       encounterUuid: '',
+      handlePostResponse: mutate,
     });
   };
 
@@ -276,9 +279,11 @@ const PostpartumControlTable: React.FC<ProgramsDetailedSummaryProps> = ({ patien
           <>
             <CardHeader title={headerTitle}>
               {isValidating && <InlineLoading />}
-              <Button onClick={handleAddPrenatalAttention} kind="ghost">
-                {t('add', 'Add')}
-              </Button>
+              <RequirePrivilege privilege={postnatalCareEditPrivilege} hideUnauthorized>
+                <Button onClick={handleAddPrenatalAttention} kind="ghost">
+                  {t('add', 'Add')}
+                </Button>
+              </RequirePrivilege>
             </CardHeader>
             <DataTable rows={tableRows} headers={tableHeaders} isSortable size={isTablet ? 'lg' : 'sm'} useZebraStyles>
               {({ rows, headers, getHeaderProps, getTableProps }) => (
@@ -312,11 +317,16 @@ const PostpartumControlTable: React.FC<ProgramsDetailedSummaryProps> = ({ patien
             </DataTable>
           </>
         ) : (
-          <EmptyState
-            headerTitle={headerTitle}
-            displayText={t('controlPuerperio', 'Control Puerperio')}
-            launchForm={handleAddPrenatalAttention}
-          />
+          <RequirePrivilege
+            privilege={postnatalCareEditPrivilege}
+            fallback={<EmptyState headerTitle={headerTitle} displayText={t('controlPuerperio', 'Control Puerperio')} />}
+          >
+            <EmptyState
+              headerTitle={headerTitle}
+              displayText={t('controlPuerperio', 'Control Puerperio')}
+              launchForm={handleAddPrenatalAttention}
+            />
+          </RequirePrivilege>
         )}
       </div>
     </div>

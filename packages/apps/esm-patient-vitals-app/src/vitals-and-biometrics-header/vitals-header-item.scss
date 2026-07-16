@@ -5,10 +5,10 @@
 
 .container {
   display: flex;
-  flex-flow: row wrap;
   flex-direction: column;
   margin: layout.$spacing-03 0 0;
-  min-inline-size: max-content;
+  min-inline-size: 0;
+  inline-size: 100%;
 }
 
 .abnormal-value {
@@ -17,7 +17,8 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  width: fit-content;
+  width: 100%;
+  min-height: layout.$spacing-08;
   gap: layout.$spacing-02;
   padding: layout.$spacing-02;
 }
@@ -36,16 +37,19 @@
   display: flex;
   gap: layout.$spacing-02;
   padding: 0;
+  min-width: 0;
 }
 
 .value-container {
   @extend .label-container;
   margin-top: layout.$spacing-02;
+  align-items: baseline;
 }
 
 .label {
   @include type.type-style('label-01');
   color: $text-02;
+  overflow-wrap: anywhere;
 }
 
 .danger-icon {
@@ -56,15 +60,22 @@
 
 .value {
   @include type.type-style('body-compact-02');
+  white-space: nowrap;
 }
 
 .units {
   @include type.type-style('body-compact-01');
   color: $text-02;
+  overflow-wrap: anywhere;
 }
 
 .pad-right {
+  display: flex;
+  align-items: baseline;
+  gap: layout.$spacing-01;
+  min-width: 0;
   margin-right: layout.$spacing-01;
+  flex-wrap: wrap;
 }
 
 .critically-low,

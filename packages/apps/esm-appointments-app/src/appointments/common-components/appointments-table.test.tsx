@@ -1,11 +1,12 @@
-import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { getByTextWithMarkup } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../../config-schema';
 import { exportAppointmentsToSpreadsheet } from '../../helpers/excel';
-import type { Appointment, AppointmentKind, AppointmentStatus } from '../../types';
+import { useTodaysVisits } from '../../hooks/useTodaysVisits';
+import { type Appointment, type AppointmentKind, AppointmentStatus } from '../../types';
 
 import AppointmentsTable from './appointments-table.component';
 
@@ -64,6 +65,9 @@ const mockAppointments = [
 
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockExportAppointmentsToSpreadsheet = vi.mocked(exportAppointmentsToSpreadsheet);
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
+const mockUseTodaysVisits = vi.mocked(useTodaysVisits);
 
 vi.mock('../../helpers/excel', async () => {
   return {
@@ -72,13 +76,26 @@ vi.mock('../../helpers/excel', async () => {
   };
 });
 
+vi.mock('../../hooks/useTodaysVisits', () => ({
+  useTodaysVisits: vi.fn(),
+}));
+
 describe('AppointmentsTable', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
       customPatientChartUrl: 'url-to-patient-chart',
       checkInButton: { enabled: false, showIfActiveVisit: false, customUrl: null },
       checkOutButton: { enabled: false, customUrl: null },
+    });
+    mockUseSession.mockReturnValue({ user: { uuid: 'user-uuid' } } as ReturnType<typeof useSession>);
+    mockUserHasAccess.mockReturnValue(true);
+    mockUseTodaysVisits.mockReturnValue({
+      visits: [],
+      error: null,
+      isLoading: false,
+      mutateVisit: vi.fn(),
     });
   });
 
@@ -88,6 +105,30 @@ describe('AppointmentsTable', () => {
     await screen.findByRole('heading', { name: /scheduled appointment/i });
 
     expect(getByTextWithMarkup('There are no scheduled appointments to display')).toBeInTheDocument();
+  });
+
+  it.each([
+    [AppointmentStatus.SCHEDULED, 'expected', 'Expected appointments'],
+    [AppointmentStatus.CHECKEDIN, 'checkedIn', 'Appointments in progress'],
+    [AppointmentStatus.COMPLETED, 'completed', 'Completed appointments'],
+    [AppointmentStatus.CANCELLED, 'cancelled', 'Cancelled appointments'],
+  ])(
+    'uses a grammatical collection heading for %s appointments',
+    async (appointmentStatus, tableHeading, heading) => {
+      renderAppointmentsTable({ appointmentStatus, tableHeading });
+
+      await screen.findByRole('heading', { name: heading });
+
+      expect(getByTextWithMarkup(`There are no ${heading.toLocaleLowerCase()} to display`)).toBeInTheDocument();
+    },
+  );
+
+  it('labels the current-day collection as appointments scheduled today', async () => {
+    renderAppointmentsTable({ tableHeading: 'todaysAppointments' });
+
+    await screen.findByRole('heading', { name: 'Appointments scheduled today' });
+
+    expect(getByTextWithMarkup('There are no appointments scheduled today to display')).toBeInTheDocument();
   });
 
   it('renders a loading state when fetching data', () => {
@@ -102,7 +143,7 @@ describe('AppointmentsTable', () => {
     await screen.findByRole('heading', { name: /scheduled appointment/i });
     expect(screen.getByRole('search', { name: /filter table/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /download/i })).toBeInTheDocument();
-    expect(screen.getByRole('row', { name: /john wilson 100gej hiv clinic outpatient/i })).toBeInTheDocument();
+    expect(screen.getByRole('row', { name: /john wilson 100gej .* hiv clinic outpatient/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /john wilson/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /john wilson/i })).toHaveAttribute('href', 'url-to-patient-chart');
   });
@@ -138,6 +179,36 @@ describe('AppointmentsTable', () => {
       ]),
       expect.stringContaining('scheduled_appointments'),
     );
+  });
+
+  it('offers editing for an editable future appointment', () => {
+    const editableAppointment = {
+      ...mockAppointments[0],
+      startDateTime: new Date(Date.now() + 86_400_000).toISOString(),
+      status: AppointmentStatus.SCHEDULED,
+    };
+
+    renderAppointmentsTable({ appointments: [editableAppointment] });
+
+    expect(screen.getByRole('button', { name: /actions/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /options/i })).not.toBeInTheDocument();
+  });
+
+  it.each([
+    AppointmentStatus.CHECKEDIN,
+    AppointmentStatus.COMPLETED,
+    AppointmentStatus.CANCELLED,
+    AppointmentStatus.MISSED,
+  ])('does not offer editing for a future appointment in %s state', (status) => {
+    const nonEditableAppointment = {
+      ...mockAppointments[0],
+      startDateTime: new Date(Date.now() + 86_400_000).toISOString(),
+      status,
+    };
+
+    renderAppointmentsTable({ appointments: [nonEditableAppointment] });
+
+    expect(screen.queryByRole('button', { name: /actions/i })).not.toBeInTheDocument();
   });
 });
 

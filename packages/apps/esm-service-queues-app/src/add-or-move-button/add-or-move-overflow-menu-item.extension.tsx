@@ -2,6 +2,7 @@ import { OverflowMenuItem, SkeletonText } from '@carbon/react';
 import { showModal, useVisit } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { CanEditServiceQueues } from '../permissions';
 
 interface AddOrMoveOverflowMenuItemProps {
   patientUuid: string;
@@ -26,7 +27,11 @@ const AddOrMoveOverflowMenuItem: React.FC<AddOrMoveOverflowMenuItemProps> = ({ p
     return <SkeletonText />;
   }
 
-  return <OverflowMenuItem itemText={t('transitionPatientAction', 'Transition patient')} onClick={handleLaunchModal} />;
+  return (
+    <CanEditServiceQueues>
+      <OverflowMenuItem itemText={t('transitionPatientAction', 'Transition patient')} onClick={handleLaunchModal} />
+    </CanEditServiceQueues>
+  );
 };
 
 export default AddOrMoveOverflowMenuItem;

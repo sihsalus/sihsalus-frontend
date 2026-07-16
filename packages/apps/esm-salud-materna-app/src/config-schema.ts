@@ -760,6 +760,44 @@ export const configSchema = {
     },
   },
 
+  pregnancyEpisode: {
+    _type: Type.Object,
+    _description: 'Concepts used to identify and bound the latest pregnancy episode',
+    _default: {
+      lastMenstrualPeriodConceptUuid: '57634c13-00a8-4764-93ec-dab90b6d20ce',
+    },
+    lastMenstrualPeriodConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'FUM concept recorded by OBST-002-EMBARAZO ACTUAL',
+      _default: '57634c13-00a8-4764-93ec-dab90b6d20ce',
+    },
+  },
+
+  prenatalMeasurements: {
+    _type: Type.Object,
+    _description: 'Concepts recorded by OBST-003 and displayed in prenatal measurement charts',
+    _default: {
+      gestationalAgeConceptUuid: '1e35f0dd-3bbb-4b45-96fd-2fc590c1b385',
+      uterineHeightConceptUuid: '4bcdcee3-54c2-4368-a5cf-733e9c25fe50',
+      cervicalLengthConceptUuid: '',
+    },
+    gestationalAgeConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Gestational age in weeks from OBST-003',
+      _default: '1e35f0dd-3bbb-4b45-96fd-2fc590c1b385',
+    },
+    uterineHeightConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Uterine height in centimeters from OBST-003',
+      _default: '4bcdcee3-54c2-4368-a5cf-733e9c25fe50',
+    },
+    cervicalLengthConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Optional cervical length concept; currently absent from OBST-003',
+      _default: '',
+    },
+  },
+
   // 10E. PSICOPROFILAXIS (RM 361-2011)
   psychoprophylaxis: {
     _type: Type.Object,
@@ -1084,7 +1122,7 @@ export const configSchema = {
     _default: {
       encounterTypeUuid: '8993b43c-7878-4e80-9257-1da45e84a904',
       formUuid: 'HOSP-011-HOJA DE MONITORIZACIÓN OBSTÉTRICA-PARTO',
-      progressConceptUuid: '44426693-0529-4e37-8efe-8ec5b2cbb290',
+      progressConceptUuid: 'a87234d5-3697-5483-8e21-061080d81d35',
       concepts: {
         timeRecordedUuid: '2c67cd3d-407c-4f4d-bdf7-0f32b42ccfb4',
         fetalHeartRateUuid: 'b1fb2d14-92ec-4fda-90e5-40f3227c9c65',
@@ -1123,7 +1161,7 @@ export const configSchema = {
     progressConceptUuid: {
       _type: Type.ConceptUuid,
       _description: 'Concept UUID del grupo de observaciones de progreso del partograma',
-      _default: '44426693-0529-4e37-8efe-8ec5b2cbb290',
+      _default: 'a87234d5-3697-5483-8e21-061080d81d35',
     },
     concepts: {
       _type: Type.Object,
@@ -1533,6 +1571,14 @@ export interface ConfigObject {
     vihResultConceptUuid: string;
     sifilisResultConceptUuid: string;
     hepatitisBResultConceptUuid: string;
+  };
+  pregnancyEpisode: {
+    lastMenstrualPeriodConceptUuid: string;
+  };
+  prenatalMeasurements: {
+    gestationalAgeConceptUuid: string;
+    uterineHeightConceptUuid: string;
+    cervicalLengthConceptUuid: string;
   };
   psychoprophylaxis: {
     encounterTypeUuid: string;

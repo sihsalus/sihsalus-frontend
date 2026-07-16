@@ -14,6 +14,8 @@
   "causeOfDeath": "Cause de décès",
   "causeOfDeath_lower": "concepts de cause de décès configurés dans le système",
   "causeOfDeathIsRequired": "Veuillez sélectionner la cause du décès",
+  "chartAccessDeniedMessage": "Vous n’avez pas l’autorisation d’accéder au dossier patient. Vous avez été redirigé vers l’accueil.",
+  "chartAccessDeniedTitle": "Accès restreint",
   "checkFilters": "Vérifiez les filtres ci-dessus",
   "close": "Fermer",
   "confirm": "Confirmer",

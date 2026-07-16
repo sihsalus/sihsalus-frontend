@@ -4,6 +4,9 @@ import { useMemo } from 'react';
 import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
+import { isWithinPregnancyEpisode } from '../utils/pregnancy-episode-utils';
+
+import { useCurrentPregnancy } from './useCurrentPregnancy';
 
 interface PsychoprophylaxisResult {
   sessionsCompleted: number;
@@ -27,6 +30,7 @@ interface PsychoprophylaxisResult {
  */
 export function usePsychoprophylaxis(patientUuid: string): PsychoprophylaxisResult {
   const config = useConfig<ConfigObject>();
+  const { pregnancyStartDate, isLoading: isPregnancyLoading, error: pregnancyError } = useCurrentPregnancy(patientUuid);
   const encounterTypeUuid = config.psychoprophylaxis?.encounterTypeUuid;
   const totalSessions = config.psychoprophylaxis?.totalSessionsRequired ?? 6;
 
@@ -41,7 +45,9 @@ export function usePsychoprophylaxis(patientUuid: string): PsychoprophylaxisResu
   });
 
   const result = useMemo(() => {
-    const encounters = data?.results ?? [];
+    const encounters = (data?.results ?? []).filter((encounter: { encounterDatetime?: string }) =>
+      isWithinPregnancyEpisode(encounter.encounterDatetime, pregnancyStartDate),
+    );
     const sessionsCompleted = encounters.length;
     const percentage = totalSessions > 0 ? Math.min((sessionsCompleted / totalSessions) * 100, 100) : 0;
     const isComplete = sessionsCompleted >= totalSessions;
@@ -54,13 +60,19 @@ export function usePsychoprophylaxis(patientUuid: string): PsychoprophylaxisResu
       ? dayjs(sorted[0].encounterDatetime).format('DD/MM/YYYY')
       : null;
 
-    return { sessionsCompleted, totalSessions, percentage, isComplete, lastSessionDate };
-  }, [data, totalSessions]);
+    return {
+      sessionsCompleted,
+      totalSessions,
+      percentage,
+      isComplete,
+      lastSessionDate,
+    };
+  }, [data, pregnancyStartDate, totalSessions]);
 
   return {
     ...result,
-    isLoading,
-    error,
+    isLoading: isPregnancyLoading || isLoading,
+    error: pregnancyError ?? error ?? null,
     mutate,
   };
 }

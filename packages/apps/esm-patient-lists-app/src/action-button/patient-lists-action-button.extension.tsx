@@ -6,7 +6,7 @@ function PatientListsActionButton() {
   const { t } = useTranslation();
   const session = useSession();
 
-  if (!userHasAccess('app:patient-lists.edit', session?.user)) {
+  if (!userHasAccess('app:home.listasPacientes.editar', session?.user)) {
     return null;
   }
 

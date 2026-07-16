@@ -110,7 +110,7 @@ const BaseVisitType: React.FC<BaseVisitTypeProps> = ({ visitTypes }) => {
                     onChange(getDefaultOptionForGroup(selectedItem)?.uuid ?? '');
                   }}
                   selectedItem={selectedGroup}
-                  titleText={t('visitTypeCategory', 'Categoría de consulta')}
+                  titleText={`${t('visitTypeCategory', 'Categoría de consulta')} *`}
                 />
                 {showDetailSelector ? (
                   <Dropdown
@@ -123,7 +123,7 @@ const BaseVisitType: React.FC<BaseVisitTypeProps> = ({ visitTypes }) => {
                       onChange(selectedItem?.uuid ?? '');
                     }}
                     selectedItem={selectedOption}
-                    titleText={t('visitTypeDetail', 'Tipo específico')}
+                    titleText={`${t('visitTypeDetail', 'Tipo específico')} *`}
                   />
                 ) : null}
               </div>

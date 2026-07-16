@@ -21,23 +21,3 @@
 .table {
   width: 100%;
 }
-
-.tileContainer {
-  background-color: var(--cds-layer, #ffffff);
-  padding: layout.$spacing-07 0;
-}
-
-.tile {
-  margin: auto;
-  text-align: center;
-}
-
-.emptyStateText {
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.emptyStateHelperText {
-  font-size: 0.75rem;
-  color: var(--cds-text-secondary, #525252);
-}

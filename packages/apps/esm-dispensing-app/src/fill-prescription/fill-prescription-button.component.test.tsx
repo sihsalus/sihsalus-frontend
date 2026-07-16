@@ -28,12 +28,10 @@ vi.mock('react-i18next', () => ({
 describe('FillPrescriptionButton', () => {
   beforeEach(() => {
     mockUseSession.mockReturnValue({ user: { uuid: 'user-1' } });
-    mockUserHasAccess.mockImplementation(
-      (privilege) => privilege === dispensingEditPrivilege || privilege === PRIVILEGE_CREATE_DISPENSE,
-    );
+    mockUserHasAccess.mockReturnValue(true);
   });
 
-  it('requires the dispensing create privilege', () => {
+  it('shows the action when the user has both frontend and backend privileges', () => {
     render(<FillPrescriptionButton />);
 
     expect(mockUserHasAccess).toHaveBeenCalledWith(
@@ -47,11 +45,23 @@ describe('FillPrescriptionButton', () => {
     expect(screen.getByRole('button', { name: 'Fill prescription' })).toBeInTheDocument();
   });
 
-  it('hides the action when the user cannot create dispenses', () => {
-    mockUserHasAccess.mockReturnValue(false);
+  it('hides the action when the user lacks the frontend edit privilege', () => {
+    mockUserHasAccess.mockImplementation((privilege) => privilege === PRIVILEGE_CREATE_DISPENSE);
 
     render(<FillPrescriptionButton />);
 
+    expect(screen.queryByRole('button', { name: 'Fill prescription' })).not.toBeInTheDocument();
+  });
+
+  it('hides the action when the user lacks the backend dispense privilege', () => {
+    mockUserHasAccess.mockImplementation((privilege) => privilege === dispensingEditPrivilege);
+
+    render(<FillPrescriptionButton />);
+
+    expect(mockUserHasAccess).toHaveBeenCalledWith(
+      PRIVILEGE_CREATE_DISPENSE,
+      expect.objectContaining({ uuid: 'user-1' }),
+    );
     expect(screen.queryByRole('button', { name: 'Fill prescription' })).not.toBeInTheDocument();
   });
 });

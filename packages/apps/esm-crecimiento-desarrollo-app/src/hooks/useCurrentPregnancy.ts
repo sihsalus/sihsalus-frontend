@@ -1,8 +1,7 @@
 import { useConfig } from '@openmrs/esm-framework';
+import { useFilteredEncounter } from '@openmrs/esm-patient-common-lib';
 
 import type { ConfigObject } from '../config-schema';
-
-import { useFilteredEncounter } from './useFilteredEncounter';
 
 export const useCurrentPregnancy = (patientUuid: string) => {
   const config = useConfig<ConfigObject>();

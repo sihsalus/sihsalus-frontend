@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig, useLayoutType } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { configSchema, type PatientSearchConfig } from '../../config-schema';
@@ -42,6 +42,7 @@ describe('RefineSearch', () => {
   const user = userEvent.setup();
 
   const mockSetFilters = vi.fn();
+  const mockSetSearchQuery = vi.fn();
   const mockConfig = getDefaultsFromConfigSchema(configSchema) as PatientSearchConfig;
   const personAttributeTypes: Record<string, { format: string; uuid: string; display: string }> = {
     '6f5c0b8a-9e91-4d41-9a8c-8b0f3c2e7a11': {
@@ -52,7 +53,7 @@ describe('RefineSearch', () => {
     'c0d1a2b3-4e5f-4a6b-9c7d-8e9f0a1b2c3d': {
       format: 'java.lang.String',
       uuid: 'c0d1a2b3-4e5f-4a6b-9c7d-8e9f0a1b2c3d',
-      display: 'Código de Documento de Identidad',
+      display: 'Número de Documento de Identidad',
     },
     'a7e3f8c1-2d4b-4f9a-8c6e-1b2d3f4a5c6e': {
       format: 'org.openmrs.Concept',
@@ -67,6 +68,8 @@ describe('RefineSearch', () => {
   };
 
   beforeEach(() => {
+    mockSetFilters.mockClear();
+    mockSetSearchQuery.mockClear();
     mockUseConfig.mockReturnValue(mockConfig);
     mockUseLayoutType.mockReturnValue('tablet');
     mockUsePersonAttributeType.mockImplementation((attributeTypeUuid: string) => ({
@@ -86,29 +89,57 @@ describe('RefineSearch', () => {
   });
 
   const renderComponent = (props = {}) => {
-    return render(<RefineSearch setFilters={mockSetFilters} inTabletOrOverlay={false} filtersApplied={0} {...props} />);
+    return render(
+      <RefineSearch
+        setFilters={mockSetFilters}
+        setSearchQuery={mockSetSearchQuery}
+        inTabletOrOverlay={false}
+        filtersApplied={0}
+        {...props}
+      />,
+    );
   };
 
   it('renders all enabled search fields', () => {
     renderComponent();
 
     expect(screen.getByText('Sex')).toBeInTheDocument();
-    expect(screen.getByText('Day of Birth')).toBeInTheDocument();
-    expect(screen.getByText('Month of Birth')).toBeInTheDocument();
-    expect(screen.getByText('Year of Birth')).toBeInTheDocument();
-    expect(screen.getByLabelText('Age')).toBeInTheDocument();
+    expect(screen.getByLabelText('Date of birth')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Age')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Postcode')).not.toBeInTheDocument();
     expect(screen.getByText('Tipo de Documento de Identidad')).toBeInTheDocument();
-    expect(screen.getByLabelText('Código de Documento de Identidad')).toBeInTheDocument();
+    expect(screen.getByLabelText('Número de Documento de Identidad')).toBeInTheDocument();
     expect(screen.getByText('Estado de Verificación de Identidad')).toBeInTheDocument();
     expect(screen.getByText('Estado de Identificación en Admisión')).toBeInTheDocument();
   });
 
-  it('shows number of filters applied in Apply button when filters are active', () => {
+  it('shows number of filters applied in Search button when filters are active', () => {
     renderComponent({ filtersApplied: 2 });
 
-    const applyButton = screen.getByRole('button', { name: /apply/i });
-    expect(applyButton).toHaveTextContent('Apply (2 filters applied)');
+    const searchButton = screen.getByRole('button', { name: /search/i });
+    expect(searchButton).toHaveTextContent('Search (2 filters applied)');
+  });
+
+  it('requires a name or document number before searching', async () => {
+    renderComponent();
+
+    const searchButton = screen.getByRole('button', { name: /search/i });
+    expect(searchButton).toBeDisabled();
+
+    await user.type(screen.getByLabelText(/apellidos y nombres/i), 'Ahuanari Flores');
+    expect(searchButton).toBeEnabled();
+  });
+
+  it('uses the shared patient search placeholder and submits an Otros document unchanged', async () => {
+    renderComponent();
+
+    const searchInput = screen.getByLabelText(/apellidos y nombres/i);
+    expect(searchInput).toHaveAttribute('placeholder', 'Search for a patient by name or identifier number');
+
+    await user.type(searchInput, 'LM-OTRO-2026');
+    await user.click(screen.getByRole('button', { name: /search/i }));
+
+    expect(mockSetSearchQuery).toHaveBeenCalledWith('LM-OTRO-2026');
   });
 
   it('calls setFilters with initial state when Reset Fields is clicked', async () => {
@@ -117,29 +148,30 @@ describe('RefineSearch', () => {
     await user.click(screen.getByRole('button', { name: /reset fields/i }));
 
     expect(mockSetFilters).toHaveBeenCalledWith({
+      query: '',
       gender: 'any',
-      dateOfBirth: 0,
-      monthOfBirth: 0,
-      yearOfBirth: 0,
+      dateOfBirth: null,
+      monthOfBirth: null,
+      yearOfBirth: null,
       postcode: '',
-      age: 0,
+      age: null,
       attributes: {},
     });
   });
 
-  it('submits form with current state when Apply is clicked', async () => {
+  it('submits form with current state when Search is clicked', async () => {
     renderComponent();
 
-    const ageInput = screen.getByRole('spinbutton', { name: /age/i });
-    await user.type(ageInput, '30');
-    await user.click(screen.getByRole('button', { name: /apply/i }));
+    await user.type(screen.getByLabelText(/apellidos y nombres/i), 'Ahuanari');
+    await user.click(screen.getByRole('button', { name: /search/i }));
 
     expect(mockSetFilters).toHaveBeenCalledWith(
       expect.objectContaining({
+        query: 'Ahuanari',
         gender: 'any',
-        dateOfBirth: 0,
-        monthOfBirth: 0,
-        yearOfBirth: 0,
+        dateOfBirth: null,
+        monthOfBirth: null,
+        yearOfBirth: null,
         postcode: '',
         attributes: {
           '6f5c0b8a-9e91-4d41-9a8c-8b0f3c2e7a11': '',
@@ -147,7 +179,24 @@ describe('RefineSearch', () => {
           'a7e3f8c1-2d4b-4f9a-8c6e-1b2d3f4a5c6e': '',
           '787f1ea9-1792-45e5-9076-699b1a0638cb': '',
         },
-        age: 30,
+        age: null,
+      }),
+    );
+  });
+
+  it('uses the identity document number as the search query when the main query is empty', async () => {
+    renderComponent();
+
+    await user.type(screen.getByLabelText('Número de Documento de Identidad'), '10000001');
+    await user.click(screen.getByRole('button', { name: /search/i }));
+
+    expect(mockSetSearchQuery).toHaveBeenCalledWith('10000001');
+    expect(mockSetFilters).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: '',
+        attributes: expect.objectContaining({
+          'c0d1a2b3-4e5f-4a6b-9c7d-8e9f0a1b2c3d': '10000001',
+        }),
       }),
     );
   });
@@ -184,8 +233,9 @@ describe('RefineSearch', () => {
     it('handles gender selection correctly', async () => {
       renderComponent();
 
+      await user.type(screen.getByLabelText(/apellidos y nombres/i), 'Ahuanari');
       await user.click(screen.getByRole('tab', { name: 'Male' }));
-      await user.click(screen.getByRole('button', { name: /apply/i }));
+      await user.click(screen.getByRole('button', { name: /search/i }));
 
       expect(mockSetFilters).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -197,14 +247,9 @@ describe('RefineSearch', () => {
     it('handles date of birth inputs correctly', async () => {
       renderComponent();
 
-      const dayInput = screen.getByRole('spinbutton', { name: /day of birth/i });
-      const monthInput = screen.getByRole('spinbutton', { name: /month of birth/i });
-      const yearInput = screen.getByRole('spinbutton', { name: /year of birth/i });
-
-      await user.type(dayInput, '15');
-      await user.type(monthInput, '03');
-      await user.type(yearInput, '1990');
-      await user.click(screen.getByRole('button', { name: /apply/i }));
+      await user.type(screen.getByLabelText(/apellidos y nombres/i), 'Ahuanari');
+      fireEvent.change(screen.getByLabelText('Date of birth'), { target: { value: '1990-03-15' } });
+      await user.click(screen.getByRole('button', { name: /search/i }));
 
       expect(mockSetFilters).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -213,19 +258,6 @@ describe('RefineSearch', () => {
           yearOfBirth: 1990,
         }),
       );
-    });
-
-    it('validates date of birth inputs', async () => {
-      renderComponent();
-
-      const dayInput = screen.getByRole('spinbutton', { name: /day of birth/i });
-      const monthInput = screen.getByRole('spinbutton', { name: /month of birth/i });
-
-      await user.type(dayInput, '32');
-      expect(dayInput).toHaveAttribute('max', '31');
-
-      await user.type(monthInput, '13');
-      expect(monthInput).toHaveAttribute('max', '12');
     });
   });
 });

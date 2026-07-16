@@ -9,7 +9,7 @@ import {
   TableRow,
   Tag,
 } from '@carbon/react';
-import { formatDate, useConfig } from '@openmrs/esm-framework';
+import { formatDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,10 +25,14 @@ interface DiagnosticoClasificadoProps {
 const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { diagnoses, isLoading, error } = useDiagnosisHistory(patientUuid, config.encounterTypes?.externalConsultation);
+  const isTablet = useLayoutType() === 'tablet';
+  const { diagnoses, isLoading, isValidating, error, mutate, pagination } = useDiagnosisHistory(
+    patientUuid,
+    config.encounterTypes?.externalConsultation,
+  );
 
   const headers = [
-    { key: 'date', header: t('date', 'Fecha') },
+    { key: 'date', header: t('dateAndTime', 'Fecha y hora') },
     { key: 'diagnosis', header: t('diagnosis', 'Diagnóstico') },
     { key: 'cie10', header: t('cie10Code', 'CIE-10') },
     { key: 'priority', header: t('diagnosisPriority', 'Prioridad') },
@@ -37,7 +41,7 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
 
   const rows = diagnoses.map((dx) => ({
     id: dx.uuid,
-    date: formatDate(new Date(dx.encounterDatetime)),
+    date: formatDate(new Date(dx.encounterDatetime), { time: true }),
     diagnosis: dx.display,
     cie10: dx.cie10Code || '—',
     priority:
@@ -68,6 +72,7 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
 
   const handleLaunchForm = () => {
     launchPatientWorkspace(patientFormEntryWorkspace, {
+      mutateForm: mutate,
       formInfo: {
         patientUuid,
         formUuid: config.formsList?.consultaExternaForm,
@@ -80,12 +85,15 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
       title={t('diagnosisHistory', 'Historial de Diagnósticos')}
       actionLabel={t('addDiagnosis', 'Registrar Diagnóstico')}
       empty={rows.length === 0}
-      emptyMessage={t('noDiagnosisData', 'No hay diagnósticos registrados para este paciente.')}
+      emptyDisplayText={t('diagnoses', 'diagnósticos')}
       error={error}
       isLoading={isLoading}
+      isValidating={isValidating}
       onAction={handleLaunchForm}
+      pagination={pagination}
+      skeletonHeaders={headers}
     >
-      <DataTable rows={rows} headers={headers} size="sm">
+      <DataTable rows={rows} headers={headers} size={isTablet ? 'lg' : 'sm'}>
         {({ rows: tableRows, headers: tableHeaders, getTableProps, getHeaderProps, getRowProps }) => (
           <TableContainer>
             <Table {...getTableProps()} aria-label={t('diagnosisHistory', 'Historial de Diagnósticos')}>

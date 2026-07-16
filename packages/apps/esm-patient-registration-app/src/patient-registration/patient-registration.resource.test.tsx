@@ -1,6 +1,11 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
-import { savePatient, savePatientPhoto, savePerson } from './patient-registration.resource';
+import {
+  fetchPersonRegistrationCopyData,
+  savePatient,
+  savePatientPhoto,
+  savePerson,
+} from './patient-registration.resource';
 
 const mockOpenmrsFetch = openmrsFetch as vi.Mock;
 
@@ -29,6 +34,7 @@ describe('savePatient', () => {
 
 describe('savePerson', () => {
   it('posts to the OpenMRS person endpoint without patient identifiers', () => {
+    const signal = new AbortController().signal;
     const person = {
       names: [
         {
@@ -40,7 +46,7 @@ describe('savePerson', () => {
       gender: 'F',
     };
 
-    savePerson(person);
+    savePerson(person, signal);
 
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(`${restBaseUrl}/person`, {
       headers: {
@@ -48,8 +54,22 @@ describe('savePerson', () => {
       },
       method: 'POST',
       body: person,
-      signal: expect.any(AbortSignal),
+      signal,
     });
+  });
+});
+
+describe('fetchPersonRegistrationCopyData', () => {
+  it('forwards the caller signal to the request', async () => {
+    const signal = new AbortController().signal;
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: { uuid: 'responsible-person-uuid' } });
+
+    await fetchPersonRegistrationCopyData('responsible-person-uuid', signal);
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      expect.stringContaining(`${restBaseUrl}/person/responsible-person-uuid?v=`),
+      { signal },
+    );
   });
 });
 

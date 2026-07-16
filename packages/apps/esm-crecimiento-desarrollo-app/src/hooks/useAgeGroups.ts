@@ -8,23 +8,10 @@ import {
   type AgeGroup,
   calculateAgeInDays,
   calculateAgeInMonths,
+  getConfiguredAgeGroupFromBirthDate,
   getAgeGroup,
   getAgeGroupInDays,
 } from '../utils/age-group-utils';
-
-function getConfiguredAgeGroupFromBirthDate(birthDate: string | Date, groups: AgeGroup[]): AgeGroup | null {
-  const ageInDays = calculateAgeInDays(birthDate);
-
-  if (ageInDays <= 28) {
-    return getAgeGroupInDays(ageInDays, groups);
-  }
-
-  const ageInMonths = Math.max(1, calculateAgeInMonths(birthDate));
-  return getAgeGroup(
-    ageInMonths,
-    groups.filter((group) => group.minMonths !== undefined && group.maxMonths !== undefined),
-  );
-}
 
 /**
  * Hook que proporciona funciones relacionadas con grupos etarios usando la configuración del sistema
@@ -36,16 +23,16 @@ export function useAgeGroups() {
   const ageGroupsForCREDForms = useMemo(() => config?.CREDFormsByAgeGroup || [], [config?.CREDFormsByAgeGroup]);
 
   const getAgeGroupForDisplay = useMemo(() => {
-    return (birthDate: string | Date): AgeGroup | null => {
+    return (birthDate: string | Date, referenceDate: string | Date = new Date()): AgeGroup | null => {
       if (!birthDate || ageGroupsCRED.length === 0) return null;
-      return getConfiguredAgeGroupFromBirthDate(birthDate, ageGroupsCRED);
+      return getConfiguredAgeGroupFromBirthDate(birthDate, ageGroupsCRED, referenceDate);
     };
   }, [ageGroupsCRED]);
 
   const getAgeGroupForForms = useMemo(() => {
-    return (birthDate: string | Date): AgeGroup | null => {
+    return (birthDate: string | Date, referenceDate: string | Date = new Date()): AgeGroup | null => {
       if (!birthDate || ageGroupsForCREDForms.length === 0) return null;
-      return getConfiguredAgeGroupFromBirthDate(birthDate, ageGroupsForCREDForms);
+      return getConfiguredAgeGroupFromBirthDate(birthDate, ageGroupsForCREDForms, referenceDate);
     };
   }, [ageGroupsForCREDForms]);
 

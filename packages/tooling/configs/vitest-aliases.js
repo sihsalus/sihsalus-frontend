@@ -1,5 +1,4 @@
 import path from 'node:path';
-
 function normalizeReplacement(rootDir, replacement, isGlob) {
   const isPathLike = replacement.startsWith('.') || replacement.startsWith('/');
   if (!isPathLike) {

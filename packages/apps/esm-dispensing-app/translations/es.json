@@ -101,6 +101,8 @@
   "ordersForHomeDelivery": "Órdenes para entrega a domicilio",
   "patientInstructions": "Instrucciones del paciente",
   "patientName": "Nombre del paciente",
+  "patientSearchCriteria": "Apellidos y nombres o documento de identidad",
+  "patientSearchPlaceholder": "Ingrese apellidos, nombres, DNI, CE o pasaporte",
   "pause": "Pausa",
   "paused": "Pausado",
   "pausedDispense": "dispensación pausada",

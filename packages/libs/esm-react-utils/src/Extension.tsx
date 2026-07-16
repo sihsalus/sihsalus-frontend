@@ -20,6 +20,7 @@ export type ExtensionProps = React.HTMLAttributes<HTMLDivElement> & {
 export const Extension: React.FC<ExtensionProps> = ({ state, children, ...divProps }) => {
   const { extension } = useContext(ComponentContext);
   const parcel = useRef<Parcel | null>(null);
+  const mountInProgress = useRef(false);
   const updatePromise = useRef<Promise<void>>(Promise.resolve());
 
   const ref = useCallback(
@@ -28,8 +29,12 @@ export const Extension: React.FC<ExtensionProps> = ({ state, children, ...divPro
         extension?.extensionSlotName &&
         extension.extensionSlotModuleName &&
         extension.extensionSlotModuleName &&
-        !parcel.current
+        !parcel.current &&
+        !mountInProgress.current
       ) {
+        // renderExtension updates the extension store synchronously before its
+        // promise resolves. Guard first so that update cannot re-enter this ref.
+        mountInProgress.current = true;
         renderExtension(
           node,
           extension.extensionSlotName,
@@ -37,12 +42,16 @@ export const Extension: React.FC<ExtensionProps> = ({ state, children, ...divPro
           extension.extensionId,
           undefined,
           state,
-        ).then((newParcel: Parcel | null) => {
-          if (!newParcel) {
-            return;
-          }
-          parcel.current = newParcel;
-        });
+        )
+          .then((newParcel: Parcel | null) => {
+            if (!newParcel) {
+              return;
+            }
+            parcel.current = newParcel;
+          })
+          .finally(() => {
+            mountInProgress.current = false;
+          });
       }
     },
     [extension?.extensionSlotModuleName, state, extension?.extensionSlotName, extension?.extensionId],

@@ -2,6 +2,7 @@ import { Button, DataTableSkeleton } from '@carbon/react';
 import {
   ArrowLeftIcon,
   ErrorState,
+  getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
   getPatientName,
   PatientBannerContactDetails,
   PatientBannerPatientInfo,
@@ -10,9 +11,11 @@ import {
   showSnackbar,
   usePatient,
   useVisit,
+  type Visit,
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
+import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -23,10 +26,22 @@ import ExistingVisitFormComponent from './existing-visit-form/existing-visit-for
 interface CreateQueueEntryWorkspace2Props {
   selectedPatientUuid: string;
   currentServiceQueueUuid?: string;
+  currentQueueLocationUuid?: string;
+  activeVisit?: Visit;
+  onBeforeQueueEntrySave?: (visit?: Visit) => boolean | Promise<boolean>;
+  onQueueEntryAdded?: () => void | Promise<void>;
+  startVisitWorkspaceName?: string;
+  visitFormOpenedFrom?: string;
   patient?: fhir.Patient;
+  requestedServiceName?: string;
+  requiredVisitLocation?: {
+    uuid: string;
+    display: string;
+  };
+  requiredVisitTypeUuid?: string;
 }
 
-const startVisitWorkspaceName = 'queue-patient-search-start-visit-workspace';
+const defaultStartVisitWorkspaceName = 'queue-patient-search-start-visit-workspace';
 
 const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueueEntryWorkspace2Props>> = ({
   workspaceProps,
@@ -34,15 +49,38 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
   closeWorkspace,
 }) => {
   const { t } = useTranslation();
-  const { selectedPatientUuid, currentServiceQueueUuid, patient: searchedPatient } = workspaceProps ?? {};
+  const {
+    selectedPatientUuid,
+    activeVisit: suppliedActiveVisit,
+    currentServiceQueueUuid,
+    currentQueueLocationUuid,
+    onBeforeQueueEntrySave,
+    onQueueEntryAdded,
+    patient: searchedPatient,
+    requestedServiceName,
+    requiredVisitLocation,
+    requiredVisitTypeUuid,
+    startVisitWorkspaceName = defaultStartVisitWorkspaceName,
+    visitFormOpenedFrom = 'service-queues-add-patient',
+  } = workspaceProps ?? {};
   const { patient } = usePatient(selectedPatientUuid);
-  const { activeVisit, isLoading, error } = useVisit(selectedPatientUuid);
+  const { activeVisit: fetchedActiveVisit, isLoading, error } = useVisit(selectedPatientUuid);
+  const activeVisit = suppliedActiveVisit ?? fetchedActiveVisit;
   const [showContactDetails, setShowContactDetails] = useState(false);
   const hasLaunchedStartVisitWorkspace = useRef(false);
 
   const handleCloseWindow = useCallback(() => {
     void closeWorkspace({ closeWindow: true, discardUnsavedChanges: true });
   }, [closeWorkspace]);
+
+  const handleQueueEntryAdded = useCallback(async () => {
+    await onQueueEntryAdded?.();
+  }, [onQueueEntryAdded]);
+
+  const handleQueueEntryAddedAndClose = useCallback(async () => {
+    await handleQueueEntryAdded();
+    handleCloseWindow();
+  }, [handleCloseWindow, handleQueueEntryAdded]);
 
   const handleToggleContactDetails = useCallback(() => {
     setShowContactDetails((value) => !value);
@@ -57,31 +95,48 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
 
     void launchChildWorkspace(startVisitWorkspaceName, {
       currentServiceQueueUuid,
-      openedFrom: 'service-queues-add-patient',
+      currentQueueLocationUuid,
+      openedFrom: visitFormOpenedFrom,
+      onBeforeVisitSave: onBeforeQueueEntrySave,
       patient: searchedPatient ?? patient,
       patientUuid: selectedPatientUuid,
+      requestedServiceName,
+      requiredVisitLocation,
+      requiredVisitTypeUuid,
       workspaceTitle: t('addPatientToQueue', 'Add patient to queue'),
-      onQueueEntryAdded: handleCloseWindow,
+      onQueueEntryAdded: handleQueueEntryAddedAndClose,
     }).catch((launchError) => {
       hasLaunchedStartVisitWorkspace.current = false;
       showSnackbar({
         isLowContrast: false,
         kind: 'error',
-        title: t('errorAddingPatientToQueue', 'Error adding patient to queue'),
-        subtitle: launchError?.message ?? t('unexpectedError', 'An unexpected error occurred'),
+        title: t('errorAddingPatientToQueue', 'No se pudo agregar el paciente a la cola'),
+        subtitle: getCompatibleUserFacingErrorMessage(
+          launchError,
+          t('queueEntryActionErrorMessage', 'No se pudo completar la acción de cola. Intente nuevamente.'),
+          { logContext: 'Launch start visit workspace from service queues' },
+          frameworkGetUserFacingErrorMessage,
+        ),
       });
     });
   }, [
     activeVisit,
     currentServiceQueueUuid,
+    currentQueueLocationUuid,
     error,
-    handleCloseWindow,
+    handleQueueEntryAddedAndClose,
     isLoading,
     launchChildWorkspace,
+    onBeforeQueueEntrySave,
     patient,
     searchedPatient,
     selectedPatientUuid,
+    startVisitWorkspaceName,
+    requestedServiceName,
+    requiredVisitLocation,
+    requiredVisitTypeUuid,
     t,
+    visitFormOpenedFrom,
   ]);
 
   const patientToDisplay = patient ?? searchedPatient;
@@ -129,7 +184,15 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
           ) : error ? (
             <ErrorState headerTitle={t('errorFetchingVisit', 'Error fetching patient visit')} error={error} />
           ) : activeVisit ? (
-            <ExistingVisitFormComponent visit={activeVisit} closeWorkspace={handleCloseWindow} />
+            <ExistingVisitFormComponent
+              visit={activeVisit}
+              closeWorkspace={handleCloseWindow}
+              currentQueueLocationUuid={currentQueueLocationUuid}
+              currentServiceQueueUuid={currentServiceQueueUuid}
+              onBeforeQueueEntrySave={onBeforeQueueEntrySave}
+              onQueueEntryAdded={handleQueueEntryAdded}
+              requestedServiceName={requestedServiceName}
+            />
           ) : (
             <DataTableSkeleton role="progressbar" />
           )}

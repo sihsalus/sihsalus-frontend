@@ -14,13 +14,15 @@
       "name": "referrals-app-menu-item",
       "component": "referralsAppMenuItem",
       "slot": "app-menu-item-slot",
+      "privileges": "app:referencias",
       "order": 15
     }
   ],
   "modals": [
     {
       "name": "referral-reasons-dialog",
-      "component": "referralReasonsDialogPopup"
+      "component": "referralReasonsDialogPopup",
+      "privileges": "app:referencias"
     }
   ],
   "workspaces": [
@@ -29,7 +31,8 @@
       "component": "facilityReferralForm",
       "title": "referralForm",
       "type": "form",
-      "width": "wider"
+      "width": "wider",
+      "privileges": "app:referencias"
     }
   ]
 }

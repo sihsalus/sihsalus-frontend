@@ -43,7 +43,7 @@ export function applySisInsuranceToForm(
 
 export const SisLookupField = () => {
   const { t } = useTranslation(moduleName);
-  const { identifierTypes, values, setFieldValue, setFieldTouched } = useContext(PatientRegistrationContext);
+  const { identifierTypes, values, setFieldValue, setFieldTouched, isOffline } = useContext(PatientRegistrationContext);
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<LookupStatus | null>(null);
   const dniIdentifier = useMemo(
@@ -109,11 +109,26 @@ export const SisLookupField = () => {
         {dni ? <span className={styles.externalLookupDocument}>DNI {dni}</span> : null}
       </div>
       <div className={styles.externalLookupAction}>
-        <Button kind="tertiary" size="sm" renderIcon={Search} onClick={handleLookup} disabled={isLoading}>
+        <Button
+          className={styles.externalLookupButton}
+          kind="tertiary"
+          size="sm"
+          renderIcon={Search}
+          onClick={handleLookup}
+          disabled={isLoading || isOffline}
+        >
           {t('sisLookupButton', 'Consultar SIS')}
         </Button>
         {isLoading ? <InlineLoading description={t('sisLookupLoading', 'Consultando SIS')} /> : null}
       </div>
+      {isOffline ? (
+        <InlineNotification
+          className={styles.externalLookupNotification}
+          kind="info"
+          lowContrast
+          title={t('sisLookupOffline', 'La consulta SIS requiere conexión')}
+        />
+      ) : null}
       {status ? (
         <InlineNotification
           className={styles.externalLookupNotification}

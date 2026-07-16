@@ -1,4 +1,5 @@
 import { Type, validators } from '@openmrs/esm-framework';
+import { MAX_PATIENT_AGE_YEARS, MIN_PATIENT_AGE_YEARS } from '@openmrs/esm-utils';
 
 export const configSchema = {
   search: {
@@ -32,9 +33,9 @@ export const configSchema = {
           enabled: true,
         },
         age: {
-          enabled: true,
-          min: 0,
-          max: 130,
+          enabled: false,
+          min: MIN_PATIENT_AGE_YEARS,
+          max: MAX_PATIENT_AGE_YEARS,
         },
         postcode: {
           enabled: false,
@@ -82,18 +83,20 @@ export const configSchema = {
         _description: 'Configuration for the age field',
         enabled: {
           _type: Type.Boolean,
-          _description: 'Optional. If true, determines whether to display the age field or not. Defaults to true',
-          _default: true,
+          _description: 'The age filter is not displayed in the SIH Salus patient search',
+          _default: false,
         },
         min: {
           _type: Type.Number,
           _description: 'The minimum value for the age field',
-          _default: 0,
+          _default: MIN_PATIENT_AGE_YEARS,
+          _validators: [validators.inRange(MIN_PATIENT_AGE_YEARS, MAX_PATIENT_AGE_YEARS)],
         },
         max: {
           _type: Type.Number,
           _description: 'The maximum value for the age field',
-          _default: 130,
+          _default: MAX_PATIENT_AGE_YEARS,
+          _validators: [validators.inRange(MIN_PATIENT_AGE_YEARS, MAX_PATIENT_AGE_YEARS)],
         },
       },
       postcode: {

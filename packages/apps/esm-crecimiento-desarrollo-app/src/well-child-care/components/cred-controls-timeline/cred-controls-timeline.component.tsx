@@ -1,12 +1,14 @@
-import { Tile } from '@carbon/react';
-import { launchWorkspace2, useConfig, usePatient, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { ClickableTile, Tile } from '@carbon/react';
+import { useConfig, usePatient, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
-import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ConfigObject } from '../../../config-schema';
+import type { AgeRange, ConfigObject } from '../../../config-schema';
 import { credCourseLifeEditPrivilege } from '../../../constants';
-import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
+import { useAgeGroups } from '../../../hooks/useAgeGroups';
+import { type CREDControlWithStatus, useCREDSchedule } from '../../../hooks/useCREDSchedule';
+import { canRegisterCREDControlFromAgeGroup } from '../../../utils/cred-age-group-actions';
 import { translateCredAgeGroupLabel, translateCredAgeGroupSublabel } from '../../../utils/cred-label-translations';
 
 import styles from './cred-schedule.scss';
@@ -22,30 +24,19 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
   const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);
   const { patient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
   const { controls } = useCREDSchedule(patientUuid);
-  const [selectedAgeGroup, setSelectedAgeGroup] = useState<(typeof ageGroupsCRED)[0] | null>(null);
-
-  const patientAge = useMemo(() => {
-    if (!patient?.birthDate) return { inDays: 0, inMonths: 0 };
-    const birthDate = dayjs(patient.birthDate);
-    const today = dayjs();
-    return { inDays: today.diff(birthDate, 'days'), inMonths: today.diff(birthDate, 'months') };
-  }, [patient]);
+  const { getAgeGroupForDisplay } = useAgeGroups();
+  const [selectedAgeGroup, setSelectedAgeGroup] = useState<AgeRange | null>(null);
+  const launchControlWorkspace = useLaunchWorkspaceRequiringVisit<{
+    workspaceTitle: string;
+    patientUuid: string;
+    ageGroup: AgeRange;
+    control: CREDControlWithStatus;
+    type: 'ageGroup';
+  }>(patientUuid, 'wellchild-control-form');
 
   const currentAgeGroup = useMemo(() => {
-    return ageGroupsCRED.find((group) => {
-      const inDayRange =
-        group.minDays !== undefined &&
-        group.maxDays !== undefined &&
-        patientAge.inDays >= group.minDays &&
-        patientAge.inDays <= group.maxDays;
-      const inMonthRange =
-        group.minMonths !== undefined &&
-        group.maxMonths !== undefined &&
-        patientAge.inMonths >= group.minMonths &&
-        patientAge.inMonths <= group.maxMonths;
-      return inDayRange || inMonthRange;
-    });
-  }, [patientAge, ageGroupsCRED]);
+    return patient?.birthDate ? getAgeGroupForDisplay(patient.birthDate) : null;
+  }, [getAgeGroupForDisplay, patient?.birthDate]);
 
   // Compute status summary per age group
   const groupStatusSummary = useMemo(() => {
@@ -67,12 +58,22 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
     return summary;
   }, [controls, ageGroupsCRED]);
 
-  const handleAgeGroupClick = (group) => {
+  const handleAgeGroupClick = (group: AgeRange) => {
+    if (!canRegisterCREDControlFromAgeGroup(group.label, currentAgeGroup?.label, controls)) return;
+
+    const control = controls.find(
+      (candidate) =>
+        candidate.ageGroupLabel === group.label && candidate.status !== 'completed' && candidate.status !== 'scheduled',
+    );
+
+    if (!control) return;
+
     setSelectedAgeGroup(group);
-    launchWorkspace2('wellchild-control-form', {
+    launchControlWorkspace({
       workspaceTitle: `${t('ageGroupDetails', 'Control Crecimiento y Desarrollo - Grupo Etario')} - ${translateCredAgeGroupLabel(t, group.label)}`,
       patientUuid,
       ageGroup: group,
+      control,
       type: 'ageGroup',
     });
   };
@@ -93,19 +94,17 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
           const isSelected = selectedAgeGroup?.label === group.label;
           const allCompleted = summary && summary.total > 0 && summary.completed === summary.total;
           const hasOverdue = summary && summary.overdue > 0;
-
-          return (
-            <Tile
-              key={group.label}
-              className={classNames(styles.ageTile, {
-                [styles.active]: isSelected,
-                [styles.current]: isCurrent,
-                [styles.neonatal]: group.neonatalControl,
-                [styles.groupCompleted]: allCompleted,
-                [styles.groupOverdue]: hasOverdue,
-              })}
-              onClick={canEdit ? () => handleAgeGroupClick(group) : undefined}
-            >
+          const hasAvailableControl = canRegisterCREDControlFromAgeGroup(group.label, currentAgeGroup?.label, controls);
+          const tileClassName = classNames(styles.ageTile, {
+            [styles.active]: isSelected,
+            [styles.current]: isCurrent,
+            [styles.neonatal]: group.neonatalControl,
+            [styles.groupCompleted]: allCompleted,
+            [styles.groupOverdue]: hasOverdue,
+            [styles.actionable]: canEdit && hasAvailableControl,
+          });
+          const tileContent = (
+            <>
               <strong>{translateCredAgeGroupLabel(t, group.label)}</strong>
               {group.sublabel && <div>{translateCredAgeGroupSublabel(t, group.sublabel)}</div>}
               {summary && summary.total > 0 && (
@@ -115,9 +114,21 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
               )}
               {hasOverdue && (
                 <div className={styles.overdueIndicator}>
-                  {t('overdueShort', '{{count}} venc.', { count: summary.overdue })}
+                  {t('overdueShort', '{{count}} venc.', {
+                    count: summary.overdue,
+                  })}
                 </div>
               )}
+            </>
+          );
+
+          return canEdit && hasAvailableControl ? (
+            <ClickableTile key={group.label} className={tileClassName} onClick={() => handleAgeGroupClick(group)}>
+              {tileContent}
+            </ClickableTile>
+          ) : (
+            <Tile key={group.label} className={tileClassName}>
+              {tileContent}
             </Tile>
           );
         })}

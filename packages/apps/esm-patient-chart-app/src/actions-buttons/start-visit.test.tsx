@@ -62,10 +62,10 @@ describe('StartVisitOverflowMenuItem', () => {
   beforeEach(() => {
     mockUseSession.mockReturnValue({
       user: {
-        privileges: [{ display: 'app:adt' }],
+        privileges: [{ display: 'app:home.admision' }],
       },
     } as ReturnType<typeof useSession>);
-    mockUserHasAccess.mockImplementation((privilege) => privilege === 'app:adt');
+    mockUserHasAccess.mockImplementation((privilege) => privilege === 'app:home.admision');
   });
 
   it('should launch the start visit form', async () => {

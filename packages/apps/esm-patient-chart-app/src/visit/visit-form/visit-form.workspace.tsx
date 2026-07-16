@@ -18,6 +18,7 @@ import {
   Extension,
   ExtensionSlot,
   formatDatetime,
+  getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
   type NewVisitPayload,
   saveVisit,
   showSnackbar,
@@ -42,24 +43,26 @@ import {
   time12HourFormatRegex,
   useActivePatientEnrollment,
 } from '@openmrs/esm-patient-common-lib';
+import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import { UnauthorizedState } from '@sihsalus/esm-rbac';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { type ChartConfig } from '../../config-schema';
 import { useDefaultVisitLocation } from '../hooks/useDefaultVisitLocation';
 import { useEmrConfiguration } from '../hooks/useEmrConfiguration';
 import { useVisitAttributeTypes } from '../hooks/useVisitAttributeType';
-import { canStartVisit } from '../visit-access';
+import { canEditVisit, canStartVisit } from '../visit-access';
 import { invalidateUseVisits, useInfiniteVisits } from '../visits-widget/visit.resource';
 
 import BaseVisitType from './base-visit-type.component';
-import CompanionList from './companion-list.component';
+import CompanionList, { usePatientCompanions } from './companion-list.component';
 import LocationSelector from './location-selector.component';
 import { MemoizedRecommendedVisitType } from './recommended-visit-type.component';
 import VisitAttributeTypeFields from './visit-attribute-type.component';
@@ -68,18 +71,34 @@ import {
   createVisitAttribute,
   deleteVisitAttribute,
   getDefaultVisitAttributesFromPatientAddress,
+  getVisitAttributes,
   normalizeVisitTimeFormatInput,
   normalizeVisitTimeInput,
+  reconcileVisitCreation,
   updateVisitAttribute,
   useConditionalVisitTypes,
   usePersonAttributesForVisitDefaults,
+  useVisitAttributeTypeExists,
   useVisitFormCallbacks,
+  VISIT_PERSISTENCE_CORRELATION_CONFLICT,
   type VisitFormCallbacks,
   type VisitFormData,
+  type VisitPersistenceCorrelation,
 } from './visit-form.resource';
 import styles from './visit-form.scss';
 
 dayjs.extend(isSameOrBefore);
+
+const VISIT_SAVE_OUTCOME_UNKNOWN = 'VISIT_SAVE_OUTCOME_UNKNOWN';
+const DETERMINISTIC_VISIT_CREATE_REJECTION_STATUSES = new Set([
+  400, 401, 403, 404, 405, 406, 409, 410, 412, 413, 414, 415, 416, 417, 422,
+]);
+
+function isDefinitiveClientRejection(error: unknown) {
+  const candidate = error as { status?: unknown; response?: { status?: unknown } };
+  const status = Number(candidate?.status ?? candidate?.response?.status);
+  return Number.isInteger(status) && DETERMINISTIC_VISIT_CREATE_REJECTION_STATUSES.has(status);
+}
 
 interface StartVisitFormWorkspaceProps {
   /**
@@ -91,9 +110,19 @@ interface StartVisitFormWorkspaceProps {
   showPatientHeader?: boolean;
   showVisitEndDateTimeFields?: boolean;
   onVisitStarted?: (visit: Visit) => void | Promise<void>;
+  onBeforeVisitSave?: (persistedVisit?: Visit) => boolean | Promise<boolean>;
   onQueueEntryAdded?: () => void | Promise<void>;
+  additionalVisitAttributes?: NewVisitPayload['attributes'];
+  visitPersistenceCorrelation?: VisitPersistenceCorrelation;
   patientUuid?: string;
   currentServiceQueueUuid?: string;
+  currentQueueLocationUuid?: string;
+  requiredVisitLocation?: {
+    uuid: string;
+    display: string;
+  };
+  requiredVisitTypeUuid?: string;
+  requestedServiceName?: string;
   visitToEdit?: Visit;
   workspaceTitle?: string;
 }
@@ -119,12 +148,20 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     showPatientHeader = false,
     showVisitEndDateTimeFields,
     onVisitStarted,
+    onBeforeVisitSave,
     onQueueEntryAdded,
+    additionalVisitAttributes,
+    visitPersistenceCorrelation,
     currentServiceQueueUuid,
+    currentQueueLocationUuid,
+    requiredVisitLocation,
+    requiredVisitTypeUuid,
+    requestedServiceName,
     visitToEdit,
     openedFrom,
     workspaceTitle,
   } = workspaceProps;
+  const isQueueRegistration = openedFrom === 'service-queues-add-patient' && !visitToEdit;
   const initialPatientUuid = isWorkspace2
     ? (props.groupProps?.patientUuid ?? workspaceProps.patientUuid)
     : props.patientUuid;
@@ -159,6 +196,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   );
   const { emrConfiguration } = useEmrConfiguration(isEmrApiModuleInstalled);
   const { patientUuid, patient } = usePatient(initialPatientUuid);
+  const { companions, isLoading: isLoadingCompanions, companionRelationshipTypeUuid } = usePatientCompanions(patientUuid);
   const [contentSwitcherIndex, setContentSwitcherIndex] = useState(config.showRecommendedVisitTypeTab ? 0 : 1);
   const visitHeaderSlotState = useMemo(() => ({ patientUuid }), [patientUuid]);
   const { activePatientEnrollment, isLoading } = useActivePatientEnrollment(patientUuid);
@@ -167,6 +205,44 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   const allVisitTypes = useConditionalVisitTypes();
   const { attributes: personAttributesForVisitDefaults } = usePersonAttributesForVisitDefaults(patientUuid);
   const [isVisitSaved, setIsVisitSaved] = useState(false);
+  const [persistedVisitPendingPostSubmit, setPersistedVisitPendingPostSubmit] = useState<Visit | null>(null);
+  const [visitCreationRequiresReconciliation, setVisitCreationRequiresReconciliation] = useState(false);
+  const [queueEntryPersistenceCompleted, setQueueEntryPersistenceCompleted] = useState(false);
+  const completedPostSubmitActions = useRef(new Set<string>());
+  const visitPersistenceToken = useRef(uuidv4());
+  const pendingVisitCreationPayload = useRef<NewVisitPayload | null>(null);
+  const pendingVisitCreationError = useRef<unknown>(null);
+  // A missing attribute type would make the backend reject the whole visit payload,
+  // so the correlation token is dropped when the backend does not have it provisioned.
+  const persistenceAttributeTypeExists = useVisitAttributeTypeExists(config.visitPersistenceTokenAttributeTypeUuid);
+  const effectiveVisitPersistenceCorrelation = useMemo<VisitPersistenceCorrelation | undefined>(() => {
+    if (visitToEdit) {
+      return undefined;
+    }
+
+    if (visitPersistenceCorrelation) {
+      return visitPersistenceCorrelation;
+    }
+
+    if (!persistenceAttributeTypeExists) {
+      console.warn(
+        `The visit attribute type ${config.visitPersistenceTokenAttributeTypeUuid} configured as visitPersistenceTokenAttributeTypeUuid does not exist on the backend. Visits will be created without the persistence token.`,
+      );
+      return undefined;
+    }
+
+    return config.visitPersistenceTokenAttributeTypeUuid
+      ? {
+          attributeType: config.visitPersistenceTokenAttributeTypeUuid,
+          value: visitPersistenceToken.current,
+        }
+      : undefined;
+  }, [
+    config.visitPersistenceTokenAttributeTypeUuid,
+    persistenceAttributeTypeExists,
+    visitPersistenceCorrelation,
+    visitToEdit,
+  ]);
 
   const [errorFetchingResources, setErrorFetchingResources] = useState<{
     blockSavingForm: boolean;
@@ -200,6 +276,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     const birthDate = dayjs(birthDateValue);
     return birthDate.isValid() ? birthDate.startOf('day') : null;
   }, [patientBirthDateValue]);
+  const isMinorPatient = Boolean(patientBirthDate && dayjs().diff(patientBirthDate, 'year') < 18);
+  const companionRequired = !visitToEdit && isMinorPatient && Boolean(companionRelationshipTypeUuid);
 
   const visitFormSchema = useMemo(() => {
     const createVisitAttributeSchema = (required: boolean) =>
@@ -316,8 +394,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       visitStartTime: dayjs(visitStartDate).format('hh:mm'),
       visitStartTimeFormat: new Date(visitStartDate).getHours() >= 12 ? 'PM' : 'AM',
       visitStopTimeFormat: new Date().getHours() >= 12 ? 'PM' : 'AM',
-      visitType: visitToEdit?.visitType?.uuid ?? emrConfiguration?.atFacilityVisitType?.uuid,
-      visitLocation: visitToEdit?.location ?? defaultVisitLocation ?? {},
+      visitType: visitToEdit?.visitType?.uuid ?? requiredVisitTypeUuid ?? emrConfiguration?.atFacilityVisitType?.uuid,
+      visitLocation: visitToEdit?.location ?? requiredVisitLocation ?? defaultVisitLocation ?? {},
       visitAttributes:
         visitToEdit?.attributes.reduce<Record<string, string>>((acc, curr) => {
           acc[curr.attributeType.uuid] = typeof curr.value === 'object' ? curr?.value?.uuid : `${curr.value ?? ''}`;
@@ -371,6 +449,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   }, [
     visitToEdit,
     defaultVisitLocation,
+    requiredVisitLocation,
+    requiredVisitTypeUuid,
     emrConfiguration,
     patient,
     config.visitAttributeTypes,
@@ -400,8 +480,17 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   }, [defaultValues, reset]);
 
   useEffect(() => {
-    promptBeforeClosing(() => isDirty && !isVisitSaved);
-  }, [isDirty, isVisitSaved, promptBeforeClosing]);
+    promptBeforeClosing(
+      () =>
+        (isDirty && !isVisitSaved) || Boolean(persistedVisitPendingPostSubmit) || visitCreationRequiresReconciliation,
+    );
+  }, [
+    isDirty,
+    isVisitSaved,
+    persistedVisitPendingPostSubmit,
+    promptBeforeClosing,
+    visitCreationRequiresReconciliation,
+  ]);
 
   const [maxVisitStartDatetime, initialMinVisitStopDatetime] = useMemo(() => {
     const now = Date.now();
@@ -482,87 +571,257 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   }, [displayVisitStopDateTimeFields, getValues, maxVisitStartDatetime, minVisitStopDatetime, setError, t]);
 
   const handleVisitAttributes = useCallback(
-    (visitAttributes: { [p: string]: string }, visitUuid: string) => {
+    async (visitAttributes: { [p: string]: string }, visitUuid: string) => {
       const existingVisitAttributeTypes =
         visitToEdit?.attributes?.map((attribute) => attribute.attributeType.uuid) || [];
-
-      const promises = [];
+      const responses = [];
 
       for (const [attributeType, value] of Object.entries(visitAttributes)) {
-        if (attributeType && existingVisitAttributeTypes.includes(attributeType)) {
-          const attributeToEdit = visitToEdit.attributes.find((attr) => attr.attributeType.uuid === attributeType);
+        const actionId = `visit-attribute:${attributeType}`;
+        if (completedPostSubmitActions.current.has(actionId)) {
+          continue;
+        }
 
+        const attributeToEdit =
+          attributeType && existingVisitAttributeTypes.includes(attributeType)
+            ? visitToEdit?.attributes?.find((attribute) => attribute.attributeType.uuid === attributeType)
+            : undefined;
+        const attributeName =
+          attributeToEdit?.attributeType.display ??
+          visitAttributeTypes?.find((type) => type.uuid === attributeType)?.display ??
+          t('visitAttribute', 'atributo de consulta');
+
+        try {
           if (attributeToEdit) {
-            // continue to next attribute if the previous value is same as new value
             const isSameValue =
               typeof attributeToEdit.value === 'object'
                 ? attributeToEdit.value.uuid === value
                 : attributeToEdit.value === value;
 
-            if (isSameValue) {
+            if (!isSameValue) {
+              const response = value
+                ? await updateVisitAttribute(visitUuid, attributeToEdit.uuid, value)
+                : await deleteVisitAttribute(visitUuid, attributeToEdit.uuid);
+              responses.push(response);
+            }
+          } else if (value) {
+            responses.push(await createVisitAttribute(visitUuid, attributeType, value));
+          }
+
+          completedPostSubmitActions.current.add(actionId);
+        } catch (error) {
+          try {
+            const persistedAttributes = await getVisitAttributes(visitUuid);
+            const getPersistedValue = (persistedValue: unknown) => {
+              if (persistedValue && typeof persistedValue === 'object' && 'uuid' in persistedValue) {
+                return String(persistedValue.uuid ?? '');
+              }
+
+              return String(persistedValue ?? '');
+            };
+            const attributeWasReconciled = attributeToEdit
+              ? value
+                ? persistedAttributes.some(
+                    (attribute) =>
+                      attribute.uuid === attributeToEdit.uuid && getPersistedValue(attribute.value) === value,
+                  )
+                : persistedAttributes.every((attribute) => attribute.uuid !== attributeToEdit.uuid)
+              : persistedAttributes.some(
+                  (attribute) =>
+                    attribute.attributeType?.uuid === attributeType && getPersistedValue(attribute.value) === value,
+                );
+
+            if (attributeWasReconciled) {
+              console.error('Visit attribute write returned an error but server state confirms success.', error);
+              completedPostSubmitActions.current.add(actionId);
               continue;
             }
+          } catch (reconciliationError) {
+            console.error('Could not reconcile the visit attribute after a write failure.', reconciliationError);
+          }
 
-            if (value) {
-              // Update attribute with new value
-              promises.push(
-                updateVisitAttribute(visitUuid, attributeToEdit.uuid, value).catch((err) => {
-                  showSnackbar({
-                    title: t('errorUpdatingVisitAttribute', 'Error updating the {{attributeName}} visit attribute', {
-                      attributeName: attributeToEdit.attributeType.display,
-                    }),
-                    kind: 'error',
-                    isLowContrast: false,
-                    subtitle: err?.message,
-                  });
-                  throw err; // short-circuit promise chain
-                }),
-              );
-            } else {
-              // Delete attribute if no value is provided
-              promises.push(
-                deleteVisitAttribute(visitUuid, attributeToEdit.uuid).catch((err) => {
-                  showSnackbar({
-                    title: t('errorDeletingVisitAttribute', 'Error deleting the {{attributeName}} visit attribute', {
-                      attributeName: attributeToEdit.attributeType.display,
-                    }),
-                    kind: 'error',
-                    isLowContrast: false,
-                    subtitle: err?.message,
-                  });
-                  throw err; // short-circuit promise chain
-                }),
-              );
-            }
-          }
-        } else {
-          if (value) {
-            promises.push(
-              createVisitAttribute(visitUuid, attributeType, value).catch((err) => {
-                showSnackbar({
-                  title: t('errorCreatingVisitAttribute', 'Error creating the {{attributeName}} visit attribute', {
-                    attributeName: visitAttributeTypes?.find((type) => type.uuid === attributeType)?.display,
-                  }),
-                  kind: 'error',
-                  isLowContrast: false,
-                  subtitle: err?.message,
-                });
-                throw err; // short-circuit promise chain
-              }),
-            );
-          }
+          const title = attributeToEdit
+            ? value
+              ? t('errorUpdatingVisitAttribute', 'No se pudo actualizar el atributo {{attributeName}}', {
+                  attributeName,
+                })
+              : t('errorDeletingVisitAttribute', 'No se pudo eliminar el atributo {{attributeName}}', {
+                  attributeName,
+                })
+            : t('errorCreatingVisitAttribute', 'No se pudo crear el atributo {{attributeName}}', {
+                attributeName,
+              });
+          showSnackbar({
+            title,
+            kind: 'error',
+            isLowContrast: false,
+            subtitle: getCompatibleUserFacingErrorMessage(
+              error,
+              t('visitAttributeSaveFailed', 'No se pudo guardar el atributo de la consulta. Intente nuevamente.'),
+              { logContext: `Persist visit attribute ${attributeType}` },
+              frameworkGetUserFacingErrorMessage,
+            ),
+          });
+          throw error;
         }
       }
 
-      return Promise.all(promises);
+      return responses;
     },
     [visitToEdit, t, visitAttributeTypes],
   );
 
   const onSubmit = useCallback(
-    (data: VisitFormData) => {
+    async (data: VisitFormData) => {
       if (visitToEdit && !validateVisitStartStopDatetime()) {
         return;
+      }
+
+      if (companionRequired && isLoadingCompanions) {
+        showSnackbar({
+          title: t('companionsLoading', 'No se pudo validar el acompañante'),
+          subtitle: t('companionsLoadingMessage', 'Espere a que se carguen los acompañantes e intente nuevamente.'),
+          kind: 'error',
+          isLowContrast: false,
+        });
+        return;
+      }
+
+      if (companionRequired && companions.length === 0) {
+        showSnackbar({
+          title: t('companionRequiredForMinorTitle', 'Acompañante obligatorio'),
+          subtitle: t(
+            'companionRequiredForMinor',
+            'Para iniciar la consulta de un menor de edad debe existir al menos un acompañante registrado.',
+          ),
+          kind: 'error',
+          isLowContrast: false,
+        });
+        return;
+      }
+
+      const queueEntryIsRequired =
+        openedFrom === 'appointments-check-in' || openedFrom === 'service-queues-add-patient';
+      if (queueEntryIsRequired && !isOnline) {
+        showSnackbar({
+          title: t('queueEntryOfflineUnavailable', 'No se puede registrar la atención sin conexión'),
+          subtitle: t(
+            'queueEntryOfflineUnavailableMessage',
+            'La admisión de citas y colas requiere conexión. No se creó la consulta.',
+          ),
+          kind: 'error',
+          isLowContrast: false,
+        });
+        return;
+      }
+
+      const hasQueueEntryCallback = [...visitFormCallbacks.values()].some(
+        (callbacks) => callbacks.kind === 'queue-entry',
+      );
+      if (queueEntryIsRequired && !hasQueueEntryCallback && !queueEntryPersistenceCompleted) {
+        showSnackbar({
+          title: t('queueEntryUnavailable', 'No se puede registrar la cola'),
+          subtitle: t(
+            'queueEntryUnavailableMessage',
+            'No se cargó el formulario de cola o el usuario no tiene el privilegio requerido. La consulta no fue creada.',
+          ),
+          kind: 'error',
+          isLowContrast: false,
+        });
+        return;
+      }
+
+      let recoveredVisit = persistedVisitPendingPostSubmit;
+      if (isOnline && !visitToEdit && !recoveredVisit && pendingVisitCreationPayload.current) {
+        if (!effectiveVisitPersistenceCorrelation) {
+          showSnackbar({
+            title: t('visitSaveRequiresReconciliation', 'No se pudo confirmar la consulta'),
+            subtitle: t(
+              'visitSaveOutcomeManualReview',
+              'No vuelva a enviar el formulario. Ciérrelo y verifique las consultas activas del paciente antes de continuar.',
+            ),
+            kind: 'error',
+            isLowContrast: false,
+          });
+          return;
+        }
+
+        try {
+          recoveredVisit = await reconcileVisitCreation(
+            patientUuid,
+            pendingVisitCreationPayload.current,
+            effectiveVisitPersistenceCorrelation,
+          );
+        } catch (error) {
+          const recoveryError =
+            (error as { code?: string })?.code === VISIT_PERSISTENCE_CORRELATION_CONFLICT
+              ? error
+              : Object.assign(new Error('The visit creation result could not be reconciled.'), {
+                  code: VISIT_SAVE_OUTCOME_UNKNOWN,
+                  cause: error,
+                });
+          showSnackbar({
+            title: t('visitSaveRequiresReconciliation', 'No se pudo confirmar la consulta'),
+            subtitle: getCompatibleUserFacingErrorMessage(
+              recoveryError,
+              t(
+                'visitSaveOutcomeUnknown',
+                'No repita la admisión. Pulse Reintentar para verificar la consulta antes de continuar.',
+              ),
+              {
+                codeMessages: {
+                  [VISIT_PERSISTENCE_CORRELATION_CONFLICT]: t(
+                    'visitPersistenceCorrelationConflict',
+                    'Se encontraron consultas inconsistentes para este registro. Regularícelas antes de continuar.',
+                  ),
+                },
+                logContext: 'Reconcile pending visit creation before retry',
+              },
+              frameworkGetUserFacingErrorMessage,
+            ),
+            kind: 'error',
+            isLowContrast: false,
+          });
+          return;
+        }
+
+        if (recoveredVisit) {
+          console.error(
+            'Visit creation returned an error but the correlated server state confirms success.',
+            pendingVisitCreationError.current,
+          );
+          pendingVisitCreationPayload.current = null;
+          pendingVisitCreationError.current = null;
+          setVisitCreationRequiresReconciliation(false);
+          setIsVisitSaved(true);
+          setPersistedVisitPendingPostSubmit(recoveredVisit);
+        } else {
+          showSnackbar({
+            title: t('visitSaveRequiresReconciliation', 'No se pudo confirmar la consulta'),
+            subtitle: t(
+              'visitSaveOutcomeUnknown',
+              'No repita la admisión. Pulse Reintentar para verificar la consulta antes de continuar.',
+            ),
+            kind: 'error',
+            isLowContrast: false,
+          });
+          return;
+        }
+      }
+
+      if (onBeforeVisitSave && !(await onBeforeVisitSave(recoveredVisit ?? visitToEdit))) {
+        return;
+      }
+
+      for (const [extensionId, callbacks] of visitFormCallbacks) {
+        const actionId = `extension:${extensionId}`;
+        if (
+          !completedPostSubmitActions.current.has(actionId) &&
+          callbacks.onBeforeVisitSave &&
+          !(await callbacks.onBeforeVisitSave())
+        ) {
+          return;
+        }
       }
 
       const {
@@ -578,24 +837,35 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       } = data;
 
       const [hours, minutes] = convertTime12to24(visitStartTime, visitStartTimeFormat);
-      const currentSeconds = new Date().getSeconds();
+      const submissionDatetime = new Date();
+      const currentSeconds = submissionDatetime.getSeconds();
+      const startDatetime = isQueueRegistration
+        ? submissionDatetime
+        : new Date(
+            dayjs(visitStartDate).year(),
+            dayjs(visitStartDate).month(),
+            dayjs(visitStartDate).date(),
+            hours,
+            minutes,
+            currentSeconds,
+          );
       const payload: NewVisitPayload = {
         patient: patientUuid,
-        startDatetime: toDateObjectStrict(
-          toOmrsIsoString(
-            new Date(
-              dayjs(visitStartDate).year(),
-              dayjs(visitStartDate).month(),
-              dayjs(visitStartDate).date(),
-              hours,
-              minutes,
-              currentSeconds,
-            ),
-          ),
-        ),
+        startDatetime: toDateObjectStrict(toOmrsIsoString(startDatetime)),
         visitType: visitType,
         location: visitLocation?.uuid,
+        attributes: additionalVisitAttributes?.length ? [...additionalVisitAttributes] : undefined,
       };
+
+      if (
+        effectiveVisitPersistenceCorrelation &&
+        !visitPersistenceCorrelation &&
+        !payload.attributes?.some(
+          (attribute) => attribute.attributeType === effectiveVisitPersistenceCorrelation.attributeType,
+        )
+      ) {
+        payload.attributes = [...(payload.attributes ?? []), effectiveVisitPersistenceCorrelation];
+      }
 
       if (visitToEdit?.uuid) {
         // The request throws 400 (Bad request) error when the patient is passed in the update payload
@@ -622,95 +892,187 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       const abortController = new AbortController();
 
       if (config.showExtraVisitAttributesSlot) {
-        const { handleCreateExtraVisitInfo, attributes: extraAttributes } = extraVisitInfo ?? {};
+        const { attributes: extraAttributes } = extraVisitInfo ?? {};
         if (Array.isArray(extraAttributes) && extraAttributes.length > 0) {
           if (!payload.attributes) {
             payload.attributes = [];
           }
           payload.attributes.push(...extraAttributes);
         }
-        handleCreateExtraVisitInfo?.();
       }
 
       if (isOnline) {
-        const visitRequest = visitToEdit?.uuid
-          ? updateVisit(visitToEdit?.uuid, payload, abortController)
-          : saveVisit(payload, abortController);
+        let visit: Visit | null = recoveredVisit;
 
-        visitRequest
-          .then((response) => {
+        try {
+          if (!visit) {
+            if (!completedPostSubmitActions.current.has('extra-visit-info')) {
+              await extraVisitInfo?.handleCreateExtraVisitInfo?.();
+              completedPostSubmitActions.current.add('extra-visit-info');
+            }
+
+            if (visitToEdit?.uuid) {
+              const response = await updateVisit(visitToEdit.uuid, payload, abortController);
+              visit = response.data;
+            } else {
+              pendingVisitCreationPayload.current = payload;
+              setVisitCreationRequiresReconciliation(true);
+
+              try {
+                const response = await saveVisit(payload, abortController);
+                visit = response.data;
+                pendingVisitCreationPayload.current = null;
+                pendingVisitCreationError.current = null;
+                setVisitCreationRequiresReconciliation(false);
+              } catch (saveError) {
+                if (isDefinitiveClientRejection(saveError)) {
+                  pendingVisitCreationPayload.current = null;
+                  pendingVisitCreationError.current = null;
+                  setVisitCreationRequiresReconciliation(false);
+                  throw saveError;
+                }
+
+                if (!effectiveVisitPersistenceCorrelation) {
+                  pendingVisitCreationError.current = saveError;
+                  throw Object.assign(new Error('The visit creation result is unknown.'), {
+                    code: VISIT_SAVE_OUTCOME_UNKNOWN,
+                    cause: saveError,
+                  });
+                }
+
+                pendingVisitCreationError.current = saveError;
+                try {
+                  visit = await reconcileVisitCreation(patientUuid, payload, effectiveVisitPersistenceCorrelation);
+                } catch (reconciliationError) {
+                  console.error('Could not reconcile visit creation after a write failure.', reconciliationError);
+                  if ((reconciliationError as { code?: string })?.code === VISIT_PERSISTENCE_CORRELATION_CONFLICT) {
+                    throw reconciliationError;
+                  }
+                  throw Object.assign(new Error('The visit creation result could not be reconciled.'), {
+                    code: VISIT_SAVE_OUTCOME_UNKNOWN,
+                    cause: reconciliationError,
+                  });
+                }
+
+                if (!visit) {
+                  throw Object.assign(new Error('The visit creation result is unknown.'), {
+                    code: VISIT_SAVE_OUTCOME_UNKNOWN,
+                    cause: saveError,
+                  });
+                }
+
+                console.error(
+                  'Visit creation returned an error but the correlated server state confirms success.',
+                  saveError,
+                );
+                pendingVisitCreationPayload.current = null;
+                pendingVisitCreationError.current = null;
+                setVisitCreationRequiresReconciliation(false);
+              }
+            }
+
+            setIsVisitSaved(true);
+            setPersistedVisitPendingPostSubmit(visit);
+          }
+
+          if (!completedPostSubmitActions.current.has('visit-attributes')) {
+            const visitAttributesResponses = await handleVisitAttributes(visitAttributes, visit.uuid);
+            completedPostSubmitActions.current.add('visit-attributes');
+            if (visitAttributesResponses.length > 0) {
+              showSnackbar({
+                isLowContrast: true,
+                kind: 'success',
+                title: t(
+                  'additionalVisitInformationUpdatedSuccessfully',
+                  'Additional visit information updated successfully',
+                ),
+              });
+            }
+          }
+
+          for (const [extensionId, callbacks] of visitFormCallbacks) {
+            const actionId = `extension:${extensionId}`;
+            if (!completedPostSubmitActions.current.has(actionId)) {
+              await callbacks.onVisitCreatedOrUpdated(visit);
+              completedPostSubmitActions.current.add(actionId);
+              if (callbacks.kind === 'queue-entry') {
+                setQueueEntryPersistenceCompleted(true);
+              }
+            }
+          }
+
+          if (!visitToEdit && onVisitStarted && !completedPostSubmitActions.current.has('visit-started')) {
+            await onVisitStarted(visit);
+            completedPostSubmitActions.current.add('visit-started');
+          }
+
+          if (!isQueueRegistration) {
             showSnackbar({
               isLowContrast: true,
               kind: 'success',
               subtitle: !visitToEdit
                 ? t('visitStartedSuccessfully', '{{visit}} started successfully', {
-                    visit: response?.data?.visitType?.display ?? t('visit', 'Visit'),
+                    visit: visit.visitType?.display ?? t('visit', 'Visit'),
                   })
                 : t('visitDetailsUpdatedSuccessfully', '{{visit}} updated successfully', {
-                    visit: response?.data?.visitType?.display ?? t('pastVisit', 'Past visit'),
+                    visit: visit.visitType?.display ?? t('pastVisit', 'Past visit'),
                   }),
               title: !visitToEdit
                 ? t('visitStarted', 'Visit started')
                 : t('visitDetailsUpdated', 'Visit details updated'),
             });
-            return response;
-          })
-          .catch((error) => {
-            showSnackbar({
-              title: !visitToEdit
-                ? t('startVisitError', 'Error starting visit')
-                : t('errorUpdatingVisitDetails', 'Error updating visit details'),
-              kind: 'error',
-              isLowContrast: false,
-              subtitle: error?.message,
-            });
-            throw error; // short-circuit promise chain
-          })
-          .then((response) => {
-            // now that visit is created / updated, we run post-submit actions
-            // to update visit attributes or any other OnVisitCreatedOrUpdated actions
-            const visit = response.data;
-            setIsVisitSaved(true);
+          }
 
-            // handleVisitAttributes already has code to show error snackbar when attribute fails to update
-            // no need for catch block here
-            const visitAttributesRequest = handleVisitAttributes(visitAttributes, response.data.uuid).then(
-              (visitAttributesResponses) => {
-                if (visitAttributesResponses.length > 0) {
-                  showSnackbar({
-                    isLowContrast: true,
-                    kind: 'success',
-                    title: t(
-                      'additionalVisitInformationUpdatedSuccessfully',
-                      'Additional visit information updated successfully',
-                    ),
-                  });
-                }
+          setPersistedVisitPendingPostSubmit(null);
+          setVisitCreationRequiresReconciliation(false);
+          setQueueEntryPersistenceCompleted(false);
+          completedPostSubmitActions.current.clear();
+          closeCurrentWorkspace({ ignoreChanges: true });
+        } catch (error) {
+          const visitWasPersisted = Boolean(visit);
+          showSnackbar({
+            title: visitWasPersisted
+              ? t('visitStartedWithPendingActions', 'Consulta iniciada con acciones pendientes')
+              : !visitToEdit
+                ? t('startVisitError', 'No se pudo iniciar la consulta')
+                : t('errorUpdatingVisitDetails', 'No se pudieron actualizar los datos de la consulta'),
+            kind: 'error',
+            isLowContrast: false,
+            subtitle: getCompatibleUserFacingErrorMessage(
+              error,
+              visitWasPersisted
+                ? t(
+                    'visitPostSubmitActionFailed',
+                    'La consulta ya fue guardada. Pulse Reintentar para completar el registro; no inicie otra consulta.',
+                  )
+                : t('visitSaveFailed', 'No se pudo guardar la consulta. Intente nuevamente.'),
+              {
+                codeMessages: {
+                  [VISIT_SAVE_OUTCOME_UNKNOWN]: t(
+                    effectiveVisitPersistenceCorrelation ? 'visitSaveOutcomeUnknown' : 'visitSaveOutcomeManualReview',
+                    effectiveVisitPersistenceCorrelation
+                      ? 'No repita la admisión. Pulse Reintentar para verificar la consulta antes de continuar.'
+                      : 'No vuelva a enviar el formulario. Ciérrelo y verifique las consultas activas del paciente antes de continuar.',
+                  ),
+                  [VISIT_PERSISTENCE_CORRELATION_CONFLICT]: t(
+                    'visitPersistenceCorrelationConflict',
+                    'Se encontraron consultas inconsistentes para este registro. Regularícelas antes de continuar.',
+                  ),
+                },
+                logContext: visitWasPersisted ? 'Complete visit post-submit actions' : 'Save visit',
               },
-            );
-
-            const onVisitCreatedOrUpdatedRequests = [...visitFormCallbacks.values()].map((callbacks) =>
-              callbacks.onVisitCreatedOrUpdated(visit),
-            );
-            const onVisitStartedRequest =
-              !visitToEdit && onVisitStarted ? Promise.resolve(onVisitStarted(visit)) : null;
-
-            return Promise.all(
-              [visitAttributesRequest, ...onVisitCreatedOrUpdatedRequests, onVisitStartedRequest].filter(Boolean),
-            );
-          })
-          .then(() => {
-            closeCurrentWorkspace({ ignoreChanges: true });
-          })
-          .catch(() => {
-            // do nothing, this catches any reject promises used for short-circuiting
-          })
-          .finally(() => {
-            mutateCurrentVisit();
-            invalidateUseVisits(patientUuid);
-            mutateInfiniteVisits();
+              frameworkGetUserFacingErrorMessage,
+            ),
           });
+        } finally {
+          mutateCurrentVisit();
+          invalidateUseVisits(patientUuid);
+          mutateInfiniteVisits();
+        }
+
+        return;
       } else {
+        extraVisitInfo?.handleCreateExtraVisitInfo?.();
         createOfflineVisitForPatient(
           patientUuid,
           visitLocation.uuid,
@@ -732,10 +1094,15 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           },
           (error: Error) => {
             showSnackbar({
-              title: t('startVisitError', 'Error starting visit'),
+              title: t('startVisitError', 'No se pudo iniciar la consulta'),
               kind: 'error',
               isLowContrast: false,
-              subtitle: error?.message,
+              subtitle: getCompatibleUserFacingErrorMessage(
+                error,
+                t('offlineVisitSaveFailed', 'No se pudo guardar la consulta sin conexión. Intente nuevamente.'),
+                { logContext: 'Save offline visit' },
+                frameworkGetUserFacingErrorMessage,
+              ),
             });
           },
         );
@@ -745,203 +1112,262 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     },
     [
       closeCurrentWorkspace,
+      additionalVisitAttributes,
       config.offlineVisitTypeUuid,
       config.showExtraVisitAttributesSlot,
       displayVisitStopDateTimeFields,
       extraVisitInfo,
       handleVisitAttributes,
+      effectiveVisitPersistenceCorrelation,
       isOnline,
+      isQueueRegistration,
       mutateCurrentVisit,
       mutateInfiniteVisits,
       onVisitStarted,
+      onBeforeVisitSave,
+      openedFrom,
+      persistedVisitPendingPostSubmit,
+      queueEntryPersistenceCompleted,
       visitFormCallbacks,
+      visitPersistenceCorrelation,
       patientUuid,
       t,
       validateVisitStartStopDatetime,
       visitToEdit,
+      companionRequired,
+      companions.length,
+      isLoadingCompanions,
     ],
   );
 
   const content = (
     <FormProvider {...methods}>
       <Form className={styles.form} onSubmit={handleSubmit(onSubmit)} data-openmrs-role="Start Visit Form">
-        {showPatientHeader && patient && (
-          <ExtensionSlot
-            name="patient-header-slot"
-            state={{
-              patient,
-              patientUuid: patientUuid,
-              hideActionsOverflow: true,
-            }}
-          />
-        )}
-        {errorFetchingResources && (
+        {persistedVisitPendingPostSubmit ? (
           <InlineNotification
-            kind={errorFetchingResources?.blockSavingForm ? 'error' : 'warning'}
+            hideCloseButton
+            kind="warning"
             lowContrast
-            className={styles.inlineNotification}
-            title={t('partOfFormDidntLoad', 'Part of the form did not load')}
-            subtitle={t('refreshToTryAgain', 'Please refresh to try again')}
+            title={t('visitSavedPendingCompletion', 'La consulta ya fue guardada')}
+            subtitle={t(
+              'visitSavedPendingCompletionMessage',
+              'Los datos guardados permanecen bloqueados mientras se reintentan las acciones pendientes.',
+            )}
           />
-        )}
-        <div>
-          {isTablet && (
-            <Row className={styles.headerGridRow}>
-              <ExtensionSlot
-                name="visit-form-header-slot"
-                className={styles.dataGridRow}
-                state={visitHeaderSlotState}
-              />
-            </Row>
-          )}
-          <Stack gap={1} className={styles.container}>
-            <VisitDateTimeField
-              dateFieldName="visitStartDate"
-              maxDate={maxVisitStartDatetime}
-              minDate={patientBirthDate?.valueOf()}
-              timeFieldName="visitStartTime"
-              timeFormatFieldName="visitStartTimeFormat"
-              visitDatetimeLabel={t('visitStartDatetime', 'Visit start date and time')}
+        ) : visitCreationRequiresReconciliation ? (
+          <InlineNotification
+            hideCloseButton
+            kind="warning"
+            lowContrast
+            title={t('visitSaveRequiresReconciliation', 'No se pudo confirmar la consulta')}
+            subtitle={t(
+              effectiveVisitPersistenceCorrelation ? 'visitSaveOutcomeUnknown' : 'visitSaveOutcomeManualReview',
+              effectiveVisitPersistenceCorrelation
+                ? 'No repita la admisión. Pulse Reintentar para verificar la consulta antes de continuar.'
+                : 'No vuelva a enviar el formulario. Ciérrelo y verifique las consultas activas del paciente antes de continuar.',
+            )}
+          />
+        ) : null}
+        <fieldset
+          className={styles.persistedVisitFields}
+          disabled={Boolean(persistedVisitPendingPostSubmit || visitCreationRequiresReconciliation)}
+        >
+          {showPatientHeader && patient && (
+            <ExtensionSlot
+              name="patient-header-slot"
+              state={{
+                patient,
+                patientUuid: patientUuid,
+                hideActionsOverflow: true,
+              }}
             />
-
-            {displayVisitStopDateTimeFields && (
-              <VisitDateTimeField
-                dateFieldName="visitStopDate"
-                minDate={resolvedMinVisitStopDatetime}
-                timeFieldName="visitStopTime"
-                timeFormatFieldName="visitStopTimeFormat"
-                visitDatetimeLabel={t('visitStopDatetime', 'Visit stop date and time')}
-              />
+          )}
+          {errorFetchingResources && (
+            <InlineNotification
+              kind={errorFetchingResources?.blockSavingForm ? 'error' : 'warning'}
+              lowContrast
+              className={styles.inlineNotification}
+              title={t('partOfFormDidntLoad', 'Part of the form did not load')}
+              subtitle={t('refreshToTryAgain', 'Please refresh to try again')}
+            />
+          )}
+          <div>
+            {isTablet && (
+              <Row className={styles.headerGridRow}>
+                <ExtensionSlot
+                  name="visit-form-header-slot"
+                  className={styles.dataGridRow}
+                  state={visitHeaderSlotState}
+                />
+              </Row>
             )}
+            <Stack gap={1} className={styles.container}>
+              {!isQueueRegistration ? (
+                <VisitDateTimeField
+                  dateFieldName="visitStartDate"
+                  maxDate={maxVisitStartDatetime}
+                  minDate={patientBirthDate?.valueOf()}
+                  timeFieldName="visitStartTime"
+                  timeFormatFieldName="visitStartTimeFormat"
+                  visitDatetimeLabel={t('visitStartDatetime', 'Visit start date and time')}
+                />
+              ) : null}
 
-            {/* Upcoming appointments. This get shown when config.showUpcomingAppointments is true. */}
-            {config.showUpcomingAppointments && (
-              <section>
-                <div className={styles.sectionTitle} />
-                <div className={styles.sectionField}>
-                  <VisitFormExtensionSlot
-                    name="visit-form-top-slot"
-                    patientUuid={patientUuid}
-                    currentServiceQueueUuid={currentServiceQueueUuid}
-                    onQueueEntryAdded={onQueueEntryAdded}
-                    visitFormOpenedFrom={openedFrom}
-                    setVisitFormCallbacks={setVisitFormCallbacks}
-                  />
-                </div>
-              </section>
-            )}
+              {displayVisitStopDateTimeFields && (
+                <VisitDateTimeField
+                  dateFieldName="visitStopDate"
+                  minDate={resolvedMinVisitStopDatetime}
+                  timeFieldName="visitStopTime"
+                  timeFormatFieldName="visitStopTimeFormat"
+                  visitDatetimeLabel={t('visitStopDatetime', 'Visit stop date and time')}
+                />
+              )}
 
-            {/* This field lets the user select a location for the visit. The location is required for the visit to be saved. Defaults to the active session location */}
-            <LocationSelector control={control} />
+              {/* Upcoming appointments. This get shown when config.showUpcomingAppointments is true. */}
+              {config.showUpcomingAppointments && (
+                <section>
+                  <div className={styles.sectionTitle} />
+                  <div className={styles.sectionField}>
+                    <VisitFormExtensionSlot
+                      name="visit-form-top-slot"
+                      patientUuid={patientUuid}
+                      currentServiceQueueUuid={currentServiceQueueUuid}
+                      currentQueueLocationUuid={currentQueueLocationUuid}
+                      requestedServiceName={requestedServiceName}
+                      onQueueEntryAdded={onQueueEntryAdded}
+                      visitFormOpenedFrom={openedFrom}
+                      setVisitFormCallbacks={setVisitFormCallbacks}
+                    />
+                  </div>
+                </section>
+              )}
 
-            {/* Lists the patient's companions (Acompañante relationships). */}
-            <CompanionList patientUuid={patientUuid} />
+              {/* This field lets the user select a location for the visit. The location is required for the visit to be saved. Defaults to the active session location */}
+              <LocationSelector control={control} lockedLocation={requiredVisitLocation} />
 
-            {/* Lists available program types. This feature is dependent on the `showRecommendedVisitTypeTab` config being set
+              {/* Lists the patient's companions (Acompañante relationships). */}
+              <CompanionList patientUuid={patientUuid} required={companionRequired} />
+
+              {/* Lists available program types. This feature is dependent on the `showRecommendedVisitTypeTab` config being set
           to true. */}
-            {config.showRecommendedVisitTypeTab && (
-              <section>
-                <h1 className={styles.sectionTitle}>{t('program', 'Program')}</h1>
-                <FormGroup legendText={t('selectProgramType', 'Select program type')} className={styles.sectionField}>
-                  <Controller
-                    name="programType"
-                    control={control}
-                    render={({ field: { onChange } }) => (
-                      <RadioButtonGroup
-                        orientation="vertical"
-                        onChange={(uuid: string) =>
-                          onChange(activePatientEnrollment.find(({ program }) => program.uuid === uuid)?.uuid)
-                        }
-                        name="program-type-radio-group"
-                      >
-                        {activePatientEnrollment.map(({ uuid, display, program }) => (
-                          <RadioButton
-                            key={uuid}
-                            className={styles.radioButton}
-                            id={uuid}
-                            labelText={display}
-                            value={program.uuid}
-                          />
-                        ))}
-                      </RadioButtonGroup>
-                    )}
-                  />
-                </FormGroup>
-              </section>
-            )}
-
-            {/* Lists available visit types if no atFacilityVisitType enabled. The content switcher only gets shown when recommended visit types are enabled */}
-            {!emrConfiguration?.atFacilityVisitType && (
-              <section>
-                <h1 className={styles.sectionTitle}>{t('visitType_title', 'Visit Type')}</h1>
-                <div className={styles.sectionField}>
-                  {config.showRecommendedVisitTypeTab ? (
-                    <>
-                      <ContentSwitcher
-                        selectedIndex={contentSwitcherIndex}
-                        onChange={({ index }) => setContentSwitcherIndex(index)}
-                      >
-                        <Switch name="recommended" text={t('recommended', 'Recommended')} />
-                        <Switch name="all" text={t('all', 'All')} />
-                      </ContentSwitcher>
-                      {contentSwitcherIndex === 0 && !isLoading && (
-                        <MemoizedRecommendedVisitType
-                          patientUuid={patientUuid}
-                          patientProgramEnrollment={(() => {
-                            return activePatientEnrollment?.find(
-                              ({ program }) => program.uuid === getValues('programType'),
-                            );
-                          })()}
-                          locationUuid={getValues('visitLocation')?.uuid}
-                        />
+              {config.showRecommendedVisitTypeTab && (
+                <section>
+                  <h1 className={styles.sectionTitle}>{t('program', 'Program')}</h1>
+                  <FormGroup legendText={t('selectProgramType', 'Select program type')} className={styles.sectionField}>
+                    <Controller
+                      name="programType"
+                      control={control}
+                      render={({ field: { onChange } }) => (
+                        <RadioButtonGroup
+                          orientation="vertical"
+                          onChange={(uuid: string) =>
+                            onChange(activePatientEnrollment.find(({ program }) => program.uuid === uuid)?.uuid)
+                          }
+                          name="program-type-radio-group"
+                        >
+                          {activePatientEnrollment.map(({ uuid, display, program }) => (
+                            <RadioButton
+                              key={uuid}
+                              className={styles.radioButton}
+                              id={uuid}
+                              labelText={display}
+                              value={program.uuid}
+                            />
+                          ))}
+                        </RadioButtonGroup>
                       )}
-                      {contentSwitcherIndex === 1 && <BaseVisitType visitTypes={allVisitTypes} />}
-                    </>
-                  ) : (
-                    // Defaults to showing all possible visit types if recommended visits are not enabled
-                    <BaseVisitType visitTypes={allVisitTypes} />
+                    />
+                  </FormGroup>
+                </section>
+              )}
+
+              {/* Lists available visit types if no atFacilityVisitType enabled. The content switcher only gets shown when recommended visit types are enabled */}
+              {requiredVisitTypeUuid ? (
+                <section>
+                  <h1 className={styles.sectionTitle}>{`${t('visitType_title', 'Tipo de consulta')} *`}</h1>
+                  <div className={styles.sectionField}>
+                    <p className={styles.bodyShort02}>
+                      {allVisitTypes.find((visitType) => visitType.uuid === requiredVisitTypeUuid)?.display ??
+                        t('configuredAppointmentVisitType', 'Tipo asignado por el servicio de la cita')}
+                    </p>
+                  </div>
+                </section>
+              ) : !emrConfiguration?.atFacilityVisitType ? (
+                <section>
+                  <h1 className={styles.sectionTitle}>{`${t('visitType_title', 'Tipo de consulta')} *`}</h1>
+                  <div className={styles.sectionField}>
+                    {config.showRecommendedVisitTypeTab ? (
+                      <>
+                        <ContentSwitcher
+                          selectedIndex={contentSwitcherIndex}
+                          onChange={({ index }) => setContentSwitcherIndex(index)}
+                        >
+                          <Switch name="recommended" text={t('recommended', 'Recommended')} />
+                          <Switch name="all" text={t('all', 'All')} />
+                        </ContentSwitcher>
+                        {contentSwitcherIndex === 0 && !isLoading && (
+                          <MemoizedRecommendedVisitType
+                            patientUuid={patientUuid}
+                            patientProgramEnrollment={(() => {
+                              return activePatientEnrollment?.find(
+                                ({ program }) => program.uuid === getValues('programType'),
+                              );
+                            })()}
+                            locationUuid={getValues('visitLocation')?.uuid}
+                          />
+                        )}
+                        {contentSwitcherIndex === 1 && <BaseVisitType visitTypes={allVisitTypes} />}
+                      </>
+                    ) : (
+                      // Defaults to showing all possible visit types if recommended visits are not enabled
+                      <BaseVisitType visitTypes={allVisitTypes} />
+                    )}
+                  </div>
+
+                  {errors?.visitType && (
+                    <section>
+                      <div className={styles.sectionTitle} />
+                      <div className={styles.sectionField}>
+                        <InlineNotification
+                          role="alert"
+                          style={{ margin: '0', minWidth: '100%' }}
+                          kind="error"
+                          lowContrast={true}
+                          title={t('missingVisitType', 'Missing visit type')}
+                          subtitle={t('selectVisitType', 'Please select a Visit Type')}
+                        />
+                      </div>
+                    </section>
                   )}
+                </section>
+              ) : null}
+
+              {config.showExtraVisitAttributesSlot && (
+                <MemoizedExtraVisitSlot patientUuid={patientUuid} setExtraVisitInfo={setExtraVisitInfo} />
+              )}
+
+              {/* Visit type attribute fields. These get shown when visit attribute types are configured */}
+              <section>
+                <h1 className={styles.sectionTitle}>{isTablet && t('visitAttributes', 'Visit attributes')}</h1>
+                <div className={styles.sectionField}>
+                  <VisitAttributeTypeFields setErrorFetchingResources={setErrorFetchingResources} />
                 </div>
-
-                {errors?.visitType && (
-                  <section>
-                    <div className={styles.sectionTitle} />
-                    <div className={styles.sectionField}>
-                      <InlineNotification
-                        role="alert"
-                        style={{ margin: '0', minWidth: '100%' }}
-                        kind="error"
-                        lowContrast={true}
-                        title={t('missingVisitType', 'Missing visit type')}
-                        subtitle={t('selectVisitType', 'Please select a Visit Type')}
-                      />
-                    </div>
-                  </section>
-                )}
               </section>
-            )}
-
-            {config.showExtraVisitAttributesSlot && (
-              <MemoizedExtraVisitSlot patientUuid={patientUuid} setExtraVisitInfo={setExtraVisitInfo} />
-            )}
-
-            {/* Visit type attribute fields. These get shown when visit attribute types are configured */}
-            <section>
-              <h1 className={styles.sectionTitle}>{isTablet && t('visitAttributes', 'Visit attributes')}</h1>
-              <div className={styles.sectionField}>
-                <VisitAttributeTypeFields setErrorFetchingResources={setErrorFetchingResources} />
-              </div>
-            </section>
-
-            {/* Queue location and queue fields. These get shown when config.showServiceQueueFields is true,
-                or when the form is opened from the queues app */}
-            <section>
+            </Stack>
+          </div>
+        </fieldset>
+        {/* Preserve the queue selection used by the first persistence attempt once the visit exists. */}
+        <fieldset className={styles.persistedVisitFields} disabled={Boolean(persistedVisitPendingPostSubmit)}>
+          <Stack gap={1} className={styles.container}>
+            <section className={styles.queueSection}>
               <div className={styles.sectionTitle} />
               <div className={styles.sectionField}>
                 <VisitFormExtensionSlot
                   name="visit-form-bottom-slot"
                   patientUuid={patientUuid}
                   currentServiceQueueUuid={currentServiceQueueUuid}
+                  currentQueueLocationUuid={currentQueueLocationUuid}
+                  requestedServiceName={requestedServiceName}
                   onQueueEntryAdded={onQueueEntryAdded}
                   visitFormOpenedFrom={openedFrom}
                   setVisitFormCallbacks={setVisitFormCallbacks}
@@ -949,7 +1375,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
               </div>
             </section>
           </Stack>
-        </div>
+        </fieldset>
         <ButtonSet
           className={classNames(styles.buttonSet, {
             [styles.tablet]: isTablet,
@@ -961,7 +1387,11 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           </Button>
           <Button
             className={styles.button}
-            disabled={isSubmitting || errorFetchingResources?.blockSavingForm}
+            disabled={
+              isSubmitting ||
+              errorFetchingResources?.blockSavingForm ||
+              (visitCreationRequiresReconciliation && !effectiveVisitPersistenceCorrelation)
+            }
             kind="primary"
             type="submit"
           >
@@ -969,13 +1399,25 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
               <InlineLoading
                 className={styles.spinner}
                 description={
-                  visitToEdit
-                    ? t('updatingVisit', 'Updating visit') + '...'
-                    : t('startingVisit', 'Starting visit') + '...'
+                  persistedVisitPendingPostSubmit || visitCreationRequiresReconciliation
+                    ? t('retryingVisitCompletion', 'Reintentando registro') + '...'
+                    : visitToEdit
+                      ? t('updatingVisit', 'Updating visit') + '...'
+                      : isQueueRegistration
+                        ? t('addingPatientToQueue', 'Adding patient to queue') + '...'
+                        : t('startingVisit', 'Starting visit') + '...'
                 }
               />
             ) : (
-              <span>{visitToEdit ? t('updateVisit', 'Update visit') : t('startVisit', 'Start visit')}</span>
+              <span>
+                {persistedVisitPendingPostSubmit || visitCreationRequiresReconciliation
+                  ? t('retryVisitCompletion', 'Reintentar registro')
+                  : visitToEdit
+                    ? t('updateVisit', 'Update visit')
+                    : isQueueRegistration
+                      ? t('addPatientToQueue', 'Add patient to queue')
+                      : t('startVisit', 'Start visit')}
+              </span>
             )}
           </Button>
         </ButtonSet>
@@ -990,7 +1432,9 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           workspaceTitle ??
           (visitToEdit ? t('editVisitDetails', 'Edit visit details') : t('startVisitWorkspaceTitle', 'Start visit'))
         }
-        hasUnsavedChanges={isDirty && !isVisitSaved}
+        hasUnsavedChanges={
+          (isDirty && !isVisitSaved) || Boolean(persistedVisitPendingPostSubmit) || visitCreationRequiresReconciliation
+        }
       >
         {content}
       </Workspace2>
@@ -1004,6 +1448,8 @@ interface VisitFormExtensionSlotProps {
   name: string;
   patientUuid: string;
   currentServiceQueueUuid?: string;
+  currentQueueLocationUuid?: string;
+  requestedServiceName?: string;
   onQueueEntryAdded?: () => void | Promise<void>;
   visitFormOpenedFrom: string;
   setVisitFormCallbacks: React.Dispatch<React.SetStateAction<Map<string, VisitFormCallbacks>>>;
@@ -1024,11 +1470,22 @@ type VisitFormExtensionState = {
   visitFormOpenedFrom: string;
   patientChartConfig: ChartConfig;
   currentServiceQueueUuid?: string;
+  currentQueueLocationUuid?: string;
+  requestedServiceName?: string;
   onQueueEntryAdded?: () => void | Promise<void>;
 };
 
 const VisitFormExtensionSlot: React.FC<VisitFormExtensionSlotProps> = React.memo(
-  ({ name, patientUuid, currentServiceQueueUuid, onQueueEntryAdded, visitFormOpenedFrom, setVisitFormCallbacks }) => {
+  ({
+    name,
+    patientUuid,
+    currentServiceQueueUuid,
+    currentQueueLocationUuid,
+    requestedServiceName,
+    onQueueEntryAdded,
+    visitFormOpenedFrom,
+    setVisitFormCallbacks,
+  }) => {
     const config = useConfig<ChartConfig>();
 
     return (
@@ -1044,6 +1501,8 @@ const VisitFormExtensionSlot: React.FC<VisitFormExtensionSlotProps> = React.memo
             visitFormOpenedFrom,
             patientChartConfig: config,
             currentServiceQueueUuid,
+            currentQueueLocationUuid,
+            requestedServiceName,
             onQueueEntryAdded,
           };
           return <Extension state={state} />;
@@ -1093,11 +1552,22 @@ const MemoizedExtraVisitSlot = React.memo(
 const StartVisitFormGuard: React.FC<StartVisitFormProps> = (props) => {
   const { user } = useSession();
 
-  if (!canStartVisit(user)) {
+  const visitToEdit = isWorkspace2Props(props) ? props.workspaceProps.visitToEdit : props.visitToEdit;
+  const hasAccess = visitToEdit ? canEditVisit(user) : canStartVisit(user);
+
+  if (!hasAccess) {
     return (
       <UnauthorizedState
-        privilege={['app:adt', 'app:clinical.chart.visits.edit']}
-        description="Necesita permisos de admisión o edición de visitas para iniciar una consulta."
+        privilege={
+          visitToEdit
+            ? ['Edit Visits', 'app:home.admision', 'app:hoja.clinica.visitas.editar']
+            : ['Add Visits', 'app:home.admision', 'app:hoja.clinica.visitas.editar']
+        }
+        description={
+          visitToEdit
+            ? 'Necesita el privilegio para editar visitas.'
+            : 'Necesita el privilegio para crear visitas o permisos de admisión.'
+        }
       />
     );
   }

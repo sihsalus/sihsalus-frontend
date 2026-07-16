@@ -1,19 +1,69 @@
-import { openmrsFetch, restBaseUrl, useSession, type Visit } from '@openmrs/esm-framework';
-import dayjs from 'dayjs';
+import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
+
+const activeVisitsCacheKey = 'sihsalus-active-visits-with-appointment-links';
+// Stay within the OpenMRS REST absolute page-size default so this MFE does not
+// depend on a distro-specific `webservices.rest.maxResultsAbsolute` override.
+const activeVisitsPageSize = 100;
+const activeVisitRepresentation =
+  'custom:(uuid,patient:(uuid),startDatetime,stopDatetime,attributes:(value,attributeType:(uuid)))';
+
+interface ActiveAppointmentVisit {
+  uuid: string;
+  patient?: { uuid?: string };
+  startDatetime?: string;
+  stopDatetime?: string | null;
+  attributes?: Array<{
+    value?: unknown;
+    attributeType?: { uuid?: string };
+  }>;
+}
+
+export async function getAllActiveVisits() {
+  const visits: Array<ActiveAppointmentVisit> = [];
+  const seenVisitUuids = new Set<string>();
+
+  for (let startIndex = 0; ; startIndex += activeVisitsPageSize) {
+    const searchParams = new URLSearchParams({
+      includeInactive: 'false',
+      includeParentLocations: 'true',
+      limit: String(activeVisitsPageSize),
+      startIndex: String(startIndex),
+      v: activeVisitRepresentation,
+    });
+    const response = await openmrsFetch<{ results?: Array<ActiveAppointmentVisit> }>(
+      `${restBaseUrl}/visit?${searchParams.toString()}`,
+    );
+    const page = response.data?.results ?? [];
+    let addedVisits = 0;
+
+    for (const visit of page) {
+      if (visit.uuid && !seenVisitUuids.has(visit.uuid)) {
+        seenVisitUuids.add(visit.uuid);
+        visits.push(visit);
+        addedVisits += 1;
+      }
+    }
+
+    if (page.length < activeVisitsPageSize || addedVisits === 0) {
+      break;
+    }
+  }
+
+  return visits;
+}
 
 /**
  * Custom hook to fetch visits from the OpenMRS REST API.
- * This fetches all visits that started on today
+ * Fetches all active visits, including visits that started before today.
  * @returns An object containing the visits, isLoading flag, and error message.
  */
 export const useTodaysVisits = () => {
-  const session = useSession();
-  const visitsUrl = `${restBaseUrl}/visit?includeInactive=true&includeParentLocations=true&v=custom:(uuid,patient:(uuid,identifiers:(identifier,uuid),person:(age,display,gender,uuid)),visitType:(uuid,name,display),location:(uuid,name,display),startDatetime,stopDatetime)&fromStartDate=${dayjs().format(
-    'YYYY-MM-DD',
-  )}&location=${session?.sessionLocation?.uuid}`;
-  const { data, error, isLoading, mutate } = useSWR<{ data: { results: Visit[] } }>(visitsUrl, openmrsFetch);
-  const visits = data?.data?.results ?? [];
+  const { data, error, isLoading, mutate } = useSWR<Array<ActiveAppointmentVisit>>(
+    activeVisitsCacheKey,
+    getAllActiveVisits,
+  );
+  const visits = data ?? [];
 
   return { isLoading, visits, error, mutateVisit: mutate };
 };

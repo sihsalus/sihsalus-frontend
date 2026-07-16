@@ -15,10 +15,6 @@ vi.mock('../../field/field.component', () => ({
   Field: ({ name }: { name: string }) => <div data-testid={`field-${name}`}>{name}</div>,
 }));
 
-vi.mock('../copy-responsible-data/copy-responsible-data-button.component', () => ({
-  CopyResponsibleDataButton: () => <button type="button">Copy responsible data</button>,
-}));
-
 const noConsultedInsuranceAccreditationConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2054';
 
 const insuranceSectionDefinition: SectionDefinition = {
@@ -58,6 +54,9 @@ describe('InsuranceSection', () => {
     expect(screen.getByTestId('field-insuranceCode')).toBeInTheDocument();
     expect(screen.getByTestId('field-insuranceAccreditationStatus')).toBeInTheDocument();
     expect(screen.queryByTestId('field-insuranceAccreditationCheckedAt')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /copy responsible data|copiar seguro del responsable/i }),
+    ).not.toBeInTheDocument();
   });
 
   it.each([

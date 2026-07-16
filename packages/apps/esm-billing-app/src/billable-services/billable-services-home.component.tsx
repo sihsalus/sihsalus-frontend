@@ -1,4 +1,5 @@
 import { isDesktop, useLayoutType, useLeftNav, WorkspaceContainer } from '@openmrs/esm-framework';
+import { modulePrivileges, RequireModulePrivilege } from '@sihsalus/esm-rbac';
 import classNames from 'classnames';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -10,7 +11,7 @@ import CashPointConfiguration from './cash-point/cash-point-configuration.compon
 import BillableServicesDashboard from './dashboard/dashboard.component';
 import PaymentModesConfig from './payment-modes/payment-modes-config.component';
 
-const BillableServiceHome: React.FC = () => {
+const BillableServicesContent: React.FC = () => {
   const { t } = useTranslation();
   const layout = useLayoutType();
   const basePath = `${globalThis.spaBase}/billable-services`;
@@ -34,5 +35,11 @@ const BillableServiceHome: React.FC = () => {
     </BrowserRouter>
   );
 };
+
+const BillableServiceHome: React.FC = () => (
+  <RequireModulePrivilege privilege={modulePrivileges.billableServices}>
+    <BillableServicesContent />
+  </RequireModulePrivilege>
+);
 
 export default BillableServiceHome;

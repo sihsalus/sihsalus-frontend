@@ -61,11 +61,7 @@ describe('ResultsViewer', () => {
 
     const testResultsText = screen.getByRole('heading', { name: /data load error/i });
     expect(testResultsText).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /Sorry, there was a problem displaying this information. You can try to reload this page, or contact the site administrator and quote the error code above./i,
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/there was a problem displaying this information/i)).toBeInTheDocument();
   });
 
   it('should render the Tree wrapper component component', async () => {

@@ -35,7 +35,7 @@ export interface FHIRCondition {
     coding: Array<CodingData>;
   };
   id: string;
-  onsetDateTime: string;
+  onsetDateTime?: string;
   recordedDate: string;
   recorder: {
     display: string;
@@ -73,7 +73,7 @@ export type Condition = {
   clinicalStatus: string;
   conceptId: string;
   display: string;
-  onsetDateTime: string;
+  onsetDateTime?: string;
   recordedDate: string;
   id: string;
   abatementDateTime?: string;
@@ -115,7 +115,7 @@ type CreatePayload = {
       },
     ];
   };
-  onsetDateTime: string;
+  onsetDateTime?: string;
   recorder: {
     reference: string;
   };
@@ -137,10 +137,10 @@ export type FormFields = {
   clinicalStatus: string;
   conceptId: string;
   display: string;
-  abatementDateTime: string;
-  onsetDateTime: string;
+  abatementDateTime?: string | null;
+  onsetDateTime?: string | null;
   patientId: string;
-  userId: string;
+  providerUuid: string;
   antecedentType?: AntecedentTypeCode | string;
   note?: string;
 };
@@ -210,36 +210,7 @@ export async function createCondition(payload: FormFields) {
   const controller = new AbortController();
   const url = `${fhirBaseUrl}/Condition`;
 
-  const completePayload: CreatePayload = {
-    clinicalStatus: {
-      coding: [
-        {
-          system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
-          code: payload.clinicalStatus,
-        },
-      ],
-    },
-    code: {
-      coding: [
-        {
-          code: payload.conceptId,
-          display: payload.display,
-        },
-      ],
-    },
-    abatementDateTime: payload.abatementDateTime,
-    onsetDateTime: payload.onsetDateTime,
-    recorder: {
-      reference: `Practitioner/${payload.userId}`,
-    },
-    recordedDate: new Date().toISOString(),
-    resourceType: 'Condition',
-    subject: {
-      reference: `Patient/${payload.patientId}`,
-    },
-    category: buildAntecedentTypeCategory(payload.antecedentType),
-    note: buildAntecedentTypeNote(payload.antecedentType, payload.note),
-  };
+  const completePayload = buildConditionPayload(payload);
 
   const res = await openmrsFetch(url, {
     headers: {
@@ -253,11 +224,12 @@ export async function createCondition(payload: FormFields) {
   return res;
 }
 
-export async function updateCondition(conditionId, payload: FormFields) {
-  const controller = new AbortController();
-  const url = `${fhirBaseUrl}/Condition/${conditionId}`;
+function buildConditionPayload(payload: FormFields): CreatePayload {
+  if (!payload.providerUuid) {
+    throw new Error('A clinical provider is required to record an antecedent.');
+  }
 
-  const completePayload: EditPayload = {
+  return {
     clinicalStatus: {
       coding: [
         {
@@ -274,11 +246,10 @@ export async function updateCondition(conditionId, payload: FormFields) {
         },
       ],
     },
-    abatementDateTime: payload.abatementDateTime,
-    id: conditionId,
-    onsetDateTime: payload.onsetDateTime,
+    ...(payload.abatementDateTime ? { abatementDateTime: payload.abatementDateTime } : {}),
+    ...(payload.onsetDateTime ? { onsetDateTime: payload.onsetDateTime } : {}),
     recorder: {
-      reference: `Practitioner/${payload.userId}`,
+      reference: `Practitioner/${payload.providerUuid}`,
     },
     recordedDate: new Date().toISOString(),
     resourceType: 'Condition',
@@ -287,6 +258,16 @@ export async function updateCondition(conditionId, payload: FormFields) {
     },
     category: buildAntecedentTypeCategory(payload.antecedentType),
     note: buildAntecedentTypeNote(payload.antecedentType, payload.note),
+  };
+}
+
+export async function updateCondition(conditionId, payload: FormFields) {
+  const controller = new AbortController();
+  const url = `${fhirBaseUrl}/Condition/${conditionId}`;
+
+  const completePayload: EditPayload = {
+    ...buildConditionPayload(payload),
+    id: conditionId,
   };
 
   const res = await openmrsFetch(url, {

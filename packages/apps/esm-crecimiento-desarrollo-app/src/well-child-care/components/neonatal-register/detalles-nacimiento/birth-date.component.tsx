@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../../config-schema';
 import { credNeonatalEditPrivilege } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
-import { useLatestValidEncounter } from '../../../../hooks/useLatestEncounter'; // Ajusta la ruta
+import { useLatestValidEncounter } from '@openmrs/esm-patient-common-lib';
 import PatientSummaryTable from '../../../../ui/patient-summary-table/patient-summary-table.component';
 
 interface BirthDataProps {
@@ -20,7 +20,8 @@ const BirthDataTable: React.FC<BirthDataProps> = ({ patientUuid }) => {
   const headerTitle = t('birthData', 'Datos del Nacimiento');
   const { encounter, isLoading, error, mutate } = useLatestValidEncounter(
     patientUuid,
-    config.encounterTypes.antecedentesPerinatales, // Asegúrate de tener este tipo de encounter configurado
+    config.encounterTypes.antecedentesPerinatales,
+    config.formsList.birthDetails,
   );
   const { launchForm } = useCREDFormLauncher('birthDetails');
 
@@ -33,8 +34,8 @@ const BirthDataTable: React.FC<BirthDataProps> = ({ patientUuid }) => {
   }, [encounter]);
 
   const handleLaunchForm = React.useCallback(() => {
-    launchForm(encounter?.uuid || '');
-  }, [encounter?.uuid, launchForm]);
+    launchForm(encounter?.uuid || '', () => void mutate());
+  }, [encounter?.uuid, launchForm, mutate]);
 
   const dataHook = () => {
     return {

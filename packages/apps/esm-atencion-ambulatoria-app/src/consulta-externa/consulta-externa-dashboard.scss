@@ -47,20 +47,20 @@
   background-color: $ui-01;
 }
 
-.cardEmptyState {
+.emptyPage {
+  @include type.type-style("body-compact-01");
+  color: $text-02;
+  padding: layout.$spacing-07 layout.$spacing-05;
+  text-align: center;
+}
+
+.pagination {
   align-items: center;
   background-color: $ui-01;
+  border-top: 1px solid $ui-03;
   display: flex;
   justify-content: center;
-  min-height: 8rem;
-  padding: layout.$spacing-06;
-  text-align: center;
-
-  p {
-    @include type.type-style("body-compact-01");
-    color: $text-02;
-    margin: 0;
-  }
+  padding: layout.$spacing-03 layout.$spacing-05;
 }
 
 .combinedPanel {

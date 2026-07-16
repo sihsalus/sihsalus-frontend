@@ -1,5 +1,13 @@
-import { validatePlainNumberInput } from '@openmrs/esm-utils';
+import {
+  getLocalCalendarDate,
+  MAX_PATIENT_AGE_YEARS,
+  parsePatientBirthdate,
+  validatePatientBirthdate,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
 import { z } from 'zod';
+
+import { isNationalityConceptUuid } from './patient-nationality';
 
 export const communicationConditionOptions = [
   { value: 'communicates', label: 'Puede comunicarse' },
@@ -52,13 +60,36 @@ const optionalEstimatedYears = z.preprocess((value) => {
     return undefined;
   }
 
-  return validatePlainNumberInput(String(value), { integer: true, min: 0, nonNegative: true }).parsedValue ?? value;
-}, z.number().min(0, 'Edad estimada no puede ser negativa').optional());
+  return (
+    validatePlainNumberInput(String(value), {
+      integer: true,
+      max: MAX_PATIENT_AGE_YEARS,
+      min: 0,
+      nonNegative: true,
+    }).parsedValue ?? value
+  );
+}, z
+  .number()
+  .int('Edad estimada debe ser un número entero')
+  .min(0, 'Edad estimada no puede ser negativa')
+  .max(MAX_PATIENT_AGE_YEARS, `Edad estimada no puede ser mayor a ${MAX_PATIENT_AGE_YEARS}`)
+  .optional());
 
 const optionalAgeString = optionalTrimmedString.refine(
   (value) =>
-    !value || !validatePlainNumberInput(value, { integer: true, max: 130, min: 0, nonNegative: true }).isInvalid,
+    !value ||
+    !validatePlainNumberInput(value, {
+      integer: true,
+      max: MAX_PATIENT_AGE_YEARS,
+      min: 0,
+      nonNegative: true,
+    }).isInvalid,
   'Edad debe ser un número entero válido',
+);
+
+const optionalNationalityConceptUuid = optionalTrimmedString.refine(
+  (value) => !value || isNationalityConceptUuid(value),
+  'Seleccione una nacionalidad válida del catálogo',
 );
 
 export const quickRegistrationSchema = z
@@ -72,7 +103,7 @@ export const quickRegistrationSchema = z
     birthdate: optionalTrimmedString,
     identifierType: optionalTrimmedString,
     identifier: optionalTrimmedString,
-    nationality: optionalTrimmedString,
+    nationality: optionalNationalityConceptUuid,
     isUnknown: z.boolean().optional(),
     arrivalDateTime: z.string().trim().min(1, 'Fecha y hora de ingreso es requerida'),
     communicationCondition: optionalTrimmedString,
@@ -92,6 +123,27 @@ export const quickRegistrationSchema = z
     companionRelationship: optionalTrimmedString,
   })
   .superRefine((data, ctx) => {
+    if (data.birthdate) {
+      const parsedBirthdate = parsePatientBirthdate(data.birthdate);
+      const validation = parsedBirthdate
+        ? validatePatientBirthdate(parsedBirthdate, getLocalCalendarDate())
+        : 'invalid';
+      const message = {
+        invalid: 'Ingrese una fecha de nacimiento válida',
+        future: 'La fecha de nacimiento no puede estar en el futuro',
+        'too-old': `La fecha de nacimiento no puede ser de hace más de ${MAX_PATIENT_AGE_YEARS} años`,
+        valid: '',
+      }[validation];
+
+      if (message) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['birthdate'],
+          message,
+        });
+      }
+    }
+
     const isIncapacitated =
       !!data.isUnknown ||
       (!!data.communicationCondition && incapacitatingCommunicationConditions.has(data.communicationCondition));

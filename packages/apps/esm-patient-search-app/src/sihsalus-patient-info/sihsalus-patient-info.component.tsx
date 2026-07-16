@@ -8,7 +8,6 @@ interface SihsalusPatientInfoProps {
 }
 
 const dniIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440001';
-const dniValuePattern = /^\d{8}$/;
 
 function isDniIdentifier(identifier: fhir.Identifier) {
   const type = identifier.type;
@@ -21,8 +20,7 @@ function isDniIdentifier(identifier: fhir.Identifier) {
     typeText === 'dni' ||
     codingDisplay === 'dni' ||
     codingCode === 'dni' ||
-    coding?.code === dniIdentifierTypeUuid ||
-    Boolean(identifier.value && dniValuePattern.test(identifier.value))
+    coding?.code === dniIdentifierTypeUuid
   );
 }
 
@@ -76,13 +74,17 @@ function Identifier({ identifier, highlighted }: { identifier: fhir.Identifier; 
   return (
     <span className={highlighted ? styles.highlightedIdentifier : styles.plainIdentifier}>
       {label ? <span>{label}:&nbsp;</span> : null}
-      <span className={styles.identifierValue}>{identifier.value}</span>
+      {highlighted ? (
+        <strong className={styles.identifierValue}>{identifier.value}</strong>
+      ) : (
+        <span className={styles.identifierValue}>{identifier.value}</span>
+      )}
     </span>
   );
 }
 
 function PatientIdentifiers({ identifiers }: { identifiers?: fhir.Identifier[] }) {
-  const filteredIdentifiers = (identifiers?.filter((identifier) => identifier.value) ?? []).sort(
+  const filteredIdentifiers = [...(identifiers?.filter((identifier) => identifier.value) ?? [])].sort(
     (firstIdentifier, secondIdentifier) => getIdentifierOrder(firstIdentifier) - getIdentifierOrder(secondIdentifier),
   );
   const hasDniIdentifier = filteredIdentifiers.some(isDniIdentifier);
@@ -107,6 +109,7 @@ function PatientIdentifiers({ identifiers }: { identifiers?: fhir.Identifier[] }
 
 export function SihsalusPatientInfo({ patient, renderedFrom }: SihsalusPatientInfoProps) {
   const gender = getGenderDisplay(patient.gender);
+  const showBirthDate = renderedFrom !== 'patient-search';
   const extensionState = useMemo(() => ({ patientUuid: patient.id, patient, renderedFrom }), [patient, renderedFrom]);
 
   return (
@@ -125,8 +128,12 @@ export function SihsalusPatientInfo({ patient, renderedFrom }: SihsalusPatientIn
         {patient.birthDate ? (
           <>
             <span>{age(patient.birthDate)}</span>
-            <span className={styles.patientInfoSeparator}>&middot;</span>
-            <span>{formatPartialDate(patient.birthDate, { time: false })}</span>
+            {showBirthDate ? (
+              <>
+                <span className={styles.patientInfoSeparator}>&middot;</span>
+                <span>{formatPartialDate(patient.birthDate, { time: false })}</span>
+              </>
+            ) : null}
             <span className={styles.patientInfoSeparator}>&middot;</span>
           </>
         ) : null}

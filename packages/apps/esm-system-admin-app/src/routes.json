@@ -8,7 +8,8 @@
     {
       "name": "system-administration-app-menu-item",
       "slot": "app-menu-item-slot",
-      "component": "systemAdminAppMenuItem"
+      "component": "systemAdminAppMenuItem",
+      "privileges": "app:administracionSistema"
     },
     {
       "name": "system-admin-page-link",

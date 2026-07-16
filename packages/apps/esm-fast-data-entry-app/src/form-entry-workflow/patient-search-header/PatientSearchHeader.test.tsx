@@ -1,6 +1,14 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { type ConfigSchema, type Session, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
+import {
+  type ConfigSchema,
+  interpolateUrl,
+  navigate,
+  type Session,
+  showSnackbar,
+  useConfig,
+  useSession,
+} from '@openmrs/esm-framework';
 import FormWorkflowContext from '../../context/FormWorkflowContext';
 import { useHsuIdIdentifier } from '../../hooks/location-tag.resource';
 import PatientSearchHeader from './PatientSearchHeader';
@@ -39,6 +47,8 @@ vi.mock('react-router-dom', () => ({
 }));
 
 const mockShowSnackbar = showSnackbar as vi.MockedFunction<typeof showSnackbar>;
+const mockInterpolateUrl = vi.mocked(interpolateUrl);
+const mockNavigate = vi.mocked(navigate);
 const mockUseConfig = useConfig as vi.MockedFunction<typeof useConfig>;
 const mockUseSession = useSession as vi.MockedFunction<typeof useSession>;
 const mockUseHsuIdIdentifier = useHsuIdIdentifier as vi.MockedFunction<typeof useHsuIdIdentifier>;
@@ -117,5 +127,24 @@ describe('PatientSearchHeader - Enforcement Feature', () => {
       expect(mockContext.addPatient).toHaveBeenCalledWith('patient-123');
       expect(mockShowSnackbar).not.toHaveBeenCalled();
     });
+  });
+
+  it('returns to the active form after registering a new patient', () => {
+    mockUseConfig.mockReturnValue({} as ConfigSchema);
+    mockUseHsuIdIdentifier.mockReturnValue({ hsuIdentifier: undefined } as ReturnType<typeof useHsuIdIdentifier>);
+
+    render(
+      <FormWorkflowContext.Provider value={mockContext as never}>
+        <PatientSearchHeader />
+      </FormWorkflowContext.Provider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /create new patient/i }));
+
+    const afterUrl = encodeURIComponent(`\${openmrsSpaBase}/forms/form/form-123?patientUuid=\${patientUuid}`);
+    const registrationUrl = `\${openmrsSpaBase}/patient-registration?afterUrl=${afterUrl}`;
+
+    expect(mockInterpolateUrl).toHaveBeenCalledWith(registrationUrl);
+    expect(mockNavigate).toHaveBeenCalledWith({ to: registrationUrl });
   });
 });

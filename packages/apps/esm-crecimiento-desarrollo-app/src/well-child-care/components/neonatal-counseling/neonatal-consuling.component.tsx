@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../config-schema';
 import { credNeonatalEditPrivilege } from '../../../constants';
 import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
-import { useLatestValidEncounter } from '../../../hooks/useLatestEncounter'; // Ajusta la ruta
+import { useLatestValidEncounter } from '@openmrs/esm-patient-common-lib';
 import PatientSummaryTable from '../../../ui/patient-summary-table/patient-summary-table.component';
 
 interface NeonatalCounselingProps {
@@ -21,17 +21,17 @@ const NeonatalCounseling: React.FC<NeonatalCounselingProps> = ({ patientUuid }) 
   const { encounter, isLoading, error, mutate } = useLatestValidEncounter(
     patientUuid,
     config.encounterTypes.consejeriaMaterna,
+    config.formsList.breastfeedingObservation,
   );
   const { launchForm } = useCREDFormLauncher('breastfeedingObservation');
 
   // Procesar observaciones, manejando múltiples valores para checkboxes
   const obsData = React.useMemo(() => {
     if (!encounter?.obs) return {};
-    const obsMap: { [key: string]: string | string[] } = {};
+    const obsMap: { [key: string]: string | number | Array<string | number> } = {};
     encounter.obs.forEach((obs) => {
       const conceptUuid = obs.concept.uuid;
-      const value =
-        obs.value && typeof obs.value === 'object' && 'display' in obs.value ? obs.value.display : obs.value;
+      const value = typeof obs.value === 'object' ? (obs.value?.display ?? '') : obs.value;
       if (obsMap[conceptUuid]) {
         // Si ya existe, convertir a array para checkboxes
         obsMap[conceptUuid] = Array.isArray(obsMap[conceptUuid])
@@ -45,8 +45,7 @@ const NeonatalCounseling: React.FC<NeonatalCounselingProps> = ({ patientUuid }) 
   }, [encounter]);
 
   const handleLaunchForm = React.useCallback(() => {
-    launchForm(encounter?.uuid || '');
-    setTimeout(() => mutate(), 1000); // Forzar revalidación
+    launchForm(encounter?.uuid || '', () => void mutate());
   }, [encounter?.uuid, launchForm, mutate]);
 
   const dataHook = () => ({

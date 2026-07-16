@@ -1,6 +1,17 @@
+import { getUserFacingErrorMessage } from '@openmrs/esm-framework';
 import { DUPLICATE_QUEUE_ENTRY_ERROR_CODE, QUEUE_ENTRY_ALREADY_ENDED_ERROR } from '../constants';
 
-export function getErrorMessage(error: unknown): string {
+export function getUserFacingQueueErrorMessage(
+  error: unknown,
+  fallback: string,
+  logContext = 'Queue entry action',
+  invalidSubmissionMessage = 'Invalid submission',
+): string {
+  const userFacingMessage = getUserFacingErrorMessage(error, fallback, { logContext });
+  return userFacingMessage.trim().toLowerCase() === 'invalid submission' ? invalidSubmissionMessage : userFacingMessage;
+}
+
+function getTechnicalErrorMessage(error: unknown): string {
   const err = error as {
     responseBody?: {
       error?: {
@@ -28,9 +39,9 @@ export function getErrorMessage(error: unknown): string {
 // silently fall through to the generic error handler, which is an acceptable degradation.
 // See: https://github.com/openmrs/openmrs-module-queue/blob/1a82392a444d/api/src/main/java/org/openmrs/module/queue/api/impl/QueueEntryServiceImpl.java#L117
 export function isAlreadyEndedQueueEntryError(error: unknown): boolean {
-  return getErrorMessage(error).includes(QUEUE_ENTRY_ALREADY_ENDED_ERROR);
+  return getTechnicalErrorMessage(error).includes(QUEUE_ENTRY_ALREADY_ENDED_ERROR);
 }
 
 export function isDuplicateQueueEntryError(error: unknown): boolean {
-  return getErrorMessage(error).includes(DUPLICATE_QUEUE_ENTRY_ERROR_CODE);
+  return getTechnicalErrorMessage(error).includes(DUPLICATE_QUEUE_ENTRY_ERROR_CODE);
 }

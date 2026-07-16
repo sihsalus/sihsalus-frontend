@@ -1,6 +1,7 @@
 import { Button, InlineLoading, InlineNotification, Tag } from '@carbon/react';
 import { Add, Calendar } from '@carbon/react/icons';
-import { launchWorkspace2, showSnackbar, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { showSnackbar, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +9,7 @@ import type { ConfigObject } from '../../../config-schema';
 import { credCourseLifeEditPrivilege } from '../../../constants';
 import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
 import { useMutateAppointments } from '../../../ui/form/appointments-form.resource';
+import { getCREDControlsToSchedule } from '../../../utils/cred-control-intervals';
 import { translateCredControlLabel } from '../../../utils/cred-label-translations';
 import { createCREDAppointments } from '../../common/cred-appointments.resource';
 
@@ -22,27 +24,35 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
   const config = useConfig<ConfigObject>();
   const session = useSession();
   const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);
-  const { controls, nextDueControl, overdueControls, completedCount, totalCount, isLoading, error } =
-    useCREDSchedule(patientUuid);
+  const { controls, nextDueControl, completedCount, totalCount, isLoading, error } = useCREDSchedule(patientUuid);
+  const launchControlWorkspace = useLaunchWorkspaceRequiringVisit<{
+    workspaceTitle: string;
+    patientUuid: string;
+    control: typeof nextDueControl;
+    type: 'newControl';
+  }>(patientUuid, 'wellchild-control-form');
   const { mutateAppointments } = useMutateAppointments();
 
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const pendingControls = useMemo(
-    () => controls.filter((c) => c.status === 'overdue' || c.status === 'pending'),
-    [controls],
-  );
+  const controlsToSchedule = useMemo(() => getCREDControlsToSchedule(nextDueControl), [nextDueControl]);
 
   const scheduledControls = useMemo(() => controls.filter((c) => c.status === 'scheduled'), [controls]);
+  const canRegisterNextControl = Boolean(
+    nextDueControl &&
+      (nextDueControl.controlNumber === 1 || !dayjs().isBefore(dayjs(nextDueControl.targetDate), 'day')),
+  );
 
   const handleRegisterControl = useCallback(() => {
-    launchWorkspace2('wellchild-control-form', {
+    if (!canRegisterNextControl) return;
+
+    launchControlWorkspace({
       workspaceTitle: t('newCredEncounter', 'Nuevo Control Crecimiento y Desarrollo'),
       patientUuid,
       control: nextDueControl,
       type: 'newControl',
     });
-  }, [nextDueControl, patientUuid, t]);
+  }, [canRegisterNextControl, launchControlWorkspace, nextDueControl, patientUuid, t]);
 
   const handleGenerateAppointments = useCallback(async () => {
     const serviceUuid = config.credScheduling?.appointmentServiceUuid;
@@ -68,9 +78,6 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
       return;
     }
 
-    const lookahead = config.credScheduling?.lookaheadCount ?? 3;
-    const controlsToSchedule = pendingControls.slice(0, lookahead);
-
     if (controlsToSchedule.length === 0) {
       showSnackbar({
         title: t('noControlsToSchedule', 'Sin controles pendientes'),
@@ -92,14 +99,10 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
 
       if (result.created.length > 0) {
         showSnackbar({
-          title: t('appointmentsCreated', 'Citas creadas'),
-          subtitle: t(
-            'appointmentsCreatedDetail',
-            'Se crearon {{count}} citas Crecimiento y Desarrollo exitosamente.',
-            {
-              count: result.created.length,
-            },
-          ),
+          title: t('appointmentsCreated', 'Cita creada'),
+          subtitle: t('appointmentsCreatedDetail', 'La cita Crecimiento y Desarrollo se creó correctamente.', {
+            count: result.created.length,
+          }),
           kind: 'success',
         });
         mutateAppointments();
@@ -107,8 +110,8 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
 
       if (result.errors.length > 0) {
         showSnackbar({
-          title: t('someAppointmentsFailed', 'Algunas citas fallaron'),
-          subtitle: t('appointmentsFailedDetail', '{{count}} citas no pudieron crearse.', {
+          title: t('someAppointmentsFailed', 'No se pudo crear la cita'),
+          subtitle: t('appointmentsFailedDetail', 'La cita Crecimiento y Desarrollo no pudo crearse.', {
             count: result.errors.length,
           }),
           kind: 'warning',
@@ -123,7 +126,7 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
     } finally {
       setIsGenerating(false);
     }
-  }, [config, session, pendingControls, patientUuid, mutateAppointments, t]);
+  }, [config, session, controlsToSchedule, patientUuid, mutateAppointments, t]);
 
   if (isLoading)
     return <InlineLoading description={t('loadingSchedule', 'Cargando calendario Crecimiento y Desarrollo...')} />;
@@ -143,41 +146,36 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
             <div className={styles.nextDueCard}>
               <div className={styles.nextDueInfo}>
                 <span className={styles.nextDueLabel}>
-                  #{nextDueControl.controlNumber} - {translateCredControlLabel(t, nextDueControl.label)}
+                  {t('realControlNumber', 'Número de control real')}: {nextDueControl.controlNumber}
                 </span>
                 <span className={styles.nextDueDate}>
-                  {t('expectedDate', 'Fecha esperada')}: {dayjs(nextDueControl.targetDate).format('DD/MM/YYYY')}
+                  {nextDueControl.controlNumber === 1
+                    ? t('recommendedControlDate', 'Fecha recomendada')
+                    : t('minimumControlDate', 'Fecha mínima')}
+                  : {dayjs(nextDueControl.targetDate).format('DD/MM/YYYY')}
                 </span>
+                {nextDueControl.appointmentDate && (
+                  <span className={styles.nextDueDate}>
+                    {t('appointmentDate', 'Fecha de cita')}:{' '}
+                    {dayjs(nextDueControl.appointmentDate).format('DD/MM/YYYY')}
+                  </span>
+                )}
+                {nextDueControl.status === 'overdue' && <Tag type="red">{t('statusOverdue', 'Vencido')}</Tag>}
+                {nextDueControl.status === 'pending' && <Tag type="green">{t('statusPending', 'Pendiente')}</Tag>}
+                {nextDueControl.status === 'scheduled' && <Tag type="blue">{t('statusScheduled', 'Programado')}</Tag>}
+                {nextDueControl.status === 'future' && <Tag type="gray">{t('statusFuture', 'Futuro')}</Tag>}
               </div>
               {canEdit && (
-                <Button kind="primary" size="sm" renderIcon={Add} onClick={handleRegisterControl}>
+                <Button
+                  kind="primary"
+                  size="sm"
+                  renderIcon={Add}
+                  onClick={handleRegisterControl}
+                  disabled={!canRegisterNextControl}
+                >
                   {t('registerControl', 'Registrar Control')}
                 </Button>
               )}
-            </div>
-          </>
-        )}
-
-        {/* Overdue controls */}
-        {overdueControls.length > 0 && (
-          <>
-            <div className={styles.sectionTitle}>
-              {t('overdueControls', 'Controles Vencidos')} ({overdueControls.length})
-            </div>
-            <div className={styles.overdueList}>
-              {overdueControls.map((control) => (
-                <div key={control.controlNumber} className={styles.overdueItem}>
-                  <div>
-                    <span className={styles.overdueItemLabel}>
-                      #{control.controlNumber} - {translateCredControlLabel(t, control.label)}
-                    </span>
-                    <div className={styles.overdueItemDate}>
-                      {t('wasExpectedOn', 'Se esperaba el')} {dayjs(control.targetDate).format('DD/MM/YYYY')}
-                    </div>
-                  </div>
-                  <Tag type="red">{t('statusOverdue', 'Vencido')}</Tag>
-                </div>
-              ))}
             </div>
           </>
         )}
@@ -191,7 +189,7 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
             {scheduledControls.map((control) => (
               <div key={control.controlNumber} className={styles.checkupItem}>
                 <span>
-                  #{control.controlNumber} - {translateCredControlLabel(t, control.label)}
+                  {t('idealAgeSlot', 'Edad programada')}: {translateCredControlLabel(t, control.label)}
                 </span>
                 <span className={styles.dueDate}>
                   {control.appointmentDate ? dayjs(control.appointmentDate).format('DD/MM/YYYY') : ''}
@@ -221,11 +219,11 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
               size="md"
               renderIcon={Calendar}
               onClick={handleGenerateAppointments}
-              disabled={isGenerating || pendingControls.length === 0}
+              disabled={isGenerating || controlsToSchedule.length === 0}
             >
               {isGenerating
                 ? t('generatingAppointments', 'Generando citas...')
-                : t('generateAppointments', 'Generar Citas Crecimiento y Desarrollo')}
+                : t('generateAppointments', 'Generar cita Crecimiento y Desarrollo')}
             </Button>
           )}
         </div>

@@ -48,10 +48,32 @@ The app is configured through the [OpenMRS config system](https://o3-docs.openmr
 | `procedureConceptSourceType` | String | `Concept class` | How `procedureConceptUuid` filters results: `Concept class`, `Concept set`, `Answer to`, or `any`. |
 | `bodySiteConceptUuid` | UUID | `8d491c7a-…` (Anatomy) | Scopes the body-site concept search. |
 | `bodySiteConceptSourceType` | String | `Concept class` | Same options as above. |
-| `statusConceptUuid` | UUID | `167157AAAA…` | Scopes the status concept search. |
-| `statusConceptSourceType` | String | `Concept set` | Same options as above. |
+| `statusConceptUuid` | UUID | `f0d47b45-…` (CIEL 170800) | Scopes the status concept search to the Procedure status question. |
+| `statusConceptSourceType` | String | `Answer to` | Same options as above. |
 | `durationUnitConceptUuid` | UUID | `1732AAAAA…` | Scopes the duration-unit concept search. |
-| `durationUnitConceptSourceType` | String | `Answer to` | Same options as above. |
+| `durationUnitConceptSourceType` | String | `Concept set` | Same options as above. |
+
+---
+
+## Required clinical content
+
+The default status field uses [CIEL 170800 — Procedure status](https://app.openconceptlab.org/#/orgs/CIEL/sources/CIEL/concepts/170800/), whose OpenMRS UUID is `f0d47b45-8303-4cdc-a9f2-c37135a3700f`. The concept and its answers must be imported into the OpenMRS backend. They are included in version 11 or later of the OpenMRS `procedures` OCL collection used by the [Reference Application demo content](https://github.com/openmrs/openmrs-content-referenceapplication-demo/tree/main/configuration/backend_configuration/ocl).
+
+Do not use CIEL 167157 (`Medication dispense status`) for this field. It was the original temporary upstream default and does not represent procedure status.
+
+After importing the content, an authenticated request to the backend should return the configured status answers:
+
+```text
+GET /openmrs/ws/rest/v1/concept?answerTo=f0d47b45-8303-4cdc-a9f2-c37135a3700f&v=custom:(uuid,display)
+```
+
+The expected CIEL answers are Preparation, In progress, On hold, Completed, Not done, Discontinued, Entered in error, and Unknown.
+
+Before querying members or answers, the frontend verifies that the configured source exists. This prevents OpenMRS REST implementations that ignore an unknown `answerTo` filter from returning unrelated concepts as clinical options.
+
+SIH Salus imports `1732AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` as a concept set named `Unidad de Tiempo`, so `Concept set` is the default. Its members provide seconds, minutes, hours, days, weeks, months, and years.
+
+Procedure types are OpenMRS metadata, not concepts. The backend must also seed at least one `/ws/rest/v1/proceduretype`; the Reference Application demo content provides Diagnostic, Surgical, Laboratory, Imaging, Therapeutic, Nursing, Dental, Obstetric, Emergency, Vaccination, Referral, and Other.
 
 ---
 

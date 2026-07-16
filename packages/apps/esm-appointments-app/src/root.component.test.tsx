@@ -38,7 +38,7 @@ describe('Appointments root', () => {
 
     render(<Root />);
 
-    expect(mockRequirePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'app:appointments' }));
+    expect(mockRequirePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'app:home.citas' }));
     expect(screen.getByText('Appointments dashboard')).toBeInTheDocument();
   });
 

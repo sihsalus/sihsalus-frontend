@@ -1,9 +1,9 @@
 import { formatDate, openmrsFetch, parseDate, restBaseUrl, type Visit } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
-import isEmpty from 'lodash-es/isEmpty';
 import useSWR from 'swr';
 
+import { transitionQueueEntry } from '../modals/queue-entry-actions.resource';
 import { type Concept, type Identifer, type MappedServiceQueueEntry, type Queue, type QueueEntry } from '../types';
 
 dayjs.extend(isToday);
@@ -117,61 +117,18 @@ export const mapVisitQueueEntryProperties = (
 });
 
 export async function updateQueueEntry(
-  visitUuid: string,
-  previousQueueUuid: string,
-  newQueueUuid: string,
   queueEntryUuid: string,
-  patientUuid: string,
+  newQueueUuid: string,
   priority: string,
   status: string,
-  endedAt: Date,
-  sortWeight: number,
+  priorityComment?: string,
 ) {
-  const abortController = new AbortController();
-  const queueServiceUuid = isEmpty(newQueueUuid) ? previousQueueUuid : newQueueUuid;
-
-  await Promise.all([endPatientStatus(previousQueueUuid, queueEntryUuid, endedAt)]);
-
-  return openmrsFetch(`${restBaseUrl}/visit-queue-entry`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    signal: abortController.signal,
-    body: {
-      visit: { uuid: visitUuid },
-      queueEntry: {
-        status: {
-          uuid: status,
-        },
-        priority: {
-          uuid: priority,
-        },
-        queue: {
-          uuid: queueServiceUuid,
-        },
-        patient: {
-          uuid: patientUuid,
-        },
-        startedAt: new Date(),
-        sortWeight: sortWeight,
-        queueComingFrom: previousQueueUuid,
-      },
-    },
-  });
-}
-
-export async function endPatientStatus(previousQueueUuid: string, queueEntryUuid: string, endedAt: Date) {
-  const abortController = new AbortController();
-  await openmrsFetch(`${restBaseUrl}/queue/${previousQueueUuid}/entry/${queueEntryUuid}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    signal: abortController.signal,
-    body: {
-      endedAt: endedAt,
-    },
+  return transitionQueueEntry({
+    queueEntryToTransition: queueEntryUuid,
+    newQueue: newQueueUuid,
+    newPriority: priority,
+    newStatus: status,
+    ...(priorityComment !== undefined ? { newPriorityComment: priorityComment } : {}),
   });
 }
 

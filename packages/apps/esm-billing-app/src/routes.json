@@ -20,20 +20,20 @@
         "title": "billing",
         "slot": "billing-dashboard-slot"
       },
-      "privileges": "app:billing",
+      "privileges": "app:home.facturacion",
       "order": 90
     },
     {
       "component": "root",
       "name": "billing-dashboard-root",
       "slot": "billing-dashboard-slot",
-      "privileges": "app:billing"
+      "privileges": "app:home.facturacion"
     },
     {
       "name": "billing-patient-summary",
       "component": "billingPatientSummary",
       "slot": "patient-chart-billing-dashboard-slot",
-      "privileges": "app:clinical.chart.billing",
+      "privileges": "app:hoja.clinica.facturacion",
       "order": 10,
       "meta": {
         "columnSpan": 4
@@ -43,7 +43,7 @@
       "name": "billing-summary-dashboard-link",
       "component": "billingSummaryDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.billing",
+      "privileges": "app:hoja.clinica.facturacion",
       "order": 22,
       "meta": {
         "columns": 1,
@@ -58,12 +58,14 @@
       "slot": "app-menu-item-slot",
       "meta": {
         "name": "Billable Services"
-      }
+      },
+      "privileges": "app:serviciosFacturables"
     },
     {
       "slot": "legacy-system-admin-page-card-link-slot",
       "component": "billableServicesCardLink",
-      "name": "billable-services-admin-card-link"
+      "name": "billable-services-admin-card-link",
+      "privileges": "app:serviciosFacturables"
     },
     {
       "name": "patient-banner-billing-tags",
@@ -87,25 +89,28 @@
   "modals": [
     {
       "name": "add-cash-point-modal",
-      "component": "addCashPointModal"
+      "component": "addCashPointModal",
+      "privileges": "app:serviciosFacturables"
     },
     {
       "name": "payment-mode-form-modal",
-      "component": "paymentModeFormModal"
+      "component": "paymentModeFormModal",
+      "privileges": "app:serviciosFacturables"
     },
     {
       "name": "delete-payment-mode-modal",
-      "component": "deletePaymentModeModal"
+      "component": "deletePaymentModeModal",
+      "privileges": "app:serviciosFacturables"
     },
     {
       "name": "edit-bill-item-modal",
       "component": "editBillLineItemModal",
-      "privileges": "app:clinical.chart.billing.edit"
+      "privileges": "app:hoja.clinica.facturacion.editar"
     },
     {
       "name": "edit-bill-line-item-modal",
       "component": "editBillLineItemModal",
-      "privileges": "app:clinical.chart.billing.edit"
+      "privileges": "app:hoja.clinica.facturacion.editar"
     },
     {
       "name": "require-billing-modal",
@@ -114,7 +119,7 @@
     {
       "name": "delete-line-item-confirmation-modal",
       "component": "deleteLineItemConfirmationModal",
-      "privileges": "app:clinical.chart.billing.edit"
+      "privileges": "app:hoja.clinica.facturacion.editar"
     }
   ],
   "workspaces2": [
@@ -122,12 +127,13 @@
       "name": "billing-form-workspace",
       "component": "billingFormWorkspace",
       "window": "billing-form-window",
-      "privileges": "app:clinical.chart.billing.edit"
+      "privileges": "app:hoja.clinica.facturacion.editar"
     },
     {
       "name": "billable-service-form",
       "component": "billableServiceFormWorkspace",
-      "window": "billable-service-form-window"
+      "window": "billable-service-form-window",
+      "privileges": "app:serviciosFacturables"
     }
   ],
   "workspaceWindows2": [

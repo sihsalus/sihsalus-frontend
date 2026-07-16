@@ -17,7 +17,10 @@ const Root: React.FC = () => {
         description="Necesita permisos de colas para acceder a esta seccion."
       >
         <main>
-          <BrowserRouter basename={serviceQueuesBasePath}>
+          <BrowserRouter
+            basename={serviceQueuesBasePath}
+            future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+          >
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/admin" element={<AdminPage />} />

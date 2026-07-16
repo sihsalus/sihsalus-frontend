@@ -22,9 +22,10 @@ import styles from './visit-form.scss';
 
 interface LocationSelectorProps {
   control: Control<VisitFormData>;
+  lockedLocation?: Pick<Location, 'uuid' | 'display'>;
 }
 
-const LocationSelector: React.FC<LocationSelectorProps> = ({ control }) => {
+const LocationSelector: React.FC<LocationSelectorProps> = ({ control, lockedLocation }) => {
   const { t } = useTranslation();
   const config = useConfig<ChartConfig>();
   const {
@@ -42,7 +43,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ control }) => {
     searchTerm,
   );
   const { defaultFacility, isLoading: loadingDefaultFacility } = useDefaultFacilityLocation();
-  const disableChangingVisitLocation = config?.disableChangingVisitLocation;
+  const disableChangingVisitLocation = Boolean(lockedLocation) || config?.disableChangingVisitLocation;
   const locationsToShow: Array<OpenmrsResource> =
     !loadingDefaultFacility && !isEmpty(defaultFacility) ? [defaultFacility] : locations ? locations : [];
 
@@ -58,7 +59,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ control }) => {
 
   return (
     <section data-testid="combo">
-      <div className={styles.sectionTitle}>{t('visitLocation', 'Visit Location')}</div>
+      <div className={styles.sectionTitle}>{`${t('visitLocation', 'Ubicación de la consulta')} *`}</div>
       <div className={classNames(styles.selectContainer, styles.sectionField)}>
         {!disableChangingVisitLocation ? (
           <Controller
@@ -76,13 +77,16 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ control }) => {
                 onChange={({ selectedItem }) => onChange(selectedItem)}
                 onInputChange={(searchTerm) => handleSearch(searchTerm)}
                 readOnly={disableChangingVisitLocation}
+                required
                 selectedItem={value ?? null}
                 titleText={t('selectLocation', 'Select a location')}
               />
             )}
           />
         ) : (
-          <p className={styles.bodyShort02}>{defaultVisitLocation?.display ?? sessionLocation?.display ?? ''}</p>
+          <p className={styles.bodyShort02}>
+            {lockedLocation?.display ?? defaultVisitLocation?.display ?? sessionLocation?.display ?? ''}
+          </p>
         )}
       </div>
     </section>

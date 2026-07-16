@@ -108,7 +108,7 @@ describe('ChangeStatusModal', () => {
     });
   });
 
-  it('should display error message when rest api call to update queue entry fails', async () => {
+  it('should display a safe error message when rest api call to update queue entry fails', async () => {
     const user = userEvent.setup();
 
     mockUpdateQueueEntry.mockRejectedValue({
@@ -150,10 +150,13 @@ describe('ChangeStatusModal', () => {
     await user.click(screen.getByRole('button', { name: /move to next service/i }));
 
     expect(mockShowSnackbar).toHaveBeenCalledWith({
-      subtitle: 'Internal Server Error',
+      subtitle: 'The queue action could not be completed. Please try again.',
       kind: 'error',
       title: 'Error updating queue entry status',
     });
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(
+      expect.objectContaining({ subtitle: expect.stringMatching(/internal server error/i) }),
+    );
   });
 
   test('should show error message when user tries to update queue entry without selecting required fields', async () => {

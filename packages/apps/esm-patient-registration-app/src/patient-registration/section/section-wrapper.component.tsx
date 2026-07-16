@@ -1,8 +1,14 @@
 import { Tile } from '@carbon/react';
+import { useConfig } from '@openmrs/esm-framework';
+import classNames from 'classnames';
+import { getIn, useFormikContext } from 'formik';
 import { useTranslation } from 'react-i18next';
 
-import { type SectionDefinition } from '../../config-schema';
+import { type RegistrationConfig, type SectionDefinition } from '../../config-schema';
 import { moduleName } from '../../constants';
+import { type FormValues } from '../patient-registration.types';
+import { getEffectiveRegistrationConfig } from '../peru-registration-config';
+import { hasResponsibleRelationship, isMinorPatient } from '../validation/patient-registration-validation';
 import { Section } from './section.component';
 import styles from './section.scss';
 
@@ -13,7 +19,20 @@ export interface SectionWrapperProps {
 
 export const SectionWrapper = ({ sectionDefinition, index }: SectionWrapperProps) => {
   const { t } = useTranslation(moduleName);
+  const { errors, touched, values } = useFormikContext<FormValues>();
+  const configuredConfig = useConfig<RegistrationConfig>();
+  const config = configuredConfig?.sections ? getEffectiveRegistrationConfig(configuredConfig) : configuredConfig;
   const isIdentityLookupSection = sectionDefinition.id === 'identityLookup';
+  const isResponsiblePersonSection = sectionDefinition.id === 'responsiblePerson';
+  const responsibleRelationshipRequired =
+    isResponsiblePersonSection &&
+    isMinorPatient(values) &&
+    !hasResponsibleRelationship(
+      values.relationships,
+      config?.relationshipOptions?.minorResponsibleRelationshipTypes ?? [],
+    );
+  const responsibleRelationshipError =
+    responsibleRelationshipRequired && Boolean(getIn(touched, 'relationships') && getIn(errors, 'relationships'));
   const sectionNumber = isIdentityLookupSection ? 0 : index;
   const helperText = isIdentityLookupSection
     ? t(
@@ -32,7 +51,15 @@ export const SectionWrapper = ({ sectionDefinition, index }: SectionWrapperProps
    * t('relationshipsSection', 'Relationships')
    */
   return (
-    <div className={styles.sectionAnchor} id={sectionDefinition.id}>
+    <div
+      aria-invalid={responsibleRelationshipError || undefined}
+      className={classNames(styles.sectionAnchor, {
+        [styles.sectionRequiresAttention]: responsibleRelationshipRequired && !responsibleRelationshipError,
+        [styles.sectionHasError]: responsibleRelationshipError,
+      })}
+      data-requires-attention={responsibleRelationshipRequired || undefined}
+      id={sectionDefinition.id}
+    >
       <h3 className={styles.productiveHeading02}>
         {sectionNumber}. {t(`${sectionDefinition.id}Section`, sectionDefinition.name)}
       </h3>

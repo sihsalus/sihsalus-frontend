@@ -45,18 +45,16 @@ export const configSchema = {
     _default: 'Concept class',
     _validators: [validators.oneOf(conceptSourceTypes)],
   },
-  // TODO: Update the following value once the concept set is available for procedure status, currently using
-  // https://app.openconceptlab.org/#/orgs/CIEL/sources/CIEL/concepts/167157/ (Medication dispense status)
   statusConceptUuid: {
     _type: Type.UUID,
     _description:
       'UUID used to constrain the procedure-status concept search. Its meaning is determined by `statusConceptSourceType`.',
-    _default: '167157AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    _default: 'f0d47b45-8303-4cdc-a9f2-c37135a3700f', // CIEL 170800: Procedure status
   },
   statusConceptSourceType: {
     _type: Type.String,
     _description: sourceTypeDescription,
-    _default: 'Concept set',
+    _default: 'Answer to',
     _validators: [validators.oneOf(conceptSourceTypes)],
   },
   durationUnitConceptUuid: {
@@ -68,7 +66,7 @@ export const configSchema = {
   durationUnitConceptSourceType: {
     _type: Type.String,
     _description: sourceTypeDescription,
-    _default: 'Answer to',
+    _default: 'Concept set',
     _validators: [validators.oneOf(conceptSourceTypes)],
   },
 };

@@ -1,6 +1,7 @@
 import { registerExtension, registerWorkspace, registerWorkspaceGroup } from '@openmrs/esm-extensions';
 import { clearMockExtensionRegistry } from '@openmrs/esm-framework/mock';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { userCanLaunch } from '../access';
 import {
   cancelPrompt,
   closeWorkspace,
@@ -12,10 +13,35 @@ import {
   resetWorkspaceStore,
 } from './workspaces';
 
+vi.mock('../access', () => ({
+  userCanLaunch: vi.fn(() => true),
+}));
+
+const mockUserCanLaunch = vi.mocked(userCanLaunch);
+
 describe('workspace system', () => {
   beforeEach(() => {
     resetWorkspaceStore();
     clearMockExtensionRegistry();
+    mockUserCanLaunch.mockReturnValue(true);
+  });
+
+  it('does not launch a workspace when the user lacks its declared privilege', () => {
+    const store = getWorkspaceStore();
+    registerWorkspace({
+      name: 'protected',
+      title: 'Protected',
+      load: vi.fn(),
+      moduleName: '@openmrs/foo',
+      privileges: 'app:protected',
+    });
+    mockUserCanLaunch.mockReturnValue(false);
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    launchWorkspace('protected');
+
+    expect(mockUserCanLaunch).toHaveBeenCalledWith('app:protected');
+    expect(store.getState().openWorkspaces).toHaveLength(0);
   });
 
   it('registering, launching, and closing a workspace', () => {

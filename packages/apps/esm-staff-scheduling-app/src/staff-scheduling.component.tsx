@@ -25,6 +25,7 @@ import {
   shouldPreventPlainNumberPaste,
   validatePlainNumberInput,
 } from '@openmrs/esm-utils';
+import { modulePrivileges, RequireModulePrivilege } from '@sihsalus/esm-rbac';
 import dayjs from 'dayjs';
 import { type ClipboardEvent, type KeyboardEvent, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -109,7 +110,7 @@ function updateData(data: StaffSchedulingData, patch: Partial<StaffSchedulingDat
   };
 }
 
-export default function StaffScheduling() {
+function StaffSchedulingContent() {
   const { t } = useTranslation();
   const { schedulingData, settingUuid, isLoading, error, mutate } = useStaffSchedulingData();
   const referenceData = useSchedulingReferenceData();
@@ -517,6 +518,14 @@ export default function StaffScheduling() {
         </TabPanels>
       </Tabs>
     </main>
+  );
+}
+
+export default function StaffScheduling() {
+  return (
+    <RequireModulePrivilege privilege={modulePrivileges.staffScheduling}>
+      <StaffSchedulingContent />
+    </RequireModulePrivilege>
   );
 }
 

@@ -26,7 +26,7 @@
       "name": "medications-details-widget",
       "component": "medicationsSummary",
       "slot": "patient-chart-medications-dashboard-slot",
-      "privileges": "app:clinical.chart.medications",
+      "privileges": "app:hoja.clinica.medicamentos",
       "meta": {
         "fullWidth": false
       }
@@ -35,7 +35,7 @@
       "name": "active-medications-widget",
       "component": "activeMedications",
       "slot": "patient-chart-summary-dashboard-slot",
-      "privileges": "app:clinical.chart.medications",
+      "privileges": "app:hoja.clinica.medicamentos",
       "meta": {
         "fullWidth": false
       },
@@ -45,7 +45,7 @@
       "name": "past-medications-widget",
       "component": "pastMedications",
       "slot": "patient-chart-summary-dashboard-slot",
-      "privileges": "app:clinical.chart.medications",
+      "privileges": "app:hoja.clinica.medicamentos",
       "meta": {
         "fullWidth": false
       },
@@ -55,7 +55,7 @@
       "name": "medications-summary-dashboard",
       "component": "medicationsDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.medications",
+      "privileges": "app:hoja.clinica.medicamentos",
       "order": 3,
       "meta": {
         "slot": "patient-chart-medications-dashboard-slot",
@@ -82,7 +82,7 @@
       "name": "add-drug-order",
       "component": "addDrugOrderWorkspace",
       "window": "patient-chart-orders",
-      "privileges": "app:clinical.chart.medications.edit"
+      "privileges": "app:hoja.clinica.medicamentos.editar"
     }
   ]
 }

@@ -72,6 +72,15 @@
   min-width: 0;
 }
 
+.codedRadioGroup {
+  min-block-size: layout.$spacing-09;
+
+  :global(.cds--radio-button-group) {
+    flex-wrap: wrap;
+    gap: layout.$spacing-04 layout.$spacing-06;
+  }
+}
+
 .fullWidthInDesktopView {
   width: 100%;
   grid-column: 1 / -1;
@@ -204,6 +213,12 @@
   gap: layout.$spacing-04;
 }
 
+.externalLookupButton {
+  inline-size: 100%;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+
 .externalLookupNotification {
   margin: 0;
   max-width: 32rem;
@@ -300,6 +315,7 @@
   }
 }
 
+.fieldError,
 .radioFieldError {
   color: colors.$red-60;
   display: block;

@@ -21,6 +21,7 @@ import {
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 
 import styles from './care-summary-table.scss';
 
@@ -115,6 +116,7 @@ interface CareSummaryTableProps {
   title: string;
   emptyStateText: string;
   formUuid: string;
+  editPrivilege: string;
   useEncountersHook: (uuid: string) => {
     prenatalEncounters: Encounter[];
     isValidating: boolean;
@@ -130,6 +132,7 @@ const CareSummaryTable: React.FC<CareSummaryTableProps> = ({
   title,
   emptyStateText,
   formUuid,
+  editPrivilege,
   useEncountersHook,
   rowDefinitions,
   customHeaderTransform,
@@ -150,9 +153,6 @@ const CareSummaryTable: React.FC<CareSummaryTableProps> = ({
             formInfo: { formUuid, patientUuid, additionalProps: {} },
           });
         }
-      }
-      if (mutate) {
-        setTimeout(() => mutate(), 1000);
       }
     } catch (err) {
       console.error('Failed to launch form:', err);
@@ -239,9 +239,11 @@ const CareSummaryTable: React.FC<CareSummaryTableProps> = ({
         <>
           <CardHeader title={title}>
             {isValidating && <InlineLoading />}
-            <Button kind="ghost" renderIcon={(props) => <Add size={16} {...props} />} onClick={launchForm}>
-              {t('add', 'Añadir')}
-            </Button>
+            <RequirePrivilege privilege={editPrivilege} hideUnauthorized>
+              <Button kind="ghost" renderIcon={(props) => <Add size={16} {...props} />} onClick={launchForm}>
+                {t('add', 'Añadir')}
+              </Button>
+            </RequirePrivilege>
           </CardHeader>
           <DataTable rows={tableRows} headers={tableHeaders} isSortable useZebraStyles size="sm">
             {({ rows, headers, getHeaderProps, getTableProps }) => (
@@ -271,7 +273,12 @@ const CareSummaryTable: React.FC<CareSummaryTableProps> = ({
           </DataTable>
         </>
       ) : (
-        <EmptyState headerTitle={title} displayText={emptyStateText} launchForm={launchForm} />
+        <RequirePrivilege
+          privilege={editPrivilege}
+          fallback={<EmptyState headerTitle={title} displayText={emptyStateText} />}
+        >
+          <EmptyState headerTitle={title} displayText={emptyStateText} launchForm={launchForm} />
+        </RequirePrivilege>
       )}
     </div>
   );

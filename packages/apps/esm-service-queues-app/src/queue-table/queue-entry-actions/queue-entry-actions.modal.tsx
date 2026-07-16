@@ -21,11 +21,12 @@ import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { time12HourFormatRegexPattern } from '../../constants';
+import { queueEntryCommentMaxLength, time12HourFormatRegexPattern } from '../../constants';
 import { type amPm, convertTime12to24 } from '../../helpers/time-helpers';
 import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
 import { useQueues } from '../../hooks/useQueues';
 import { type QueueEntry } from '../../types';
+import { getUserFacingQueueErrorMessage } from '../../modals/queue-entry-error.utils';
 
 import styles from './queue-entry-actions.scss';
 
@@ -92,6 +93,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
   });
   const { queues } = useQueues();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isCommentTooLong = formState.prioritycomment.length > queueEntryCommentMaxLength;
 
   const selectedQueue = queues.find((q) => q.uuid === formState.selectedQueue);
 
@@ -164,7 +166,12 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
         showSnackbar({
           title: submitFailureTitle,
           kind: 'error',
-          subtitle: error?.message,
+          subtitle: getUserFacingQueueErrorMessage(
+            error,
+            t('queueEntryActionErrorMessage', 'The queue action could not be completed. Please try again.'),
+            'Submit legacy queue entry action',
+            t('invalidSubmission', 'La solicitud no es válida.'),
+          ),
         });
       })
       .finally(() => {
@@ -324,52 +331,62 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
                 value={formState.prioritycomment}
                 onChange={(e) => setPriorityComment(e.target.value)}
                 placeholder={t('enterCommentHere', 'Enter comment here')}
+                maxLength={queueEntryCommentMaxLength}
+                invalid={isCommentTooLong}
+                invalidText={t('queueEntryCommentTooLong', 'El comentario no puede superar los {{count}} caracteres.', {
+                  count: queueEntryCommentMaxLength,
+                })}
+                helperText={t('queueEntryCommentLimit', 'Máximo {{count}} caracteres.', {
+                  count: queueEntryCommentMaxLength,
+                })}
               />
             </section>
 
-            <section className={styles.section}>
-              <div className={styles.sectionTitle}>{t('timeOfTransition', 'Time of transition')}</div>
-              <Checkbox
-                labelText={t('modifyDefaultValue', 'Modify default value')}
-                id={'modifyTransitionTime'}
-                checked={formState.modifyDefaultTransitionDateTime}
-                onChange={(_, { checked }) => {
-                  setModifyDefaultTransitionDateTime(checked);
-                }}
-              />
-              <div className={styles.dateTimeFields}>
-                <OpenmrsDatePicker
-                  value={formState.transitionDate}
-                  maxDate={new Date()}
-                  onChange={setTransitionDate}
-                  id="datePickerInput"
-                  data-testid="datePickerInput"
-                  labelText={t('date', 'Date')}
-                  isDisabled={!formState.modifyDefaultTransitionDateTime}
+            {!isTransition && (
+              <section className={styles.section}>
+                <div className={styles.sectionTitle}>{t('queueEntryStartTime', 'Queue entry start time')}</div>
+                <Checkbox
+                  labelText={t('modifyDefaultValue', 'Modify default value')}
+                  id={'modifyTransitionTime'}
+                  checked={formState.modifyDefaultTransitionDateTime}
+                  onChange={(_, { checked }) => {
+                    setModifyDefaultTransitionDateTime(checked);
+                  }}
                 />
+                <div className={styles.dateTimeFields}>
+                  <OpenmrsDatePicker
+                    value={formState.transitionDate}
+                    maxDate={new Date()}
+                    onChange={setTransitionDate}
+                    id="datePickerInput"
+                    data-testid="datePickerInput"
+                    labelText={t('date', 'Date')}
+                    isDisabled={!formState.modifyDefaultTransitionDateTime}
+                  />
 
-                <TimePicker
-                  id="transitionTime"
-                  labelText={t('time', 'Time')}
-                  onChange={(event) => setTransitionTime(event.target.value)}
-                  pattern={time12HourFormatRegexPattern}
-                  value={formState.transitionTime}
-                  invalid={timeInvalidMessage != null}
-                  invalidText={timeInvalidMessage}
-                  disabled={!formState.modifyDefaultTransitionDateTime}
-                >
-                  <TimePickerSelect
-                    id="visitStartTimeSelect"
-                    onChange={(event) => setTransitionTimeFormat(event.target.value as amPm)}
-                    value={formState.transitionTimeFormat}
-                    aria-label={t('time', 'Time')}
+                  <TimePicker
+                    id="transitionTime"
+                    labelText={t('time', 'Time')}
+                    onChange={(event) => setTransitionTime(event.target.value)}
+                    pattern={time12HourFormatRegexPattern}
+                    value={formState.transitionTime}
+                    invalid={timeInvalidMessage != null}
+                    invalidText={timeInvalidMessage}
+                    disabled={!formState.modifyDefaultTransitionDateTime}
                   >
-                    <SelectItem value="AM" text="AM" />
-                    <SelectItem value="PM" text="PM" />
-                  </TimePickerSelect>
-                </TimePicker>
-              </div>
-            </section>
+                    <TimePickerSelect
+                      id="visitStartTimeSelect"
+                      onChange={(event) => setTransitionTimeFormat(event.target.value as amPm)}
+                      value={formState.transitionTimeFormat}
+                      aria-label={t('time', 'Time')}
+                    >
+                      <SelectItem value="AM" text="AM" />
+                      <SelectItem value="PM" text="PM" />
+                    </TimePickerSelect>
+                  </TimePicker>
+                </div>
+              </section>
+            )}
           </Stack>
         </div>
       </ModalBody>
@@ -377,7 +394,10 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
         <Button kind="secondary" onClick={closeModal}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button disabled={isSubmitting || disableSubmit(queueEntry, formState)} onClick={submitForm}>
+        <Button
+          disabled={isSubmitting || isCommentTooLong || disableSubmit(queueEntry, formState)}
+          onClick={submitForm}
+        >
           {submitButtonText}
         </Button>
       </ModalFooter>

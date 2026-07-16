@@ -1,4 +1,5 @@
 import { type FetchResponse, openmrsFetch } from '@openmrs/esm-framework';
+import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockAppointmentsData, mockPatient, patientChartBasePath, renderWithSwr } from 'test-utils';
@@ -13,7 +14,13 @@ const testProps = {
 };
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
 const mockUseSession = vi.hoisted(() => vi.fn());
+
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  launchPatientWorkspace: vi.fn(),
+}));
 
 vi.mock('@openmrs/esm-framework', async () => {
   const actual = await vi.importActual<typeof import('@openmrs/esm-framework')>('@openmrs/esm-framework');
@@ -27,9 +34,22 @@ vi.mock('@openmrs/esm-framework', async () => {
 
 describe('AppointmentsOverview', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mockUseSession.mockReturnValue({
       user: { uuid: 'mock-user-uuid', display: 'Mock User' },
     });
+  });
+
+  it('opens the patient-chart appointment form with the current patient context', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: [] } as unknown as FetchResponse<AppointmentsFetchResponse>);
+    renderWithSwr(<AppointmentsBase {...testProps} />);
+
+    await userEvent.click(await screen.findByRole('button', { name: /add/i }));
+
+    expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith(
+      'patient-chart-appointments-form-workspace',
+      expect.objectContaining({ context: 'creating', patientUuid: testProps.patientUuid }),
+    );
   });
 
   it('renders an empty state if appointments data is unavailable', async () => {
@@ -59,9 +79,7 @@ describe('AppointmentsOverview', () => {
 
     expect(await screen.findByRole('heading', { name: /appointments/i })).toBeInTheDocument();
     expect(
-      screen.getByText(
-        'Sorry, there was a problem displaying this information. You can try to reload this page, or contact the site administrator and quote the error code above.',
-      ),
+      screen.getByText('There was a problem displaying this information. Try reloading the page or contact support.'),
     ).toBeInTheDocument();
   });
 

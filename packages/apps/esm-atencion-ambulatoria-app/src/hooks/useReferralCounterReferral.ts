@@ -1,5 +1,5 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import useSWR from 'swr';
+import { restBaseUrl } from '@openmrs/esm-framework';
+import { useClinicalHistoryPagination } from './useClinicalHistoryPagination';
 
 export interface ReferralEntry {
   uuid: string;
@@ -68,28 +68,41 @@ export function useReferralCounterReferral(
   const referralCounterReferralUrl =
     patientUuid && referralCounterReferralEncounterTypeUuid
       ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${referralCounterReferralEncounterTypeUuid}` +
-        `&v=custom:(uuid,encounterDatetime,encounterProviders:(display),obs:(concept:(uuid),value))&limit=20`
+        `&v=custom:(uuid,encounterDatetime,encounterProviders:(display),obs:(concept:(uuid),value))&order=desc`
       : null;
   const interconsultationOrdersUrl =
     patientUuid && externalConsultationEncounterTypeUuid
       ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${externalConsultationEncounterTypeUuid}` +
-        `&v=custom:(uuid,encounterDatetime,encounterProviders:(display),obs:(concept:(uuid),value,display))&limit=20`
+        `&v=custom:(uuid,encounterDatetime,encounterProviders:(display),obs:(concept:(uuid),value,display))&order=desc`
       : null;
 
   const {
-    data: referralData,
+    data: referralEncounters,
     error: referralError,
     isLoading: isLoadingReferrals,
+    isValidating: isValidatingReferrals,
     mutate: mutateReferrals,
-  } = useSWR<{ data: { results: Encounter[] } }>(referralCounterReferralUrl, openmrsFetch);
+    pagination: referralPagination,
+  } = useClinicalHistoryPagination<Encounter>(referralCounterReferralUrl);
   const {
-    data: orderData,
+    data: orderEncounters,
     error: orderError,
     isLoading: isLoadingOrders,
+    isValidating: isValidatingOrders,
     mutate: mutateOrders,
-  } = useSWR<{ data: { results: Encounter[] } }>(interconsultationOrdersUrl, openmrsFetch);
+    pagination: orderPagination,
+  } = useClinicalHistoryPagination<Encounter>(interconsultationOrdersUrl);
 
-  const structuredReferrals: ReferralEntry[] = (referralData?.data?.results ?? []).map((enc) => ({
+  const referralTotalPages = Number.isFinite(referralPagination.totalPages) ? referralPagination.totalPages : 0;
+  const orderTotalPages = Number.isFinite(orderPagination.totalPages) ? orderPagination.totalPages : 0;
+  const currentPage = Math.max(referralPagination.currentPage, orderPagination.currentPage);
+  const totalPages = Math.max(referralTotalPages, orderTotalPages);
+
+  const visibleReferralEncounters =
+    referralPagination.currentPage === currentPage ? referralEncounters : ([] as Encounter[]);
+  const visibleOrderEncounters = orderPagination.currentPage === currentPage ? orderEncounters : ([] as Encounter[]);
+
+  const structuredReferrals: ReferralEntry[] = visibleReferralEncounters.map((enc) => ({
     uuid: enc.uuid,
     encounterDatetime: enc.encounterDatetime,
     provider: enc.encounterProviders?.[0]?.display?.split(' - ')?.[0] ?? null,
@@ -101,7 +114,7 @@ export function useReferralCounterReferral(
     interconsultationOrder: null,
   }));
 
-  const interconsultationOrders: ReferralEntry[] = (orderData?.data?.results ?? [])
+  const interconsultationOrders: ReferralEntry[] = visibleOrderEncounters
     .map((enc): ReferralEntry | null => {
       const order = getFirstObsValue(enc.obs, [
         concepts.referralUuid,
@@ -134,10 +147,23 @@ export function useReferralCounterReferral(
   return {
     entries,
     isLoading: isLoadingReferrals || isLoadingOrders,
+    isValidating: isValidatingReferrals || isValidatingOrders,
     error: referralError || orderError,
     mutate: () => {
       void mutateReferrals();
       void mutateOrders();
+    },
+    pagination: {
+      currentPage,
+      totalPages,
+      onPageChange: (page: number) => {
+        if (page <= referralTotalPages) {
+          referralPagination.onPageChange(page);
+        }
+        if (page <= orderTotalPages) {
+          orderPagination.onPageChange(page);
+        }
+      },
     },
   };
 }

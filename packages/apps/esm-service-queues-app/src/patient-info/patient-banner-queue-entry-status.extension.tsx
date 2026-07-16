@@ -1,9 +1,9 @@
 import { Button, Tag } from '@carbon/react';
-import { isDesktop, showModal, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
+import { isDesktop, showModal, useLayoutType, useSession } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { serviceQueuesEditPrivilege } from '../constants';
+import { canEditServiceQueues } from '../permissions';
 import { useQueueEntries } from '../hooks/useQueueEntries';
 
 import styles from './patient-banner-queue-entry-status.scss';
@@ -25,7 +25,7 @@ const PatientBannerQueueEntryStatus: React.FC<PatientBannerQueueEntryStatusProps
   const { t } = useTranslation();
   const isPatientChart = renderedFrom === 'patient-chart';
   const session = useSession();
-  const canEdit = userHasAccess(serviceQueuesEditPrivilege, session?.user);
+  const canEdit = canEditServiceQueues(session?.user);
   if (!isPatientChart || !queueEntry) {
     return <></>;
   }

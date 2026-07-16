@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { mockAdvancedSearchResults } from 'test-utils';
@@ -44,6 +44,7 @@ const conceptAnswersBySetUuid = {
   'e47c3ef7-c7e2-4d35-b2fa-934df43df2a5': [
     { uuid: 'bdb57e2a-d8fd-4e2b-8622-1ba60dcd3024', display: 'No identificado' },
     { uuid: '9e42f0f1-d989-4604-902e-8a33f474f01e', display: 'Identificación confirmada' },
+    { uuid: '8e9518a2-828d-4e50-a110-d964b63e51e2', display: 'Fusionado con registro existente' },
   ],
 };
 
@@ -143,12 +144,58 @@ describe('AdvancedPatientSearchComponent', () => {
     expect(screen.getByText(/2 search result/)).toBeInTheDocument();
   });
 
+  it('uses the configured deceased-patient search policy', () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      includeDead: false,
+    } as PatientSearchConfig);
+
+    renderComponent();
+
+    expect(mockUseInfinitePatientSearch).toHaveBeenCalledWith('Jos', false, true, 50);
+  });
+
+  it('keeps fetching server pages while the last page reports more results', () => {
+    const setPage = vi.fn();
+    mockUseInfinitePatientSearch.mockReturnValue({ ...mockSearchResults, hasMore: true, setPage });
+
+    renderComponent();
+
+    expect(setPage).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['a page is still loading', { isLoading: true }],
+    ['a page is validating', { isValidating: true }],
+    ['a page failed to fetch', { fetchError: new Error('SQL timeout') }],
+  ])('does not request another server page while %s', (_description, state) => {
+    const setPage = vi.fn();
+    mockUseInfinitePatientSearch.mockReturnValue({ ...mockSearchResults, hasMore: true, setPage, ...state });
+
+    renderComponent();
+
+    expect(setPage).not.toHaveBeenCalled();
+  });
+
+  it('does not offer patient registration in an embedded selection context', () => {
+    mockUseInfinitePatientSearch.mockReturnValue({
+      ...mockSearchResults,
+      data: [],
+      totalResults: 0,
+    });
+
+    renderComponent();
+
+    expect(screen.getByText(/no patient charts were found/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /add patient/i })).not.toBeInTheDocument();
+  });
+
   it('does not show postcode or telephone filters by default', () => {
     renderComponent();
 
     expect(screen.queryByLabelText(/postcode/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/telephone|tel[eé]fono|phone/i)).not.toBeInTheDocument();
-    expect(screen.getByLabelText(/código de documento de identidad/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/número de documento de identidad/i)).toBeInTheDocument();
   });
 
   describe('Filtering', () => {
@@ -156,44 +203,115 @@ describe('AdvancedPatientSearchComponent', () => {
       renderComponent();
 
       await user.click(screen.getByRole('tab', { name: /female/i }));
-      await user.click(screen.getByRole('button', { name: /apply/i }));
+      await user.click(screen.getByRole('button', { name: /search/i }));
 
       expect(screen.getByText(/0 search result/)).toBeInTheDocument();
     });
 
-    it('filters by age correctly', async () => {
+    it('filters OpenMRS UTC-midnight birthdates as calendar dates in the Peru timezone', async () => {
       renderComponent();
 
-      // Set age filter
-      const ageInput = screen.getByRole('spinbutton', { name: /age/i });
-      await user.type(ageInput, '30');
-      await user.click(screen.getByRole('button', { name: /apply/i }));
+      fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2019-09-25' } });
+      await user.click(screen.getByRole('button', { name: /search/i }));
 
       const patientBanners = screen.getAllByRole('banner');
       expect(patientBanners).toHaveLength(1);
-      expect(within(patientBanners[0]).getByText(/Joseph Davis/i)).toBeInTheDocument();
+      expect(within(patientBanners[0]).getByText(/Joshua Johnson/i)).toBeInTheDocument();
     });
 
     it('filters by person attribute correctly', async () => {
       renderComponent();
 
-      const documentCodeInput = screen.getByLabelText(/código de documento de identidad/i);
+      const documentCodeInput = screen.getByLabelText(/número de documento de identidad/i);
       await user.type(documentCodeInput, '12345678');
-      await user.click(screen.getByRole('button', { name: /apply/i }));
+      await user.click(screen.getByRole('button', { name: /search/i }));
 
       const patientBanners = screen.getAllByRole('banner');
       expect(patientBanners).toHaveLength(1);
       expect(within(patientBanners[0]).getByText(/Joshua Johnson/)).toBeInTheDocument();
     });
 
+    it('filters admission identification status across concept and legacy values', async () => {
+      const admissionStatusAttributeType = {
+        uuid: '787f1ea9-1792-45e5-9076-699b1a0638cb',
+        display: 'Estado de Identificación en Admisión',
+      };
+      const patients = [
+        {
+          ...mockAdvancedSearchResults[0],
+          uuid: 'merged-concept-patient',
+          attributes: [
+            ...mockAdvancedSearchResults[0].attributes.filter(
+              ({ attributeType }) => attributeType.uuid !== admissionStatusAttributeType.uuid,
+            ),
+            {
+              value: {
+                uuid: '8e9518a2-828d-4e50-a110-d964b63e51e2',
+                display: 'Fusionado con registro existente',
+              },
+              attributeType: admissionStatusAttributeType,
+            },
+          ],
+        },
+        {
+          ...mockAdvancedSearchResults[1],
+          uuid: 'merged-legacy-patient',
+          attributes: [
+            ...mockAdvancedSearchResults[1].attributes.filter(
+              ({ attributeType }) => attributeType.uuid !== admissionStatusAttributeType.uuid,
+            ),
+            { value: 'merged', attributeType: admissionStatusAttributeType },
+          ],
+        },
+        {
+          ...mockAdvancedSearchResults[0],
+          uuid: 'missing-status-value-patient',
+          attributes: [
+            ...mockAdvancedSearchResults[0].attributes.filter(
+              ({ attributeType }) => attributeType.uuid !== admissionStatusAttributeType.uuid,
+            ),
+            { value: null, attributeType: admissionStatusAttributeType },
+          ],
+        },
+      ] as unknown as NonNullable<PatientSearchResponse['data']>;
+      mockUseInfinitePatientSearch.mockReturnValue({ ...mockSearchResults, data: patients, totalResults: 3 });
+
+      renderComponent();
+
+      await user.click(screen.getByRole('combobox', { name: /estado de identificaci.n en admisi.n/i }));
+      await user.click(screen.getByRole('option', { name: 'Fusionado con registro existente' }));
+      await user.click(screen.getByRole('button', { name: /search/i }));
+
+      expect(screen.getByText(/2 search result/)).toBeInTheDocument();
+      expect(screen.getAllByRole('banner')).toHaveLength(2);
+    });
+
+    it('matches document numbers exactly when refining a name search', async () => {
+      renderComponent();
+
+      await user.type(screen.getByLabelText(/^N.mero de Documento de Identidad$/i), '1234');
+      await user.click(screen.getByRole('button', { name: /search/i }));
+
+      expect(screen.getByText(/0 search result/)).toBeInTheDocument();
+    });
+
+    it('searches by identity document number entered in refine search when query is empty', async () => {
+      renderComponent({ query: '' });
+
+      await user.type(screen.getByLabelText(/número de documento de identidad/i), '10000001');
+      await user.click(screen.getByRole('button', { name: /search/i }));
+
+      await waitFor(() => {
+        expect(mockUseInfinitePatientSearch).toHaveBeenLastCalledWith('10000001', true, true, 50);
+      });
+    });
+
     it('combines multiple filters correctly', async () => {
       renderComponent();
 
-      // Set multiple filters
-      await user.click(screen.getByRole('tab', { name: /any/i }));
-      const ageInput = screen.getByRole('spinbutton', { name: /age/i });
-      await user.type(ageInput, '5');
-      await user.click(screen.getByRole('button', { name: /apply/i }));
+      await user.click(screen.getByRole('tab', { name: /^male$/i }));
+      fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2019-09-25' } });
+      await user.click(screen.getByRole('button', { name: /search/i }));
 
       const patientBanners = screen.getAllByRole('banner');
       expect(patientBanners).toHaveLength(1);
@@ -205,7 +323,7 @@ describe('AdvancedPatientSearchComponent', () => {
 
       // Set a filter
       await user.click(screen.getByRole('tab', { name: /female/i }));
-      await user.click(screen.getByRole('button', { name: /apply/i }));
+      await user.click(screen.getByRole('button', { name: /search/i }));
 
       // Reset filters
       await user.click(screen.getByRole('button', { name: /reset fields/i }));

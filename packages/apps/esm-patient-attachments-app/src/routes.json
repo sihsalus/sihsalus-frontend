@@ -8,13 +8,13 @@
       "name": "attachments-overview-widget",
       "component": "attachmentsOverview",
       "slot": "patient-chart-attachments-dashboard-slot",
-      "privileges": "app:clinical.chart.attachments"
+      "privileges": "app:hoja.clinica.adjuntos"
     },
     {
       "name": "attachments-results-summary-dashboard",
       "component": "attachmentsSummaryResultsDashboard",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.attachments",
+      "privileges": "app:hoja.clinica.adjuntos",
       "meta": {
         "slot": "patient-chart-attachments-dashboard-slot",
         "path": "Attachments"
@@ -25,7 +25,7 @@
       "name": "capture-photo-widget",
       "component": "capturePhotoWidget",
       "slot": "capture-patient-photo-slot",
-      "privileges": "app:topnav.registerPatient"
+      "privileges": "app:opciones.registrarPaciente"
     }
   ],
   "modals": [
@@ -36,7 +36,7 @@
     {
       "name": "delete-attachment-modal",
       "component": "deleteAttachmentModal",
-      "privileges": "app:clinical.chart.attachments.edit"
+      "privileges": "app:hoja.clinica.adjuntos.editar"
     }
   ],
   "pages": []

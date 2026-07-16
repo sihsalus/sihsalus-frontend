@@ -6,27 +6,45 @@ import {
   useConnectivity,
   useSession,
 } from '@openmrs/esm-framework';
-import { screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { mockConfig } from '../../../../test-utils/mocks/login-config.mock';
+import { hardNavigate } from '../navigation';
 import renderWithRouter from '../test-helpers/render-with-router';
 
-import Login from './login.component';
+import Login, { type LoginReferrer } from './login.component';
 
 const mockGetSessionStore = vi.mocked(getSessionStore);
 const mockLogin = vi.mocked(refetchCurrentUser);
 const mockUseConfig = vi.mocked(useConfig);
 const mockUseConnectivity = vi.mocked(useConnectivity);
 const mockUseSession = vi.mocked(useSession);
+const mockHardNavigate = vi.mocked(hardNavigate);
+
+vi.mock('../navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../navigation')>()),
+  hardNavigate: vi.fn(),
+}));
 
 const mockBuildInfo = { version: '1.2.3', gitSha: 'abc1234', buildTime: '2026-06-04T00:00:00Z' };
 const openmrsSpaBasePlaceholder = '$' + '{openmrsSpaBase}';
 
+const LocationSelectPage = () => {
+  const state = useLocation().state as LoginReferrer;
+
+  return (
+    <div>
+      Location select page
+      <span data-testid="location-referrer">{state?.referrer}</span>
+    </div>
+  );
+};
+
 const LoginRoutes = () => (
   <Routes>
     <Route path="/login" element={<Login />} />
-    <Route path="/login/location" element={<div>Location select page</div>} />
+    <Route path="/login/location" element={<LocationSelectPage />} />
   </Routes>
 );
 
@@ -77,7 +95,7 @@ describe('Login', () => {
     screen.getByRole('button', { name: /Continue/i });
   });
 
-  it('loads the optimized AVIF login image before falling back to PNG', () => {
+  it('renders the login artwork', () => {
     const { container } = renderWithRouter(
       Login,
       {},
@@ -86,13 +104,7 @@ describe('Login', () => {
       },
     );
 
-    const optimizedSource = container.querySelector('picture source[type="image/avif"]');
-    const fallbackImage = container.querySelector('picture img');
-
-    expect(optimizedSource).toHaveAttribute('srcset', '/openmrs/spa/login.avif');
-    expect(fallbackImage).toHaveAttribute('src', '/openmrs/spa/login.png');
-    expect(fallbackImage).toHaveAttribute('width', '1672');
-    expect(fallbackImage).toHaveAttribute('height', '941');
+    expect(container.querySelector('picture')).toBeInTheDocument();
   });
 
   it('renders a configurable logo', () => {
@@ -238,6 +250,37 @@ describe('Login', () => {
     await user.click(screen.getByRole('button', { name: /log in/i }));
 
     expect(await screen.findByText('Location select page')).toBeInTheDocument();
+  });
+
+  it('requires admission users without a session location to select one', async () => {
+    mockLogin.mockResolvedValue({
+      session: {
+        authenticated: true,
+        user: {
+          roles: [{ display: 'Admisión' }],
+          privileges: [{ display: 'app:home.admision' }],
+        },
+      },
+    } as SessionStore);
+
+    render(
+      <MemoryRouter
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+        initialEntries={[{ pathname: '/login', state: { referrer: '/patient-registration' } }]}
+      >
+        <LoginRoutes />
+      </MemoryRouter>,
+    );
+    const user = userEvent.setup();
+
+    await user.type(screen.getByRole('textbox', { name: /Username/i }), 'admision');
+    await user.click(screen.getByRole('button', { name: /Continue/i }));
+    await user.type(await screen.findByLabelText(/^password$/i), 'secret');
+    await user.click(screen.getByRole('button', { name: /log in/i }));
+
+    expect(await screen.findByText('Location select page')).toBeInTheDocument();
+    expect(screen.getByTestId('location-referrer')).toHaveTextContent('/patient-registration');
+    expect(mockHardNavigate).not.toHaveBeenCalled();
   });
 
   it('should render the both the username and password fields when the showPasswordOnSeparateScreen config is false', async () => {

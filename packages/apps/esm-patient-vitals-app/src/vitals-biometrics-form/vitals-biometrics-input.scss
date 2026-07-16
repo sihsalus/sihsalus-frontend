@@ -27,6 +27,10 @@
   margin-bottom: layout.$spacing-03;
 }
 
+.requiredIndicator {
+  color: $danger;
+}
+
 .numberInput {
   border: none;
   @extend .productiveHeading04;

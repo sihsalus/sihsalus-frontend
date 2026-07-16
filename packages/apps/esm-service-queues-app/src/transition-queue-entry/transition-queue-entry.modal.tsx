@@ -1,5 +1,5 @@
 import { Button, ModalBody, ModalFooter, ModalHeader, Tag } from '@carbon/react';
-import { navigate, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, navigate, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -53,41 +53,37 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ c
 
   const { mutateQueueEntries } = useMutateQueueEntries();
 
-  const launchEditPriorityModal = useCallback(() => {
-    const endedAt = new Date();
-    updateQueueEntry(
-      queueEntry?.visitUuid,
-      queueEntry?.queueUuid,
-      queueEntry?.queueUuid,
-      queueEntry?.queueEntryUuid,
-      queueEntry?.patientUuid,
-      queueEntry?.priority?.uuid,
-      defaultTransitionStatus,
-      endedAt,
-      queueEntry?.sortWeight,
-    ).then(
-      () => {
-        serveQueueEntry(queueEntry?.queue.name, queueEntry?.visitQueueNumber, 'serving').then(({ status }) => {
-          showSnackbar({
-            isLowContrast: true,
-            title: t('success', 'Success'),
-            kind: 'success',
-            subtitle: t('patientAttendingService', 'Patient attending service'),
-          });
-          closeModal();
-          mutateQueueEntries();
-          navigate({ to: `${globalThis.spaBase}/patient/${queueEntry?.patientUuid}/chart` });
-        });
-      },
-      (error) => {
-        showSnackbar({
-          title: t('queueEntryUpdateFailed', 'Error updating queue entry'),
-          kind: 'error',
-          isLowContrast: false,
-          subtitle: error?.message,
-        });
-      },
-    );
+  const launchEditPriorityModal = useCallback(async () => {
+    try {
+      await updateQueueEntry(
+        queueEntry?.queueEntryUuid,
+        queueEntry?.queueUuid,
+        queueEntry?.priority?.uuid,
+        defaultTransitionStatus,
+      );
+      await serveQueueEntry(queueEntry?.queue.name, queueEntry?.visitQueueNumber, 'serving');
+
+      showSnackbar({
+        isLowContrast: true,
+        title: t('success', 'Success'),
+        kind: 'success',
+        subtitle: t('patientAttendingService', 'Patient attending service'),
+      });
+      closeModal();
+      mutateQueueEntries();
+      navigate({ to: `${globalThis.spaBase}/patient/${queueEntry?.patientUuid}/chart` });
+    } catch (error) {
+      showSnackbar({
+        title: t('queueEntryUpdateFailed', 'Error updating queue entry'),
+        kind: 'error',
+        isLowContrast: false,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('queueEntryActionErrorMessage', 'The queue action could not be completed. Please try again.'),
+          { logContext: 'Serve queue entry' },
+        ),
+      });
+    }
   }, [
     closeModal,
     defaultTransitionStatus,
@@ -97,9 +93,7 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ c
     queueEntry?.queue.name,
     queueEntry?.queueEntryUuid,
     queueEntry?.queueUuid,
-    queueEntry?.sortWeight,
     queueEntry?.visitQueueNumber,
-    queueEntry?.visitUuid,
     t,
   ]);
 
@@ -120,7 +114,11 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ c
           title: t('queueEntryUpdateFailed', 'Error updating queue entry'),
           kind: 'error',
           isLowContrast: false,
-          subtitle: error?.message,
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('queueEntryActionErrorMessage', 'The queue action could not be completed. Please try again.'),
+            { logContext: 'Requeue queue entry' },
+          ),
         });
       },
     );
@@ -157,7 +155,7 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ c
         <Button kind="secondary" onClick={() => handleRequeuePatient()}>
           {t('requeue', 'Requeue')}
         </Button>
-        <Button onClick={() => launchEditPriorityModal()}>{t('serve', 'Serve')}</Button>
+        <Button onClick={() => void launchEditPriorityModal()}>{t('serve', 'Serve')}</Button>
       </ModalFooter>
     </div>
   );

@@ -163,6 +163,26 @@ describe('PersonAttributeField', () => {
       expect(screen.getByText('concept-answer-2')).toBeInTheDocument();
     });
 
+    it('sorts concept answers without mutating the resource data', async () => {
+      const conceptAnswers = [
+        { uuid: 'zulu-uuid', display: 'Zulu' },
+        { uuid: 'alpha-uuid', display: 'Alpha' },
+      ];
+      mockUseAttributeConceptAnswers.mockReturnValue({
+        conceptAnswers,
+        isLoadingConceptAnswers: false,
+        errorFetchingConceptAnswers: null,
+      });
+
+      render(<PersonAttributeField {...defaultProps} />);
+      await user.click(screen.getByRole('combobox'));
+
+      const alphaOption = screen.getByText('Alpha');
+      const zuluOption = screen.getByText('Zulu');
+      expect(alphaOption.compareDocumentPosition(zuluOption) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(conceptAnswers.map(({ display }) => display)).toEqual(['Zulu', 'Alpha']);
+    });
+
     it('handles custom concept answers', async () => {
       mockUsePersonAttributeType.mockReturnValue({
         data: {
@@ -229,6 +249,31 @@ describe('PersonAttributeField', () => {
       expect(screen.getByText('concept-answer-1')).toBeInTheDocument();
       expect(screen.getByText('concept-answer-2')).toBeInTheDocument();
     });
+
+    it('hides the optional concept filter when the user lacks permission to load its answers', () => {
+      mockUseAttributeConceptAnswers.mockReturnValue({
+        conceptAnswers: [],
+        isLoadingConceptAnswers: false,
+        errorFetchingConceptAnswers: Object.assign(new Error('Forbidden'), { response: { status: 403 } }),
+      });
+
+      const { container } = render(<PersonAttributeField {...defaultProps} />);
+
+      expect(container).toBeEmptyDOMElement();
+      expect(screen.queryByText('Error loading concept attribute answers')).not.toBeInTheDocument();
+    });
+
+    it('keeps the error notification for failures other than missing permissions', () => {
+      mockUseAttributeConceptAnswers.mockReturnValue({
+        conceptAnswers: [],
+        isLoadingConceptAnswers: false,
+        errorFetchingConceptAnswers: new Error('Server error'),
+      });
+
+      render(<PersonAttributeField {...defaultProps} />);
+
+      expect(screen.getByText('Error loading concept attribute answers')).toBeInTheDocument();
+    });
   });
 
   describe('Location Attribute Type', () => {
@@ -277,14 +322,16 @@ describe('PersonAttributeField', () => {
       expect(screen.queryByText('Error loading attribute type test-uuid')).not.toBeInTheDocument();
     });
 
-    it('shows an error notification when loading attribute type fails for a non-404 reason', () => {
+    it('hides optional attribute filters when loading the attribute type fails', () => {
       mockUsePersonAttributeType.mockReturnValue({
         data: null,
         isLoading: false,
         error: new Error('Failed to load attribute type'),
       });
-      render(<PersonAttributeField {...defaultProps} />);
-      expect(screen.getByText('Error loading attribute type test-uuid')).toBeInTheDocument();
+      const { container } = render(<PersonAttributeField {...defaultProps} />);
+
+      expect(container).toBeEmptyDOMElement();
+      expect(screen.queryByText('Error loading attribute type test-uuid')).not.toBeInTheDocument();
     });
   });
 

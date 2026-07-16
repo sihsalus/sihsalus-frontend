@@ -7,6 +7,10 @@ import { type SearchedPatient } from '../../../types';
 
 import PatientBanner from './patient-banner.component';
 
+vi.mock('../../../sihsalus-patient-info/sihsalus-patient-info.component', () => ({
+  SihsalusPatientInfo: ({ patient }) => <span>{patient.name[0].text}</span>,
+}));
+
 const mockUseVisit = vi.mocked(useVisit);
 const mockExtensionSlot = vi.mocked(ExtensionSlot);
 
@@ -40,7 +44,7 @@ function mockVisitReturn(overrides: Partial<ReturnType<typeof useVisit>>) {
   } as unknown as ReturnType<typeof useVisit>;
 }
 
-function renderPatientBanner() {
+function renderPatientBanner(patientToRender = patient) {
   return render(
     <PatientSearchContext2.Provider
       value={{
@@ -50,7 +54,7 @@ function renderPatientBanner() {
         startVisitWorkspaceName: 'start-visit-workspace',
       }}
     >
-      <PatientBanner patient={patient} patientUuid={patient.uuid} />
+      <PatientBanner patient={patientToRender} patientUuid={patientToRender.uuid} />
     </PatientSearchContext2.Provider>,
   );
 }
@@ -77,5 +81,34 @@ describe('PatientBanner', () => {
 
     expect(screen.getByRole('button', { name: /start visit/i })).toBeInTheDocument();
     expect(mockExtensionSlot).toHaveBeenCalled();
+  });
+
+  it.each([
+    ['visit data is still loading', { isLoading: true }],
+    ['visit data is validating', { isValidating: true }],
+    ['visit data failed', { error: new Error('Visit lookup failed') }],
+  ])('does not show the start visit action when %s', (_description, visitState) => {
+    mockUseVisit.mockReturnValue(mockVisitReturn(visitState));
+
+    renderPatientBanner();
+
+    expect(screen.queryByRole('button', { name: /start visit/i })).not.toBeInTheDocument();
+    expect(mockExtensionSlot).not.toHaveBeenCalled();
+  });
+
+  it('treats dead=true without a death date as deceased and hides start visit', () => {
+    mockUseVisit.mockReturnValue(mockVisitReturn({}));
+
+    renderPatientBanner({
+      ...patient,
+      person: {
+        ...patient.person,
+        dead: true,
+        deathDate: null,
+      },
+    });
+
+    expect(screen.queryByRole('button', { name: /start visit/i })).not.toBeInTheDocument();
+    expect(mockExtensionSlot).not.toHaveBeenCalled();
   });
 });

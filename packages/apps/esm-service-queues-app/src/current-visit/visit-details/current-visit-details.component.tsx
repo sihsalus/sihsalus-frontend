@@ -5,7 +5,8 @@ import {
   StructuredListRow,
   StructuredListWrapper,
 } from '@carbon/react';
-import { formatTime, type OpenmrsResource, parseDate, useConfig, type Visit } from '@openmrs/esm-framework';
+import { formatTime, type OpenmrsResource, parseDate, useConfig, useSession, type Visit } from '@openmrs/esm-framework';
+import { isAdmissionUser } from '@sihsalus/esm-rbac';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -31,6 +32,8 @@ enum visitTypes {
 const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encounters, visit }) => {
   const { t } = useTranslation();
   const { concepts, visitNoteEncounterTypeUuid } = useConfig<ConfigObject>();
+  const session = useSession();
+  const canViewVisitSummary = !isAdmissionUser(session?.user);
 
   const [diagnoses, notes, vitalsToRetrieve]: [Array<DiagnosisItem>, Array<Note>, Array<Encounter>] = useMemo(() => {
     const notes: Array<Note> = [];
@@ -72,6 +75,7 @@ const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encount
     concepts.problemListConceptUuid,
     concepts.visitDiagnosesConceptUuid,
   ]);
+  const vitals = useVitalsFromObs(vitalsToRetrieve);
 
   return (
     <div className={styles.wrapper}>
@@ -79,23 +83,20 @@ const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encount
         <StructuredListWrapper className={styles.structuredList}>
           <StructuredListHead></StructuredListHead>
           <StructuredListBody>
-            <StructuredListRow className={styles.structuredListRow}>
-              <StructuredListCell>{t('visitNote', 'Visit note')}</StructuredListCell>
-              <StructuredListCell>
-                <VisitNote notes={notes} diagnoses={diagnoses} patientUuid={patientUuid} />
-              </StructuredListCell>
-            </StructuredListRow>
+            {canViewVisitSummary ? (
+              <StructuredListRow className={styles.structuredListRow}>
+                <StructuredListCell>{t('visitNote', 'Visit note')}</StructuredListCell>
+                <StructuredListCell>
+                  <VisitNote notes={notes} diagnoses={diagnoses} patientUuid={patientUuid} />
+                </StructuredListCell>
+              </StructuredListRow>
+            ) : null}
 
             <StructuredListRow className={styles.structuredListRow}>
               <StructuredListCell>{t('vitals', 'Vitals')}</StructuredListCell>
               <StructuredListCell>
                 {' '}
-                <Vitals
-                  vitals={useVitalsFromObs(vitalsToRetrieve)}
-                  patientUuid={patientUuid}
-                  visitType={visitTypes.CURRENT}
-                  visit={visit}
-                />
+                <Vitals vitals={vitals} patientUuid={patientUuid} visitType={visitTypes.CURRENT} visit={visit} />
               </StructuredListCell>
             </StructuredListRow>
           </StructuredListBody>

@@ -1,17 +1,51 @@
-import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
+import { navigate, showSnackbar, useSession } from '@openmrs/esm-framework';
+import { AppErrorBoundary, isAdmissionUser } from '@sihsalus/esm-rbac';
+import { type PropsWithChildren, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
-import { basePath, clinicalChartPrivilege, dashboardPath, spaRoot } from './constants';
+import { hasClinicalChartAccess } from './clinical-chart-access';
+import { basePath, dashboardPath, spaRoot } from './constants';
 import PatientChart from './patient-chart/patient-chart.component';
 import styles from './root.scss';
+
+function RedirectToPatientSearch() {
+  const { t } = useTranslation();
+  const hasRedirected = useRef(false);
+
+  useEffect(() => {
+    if (hasRedirected.current) {
+      return;
+    }
+
+    hasRedirected.current = true;
+    showSnackbar({
+      kind: 'info',
+      isLowContrast: true,
+      title: t('chartAccessDeniedTitle', 'Acceso restringido'),
+      subtitle: t(
+        'chartAccessDeniedMessage',
+        'No tiene permisos para acceder a la historia clínica. Fue redirigido a la búsqueda de pacientes.',
+      ),
+    });
+    navigate({ to: `${globalThis.spaBase}/search` });
+  }, [t]);
+
+  return null;
+}
+
+function RequireClinicalChartAccess({ children }: PropsWithChildren) {
+  const { user } = useSession();
+
+  // Admission works from search, appointments, and queues; it must not open the clinical chart,
+  // even when a broad chart privilege is inherited by the account.
+  return !isAdmissionUser(user) && hasClinicalChartAccess(user) ? <>{children}</> : <RedirectToPatientSearch />;
+}
 
 export default function Root() {
   return (
     <AppErrorBoundary appName="esm-patient-chart-app">
-      <RequirePrivilege
-        privilege={clinicalChartPrivilege}
-        description="Necesita el privilegio de historia clinica para acceder al chart del paciente."
-      >
+      <RequireClinicalChartAccess>
         <div className={styles.patientChartWrapper}>
           <BrowserRouter basename={spaRoot}>
             <Routes>
@@ -20,7 +54,7 @@ export default function Root() {
             </Routes>
           </BrowserRouter>
         </div>
-      </RequirePrivilege>
+      </RequireClinicalChartAccess>
     </AppErrorBoundary>
   );
 }

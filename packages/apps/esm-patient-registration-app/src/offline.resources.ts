@@ -60,6 +60,7 @@ export interface RelationshipTypesResponse {
     displayAIsToB?: string;
     displayBIsToA?: string;
     uuid: string;
+    weight?: number;
   }>;
 }
 
@@ -77,7 +78,9 @@ export async function fetchAddressTemplate() {
 
 export async function fetchAllRelationshipTypes(): Promise<RelationshipTypesResponse> {
   try {
-    const { data } = await cacheAndFetch<RelationshipTypesResponse>(`${restBaseUrl}/relationshiptype?v=default`);
+    const { data } = await cacheAndFetch<RelationshipTypesResponse>(
+      `${restBaseUrl}/relationshiptype?v=custom:(uuid,displayAIsToB,displayBIsToA,weight)`,
+    );
     return data;
   } catch (error) {
     console.warn(

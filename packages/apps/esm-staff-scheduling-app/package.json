@@ -42,6 +42,7 @@
   "dependencies": {
     "@carbon/react": "^1.83.0",
     "@openmrs/esm-utils": "workspace:*",
+    "@sihsalus/esm-rbac": "workspace:*",
     "dayjs": "1.x"
   },
   "peerDependencies": {

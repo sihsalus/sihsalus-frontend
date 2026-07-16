@@ -2,6 +2,7 @@ import { Layer, OverflowMenu, OverflowMenuItem } from '@carbon/react';
 import { launchWorkspace2, showModal, useLayoutType } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { CanEditServiceQueues } from '../../permissions';
 import type { QueueRoom } from '../../types';
 import styles from './admin-page.scss';
 
@@ -25,17 +26,25 @@ const QueueRoomActionMenu: React.FC<QueueRoomActionMenuProps> = ({ queueRoom }) 
   }, [queueRoom]);
 
   return (
-    <Layer>
-      <OverflowMenu aria-label={t('actions', 'Actions')} size={isTablet ? 'lg' : 'sm'} flipped align="left">
-        <OverflowMenuItem className={styles.menuitem} itemText={t('edit', 'Edit')} onClick={handleEditQueueRoom} />
-        <OverflowMenuItem
-          className={styles.menuitem}
-          isDelete
-          itemText={t('delete', 'Delete')}
-          onClick={handleDeleteQueueRoom}
-        />
-      </OverflowMenu>
-    </Layer>
+    <CanEditServiceQueues>
+      <Layer>
+        <OverflowMenu
+          aria-label={t('actions', 'Actions')}
+          iconDescription={t('actions', 'Actions')}
+          size={isTablet ? 'lg' : 'sm'}
+          flipped
+          align="left"
+        >
+          <OverflowMenuItem className={styles.menuitem} itemText={t('edit', 'Edit')} onClick={handleEditQueueRoom} />
+          <OverflowMenuItem
+            className={styles.menuitem}
+            isDelete
+            itemText={t('delete', 'Delete')}
+            onClick={handleDeleteQueueRoom}
+          />
+        </OverflowMenu>
+      </Layer>
+    </CanEditServiceQueues>
   );
 };
 

@@ -1,5 +1,13 @@
 import { ComboBox, DataTableSkeleton, Dropdown, Layer, Pagination, Tile } from '@carbon/react';
-import { formatDate, showModal, showSnackbar, useConfig, usePagination } from '@openmrs/esm-framework';
+import {
+  formatDate,
+  showModal,
+  showSnackbar,
+  useConfig,
+  usePagination,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import {
   CardHeader,
   EmptyDataIllustration,
@@ -11,7 +19,7 @@ import { useTranslation } from 'react-i18next';
 import type { KeyedMutator } from 'swr';
 
 import type { ConfigObject } from '../../config-schema';
-import { patientFormEntryWorkspace } from '../../utils/constants';
+import { chartCaseMonitoringEditPrivilege, patientFormEntryWorkspace } from '../../utils/constants';
 
 import styles from './case-encounter-header.scss';
 import { deleteEncounter, useInfiniteVisits } from './case-encounter-table.resource';
@@ -31,6 +39,8 @@ const CaseEncounterHeader = ({ patientUuid, mutate, onFilterChange }: CaseEncoun
   const { t } = useTranslation();
   const title = t('caseEncounter', 'Seguimiento clínico del caso');
   const { caseManagementForms } = useConfig<ConfigObject>();
+  const session = useSession();
+  const canEdit = userHasAccess(chartCaseMonitoringEditPrivilege, session?.user);
 
   const handleOpenOrEditClinicalEncounterForm = (formUuid: string, encounterUUID = '') => {
     launchPatientWorkspace(patientFormEntryWorkspace, {
@@ -78,14 +88,16 @@ const CaseEncounterHeader = ({ patientUuid, mutate, onFilterChange }: CaseEncoun
             onChange={handleEncounterTypeChange}
             size="lg"
           />
-          <ComboBox
-            onChange={handleComboBoxChange}
-            id="select-form"
-            items={items}
-            itemToString={(item) => (item ? item.text : '')}
-            placeholder={t('selectForms', 'Select forms')}
-            className={styles.comboBox}
-          />
+          {canEdit ? (
+            <ComboBox
+              onChange={handleComboBoxChange}
+              id="select-form"
+              items={items}
+              itemToString={(item) => (item ? item.text : '')}
+              placeholder={t('selectForms', 'Select forms')}
+              className={styles.comboBox}
+            />
+          ) : null}
         </div>
       </CardHeader>
     </div>

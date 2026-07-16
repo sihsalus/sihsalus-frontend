@@ -4,6 +4,9 @@ import { useMemo } from 'react';
 import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
+import { isWithinPregnancyEpisode } from '../utils/pregnancy-episode-utils';
+
+import { useCurrentPregnancy } from './useCurrentPregnancy';
 
 type RiskLevel = 'bajo' | 'alto' | 'muy-alto' | 'indeterminado';
 
@@ -28,6 +31,7 @@ interface ObstetricRiskResult {
  */
 export function useObstetricRisk(patientUuid: string): ObstetricRiskResult {
   const config = useConfig<ConfigObject>();
+  const { pregnancyStartDate, isLoading: isPregnancyLoading, error: pregnancyError } = useCurrentPregnancy(patientUuid);
   const classificationConceptUuid = config.obstetricRisk?.classificationConceptUuid;
   const highRiskConceptUuid = config.obstetricRisk?.highRiskConceptUuid;
   const lowRiskConceptUuid = config.obstetricRisk?.lowRiskConceptUuid;
@@ -37,7 +41,7 @@ export function useObstetricRisk(patientUuid: string): ObstetricRiskResult {
   // Fetch risk classification (latest obs for Grupo de Riesgo)
   const classificationUrl = useMemo(() => {
     if (!patientUuid || !classificationConceptUuid) return null;
-    return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${classificationConceptUuid}&v=custom:(uuid,value:(uuid,display),obsDatetime)&limit=1&sort=desc`;
+    return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${classificationConceptUuid}&v=custom:(uuid,value:(uuid,display),obsDatetime)&limit=100`;
   }, [patientUuid, classificationConceptUuid]);
 
   // Fetch risk factors (all obs for Motivo derivación casa espera)
@@ -67,9 +71,20 @@ export function useObstetricRisk(patientUuid: string): ObstetricRiskResult {
   });
 
   const result = useMemo(() => {
-    const obs = classificationData?.results?.[0];
+    const obs = (classificationData?.results ?? [])
+      .filter((candidate: { obsDatetime?: string }) =>
+        isWithinPregnancyEpisode(candidate.obsDatetime, pregnancyStartDate),
+      )
+      .sort(
+        (first: { obsDatetime: string }, second: { obsDatetime: string }) =>
+          new Date(second.obsDatetime).getTime() - new Date(first.obsDatetime).getTime(),
+      )[0];
     if (!obs) {
-      return { riskLevel: 'indeterminado' as RiskLevel, riskFactors: [] as string[], lastEvaluationDate: null };
+      return {
+        riskLevel: 'indeterminado' as RiskLevel,
+        riskFactors: [] as string[],
+        lastEvaluationDate: null,
+      };
     }
 
     const valueUuid = obs.value?.uuid;
@@ -87,16 +102,26 @@ export function useObstetricRisk(patientUuid: string): ObstetricRiskResult {
 
     // Parse risk factors from Motivo derivación obs
     const riskFactors: string[] = (factorsData?.results ?? [])
+      .filter((factorObs: { obsDatetime?: string }) =>
+        isWithinPregnancyEpisode(factorObs.obsDatetime, pregnancyStartDate),
+      )
       .map((factorObs: { value?: { display?: string } }) => factorObs.value?.display)
       .filter(Boolean);
 
     return { riskLevel, riskFactors, lastEvaluationDate };
-  }, [classificationData, factorsData, highRiskConceptUuid, lowRiskConceptUuid, veryHighRiskConceptUuid]);
+  }, [
+    classificationData,
+    factorsData,
+    highRiskConceptUuid,
+    lowRiskConceptUuid,
+    pregnancyStartDate,
+    veryHighRiskConceptUuid,
+  ]);
 
   return {
     ...result,
-    isLoading: classLoading || factorsLoading,
-    error: classError || factorsError,
+    isLoading: isPregnancyLoading || classLoading || factorsLoading,
+    error: pregnancyError || classError || factorsError,
     mutate: () => {
       classificationMutate();
       factorsMutate();

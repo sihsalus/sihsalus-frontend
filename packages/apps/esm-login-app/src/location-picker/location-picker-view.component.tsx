@@ -1,4 +1,4 @@
-import { Button, Checkbox, InlineLoading } from '@carbon/react';
+import { Button, Checkbox, InlineLoading, InlineNotification } from '@carbon/react';
 import {
   getCoreTranslation,
   LocationPicker,
@@ -13,6 +13,7 @@ import { type Location, useLocation, useSearchParams } from 'react-router-dom';
 
 import type { ConfigSchema } from '../config-schema';
 import type { LoginReferrer } from '../login/login.component';
+import { LoginArtwork } from '../login-artwork.component';
 import { buildSpaNavigationTarget, hardNavigate } from '../navigation';
 
 import { useDefaultLocation, useLocationCount } from './location-picker.resource';
@@ -31,8 +32,10 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
   const [searchParams] = useSearchParams();
   const checkboxId = useId();
   const isUpdateFlow = useMemo(() => searchParams.get('update') === 'true', [searchParams]);
-  const { defaultLocation, updateDefaultLocation, savePreference, setSavePreference } =
-    useDefaultLocation(isUpdateFlow);
+  const { defaultLocation, updateDefaultLocation, savePreference, setSavePreference } = useDefaultLocation(
+    isUpdateFlow,
+    chooseLocation.useLoginLocationTag,
+  );
   const {
     isLoading: isLoadingLocationCount,
     locationCount,
@@ -48,9 +51,6 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
     }),
     [user],
   );
-  const loginImageAvifSrc = `${globalThis.getOpenmrsSpaBase()}login.avif`;
-  const loginImageSrc = `${globalThis.getOpenmrsSpaBase()}login.png`;
-
   const [activeLocation, setActiveLocation] = useState(() => {
     if (currentLocationUuid && hideWelcomeMessage) {
       return currentLocationUuid;
@@ -65,7 +65,7 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
   };
 
   const changeLocation = useCallback(
-    (locationUuid?: string, saveUserPreference?: boolean) => {
+    (locationUuid: string, saveUserPreference?: boolean) => {
       setIsSubmitting(true);
 
       const referrer = state?.referrer;
@@ -94,8 +94,10 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
     if (isLoadingLocationCount) return;
 
     if (locationCount === 0) {
-      changeLocation();
-    } else if (locationCount === 1 || !chooseLocation.enabled) {
+      return;
+    }
+
+    if (locationCount === 1 || !chooseLocation.enabled) {
       if (firstLocationResourceId) {
         changeLocation(firstLocationResourceId, true);
       } else {
@@ -106,14 +108,14 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
 
   // Handle cases where the login location is present in the userProperties.
   useEffect(() => {
-    if (isUpdateFlow) {
+    if (isUpdateFlow || locationCount === 0) {
       return;
     }
     if (defaultLocation && !isSubmitting) {
       setActiveLocation(defaultLocation);
       changeLocation(defaultLocation, true);
     }
-  }, [changeLocation, isSubmitting, defaultLocation, isUpdateFlow]);
+  }, [changeLocation, isSubmitting, defaultLocation, isUpdateFlow, locationCount]);
 
   const handleSubmit = useCallback(
     (evt: React.FormEvent<HTMLFormElement>) => {
@@ -130,10 +132,7 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
 
   return (
     <div className={styles.locationPickerContainer}>
-      <picture className={styles.backgroundMedia}>
-        <source srcSet={loginImageAvifSrc} type="image/avif" />
-        <img src={loginImageSrc} alt="" width="1672" height="941" />
-      </picture>
+      <LoginArtwork className={styles.backgroundMedia} />
       <form className={styles.locationPickerForm} onSubmit={handleSubmit}>
         <div className={styles.locationCard}>
           <div className={styles.paddedContainer}>
@@ -147,12 +146,25 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
               )}
             </p>
           </div>
-          <LocationPicker
-            selectedLocationUuid={activeLocation}
-            defaultLocationUuid={userProperties?.defaultLocation}
-            locationTag={chooseLocation.useLoginLocationTag && 'Login Location'}
-            onChange={(locationUuid) => setActiveLocation(locationUuid)}
-          />
+          {locationCount === 0 ? (
+            <InlineNotification
+              hideCloseButton
+              kind="error"
+              lowContrast
+              title={t('noLoginLocationsAvailable', 'No login locations available')}
+              subtitle={t(
+                'noLoginLocationsAvailableMessage',
+                'Contact an administrator to configure at least one login location.',
+              )}
+            />
+          ) : (
+            <LocationPicker
+              selectedLocationUuid={activeLocation}
+              defaultLocationUuid={userProperties?.defaultLocation}
+              locationTag={chooseLocation.useLoginLocationTag && 'Login Location'}
+              onChange={(locationUuid) => setActiveLocation(locationUuid)}
+            />
+          )}
           <div className={styles.footerContainer}>
             <Checkbox
               className={styles.savePreferenceCheckbox}
@@ -165,7 +177,7 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
               className={styles.confirmButton}
               kind="primary"
               type="submit"
-              disabled={!activeLocation || !isLoginEnabled || isSubmitting}
+              disabled={locationCount === 0 || !activeLocation || !isLoginEnabled || isSubmitting}
             >
               {isSubmitting ? (
                 <InlineLoading className={styles.loader} description={t('submitting', 'Submitting')} />

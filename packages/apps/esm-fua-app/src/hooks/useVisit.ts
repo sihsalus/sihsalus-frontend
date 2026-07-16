@@ -1,4 +1,4 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { makeUrl, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { getPreferredIdentifier } from '@openmrs/esm-utils';
 import useSWR from 'swr';
 
@@ -26,6 +26,59 @@ export interface VisitPatientInfo {
     identifier: string;
     identifierType: { display: string };
   }>;
+}
+
+export class FuaGenerationError extends Error {
+  constructor(
+    public readonly status: number | null,
+    public readonly responseBody: unknown = null,
+  ) {
+    super(status ? `FUA generation failed with HTTP ${status}` : 'FUA generation request failed');
+    this.name = 'FuaGenerationError';
+  }
+}
+
+async function readResponseBody(response: Response): Promise<unknown> {
+  try {
+    const responseText = await response.text();
+    if (!responseText) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(responseText);
+    } catch {
+      return responseText;
+    }
+  } catch {
+    return null;
+  }
+}
+
+async function requestFuaGeneration(visitUuid: string): Promise<Response> {
+  let response: Response;
+
+  try {
+    // The FUA endpoint can return 401 for domain/configuration failures. openmrsFetch
+    // treats every 401 as an expired session and redirects, so handle this request locally.
+    response = await window.fetch(makeUrl(`${ModuleFuaRestURL}/generateFromVisit/${encodeURIComponent(visitUuid)}`), {
+      method: 'POST',
+      credentials: 'same-origin',
+      redirect: 'manual',
+      headers: {
+        Accept: 'application/json',
+        'Disable-WWW-Authenticate': 'true',
+      },
+    });
+  } catch (error) {
+    throw new FuaGenerationError(null, error);
+  }
+
+  if (!response.ok) {
+    throw new FuaGenerationError(response.status, await readResponseBody(response));
+  }
+
+  return response;
 }
 
 export function useVisit(visitUuid: string | null | undefined) {
@@ -58,22 +111,14 @@ export function useVisits() {
 }
 
 export async function generateFuaFromVisit(visitUuid: string) {
-  const response = await openmrsFetch(`${ModuleFuaRestURL}/generateFromVisit/${visitUuid}`, {
-    method: 'POST',
-  });
+  const response = await requestFuaGeneration(visitUuid);
 
   await revalidateFuaRequestCaches();
   return response;
 }
 
 export async function generateFuasFromVisits(visitUuids: Array<string>) {
-  const results = await Promise.allSettled(
-    visitUuids.map((visitUuid) =>
-      openmrsFetch(`${ModuleFuaRestURL}/generateFromVisit/${encodeURIComponent(visitUuid)}`, {
-        method: 'POST',
-      }),
-    ),
-  );
+  const results = await Promise.allSettled(visitUuids.map(requestFuaGeneration));
 
   await revalidateFuaRequestCaches();
 

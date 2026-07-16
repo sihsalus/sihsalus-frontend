@@ -26,7 +26,7 @@ const STATUS_ICONS: Record<ControlStatus, typeof CheckmarkFilled> = {
   future: CircleDash,
 };
 
-const CredTile: React.FC<CredTileProps> = ({ controlNumber, label, date, status }) => {
+const CredTile: React.FC<CredTileProps> = ({ label, date, status }) => {
   const { t } = useTranslation();
 
   const statusLabels: Record<ControlStatus, string> = {
@@ -50,7 +50,7 @@ const CredTile: React.FC<CredTileProps> = ({ controlNumber, label, date, status 
       })}
     >
       <div className={styles.tileHeader}>
-        <strong>{`#${controlNumber}`}</strong>
+        <strong>{t('idealAgeSlot', 'Edad programada')}</strong>
         <span className={classNames(styles.statusBadge, styles[`status-${status}`])}>
           <StatusIcon size={12} />
           {statusLabels[status]}

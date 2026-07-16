@@ -1,5 +1,5 @@
 import { Button, ButtonSkeleton, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { showSnackbar } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
@@ -17,29 +17,57 @@ const ClearQueueEntriesModal: React.FC<ClearQueueEntriesModalProps> = ({ queueEn
   const { mutateQueueEntries } = useMutateQueueEntries();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleClearQueueBatchRequest = useCallback(() => {
+  const handleClearQueueBatchRequest = useCallback(async () => {
     setIsSubmitting(true);
-    batchClearQueueEntries(queueEntries).then(
-      () => {
-        closeModal();
+    try {
+      const result = await batchClearQueueEntries(queueEntries);
+      const completed = result.cleared + result.alreadyEnded;
+
+      if (result.failed === 0) {
         showSnackbar({
           isLowContrast: true,
           title: t('clearQueue', 'Clear queue'),
           kind: 'success',
           subtitle: t('queuesClearedSuccessfully', 'Queues cleared successfully'),
         });
-        mutateQueueEntries();
-      },
-      (error) => {
+      } else if (completed > 0) {
+        showSnackbar({
+          isLowContrast: true,
+          title: t('queueClearPartial', 'Queue partially cleared'),
+          kind: 'warning',
+          subtitle: t(
+            'queueClearPartialMessage',
+            '{{completed}} of {{total}} entries were cleared or were already inactive. {{failed}} could not be processed.',
+            { completed, total: result.total, failed: result.failed },
+          ),
+        });
+      } else {
         showSnackbar({
           title: t('errorClearingQueues', 'Error clearing queues'),
           kind: 'error',
           isLowContrast: false,
-          subtitle: error?.message,
+          subtitle: t('queueOperationErrorMessage', 'The queue operation could not be completed. Please try again.'),
         });
+      }
+    } catch (error) {
+      showSnackbar({
+        title: t('errorClearingQueues', 'Error clearing queues'),
+        kind: 'error',
+        isLowContrast: false,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('queueOperationErrorMessage', 'The queue operation could not be completed. Please try again.'),
+          { logContext: 'Clear queue entries' },
+        ),
+      });
+    } finally {
+      try {
+        await mutateQueueEntries();
+      } finally {
+        setIsSubmitting(false);
         closeModal();
-      },
-    );
+      }
+    }
   }, [closeModal, mutateQueueEntries, t, queueEntries]);
 
   return (

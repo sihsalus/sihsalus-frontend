@@ -29,7 +29,7 @@
       "component": "addPatientLink",
       "name": "add-patient-action",
       "slot": "top-nav-actions-slot",
-      "privileges": "app:topnav.registerPatient",
+      "privileges": "app:opciones.registrarPaciente",
       "online": true,
       "offline": true
     },
@@ -44,7 +44,7 @@
       "component": "editPatientDetailsButton",
       "name": "edit-patient-details-button",
       "slot": "patient-actions-slot",
-      "privileges": "app:topnav.registerPatient",
+      "privileges": "app:opciones.registrarPaciente",
       "online": true,
       "offline": true
     },
@@ -52,7 +52,7 @@
       "component": "editPatientDetailsButton",
       "name": "edit-patient-details-button",
       "slot": "patient-search-actions-slot",
-      "privileges": "app:topnav.registerPatient",
+      "privileges": "app:opciones.registrarPaciente",
       "online": true,
       "offline": true
     },
@@ -60,7 +60,7 @@
       "component": "bulkPatientImportAdminCardLink",
       "name": "system-administration-patient-import-card-link",
       "slot": "system-admin-page-card-link-slot",
-      "privileges": "app:topnav.registerPatient",
+      "privileges": "Manage Patients",
       "online": true,
       "offline": false
     }

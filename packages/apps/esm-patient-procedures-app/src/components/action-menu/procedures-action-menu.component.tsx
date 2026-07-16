@@ -14,7 +14,7 @@ export const ProceduresActionMenu = ({ procedure, patientUuid }: ProceduresActio
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
-  const canEdit = userHasAccess('app:clinical.chart.procedures.edit', session?.user);
+  const canEdit = userHasAccess('app:hoja.clinica.procedimientos.editar', session?.user);
   const launchEditProcedureForm = useCallback(
     () =>
       launchWorkspace2('procedures-form-workspace', {

@@ -1,5 +1,6 @@
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import { showSnackbar, useLayoutType } from '@openmrs/esm-framework';
+import { modulePrivileges, RequireModulePrivilege } from '@sihsalus/esm-rbac';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +26,7 @@ interface TabItem {
   component: JSX.Element;
 }
 
-const CohortBuilder: React.FC = () => {
+const CohortBuilderContent: React.FC = () => {
   const { t } = useTranslation();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [isHistoryUpdated, setIsHistoryUpdated] = useState(true);
@@ -181,5 +182,11 @@ const CohortBuilder: React.FC = () => {
     </div>
   );
 };
+
+const CohortBuilder: React.FC = () => (
+  <RequireModulePrivilege privilege={modulePrivileges.cohortBuilder}>
+    <CohortBuilderContent />
+  </RequireModulePrivilege>
+);
 
 export default CohortBuilder;

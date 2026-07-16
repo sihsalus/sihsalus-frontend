@@ -3,6 +3,7 @@ import { AddIcon, launchWorkspace2, type Workspace2DefinitionProps } from '@open
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { serviceQueuesPatientSearchWorkspace, serviceQueuesStartVisitWorkspace } from '../../constants';
+import { CanEditServiceQueues } from '../../permissions';
 import { useServiceQueuesStore } from '../../store/store';
 
 const AddPatientToQueueButton: React.FC = () => {
@@ -10,42 +11,44 @@ const AddPatientToQueueButton: React.FC = () => {
   const { selectedServiceUuid } = useServiceQueuesStore();
 
   return (
-    <Button
-      kind="secondary"
-      renderIcon={(props) => <AddIcon size={16} {...props} />}
-      size="sm"
-      onClick={() =>
-        launchWorkspace2(
-          'queue-patient-search-workspace',
-          {
-            initialQuery: '',
-            workspaceTitle: t('addPatientToQueue', 'Add patient to queue'),
-            onPatientSelected(
-              patientUuid: string,
-              patient: fhir.Patient,
-              launchChildWorkspace: Workspace2DefinitionProps['launchChildWorkspace'],
-              _closeWorkspace: Workspace2DefinitionProps['closeWorkspace'],
-            ) {
-              launchChildWorkspace(serviceQueuesPatientSearchWorkspace, {
-                currentServiceQueueUuid: selectedServiceUuid,
-                patient,
-                selectedPatientUuid: patientUuid,
-              });
-            },
-          },
-          {
-            startVisitWorkspaceName: serviceQueuesStartVisitWorkspace,
-            startVisitWorkspaceProps: {
-              currentServiceQueueUuid: selectedServiceUuid,
-              openedFrom: 'service-queues-add-patient',
+    <CanEditServiceQueues>
+      <Button
+        kind="primary"
+        renderIcon={(props) => <AddIcon size={16} {...props} />}
+        size="sm"
+        onClick={() =>
+          launchWorkspace2(
+            'queue-patient-search-workspace',
+            {
+              initialQuery: '',
               workspaceTitle: t('addPatientToQueue', 'Add patient to queue'),
+              onPatientSelected(
+                patientUuid: string,
+                patient: fhir.Patient,
+                launchChildWorkspace: Workspace2DefinitionProps['launchChildWorkspace'],
+                _closeWorkspace: Workspace2DefinitionProps['closeWorkspace'],
+              ) {
+                launchChildWorkspace(serviceQueuesPatientSearchWorkspace, {
+                  currentServiceQueueUuid: selectedServiceUuid,
+                  patient,
+                  selectedPatientUuid: patientUuid,
+                });
+              },
             },
-          },
-        )
-      }
-    >
-      {t('addPatientToQueue', 'Add patient to queue')}
-    </Button>
+            {
+              startVisitWorkspaceName: serviceQueuesStartVisitWorkspace,
+              startVisitWorkspaceProps: {
+                currentServiceQueueUuid: selectedServiceUuid,
+                openedFrom: 'service-queues-add-patient',
+                workspaceTitle: t('addPatientToQueue', 'Add patient to queue'),
+              },
+            },
+          )
+        }
+      >
+        {t('addPatientToQueue', 'Add patient to queue')}
+      </Button>
+    </CanEditServiceQueues>
   );
 };
 

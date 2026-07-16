@@ -1,4 +1,4 @@
-import { ConfigurableLink, getPatientName, interpolateString, PatientPhoto, useConfig } from '@openmrs/esm-framework';
+import { ConfigurableLink, getPatientName, PatientPhoto, useConfig } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { forwardRef, useCallback, useContext, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
@@ -111,16 +111,16 @@ const CompactPatientBanner = forwardRef<HTMLDivElement, CompactPatientBannerProp
 const ClickablePatientContainer = ({ patient, children }: ClickablePatientContainerProps) => {
   const { nonNavigationSelectPatientAction, patientClickSideEffect } = useContext(PatientSearchContext);
   const config = useConfig<PatientSearchConfig>();
-  const isDeceased = Boolean(patient?.person?.deathDate);
+  const isDeceased = Boolean(patient?.person?.dead || patient?.person?.deathDate);
 
   if (nonNavigationSelectPatientAction) {
     return (
       <button
+        aria-label={patient.person.personName.display}
         type="button"
         className={classNames(styles.patientSearchResult, styles.patientSearchResultButton, {
           [styles.deceased]: isDeceased,
         })}
-        key={patient.uuid}
         onClick={() => {
           nonNavigationSelectPatientAction(patient.uuid);
           patientClickSideEffect?.(patient.uuid);
@@ -133,14 +133,13 @@ const ClickablePatientContainer = ({ patient, children }: ClickablePatientContai
 
   return (
     <ConfigurableLink
+      aria-label={patient.person.personName.display}
       className={classNames(styles.patientSearchResult, {
         [styles.deceased]: isDeceased,
       })}
-      key={patient.uuid}
       onBeforeNavigate={() => patientClickSideEffect?.(patient.uuid)}
-      to={interpolateString(config.search.patientChartUrl, {
-        patientUuid: patient.uuid,
-      })}
+      to={config.search.patientChartUrl}
+      templateParams={{ patientUuid: patient.uuid }}
     >
       {children}
     </ConfigurableLink>

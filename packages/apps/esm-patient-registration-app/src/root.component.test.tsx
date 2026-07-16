@@ -48,10 +48,15 @@ vi.mock('./patient-registration/patient-registration.component', () => ({
   PatientRegistration: () => <div>Patient registration page</div>,
 }));
 
+vi.mock('./bulk-patient-import/bulk-patient-import.component', () => ({
+  default: () => <div>Bulk patient import page</div>,
+}));
+
 describe('Patient registration root', () => {
   beforeEach(() => {
     vi.stubGlobal('getOpenmrsSpaBase', () => '/openmrs/spa');
     window.history.pushState({}, 'Patient registration', '/openmrs/spa/patient-registration');
+    mockRequirePrivilege.mockClear();
     mockRequirePrivilege.mockImplementation(({ children }) => <>{children}</>);
   });
 
@@ -61,7 +66,7 @@ describe('Patient registration root', () => {
     render(<Root />);
 
     expect(mockRequirePrivilege).toHaveBeenCalledWith(
-      expect.objectContaining({ privilege: 'app:topnav.registerPatient' }),
+      expect.objectContaining({ privilege: 'app:opciones.registrarPaciente' }),
     );
     expect(screen.getByText('Patient registration page')).toBeInTheDocument();
   }, 15000);
@@ -73,5 +78,21 @@ describe('Patient registration root', () => {
     render(<Root />);
 
     expect(screen.queryByText('Patient registration page')).not.toBeInTheDocument();
+  }, 15000);
+
+  it('protects bulk import with Manage Patients without also requiring the registration privilege', async () => {
+    window.history.pushState({}, 'Bulk patient import', '/openmrs/spa/patient-import');
+    mockRequirePrivilege.mockImplementation(({ children, privilege }) =>
+      privilege === 'Manage Patients' ? <>{children}</> : null,
+    );
+    const { default: Root } = await import('./root.component');
+
+    render(<Root />);
+
+    expect(mockRequirePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'Manage Patients' }));
+    expect(mockRequirePrivilege).not.toHaveBeenCalledWith(
+      expect.objectContaining({ privilege: 'app:opciones.registrarPaciente' }),
+    );
+    expect(screen.getByText('Bulk patient import page')).toBeInTheDocument();
   }, 15000);
 });

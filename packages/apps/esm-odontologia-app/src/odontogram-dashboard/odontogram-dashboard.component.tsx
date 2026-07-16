@@ -1,5 +1,14 @@
 import { Edit, Information, Maximize, TrashCan } from '@carbon/icons-react';
-import { Button, ButtonSet, IconButton, InlineLoading, SkeletonPlaceholder, SkeletonText, Tag, Tooltip } from '@carbon/react';
+import {
+  Button,
+  ButtonSet,
+  IconButton,
+  InlineLoading,
+  SkeletonPlaceholder,
+  SkeletonText,
+  Tag,
+  Tooltip,
+} from '@carbon/react';
 import {
   formatDate,
   launchWorkspace,
@@ -52,7 +61,10 @@ const OdontogramEmpty: React.FC<{ onGenerate?: () => void }> = ({ onGenerate }) 
   return (
     <DentalEmptyState
       title={t('odontogram', 'Odontograma')}
-      description={t('odontogramEmptyDescription', 'No hay odontograma inicial registrado para mostrar para este paciente.')}
+      description={t(
+        'odontogramEmptyDescription',
+        'No hay odontograma inicial registrado para mostrar para este paciente.',
+      )}
       actionLabel={t('registerBaseOdontogram', 'Registrar odontograma inicial')}
       onAction={onGenerate}
     />
@@ -62,7 +74,7 @@ const OdontogramEmpty: React.FC<{ onGenerate?: () => void }> = ({ onGenerate }) 
 const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = userHasAccess('app:clinical.chart.dentistry.edit', session?.user);
+  const canEdit = userHasAccess('app:hoja.clinica.odontologia.editar', session?.user);
   const { save, isSaving } = useOdontogramEncounter();
 
   const setPatient = useOdontogramDataStore((s) => s.setPatient);
@@ -267,7 +279,9 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
         kind: 'error',
         title: t('odontogramSaveError', 'Error al guardar odontograma'),
         subtitle:
-          err instanceof Error ? err.message : t('odontogramSaveErrorSubtitle', 'No se pudo guardar. Intente nuevamente.'),
+          err instanceof Error
+            ? err.message
+            : t('odontogramSaveErrorSubtitle', 'No se pudo guardar. Intente nuevamente.'),
       });
     }
   }, [editContext, save, patientUuid, editData, t, mutate, setSelectedEncounterUuid, resetFormSelection]);
@@ -452,10 +466,22 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
               </div>
 
               <ButtonSet className={styles.editButtons}>
-                <Button kind="secondary" size="sm" onClick={handleCancelEdit} disabled={isSaving} data-testid="cancel-edit-btn">
+                <Button
+                  kind="secondary"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                  disabled={isSaving}
+                  data-testid="cancel-edit-btn"
+                >
                   {t('cancel', 'Cancelar')}
                 </Button>
-                <Button kind="primary" size="sm" onClick={handleSaveEdit} disabled={isSaving} data-testid="save-edit-btn">
+                <Button
+                  kind="primary"
+                  size="sm"
+                  onClick={handleSaveEdit}
+                  disabled={isSaving}
+                  data-testid="save-edit-btn"
+                >
                   {isSaving ? <InlineLoading description={t('saving', 'Guardando...')} /> : t('save', 'Guardar')}
                 </Button>
               </ButtonSet>
@@ -467,9 +493,7 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
                   <div className={styles.editingBannerInfo}>
                     <Information size={16} className={styles.editingBannerIcon} />
                     <div className={styles.editingBannerText}>
-                      <span className={styles.editingBannerTitle}>
-                        {t('editingInProgress', 'Edición en progreso')}
-                      </span>
+                      <span className={styles.editingBannerTitle}>{t('editingInProgress', 'Edición en progreso')}</span>
                       <span className={styles.editingBannerSubtitle}>{editTypeLabel}</span>
                     </div>
                   </div>
@@ -498,7 +522,13 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
                     <Maximize />
                   </IconButton>
                   {!isEditing && canEditSelected ? (
-                    <Button kind="tertiary" size="sm" renderIcon={Edit} onClick={startEditSelected} data-testid="edit-odontogram-btn">
+                    <Button
+                      kind="tertiary"
+                      size="sm"
+                      renderIcon={Edit}
+                      onClick={startEditSelected}
+                      data-testid="edit-odontogram-btn"
+                    >
                       {t('edit', 'Editar')}
                     </Button>
                   ) : null}

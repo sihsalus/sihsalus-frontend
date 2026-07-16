@@ -40,27 +40,35 @@ describe('PeruHomeActions', () => {
     render(<PeruHomeActions />);
 
     expect(mockRequirePrivilege).toHaveBeenCalledWith(
-      expect.objectContaining({ privilege: 'Get Patients', hideUnauthorized: true }),
+      expect.objectContaining({ privilege: 'app:opciones.busquedaPaciente', hideUnauthorized: true }),
     );
     expect(mockRequirePrivilege).toHaveBeenCalledWith(
-      expect.objectContaining({ privilege: 'app:service-queues', hideUnauthorized: true }),
+      expect.objectContaining({ privilege: 'app:opciones.registrarPaciente', hideUnauthorized: true }),
     );
     expect(mockRequirePrivilege).toHaveBeenCalledWith(
-      expect.objectContaining({ privilege: 'app:appointments', hideUnauthorized: true }),
+      expect.objectContaining({ privilege: 'app:home.colasAtencion', hideUnauthorized: true }),
     );
     expect(mockRequirePrivilege).toHaveBeenCalledWith(
-      expect.objectContaining({ privilege: 'app:laboratory', hideUnauthorized: true }),
+      expect.objectContaining({ privilege: 'app:home.citas', hideUnauthorized: true }),
     );
     expect(mockRequirePrivilege).toHaveBeenCalledWith(
-      expect.objectContaining({ privilege: 'app:dispensing', hideUnauthorized: true }),
+      expect.objectContaining({ privilege: 'app:home.laboratorio', hideUnauthorized: true }),
     );
     expect(mockRequirePrivilege).toHaveBeenCalledWith(
-      expect.objectContaining({ privilege: 'app:fua', hideUnauthorized: true }),
+      expect.objectContaining({ privilege: 'app:home.farmacia', hideUnauthorized: true }),
+    );
+    expect(mockRequirePrivilege).toHaveBeenCalledWith(
+      expect.objectContaining({ privilege: 'app:home.fua', hideUnauthorized: true }),
     );
   });
 
   it('shows only admission quick actions for an admission user', () => {
-    const admissionPrivileges = new Set(['Get Patients', 'app:adt', 'app:service-queues', 'app:appointments']);
+    const admissionPrivileges = new Set([
+      'app:opciones.busquedaPaciente',
+      'app:opciones.registrarPaciente',
+      'app:home.colasAtencion',
+      'app:home.citas',
+    ]);
     mockRequirePrivilege.mockImplementation(({ children, privilege }) => {
       const privileges = Array.isArray(privilege) ? privilege : [privilege];
       return privileges.some((item) => admissionPrivileges.has(item)) ? <>{children}</> : null;
@@ -78,7 +86,7 @@ describe('PeruHomeActions', () => {
   });
 
   it('shows patient search and the laboratory quick action for a laboratory user', () => {
-    const laboratoryPrivileges = new Set(['Get Patients', 'app:laboratory']);
+    const laboratoryPrivileges = new Set(['app:opciones.busquedaPaciente', 'app:home.laboratorio']);
     mockRequirePrivilege.mockImplementation(({ children, privilege }) => {
       const privileges = Array.isArray(privilege) ? privilege : [privilege];
       return privileges.some((item) => laboratoryPrivileges.has(item)) ? <>{children}</> : null;
@@ -94,7 +102,7 @@ describe('PeruHomeActions', () => {
   });
 
   it('shows patient search and FUA for a FUA user', () => {
-    const fuaPrivileges = new Set(['Get Patients', 'app:fua']);
+    const fuaPrivileges = new Set(['app:opciones.busquedaPaciente', 'app:home.fua']);
     mockRequirePrivilege.mockImplementation(({ children, privilege }) => {
       const privileges = Array.isArray(privilege) ? privilege : [privilege];
       return privileges.some((item) => fuaPrivileges.has(item)) ? <>{children}</> : null;
@@ -110,7 +118,7 @@ describe('PeruHomeActions', () => {
 
   it('shows only the dispensing quick action for a pharmacy user', () => {
     mockRequirePrivilege.mockImplementation(({ children, privilege }) =>
-      privilege === 'app:dispensing' ? <>{children}</> : null,
+      privilege === 'app:home.farmacia' ? <>{children}</> : null,
     );
 
     render(<PeruHomeActions />);

@@ -1,6 +1,8 @@
 {
   "$schema": "https://json.openmrs.org/routes.schema.json",
   "backendDependencies": {
+    "appointments": ">=2.1.0",
+    "queue": ">=3.0.0",
     "webservices.rest": ">=2.2.0"
   },
   "extensions": [
@@ -8,7 +10,7 @@
       "name": "home-appointments",
       "slot": "homepage-widgets-slot",
       "component": "homeAppointments",
-      "privileges": "app:appointments",
+      "privileges": "app:home.citas",
       "order": 1
     },
     {
@@ -20,68 +22,68 @@
         "slot": "clinical-appointments-dashboard-slot",
         "title": "Appointments"
       },
-      "privileges": "app:appointments",
+      "privileges": "app:home.citas",
       "order": 20
     },
     {
       "component": "root",
       "name": "clinical-appointments-dashboard",
       "slot": "clinical-appointments-dashboard-slot",
-      "privileges": "app:appointments"
+      "privileges": "app:home.citas"
     },
     {
       "name": "appointments-calendar-dashboard-link",
       "slot": "calendar-dashboard-slot",
       "component": "appointmentsCalendarDashboardLink",
-      "privileges": "app:appointments"
+      "privileges": "app:home.citas"
     },
     {
       "name": "todays-appointments-dashboard",
       "slot": "todays-appointment-slot",
       "component": "homeAppointments",
-      "privileges": "app:appointments"
+      "privileges": "app:home.citas"
     },
     {
       "name": "expected-appointments-panel",
       "slot": "scheduled-appointments-panels-slot",
       "component": "appointmentsList",
-      "privileges": "app:appointments"
+      "privileges": "app:home.citas"
     },
     {
       "name": "checked-in-appointments-panel",
       "slot": "scheduled-appointments-panels-slot",
       "component": "appointmentsList",
-      "privileges": "app:appointments"
+      "privileges": "app:home.citas"
     },
     {
       "name": "completed-appointments-panel",
       "slot": "scheduled-appointments-panels-slot",
       "component": "appointmentsList",
-      "privileges": "app:appointments"
+      "privileges": "app:home.citas"
     },
     {
       "name": "missed-appointments-panel",
       "slot": "scheduled-appointments-panels-slot",
       "component": "appointmentsList",
-      "privileges": "app:appointments"
+      "privileges": "app:home.citas"
     },
     {
       "name": "cancelled-appointments-panel",
       "slot": "scheduled-appointments-panels-slot",
       "component": "appointmentsList",
-      "privileges": "app:appointments"
+      "privileges": "app:home.citas"
     },
     {
       "name": "early-appointments-panel",
       "component": "earlyAppointments",
-      "privileges": "app:appointments"
+      "privileges": "app:home.citas"
     },
     {
       "name": "patient-appointments-summary-dashboard",
       "component": "patientAppointmentsSummaryDashboardLink",
       "slot": "patient-chart-dashboard-slot",
       "order": 21,
-      "privileges": "app:clinical.chart.appointments",
+      "privileges": "app:hoja.clinica.citas",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -95,7 +97,7 @@
       "name": "patientAppointments-details-widget",
       "component": "patientAppointmentsDetailedSummary",
       "slot": "patient-chart-appointments-dashboard-slot",
-      "privileges": "app:clinical.chart.appointments",
+      "privileges": "app:hoja.clinica.citas",
       "meta": {
         "columnSpan": 1
       }
@@ -104,28 +106,42 @@
       "name": "patient-upcoming-appointment-widget",
       "component": "patientUpcomingAppointmentsWidget",
       "slot": "visit-form-top-slot",
-      "privileges": "app:appointments"
+      "privileges": "app:home.citas"
     },
     {
       "name": "search-patient",
       "component": "searchPatient",
-      "privileges": "app:appointments"
+      "privileges": "app:home.citas"
     },
     {
       "name": "home-appointments-tile",
       "slot": "home-metrics-tiles-slot",
       "component": "homeAppointmentsTile",
-      "privileges": "app:appointments"
+      "privileges": "app:home.citas"
     }
   ],
   "modals": [
     {
       "name": "end-appointment-modal",
-      "component": "endAppointmentModal"
+      "component": "endAppointmentModal",
+      "privileges": [
+        "app:home.citas.editar",
+        "Get Visits",
+        "Edit Visits",
+        "Get Queue Entries",
+        "Get Queues",
+        "Manage Queue Entries"
+      ]
     },
     {
       "name": "cancel-appointment-modal",
-      "component": "cancelAppointmentModal"
+      "component": "cancelAppointmentModal",
+      "privileges": "app:home.citas.editar"
+    },
+    {
+      "name": "patient-chart-cancel-appointment-modal",
+      "component": "cancelAppointmentModal",
+      "privileges": "app:hoja.clinica.citas.editar"
     }
   ],
   "workspaceGroups2": [
@@ -139,6 +155,11 @@
       "name": "appointments-window",
       "group": "appointments-group",
       "width": "wider"
+    },
+    {
+      "name": "patient-chart-appointments-window",
+      "group": "patient-chart",
+      "width": "wider"
     }
   ],
   "workspaces2": [
@@ -146,19 +167,54 @@
       "name": "appointments-form-workspace",
       "component": "appointmentsFormWorkspace",
       "window": "appointments-window",
-      "privileges": "app:appointments"
+      "privileges": "app:home.citas.editar"
+    },
+    {
+      "name": "patient-chart-appointments-form-workspace",
+      "component": "appointmentsFormWorkspace",
+      "window": "patient-chart-appointments-window",
+      "privileges": "app:hoja.clinica.citas.editar"
     },
     {
       "name": "appointments-patient-search-workspace",
       "component": "searchPatient",
       "window": "appointments-window",
-      "privileges": "app:appointments"
+      "privileges": "app:home.citas.editar"
     },
     {
       "name": "appointments-start-visit-workspace",
       "component": "@sihsalus/esm-patient-chart-app#startVisitWorkspace",
       "window": "appointments-window",
-      "privileges": "app:appointments"
+      "privileges": [
+        "app:home.citas.editar",
+        "Get Patients",
+        "Get Locations",
+        "Get Visits",
+        "Add Visits",
+        "Edit Visits",
+        "Get Visit Types",
+        "Get Visit Attribute Types",
+        "Get Queue Entries",
+        "Get Queues",
+        "Manage Queue Entries"
+      ]
+    },
+    {
+      "name": "appointments-add-active-visit-to-queue-workspace",
+      "component": "@sihsalus/esm-service-queues-app#createQueueEntryWorkspace2",
+      "window": "appointments-window",
+      "privileges": [
+        "app:home.citas.editar",
+        "Get Patients",
+        "Get Locations",
+        "Get Visits",
+        "Edit Visits",
+        "Get Visit Types",
+        "Get Visit Attribute Types",
+        "Get Queue Entries",
+        "Get Queues",
+        "Manage Queue Entries"
+      ]
     }
   ]
 }

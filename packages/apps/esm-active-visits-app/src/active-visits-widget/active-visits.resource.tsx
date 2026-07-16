@@ -25,6 +25,22 @@ import { getPreferredIdentifier } from '@openmrs/esm-framework';
 
 type VisitIdentifier = NonNullable<Visit['patient']>['identifiers'][number];
 
+export function mapVisitObservations(encounters: Visit['encounters'] | undefined) {
+  const allObs = (encounters ?? []).flatMap((encounter) => encounter.obs ?? []);
+
+  return allObs.reduce((map, obs) => {
+    const key = obs.concept.uuid;
+    if (!map[key]) {
+      map[key] = [];
+    }
+    map[key].push({
+      value: obs.value,
+      uuid: obs.uuid,
+    });
+    return map;
+  }, {});
+}
+
 export function useActiveVisits() {
   const session = useSession();
   const config = useConfig();
@@ -120,22 +136,8 @@ export function useActiveVisits() {
       activeVisits[header?.key] = personAttributes?.value ?? '--';
     });
 
-    // Add flattened observations
-    const allObs = visit.encounters.reduce((accumulator, encounter) => {
-      return [...accumulator, ...(encounter.obs || [])];
-    }, []);
-
-    activeVisits.observations = allObs.reduce((map, obs) => {
-      const key = obs.concept.uuid;
-      if (!map[key]) {
-        map[key] = [];
-      }
-      map[key].push({
-        value: obs.value,
-        uuid: obs.uuid,
-      });
-      return map;
-    }, {});
+    // Visits without encounters may omit the property instead of returning an empty array.
+    activeVisits.observations = mapVisitObservations(visit.encounters);
 
     return activeVisits;
   };

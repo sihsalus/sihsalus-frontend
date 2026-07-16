@@ -1,7 +1,6 @@
 import {
   type FetchResponse,
   getConfig,
-  openmrsFetch,
   queueSynchronizationItem,
   restBaseUrl,
   type Session,
@@ -11,10 +10,25 @@ import {
 
 import { type RegistrationConfig } from '../config-schema';
 import { patientRegistration } from '../constants';
-
+import {
+  identityVerificationSourceConceptUuids,
+  identityVerificationStatusConceptUuids,
+  personIdentityVerificationSourceAttributeTypeUuid,
+  personIdentityVerificationStatusAttributeTypeUuid,
+  personIdentityVerifiedAtAttributeTypeUuid,
+} from './identity/identity-documents';
+import { fetchPersonForPromotion, isPersonAlreadyPatient } from './identity/identity-search.resource';
+import { verifyIdentityForPromotion } from './identity/identity-verification.resource';
+import {
+  buildDocumentIdentifierForPromotion,
+  getPersonDocument,
+  getPreferredAddress,
+  getPreferredName,
+} from './identity/promotion';
 import {
   addPatientIdentifier,
   deletePatientIdentifier,
+  deletePersonAttribute,
   deletePersonName,
   deleteRelationship,
   generateIdentifier,
@@ -29,22 +43,6 @@ import {
   updatePatientIdentifier,
   updateRelationship,
 } from './patient-registration.resource';
-import { fetchPersonForPromotion, isPersonAlreadyPatient } from './identity/identity-search.resource';
-import {
-  identityVerificationSourceConceptUuids,
-  identityVerificationStatusConceptUuids,
-  personIdentityVerificationSourceAttributeTypeUuid,
-  personIdentityVerificationStatusAttributeTypeUuid,
-  personIdentityVerifiedAtAttributeTypeUuid,
-} from './identity/identity-documents';
-import { verifyIdentityForPromotion } from './identity/identity-verification.resource';
-import {
-  buildDocumentIdentifierForPromotion,
-  getPersonDocument,
-  getPreferredAddress,
-  getPreferredName,
-} from './identity/promotion';
-import { buildResponsiblePersonPayload } from './section/patient-relationships/responsible-person.utils';
 import {
   type AddressProperties,
   type AttributeValue,
@@ -64,6 +62,8 @@ import {
   birthAddressMarker,
   birthAddressMarkerField,
 } from './patient-registration-utils';
+import { isRegistrationDomainError, RegistrationDomainError, registrationErrorCodes } from './registration-errors';
+import { buildResponsiblePersonPayload } from './section/patient-relationships/responsible-person.utils';
 
 const familyName2ExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/patient-family-name2';
 const addressExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/address';
@@ -135,6 +135,117 @@ function isValidAttributeTypeKey(attributeType: string) {
   );
 }
 
+interface RelationshipTransactionState {
+  companionCompleted?: boolean;
+  companionRemoved?: boolean;
+  companionRelationshipUuid?: string;
+  companionSignature?: string;
+  mainCompleted?: boolean;
+  mainRelationshipUuid?: string;
+  mainSignature?: string;
+  relatedPersonUuid?: string;
+}
+
+interface IdentifierTransactionState {
+  existsOnServer: boolean;
+  initialized: boolean;
+  persistedValue?: string;
+  resourceUuid?: string;
+}
+
+function getRelationshipTransactionKey(relationship: RelationshipValue) {
+  return (
+    relationship.uuid ??
+    relationship.clientId ??
+    [
+      relationship.relatedPersonUuid,
+      relationship.relationshipType,
+      relationship.newPerson?.givenName,
+      relationship.newPerson?.familyName,
+    ].join('|')
+  );
+}
+
+function getMainRelationshipTransactionSignature(relationship: RelationshipValue, relatedPersonUuid?: string) {
+  return JSON.stringify({
+    action: relationship.action,
+    relatedPersonUuid,
+    relationshipType: relationship.relationshipType,
+    uuid: relationship.uuid,
+  });
+}
+
+function getCompanionRelationshipTransactionSignature(
+  relationship: RelationshipValue,
+  relatedPersonUuid: string | undefined,
+  companionRelationshipType: string | undefined,
+  companionRelationshipUuid: string | undefined,
+) {
+  return JSON.stringify({
+    action: relationship.action,
+    companionRelationshipType,
+    companionRelationshipUuid,
+    isCompanion: !!relationship.isCompanion,
+    relatedPersonUuid,
+  });
+}
+
+function getIdentifierFormSignature(identifiers: FormValues['identifiers']) {
+  return JSON.stringify(
+    Object.entries(identifiers ?? {})
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([fieldName, identifier]) => ({
+        autoGeneration: !!identifier.autoGeneration,
+        fieldName,
+        identifierTypeUuid: identifier.identifierTypeUuid,
+        identifierValue: identifier.identifierValue,
+        preferred: !!identifier.preferred,
+        selectedSourceUuid: identifier.selectedSource?.uuid,
+      })),
+  );
+}
+
+function getPatientPayloadSignature(patient: Patient) {
+  const { identifiers: _identifiers, ...demographicPayload } = patient;
+  return JSON.stringify(demographicPayload);
+}
+
+const missingIdentifierLocationMessage =
+  'No se puede registrar al paciente sin una ubicación de sesión. Seleccione una ubicación e intente nuevamente.';
+
+function assertLocationForIdentifiers(hasIdentifiers: boolean, location: string) {
+  if (hasIdentifiers && !location?.trim()) {
+    throw new RegistrationDomainError(
+      registrationErrorCodes.identifierLocationRequired,
+      missingIdentifierLocationMessage,
+    );
+  }
+}
+
+function assertIdentifierLocation(identifiers: FormValues['identifiers'], location: string) {
+  const hasActiveIdentifiers = Object.values(identifiers ?? {}).some(
+    ({ identifierValue, autoGeneration, selectedSource }) =>
+      Boolean(identifierValue || (autoGeneration && selectedSource)),
+  );
+
+  assertLocationForIdentifiers(hasActiveIdentifiers, location);
+}
+
+function ensureTransactionState(transactionManager: SavePatientTransactionManager) {
+  transactionManager.deletedAttributeUuids ??= {};
+  transactionManager.deletedIdentifierUuids ??= {};
+  transactionManager.deletedNameUuids ??= {};
+  transactionManager.generatedIdentifiers ??= {};
+  transactionManager.identifierRows ??= {};
+  transactionManager.relationshipRows ??= {};
+  transactionManager.observationsSaved ??= false;
+  transactionManager.patientSaved ??= false;
+  transactionManager.photoSaved ??= false;
+  transactionManager.promotionAttributes ??= [];
+  transactionManager.promotionCompleted ??= false;
+  return transactionManager;
+}
+
 export type SavePatientForm = (
   isNewPatient: boolean,
   values: FormValues,
@@ -160,20 +271,19 @@ export class FormManager {
     initialIdentifierValues,
     currentUser,
     config,
+    savePatientTransactionManager,
   ) => {
     if (values.personUuidToPromote) {
       // Promotion needs the live backend: the already-a-patient pre-check and duplicate
       // detection cannot run offline, and a queued promotion could collide with another
       // operator promoting the same person.
-      throw {
-        responseBody: {
-          error: {
-            message:
-              'La promoción de una persona existente a paciente no está disponible sin conexión. Conéctese e intente nuevamente.',
-          },
-        },
-      };
+      throw new RegistrationDomainError(
+        registrationErrorCodes.promotionOffline,
+        'Existing-person promotion was attempted while offline.',
+      );
     }
+
+    assertIdentifierLocation(values.identifiers, currentLocation);
 
     const syncItem: PatientRegistration = {
       fhirPatient: FormManager.mapPatientToFhirPatient(
@@ -190,7 +300,9 @@ export class FormManager {
         initialIdentifierValues,
         currentUser,
         config,
-        savePatientTransactionManager: new SavePatientTransactionManager(),
+        savePatientTransactionManager: ensureTransactionState(
+          savePatientTransactionManager ?? new SavePatientTransactionManager(),
+        ),
       },
     };
 
@@ -215,9 +327,23 @@ export class FormManager {
     currentUser,
     config,
     savePatientTransactionManager,
-    _abortController,
+    abortController,
   ) => {
+    savePatientTransactionManager ??= new SavePatientTransactionManager();
+    ensureTransactionState(savePatientTransactionManager);
+    const signal = abortController?.signal;
     const personUuidToPromote = isNewPatient ? values.personUuidToPromote : undefined;
+
+    if (
+      isNewPatient &&
+      savePatientTransactionManager.newPatientIdentifierSignature &&
+      savePatientTransactionManager.newPatientIdentifierSignature !== getIdentifierFormSignature(values.identifiers)
+    ) {
+      throw new RegistrationDomainError(
+        registrationErrorCodes.partialCreateIdentifierChanged,
+        'El paciente ya fue creado parcialmente y sus identificadores cambiaron. Abra el paciente existente para editar su identificación.',
+      );
+    }
 
     if (personUuidToPromote && values.patientUuid !== personUuidToPromote) {
       // The whole point of promotion is reusing the person's identity: never let a
@@ -225,25 +351,40 @@ export class FormManager {
       values = { ...values, patientUuid: personUuidToPromote };
     }
 
+    FormManager.assertObservationConfiguration(values.obs, currentLocation, currentUser, config);
+
     const patientIdentifiers: Array<PatientIdentifier> = await FormManager.savePatientIdentifiers(
       isNewPatient,
       values.patientUuid,
       values.identifiers,
       initialIdentifierValues,
       currentLocation,
+      savePatientTransactionManager,
+      signal,
     );
 
     let effectivePatientUuidMap = patientUuidMap;
     let promotionAttributes: Array<AttributeValue> = [];
 
     if (personUuidToPromote) {
-      const promotion = await FormManager.promoteExistingPerson(
-        personUuidToPromote,
-        patientIdentifiers,
-        currentLocation,
-        savePatientTransactionManager.patientSaved,
-      );
+      const promotion = savePatientTransactionManager.promotionCompleted
+        ? {
+            patientUuidMap: savePatientTransactionManager.promotionPatientUuidMap ?? {},
+            verificationAttributes: savePatientTransactionManager.promotionAttributes,
+          }
+        : await FormManager.promoteExistingPerson(
+            personUuidToPromote,
+            patientIdentifiers,
+            currentLocation,
+            savePatientTransactionManager.patientSaved,
+            signal,
+          );
+      savePatientTransactionManager.promotionCompleted = true;
+      savePatientTransactionManager.promotionPatientUuidMap = promotion.patientUuidMap;
+      savePatientTransactionManager.promotionAttributes = promotion.verificationAttributes;
       savePatientTransactionManager.patientSaved = true;
+      savePatientTransactionManager.savedPatientUuid = personUuidToPromote;
+      savePatientTransactionManager.newPatientIdentifierSignature = getIdentifierFormSignature(values.identifiers);
       // Reuse the person's existing preferred name/address rows in the follow-up
       // demographic update so it edits them instead of appending duplicates.
       effectivePatientUuidMap = { ...patientUuidMap, ...promotion.patientUuidMap };
@@ -259,37 +400,94 @@ export class FormManager {
       config,
     );
 
-    if (personUuidToPromote) {
+    if (personUuidToPromote || !isNewPatient || savePatientTransactionManager.patientSaved) {
       // Identifiers were already created by the promotion call; re-sending them on the
-      // demographic update would duplicate them.
+      // demographic update (or a retry update) would duplicate them.
       delete (createdPatient as Partial<Patient>).identifiers;
+    }
+
+    if (personUuidToPromote) {
       createdPatient.person.attributes = [...createdPatient.person.attributes, ...promotionAttributes];
     }
 
-    FormManager.getDeletedNames(values.patientUuid, patientUuidMap).forEach(async (name) => {
-      await deletePersonName(name.nameUuid, name.personUuid);
-    });
+    const patientWasAlreadySaved = savePatientTransactionManager.patientSaved;
+    const patientPayloadSignature = getPatientPayloadSignature(createdPatient);
 
-    const savePatientResponse = await savePatient(
-      createdPatient,
-      isNewPatient && !savePatientTransactionManager.patientSaved ? undefined : values.patientUuid,
-    );
+    if (
+      savePatientTransactionManager.patientSaved &&
+      savePatientTransactionManager.patientPayloadSignature &&
+      savePatientTransactionManager.patientPayloadSignature !== patientPayloadSignature
+    ) {
+      throw new RegistrationDomainError(
+        registrationErrorCodes.partialSavePatientChanged,
+        'El paciente ya fue guardado parcialmente y sus datos cambiaron. Recargue el paciente antes de continuar para evitar registros duplicados.',
+      );
+    }
+
+    const savePatientResponse =
+      savePatientTransactionManager.patientSaved &&
+      savePatientTransactionManager.patientPayloadSignature === patientPayloadSignature &&
+      savePatientTransactionManager.savedPatientUuid
+        ? ({
+            data: { uuid: savePatientTransactionManager.savedPatientUuid },
+            ok: true,
+          } as FetchResponse)
+        : await savePatient(
+            createdPatient,
+            isNewPatient && !savePatientTransactionManager.patientSaved ? undefined : values.patientUuid,
+            signal,
+          );
 
     if (savePatientResponse.ok) {
       savePatientTransactionManager.patientSaved = true;
-      await this.saveRelationships(values.relationships, savePatientResponse, {
-        companionRelationshipType: config.relationshipOptions?.companionRelationshipType,
-        phoneAttributeTypeUuid: config.fieldConfigurations?.phone?.personAttributeUuid,
-      });
+      savePatientTransactionManager.patientPayloadSignature = patientPayloadSignature;
+      savePatientTransactionManager.savedPatientUuid = savePatientResponse.data.uuid;
+      if (isNewPatient && !patientWasAlreadySaved) {
+        savePatientTransactionManager.newPatientIdentifierSignature = getIdentifierFormSignature(values.identifiers);
+      }
 
-      await this.saveObservations(values.obs, savePatientResponse, currentLocation, currentUser, config);
+      for (const name of FormManager.getDeletedNames(values, patientUuidMap)) {
+        if (!savePatientTransactionManager.deletedNameUuids[name.nameUuid]) {
+          await deletePersonName(name.nameUuid, name.personUuid, signal);
+          savePatientTransactionManager.deletedNameUuids[name.nameUuid] = true;
+        }
+      }
 
-      const { patientPhotoConceptUuid } = await getConfig<StyleguideConfigObject>('@openmrs/esm-styleguide');
+      await FormManager.deleteRemovedPatientAttributes(
+        isNewPatient,
+        values,
+        patientUuidMap,
+        savePatientTransactionManager,
+        signal,
+      );
 
-      if (capturePhotoProps?.imageData) {
+      await this.saveRelationships(
+        values.relationships,
+        savePatientResponse,
+        {
+          companionRelationshipType: config.relationshipOptions?.companionRelationshipType,
+          phoneAttributeTypeUuid: config.fieldConfigurations?.phone?.personAttributeUuid,
+        },
+        savePatientTransactionManager,
+        signal,
+      );
+
+      await this.saveObservations(
+        values.obs,
+        savePatientResponse,
+        currentLocation,
+        currentUser,
+        config,
+        savePatientTransactionManager,
+        signal,
+      );
+
+      if (capturePhotoProps?.imageData && !savePatientTransactionManager.photoSaved) {
+        const { patientPhotoConceptUuid } = await getConfig<StyleguideConfigObject>('@openmrs/esm-styleguide');
         const savePhotoAsAttachment = async () => {
           try {
             await savePatientPhotoAsAttachment(savePatientResponse.data.uuid, capturePhotoProps.imageData);
+            savePatientTransactionManager.photoSaved = true;
           } catch (attachmentError) {
             console.warn('Patient photo could not be saved as an attachment.', attachmentError);
           }
@@ -303,7 +501,9 @@ export class FormManager {
               `${restBaseUrl}/obs`,
               capturePhotoProps.dateTime || new Date().toISOString(),
               patientPhotoConceptUuid,
+              signal,
             );
+            savePatientTransactionManager.photoSaved = true;
           } catch (error) {
             console.warn('Patient photo could not be saved. Continuing after patient registration succeeded.', error);
             await savePhotoAsAttachment();
@@ -330,16 +530,13 @@ export class FormManager {
     patientIdentifiers: Array<PatientIdentifier>,
     currentLocation: string,
     alreadyPromotedInSession: boolean,
+    signal?: AbortSignal,
   ): Promise<{ patientUuidMap: PatientUuidMapType; verificationAttributes: Array<AttributeValue> }> {
     if (!alreadyPromotedInSession && (await isPersonAlreadyPatient(personUuid))) {
-      throw {
-        responseBody: {
-          error: {
-            message:
-              'Esta persona ya está registrada como paciente (posiblemente otro usuario la promovió). Búsquela en el buscador de pacientes en lugar de registrarla de nuevo.',
-          },
-        },
-      };
+      throw new RegistrationDomainError(
+        registrationErrorCodes.promotionAlreadyPatient,
+        `Person ${personUuid} is already registered as a patient and cannot be promoted again.`,
+      );
     }
 
     const person = await fetchPersonForPromotion(personUuid);
@@ -373,16 +570,14 @@ export class FormManager {
             { attributeType: personIdentityVerifiedAtAttributeTypeUuid, value: outcome.verifiedAt },
           );
         } else if (outcome.status === 'mismatch') {
-          throw {
-            responseBody: {
-              error: {
-                message: `Los datos de la persona no coinciden con la fuente de verificación: ${outcome.observation}. Resuelva la discrepancia antes de promover.`,
-              },
-            },
-          };
+          throw new RegistrationDomainError(
+            registrationErrorCodes.identityVerificationMismatch,
+            `Identity verification mismatch while promoting ${personUuid}: ${outcome.observation}`,
+            { technicalDetails: { observation: outcome.observation, personUuid, source: outcome.source } },
+          );
         }
       } catch (error) {
-        if (typeof error === 'object' && error !== null && 'responseBody' in error) {
+        if (isRegistrationDomainError(error)) {
           throw error;
         }
         // Verification unavailability must never block registration (doc: "no bloquear
@@ -399,7 +594,8 @@ export class FormManager {
         identifiers.push(documentIdentifier);
       }
 
-      await promotePersonToPatient(personUuid, identifiers);
+      assertLocationForIdentifiers(identifiers.length > 0, currentLocation);
+      await promotePersonToPatient(personUuid, identifiers, signal);
     }
 
     return {
@@ -412,45 +608,65 @@ export class FormManager {
   }
 
   static async saveRelationships(
-    relationships: Array<RelationshipValue>,
+    relationships: Array<RelationshipValue> | undefined,
     savePatientResponse: FetchResponse,
     options: { companionRelationshipType?: string; phoneAttributeTypeUuid?: string } = {},
+    transactionManager: SavePatientTransactionManager = new SavePatientTransactionManager(),
+    signal?: AbortSignal,
   ) {
     const thisPatientUuid = savePatientResponse.data.uuid;
+    const results: Array<unknown> = [];
 
-    const operations = relationships
-      .filter((m) => m.relationshipType)
-      .filter((relationship) => !!relationship.action)
-      .map((relationship) => FormManager.saveRelationshipForRow(relationship, thisPatientUuid, options));
+    for (const relationship of relationships ?? []) {
+      if (relationship.relationshipType && relationship.action) {
+        results.push(
+          await FormManager.saveRelationshipForRow(relationship, thisPatientUuid, options, transactionManager, signal),
+        );
+      }
+    }
 
-    return Promise.all(operations);
+    return results;
   }
 
   static async saveRelationshipForRow(
     relationship: RelationshipValue,
     thisPatientUuid: string,
     options: { companionRelationshipType?: string; phoneAttributeTypeUuid?: string },
+    transactionManager: SavePatientTransactionManager = new SavePatientTransactionManager(),
+    signal?: AbortSignal,
   ) {
     const { relationshipType, uuid: relationshipUuid, action, isCompanion, companionRelationshipUuid } = relationship;
     let { relatedPersonUuid } = relationship;
+    const transactionKey = getRelationshipTransactionKey(relationship);
+    const state: RelationshipTransactionState = transactionManager.relationshipRows[transactionKey] ?? {};
+    transactionManager.relationshipRows[transactionKey] = state;
+    relatedPersonUuid ||= state.relatedPersonUuid;
 
     // Pending responsible person: created here, right before its relationship, so an
     // abandoned registration never leaves an orphaned person in the database.
     if (!relatedPersonUuid && action === 'ADD' && relationship.newPerson) {
-      const savePersonResponse = await savePerson(
-        buildResponsiblePersonPayload(relationship.newPerson, {
-          phoneAttributeTypeUuid: options.phoneAttributeTypeUuid,
-        }),
-      );
+      const responsiblePerson = buildResponsiblePersonPayload(relationship.newPerson, {
+        phoneAttributeTypeUuid: options.phoneAttributeTypeUuid,
+      });
+      const savePersonResponse = signal
+        ? await savePerson(responsiblePerson, signal)
+        : await savePerson(responsiblePerson);
       relatedPersonUuid = savePersonResponse?.data?.uuid;
 
       if (!relatedPersonUuid) {
-        throw new Error('The backend did not return a person UUID for the new responsible person');
+        throw new RegistrationDomainError(
+          registrationErrorCodes.responsiblePersonCreationFailed,
+          'The backend did not return a person UUID for the new responsible person.',
+        );
       }
+      state.relatedPersonUuid = relatedPersonUuid;
     }
 
     if (!relatedPersonUuid && action !== 'DELETE') {
-      return;
+      throw new RegistrationDomainError(
+        registrationErrorCodes.relationshipPersonRequired,
+        'No related person was selected or registered before saving the relationship.',
+      );
     }
 
     const [type, direction] = relationshipType.split('/');
@@ -460,45 +676,114 @@ export class FormManager {
       personB: isAToB ? thisPatientUuid : relatedPersonUuid,
       relationshipType: type,
     };
+    const mainSignature = getMainRelationshipTransactionSignature(relationship, relatedPersonUuid);
 
-    const rowOperations: Array<Promise<unknown>> = [];
-
-    switch (action) {
-      case 'ADD':
-        rowOperations.push(saveRelationship(relationshipToSave));
-        break;
-      case 'UPDATE':
-        rowOperations.push(updateRelationship(relationshipUuid, relationshipToSave));
-        break;
-      case 'DELETE':
-        rowOperations.push(deleteRelationship(relationshipUuid));
-        break;
-      default:
-        break;
+    if (state.mainCompleted && state.mainSignature !== mainSignature) {
+      throw new RegistrationDomainError(
+        registrationErrorCodes.relationshipRetryChanged,
+        'La relación cambió después de guardarse parcialmente. Restablezca sus datos anteriores y vuelva a intentar.',
+      );
     }
 
-    // Companion (Acompañante) relationship: create it when the checkbox is
-    // ticked and none exists yet; delete it when unticked (or the whole row
-    // is removed) and one was previously saved.
+    if (!state.mainCompleted) {
+      switch (action) {
+        case 'ADD': {
+          const response = signal
+            ? await saveRelationship(relationshipToSave, signal)
+            : await saveRelationship(relationshipToSave);
+          state.mainRelationshipUuid = response?.data?.uuid;
+          state.mainCompleted = true;
+          break;
+        }
+        case 'UPDATE':
+          if (!relationshipUuid) {
+            throw new RegistrationDomainError(
+              registrationErrorCodes.relationshipUpdateInvalid,
+              'An existing relationship UUID is required for update.',
+            );
+          }
+          if (signal) {
+            await updateRelationship(relationshipUuid, relationshipToSave, signal);
+          } else {
+            await updateRelationship(relationshipUuid, relationshipToSave);
+          }
+          state.mainCompleted = true;
+          break;
+        case 'DELETE':
+          if (relationshipUuid) {
+            if (signal) {
+              await deleteRelationship(relationshipUuid, signal);
+            } else {
+              await deleteRelationship(relationshipUuid);
+            }
+          }
+          state.mainCompleted = true;
+          break;
+        default:
+          break;
+      }
+      state.mainSignature = mainSignature;
+    }
+
+    // The primary responsible person is persisted through the companion relationship
+    // already consumed by downstream workflows. Create or remove it with the selection.
     if (options.companionRelationshipType) {
       const [companionType, companionDirection] = options.companionRelationshipType.split('/');
       const companionIsAToB = companionDirection === 'aIsToB';
       const wantsCompanion = !!isCompanion && action !== 'DELETE';
+      const mainRelationshipIsCompanion = type === companionType;
+      const effectiveCompanionRelationshipUuid = state.companionRemoved
+        ? undefined
+        : (state.companionRelationshipUuid ?? companionRelationshipUuid);
+      const companionSignature = getCompanionRelationshipTransactionSignature(
+        relationship,
+        relatedPersonUuid,
+        options.companionRelationshipType,
+        effectiveCompanionRelationshipUuid,
+      );
 
-      if (wantsCompanion && !companionRelationshipUuid) {
-        rowOperations.push(
-          saveRelationship({
-            personA: companionIsAToB ? relatedPersonUuid : thisPatientUuid,
-            personB: companionIsAToB ? thisPatientUuid : relatedPersonUuid,
-            relationshipType: companionType,
-          }),
-        );
-      } else if (!wantsCompanion && companionRelationshipUuid) {
-        rowOperations.push(deleteRelationship(companionRelationshipUuid));
+      if (state.companionSignature !== companionSignature) {
+        state.companionCompleted = false;
       }
+
+      if (
+        !state.companionCompleted &&
+        !mainRelationshipIsCompanion &&
+        wantsCompanion &&
+        !effectiveCompanionRelationshipUuid
+      ) {
+        const companionRelationship = {
+          personA: companionIsAToB ? relatedPersonUuid : thisPatientUuid,
+          personB: companionIsAToB ? thisPatientUuid : relatedPersonUuid,
+          relationshipType: companionType,
+        };
+        const response = signal
+          ? await saveRelationship(companionRelationship, signal)
+          : await saveRelationship(companionRelationship);
+        state.companionRelationshipUuid = response?.data?.uuid;
+        state.companionRemoved = false;
+        state.companionCompleted = true;
+      } else if (!state.companionCompleted && !wantsCompanion && effectiveCompanionRelationshipUuid) {
+        if (signal) {
+          await deleteRelationship(effectiveCompanionRelationshipUuid, signal);
+        } else {
+          await deleteRelationship(effectiveCompanionRelationshipUuid);
+        }
+        state.companionRelationshipUuid = undefined;
+        state.companionRemoved = true;
+        state.companionCompleted = true;
+      } else if (mainRelationshipIsCompanion || effectiveCompanionRelationshipUuid || !wantsCompanion) {
+        state.companionCompleted = true;
+      }
+      state.companionSignature = getCompanionRelationshipTransactionSignature(
+        relationship,
+        relatedPersonUuid,
+        options.companionRelationshipType,
+        state.companionRemoved ? undefined : (state.companionRelationshipUuid ?? companionRelationshipUuid),
+      );
     }
 
-    return Promise.all(rowOperations);
+    return state;
   }
 
   static async saveObservations(
@@ -507,33 +792,70 @@ export class FormManager {
     currentLocation: string,
     currentUser: Session,
     config: RegistrationConfig,
+    transactionManager: SavePatientTransactionManager = new SavePatientTransactionManager(),
+    signal?: AbortSignal,
   ) {
-    if (obss && Object.keys(obss).length > 0) {
-      if (!config.registrationObs.encounterTypeUuid) {
-        console.error(
-          'The registration form has been configured to have obs fields, ' +
-            'but no registration encounter type has been configured. Obs field values ' +
-            'will not be saved.',
-        );
-      } else {
-        const encounterToSave: Encounter = {
-          encounterDatetime: new Date(),
-          patient: savePatientResponse.data.uuid,
-          encounterType: config.registrationObs.encounterTypeUuid,
-          location: currentLocation,
-          encounterProviders: [
-            {
-              provider: currentUser.currentProvider.uuid,
-              encounterRole: config.registrationObs.encounterProviderRoleUuid,
-            },
-          ],
-          form: config.registrationObs.registrationFormUuid,
-          obs: Object.entries(obss)
-            .filter(([, value]) => value !== '')
-            .map(([conceptUuid, value]) => ({ concept: conceptUuid, value })),
-        };
-        return saveEncounter(encounterToSave);
-      }
+    const observations = Object.entries(obss ?? {})
+      .filter(([, value]) => value !== '')
+      .map(([conceptUuid, value]) => ({ concept: conceptUuid, value }));
+
+    if (!observations.length || transactionManager.observationsSaved) {
+      return;
+    }
+
+    FormManager.assertObservationConfiguration(obss, currentLocation, currentUser, config);
+    const encounterToSave: Encounter = {
+      encounterDatetime: new Date(),
+      patient: savePatientResponse.data.uuid,
+      encounterType: config.registrationObs.encounterTypeUuid,
+      location: currentLocation,
+      encounterProviders: [
+        {
+          provider: currentUser.currentProvider.uuid,
+          encounterRole: config.registrationObs.encounterProviderRoleUuid,
+        },
+      ],
+      form: config.registrationObs.registrationFormUuid,
+      obs: observations,
+    };
+    const response = await saveEncounter(encounterToSave, signal);
+    transactionManager.observationsSaved = true;
+    return response;
+  }
+
+  static assertObservationConfiguration(
+    obss: { [conceptUuid: string]: string } | undefined,
+    currentLocation: string,
+    currentUser: Session,
+    config: RegistrationConfig,
+  ) {
+    if (!Object.values(obss ?? {}).some((value) => value !== '')) {
+      return;
+    }
+
+    const missingConfiguration: Array<string> = [];
+    if (!config.registrationObs?.encounterTypeUuid) {
+      missingConfiguration.push('tipo de encuentro');
+    }
+    if (!config.registrationObs?.encounterProviderRoleUuid) {
+      missingConfiguration.push('rol del proveedor');
+    }
+    if (!config.registrationObs?.registrationFormUuid) {
+      missingConfiguration.push('formulario de registro');
+    }
+    if (!currentLocation) {
+      missingConfiguration.push('ubicación de sesión');
+    }
+    if (!currentUser?.currentProvider?.uuid) {
+      missingConfiguration.push('proveedor de la sesión');
+    }
+
+    if (missingConfiguration.length) {
+      throw new RegistrationDomainError(
+        registrationErrorCodes.clinicalConfigurationMissing,
+        `No se puede guardar la información clínica del registro. Falta configurar: ${missingConfiguration.join(', ')}.`,
+        { technicalDetails: { missingConfiguration } },
+      );
     }
   }
 
@@ -543,33 +865,63 @@ export class FormManager {
     patientIdentifiers: FormValues['identifiers'], // values.identifiers
     initialIdentifierValues: FormValues['identifiers'], // Initial identifiers assigned to the patient
     location: string,
+    transactionManager: SavePatientTransactionManager = new SavePatientTransactionManager(),
+    signal?: AbortSignal,
   ): Promise<Array<PatientIdentifier>> {
-    const identifierTypeRequests = Object.values(patientIdentifiers)
+    ensureTransactionState(transactionManager);
+    assertIdentifierLocation(patientIdentifiers, location);
+
+    const initializeIdentifierRow = (
+      identifierFieldName: string,
+      initialIdentifier?: FormValues['identifiers'][string],
+    ) => {
+      const existingState = transactionManager.identifierRows[identifierFieldName];
+      if (existingState?.initialized) {
+        return existingState;
+      }
+
+      const persistedValue = initialIdentifier?.initialValue || initialIdentifier?.identifierValue || undefined;
+      const state: IdentifierTransactionState = {
+        existsOnServer: !!persistedValue,
+        initialized: true,
+        persistedValue,
+        resourceUuid: initialIdentifier?.identifierUuid,
+      };
+      transactionManager.identifierRows[identifierFieldName] = state;
+      return state;
+    };
+
+    if (!isNewPatient) {
+      Object.entries(initialIdentifierValues ?? {}).forEach(([fieldName, identifier]) => {
+        initializeIdentifierRow(fieldName, identifier);
+      });
+    }
+
+    const activeIdentifierEntries = Object.entries(patientIdentifiers ?? {}).filter(
+      ([, { identifierValue, autoGeneration, selectedSource }]) =>
+        Boolean(identifierValue || (autoGeneration && selectedSource)),
+    );
+    const activeIdentifierFields = new Set(activeIdentifierEntries.map(([fieldName]) => fieldName));
+    const identifierTypeRequests = activeIdentifierEntries
       /* Since default identifier-types will be present on the form and are also in the not-required state,
         therefore we might be running into situations when there's no value and no source associated,
         hence filtering these fields out.
       */
-      .filter(
-        ({ identifierValue, autoGeneration, selectedSource }) => identifierValue || (autoGeneration && selectedSource),
-      )
-      .map(async (patientIdentifier) => {
-        const {
-          identifierTypeUuid,
-          identifierValue,
-          identifierUuid,
-          selectedSource,
-          preferred,
-          autoGeneration,
-          initialValue,
-        } = patientIdentifier;
+      .map(async ([identifierFieldName, patientIdentifier]) => {
+        const { identifierTypeUuid, identifierValue, identifierUuid, selectedSource, preferred, autoGeneration } =
+          patientIdentifier;
 
         const autoGenerationManualEntry =
           autoGeneration && selectedSource?.autoGenerationOption?.manualEntryEnabled && !!identifierValue;
 
-        const identifier =
-          !autoGeneration || autoGenerationManualEntry
-            ? identifierValue
-            : await (await generateIdentifier(selectedSource.uuid)).data.identifier;
+        let identifier = identifierValue;
+        if (autoGeneration && !autoGenerationManualEntry) {
+          identifier = transactionManager.generatedIdentifiers[identifierFieldName];
+          if (!identifier) {
+            identifier = (await generateIdentifier(selectedSource.uuid, signal)).data.identifier;
+            transactionManager.generatedIdentifiers[identifierFieldName] = identifier;
+          }
+        }
 
         const identifierToCreate = {
           uuid: identifierUuid,
@@ -580,11 +932,30 @@ export class FormManager {
         };
 
         if (!isNewPatient) {
-          if (!initialValue) {
-            await addPatientIdentifier(patientUuid, identifierToCreate);
-          } else if (initialValue !== identifier) {
-            await updatePatientIdentifier(patientUuid, identifierUuid, identifierToCreate.identifier);
+          const state = initializeIdentifierRow(identifierFieldName, initialIdentifierValues?.[identifierFieldName]);
+
+          if (!state.existsOnServer) {
+            const response = await addPatientIdentifier(
+              patientUuid,
+              { ...identifierToCreate, uuid: undefined },
+              signal,
+            );
+            state.existsOnServer = true;
+            state.persistedValue = identifier;
+            state.resourceUuid = response?.data?.uuid;
+          } else if (state.persistedValue !== identifier) {
+            if (!state.resourceUuid) {
+              throw new RegistrationDomainError(
+                registrationErrorCodes.identifierRetryUpdateUnavailable,
+                `No se puede modificar el identificador ${identifierFieldName} durante este reintento. Recargue el paciente e intente nuevamente.`,
+                { technicalDetails: { identifierFieldName } },
+              );
+            }
+            await updatePatientIdentifier(patientUuid, state.resourceUuid, identifierToCreate.identifier, signal);
+            state.persistedValue = identifier;
           }
+
+          identifierToCreate.uuid = state.resourceUuid;
         }
 
         return identifierToCreate;
@@ -597,23 +968,39 @@ export class FormManager {
       to delete the respective identifiers.
     */
 
-    if (patientUuid) {
-      Object.keys(initialIdentifierValues)
-        .filter((identifierFieldName) => !patientIdentifiers[identifierFieldName])
-        .forEach(async (identifierFieldName) => {
-          await deletePatientIdentifier(patientUuid, initialIdentifierValues[identifierFieldName].identifierUuid);
-        });
+    const identifiers = await Promise.all(identifierTypeRequests);
+
+    if (patientUuid && !isNewPatient) {
+      for (const [identifierFieldName, state] of Object.entries(transactionManager.identifierRows)) {
+        if (!state.existsOnServer || activeIdentifierFields.has(identifierFieldName)) {
+          continue;
+        }
+        if (!state.resourceUuid) {
+          throw new RegistrationDomainError(
+            registrationErrorCodes.identifierRetryDeleteUnavailable,
+            `No se puede eliminar el identificador ${identifierFieldName} durante este reintento. Recargue el paciente e intente nuevamente.`,
+            { technicalDetails: { identifierFieldName } },
+          );
+        }
+        if (!transactionManager.deletedIdentifierUuids[state.resourceUuid]) {
+          await deletePatientIdentifier(patientUuid, state.resourceUuid, signal);
+          transactionManager.deletedIdentifierUuids[state.resourceUuid] = true;
+        }
+        state.existsOnServer = false;
+        state.persistedValue = undefined;
+        state.resourceUuid = undefined;
+      }
     }
 
-    return Promise.all(identifierTypeRequests);
+    return identifiers;
   }
 
-  static getDeletedNames(patientUuid: string, patientUuidMap: PatientUuidMapType) {
-    if (patientUuidMap?.additionalNameUuid) {
+  static getDeletedNames(values: FormValues, patientUuidMap: PatientUuidMapType) {
+    if (!values.addNameInLocalLanguage && patientUuidMap?.additionalNameUuid) {
       return [
         {
           nameUuid: patientUuidMap.additionalNameUuid,
-          personUuid: patientUuid,
+          personUuid: values.patientUuid,
         },
       ];
     }
@@ -621,7 +1008,7 @@ export class FormManager {
   }
 
   static getPatientToCreate(
-    isNewPatient: boolean,
+    _isNewPatient: boolean,
     values: FormValues,
     patientUuidMap: PatientUuidMapType,
     _initialAddressFieldValues: Record<string, unknown>,
@@ -646,17 +1033,23 @@ export class FormManager {
         gender: values.gender.charAt(0).toUpperCase(),
         birthdate,
         birthdateEstimated: values.birthdateEstimated,
-        attributes: FormManager.getPatientAttributes(isNewPatient, values, patientUuidMap),
-        addresses: FormManager.getPatientAddresses(values, patientUuidMap),
+        attributes: FormManager.getPatientAttributes(values, patientUuidMap),
+        addresses: FormManager.getPatientAddresses(values, patientUuidMap, _initialAddressFieldValues),
         ...FormManager.getPatientDeathInfo(values, config),
       },
       identifiers,
     };
   }
 
-  static getPatientAddresses(values: FormValues, patientUuidMap: PatientUuidMapType): Array<PatientAddress> {
+  static getPatientAddresses(
+    values: FormValues,
+    patientUuidMap: PatientUuidMapType,
+    initialAddressFieldValues: Record<string, unknown> = {},
+  ): Array<PatientAddress> {
+    const initialResidenceAddress = initialAddressFieldValues.address as FormValues['address'] | undefined;
+    const initialBirthAddress = initialAddressFieldValues.birthAddress as FormValues['birthAddress'] | undefined;
     const residenceAddress: PatientAddress = {
-      ...cleanAddress(values.address),
+      ...FormManager.getAddressValuesToPersist(values.address, initialResidenceAddress),
       uuid: patientUuidMap.preferredAddressUuid,
       preferred: true,
     };
@@ -669,12 +1062,25 @@ export class FormManager {
     return [
       residenceAddress,
       {
-        ...cleanAddress(values.birthAddress),
+        ...FormManager.getAddressValuesToPersist(values.birthAddress, initialBirthAddress),
         uuid: patientUuidMap.birthAddressUuid,
         preferred: false,
         [birthAddressMarkerField]: birthAddressMarker,
       },
     ];
+  }
+
+  static getAddressValuesToPersist(
+    currentAddress: FormValues['address'] | undefined,
+    initialAddress: FormValues['address'] | undefined,
+  ): Partial<Record<AddressProperties, string>> {
+    const currentValues = cleanAddress(currentAddress);
+    const clearedValues = Object.fromEntries(
+      Object.keys(initialAddress ?? {})
+        .filter((field) => typeof currentAddress?.[field] === 'string' && !currentAddress[field].trim())
+        .map((field) => [field, '']),
+    );
+    return { ...currentValues, ...clearedValues } as Partial<Record<AddressProperties, string>>;
   }
 
   static getNames(values: FormValues, patientUuidMap: PatientUuidMapType) {
@@ -703,33 +1109,48 @@ export class FormManager {
     return names;
   }
 
-  static getPatientAttributes(isNewPatient: boolean, values: FormValues, patientUuidMap: PatientUuidMapType) {
+  static getPatientAttributes(values: FormValues, patientUuidMap: PatientUuidMapType = {}) {
     const attributes: Array<AttributeValue> = [];
     if (values.attributes) {
       Object.entries(values.attributes)
         .filter(([key, value]) => isValidAttributeTypeKey(key) && !!value)
         .forEach(([key, value]) => {
+          const attributeUuid = patientUuidMap[`attribute.${key}`];
           attributes.push({
             attributeType: key,
+            ...(attributeUuid ? { uuid: attributeUuid } : {}),
             value,
           });
         });
-
-      if (!isNewPatient && values.patientUuid) {
-        Object.entries(values.attributes)
-          .filter(([key, value]) => isValidAttributeTypeKey(key) && !value)
-          .forEach(async ([key]) => {
-            const attributeUuid = patientUuidMap[`attribute.${key}`];
-            await openmrsFetch(`${restBaseUrl}/person/${values.patientUuid}/attribute/${attributeUuid}`, {
-              method: 'DELETE',
-            }).catch((err) => {
-              console.error(err);
-            });
-          });
-      }
     }
 
     return attributes;
+  }
+
+  static async deleteRemovedPatientAttributes(
+    isNewPatient: boolean,
+    values: FormValues,
+    patientUuidMap: PatientUuidMapType,
+    transactionManager: SavePatientTransactionManager,
+    signal?: AbortSignal,
+  ) {
+    if (isNewPatient || !values.patientUuid) {
+      return;
+    }
+
+    for (const [attributeTypeUuid, value] of Object.entries(values.attributes ?? {})) {
+      if (!isValidAttributeTypeKey(attributeTypeUuid) || value) {
+        continue;
+      }
+
+      const attributeUuid = patientUuidMap[`attribute.${attributeTypeUuid}`] as string | undefined;
+      if (!attributeUuid || transactionManager.deletedAttributeUuids[attributeUuid]) {
+        continue;
+      }
+
+      await deletePersonAttribute(values.patientUuid, attributeUuid, signal);
+      transactionManager.deletedAttributeUuids[attributeUuid] = true;
+    }
   }
 
   static getPatientDeathInfo(values: FormValues, config?: RegistrationConfig) {
@@ -788,15 +1209,15 @@ export class FormManager {
       id: patient.uuid,
       gender: patient.person?.gender,
       birthDate: patient.person?.birthdate,
-      deceasedBoolean: patient.person.dead,
-      deceasedDateTime: patient.person.deathDate,
+      deceasedBoolean: patient.person?.dead,
+      deceasedDateTime: patient.person?.deathDate,
       name: patient.person?.names?.map((name) => ({
         given: [name.givenName, name.middleName].filter(Boolean),
         family: name.familyName,
         text: [name.familyName, name.familyName2, name.givenName, name.middleName].filter(Boolean).join(' '),
         ...(name.familyName2 ? { extension: [{ url: familyName2ExtensionUrl, valueString: name.familyName2 }] } : {}),
       })),
-      address: patient.person?.addresses.map((address) => ({
+      address: patient.person?.addresses?.map((address) => ({
         id: address.uuid,
         city: address.cityVillage,
         country: address.country,
@@ -812,5 +1233,19 @@ export class FormManager {
 }
 
 export class SavePatientTransactionManager {
+  deletedAttributeUuids: Record<string, boolean> = {};
+  deletedIdentifierUuids: Record<string, boolean> = {};
+  deletedNameUuids: Record<string, boolean> = {};
+  generatedIdentifiers: Record<string, string> = {};
+  identifierRows: Record<string, IdentifierTransactionState> = {};
+  newPatientIdentifierSignature?: string;
+  observationsSaved = false;
+  patientPayloadSignature?: string;
   patientSaved = false;
+  photoSaved = false;
+  promotionAttributes: Array<AttributeValue> = [];
+  promotionCompleted = false;
+  promotionPatientUuidMap?: PatientUuidMapType;
+  relationshipRows: Record<string, RelationshipTransactionState> = {};
+  savedPatientUuid?: string;
 }

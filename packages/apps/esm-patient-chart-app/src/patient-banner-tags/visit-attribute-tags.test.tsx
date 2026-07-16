@@ -64,6 +64,83 @@ describe('VisitAttributeTags', () => {
     expect(screen.queryByText('Hidden')).not.toBeInTheDocument();
   });
 
+  it('renders the display of a Concept attribute returned by QLTY instead of the resource object', () => {
+    mockUseVisitOrOfflineVisit.mockReturnValue({
+      currentVisit: {
+        uuid: 'visit-uuid',
+        attributes: [
+          {
+            uuid: 'financier-attribute-uuid',
+            attributeType: {
+              uuid: 'insurance-scheme-uuid',
+              datatypeClassname: 'org.openmrs.customdatatype.datatype.ConceptDatatype',
+            },
+            value: {
+              uuid: 'financier-concept-uuid',
+              display: 'SIS Gratuito',
+              name: { display: 'SIS Gratuito', name: 'SIS Gratuito' },
+              datatype: { display: 'N/A' },
+              conceptClass: { display: 'Misc' },
+              set: false,
+              version: null,
+              retired: false,
+              names: [],
+              descriptions: [],
+              mappings: [],
+              answers: [],
+              setMembers: [],
+              attributes: [],
+              links: [],
+              resourceVersion: '2.0',
+            },
+          },
+        ],
+      },
+    } as unknown as ReturnType<typeof useVisitOrOfflineVisit>);
+
+    expect(() => render(<VisitAttributeTags patientUuid="patient-uuid" />)).not.toThrow();
+    expect(screen.getByText('SIS Gratuito')).toBeInTheDocument();
+    expect(screen.queryByText('[object Object]')).not.toBeInTheDocument();
+  });
+
+  it('uses a resource display even when the attribute datatype metadata is incomplete', () => {
+    mockUseVisitOrOfflineVisit.mockReturnValue({
+      currentVisit: {
+        uuid: 'visit-uuid',
+        attributes: [
+          {
+            uuid: 'attribute-without-datatype-uuid',
+            attributeType: { uuid: 'insurance-scheme-uuid' },
+            value: { uuid: 'financier-concept-uuid', display: 'SIS Gratuito' },
+          },
+        ],
+      },
+    } as unknown as ReturnType<typeof useVisitOrOfflineVisit>);
+
+    render(<VisitAttributeTags patientUuid="patient-uuid" />);
+
+    expect(screen.getByText('SIS Gratuito')).toBeInTheDocument();
+  });
+
+  it('omits opaque object values that do not have a safe display field', () => {
+    mockUseVisitOrOfflineVisit.mockReturnValue({
+      currentVisit: {
+        uuid: 'visit-uuid',
+        attributes: [
+          {
+            uuid: 'opaque-attribute-uuid',
+            attributeType: { uuid: 'insurance-scheme-uuid' },
+            value: { uuid: 'opaque-resource-uuid' },
+          },
+        ],
+      },
+    } as unknown as ReturnType<typeof useVisitOrOfflineVisit>);
+
+    const { container } = render(<VisitAttributeTags patientUuid="patient-uuid" />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
   it('does not render or throw for voided visits with malformed attributes', () => {
     mockUseVisitOrOfflineVisit.mockReturnValue({
       currentVisit: {

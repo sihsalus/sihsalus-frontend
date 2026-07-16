@@ -1,4 +1,6 @@
-import { Layer, Tile } from '@carbon/react';
+import { Button, Layer, Tile } from '@carbon/react';
+import { UserFollow } from '@carbon/react/icons';
+import { navigate, UserHasAccess } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -12,8 +14,16 @@ interface PatientSearchResultsProps {
   searchResults: SearchedPatient[];
 }
 
-export const EmptyState: React.FC = () => {
+interface EmptyStateProps {
+  showAddPatient?: boolean;
+}
+
+export const EmptyState: React.FC<EmptyStateProps> = ({ showAddPatient = true }) => {
   const { t } = useTranslation();
+  const goToPatientRegistration = React.useCallback(() => {
+    navigate({ to: `${globalThis.getOpenmrsSpaBase()}patient-registration` });
+  }, []);
+
   return (
     <Layer>
       <Tile className={styles.emptySearchResultsTile}>
@@ -24,6 +34,18 @@ export const EmptyState: React.FC = () => {
         <p className={styles.actionText}>
           <span>{t('trySearchWithPatientUniqueID', "Try to search again using the patient's unique ID number")}</span>
         </p>
+        {showAddPatient ? (
+          <UserHasAccess privilege="app:opciones.registrarPaciente">
+            <Button
+              className={styles.addPatientButton}
+              kind="primary"
+              renderIcon={UserFollow}
+              onClick={goToPatientRegistration}
+            >
+              {t('addPatient', 'Agregar paciente')}
+            </Button>
+          </UserHasAccess>
+        ) : null}
       </Tile>
     </Layer>
   );
@@ -52,7 +74,7 @@ export const ErrorState: React.FC = () => {
           <p className={styles.errorCopy}>
             {t(
               'errorCopy',
-              'Sorry, there was an error. You can try to reload this page, or contact the site administrator and quote the error code above.',
+              'Sorry, there was an error. Please try again or contact the site administrator.',
             )}
           </p>
         </div>

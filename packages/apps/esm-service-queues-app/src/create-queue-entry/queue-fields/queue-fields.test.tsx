@@ -4,15 +4,14 @@ import {
   useConfig,
   useLayoutType,
   useSession,
-  type Visit,
 } from '@openmrs/esm-framework';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockSession, mockVisitAlice } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../../config-schema';
 
-import QueueFields from './queue-fields.component';
+import QueueFields, { type QueueFieldsCallbacks } from './queue-fields.component';
 import { postQueueEntry } from './queue-fields.resource';
 
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
@@ -21,7 +20,10 @@ const mockUseSession = vi.mocked(useSession);
 
 vi.mock('../hooks/useQueueLocations', () => ({
   useQueueLocations: vi.fn(() => ({
-    queueLocations: [{ id: '1', name: 'Location 1' }],
+    queueLocations: [
+      { id: '1', name: 'Location 1' },
+      { id: 'obstetric-location', name: 'UPSS - CENTRO OBSTÉTRICO' },
+    ],
   })),
 }));
 
@@ -45,7 +47,10 @@ vi.mock('./queue-fields.resource', () => {
     postQueueEntry: vi.fn(),
   };
 });
-const mockPostQueueEntry = vi.mocked(postQueueEntry).mockResolvedValue({} as FetchResponse);
+const mockPostQueueEntry = vi.mocked(postQueueEntry).mockResolvedValue({
+  created: true,
+  response: {} as FetchResponse,
+});
 
 describe('QueueFields', () => {
   beforeEach(() => {
@@ -53,16 +58,14 @@ describe('QueueFields', () => {
     mockUseSession.mockReturnValue(mockSession.data);
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
+      visitQueueNumberAttributeUuid: 'queue-number-attribute-uuid',
     });
   });
 
   it('renders the form fields and returns the set values', async () => {
     const user = userEvent.setup();
-    let onSubmit: ((visit: Visit) => Promise<unknown>) | undefined;
-    const setOnSubmit = (callback: (visit: Visit) => Promise<unknown>) => {
-      onSubmit = callback;
-    };
-    render(<QueueFields setOnSubmit={setOnSubmit} />);
+    let callbacks: QueueFieldsCallbacks | undefined;
+    render(<QueueFields setCallbacks={(value) => (callbacks = value)} />);
 
     expect(screen.getByLabelText('Select a queue location')).toBeInTheDocument();
     expect(screen.getByLabelText('Select a service')).toBeInTheDocument();
@@ -76,11 +79,12 @@ describe('QueueFields', () => {
     expect(screen.getByText('High')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByLabelText('High')).toBeChecked());
 
-    expect(onSubmit).toBeDefined();
-    if (!onSubmit) {
-      throw new Error('onSubmit callback was not set');
+    expect(callbacks).toBeDefined();
+    if (!callbacks) {
+      throw new Error('Queue field callbacks were not set');
     }
-    await onSubmit(mockVisitAlice);
+    expect(callbacks.onBeforeVisitSave()).toBe(true);
+    await callbacks.onVisitCreatedOrUpdated(mockVisitAlice);
     expect(mockPostQueueEntry).toHaveBeenCalledWith(
       mockVisitAlice.uuid,
       queueUuid, // queueUuid
@@ -89,7 +93,64 @@ describe('QueueFields', () => {
       '176052c7-5fd4-4b33-89cc-7bae6848c65a', // status
       0, // sortWeight
       '1', // locationUuid
-      null, // visitQueueNumberAttributeUuid
+      'queue-number-attribute-uuid',
+      mockVisitAlice.startDatetime,
     );
+  });
+
+  it('blocks submission until a service is selected', async () => {
+    let callbacks: QueueFieldsCallbacks | undefined;
+    render(<QueueFields setCallbacks={(value) => (callbacks = value)} />);
+
+    expect(callbacks).toBeDefined();
+    await act(async () => expect(callbacks?.onBeforeVisitSave()).toBe(false));
+    expect(mockPostQueueEntry).not.toHaveBeenCalled();
+  });
+
+  it('uses the appointment queue location while the session location is unavailable', async () => {
+    const user = userEvent.setup();
+    let callbacks: QueueFieldsCallbacks | undefined;
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      sessionLocation: null,
+    } as unknown as ReturnType<typeof useSession>);
+
+    render(<QueueFields currentQueueLocationUuid="1" setCallbacks={(value) => (callbacks = value)} />);
+
+    await waitFor(() => expect(screen.getByLabelText('Select a queue location')).toHaveValue('1'));
+
+    const queueUuid = 'e2ec9cf0-ec38-4d2b-af6c-59c82fa30b90';
+    await user.selectOptions(screen.getByLabelText('Select a service'), queueUuid);
+    await waitFor(() => expect(callbacks?.onBeforeVisitSave()).toBe(true));
+    await callbacks?.onVisitCreatedOrUpdated(mockVisitAlice);
+
+    expect(mockPostQueueEntry).toHaveBeenCalledWith(
+      mockVisitAlice.uuid,
+      queueUuid,
+      mockVisitAlice.patient.uuid,
+      '197852c7-5fd4-4b33-89cc-7bae6848c65a',
+      '176052c7-5fd4-4b33-89cc-7bae6848c65a',
+      0,
+      '1',
+      'queue-number-attribute-uuid',
+      mockVisitAlice.startDatetime,
+    );
+  });
+
+  it('falls back to the first queue location while the session location is unavailable', async () => {
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      sessionLocation: null,
+    } as unknown as ReturnType<typeof useSession>);
+
+    render(<QueueFields setCallbacks={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByLabelText('Select a queue location')).toHaveValue('1'));
+  });
+
+  it('hides obstetric locations for male patients', () => {
+    render(<QueueFields patientGender="M" setCallbacks={vi.fn()} />);
+
+    expect(screen.queryByRole('option', { name: 'UPSS - CENTRO OBSTÉTRICO' })).not.toBeInTheDocument();
   });
 });

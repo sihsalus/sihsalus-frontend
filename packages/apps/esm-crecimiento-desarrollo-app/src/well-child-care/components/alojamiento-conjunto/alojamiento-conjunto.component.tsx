@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../config-schema';
 import { credNeonatalEditPrivilege } from '../../../constants';
 import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
-import { useLatestValidEncounter } from '../../../hooks/useLatestEncounter';
+import { useLatestValidEncounter } from '@openmrs/esm-patient-common-lib';
 import PatientSummaryTable from '../../../ui/patient-summary-table/patient-summary-table.component';
 
 interface AlojamientoConjuntoProps {
@@ -21,6 +21,7 @@ const AlojamientoConjunto: React.FC<AlojamientoConjuntoProps> = ({ patientUuid }
   const { encounter, isLoading, error, mutate } = useLatestValidEncounter(
     patientUuid,
     config.encounterTypes.alojamientoConjunto,
+    config.formsList.roomingIn,
   );
   const { launchForm } = useCREDFormLauncher('roomingIn');
 
@@ -35,8 +36,8 @@ const AlojamientoConjunto: React.FC<AlojamientoConjuntoProps> = ({ patientUuid }
   }, [encounter]);
 
   const handleLaunchForm = React.useCallback(() => {
-    launchForm(encounter?.uuid || '');
-  }, [encounter?.uuid, launchForm]);
+    launchForm(encounter?.uuid || '', () => void mutate());
+  }, [encounter?.uuid, launchForm, mutate]);
 
   const dataHook = React.useCallback(() => {
     return {

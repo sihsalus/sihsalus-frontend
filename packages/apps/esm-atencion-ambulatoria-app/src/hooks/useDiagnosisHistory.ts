@@ -1,6 +1,6 @@
-import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
-import useSWR from 'swr';
+import { restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import type { ConfigObject } from '../config-schema';
+import { useClinicalHistoryPagination } from './useClinicalHistoryPagination';
 
 export interface DiagnosisEntry {
   uuid: string;
@@ -94,12 +94,12 @@ export function useDiagnosisHistory(patientUuid: string, encounterTypeUuid: stri
       ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}` +
         `&v=custom:(uuid,encounterDatetime,` +
         `diagnoses:(uuid,display,diagnosis:(coded:(uuid,display,mappings:(display))),certainty,rank),` +
-        `obs:(concept:(uuid),value:(uuid,display),formFieldNamespace,formFieldPath))&limit=20`
+        `obs:(concept:(uuid),value:(uuid,display),formFieldNamespace,formFieldPath))&order=desc`
       : null;
 
-  const { data, error, isLoading, mutate } = useSWR<{ data: { results: Encounter[] } }>(url, openmrsFetch);
+  const { data, error, isLoading, isValidating, mutate, pagination } = useClinicalHistoryPagination<Encounter>(url);
 
-  const diagnoses: DiagnosisEntry[] = (data?.data?.results ?? []).flatMap((encounter) => {
+  const diagnoses: DiagnosisEntry[] = data.flatMap((encounter) => {
     // Mirrors patient-notes: one obs links the MINSA P/D/R type to each coded diagnosis.
     const tipoMap: Record<string, EncounterObs['value']> = {};
     (encounter.obs ?? []).forEach((obs) => {
@@ -136,7 +136,9 @@ export function useDiagnosisHistory(patientUuid: string, encounterTypeUuid: stri
   return {
     diagnoses,
     isLoading,
+    isValidating,
     error,
     mutate,
+    pagination,
   };
 }

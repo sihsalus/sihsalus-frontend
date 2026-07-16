@@ -60,6 +60,21 @@
   display: contents;
 }
 
+.headerGlobalBar :global(.cds--header__action).userMenuButton {
+  width: auto;
+  min-width: layout.$spacing-09;
+  max-width: 15rem;
+  gap: layout.$spacing-03;
+  padding: 0 layout.$spacing-04 !important;
+}
+
+.userDisplayName {
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 30rem) {
   .logoWrapper,
   .divider {
@@ -75,5 +90,14 @@
 
   .headerGlobalBar {
     margin-inline-start: auto;
+  }
+
+  .headerGlobalBar :global(.cds--header__action).userMenuButton {
+    width: layout.$spacing-09;
+    padding: 0 layout.$spacing-04 !important;
+  }
+
+  .userDisplayName {
+    display: none;
   }
 }

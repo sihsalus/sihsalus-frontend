@@ -12,6 +12,7 @@ import { shallowEqual } from '@openmrs/esm-utils';
 import { type Context, useContext } from 'react';
 import { SingleSpaContext } from 'single-spa-react';
 import { v4 as uuidV4 } from 'uuid';
+import { userCanLaunch } from '../access';
 import { showModal } from '../modals';
 import { type Workspace2DefinitionProps } from './workspace2.component';
 
@@ -143,9 +144,15 @@ export async function launchWorkspace2<
   groupProps: GroupProp | null = null,
 ): Promise<boolean> {
   const storeState = workspace2Store.getState();
+  const workspaceDefinition = storeState.registeredWorkspacesByName[workspaceName];
 
-  if (!storeState.registeredWorkspacesByName[workspaceName]) {
+  if (!workspaceDefinition) {
     throw new Error(`Unable to launch workspace ${workspaceName}. Workspace is not registered`);
+  }
+
+  if (!userCanLaunch(workspaceDefinition.privileges)) {
+    console.warn(`Access denied while launching workspace "${workspaceName}".`);
+    return false;
   }
   const windowDef = getWindowByWorkspaceName(workspaceName);
   if (!windowDef) {

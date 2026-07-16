@@ -5,8 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { useMutateQueueEntries } from '../hooks/useQueueEntries';
 import { useQueueEntry } from '../hooks/useQueueEntry';
 import { useQueues } from '../hooks/useQueues';
+import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
 import { type QueueEntry } from '../types';
-import { updateQueueEntry } from './queue-entry-actions.resource';
+import { transitionQueueEntry, updateActiveQueueEntry } from './queue-entry-actions.resource';
 import QueueEntryActionModal from './queue-entry-actions-modal.component';
 import { convertTime12to24 } from './time-helpers';
 
@@ -19,6 +20,11 @@ const EditQueueEntryModal: React.FC<EditQueueEntryModalProps> = ({ queueEntry, c
   const { t } = useTranslation();
   const { queues } = useQueues();
   const { queueEntry: freshEntry, error, isLoading } = useQueueEntry(queueEntry.uuid);
+  const errorMessage = useUserFacingErrorMessage(
+    error,
+    t('queueDataLoadErrorMessage', 'Queue information could not be loaded. Please try again.'),
+    'Load queue entry for editing',
+  );
   const { mutateQueueEntries } = useMutateQueueEntries();
   const isEnded = !isLoading && !error && (!freshEntry || Boolean(freshEntry.endedAt));
 
@@ -55,7 +61,7 @@ const EditQueueEntryModal: React.FC<EditQueueEntryModalProps> = ({ queueEntry, c
             kind="error"
             lowContrast
             title={t('errorLoadingQueueEntry', 'Error loading queue entry')}
-            subtitle={error?.message || t('unexpectedError', 'An unexpected error occurred')}
+            subtitle={errorMessage}
           />
         </ModalBody>
         <ModalFooter>
@@ -109,16 +115,34 @@ const EditQueueEntryModal: React.FC<EditQueueEntryModalProps> = ({ queueEntry, c
         submitFailureTitle: t('queueEntryEditingFailed', 'Error editing queue entry'),
         submitAction: (queueEntry, formState) => {
           const selectedQueue = queues.find((q) => q.uuid === formState.selectedQueue);
-          const statuses = selectedQueue?.allowedStatuses;
-          const priorities = selectedQueue?.allowedPriorities;
+          const status = selectedQueue?.allowedStatuses.find((item) => item.uuid === formState.selectedStatus);
+          const priority = selectedQueue?.allowedPriorities.find((item) => item.uuid === formState.selectedPriority);
+
+          if (!selectedQueue || !status || !priority) {
+            return Promise.reject(new Error('The selected queue configuration is not available.'));
+          }
+
+          const queueChanged = selectedQueue.uuid !== queueEntry.queue.uuid;
+          const statusChanged = status.uuid !== queueEntry.status.uuid;
+          const priorityChanged = priority.uuid !== queueEntry.priority.uuid;
+
+          if (queueChanged || statusChanged || priorityChanged) {
+            return transitionQueueEntry({
+              queueEntryToTransition: queueEntry.uuid,
+              newQueue: selectedQueue.uuid,
+              newStatus: status.uuid,
+              newPriority: priority.uuid,
+              newPriorityComment: formState.priorityComment,
+            });
+          }
 
           const startAtDate = new Date(formState.transitionDate);
           const [hour, minute] = convertTime12to24(formState.transitionTime, formState.transitionTimeFormat);
           startAtDate.setHours(hour, minute, 0, 0);
 
-          return updateQueueEntry(queueEntry.uuid, {
-            status: statuses.find((s) => s.uuid === formState.selectedStatus),
-            priority: priorities.find((p) => p.uuid === formState.selectedPriority),
+          return updateActiveQueueEntry(queueEntry.uuid, {
+            status,
+            priority,
             priorityComment: formState.priorityComment,
             ...(formState.modifyDefaultTransitionDateTime ? { startedAt: startAtDate.toISOString() } : {}),
           });

@@ -439,7 +439,7 @@ const MedicationDispenseReview: React.FC<MedicationDispenseReviewProps> = ({
               disabled={!userCanModify || !allowEditing}
               id="isFreeTextToggled"
               size={'sm'}
-              labelText={t('freeTextDosage', 'Free text dosage')}
+              labelText={t('freeTextDosage', 'Texto libre de dosificación')}
               onToggle={(value) => {
                 setIsFreeTextDosage(value);
                 // clear out the dose, route and frequency if changed to free text dosage
@@ -629,8 +629,8 @@ const MedicationDispenseReview: React.FC<MedicationDispenseReviewProps> = ({
         <TextArea
           labelText={
             isFreeTextDosage
-              ? t('freeTextDosage', 'Free text dosage')
-              : t('patientInstructions', 'Patient instructions')
+              ? t('freeTextDosage', 'Texto libre de dosificación')
+              : t('patientInstructions', 'Instrucciones para el paciente')
           }
           value={medicationDispense.dosageInstruction[0].text}
           maxLength={65535}

@@ -148,6 +148,8 @@ describe('FormEntryWorkspace', () => {
   });
 
   it('renders the workspace2 form-entry path for v12-shaped callers', async () => {
+    const handleEncounterCreate = vi.fn();
+
     render(
       <FormEntryWorkspace
         {...workspace2DefinitionProps}
@@ -169,6 +171,7 @@ describe('FormEntryWorkspace', () => {
               retired: false,
               resources: [],
             },
+            handleEncounterCreate,
           } as any
         }
       />,
@@ -187,6 +190,7 @@ describe('FormEntryWorkspace', () => {
         name: 'form-widget-slot',
         state: expect.objectContaining({
           formUuid: 'some-form-uuid',
+          handleEncounterCreate,
           patientUuid: mockPatient.uuid,
           visit: mockCurrentVisit,
         }),

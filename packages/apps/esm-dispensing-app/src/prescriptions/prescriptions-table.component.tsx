@@ -58,9 +58,10 @@ const PrescriptionsTable: React.FC<PrescriptionsTableProps> = ({
   );
 
   // reset back to page 1 whenever search term changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the search term intentionally resets table pagination.
   useEffect(() => {
     setPage(1);
-  }, []);
+  }, [debouncedSearchTerm]);
 
   // dynamic status keys we need to maintain
   // t('active', 'Active')

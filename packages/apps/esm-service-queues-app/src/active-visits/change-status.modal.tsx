@@ -15,7 +15,7 @@ import {
   Switch,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { navigate, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, navigate, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -95,20 +95,7 @@ const ChangeStatusModal: React.FC<ChangeStatusModalProps> = ({ queueEntry, close
     const { priority, status, service } = data;
     const defaultPriority = concepts.defaultPriorityConceptUuid;
     const queuePriority = priority === '' ? defaultPriority : priority;
-    const emergencyPriorityConceptUuid = concepts.emergencyPriorityConceptUuid;
-    const sortWeight = priority === emergencyPriorityConceptUuid ? 1.0 : 0.0;
-    const endDate = new Date();
-    updateQueueEntry(
-      queueEntry?.visitUuid,
-      queueEntry?.queue?.uuid,
-      service,
-      queueEntry?.queueEntryUuid,
-      queueEntry?.patientUuid,
-      queuePriority,
-      status,
-      endDate,
-      sortWeight,
-    ).then(
+    updateQueueEntry(queueEntry?.queueEntryUuid, service, queuePriority, status).then(
       () => {
         showSnackbar({
           isLowContrast: true,
@@ -124,7 +111,11 @@ const ChangeStatusModal: React.FC<ChangeStatusModalProps> = ({ queueEntry, close
         showSnackbar({
           title: t('queueEntryStatusUpdateFailed', 'Error updating queue entry status'),
           kind: 'error',
-          subtitle: error?.message,
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('queueEntryActionErrorMessage', 'The queue action could not be completed. Please try again.'),
+            { logContext: 'Update queue entry status' },
+          ),
         });
       },
     );

@@ -11,20 +11,20 @@
       "component": "vaccinationScheduleAppMenuItem",
       "order": 35,
       "online": true,
-      "offline": true,
-      "privileges": "app:immunization.edit"
+      "offline": false,
+      "privileges": "app:gestorCalendarioVacunacion"
     },
     {
       "name": "vacunacion-overview-widget",
       "component": "immunizationsOverview",
       "order": 8,
-      "privileges": "app:clinical.chart.immunizations"
+      "privileges": "app:hoja.clinica.inmunizaciones"
     },
     {
       "name": "vacunacion-detailed-history-card",
       "component": "immunizationHistorySummary",
       "slot": "patient-chart-vacunacion-dashboard-slot",
-      "privileges": "app:clinical.chart.immunizations",
+      "privileges": "app:hoja.clinica.inmunizaciones",
       "meta": {
         "fullWidth": true
       }
@@ -33,7 +33,7 @@
       "name": "vacunacion-details-widget",
       "component": "immunizationsDetailedSummary",
       "slot": "patient-chart-vacunacion-dashboard-slot",
-      "privileges": "app:clinical.chart.immunizations",
+      "privileges": "app:hoja.clinica.inmunizaciones",
       "meta": {
         "fullWidth": true
       }
@@ -42,7 +42,7 @@
       "name": "vacunacion-summary-dashboard",
       "component": "immunizationsDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.immunizations",
+      "privileges": "app:hoja.clinica.inmunizaciones",
       "meta": {
         "slot": "patient-chart-vacunacion-dashboard-slot",
         "path": "Vacunacion"
@@ -63,12 +63,12 @@
     {
       "name": "vacunacion-delete-confirmation-modal",
       "component": "deleteImmunizationConfirmationModal",
-      "privileges": "app:clinical.chart.immunizations.edit"
+      "privileges": "app:hoja.clinica.inmunizaciones.editar"
     },
     {
       "name": "immunization-delete-confirmation-modal",
       "component": "deleteImmunizationConfirmationModal",
-      "privileges": "app:clinical.chart.immunizations.edit"
+      "privileges": "app:hoja.clinica.inmunizaciones.editar"
     }
   ],
   "workspaces2": [
@@ -76,13 +76,13 @@
       "name": "vacunacion-form-workspace",
       "component": "immunizationFormWorkspace",
       "window": "vacunacion-form-window",
-      "privileges": "app:clinical.chart.immunizations.edit"
+      "privileges": "app:hoja.clinica.inmunizaciones.editar"
     },
     {
       "name": "immunization-form-workspace",
       "component": "immunizationFormWorkspace",
       "window": "vacunacion-form-window",
-      "privileges": "app:clinical.chart.immunizations.edit"
+      "privileges": "app:hoja.clinica.inmunizaciones.editar"
     }
   ],
   "workspaceWindows2": [

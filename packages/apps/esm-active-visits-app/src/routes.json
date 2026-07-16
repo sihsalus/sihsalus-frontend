@@ -8,22 +8,26 @@
       "name": "active-visits-widget",
       "slot": "homepage-widgets-slot",
       "component": "activeVisits",
+      "privileges": "app:home.tabla.consultas.activas",
       "order": 0
     },
     {
       "name": "visit-summary-widget",
       "slot": "visit-summary-slot",
-      "component": "visitDetail"
+      "component": "visitDetail",
+      "privileges": "app:hoja.clinica"
     },
     {
       "name": "active-visits-tile",
       "slot": "home-metrics-tiles-slot",
-      "component": "homeActiveVisitsTile"
+      "component": "homeActiveVisitsTile",
+      "privileges": "app:home.tabla.consultas.activas"
     },
     {
       "name": "total-visits-tile",
       "slot": "home-metrics-tiles-slot",
-      "component": "homeTotalVisitsTile"
+      "component": "homeTotalVisitsTile",
+      "privileges": "app:home.tabla.consultas.activas"
     }
   ],
   "pages": []

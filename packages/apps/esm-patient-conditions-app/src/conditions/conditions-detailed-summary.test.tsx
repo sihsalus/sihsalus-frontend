@@ -95,12 +95,8 @@ it('renders an error state view if there is a problem fetching antecedents data'
   render(<ConditionsDetailedSummary patient={fhirMockPatient} />);
 
   expect(screen.queryByRole('table')).not.toBeInTheDocument();
-  expect(screen.getAllByText(/Error 401: Unauthorized/i).length).toBeGreaterThan(0);
-  expect(
-    screen.getAllByText(
-      /Sorry, there was a problem displaying this information. You can try to reload this page, or contact the site administrator and quote the error code above/i,
-    ).length,
-  ).toBeGreaterThan(0);
+  expect(screen.queryAllByText(/Error 401: Unauthorized/i)).toHaveLength(0);
+  expect(screen.getAllByText(/there was a problem displaying this information/i).length).toBeGreaterThan(0);
 });
 
 it("renders a detailed summary of the patient's antecedents when present", async () => {

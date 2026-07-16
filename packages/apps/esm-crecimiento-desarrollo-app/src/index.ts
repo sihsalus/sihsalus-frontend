@@ -1,8 +1,10 @@
 import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
-import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
+import {
+  createClinicalDashboardGroup as createDashboardGroup,
+  createDashboardLink,
+} from '@openmrs/esm-patient-common-lib';
 import type React from 'react';
 
-import { createDashboardGroup } from './clinical-view-group/createDashboardGroup';
 import { configSchema } from './config-schema';
 import {
   childImmunizationScheduleDashboardMeta,
@@ -39,11 +41,11 @@ import NeonatalEvaluation from './well-child-care/components/neonatal-evaluation
 import PregnancyBirthTable from './well-child-care/components/neonatal-register/detalles-embarazo/pregnancy-table.component';
 import BirthDataTable from './well-child-care/components/neonatal-register/detalles-nacimiento/birth-date.component';
 import LabourHistory from './well-child-care/components/neonatal-register/labour-history/labour-history.component';
-import PrenatalAntecedents from './well-child-care/components/neonatal-register/prenatal-history/prenatal-history.component';
 import NewbornBalanceOverview from './well-child-care/components/newborn-monitoring/newborn balance/balance-overview.component';
 import NewbornBiometricsBase from './well-child-care/components/newborn-monitoring/newborn biometrics/biometrics-base.component';
 import ScreeningIndicators from './well-child-care/components/screening/screening-indicators.component';
 import SupplementationTracker from './well-child-care/components/supplementation/supplementation-tracker.component';
+import TpedReferenceWidget from './well-child-care/components/test-peruano/tped-reference-widget.component';
 import VaccinationSchedule from './well-child-care/components/vaccination-schema-widget/vaccinationSchedule.component';
 import { EarlyStimulation } from './well-child-care/early-stimulation.component';
 import { NeonatalCare } from './well-child-care/neonatal-care.component';
@@ -135,9 +137,7 @@ export const screeningIndicators = getSyncLifecycle(ScreeningIndicators, options
 
 // Development Evaluation Overview
 export const developmentOverview = getSyncLifecycle(DevelopmentOverview, options);
-
-// Prenatal History (Obstetric Formula — used in neonatal register)
-export const prenatalHistory = getSyncLifecycle(PrenatalAntecedents, options);
+export const tpedReferenceWidget = getSyncLifecycle(TpedReferenceWidget, options);
 
 // CRED Form Action Button
 export const credFormActionButton = getSyncLifecycle(CREDFormActionButton, options);
@@ -168,10 +168,6 @@ export const monthlyAppointmentFilterCalendar = getAsyncLifecycle(
   () => import('./ui/appointment-filter-calendar/appointment-filter-calendar'),
   options,
 );
-export const perinatalRegisterworkspace = getAsyncLifecycle(
-  () => import('./well-child-care/workspace/perinatal-register/perinatal-register-form.workspace'),
-  options,
-);
 export const wellchildControlsworkspace = getAsyncLifecycle(
   () => import('./well-child-care/workspace/well-child-control/well-child-controls-form.workspace'),
   options,
@@ -197,7 +193,3 @@ export const antecedentesPatologicosFormWorkspace = getAsyncLifecycle(
   options,
 );
 export const formsSelectorWorkspace = getSyncLifecycle(CREDFormsSelectorWorkspace, options);
-export const testPeruanoFormWorkspace = getAsyncLifecycle(
-  () => import('./well-child-care/workspace/test-peruano-form/test-peruano-form.component'),
-  options,
-);

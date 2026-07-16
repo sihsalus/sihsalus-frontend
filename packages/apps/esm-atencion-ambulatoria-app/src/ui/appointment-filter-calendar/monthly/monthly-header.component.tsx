@@ -4,7 +4,8 @@ import dayjs from 'dayjs';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import SelectedDateContext from '../../../hooks/selectedDateContext';
+import { SelectedDateContext } from '@openmrs/esm-patient-common-lib';
+
 import { omrsDateFormat } from '../../../utils/constants';
 
 import DaysOfWeekCard from './days-of-week.component';

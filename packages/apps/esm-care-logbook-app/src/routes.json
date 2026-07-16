@@ -18,14 +18,14 @@
         "slot": "admission-dashboard-slot",
         "title": "admissionReportByUps"
       },
-      "privileges": "app:care-logbook",
+      "privileges": "app:home.libroAtenciones",
       "order": 20
     },
     {
       "component": "careLogbookHomeDashboard",
       "name": "care-logbook-home-dashboard",
       "slot": "admission-dashboard-slot",
-      "privileges": "app:care-logbook",
+      "privileges": "app:home.libroAtenciones",
       "online": true,
       "offline": false
     },
@@ -33,7 +33,7 @@
       "component": "careLogbookMergePatientsAction",
       "name": "care-logbook-merge-patients-action",
       "slot": "top-nav-actions-slot",
-      "privileges": ["app:care-logbook.edit", "app:topnav.mergePatients"],
+      "privileges": ["app:home.libroAtenciones.editar", "app:opciones.fusionarPacientes"],
       "online": true,
       "offline": false
     },
@@ -41,7 +41,7 @@
       "component": "careLogbookMergePatientsMenuItem",
       "name": "care-logbook-merge-patients-menu-item",
       "slot": "patient-actions-slot",
-      "privileges": "app:care-logbook.edit",
+      "privileges": "app:home.libroAtenciones.editar",
       "online": true,
       "offline": false
     }

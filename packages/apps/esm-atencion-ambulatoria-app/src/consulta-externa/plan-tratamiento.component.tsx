@@ -24,7 +24,7 @@ interface PlanTratamientoProps {
 const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { treatmentPlans, isLoading, error } = useTreatmentPlan(
+  const { treatmentPlans, isLoading, isValidating, error, mutate, pagination } = useTreatmentPlan(
     patientUuid,
     config.encounterTypes?.externalConsultation,
     config.concepts,
@@ -32,6 +32,7 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
 
   const handleLaunchForm = () => {
     launchPatientWorkspace(patientFormEntryWorkspace, {
+      mutateForm: mutate,
       formInfo: {
         patientUuid,
         formUuid: config.formsList?.consultaExternaForm,
@@ -57,10 +58,13 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
       title={t('treatmentPlanHistory', 'Historial de Planes de Tratamiento')}
       actionLabel={t('addTreatmentPlan', 'Registrar Plan')}
       empty={treatmentPlans.length === 0}
-      emptyMessage={t('noTreatmentPlanData', 'No hay planes de tratamiento registrados para este paciente.')}
+      emptyDisplayText={t('treatmentPlans', 'planes de tratamiento')}
       error={error}
       isLoading={isLoading}
+      isValidating={isValidating}
+      loadingVariant="accordion"
       onAction={handleLaunchForm}
+      pagination={pagination}
     >
       <Accordion>
         {treatmentPlans.map((plan) => (
@@ -68,7 +72,7 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
             key={plan.encounterUuid}
             title={
               <span>
-                {formatDate(new Date(plan.encounterDatetime))}
+                {formatDate(new Date(plan.encounterDatetime), { time: true })}
                 {' — '}
                 <Tag type="outline" size="sm">
                   {plan.provider || t('unknownProvider', 'Proveedor desconocido')}

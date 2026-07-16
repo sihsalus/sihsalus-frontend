@@ -1,5 +1,5 @@
 import { Button } from '@carbon/react';
-import { showSnackbar, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -38,7 +38,11 @@ const StartVisitButton2 = ({
         isLowContrast: false,
         kind: 'error',
         title: t('errorStartingVisit', 'Error starting visit'),
-        subtitle: error.message ?? t('errorStartingVisitDescription', 'An error occurred while starting the visit'),
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('errorStartingVisitDescription', 'An error occurred while starting the visit'),
+          { log: false },
+        ),
       });
     }
   }, [patientUuid, t, launchChildWorkspace, patient, startVisitWorkspaceName, startVisitWorkspaceProps]);

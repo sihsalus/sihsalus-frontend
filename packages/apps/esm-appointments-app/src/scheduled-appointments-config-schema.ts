@@ -4,7 +4,7 @@ export const expectedAppointmentsPanelConfigSchema = {
   title: {
     _type: Type.String,
     _description: 'The title to display, may be a translation key or plain text',
-    _default: 'expected',
+    _default: 'expectedAppointmentsTab',
   },
   status: {
     _type: Type.String,
@@ -33,7 +33,7 @@ export const checkedInAppointmentsPanelConfigSchema = {
   title: {
     _type: Type.String,
     _description: 'The title to display, may be a translation key or plain text',
-    _default: 'checkedIn',
+    _default: 'inProgressAppointmentsTab',
   },
   status: {
     _type: Type.String,
@@ -62,7 +62,7 @@ export const completedAppointmentsPanelConfigSchema = {
   title: {
     _type: Type.String,
     _description: 'The title to display, may be a translation key or plain text',
-    _default: 'completed',
+    _default: 'completedAppointmentsTab',
   },
   status: {
     _type: Type.String,
@@ -91,7 +91,7 @@ export const missedAppointmentsPanelConfigSchema = {
   title: {
     _type: Type.String,
     _description: 'The title to display, may be a translation key or plain text',
-    _default: 'missed',
+    _default: 'missedAppointmentsTab',
   },
   status: {
     _type: Type.String,
@@ -120,7 +120,7 @@ export const cancelledAppointmentsPanelConfigSchema = {
   title: {
     _type: Type.String,
     _description: 'The title to display, may be a translation key or plain text',
-    _default: 'cancelled',
+    _default: 'cancelledAppointmentsTab',
   },
   status: {
     _type: Type.String,

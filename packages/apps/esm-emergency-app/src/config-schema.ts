@@ -426,6 +426,11 @@ export const configSchema = {
       _default: '8d79403a-c2cc-11de-8d13-0010c6dffd0f',
       _description: 'UUID del tipo de documento Certificado de Nacido Vivo',
     },
+    otherIdentifierTypeUuid: {
+      _type: Type.UUID,
+      _default: '550e8400-e29b-41d4-a716-446655440004',
+      _description: 'UUID del tipo de identificador genérico OTROS para documentos no especificados',
+    },
     defaultLocationUuid: {
       _type: Type.UUID,
       _default: '35d2234e-129a-4c40-abb2-1ae0b2400003',
@@ -454,7 +459,17 @@ export const configSchema = {
     nationalityAttributeTypeUuid: {
       _type: Type.UUID,
       _default: '9b3df0a1-0c58-4f55-9868-9c38f1db1007',
-      _description: 'UUID del person attribute type Nacionalidad / país del documento',
+      _description: 'UUID del person attribute type País de Nacionalidad (Coded → Concept)',
+    },
+    nationalityConceptSetUuid: {
+      _type: Type.ConceptUuid,
+      _default: '7869ef7a-be6c-4108-9ee5-9cc7470e0b2d',
+      _description: 'UUID del conjunto de conceptos que contiene las nacionalidades permitidas',
+    },
+    peruNationalityConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: 'e0370dea-d480-4721-a438-97a77d6c3349',
+      _description: 'UUID del concepto Perú usado cuando un DNI válido confirma nacionalidad peruana',
     },
     insuranceTypeAttributeTypeUuid: {
       _type: Type.UUID,
@@ -502,25 +517,25 @@ export const configSchema = {
     identificationStatusConcepts: {
       pendingUuid: {
         _type: Type.ConceptUuid,
-        _default: null,
+        _default: 'bdb57e2a-d8fd-4e2b-8622-1ba60dcd3024',
         _description:
           'UUID opcional del concepto que representa estado de identificación = pendiente (si el person attribute type es Coded).',
       },
       partialUuid: {
         _type: Type.ConceptUuid,
-        _default: null,
+        _default: '37ea79cb-9ae7-4297-8e56-8c374561c73c',
         _description:
           'UUID opcional del concepto que representa estado de identificación = parcial (si el person attribute type es Coded).',
       },
       confirmedUuid: {
         _type: Type.ConceptUuid,
-        _default: null,
+        _default: '9e42f0f1-d989-4604-902e-8a33f474f01e',
         _description:
           'UUID opcional del concepto que representa estado de identificación = confirmado (si el person attribute type es Coded).',
       },
       mergedUuid: {
         _type: Type.ConceptUuid,
-        _default: null,
+        _default: '8e9518a2-828d-4e50-a110-d964b63e51e2',
         _description:
           'UUID opcional del concepto que representa estado de identificación = fusionado (si el person attribute type es Coded).',
       },
@@ -634,12 +649,15 @@ export interface Config {
     passportIdentifierTypeUuid: string;
     dieIdentifierTypeUuid: string;
     liveBirthCertificateIdentifierTypeUuid: string;
+    otherIdentifierTypeUuid: string;
     defaultLocationUuid: string;
     phoneNumberAttributeTypeUuid: string;
     identifierSourceUuid: string;
     openMrsIdIdentifierTypeUuid: string;
     unknownPatientAttributeTypeUuid: string;
     nationalityAttributeTypeUuid: string;
+    nationalityConceptSetUuid: string;
+    peruNationalityConceptUuid: string;
     insuranceTypeAttributeTypeUuid: string;
     insuranceCodeAttributeTypeUuid: string;
     companionNameAttributeTypeUuid: string;

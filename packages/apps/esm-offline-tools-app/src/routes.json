@@ -18,7 +18,8 @@
       "component": "offlineToolsAppMenuItem",
       "order": 80,
       "online": true,
-      "offline": true
+      "offline": true,
+      "privileges": "app:herramientasSinInternet"
     },
     {
       "name": "offline-tools-nav-items",
@@ -100,7 +101,7 @@
       "name": "offline-tools-patient-chart-actions-widget",
       "slot": "patient-chart-summary-dashboard-slot",
       "component": "offlineToolsPatientChartActions",
-      "privileges": "app:clinical.chart.offlineActions",
+      "privileges": "app:hoja.clinica.accionesSinConexion",
       "meta": {
         "columnSpan": 4
       },
@@ -112,7 +113,7 @@
       "name": "offline-tools-patient-chart-actions-dashboard",
       "slot": "patient-chart-offline-actions-dashboard-slot",
       "component": "offlineToolsPatientChartActions",
-      "privileges": "app:clinical.chart.offlineActions",
+      "privileges": "app:hoja.clinica.accionesSinConexion",
       "online": true,
       "offline": true,
       "order": 0
@@ -121,7 +122,7 @@
       "name": "offline-tools-patient-chart-actions-dashboard-link",
       "slot": "patient-chart-dashboard-slot",
       "component": "offlineToolsPatientChartActionsDashboardLink",
-      "privileges": "app:clinical.chart.offlineActions",
+      "privileges": "app:hoja.clinica.accionesSinConexion",
       "meta": {
         "columns": 1,
         "title": "offlineActions",
@@ -139,6 +140,7 @@
       "component": "offlineToolsOptInButton",
       "online": true,
       "offline": true,
+      "privileges": "app:herramientasSinInternet",
       "order": 1
     }
   ],
@@ -146,7 +148,7 @@
     {
       "name": "offline-tools-confirmation-modal",
       "component": "offlineToolsConfirmationModal",
-      "privileges": "app:clinical.chart.offlineActions.edit"
+      "privileges": "app:hoja.clinica.accionesSinConexion.editar"
     }
   ]
 }

@@ -4,10 +4,15 @@ import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutateQueueEntries } from '../hooks/useQueueEntries';
 import { useQueueEntry } from '../hooks/useQueueEntry';
+import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
 import { type QueueEntry } from '../types';
-import { transitionQueueEntry } from './queue-entry-actions.resource';
+import {
+  isQueueEntryCommentOnlyChange,
+  isQueueEntryTransitionUnchanged,
+  transitionQueueEntry,
+  updateActiveQueueEntry,
+} from './queue-entry-actions.resource';
 import QueueEntryActionModal from './queue-entry-actions-modal.component';
-import { convertTime12to24 } from './time-helpers';
 
 interface TransitionQueueEntryModalProps {
   queueEntry: QueueEntry;
@@ -17,6 +22,11 @@ interface TransitionQueueEntryModalProps {
 const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ queueEntry, closeModal }) => {
   const { t } = useTranslation();
   const { queueEntry: freshEntry, error, isLoading } = useQueueEntry(queueEntry.uuid);
+  const errorMessage = useUserFacingErrorMessage(
+    error,
+    t('queueDataLoadErrorMessage', 'Queue information could not be loaded. Please try again.'),
+    'Load queue entry for transition',
+  );
   const { mutateQueueEntries } = useMutateQueueEntries();
   const isEnded = !isLoading && !error && (!freshEntry || Boolean(freshEntry.endedAt));
 
@@ -53,7 +63,7 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ q
             kind="error"
             lowContrast
             title={t('errorLoadingQueueEntry', 'Error loading queue entry')}
-            subtitle={error?.message || t('unexpectedError', 'An unexpected error occurred')}
+            subtitle={errorMessage}
           />
         </ModalBody>
         <ModalFooter>
@@ -103,22 +113,17 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ q
         submitSuccessTitle: t('queueEntryTransitioned', 'Queue entry transitioned'),
         submitSuccessText: t('queueEntryTransitionedSuccessfully', 'Queue entry transitioned successfully'),
         submitFailureTitle: t('queueEntryTransitionFailed', 'Error transitioning queue entry'),
-        submitAction: (queueEntry, formState) => {
-          const transitionDate = new Date(formState.transitionDate);
-          const [hour, minute] = convertTime12to24(formState.transitionTime, formState.transitionTimeFormat);
-          transitionDate.setHours(hour, minute, 0, 0);
-
-          return transitionQueueEntry({
-            queueEntryToTransition: queueEntry.uuid,
-            newQueue: formState.selectedQueue,
-            newStatus: formState.selectedStatus,
-            newPriority: formState.selectedPriority,
-            newPriorityComment: formState.priorityComment,
-            ...(formState.modifyDefaultTransitionDateTime ? { transitionDate: transitionDate.toISOString() } : {}),
-          });
-        },
-        disableSubmit: (queueEntry, formState) =>
-          formState.selectedQueue === queueEntry.queue.uuid && formState.selectedStatus === queueEntry.status.uuid,
+        submitAction: (queueEntry, formState) =>
+          isQueueEntryCommentOnlyChange(queueEntry, formState)
+            ? updateActiveQueueEntry(queueEntry.uuid, { priorityComment: formState.priorityComment })
+            : transitionQueueEntry({
+                queueEntryToTransition: queueEntry.uuid,
+                newQueue: formState.selectedQueue,
+                newStatus: formState.selectedStatus,
+                newPriority: formState.selectedPriority,
+                newPriorityComment: formState.priorityComment,
+              }),
+        disableSubmit: (queueEntry, formState) => isQueueEntryTransitionUnchanged(queueEntry, formState),
         isEdit: false,
         showQueuePicker: false,
         showStatusPicker: true,

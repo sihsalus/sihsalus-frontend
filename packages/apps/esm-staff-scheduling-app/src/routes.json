@@ -9,6 +9,7 @@
       "slot": "app-menu-item-slot",
       "component": "staffSchedulingAppMenuItem",
       "order": 28,
+      "privileges": "app:programacionTurnosRecursos",
       "online": true,
       "offline": false
     }

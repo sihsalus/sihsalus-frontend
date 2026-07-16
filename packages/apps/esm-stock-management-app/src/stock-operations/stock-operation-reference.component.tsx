@@ -1,7 +1,9 @@
 import { InlineLoading } from '@carbon/react';
 import { showSnackbar } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { stockManagementOperationsEditPrivilege } from '../constants';
 import { useStockOperationTypes } from '../stock-lookups/stock-lookups.resource';
 import { launchStockoperationAddOrEditWorkSpace } from './stock-operation.utils';
 import { useStockOperationAndItems } from './stock-operations.resource';
@@ -54,14 +56,20 @@ const StockOperationReference = ({ operationNumber, operationUuid }: StockOperat
     return <InlineLoading description={t('loading', 'Loading')} />;
   }
 
+  if (!stockOperation?.permission?.canEdit) {
+    return <span>{operationNumber}</span>;
+  }
+
   return (
-    <button
-      type="button"
-      onClick={handleEdit}
-      style={{ background: 'none', border: 0, color: 'inherit', cursor: 'pointer', padding: 0 }}
-    >
-      {operationNumber}
-    </button>
+    <RequirePrivilege privilege={stockManagementOperationsEditPrivilege} fallback={<span>{operationNumber}</span>}>
+      <button
+        type="button"
+        onClick={handleEdit}
+        style={{ background: 'none', border: 0, color: 'inherit', cursor: 'pointer', padding: 0 }}
+      >
+        {operationNumber}
+      </button>
+    </RequirePrivilege>
   );
 };
 

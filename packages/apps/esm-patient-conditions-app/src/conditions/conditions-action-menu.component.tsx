@@ -15,7 +15,7 @@ export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActio
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
-  const canEdit = userHasAccess('app:clinical.chart.conditions.edit', session?.user);
+  const canEdit = userHasAccess('app:hoja.clinica.condiciones.editar', session?.user);
 
   const launchEditConditionsForm = useCallback(
     () =>

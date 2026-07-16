@@ -26,13 +26,17 @@ import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject, defaultColumnConfig, type PriorityConfig } from '../config-schema';
-import { time12HourFormatRegexPattern } from '../constants';
+import { queueEntryCommentMaxLength, time12HourFormatRegexPattern } from '../constants';
 import { useMutateQueueEntries } from '../hooks/useQueueEntries';
 import { useQueues } from '../hooks/useQueues';
 import QueuePriority from '../queue-table/components/queue-priority.component';
 import { type Queue, type QueueEntry } from '../types';
 import styles from './queue-entry-actions.scss';
-import { getErrorMessage, isAlreadyEndedQueueEntryError, isDuplicateQueueEntryError } from './queue-entry-error.utils';
+import {
+  getUserFacingQueueErrorMessage,
+  isAlreadyEndedQueueEntryError,
+  isDuplicateQueueEntryError,
+} from './queue-entry-error.utils';
 import { type amPm, convertTime12to24 } from './time-helpers';
 
 const TIME_REGEX_12H = /^(0?[1-9]|1[0-2]):[0-5][0-9]$/;
@@ -124,22 +128,30 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
     transitionTime: dayjs(initialTransitionDate).format('hh:mm'),
     transitionTimeFormat: dayjs(initialTransitionDate).hour() < 12 ? 'AM' : 'PM',
   });
-  const { queues } = useQueues();
+  const { queues, isLoading: isLoadingQueues, error: queuesError } = useQueues();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submissionError, setSubmissionError] = useState<{
+  const [userFacingSubmissionError, setUserFacingSubmissionError] = useState<{
     type: 'duplicate' | 'error';
-    message: string;
+    description: string;
     title?: string;
   } | null>(null);
 
   const selectedQueue = queues.find((q) => q.uuid === formState.selectedQueue);
+  const isCommentTooLong = formState.priorityComment.length > queueEntryCommentMaxLength;
 
-  const clearSubmissionError = () => setSubmissionError(null);
+  const clearSubmissionError = () => setUserFacingSubmissionError(null);
 
   const statuses = selectedQueue?.allowedStatuses;
   const hasNoStatusesConfigured = selectedQueue && statuses.length === 0;
   const priorities = selectedQueue?.allowedPriorities;
   const hasNoPrioritiesConfigured = selectedQueue && priorities.length === 0;
+  const hasValidQueueConfiguration = Boolean(
+    !isLoadingQueues &&
+      !queuesError &&
+      selectedQueue &&
+      priorities?.some(({ uuid }) => uuid === formState.selectedPriority) &&
+      (!showStatusPicker || statuses?.some(({ uuid }) => uuid === formState.selectedStatus)),
+  );
 
   const setSelectedQueueUuid = (selectedQueueUuid: string) => {
     clearSubmissionError();
@@ -195,7 +207,9 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
   const submitForm = () => {
     setIsSubmitting(true);
 
-    submitAction(queueEntry, formState)
+    // Normalize synchronous validation failures into the existing async error path.
+    Promise.resolve()
+      .then(() => submitAction(queueEntry, formState))
       .then(({ status }) => {
         if (status === 200) {
           showSnackbar({
@@ -223,15 +237,20 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
           mutateQueueEntries();
           closeModal();
         } else if (isDuplicateQueueEntryError(error)) {
-          setSubmissionError({
+          setUserFacingSubmissionError({
             type: 'duplicate',
-            message: t('duplicateQueueEntry', 'This patient is already in the selected queue.'),
+            description: t('duplicateQueueEntry', 'This patient is already in the selected queue.'),
             title: t('patientAlreadyInQueue', 'Patient already in queue'),
           });
         } else {
-          setSubmissionError({
+          setUserFacingSubmissionError({
             type: 'error',
-            message: getErrorMessage(error) || t('unknownError', 'An unknown error occurred'),
+            description: getUserFacingQueueErrorMessage(
+              error,
+              t('queueEntryActionErrorMessage', 'The queue action could not be completed. Please try again.'),
+              'Submit queue entry action',
+              t('invalidSubmission', 'La solicitud no es válida.'),
+            ),
             title: submitFailureTitle,
           });
         }
@@ -298,6 +317,17 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
         <div className={styles.queueEntryActionModalBody}>
           <Stack gap={4}>
             {modalInstruction && <p>{modalInstruction}</p>}
+            {queuesError && (
+              <InlineNotification
+                hideCloseButton
+                kind="error"
+                lowContrast
+                title={t(
+                  'queueDataLoadErrorMessage',
+                  'No se pudo cargar la información de la cola. Inténtelo de nuevo.',
+                )}
+              />
+            )}
             {showQueuePicker && (
               <section>
                 {/* Read this issue description for why we're using 8 locations as the cut off https://openmrs.atlassian.net/jira/software/c/projects/O3/issues/O3-4131 */}
@@ -307,7 +337,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
                     className={styles.radioButtonGroup}
                     id="queue"
                     name="queue"
-                    invalidText="Required"
+                    invalidText={t('required', 'Required')}
                     valueSelected={formState.selectedQueue}
                     orientation="vertical"
                     onChange={(uuid) => setSelectedQueueUuid(String(uuid))}
@@ -418,63 +448,73 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
                 value={formState.priorityComment}
                 onChange={(e) => setPriorityComment(e.target.value)}
                 placeholder={t('enterCommentHere', 'Enter comment here')}
+                maxLength={queueEntryCommentMaxLength}
+                invalid={isCommentTooLong}
+                invalidText={t('queueEntryCommentTooLong', 'El comentario no puede superar los {{count}} caracteres.', {
+                  count: queueEntryCommentMaxLength,
+                })}
+                helperText={t('queueEntryCommentLimit', 'Máximo {{count}} caracteres.', {
+                  count: queueEntryCommentMaxLength,
+                })}
               />
             </section>
 
-            <section>
-              <div className={styles.sectionTitle}>{t('timeOfTransition', 'Time of transition')}</div>
-              <Checkbox
-                labelText={t('now', 'Now')}
-                id={'modifyTransitionTime'}
-                checked={!formState.modifyDefaultTransitionDateTime}
-                onChange={(_, { checked }) => {
-                  setModifyDefaultTransitionDateTime(!checked);
-                }}
-              />
-              {formState.modifyDefaultTransitionDateTime && (
-                <div className={styles.dateTimeFields}>
-                  <OpenmrsDatePicker
-                    data-testid="datePickerInput"
-                    id="datePickerInput"
-                    labelText={t('date', 'Date')}
-                    maxDate={new Date()}
-                    onChange={setTransitionDate}
-                    value={formState.transitionDate}
-                  />
+            {isEdit && (
+              <section>
+                <div className={styles.sectionTitle}>{t('queueEntryStartTime', 'Queue entry start time')}</div>
+                <Checkbox
+                  labelText={t('now', 'Now')}
+                  id={'modifyTransitionTime'}
+                  checked={!formState.modifyDefaultTransitionDateTime}
+                  onChange={(_, { checked }) => {
+                    setModifyDefaultTransitionDateTime(!checked);
+                  }}
+                />
+                {formState.modifyDefaultTransitionDateTime && (
+                  <div className={styles.dateTimeFields}>
+                    <OpenmrsDatePicker
+                      data-testid="datePickerInput"
+                      id="datePickerInput"
+                      labelText={t('date', 'Date')}
+                      maxDate={new Date()}
+                      onChange={setTransitionDate}
+                      value={formState.transitionDate}
+                    />
 
-                  <TimePicker
-                    id="transitionTime"
-                    labelText={t('time', 'Time')}
-                    onChange={(event) => {
-                      const sanitized = event.target.value.replace(/[^0-9:]/g, '');
-                      setTransitionTime(sanitized); // ← sanitized, not raw value
-                    }}
-                    pattern={time12HourFormatRegexPattern}
-                    value={formState.transitionTime}
-                    invalid={timeInvalidMessage !== null}
-                    invalidText={timeInvalidMessage}
-                  >
-                    <TimePickerSelect
-                      id="visitStartTimeSelect"
-                      onChange={(event) => setTransitionTimeFormat(event.target.value as amPm)}
-                      value={formState.transitionTimeFormat}
-                      aria-label={t('time', 'Time')}
+                    <TimePicker
+                      id="transitionTime"
+                      labelText={t('time', 'Time')}
+                      onChange={(event) => {
+                        const sanitized = event.target.value.replace(/[^0-9:]/g, '');
+                        setTransitionTime(sanitized); // ← sanitized, not raw value
+                      }}
+                      pattern={time12HourFormatRegexPattern}
+                      value={formState.transitionTime}
+                      invalid={timeInvalidMessage !== null}
+                      invalidText={timeInvalidMessage}
                     >
-                      <SelectItem value="AM" text="AM" />
-                      <SelectItem value="PM" text="PM" />
-                    </TimePickerSelect>
-                  </TimePicker>
-                </div>
-              )}
-            </section>
+                      <TimePickerSelect
+                        id="visitStartTimeSelect"
+                        onChange={(event) => setTransitionTimeFormat(event.target.value as amPm)}
+                        value={formState.transitionTimeFormat}
+                        aria-label={t('time', 'Time')}
+                      >
+                        <SelectItem value="AM" text="AM" />
+                        <SelectItem value="PM" text="PM" />
+                      </TimePickerSelect>
+                    </TimePicker>
+                  </div>
+                )}
+              </section>
+            )}
 
-            {submissionError && (
+            {userFacingSubmissionError && (
               <InlineNotification
                 kind="error"
                 lowContrast={false}
-                title={submissionError.title || t('queueEntryError', 'Error updating queue entry')}
-                subtitle={submissionError.message}
-                onClose={() => setSubmissionError(null)}
+                title={userFacingSubmissionError.title || t('queueEntryError', 'Error updating queue entry')}
+                subtitle={userFacingSubmissionError.description}
+                onClose={() => setUserFacingSubmissionError(null)}
               />
             )}
           </Stack>
@@ -487,8 +527,10 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
         <Button
           disabled={
             isSubmitting ||
+            !hasValidQueueConfiguration ||
+            isCommentTooLong ||
             disableSubmit(queueEntry, formState) ||
-            (formState.modifyDefaultTransitionDateTime && timeInvalidMessage !== null)
+            (isEdit && formState.modifyDefaultTransitionDateTime && timeInvalidMessage !== null)
           }
           onClick={submitForm}
         >

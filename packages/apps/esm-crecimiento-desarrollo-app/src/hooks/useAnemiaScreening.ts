@@ -1,4 +1,4 @@
-import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useConfig, usePatient } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import { useMemo } from 'react';
 import useSWR from 'swr';
@@ -8,7 +8,6 @@ import type { ConfigObject } from '../config-schema';
 interface AnemiaScreeningResult {
   lastHb: number | null;
   lastDate: string | null;
-  isAnemic: boolean;
   nextDueDate: string | null;
   isLoading: boolean;
   error: Error | null;
@@ -16,25 +15,29 @@ interface AnemiaScreeningResult {
 }
 
 /**
- * Hook para tamizaje de anemia según NTS 238:
- * - Primer dosaje de Hb a los 6 meses
- * - Frecuencia semestral hasta los 2 años
- * - Frecuencia anual a partir de los 2 años
- * - Anemia: Hb < 11 g/dL (configurable via anemiaScreening.anemiaThreshold)
+ * Hook para tamizaje de anemia según NTS 213 y RM 429-2024:
+ * - 6 a 23 meses: inicio, tercer mes y término de la suplementación
+ * - 24 a 59 meses: dos veces al año
+ * - 5 a 11 años: una vez al año
  *
  * Usa: config.anemiaScreening.hemoglobinaConceptUuid
  */
 export function useAnemiaScreening(patientUuid: string): AnemiaScreeningResult {
   const config = useConfig<ConfigObject>();
+  const { patient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
   const conceptUuid = config.anemiaScreening?.hemoglobinaConceptUuid;
-  const threshold = config.anemiaScreening?.anemiaThreshold ?? 11.0;
 
   const url = useMemo(() => {
     if (!patientUuid || !conceptUuid) return null;
     return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${conceptUuid}&v=custom:(uuid,value,obsDatetime)&limit=1&sort=desc`;
   }, [patientUuid, conceptUuid]);
 
-  const { data, isLoading, error, mutate } = useSWR(url, async (fetchUrl: string) => {
+  const {
+    data,
+    isLoading: isObservationLoading,
+    error: observationError,
+    mutate,
+  } = useSWR(url, async (fetchUrl: string) => {
     const response = await openmrsFetch(fetchUrl);
     return response?.data;
   });
@@ -42,25 +45,46 @@ export function useAnemiaScreening(patientUuid: string): AnemiaScreeningResult {
   const result = useMemo(() => {
     const obs = data?.results?.[0];
     if (!obs) {
-      return { lastHb: null, lastDate: null, isAnemic: false, nextDueDate: null };
+      return {
+        lastHb: null,
+        lastDate: null,
+        nextDueDate: null,
+      };
     }
 
     const hbValue = typeof obs.value === 'number' ? obs.value : parseFloat(obs.value);
     const obsDate = obs.obsDatetime ? dayjs(obs.obsDatetime).format('DD/MM/YYYY') : null;
-    const isAnemic = !Number.isNaN(hbValue) && hbValue < threshold;
+    const intervalMonths = getAnemiaScreeningIntervalMonths(patient?.birthDate, obs.obsDatetime);
+    const nextDueDate =
+      obs.obsDatetime && intervalMonths
+        ? dayjs(obs.obsDatetime).add(intervalMonths, 'months').format('DD/MM/YYYY')
+        : null;
 
-    // Calcular próximo tamizaje: 6 meses después del último
-    const nextDueDate = obs.obsDatetime ? dayjs(obs.obsDatetime).add(6, 'months').format('DD/MM/YYYY') : null;
-
-    return { lastHb: Number.isNaN(hbValue) ? null : hbValue, lastDate: obsDate, isAnemic, nextDueDate };
-  }, [data, threshold]);
+    return {
+      lastHb: Number.isNaN(hbValue) ? null : hbValue,
+      lastDate: obsDate,
+      nextDueDate,
+    };
+  }, [data, patient?.birthDate]);
 
   return {
     ...result,
-    isLoading,
-    error,
+    isLoading: isPatientLoading || isObservationLoading,
+    error: (patientError ?? observationError ?? null) as Error | null,
     mutate,
   };
+}
+
+export function getAnemiaScreeningIntervalMonths(birthDate?: string, screeningDate?: string): 3 | 6 | 12 | null {
+  if (!birthDate || !screeningDate) return null;
+
+  const ageInMonths = dayjs(screeningDate).diff(dayjs(birthDate), 'month', true);
+
+  if (ageInMonths >= 6 && ageInMonths < 24) return 3;
+  if (ageInMonths >= 24 && ageInMonths < 60) return 6;
+  if (ageInMonths >= 60 && ageInMonths < 144) return 12;
+
+  return null;
 }
 
 export default useAnemiaScreening;

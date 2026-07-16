@@ -9,23 +9,51 @@ interface VisitAttributeTagsProps {
   patientUuid: string;
 }
 
-const getAttributeValue = (attributeType, value) => {
-  switch (attributeType?.datatypeClassname) {
-    case 'org.openmrs.customdatatype.datatype.ConceptDatatype':
-      return value?.display;
-    case 'org.openmrs.customdatatype.datatype.FloatDatatype':
-    case 'org.openmrs.customdatatype.datatype.FreeTextDatatype':
-    case 'org.openmrs.customdatatype.datatype.LongFreeTextDatatype':
-    case 'org.openmrs.customdatatype.datatype.BooleanDatatype':
-      return value;
-    case 'org.openmrs.customdatatype.datatype.DateDatatype':
-      return formatDate(new Date(value), {
-        mode: 'wide',
-      });
-    default:
-      return value;
+interface VisitAttributeTypeLike {
+  datatypeClassname?: string;
+}
+
+function getDisplayValue(value: unknown, depth = 0): string | null {
+  if (typeof value === 'string') {
+    return value;
   }
-};
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? String(value) : null;
+  }
+
+  if (typeof value === 'boolean') {
+    return String(value);
+  }
+
+  if (!value || typeof value !== 'object' || Array.isArray(value) || depth >= 2) {
+    return null;
+  }
+
+  const resource = value as Record<string, unknown>;
+  for (const key of ['display', 'name', 'value']) {
+    const displayValue = getDisplayValue(resource[key], depth + 1);
+    if (displayValue !== null && displayValue !== '') {
+      return displayValue;
+    }
+  }
+
+  return null;
+}
+
+function getAttributeValue(attributeType: VisitAttributeTypeLike | null | undefined, value: unknown): string | null {
+  const displayValue = getDisplayValue(value);
+  if (!displayValue) {
+    return null;
+  }
+
+  if (attributeType?.datatypeClassname === 'org.openmrs.customdatatype.datatype.DateDatatype') {
+    const date = new Date(displayValue);
+    return Number.isNaN(date.getTime()) ? null : formatDate(date, { mode: 'wide' });
+  }
+
+  return displayValue;
+}
 
 const VisitAttributeTags: React.FC<VisitAttributeTagsProps> = ({ patientUuid }) => {
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
@@ -49,7 +77,7 @@ const VisitAttributeTags: React.FC<VisitAttributeTagsProps> = ({ patientUuid }) 
 
           return value !== null && value !== undefined && value !== '' ? (
             <Tag key={attribute?.uuid ?? attribute?.attributeType?.uuid} type="gray">
-              {String(value)}
+              {value}
             </Tag>
           ) : null;
         })}

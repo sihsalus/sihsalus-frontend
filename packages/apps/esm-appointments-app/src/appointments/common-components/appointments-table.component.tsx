@@ -29,9 +29,10 @@ import {
   useConfig,
   useLayoutType,
   usePagination,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
+import classNames from 'classnames';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import utc from 'dayjs/plugin/utc';
@@ -41,9 +42,10 @@ import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import { appointmentsEditPrivilege } from '../../constants';
 import { EmptyState } from '../../empty-state/empty-state.component';
+import { isAppointmentEditable } from '../../helpers';
 import { exportAppointmentsToSpreadsheet } from '../../helpers/excel';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
-import { type Appointment } from '../../types';
+import { type Appointment, AppointmentStatus } from '../../types';
 import AppointmentDetails from '../details/appointment-details.component';
 import { getPageSizes, useAppointmentSearchResults } from '../utils';
 
@@ -54,6 +56,7 @@ dayjs.extend(utc);
 dayjs.extend(isToday);
 
 interface AppointmentsTableProps {
+  appointmentStatus?: string;
   appointments: Array<Appointment>;
   isLoading: boolean;
   tableHeading: string;
@@ -61,6 +64,7 @@ interface AppointmentsTableProps {
 }
 
 const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
+  appointmentStatus,
   appointments,
   isLoading,
   tableHeading,
@@ -69,6 +73,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
   const { t } = useTranslation();
   const [pageSize, setPageSize] = useState(25);
   const [searchString, setSearchString] = useState('');
+  const [editingAppointmentUuid, setEditingAppointmentUuid] = useState<string | null>(null);
   const searchResults = useAppointmentSearchResults(appointments, searchString);
   const { results, goTo, currentPage } = usePagination(searchResults, pageSize);
   const { customPatientChartUrl, patientIdentifierType } = useConfig<ConfigObject>();
@@ -84,12 +89,34 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
     tableHeading === 'todayAppointments' ||
     /today/i.test(tableHeading) ||
     /hoy/i.test(translatedTableHeading);
+  const sectionTitlesByStatus: Partial<Record<AppointmentStatus, string>> = {
+    [AppointmentStatus.SCHEDULED]: t('expectedAppointments', 'Expected appointments'),
+    [AppointmentStatus.CHECKEDIN]: t('appointmentsInProgress', 'Appointments in progress'),
+    [AppointmentStatus.COMPLETED]: t('completedAppointments', 'Completed appointments'),
+    [AppointmentStatus.CANCELLED]: t('cancelledAppointments', 'Cancelled appointments'),
+    [AppointmentStatus.MISSED]: t('missedAppointments', 'Missed appointments'),
+  };
+  const sectionTitlesByConfigKey: Record<string, string | undefined> = {
+    expected: sectionTitlesByStatus[AppointmentStatus.SCHEDULED],
+    expectedAppointmentsTab: sectionTitlesByStatus[AppointmentStatus.SCHEDULED],
+    checkedIn: sectionTitlesByStatus[AppointmentStatus.CHECKEDIN],
+    inProgressAppointmentsTab: sectionTitlesByStatus[AppointmentStatus.CHECKEDIN],
+    completed: sectionTitlesByStatus[AppointmentStatus.COMPLETED],
+    completedAppointmentsTab: sectionTitlesByStatus[AppointmentStatus.COMPLETED],
+    cancelled: sectionTitlesByStatus[AppointmentStatus.CANCELLED],
+    cancelledAppointmentsTab: sectionTitlesByStatus[AppointmentStatus.CANCELLED],
+    missed: sectionTitlesByStatus[AppointmentStatus.MISSED],
+    missedAppointmentsTab: sectionTitlesByStatus[AppointmentStatus.MISSED],
+  };
+  const statusSectionTitle = appointmentStatus
+    ? sectionTitlesByStatus[appointmentStatus as AppointmentStatus]
+    : undefined;
   const appointmentSectionTitle = isTodayAppointmentsTable
-    ? t('todaysAppointments', 'Today appointments')
-    : `${translatedTableHeading} ${t('appointments', 'Appointments')}`;
-  const emptyDisplayText = isTodayAppointmentsTable
-    ? t('appointmentsScheduledForToday', 'appointments scheduled for today')
-    : appointmentSectionTitle.toLocaleLowerCase();
+    ? t('scheduledForToday', 'Appointments scheduled today')
+    : (statusSectionTitle ??
+      sectionTitlesByConfigKey[tableHeading] ??
+      `${translatedTableHeading} ${t('appointments', 'Appointments')}`);
+  const emptyDisplayText = appointmentSectionTitle.toLocaleLowerCase();
   const headerData = [
     {
       header: t('patientName', 'Patient name'),
@@ -98,6 +125,10 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
     {
       header: t('identifier', 'Identifier'),
       key: 'identifier',
+    },
+    {
+      header: t('dateTime', 'Date & Time'),
+      key: 'dateTime',
     },
     {
       header: t('location', 'Location'),
@@ -130,7 +161,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
       : appointment.patient.identifier,
     dateTime: formatDatetime(new Date(appointment.startDateTime)),
     serviceType: appointment.service.name,
-    location: appointment.location?.name,
+    location: appointment.location?.name ?? appointment.service.location?.display ?? '—',
     provider: appointment.provider,
     status: <AppointmentActions appointment={appointment} />,
   }));
@@ -249,29 +280,39 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                           const { key, ...rowProps } = getRowProps({ row });
 
                           return (
-                            <TableExpandRow key={key} {...rowProps}>
+                            <TableExpandRow
+                              key={key}
+                              {...rowProps}
+                              className={classNames(rowProps.className, {
+                                [styles.editingRow]: editingAppointmentUuid === matchingAppointment.uuid,
+                              })}
+                            >
                               {row.cells.map((cell) => (
                                 <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
                               ))}
                               <TableCell className="cds--table-column-menu">
-                                {canEdit && (isFutureAppointment || (isTodayAppointment && !hasActiveVisitToday)) ? (
+                                {canEdit &&
+                                isAppointmentEditable(matchingAppointment.status) &&
+                                (isFutureAppointment || (isTodayAppointment && !hasActiveVisitToday)) ? (
                                   <OverflowMenu
                                     align="left"
                                     aria-label={t('actions', 'Actions')}
                                     flipped
+                                    iconDescription={t('actions', 'Actions')}
                                     size={responsiveSize}
                                   >
                                     <OverflowMenuItem
                                       className={styles.menuItem}
                                       itemText={t('editAppointment', 'Edit appointment')}
-                                      onClick={() =>
+                                      onClick={() => {
+                                        setEditingAppointmentUuid(matchingAppointment.uuid);
                                         launchWorkspace2('appointments-form-workspace', {
                                           patientUuid: matchingAppointment.patient.uuid,
                                           appointment: matchingAppointment,
                                           context: 'editing',
                                           workspaceTitle: t('editAppointment', 'Edit appointment'),
-                                        })
-                                      }
+                                        });
+                                      }}
                                     />
                                   </OverflowMenu>
                                 ) : null}

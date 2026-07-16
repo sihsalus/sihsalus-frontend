@@ -1,5 +1,6 @@
 import { ComboBox, InlineLoading, InlineNotification, TextInput, TextInputSkeleton } from '@carbon/react';
 import { type OpenmrsResource } from '@openmrs/esm-framework';
+import type { TFunction } from 'i18next';
 import React, { useMemo, useRef, useState } from 'react';
 import { type Control, Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -14,14 +15,32 @@ import {
 } from './person-attributes.resource';
 import styles from './search-field.scss';
 
+export const identityDocumentTypeAttributeUuid = '6f5c0b8a-9e91-4d41-9a8c-8b0f3c2e7a11';
+export const identityDocumentNumberAttributeUuid = 'c0d1a2b3-4e5f-4a6b-9c7d-8e9f0a1b2c3d';
+
+function getPersonAttributeDisplayLabel(attributeDisplay: string, attributeTypeUuid: string | undefined, t: TFunction) {
+  if (attributeTypeUuid === identityDocumentNumberAttributeUuid) {
+    return t('identityDocumentNumber', 'Número de Documento de Identidad');
+  }
+
+  return t(attributeDisplay);
+}
+
 export function isMissingPersonAttributeTypeError(error: unknown) {
-  const responseStatus =
-    typeof error === 'object' && error
-      ? ((error as { response?: { status?: number }; status?: number }).response?.status ??
-        (error as { status?: number }).status)
-      : undefined;
+  const responseStatus = getErrorStatus(error);
 
   return responseStatus === 404 || (error instanceof Error && /\b404\b/.test(error.message));
+}
+
+function getErrorStatus(error: unknown) {
+  return typeof error === 'object' && error
+    ? ((error as { response?: { status?: number }; status?: number }).response?.status ??
+        (error as { status?: number }).status)
+    : undefined;
+}
+
+function isForbiddenError(error: unknown) {
+  return getErrorStatus(error) === 403 || (error instanceof Error && /\b403\b/.test(error.message));
 }
 
 export function sanitizePersonAttributeText(value: string, disallowNumbers?: boolean) {
@@ -60,7 +79,9 @@ export function PersonAttributeField({ field, control, isTablet }: PersonAttribu
     }
 
     switch (personAttributeType.format) {
-      case 'java.lang.String':
+      case 'java.lang.String': {
+        const labelText = getPersonAttributeDisplayLabel(personAttributeType.display, field.attributeTypeUuid, t);
+
         if (field.stringAnswerOptions?.length) {
           return (
             <StringAttributeOptionsField
@@ -80,7 +101,7 @@ export function PersonAttributeField({ field, control, isTablet }: PersonAttribu
             render={({ field: { onChange, value } }) => (
               <TextInput
                 id={field.name}
-                labelText={t(personAttributeType.display)}
+                labelText={labelText}
                 value={value || ''}
                 onChange={(e) => onChange(sanitizePersonAttributeText(e.target.value, field.disallowNumbers))}
                 placeholder={field.placeholder}
@@ -90,6 +111,7 @@ export function PersonAttributeField({ field, control, isTablet }: PersonAttribu
             )}
           />
         );
+      }
 
       case 'org.openmrs.Concept':
         return (
@@ -123,17 +145,7 @@ export function PersonAttributeField({ field, control, isTablet }: PersonAttribu
   }, [personAttributeType, isLoading, field, control, t, isTablet]);
 
   if (error) {
-    if (isMissingPersonAttributeTypeError(error)) {
-      return null;
-    }
-
-    return (
-      <InlineNotification kind="error" title={t('error', 'Error')}>
-        {t('errorLoadingAttribute', 'Error loading attribute type {{attributeUuid}}', {
-          attributeUuid: field.attributeTypeUuid,
-        })}
-      </InlineNotification>
-    );
+    return null;
   }
 
   return formatField;
@@ -199,8 +211,10 @@ const ConceptAttributeField: React.FC<ConceptAttributeFieldProps> = ({
 
   const items = useMemo(() => {
     if (isLoadingConceptAnswers || isLoadingConfiguredAnswers) return [];
-    if (field.conceptAnswersUuids?.length) return configuredConceptAnswers || [];
-    return conceptAnswers || [];
+
+    const baseItems = field.conceptAnswersUuids?.length ? configuredConceptAnswers || [] : conceptAnswers || [];
+
+    return [...baseItems].sort((a, b) => a.display.localeCompare(b.display));
   }, [
     isLoadingConceptAnswers,
     isLoadingConfiguredAnswers,
@@ -214,6 +228,10 @@ const ConceptAttributeField: React.FC<ConceptAttributeFieldProps> = ({
   }
 
   if (errorFetchingConceptAnswers) {
+    if (isForbiddenError(errorFetchingConceptAnswers)) {
+      return null;
+    }
+
     return (
       <InlineNotification kind="error" title={t('error', 'Error')}>
         {t('errorLoadingConceptAttributeAnswers', 'Error loading concept attribute answers')}
@@ -232,8 +250,8 @@ const ConceptAttributeField: React.FC<ConceptAttributeFieldProps> = ({
           titleText={t(attributeDisplay)}
           items={items}
           itemToString={(item: OpenmrsResource) => item?.display}
-          selectedItem={items.sort((a, b) => a.display.localeCompare(b.display)).find((item) => item.uuid === value)}
-          onChange={({ selectedItem }) => onChange(selectedItem?.uuid)}
+          selectedItem={items.find((item) => item.uuid === value)}
+          onChange={({ selectedItem }) => onChange(selectedItem?.uuid ?? '')}
           placeholder={field.placeholder ?? t('selectOption', 'Select an option')}
           size={isTablet ? 'lg' : 'md'}
         />

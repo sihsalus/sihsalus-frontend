@@ -4,7 +4,6 @@ import {
   ExtensionSlot,
   PatientBannerActionsMenu,
   PatientBannerContactDetails,
-  PatientBannerPatientInfo,
   PatientBannerToggleContactDetailsButton,
   PatientPhoto,
   useConfig,
@@ -17,6 +16,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { type PatientSearchConfig } from '../../../config-schema';
 import { PatientSearchContext, usePatientSearchContext2 } from '../../../patient-search-context';
+import { SihsalusPatientInfo } from '../../../sihsalus-patient-info/sihsalus-patient-info.component';
 import { type FHIRPatientType, type SearchedPatient } from '../../../types';
 
 import styles from './patient-banner.scss';
@@ -55,14 +55,22 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
 }) => {
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
-  const { activeVisit, currentVisit } = useVisit(patientUuid);
+  const {
+    activeVisit,
+    currentVisit,
+    error: visitError,
+    isLoading: isVisitLoading,
+    isValidating: isVisitValidating,
+  } = useVisit(patientUuid);
   const effectiveVisit = currentVisit ?? activeVisit;
   const { nonNavigationSelectPatientAction } = useContext(PatientSearchContext);
   const patientSearchContext2 = usePatientSearchContext2();
   const hideActionsOverflow = hideActionsOverflowProp ?? Boolean(patientSearchContext2?.onPatientSelected);
 
   const patientName = patient.person.personName.display;
-  const isDeceased = !!patient.person.deathDate;
+  const isDeceased = Boolean(patient.person.dead || patient.person.deathDate);
+  const canStartVisit =
+    !isDeceased && !effectiveVisit && !isVisitLoading && !isVisitValidating && !visitError;
 
   const [showContactDetails, setShowContactDetails] = useState(false);
 
@@ -170,7 +178,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
           <div className={styles.patientAvatar} role="img">
             <PatientPhoto patientUuid={patientUuid} patientName={patientName} />
           </div>
-          <PatientBannerPatientInfo patient={fhirMappedPatient} renderedFrom="patient-search" />
+          <SihsalusPatientInfo patient={fhirMappedPatient} renderedFrom="patient-search" />
         </ClickablePatientContainer>
         <div className={styles.actionButtons}>
           <PatientBannerToggleContactDetailsButton
@@ -190,9 +198,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
                 patientUuid={patientUuid}
               />
             ) : null}
-            {!isDeceased && !effectiveVisit && (
-              <ExtensionSlot name={startVisitButtonSlotName} state={startVisitButtonSlotState} />
-            )}
+            {canStartVisit ? <ExtensionSlot name={startVisitButtonSlotName} state={startVisitButtonSlotState} /> : null}
           </div>
         </div>
         <div>

@@ -505,6 +505,9 @@ export function getPrescriptionTableEndpoint(
   patientSearchTerm: string,
   location: string,
 ): string {
+  const normalizedPatientSearchTerm = patientSearchTerm?.trim();
+  const encodedPatientSearchTerm = normalizedPatientSearchTerm ? encodeURIComponent(normalizedPatientSearchTerm) : '';
+
   if (customPrescriptionsTableEndpoint) {
     return interpolatePrescriptionEndpoint(customPrescriptionsTableEndpoint, {
       fhirBaseUrl,
@@ -513,7 +516,7 @@ export function getPrescriptionTableEndpoint(
       pageOffset,
       pageSize,
       date,
-      patientSearchTerm,
+      patientSearchTerm: encodedPatientSearchTerm,
       location,
     });
   }
@@ -525,7 +528,7 @@ export function getPrescriptionTableEndpoint(
     `&status=${status}`;
 
   const activeDateFilter = status === 'ACTIVE' ? `&date=ge${date}` : '';
-  const patientFilter = patientSearchTerm ? `&patientSearchTerm=${patientSearchTerm}` : '';
+  const patientFilter = encodedPatientSearchTerm ? `&patientSearchTerm=${encodedPatientSearchTerm}` : '';
   const locationFilter = location ? `&location=${location}` : '';
 
   return `${baseEndpoint}${activeDateFilter}${patientFilter}${locationFilter}`;
@@ -566,7 +569,7 @@ export function getRefillsAllowed(resource: MedicationRequest | MedicationDispen
 }
 
 /**
- * Given a refernece in format "MedicationReference/uuid" or just "uuid", returns just the uuid compoennt
+ * Given a reference in format "MedicationReference/uuid" or just "uuid", returns just the uuid component
  */
 export function getUuidFromReference(reference: string): string {
   if (reference?.includes('/')) {

@@ -1,7 +1,9 @@
 import { Button } from '@carbon/react';
 import { UserSettings } from '@carbon/react/icons';
 import { navigate } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import { useTranslation } from 'react-i18next';
+import { stockManagementSettingsEditPrivilege } from '../constants';
 import styles from './stock-settings.scss';
 
 function StockSettings() {
@@ -16,18 +18,20 @@ function StockSettings() {
         )}
       </div>
 
-      <Button
-        onClick={() =>
-          navigate({
-            to: `${globalThis.openmrsBase}/admin/maintenance/settings.list?show=Stockmanagement`,
-          })
-        }
-        size="md"
-        renderIcon={() => <UserSettings className="cds--btn__icon" size={24} />}
-        kind="ghost"
-      >
-        {t('adminSettings', 'Admin settings')}
-      </Button>
+      <RequirePrivilege privilege={stockManagementSettingsEditPrivilege} hideUnauthorized>
+        <Button
+          onClick={() =>
+            navigate({
+              to: `${globalThis.openmrsBase}/admin/maintenance/settings.list?show=Stockmanagement`,
+            })
+          }
+          size="md"
+          renderIcon={() => <UserSettings className="cds--btn__icon" size={24} />}
+          kind="ghost"
+        >
+          {t('adminSettings', 'Admin settings')}
+        </Button>
+      </RequirePrivilege>
     </div>
   );
 }

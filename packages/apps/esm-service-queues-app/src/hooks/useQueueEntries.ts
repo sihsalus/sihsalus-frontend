@@ -1,6 +1,14 @@
-import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import {
+  type FetchResponse,
+  getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
+  openmrsFetch,
+  restBaseUrl,
+  showSnackbar,
+} from '@openmrs/esm-framework';
+import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import isEqual from 'lodash-es/isEqual';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 import { useSWRConfig } from 'swr/_internal';
 
@@ -53,19 +61,34 @@ function getNextUrlFromResponse(data: QueueEntryResponse) {
 }
 
 export function useMutateQueueEntries() {
+  const { t } = useTranslation();
   const { mutate } = useSWRConfig();
-
-  return {
-    mutateQueueEntries: () => {
-      return mutate((key) => {
+  const mutateQueueEntries = useCallback(async () => {
+    try {
+      await mutate((key) => {
         return (
           typeof key === 'string' &&
           (key.includes(`${restBaseUrl}/queue-entry`) || key.includes(`${restBaseUrl}/visit-queue-entry`))
         );
-      }).then(() => {
-        globalThis.dispatchEvent(new CustomEvent('queue-entry-updated'));
       });
-    },
+      globalThis.dispatchEvent(new CustomEvent('queue-entry-updated'));
+    } catch (error) {
+      showSnackbar({
+        title: t('errorLoadingQueueEntries', 'Error loading queue entries'),
+        kind: 'error',
+        isLowContrast: false,
+        subtitle: getCompatibleUserFacingErrorMessage(
+          error,
+          t('queueDataLoadErrorMessage', 'Queue information could not be loaded. Please try again.'),
+          { logContext: 'Refresh queue entries' },
+          frameworkGetUserFacingErrorMessage,
+        ),
+      });
+    }
+  }, [mutate, t]);
+
+  return {
+    mutateQueueEntries,
   };
 }
 

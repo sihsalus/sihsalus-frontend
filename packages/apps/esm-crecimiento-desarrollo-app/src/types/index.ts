@@ -12,6 +12,7 @@ export interface WorkspaceProps {
   };
   controlNumber?: number;
   controlTargetDate?: string;
+  consultationDatetime?: string;
   patientAge?: string;
   patientBirthDate?: string;
   patientUuid?: string;
@@ -116,12 +117,16 @@ export interface OpenmrsEncounter extends OpenmrsResource {
   location: string;
   encounterProviders?: Array<{
     encounterRole: string;
-    provider: { uuid: string; person: { uuid: string; display: string }; name: string };
+    provider: {
+      uuid: string;
+      person: { uuid: string; display: string };
+      name: string;
+    };
     display?: string;
   }>;
   obs: Array<OpenmrsResource>;
 
-  form?: { name: string; uuid: string };
+  form?: { name: string; display?: string; uuid: string };
 
   visit?: {
     visitType: {

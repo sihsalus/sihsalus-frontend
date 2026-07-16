@@ -5,11 +5,7 @@ import { useSWRConfig } from 'swr';
 import { type Config } from '../../config-schema';
 import { useEmergencyConfig } from '../../hooks/usePriorityConfig';
 import { type EmergencyQueueEntry, transitionToAttentionQueue } from '../../resources/emergency.resource';
-import {
-  calculateTriagePriority,
-  type TriagePriority,
-  type TriageVitals,
-} from '../utils/priority-calculator';
+import { calculateTriagePriority, type TriagePriority, type TriageVitals } from '../utils/priority-calculator';
 import { validateTriageComplete } from '../utils/triage-validator';
 
 interface VitalsSavedFormData {
@@ -71,7 +67,10 @@ export function useTriageVitalsSavedHandler(queueEntry: EmergencyQueueEntry) {
         showSnackbar({
           title: t('noVisitFound', 'No se encontró una visita activa'),
           kind: 'error',
-          subtitle: t('cannotMovePatientWithoutVisit', 'No se puede mover al paciente a atención sin una visita activa.'),
+          subtitle: t(
+            'cannotMovePatientWithoutVisit',
+            'No se puede mover al paciente a atención sin una visita activa.',
+          ),
         });
         return;
       }

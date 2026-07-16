@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../config-schema';
 import { appointmentsEditPrivilege } from '../../constants';
+import { canTransition } from '../../helpers';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
 import { type Appointment, AppointmentStatus } from '../../types';
 
@@ -18,22 +19,57 @@ import CheckInButton from './checkin-button.component';
 dayjs.extend(utc);
 dayjs.extend(isToday);
 
+const checkInPrivileges = [
+  appointmentsEditPrivilege,
+  'Get Patients',
+  'Get Locations',
+  'Get Visits',
+  'Add Visits',
+  'Edit Visits',
+  'Get Visit Types',
+  'Get Visit Attribute Types',
+  'Get Queue Entries',
+  'Get Queues',
+  'Manage Queue Entries',
+];
+const checkOutPrivileges = [
+  appointmentsEditPrivilege,
+  'Get Visits',
+  'Edit Visits',
+  'Get Queue Entries',
+  'Get Queues',
+  'Manage Queue Entries',
+];
+
 interface AppointmentsActionsProps {
   appointment: Appointment;
 }
 
 const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }) => {
   const { t } = useTranslation();
-  const { checkInButton, checkOutButton } = useConfig<ConfigObject>();
+  const { appointmentVisitAttributeTypeUuid, checkInButton, checkOutButton } = useConfig<ConfigObject>();
   const session = useSession();
-  const canEdit = userHasAccess(appointmentsEditPrivilege, session?.user);
-  const { visits, mutateVisit } = useTodaysVisits(); // TODO doesn't work if visit didn't start today? what about inpatient?
+  const canCheckIn = userHasAccess(checkInPrivileges, session?.user);
+  const canCheckOut = userHasAccess(checkOutPrivileges, session?.user);
+  const { visits, mutateVisit } = useTodaysVisits();
 
   const patientUuid = appointment.patient.uuid;
   const visitDate = dayjs(appointment.startDateTime);
 
-  const hasActiveVisitToday = visits?.some(
+  const hasActiveVisit = visits?.some(
     (visit) => visit?.patient?.uuid === patientUuid && visit?.startDatetime && !visit?.stopDatetime,
+  );
+  const hasLinkedActiveVisit = visits?.some(
+    (visit) =>
+      visit?.patient?.uuid === patientUuid &&
+      visit?.startDatetime &&
+      !visit?.stopDatetime &&
+      Boolean(appointmentVisitAttributeTypeUuid) &&
+      (visit.attributes ?? []).some(
+        (attribute) =>
+          attribute.attributeType?.uuid === appointmentVisitAttributeTypeUuid &&
+          String(attribute.value ?? '').trim() === appointment.uuid,
+      ),
   );
 
   const isTodaysAppointment = visitDate.isToday();
@@ -72,31 +108,32 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
         );
 
       case isCompleted:
+        if (canCheckOut && hasLinkedActiveVisit) {
+          return (
+            <Button onClick={handleCheckout} kind="tertiary" size="sm">
+              {t('reconcileCheckout', 'Regularizar cierre')}
+            </Button>
+          );
+        }
         return (
           <Button kind="ghost" renderIcon={TaskComplete} iconDescription={t('checkedOut', 'Checked out')} size="sm">
             {t('checkedOut', 'Checked out')}
           </Button>
         );
 
-      case canEdit && checkOutButton.enabled && isCheckedIn:
+      case canCheckOut && checkOutButton.enabled && isCheckedIn:
         return (
           <Button onClick={handleCheckout} kind="danger--tertiary" size="sm">
             {t('checkOut', 'Check out')}
           </Button>
         );
 
-      case canEdit &&
+      case canCheckIn &&
         checkInButton.enabled &&
-        (!hasActiveVisitToday || checkInButton.showIfActiveVisit) &&
-        isTodaysAppointment:
-        return (
-          <CheckInButton
-            patientUuid={patientUuid}
-            appointment={appointment}
-            hasActiveVisit={hasActiveVisitToday}
-            mutateVisits={mutateVisit}
-          />
-        );
+        (!hasActiveVisit || checkInButton.showIfActiveVisit) &&
+        isTodaysAppointment &&
+        canTransition(appointment.status, AppointmentStatus.CHECKEDIN):
+        return <CheckInButton patientUuid={patientUuid} appointment={appointment} mutateVisits={mutateVisit} />;
 
       default:
         return null;

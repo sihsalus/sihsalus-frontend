@@ -4020,9 +4020,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-form-stack-sharing.patch::locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A.":
+"@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch::locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A.":
   version: 9.0.2
-  resolution: "@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-form-stack-sharing.patch::version=9.0.2&hash=2104cd&locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A."
+  resolution: "@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch::version=9.0.2&hash=307be9&locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A."
   dependencies:
     "@carbon/react": "npm:^1.92.1"
     "@internationalized/date": "npm:^3.8.0"
@@ -4052,7 +4052,7 @@ __metadata:
     workbox-strategies: "npm:^6.1.5"
     workbox-webpack-plugin: "npm:^6.1.5"
     workbox-window: "npm:^6.1.5"
-  checksum: 10c0/4667a8e9a198721769428c17e9e9beece4d2a8eb935c39f27863bb714707cbdbcf0cbcf141551e48d40be3999100ae8f0fe5738fa79cc4baf82c1d5d55e391b6
+  checksum: 10c0/edcb402ed2f7f15c0c2b07f04e53af21e210a6d3c101c199b45da8b12089d6eb143063d72d32ade8d21c8a0026318919a6cfb149ce00a54d5a93ffb813a2b2a6
   languageName: node
   linkType: hard
 
@@ -4414,8 +4414,10 @@ __metadata:
     "@openmrs/esm-extensions": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
     "@sihsalus/esm-form-engine-lib": "workspace:*"
+    dayjs: "npm:1.x"
     jsep: "npm:^1.4.0"
     lodash-es: "npm:^4.17.23"
+    swr: "npm:2.x"
     typescript: "npm:6.0.3"
     uuid: "npm:^14.0.0"
     vitest: "npm:^4.1.7"
@@ -4443,6 +4445,7 @@ __metadata:
     "@openmrs/esm-globals": "workspace:*"
     "@openmrs/esm-navigation": "workspace:*"
     "@openmrs/esm-state": "workspace:*"
+    "@openmrs/esm-translations": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@swc/cli": "npm:0.8.1"
     "@swc/core": "npm:1.15.21"
@@ -4475,6 +4478,7 @@ __metadata:
     "@openmrs/esm-globals": 9.x
     "@openmrs/esm-navigation": 9.x
     "@openmrs/esm-state": 9.x
+    "@openmrs/esm-translations": 9.x
     "@openmrs/esm-utils": 9.x
     dayjs: 1.x
     i18next: 25.x
@@ -4668,7 +4672,7 @@ __metadata:
     lodash: "npm:4.18.1"
     sass-embedded: "npm:1.89.0"
     sass-loader: "npm:16.0.5"
-    style-loader: "npm:3.3.4"
+    style-loader: "npm:4.0.0"
     swc-loader: "npm:0.2.7"
     ts-checker-rspack-plugin: "npm:1.3.0"
     typescript: "npm:6.0.3"
@@ -7894,6 +7898,7 @@ __metadata:
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
     "@playwright/test": "npm:^1.52.0"
+    "@sihsalus/esm-rbac": "workspace:*"
     "@swc/cli": "npm:0.8.1"
     "@swc/core": "npm:1.15.21"
     "@types/react": "npm:^18.3.21"
@@ -8144,6 +8149,7 @@ __metadata:
     "@carbon/react": "npm:^1.83.0"
     "@openmrs/esm-framework": "workspace:*"
     "@playwright/test": "npm:^1.50.1"
+    "@sihsalus/esm-rbac": "workspace:*"
     "@swc-node/loader": "npm:^1.3.7"
     "@swc/core": "npm:1.15.21"
     "@types/react": "npm:^18.3.21"
@@ -9017,6 +9023,7 @@ __metadata:
   dependencies:
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
+    "@sihsalus/esm-rbac": "workspace:*"
     html-entities: "npm:^2.5.2"
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"
@@ -9143,6 +9150,7 @@ __metadata:
   resolution: "@sihsalus/esm-patient-search-app@workspace:packages/apps/esm-patient-search-app"
   dependencies:
     "@carbon/react": "npm:^1.71.0"
+    "@hookform/resolvers": "npm:^3.9.1"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@sihsalus/esm-rbac": "workspace:*"
@@ -9153,6 +9161,7 @@ __metadata:
     react-hook-form: "npm:^7.54.0"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.7"
+    zod: "npm:^3.24.1"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     react: ^18.3.1
@@ -9322,6 +9331,7 @@ __metadata:
   dependencies:
     "@rspack/cli": "npm:1.7.11"
     "@rspack/core": "npm:1.7.11"
+    "@sihsalus/esm-rbac": "workspace:*"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.7"
@@ -9347,6 +9357,7 @@ __metadata:
     "@carbon/react": "npm:^1.83.0"
     "@datasert/cronjs-matcher": "npm:^1.2.0"
     "@datasert/cronjs-parser": "npm:^1.2.0"
+    "@sihsalus/esm-rbac": "workspace:*"
     cronstrue: "npm:^2.41.0"
     dayjs: "npm:^1.8.36"
     lodash-es: "npm:^4.17.21"
@@ -9379,6 +9390,7 @@ __metadata:
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@rspack/core": "npm:1.7.11"
+    "@sihsalus/esm-rbac": "workspace:*"
     classnames: "npm:^2.5.1"
     dayjs: "npm:^1.11.13"
     exceljs: "npm:^4.4.0"
@@ -9473,6 +9485,7 @@ __metadata:
     "@carbon/react": "npm:^1.83.0"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
+    "@sihsalus/esm-rbac": "workspace:*"
     dayjs: "npm:1.x"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
@@ -9696,9 +9709,11 @@ __metadata:
     "@types/webpack-env": "npm:^1.18.8"
     "@vitest/coverage-v8": "npm:^4.0.18"
     "@vitest/ui": "npm:4.1.0"
+    acorn: "npm:8.16.0"
     chalk: "npm:^4.1.2"
     cross-env: "npm:^10.1.0"
     dotenv: "npm:^17.3.1"
+    eslint-scope: "npm:5.1.1"
     express: "npm:^4.22.0"
     fake-indexeddb: "npm:^4.0.2"
     happy-dom: "npm:^20.9.0"
@@ -11765,28 +11780,28 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@xhmikosr/decompress-unzip@npm:^8.1.0":
-  version: 8.1.1
-  resolution: "@xhmikosr/decompress-unzip@npm:8.1.1"
+"@xhmikosr/decompress-unzip@npm:^8.1.1":
+  version: 8.2.1
+  resolution: "@xhmikosr/decompress-unzip@npm:8.2.1"
   dependencies:
     file-type: "npm:^21.3.4"
     get-stream: "npm:^9.0.1"
-    yauzl: "npm:^3.3.0"
-  checksum: 10c0/d7e8963f4f290c367903511f1ec2554284c520b869218f0284cfd0a20c26667a5a3b95f8bb1c18439157ff3afe734bdcafdd47dbd4ba5d35a4766c6d8b66e40a
+    yauzl: "npm:^3.4.0"
+  checksum: 10c0/5f6f6701d4c10983f2fb602f2d8cf0574894195f68d1977e6c9cab92f27e8c9130c47e6955538c8b4aa50966071cfa46b5ec20685dda9c04acdbca59bc116c11
   languageName: node
   linkType: hard
 
 "@xhmikosr/decompress@npm:^11.1.1":
-  version: 11.1.2
-  resolution: "@xhmikosr/decompress@npm:11.1.2"
+  version: 11.1.3
+  resolution: "@xhmikosr/decompress@npm:11.1.3"
   dependencies:
     "@xhmikosr/decompress-tar": "npm:^9.0.1"
     "@xhmikosr/decompress-tarbz2": "npm:^9.0.1"
     "@xhmikosr/decompress-targz": "npm:^9.0.1"
-    "@xhmikosr/decompress-unzip": "npm:^8.1.0"
+    "@xhmikosr/decompress-unzip": "npm:^8.1.1"
     graceful-fs: "npm:^4.2.11"
     strip-dirs: "npm:^3.0.0"
-  checksum: 10c0/d50c392543c303fe7e5185eebb9216cce6d7591e82369d2a6c2c38cc9a7ef3e23c3fbc59ee07931b4634f44ee4a7bac0e4ed4d4a3d0c63c471501d36597529a7
+  checksum: 10c0/bdf6406dbd38f7a25119247c9b235f64c99c4bc70363df4b55fd5ae0b9ca2b1fb6c79654848087d7ba78326470f8da852c3f02da5d678b134b305a8df928e5ef
   languageName: node
   linkType: hard
 
@@ -11887,7 +11902,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"acorn@npm:^8.0.4, acorn@npm:^8.11.0, acorn@npm:^8.15.0, acorn@npm:^8.16.0, acorn@npm:^8.4.1":
+"acorn@npm:8.16.0, acorn@npm:^8.0.4, acorn@npm:^8.11.0, acorn@npm:^8.15.0, acorn@npm:^8.16.0, acorn@npm:^8.4.1":
   version: 8.16.0
   resolution: "acorn@npm:8.16.0"
   bin:
@@ -12962,7 +12977,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"buffer-crc32@npm:^0.2.1, buffer-crc32@npm:^0.2.13, buffer-crc32@npm:~0.2.3":
+"buffer-crc32@npm:^0.2.1, buffer-crc32@npm:^0.2.13":
   version: 0.2.13
   resolution: "buffer-crc32@npm:0.2.13"
   checksum: 10c0/cb0a8ddf5cf4f766466db63279e47761eb825693eeba6a5a95ee4ec8cb8f81ede70aa7f9d8aeec083e781d47154290eb5d4d26b3f7a465ec57fb9e7d59c47150
@@ -24162,12 +24177,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"style-loader@npm:3.3.4":
-  version: 3.3.4
-  resolution: "style-loader@npm:3.3.4"
+"style-loader@npm:4.0.0":
+  version: 4.0.0
+  resolution: "style-loader@npm:4.0.0"
   peerDependencies:
-    webpack: ^5.0.0
-  checksum: 10c0/8f8027fc5c6e91400cbb60066e7db3315810f8eaa0d19b2a254936eb0bec399ba8a7043b1789da9d05ab7c3ba50faf9267765ae0bf3571e48aa34ecdc774be37
+    webpack: ^5.27.0
+  checksum: 10c0/214bc0f3b018f8c374f79b9fa16da43df78c7fef2261e9a99e36c2f8387601fad10ac75a171aa8edba75903db214bc46952ae08b94a1f8544bd146c2c8d07d27
   languageName: node
   linkType: hard
 
@@ -25887,13 +25902,13 @@ __metadata:
   linkType: hard
 
 "websocket-driver@npm:>=0.5.1, websocket-driver@npm:^0.7.4":
-  version: 0.7.4
-  resolution: "websocket-driver@npm:0.7.4"
+  version: 0.7.5
+  resolution: "websocket-driver@npm:0.7.5"
   dependencies:
     http-parser-js: "npm:>=0.5.1"
     safe-buffer: "npm:>=5.1.0"
     websocket-extensions: "npm:>=0.1.1"
-  checksum: 10c0/5f09547912b27bdc57bac17b7b6527d8993aa4ac8a2d10588bb74aebaf785fdcf64fea034aae0c359b7adff2044dd66f3d03866e4685571f81b13e548f9021f1
+  checksum: 10c0/843a3c9f529ce07f2721829f70f62986247525ab22625e857b69da13dc90967bacfe57b85e196801b565cd797e309ddd5b06fa8435732e34e8a8ab6201d7abed
   languageName: node
   linkType: hard
 
@@ -26514,13 +26529,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yauzl@npm:^3.3.0":
-  version: 3.3.0
-  resolution: "yauzl@npm:3.3.0"
+"yauzl@npm:^3.4.0":
+  version: 3.4.0
+  resolution: "yauzl@npm:3.4.0"
   dependencies:
-    buffer-crc32: "npm:~0.2.3"
     pend: "npm:~1.2.0"
-  checksum: 10c0/935e32054171104bdf8a4091180f61b5698d8b90ee64552bb643c2176f815d4215d0764e3f41e0d9a1e4525b37602bf145ec5fd39dd014f0be7290851ce3acce
+  checksum: 10c0/17a98c42c0065e8af429eb8a61f7a0e4562181ed54080366b838f34f741b6829f167f804787c86b7646bb042707f35871739f053de0548285e405a2eae4da025
   languageName: node
   linkType: hard
 

@@ -1,7 +1,18 @@
-import { Button, ButtonSkeleton, Search, Select, SelectItem, SelectSkeleton, SkeletonText, Tile } from '@carbon/react';
+import {
+  Button,
+  ButtonSkeleton,
+  InlineNotification,
+  Search,
+  Select,
+  SelectItem,
+  SelectSkeleton,
+  SkeletonText,
+  Tile,
+} from '@carbon/react';
 import { ShoppingCartArrowUp } from '@carbon/react/icons';
 import {
   ArrowRightIcon,
+  logError,
   openmrsFetch,
   ResponsiveWrapper,
   restBaseUrl,
@@ -44,6 +55,58 @@ interface TestTypeSearchResultItemProps {
   returnToOrderBasket: () => void;
 }
 
+interface LabsetLabel {
+  uuid: string;
+  display: string;
+}
+
+interface LabsetLabelRequest {
+  uuid: string;
+  url: string;
+}
+
+interface LabsetLabelLoadResult {
+  labsets: Array<LabsetLabel>;
+  failedUuids: Array<string>;
+}
+
+function isLabsetLabel(value: unknown, expectedUuid: string): value is LabsetLabel {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  const label = value as Partial<LabsetLabel>;
+  return label.uuid === expectedUuid && typeof label.display === 'string' && label.display.trim().length > 0;
+}
+
+export async function fetchConfiguredLabsetLabels(requests: Array<LabsetLabelRequest>): Promise<LabsetLabelLoadResult> {
+  const results = await Promise.allSettled(
+    requests.map(({ url }) =>
+      Promise.resolve().then(async () => {
+        const response = await openmrsFetch<LabsetLabel>(url);
+        return response.data;
+      }),
+    ),
+  );
+  const labsets: Array<LabsetLabel> = [];
+  const failedUuids: Array<string> = [];
+
+  results.forEach((result, index) => {
+    const request = requests[index];
+    if (result.status === 'fulfilled' && isLabsetLabel(result.value, request.uuid)) {
+      labsets.push(result.value);
+      return;
+    }
+
+    failedUuids.push(request.uuid);
+    const error =
+      result.status === 'rejected' ? result.reason : new Error('The test type concept response was malformed.');
+    logError(error, `Load test type concept ${request.uuid}`);
+  });
+
+  return { failedUuids, labsets };
+}
+
 let lastSelectedLabset = 'ALL';
 
 export function TestTypeSearch({
@@ -59,21 +122,22 @@ export function TestTypeSearch({
 
   const config = useConfig<ConfigObject>();
   const resultsViewerConcepts = config?.resultsViewerConcepts ?? [];
-  const conceptUuids = useMemo(() => {
-    return resultsViewerConcepts.map((c) => c.conceptUuid);
+  const conceptRequests = useMemo(() => {
+    return resultsViewerConcepts.map(({ conceptUuid }) => ({
+      uuid: conceptUuid,
+      url: `${restBaseUrl}/concept/${conceptUuid}?v=custom:(uuid,display)`,
+    }));
   }, [resultsViewerConcepts]);
 
-  const fetchConcepts = useCallback((urls: Array<string>) => {
-    return Promise.all(urls.map((url) => openmrsFetch<{ uuid: string; display: string }>(url).then((res) => res.data)));
-  }, []);
-
-  const { data: fetchedLabsets, isLoading: isLoadingLabsets } = useSWRImmutable<
-    Array<{ uuid: string; display: string }>,
-    Error
-  >(
-    conceptUuids.length ? conceptUuids.map((uuid) => `${restBaseUrl}/concept/${uuid}?v=custom:(uuid,display)`) : null,
-    fetchConcepts,
+  const { data: labsetLoadResult, isLoading: isLoadingLabsets } = useSWRImmutable<LabsetLabelLoadResult, Error>(
+    conceptRequests.length ? conceptRequests : null,
+    fetchConfiguredLabsetLabels,
   );
+  const fetchedLabsets = labsetLoadResult?.labsets ?? [];
+  const failedLabsetCount = labsetLoadResult?.failedUuids.length ?? 0;
+  const hasPartialLabsetCatalog = fetchedLabsets.length > 0 && failedLabsetCount > 0;
+  const hasUnavailableLabsetCatalog =
+    conceptRequests.length > 0 && !isLoadingLabsets && failedLabsetCount === conceptRequests.length;
 
   const [selectedLabset, setSelectedLabset] = useState(lastSelectedLabset);
 
@@ -116,6 +180,7 @@ export function TestTypeSearch({
               <SelectSkeleton />
             ) : (
               <Select
+                disabled={hasUnavailableLabsetCatalog}
                 id="labset-select"
                 labelText={t('labSetLabel', 'Lab Set')}
                 hideLabel
@@ -132,6 +197,23 @@ export function TestTypeSearch({
           </div>
         </div>
       </ResponsiveWrapper>
+      {hasPartialLabsetCatalog || hasUnavailableLabsetCatalog ? (
+        <InlineNotification
+          hideCloseButton
+          kind={hasUnavailableLabsetCatalog ? 'error' : 'warning'}
+          lowContrast
+          title={t(
+            hasUnavailableLabsetCatalog ? 'labConceptCatalogUnavailableTitle' : 'labConceptCatalogPartialTitle',
+            hasUnavailableLabsetCatalog ? 'Lab test catalog unavailable' : 'Incomplete lab test catalog',
+          )}
+          subtitle={t(
+            hasUnavailableLabsetCatalog ? 'labConceptCatalogUnavailableSubtitle' : 'labConceptCatalogPartialSubtitle',
+            hasUnavailableLabsetCatalog
+              ? 'Test group labels could not be loaded. All configured tests remain available; do not interpret missing groups as absent tests.'
+              : 'Some test group labels could not be loaded. Available groups remain visible; do not interpret a missing group as an absent test.',
+          )}
+        />
+      ) : null}
       <TestTypeSearchResults
         cancelOrder={returnToOrderBasket}
         orderTypeUuid={orderTypeUuid}

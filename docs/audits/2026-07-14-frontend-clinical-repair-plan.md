@@ -40,12 +40,45 @@ backend.
 | Mensajes clínicos e i18n      | Interpolación React sin entidades visibles y acrónimos preservados      | Smoke visual en español e inglés                                                 |
 | Registro y nacionalidad       | Inferencia endurecida, modo no identificado y contrato documentado      | Completar y versionar el catálogo OCL; auditar datos históricos                  |
 | Identidad en emergencia       | Documento validado por tipo; `Otros` deshabilitado si el tipo no existe | Crear/aprobar el tipo `Otros` antes de configurarlo                              |
-| Citas                         | Ciclo y validaciones endurecidos; suites posrebase completadas          | Hacer atómicos conflicto/estado/guardado y definir capacidad/proveedor           |
-| Rutas, modales y workspaces   | Nombres únicos, guard de duplicados y revocación reactiva                | Ninguno para el registro; sí para la matriz RBAC asociada                        |
-| RBAC                          | Propagación, doble permiso clínico y bloqueo directo implementados       | Aprobar/asignar matriz de privilegios y probar roles reales                      |
+| Citas                         | Parcial: fechas, respuestas y checkpoint endurecidos; auditoría abierta | Serie exacta, bypass de fecha, idempotencia y atomicidad backend                 |
+| Laboratorio                   | Parcial: carga independiente y avisos; recuperación aún abierta         | Validar conceptos autenticados y visibilidad histórica en el entorno objetivo    |
+| Rutas, modales y workspaces   | Nombres únicos, guard de duplicados y revocación reactiva               | Ninguno para el registro; sí para la matriz RBAC asociada                        |
+| RBAC                          | Propagación, doble permiso clínico y bloqueo directo implementados      | Aprobar/asignar matriz de privilegios y probar roles reales                      |
 | FUA                           | Endpoint deshabilitado por defecto y HTML aislado/sanitizado            | Publicar un gateway HTTPS mismo origen y validar contrato/roles                  |
 | E2E                           | Smoke externo sintético separado del build del PR                       | Crear ambiente, variables, cuenta mínima, revisores y despliegue efímero por SHA |
-| Release                       | SHA inmutable y promoción idempotente por digest; no despliega          | Implementar receptor de despliegue, proteger ambientes y aprobar promoción        |
+| Release                       | SHA inmutable y promoción idempotente por digest; no despliega          | Implementar receptor de despliegue, proteger ambientes y aprobar promoción       |
+
+### Checkpoint de trabajo — 2026-07-16
+
+El alcance queda congelado en este punto para conservar una base revisable antes de seguir acumulando cambios. Este
+checkpoint es de trabajo y no está listo para producción ni para retirar el estado de borrador.
+
+Completado y verificado en la base anterior a la siguiente sincronización con `origin/main`:
+
+- búsqueda de nacimiento/edad con fecha posible, horizonte de 140 años y coincidencia exacta de documento;
+- corrección del mensaje SOAP para que `/` no se muestre como entidad HTML;
+- checkpoint local de creación de citas, validación estricta de respuestas individuales, límites de recurrencia,
+  permisos de fechas y cabecera defensiva;
+- carga independiente de conceptos auxiliares en Laboratorio, Órdenes y Pruebas, con avisos de éxito parcial/fallo;
+- actualización mínima de `websocket-driver` y auditoría HIGH/CRITICAL sin sugerencias pendientes.
+
+Evidencia ejecutada: Citas `276/276`, Laboratorio `21/21`, Órdenes `56/56`, Pruebas `48/48`, búsqueda de pacientes
+`24/24` archivos y `159/159` pruebas; TypeScript pasó en esos paquetes. `yarn install --immutable` y
+`yarn npm audit --all --recursive --severity high` también pasaron.
+
+Hallazgos que se dejan explícitamente abiertos para la siguiente iteración:
+
+- integrar `origin/main` actual (`8207c0412` al tomar este checkpoint) y revalidar los conflictos semánticos de RBAC,
+  citas, colas, traducciones y lockfile;
+- impedir que `Workload` cambie la fecha sin `app:appointments.startDate.edit`;
+- exigir el conjunto exacto de fechas/cantidad en la confirmación recurrente y mantener `HTTP 200 + []` como resultado
+  indeterminado; solo `204` prueba un no-op previo al guardado en el controlador revisado;
+- retirar la huella SHA-256 clínica no utilizada del checkpoint o darle un contrato real; cubrir almacenamiento,
+  WebCrypto y fallo de limpieza;
+- limpiar selecciones obsoletas de grupo tras una revalidación, mostrar error explícito si falla la fuente principal de
+  órdenes de laboratorio y llevar Patient Orders a configuración validada en lugar de UUID codificados;
+- validar de forma autenticada conceptos, `obstree` y resultados históricos antes de reactivar las tres raíces
+  comentadas.
 
 ## 1. Nacimiento y edad
 
@@ -114,6 +147,9 @@ El contrato de formatos, sus fuentes, brechas con content y el orden seguro de m
   nacimiento desde ella. Una fecha exacta revisada siempre prevalece.
 - Normalizar y validar el documento de emergencia según el mismo contrato de tipos que usa registro general; una
   combinación desconocida o inválida no se envía.
+- En búsqueda avanzada, tratar el parámetro REST de documento como una preselección y volver a exigir en el cliente
+  una coincidencia exacta del atributo normalizado. Una respuesta parcial del servidor para `10000001` no puede
+  mostrar también `100000010`.
 - No eliminar letras o truncar valores sobrelongitud hasta convertir un documento distinto en uno aparentemente
   válido; solo se normalizan separadores de presentación y mayúsculas.
 - Rechazar UUID duplicados entre tipos de documento y fallar cerrada la nacionalidad si no se pudo comprobar su
@@ -160,6 +196,25 @@ El contrato de formatos, sus fuentes, brechas con content y el orden seguro de m
 - Volver a consultar el estado editable inmediatamente antes de guardar; una cita que cambió de estado falla cerrada.
 - Limitar recurrencia a un horizonte máximo de 365 días, periodo positivo, fin posterior al inicio y días de semana
   válidos.
+- Marcar como obligatoria la fecha de inicio tanto en citas ordinarias como recurrentes. La edición de esa fecha
+  exige `app:appointments.startDate.edit`; sin el privilegio, el control y su callback son de solo lectura y el
+  payload conserva el valor autorizado.
+- Antes de cada POST de creación, escribir en `sessionStorage` un checkpoint exclusivo por paciente con `attemptId`,
+  modo recurrente y huella SHA-256 del payload. El valor persistido no contiene comentarios, payload clínico,
+  identificador de sesión ni UUID de usuario; el borrado exige el mismo `attemptId`.
+- Mantener el checkpoint durante toda la vida de la pestaña si el resultado es indeterminado. No caduca ni se borra
+  automáticamente para recuperar disponibilidad; después de verificar la lista, cerrar la pestaña libera este
+  control local. Otro paciente de la misma pestaña conserva su propia clave y no queda bloqueado por ese intento.
+- Confirmar una creación individual únicamente con HTTP `200` y un DTO con UUID no vacío que coincida en paciente,
+  servicio/subtipo, sede, proveedor activo, fecha de emisión, estado, comentario, condición de ingreso e instantes.
+  Un `201`, `202`, `204` o DTO discordante queda pendiente de verificación y no habilita un segundo POST.
+- Confirmar una creación recurrente únicamente con HTTP `200`, una lista de UUID distintos cuyo conjunto completo de
+  fechas, horas y cantidad coincida exactamente con la serie diaria o semanal solicitada, además del contexto clínico,
+  duración y patrón. Un subconjunto no vacío no demuestra que se haya persistido la serie completa.
+- Tratar únicamente `204` del endpoint recurrente como un no-op definitivo y corregible: el controlador retorna antes
+  de `validateAndSave`. Una lista `200` vacía es una respuesta imposible según ese contrato, pero ocurre después de la
+  llamada de persistencia y por tanto permanece indeterminada, igual que el `400` genérico cuyo `catch` también incluye
+  la construcción de la respuesta.
 - Mantener aislamiento por paciente en visitas del día: consultar solo los pacientes de la página visible, con
   paginación y concurrencia acotadas.
 - No mostrar acciones de visita si su consulta falla o si una respuesta HTTP exitosa no contiene un arreglo
@@ -197,6 +252,18 @@ El contrato de formatos, sus fuentes, brechas con content y el orden seguro de m
 - Añadir al alta de servicios de citas una clave de idempotencia, restricción `UNIQUE` transaccional sobre el nombre
   normalizado y una respuesta de creación inequívoca. El chequeo previo de nombre del módulo actual no es atómico y
   el checkpoint frontend no coordina pestañas, navegadores ni otros clientes.
+- Añadir también una clave de idempotencia persistida a la creación individual y recurrente de citas. El checkpoint
+  por paciente solo cubre una pestaña; otra pestaña, dispositivo o integración todavía puede repetir el mismo POST.
+- Versionar un contrato de error que distinga rechazo previo a persistencia de fallo posterior al commit. En el
+  módulo actual,
+  [`AppointmentController.saveAppointment`](https://github.com/Bahmni/openmrs-module-appointments/blob/b4f3495a2eaf6f3b802ea86b05d0a28fcb0d20d9/omod/src/main/java/org/openmrs/module/appointments/web/controller/AppointmentController.java)
+  devuelve `400` desde un bloque que incluye `validateAndSave` y `constructResponse`, por lo que el frontend no puede
+  concluir rollback a partir del código. El
+  [`RecurringAppointmentsController`](https://github.com/Bahmni/openmrs-module-appointments/blob/b4f3495a2eaf6f3b802ea86b05d0a28fcb0d20d9/omod/src/main/java/org/openmrs/module/appointments/web/controller/RecurringAppointmentsController.java)
+  documenta además que `204` se devuelve solo cuando la lista generada está vacía, antes de guardar.
+- La lectura anterior está fijada al SHA público `b4f3495a2eaf6f3b802ea86b05d0a28fcb0d20d9`; antes de producción se debe
+  identificar la versión realmente desplegada y ejecutar pruebas de contrato contra ese artefacto. El código público
+  no demuestra por sí solo qué versión está activa en el entorno objetivo.
 - Desplegar y verificar el `VisitAttributeType` configurado para el token de persistencia antes del frontend. Su
   ausencia bloquea deliberadamente la creación online de consultas para evitar duplicados tras timeouts ambiguos.
 - Verificar en el entorno objetivo ambos contratos, sin intercambiar sus valores:
@@ -219,6 +286,9 @@ El contrato de formatos, sus fuentes, brechas con content y el orden seguro de m
   `202` o perdida queda pendiente y una creación encontrada exactamente en el catálogo se concilia sin reenvío.
 - Un checkpoint de servicio vencido, corrupto, de otra sesión o de otro payload bloquea y exige revisión; no se borra
   automáticamente para recuperar disponibilidad a costa de una posible duplicación.
+- Un POST de cita con resultado indeterminado bloquea un segundo envío para ese paciente en la pestaña, incluso tras
+  remontar el formulario. Un paciente distinto continúa operativo. HTTP `204` recurrente muestra el no-op y permite
+  corregir; HTTP `400`, `201/202`, respuesta perdida o cuerpo discordante exigen verificación.
 
 ### Atención de emergencia y cierre de cola
 
@@ -252,7 +322,50 @@ El contrato de formatos, sus fuentes, brechas con content y el orden seguro de m
   ni una carrera TOCTOU. El backend debe ofrecer operaciones transaccionales e idempotentes para visita, entrada de
   cola, transición a atención y encuentro, con unicidad, control de versión/CAS y `create-or-return`.
 
-## 4. Rutas, modales y workspaces
+## 4. Laboratorio, órdenes y diccionario clínico
+
+### Hallazgo de contenido
+
+El [PR #583](https://github.com/sihsalus/sihsalus-frontend/pull/583), commit `fb31897e`, comentó sin prueba de
+contenido tres raíces en Laboratorio, Pruebas del paciente y Órdenes del paciente:
+
+- `24305e8e-f3dc-4ac6-bf87-e4f11f3b970e` — Hemograma completo;
+- `df144cc2-6718-4005-9881-f39eafd73315` — Examen de Heces;
+- `1bcb541a-55e8-4c5d-83fb-d121a9d54d9d` — Tipificación sanguínea.
+
+Las ocho raíces que siguen habilitadas coinciden entre los tres paquetes. Eso demuestra consistencia de código, no
+que las tres raíces comentadas sean inválidas ni que sus resultados históricos estén cubiertos por otra raíz. La
+consulta anónima al endpoint DEV `/ws/rest/v1/concept/{uuid}` devolvió `401` el 15 de julio de 2026; sin una sesión
+autenticada de solo lectura no existe evidencia suficiente para reactivar o retirar conceptos.
+
+### Trabajo del frontend
+
+- No cambiar la lista de UUID por intuición, etiqueta o ausencia en una respuesta no autenticada.
+- Cargar de forma independiente las raíces usadas para etiquetas y filtros de agrupación. Si una falla, conservar y
+  mostrar las que sí respondieron, registrar el UUID fallido mediante `logError` sin datos del paciente y advertir
+  que el catálogo está incompleto.
+- Si fallan todas esas raíces auxiliares, mostrar una notificación de error y deshabilitar el filtro de agrupación,
+  pero mantener visibles las órdenes o tipos de prueba obtenidos por su fuente clínica principal. Nunca representar
+  el fallo del catálogo auxiliar como ausencia de datos. Si falla la fuente clínica principal, conservar su manejo
+  explícito de error (`ErrorState` o mosaico de error), sin convertir el fallo en una lista vacía.
+- Aplicar la misma regla en Laboratorio, Órdenes del paciente y búsqueda de tipos de prueba, con traducciones ES/EN y
+  pruebas de éxito total, éxito parcial y fallo total.
+- Auditar por separado el visor de resultados: si una raíz deshabilitada no es descendiente de otra habilitada, sus
+  observaciones podrían quedar invisibles aunque la captura de órdenes funcione. No declarar cerrada esa brecha por
+  endurecer solamente los loaders.
+
+### Validación requerida de backend/content
+
+1. Con una cuenta técnica de lectura mínima, resolver las once raíces por UUID y registrar nombre, clase, retirado,
+   datatype y miembros del set.
+2. Consultar `obstree` para cada raíz y comprobar si las tres deshabilitadas son redundantes o raíces clínicas
+   independientes.
+3. Buscar observaciones históricas sintéticas/deidentificadas vinculadas a esas raíces y confirmar su ruta de
+   visualización.
+4. Aprobar en conjunto frontend, laboratorio y content cualquier reactivación, reemplazo o migración; preservar UUID
+   existentes cuando el concepto sea válido.
+
+## 5. Rutas, modales y workspaces
 
 ### Trabajo del frontend
 
@@ -278,7 +391,7 @@ El contrato de formatos, sus fuentes, brechas con content y el orden seguro de m
 - Abrir una acción desde cada módulo resuelve el modal/workspace de ese módulo.
 - Un registro duplicado falla con un error diagnóstico y no reemplaza silenciosamente el componente previo.
 
-## 5. RBAC
+## 6. RBAC
 
 ### Trabajo del frontend
 
@@ -304,7 +417,7 @@ Los 12 privilegios priorizados aparecen en 46 registros físicos; al deduplicar 
 a 37 superficies lógicas. La ventana de listas de pacientes gobierna dos workspaces y su icono, por lo que el conteo
 operativo es de 39 puntos de entrada que deben contrastarse con la matriz externa:
 
-| Privilegio auditado                         |                                  Superficies efectivas |
+| Privilegio auditado                           |                                  Superficies efectivas |
 | --------------------------------------------- | -----------------------------------------------------: |
 | `app:hoja.clinica.accionesSinConexion.editar` |                                                1 modal |
 | `app:hoja.clinica.controlPrenatal.editar`     |                                 1 modal + 3 workspaces |
@@ -334,7 +447,7 @@ los usuarios clínicos.
 4. probar usuario clínico, admisión, farmacia, laboratorio, caja, administrador y solo lectura;
 5. comprobar tanto visibilidad como respuesta backend ante llamada directa.
 
-## 6. FUA y contenido HTML remoto
+## 7. FUA y contenido HTML remoto
 
 ### Trabajo del frontend
 
@@ -354,7 +467,7 @@ los usuarios clínicos.
 - El visor permite solo contenido estático esperado, incluidas imágenes raster `data:` aprobadas.
 - Si el sanitizador no está disponible, se muestra texto escapado y no HTML activo.
 
-## 7. E2E, CI y publicación
+## 8. E2E, CI y publicación
 
 ### E2E
 
@@ -393,11 +506,11 @@ los usuarios clínicos.
 - Antes de desplegar, implementar y auditar un receptor en el repositorio de infraestructura que consuma el SHA o
   digest aprobado, aplique las protecciones del ambiente y produzca evidencia de rollout/rollback.
 
-## 8. Estrategia de consolidación y PR
+## 9. Estrategia de consolidación y PR
 
 1. Terminar las pruebas focalizadas en la rama de reparación.
-2. Crear un commit único y una referencia de respaldo antes de reescribir la rama.
-3. Rebasar únicamente el commit de reparación sobre la punta actual de `origin/main`.
+2. Crear un commit y una referencia de respaldo antes de sincronizar la rama.
+3. Integrar explícitamente la punta actual de `origin/main` mediante merge, conservando la procedencia de ambos lados.
 4. Resolver conflictos preservando las correcciones ya fusionadas de CRED, registro, formularios y citas.
 5. Ejecutar validaciones focalizadas y después `yarn verify` completo.
 6. Revisar el diff final contra `origin/main`, incluyendo secretos, rutas, permisos y lockfile.
@@ -409,7 +522,7 @@ No se incorporarán actualizaciones de dependencias ajenas al alcance. Las actua
 cerrar hallazgos HIGH/CRITICAL del audit se aceptan solo con lockfile inmutable, pruebas del tooling y ensamblado
 completo.
 
-## 9. Matriz mínima de verificación
+## 10. Matriz mínima de verificación
 
 | Área            | Unidad/componente                                  | Integración frontend          | E2E sintético                                | Backend/content                                   |
 | --------------- | -------------------------------------------------- | ----------------------------- | -------------------------------------------- | ------------------------------------------------- |
@@ -417,6 +530,7 @@ completo.
 | Mensajes/i18n   | `/`, acrónimos y marcado inerte                    | estados vacíos y paginados    | revisión ES/EN sin entidades visibles        | no aplica                                         |
 | Nacionalidad    | inferencia/no sobrescritura/error de catálogo      | UUID de concepto en payload   | DNI, CE, pasaporte y edición                 | set completo, permisos y persistencia REST/DB     |
 | Citas           | estado, servicio, duración, recurrencia, conflicto | hooks de visitas/colas        | crear, editar, cancelar, check-in            | transacción, capacidad, auditoría                 |
+| Laboratorio     | éxito total/parcial/fallo de raíces                | órdenes, pruebas y resultados | catálogo incompleto y recuperación           | conceptos, obstree e históricos                   |
 | Identidad       | formato no destructivo, UUID no ambiguos           | registro/emergencia/promoción | documentos sintéticos y paciente desconocido | regex, unicidad, duplicados y migración histórica |
 | Rutas/RBAC      | nombres únicos y guards                            | apertura directa y desde menú | roles permitidos/denegados                   | privilegios asignados y denegación REST           |
 | FUA             | URL y sanitización                                 | iframe inerte                 | carga desde gateway sintético                | endpoint HTTPS, roles y logging seguro            |
@@ -439,10 +553,10 @@ yarn build
 yarn assemble
 ```
 
-Las suites focalizadas de paciente, registro, emergencia, FUA, citas, rutas y styleguide deben pasar además del
-comando monorepo. La evidencia exacta se incluirá en el PR.
+Las suites focalizadas de paciente, registro, emergencia, FUA, citas, laboratorio, rutas y styleguide deben pasar
+además del comando monorepo. La evidencia exacta se incluirá en el PR.
 
-## 10. Orden de despliegue y rollback
+## 11. Orden de despliegue y rollback
 
 ### Preparación
 
@@ -451,7 +565,8 @@ comando monorepo. La evidencia exacta se incluirá en el PR.
 3. Configurar gateway FUA, ambientes protegidos y cuenta E2E sintética.
 4. Confirmar los dos `VisitAttributeType` anteriores —token general y correlación cita→consulta— y las reglas de
    identidad en el backend objetivo.
-5. Ejecutar smokes por rol sin pacientes reales.
+5. Validar de forma autenticada las raíces de laboratorio y la visibilidad de sus resultados históricos.
+6. Ejecutar smokes por rol sin pacientes reales.
 
 ### Promoción
 
@@ -474,6 +589,9 @@ comando monorepo. La evidencia exacta se incluirá en el PR.
 
 - Atomicidad de citas, colas y reglas de capacidad/proveedor en backend; los prechecks frontend no eliminan carreras
   TOCTOU entre dos clientes.
+- Creación de citas entre pestañas, dispositivos u otros clientes: el checkpoint por paciente impide el reenvío en
+  la pestaña actual, pero no ofrece idempotencia global ni una reconciliación auditada después de un resultado
+  indeterminado.
 - Creación de servicios de citas entre pestañas, navegadores u otros clientes: `sessionStorage`, mutex y `attemptId`
   protegen la pestaña actual, pero solo idempotencia y unicidad transaccional backend eliminan la carrera global. Un
   checkpoint corrupto o vencido necesita además un flujo administrativo de revisión, no borrado automático.
@@ -485,6 +603,8 @@ comando monorepo. La evidencia exacta se incluirá en el PR.
 - Creación de visita de emergencia tras una respuesta perdida: el checkpoint de cola empieza cuando ya existe un UUID
   de visita, por lo que el backend debe reconciliar/idempotentizar también el POST de visita.
 - Catálogo completo de nacionalidades y saneamiento de valores históricos.
+- Validez de las tres raíces de laboratorio deshabilitadas y visibilidad de sus resultados históricos; la
+  verificación autenticada de concepto/obstree sigue pendiente.
 - Aprobación coordinada de formatos/unicidad para CE, pasaporte, DIE, CNV y `Otros`, junto con auditoría histórica.
 - Export fechado, aprobación y asignación institucional de la matriz de privilegios por rol.
 - Gateway FUA de mismo origen y contrato de respuesta.

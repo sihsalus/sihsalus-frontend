@@ -1,4 +1,4 @@
-import { getDefaultsFromConfigSchema, type Order, type Patient, useConfig } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, openmrsFetch, type Order, type Patient, useConfig } from '@openmrs/esm-framework';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type Config, configSchema } from '../../config-schema';
@@ -11,6 +11,7 @@ vi.mock('../../laboratory.resource', () => ({
 
 const mockUseConfig = vi.mocked(useConfig<Config>);
 const mockUseLabOrders = vi.mocked(useLabOrders);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
 function mockUseLabOrdersImplementation(props: Parameters<typeof useLabOrders>[0]) {
   const mockPatient1: Partial<Patient> = {
@@ -137,7 +138,12 @@ function mockUseLabOrdersImplementation(props: Parameters<typeof useLabOrders>[0
 
 describe('OrdersDataTable', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mockUseLabOrders.mockImplementation(mockUseLabOrdersImplementation);
+    mockOpenmrsFetch.mockImplementation(async (url) => {
+      const uuid = String(url).match(/\/concept\/([^?]+)/)?.[1] ?? '';
+      return { data: { uuid, display: `Set ${uuid}`, setMembers: [] } } as never;
+    });
   });
 
   it('should render one row per patient and show lab details', async () => {
@@ -209,5 +215,40 @@ describe('OrdersDataTable', () => {
     expect(row2).toHaveTextContent('60');
     expect(row2).toHaveTextContent('1');
     expect(screen.queryByText(/BAD-ID/)).not.toBeInTheDocument();
+  });
+
+  it('keeps orders visible and warns when only part of the configured test catalog loads', async () => {
+    const user = userEvent.setup();
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      resultsViewerConcepts: [{ conceptUuid: 'partial-good' }, { conceptUuid: 'partial-failed' }],
+    });
+    mockOpenmrsFetch.mockImplementation(async (url) => {
+      const uuid = String(url).match(/\/concept\/([^?]+)/)?.[1] ?? '';
+      if (uuid === 'partial-failed') {
+        throw new Error('Request failed');
+      }
+      return { data: { uuid, display: 'Available test group', setMembers: [] } } as never;
+    });
+
+    render(<OrdersDataTable />);
+
+    expect(await screen.findByText('Incomplete lab test catalog')).toBeInTheDocument();
+    expect(screen.getByRole('table')).toBeInTheDocument();
+    await user.click(screen.getByRole('combobox', { name: /filter by lab set/i }));
+    expect(await screen.findByRole('option', { name: 'Available test group' })).toBeInTheDocument();
+  });
+
+  it('keeps orders visible and reports when every configured test group fails to load', async () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      resultsViewerConcepts: [{ conceptUuid: 'all-failed-a' }, { conceptUuid: 'all-failed-b' }],
+    });
+    mockOpenmrsFetch.mockRejectedValue(new Error('Request failed'));
+
+    render(<OrdersDataTable />);
+
+    expect(await screen.findByText('Lab test catalog unavailable')).toBeInTheDocument();
+    expect(screen.getByRole('table')).toBeInTheDocument();
   });
 });

@@ -70,7 +70,12 @@ const AppointmentsHeader: React.FC<AppointmentHeaderProps> = ({ appointmentServi
           data-testid="appointment-date-picker"
           id="appointment-date-picker"
           labelText={t('date', 'Date')}
-          onChange={(date) => setSelectedDate(dayjs(date).startOf('day').format(omrsDateFormat))}
+          onChange={(date) => {
+            if (!date || !dayjs(date).isValid()) {
+              return;
+            }
+            setSelectedDate(dayjs(date).startOf('day').format(omrsDateFormat));
+          }}
           value={dayjs(selectedDate).toDate()}
         />
       </div>

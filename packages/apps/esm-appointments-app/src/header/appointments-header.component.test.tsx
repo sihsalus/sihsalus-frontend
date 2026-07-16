@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import SelectedDateContext from '../hooks/selectedDateContext';
@@ -46,6 +46,7 @@ function renderAppointmentsHeader(props: Partial<React.ComponentProps<typeof App
 
 describe('AppointmentsHeader', () => {
   beforeEach(() => {
+    setSelectedDate.mockClear();
     mockUseAppointmentServices.mockReturnValue({ serviceTypes, isLoading: false, error: undefined });
   });
 
@@ -85,5 +86,14 @@ describe('AppointmentsHeader', () => {
     const header = screen.getByTestId('appointments-header');
     expect(within(header).queryByText('Service')).not.toBeInTheDocument();
     expect(within(header).getByRole('textbox', { name: 'Date' })).toBeInTheDocument();
+  });
+
+  it('keeps the selected date unchanged when the date control is cleared or invalid', () => {
+    renderAppointmentsHeader();
+
+    const dateInput = screen.getByRole('textbox', { name: 'Date' });
+    fireEvent.change(dateInput, { target: { value: '' } });
+
+    expect(setSelectedDate).not.toHaveBeenCalled();
   });
 });

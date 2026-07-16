@@ -1,6 +1,7 @@
 import {
   closeWorkspace,
   getDefaultsFromConfigSchema,
+  openmrsFetch,
   useConfig,
   useLayoutType,
   usePatient,
@@ -49,11 +50,13 @@ const mockTestTypes = [
   //   synonyms: ['HEMOGLOBIN', 'HGB'],
   // },
 ];
-const mockUseTestTypes = vi.fn().mockReturnValue({
+const defaultUseTestTypesResult = {
   testTypes: mockTestTypes,
   isLoading: false,
   error: null,
-});
+};
+const mockUseTestTypes = vi.fn().mockReturnValue(defaultUseTestTypesResult);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
 vi.mock('./useTestTypes', async () => ({
   useTestTypes: () => mockUseTestTypes(),
@@ -96,14 +99,16 @@ function renderAddLabOrderWorkspace(props: Partial<ComponentProps<typeof AddLabO
   return { mockCloseWorkspace, mockPromptBeforeClosing, mockCloseWorkspaceWithSavedChanges, ...view };
 }
 
-mockUseConfig.mockReturnValue({
+const defaultConfig = {
   ...getDefaultsFromConfigSchema(configSchema),
   orders: {
     labOrderTypeUuid: 'test-lab-order-type-uuid',
     labOrderableConcepts: [],
   },
   additionalTestOrderTypes: [],
-});
+};
+
+mockUseConfig.mockReturnValue(defaultConfig);
 
 mockUseSession.mockReturnValue(mockSessionDataResponse.data);
 
@@ -132,6 +137,12 @@ mockUseOrderType.mockReturnValue({
 describe('AddLabOrder', () => {
   beforeEach(() => {
     _resetOrderBasketStore();
+    mockUseConfig.mockReturnValue(defaultConfig);
+    mockUseTestTypes.mockReturnValue(defaultUseTestTypesResult);
+    mockOpenmrsFetch.mockImplementation(async (url) => {
+      const uuid = String(url).match(/\/concept\/([^?]+)/)?.[1] ?? '';
+      return { data: { uuid, display: `Set ${uuid}` } } as never;
+    });
   });
 
   test('happy path fill and submit form', async () => {
@@ -268,5 +279,38 @@ describe('AddLabOrder', () => {
     });
     renderAddLabOrderWorkspace();
     expect(screen.getByText(/Error/i)).toBeInTheDocument();
+  });
+
+  test('keeps configured tests available and warns when only some group labels load', async () => {
+    mockUseConfig.mockReturnValue({
+      ...defaultConfig,
+      resultsViewerConcepts: [{ conceptUuid: 'partial-good' }, { conceptUuid: 'partial-failed' }],
+    });
+    mockOpenmrsFetch.mockImplementation(async (url) => {
+      const uuid = String(url).match(/\/concept\/([^?]+)/)?.[1] ?? '';
+      if (uuid === 'partial-failed') {
+        throw new Error('Request failed');
+      }
+      return { data: { uuid, display: 'Available test group' } } as never;
+    });
+
+    renderAddLabOrderWorkspace();
+
+    expect(await screen.findByText('Incomplete lab test catalog')).toBeInTheDocument();
+    expect(screen.getByText('CD4 COUNT')).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Available test group' })).toBeInTheDocument();
+  });
+
+  test('keeps configured tests available and reports when every group label fails to load', async () => {
+    mockUseConfig.mockReturnValue({
+      ...defaultConfig,
+      resultsViewerConcepts: [{ conceptUuid: 'all-failed-a' }, { conceptUuid: 'all-failed-b' }],
+    });
+    mockOpenmrsFetch.mockRejectedValue(new Error('Request failed'));
+
+    renderAddLabOrderWorkspace();
+
+    expect(await screen.findByText('Lab test catalog unavailable')).toBeInTheDocument();
+    expect(screen.getByText('CD4 COUNT')).toBeInTheDocument();
   });
 });

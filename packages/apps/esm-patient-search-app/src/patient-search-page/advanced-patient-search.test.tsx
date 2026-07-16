@@ -329,6 +329,26 @@ describe('AdvancedPatientSearchComponent', () => {
     });
 
     it('searches by identity document number entered in refine search when query is empty', async () => {
+      const exactDocumentPatient = {
+        ...mockAdvancedSearchResults[0],
+        attributes: mockAdvancedSearchResults[0].attributes.map((attribute) =>
+          attribute.attributeType.uuid === 'c0d1a2b3-4e5f-4a6b-9c7d-8e9f0a1b2c3d'
+            ? { ...attribute, value: ' 10000001 ' }
+            : attribute,
+        ),
+      };
+      const partialDocumentPatient = {
+        ...mockAdvancedSearchResults[1],
+        attributes: mockAdvancedSearchResults[1].attributes.map((attribute) =>
+          attribute.attributeType.uuid === 'c0d1a2b3-4e5f-4a6b-9c7d-8e9f0a1b2c3d'
+            ? { ...attribute, value: '100000010' }
+            : attribute,
+        ),
+      };
+      mockUseInfinitePatientSearch.mockReturnValue({
+        ...mockSearchResults,
+        data: [exactDocumentPatient, partialDocumentPatient] as unknown as PatientSearchResponse['data'],
+      });
       renderComponent({ query: '' });
 
       await user.type(screen.getByLabelText(/número de documento de identidad/i), '10000001');
@@ -337,6 +357,11 @@ describe('AdvancedPatientSearchComponent', () => {
       await waitFor(() => {
         expect(mockUseInfinitePatientSearch).toHaveBeenLastCalledWith('10000001', true, true, 50);
       });
+      expect(screen.getByText(/1 search result/i)).toBeInTheDocument();
+      const patientBanners = screen.getAllByRole('banner');
+      expect(patientBanners).toHaveLength(1);
+      expect(within(patientBanners[0]).getByText(/Joshua Johnson/i)).toBeInTheDocument();
+      expect(screen.queryByText(/Joseph Davis/i)).not.toBeInTheDocument();
     });
 
     it('combines multiple filters correctly', async () => {

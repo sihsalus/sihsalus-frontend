@@ -2,6 +2,7 @@ import {
   DataTable,
   DataTableSkeleton,
   Dropdown,
+  InlineNotification,
   Layer,
   OverflowMenu,
   OverflowMenuItem,
@@ -24,6 +25,7 @@ import {
 import {
   ExtensionSlot,
   formatDate,
+  logError,
   type OrderUrgency,
   openmrsFetch,
   parseDate,
@@ -135,6 +137,63 @@ interface LabsetResponse {
   setMembers: Array<LabsetMember>;
 }
 
+interface LabsetRequest {
+  uuid: string;
+  url: string;
+}
+
+interface LabsetLoadResult {
+  labsets: Array<LabsetResponse>;
+  failedUuids: Array<string>;
+}
+
+function isLabsetMember(value: unknown): value is LabsetMember {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  const member = value as Partial<LabsetMember>;
+  return (
+    typeof member.uuid === 'string' &&
+    member.uuid.trim().length > 0 &&
+    typeof member.display === 'string' &&
+    member.display.trim().length > 0 &&
+    (member.setMembers === undefined || (Array.isArray(member.setMembers) && member.setMembers.every(isLabsetMember)))
+  );
+}
+
+function isLabsetResponse(value: unknown, expectedUuid: string): value is LabsetResponse {
+  return isLabsetMember(value) && value.uuid === expectedUuid && Array.isArray(value.setMembers);
+}
+
+export async function fetchConfiguredLabsets(requests: Array<LabsetRequest>): Promise<LabsetLoadResult> {
+  const results = await Promise.allSettled(
+    requests.map(({ url }) =>
+      Promise.resolve().then(async () => {
+        const response = await openmrsFetch<LabsetResponse>(url);
+        return response.data;
+      }),
+    ),
+  );
+  const labsets: Array<LabsetResponse> = [];
+  const failedUuids: Array<string> = [];
+
+  results.forEach((result, index) => {
+    const request = requests[index];
+    if (result.status === 'fulfilled' && isLabsetResponse(result.value, request.uuid)) {
+      labsets.push(result.value);
+      return;
+    }
+
+    failedUuids.push(request.uuid);
+    const error =
+      result.status === 'rejected' ? result.reason : new Error('The laboratory concept response was malformed.');
+    logError(error, `Load laboratory concept ${request.uuid}`);
+  });
+
+  return { failedUuids, labsets };
+}
+
 const getMemberUuids = (labset: LabsetResponse | LabsetMember): Array<string> => {
   const uuids: Array<string> = [];
   const recurse = (member: LabsetResponse | LabsetMember) => {
@@ -176,23 +235,24 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   const canEdit = userHasAccess(laboratoryEditPrivilege, session?.user);
   const { labTableColumns, patientIdIdentifierTypeUuid, resultsViewerConcepts } = useConfig<Config>();
 
-  const fetchLabsets = useCallback((urls: Array<string>) => {
-    return Promise.all(urls.map((url) => openmrsFetch<LabsetResponse>(url).then((res) => res.data)));
-  }, []);
-
-  const conceptUrls = useMemo(() => {
+  const conceptRequests = useMemo(() => {
     return (
-      resultsViewerConcepts?.map(
-        (c) =>
-          `${restBaseUrl}/concept/${c.conceptUuid}?v=custom:(uuid,display,setMembers:(uuid,display,setMembers:(uuid,display,setMembers:(uuid,display))))`,
-      ) || []
+      resultsViewerConcepts?.map(({ conceptUuid }) => ({
+        uuid: conceptUuid,
+        url: `${restBaseUrl}/concept/${conceptUuid}?v=custom:(uuid,display,setMembers:(uuid,display,setMembers:(uuid,display,setMembers:(uuid,display))))`,
+      })) || []
     );
   }, [resultsViewerConcepts]);
 
-  const { data: fetchedLabsets } = useSWR<Array<LabsetResponse>, Error>(
-    conceptUrls.length ? conceptUrls : null,
-    fetchLabsets,
+  const { data: labsetLoadResult, isLoading: isLoadingLabsets } = useSWR<LabsetLoadResult, Error>(
+    conceptRequests.length ? conceptRequests : null,
+    fetchConfiguredLabsets,
   );
+  const fetchedLabsets = labsetLoadResult?.labsets ?? [];
+  const failedLabsetCount = labsetLoadResult?.failedUuids.length ?? 0;
+  const hasPartialLabsetCatalog = fetchedLabsets.length > 0 && failedLabsetCount > 0;
+  const hasUnavailableLabsetCatalog =
+    conceptRequests.length > 0 && !isLoadingLabsets && failedLabsetCount === conceptRequests.length;
 
   const labsetOptions = useMemo(() => {
     const options = [{ value: null, display: t('all', 'All') }];
@@ -492,6 +552,25 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
     <DataTable rows={tableRows} headers={columns} useZebraStyles>
       {({ getExpandHeaderProps, getHeaderProps, getRowProps, getTableProps, headers, rows }) => (
         <TableContainer className={styles.tableContainer}>
+          {hasPartialLabsetCatalog || hasUnavailableLabsetCatalog ? (
+            <InlineNotification
+              hideCloseButton
+              kind={hasUnavailableLabsetCatalog ? 'error' : 'warning'}
+              lowContrast
+              title={t(
+                hasUnavailableLabsetCatalog ? 'labConceptCatalogUnavailableTitle' : 'labConceptCatalogPartialTitle',
+                hasUnavailableLabsetCatalog ? 'Lab test catalog unavailable' : 'Incomplete lab test catalog',
+              )}
+              subtitle={t(
+                hasUnavailableLabsetCatalog
+                  ? 'labConceptCatalogUnavailableSubtitle'
+                  : 'labConceptCatalogPartialSubtitle',
+                hasUnavailableLabsetCatalog
+                  ? 'Test group filters could not be loaded. Orders remain visible without that filter; do not interpret missing groups as absent tests.'
+                  : 'Some test groups could not be loaded. Available groups remain visible; do not interpret a missing group as an absent test.',
+              )}
+            />
+          ) : null}
           <TableToolbar>
             <TableToolbarContent className={styles.tableToolBar}>
               <Layer className={styles.toolbarItem}>
@@ -522,6 +601,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
                   type="inline"
                 />
                 <Dropdown
+                  disabled={isLoadingLabsets || hasUnavailableLabsetCatalog}
                   id="orderLabsetFilter"
                   initialSelectedItem={
                     selectedLabsetUuid ? labsetOptions.find((l) => l.value === selectedLabsetUuid) : labsetOptions[0]

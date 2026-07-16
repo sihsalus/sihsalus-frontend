@@ -33,8 +33,9 @@ import {
 } from '../constants';
 import { useProviders } from '../hooks/useProviders';
 import { getAppointmentStatus } from '../patient-appointments/patient-appointments.resource';
-import { type Appointment, AppointmentKind, AppointmentStatus } from '../types';
+import { type Appointment, AppointmentKind, type AppointmentPayload, AppointmentStatus } from '../types';
 
+import { getAppointmentCreationCheckpointStorageKey } from './appointment-creation-checkpoint';
 import { saveAppointment, saveRecurringAppointments } from './appointments-form.resource';
 import AppointmentForm, {
   getRecurringAppointmentPeriodValidationError,
@@ -76,6 +77,7 @@ const mockUsePatient = vi.mocked(usePatient);
 const mockUseProviders = vi.mocked(useProviders);
 const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
+const appointmentCheckpointStorageKey = getAppointmentCreationCheckpointStorageKey(mockPatient.id);
 
 async function fillRequiredAppointmentFields(
   user: ReturnType<typeof userEvent.setup>,
@@ -156,6 +158,52 @@ function mockAppointmentRequests(
   });
 }
 
+function confirmedAppointmentResponse(
+  payload: AppointmentPayload,
+  status = 200,
+  uuid = payload.uuid ?? 'created-uuid',
+) {
+  return {
+    status,
+    data: {
+      uuid,
+      patient: { uuid: payload.patientUuid },
+      service: { uuid: payload.serviceUuid },
+      serviceType: payload.serviceTypeUuid ? { uuid: payload.serviceTypeUuid } : null,
+      location: { uuid: payload.locationUuid },
+      startDateTime: payload.startDateTime,
+      endDateTime: payload.endDateTime,
+      dateAppointmentScheduled: payload.dateAppointmentScheduled,
+      appointmentKind: payload.appointmentKind,
+      comments: payload.comments,
+      status: payload.status,
+      providers: (payload.providers ?? []).map((provider) => ({
+        response: provider.response ?? 'ACCEPTED',
+        uuid: provider.uuid,
+      })),
+    },
+  } as FetchResponse<unknown>;
+}
+
+function mockConfirmedAppointmentSave(status = 200) {
+  mockSaveAppointment.mockImplementation(async (payload) => confirmedAppointmentResponse(payload, status));
+}
+
+function mockConfirmedRecurringSave(status = 200) {
+  mockSaveRecurringAppointments.mockImplementation(
+    async (payload) =>
+      ({
+        status,
+        data: [
+          {
+            appointmentDefaultResponse: confirmedAppointmentResponse(payload.appointmentRequest).data,
+            recurringPattern: payload.recurringPattern,
+          },
+        ],
+      }) as unknown as FetchResponse,
+  );
+}
+
 vi.mock('./appointments-form.resource', async () => ({
   ...(await vi.importActual('./appointments-form.resource')),
   saveAppointment: vi.fn(),
@@ -186,8 +234,9 @@ describe('AppointmentForm', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSaveAppointment.mockResolvedValue({} as FetchResponse<unknown>);
-    mockSaveRecurringAppointments.mockResolvedValue({ status: 201 } as FetchResponse<unknown>);
+    globalThis.sessionStorage.clear();
+    mockConfirmedAppointmentSave();
+    mockConfirmedRecurringSave();
     mockAppointmentRequests();
     mockGetAppointmentStatus.mockResolvedValue(AppointmentStatus.SCHEDULED);
     mockGetUserFacingErrorMessage.mockImplementation((error, fallback, options) => {
@@ -298,6 +347,104 @@ describe('AppointmentForm', () => {
       }),
       expect.any(AbortController),
     );
+  });
+
+  it('confirms a recurring response whose appointments have distinct dates but the requested pattern and context', async () => {
+    const user = userEvent.setup();
+    mockSaveRecurringAppointments.mockImplementation(async (payload) => {
+      const firstAppointment = payload.appointmentRequest;
+      const secondAppointment = {
+        ...firstAppointment,
+        startDateTime: dayjs(firstAppointment.startDateTime).add(1, 'day').toISOString(),
+        endDateTime: dayjs(firstAppointment.endDateTime).add(1, 'day').toISOString(),
+      };
+      return {
+        status: 200,
+        data: [
+          {
+            appointmentDefaultResponse: confirmedAppointmentResponse(firstAppointment, 200, 'recurring-uuid-1').data,
+            recurringPattern: payload.recurringPattern,
+          },
+          {
+            appointmentDefaultResponse: confirmedAppointmentResponse(secondAppointment, 200, 'recurring-uuid-2').data,
+            recurringPattern: payload.recurringPattern,
+          },
+        ],
+      } as FetchResponse;
+    });
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+    await user.click(screen.getByLabelText(/is this a recurring appointment/i));
+    fireEvent.change(await screen.findByLabelText(/^end date$/i), {
+      target: { value: dayjs().add(7, 'day').format('YYYY-MM-DD') },
+    });
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveRecurringAppointments).toHaveBeenCalledTimes(1));
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'success', title: 'Appointment scheduled' }),
+    );
+    expect(globalThis.sessionStorage.getItem(appointmentCheckpointStorageKey)).toBeNull();
+  });
+
+  it('keeps a recurring response locked when the returned pattern differs from the request', async () => {
+    const user = userEvent.setup();
+    mockSaveRecurringAppointments.mockImplementation(
+      async (payload) =>
+        ({
+          status: 200,
+          data: [
+            {
+              appointmentDefaultResponse: confirmedAppointmentResponse(payload.appointmentRequest).data,
+              recurringPattern: { ...payload.recurringPattern, period: payload.recurringPattern.period + 1 },
+            },
+          ],
+        }) as FetchResponse,
+    );
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+    await user.click(screen.getByLabelText(/is this a recurring appointment/i));
+    fireEvent.change(await screen.findByLabelText(/^end date$/i), {
+      target: { value: dayjs().add(7, 'day').format('YYYY-MM-DD') },
+    });
+    const saveButton = screen.getByRole('button', { name: /save and close/i });
+    await user.click(saveButton);
+
+    await waitFor(() => expect(mockSaveRecurringAppointments).toHaveBeenCalledTimes(1));
+    expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'warning' }));
+    expect(globalThis.sessionStorage.getItem(appointmentCheckpointStorageKey)).not.toBeNull();
+    expect(saveButton).toBeDisabled();
+  });
+
+  it('treats a recurring HTTP 204 as a definitive empty series instead of a successful save', async () => {
+    const user = userEvent.setup();
+    mockSaveRecurringAppointments.mockResolvedValue({ status: 204 } as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+    await user.click(screen.getByLabelText(/is this a recurring appointment/i));
+    fireEvent.change(await screen.findByLabelText(/^end date$/i), {
+      target: { value: dayjs().add(7, 'day').format('YYYY-MM-DD') },
+    });
+    const saveButton = screen.getByRole('button', { name: /save and close/i });
+    await user.click(saveButton);
+
+    await waitFor(() => expect(mockSaveRecurringAppointments).toHaveBeenCalledTimes(1));
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      isLowContrast: false,
+      kind: 'error',
+      subtitle:
+        'No se generó ninguna cita recurrente. Revise la fecha de inicio, el fin y el patrón antes de reintentar.',
+      title: 'Error scheduling appointment',
+    });
+    expect(globalThis.sessionStorage.getItem(appointmentCheckpointStorageKey)).toBeNull();
+    expect(saveButton).toBeEnabled();
+    expect(defaultProps.closeWorkspace).not.toHaveBeenCalled();
   });
 
   it('renders the appointments form', async () => {
@@ -415,10 +562,7 @@ describe('AppointmentForm', () => {
   it('renders a success snackbar upon successfully scheduling an appointment', async () => {
     const user = userEvent.setup();
 
-    mockSaveAppointment.mockResolvedValue({
-      status: 201,
-      statusText: 'Created',
-    } as FetchResponse);
+    mockConfirmedAppointmentSave(200);
 
     renderWithSwr(<AppointmentForm {...defaultProps} />);
 
@@ -459,7 +603,7 @@ describe('AppointmentForm', () => {
     });
   });
 
-  it('treats HTTP 204 as a confirmed successful save and does not invite resubmission', async () => {
+  it('keeps HTTP 204 locked because the appointment API did not return an identifiable saved record', async () => {
     const user = userEvent.setup();
     mockSaveAppointment.mockResolvedValue({ status: 204 } as FetchResponse);
 
@@ -469,10 +613,85 @@ describe('AppointmentForm', () => {
     await user.click(screen.getByRole('button', { name: /save and close/i }));
 
     await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      isLowContrast: false,
+      kind: 'warning',
+      subtitle:
+        'No se pudo confirmar si la cita fue guardada. No vuelva a enviarla; verifique primero la lista de citas.',
+      title: 'Error scheduling appointment',
+    });
+    expect(globalThis.sessionStorage.getItem(appointmentCheckpointStorageKey)).not.toBeNull();
+    expect(screen.getByRole('button', { name: /save and close/i })).toBeDisabled();
+    expect(defaultProps.closeWorkspace).not.toHaveBeenCalled();
+  });
+
+  it('keeps an HTTP 202 creation locked because it does not prove that the appointment was committed', async () => {
+    const user = userEvent.setup();
+    mockSaveAppointment.mockResolvedValue({ status: 202 } as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+
+    const saveButton = screen.getByRole('button', { name: /save and close/i });
+    await user.click(saveButton);
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      isLowContrast: false,
+      kind: 'warning',
+      subtitle:
+        'No se pudo confirmar si la cita fue guardada. No vuelva a enviarla; verifique primero la lista de citas.',
+      title: 'Error scheduling appointment',
+    });
+    expect(globalThis.sessionStorage.getItem(appointmentCheckpointStorageKey)).not.toBeNull();
+    expect(saveButton).toBeDisabled();
+    expect(defaultProps.closeWorkspace).not.toHaveBeenCalled();
+  });
+
+  it('keeps an otherwise valid HTTP 201 creation locked because the deployed backend contract requires HTTP 200', async () => {
+    const user = userEvent.setup();
+    mockConfirmedAppointmentSave(201);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+
+    const saveButton = screen.getByRole('button', { name: /save and close/i });
+    await user.click(saveButton);
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'warning' }));
+    expect(globalThis.sessionStorage.getItem(appointmentCheckpointStorageKey)).not.toBeNull();
+    expect(saveButton).toBeDisabled();
+  });
+
+  it('keeps a malformed HTTP 200 creation locked when the returned record belongs to another patient', async () => {
+    const user = userEvent.setup();
+    mockSaveAppointment.mockImplementation(async (payload) => {
+      const response = confirmedAppointmentResponse(payload);
+      return {
+        ...response,
+        data: { ...(response.data as object), patient: { uuid: 'another-patient' } },
+      } as FetchResponse;
+    });
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+    const saveButton = screen.getByRole('button', { name: /save and close/i });
+    await user.click(saveButton);
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
     expect(mockShowSnackbar).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'success', title: 'Appointment scheduled' }),
+      expect.objectContaining({
+        kind: 'warning',
+        subtitle: expect.stringContaining('No se pudo confirmar si la cita fue guardada'),
+      }),
     );
-    expect(mockShowSnackbar).not.toHaveBeenCalledWith(expect.objectContaining({ title: 'No Content' }));
+    expect(globalThis.sessionStorage.getItem(appointmentCheckpointStorageKey)).not.toBeNull();
+    expect(saveButton).toBeDisabled();
+    expect(defaultProps.closeWorkspace).not.toHaveBeenCalled();
   });
 
   it('schedules an all-day appointment using the full selected day', async () => {
@@ -483,10 +702,7 @@ describe('AppointmentForm', () => {
       allowAllDayAppointments: true,
       appointmentTypes: ['Scheduled', 'WalkIn'],
     });
-    mockSaveAppointment.mockResolvedValue({
-      status: 201,
-      statusText: 'Created',
-    } as FetchResponse);
+    mockConfirmedAppointmentSave(200);
 
     renderWithSwr(<AppointmentForm {...defaultProps} />);
 
@@ -526,7 +742,7 @@ describe('AppointmentForm', () => {
   it('accepts the defensive HTTP 200 empty conflict map', async () => {
     const user = userEvent.setup();
     mockAppointmentRequests(mockUseAppointmentServiceData, { status: 200, data: {} } as FetchResponse);
-    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+    mockConfirmedAppointmentSave(200);
 
     renderWithSwr(<AppointmentForm {...defaultProps} />);
 
@@ -616,9 +832,56 @@ describe('AppointmentForm', () => {
     expect(mockSaveAppointment).toHaveBeenCalledTimes(1);
   });
 
-  it('allows correction after a definitive client rejection', async () => {
+  it('keeps an ambiguous creation locked after the form is remounted', async () => {
+    const user = userEvent.setup();
+    mockSaveAppointment.mockRejectedValue({ response: { status: 500 } });
+
+    const firstRender = renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    expect(globalThis.sessionStorage.getItem(appointmentCheckpointStorageKey)).not.toBeNull();
+    firstRender.unmount();
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+
+    expect(await screen.findByText('Resultado pendiente de verificación')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /save and close/i })).toBeDisabled();
+    expect(screen.getByText(/hay una creación de cita pendiente para este paciente/i)).toBeInTheDocument();
+    expect(mockSaveAppointment).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a generic backend HTTP 400 locked because it does not prove that the write was rolled back', async () => {
     const user = userEvent.setup();
     mockSaveAppointment.mockRejectedValue({ response: { status: 400 } });
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+
+    const saveButton = screen.getByRole('button', { name: /save and close/i });
+    await user.click(saveButton);
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    expect(saveButton).toBeDisabled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      isLowContrast: false,
+      kind: 'warning',
+      subtitle:
+        'No se pudo confirmar si la cita fue guardada. No vuelva a enviarla; verifique primero la lista de citas.',
+      title: 'Error scheduling appointment',
+    });
+
+    await user.click(saveButton);
+    expect(mockSaveAppointment).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows correction after a definitive authorization rejection', async () => {
+    const user = userEvent.setup();
+    mockSaveAppointment.mockRejectedValue({ response: { status: 403 } });
 
     renderWithSwr(<AppointmentForm {...defaultProps} />);
     await waitForLoadingToFinish();
@@ -635,9 +898,6 @@ describe('AppointmentForm', () => {
       subtitle: 'La cita no fue guardada. Revise los datos antes de volver a intentar.',
       title: 'Error scheduling appointment',
     });
-
-    await user.click(saveButton);
-    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(2));
   });
 
   it('uses the selected service initial status when creating an appointment', async () => {
@@ -648,7 +908,7 @@ describe('AppointmentForm', () => {
     };
 
     mockAppointmentRequests([requestedService]);
-    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+    mockConfirmedAppointmentSave(200);
 
     renderWithSwr(<AppointmentForm {...defaultProps} />);
 
@@ -670,7 +930,7 @@ describe('AppointmentForm', () => {
     };
 
     mockAppointmentRequests([waitListService]);
-    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+    mockConfirmedAppointmentSave(200);
 
     renderWithSwr(<AppointmentForm {...defaultProps} />);
 
@@ -692,7 +952,7 @@ describe('AppointmentForm', () => {
     };
 
     mockAppointmentRequests([serviceWithInvalidInitialStatus]);
-    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+    mockConfirmedAppointmentSave(200);
 
     renderWithSwr(<AppointmentForm {...defaultProps} />);
 
@@ -710,7 +970,7 @@ describe('AppointmentForm', () => {
     const user = userEvent.setup();
     const appointment = makeEditableAppointment();
 
-    mockSaveAppointment.mockResolvedValue({ status: 200 } as FetchResponse);
+    mockConfirmedAppointmentSave(200);
 
     renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
 
@@ -781,7 +1041,7 @@ describe('AppointmentForm', () => {
       durationMins: 45,
     };
     mockAppointmentRequests([firstService, secondService]);
-    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+    mockConfirmedAppointmentSave(200);
 
     renderWithSwr(<AppointmentForm {...defaultProps} />);
 
@@ -917,7 +1177,7 @@ describe('AppointmentForm', () => {
       ],
     };
     mockAppointmentRequests([service]);
-    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+    mockConfirmedAppointmentSave(200);
 
     renderWithSwr(<AppointmentForm {...defaultProps} />);
 
@@ -944,7 +1204,7 @@ describe('AppointmentForm', () => {
       serviceTypes: [{ uuid: 'replacement-service-type', name: 'Tipo nuevo', duration: 45 }],
     };
     mockAppointmentRequests([mockUseAppointmentServiceData[0], replacementService]);
-    mockSaveAppointment.mockResolvedValue({ status: 200 } as FetchResponse);
+    mockConfirmedAppointmentSave(200);
 
     renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
 
@@ -985,7 +1245,7 @@ describe('AppointmentForm', () => {
       { uuid: 'secondary-provider-uuid', response: 'AWAITING', comments: 'Interconsulta' },
       { uuid: 'cancelled-provider-uuid', response: 'CANCELLED', comments: 'Retirado' },
     ];
-    mockSaveAppointment.mockResolvedValue({ status: 200 } as FetchResponse);
+    mockConfirmedAppointmentSave(200);
 
     renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
 
@@ -1069,7 +1329,7 @@ describe('AppointmentForm', () => {
       { uuid: 'rejected-provider-uuid', response: 'REJECTED', name: 'Profesional rechazado' },
       { uuid: 'tentative-provider-uuid', response: 'TENTATIVE', name: 'Profesional tentativo' },
     ];
-    mockSaveAppointment.mockResolvedValue({ status: 200 } as FetchResponse);
+    mockConfirmedAppointmentSave(200);
 
     renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
 
@@ -1252,12 +1512,35 @@ describe('AppointmentForm', () => {
     expect(screen.getByTestId('datePickerInput')).not.toHaveAttribute('readonly');
   });
 
+  it('applies the start-date privilege and required marker to recurring appointments', async () => {
+    const user = userEvent.setup();
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await user.click(screen.getByLabelText(/is this a recurring appointment/i));
+
+    const recurringStartDate = await screen.findByTestId('startDatePickerInput');
+    expect(recurringStartDate).toHaveAttribute('readonly');
+    expect(recurringStartDate).toBeRequired();
+  });
+
+  it('allows an authorized user to edit the recurring appointment start date', async () => {
+    const user = userEvent.setup();
+    mockUserHasAccess.mockImplementation((privilege) => privilege === appointmentStartDateEditPrivilege);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await user.click(screen.getByLabelText(/is this a recurring appointment/i));
+
+    expect(await screen.findByTestId('startDatePickerInput')).not.toHaveAttribute('readonly');
+  });
+
   it('persists an authorized appointment issue date change', async () => {
     const user = userEvent.setup();
     const appointment = makeEditableAppointment();
     appointment.dateAppointmentScheduled = '2026-07-01T09:00:00-05:00';
     mockUserHasAccess.mockReturnValue(true);
-    mockSaveAppointment.mockResolvedValue({ status: 200 } as FetchResponse);
+    mockConfirmedAppointmentSave(200);
 
     renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
 
@@ -1290,7 +1573,7 @@ describe('AppointmentForm', () => {
 
   it('keeps the trusted creation issue date stable across midnight and rerenders', async () => {
     const user = userEvent.setup();
-    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+    mockConfirmedAppointmentSave(200);
 
     renderWithSwr(<AppointmentForm {...defaultProps} />);
 
@@ -1351,7 +1634,7 @@ describe('AppointmentForm', () => {
     const user = userEvent.setup();
     const appointment = makeEditableAppointment();
     appointment.dateAppointmentScheduled = '2026-07-01T09:00:00-05:00';
-    mockSaveAppointment.mockResolvedValue({ status: 200 } as FetchResponse);
+    mockConfirmedAppointmentSave(200);
 
     renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
 

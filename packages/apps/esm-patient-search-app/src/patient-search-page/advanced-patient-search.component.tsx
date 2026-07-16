@@ -70,10 +70,6 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
 
   const filteredResults = useMemo(() => {
     if (searchResults && filtersApplied) {
-      const identityDocumentSearchQuery = filters.attributes?.[identityDocumentNumberAttributeUuid]?.trim() ?? '';
-      const shouldSkipIdentityDocumentAttributeFilters =
-        !!identityDocumentSearchQuery && activeQuery === identityDocumentSearchQuery;
-
       return searchResults.filter((patient) => {
         // Gender filter
         if (filters.gender !== 'any') {
@@ -121,9 +117,6 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
           for (const [attributeUuid, value] of Object.entries(filters.attributes)) {
             const normalizedFilterValue = value?.trim().toLowerCase();
             if (!normalizedFilterValue) continue;
-            if (shouldSkipIdentityDocumentAttributeFilters && attributeUuid === identityDocumentNumberAttributeUuid) {
-              continue;
-            }
 
             const matchingAttributes = patient.attributes?.filter(
               (attribute) => attribute.attributeType.uuid === attributeUuid,
@@ -148,7 +141,7 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
     }
 
     return searchResults;
-  }, [activeQuery, filtersApplied, filters, searchResults]);
+  }, [filtersApplied, filters, searchResults]);
 
   return (
     <div

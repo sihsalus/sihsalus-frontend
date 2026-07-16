@@ -21,6 +21,7 @@ import {
   ExtensionSlot,
   type FetchResponse,
   getUserFacingErrorMessage,
+  logError,
   OpenmrsDatePicker,
   ResponsiveWrapper,
   showSnackbar,
@@ -78,6 +79,12 @@ import {
   useAppointmentService,
   useMutateAppointments,
 } from './appointments-form.resource';
+import {
+  clearAppointmentCreationCheckpoint,
+  fingerprintAppointmentCreationPayload,
+  loadAppointmentCreationCheckpoint,
+  saveAppointmentCreationCheckpoint,
+} from './appointment-creation-checkpoint';
 import styles from './appointments-form.scss';
 
 const preventInvalidIntegerKey =
@@ -138,6 +145,7 @@ const DEFAULT_APPOINTMENT_DURATION_MINUTES = 30;
 // With a daily period of one, this caps a series at 366 generated appointments.
 const MAX_RECURRING_APPOINTMENT_HORIZON_DAYS = 365;
 const APPOINTMENT_EDIT_STATUS_CONFLICT = 'APPOINTMENT_EDIT_STATUS_CONFLICT';
+const APPOINTMENT_RECURRING_EMPTY = 'APPOINTMENT_RECURRING_EMPTY';
 
 const time12HourFormatRegexPattern = '^(1[0-2]|0?[1-9]):[0-5][0-9]$';
 
@@ -148,7 +156,205 @@ function RequiredFieldLabel({ label }: { label: string }) {
 
 const isValidTime = (timeStr: string) => timeStr.match(new RegExp(time12HourFormatRegexPattern));
 
-const isSuccessfulAppointmentResponse = (status?: number) => status >= 200 && status < 300;
+type AppointmentConfirmation = {
+  uuid?: unknown;
+  patient?: { uuid?: unknown };
+  service?: { uuid?: unknown };
+  serviceType?: { uuid?: unknown } | null;
+  location?: { uuid?: unknown };
+  startDateTime?: unknown;
+  endDateTime?: unknown;
+  dateAppointmentScheduled?: unknown;
+  appointmentKind?: unknown;
+  status?: unknown;
+  comments?: unknown;
+  providers?: unknown;
+};
+
+type RecurringPatternConfirmation = {
+  type?: unknown;
+  period?: unknown;
+  endDate?: unknown;
+  daysOfWeek?: unknown;
+};
+
+function isSameInstant(left: unknown, right: string) {
+  if (typeof left !== 'string' && typeof left !== 'number' && !(left instanceof Date)) {
+    return false;
+  }
+  const leftTime = new Date(left).getTime();
+  const rightTime = new Date(right).getTime();
+  return Number.isFinite(leftTime) && Number.isFinite(rightTime) && leftTime === rightTime;
+}
+
+function getConfirmedAppointmentEntity(value: unknown, payload: AppointmentPayload) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+
+  const confirmation = value as AppointmentConfirmation;
+  const responseUuid = typeof confirmation.uuid === 'string' ? confirmation.uuid.trim() : '';
+  const responseServiceTypeUuid =
+    confirmation.serviceType && typeof confirmation.serviceType.uuid === 'string'
+      ? confirmation.serviceType.uuid
+      : undefined;
+  const expectedProviders = (payload.providers ?? [])
+    .map((provider) => ({
+      response: provider.response?.toUpperCase() ?? 'ACCEPTED',
+      uuid: provider.uuid,
+    }))
+    .sort((left, right) => left.uuid.localeCompare(right.uuid));
+  const responseProviders = Array.isArray(confirmation.providers)
+    ? confirmation.providers
+        .filter((provider): provider is { uuid: string; response?: string } =>
+          Boolean(
+            provider &&
+              typeof provider === 'object' &&
+              typeof (provider as { uuid?: unknown }).uuid === 'string' &&
+              (typeof (provider as { response?: unknown }).response === 'string' ||
+                (provider as { response?: unknown }).response === undefined),
+          ),
+        )
+        .map((provider) => ({
+          response: provider.response?.toUpperCase() ?? 'ACCEPTED',
+          uuid: provider.uuid,
+        }))
+        .filter((provider) => provider.response !== 'CANCELLED')
+        .sort((left, right) => left.uuid.localeCompare(right.uuid))
+    : null;
+
+  const contextMatches =
+    responseUuid.length > 0 &&
+    (!payload.uuid || responseUuid === payload.uuid) &&
+    confirmation.patient?.uuid === payload.patientUuid &&
+    confirmation.service?.uuid === payload.serviceUuid &&
+    responseServiceTypeUuid === payload.serviceTypeUuid &&
+    confirmation.location?.uuid === payload.locationUuid &&
+    confirmation.appointmentKind === payload.appointmentKind &&
+    confirmation.comments === payload.comments &&
+    (!payload.status || confirmation.status === payload.status) &&
+    isSameInstant(confirmation.dateAppointmentScheduled, payload.dateAppointmentScheduled) &&
+    responseProviders !== null &&
+    JSON.stringify(responseProviders) === JSON.stringify(expectedProviders);
+
+  return contextMatches ? confirmation : null;
+}
+
+function isConfirmedAppointmentEntity(value: unknown, payload: AppointmentPayload) {
+  const confirmation = getConfirmedAppointmentEntity(value, payload);
+  return (
+    Boolean(confirmation) &&
+    isSameInstant(confirmation?.startDateTime, payload.startDateTime) &&
+    isSameInstant(confirmation?.endDateTime, payload.endDateTime)
+  );
+}
+
+function normalizeDaysOfWeek(value: unknown) {
+  return Array.isArray(value)
+    ? value
+        .filter((day): day is string => typeof day === 'string')
+        .map((day) => day.toUpperCase())
+        .sort()
+    : [];
+}
+
+function isConfirmedRecurringPattern(value: unknown, requestedPattern: RecurringPattern) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  const confirmation = value as RecurringPatternConfirmation;
+  return (
+    typeof confirmation.type === 'string' &&
+    confirmation.type.toUpperCase() === requestedPattern.type &&
+    confirmation.period === requestedPattern.period &&
+    Boolean(requestedPattern.endDate) &&
+    isSameInstant(confirmation.endDate, requestedPattern.endDate ?? '') &&
+    JSON.stringify(normalizeDaysOfWeek(confirmation.daysOfWeek)) ===
+      JSON.stringify(normalizeDaysOfWeek(requestedPattern.daysOfWeek))
+  );
+}
+
+function getConfirmedRecurringAppointmentStart(value: unknown, payload: AppointmentPayload) {
+  const confirmation = getConfirmedAppointmentEntity(value, payload);
+  if (!confirmation) {
+    return null;
+  }
+
+  const startTime = new Date(confirmation.startDateTime as string | number | Date).getTime();
+  const endTime = new Date(confirmation.endDateTime as string | number | Date).getTime();
+  const requestedStartTime = new Date(payload.startDateTime).getTime();
+  const requestedDuration = new Date(payload.endDateTime).getTime() - requestedStartTime;
+
+  return Number.isFinite(startTime) &&
+    Number.isFinite(endTime) &&
+    startTime >= requestedStartTime &&
+    endTime > startTime &&
+    endTime - startTime === requestedDuration
+    ? startTime
+    : null;
+}
+
+function isConfirmedAppointmentSaveResponse(
+  response: FetchResponse<unknown>,
+  payload: AppointmentPayload,
+  recurringPattern?: RecurringPattern,
+) {
+  if (response.status !== 200) {
+    return false;
+  }
+
+  if (!recurringPattern) {
+    return isConfirmedAppointmentEntity(response.data, payload);
+  }
+
+  if (!Array.isArray(response.data) || response.data.length === 0) {
+    return false;
+  }
+
+  const confirmations = response.data.map((entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      return null;
+    }
+    const recurringConfirmation = entry as {
+      appointmentDefaultResponse?: unknown;
+      recurringPattern?: unknown;
+    };
+    const appointment = recurringConfirmation.appointmentDefaultResponse;
+    const confirmedStart = getConfirmedRecurringAppointmentStart(appointment, payload);
+    if (
+      confirmedStart === null ||
+      !isConfirmedRecurringPattern(recurringConfirmation.recurringPattern, recurringPattern)
+    ) {
+      return null;
+    }
+    const appointmentUuid = (appointment as AppointmentConfirmation).uuid;
+    return typeof appointmentUuid === 'string' ? { appointmentUuid, confirmedStart } : null;
+  });
+
+  if (confirmations.some((confirmation) => confirmation === null)) {
+    return false;
+  }
+
+  const validConfirmations = confirmations as Array<{ appointmentUuid: string; confirmedStart: number }>;
+  const recurringEndTime = new Date(recurringPattern.endDate ?? '').getTime();
+  const appointmentUuids = validConfirmations.map(({ appointmentUuid }) => appointmentUuid);
+  const appointmentStarts = validConfirmations.map(({ confirmedStart }) => confirmedStart);
+
+  return (
+    Number.isFinite(recurringEndTime) &&
+    appointmentStarts.every((startTime) => startTime <= recurringEndTime) &&
+    new Set(appointmentUuids).size === appointmentUuids.length &&
+    new Set(appointmentStarts).size === appointmentStarts.length
+  );
+}
+
+function isDefinitiveEmptyRecurringSaveResponse(response: FetchResponse<unknown>, recurring: boolean) {
+  return (
+    recurring &&
+    (response.status === 204 || (response.status === 200 && Array.isArray(response.data) && response.data.length === 0))
+  );
+}
 
 function getErrorStatus(error: unknown): number | undefined {
   if (!error || typeof error !== 'object') {
@@ -161,8 +367,14 @@ function getErrorStatus(error: unknown): number | undefined {
 }
 
 function isDefinitiveAppointmentSaveRejection(error: unknown) {
+  if (error && typeof error === 'object' && (error as { code?: unknown }).code === APPOINTMENT_RECURRING_EMPTY) {
+    return true;
+  }
+
   const status = getErrorStatus(error);
-  return Boolean(status && status >= 400 && status < 500 && ![408, 425, 429].includes(status));
+  // The appointments module catches mapping, persistence and response-construction failures in the same 400 block.
+  // Only transport/authentication rejections that cannot enter the save controller are safe to retry automatically.
+  return Boolean(status && [401, 403, 404, 405, 413, 415].includes(status));
 }
 
 function getConfiguredAppointmentDuration(service?: AppointmentService, serviceTypeUuid?: string) {
@@ -373,6 +585,7 @@ const AppointmentsForm: React.FC<
   const [isSuccessful, setIsSuccessful] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaveOutcomeAmbiguous, setIsSaveOutcomeAmbiguous] = useState(false);
+  const [saveOutcomeSafetyMessage, setSaveOutcomeSafetyMessage] = useState<string>();
   const saveAttemptInFlightRef = useRef(false);
   // Keep the trusted issue date stable for the lifetime of this form. Recomputing
   // `new Date()` on every render could silently change the submitted day if a
@@ -389,6 +602,32 @@ const AppointmentsForm: React.FC<
     const persistedIssueDate = new Date(appointment.dateAppointmentScheduled);
     return isValidDate(persistedIssueDate) ? persistedIssueDate : undefined;
   });
+
+  useEffect(() => {
+    if (context === 'editing') {
+      return;
+    }
+
+    try {
+      if (loadAppointmentCreationCheckpoint(patientUuid ?? '')) {
+        setIsSaveOutcomeAmbiguous(true);
+        setSaveOutcomeSafetyMessage(
+          t(
+            'appointmentCreationCheckpointPending',
+            'Hay una creación de cita pendiente para este paciente. No vuelva a guardar hasta verificar la lista de citas; si requiere liberarla, cierre esta pestaña después de la verificación.',
+          ),
+        );
+      }
+    } catch {
+      setIsSaveOutcomeAmbiguous(true);
+      setSaveOutcomeSafetyMessage(
+        t(
+          'appointmentCreationCheckpointInvalid',
+          'Existe un intento de cita pendiente que no puede leerse. No vuelva a guardar; solicite verificación de la cita y de esta sesión.',
+        ),
+      );
+    }
+  }, [context, patientUuid, t]);
 
   // TODO can we clean this all up to be more consistent between using Date and dayjs?
   const {
@@ -886,15 +1125,121 @@ const AppointmentsForm: React.FC<
       return;
     }
 
+    let creationAttemptId: string | undefined;
+    if (context !== 'editing') {
+      const checkpointPayload = isRecurringAppointment ? recurringAppointmentPayload : appointmentPayload;
+      const payloadFingerprint = await fingerprintAppointmentCreationPayload(checkpointPayload);
+      const attemptId = globalThis.crypto?.randomUUID?.();
+      const hasAuthenticatedUserAndPatient = Boolean(session?.user?.uuid?.trim() && patientUuid?.trim());
+
+      if (!payloadFingerprint || !attemptId || !hasAuthenticatedUserAndPatient) {
+        releaseSaveAttempt();
+        showSnackbar({
+          title: t('appointmentFormError', 'Error scheduling appointment'),
+          kind: 'error',
+          isLowContrast: false,
+          subtitle: t(
+            'appointmentCreationCheckpointUnavailable',
+            'No se pudo preparar un guardado seguro en este navegador. Verifique la sesión y habilite el almacenamiento antes de guardar.',
+          ),
+        });
+        return;
+      }
+
+      if (
+        !saveAppointmentCreationCheckpoint(
+          {
+            version: 1,
+            state: 'create-pending',
+            attemptId,
+            createdAt: Date.now(),
+            payloadFingerprint,
+            recurring: isRecurringAppointment,
+          },
+          patientUuid ?? '',
+        )
+      ) {
+        let hasPendingCheckpoint = false;
+        try {
+          hasPendingCheckpoint = Boolean(loadAppointmentCreationCheckpoint(patientUuid ?? ''));
+        } catch {
+          hasPendingCheckpoint = true;
+        }
+
+        if (hasPendingCheckpoint) {
+          setIsSubmitting(false);
+          setIsSaveOutcomeAmbiguous(true);
+          const checkpointMessage = t(
+            'appointmentCreationCheckpointPending',
+            'Hay una creación de cita pendiente para este paciente. No vuelva a guardar hasta verificar la lista de citas; si requiere liberarla, cierre esta pestaña después de la verificación.',
+          );
+          setSaveOutcomeSafetyMessage(checkpointMessage);
+          showSnackbar({
+            title: t('appointmentFormError', 'Error scheduling appointment'),
+            kind: 'warning',
+            isLowContrast: false,
+            subtitle: checkpointMessage,
+          });
+        } else {
+          releaseSaveAttempt();
+          showSnackbar({
+            title: t('appointmentFormError', 'Error scheduling appointment'),
+            kind: 'error',
+            isLowContrast: false,
+            subtitle: t(
+              'appointmentCreationCheckpointUnavailable',
+              'No se pudo preparar un guardado seguro en este navegador. Verifique la sesión y habilite el almacenamiento antes de guardar.',
+            ),
+          });
+        }
+        return;
+      }
+      creationAttemptId = attemptId;
+    }
+
     const abortController = new AbortController();
 
     try {
-      const { status } = isRecurringAppointment
+      const saveResponse = isRecurringAppointment
         ? await saveRecurringAppointments(recurringAppointmentPayload, abortController)
         : await saveAppointment(appointmentPayload, abortController);
 
-      if (!isSuccessfulAppointmentResponse(status)) {
-        throw Object.assign(new Error('The appointment save returned an unsuccessful status.'), { status });
+      if (
+        !isConfirmedAppointmentSaveResponse(
+          saveResponse,
+          appointmentPayload,
+          isRecurringAppointment ? recurringAppointmentPayload.recurringPattern : undefined,
+        )
+      ) {
+        const emptyRecurringResponse = isDefinitiveEmptyRecurringSaveResponse(saveResponse, isRecurringAppointment);
+        throw Object.assign(new Error('The appointment save response did not confirm the requested write.'), {
+          status: emptyRecurringResponse ? 422 : saveResponse.status,
+          ...(emptyRecurringResponse ? { code: APPOINTMENT_RECURRING_EMPTY } : {}),
+        });
+      }
+
+      if (creationAttemptId && !clearAppointmentCreationCheckpoint(creationAttemptId, patientUuid ?? '')) {
+        const checkpointMessage = t(
+          'appointmentCreationCheckpointClearFailed',
+          'La cita fue guardada, pero no se pudo cerrar su control de seguridad. No cree otra cita hasta verificar la lista y actualizar la pantalla.',
+        );
+        logError(new Error('The confirmed appointment creation checkpoint could not be cleared.'), 'Save appointment');
+        setIsSubmitting(false);
+        setIsSaveOutcomeAmbiguous(true);
+        setSaveOutcomeSafetyMessage(checkpointMessage);
+        setIsSuccessful(true);
+        showSnackbar({
+          title: t('appointmentScheduled', 'Appointment scheduled'),
+          kind: 'warning',
+          isLowContrast: false,
+          subtitle: checkpointMessage,
+        });
+        try {
+          await mutateAppointments();
+        } catch (error) {
+          logError(error, 'Refresh appointments after confirmed save');
+        }
+        return;
       }
 
       setIsSubmitting(false);
@@ -924,10 +1269,25 @@ const AppointmentsForm: React.FC<
     } catch (error) {
       setIsSubmitting(false);
       const definitiveRejection = isDefinitiveAppointmentSaveRejection(error);
-      if (definitiveRejection) {
+      const checkpointWasCleared =
+        definitiveRejection && creationAttemptId
+          ? clearAppointmentCreationCheckpoint(creationAttemptId, patientUuid ?? '')
+          : definitiveRejection;
+      const outcomeSafetyMessage = definitiveRejection
+        ? t(
+            'appointmentRejectedCheckpointClearFailed',
+            'La cita no fue guardada, pero no se pudo cerrar su control de seguridad. No reintente hasta actualizar la pantalla.',
+          )
+        : t(
+            'appointmentSaveOutcomeUnknown',
+            'No se pudo confirmar si la cita fue guardada. No vuelva a enviarla; verifique primero la lista de citas.',
+          );
+      if (checkpointWasCleared) {
         saveAttemptInFlightRef.current = false;
       } else {
         setIsSaveOutcomeAmbiguous(true);
+        setSaveOutcomeSafetyMessage(outcomeSafetyMessage);
+        logError(error, 'Save appointment outcome requires verification');
       }
 
       showSnackbar({
@@ -935,18 +1295,23 @@ const AppointmentsForm: React.FC<
           context === 'editing'
             ? t('appointmentEditError', 'Error editing appointment')
             : t('appointmentFormError', 'Error scheduling appointment'),
-        kind: definitiveRejection ? 'error' : 'warning',
+        kind: checkpointWasCleared ? 'error' : 'warning',
         isLowContrast: false,
-        subtitle: definitiveRejection
+        subtitle: checkpointWasCleared
           ? getUserFacingErrorMessage(
               error,
               t('appointmentSaveRejected', 'La cita no fue guardada. Revise los datos antes de volver a intentar.'),
-              { logContext: 'Save appointment rejected' },
+              {
+                codeMessages: {
+                  [APPOINTMENT_RECURRING_EMPTY]: t(
+                    'appointmentRecurringSaveEmpty',
+                    'No se generó ninguna cita recurrente. Revise la fecha de inicio, el fin y el patrón antes de reintentar.',
+                  ),
+                },
+                logContext: 'Save appointment rejected',
+              },
             )
-          : t(
-              'appointmentSaveOutcomeUnknown',
-              'No se pudo confirmar si la cita fue guardada. No vuelva a enviarla; verifique primero la lista de citas.',
-            ),
+          : outcomeSafetyMessage,
       });
     }
   };
@@ -1062,10 +1427,13 @@ const AppointmentsForm: React.FC<
               kind="warning"
               lowContrast={false}
               title={t('appointmentSavePendingVerificationTitle', 'Resultado pendiente de verificación')}
-              subtitle={t(
-                'appointmentSaveOutcomeUnknown',
-                'No se pudo confirmar si la cita fue guardada. No vuelva a enviarla; verifique primero la lista de citas.',
-              )}
+              subtitle={
+                saveOutcomeSafetyMessage ??
+                t(
+                  'appointmentSaveOutcomeUnknown',
+                  'No se pudo confirmar si la cita fue guardada. No vuelva a enviarla; verifique primero la lista de citas.',
+                )
+              }
             />
           )}
           {Object.keys(errors).length > 0 && (
@@ -1214,7 +1582,9 @@ const AppointmentsForm: React.FC<
                     id="appointmentType"
                     invalid={!!errors?.appointmentType}
                     invalidText={errors?.appointmentType?.message}
-                    labelText={<RequiredFieldLabel label={t('selectAppointmentType', 'Select the type of appointment')} />}
+                    labelText={
+                      <RequiredFieldLabel label={t('selectAppointmentType', 'Select the type of appointment')} />
+                    }
                     onBlur={onBlur}
                     onChange={onChange}
                     ref={ref}
@@ -1266,13 +1636,18 @@ const AppointmentsForm: React.FC<
                     <Controller
                       name="appointmentDateTime"
                       control={control}
-                      render={({ field: { onChange, value } }) => (
+                      render={({ field: { onChange, value }, fieldState }) => (
                         <div className={styles.dateTimeFields}>
                           <OpenmrsDatePicker
                             id="startDatePickerInput"
-                            labelText={t('startDate', 'Start date')}
+                            data-testid="startDatePickerInput"
+                            invalid={Boolean(fieldState?.error?.message)}
+                            invalidText={fieldState?.error?.message}
+                            isReadOnly={!canEditAppointmentStartDate}
+                            isRequired
+                            labelText={<RequiredFieldLabel label={t('startDate', 'Start date')} />}
                             onChange={(startDate) => {
-                              if (!startDate) {
+                              if (!canEditAppointmentStartDate || !startDate) {
                                 return;
                               }
                               onChange({
@@ -1429,6 +1804,7 @@ const AppointmentsForm: React.FC<
                           id="datePickerInput"
                           data-testid="datePickerInput"
                           isReadOnly={!canEditAppointmentStartDate}
+                          isRequired
                           labelText={<RequiredFieldLabel label={t('date', 'Date')} />}
                           style={{ width: '100%' }}
                           invalid={Boolean(fieldState?.error?.message)}
@@ -1537,7 +1913,11 @@ const AppointmentsForm: React.FC<
           <Button className={styles.button} onClick={() => closeWorkspace()} kind="secondary">
             {t('discard', 'Discard')}
           </Button>
-          <Button className={styles.button} disabled={isSubmitting || isSaveOutcomeAmbiguous || isSuccessful} type="submit">
+          <Button
+            className={styles.button}
+            disabled={isSubmitting || isSaveOutcomeAmbiguous || isSuccessful}
+            type="submit"
+          >
             {t('saveAndClose', 'Save and close')}
           </Button>
         </ButtonSet>

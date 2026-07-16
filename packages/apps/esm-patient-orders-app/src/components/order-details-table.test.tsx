@@ -10,6 +10,7 @@ import { useOrderTypes, usePatientOrders } from '@openmrs/esm-patient-common-lib
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useReactToPrint } from 'react-to-print';
+import { SWRConfig } from 'swr';
 import { mockOrders, mockSessionDataResponse } from 'test-utils';
 
 import { configSchema } from '../config-schema';
@@ -58,6 +59,15 @@ describe('OrderDetailsTable', () => {
   const user = userEvent.setup();
   const testOrderTypeUuid = '52a447d3-a64a-11e3-9aeb-50e549534c5e';
   const drugOrderTypeUuid = '131168f4-15f5-102d-96e4-000c29c2a5d7';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
+    mockOpenmrsFetch.mockImplementation(async (url) => {
+      const uuid = String(url).match(/\/concept\/([^?]+)/)?.[1] ?? '';
+      return { data: { uuid, display: `Set ${uuid}`, setMembers: [] } };
+    });
+  });
 
   it('renders a loading state when fetching orders', async () => {
     mockUseOrderTypes.mockReturnValue({
@@ -275,8 +285,61 @@ describe('OrderDetailsTable', () => {
 
     expect(mockHandlePrint).toHaveBeenCalledTimes(1);
   });
+
+  it('keeps patient orders visible and warns when only part of the test-group catalog loads', async () => {
+    mockUseOrderTypes.mockReturnValue({
+      data: [{ uuid: testOrderTypeUuid, display: 'Test Order' }],
+      error: null,
+      isLoading: false,
+      isValidating: false,
+    });
+    mockUsePatientOrders.mockReturnValue({
+      data: mockOrders,
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+    });
+    let requestCount = 0;
+    mockOpenmrsFetch.mockImplementation(async (url) => {
+      requestCount += 1;
+      if (requestCount === 2) {
+        throw new Error('Request failed');
+      }
+      const uuid = String(url).match(/\/concept\/([^?]+)/)?.[1] ?? '';
+      return { data: { uuid, display: `Set ${uuid}`, setMembers: [] } };
+    });
+
+    renderOrderDetailsTable(true);
+
+    expect(await screen.findByText('Incomplete lab test catalog')).toBeInTheDocument();
+    expect(screen.getByRole('table')).toBeInTheDocument();
+  });
+
+  it('keeps patient orders visible and reports when every test-group label fails to load', async () => {
+    mockUseOrderTypes.mockReturnValue({
+      data: [{ uuid: testOrderTypeUuid, display: 'Test Order' }],
+      error: null,
+      isLoading: false,
+      isValidating: false,
+    });
+    mockUsePatientOrders.mockReturnValue({
+      data: mockOrders,
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+    });
+    mockOpenmrsFetch.mockRejectedValue(new Error('Request failed'));
+
+    renderOrderDetailsTable(true);
+
+    expect(await screen.findByText('Lab test catalog unavailable')).toBeInTheDocument();
+    expect(screen.getByRole('table')).toBeInTheDocument();
+  });
 });
 
-function renderOrderDetailsTable() {
-  render(<OrderDetailsTable patientUuid="mock-patient-uuid" showAddButton showPrintButton title="Patient Orders" />);
+function renderOrderDetailsTable(withIsolatedSWRCache = false) {
+  const table = (
+    <OrderDetailsTable patientUuid="mock-patient-uuid" showAddButton showPrintButton title="Patient Orders" />
+  );
+  render(withIsolatedSWRCache ? <SWRConfig value={{ provider: () => new Map() }}>{table}</SWRConfig> : table);
 }

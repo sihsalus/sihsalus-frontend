@@ -12,6 +12,7 @@ import {
   TableRow,
   Tile,
 } from '@carbon/react';
+import { getUserFacingErrorMessage } from '@openmrs/esm-framework';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -109,7 +110,11 @@ const MetasPage: React.FC = () => {
       </div>
 
       {isLoading ? <InlineLoading description={t('loadingMetas', 'Cargando metas...')} /> : null}
-      {error ? <div className={styles.errorBanner}>{error.message}</div> : null}
+      {error ? (
+        <div className={styles.errorBanner}>
+          {getUserFacingErrorMessage(error, t('metasLoadFailed', 'No se pudieron cargar las metas'))}
+        </div>
+      ) : null}
 
       {!isLoading && !error ? (
         rows.length ? (

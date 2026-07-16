@@ -43,7 +43,7 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
   const [selectedVersionId, setSelectedVersionId] = useState<string>(initialMeta?.indicador_version_id ?? '');
   const [anio, setAnio] = useState<number | ''>(initialMeta?.anio ?? '');
   const [valorMeta, setValorMeta] = useState<number | ''>(initialMeta?.valor_meta ?? '');
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -54,7 +54,7 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
     setSelectedVersionId(initialMeta?.indicador_version_id ?? '');
     setAnio(initialMeta?.anio ?? '');
     setValorMeta(initialMeta?.valor_meta ?? '');
-    setValidationError(null);
+    setValidationMessage(null);
   }, [isOpen, indicators, initialMeta]);
 
   const versiones = selectedIndicator?.versiones ?? [];
@@ -88,10 +88,10 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    setValidationError(null);
+    setValidationMessage(null);
     const error = validate();
     if (error) {
-      setValidationError(error);
+      setValidationMessage(error);
       return;
     }
     await onSubmit({
@@ -118,9 +118,9 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
       onRequestSubmit={handleSubmit}
     >
       <div style={{ display: 'grid', gap: '1.25rem' }}>
-        {validationError ? (
+        {validationMessage ? (
           <div role="alert" style={{ color: '#da1e28' }}>
-            {validationError}
+            {validationMessage}
           </div>
         ) : null}
 

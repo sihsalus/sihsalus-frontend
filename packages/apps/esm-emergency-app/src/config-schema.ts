@@ -235,13 +235,15 @@ export const configSchema = {
      */
     emergencyConceptUuid: {
       _type: Type.ConceptUuid,
-      _default: 'b0cdc710-4850-4ff6-a07f-8a1130aefdd9',
-      _description: 'UUID del concepto "Emergencia (Pre-triaje)" para clasificación inicial.',
+      _default: 'e724bdb6-2c75-4b6f-a00c-d43f2c372974',
+      _description:
+        'UUID del concepto "Emergencia" (clasificación pre-triaje). Debe ser miembro del set Clasificación Pre-Triaje de la cola de triaje.',
     },
     urgencyConceptUuid: {
       _type: Type.ConceptUuid,
-      _default: '0f0baaea-9613-45c3-8a39-c2f5e14f4bbf',
-      _description: 'UUID del concepto "Urgencia (Pre-triaje)" para clasificación inicial.',
+      _default: '89f8fab4-37ab-48bc-a84c-5da98a15b985',
+      _description:
+        'UUID del concepto "Urgencia" (clasificación pre-triaje). Debe ser miembro del set Clasificación Pre-Triaje de la cola de triaje.',
     },
   },
 

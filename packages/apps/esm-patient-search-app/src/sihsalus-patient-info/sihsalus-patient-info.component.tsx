@@ -109,6 +109,7 @@ function PatientIdentifiers({ identifiers }: { identifiers?: fhir.Identifier[] }
 
 export function SihsalusPatientInfo({ patient, renderedFrom }: SihsalusPatientInfoProps) {
   const gender = getGenderDisplay(patient.gender);
+  const showBirthDate = renderedFrom !== 'patient-search';
   const extensionState = useMemo(() => ({ patientUuid: patient.id, patient, renderedFrom }), [patient, renderedFrom]);
 
   return (
@@ -127,8 +128,12 @@ export function SihsalusPatientInfo({ patient, renderedFrom }: SihsalusPatientIn
         {patient.birthDate ? (
           <>
             <span>{age(patient.birthDate)}</span>
-            <span className={styles.patientInfoSeparator}>&middot;</span>
-            <span>{formatPartialDate(patient.birthDate, { time: false })}</span>
+            {showBirthDate ? (
+              <>
+                <span className={styles.patientInfoSeparator}>&middot;</span>
+                <span>{formatPartialDate(patient.birthDate, { time: false })}</span>
+              </>
+            ) : null}
             <span className={styles.patientInfoSeparator}>&middot;</span>
           </>
         ) : null}

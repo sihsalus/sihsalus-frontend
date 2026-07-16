@@ -31,10 +31,12 @@ import {
   WarningAltFilled,
 } from '@carbon/react/icons';
 import { isDesktop, restBaseUrl, useSession } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   APP_STOCKMANAGEMENT_REPORTS_VIEW,
+  stockManagementReportsEditPrivilege,
   TASK_STOCKMANAGEMENT_REPORTS_MUTATE,
   URL_BATCH_JOB_ARTIFACT,
 } from '../../constants';
@@ -173,15 +175,17 @@ const StockReports: React.FC = () => {
               // onClick={(e) => onViewItem(batchJob.uuid, e)}
             />
           )}
-          <Button
-            type="button"
-            size="sm"
-            className="submitButton clear-padding-margin"
-            iconDescription={'Copy'}
-            kind="ghost"
-            renderIcon={Copy}
-            // onClick={() => onCloneReportClick(batchJob.uuid)}
-          />
+          <RequirePrivilege privilege={stockManagementReportsEditPrivilege} hideUnauthorized>
+            <Button
+              type="button"
+              size="sm"
+              className="submitButton clear-padding-margin"
+              iconDescription={'Copy'}
+              kind="ghost"
+              renderIcon={Copy}
+              // onClick={() => onCloneReportClick(batchJob.uuid)}
+            />
+          </RequirePrivilege>
           {batchJob?.status === BatchJobStatusCompleted && (batchJob.outputArtifactSize ?? 0) > 0 && (
             <Button
               type="button"
@@ -227,7 +231,11 @@ const StockReports: React.FC = () => {
                     {t('refresh', 'Refresh')}
                   </TableToolbarAction>
                 </TableToolbarMenu>
-                {canCreateReport && <NewReportActionButton />}
+                {canCreateReport && (
+                  <RequirePrivilege privilege={stockManagementReportsEditPrivilege} hideUnauthorized>
+                    <NewReportActionButton />
+                  </RequirePrivilege>
+                )}
               </TableToolbarContent>
             </TableToolbar>
             <Table {...getTableProps()}>

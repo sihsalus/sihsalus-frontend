@@ -38,7 +38,7 @@
   "clearAllQueueEntriesWarningMessage": "Borrar todas las entradas de las colas quitará a todos los pacientes de ellas",
   "clearQueue": "Borrar cola",
   "clearQueueEntries": "Borrar entradas de la cola",
-  "clinicMetrics": "Métricas clínicas",
+  "clinicMetrics": "Métricas de atención en colas",
   "comment": "Comentario",
   "comingFrom": "Procedente de",
   "configurePriorities": "Por favor, configure las prioridades para continuar.",

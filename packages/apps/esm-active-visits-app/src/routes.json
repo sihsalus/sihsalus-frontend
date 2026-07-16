@@ -20,12 +20,14 @@
     {
       "name": "active-visits-tile",
       "slot": "home-metrics-tiles-slot",
-      "component": "homeActiveVisitsTile"
+      "component": "homeActiveVisitsTile",
+      "privileges": "app:home.tabla.consultas.activas"
     },
     {
       "name": "total-visits-tile",
       "slot": "home-metrics-tiles-slot",
-      "component": "homeTotalVisitsTile"
+      "component": "homeTotalVisitsTile",
+      "privileges": "app:home.tabla.consultas.activas"
     }
   ],
   "pages": []

@@ -1,20 +1,62 @@
-import { getWorkspaceRegistration } from '@openmrs/esm-extensions';
-import { describe, expect, it } from 'vitest';
-import { tryRegisterWorkspace } from './components';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-describe('tryRegisterWorkspace', () => {
-  it('preserves the workspace privilege requirements from routes.json', () => {
-    const privileges = ['view-clinical-data', 'edit-clinical-data'];
+const mockRegisterModal = vi.hoisted(() => vi.fn());
+const mockRegisterWorkspace = vi.hoisted(() => vi.fn());
 
-    tryRegisterWorkspace('@openmrs/test-app', {
-      name: 'protected-routes-workspace',
-      title: 'Protected workspace',
-      component: 'protectedWorkspace',
-      type: 'form',
-      groups: [],
-      privileges,
+vi.mock('@openmrs/esm-extensions', () => ({
+  attach: vi.fn(),
+  registerExtension: vi.fn(),
+  registerModal: mockRegisterModal,
+  registerWorkspace: mockRegisterWorkspace,
+  registerWorkspaceGroup: vi.fn(),
+  registerWorkspaceGroups2: vi.fn(),
+  registerWorkspaces2: vi.fn(),
+  registerWorkspaceWindows2: vi.fn(),
+}));
+
+vi.mock('@openmrs/esm-feature-flags', () => ({
+  registerFeatureFlag: vi.fn(),
+}));
+
+vi.mock('./load-lifecycles', () => ({
+  loadLifeCycles: vi.fn(),
+}));
+
+import { tryRegisterModal, tryRegisterWorkspace } from './components';
+
+describe('privileged component registration', () => {
+  beforeEach(() => {
+    mockRegisterModal.mockClear();
+    mockRegisterWorkspace.mockClear();
+  });
+
+  it('preserves modal privileges in the runtime registry', () => {
+    tryRegisterModal('@openmrs/test', {
+      name: 'protected-modal',
+      component: 'protectedModal',
+      privileges: 'app:protected',
     });
 
-    expect(getWorkspaceRegistration('protected-routes-workspace').privileges).toEqual(privileges);
+    expect(mockRegisterModal).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'protected-modal', privileges: 'app:protected' }),
+    );
+  });
+
+  it('preserves workspace privileges in the runtime registry', () => {
+    tryRegisterWorkspace('@openmrs/test', {
+      name: 'protected-workspace',
+      component: 'protectedWorkspace',
+      title: 'Protected workspace',
+      type: 'form',
+      groups: [],
+      privileges: ['app:protected', 'Task: mutate'],
+    });
+
+    expect(mockRegisterWorkspace).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'protected-workspace',
+        privileges: ['app:protected', 'Task: mutate'],
+      }),
+    );
   });
 });

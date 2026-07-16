@@ -7,6 +7,16 @@
   margin: layout.$spacing-05;
 }
 
+.statusSwitcher {
+  width: 100%;
+  margin-bottom: layout.$spacing-05;
+  overflow-x: auto;
+
+  :global(.cds--content-switcher-btn) {
+    min-width: 10rem;
+  }
+}
+
 .container {
   border: 1px solid colors.$gray-20;
 }
@@ -31,24 +41,6 @@
 
   :global(.cds--inline-loading) {
     justify-content: end;
-  }
-}
-
-.filterContainer {
-  label {
-    margin-right: layout.$spacing-03 !important;
-  }
-
-  :global(.cds--dropdown__wrapper--inline) {
-    gap: 0;
-  }
-
-  :global(.cds--list-box__menu-icon) {
-    height: layout.$spacing-05;
-  }
-
-  :global(.cds--dropdown--inline) :global(.cds--list-box__field) {
-    min-width: 12rem;
   }
 }
 

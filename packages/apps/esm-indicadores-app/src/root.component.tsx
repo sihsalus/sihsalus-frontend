@@ -1,5 +1,5 @@
 import { InlineNotification } from '@carbon/react';
-import { AppErrorBoundary } from '@sihsalus/esm-rbac';
+import { AppErrorBoundary, modulePrivileges, RequireModulePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom';
 
@@ -13,7 +13,7 @@ import ResultadosPage from './pages/ResultadosPage';
 
 const trimTrailingSlash = (path: string) => path.replace(/\/+$/, '');
 
-const RootComponent: React.FC = () => {
+const IndicatorsContent: React.FC = () => {
   const { isMockMode, errorMessage } = useMockMode();
   useIndicatorsHealth(); // side-effect: checks backend health on mount
   const spaBase = trimTrailingSlash(window.getOpenmrsSpaBase?.() ?? globalThis.spaBase ?? '/openmrs/spa');
@@ -61,5 +61,11 @@ const RootComponent: React.FC = () => {
     </AppErrorBoundary>
   );
 };
+
+const RootComponent: React.FC = () => (
+  <RequireModulePrivilege privilege={modulePrivileges.indicators}>
+    <IndicatorsContent />
+  </RequireModulePrivilege>
+);
 
 export default RootComponent;

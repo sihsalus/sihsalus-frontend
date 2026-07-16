@@ -37,7 +37,7 @@ describe('Appointment metrics', () => {
     render(<AppointmentsMetrics appointmentServiceTypes={['consultation-service-uuid']} />);
 
     await screen.findByText(/appointment metrics/i);
-    expect(screen.getByText(/scheduled appointments/i)).toBeInTheDocument();
+    expect(screen.getByText(/appointments scheduled today/i)).toBeInTheDocument();
     expect(screen.getByText(/^appointments$/i)).toBeInTheDocument();
     expect(screen.getByText(/16/i)).toBeInTheDocument();
     expect(screen.getAllByText(/^4$/i)).toHaveLength(2);

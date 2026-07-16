@@ -25,9 +25,15 @@ import {
 } from '@carbon/react';
 import { ArrowRight } from '@carbon/react/icons';
 import { isDesktop, restBaseUrl } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, StockFilters } from '../constants';
+import {
+  DATE_PICKER_CONTROL_FORMAT,
+  DATE_PICKER_FORMAT,
+  StockFilters,
+  stockManagementOperationsEditPrivilege,
+} from '../constants';
 import { ResourceRepresentation } from '../core/api/api';
 import { formatDisplayDate } from '../core/utils/datetimeUtils';
 import {
@@ -133,8 +139,15 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
           id: stockOperation?.uuid,
           key: `key-${stockOperation?.uuid}`,
           operationTypeName: translateStockOperationType(t, stockOperation?.operationTypeName),
-          operationNumber: (
-            <EditStockOperationActionMenu stockOperation={stockOperation} showIcon={false} showprops={true} />
+          operationNumber: stockOperation.permission?.canEdit ? (
+            <RequirePrivilege
+              privilege={stockManagementOperationsEditPrivilege}
+              fallback={<span>{stockOperation.operationNumber}</span>}
+            >
+              <EditStockOperationActionMenu stockOperation={stockOperation} showIcon={false} showprops={true} />
+            </RequirePrivilege>
+          ) : (
+            <span>{stockOperation.operationNumber}</span>
           ),
           stockOperationItems: {
             commonNames,
@@ -158,7 +171,11 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
             stockOperation?.responsiblePersonFamilyName ?? stockOperation?.responsiblePersonOther ?? ''
           } ${stockOperation?.responsiblePersonGivenName ?? ''}`,
           operationDate: formatDisplayDate(stockOperation?.operationDate),
-          actions: <EditStockOperationActionMenu stockOperation={stockOperation} showIcon={true} showprops={false} />,
+          actions: stockOperation.permission?.canEdit ? (
+            <RequirePrivilege privilege={stockManagementOperationsEditPrivilege} hideUnauthorized>
+              <EditStockOperationActionMenu stockOperation={stockOperation} showIcon={true} showprops={false} />
+            </RequirePrivilege>
+          ) : null,
         };
       }),
     [items, t],
@@ -231,7 +248,9 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                   </TableToolbarAction>
                 </TableToolbarMenu>
 
-                <StockOperationTypesSelector />
+                <RequirePrivilege privilege={stockManagementOperationsEditPrivilege} hideUnauthorized>
+                  <StockOperationTypesSelector />
+                </RequirePrivilege>
               </TableToolbarContent>
             </TableToolbar>
             <Table {...getTableProps()}>

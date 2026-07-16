@@ -66,8 +66,7 @@
       "component": "appMenuButton",
       "online": true,
       "offline": true,
-      "slot": "top-nav-app-menu-slot",
-      "privileges": "app:opciones.selectorModulos"
+      "slot": "top-nav-app-menu-slot"
     }
   ],
   "modals": [

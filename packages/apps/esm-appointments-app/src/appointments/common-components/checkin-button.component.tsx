@@ -245,7 +245,7 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
 
       await changeAppointmentStatus(AppointmentStatus.CHECKEDIN, appointment.uuid);
       showSnackbar({
-        title: t('checkedIn', 'Cita admitida'),
+        title: t('checkedIn', 'Cita en progreso'),
         subtitle,
         kind: 'success',
         isLowContrast: true,

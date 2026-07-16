@@ -1,3 +1,4 @@
+import esTranslations from '../../translations/es.json';
 import { AppointmentKind, AppointmentStatus } from '../types';
 import { canTransition, getAppointmentKindLabel, getAppointmentStatusLabel, isAppointmentEditable } from './functions';
 
@@ -51,8 +52,20 @@ describe('appointment labels', () => {
   const t = (_key: string, defaultValue: string) => defaultValue;
 
   it('uses localized labels for known backend values', () => {
-    expect(getAppointmentStatusLabel(AppointmentStatus.CHECKEDIN, t)).toBe('Cita admitida');
+    expect(getAppointmentStatusLabel(AppointmentStatus.CHECKEDIN, t)).toBe('Cita en progreso');
     expect(getAppointmentKindLabel(AppointmentKind.WALKIN, t)).toBe('Sin cita');
+  });
+
+  it('uses grammatical Spanish labels for appointment tabs and collections', () => {
+    expect(esTranslations.checkedIn).toBe('Cita en progreso');
+    expect(esTranslations.expectedAppointmentsTab).toBe('Esperadas');
+    expect(esTranslations.inProgressAppointmentsTab).toBe('En progreso');
+    expect(esTranslations.completedAppointmentsTab).toBe('Completadas');
+    expect(esTranslations.cancelledAppointmentsTab).toBe('Canceladas');
+    expect(esTranslations.expectedAppointments).toBe('Citas esperadas');
+    expect(esTranslations.appointmentsInProgress).toBe('Citas en progreso');
+    expect(esTranslations.completedAppointments).toBe('Citas completadas');
+    expect(esTranslations.cancelledAppointments).toBe('Citas canceladas');
   });
 
   it('does not expose unknown backend values directly', () => {

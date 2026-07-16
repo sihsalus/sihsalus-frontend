@@ -1,4 +1,6 @@
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useMemo } from 'react';
+import { stockManagementOperationsEditPrivilege } from '../constants';
 import { type StockOperationDTO } from '../core/api/types/stockOperation/StockOperationDTO';
 import {
   OperationType,
@@ -36,42 +38,44 @@ const StockoperationActions: React.FC<Props> = ({ stockOperation, stockOperation
         (stockOperation?.permission?.isRequisitionAndCanIssueStock ?? false) ||
         stockOperation.permission?.isRequisitionAndCanIssueStock) && (
         <div className={styles.actionBtns}>
-          <>
-            {!stockOperation.permission?.canEdit && stockOperation.permission?.canApprove && (
-              <>
-                {!operationTypePermision.requiresDispatchAcknowledgement && (
-                  <StockOperationApprovalButton operation={stockOperation} />
-                )}
+          <RequirePrivilege privilege={stockManagementOperationsEditPrivilege} hideUnauthorized>
+            <>
+              {!stockOperation.permission?.canEdit && stockOperation.permission?.canApprove && (
+                <>
+                  {!operationTypePermision.requiresDispatchAcknowledgement && (
+                    <StockOperationApprovalButton operation={stockOperation} />
+                  )}
 
-                {operationTypePermision.requiresDispatchAcknowledgement && (
-                  <StockOperationApproveDispatchButton operation={stockOperation} />
-                )}
+                  {operationTypePermision.requiresDispatchAcknowledgement && (
+                    <StockOperationApproveDispatchButton operation={stockOperation} />
+                  )}
 
-                <StockOperationRejectButton operation={stockOperation} />
-                <StockOperationReturnButton operation={stockOperation} />
-                <StockOperationCancelButton operation={stockOperation} />
-              </>
-            )}
+                  <StockOperationRejectButton operation={stockOperation} />
+                  <StockOperationReturnButton operation={stockOperation} />
+                  <StockOperationCancelButton operation={stockOperation} />
+                </>
+              )}
 
-            {!stockOperation.permission?.canEdit && stockOperation.permission?.canReceiveItems && (
-              <>
-                <StockOperationCompleteDispatchButton operation={stockOperation} reason={false} />
-                <StockOperationReturnButton operation={stockOperation} />
-              </>
-            )}
+              {!stockOperation.permission?.canEdit && stockOperation.permission?.canReceiveItems && (
+                <>
+                  <StockOperationCompleteDispatchButton operation={stockOperation} reason={false} />
+                  <StockOperationReturnButton operation={stockOperation} />
+                </>
+              )}
 
-            {stockOperation.permission?.canEdit && <StockOperationCancelButton operation={stockOperation} />}
-            {stockOperation.permission?.isRequisitionAndCanIssueStock && (
-              <StockOperationIssueStockButton operation={stockOperation} />
-            )}
-            {(stockOperation.permission?.isRequisitionAndCanIssueStock ||
-              stockOperation.operationType === OperationType.STOCK_ISSUE_OPERATION_TYPE ||
-              stockOperation.operationType === OperationType.REQUISITION_OPERATION_TYPE ||
-              stockOperation.operationType === OperationType.RECEIPT_OPERATION_TYPE ||
-              stockOperation.operationType === OperationType.TRANSFER_OUT_OPERATION_TYPE) && (
-              <StockOperationPrintButton operation={stockOperation} />
-            )}
-          </>
+              {stockOperation.permission?.canEdit && <StockOperationCancelButton operation={stockOperation} />}
+              {stockOperation.permission?.isRequisitionAndCanIssueStock && (
+                <StockOperationIssueStockButton operation={stockOperation} />
+              )}
+            </>
+          </RequirePrivilege>
+          {(stockOperation.permission?.isRequisitionAndCanIssueStock ||
+            stockOperation.operationType === OperationType.STOCK_ISSUE_OPERATION_TYPE ||
+            stockOperation.operationType === OperationType.REQUISITION_OPERATION_TYPE ||
+            stockOperation.operationType === OperationType.RECEIPT_OPERATION_TYPE ||
+            stockOperation.operationType === OperationType.TRANSFER_OUT_OPERATION_TYPE) && (
+            <StockOperationPrintButton operation={stockOperation} />
+          )}
         </div>
       )}
     </>

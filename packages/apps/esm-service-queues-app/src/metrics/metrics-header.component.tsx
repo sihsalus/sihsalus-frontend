@@ -8,22 +8,21 @@ import styles from './metrics-header.scss';
 
 const MetricsHeader = () => {
   const { t } = useTranslation();
-  const { selectedServiceUuid, selectedQueueLocationUuid, selectedQueueStatusUuid } = useServiceQueuesStore();
+  const { selectedServiceUuid, selectedQueueLocationUuid } = useServiceQueuesStore();
 
   const searchCriteria = useMemo(
     () => ({
       service: selectedServiceUuid,
       location: selectedQueueLocationUuid,
       isEnded: false,
-      status: selectedQueueStatusUuid,
     }),
-    [selectedServiceUuid, selectedQueueLocationUuid, selectedQueueStatusUuid],
+    [selectedServiceUuid, selectedQueueLocationUuid],
   );
   const { queueEntries } = useQueueEntries(searchCriteria);
 
   return (
     <div className={styles.metricsContainer}>
-      <span className={styles.metricsTitle}>{t('clinicMetrics', 'Clinic metrics')}</span>
+      <span className={styles.metricsTitle}>{t('clinicMetrics', 'Queue service metrics')}</span>
       <div className={styles.metricsContent}>
         <ClearQueueEntries queueEntries={queueEntries} />
         <AddPatientToQueueButton />

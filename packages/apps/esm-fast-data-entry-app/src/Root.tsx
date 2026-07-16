@@ -1,3 +1,4 @@
+import { modulePrivileges, RequireModulePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { appPath } from './constant';
@@ -8,15 +9,17 @@ const GroupFormEntryWorkflow = React.lazy(() => import('./group-form-entry-workf
 
 const Root = () => {
   return (
-    <main>
-      <BrowserRouter basename={appPath}>
-        <Routes>
-          <Route path="/" element={<FormsPage />} />
-          <Route path="/form/:formUuid" element={<FormEntryWorkflow />} />
-          <Route path="/groupform/:formUuid" element={<GroupFormEntryWorkflow />} />
-        </Routes>
-      </BrowserRouter>
-    </main>
+    <RequireModulePrivilege privilege={modulePrivileges.forms}>
+      <main>
+        <BrowserRouter basename={appPath}>
+          <Routes>
+            <Route path="/" element={<FormsPage />} />
+            <Route path="/form/:formUuid" element={<FormEntryWorkflow />} />
+            <Route path="/groupform/:formUuid" element={<GroupFormEntryWorkflow />} />
+          </Routes>
+        </BrowserRouter>
+      </main>
+    </RequireModulePrivilege>
   );
 };
 

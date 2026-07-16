@@ -297,6 +297,10 @@ export type WorkspaceDefinition = {
    * The name of the component exported by this frontend module.
    */
   component: string;
+  /**
+   * The privilege or privileges required to launch this workspace.
+   */
+  privileges?: string | Array<string>;
 };
 
 export interface WorkspaceGroupDefinition {

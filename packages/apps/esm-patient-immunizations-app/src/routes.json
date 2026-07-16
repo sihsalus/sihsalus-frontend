@@ -11,8 +11,8 @@
       "component": "vaccinationScheduleAppMenuItem",
       "order": 35,
       "online": true,
-      "offline": true,
-      "privileges": "app:hoja.clinica.inmunizaciones.editar"
+      "offline": false,
+      "privileges": "app:gestorCalendarioVacunacion"
     },
     {
       "name": "vacunacion-overview-widget",

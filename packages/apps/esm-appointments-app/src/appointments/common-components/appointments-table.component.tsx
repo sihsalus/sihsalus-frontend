@@ -32,10 +32,10 @@ import {
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
+import classNames from 'classnames';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import utc from 'dayjs/plugin/utc';
-import classNames from 'classnames';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -45,7 +45,7 @@ import { EmptyState } from '../../empty-state/empty-state.component';
 import { isAppointmentEditable } from '../../helpers';
 import { exportAppointmentsToSpreadsheet } from '../../helpers/excel';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
-import { type Appointment } from '../../types';
+import { type Appointment, AppointmentStatus } from '../../types';
 import AppointmentDetails from '../details/appointment-details.component';
 import { getPageSizes, useAppointmentSearchResults } from '../utils';
 
@@ -56,6 +56,7 @@ dayjs.extend(utc);
 dayjs.extend(isToday);
 
 interface AppointmentsTableProps {
+  appointmentStatus?: string;
   appointments: Array<Appointment>;
   isLoading: boolean;
   tableHeading: string;
@@ -63,6 +64,7 @@ interface AppointmentsTableProps {
 }
 
 const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
+  appointmentStatus,
   appointments,
   isLoading,
   tableHeading,
@@ -92,12 +94,34 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
     tableHeading === 'todayAppointments' ||
     /today/i.test(tableHeading) ||
     /hoy/i.test(translatedTableHeading);
+  const sectionTitlesByStatus: Partial<Record<AppointmentStatus, string>> = {
+    [AppointmentStatus.SCHEDULED]: t('expectedAppointments', 'Expected appointments'),
+    [AppointmentStatus.CHECKEDIN]: t('appointmentsInProgress', 'Appointments in progress'),
+    [AppointmentStatus.COMPLETED]: t('completedAppointments', 'Completed appointments'),
+    [AppointmentStatus.CANCELLED]: t('cancelledAppointments', 'Cancelled appointments'),
+    [AppointmentStatus.MISSED]: t('missedAppointments', 'Missed appointments'),
+  };
+  const sectionTitlesByConfigKey: Record<string, string | undefined> = {
+    expected: sectionTitlesByStatus[AppointmentStatus.SCHEDULED],
+    expectedAppointmentsTab: sectionTitlesByStatus[AppointmentStatus.SCHEDULED],
+    checkedIn: sectionTitlesByStatus[AppointmentStatus.CHECKEDIN],
+    inProgressAppointmentsTab: sectionTitlesByStatus[AppointmentStatus.CHECKEDIN],
+    completed: sectionTitlesByStatus[AppointmentStatus.COMPLETED],
+    completedAppointmentsTab: sectionTitlesByStatus[AppointmentStatus.COMPLETED],
+    cancelled: sectionTitlesByStatus[AppointmentStatus.CANCELLED],
+    cancelledAppointmentsTab: sectionTitlesByStatus[AppointmentStatus.CANCELLED],
+    missed: sectionTitlesByStatus[AppointmentStatus.MISSED],
+    missedAppointmentsTab: sectionTitlesByStatus[AppointmentStatus.MISSED],
+  };
+  const statusSectionTitle = appointmentStatus
+    ? sectionTitlesByStatus[appointmentStatus as AppointmentStatus]
+    : undefined;
   const appointmentSectionTitle = isTodayAppointmentsTable
-    ? t('todaysAppointments', 'Today appointments')
-    : `${translatedTableHeading} ${t('appointments', 'Appointments')}`;
-  const emptyDisplayText = isTodayAppointmentsTable
-    ? t('appointmentsScheduledForToday', 'appointments scheduled for today')
-    : appointmentSectionTitle.toLocaleLowerCase();
+    ? t('scheduledForToday', 'Appointments scheduled today')
+    : (statusSectionTitle ??
+      sectionTitlesByConfigKey[tableHeading] ??
+      `${translatedTableHeading} ${t('appointments', 'Appointments')}`);
+  const emptyDisplayText = appointmentSectionTitle.toLocaleLowerCase();
   const headerData = [
     {
       header: t('patientName', 'Patient name'),

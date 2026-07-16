@@ -35,6 +35,11 @@ import {
 } from './queue-fields.resource';
 import styles from './queue-fields.scss';
 
+// Same visual convention as patient registration and the appointments form.
+function RequiredFieldLabel({ label }: { label: string }) {
+  return <span className={styles.requiredLabel}>{label}</span>;
+}
+
 export interface QueueFieldsProps {
   currentServiceQueueUuid?: string;
   currentQueueLocationUuid?: string;
@@ -333,7 +338,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
           ) : (
             <Select
               disabled={Boolean(currentQueueLocationUuid)}
-              labelText={t('selectQueueLocation', 'Select a queue location')}
+              labelText={<RequiredFieldLabel label={t('selectQueueLocation', 'Select a queue location')} />}
               id="queueLocation"
               name="queueLocation"
               invalid={showValidationErrors && !selectedQueueLocationIsConfigured}
@@ -381,7 +386,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
         ) : (
           <Select
             disabled={Boolean(currentServiceQueueUuid)}
-            labelText={t('selectService', 'Select a service')}
+            labelText={<RequiredFieldLabel label={t('selectService', 'Select a service')} />}
             id="service"
             name="service"
             invalid={showValidationErrors && !selectedServiceIsConfigured}
@@ -405,7 +410,9 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
 
       {selectedService ? (
         <section className={styles.section}>
-          <div className={styles.sectionTitle}>{t('priority', 'Priority')}</div>
+          <div className={styles.sectionTitle}>
+            <RequiredFieldLabel label={t('priority', 'Priority')} />
+          </div>
           {isLoadingQueues ? (
             <RadioButtonGroup id="priority-skeleton" name="priority-skeleton">
               <RadioButtonSkeleton />

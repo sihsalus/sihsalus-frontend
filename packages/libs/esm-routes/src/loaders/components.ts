@@ -105,8 +105,8 @@ To fix this, ensure that you define a 'component' field inside the modal definit
   registerModal({
     name,
     moduleName: appName,
-    load: () => loadLifeCycles(appName, modal.component),
     privileges: modal.privileges,
+    load: () => loadLifeCycles(appName, modal.component),
   });
 }
 

@@ -11,3 +11,9 @@
 .section {
   margin: layout.$spacing-07 layout.$spacing-05 0;
 }
+
+// Same required-field marker used by patient registration and the appointments form.
+.requiredLabel::after {
+  content: ' *';
+  color: $danger;
+}

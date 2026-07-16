@@ -113,6 +113,30 @@ describe('AppointmentsTable', () => {
     expect(getByTextWithMarkup('There are no scheduled appointments to display')).toBeInTheDocument();
   });
 
+  it.each([
+    [AppointmentStatus.SCHEDULED, 'expected', 'Expected appointments'],
+    [AppointmentStatus.CHECKEDIN, 'checkedIn', 'Appointments in progress'],
+    [AppointmentStatus.COMPLETED, 'completed', 'Completed appointments'],
+    [AppointmentStatus.CANCELLED, 'cancelled', 'Cancelled appointments'],
+  ])(
+    'uses a grammatical collection heading for %s appointments',
+    async (appointmentStatus, tableHeading, heading) => {
+      renderAppointmentsTable({ appointmentStatus, tableHeading });
+
+      await screen.findByRole('heading', { name: heading });
+
+      expect(getByTextWithMarkup(`There are no ${heading.toLocaleLowerCase()} to display`)).toBeInTheDocument();
+    },
+  );
+
+  it('labels the current-day collection as appointments scheduled today', async () => {
+    renderAppointmentsTable({ tableHeading: 'todaysAppointments' });
+
+    await screen.findByRole('heading', { name: 'Appointments scheduled today' });
+
+    expect(getByTextWithMarkup('There are no appointments scheduled today to display')).toBeInTheDocument();
+  });
+
   it('renders a loading state when fetching data', () => {
     renderAppointmentsTable({ isLoading: true });
 

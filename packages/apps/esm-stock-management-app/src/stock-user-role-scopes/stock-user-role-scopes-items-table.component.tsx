@@ -19,9 +19,10 @@ import {
 } from '@carbon/react';
 import { ArrowDownLeft, ArrowLeft } from '@carbon/react/icons';
 import { isDesktop, restBaseUrl, useSession } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { URL_USER_ROLE_SCOPE } from '../constants';
+import { stockManagementRoleScopesEditPrivilege, URL_USER_ROLE_SCOPE } from '../constants';
 import { ResourceRepresentation } from '../core/api/api';
 import { formatDisplayDate } from '../core/utils/datetimeUtils';
 import { translateStockLocation, translateStockOperationType } from '../core/utils/translationUtils';
@@ -111,9 +112,14 @@ function StockUserRoleScopesItems() {
           currentUser.user.uuid === userRoleScope.userUuid ? (
             `${userRoleScope?.userFamilyName} ${userRoleScope.userGivenName}`
           ) : (
-            <Link
-              href={URL_USER_ROLE_SCOPE(userRoleScope?.uuid)}
-            >{`${userRoleScope?.userFamilyName} ${userRoleScope.userGivenName}`}</Link>
+            <RequirePrivilege
+              privilege={stockManagementRoleScopesEditPrivilege}
+              fallback={<span>{`${userRoleScope?.userFamilyName} ${userRoleScope.userGivenName}`}</span>}
+            >
+              <Link
+                href={URL_USER_ROLE_SCOPE(userRoleScope?.uuid)}
+              >{`${userRoleScope?.userFamilyName} ${userRoleScope.userGivenName}`}</Link>
+            </RequirePrivilege>
           ),
 
         roleName: userRoleScope?.role,
@@ -142,10 +148,10 @@ function StockUserRoleScopesItems() {
         actions: (
           <div style={{ display: 'flex' }}>
             {!isCurrentUser && (
-              <>
+              <RequirePrivilege privilege={stockManagementRoleScopesEditPrivilege} hideUnauthorized>
                 <EditStockUserRoleActionsMenu data={items[index]} />
                 <StockUserScopeDeleteActionMenu uuid={items[index].uuid} />
-              </>
+              </RequirePrivilege>
             )}
           </div>
         ),
@@ -187,7 +193,9 @@ function StockUserRoleScopesItems() {
                     {t('refresh', 'Refresh')}
                   </TableToolbarAction>
                 </TableToolbarMenu>
-                <AddStockUserRoleScopeActionButton />
+                <RequirePrivilege privilege={stockManagementRoleScopesEditPrivilege} hideUnauthorized>
+                  <AddStockUserRoleScopeActionButton />
+                </RequirePrivilege>
               </TableToolbarContent>
             </TableToolbar>
             <Table {...getTableProps()}>

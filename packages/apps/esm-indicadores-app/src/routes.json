@@ -14,6 +14,7 @@
       "name": "indicadores-app-menu-item",
       "slot": "app-menu-item-slot",
       "component": "indicadoresAppMenuItem",
+      "privileges": "app:indicadores",
       "order": 60
     }
   ]

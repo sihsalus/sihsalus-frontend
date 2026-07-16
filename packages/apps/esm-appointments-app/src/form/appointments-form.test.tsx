@@ -7,8 +7,8 @@ import {
   useConfig,
   useLocations,
   usePatient,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -517,6 +517,32 @@ describe('AppointmentForm', () => {
     // Picking a service whose durationMins is null keeps the 30-minute fallback.
     await user.selectOptions(screen.getByRole('combobox', { name: /^select a service$/i }), ['svc-no-duration-uuid']);
     expect(durationInput).toHaveValue(30);
+  });
+
+  it('does not use the login facility as the appointment location and defaults to the selected service location', async () => {
+    const user = userEvent.setup();
+    const serviceLocation = mockLocations.data.results.at(1);
+    const baseService = mockUseAppointmentServiceData.at(0);
+    if (!serviceLocation || !baseService) {
+      throw new Error('Appointment service and operational location fixtures are required');
+    }
+    const service = {
+      ...baseService,
+      location: serviceLocation,
+    };
+    mockOpenmrsFetch.mockResolvedValue({ data: [service] } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+
+    const locationSelect = screen.getByRole('combobox', { name: /select a location/i });
+    expect(locationSelect).toHaveValue('');
+    expect(locationSelect).not.toHaveValue(mockSession.data.sessionLocation.uuid);
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), [service.name]);
+
+    expect(locationSelect).toHaveValue(serviceLocation.uuid);
   });
 
   it('prevents scientific notation, signs, and decimals in appointment duration', async () => {

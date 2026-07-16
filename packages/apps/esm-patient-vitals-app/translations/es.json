@@ -67,6 +67,7 @@
   "noDataRecorded": "No se han registrado datos para este paciente",
   "normalRange": "Rango normal",
   "noSessionLocation": "No se pudo determinar la ubicación de la sesión. Por favor, inicie sesión nuevamente.",
+  "noVisitLocation": "No se pudo determinar la ubicación de la consulta activa.",
   "notAvailable": "No disponible",
   "notes": "Notas",
   "other": "Otro",

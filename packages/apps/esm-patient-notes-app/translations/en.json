@@ -1,4 +1,5 @@
 {
+  "activeVisitLocationRequired": "An active visit with an operational location is required.",
   "add": "Add",
   "addImage": "Add image",
   "addVisitNote": "Add a visit note",

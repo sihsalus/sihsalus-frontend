@@ -35,7 +35,7 @@ interface ServePatientModalProps {
 
 const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, closeModal }) => {
   const { t } = useTranslation();
-  const { queueStatuses, emergencyTriageQueueUuid, triageEncounter } = useEmergencyConfig();
+  const { queueStatuses, emergencyTriageQueueUuid, emergencyLocationUuid, triageEncounter } = useEmergencyConfig();
   const { mutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingReconciliation, setPendingReconciliation] = useState<ServePatientReconciliationCheckpoint | null>(() =>
@@ -94,6 +94,7 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
         WORKSPACES.TRIAGE_VITALS_FORM,
         {
           encounterTypeUuid: triageEncounter.encounterTypeUuid,
+          locationUuid: emergencyLocationUuid,
           onVitalsSaved: handleTriageVitalsSaved,
           profile: 'emergency-triage',
         },
@@ -107,6 +108,7 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
     closeModal,
     handleTriageVitalsSaved,
     isTriageQueue,
+    emergencyLocationUuid,
     mutate,
     queueEntry,
     queueStatuses.inService,

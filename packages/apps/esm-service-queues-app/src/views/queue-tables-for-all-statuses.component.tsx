@@ -7,14 +7,15 @@ import {
   logError,
   showToast,
   useLayoutType,
+  useLocations,
   useSession,
 } from '@openmrs/esm-framework';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { canEditServiceQueues } from '../permissions';
 import { useQueueEntries } from '../hooks/useQueueEntries';
 import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
 import PatientQueueHeader from '../patient-queue-header/patient-queue-header.component';
+import { canEditServiceQueues } from '../permissions';
 import { useColumns } from '../queue-table/cells/columns.resource';
 import QueueTable from '../queue-table/queue-table.component';
 import styles from '../queue-table/queue-table.scss';
@@ -44,6 +45,8 @@ const QueueTablesForAllStatuses: React.FC<QueueTablesForAllStatusesProps> = ({
   );
   const session = useSession();
   const canEdit = canEditServiceQueues(session?.user);
+  const visitLocations = useLocations('Visit Location');
+  const selectedQueueVisitLocation = visitLocations.find((location) => location.uuid === selectedQueue?.location?.uuid);
 
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -65,14 +68,23 @@ const QueueTablesForAllStatuses: React.FC<QueueTablesForAllStatusesProps> = ({
                   buttonText: t('addPatientToQueue', 'Add patient to queue'),
                   overlayHeader: t('addPatientToQueue', 'Add patient to queue'),
                   buttonProps: {
+                    disabled: !selectedQueueVisitLocation,
                     kind: 'secondary',
                     renderIcon: (props) => <Add size={16} {...props} />,
                     size: isDesktop(layout) ? 'sm' : 'lg',
                   },
                   selectPatientAction: (selectedPatientUuid) => {
+                    if (!selectedQueueVisitLocation) {
+                      return;
+                    }
                     launchWorkspace('create-queue-entry-workspace', {
                       selectedPatientUuid,
                       currentServiceQueueUuid: selectedQueue.uuid,
+                      currentQueueLocationUuid: selectedQueueVisitLocation.uuid,
+                      requiredVisitLocation: {
+                        uuid: selectedQueueVisitLocation.uuid,
+                        display: selectedQueueVisitLocation.display,
+                      },
                     });
                   },
                 }}

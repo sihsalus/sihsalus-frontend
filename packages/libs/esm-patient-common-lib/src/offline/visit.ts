@@ -1,10 +1,4 @@
-import {
-  type NewVisitPayload,
-  type QueueItemDescriptor,
-  useSession,
-  useVisit,
-  type Visit,
-} from '@openmrs/esm-framework';
+import { type NewVisitPayload, type QueueItemDescriptor, useVisit, type Visit } from '@openmrs/esm-framework';
 import { useEffect, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
@@ -89,19 +83,25 @@ export function useOfflineVisit(patientUuid: string): ReturnType<typeof useVisit
  * Mutates those SWR hooks when a new offline visit has been created.
  * @param patientUuid The UUID of the patient for which an offline visit should be created.
  * @param offlineVisitTypeUuid The UUID of the offline visit type.
+ * @param operationalLocationUuid The UUID of the operational location selected for the offline visit.
  */
-export function useAutoCreatedOfflineVisit(patientUuid: string, offlineVisitTypeUuid: string): void {
+export function useAutoCreatedOfflineVisit(
+  patientUuid: string,
+  offlineVisitTypeUuid: string,
+  operationalLocationUuid: string,
+): void {
   const isOnline = useOnlineStatus();
-  const location = useSession()?.sessionLocation?.uuid;
   const { currentVisit, isValidating, error, mutate } = useOfflineVisit(patientUuid);
 
   useEffect(() => {
-    if (!isOnline && !isValidating && !currentVisit && !error) {
-      void createOfflineVisitForPatient(patientUuid, location, offlineVisitTypeUuid, new Date()).finally(() => {
-        void mutate();
-      });
+    if (!isOnline && operationalLocationUuid && !isValidating && !currentVisit && !error) {
+      void createOfflineVisitForPatient(patientUuid, operationalLocationUuid, offlineVisitTypeUuid, new Date()).finally(
+        () => {
+          void mutate();
+        },
+      );
     }
-  }, [isOnline, currentVisit, isValidating, error, mutate, location, offlineVisitTypeUuid, patientUuid]);
+  }, [isOnline, currentVisit, isValidating, error, mutate, offlineVisitTypeUuid, operationalLocationUuid, patientUuid]);
 }
 
 export async function getOfflineVisitForPatient(patientUuid: string): Promise<OfflineVisit | undefined> {
@@ -150,12 +150,15 @@ export async function createOfflineVisitForPatient(
   return offlineVisit;
 }
 
-function offlineVisitToVisit(offlineVisit: OfflineVisit): Visit {
+export function offlineVisitToVisit(offlineVisit: OfflineVisit): Visit {
   return {
     uuid: offlineVisit.uuid,
     startDatetime: offlineVisit.startDatetime?.toString(),
     stopDatetime: offlineVisit.stopDatetime?.toString(),
     encounters: [],
+    location: {
+      uuid: offlineVisit.location,
+    },
     visitType: {
       uuid: offlineVisit.visitType,
       display: 'Offline',

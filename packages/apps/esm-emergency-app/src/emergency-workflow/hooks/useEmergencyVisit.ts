@@ -16,7 +16,6 @@ import {
   restBaseUrl,
   showSnackbar,
   useConfig,
-  useSession,
 } from '@openmrs/esm-framework';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -122,7 +121,6 @@ async function verifyEmergencyVisitIdentity(
 export function useEmergencyVisit() {
   const { t } = useTranslation();
   const [isCreatingVisit, setIsCreatingVisit] = useState(false);
-  const session = useSession();
   const config = useConfig<Config>();
 
   /**
@@ -132,8 +130,7 @@ export function useEmergencyVisit() {
     async (patientUuid: string): Promise<VisitResponse | null> => {
       const patient = patientUuid?.trim();
       const visitTypeUuid = config.emergencyVisitTypeUuid?.trim();
-      const locationUuid =
-        session?.sessionLocation?.uuid?.trim() || config.patientRegistration?.defaultLocationUuid?.trim();
+      const locationUuid = config.emergencyLocationUuid?.trim();
       if (!patient || !visitTypeUuid || !locationUuid) {
         throw new EmergencyVisitConfigurationError();
       }
@@ -185,7 +182,7 @@ export function useEmergencyVisit() {
 
       return null;
     },
-    [config.emergencyVisitTypeUuid, config.patientRegistration?.defaultLocationUuid, session?.sessionLocation?.uuid],
+    [config.emergencyLocationUuid, config.emergencyVisitTypeUuid],
   );
 
   /**
@@ -198,9 +195,16 @@ export function useEmergencyVisit() {
       try {
         const patient = patientUuid?.trim();
         const visitTypeUuid = config.emergencyVisitTypeUuid?.trim();
-        const locationUuid =
-          session?.sessionLocation?.uuid?.trim() || config.patientRegistration?.defaultLocationUuid?.trim();
-        if (!patient || !visitTypeUuid || !locationUuid) {
+        const locationUuid = config.emergencyLocationUuid?.trim();
+        if (!locationUuid) {
+          showSnackbar({
+            title: t('errorCreatingVisit', 'Error al crear visita'),
+            subtitle: t('emergencyLocationNotConfigured', 'No se configuró la ubicación operativa de emergencia.'),
+            kind: 'error',
+          });
+          return null;
+        }
+        if (!patient || !visitTypeUuid) {
           throw new EmergencyVisitConfigurationError();
         }
 
@@ -279,7 +283,7 @@ export function useEmergencyVisit() {
         setIsCreatingVisit(false);
       }
     },
-    [config, session, t],
+    [config, t],
   );
 
   /**

@@ -212,6 +212,7 @@ describe('Medication Dispense Resource tests', () => {
       session,
       providers,
       true,
+      'pharmacy-location-uuid',
     );
 
     expect(medicationDispense.id).toBeUndefined();
@@ -223,7 +224,7 @@ describe('Medication Dispense Resource tests', () => {
     expect(medicationDispense.medicationCodeableConcept).toBeUndefined();
     expect(medicationDispense.subject.reference).toBe('Patient/765432');
     expect(medicationDispense.performer[0].actor.reference).toBe('Practitioner/ghi789');
-    expect(medicationDispense.location.reference).toBe('Location/987654');
+    expect(medicationDispense.location.reference).toBe('Location/pharmacy-location-uuid');
     expect(medicationDispense.quantity.value).toBe(20.0);
     expect(medicationDispense.quantity.system).toBe('http://snomed.info/sct');
     expect(medicationDispense.quantity.unit).toBe('Tablet');
@@ -240,5 +241,19 @@ describe('Medication Dispense Resource tests', () => {
     expect(medicationDispense.dosageInstruction[0].doseAndRate[0].doseQuantity.code).toBe('385055001');
     expect(medicationDispense.dosageInstruction[0].doseAndRate[0].doseQuantity.unit).toBe('Tablet');
     expect(medicationDispense.substitution.wasSubstituted).toBe(false);
+  });
+
+  it('does not fall back to the login location when the dispensing location is missing', () => {
+    const activeMedicationRequest = {
+      id: '456def',
+      resourceType: 'MedicationRequest',
+      status: MedicationRequestStatus.active,
+    } as MedicationRequest;
+    const session = {} as Session;
+    const providers: Provider[] = [];
+
+    expect(() => initiateMedicationDispenseBody(activeMedicationRequest, session, providers, true, '')).toThrow(
+      'Dispensing location is not configured',
+    );
   });
 });

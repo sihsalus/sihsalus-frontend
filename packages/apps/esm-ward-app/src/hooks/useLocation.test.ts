@@ -18,7 +18,7 @@ describe('useLocation hook', () => {
   it('should call useLocation', () => {
     renderHook(() => useLocation('testUUID'));
     expect(useSWRImmutableMock).toHaveBeenCalledWith(
-      `${restBaseUrl}/location/testUUID?v=custom:(display,uuid)`,
+      `${restBaseUrl}/location/testUUID?v=custom:(display,uuid,tags:(uuid,display))`,
       expect.any(Function),
     );
   });

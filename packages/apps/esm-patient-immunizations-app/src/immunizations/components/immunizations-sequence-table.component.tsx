@@ -144,6 +144,7 @@ const SequenceTable: React.FC<SequenceTableProps> = ({
               lotNumber: dose.lotNumber,
               manufacturer: dose.manufacturer,
               visitId: dose.visitUuid,
+              locationId: dose.locationUuid,
             });
             launchPatientImmunizationForm();
           }}

@@ -4,7 +4,6 @@ import {
   showSnackbar,
   useConfig,
   usePatient,
-  useSession,
 } from '@openmrs/esm-framework';
 import {
   type PatientWorkspace2DefinitionProps,
@@ -76,7 +75,6 @@ const mockSavePatientVitals = vi.mocked(saveVitalsAndBiometrics);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUsePatient = vi.mocked(usePatient);
 const mockUseReferenceRanges = vi.mocked(useReferenceRanges);
-const mockUseSession = vi.mocked(useSession);
 const mockUseVisitOrOfflineVisit = vi.mocked(useVisitOrOfflineVisit);
 
 vi.mock('../common', () => ({
@@ -114,12 +112,6 @@ mockUseConfig.mockReturnValue({
   ...mockVitalsConfig,
 } as ConfigObject);
 
-mockUseSession.mockReturnValue({
-  sessionLocation: {
-    uuid: 'test-session-location',
-  },
-} as ReturnType<typeof useSession>);
-
 mockUsePatient.mockReturnValue({
   patient: {
     birthDate: mockPatient.birthdate,
@@ -129,6 +121,9 @@ mockUsePatient.mockReturnValue({
 const activeVisitMock = {
   currentVisit: {
     uuid: 'test-visit-uuid',
+    location: {
+      uuid: 'test-visit-location',
+    },
     stopDatetime: null,
   },
 } as ReturnType<typeof useVisitOrOfflineVisit>;
@@ -305,7 +300,7 @@ describe('VitalsBiometricsForm', () => {
         weight: weightValue,
       }),
       expect.any(AbortController),
-      'test-session-location',
+      'test-visit-location',
       'test-visit-uuid',
     );
 
@@ -420,6 +415,7 @@ describe('VitalsBiometricsForm', () => {
   it('uses the workspace encounter type override when saving from Workspace 2', async () => {
     const user = userEvent.setup();
     const triageEncounterTypeUuid = 'triage-encounter-type-uuid';
+    const triageLocationUuid = 'emergency-location-uuid';
 
     mockSavePatientVitals.mockResolvedValue({
       statusText: 'created',
@@ -432,6 +428,7 @@ describe('VitalsBiometricsForm', () => {
         {...testWorkspace2Props}
         workspaceProps={{
           encounterTypeUuid: triageEncounterTypeUuid,
+          locationUuid: triageLocationUuid,
         }}
       />,
     );
@@ -448,7 +445,7 @@ describe('VitalsBiometricsForm', () => {
         weight: weightValue,
       }),
       expect.any(AbortController),
-      'test-session-location',
+      triageLocationUuid,
       'test-visit-uuid',
     );
   });
@@ -499,7 +496,7 @@ describe('VitalsBiometricsForm', () => {
         glasgowTotal: 15,
       }),
       expect.any(AbortController),
-      'test-session-location',
+      'test-visit-location',
       'test-visit-uuid',
     );
   });
@@ -662,6 +659,30 @@ describe('VitalsBiometricsForm', () => {
       isLowContrast: false,
       kind: 'error',
       subtitle: 'An active visit is required to record vitals and biometrics.',
+      title: 'Error saving vitals and biometrics',
+    });
+  });
+
+  it('does not fall back to the login facility when the active visit has no location', async () => {
+    const user = userEvent.setup();
+
+    mockUseVisitOrOfflineVisit.mockReturnValue({
+      currentVisit: {
+        uuid: 'test-visit-uuid',
+        stopDatetime: null,
+      },
+    } as ReturnType<typeof useVisitOrOfflineVisit>);
+
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    await user.type(screen.getByRole('spinbutton', { name: /weight/i }), weightValue.toString());
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(mockSavePatientVitals).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      isLowContrast: false,
+      kind: 'error',
+      subtitle: 'Could not determine the active visit location.',
       title: 'Error saving vitals and biometrics',
     });
   });

@@ -1,4 +1,4 @@
-import { getDefaultsFromConfigSchema, openmrsFetch, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, openmrsFetch, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { act, renderHook } from '@testing-library/react';
 import { type Config, configSchema } from '../../config-schema';
 import { useEmergencyVisit } from './useEmergencyVisit';
@@ -6,12 +6,12 @@ import { useEmergencyVisit } from './useEmergencyVisit';
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseConfig = vi.mocked(useConfig<Config>);
-const mockUseSession = vi.mocked(useSession);
 
 describe('useEmergencyVisit', () => {
   const config: Config = {
     ...(getDefaultsFromConfigSchema(configSchema) as Config),
     emergencyVisitTypeUuid: '11111111-1111-4111-8111-111111111111',
+    emergencyLocationUuid: '22222222-2222-4222-8222-222222222222',
     patientRegistration: {
       ...(getDefaultsFromConfigSchema(configSchema) as Config).patientRegistration,
       defaultLocationUuid: '22222222-2222-4222-8222-222222222222',
@@ -23,11 +23,6 @@ describe('useEmergencyVisit', () => {
     mockOpenmrsFetch.mockReset();
     mockShowSnackbar.mockReset();
     mockUseConfig.mockReturnValue(config);
-    mockUseSession.mockReturnValue({
-      authenticated: true,
-      sessionId: 'session-id',
-      sessionLocation: { uuid: '33333333-3333-4333-8333-333333333333' },
-    } as ReturnType<typeof useSession>);
   });
 
   const verifiedVisitData = {
@@ -36,7 +31,7 @@ describe('useEmergencyVisit', () => {
     stopDatetime: null,
     patient: { uuid: 'patient-uuid' },
     visitType: { uuid: '11111111-1111-4111-8111-111111111111' },
-    location: { uuid: '33333333-3333-4333-8333-333333333333' },
+    location: { uuid: '22222222-2222-4222-8222-222222222222' },
   };
   const verifiedVisitResponse = { data: verifiedVisitData } as Awaited<ReturnType<typeof openmrsFetch>>;
 
@@ -64,7 +59,7 @@ describe('useEmergencyVisit', () => {
       body: {
         patient: 'patient-uuid',
         visitType: '11111111-1111-4111-8111-111111111111',
-        location: '33333333-3333-4333-8333-333333333333',
+        location: '22222222-2222-4222-8222-222222222222',
         startDatetime: '2026-05-30T15:15:00.000Z',
       },
     });
@@ -76,6 +71,27 @@ describe('useEmergencyVisit', () => {
         attributeType: '6ffc9f6b-a9fb-434e-9b2d-4a2591cc16b3',
         value: 'Ingreso por SAMU sin documentos',
       },
+    });
+  });
+
+  it('fails closed instead of using the login facility when no emergency location is configured', async () => {
+    mockUseConfig.mockReturnValue({
+      ...config,
+      emergencyLocationUuid: '',
+    });
+    const { result } = renderHook(() => useEmergencyVisit());
+    let visitUuid: string | null = 'not-null';
+
+    await act(async () => {
+      visitUuid = await result.current.createEmergencyVisit('patient-uuid');
+    });
+
+    expect(visitUuid).toBeNull();
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      kind: 'error',
+      subtitle: 'No se configuró la ubicación operativa de emergencia.',
+      title: 'Error al crear visita',
     });
   });
 
@@ -177,7 +193,7 @@ describe('useEmergencyVisit', () => {
       visitType: { uuid: config.emergencyVisitTypeUuid, display: 'Emergencia' },
       startDatetime: '2026-07-15T10:00:00.000Z',
       stopDatetime: null,
-      location: { uuid: '33333333-3333-4333-8333-333333333333', display: 'Emergencia' },
+      location: { uuid: '22222222-2222-4222-8222-222222222222', display: 'Emergencia' },
     };
     mockOpenmrsFetch
       .mockResolvedValueOnce({ data: { results: [emergencyVisit] } } as Awaited<ReturnType<typeof openmrsFetch>>)
@@ -252,23 +268,6 @@ describe('useEmergencyVisit', () => {
           'No se pudo confirmar la creación de la visita de emergencia. Verifique las visitas activas antes de reintentar.',
       }),
     );
-  });
-
-  it('does not post a visit when its required location is unavailable', async () => {
-    mockUseSession.mockReturnValue({ authenticated: true, sessionId: 'session-id' } as ReturnType<typeof useSession>);
-    mockUseConfig.mockReturnValue({
-      ...config,
-      patientRegistration: { ...config.patientRegistration, defaultLocationUuid: '' },
-    });
-
-    const { result } = renderHook(() => useEmergencyVisit());
-    let visitUuid: string | null = 'unexpected';
-    await act(async () => {
-      visitUuid = await result.current.createEmergencyVisit('patient-uuid');
-    });
-
-    expect(visitUuid).toBeNull();
-    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });
 
   it('does not create a visit when the active-visit lookup fails', async () => {

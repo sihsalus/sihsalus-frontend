@@ -1,5 +1,6 @@
-import { openmrsFetch, useSession } from '@openmrs/esm-framework';
+import { openmrsFetch, useConfig } from '@openmrs/esm-framework';
 import useSWR from 'swr';
+import { type PharmacyConfig } from '../../config-schema';
 import { type InventoryItem, type MedicationDispense, type StockDispenseRequest } from '../../types';
 import { getUuidFromReference } from '../../utils';
 
@@ -12,8 +13,11 @@ import { getUuidFromReference } from '../../utils';
  * @returns {Array} - The inventory items.
  */
 export const useDispenseStock = (drugUuid: string) => {
-  const session = useSession();
-  const url = `/ws/rest/v1/stockmanagement/stockiteminventory?v=default&totalCount=true&drugUuid=${drugUuid}&includeBatchNo=true&groupBy=LocationStockItemBatchNo&dispenseLocationUuid=${session?.sessionLocation?.uuid}&includeStrength=1&includeConceptRefIds=1&emptyBatch=1&emptyBatchLocationUuid=${session?.sessionLocation?.uuid}&dispenseAtLocation=1`;
+  const { dispensingLocationUuid } = useConfig<PharmacyConfig>();
+  const url =
+    drugUuid && dispensingLocationUuid
+      ? `/ws/rest/v1/stockmanagement/stockiteminventory?v=default&totalCount=true&drugUuid=${drugUuid}&includeBatchNo=true&groupBy=LocationStockItemBatchNo&dispenseLocationUuid=${dispensingLocationUuid}&includeStrength=1&includeConceptRefIds=1&emptyBatch=1&emptyBatchLocationUuid=${dispensingLocationUuid}&dispenseAtLocation=1`
+      : null;
   const { data, error, isLoading } = useSWR<{ data: { results: Array<InventoryItem> } }>(url, openmrsFetch);
   return { inventoryItems: data?.data?.results ?? [], error, isLoading };
 };

@@ -41,6 +41,7 @@
   "dispensedBy": "Entregado por",
   "dispensedMedication": "Medicamentos dispensados",
   "dispensePrescription": "Dispensar receta",
+  "dispensingLocationNotConfigured": "No se ha configurado la ubicación operativa de farmacia.",
   "dispensing": "Farmacia",
   "dispensingAppError": "Error en la aplicación de dispensación",
   "dispensingAppMisconfigurationMessage": "Por favor, contacte con la administración del sistema: Configuración incorrecta - 'restrictTotalQuantityDispensed' no puede ser habilitado si 'allowModifyingPrescription' está habilitado.",

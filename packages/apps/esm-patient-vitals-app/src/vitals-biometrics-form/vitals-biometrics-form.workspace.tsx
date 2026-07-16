@@ -18,7 +18,6 @@ import {
   useConfig,
   useLayoutType,
   usePatient,
-  useSession,
   Workspace2,
 } from '@openmrs/esm-framework';
 import {
@@ -163,6 +162,8 @@ export interface VitalsBiometricsSavedPayload {
 
 interface VitalsBiometricsWorkspaceOverrides extends ConditionalFieldOverrides {
   encounterTypeUuid?: string;
+  locationUuid?: string;
+  patientUuid?: string;
   onVitalsSaved?: (payload: VitalsBiometricsSavedPayload) => Promise<void> | void;
   profile?: VitalsBiometricsWorkspaceProfile;
 }
@@ -178,13 +179,14 @@ function isWorkspace2Props(props: VitalsBiometricsWorkspaceProps): props is Vita
 
 const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props) => {
   const { t } = useTranslation();
-  const patientUuid = isWorkspace2Props(props) ? (props.groupProps?.patientUuid ?? '') : props.patientUuid;
+  const patientUuid = isWorkspace2Props(props)
+    ? (props.groupProps?.patientUuid ?? props.workspaceProps?.patientUuid ?? '')
+    : props.patientUuid;
   const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<ConfigObject>();
   const biometricsUnitsSymbols = config.biometrics;
   const useMuacColorStatus = config.vitals.useMuacColors;
 
-  const session = useSession();
   const patient = usePatient(patientUuid);
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
   const { data: conceptUnits, conceptMetadata, conceptRanges, isLoading } = useVitalsConceptMetadata();
@@ -451,23 +453,23 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       if (allFieldsAreValid) {
         setShowErrorMessage(false);
 
-        const locationUuid = session?.sessionLocation?.uuid;
-        if (!locationUuid) {
-          showSnackbar({
-            title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
-            kind: 'error',
-            isLowContrast: false,
-            subtitle: t('noSessionLocation', 'Could not determine session location. Please log in again.'),
-          });
-          return;
-        }
-
         if (!currentVisit?.uuid || currentVisit.stopDatetime) {
           showSnackbar({
             title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
             kind: 'error',
             isLowContrast: false,
             subtitle: t('noActiveVisit', 'An active visit is required to record vitals and biometrics.'),
+          });
+          return;
+        }
+
+        const locationUuid = workspaceOverrides.locationUuid ?? currentVisit.location?.uuid;
+        if (!locationUuid) {
+          showSnackbar({
+            title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
+            kind: 'error',
+            isLowContrast: false,
+            subtitle: t('noVisitLocation', 'Could not determine the active visit location.'),
           });
           return;
         }
@@ -569,12 +571,12 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       closeCurrentWorkspaceWithSavedChanges,
       conceptMetadata,
       config.concepts,
+      currentVisit?.location?.uuid,
       currentVisit?.stopDatetime,
       currentVisit?.uuid,
       encounterTypeUuid,
       getPatientReferenceRange,
       patientUuid,
-      session?.sessionLocation?.uuid,
       t,
       vitalsWereSaved,
       workspaceOverrides,

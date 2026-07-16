@@ -271,6 +271,7 @@
   "selectAVisitType": "Select visit type",
   "selectQueue": "Select a queue",
   "selectQueueLocation": "Select a queue location",
+  "selectOperationalQueueLocation": "Select an operational visit location before adding a patient",
   "selectQueueRoom": "Select a queue room",
   "selectQueueRoomLocation": "Select a queue room location",
   "selectQueueRoomService": "Select a queue room service",

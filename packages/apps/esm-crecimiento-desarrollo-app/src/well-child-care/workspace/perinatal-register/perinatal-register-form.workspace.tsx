@@ -1,7 +1,7 @@
 // perinatal-register-form.tsx
 import { Button, ButtonSet, ButtonSkeleton, Column, Form, InlineNotification, Stack } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createErrorHandler, showSnackbar, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
+import { createErrorHandler, showSnackbar, useConfig, useLayoutType, useVisit } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -96,7 +96,8 @@ const PerinatalRegisterForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWo
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<ConfigObject>();
-  const session = useSession();
+  const { activeVisit, currentVisit } = useVisit(patientUuid);
+  const visit = currentVisit ?? activeVisit;
   const { data: formattedObs, isLoading: isLoadingFormattedObs, error } = usePrenatalAntecedents(patientUuid);
   const { isLoading } = usePrenatalConceptMetadata();
   const [showErrorNotification, setShowErrorNotification] = useState(false);
@@ -133,6 +134,17 @@ const PerinatalRegisterForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWo
 
   const savePerinatalData = useCallback(
     (data: PerinatalRegisterFormType) => {
+      const locationUuid = visit?.location?.uuid;
+      if (!locationUuid) {
+        showSnackbar({
+          title: t('perinatalDataSaveError', 'Error saving perinatal data'),
+          subtitle: t('activeVisitLocationRequired', 'An active visit with an operational location is required.'),
+          kind: 'error',
+          isLowContrast: false,
+        });
+        return;
+      }
+
       setIsSubmitting(true);
       setShowErrorNotification(false);
 
@@ -153,7 +165,7 @@ const PerinatalRegisterForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWo
         patientUuid,
         filteredData,
         abortController,
-        session?.sessionLocation?.uuid,
+        locationUuid,
       )
         .then((response) => {
           if (response.status === 201) {
@@ -181,7 +193,7 @@ const PerinatalRegisterForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWo
           abortController.abort();
         });
     },
-    [closeWorkspace, config, patientUuid, session?.sessionLocation?.uuid, t],
+    [closeWorkspace, config, patientUuid, t, visit?.location?.uuid],
   );
 
   function onError(err) {

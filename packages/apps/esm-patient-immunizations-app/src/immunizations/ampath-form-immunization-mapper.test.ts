@@ -57,6 +57,7 @@ describe('AMPATH immunization form mapper', () => {
           uuid: 'encounter-uuid',
           encounterDatetime: '2026-05-28T10:30:00.000Z',
           visit: { uuid: 'visit-uuid' },
+          location: { uuid: 'historical-location-uuid' },
           obs: [
             {
               concept: { uuid: config.ampathFormPersistence.concepts.vaccineUuid },
@@ -83,6 +84,7 @@ describe('AMPATH immunization form mapper', () => {
         {
           persistenceSource: 'ampath-form',
           immunizationObsUuid: 'encounter-uuid',
+          locationUuid: 'historical-location-uuid',
           doseNumber: 1,
           occurrenceDateTime: '2026-05-28T00:00:00.000Z',
         },

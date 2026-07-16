@@ -1,4 +1,5 @@
 {
+  "activeVisitLocationRequired": "Se requiere una visita activa con una ubicación asistencial.",
   "add": "Agregar",
   "addImage": "Agregar imagen",
   "addVisitNote": "Agregar un resumen de consulta",

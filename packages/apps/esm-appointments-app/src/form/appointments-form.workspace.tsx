@@ -2,8 +2,8 @@ import {
   Button,
   ButtonSet,
   Form,
-  InlineNotification,
   InlineLoading,
+  InlineNotification,
   MultiSelect,
   NumberInput,
   RadioButton,
@@ -30,8 +30,8 @@ import {
   useLayoutType,
   useLocations,
   usePatient,
-  useSession,
   userHasAccess,
+  useSession,
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
@@ -840,7 +840,7 @@ const AppointmentsForm: React.FC<
     mode: 'all',
     resolver: zodResolver(appointmentsFormSchema),
     defaultValues: {
-      location: appointment?.location?.uuid ?? session?.sessionLocation?.uuid ?? '',
+      location: appointment?.location?.uuid ?? '',
       provider: currentPrimaryProviderUuid ?? (context === 'creating' ? (session?.currentProvider?.uuid ?? '') : ''),
       appointmentNote: appointment?.comments || '',
       appointmentType: existingAppointmentType,
@@ -1511,6 +1511,13 @@ const AppointmentsForm: React.FC<
                       }
                       if (event.target.value !== getValues('selectedService')) {
                         setValue('selectedServiceType', '', { shouldDirty: true, shouldValidate: true });
+                      }
+
+                      if (selectedService?.location?.uuid) {
+                        setValue('location', selectedService.location.uuid, {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
                       }
                       onChange(event);
                     }}

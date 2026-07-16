@@ -271,6 +271,7 @@
   "selectAVisitType": "Seleccionar tipo de consulta",
   "selectQueue": "Seleccionar una cola",
   "selectQueueLocation": "Seleccione una ubicación de la cola",
+  "selectOperationalQueueLocation": "Seleccione una ubicación asistencial antes de agregar un paciente",
   "selectQueueRoom": "Seleccione una sala de espera",
   "selectQueueRoomLocation": "Seleccione una ubicación de sala de espera",
   "selectQueueRoomService": "Seleccione un servicio de sala de espera",

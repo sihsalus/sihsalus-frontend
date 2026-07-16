@@ -29,7 +29,7 @@
   "managementNote": "Nota de gestión",
   "nextPage": "Página siguiente",
   "noActiveVisit": "Sin visita activa",
-  "noActiveVisitSubtitle": "La solicitud se registrará fuera de una visita. Se recomienda iniciar la visita primero.",
+  "noActiveVisitSubtitle": "Debe iniciar una visita en una ubicación asistencial antes de solicitar la interconsulta.",
   "noInterconsultasFound": "No hay interconsultas para mostrar",
   "noPatientInterconsultas": "El paciente no tiene interconsultas registradas.",
   "orderNumber": "N° orden",

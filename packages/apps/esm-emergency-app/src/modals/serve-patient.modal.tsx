@@ -11,11 +11,14 @@ import { launchWorkspace, launchWorkspace2, showSnackbar } from '@openmrs/esm-fr
 import { getPreferredIdentifier } from '@openmrs/esm-utils';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSWRConfig } from 'swr';
 import { WORKSPACES } from '../constants';
 import { useTriageVitalsSavedHandler } from '../emergency-workflow/hooks/useTriageVitalsSavedHandler';
 import { useEmergencyConfig } from '../hooks/usePriorityConfig';
-import { type EmergencyQueueEntry, updateEmergencyQueueEntry } from '../resources/emergency.resource';
+import {
+  type EmergencyQueueEntry,
+  updateEmergencyQueueEntry,
+  useMutateEmergencyQueueEntries,
+} from '../resources/emergency.resource';
 import styles from './serve-patient.modal.scss';
 
 interface ServePatientModalProps {
@@ -26,7 +29,7 @@ interface ServePatientModalProps {
 const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, closeModal }) => {
   const { t } = useTranslation();
   const { queueStatuses, emergencyTriageQueueUuid, emergencyLocationUuid, triageEncounter } = useEmergencyConfig();
-  const { mutate } = useSWRConfig();
+  const { mutateEmergencyQueueEntries } = useMutateEmergencyQueueEntries();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const handleTriageVitalsSaved = useTriageVitalsSavedHandler(queueEntry);
 
@@ -44,15 +47,16 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
     updateEmergencyQueueEntry(queueEntry.uuid, {
       statusUuid: queueStatuses.inService,
     })
-      .then(({ status }) => {
-        if (status >= 200 && status < 300) {
+      .then((response) => {
+        // A null response means the update was reconciled as already applied
+        if (response == null || (response.status >= 200 && response.status < 300)) {
           showSnackbar({
             isLowContrast: true,
             title: t('patientServed', 'Paciente en atención'),
             kind: 'success',
             subtitle: t('patientServedSuccessfully', 'El paciente ha sido marcado como en atención'),
           });
-          mutate((key) => typeof key === 'string' && key.includes('/queue-entry'));
+          void mutateEmergencyQueueEntries();
           closeModal();
 
           if (isTriageQueue) {
@@ -89,7 +93,7 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
     queueStatuses.inService,
     isTriageQueue,
     emergencyLocationUuid,
-    mutate,
+    mutateEmergencyQueueEntries,
     closeModal,
     t,
     triageEncounter.encounterTypeUuid,

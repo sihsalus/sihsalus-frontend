@@ -1,11 +1,32 @@
 import { getLocale, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
-import { useCallback, useMemo } from 'react';
-import useSWR from 'swr';
+import { useCallback, useEffect, useMemo } from 'react';
+import useSWR, { useSWRConfig } from 'swr';
 import useSWRImmutable from 'swr/immutable';
 import { type Config } from '../config-schema';
 import { omrsDateFormat } from '../constants';
 import { useServiceQueuesFilters } from '../utils/service-queues-integration';
+
+/**
+ * Revalidates every queue-entry-related SWR key — both the emergency hooks and
+ * the standard service-queues hooks — and dispatches the same
+ * `queue-entry-updated` CustomEvent that service-queues' useMutateQueueEntries
+ * emits, so tables in both apps refresh regardless of which one made the change.
+ */
+export function useMutateEmergencyQueueEntries() {
+  const { mutate } = useSWRConfig();
+
+  const mutateEmergencyQueueEntries = useCallback(async () => {
+    await mutate(
+      (key) =>
+        typeof key === 'string' &&
+        (key.includes(`${restBaseUrl}/queue-entry`) || key.includes(`${restBaseUrl}/visit-queue-entry`)),
+    );
+    globalThis.dispatchEvent(new CustomEvent('queue-entry-updated'));
+  }, [mutate]);
+
+  return { mutateEmergencyQueueEntries };
+}
 
 /**
  * Represents a single patient entry in an emergency queue.
@@ -253,6 +274,16 @@ export function useEmergencyQueueEntries(
     Error
   >(swrKey, openmrsFetch, { refreshInterval: config.autoRefreshInterval });
 
+  // Refresh when the standard service-queues tables announce a change, so a
+  // transition made from either app is reflected in both.
+  useEffect(() => {
+    const listener = () => {
+      void mutate();
+    };
+    globalThis.addEventListener('queue-entry-updated', listener);
+    return () => globalThis.removeEventListener('queue-entry-updated', listener);
+  }, [mutate]);
+
   return {
     queueEntries: shouldSkipMissingQueue ? [] : data?.data?.results || [],
     totalCount: shouldSkipMissingQueue ? 0 : data?.data?.totalCount || 0,
@@ -478,6 +509,29 @@ export async function createEmergencyQueueEntry(
  * @param updates - Partial updates to apply
  * @returns Promise with the updated queue entry
  */
+interface QueueEntryState {
+  uuid: string;
+  status?: { uuid: string };
+  priority?: { uuid: string };
+  queue?: { uuid: string };
+  endedAt?: string | null;
+}
+
+/**
+ * Re-reads a queue entry so callers can reconcile after a request whose
+ * response was lost (the backend may have applied the change anyway).
+ */
+async function fetchQueueEntryState(queueEntryUuid: string): Promise<QueueEntryState | null> {
+  try {
+    const response = await openmrsFetch<QueueEntryState>(
+      `${restBaseUrl}/queue-entry/${queueEntryUuid}?v=custom:(uuid,status:(uuid),priority:(uuid),queue:(uuid),endedAt)`,
+    );
+    return response.data ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function updateEmergencyQueueEntry(
   queueEntryUuid: string,
   updates: {
@@ -500,13 +554,23 @@ export async function updateEmergencyQueueEntry(
     body.priorityComment = updates.priorityComment;
   }
 
-  return openmrsFetch(`${restBaseUrl}/queue-entry/${queueEntryUuid}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body,
-  });
+  try {
+    return await openmrsFetch(`${restBaseUrl}/queue-entry/${queueEntryUuid}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body,
+    });
+  } catch (error) {
+    const current = await fetchQueueEntryState(queueEntryUuid);
+    const statusApplied = !updates.statusUuid || current?.status?.uuid === updates.statusUuid;
+    const priorityApplied = !updates.priorityUuid || current?.priority?.uuid === updates.priorityUuid;
+    if (current && statusApplied && priorityApplied) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 /**
@@ -579,15 +643,23 @@ export async function transitionToAttentionQueue(
 }
 
 export async function endEmergencyQueueEntry(queueEntryUuid: string) {
-  return openmrsFetch(`${restBaseUrl}/queue-entry/${queueEntryUuid}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: {
-      endedAt: dayjs().format(omrsDateFormat),
-    },
-  });
+  try {
+    return await openmrsFetch(`${restBaseUrl}/queue-entry/${queueEntryUuid}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: {
+        endedAt: dayjs().format(omrsDateFormat),
+      },
+    });
+  } catch (error) {
+    const current = await fetchQueueEntryState(queueEntryUuid);
+    if (current?.endedAt) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 /**
@@ -602,12 +674,37 @@ export async function transitionEmergencyQueueEntry(params: {
   newQueue?: string;
   transitionDate?: string;
 }) {
-  return openmrsFetch(`${restBaseUrl}/queue-entry/transition`, {
+  try {
+    return await openmrsFetch(`${restBaseUrl}/queue-entry/transition`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: params,
+    });
+  } catch (error) {
+    // A transition ends the source entry; if it is already ended, the backend
+    // applied the transition even though the response was lost.
+    const current = await fetchQueueEntryState(params.queueEntryToTransition);
+    if (current?.endedAt) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Stops (closes) an emergency visit after disposition.
+ */
+export async function stopEmergencyVisit(visitUuid: string) {
+  return openmrsFetch(`${restBaseUrl}/visit/${visitUuid}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: params,
+    body: {
+      stopDatetime: dayjs().format(omrsDateFormat),
+    },
   });
 }
 

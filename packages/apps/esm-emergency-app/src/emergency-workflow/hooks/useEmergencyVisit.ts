@@ -155,19 +155,35 @@ export function useEmergencyVisit() {
       const existingVisit = await checkActiveEmergencyVisit(patientUuid);
 
       if (existingVisit) {
-        showSnackbar({
-          title: t('activeVisitFound', 'Visita activa encontrada'),
-          subtitle: t('patientHasActiveVisit', 'El paciente ya tiene una visita de emergencia activa'),
-          kind: 'info',
-          timeoutInMs: 3000,
-        });
+        const isEmergencyVisit = existingVisit.visitType?.uuid === config.emergencyVisitTypeUuid;
+        if (isEmergencyVisit) {
+          showSnackbar({
+            title: t('activeVisitFound', 'Visita activa encontrada'),
+            subtitle: t('patientHasActiveVisit', 'El paciente ya tiene una visita de emergencia activa'),
+            kind: 'info',
+            timeoutInMs: 3000,
+          });
+        } else {
+          // OpenMRS no permite visitas paralelas por defecto: se reutiliza la visita
+          // abierta, pero informando su tipo real en lugar de llamarla "de emergencia".
+          showSnackbar({
+            title: t('activeNonEmergencyVisitFound', 'Visita activa de otro tipo'),
+            subtitle: t(
+              'emergencyUnderExistingVisit',
+              'El paciente tiene una visita activa de tipo "{{visitType}}"; la atención de emergencia se registrará bajo esa visita.',
+              { visitType: existingVisit.visitType?.display ?? t('unknownVisitType', 'desconocido') },
+            ),
+            kind: 'warning',
+            timeoutInMs: 5000,
+          });
+        }
         return existingVisit.uuid;
       }
 
       // 2. Si no existe, crear nueva visita
       return await createEmergencyVisit(patientUuid, startDatetime, administrativeNotes);
     },
-    [checkActiveEmergencyVisit, createEmergencyVisit, t],
+    [checkActiveEmergencyVisit, createEmergencyVisit, config.emergencyVisitTypeUuid, t],
   );
 
   return {

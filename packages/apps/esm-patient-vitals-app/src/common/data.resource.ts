@@ -255,6 +255,8 @@ export function useVitalsAndBiometrics(patientUuid: string, mode: VitalsAndBiome
           return 'glasgowMotorResponse';
         case concepts.glasgowTotalUuid:
           return 'glasgowTotal';
+        case concepts.generalPatientNoteUuid:
+          return 'note';
         default:
           return undefined;
       }
@@ -262,6 +264,7 @@ export function useVitalsAndBiometrics(patientUuid: string, mode: VitalsAndBiome
     [
       concepts.abdominalCircumferenceUuid,
       concepts.chestCircumferenceUuid,
+      concepts.generalPatientNoteUuid,
       concepts.headCircumferenceUuid,
       concepts.heightUuid,
       concepts.glasgowEyeOpeningUuid,
@@ -329,6 +332,13 @@ export function useVitalsAndBiometrics(patientUuid: string, mode: VitalsAndBiome
   return observationResult;
 }
 
+export interface VitalsEncounterContext {
+  /** Time the measurements were taken; the backend defaults to "now" when omitted */
+  encounterDatetime?: Date;
+  providerUuid?: string;
+  encounterRoleUuid?: string;
+}
+
 export function saveVitalsAndBiometrics(
   encounterTypeUuid: string,
   concepts: ConfigObject['concepts'],
@@ -337,7 +347,10 @@ export function saveVitalsAndBiometrics(
   abortController: AbortController,
   location: string,
   visitUuid?: string,
+  encounterContext?: VitalsEncounterContext,
 ) {
+  const { encounterDatetime, providerUuid, encounterRoleUuid } = encounterContext ?? {};
+
   return openmrsFetch<unknown>(`${restBaseUrl}/encounter`, {
     method: 'POST',
     headers: {
@@ -349,6 +362,10 @@ export function saveVitalsAndBiometrics(
       location: location,
       encounterType: encounterTypeUuid,
       ...(visitUuid ? { visit: visitUuid } : {}),
+      ...(encounterDatetime ? { encounterDatetime: encounterDatetime.toISOString() } : {}),
+      ...(providerUuid && encounterRoleUuid
+        ? { encounterProviders: [{ provider: providerUuid, encounterRole: encounterRoleUuid }] }
+        : {}),
       obs: createObsObject(vitals, concepts),
     },
   });

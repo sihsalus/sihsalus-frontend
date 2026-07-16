@@ -33,7 +33,14 @@ const BiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pageSize, 
 
   const config = useConfig<ConfigObject>();
   const { abdominalCircumferenceUnit, bmiUnit } = config.biometrics;
-  const { data: biometrics, isLoading, error, isValidating } = useVitalsAndBiometrics(patientUuid, 'biometrics');
+  const {
+    data: biometrics,
+    isLoading,
+    error,
+    isValidating,
+    hasMore,
+    setPage,
+  } = useVitalsAndBiometrics(patientUuid, 'biometrics');
   const { data: conceptUnits, error: conceptsError } = useVitalsConceptMetadata();
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
 
@@ -153,6 +160,9 @@ const BiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pageSize, 
             urlLabel={urlLabel}
             pageUrl={pageUrl}
             tableHeaders={tableHeaders}
+            hasMoreData={hasMore}
+            isLoadingMoreData={isValidating}
+            onLoadMoreData={() => setPage((size) => size + 1)}
           />
         )}
       </div>

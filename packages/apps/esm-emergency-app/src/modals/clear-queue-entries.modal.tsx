@@ -2,8 +2,11 @@ import { Button, ButtonSkeleton, ModalBody, ModalFooter, ModalHeader } from '@ca
 import { showSnackbar } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSWRConfig } from 'swr';
-import { type EmergencyQueueEntry, endEmergencyQueueEntry } from '../resources/emergency.resource';
+import {
+  type EmergencyQueueEntry,
+  endEmergencyQueueEntry,
+  useMutateEmergencyQueueEntries,
+} from '../resources/emergency.resource';
 
 interface ClearQueueEntriesModalProps {
   queueEntries: Array<EmergencyQueueEntry>;
@@ -12,31 +15,37 @@ interface ClearQueueEntriesModalProps {
 
 const ClearQueueEntriesModal: React.FC<ClearQueueEntriesModalProps> = ({ queueEntries, closeModal }) => {
   const { t } = useTranslation();
-  const { mutate } = useSWRConfig();
+  const { mutateEmergencyQueueEntries } = useMutateEmergencyQueueEntries();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleClearAll = useCallback(() => {
+  const handleClearAll = useCallback(async () => {
     setIsSubmitting(true);
-    Promise.all(queueEntries.map((entry) => endEmergencyQueueEntry(entry.uuid)))
-      .then(() => {
-        showSnackbar({
-          isLowContrast: true,
-          title: t('clearQueue', 'Limpiar cola'),
-          kind: 'success',
-          subtitle: t('queuesClearedSuccessfully', 'Cola limpiada exitosamente'),
-        });
-        mutate((key) => typeof key === 'string' && key.includes('/queue-entry'));
-        closeModal();
-      })
-      .catch((error) => {
-        showSnackbar({
-          title: t('errorClearingQueues', 'Error al limpiar cola'),
-          kind: 'error',
-          subtitle: error?.message,
-        });
-        closeModal();
+    // allSettled: one failure must not hide that the other entries were already ended
+    const results = await Promise.allSettled(queueEntries.map((entry) => endEmergencyQueueEntry(entry.uuid)));
+    const failedCount = results.filter((result) => result.status === 'rejected').length;
+
+    void mutateEmergencyQueueEntries();
+
+    if (failedCount === 0) {
+      showSnackbar({
+        isLowContrast: true,
+        title: t('clearQueue', 'Limpiar cola'),
+        kind: 'success',
+        subtitle: t('queuesClearedSuccessfully', 'Cola limpiada exitosamente'),
       });
-  }, [queueEntries, closeModal, mutate, t]);
+    } else {
+      showSnackbar({
+        title: t('errorClearingQueues', 'Error al limpiar cola'),
+        kind: failedCount === queueEntries.length ? 'error' : 'warning',
+        subtitle: t(
+          'queuesPartiallyCleared',
+          'Se finalizaron {{succeeded}} de {{total}} registros; {{failed}} fallaron. Intente nuevamente.',
+          { succeeded: queueEntries.length - failedCount, failed: failedCount, total: queueEntries.length },
+        ),
+      });
+    }
+    closeModal();
+  }, [queueEntries, closeModal, mutateEmergencyQueueEntries, t]);
 
   return (
     <>

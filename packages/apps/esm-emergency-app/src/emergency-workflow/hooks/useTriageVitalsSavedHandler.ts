@@ -1,10 +1,13 @@
 import { showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSWRConfig } from 'swr';
 import { type Config } from '../../config-schema';
 import { useEmergencyConfig } from '../../hooks/usePriorityConfig';
-import { type EmergencyQueueEntry, transitionToAttentionQueue } from '../../resources/emergency.resource';
+import {
+  type EmergencyQueueEntry,
+  transitionToAttentionQueue,
+  useMutateEmergencyQueueEntries,
+} from '../../resources/emergency.resource';
 import { calculateTriagePriority, type TriagePriority, type TriageVitals } from '../utils/priority-calculator';
 import { validateTriageComplete } from '../utils/triage-validator';
 
@@ -44,7 +47,7 @@ export function useTriageVitalsSavedHandler(queueEntry: EmergencyQueueEntry) {
   const { t } = useTranslation();
   const config = useConfig<Config>();
   const { emergencyAttentionQueueUuid, queueStatuses } = useEmergencyConfig();
-  const { mutate } = useSWRConfig();
+  const { mutateEmergencyQueueEntries } = useMutateEmergencyQueueEntries();
 
   return useCallback(
     async ({ formData, visitUuid }: TriageVitalsSavedPayload) => {
@@ -96,7 +99,7 @@ export function useTriageVitalsSavedHandler(queueEntry: EmergencyQueueEntry) {
           priorityConfig?.sortWeight ?? 999,
         );
 
-        mutate((key) => typeof key === 'string' && key.includes('/queue-entry'));
+        void mutateEmergencyQueueEntries();
         showSnackbar({
           isLowContrast: true,
           title: t('triageCompleted', 'Triaje completado'),
@@ -125,7 +128,7 @@ export function useTriageVitalsSavedHandler(queueEntry: EmergencyQueueEntry) {
       config.concepts.priorityIVConceptUuid,
       config.priorityConfigs,
       emergencyAttentionQueueUuid,
-      mutate,
+      mutateEmergencyQueueEntries,
       queueEntry.patient.uuid,
       queueEntry.uuid,
       queueStatuses.waiting,

@@ -19,7 +19,7 @@ export interface PatientObservationRecord {
   key: string;
   recordedDate: string;
   resource: FHIRResource['resource'];
-  value: number;
+  value: number | string;
 }
 
 export interface PatientObservationsResponse {
@@ -108,7 +108,7 @@ export function useMappedPatientObservations<Row extends PatientObservationBaseR
   >(getPage, fetchPatientObservations);
 
   const mappedRows = useMemo(() => {
-    const groupedRows = new Map<string, Partial<Row>>();
+    const groupedRows = new Map<string, { date: string; fields: Partial<Row> }>();
 
     data?.forEach((page) => {
       page?.data?.entry
@@ -118,7 +118,11 @@ export function useMappedPatientObservations<Row extends PatientObservationBaseR
           const code = resource?.code?.coding?.[0]?.code;
           const key = code ? getObservationKey(code) : undefined;
           const recordedDate = resource?.effectiveDateTime;
-          const value = resource?.valueQuantity?.value;
+          const value =
+            resource?.valueQuantity?.value ??
+            resource?.valueString ??
+            resource?.valueCodeableConcept?.coding?.[0]?.display ??
+            resource?.valueCodeableConcept?.coding?.[0]?.code;
 
           if (!code || !key || !recordedDate || value == null) {
             return;
@@ -126,27 +130,36 @@ export function useMappedPatientObservations<Row extends PatientObservationBaseR
 
           const recordedDateString = String(recordedDate);
           const date = new Date(recordedDateString).toISOString();
+          const encounterId = resource?.encounter?.reference?.split('/')?.pop() ?? '';
           const record: PatientObservationRecord = {
             code,
-            encounterId: resource?.encounter?.reference?.split('/')?.pop() ?? '',
+            encounterId,
             key,
             recordedDate: recordedDateString,
             resource,
             value,
           };
 
-          groupedRows.set(date, {
-            ...groupedRows.get(date),
-            ...(getObservationFields?.(record) ?? ({ [key]: value } as Partial<Row>)),
+          // One row per encounter, so observations saved seconds apart in the same
+          // encounter never split and simultaneous encounters never merge. Observations
+          // without an encounter reference fall back to grouping by exact timestamp.
+          const groupKey = encounterId || date;
+          const existing = groupedRows.get(groupKey);
+          groupedRows.set(groupKey, {
+            date: existing?.date ?? date,
+            fields: {
+              ...existing?.fields,
+              ...(getObservationFields?.(record) ?? ({ [key]: value } as Partial<Row>)),
+            },
           });
         });
     });
 
-    return Array.from(groupedRows).map(([date, row], index) => {
+    return Array.from(groupedRows).map(([groupKey, { date, fields }]) => {
       const mappedRow = {
-        id: index.toString(),
+        id: groupKey,
         date,
-        ...row,
+        ...fields,
       } as Row;
 
       return finalizeRow?.(mappedRow) ?? mappedRow;

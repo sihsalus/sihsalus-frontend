@@ -9,10 +9,9 @@
 import { type DefaultWorkspaceProps, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { mutate } from 'swr';
 import { type Config } from '../config-schema';
 import { useEmergencyConfig } from '../hooks/usePriorityConfig';
-import { createEmergencyQueueEntry } from '../resources/emergency.resource';
+import { createEmergencyQueueEntry, useMutateEmergencyQueueEntries } from '../resources/emergency.resource';
 import { type InitialPriority, mapInitialPriorityToConfig } from './components/initial-priority-selector.component';
 import styles from './emergency-workflow-workspace.scss';
 import { useEmergencyVisit } from './hooks/useEmergencyVisit';
@@ -30,6 +29,7 @@ const EmergencyWorkflowWorkspace: React.FC<EmergencyWorkflowWorkspaceProps> = ({
   const config = useConfig<Config>();
   const emergencyConfig = useEmergencyConfig();
   const { getOrCreateEmergencyVisit } = useEmergencyVisit();
+  const { mutateEmergencyQueueEntries } = useMutateEmergencyQueueEntries();
 
   const [workflowState, setWorkflowState] = useState<WorkflowState>({
     currentStep: WorkflowStep.REGISTRO,
@@ -97,16 +97,24 @@ const EmergencyWorkflowWorkspace: React.FC<EmergencyWorkflowWorkspaceProps> = ({
         );
         queueEntryUuid = response?.data?.uuid;
       } catch (error: unknown) {
+        // The visit already exists at this point; retrying the flow reuses it and
+        // only re-attempts the queue entry, so no rollback is needed.
         showSnackbar({
           title: t('errorCreatingQueueEntry', 'Error al agregar a la cola'),
-          subtitle: error instanceof Error ? error.message : t('unknownError', 'Error desconocido'),
+          subtitle:
+            error instanceof Error
+              ? error.message
+              : t(
+                  'queueEntryFailedVisitKept',
+                  'La visita quedó registrada pero el paciente no entró a la cola. Vuelva a intentarlo.',
+                ),
           kind: 'error',
         });
         return;
       }
 
-      // 4. Revalidate SWR cache so queue tables refresh
-      mutate((key) => typeof key === 'string' && key.includes('queue-entry'));
+      // 4. Revalidate SWR cache so queue tables refresh in both apps
+      void mutateEmergencyQueueEntries();
 
       if (isDirectEmergency) {
         showSnackbar({
@@ -138,7 +146,7 @@ const EmergencyWorkflowWorkspace: React.FC<EmergencyWorkflowWorkspaceProps> = ({
         initialClassification: priorityLevel,
       });
     },
-    [t, config, emergencyConfig, getOrCreateEmergencyVisit],
+    [t, config, emergencyConfig, getOrCreateEmergencyVisit, mutateEmergencyQueueEntries],
   );
 
   const handleRegisterAnother = useCallback(() => {

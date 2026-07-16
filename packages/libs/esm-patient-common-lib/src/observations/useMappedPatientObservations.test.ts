@@ -70,10 +70,114 @@ describe('useMappedPatientObservations', () => {
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(expect.stringContaining('code=zero-concept%2Cweight-concept'));
     expect(result.current.data).toEqual([
       {
-        id: '0',
+        id: '2026-06-11T15:00:00.000Z',
         date: '2026-06-11T15:00:00.000Z',
         stoolCount: 0,
         weight: 62,
+      },
+    ]);
+  });
+
+  it('groups observations from the same encounter into one row even when timestamps differ', async () => {
+    mockOpenmrsFetch.mockResolvedValue({
+      data: {
+        entry: [
+          {
+            resource: {
+              code: { coding: [{ code: 'weight-concept' }] },
+              effectiveDateTime: '2026-06-11T15:00:00.000Z',
+              valueQuantity: { value: 62 },
+              encounter: { reference: 'Encounter/encounter-a' },
+            },
+          },
+          {
+            resource: {
+              code: { coding: [{ code: 'note-concept' }] },
+              effectiveDateTime: '2026-06-11T15:00:07.000Z',
+              valueString: 'Patient fasting',
+              encounter: { reference: 'Encounter/encounter-a' },
+            },
+          },
+          {
+            resource: {
+              code: { coding: [{ code: 'weight-concept' }] },
+              effectiveDateTime: '2026-06-11T15:00:00.000Z',
+              valueQuantity: { value: 80 },
+              encounter: { reference: 'Encounter/encounter-b' },
+            },
+          },
+        ],
+        link: [],
+        total: 3,
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    const { result } = renderHook(
+      () =>
+        useMappedPatientObservations({
+          conceptUuids: ['weight-concept', 'note-concept'],
+          getObservationKey: (conceptUuid) =>
+            ({
+              'weight-concept': 'weight',
+              'note-concept': 'note',
+            })[conceptUuid],
+          patientUuid: 'patient-uuid',
+        }),
+      { wrapper: swrWrapper },
+    );
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.data).toEqual([
+      {
+        id: 'encounter-a',
+        date: '2026-06-11T15:00:00.000Z',
+        weight: 62,
+        note: 'Patient fasting',
+      },
+      {
+        id: 'encounter-b',
+        date: '2026-06-11T15:00:00.000Z',
+        weight: 80,
+      },
+    ]);
+  });
+
+  it('maps coded observations to their display value', async () => {
+    mockOpenmrsFetch.mockResolvedValue({
+      data: {
+        entry: [
+          {
+            resource: {
+              code: { coding: [{ code: 'eye-opening-concept' }] },
+              effectiveDateTime: '2026-06-11T15:00:00.000Z',
+              valueCodeableConcept: { coding: [{ code: 'answer-uuid', display: 'Spontaneous' }] },
+              encounter: { reference: 'Encounter/encounter-a' },
+            },
+          },
+        ],
+        link: [],
+        total: 1,
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    const { result } = renderHook(
+      () =>
+        useMappedPatientObservations({
+          conceptUuids: ['eye-opening-concept'],
+          getObservationKey: () => 'glasgowEyeOpening',
+          patientUuid: 'patient-uuid',
+        }),
+      { wrapper: swrWrapper },
+    );
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.data).toEqual([
+      {
+        id: 'encounter-a',
+        date: '2026-06-11T15:00:00.000Z',
+        glasgowEyeOpening: 'Spontaneous',
       },
     ]);
   });

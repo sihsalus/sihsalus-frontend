@@ -1,5 +1,5 @@
-import { type EmergencyQueueEntry } from '../../resources/emergency.resource';
 import type { Config } from '../../config-schema';
+import { type EmergencyQueueEntry } from '../../resources/emergency.resource';
 
 const IDENTIFICATION_STATUS_LABELS: Record<string, string> = {
   pending: 'Pendiente',

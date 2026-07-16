@@ -12,9 +12,13 @@ import { type DefaultWorkspaceProps, showSnackbar, useConfig } from '@openmrs/es
 import React, { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { mutate } from 'swr';
 import { type Config } from '../config-schema';
-import { type EmergencyQueueEntry, endEmergencyQueueEntry } from '../resources/emergency.resource';
+import {
+  type EmergencyQueueEntry,
+  endEmergencyQueueEntry,
+  stopEmergencyVisit,
+  useMutateEmergencyQueueEntries,
+} from '../resources/emergency.resource';
 import { createAttentionEncounter } from './attention-form.resource';
 import { type AttentionFormData, attentionFormSchema } from './attention-form.validation';
 import styles from './attention-form.workspace.scss';
@@ -27,6 +31,7 @@ interface AttentionFormWorkspaceProps extends DefaultWorkspaceProps {
 const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEntry, closeWorkspace }) => {
   const { t } = useTranslation();
   const config = useConfig<Config>();
+  const { mutateEmergencyQueueEntries } = useMutateEmergencyQueueEntries();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -71,7 +76,23 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEn
 
         await endEmergencyQueueEntry(queueEntry.uuid);
 
-        mutate((key) => typeof key === 'string' && key.includes('queue-entry'));
+        if (config.closeVisitOnDisposition) {
+          try {
+            await stopEmergencyVisit(visitUuid);
+          } catch {
+            // The encounter and queue entry are already saved; only the visit stayed open
+            showSnackbar({
+              title: t('attentionSavedVisitOpen', 'Atención registrada, visita sin cerrar'),
+              subtitle: t(
+                'couldNotCloseVisit',
+                'No se pudo cerrar la visita de emergencia. Ciérrela manualmente desde la ficha del paciente.',
+              ),
+              kind: 'warning',
+            });
+          }
+        }
+
+        void mutateEmergencyQueueEntries();
 
         showSnackbar({
           title: t('attentionSaved', 'Atención registrada'),
@@ -91,7 +112,7 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEn
         setIsSubmitting(false);
       }
     },
-    [config, queueEntry, t, closeWorkspace],
+    [config, queueEntry, t, closeWorkspace, mutateEmergencyQueueEntries],
   );
 
   return (

@@ -10,7 +10,7 @@ interface VitalsMainProps {
 const VitalsMain: React.FC<VitalsMainProps> = ({ patientUuid }) => {
   const pageSize = 10;
   const { t } = useTranslation();
-  const pageUrl: string = `$\{openmrsSpaBase}/patient/${patientUuid}/chart`;
+  const pageUrl: string = `${globalThis.spaBase}/patient/${patientUuid}/chart`;
   const urlLabel = t('goToSummary', 'Go to Summary');
 
   return <VitalsOverview patientUuid={patientUuid} pageSize={pageSize} urlLabel={urlLabel} pageUrl={pageUrl} />;

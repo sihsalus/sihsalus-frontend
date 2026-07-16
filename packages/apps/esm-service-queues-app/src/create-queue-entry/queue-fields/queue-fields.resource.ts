@@ -170,7 +170,7 @@ export async function generateVisitQueueNumber(
     // Some queue-module versions expose this endpoint as POST.
     usedLegacyMethod = true;
     response = await openmrsFetch<QueueTicketResponse>(url, {
-      method: 'GET',
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -191,7 +191,7 @@ export async function generateVisitQueueNumber(
   if (!usedLegacyMethod) {
     try {
       const legacyResponse = await openmrsFetch<QueueTicketResponse>(url, {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },

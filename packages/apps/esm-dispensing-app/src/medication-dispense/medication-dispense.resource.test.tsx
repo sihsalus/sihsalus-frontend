@@ -244,6 +244,14 @@ describe('Medication Dispense Resource tests', () => {
   });
 
   it('does not fall back to the login location when the dispensing location is missing', () => {
+    const activeMedicationRequest = {
+      id: '456def',
+      resourceType: 'MedicationRequest',
+      status: MedicationRequestStatus.active,
+    } as MedicationRequest;
+    const session = {} as Session;
+    const providers: Provider[] = [];
+
     expect(() => initiateMedicationDispenseBody(activeMedicationRequest, session, providers, true, '')).toThrow(
       'Dispensing location is not configured',
     );

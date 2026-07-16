@@ -99,7 +99,12 @@ export function initiateMedicationDispenseBody(
   session: Session,
   _providers: Provider[],
   populateDispenseInformation: boolean,
+  dispensingLocationUuid: string,
 ): MedicationDispense {
+  if (!dispensingLocationUuid) {
+    throw new Error('Dispensing location is not configured');
+  }
+
   let medicationDispense: MedicationDispense = {
     resourceType: 'MedicationDispense',
     status: null,
@@ -120,7 +125,7 @@ export function initiateMedicationDispenseBody(
       },
     ],
     location: {
-      reference: session?.sessionLocation ? `Location/${session.sessionLocation.uuid}` : '',
+      reference: `Location/${dispensingLocationUuid}`,
     },
     whenHandedOver: dayjs().format(),
   };

@@ -1,5 +1,5 @@
 import { Button, ButtonSet, Form, InlineNotification, Select, SelectItem, TextArea } from '@carbon/react';
-import { OpenmrsDatePicker, showSnackbar, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
+import { OpenmrsDatePicker, showSnackbar, useConfig, useLayoutType, useVisit } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -36,10 +36,10 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const session = useSession();
   const isTablet = useLayoutType() === 'tablet';
   const patientUuid = patientUuidProp ?? workspaceProps?.patientUuid;
-  const locationUuid = session?.sessionLocation?.uuid;
+  const { activeVisit, currentVisit } = useVisit(patientUuid);
+  const locationUuid = (currentVisit ?? activeVisit)?.location?.uuid;
   const [formData, setFormData] = useState<AdverseReaction>({
     vaccineName: '',
     reactionDescription: '',
@@ -72,7 +72,7 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
       return false;
     }
     if (!patientUuid || !locationUuid) {
-      setError(t('missingPatientOrLocation', 'No se pudo resolver el paciente o la ubicación de sesión'));
+      setError(t('missingPatientOrLocation', 'Se requiere una visita activa con una ubicación asistencial'));
       return false;
     }
     return true;

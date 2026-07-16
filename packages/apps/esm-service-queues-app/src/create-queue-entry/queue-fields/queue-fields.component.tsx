@@ -74,6 +74,9 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
     concepts: { defaultStatusConceptUuid, defaultPriorityConceptUuid, emergencyPriorityConceptUuid },
   } = useConfig<ConfigObject>();
   const [selectedQueueLocation, setSelectedQueueLocation] = useState('');
+  const { currentQueueLocationUuid: contextQueueLocationUuid, currentServiceQueueUuid: contextServiceQueueUuid } =
+    useContext(AddPatientToQueueContext);
+  const requiredQueueLocationUuid = currentQueueLocationUuid ?? contextQueueLocationUuid;
   const availableQueueLocations = useMemo(() => {
     const normalizedGender = patientGender?.trim().toLowerCase();
     const isMalePatient = normalizedGender === 'm' || normalizedGender === 'male' || normalizedGender === 'masculino';
@@ -83,12 +86,11 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
     }
 
     return queueLocations.filter(
-      (location) => location.id === currentQueueLocationUuid || !/obst[eé]tric/i.test(location.name ?? ''),
+      (location) => location.id === requiredQueueLocationUuid || !/obst[eé]tric/i.test(location.name ?? ''),
     );
-  }, [currentQueueLocationUuid, patientGender, queueLocations]);
+  }, [patientGender, queueLocations, requiredQueueLocationUuid]);
   const { queues, isLoading: isLoadingQueues } = useQueues(selectedQueueLocation);
   const [selectedService, setSelectedService] = useState('');
-  const { currentServiceQueueUuid: contextServiceQueueUuid } = useContext(AddPatientToQueueContext);
   const selectedServiceQueueUuid = currentServiceQueueUuid ?? contextServiceQueueUuid;
   const selectedQueue = useMemo(() => queues.find((q) => q.uuid === selectedService), [queues, selectedService]);
   const priorities = selectedQueue?.allowedPriorities ?? [];
@@ -216,8 +218,8 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   }, [selectedServiceQueueUuid]);
 
   useEffect(() => {
-    if (currentQueueLocationUuid) {
-      setSelectedQueueLocation(currentQueueLocationUuid);
+    if (requiredQueueLocationUuid) {
+      setSelectedQueueLocation(requiredQueueLocationUuid);
       return;
     }
 
@@ -228,7 +230,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
     const defaultLocation =
       availableQueueLocations.find((location) => location.id === sessionLocationUuid) ?? availableQueueLocations[0];
     setSelectedQueueLocation(defaultLocation?.id ?? '');
-  }, [availableQueueLocations, currentQueueLocationUuid, selectedQueueLocation, sessionLocationUuid]);
+  }, [availableQueueLocations, requiredQueueLocationUuid, selectedQueueLocation, sessionLocationUuid]);
 
   useEffect(() => {
     const nextPriority = priorities.some((allowedPriority) => allowedPriority.uuid === defaultPriorityConceptUuid)
@@ -268,7 +270,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
             <SelectSkeleton />
           ) : (
             <Select
-              disabled={Boolean(currentQueueLocationUuid)}
+              disabled={Boolean(requiredQueueLocationUuid)}
               labelText={<RequiredFieldLabel label={t('selectQueueLocation', 'Select a queue location')} />}
               id="queueLocation"
               name="queueLocation"

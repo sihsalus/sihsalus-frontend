@@ -91,7 +91,7 @@ describe('<WardPatientNotesWorkspace>', () => {
         },
       ]),
       encounterType: emrConfigurationMock?.inpatientNoteEncounterType?.uuid,
-      location: 'location-1',
+      location: mockWardPatientAlice.visit.location.uuid,
       obs: expect.arrayContaining([
         {
           concept: {
@@ -123,6 +123,37 @@ describe('<WardPatientNotesWorkspace>', () => {
     expect(mockCreatePatientNote).toHaveBeenCalledTimes(1);
     expect(mockCreatePatientNote).toHaveBeenCalledWith(
       expect.objectContaining(successPayload),
+      expect.any(AbortController),
+    );
+  });
+
+  test('records notes at the current ward after an inpatient transfer', async () => {
+    const user = userEvent.setup();
+    const transferredWardPatient = {
+      ...mockWardPatientAlice,
+      inpatientAdmission: {
+        currentInpatientLocation: {
+          uuid: 'current-ward-location-uuid',
+          display: 'Sala Mujeres Adultas',
+        },
+      },
+    } as WardPatient;
+    mockCreatePatientNote.mockResolvedValue({ status: 201, body: 'Condition created' });
+
+    render(
+      <WardPatientNotesWorkspace
+        {...testProps}
+        groupProps={{
+          wardPatient: transferredWardPatient,
+        }}
+      />,
+    );
+
+    await user.type(screen.getByRole('textbox', { name: /Write your notes/i }), 'Nota posterior al traslado');
+    await user.click(screen.getByRole('button', { name: /Save/i }));
+
+    expect(mockCreatePatientNote).toHaveBeenCalledWith(
+      expect.objectContaining({ location: 'current-ward-location-uuid' }),
       expect.any(AbortController),
     );
   });

@@ -70,7 +70,8 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
     medicationRequestBundle,
     session,
     providers,
-    disabled,
+    dispensingLocationUuid: config.dispensingLocationUuid,
+    disabled: disabled || !config.dispensingLocationUuid,
   };
 
   return (

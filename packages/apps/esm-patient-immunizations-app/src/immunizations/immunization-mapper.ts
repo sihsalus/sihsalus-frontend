@@ -48,7 +48,8 @@ const mapToImmunizationDoseFromResource = (immunizationResource: FHIRImmunizatio
     programContext,
     status: immunizationResource.status === 'not-done' ? 'not-done' : 'completed',
     statusReason: immunizationResource.statusReason?.text,
-    visitUuid: fromReference(immunizationResource?.encounter),
+    visitUuid: fromReference(immunizationResource.encounter) ?? undefined,
+    locationUuid: fromReference(immunizationResource.location ?? null) ?? undefined,
   };
 };
 
@@ -126,7 +127,7 @@ function fromReference(reference: Reference | null): string | null {
   if (!reference || !reference.reference) {
     return null;
   }
-  return reference.reference.split('/')[1];
+  return reference.reference.split('/')[1] ?? null;
 }
 
 export const mapToFHIRImmunizationResource = (

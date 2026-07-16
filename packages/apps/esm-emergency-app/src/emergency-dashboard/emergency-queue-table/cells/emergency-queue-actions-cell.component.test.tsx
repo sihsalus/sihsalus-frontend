@@ -81,6 +81,7 @@ describe('EmergencyQueueActionsCell', () => {
       WORKSPACES.TRIAGE_VITALS_FORM,
       expect.objectContaining({
         encounterTypeUuid: triageEncounterTypeUuid,
+        locationUuid: config.emergencyLocationUuid,
         onVitalsSaved: expect.any(Function),
         profile: 'emergency-triage',
       }),

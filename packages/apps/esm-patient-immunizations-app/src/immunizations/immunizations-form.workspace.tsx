@@ -58,6 +58,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
   const ampathPersistence = getAmpathImmunizationFormPersistence(config);
   const fhirConceptMappings = getFhirImmunizationConceptMappings(config?.fhirConceptMappings);
   const currentUser = useSession();
+  const activeVisitLocationUuid = visitContext?.location?.uuid;
   const isTablet = useLayoutType() === 'tablet';
   const { t } = useTranslation();
   const { immunizationsConceptSet } = useImmunizationsConceptSet(config);
@@ -68,7 +69,9 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
     immunizationObsUuid: string;
     persistenceSource?: 'fhir' | 'ampath-form';
     visitUuid?: string;
+    locationUuid?: string;
   }>();
+  const locationUuid = immunizationToEditMeta?.locationUuid ?? activeVisitLocationUuid;
 
   const immunizationFormSchema = useMemo(() => {
     return z
@@ -239,6 +242,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
           immunizationObsUuid: props.immunizationId,
           persistenceSource: props.persistenceSource,
           visitUuid: props.visitId,
+          locationUuid: props.locationId,
         });
       }
     });
@@ -278,6 +282,16 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
 
   const onSubmit = useCallback(
     async (data: ImmunizationFormInputData) => {
+      if (!locationUuid) {
+        showSnackbar({
+          title: t('errorSaving', 'Error saving vaccination'),
+          subtitle: t('activeVisitLocationRequired', 'An active visit with an operational location is required.'),
+          kind: 'error',
+          isLowContrast: false,
+        });
+        return;
+      }
+
       try {
         const {
           vaccineUuid,
@@ -317,7 +331,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
               immunization,
               config,
               immunizationToEditMeta?.visitUuid || visitContext?.uuid,
-              currentUser?.sessionLocation?.uuid,
+              locationUuid,
             ),
             immunizationToEditMeta?.immunizationObsUuid,
             abortController,
@@ -328,7 +342,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
             mapToFHIRImmunizationResource(
               immunization,
               immunizationToEditMeta?.visitUuid || visitContext?.uuid,
-              currentUser?.sessionLocation?.uuid,
+              locationUuid,
               currentUser?.currentProvider?.uuid,
             ),
             immunizationToEditMeta?.immunizationObsUuid,
@@ -395,12 +409,12 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
       }
     },
     [
-      currentUser?.sessionLocation?.uuid,
       patientUuid,
       currentUser?.currentProvider?.uuid,
       visitContext?.uuid,
       immunizationToEditMeta,
       immunizationsConceptSet,
+      locationUuid,
       closeWorkspace,
       t,
       mutate,

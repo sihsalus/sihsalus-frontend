@@ -6,8 +6,8 @@ import {
   showSnackbar,
   translateFrom,
   useConfig,
-  useSession,
   userHasAccess,
+  useSession,
   Workspace2,
 } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
@@ -65,11 +65,22 @@ const WardPatientNotesWorkspace: React.FC<WardPatientWorkspaceDefinition> = ({
     },
   });
 
-  const locationUuid = session?.sessionLocation?.uuid;
+  const locationUuid =
+    wardPatient.inpatientAdmission?.currentInpatientLocation?.uuid ?? wardPatient.visit?.location?.uuid;
   const providerUuid = session?.currentProvider?.uuid;
 
   const onSubmit = useCallback(
     (data: NotesFormData) => {
+      if (!locationUuid || !providerUuid) {
+        showSnackbar({
+          isLowContrast: false,
+          kind: 'error',
+          subtitle: t('activeWardLocationRequired', 'The ward patient must have an operational location.'),
+          title: t('patientNoteSaveError', 'Error saving patient note'),
+        });
+        return;
+      }
+
       const { wardClinicalNote } = data;
       setIsSubmitting(true);
 

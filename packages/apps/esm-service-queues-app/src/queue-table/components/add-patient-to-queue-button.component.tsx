@@ -1,5 +1,5 @@
 import { Button } from '@carbon/react';
-import { AddIcon, launchWorkspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
+import { AddIcon, launchWorkspace2, useLocations, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { serviceQueuesPatientSearchWorkspace, serviceQueuesStartVisitWorkspace } from '../../constants';
@@ -8,11 +8,25 @@ import { useServiceQueuesStore } from '../../store/store';
 
 const AddPatientToQueueButton: React.FC = () => {
   const { t } = useTranslation();
-  const { selectedServiceUuid } = useServiceQueuesStore();
+  const { selectedQueueLocationName, selectedQueueLocationUuid, selectedServiceUuid } = useServiceQueuesStore();
+  const visitLocations = useLocations('Visit Location');
+  const selectedVisitLocation = visitLocations?.find((location) => location.uuid === selectedQueueLocationUuid);
+  const requiredVisitLocation = selectedVisitLocation
+    ? {
+        uuid: selectedVisitLocation.uuid,
+        display: selectedVisitLocation.display ?? selectedQueueLocationName ?? selectedVisitLocation.uuid,
+      }
+    : undefined;
 
   return (
     <CanEditServiceQueues>
       <Button
+        disabled={!requiredVisitLocation}
+        title={
+          requiredVisitLocation
+            ? undefined
+            : t('selectOperationalQueueLocation', 'Select an operational visit location before adding a patient')
+        }
         kind="primary"
         renderIcon={(props) => <AddIcon size={16} {...props} />}
         size="sm"
@@ -29,8 +43,10 @@ const AddPatientToQueueButton: React.FC = () => {
                 _closeWorkspace: Workspace2DefinitionProps['closeWorkspace'],
               ) {
                 launchChildWorkspace(serviceQueuesPatientSearchWorkspace, {
+                  currentQueueLocationUuid: selectedQueueLocationUuid,
                   currentServiceQueueUuid: selectedServiceUuid,
                   patient,
+                  requiredVisitLocation,
                   selectedPatientUuid: patientUuid,
                 });
               },
@@ -38,8 +54,10 @@ const AddPatientToQueueButton: React.FC = () => {
             {
               startVisitWorkspaceName: serviceQueuesStartVisitWorkspace,
               startVisitWorkspaceProps: {
+                currentQueueLocationUuid: selectedQueueLocationUuid,
                 currentServiceQueueUuid: selectedServiceUuid,
                 openedFrom: 'service-queues-add-patient',
+                requiredVisitLocation,
                 workspaceTitle: t('addPatientToQueue', 'Add patient to queue'),
               },
             },

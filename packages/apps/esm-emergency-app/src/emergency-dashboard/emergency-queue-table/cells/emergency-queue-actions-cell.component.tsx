@@ -65,6 +65,7 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
       WORKSPACES.TRIAGE_VITALS_FORM,
       {
         encounterTypeUuid: triageEncounterTypeUuid,
+        locationUuid: config.emergencyLocationUuid,
         onVitalsSaved: handleTriageVitalsSaved,
         profile: 'emergency-triage',
       },
@@ -73,7 +74,7 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
         patientUuid: queueEntry.patient.uuid,
       },
     );
-  }, [handleTriageVitalsSaved, queueEntry.patient.uuid, triageEncounterTypeUuid]);
+  }, [config.emergencyLocationUuid, handleTriageVitalsSaved, queueEntry.patient.uuid, triageEncounterTypeUuid]);
 
   const handleOpenAttention = useCallback(() => {
     launchWorkspace(WORKSPACES.ATTENTION_FORM, {

@@ -24,7 +24,9 @@ export function useInpatientRequest(
   const { location } = useWardLocation();
   const searchParams = new URLSearchParams();
   searchParams.set('dispositionType', dispositionType.join(','));
-  searchParams.set('dispositionLocation', location?.uuid);
+  if (location?.uuid) {
+    searchParams.set('dispositionLocation', location.uuid);
+  }
   searchParams.set('v', rep);
 
   const { data, ...rest } = useOpenmrsFetchAll<InpatientRequest>(

@@ -92,8 +92,14 @@ type VisitNoteTextFieldName =
 
 interface VisitContextWithUuid {
   uuid?: string;
+  location?: {
+    uuid?: string;
+  };
   visit?: {
     uuid?: string;
+    location?: {
+      uuid?: string;
+    };
   };
 }
 
@@ -288,6 +294,8 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
   } = visitNoteConfig;
   const currentVisitContext = visitContext as VisitContextWithUuid | null | undefined;
   const visitUuid = currentVisitContext?.visit?.uuid ?? currentVisitContext?.uuid;
+  const locationUuid =
+    encounter?.location?.uuid ?? currentVisitContext?.visit?.location?.uuid ?? currentVisitContext?.location?.uuid;
   const { clinicalContext } = useVisitNoteClinicalContext(patientUuid, visitUuid);
   const [isLoadingPrimaryDiagnoses, setIsLoadingPrimaryDiagnoses] = useState(false);
   const [isLoadingSecondaryDiagnoses, setIsLoadingSecondaryDiagnoses] = useState(false);
@@ -508,7 +516,6 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
     [globalMutate],
   );
 
-  const locationUuid = session?.sessionLocation?.uuid;
   const providerUuid = session?.currentProvider?.uuid;
   const encounterProvider = encounter?.encounterProviders?.[0]?.provider;
   const registeredProviderUuid = isEditing ? encounterProvider?.uuid : providerUuid;
@@ -741,6 +748,16 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
       } = data;
 
       if (isPrimaryDiagnosisRequired && !selectedPrimaryDiagnoses.length) {
+        return;
+      }
+
+      if (!locationUuid) {
+        showSnackbar({
+          title: t('visitNoteSaveError', 'Error saving visit note'),
+          subtitle: t('activeVisitLocationRequired', 'An active visit with an operational location is required.'),
+          kind: 'error',
+          isLowContrast: false,
+        });
         return;
       }
 

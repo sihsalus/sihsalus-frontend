@@ -68,11 +68,11 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
       return;
     }
 
-    const locationUuid = session?.sessionLocation?.uuid;
+    const locationUuid = config.credScheduling?.appointmentLocationUuid;
     if (!locationUuid) {
       showSnackbar({
         title: t('locationError', 'Error de ubicación'),
-        subtitle: t('noSessionLocation', 'No se pudo determinar la ubicación actual.'),
+        subtitle: t('noAppointmentLocationUuid', 'No se configuró la ubicación asistencial para las citas CRED.'),
         kind: 'error',
       });
       return;
@@ -126,7 +126,7 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
     } finally {
       setIsGenerating(false);
     }
-  }, [config, session, controlsToSchedule, patientUuid, mutateAppointments, t]);
+  }, [config, controlsToSchedule, patientUuid, mutateAppointments, t]);
 
   if (isLoading)
     return <InlineLoading description={t('loadingSchedule', 'Cargando calendario Crecimiento y Desarrollo...')} />;

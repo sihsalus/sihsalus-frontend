@@ -1,29 +1,25 @@
 import {
-  type FetchResponse,
   formatDatetime,
   type OpenmrsResource,
   openmrsFetch,
   parseDate,
   restBaseUrl,
   useConfig,
-  useSession,
   type Visit,
 } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import last from 'lodash-es/last';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
-import useSWRInfinite from 'swr/infinite';
 
-import { type ActiveVisit, type VisitResponse } from '../types';
+import { useFacilityActiveVisits } from '../active-visits.resource';
+import { type ActiveVisit } from '../types';
 
 dayjs.extend(isToday);
 
 import { getPreferredIdentifier } from '@openmrs/esm-framework';
-
-type VisitIdentifier = NonNullable<Visit['patient']>['identifiers'][number];
 
 export function mapVisitObservations(encounters: Visit['encounters'] | undefined) {
   const allObs = (encounters ?? []).flatMap((encounter) => encounter.obs ?? []);
@@ -42,50 +38,8 @@ export function mapVisitObservations(encounters: Visit['encounters'] | undefined
 }
 
 export function useActiveVisits() {
-  const session = useSession();
   const config = useConfig();
-  const sessionLocation = session?.sessionLocation?.uuid;
-
-  const customRepresentation =
-    'custom:(uuid,patient:(uuid,identifiers:(identifier,uuid,identifierType:(name,uuid)),' +
-    'person:(age,display,gender,uuid,attributes:(value,attributeType:(uuid,display)))),' +
-    'visitType:(uuid,name,display),location:(uuid,name,display),startDatetime,stopDatetime,' +
-    'encounters:(encounterDatetime,obs:(uuid,concept:(uuid,display),value)))';
-
-  const getUrl = (pageIndex, previousPageData: FetchResponse<VisitResponse>) => {
-    if (pageIndex && !previousPageData?.data?.links?.some((link) => link.rel === 'next')) {
-      return null;
-    }
-
-    const url = `${restBaseUrl}/visit?v=${customRepresentation}&`;
-    const urlSearchParams = new URLSearchParams();
-
-    urlSearchParams.append('includeParentLocations', 'true');
-    urlSearchParams.append('includeInactive', 'false');
-    urlSearchParams.append('totalCount', 'true');
-    urlSearchParams.append('location', `${sessionLocation}`);
-
-    if (pageIndex) {
-      urlSearchParams.append('startIndex', `${pageIndex * 50}`);
-    }
-
-    return url + urlSearchParams.toString();
-  };
-
-  const {
-    data,
-    error,
-    isLoading,
-    isValidating,
-    size: pageNumber,
-    setSize,
-  } = useSWRInfinite<FetchResponse<VisitResponse>, Error>(sessionLocation ? getUrl : null, openmrsFetch);
-
-  useEffect(() => {
-    if (data && data?.[pageNumber - 1]?.data?.links?.some((link) => link.rel === 'next')) {
-      setSize((currentSize) => currentSize + 1);
-    }
-  }, [data, pageNumber, setSize]);
+  const { visits, error, isLoading, isValidating, totalResults } = useFacilityActiveVisits();
 
   const mapVisitProperties = (visit: Visit): ActiveVisit => {
     // create base object
@@ -142,16 +96,14 @@ export function useActiveVisits() {
     return activeVisits;
   };
 
-  const formattedActiveVisits: Array<ActiveVisit> = data
-    ? [].concat(...(data?.map((res) => res?.data?.results?.map(mapVisitProperties)) ?? []))
-    : [];
+  const formattedActiveVisits: Array<ActiveVisit> = visits.map(mapVisitProperties);
 
   return {
     activeVisits: formattedActiveVisits,
     error,
     isLoading,
     isValidating,
-    totalResults: data?.[0]?.data?.totalCount ?? 0,
+    totalResults,
   };
 }
 

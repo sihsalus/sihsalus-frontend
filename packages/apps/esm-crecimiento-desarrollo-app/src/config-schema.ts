@@ -1071,6 +1071,11 @@ export const configSchema = {
       _description: 'UUID del AppointmentService para controles CRED',
       _default: '',
     },
+    appointmentLocationUuid: {
+      _type: Type.UUID,
+      _description: 'UUID de la ubicación asistencial donde se programan los controles CRED',
+      _default: '35d2234e-129a-4c40-abb2-1ae0b2400001',
+    },
     lookaheadCount: {
       _type: Type.Number,
       _description: 'Compatibilidad legada: el flujo normativo genera siempre una única próxima cita',
@@ -1452,6 +1457,7 @@ export interface ConfigObject {
   };
   credScheduling: {
     appointmentServiceUuid: string;
+    appointmentLocationUuid: string;
     lookaheadCount: number;
     defaultAppointmentDurationMins: number;
   };

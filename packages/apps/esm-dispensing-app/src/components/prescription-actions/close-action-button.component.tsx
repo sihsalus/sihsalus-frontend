@@ -1,5 +1,5 @@
 import { Button } from '@carbon/react';
-import { launchWorkspace2, userHasAccess, type Session } from '@openmrs/esm-framework';
+import { launchWorkspace2, type Session, userHasAccess } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { dispensingEditPrivilege } from '../../constants';
@@ -12,6 +12,7 @@ type CloseActionButtonProps = {
   medicationRequestBundle: MedicationRequestBundle;
   session: Session;
   providers: Array<Provider>;
+  dispensingLocationUuid: string;
   closeable: boolean;
   disabled: boolean;
 };
@@ -22,20 +23,27 @@ const CloseActionButton: React.FC<CloseActionButtonProps> = ({
   medicationRequestBundle,
   session,
   providers,
+  dispensingLocationUuid,
   closeable,
   disabled,
 }) => {
   const { t } = useTranslation();
 
-  const closeDispenseFormProps = {
-    patientUuid,
-    encounterUuid,
-    medicationDispense: initiateMedicationDispenseBody(medicationRequestBundle.request, session, providers, false),
-    mode: 'enter',
-  };
-
   const handleLaunchWorkspace = () => {
-    launchWorkspace2('close-dispense-workspace', closeDispenseFormProps);
+    if (dispensingLocationUuid) {
+      launchWorkspace2('close-dispense-workspace', {
+        patientUuid,
+        encounterUuid,
+        medicationDispense: initiateMedicationDispenseBody(
+          medicationRequestBundle.request,
+          session,
+          providers,
+          false,
+          dispensingLocationUuid,
+        ),
+        mode: 'enter',
+      });
+    }
   };
 
   if (!closeable) {
@@ -45,7 +53,7 @@ const CloseActionButton: React.FC<CloseActionButtonProps> = ({
     return null;
   }
   return (
-    <Button kind="danger" onClick={handleLaunchWorkspace} disabled={disabled}>
+    <Button kind="danger" onClick={handleLaunchWorkspace} disabled={disabled || !dispensingLocationUuid}>
       {t('close', 'Close')}
     </Button>
   );

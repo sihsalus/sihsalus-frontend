@@ -10,7 +10,7 @@
  * - Proper error handling and user feedback
  */
 
-import { openmrsFetch, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
+import { openmrsFetch, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Config } from '../../config-schema';
@@ -34,7 +34,6 @@ interface VisitSearchResponse {
 export function useEmergencyVisit() {
   const { t } = useTranslation();
   const [isCreatingVisit, setIsCreatingVisit] = useState(false);
-  const session = useSession();
   const config = useConfig<Config>();
 
   /**
@@ -72,10 +71,20 @@ export function useEmergencyVisit() {
       setIsCreatingVisit(true);
 
       try {
+        const emergencyLocationUuid = config.emergencyLocationUuid;
+        if (!emergencyLocationUuid) {
+          showSnackbar({
+            title: t('errorCreatingVisit', 'Error al crear visita'),
+            subtitle: t('emergencyLocationNotConfigured', 'No se configuró la ubicación operativa de emergencia.'),
+            kind: 'error',
+          });
+          return null;
+        }
+
         const visitPayload = {
           patient: patientUuid,
           visitType: config.emergencyVisitTypeUuid,
-          location: session?.sessionLocation?.uuid || config.patientRegistration?.defaultLocationUuid,
+          location: emergencyLocationUuid,
           startDatetime: startDatetime ? new Date(startDatetime).toISOString() : new Date().toISOString(),
         };
 
@@ -133,7 +142,7 @@ export function useEmergencyVisit() {
         setIsCreatingVisit(false);
       }
     },
-    [config, session, t],
+    [config, t],
   );
 
   /**

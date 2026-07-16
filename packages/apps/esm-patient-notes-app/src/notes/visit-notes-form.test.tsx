@@ -36,7 +36,10 @@ const defaultProps: PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}> = 
   groupProps: {
     patient: mockPatient as unknown as fhir.Patient,
     patientUuid: mockPatient.id,
-    visitContext: null,
+    visitContext: {
+      uuid: 'active-visit-uuid',
+      location: { uuid: 'operational-location-uuid', display: 'UPSS - CONSULTA EXTERNA' },
+    } as never,
     mutateVisitContext: null,
   },
   launchChildWorkspace: vi.fn(),
@@ -337,7 +340,7 @@ test('renders a success snackbar upon successfully recording a visit note', asyn
     ]),
     encounterType: ConfigMock.visitNoteConfig.encounterTypeUuid,
     form: ConfigMock.visitNoteConfig.formConceptUuid,
-    location: mockSessionDataResponse.data.sessionLocation.uuid,
+    location: 'operational-location-uuid',
     obs: expect.arrayContaining([
       {
         concept: { display: '', uuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
@@ -359,7 +362,15 @@ test('renders a success snackbar upon successfully recording a visit note', asyn
   } as Awaited<ReturnType<typeof saveVisitNote>>);
   mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
 
-  renderVisitNotesForm({}, { visitContext: { uuid: 'active-visit-uuid' } as never });
+  renderVisitNotesForm(
+    {},
+    {
+      visitContext: {
+        uuid: 'active-visit-uuid',
+        location: { uuid: 'operational-location-uuid', display: 'UPSS - CONSULTA EXTERNA' },
+      } as never,
+    },
+  );
 
   const chiefComplaint = screen.getByRole('textbox', { name: /Chief complaint/i });
   const clinicalNote = screen.getByRole('textbox', { name: /Additional notes/i });
@@ -506,7 +517,7 @@ test('updates existing visit note when in edit mode', async () => {
     ],
     encounterType: ConfigMock.visitNoteConfig.encounterTypeUuid,
     form: ConfigMock.visitNoteConfig.formConceptUuid,
-    location: mockSessionDataResponse.data.sessionLocation.uuid,
+    location: 'operational-location-uuid',
     obs: expect.arrayContaining([
       expect.objectContaining({
         concept: { display: '', uuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
@@ -620,7 +631,7 @@ test('allows saving visit note without primary diagnosis when isPrimaryDiagnosis
     ]),
     encounterType: ConfigMock.visitNoteConfig.encounterTypeUuid,
     form: ConfigMock.visitNoteConfig.formConceptUuid,
-    location: mockSessionDataResponse.data.sessionLocation.uuid,
+    location: 'operational-location-uuid',
     obs: expect.arrayContaining([
       {
         concept: { display: '', uuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },

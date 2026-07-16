@@ -1,29 +1,18 @@
-import { useSession } from '@openmrs/esm-framework';
 import { renderHook } from '@testing-library/react';
-import { mockSession } from '__mocks__';
 import { useParams } from 'react-router-dom';
 import useLocation from './useLocation';
 import useWardLocation from './useWardLocation';
 
-vi.mock('@openmrs/esm-framework', async () => ({
-  ...(await vi.importActual('@openmrs/esm-framework')),
-  useSession: vi.fn(),
-}));
 vi.mock('react-router-dom', () => ({
   useParams: vi.fn(),
 }));
 vi.mock('./useLocation', () => ({ default: vi.fn() }));
 
 const mockUseParams = vi.mocked(useParams);
-const mockUseSession = vi.mocked(useSession);
 const mockUseLocation = useLocation as vi.Mock;
 
 describe('useWardLocation', () => {
-  beforeEach(() => {
-    mockUseSession.mockReturnValue(mockSession.data);
-  });
-
-  it('returns session location when locationUuidFromUrl is not provided', async () => {
+  it('does not treat the login facility as a ward when no location is provided', async () => {
     mockUseParams.mockReturnValue({});
     mockUseLocation.mockReturnValue({
       data: null,
@@ -34,7 +23,7 @@ describe('useWardLocation', () => {
     });
 
     const { result } = renderHook(() => useWardLocation());
-    expect(result.current.location).toBe(mockSession.data.sessionLocation);
+    expect(result.current.location).toBeUndefined();
   });
 
   it('returns location from useLocation when locationUuidFromUrl is provided', async () => {
@@ -44,6 +33,7 @@ describe('useWardLocation', () => {
         data: {
           display: 'Test Location',
           name: 'Test Location',
+          tags: [{ uuid: 'admission-location-tag', display: 'Admission Location' }],
           uuid: 'test-location-uuid',
         },
       },
@@ -58,6 +48,7 @@ describe('useWardLocation', () => {
     expect(result.current.location).toEqual({
       display: 'Test Location',
       name: 'Test Location',
+      tags: [{ uuid: 'admission-location-tag', display: 'Admission Location' }],
       uuid: 'test-location-uuid',
     });
     expect(result.current.invalidLocation).toBeFalsy();
@@ -105,5 +96,27 @@ describe('useWardLocation', () => {
 
     const { result } = renderHook(() => useWardLocation());
     expect(result.current.invalidLocation).toBeTruthy();
+  });
+
+  it('rejects a location that is not an Admission Location', () => {
+    mockUseParams.mockReturnValue({ locationUuid: 'hospital-uuid' });
+    mockUseLocation.mockReturnValue({
+      data: {
+        data: {
+          display: 'Hospital Santa Clotilde',
+          tags: [{ uuid: 'facility-location-tag', display: 'Facility Location' }],
+          uuid: 'hospital-uuid',
+        },
+      },
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+
+    const { result } = renderHook(() => useWardLocation());
+
+    expect(result.current.location).toBeUndefined();
+    expect(result.current.invalidLocation).toBe(true);
   });
 });

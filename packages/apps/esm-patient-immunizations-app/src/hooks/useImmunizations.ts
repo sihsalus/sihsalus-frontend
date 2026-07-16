@@ -39,7 +39,7 @@ export function useImmunizations(patientUuid: string) {
   const immunizationsUrl = `${fhirBaseUrl}/Immunization?patient=${patientUuid}`;
   const ampathImmunizationsUrl =
     patientUuid && ampathPersistence.enabled
-      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${ampathPersistence.encounterTypeUuid}&form=${ampathPersistence.formUuid}&v=custom:(uuid,encounterDatetime,visit:(uuid),obs:(uuid,concept:(uuid,display),value:(uuid,display,name)))&limit=100`
+      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${ampathPersistence.encounterTypeUuid}&form=${ampathPersistence.formUuid}&v=custom:(uuid,encounterDatetime,visit:(uuid),location:(uuid),obs:(uuid,concept:(uuid,display),value:(uuid,display,name)))&limit=100`
       : null;
 
   const { data, error, isLoading, isValidating, mutate } = useFhirFetchAll<FHIRImmunizationResource>(immunizationsUrl);

@@ -21,11 +21,17 @@ import ExistingVisitFormComponent from './existing-visit-form/existing-visit-for
 interface PatientSearchProps extends DefaultWorkspaceProps {
   selectedPatientUuid: string;
   currentServiceQueueUuid?: string;
+  currentQueueLocationUuid?: string;
+  requiredVisitLocation?: {
+    uuid: string;
+    display: string;
+  };
   handleBackToSearchList?: () => void;
 }
 
 export const AddPatientToQueueContext = React.createContext({
   currentServiceQueueUuid: '',
+  currentQueueLocationUuid: '',
 });
 
 /**
@@ -37,6 +43,8 @@ const CreateQueueEntryWorkspace: React.FC<PatientSearchProps> = ({
   promptBeforeClosing,
   selectedPatientUuid,
   currentServiceQueueUuid,
+  currentQueueLocationUuid,
+  requiredVisitLocation,
   handleBackToSearchList,
 }) => {
   const { t } = useTranslation();
@@ -53,7 +61,7 @@ const CreateQueueEntryWorkspace: React.FC<PatientSearchProps> = ({
 
   return patient ? (
     <div className={styles.patientSearchContainer}>
-      <AddPatientToQueueContext.Provider value={{ currentServiceQueueUuid }}>
+      <AddPatientToQueueContext.Provider value={{ currentQueueLocationUuid, currentServiceQueueUuid }}>
         <div className={styles.patientBannerContainer}>
           <div className={styles.patientBanner}>
             <div className={styles.patientPhoto} role="img">
@@ -87,13 +95,21 @@ const CreateQueueEntryWorkspace: React.FC<PatientSearchProps> = ({
         ) : error ? (
           <ErrorState headerTitle={t('errorFetchingVisit', 'Error fetching patient visit')} error={error} />
         ) : activeVisit ? (
-          <ExistingVisitFormComponent visit={activeVisit} closeWorkspace={closeWorkspace} />
+          <ExistingVisitFormComponent
+            visit={activeVisit}
+            closeWorkspace={closeWorkspace}
+            currentQueueLocationUuid={currentQueueLocationUuid}
+            currentServiceQueueUuid={currentServiceQueueUuid}
+          />
         ) : (
           <ExtensionSlot
             name="start-visit-workspace-form-slot"
             state={{
               patientUuid: selectedPatientUuid,
               closeWorkspace,
+              currentQueueLocationUuid,
+              currentServiceQueueUuid,
+              requiredVisitLocation,
               promptBeforeClosing,
               openedFrom: 'service-queues-add-patient',
             }}

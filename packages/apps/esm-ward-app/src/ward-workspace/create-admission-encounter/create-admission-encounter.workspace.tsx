@@ -82,6 +82,14 @@ const CreateAdmissionEncounterWorkspace: React.FC<
         </Button>
       </>
     );
+  } else if (!location) {
+    content = (
+      <InlineNotification
+        kind="error"
+        lowContrast={true}
+        title={t('invalidLocationSpecified', 'Invalid location specified')}
+      />
+    );
   } else {
     const assignedBedDetail = bedData.data.results[0];
     const isAssignedBedAtCurrentLocation = assignedBedDetail?.physicalLocation?.uuid === location.uuid;

@@ -39,7 +39,7 @@ function ClinicMetrics() {
     isEnded: false,
   });
 
-  const { activeVisitsCount, isLoading: loading } = useActiveVisits();
+  const { activeVisitsCount, isLoading: loading } = useActiveVisits(selectedQueueLocationUuid);
   const { waitTime } = useAverageWaitTime(selectedServiceUuid, defaultStatusConceptUuid);
 
   const defaultServiceItem: Service = {

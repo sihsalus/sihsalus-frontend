@@ -90,9 +90,9 @@ describe('WardView', () => {
 
   it('renders notification for invalid location uuid', () => {
     mockUseWardLocation.mockReturnValueOnce({
-      location: null,
+      location: undefined,
       isLoadingLocation: false,
-      errorFetchingLocation: null,
+      errorFetchingLocation: undefined,
       invalidLocation: true,
     });
 

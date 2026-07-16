@@ -1,5 +1,5 @@
 import { Button } from '@carbon/react';
-import { launchWorkspace2, userHasAccess, type Session } from '@openmrs/esm-framework';
+import { launchWorkspace2, type Session, userHasAccess } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { dispensingEditPrivilege } from '../../constants';
@@ -12,6 +12,7 @@ type PauseActionButtonProps = {
   medicationRequestBundle: MedicationRequestBundle;
   session: Session;
   providers: Array<Provider>;
+  dispensingLocationUuid: string;
   pauseable: boolean;
   disabled: boolean;
 };
@@ -22,19 +23,26 @@ const PauseActionButton: React.FC<PauseActionButtonProps> = ({
   medicationRequestBundle,
   session,
   providers,
+  dispensingLocationUuid,
   pauseable,
   disabled,
 }) => {
   const { t } = useTranslation();
-  const pauseWorkspaceProps = {
-    patientUuid,
-    encounterUuid,
-    medicationDispense: initiateMedicationDispenseBody(medicationRequestBundle.request, session, providers, false),
-    mode: 'enter',
-  };
-
   const handleLaunchWorkspace = () => {
-    launchWorkspace2('pause-dispense-workspace', pauseWorkspaceProps);
+    if (dispensingLocationUuid) {
+      launchWorkspace2('pause-dispense-workspace', {
+        patientUuid,
+        encounterUuid,
+        medicationDispense: initiateMedicationDispenseBody(
+          medicationRequestBundle.request,
+          session,
+          providers,
+          false,
+          dispensingLocationUuid,
+        ),
+        mode: 'enter',
+      });
+    }
   };
 
   if (!pauseable) {
@@ -44,7 +52,7 @@ const PauseActionButton: React.FC<PauseActionButtonProps> = ({
     return null;
   }
   return (
-    <Button kind="secondary" onClick={handleLaunchWorkspace} disabled={disabled}>
+    <Button kind="secondary" onClick={handleLaunchWorkspace} disabled={disabled || !dispensingLocationUuid}>
       {t('pause', 'Pause')}
     </Button>
   );

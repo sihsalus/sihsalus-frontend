@@ -1,6 +1,6 @@
+import type { Session } from '@openmrs/esm-framework';
 import { ExtensionSlot, useConfig, userHasAccess } from '@openmrs/esm-framework';
 import { render } from '@testing-library/react';
-import type { Session } from '@openmrs/esm-framework';
 import { MedicationDispenseStatus, type MedicationRequest, MedicationRequestStatus } from '../types';
 import { computeMedicationRequestStatus, getMostRecentMedicationDispenseStatus } from '../utils';
 import ActionButtons from './action-buttons.component';
@@ -130,6 +130,7 @@ const prescriptionActionsState = {
   medicationRequestBundle: { request: medicationRequest, dispenses: [] },
   session: mockSession,
   providers: [],
+  dispensingLocationUuid: 'pharmacy-location-uuid',
   disabled: false,
 };
 
@@ -137,6 +138,7 @@ describe('Action Buttons Component tests', () => {
   beforeEach(() => {
     mockedUserHasAccess.mockReturnValue(true);
     mockedUseConfig.mockReturnValue({
+      dispensingLocationUuid: 'pharmacy-location-uuid',
       medicationRequestExpirationPeriodInDays: 90,
       actionButtons: {
         pauseButton: {

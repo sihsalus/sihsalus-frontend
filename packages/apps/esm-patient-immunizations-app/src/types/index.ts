@@ -59,6 +59,7 @@ export interface ExistingDoses {
     text: string;
   }>;
   visitUuid?: string;
+  locationUuid?: string;
   nextDoseDate: string;
   lotNumber: string;
   manufacturer: string;

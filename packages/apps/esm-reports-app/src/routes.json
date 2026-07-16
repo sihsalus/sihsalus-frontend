@@ -11,35 +11,26 @@
       "name": "reports-app-menu-item",
       "slot": "app-menu-item-slot",
       "component": "reportsAppMenuItem",
+      "privileges": "app:reportes",
       "order": 50
     },
     {
       "name": "run-report",
-      "component": "runReport"
+      "component": "runReport",
+      "privileges": "app:reportes"
     }
   ],
   "pages": [
     {
       "component": "root",
       "route": "reports"
-    },
-    {
-      "component": "overview",
-      "route": "overview"
-    },
-    {
-      "component": "scheduled-overview",
-      "route": "scheduled-overview"
-    },
-    {
-      "component": "reports-data-overview",
-      "route": "reports-data-overview"
     }
   ],
   "modals": [
     {
       "name": "cancel-report-modal",
-      "component": "cancelReportModal"
+      "component": "cancelReportModal",
+      "privileges": "app:reportes"
     }
   ]
 }

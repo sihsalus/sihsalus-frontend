@@ -20,8 +20,10 @@ import {
 } from '@carbon/react';
 import { Edit } from '@carbon/react/icons';
 import { isDesktop, restBaseUrl } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { stockManagementItemsEditPrivilege } from '../constants';
 import { ResourceRepresentation } from '../core/api/api';
 import { type StockItemDTO } from '../core/api/types/stockItem/StockItem';
 import { type CustomTableHeader } from '../core/components/table/types';
@@ -172,7 +174,14 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
       key: `key-${stockItem?.uuid}`,
       uuid: `${stockItem?.uuid}`,
       type: stockItem?.drugUuid ? t('drug', 'Drug') : t('other', 'Other'),
-      genericName: <EditStockItemActionsMenu data={displayedItems[index]} />,
+      genericName: (
+        <RequirePrivilege
+          privilege={stockManagementItemsEditPrivilege}
+          fallback={<span>{stockItem?.drugName ?? stockItem.conceptName}</span>}
+        >
+          <EditStockItemActionsMenu data={displayedItems[index]} />
+        </RequirePrivilege>
+      ),
       commonName: stockItem?.commonName,
       tradeName: stockItem?.drugUuid ? stockItem?.conceptName : '',
       preferredVendorName: stockItem?.preferredVendorName,
@@ -184,16 +193,18 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
           ? `${stockItem?.reorderLevel?.toLocaleString()} ${stockItem?.reorderLevelUoMName}`
           : '',
       actions: (
-        <IconButton
-          kind="ghost"
-          label={t('editStockItem', 'Edit stock item')}
-          onClick={() => {
-            stockItem.isDrug = !!stockItem.drugUuid;
-            launchAddOrEditStockItemWorkspace(t, stockItem);
-          }}
-        >
-          <Edit size={16} />
-        </IconButton>
+        <RequirePrivilege privilege={stockManagementItemsEditPrivilege} hideUnauthorized>
+          <IconButton
+            kind="ghost"
+            label={t('editStockItem', 'Edit stock item')}
+            onClick={() => {
+              stockItem.isDrug = !!stockItem.drugUuid;
+              launchAddOrEditStockItemWorkspace(t, stockItem);
+            }}
+          >
+            <Edit size={16} />
+          </IconButton>
+        </RequirePrivilege>
       ),
     }));
   }, [displayedItems, t]);
@@ -233,13 +244,17 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
                   value={searchInput}
                 />
                 <FilterStockItems filterType={isDrug} changeFilterType={setDrug} />
-                <AddStockItemsBulktImportActionButton />
+                <RequirePrivilege privilege={stockManagementItemsEditPrivilege} hideUnauthorized>
+                  <AddStockItemsBulktImportActionButton />
+                </RequirePrivilege>
                 <TableToolbarMenu data-testid="stock-items-menu">
                   <TableToolbarAction className={styles.toolbarAction} onClick={handleRefresh}>
                     {t('refresh', 'Refresh')}
                   </TableToolbarAction>
                 </TableToolbarMenu>
-                <AddStockItemActionButton />
+                <RequirePrivilege privilege={stockManagementItemsEditPrivilege} hideUnauthorized>
+                  <AddStockItemActionButton />
+                </RequirePrivilege>
               </TableToolbarContent>
             </TableToolbar>
             <Table {...getTableProps()}>

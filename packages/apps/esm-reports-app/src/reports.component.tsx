@@ -1,3 +1,4 @@
+import { modulePrivileges, RequireModulePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
@@ -9,15 +10,17 @@ import styles from './root.scss';
 
 const RootComponent: React.FC = () => {
   return (
-    <div className={styles.container}>
-      <BrowserRouter basename={`${globalThis.getOpenmrsSpaBase().slice(0, -1)}${basePath}`}>
-        <Routes>
-          <Route path="/" element={<OverviewComponent />} />
-          <Route path="/scheduled-overview" element={<ScheduledOverviewComponent />} />
-          <Route path="/reports-data-overview" element={<ReportsDataOverviewComponent />} />
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <RequireModulePrivilege privilege={modulePrivileges.reports}>
+      <div className={styles.container}>
+        <BrowserRouter basename={`${globalThis.getOpenmrsSpaBase().slice(0, -1)}${basePath}`}>
+          <Routes>
+            <Route path="/" element={<OverviewComponent />} />
+            <Route path="/scheduled-overview" element={<ScheduledOverviewComponent />} />
+            <Route path="/reports-data-overview" element={<ReportsDataOverviewComponent />} />
+          </Routes>
+        </BrowserRouter>
+      </div>
+    </RequireModulePrivilege>
   );
 };
 

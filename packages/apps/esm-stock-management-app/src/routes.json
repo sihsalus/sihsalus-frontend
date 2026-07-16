@@ -17,6 +17,7 @@
       "name": "overview-db-link",
       "slot": "stock-page-dashboard-slot",
       "component": "stockOverviewLink",
+      "privileges": "app:gestionInventario.resumen",
       "meta": {
         "name": "overview",
         "slot": "overview-dashboard-slot",
@@ -29,12 +30,14 @@
     {
       "name": "stock-overview-db",
       "slot": "overview-dashboard-slot",
-      "component": "stockOverview"
+      "component": "stockOverview",
+      "privileges": "app:gestionInventario.resumen"
     },
     {
       "name": "operations-db-link",
       "slot": "stock-page-dashboard-slot",
       "component": "stockOperationsLink",
+      "privileges": "app:gestionInventario.operaciones",
       "meta": {
         "name": "operations",
         "slot": "operations-dashboard-slot",
@@ -47,12 +50,14 @@
     {
       "name": "stock-operations-db",
       "slot": "operations-dashboard-slot",
-      "component": "stockOperations"
+      "component": "stockOperations",
+      "privileges": "app:gestionInventario.operaciones"
     },
     {
       "name": "items-db-link",
       "slot": "stock-page-dashboard-slot",
       "component": "stockItemsLink",
+      "privileges": "app:gestionInventario.articulos",
       "meta": {
         "name": "items",
         "slot": "items-dashboard-slot",
@@ -65,12 +70,14 @@
     {
       "name": "stock-items-db",
       "slot": "items-dashboard-slot",
-      "component": "stockItems"
+      "component": "stockItems",
+      "privileges": "app:gestionInventario.articulos"
     },
     {
       "name": "user-scopes-db-link",
       "slot": "stock-page-dashboard-slot",
       "component": "stockUserScopesLink",
+      "privileges": "app:gestionInventario.ambitosRoles",
       "meta": {
         "name": "user-scopes",
         "slot": "user-scopes-dashboard-slot",
@@ -83,12 +90,14 @@
     {
       "name": "stock-user-scopes-db",
       "slot": "user-scopes-dashboard-slot",
-      "component": "stockUserScopes"
+      "component": "stockUserScopes",
+      "privileges": "app:gestionInventario.ambitosRoles"
     },
     {
       "name": "sources-db-link",
       "slot": "stock-page-dashboard-slot",
       "component": "stockSourcesLink",
+      "privileges": "app:gestionInventario.fuentes",
       "meta": {
         "name": "sources",
         "slot": "sources-dashboard-slot",
@@ -101,12 +110,14 @@
     {
       "name": "stock-sources-db",
       "slot": "sources-dashboard-slot",
-      "component": "stockSources"
+      "component": "stockSources",
+      "privileges": "app:gestionInventario.fuentes"
     },
     {
       "name": "reports-db-link",
       "slot": "stock-page-dashboard-slot",
       "component": "stockReportsLink",
+      "privileges": "app:gestionInventario.reportes",
       "meta": {
         "name": "reports",
         "slot": "reports-dashboard-slot",
@@ -119,12 +130,14 @@
     {
       "name": "stock-reports-db",
       "slot": "reports-dashboard-slot",
-      "component": "stockReports"
+      "component": "stockReports",
+      "privileges": "app:gestionInventario.reportes"
     },
     {
       "name": "settings-db-link",
       "slot": "stock-page-dashboard-slot",
       "component": "stockSettingsLink",
+      "privileges": "app:gestionInventario.configuracion",
       "meta": {
         "name": "settings",
         "slot": "settings-dashboard-slot",
@@ -137,35 +150,42 @@
     {
       "name": "stock-settings-db",
       "slot": "settings-dashboard-slot",
-      "component": "stockSettings"
+      "component": "stockSettings",
+      "privileges": "app:gestionInventario.configuracion"
     },
     {
       "name": "stock-management-app-menu-item",
       "slot": "app-menu-item-slot",
       "component": "stockManagementAppMenuItem",
+      "privileges": "app:gestionInventario",
       "order": 30
     },
     {
       "name": "delete-packaging-unit-button",
-      "component": "deletePackagingUnitButton"
+      "component": "deletePackagingUnitButton",
+      "privileges": "app:gestionInventario.articulos.editar"
     }
   ],
   "modals": [
     {
       "name": "delete-stock-modal",
-      "component": "deleteStockModal"
+      "component": "deleteStockModal",
+      "privileges": "app:gestionInventario.fuentes.editar"
     },
     {
       "name": "delete-stock-user-scope-modal",
-      "component": "deleteUserScopeModal"
+      "component": "deleteUserScopeModal",
+      "privileges": "app:gestionInventario.ambitosRoles.editar"
     },
     {
       "name": "delete-stock-rule-modal",
-      "component": "deleteStockRuleModal"
+      "component": "deleteStockRuleModal",
+      "privileges": "app:gestionInventario.articulos.editar"
     },
     {
       "name": "delete-packaging-unit-modal",
-      "component": "deletePackagingUnitModal"
+      "component": "deletePackagingUnitModal",
+      "privileges": "app:gestionInventario.articulos.editar"
     },
     {
       "name": "expired-stock-modal",
@@ -173,7 +193,8 @@
     },
     {
       "name": "import-bulk-stock-items",
-      "component": "importBulkStockItemsModal"
+      "component": "importBulkStockItemsModal",
+      "privileges": "app:gestionInventario.articulos.editar"
     },
     {
       "name": "receiving-stock-modal",
@@ -181,7 +202,8 @@
     },
     {
       "name": "stock-operations-modal",
-      "component": "stockOperationsModal"
+      "component": "stockOperationsModal",
+      "privileges": "app:gestionInventario.operaciones.editar"
     },
     {
       "name": "transactions-print-bincard-preview-modal",
@@ -199,13 +221,15 @@
       "title": "Stock Operation",
       "type": "form",
       "canMaximize": true,
-      "width": "extra-wide"
+      "width": "extra-wide",
+      "privileges": "app:gestionInventario.operaciones.editar"
     },
     {
       "name": "stock-item-rules-form-workspace",
       "component": "stockItemRulesFormWorkspace",
       "title": "Stock Item Rules",
-      "type": "form"
+      "type": "form",
+      "privileges": "app:gestionInventario.articulos.editar"
     },
     {
       "name": "stock-item-form-workspace",
@@ -213,7 +237,8 @@
       "title": "Stock Items",
       "type": "form",
       "canMaximize": true,
-      "width": "extra-wide"
+      "width": "extra-wide",
+      "privileges": "app:gestionInventario.articulos.editar"
     },
     {
       "name": "stock-sources-form-workspace",
@@ -221,7 +246,8 @@
       "title": "Stock Sources",
       "type": "form",
       "canMaximize": true,
-      "width": "extra-wide"
+      "width": "extra-wide",
+      "privileges": "app:gestionInventario.fuentes.editar"
     },
     {
       "name": "stock-location-form-workspace",
@@ -229,7 +255,8 @@
       "title": "Stock Locations",
       "type": "form",
       "canMaximize": true,
-      "width": "extra-wide"
+      "width": "extra-wide",
+      "privileges": "app:gestionInventario.configuracion.editar"
     },
     {
       "name": "stock-user-role-scopes-form-workspace",
@@ -237,7 +264,8 @@
       "title": "User Role Scopes",
       "type": "form",
       "canMaximize": true,
-      "width": "extra-wide"
+      "width": "extra-wide",
+      "privileges": "app:gestionInventario.ambitosRoles.editar"
     },
     {
       "name": "stock-reports-form-workspace",
@@ -245,7 +273,8 @@
       "title": "Reports",
       "type": "form",
       "canMaximize": true,
-      "width": "extra-wide"
+      "width": "extra-wide",
+      "privileges": "app:gestionInventario.reportes.editar"
     }
   ],
   "pages": [

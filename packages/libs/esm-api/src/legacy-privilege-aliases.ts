@@ -117,7 +117,6 @@ const renamedPrivilegePairs = [
   ['app:opciones.fusionarPacientes', 'app:topnav.mergePatients'],
   ['app:opciones.herramientasImplementacion', 'app:topnav.implementerTools'],
   ['app:opciones.registrarPaciente', 'app:topnav.registerPatient'],
-  ['app:opciones.selectorModulos', 'app:topnav.moduleSwitcher'],
 ] as const;
 
 const privilegeAliases = new Map<string, Set<string>>();

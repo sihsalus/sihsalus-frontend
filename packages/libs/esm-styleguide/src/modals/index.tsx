@@ -4,6 +4,7 @@ import { reportError } from '@openmrs/esm-error-handling';
 import { getModalRegistration } from '@openmrs/esm-extensions';
 import { createGlobalStore } from '@openmrs/esm-state';
 import { mountRootParcel, type Parcel } from 'single-spa';
+import { userCanLaunch } from '../access';
 
 type ModalInstanceState = 'NEW' | 'MOUNTED' | 'TO_BE_DELETED';
 type ModalSize = 'xs' | 'sm' | 'md' | 'lg';
@@ -211,6 +212,8 @@ export function showModal(modalName: string, props: ModalProps = {}, onClose: ()
   const modalRegistration = getModalRegistration(modalName);
   if (!modalRegistration) {
     reportError(`Failed to launch modal. Please notify your administrator. Modal name: "${modalName}"`);
+  } else if (!userCanLaunch(modalRegistration.privileges)) {
+    console.warn(`Access denied while launching modal "${modalName}".`);
   } else {
     openInstance({
       state: 'NEW',

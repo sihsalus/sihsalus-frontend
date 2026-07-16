@@ -17,8 +17,10 @@ import {
   Tile,
 } from '@carbon/react';
 import { isDesktop, restBaseUrl } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { stockManagementSourcesEditPrivilege } from '../constants';
 import { ResourceRepresentation } from '../core/api/api';
 import { type CustomTableHeader } from '../core/components/table/types';
 import { handleMutate } from '../utils';
@@ -55,10 +57,10 @@ const StockSourcesItems: React.FC = () => {
         acronym: entry?.acronym,
         sourceType: entry?.sourceType?.display,
         actions: (
-          <>
+          <RequirePrivilege privilege={stockManagementSourcesEditPrivilege} hideUnauthorized>
             <EditStockSourceActionsMenu data={items[index]} />
             <StockSourcesDeleteActionMenu uuid={items[index].uuid} />
-          </>
+          </RequirePrivilege>
         ),
       };
     });
@@ -115,7 +117,9 @@ const StockSourcesItems: React.FC = () => {
                   </TableToolbarAction>
                 </TableToolbarMenu>
 
-                <AddStockSourceActionButton />
+                <RequirePrivilege privilege={stockManagementSourcesEditPrivilege} hideUnauthorized>
+                  <AddStockSourceActionButton />
+                </RequirePrivilege>
               </TableToolbarContent>
             </TableToolbar>
             <Table {...getTableProps()}>

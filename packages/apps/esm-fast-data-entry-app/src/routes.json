@@ -7,7 +7,7 @@
   "pages": [
     {
       "component": "root",
-      "routeRegex": "forms",
+      "route": "forms",
       "online": true,
       "offline": true
     }
@@ -19,7 +19,8 @@
       "component": "formsAppMenuItem",
       "order": 70,
       "online": true,
-      "offline": true
+      "offline": true,
+      "privileges": "app:entradaRapidaDatos"
     }
   ]
 }

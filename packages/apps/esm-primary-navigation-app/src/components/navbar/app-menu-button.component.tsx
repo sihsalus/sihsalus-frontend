@@ -1,5 +1,5 @@
 import { HeaderGlobalAction } from '@carbon/react';
-import { CloseIcon, SwitcherIcon, useOnClickOutside } from '@openmrs/esm-framework';
+import { CloseIcon, SwitcherIcon, useAssignedExtensions, useOnClickOutside } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,7 +11,12 @@ import { type MenuButtonProps } from './types';
 
 const AppMenuButton: React.FC<MenuButtonProps> = ({ isActivePanel, togglePanel, hidePanel }) => {
   const { t } = useTranslation();
+  const availableModules = useAssignedExtensions('app-menu-item-slot');
   const appMenuRef = useOnClickOutside<HTMLDivElement>(hidePanel('appMenu'), isActivePanel('appMenu'));
+
+  if (availableModules.length === 0) {
+    return null;
+  }
 
   return (
     <div ref={appMenuRef} className={styles.panelWrapper}>

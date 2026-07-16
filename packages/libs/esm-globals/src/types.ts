@@ -225,6 +225,10 @@ export type ModalDefinition = {
    * The name of the component exported by this frontend module.
    */
   component: string;
+  /**
+   * The privilege or privileges required to launch this modal.
+   */
+  privileges?: string | Array<string>;
 };
 
 /* The possible states a workspace window can be opened in. */
@@ -287,6 +291,10 @@ export type WorkspaceDefinition = {
    * The name of the component exported by this frontend module.
    */
   component: string;
+  /**
+   * The privilege or privileges required to launch this workspace.
+   */
+  privileges?: string | Array<string>;
 };
 
 export interface WorkspaceGroupDefinition {
@@ -343,6 +351,8 @@ export interface WorkspaceDefinition2 {
   name: string;
   component: string;
   window: string;
+  /** Privilege or privileges required to launch this workspace. */
+  privileges?: string | Array<string>;
 }
 
 /**

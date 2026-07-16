@@ -33,6 +33,7 @@ import {
   useLayoutType,
   usePagination,
 } from '@openmrs/esm-framework';
+import { modulePrivileges, RequireModulePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { mutate as mutateSWR } from 'swr';
@@ -245,56 +246,58 @@ const ReferralsRoot: React.FC = () => {
   };
 
   return (
-    <main className={styles.page}>
-      <PageHeader className={styles.header}>
-        <PageHeaderContent title={t('referrals', 'Referrals')} illustration={<Assessment1Pictogram />} />
-        <div className={styles.headerActions}>
-          <Button
-            kind="primary"
-            renderIcon={UpdateNow}
-            iconDescription={t('pullReferrals', 'Pull referrals')}
-            onClick={handlePullReferrals}
-            size={responsiveSize}
-            disabled={isPullingReferrals}
-          >
-            {isPullingReferrals ? (
-              <InlineLoading description={t('pullingReferrals', 'Pulling referrals...')} status="active" />
-            ) : (
-              t('pullReferrals', 'Pull referrals')
-            )}
-          </Button>
-          <Button
-            kind="tertiary"
-            renderIcon={AirlineManageGates}
-            onClick={handleReferral}
-            iconDescription={t('referPatient', 'Refer patient')}
-            size={responsiveSize}
-          >
-            {t('referPatient', 'Refer patient')}
-          </Button>
-        </div>
-      </PageHeader>
-      <section className={styles.content}>
-        <Tabs selectedIndex={activeTabIndex} onChange={({ selectedIndex }) => setActiveTabIndex(selectedIndex)}>
-          <TabList aria-label={t('referralsTabs', 'Referrals tabs')} contained>
-            <Tab>{t('fromCommunity', 'From community')}</Tab>
-            <Tab>{t('fromFacility', 'From facility')}</Tab>
-            <Tab>{t('completed', 'Completed')}</Tab>
-          </TabList>
-          <TabPanels>
-            <TabPanel className={styles.tabPanel}>
-              <ReferralTable status="active" />
-            </TabPanel>
-            <TabPanel className={styles.tabPanel}>
-              <ReferralTable status="active" />
-            </TabPanel>
-            <TabPanel className={styles.tabPanel}>
-              <ReferralTable status="completed" />
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
-      </section>
-    </main>
+    <RequireModulePrivilege privilege={modulePrivileges.referrals}>
+      <main className={styles.page}>
+        <PageHeader className={styles.header}>
+          <PageHeaderContent title={t('referrals', 'Referrals')} illustration={<Assessment1Pictogram />} />
+          <div className={styles.headerActions}>
+            <Button
+              kind="primary"
+              renderIcon={UpdateNow}
+              iconDescription={t('pullReferrals', 'Pull referrals')}
+              onClick={handlePullReferrals}
+              size={responsiveSize}
+              disabled={isPullingReferrals}
+            >
+              {isPullingReferrals ? (
+                <InlineLoading description={t('pullingReferrals', 'Pulling referrals...')} status="active" />
+              ) : (
+                t('pullReferrals', 'Pull referrals')
+              )}
+            </Button>
+            <Button
+              kind="tertiary"
+              renderIcon={AirlineManageGates}
+              onClick={handleReferral}
+              iconDescription={t('referPatient', 'Refer patient')}
+              size={responsiveSize}
+            >
+              {t('referPatient', 'Refer patient')}
+            </Button>
+          </div>
+        </PageHeader>
+        <section className={styles.content}>
+          <Tabs selectedIndex={activeTabIndex} onChange={({ selectedIndex }) => setActiveTabIndex(selectedIndex)}>
+            <TabList aria-label={t('referralsTabs', 'Referrals tabs')} contained>
+              <Tab>{t('fromCommunity', 'From community')}</Tab>
+              <Tab>{t('fromFacility', 'From facility')}</Tab>
+              <Tab>{t('completed', 'Completed')}</Tab>
+            </TabList>
+            <TabPanels>
+              <TabPanel className={styles.tabPanel}>
+                <ReferralTable status="active" />
+              </TabPanel>
+              <TabPanel className={styles.tabPanel}>
+                <ReferralTable status="active" />
+              </TabPanel>
+              <TabPanel className={styles.tabPanel}>
+                <ReferralTable status="completed" />
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+        </section>
+      </main>
+    </RequireModulePrivilege>
   );
 };
 

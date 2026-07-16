@@ -1,4 +1,4 @@
-import { AppErrorBoundary } from '@sihsalus/esm-rbac';
+import { AppErrorBoundary, modulePrivileges, RequireModulePrivilege } from '@sihsalus/esm-rbac';
 import classNames from 'classnames';
 import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
@@ -11,17 +11,19 @@ import styles from './root.styles.scss';
 const Root: React.FC = () => {
   return (
     <AppErrorBoundary appName="esm-offline-tools-app">
-      <BrowserRouter basename={globalThis.getOpenmrsSpaBase()}>
-        <DesktopSideNav />
-        <div className={classNames('omrs-main-content', styles.mainContentContainer)}>
-          <Routes>
-            <Route path="offline-tools" element={<Home />} />
-            <Route path="offline-tools/:page" element={<OfflineToolsPage />}>
-              <Route path=":patientUuid" element={<OfflineToolsPage />} />
-            </Route>
-          </Routes>
-        </div>
-      </BrowserRouter>
+      <RequireModulePrivilege privilege={modulePrivileges.offlineTools}>
+        <BrowserRouter basename={globalThis.getOpenmrsSpaBase()}>
+          <DesktopSideNav />
+          <div className={classNames('omrs-main-content', styles.mainContentContainer)}>
+            <Routes>
+              <Route path="offline-tools" element={<Home />} />
+              <Route path="offline-tools/:page" element={<OfflineToolsPage />}>
+                <Route path=":patientUuid" element={<OfflineToolsPage />} />
+              </Route>
+            </Routes>
+          </div>
+        </BrowserRouter>
+      </RequireModulePrivilege>
     </AppErrorBoundary>
   );
 };

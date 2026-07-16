@@ -14,6 +14,7 @@ import {
   age,
   createErrorHandler,
   ExtensionSlot,
+  getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
   showSnackbar,
   useConfig,
   useLayoutType,
@@ -21,6 +22,7 @@ import {
   useSession,
   Workspace2,
 } from '@openmrs/esm-framework';
+import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import {
   type DefaultPatientWorkspaceProps,
   type PatientWorkspace2DefinitionProps,
@@ -549,10 +551,12 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
           title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
           kind: 'error',
           isLowContrast: false,
-          subtitle:
-            (typeof (error as { message?: unknown })?.message === 'string'
-              ? (error as { message: string }).message
-              : undefined) ?? t('unexpectedError', 'An unexpected error occurred. Please try again.'),
+          subtitle: getCompatibleUserFacingErrorMessage(
+            error,
+            t('unexpectedError', 'An unexpected error occurred. Please try again.'),
+            { logContext: 'Save vitals and biometrics' },
+            frameworkGetUserFacingErrorMessage,
+          ),
         });
       }
     },

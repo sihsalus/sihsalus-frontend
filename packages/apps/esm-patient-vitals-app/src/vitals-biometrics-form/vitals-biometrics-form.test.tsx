@@ -563,12 +563,15 @@ describe('VitalsBiometricsForm', () => {
     await user.click(saveButton);
 
     expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
+    // The raw backend error message is never shown; it goes through the shared
+    // user-facing error normalizer, which falls back to a safe generic message.
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: false,
       kind: 'error',
-      subtitle: 'Some of the values entered are invalid',
+      subtitle: expect.any(String),
       title: 'Error saving vitals and biometrics',
     });
+    expect(mockShowSnackbar.mock.calls[0][0].subtitle).not.toContain('Internal Server Error');
   });
 
   it('does not save vitals and biometrics without an active visit', async () => {

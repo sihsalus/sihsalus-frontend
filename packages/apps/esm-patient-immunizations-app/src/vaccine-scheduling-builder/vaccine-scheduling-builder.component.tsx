@@ -96,7 +96,7 @@ function dotClass(status: DoseStatus, s: typeof styles): string {
   return s.emptyDot;
 }
 
-const VaccineSchedulingBuilder: React.FC = () => {
+const VaccineSchedulingBuilderContent: React.FC = () => {
   const { t } = useTranslation();
   const session = useSession();
   const { scheduleData, scheduleStore, versions, settingUuid, isLoading, error, mutate } = useVaccinationSchedule();
@@ -180,147 +180,149 @@ const VaccineSchedulingBuilder: React.FC = () => {
   ];
 
   return (
-    <RequireModulePrivilege privilege={modulePrivileges.vaccineSchedulingBuilder}>
-      <div className={styles.container}>
-        <ImmunizationPlanHeader title={t('vaccinationScheduleBuilder', 'Gestor del calendario de vacunación')} />
+    <div className={styles.container}>
+      <ImmunizationPlanHeader title={t('vaccinationScheduleBuilder', 'Gestor del calendario de vacunación')} />
 
-        <div className={styles.scheduleInfo}>
-          <span className={styles.scheduleName}>
-            {t('peruNationalSchedule', 'Esquema Nacional de Vacunación — Perú')}
-          </span>
+      <div className={styles.scheduleInfo}>
+        <span className={styles.scheduleName}>
+          {t('peruNationalSchedule', 'Esquema Nacional de Vacunación — Perú')}
+        </span>
+        <span className={styles.scheduleVersion}>
+          {scheduleData
+            ? t('activeScheduleVersion', 'v{{version}} activa', {
+                version: scheduleData.version,
+              })
+            : t('localDraft', 'borrador local')}
+        </span>
+        {selectedScheduleVersion && selectedScheduleVersion.version !== scheduleData?.version && (
           <span className={styles.scheduleVersion}>
-            {scheduleData
-              ? t('activeScheduleVersion', 'v{{version}} activa', {
-                  version: scheduleData.version,
-                })
-              : t('localDraft', 'borrador local')}
+            {t('viewingScheduleVersion', 'viendo v{{version}}', {
+              version: selectedScheduleVersion.version,
+            })}
           </span>
-          {selectedScheduleVersion && selectedScheduleVersion.version !== scheduleData?.version && (
-            <span className={styles.scheduleVersion}>
-              {t('viewingScheduleVersion', 'viendo v{{version}}', {
-                version: selectedScheduleVersion.version,
-              })}
-            </span>
-          )}
-          {versions.length > 0 && (
-            <span className={styles.scheduleVersion}>
-              {t('savedVersionsCount', '{{count}} versiones guardadas', {
-                count: versions.length,
-              })}
-            </span>
-          )}
-        </div>
+        )}
+        {versions.length > 0 && (
+          <span className={styles.scheduleVersion}>
+            {t('savedVersionsCount', '{{count}} versiones guardadas', {
+              count: versions.length,
+            })}
+          </span>
+        )}
+      </div>
 
-        {error && (
-          <InlineNotification
-            kind="error"
-            title={t('loadError', 'Error al cargar')}
-            subtitle={error.message}
-            className={styles.notification}
+      {error && (
+        <InlineNotification
+          kind="error"
+          title={t('loadError', 'Error al cargar')}
+          subtitle={error.message}
+          className={styles.notification}
+        />
+      )}
+
+      <div className={styles.controls}>
+        <div className={styles['search-container']}>
+          <Search
+            labelText=""
+            placeholder={t('searchVaccine', 'Buscar vacuna...')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onClear={() => setSearchTerm('')}
+            size="lg"
+            disabled={isLoading}
+          />
+        </div>
+        {versions.length > 0 && (
+          <Dropdown
+            id="schedule-version"
+            items={versions.map((version) => version.version)}
+            itemToString={(version) => {
+              const scheduleVersion = versions.find((candidate) => candidate.version === version);
+              const suffix = scheduleVersion?.status === 'published' ? ` ${t('active', 'activa')}` : '';
+              return version ? `v${version}${suffix}` : '';
+            }}
+            label={t('selectVersion', 'Seleccionar versión')}
+            onChange={({ selectedItem }) => {
+              setSelectedVersion(selectedItem ?? null);
+              setIsDirty(false);
+            }}
+            selectedItem={selectedVersion}
+            titleText={t('scheduleVersion', 'Versión del esquema')}
+            size="lg"
           />
         )}
-
-        <div className={styles.controls}>
-          <div className={styles['search-container']}>
-            <Search
-              labelText=""
-              placeholder={t('searchVaccine', 'Buscar vacuna...')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onClear={() => setSearchTerm('')}
-              size="lg"
-              disabled={isLoading}
-            />
-          </div>
-          {versions.length > 0 && (
-            <Dropdown
-              id="schedule-version"
-              items={versions.map((version) => version.version)}
-              itemToString={(version) => {
-                const scheduleVersion = versions.find((candidate) => candidate.version === version);
-                const suffix = scheduleVersion?.status === 'published' ? ` ${t('active', 'activa')}` : '';
-                return version ? `v${version}${suffix}` : '';
-              }}
-              label={t('selectVersion', 'Seleccionar versión')}
-              onChange={({ selectedItem }) => {
-                setSelectedVersion(selectedItem ?? null);
-                setIsDirty(false);
-              }}
-              selectedItem={selectedVersion}
-              titleText={t('scheduleVersion', 'Versión del esquema')}
-              size="lg"
-            />
+        <Button
+          kind="primary"
+          renderIcon={saving ? undefined : Save}
+          onClick={handleSave}
+          disabled={saving || !isDirty}
+        >
+          {saving ? (
+            <InlineLoading description={t('saving', 'Guardando...')} />
+          ) : (
+            t('saveScheduleVersion', 'Guardar nueva versión')
           )}
-          <Button
-            kind="primary"
-            renderIcon={saving ? undefined : Save}
-            onClick={handleSave}
-            disabled={saving || !isDirty}
-          >
-            {saving ? (
-              <InlineLoading description={t('saving', 'Guardando...')} />
-            ) : (
-              t('saveScheduleVersion', 'Guardar nueva versión')
-            )}
-          </Button>
-        </div>
-
-        {isLoading && (
-          <InlineLoading description={t('loadingSchedule', 'Cargando...')} className={styles.notification} />
-        )}
-
-        <div className={styles.tableContainer}>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableHeader className={styles.headerVacuna}>{t('vaccine', 'Vacuna')}</TableHeader>
-                  {AGE_PERIODS.map((period) => (
-                    <TableHeader key={period.id} style={{ textAlign: 'center' }}>
-                      {period.label}
-                      <div className={styles.ageRange}>{period.ageRange}</div>
-                    </TableHeader>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filtered.map((entry) => (
-                  <TableRow key={entry.conceptUuid}>
-                    <TableCell>{entry.name}</TableCell>
-                    {AGE_PERIODS.map((period) => {
-                      const status = (entry.schedule[period.id] ?? 'empty') as DoseStatus;
-                      return (
-                        <TableCell key={period.id} className={styles.periodCell}>
-                          <button
-                            type="button"
-                            className={styles.periodButton}
-                            onClick={() => handleCellClick(entry.conceptUuid, period.id)}
-                            title={t(`status.${status}`, status)}
-                            aria-label={`${entry.name} - ${period.label}: ${status}`}
-                          >
-                            <div className={dotClass(status, styles)} />
-                          </button>
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </div>
-
-        <div className={styles.legend}>
-          {legendItems.map(({ status, label }) => (
-            <div key={status} className={styles.legendItem}>
-              <div className={dotClass(status, styles)} />
-              <span>{label}</span>
-            </div>
-          ))}
-        </div>
+        </Button>
       </div>
-    </RequireModulePrivilege>
+
+      {isLoading && <InlineLoading description={t('loadingSchedule', 'Cargando...')} className={styles.notification} />}
+
+      <div className={styles.tableContainer}>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeader className={styles.headerVacuna}>{t('vaccine', 'Vacuna')}</TableHeader>
+                {AGE_PERIODS.map((period) => (
+                  <TableHeader key={period.id} style={{ textAlign: 'center' }}>
+                    {period.label}
+                    <div className={styles.ageRange}>{period.ageRange}</div>
+                  </TableHeader>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filtered.map((entry) => (
+                <TableRow key={entry.conceptUuid}>
+                  <TableCell>{entry.name}</TableCell>
+                  {AGE_PERIODS.map((period) => {
+                    const status = (entry.schedule[period.id] ?? 'empty') as DoseStatus;
+                    return (
+                      <TableCell key={period.id} className={styles.periodCell}>
+                        <button
+                          type="button"
+                          className={styles.periodButton}
+                          onClick={() => handleCellClick(entry.conceptUuid, period.id)}
+                          title={t(`status.${status}`, status)}
+                          aria-label={`${entry.name} - ${period.label}: ${status}`}
+                        >
+                          <div className={dotClass(status, styles)} />
+                        </button>
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </div>
+
+      <div className={styles.legend}>
+        {legendItems.map(({ status, label }) => (
+          <div key={status} className={styles.legendItem}>
+            <div className={dotClass(status, styles)} />
+            <span>{label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
+
+const VaccineSchedulingBuilder: React.FC = () => (
+  <RequireModulePrivilege privilege={modulePrivileges.vaccineSchedulingBuilder}>
+    <VaccineSchedulingBuilderContent />
+  </RequireModulePrivilege>
+);
 
 export default VaccineSchedulingBuilder;

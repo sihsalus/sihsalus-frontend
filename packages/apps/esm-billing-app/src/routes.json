@@ -64,7 +64,8 @@
     {
       "slot": "legacy-system-admin-page-card-link-slot",
       "component": "billableServicesCardLink",
-      "name": "billable-services-admin-card-link"
+      "name": "billable-services-admin-card-link",
+      "privileges": "app:serviciosFacturables"
     },
     {
       "name": "patient-banner-billing-tags",
@@ -88,15 +89,18 @@
   "modals": [
     {
       "name": "add-cash-point-modal",
-      "component": "addCashPointModal"
+      "component": "addCashPointModal",
+      "privileges": "app:serviciosFacturables"
     },
     {
       "name": "payment-mode-form-modal",
-      "component": "paymentModeFormModal"
+      "component": "paymentModeFormModal",
+      "privileges": "app:serviciosFacturables"
     },
     {
       "name": "delete-payment-mode-modal",
-      "component": "deletePaymentModeModal"
+      "component": "deletePaymentModeModal",
+      "privileges": "app:serviciosFacturables"
     },
     {
       "name": "edit-bill-item-modal",
@@ -128,7 +132,8 @@
     {
       "name": "billable-service-form",
       "component": "billableServiceFormWorkspace",
-      "window": "billable-service-form-window"
+      "window": "billable-service-form-window",
+      "privileges": "app:serviciosFacturables"
     }
   ],
   "workspaceWindows2": [

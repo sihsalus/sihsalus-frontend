@@ -105,6 +105,7 @@ To fix this, ensure that you define a 'component' field inside the modal definit
   registerModal({
     name,
     moduleName: appName,
+    privileges: modal.privileges,
     load: () => loadLifeCycles(appName, modal.component),
   });
 }
@@ -156,6 +157,7 @@ To fix this, ensure that you define a 'component' field inside the workspace def
     width: workspace.width,
     preferredWindowSize: workspace.preferredWindowSize,
     groups: workspace.groups,
+    privileges: workspace.privileges,
     load: () => loadLifeCycles(appName, workspace.component),
   });
 

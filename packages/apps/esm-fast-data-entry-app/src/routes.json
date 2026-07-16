@@ -7,7 +7,7 @@
   "pages": [
     {
       "component": "root",
-      "routeRegex": "forms",
+      "route": "forms",
       "online": true,
       "offline": true
     }

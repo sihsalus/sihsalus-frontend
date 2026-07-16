@@ -139,13 +139,15 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
           id: stockOperation?.uuid,
           key: `key-${stockOperation?.uuid}`,
           operationTypeName: translateStockOperationType(t, stockOperation?.operationTypeName),
-          operationNumber: (
+          operationNumber: stockOperation.permission?.canEdit ? (
             <RequirePrivilege
               privilege={stockManagementOperationsEditPrivilege}
               fallback={<span>{stockOperation.operationNumber}</span>}
             >
               <EditStockOperationActionMenu stockOperation={stockOperation} showIcon={false} showprops={true} />
             </RequirePrivilege>
+          ) : (
+            <span>{stockOperation.operationNumber}</span>
           ),
           stockOperationItems: {
             commonNames,
@@ -169,11 +171,11 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
             stockOperation?.responsiblePersonFamilyName ?? stockOperation?.responsiblePersonOther ?? ''
           } ${stockOperation?.responsiblePersonGivenName ?? ''}`,
           operationDate: formatDisplayDate(stockOperation?.operationDate),
-          actions: (
+          actions: stockOperation.permission?.canEdit ? (
             <RequirePrivilege privilege={stockManagementOperationsEditPrivilege} hideUnauthorized>
               <EditStockOperationActionMenu stockOperation={stockOperation} showIcon={true} showprops={false} />
             </RequirePrivilege>
-          ),
+          ) : null,
         };
       }),
     [items, t],

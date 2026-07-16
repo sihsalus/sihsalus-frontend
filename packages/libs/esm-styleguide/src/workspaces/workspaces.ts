@@ -12,6 +12,7 @@ import { createGlobalStore, getGlobalStore } from '@openmrs/esm-state';
 import { getCoreTranslation } from '@openmrs/esm-translations';
 import { type ReactNode, useMemo } from 'react';
 import type { StoreApi } from 'zustand/vanilla';
+import { userCanLaunch } from '../access';
 
 export interface CloseWorkspaceOptions {
   /**
@@ -308,6 +309,12 @@ export function launchWorkspace<
 >(name: string, additionalProps?: Omit<T, keyof DefaultWorkspaceProps> & { workspaceTitle?: string }) {
   const store = getWorkspaceStore();
   const workspace = getWorkspaceRegistration(name);
+
+  if (!userCanLaunch(workspace.privileges)) {
+    console.warn(`Access denied while launching workspace "${name}".`);
+    return;
+  }
+
   const currentWorkspaceGroup = store.getState().workspaceGroup;
 
   if (currentWorkspaceGroup && !currentWorkspaceGroup.members?.includes(name)) {

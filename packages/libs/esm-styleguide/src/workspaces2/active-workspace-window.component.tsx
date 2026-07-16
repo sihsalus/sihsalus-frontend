@@ -6,6 +6,7 @@ import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { mountRootParcel, type ParcelConfig } from 'single-spa';
 import Parcel from 'single-spa-react/parcel';
+import { userCanLaunch } from '../access';
 import { promptForClosingWorkspaces, useWorkspace2Store } from './workspace2';
 import { type Workspace2DefinitionProps } from './workspace2.component';
 import styles from './workspace2.module.scss';
@@ -102,6 +103,12 @@ const ActiveWorkspace: React.FC<ActiveWorkspaceProps> = ({
           }
         },
         launchChildWorkspace: async (childWorkspaceName, childWorkspaceProps) => {
+          const childWorkspace = workspace2Store.getState().registeredWorkspacesByName[childWorkspaceName];
+          if (!childWorkspace || !userCanLaunch(childWorkspace.privileges)) {
+            console.warn(`Access denied while launching workspace "${childWorkspaceName}".`);
+            return;
+          }
+
           const parentWorkspaceName = openedWorkspace.workspaceName;
           const { openedWorkspaces } = openedWindow;
           const parentIndex = openedWorkspaces.findIndex((w) => w.workspaceName === parentWorkspaceName);

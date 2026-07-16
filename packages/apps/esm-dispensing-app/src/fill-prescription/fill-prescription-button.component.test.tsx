@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { dispensingEditPrivilege } from '../constants';
+import { dispensingEditPrivilege, PRIVILEGE_CREATE_DISPENSE } from '../constants';
 
 import FillPrescriptionButton from './fill-prescription-button.component';
 
@@ -28,24 +28,40 @@ vi.mock('react-i18next', () => ({
 describe('FillPrescriptionButton', () => {
   beforeEach(() => {
     mockUseSession.mockReturnValue({ user: { uuid: 'user-1' } });
-    mockUserHasAccess.mockImplementation((privilege) => privilege === dispensingEditPrivilege);
+    mockUserHasAccess.mockReturnValue(true);
   });
 
-  it('shows the action with the frontend edit privilege', () => {
+  it('shows the action when the user has both frontend and backend privileges', () => {
     render(<FillPrescriptionButton />);
 
     expect(mockUserHasAccess).toHaveBeenCalledWith(
       dispensingEditPrivilege,
       expect.objectContaining({ uuid: 'user-1' }),
     );
+    expect(mockUserHasAccess).toHaveBeenCalledWith(
+      PRIVILEGE_CREATE_DISPENSE,
+      expect.objectContaining({ uuid: 'user-1' }),
+    );
     expect(screen.getByRole('button', { name: 'Fill prescription' })).toBeInTheDocument();
   });
 
   it('hides the action when the user lacks the frontend edit privilege', () => {
-    mockUserHasAccess.mockReturnValue(false);
+    mockUserHasAccess.mockImplementation((privilege) => privilege === PRIVILEGE_CREATE_DISPENSE);
 
     render(<FillPrescriptionButton />);
 
+    expect(screen.queryByRole('button', { name: 'Fill prescription' })).not.toBeInTheDocument();
+  });
+
+  it('hides the action when the user lacks the backend dispense privilege', () => {
+    mockUserHasAccess.mockImplementation((privilege) => privilege === dispensingEditPrivilege);
+
+    render(<FillPrescriptionButton />);
+
+    expect(mockUserHasAccess).toHaveBeenCalledWith(
+      PRIVILEGE_CREATE_DISPENSE,
+      expect.objectContaining({ uuid: 'user-1' }),
+    );
     expect(screen.queryByRole('button', { name: 'Fill prescription' })).not.toBeInTheDocument();
   });
 });

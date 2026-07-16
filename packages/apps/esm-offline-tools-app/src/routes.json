@@ -140,6 +140,7 @@
       "component": "offlineToolsOptInButton",
       "online": true,
       "offline": true,
+      "privileges": "app:herramientasSinInternet",
       "order": 1
     }
   ],

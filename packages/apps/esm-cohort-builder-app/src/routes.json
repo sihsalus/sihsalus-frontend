@@ -28,27 +28,33 @@
   "modals": [
     {
       "name": "clear-search-history-modal",
-      "component": "clearSearchHistoryModal"
+      "component": "clearSearchHistoryModal",
+      "privileges": "app:constructorCohortes"
     },
     {
       "name": "clear-item-from-search-history-modal",
-      "component": "clearItemFromSearchHistoryModal"
+      "component": "clearItemFromSearchHistoryModal",
+      "privileges": "app:constructorCohortes"
     },
     {
       "name": "delete-cohort-modal",
-      "component": "deleteCohortModal"
+      "component": "deleteCohortModal",
+      "privileges": "app:constructorCohortes"
     },
     {
       "name": "delete-query-modal",
-      "component": "deleteQueryModal"
+      "component": "deleteQueryModal",
+      "privileges": "app:constructorCohortes"
     },
     {
       "name": "save-cohort-modal",
-      "component": "saveCohortModal"
+      "component": "saveCohortModal",
+      "privileges": "app:constructorCohortes"
     },
     {
       "name": "save-query-modal",
-      "component": "saveQueryModal"
+      "component": "saveQueryModal",
+      "privileges": "app:constructorCohortes"
     }
   ]
 }

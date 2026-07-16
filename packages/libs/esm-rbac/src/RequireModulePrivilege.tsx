@@ -1,5 +1,5 @@
 import { navigate, showSnackbar } from '@openmrs/esm-framework';
-import React, { type ReactNode, useEffect } from 'react';
+import React, { type ReactNode, useEffect, useRef } from 'react';
 
 import { RequirePrivilege } from './RequirePrivilege';
 
@@ -8,17 +8,15 @@ interface RequireModulePrivilegeProps {
   readonly children: ReactNode;
 }
 
-let lastAccessDeniedRedirectAt = 0;
-
 function RedirectUnauthorizedModuleToHome(): null {
-  useEffect(() => {
-    const now = Date.now();
+  const hasRedirected = useRef(false);
 
-    if (now - lastAccessDeniedRedirectAt < 1000) {
+  useEffect(() => {
+    if (hasRedirected.current) {
       return;
     }
 
-    lastAccessDeniedRedirectAt = now;
+    hasRedirected.current = true;
     showSnackbar({
       kind: 'info',
       isLowContrast: true,

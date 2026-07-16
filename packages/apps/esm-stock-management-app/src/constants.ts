@@ -27,7 +27,6 @@ export const StockFilters = Object.freeze({
 
 // SIHSALUS Stock Management UI privileges
 export const stockManagementOverviewPrivilege = 'app:gestionInventario.resumen';
-export const stockManagementOverviewEditPrivilege = 'app:gestionInventario.resumen.editar';
 export const stockManagementItemsPrivilege = 'app:gestionInventario.articulos';
 export const stockManagementItemsEditPrivilege = 'app:gestionInventario.articulos.editar';
 export const stockManagementOperationsPrivilege = 'app:gestionInventario.operaciones';

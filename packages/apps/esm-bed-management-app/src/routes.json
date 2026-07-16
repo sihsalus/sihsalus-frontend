@@ -14,7 +14,8 @@
     {
       "component": "adminCardLink",
       "name": "bed-management-admin-card-link",
-      "slot": "legacy-system-admin-page-card-link-slot"
+      "slot": "legacy-system-admin-page-card-link-slot",
+      "privileges": "app:administracionCamas"
     },
     {
       "component": "bedManagementAppMenuItem",

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { type ReactNode, StrictMode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -68,5 +68,29 @@ describe('RequireModulePrivilege', () => {
     expect(Number(mockShowSnackbar.mock.invocationCallOrder[0])).toBeLessThan(
       Number(mockNavigate.mock.invocationCallOrder[0]),
     );
+  });
+
+  it('redirects each unauthorized module mount without suppressing later navigations', async () => {
+    mockUserHasAccess.mockImplementation(({ fallback }) => <>{fallback}</>);
+
+    render(
+      <RequireModulePrivilege privilege="app:referencias">
+        <div>Referencias</div>
+      </RequireModulePrivilege>,
+    );
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledTimes(1));
+    cleanup();
+
+    render(
+      <RequireModulePrivilege privilege="app:reportes">
+        <div>Reportes</div>
+      </RequireModulePrivilege>,
+    );
+
+    await waitFor(() => {
+      expect(mockShowSnackbar).toHaveBeenCalledTimes(2);
+      expect(mockNavigate).toHaveBeenCalledTimes(2);
+    });
   });
 });

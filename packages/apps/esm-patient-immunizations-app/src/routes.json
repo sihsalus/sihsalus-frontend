@@ -11,7 +11,7 @@
       "component": "vaccinationScheduleAppMenuItem",
       "order": 35,
       "online": true,
-      "offline": true,
+      "offline": false,
       "privileges": "app:gestorCalendarioVacunacion"
     },
     {

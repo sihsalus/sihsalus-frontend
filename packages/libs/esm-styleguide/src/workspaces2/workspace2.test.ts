@@ -1,6 +1,13 @@
-import type { WorkspaceStoreState2 } from '@openmrs/esm-extensions';
-import { describe, expect, it } from 'vitest';
-import { workspace2StoreActions } from './workspace2';
+import { type WorkspaceStoreState2, workspace2Store } from '@openmrs/esm-extensions';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { userCanLaunch } from '../access';
+import { launchWorkspace2, workspace2StoreActions } from './workspace2';
+
+vi.mock('../access', () => ({
+  userCanLaunch: vi.fn(() => true),
+}));
+
+const mockUserCanLaunch = vi.mocked(userCanLaunch);
 
 function makeState(overrides: Partial<WorkspaceStoreState2> = {}): WorkspaceStoreState2 {
   return {
@@ -201,5 +208,40 @@ describe('openChildWorkspace', () => {
     expect(state.openedWindows[0].openedWorkspaces).toHaveLength(2);
     expect(state.openedWindows[0].openedWorkspaces[0].workspaceName).toBe('parent-workspace');
     expect(state.openedWindows[0].openedWorkspaces[1].workspaceName).toBe('child-workspace');
+  });
+});
+
+describe('launchWorkspace2 privilege enforcement', () => {
+  beforeEach(() => {
+    workspace2Store.setState(
+      makeState({
+        registeredGroupsByName: {
+          'test-group': { name: 'test-group', moduleName: 'test' },
+        },
+        registeredWindowsByName: {
+          'test-window': { name: 'test-window', group: 'test-group', moduleName: 'test' },
+        },
+        registeredWorkspacesByName: {
+          'protected-workspace': {
+            name: 'protected-workspace',
+            component: 'protected',
+            window: 'test-window',
+            moduleName: 'test',
+            privileges: 'app:protected',
+          },
+        },
+      }),
+    );
+    mockUserCanLaunch.mockReturnValue(true);
+  });
+
+  it('returns false without mutating state when access is denied', async () => {
+    mockUserCanLaunch.mockReturnValue(false);
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await expect(launchWorkspace2('protected-workspace')).resolves.toBe(false);
+
+    expect(mockUserCanLaunch).toHaveBeenCalledWith('app:protected');
+    expect(workspace2Store.getState().openedWindows).toHaveLength(0);
   });
 });

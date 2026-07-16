@@ -16,7 +16,7 @@ import {
 } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { dispensingEditPrivilege } from '../constants';
+import { dispensingEditPrivilege, PRIVILEGE_CREATE_DISPENSE } from '../constants';
 import styles from './fill-prescription-button.scss';
 
 const FillPrescriptionButton: React.FC<{}> = () => {
@@ -24,7 +24,11 @@ const FillPrescriptionButton: React.FC<{}> = () => {
   const responsiveSize = isTablet ? 'lg' : 'md';
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = Boolean(session?.user && userHasAccess(dispensingEditPrivilege, session.user));
+  const canEdit = Boolean(
+    session?.user &&
+      userHasAccess(dispensingEditPrivilege, session.user) &&
+      userHasAccess(PRIVILEGE_CREATE_DISPENSE, session.user),
+  );
 
   const launchSearchWorkspace = () => {
     launchWorkspace2(

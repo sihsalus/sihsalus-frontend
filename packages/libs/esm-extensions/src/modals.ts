@@ -7,6 +7,7 @@ export interface ModalRegistration {
   name: string;
   load(): Promise<LifeCycles>;
   moduleName: string;
+  privileges?: string | Array<string>;
 }
 
 interface ModalRegistry {
@@ -36,6 +37,7 @@ export function getModalRegistration(modalName: string): ModalRegistration | und
         name: modalName,
         load: extensionRegistration.load,
         moduleName: extensionRegistration.moduleName,
+        privileges: extensionRegistration.privileges,
       };
       console.warn(
         `Modal ${modalName} was registered as an extension. This is deprecated and will be removed in the future. Please register it in the "modals" section of routes.json instead of the "extensions" section.`,

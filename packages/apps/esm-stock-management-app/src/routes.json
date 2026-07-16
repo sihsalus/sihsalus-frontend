@@ -255,7 +255,8 @@
       "title": "Stock Locations",
       "type": "form",
       "canMaximize": true,
-      "width": "extra-wide"
+      "width": "extra-wide",
+      "privileges": "app:gestionInventario.configuracion.editar"
     },
     {
       "name": "stock-user-role-scopes-form-workspace",

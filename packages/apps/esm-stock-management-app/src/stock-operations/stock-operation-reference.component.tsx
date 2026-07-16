@@ -56,11 +56,12 @@ const StockOperationReference = ({ operationNumber, operationUuid }: StockOperat
     return <InlineLoading description={t('loading', 'Loading')} />;
   }
 
+  if (!stockOperation?.permission?.canEdit) {
+    return <span>{operationNumber}</span>;
+  }
+
   return (
-    <RequirePrivilege
-      privilege={stockManagementOperationsEditPrivilege}
-      fallback={<span>{operationNumber}</span>}
-    >
+    <RequirePrivilege privilege={stockManagementOperationsEditPrivilege} fallback={<span>{operationNumber}</span>}>
       <button
         type="button"
         onClick={handleEdit}

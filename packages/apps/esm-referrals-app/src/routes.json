@@ -21,7 +21,8 @@
   "modals": [
     {
       "name": "referral-reasons-dialog",
-      "component": "referralReasonsDialogPopup"
+      "component": "referralReasonsDialogPopup",
+      "privileges": "app:referencias"
     }
   ],
   "workspaces": [
@@ -30,7 +31,8 @@
       "component": "facilityReferralForm",
       "title": "referralForm",
       "type": "form",
-      "width": "wider"
+      "width": "wider",
+      "privileges": "app:referencias"
     }
   ]
 }

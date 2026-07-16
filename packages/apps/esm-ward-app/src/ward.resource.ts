@@ -14,10 +14,14 @@ export function useCreateEncounter() {
     visitUuid: string,
     obs: ObsPayload[] = [],
   ) => {
+    if (!location?.uuid) {
+      return Promise.reject(new Error('An operational ward location is required'));
+    }
+
     const encounterPayload = {
       patient: patient.uuid,
       encounterType,
-      location: location?.uuid,
+      location: location.uuid,
       encounterProviders: [
         {
           provider: currentProvider?.uuid,

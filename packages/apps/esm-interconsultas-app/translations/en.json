@@ -29,7 +29,7 @@
   "managementNote": "Management note",
   "nextPage": "Next page",
   "noActiveVisit": "No active visit",
-  "noActiveVisitSubtitle": "The request will be recorded outside a visit. Starting the visit first is recommended.",
+  "noActiveVisitSubtitle": "Start a visit at an operational location before requesting the consultation.",
   "noInterconsultasFound": "No interconsultations to display",
   "noPatientInterconsultas": "The patient has no recorded interconsultations.",
   "orderNumber": "Order no.",

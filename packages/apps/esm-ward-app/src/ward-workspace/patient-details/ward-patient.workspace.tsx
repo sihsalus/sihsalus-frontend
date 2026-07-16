@@ -14,6 +14,7 @@ export default function WardPatientWorkspace({
 }: WardPatientWorkspaceDefinition) {
   const { t } = useTranslation();
   const { patient, visit } = wardPatient ?? {};
+  const locationUuid = wardPatient?.inpatientAdmission?.currentInpatientLocation?.uuid ?? visit?.location?.uuid;
   const { hideWorkspaceVitalsLinks } = useConfig<WardConfigObject>();
   const extensionSlotState = {
     patient,
@@ -23,6 +24,7 @@ export default function WardPatientWorkspace({
     launchCustomVitalsForm: () => {
       launchChildWorkspace('ward-patient-vitals-workspace', {
         patientUuid: patient.uuid,
+        locationUuid,
         patient: {
           id: patient.uuid,
           birthDate: patient.person?.birthdate,

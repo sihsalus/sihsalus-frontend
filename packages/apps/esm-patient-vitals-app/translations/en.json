@@ -63,6 +63,7 @@
   "noDataRecorded": "No data has been recorded for this patient",
   "normalRange": "Normal range",
   "noSessionLocation": "Could not determine session location. Please log in again.",
+  "noVisitLocation": "Could not determine the active visit location.",
   "notAvailable": "Not available",
   "notes": "Notes",
   "other": "Other",

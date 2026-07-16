@@ -19,6 +19,7 @@ import { init, teardown } from './lifecycle';
 import { FormFactoryProvider } from './provider/form-factory-provider';
 import type { FormField, FormSchema, OpenmrsEncounter, PreFilledQuestions, SessionMode } from './types';
 import { reportError } from './utils/error-utils';
+import { resolveFormLocation } from './utils/form-location';
 
 const getMarkdownString = (markdown: FormSchema['markdown']): string | null => {
   return typeof markdown === 'string' ? markdown : null;
@@ -142,7 +143,7 @@ const FormEngine = ({
           sessionDate={sessionDate}
           formJson={refinedFormJson}
           workspaceLayout={workspaceSize === 'ultra-wide' ? 'maximized' : 'minimized'}
-          location={session?.sessionLocation}
+          location={resolveFormLocation(visit, session?.sessionLocation)}
           provider={session?.currentProvider}
           visit={visit}
           handleConfirmQuestionDeletion={handleConfirmQuestionDeletion}

@@ -1,7 +1,7 @@
 import { useVisit, type Visit } from '@openmrs/esm-framework';
 import { renderHook } from '@testing-library/react';
 
-import { useVisitOrOfflineVisit } from './visit';
+import { offlineVisitToVisit, useVisitOrOfflineVisit } from './visit';
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
@@ -62,5 +62,19 @@ describe('useVisitOrOfflineVisit', () => {
     const { result } = renderHook(() => useVisitOrOfflineVisit('patient-uuid'));
 
     expect(result.current.currentVisit).toBeNull();
+  });
+});
+
+describe('offlineVisitToVisit', () => {
+  it('preserves the selected operational location', () => {
+    const visit = offlineVisitToVisit({
+      uuid: 'offline-visit-uuid',
+      patient: 'patient-uuid',
+      visitType: 'visit-type-uuid',
+      location: 'upss-location-uuid',
+      startDatetime: new Date('2026-07-16T10:00:00-05:00'),
+    });
+
+    expect(visit.location?.uuid).toBe('upss-location-uuid');
   });
 });

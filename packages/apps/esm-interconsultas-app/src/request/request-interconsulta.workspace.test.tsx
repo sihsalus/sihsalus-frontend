@@ -179,6 +179,31 @@ describe('RequestInterconsultaWorkspace acceptance contract', () => {
     expect(closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true });
   });
 
+  it('[AC-01] uses activeVisit when currentVisit is not populated by the framework', async () => {
+    mockUseVisit.mockReturnValue({
+      activeVisit: {
+        uuid: 'active-visit-uuid',
+        location: { uuid: 'active-visit-location-uuid', display: 'Consultorio 2' },
+      },
+      currentVisit: null,
+    } as ReturnType<typeof useVisit>);
+    const user = userEvent.setup();
+
+    render(<RequestInterconsultaWorkspace patientUuid="patient-uuid" closeWorkspace={vi.fn()} />);
+
+    await user.selectOptions(screen.getByLabelText('Servicio destino'), 'dental-service-uuid');
+    await user.type(screen.getByLabelText('Motivo'), 'Evaluacion odontologica');
+    await user.click(screen.getByRole('button', { name: 'Solicitar interconsulta' }));
+
+    expect(mockCreateInterconsulta).toHaveBeenCalledWith(
+      expect.objectContaining({
+        visitUuid: 'active-visit-uuid',
+        locationUuid: 'active-visit-location-uuid',
+      }),
+      expect.anything(),
+    );
+  });
+
   it('[AC-01] does not offer a provider selector when the session has a current provider', () => {
     render(<RequestInterconsultaWorkspace patientUuid="patient-uuid" closeWorkspace={vi.fn()} />);
 
@@ -220,17 +245,16 @@ describe('RequestInterconsultaWorkspace acceptance contract', () => {
     });
   });
 
-  it('[AC-01][brecha] requires an active visit instead of creating a detached request', async () => {
-    await expectKnownGap(async () => {
-      mockUseVisit.mockReturnValue({ currentVisit: null } as ReturnType<typeof useVisit>);
-      const user = userEvent.setup();
+  it('[AC-01] requires an active visit instead of creating a detached request', async () => {
+    mockUseVisit.mockReturnValue({ currentVisit: null } as ReturnType<typeof useVisit>);
+    const user = userEvent.setup();
 
-      render(<RequestInterconsultaWorkspace patientUuid="patient-uuid" closeWorkspace={vi.fn()} />);
+    render(<RequestInterconsultaWorkspace patientUuid="patient-uuid" closeWorkspace={vi.fn()} />);
 
-      await user.selectOptions(screen.getByLabelText('Servicio destino'), 'dental-service-uuid');
-      await user.type(screen.getByLabelText('Motivo'), 'Evaluacion odontologica');
+    await user.selectOptions(screen.getByLabelText('Servicio destino'), 'dental-service-uuid');
+    await user.type(screen.getByLabelText('Motivo'), 'Evaluacion odontologica');
 
-      expect(screen.getByRole('button', { name: 'Solicitar interconsulta' })).toBeDisabled();
-    });
+    expect(screen.getByRole('button', { name: 'Solicitar interconsulta' })).toBeDisabled();
+    expect(mockCreateInterconsulta).not.toHaveBeenCalled();
   });
 });

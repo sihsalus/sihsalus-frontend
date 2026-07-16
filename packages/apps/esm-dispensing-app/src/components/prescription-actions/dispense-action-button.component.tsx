@@ -1,5 +1,5 @@
 import { Button } from '@carbon/react';
-import { launchWorkspace2, userHasAccess, type Session } from '@openmrs/esm-framework';
+import { launchWorkspace2, type Session, userHasAccess } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { dispensingEditPrivilege } from '../../constants';
@@ -12,6 +12,7 @@ type DispenseActionButtonProps = {
   medicationRequestBundle: MedicationRequestBundle;
   session: Session;
   providers: Array<Provider>;
+  dispensingLocationUuid: string;
   dispensable: boolean;
   quantityRemaining: number;
   quantityDispensed: number;
@@ -24,24 +25,31 @@ const DispenseActionButton: React.FC<DispenseActionButtonProps> = ({
   medicationRequestBundle,
   session,
   providers,
+  dispensingLocationUuid,
   dispensable,
   quantityRemaining,
   quantityDispensed,
   disabled,
 }) => {
   const { t } = useTranslation();
-  const dispenseWorkspaceProps = {
-    patientUuid,
-    encounterUuid,
-    medicationDispense: initiateMedicationDispenseBody(medicationRequestBundle.request, session, providers, true),
-    medicationRequestBundle,
-    quantityRemaining,
-    quantityDispensed,
-    mode: 'enter',
-  };
-
   const handleLaunchWorkspace = () => {
-    launchWorkspace2('dispense-workspace', dispenseWorkspaceProps);
+    if (dispensingLocationUuid) {
+      launchWorkspace2('dispense-workspace', {
+        patientUuid,
+        encounterUuid,
+        medicationDispense: initiateMedicationDispenseBody(
+          medicationRequestBundle.request,
+          session,
+          providers,
+          true,
+          dispensingLocationUuid,
+        ),
+        medicationRequestBundle,
+        quantityRemaining,
+        quantityDispensed,
+        mode: 'enter',
+      });
+    }
   };
 
   if (!dispensable) {
@@ -53,7 +61,7 @@ const DispenseActionButton: React.FC<DispenseActionButtonProps> = ({
   }
 
   return (
-    <Button kind="primary" onClick={handleLaunchWorkspace} disabled={disabled}>
+    <Button kind="primary" onClick={handleLaunchWorkspace} disabled={disabled || !dispensingLocationUuid}>
       {t('dispense', 'Dispense')}
     </Button>
   );

@@ -145,7 +145,7 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
   return (
     <Workspace2 title={t('addPatientToQueue', 'Add patient to queue')}>
       <div className={styles.patientSearchContainer}>
-        <AddPatientToQueueContext.Provider value={{ currentServiceQueueUuid }}>
+        <AddPatientToQueueContext.Provider value={{ currentQueueLocationUuid, currentServiceQueueUuid }}>
           {patientToDisplay ? (
             <div className={styles.patientBannerContainer}>
               <div className={styles.patientBanner}>

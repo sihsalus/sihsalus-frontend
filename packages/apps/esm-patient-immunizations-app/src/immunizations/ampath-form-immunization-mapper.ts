@@ -20,6 +20,9 @@ export interface AmpathImmunizationEncounter {
   visit?: {
     uuid?: string;
   };
+  location?: {
+    uuid?: string;
+  };
   obs?: Array<AmpathImmunizationObs>;
 }
 
@@ -199,6 +202,7 @@ export function mapFromAmpathImmunizationEncounters(
           persistenceSource: 'ampath-form',
           immunizationObsUuid: encounter.uuid,
           visitUuid: encounter.visit?.uuid,
+          locationUuid: encounter.location?.uuid,
           occurrenceDateTime,
           doseNumber: getNumberValue(encounter, concepts.doseNumber),
           manufacturer: getStringValue(encounter, concepts.manufacturer),

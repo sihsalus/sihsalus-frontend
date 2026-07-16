@@ -79,7 +79,7 @@ const Ward = ({ wardBeds, wardUnassignedPatients }: { wardBeds: ReactNode; wardU
           title={t('errorLoadingWardLocation', 'Error loading ward location')}
           subtitle={
             errorLoadingAdmissionLocation?.message ??
-            t('invalidWardLocation', 'Invalid ward location: {{location}}', { location: location.display })
+            t('invalidWardLocation', 'Invalid ward location: {{location}}', { location: location?.display ?? '' })
           }
         />
       )}

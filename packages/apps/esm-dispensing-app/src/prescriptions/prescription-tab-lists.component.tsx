@@ -1,5 +1,5 @@
 import { Tab, TabList, TabPanels, Tabs } from '@carbon/react';
-import { useConfig, useSession } from '@openmrs/esm-framework';
+import { useConfig } from '@openmrs/esm-framework';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type PharmacyConfig } from '../config-schema';
@@ -11,17 +11,16 @@ import styles from './prescriptions.scss';
 const PrescriptionTabLists: React.FC = () => {
   const { t } = useTranslation();
   const config = useConfig<PharmacyConfig>();
-  const session = useSession();
   const [selectedTab, setSelectedTab] = useState(0);
 
-  // filter tabs based on session location
+  // Filter pharmacy-specific tabs using the operational dispensing location.
   const customTabs: Array<CustomTab> = useMemo(() => {
     return (
       config?.customTabs?.filter(
-        (tab) => !tab.associatedLocations || tab.associatedLocations.includes(session.sessionLocation?.uuid),
+        (tab) => !tab.associatedLocations || tab.associatedLocations.includes(config.dispensingLocationUuid),
       ) || []
     );
-  }, [session, config]);
+  }, [config]);
 
   const handleTabChange = (event) => {
     setSelectedTab(event.selectedIndex);

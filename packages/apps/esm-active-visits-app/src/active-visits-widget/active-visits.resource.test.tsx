@@ -1,22 +1,19 @@
-import { useConfig, useSession, type Visit } from '@openmrs/esm-framework';
+import { useConfig, type Visit } from '@openmrs/esm-framework';
 import { renderHook } from '@testing-library/react';
-import { mockSession } from 'test-utils';
-import useSWRInfinite from 'swr/infinite';
 
+import { useFacilityActiveVisits } from '../active-visits.resource';
 import { useActiveVisits } from './active-visits.resource';
 
 const mockUseConfig = vi.mocked(useConfig);
-const mockUseSession = vi.mocked(useSession);
-const mockUseSWRInfinite = vi.mocked(useSWRInfinite);
+const mockUseFacilityActiveVisits = vi.mocked(useFacilityActiveVisits);
 
-vi.mock('swr/infinite', () => ({
-  default: vi.fn(),
+vi.mock('../active-visits.resource', () => ({
+  useFacilityActiveVisits: vi.fn(),
 }));
 
 describe('useActiveVisits', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseSession.mockReturnValue(mockSession.data);
     mockUseConfig.mockReturnValue({
       activeVisits: {
         attributes: [],
@@ -47,22 +44,13 @@ describe('useActiveVisits', () => {
       startDatetime: '2026-07-13T08:00:00.000-0500',
     } as unknown as Visit;
 
-    mockUseSWRInfinite.mockReturnValue({
-      data: [
-        {
-          data: {
-            results: [visitWithoutEncounters],
-            links: [],
-            totalCount: 1,
-          },
-        },
-      ],
+    mockUseFacilityActiveVisits.mockReturnValue({
+      visits: [visitWithoutEncounters],
       error: undefined,
       isLoading: false,
       isValidating: false,
-      setSize: vi.fn(),
-      size: 1,
-    } as never);
+      totalResults: 1,
+    });
 
     const { result } = renderHook(() => useActiveVisits());
 

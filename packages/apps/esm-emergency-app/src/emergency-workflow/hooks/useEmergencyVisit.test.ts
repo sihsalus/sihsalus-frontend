@@ -1,4 +1,4 @@
-import { getDefaultsFromConfigSchema, openmrsFetch, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, openmrsFetch, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { act, renderHook } from '@testing-library/react';
 import { type Config, configSchema } from '../../config-schema';
 import { useEmergencyVisit } from './useEmergencyVisit';
@@ -6,12 +6,12 @@ import { useEmergencyVisit } from './useEmergencyVisit';
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseConfig = vi.mocked(useConfig<Config>);
-const mockUseSession = vi.mocked(useSession);
 
 describe('useEmergencyVisit', () => {
   const config: Config = {
     ...(getDefaultsFromConfigSchema(configSchema) as Config),
     emergencyVisitTypeUuid: '11111111-1111-4111-8111-111111111111',
+    emergencyLocationUuid: '22222222-2222-4222-8222-222222222222',
     patientRegistration: {
       ...(getDefaultsFromConfigSchema(configSchema) as Config).patientRegistration,
       defaultLocationUuid: '22222222-2222-4222-8222-222222222222',
@@ -23,11 +23,6 @@ describe('useEmergencyVisit', () => {
     mockOpenmrsFetch.mockReset();
     mockShowSnackbar.mockReset();
     mockUseConfig.mockReturnValue(config);
-    mockUseSession.mockReturnValue({
-      authenticated: true,
-      sessionId: 'session-id',
-      sessionLocation: { uuid: '33333333-3333-4333-8333-333333333333' },
-    } as ReturnType<typeof useSession>);
   });
 
   it('creates an emergency visit at the provided arrival time and stores administrative notes as a visit attribute', async () => {
@@ -53,7 +48,7 @@ describe('useEmergencyVisit', () => {
       body: {
         patient: 'patient-uuid',
         visitType: '11111111-1111-4111-8111-111111111111',
-        location: '33333333-3333-4333-8333-333333333333',
+        location: '22222222-2222-4222-8222-222222222222',
         startDatetime: '2026-05-30T15:15:00.000Z',
       },
     });
@@ -64,6 +59,27 @@ describe('useEmergencyVisit', () => {
         attributeType: '6ffc9f6b-a9fb-434e-9b2d-4a2591cc16b3',
         value: 'Ingreso por SAMU sin documentos',
       },
+    });
+  });
+
+  it('fails closed instead of using the login facility when no emergency location is configured', async () => {
+    mockUseConfig.mockReturnValue({
+      ...config,
+      emergencyLocationUuid: '',
+    });
+    const { result } = renderHook(() => useEmergencyVisit());
+    let visitUuid: string | null = 'not-null';
+
+    await act(async () => {
+      visitUuid = await result.current.createEmergencyVisit('patient-uuid');
+    });
+
+    expect(visitUuid).toBeNull();
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      kind: 'error',
+      subtitle: 'No se configuró la ubicación operativa de emergencia.',
+      title: 'Error al crear visita',
     });
   });
 

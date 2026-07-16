@@ -95,6 +95,7 @@
   "enterFirstName": "Primer nombre",
   "enterIdentityDocument": "Ingrese documento de identidad",
   "enterInsuranceCode": "Código de seguro",
+  "emergencyLocationNotConfigured": "No se configuró la ubicación operativa de emergencia.",
   "enterMaternalLastName": "Apellido materno",
   "enterNameIdOrDni": "Ingrese nombre, HCE o documento...",
   "enterPaternalLastName": "Apellido paterno",

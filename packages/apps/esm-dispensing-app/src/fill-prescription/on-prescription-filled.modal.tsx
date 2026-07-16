@@ -44,7 +44,7 @@ interface OnPrescriptionFilledModalProps {
  * would like to immediately mark the medication orders as dispensed.
  */
 const OnPrescriptionFilledModal: React.FC<OnPrescriptionFilledModalProps> = ({ patient, encounterUuid, close }) => {
-  const { dispenserProviderRoles } = useConfig<PharmacyConfig>();
+  const { dispenserProviderRoles, dispensingLocationUuid } = useConfig<PharmacyConfig>();
   const session = useSession();
   const providers = useProviders(dispenserProviderRoles);
   const { medicationRequestBundles } = usePrescriptionDetails(encounterUuid);
@@ -53,6 +53,15 @@ const OnPrescriptionFilledModal: React.FC<OnPrescriptionFilledModalProps> = ({ p
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const onConfirm = async () => {
+    if (!dispensingLocationUuid) {
+      showSnackbar({
+        title: t('errorDispensingMedication', 'Error dispensing medication'),
+        subtitle: t('dispensingLocationNotConfigured', 'The operational pharmacy location has not been configured.'),
+        kind: 'error',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     markEncounterAsStale(encounterUuid);
     try {
@@ -62,6 +71,7 @@ const OnPrescriptionFilledModal: React.FC<OnPrescriptionFilledModalProps> = ({ p
           session,
           providers,
           true,
+          dispensingLocationUuid,
         );
         const medicationDisplay = getMedicationDisplay(
           getMedicationReferenceOrCodeableConcept(medicationRequestBundle.request),
@@ -128,7 +138,7 @@ const OnPrescriptionFilledModal: React.FC<OnPrescriptionFilledModalProps> = ({ p
           {t('createOrderWithoutDispensing', 'Create order without dispensing')}
         </Button>
         <Button
-          disabled={isSubmitting}
+          disabled={isSubmitting || !dispensingLocationUuid}
           onClick={() => {
             onConfirm();
           }}

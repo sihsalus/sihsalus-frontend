@@ -1,4 +1,5 @@
 {
+  "activeWardLocationRequired": "El paciente hospitalizado debe tener una ubicación asistencial.",
   "addPatientToWard": "Agregar paciente a hospitalización",
   "admissionRequestCancelledForPatient": "Solicitud de admisión cancelada para {{patientName}}",
   "admissionRequests": "Solicitudes de admisión",
@@ -69,6 +70,7 @@
   "invalidWardLocation": "Ubicación de sala inválida {{location}}",
   "labelColon": "{{label}}:",
   "lastEditedBy": "Última edición por: {{name}}, {{date}}",
+  "loadingWardLocations": "Cargando salas de hospitalización...",
   "male": "Masculino",
   "manage": "Administrar",
   "minutes_one": "{{count}} minuto",
@@ -133,6 +135,7 @@
   "seconds_other": "{{count}} segundos",
   "selectABed": "Seleccione una cama",
   "selectALocation": "Seleccione una ubicación",
+  "selectWardLocation": "Seleccione una sala",
   "showingLocations_one": "{{start}}-{{end}} de {{count}} ubicaciones",
   "showingLocations_many": "{{start}}-{{end}} de {{count}} ubicaciones",
   "showingLocations_other": "{{start}}-{{end}} de {{count}} ubicaciones",
@@ -152,6 +155,7 @@
   "viewEditHistory": "Ver historial de edición",
   "visitNoteSaved": "Nota del paciente guardada",
   "wardClinicalNotePlaceholder": "Escriba cualquier nota aquí",
+  "wardLocation": "Sala de hospitalización",
   "wardPatient": "Paciente hospitalizado",
   "wards": "Unidades",
   "writtenBy": "Escrito por: {{name}}, {{date}}"

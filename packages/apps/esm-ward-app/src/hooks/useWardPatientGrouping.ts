@@ -55,6 +55,10 @@ export function useWardPatientGrouping() {
   const { data: inpatientAdmissionsAtOtherLocations } = inpatientAdmissionsAtOtherLocationsResponse;
 
   const groupings = useMemo(() => {
+    if (!currentLocation) {
+      return undefined;
+    }
+
     return {
       ...createAndGetWardPatientGrouping(
         inpatientAdmissions,
@@ -72,7 +76,7 @@ export function useWardPatientGrouping() {
     currentLocation,
   ]) as ReturnType<typeof createAndGetWardPatientGrouping>;
   return {
-    ...groupings,
+    ...(groupings ?? {}),
     admissionLocationResponse,
     inpatientAdmissionResponse: inpatientAdmissionAtCurrentLocationResponse,
     inpatientRequestResponse,

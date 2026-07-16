@@ -20,7 +20,7 @@ export async function postOrdersOnNewEncounter(
   patientUuid: string,
   orderEncounterType: string,
   activeVisit: Visit | null,
-  sessionLocationUuid: string,
+  operationalLocationUuid: string,
   abortController?: AbortController,
 ) {
   const now = new Date();
@@ -57,7 +57,7 @@ export async function postOrdersOnNewEncounter(
 
   const encounterPostData = {
     patient: patientUuid,
-    location: sessionLocationUuid,
+    location: operationalLocationUuid,
     encounterType: orderEncounterType,
     ...(encounterDate ? { encounterDatetime: encounterDate } : {}),
     visit: activeVisit?.uuid,

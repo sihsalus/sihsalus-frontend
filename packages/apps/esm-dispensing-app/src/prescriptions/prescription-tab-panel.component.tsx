@@ -1,5 +1,5 @@
 import { MultiSelect, Search, TabPanel } from '@carbon/react';
-import { useConfig, useDebounce, useSession } from '@openmrs/esm-framework';
+import { useConfig, useDebounce } from '@openmrs/esm-framework';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type PharmacyConfig } from '../config-schema';
@@ -22,7 +22,6 @@ const PrescriptionTabPanel: React.FC<PrescriptionTabPanelProps> = ({
   const { t } = useTranslation();
   const config = useConfig<PharmacyConfig>();
   const isInitialized = useRef(false);
-  const { sessionLocation } = useSession();
   const { locations, isLoading: isFilterLocationsLoading } = useLocations(config);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -30,11 +29,13 @@ const PrescriptionTabPanel: React.FC<PrescriptionTabPanelProps> = ({
 
   // set any initially selected locations
   useEffect(() => {
-    if (!isInitialized.current && !isFilterLocationsLoading && sessionLocation?.uuid) {
-      setFilterLocations(locations?.filter((l) => sessionLocation?.uuid === l.associatedPharmacyLocation) || []);
+    if (!isInitialized.current && !isFilterLocationsLoading && config.dispensingLocationUuid) {
+      setFilterLocations(
+        locations?.filter((location) => config.dispensingLocationUuid === location.associatedPharmacyLocation) || [],
+      );
       isInitialized.current = true; // we only want to run when the component is first mounted so we don't override user changes
     }
-  }, [isFilterLocationsLoading, sessionLocation, locations]);
+  }, [config.dispensingLocationUuid, isFilterLocationsLoading, locations]);
 
   return (
     <TabPanel>

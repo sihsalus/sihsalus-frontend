@@ -4,8 +4,8 @@ import {
   DatePicker,
   DatePickerInput,
   Form,
-  InlineNotification,
   InlineLoading,
+  InlineNotification,
   MultiSelect,
   NumberInput,
   RadioButton,
@@ -31,8 +31,8 @@ import {
   useLayoutType,
   useLocations,
   usePatient,
-  useSession,
   userHasAccess,
+  useSession,
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
@@ -50,9 +50,9 @@ import { z } from 'zod';
 
 import { type ConfigObject } from '../config-schema';
 import {
+  appointmentIssuedDateEditPrivilege,
   appointmentLocationTagName,
   appointmentNoteMaxLength,
-  appointmentIssuedDateEditPrivilege,
   appointmentStartDateEditPrivilege,
   dateFormat,
   datePickerFormat,
@@ -402,7 +402,7 @@ const AppointmentsForm: React.FC<
     mode: 'all',
     resolver: zodResolver(appointmentsFormSchema),
     defaultValues: {
-      location: appointment?.location?.uuid ?? session?.sessionLocation?.uuid ?? '',
+      location: appointment?.location?.uuid ?? '',
       provider:
         appointment?.providers?.find((provider) => provider.response === 'ACCEPTED')?.uuid ??
         session?.currentProvider?.uuid ??
@@ -776,10 +776,10 @@ const AppointmentsForm: React.FC<
                     labelText={<RequiredFieldLabel label={t('selectService', 'Select a service')} />}
                     onBlur={onBlur}
                     onChange={(event) => {
+                      const selectedService = services?.find((service) => service.name === event.target.value);
+
                       if (context === 'creating') {
-                        const selectedServiceDuration = services?.find(
-                          (service) => service.name === event.target.value,
-                        )?.durationMins;
+                        const selectedServiceDuration = selectedService?.durationMins;
                         setValue('duration', selectedServiceDuration ?? DEFAULT_APPOINTMENT_DURATION_MINUTES);
                       } else if (context === 'editing') {
                         const previousServiceDuration = services?.find(
@@ -791,6 +791,13 @@ const AppointmentsForm: React.FC<
                         if (selectedServiceDuration && previousServiceDuration === getValues('duration')) {
                           setValue('duration', selectedServiceDuration);
                         }
+                      }
+
+                      if (selectedService?.location?.uuid) {
+                        setValue('location', selectedService.location.uuid, {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
                       }
                       onChange(event);
                     }}
@@ -821,7 +828,9 @@ const AppointmentsForm: React.FC<
                     id="appointmentType"
                     invalid={!!errors?.appointmentType}
                     invalidText={errors?.appointmentType?.message}
-                    labelText={<RequiredFieldLabel label={t('selectAppointmentType', 'Select the type of appointment')} />}
+                    labelText={
+                      <RequiredFieldLabel label={t('selectAppointmentType', 'Select the type of appointment')} />
+                    }
                     onBlur={onBlur}
                     onChange={onChange}
                     ref={ref}
@@ -1235,7 +1244,10 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
   );
 }
 
-function getAppointmentValidationSummary(errors: Record<string, unknown>, t: (key: string, fallback: string) => string) {
+function getAppointmentValidationSummary(
+  errors: Record<string, unknown>,
+  t: (key: string, fallback: string) => string,
+) {
   const labels: Record<string, string> = {
     location: t('location', 'Ubicación'),
     selectedService: t('service', 'Servicio'),

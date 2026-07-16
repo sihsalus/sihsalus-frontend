@@ -1,9 +1,10 @@
 import { InlineNotification } from '@carbon/react';
-import { ExtensionSlot } from '@openmrs/esm-framework';
+import { ExtensionSlot, type Location } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import useWardLocation from '../hooks/useWardLocation';
+import WardLocationSelector from './ward-location-selector.component';
 import { useWardConfig } from './ward-view.resource';
 import styles from './ward-view.scss';
 
@@ -12,9 +13,6 @@ const WardView: React.FC<{}> = () => {
   const { isLoadingLocation, invalidLocation, location } = response;
   const { t } = useTranslation();
 
-  const locationUuid = location?.uuid;
-  const wardConfig = useWardConfig(locationUuid);
-
   if (isLoadingLocation) {
     return <></>;
   }
@@ -22,6 +20,16 @@ const WardView: React.FC<{}> = () => {
   if (invalidLocation) {
     return <InlineNotification kind="error" title={t('invalidLocationSpecified', 'Invalid location specified')} />;
   }
+
+  if (!location) {
+    return <WardLocationSelector />;
+  }
+
+  return <ConfiguredWardView location={location} />;
+};
+
+const ConfiguredWardView = ({ location }: { location: Location }) => {
+  const wardConfig = useWardConfig(location.uuid);
 
   const wardId = wardConfig.id;
 

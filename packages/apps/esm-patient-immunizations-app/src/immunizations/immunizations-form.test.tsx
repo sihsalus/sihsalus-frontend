@@ -201,7 +201,7 @@ describe('Immunizations Form', () => {
           extension: [],
           note: [{ text: formValues.note }],
           id: undefined,
-          location: { reference: 'Location/b1a8b05e-3542-4037-bbd3-998ee9c40574', type: 'Location' },
+          location: { reference: `Location/${mockCurrentVisit.location.uuid}`, type: 'Location' },
           manufacturer: { display: 'Pfizer' },
           occurrenceDateTime: dayjs(new Date()).startOf('day').toDate().toISOString(),
           patient: { reference: 'Patient/8673ee4f-e2ab-4077-ba55-4980f408773e', type: 'Patient' },
@@ -292,7 +292,7 @@ describe('Immunizations Form', () => {
           encounterType: config.ampathFormPersistence.encounterTypeUuid,
           form: config.ampathFormPersistence.formUuid,
           visit: mockCurrentVisit.uuid,
-          location: mockSessionDataResponse.data.sessionLocation.uuid,
+          location: mockCurrentVisit.location.uuid,
           obs: expect.arrayContaining([
             { concept: concepts.vaccineUuid, value: '782AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
             { concept: concepts.doseNumber, value: 1 },
@@ -320,6 +320,7 @@ describe('Immunizations Form', () => {
       lotNumber: 'A123456',
       manufacturer: 'Merck & Co., Inc.',
       visitId: 'ce589c9c-2f30-42ec-b289-a153f812ea5e',
+      locationId: 'historical-location-uuid',
     };
     immunizationFormSub.next(immunizationToEdit);
     mockSavePatientImmunization.mockResolvedValue({
@@ -373,7 +374,7 @@ describe('Immunizations Form', () => {
             },
           ],
           note: [{ text: immunizationToEdit.note }],
-          location: { reference: 'Location/b1a8b05e-3542-4037-bbd3-998ee9c40574', type: 'Location' },
+          location: { reference: 'Location/historical-location-uuid', type: 'Location' },
           lotNumber: 'A123456',
           manufacturer: { display: 'Merck & Co., Inc.' },
           occurrenceDateTime: toStoredDateTime('2024-01-03'),

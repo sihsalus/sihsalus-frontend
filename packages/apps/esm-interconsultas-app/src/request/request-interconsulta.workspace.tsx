@@ -46,7 +46,7 @@ type Urgency = 'ROUTINE' | 'STAT' | 'ON_SCHEDULED_DATE';
  * Solicitud de interconsulta desde el chart del paciente / consulta externa.
  * Solo captura los datos propios de la interconsulta (servicio destino,
  * prioridad, motivo, fecha programada); paciente, visita, profesional y
- * location salen de la sesión y la visita activa.
+ * location sale de la visita activa y el profesional de la sesión.
  */
 const RequestInterconsultaWorkspace: React.FC<RequestInterconsultaWorkspaceComponentProps> = (props) => {
   const { t } = useTranslation();
@@ -56,7 +56,8 @@ const RequestInterconsultaWorkspace: React.FC<RequestInterconsultaWorkspaceCompo
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
   const config = useConfig<ConfigObject>();
-  const { currentVisit } = useVisit(patientUuid);
+  const { activeVisit, currentVisit } = useVisit(patientUuid);
+  const visit = currentVisit ?? activeVisit;
   const abortController = useAbortController();
   const invalidateInterconsultas = useInvalidateInterconsultas();
 
@@ -76,7 +77,7 @@ const RequestInterconsultaWorkspace: React.FC<RequestInterconsultaWorkspaceCompo
   const isDirty = Boolean(selectedProvider || service || motivo.trim());
 
   const providerUuid = session?.currentProvider?.uuid ?? selectedProvider?.uuid;
-  const locationUuid = currentVisit?.location?.uuid ?? session?.sessionLocation?.uuid;
+  const locationUuid = visit?.location?.uuid;
   const canSubmit =
     Boolean(patientUuid && providerUuid && locationUuid && service && motivo.trim()) &&
     (urgency !== 'ON_SCHEDULED_DATE' || Boolean(scheduledDate)) &&
@@ -92,7 +93,7 @@ const RequestInterconsultaWorkspace: React.FC<RequestInterconsultaWorkspaceCompo
       await createInterconsulta(
         {
           patientUuid,
-          visitUuid: currentVisit?.uuid,
+          visitUuid: visit?.uuid,
           locationUuid,
           providerUuid,
           serviceConceptUuid: service.uuid,
@@ -128,13 +129,13 @@ const RequestInterconsultaWorkspace: React.FC<RequestInterconsultaWorkspaceCompo
         <Stack gap={5} className={styles.formContent}>
           {!currentVisit && (
             <InlineNotification
-              kind="warning"
+              kind="error"
               lowContrast
               hideCloseButton
               title={t('noActiveVisit', 'Sin visita activa')}
               subtitle={t(
                 'noActiveVisitSubtitle',
-                'La solicitud se registrará fuera de una visita. Se recomienda iniciar la visita primero.',
+                'Debe iniciar una visita en una ubicación asistencial antes de solicitar la interconsulta.',
               )}
             />
           )}

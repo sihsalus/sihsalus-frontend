@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-misused-promises, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/unbound-method */
 import { ActionableNotification, Button, ButtonSet, InlineLoading, InlineNotification } from '@carbon/react';
-import { ExtensionSlot, showModal, useConfig, useSession, Workspace2 } from '@openmrs/esm-framework';
+import { ExtensionSlot, showModal, useConfig, Workspace2 } from '@openmrs/esm-framework';
 import {
   type DefaultPatientWorkspaceProps,
   getPatientUuidFromStore,
@@ -74,7 +74,6 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
     : props.patientUuid;
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const session = useSession();
   const { activeVisit } = useVisitOrOfflineVisit(patientUuid);
   const canCreateOrders = Boolean(activeVisit);
   const { orders, clearOrders } = useOrderBasket();
@@ -173,6 +172,14 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
       return;
     }
 
+    const locationUuid = activeVisit.location?.uuid;
+    if (!locationUuid) {
+      setCreatingEncounterError(
+        t('activeVisitLocationRequired', 'The active visit must have an operational location to make orders'),
+      );
+      return;
+    }
+
     const abortController = new AbortController();
     setCreatingEncounterError('');
     const orderEncounterUuid = encounterUuid;
@@ -184,7 +191,7 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
           patientUuid,
           config?.orderEncounterType,
           activeVisit,
-          session?.sessionLocation?.uuid,
+          locationUuid,
           abortController,
         );
         mutateEncounterUuid();
@@ -222,7 +229,6 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
     openStartVisitDialog,
     orders,
     patientUuid,
-    session,
     t,
   ]);
 

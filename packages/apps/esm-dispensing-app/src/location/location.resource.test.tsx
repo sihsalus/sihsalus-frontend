@@ -25,6 +25,7 @@ const pharmacyConfig: PharmacyConfig = {
     restrictTotalQuantityDispensed: false,
   },
   dispenserProviderRoles: [],
+  dispensingLocationUuid: 'pharmacy-location-uuid',
   locationBehavior: {
     locationColumn: { enabled: false },
     locationFilter: {

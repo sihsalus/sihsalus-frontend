@@ -21,8 +21,8 @@ const HivTestingEncountersList: React.FC<OverviewListProps> = ({ patientUuid }) 
       <CardHeader title={t('htsClinicalView', 'HTS Clinical View')}>
         <div className={styles.contextSwitcherContainer}>
           <ContentSwitcher selectedIndex={selectedIndex} onChange={({ index }) => setSelectedIndex(index)}>
-            <Switch name={'screening'} text="Screening" />
-            <Switch name={'hivTesting'} text="Testing" />
+            <Switch name={'screening'} text={t('screening', 'Tamizaje')} />
+            <Switch name={'hivTesting'} text={t('testing', 'Pruebas')} />
           </ContentSwitcher>
         </div>
       </CardHeader>

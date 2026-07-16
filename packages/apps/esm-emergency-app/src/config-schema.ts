@@ -377,6 +377,13 @@ export const configSchema = {
     _description: 'UUID del tipo de visita para emergencias',
   },
 
+  closeVisitOnDisposition: {
+    _type: Type.Boolean,
+    _default: true,
+    _description:
+      'Si es true, la visita de emergencia se cierra (stopDatetime) al registrar la atención y finalizar la entrada de cola.',
+  },
+
   /**
    * Auto-crear visita al seleccionar paciente existente
    * Si es true, se creará automáticamente una visita de emergencia al seleccionar un paciente
@@ -641,6 +648,7 @@ export interface Config {
   };
   autoRefreshInterval: number;
   emergencyVisitTypeUuid: string;
+  closeVisitOnDisposition: boolean;
   autoCreateVisitOnPatientSelect: boolean;
   promptVisitCreationOnNewPatient: boolean;
   patientRegistration: {

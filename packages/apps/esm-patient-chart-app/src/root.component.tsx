@@ -1,6 +1,6 @@
 import { navigate, showSnackbar, useSession } from '@openmrs/esm-framework';
 import { AppErrorBoundary, isAdmissionUser } from '@sihsalus/esm-rbac';
-import { type PropsWithChildren, useEffect } from 'react';
+import { type PropsWithChildren, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
@@ -9,19 +9,16 @@ import { basePath, dashboardPath, spaRoot } from './constants';
 import PatientChart from './patient-chart/patient-chart.component';
 import styles from './root.scss';
 
-let lastAccessDeniedRedirectAt = 0;
-
 function RedirectToPatientSearch() {
   const { t } = useTranslation();
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
-    const now = Date.now();
-
-    if (now - lastAccessDeniedRedirectAt < 1000) {
+    if (hasRedirected.current) {
       return;
     }
 
-    lastAccessDeniedRedirectAt = now;
+    hasRedirected.current = true;
     showSnackbar({
       kind: 'info',
       isLowContrast: true,

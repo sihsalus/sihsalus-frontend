@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mockNavigate = vi.hoisted(() => vi.fn());
 const mockShowSnackbar = vi.hoisted(() => vi.fn());
 const mockUseSession = vi.hoisted(() => vi.fn());
+const mockIsAdmissionUser = vi.hoisted(() => vi.fn());
 
 vi.mock('@openmrs/esm-framework', () => ({
   navigate: mockNavigate,
@@ -18,6 +19,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@sihsalus/esm-rbac', () => ({
   AppErrorBoundary: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  isAdmissionUser: mockIsAdmissionUser,
 }));
 
 vi.mock('./patient-chart/patient-chart.component', () => ({
@@ -38,6 +40,8 @@ describe('Patient chart root', () => {
     });
     mockNavigate.mockClear();
     mockShowSnackbar.mockClear();
+    mockIsAdmissionUser.mockReset();
+    mockIsAdmissionUser.mockReturnValue(false);
   });
 
   it('allows direct chart access with the clinical chart privilege', async () => {
@@ -81,21 +85,48 @@ describe('Patient chart root', () => {
     expect(mockShowSnackbar.mock.invocationCallOrder[0]).toBeLessThan(mockNavigate.mock.invocationCallOrder[0]);
   });
 
-  it('redirects admission users even when a broad chart privilege is inherited', async () => {
+  it('redirects consecutive unauthorized mounts independently', async () => {
     mockUseSession.mockReturnValue({
       authenticated: true,
       user: {
-        privileges: [
-          { name: 'app:home.admision', display: 'Admisión' },
-          { name: 'app:hoja.clinica', display: 'Historia clínica' },
-        ],
+        privileges: [{ name: 'app:hoja.clinica.resumen', display: 'Resumen clínico' }],
         roles: [],
       },
     });
     const { default: Root } = await import('./root.component');
 
+    const firstRender = render(<Root />);
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledTimes(1));
+    firstRender.unmount();
+    mockNavigate.mockClear();
+    mockShowSnackbar.mockClear();
+
     render(<Root />);
 
+    await waitFor(() => {
+      expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
+      expect(mockNavigate).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('redirects admission users even when a broad chart privilege is inherited', async () => {
+    const user = {
+      privileges: [
+        { name: 'app:home.admision', display: 'Admisión' },
+        { name: 'app:hoja.clinica', display: 'Historia clínica' },
+      ],
+      roles: [],
+    };
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      user,
+    });
+    mockIsAdmissionUser.mockReturnValue(true);
+    const { default: Root } = await import('./root.component');
+
+    render(<Root />);
+
+    expect(mockIsAdmissionUser).toHaveBeenCalledWith(user);
     expect(screen.queryByText('Patient chart')).not.toBeInTheDocument();
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/spa/search' }));
   });

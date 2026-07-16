@@ -1,5 +1,5 @@
 import { navigate, showSnackbar, useSession } from '@openmrs/esm-framework';
-import { AppErrorBoundary } from '@sihsalus/esm-rbac';
+import { AppErrorBoundary, isAdmissionUser } from '@sihsalus/esm-rbac';
 import { type PropsWithChildren, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
@@ -40,7 +40,9 @@ function RedirectToPatientSearch() {
 function RequireClinicalChartAccess({ children }: PropsWithChildren) {
   const { user } = useSession();
 
-  return hasClinicalChartAccess(user) ? <>{children}</> : <RedirectToPatientSearch />;
+  // Admission works from search, appointments, and queues; it must not open the clinical chart,
+  // even when a broad chart privilege is inherited by the account.
+  return !isAdmissionUser(user) && hasClinicalChartAccess(user) ? <>{children}</> : <RedirectToPatientSearch />;
 }
 
 export default function Root() {

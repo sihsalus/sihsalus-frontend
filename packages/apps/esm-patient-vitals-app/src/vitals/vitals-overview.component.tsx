@@ -8,8 +8,8 @@ import {
   useConfig,
   useLayoutType,
   usePatient,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState, useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -48,7 +48,7 @@ const VitalsOverview: React.FC<VitalsOverviewProps> = ({ patientUuid, pageSize, 
   const patientData = usePatient(patientUuid);
 
   const { excludePatientIdentifierCodeTypes } = useConfig();
-  const { data: vitals, error, isLoading, isValidating } = useVitalsAndBiometrics(patientUuid);
+  const { data: vitals, error, isLoading, isValidating, hasMore, setPage } = useVitalsAndBiometrics(patientUuid);
   const { data: conceptUnits, error: conceptsError } = useVitalsConceptMetadata();
   const showPrintButton = config.vitals.showPrintButton && !chartView;
 
@@ -248,6 +248,9 @@ const VitalsOverview: React.FC<VitalsOverviewProps> = ({ patientUuid, pageSize, 
                     pageUrl={pageUrl}
                     tableHeaders={tableHeaders}
                     patient={patient}
+                    hasMoreData={hasMore}
+                    isLoadingMoreData={isValidating}
+                    onLoadMoreData={() => setPage((size) => size + 1)}
                   />
                 </div>
               )}

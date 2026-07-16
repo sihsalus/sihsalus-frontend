@@ -94,6 +94,12 @@ export const configSchema = {
       _type: Type.UUID,
       _default: '67a71486-1a54-468f-ac3e-7091a9a79584',
     },
+    encounterRoleUuid: {
+      _type: Type.UUID,
+      _default: 'a0b03050-c99b-11e0-9572-0800200c9a66',
+      _description:
+        'Encounter role used when attributing the session provider to a vitals encounter. Defaults to the OpenMRS "Unknown" encounter role.',
+    },
     vitalsOverdueThresholdHours: {
       _type: Type.Number,
       _default: 12,
@@ -146,6 +152,82 @@ export const configSchema = {
         _default: true,
         _description:
           'Whether the shared vitals workspace may render Glasgow Coma Scale fields when launched with an emergency triage profile.',
+      },
+      answerUuids: {
+        _description:
+          'Concept answer UUIDs for each Glasgow Coma Scale response. Scores are fixed by the scale itself; only the UUIDs vary per installation.',
+        eyeOpeningSpontaneous: {
+          _type: Type.UUID,
+          _default: 'faff1dec-14df-44d4-8695-b337dced2274',
+        },
+        eyeOpeningToSpeech: {
+          _type: Type.UUID,
+          _default: '2120199e-03ed-4986-892f-52a3d13b92c0',
+        },
+        eyeOpeningToPain: {
+          _type: Type.UUID,
+          _default: '1633ea34-bc65-4a87-9fec-8fef231b85cf',
+        },
+        eyeOpeningNone: {
+          _type: Type.UUID,
+          _default: '8b4ee185-b709-4cfa-b3db-f15d565ddc04',
+        },
+        eyeOpeningNotTestable: {
+          _type: Type.UUID,
+          _default: '25c71769-dddb-4d06-a858-cde05e2087e2',
+        },
+        verbalResponseOriented: {
+          _type: Type.UUID,
+          _default: '6440f83b-657e-4c5c-bac5-e3f67660ea4e',
+        },
+        verbalResponseConfused: {
+          _type: Type.UUID,
+          _default: '52066114-63ee-48ca-a09b-fa9c0c7f73ba',
+        },
+        verbalResponseInappropriateWords: {
+          _type: Type.UUID,
+          _default: '0b5820f1-f968-4950-bc62-ad54c6166723',
+        },
+        verbalResponseIncomprehensibleSounds: {
+          _type: Type.UUID,
+          _default: '245c6329-b810-4db3-bdc1-62bb9cdc0f31',
+        },
+        verbalResponseNone: {
+          _type: Type.UUID,
+          _default: '1d01f180-1acd-4121-b380-049f4bbb4af7',
+        },
+        verbalResponseNotTestable: {
+          _type: Type.UUID,
+          _default: 'fd4b9335-0f74-453e-b787-46d303a9b3b5',
+        },
+        motorResponseObeysCommands: {
+          _type: Type.UUID,
+          _default: 'bddbf4e2-c870-4515-924e-d98cfcb7948f',
+        },
+        motorResponseLocalizesPain: {
+          _type: Type.UUID,
+          _default: '355eb0e2-c319-4536-9837-43bf3c23f592',
+        },
+        motorResponseWithdrawsFromPain: {
+          _type: Type.UUID,
+          _default: 'a815a9d0-a033-48bc-89e9-836a15b9a3b2',
+        },
+        motorResponseAbnormalFlexion: {
+          _type: Type.UUID,
+          _default: '795e56c8-e783-470e-8b83-3ee11300f4a7',
+        },
+        motorResponseExtension: {
+          _type: Type.UUID,
+          _default: 'b4e10f1d-09e2-4b6b-8471-466c25da1b79',
+        },
+        motorResponseNone: {
+          _type: Type.UUID,
+          _default: '7e16856d-c686-4921-ba7f-65f7bf15771a',
+        },
+        motorResponseNotTestable: {
+          _type: Type.UUID,
+          _default: '09957de5-8eb7-4865-8e29-e946cf895bc4',
+        },
       },
     },
   },
@@ -210,6 +292,27 @@ export const configSchema = {
   },
 };
 
+export interface GlasgowComaScaleAnswerUuids {
+  eyeOpeningSpontaneous: string;
+  eyeOpeningToSpeech: string;
+  eyeOpeningToPain: string;
+  eyeOpeningNone: string;
+  eyeOpeningNotTestable: string;
+  verbalResponseOriented: string;
+  verbalResponseConfused: string;
+  verbalResponseInappropriateWords: string;
+  verbalResponseIncomprehensibleSounds: string;
+  verbalResponseNone: string;
+  verbalResponseNotTestable: string;
+  motorResponseObeysCommands: string;
+  motorResponseLocalizesPain: string;
+  motorResponseWithdrawsFromPain: string;
+  motorResponseAbnormalFlexion: string;
+  motorResponseExtension: string;
+  motorResponseNone: string;
+  motorResponseNotTestable: string;
+}
+
 export interface ConditionalBiometricFieldConfig {
   enabled: boolean;
   minAgeDays: number;
@@ -252,6 +355,7 @@ export interface ConfigObject {
   vitals: {
     useFormEngine: boolean;
     encounterTypeUuid: string;
+    encounterRoleUuid: string;
     vitalsOverdueThresholdHours: number;
     logo: {
       src: string;
@@ -265,6 +369,7 @@ export interface ConfigObject {
     showPrintButton: boolean;
     glasgowComaScale: {
       enabled: boolean;
+      answerUuids: GlasgowComaScaleAnswerUuids;
     };
   };
   biometrics: BiometricsConfigObject;

@@ -14,7 +14,12 @@ export function calculateBodyMassIndex(weight: number, height: number) {
 
 export function assessValue(value: number | undefined, range?: ObsReferenceRanges): ObservationInterpretation {
   if (range && value != null) {
-    if (range.hiCritical != null && value >= range.hiCritical) {
+    // A value inside the normal range is never critical, even when the critical
+    // threshold overlaps it (e.g. SpO2 with hiNormal = hiCritical = 100).
+    const aboveNormal = range.hiNormal == null || value > range.hiNormal;
+    const belowNormal = range.lowNormal == null || value < range.lowNormal;
+
+    if (range.hiCritical != null && value >= range.hiCritical && aboveNormal) {
       return 'critically_high';
     }
 
@@ -22,7 +27,7 @@ export function assessValue(value: number | undefined, range?: ObsReferenceRange
       return 'high';
     }
 
-    if (range.lowCritical != null && value <= range.lowCritical) {
+    if (range.lowCritical != null && value <= range.lowCritical && belowNormal) {
       return 'critically_low';
     }
 

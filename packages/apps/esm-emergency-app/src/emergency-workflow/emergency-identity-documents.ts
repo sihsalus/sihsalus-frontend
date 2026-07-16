@@ -91,7 +91,7 @@ export function getEmergencyIdentityDocumentRule(
     return undefined;
   }
 
-  if (identifierTypeUuid && identifierTypeUuid === config.otherIdentifierTypeUuid) {
+  if (identifierTypeUuid === config.otherIdentifierTypeUuid) {
     const format = config.otherIdentifierFormat?.trim();
     const maxLength = config.otherIdentifierMaxLength;
     if (

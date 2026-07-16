@@ -80,4 +80,23 @@ describe('Patient chart root', () => {
     });
     expect(mockShowSnackbar.mock.invocationCallOrder[0]).toBeLessThan(mockNavigate.mock.invocationCallOrder[0]);
   });
+
+  it('redirects admission users even when a broad chart privilege is inherited', async () => {
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      user: {
+        privileges: [
+          { name: 'app:home.admision', display: 'Admisión' },
+          { name: 'app:hoja.clinica', display: 'Historia clínica' },
+        ],
+        roles: [],
+      },
+    });
+    const { default: Root } = await import('./root.component');
+
+    render(<Root />);
+
+    expect(screen.queryByText('Patient chart')).not.toBeInTheDocument();
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/spa/search' }));
+  });
 });

@@ -14,14 +14,14 @@
         "slot": "tamizajes-home-slot",
         "path": "/home/tamizajes"
       },
-      "privileges": "app:home.tamizajes",
+      "privileges": ["app:home.tamizajes", "app:hoja.clinica.tamizajes", "Get Patients"],
       "order": 45
     },
     {
       "name": "tamizajes-home",
       "component": "root",
       "slot": "tamizajes-home-slot",
-      "privileges": "app:home.tamizajes",
+      "privileges": ["app:home.tamizajes", "app:hoja.clinica.tamizajes", "Get Patients"],
       "order": 0,
       "online": true,
       "offline": false
@@ -50,6 +50,27 @@
       "order": 0,
       "online": true,
       "offline": false
+    }
+  ],
+  "workspaces2": [
+    {
+      "name": "tamizajes-patient-search-workspace",
+      "component": "@sihsalus/esm-patient-search-app#patientSearchWorkspace2",
+      "window": "tamizajes-patient-search",
+      "privileges": ["app:home.tamizajes", "app:hoja.clinica.tamizajes", "Get Patients"]
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "tamizajes-patient-search",
+      "group": "tamizajes"
+    }
+  ],
+  "workspaceGroups2": [
+    {
+      "name": "tamizajes",
+      "scopePattern": "/home/tamizajes",
+      "overlay": true
     }
   ]
 }

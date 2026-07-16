@@ -42,7 +42,7 @@ const HivTestingEncounters: React.FC<HivTestingEncountersListProps> = ({ patient
         key: 'htsTestType',
         header: t('htsTestType', 'Test type'),
         getValue: (encounter) => {
-          return encounter.form.name;
+          return encounter.form?.name ?? t('unknownForm', 'Unidentified form');
         },
       },
       {
@@ -80,19 +80,6 @@ const HivTestingEncounters: React.FC<HivTestingEncountersListProps> = ({ patient
           return getObsFromEncounter(encounter, tbScreeningConcept);
         },
       },
-      {
-        key: 'actions',
-        header: t('actions', 'Actions'),
-        getValue: (encounter) => [
-          {
-            form: { name: 'HTS initial test', package: 'HTS retest' },
-            encounterUuid: encounter.uuid,
-            intent: '*',
-            label: t('editForm', 'Edit Form'),
-            mode: 'edit',
-          },
-        ],
-      },
     ],
     [entryPointConcept, finalResultConcept, t, tbScreeningConcept, testApproachConcept, testStrategyConcept],
   );
@@ -101,16 +88,15 @@ const HivTestingEncounters: React.FC<HivTestingEncountersListProps> = ({ patient
     <EncounterList
       patientUuid={patientUuid}
       encounterType={htsEncounterTypeUUID}
-      formList={[{ name: 'HTS Testing ' }]}
       columns={columns}
       description={headerTitle}
       headerTitle={headerTitle}
       launchOptions={{
-        displayText: t('add', 'Add'),
+        hideFormLauncher: true,
         moduleName: 'HTS Clinical View',
       }}
       filter={(encounter) => {
-        return encounter.form.uuid === htsInitialEncounterFormUUID || encounter.form.uuid === htsRetest;
+        return encounter.form?.uuid === htsInitialEncounterFormUUID || encounter.form?.uuid === htsRetest;
       }}
       formConceptMap={hivTestingConceptMap}
     />

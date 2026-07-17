@@ -145,6 +145,39 @@ describe('postQueueEntryWithoutVisit', () => {
     expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
   });
 
+  it('coalesces simultaneous creates for the same patient and queue', async () => {
+    const persistedEntry = {
+      uuid: 'new-entry',
+      queue: { uuid: input.queueUuid },
+    };
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce({ data: { uuid: persistedEntry.uuid }, status: 201 } as never)
+      .mockResolvedValueOnce({ data: { results: [persistedEntry] } } as never);
+
+    const firstCreate = postQueueEntryWithoutVisit(
+      input.queueUuid,
+      input.patientUuid,
+      input.priorityUuid,
+      input.statusUuid,
+      input.sortWeight,
+    );
+    const secondCreate = postQueueEntryWithoutVisit(
+      input.queueUuid,
+      input.patientUuid,
+      input.priorityUuid,
+      input.statusUuid,
+      input.sortWeight,
+    );
+
+    expect(secondCreate).toBe(firstCreate);
+    await expect(Promise.all([firstCreate, secondCreate])).resolves.toEqual([
+      expect.objectContaining({ created: true, queueEntry: persistedEntry }),
+      expect.objectContaining({ created: true, queueEntry: persistedEntry }),
+    ]);
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(3);
+  });
+
   it('reconciles a concurrent create instead of reporting a false failure', async () => {
     const concurrentEntry = {
       uuid: 'concurrent-entry',

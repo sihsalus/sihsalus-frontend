@@ -73,6 +73,11 @@ import {
   type RecurringPattern,
 } from '../types';
 import Workload from '../workload/workload.component';
+import {
+  isAppointmentIssuedDateAllowed,
+  isAppointmentStartDateAllowed,
+  isRecurringAppointmentRangeAllowed,
+} from './appointment-date-validation';
 //TO DO FIX THIS SHIT
 import {
   checkAppointmentConflict,
@@ -353,6 +358,45 @@ const AppointmentsForm: React.FC<
       dateAppointmentScheduled: z.date().optional(),
     })
     .refine(
+      (formValues) =>
+        isAppointmentStartDateAllowed(
+          formValues.appointmentDateTime.startDate,
+          context === 'editing' ? 'editing' : 'creating',
+          appointment?.startDateTime ? new Date(appointment.startDateTime) : undefined,
+        ),
+      {
+        path: ['appointmentDateTime.startDate'],
+        message: t('appointmentDateCannotBeInPast', 'The appointment date cannot be in the past'),
+      },
+    )
+    .refine(
+      (formValues) => {
+        if (!formValues.formIsRecurringAppointment || !formValues.appointmentDateTime.recurringPatternEndDate) {
+          return true;
+        }
+
+        return isRecurringAppointmentRangeAllowed(
+          formValues.appointmentDateTime.startDate,
+          formValues.appointmentDateTime.recurringPatternEndDate,
+        );
+      },
+      {
+        path: ['appointmentDateTime.recurringPatternEndDate'],
+        message: t(
+          'recurringAppointmentEndCannotBeBeforeStart',
+          'The recurring appointment end date cannot be before its start date',
+        ),
+      },
+    )
+    .refine(
+      (formValues) =>
+        !formValues.dateAppointmentScheduled || isAppointmentIssuedDateAllowed(formValues.dateAppointmentScheduled),
+      {
+        path: ['dateAppointmentScheduled'],
+        message: t('appointmentIssuedDateCannotBeInFuture', 'The appointment issue date cannot be in the future'),
+      },
+    )
+    .refine(
       (formValues) => {
         if (formValues.formIsRecurringAppointment === true) {
           return z.date().safeParse(formValues.appointmentDateTime.recurringPatternEndDate).success;
@@ -593,11 +637,20 @@ const AppointmentsForm: React.FC<
     };
 
     const abortController = new AbortController();
+    const originalStartDate = appointment?.startDateTime ? new Date(appointment.startDateTime) : undefined;
+    const saveRequest = () => {
+      if (isRecurringAppointment) {
+        return originalStartDate
+          ? saveRecurringAppointments(recurringAppointmentPayload, abortController, originalStartDate)
+          : saveRecurringAppointments(recurringAppointmentPayload, abortController);
+      }
 
-    (isRecurringAppointment
-      ? saveRecurringAppointments(recurringAppointmentPayload, abortController)
-      : saveAppointment(appointmentPayload, abortController)
-    ).then(
+      return originalStartDate
+        ? saveAppointment(appointmentPayload, abortController, originalStartDate)
+        : saveAppointment(appointmentPayload, abortController);
+    };
+
+    saveRequest().then(
       ({ status }) => {
         if (isSuccessfulAppointmentResponse(status)) {
           setIsSubmitting(false);
@@ -907,11 +960,15 @@ const AppointmentsForm: React.FC<
                           >
                             <DatePickerInput
                               id="startDatePickerInput"
+                              invalid={Boolean(errors.appointmentDateTime?.startDate?.message)}
+                              invalidText={errors.appointmentDateTime?.startDate?.message}
                               labelText={t('startDate', 'Start date')}
                               style={{ width: '100%' }}
                             />
                             <DatePickerInput
                               id="endDatePickerInput"
+                              invalid={Boolean(errors.appointmentDateTime?.recurringPatternEndDate?.message)}
+                              invalidText={errors.appointmentDateTime?.recurringPatternEndDate?.message}
                               labelText={t('endDate', 'End date')}
                               style={{ width: '100%' }}
                               placeholder={datePickerPlaceHolder}
@@ -1032,7 +1089,7 @@ const AppointmentsForm: React.FC<
                     <Controller
                       name="appointmentDateTime"
                       control={control}
-                      render={({ field, fieldState }) => (
+                      render={({ field }) => (
                         <OpenmrsDatePicker
                           {...field}
                           value={field.value.startDate}
@@ -1047,9 +1104,9 @@ const AppointmentsForm: React.FC<
                           isReadOnly={!canEditAppointmentStartDate}
                           labelText={<RequiredFieldLabel label={t('date', 'Date')} />}
                           style={{ width: '100%' }}
-                          invalid={Boolean(fieldState?.error?.message)}
-                          invalidText={fieldState?.error?.message}
-                          // minDate={new Date()}
+                          invalid={Boolean(errors.appointmentDateTime?.startDate?.message)}
+                          invalidText={errors.appointmentDateTime?.startDate?.message}
+                          minDate={context === 'creating' ? dayjs().startOf('day').toDate() : undefined}
                         />
                       )}
                     />
@@ -1264,9 +1321,19 @@ function getAppointmentValidationSummary(
     startTime: t('time', 'Hora'),
     duration: t('duration', 'Duración'),
     dateAppointmentScheduled: t('dateScheduled', 'Fecha de emisión de la cita'),
+    'appointmentDateTime.startDate': t('date', 'Fecha'),
+    'appointmentDateTime.recurringPatternEndDate': t('endDate', 'Fecha de finalización'),
   };
 
-  return Object.entries(errors)
+  const validationErrors = Object.entries(errors).flatMap(([key, error]) => {
+    if (key === 'appointmentDateTime' && error && typeof error === 'object') {
+      return Object.entries(error).map(([nestedKey, nestedError]) => [`${key}.${nestedKey}`, nestedError] as const);
+    }
+
+    return [[key, error] as const];
+  });
+
+  return validationErrors
     .map(([key, error]) => {
       const message =
         error && typeof error === 'object' && 'message' in error

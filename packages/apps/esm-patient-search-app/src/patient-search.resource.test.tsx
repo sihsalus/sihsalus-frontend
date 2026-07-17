@@ -7,6 +7,7 @@ import {
   isForbiddenUserPropertiesError,
   useInfinitePatientSearch,
   useRecentlyViewedPatients,
+  useRestPatients,
 } from './patient-search.resource';
 
 vi.mock('swr/infinite', () => ({
@@ -136,5 +137,35 @@ describe('patient search resource', () => {
     renderHook(() => useInfinitePatientSearch('   ', true));
 
     expect(mockUseSWRInfinite.mock.calls.at(-1)?.[0]).toBeNull();
+  });
+
+  it('skips missing recently viewed patients without hiding available patients', async () => {
+    mockUseSWRInfinite.mockReturnValue({
+      data: [{ data: { uuid: 'patient-a' } }, null],
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+      setSize: vi.fn(),
+      size: 2,
+    } as unknown as ReturnType<typeof useSWRInfinite>);
+
+    const { result } = renderHook(() => useRestPatients(['patient-a', 'missing-patient']));
+    const fetcher = mockUseSWRInfinite.mock.calls.at(-1)?.[1] as (url: string) => Promise<unknown>;
+
+    mockOpenmrsFetch.mockRejectedValueOnce({ response: { status: 404 } });
+
+    await expect(fetcher('/openmrs/ws/rest/v1/patient/missing-patient')).resolves.toBeNull();
+    expect(result.current.data).toEqual([{ uuid: 'patient-a' }]);
+    expect(result.current.fetchError).toBeUndefined();
+  });
+
+  it('does not suppress server errors while loading recently viewed patients', async () => {
+    renderHook(() => useRestPatients(['patient-a']));
+    const fetcher = mockUseSWRInfinite.mock.calls.at(-1)?.[1] as (url: string) => Promise<unknown>;
+    const serverError = { response: { status: 500 } };
+
+    mockOpenmrsFetch.mockRejectedValueOnce(serverError);
+
+    await expect(fetcher('/openmrs/ws/rest/v1/patient/patient-a')).rejects.toBe(serverError);
   });
 });

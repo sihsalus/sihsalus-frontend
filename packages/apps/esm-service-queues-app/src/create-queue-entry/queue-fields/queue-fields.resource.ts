@@ -34,6 +34,23 @@ export const MULTIPLE_ACTIVE_VISIT_QUEUE_ENTRIES = 'MULTIPLE_ACTIVE_VISIT_QUEUE_
 export const QUEUE_TICKET_GENERATION_FAILED = 'QUEUE_TICKET_GENERATION_FAILED';
 export const QUEUE_ENTRY_CREATION_UNVERIFIED = 'QUEUE_ENTRY_CREATION_UNVERIFIED';
 
+const pendingQueueEntryCreations = new Map<string, Promise<unknown>>();
+
+function coalesceQueueEntryCreation<T>(key: string, operation: () => Promise<T>): Promise<T> {
+  const pendingOperation = pendingQueueEntryCreations.get(key) as Promise<T> | undefined;
+  if (pendingOperation) {
+    return pendingOperation;
+  }
+
+  const operationPromise = operation().finally(() => {
+    if (pendingQueueEntryCreations.get(key) === operationPromise) {
+      pendingQueueEntryCreations.delete(key);
+    }
+  });
+  pendingQueueEntryCreations.set(key, operationPromise);
+  return operationPromise;
+}
+
 export class ActiveQueueEntryConflictError extends Error {
   readonly code = ACTIVE_QUEUE_ENTRY_CONFLICT;
 
@@ -253,7 +270,7 @@ function getQueueNumberFromResponse(response: FetchResponse<QueueTicketResponse>
  * the queue-entry resource directly and deliberately does not generate a visit
  * queue number.
  */
-export async function postQueueEntryWithoutVisit(
+async function createQueueEntryWithoutVisit(
   queueUuid: string,
   patientUuid: string,
   priority: string,
@@ -311,7 +328,20 @@ export async function postQueueEntryWithoutVisit(
   return { created: true, response, queueEntry: persistedEntry };
 }
 
-export async function postQueueEntry(
+export function postQueueEntryWithoutVisit(
+  queueUuid: string,
+  patientUuid: string,
+  priority: string,
+  status: string,
+  sortWeight: number,
+  startedAt: Date = new Date(),
+) {
+  return coalesceQueueEntryCreation(`patient:${patientUuid}:queue:${queueUuid}`, () =>
+    createQueueEntryWithoutVisit(queueUuid, patientUuid, priority, status, sortWeight, startedAt),
+  );
+}
+
+async function createQueueEntry(
   visitUuid: string,
   queueUuid: string,
   patientUuid: string,
@@ -426,4 +456,30 @@ export async function postQueueEntry(
   }
 
   return { created: true, response };
+}
+
+export function postQueueEntry(
+  visitUuid: string,
+  queueUuid: string,
+  patientUuid: string,
+  priority: string,
+  status: string,
+  sortWeight: number,
+  locationUuid: string,
+  visitQueueNumberAttributeUuid: string | null,
+  visitStartDatetime?: string | Date,
+) {
+  return coalesceQueueEntryCreation(`visit:${visitUuid}`, () =>
+    createQueueEntry(
+      visitUuid,
+      queueUuid,
+      patientUuid,
+      priority,
+      status,
+      sortWeight,
+      locationUuid,
+      visitQueueNumberAttributeUuid,
+      visitStartDatetime,
+    ),
+  );
 }

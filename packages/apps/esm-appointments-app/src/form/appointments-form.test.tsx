@@ -712,6 +712,40 @@ describe('AppointmentForm', () => {
     expect(screen.getByTestId('datePickerInput')).not.toHaveAttribute('readonly');
   });
 
+  it('rejects a historical appointment date even when the user can edit the field', async () => {
+    const user = userEvent.setup();
+    mockUserHasAccess.mockImplementation((privilege) => privilege === appointmentStartDateEditPrivilege);
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+    fireEvent.change(screen.getByTestId('datePickerInput'), { target: { value: '01/01/1742' } });
+    await fillRequiredAppointmentFields(user);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(await screen.findByText('The appointment date cannot be in the past')).toBeInTheDocument();
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
+  });
+
+  it('rejects a future appointment issue date even when the user can edit the field', async () => {
+    const user = userEvent.setup();
+    mockUserHasAccess.mockReturnValue(true);
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+    fireEvent.change(screen.getByTestId('dateAppointmentScheduledPickerInput'), {
+      target: { value: '01/01/2100' },
+    });
+    await fillRequiredAppointmentFields(user);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(await screen.findByText('The appointment issue date cannot be in the future')).toBeInTheDocument();
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
+  });
+
   it('preselects the responsible provider from the session when the user has a provider account', async () => {
     mockUseSession.mockReturnValue({
       ...mockSession.data,

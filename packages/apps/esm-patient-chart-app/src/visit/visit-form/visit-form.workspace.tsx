@@ -40,6 +40,7 @@ import {
   createOfflineVisitForPatient,
   type DefaultPatientWorkspaceProps,
   type PatientWorkspace2DefinitionProps,
+  safeCopyFinanciadorToVisit,
   time12HourFormatRegex,
   useActivePatientEnrollment,
 } from '@openmrs/esm-patient-common-lib';
@@ -1014,6 +1015,15 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
             setIsVisitSaved(true);
             setPersistedVisitPendingPostSubmit(visit);
+
+            // Copia el financiador persona→visita (plan de seguros SIS, F2).
+            // Solo al INICIAR una consulta (no al editarla, para no pisar
+            // correcciones manuales de Admisión). Fire-and-forget: es
+            // idempotente y nunca bloquea el inicio; un fallo se registra en
+            // consola y Admisión puede completar el dato después.
+            if (!visitToEdit) {
+              void safeCopyFinanciadorToVisit({ patientUuid, visitUuid: visit.uuid });
+            }
           }
 
           if (!completedPostSubmitActions.current.has('visit-attributes')) {

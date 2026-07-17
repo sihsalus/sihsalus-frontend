@@ -11,6 +11,17 @@ vi.mock('./patient-nationality.resource', () => ({
   useNationalityConceptAnswers: vi.fn(),
 }));
 
+vi.mock('./insurance-type.resource', () => ({
+  useInsuranceTypeConceptAnswers: vi.fn(() => ({
+    data: [
+      { uuid: '97c6e901-7570-4ab8-a9c0-9cf2b0f5bc0c', display: 'SIS' },
+      { uuid: 'af799b5e-313c-4352-80c4-5007dcd42f29', display: 'EsSalud' },
+    ],
+    error: undefined,
+    isLoading: false,
+  })),
+}));
+
 vi.mock('./usePatientSearch', () => ({
   usePatientSearch: vi.fn(),
 }));

@@ -1,4 +1,9 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import {
+  FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  LEGACY_SIS_PRODUCT_CONCEPT_UUIDS,
+  SIS_CONCEPT_UUID,
+} from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import useSWR from 'swr';
 
@@ -45,10 +50,25 @@ interface VisitRelationship {
   };
 }
 
+interface VisitAttribute {
+  uuid?: string;
+  value?:
+    | string
+    | {
+        uuid?: string;
+        display?: string;
+      };
+  attributeType?: {
+    uuid?: string;
+    display?: string;
+  };
+}
+
 interface Visit {
   uuid: string;
   startDatetime?: string;
   stopDatetime?: string;
+  attributes?: VisitAttribute[];
   patient?: {
     uuid?: string;
     display?: string;
@@ -239,7 +259,37 @@ function getAddress(addresses: VisitPersonAddress[] = []) {
     : '';
 }
 
-function hasSis(identifiers: Identifier[] = [], attributes: VisitPersonAttribute[] = []) {
+function getFinanciadorConceptUuid(visitAttributes: VisitAttribute[] = []) {
+  const financiadorAttribute = visitAttributes.find(
+    (attribute) => attribute.attributeType?.uuid === FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  );
+  const value = financiadorAttribute?.value;
+
+  if (!value) {
+    return null;
+  }
+
+  return typeof value === 'string' ? value : (value.uuid ?? null);
+}
+
+function hasSis(
+  visitAttributes: VisitAttribute[] = [],
+  identifiers: Identifier[] = [],
+  attributes: VisitPersonAttribute[] = [],
+) {
+  // Fuente de verdad: el visit attribute «Financiador» (plan de seguros SIS,
+  // F2), comparado por UUID contra el concepto SIS canónico (y sus productos
+  // legacy, que se consideran SIS).
+  const financiadorConceptUuid = getFinanciadorConceptUuid(visitAttributes);
+  if (financiadorConceptUuid) {
+    return (
+      financiadorConceptUuid === SIS_CONCEPT_UUID || LEGACY_SIS_PRODUCT_CONCEPT_UUIDS.includes(financiadorConceptUuid)
+    );
+  }
+
+  // Fallback legacy: visitas anteriores a la copia persona→visita no tienen el
+  // atributo, así que se mantiene la heurística de texto sobre identificadores
+  // y person attributes. Eliminar cuando el backfill de visitas esté completo.
   const identifiersText = getIdentifierSearchText(identifiers);
   const attributesText = getAttributeSearchText(attributes);
 
@@ -333,7 +383,7 @@ function mapVisitToAdmission(visit: Visit, relationships: VisitRelationship[] = 
     responsibleName: responsibleRelationship.name || fallbackResponsibleName,
     responsibleRelationship: responsibleRelationship.relationship || fallbackResponsibleRelationship,
     birthDate: person?.birthdate ?? '',
-    hasSis: hasSis(identifiers, person?.attributes) ? 'Sí' : 'No',
+    hasSis: hasSis(visit.attributes, identifiers, person?.attributes) ? 'Sí' : 'No',
     address: getAddress(person?.addresses),
     gender: person?.gender ?? '',
     service: visit.visitType?.display ?? '',
@@ -350,7 +400,7 @@ function mapVisitToAdmission(visit: Visit, relationships: VisitRelationship[] = 
 }
 
 const visitRepresentation =
-  'custom:(uuid,startDatetime,stopDatetime,patient:(uuid,display,identifiers:(identifier,preferred,identifierType:(display)),person:(display,birthdate,gender,addresses:(preferred,address1,cityVillage,stateProvince),attributes:(attributeType:(display),value))),visitType:(display),location:(display))';
+  'custom:(uuid,startDatetime,stopDatetime,attributes:(uuid,value,attributeType:(uuid,display)),patient:(uuid,display,identifiers:(identifier,preferred,identifierType:(display)),person:(display,birthdate,gender,addresses:(preferred,address1,cityVillage,stateProvince),attributes:(attributeType:(display),value))),visitType:(display),location:(display))';
 
 const relationshipRepresentation =
   'custom:(display,uuid,personA:(uuid,display),personB:(uuid,display),relationshipType:(uuid,display,description,aIsToB,bIsToA))';

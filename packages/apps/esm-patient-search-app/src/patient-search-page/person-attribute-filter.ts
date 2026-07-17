@@ -10,6 +10,7 @@ export const admissionIdentificationStatusConceptUuids = {
 } as const;
 
 type PersonAttribute = SearchedPatient['attributes'][number];
+type StringMatchMode = 'contains' | 'exact' | 'prefix';
 
 const admissionIdentificationStatusAliases = [
   {
@@ -80,7 +81,7 @@ export function matchesPersonAttributeFilter(
   attribute: PersonAttribute,
   attributeTypeUuid: string,
   selectedValue: string,
-  exactStringMatch = false,
+  stringMatchMode: StringMatchMode = 'contains',
 ) {
   if (attributeTypeUuid === admissionIdentificationStatusAttributeTypeUuid) {
     return matchesAdmissionIdentificationStatus(attribute, selectedValue);
@@ -94,7 +95,11 @@ export function matchesPersonAttributeFilter(
   }
 
   const normalizedAttributeValue = normalizeAttributeValue(String(value ?? ''));
-  return exactStringMatch
-    ? normalizedAttributeValue === normalizedSelectedValue
-    : normalizedAttributeValue.includes(normalizedSelectedValue);
+  if (stringMatchMode === 'exact') {
+    return normalizedAttributeValue === normalizedSelectedValue;
+  }
+  if (stringMatchMode === 'prefix') {
+    return normalizedAttributeValue.startsWith(normalizedSelectedValue);
+  }
+  return normalizedAttributeValue.includes(normalizedSelectedValue);
 }

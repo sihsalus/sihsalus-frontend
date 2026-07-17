@@ -1,4 +1,4 @@
-import { navigate, useFeatureFlag } from '@openmrs/esm-framework';
+import { navigate, openmrsFetch, showSnackbar, useFeatureFlag } from '@openmrs/esm-framework';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Form, Formik } from 'formik';
@@ -22,12 +22,17 @@ import {
   peruDniPatientIdentifierTypeUuid,
   peruInsuranceAccreditationActiveConceptUuid,
   peruInsuranceAccreditationCheckedAtAttributeTypeUuid,
+  peruInsuranceAccreditationPendingConceptUuid,
   peruInsuranceAccreditationStatusAttributeTypeUuid,
   peruInsuranceCodeAttributeTypeUuid,
+  peruInsuranceSisConceptUuid,
+  peruInsuranceTypeAttributeTypeUuid,
+  peruSisEessNameAttributeTypeUuid,
+  peruSisTypeDescriptionAttributeTypeUuid,
 } from '../../peru-registration-config';
 import { IdentityLookupField } from './identity-lookup-field.component';
 import { lookupReniecIdentityByDni } from './reniec-lookup.resource';
-import { lookupSisInsuranceByDni } from './sis-lookup.resource';
+import { lookupSisInsuranceByDni, sisOnlineVerificationUrl } from './sis-lookup.resource';
 import { SisLookupField } from './sis-lookup-field.component';
 
 vi.mock('../../identity/identity-search.resource', () => ({
@@ -39,6 +44,8 @@ const mockSearchLocalIdentityByDocument = vi.mocked(searchLocalIdentityByDocumen
 const mockFetchPersonForPromotion = vi.mocked(fetchPersonForPromotion);
 const mockNavigate = vi.mocked(navigate);
 const mockUseFeatureFlag = vi.mocked(useFeatureFlag);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockShowSnackbar = vi.mocked(showSnackbar);
 
 function deferred<T>() {
   let resolve: (value: T) => void = () => {
@@ -91,7 +98,11 @@ function buildFormValues(identifierValue = '12345678') {
   } as FormValues;
 }
 
-function renderLookup(component: React.ReactNode, values: FormValues = buildFormValues()) {
+function renderLookup(
+  component: React.ReactNode,
+  values: FormValues = buildFormValues(),
+  contextOverrides: Partial<PatientRegistrationContextProps> = {},
+) {
   const setFieldValue = vi.fn();
   const setFieldTouched = vi.fn();
   const renderTree = (currentValues: FormValues) => {
@@ -112,6 +123,7 @@ function renderLookup(component: React.ReactNode, values: FormValues = buildForm
       setFieldValue,
       validationSchema: null,
       values: currentValues,
+      ...contextOverrides,
     } as unknown as PatientRegistrationContextProps;
 
     return (
@@ -431,20 +443,63 @@ describe('IdentityLookupField', () => {
 });
 
 describe('SisLookupField', () => {
-  it('loads mock SIS accreditation data into insurance fields', async () => {
+  const checkedAtIsoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+  let windowOpenSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    windowOpenSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+    mockOpenmrsFetch.mockResolvedValue({
+      data: { answers: [{ uuid: 'sis-para-todos-uuid', display: 'SIS Para Todos' }] },
+    } as never);
+  });
+
+  afterEach(() => {
+    windowOpenSpy.mockRestore();
+  });
+
+  it('opens the online SIS portal, copies the DNI, and shows the result mini-form', async () => {
+    const user = userEvent.setup();
+    const { setFieldValue } = renderLookup(<SisLookupField />);
+
+    await user.click(screen.getByRole('button', { name: /verificar sis \(en línea\)/i }));
+
+    expect(windowOpenSpy).toHaveBeenCalledWith(sisOnlineVerificationUrl, '_blank', 'noopener');
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ title: 'DNI copiado' })),
+    );
+    await expect(window.navigator.clipboard.readText()).resolves.toBe('12345678');
+    expect(screen.getByRole('radio', { name: 'Vigente' })).toBeInTheDocument();
+    expect(setFieldValue).not.toHaveBeenCalled();
+  });
+
+  it('validates the DNI before opening the online verification', async () => {
+    const user = userEvent.setup();
+    const { setFieldValue } = renderLookup(<SisLookupField />, buildFormValues('123'));
+
+    await user.click(screen.getByRole('button', { name: /verificar sis \(en línea\)/i }));
+
+    expect(screen.getByText('El DNI debe tener 8 dígitos')).toBeInTheDocument();
+    expect(windowOpenSpy).not.toHaveBeenCalled();
+    expect(setFieldValue).not.toHaveBeenCalled();
+  });
+
+  it('applies the manual result with financiador SIS, estado, checkedAt and SETISIS attributes', async () => {
     const user = userEvent.setup();
     const { setFieldTouched, setFieldValue } = renderLookup(<SisLookupField />);
 
-    await user.click(screen.getByRole('button', { name: /consultar sis/i }));
+    await user.click(screen.getByRole('button', { name: /registrar resultado de verificación/i }));
+    await user.click(screen.getByRole('radio', { name: 'Vigente' }));
+    await screen.findByRole('option', { name: 'SIS Para Todos' });
+    await user.selectOptions(screen.getByLabelText(/producto sis/i), 'sis-para-todos-uuid');
+    await user.type(screen.getByLabelText(/código de afiliado/i), 'SIS-11112222');
+    await user.type(screen.getByLabelText(/eess de adscripción/i), 'C.S. San Juan');
+    await user.click(screen.getByRole('button', { name: /aplicar al formulario/i }));
 
-    await waitFor(() =>
-      expect(setFieldValue).toHaveBeenCalledWith(
-        `attributes.${peruInsuranceCodeAttributeTypeUuid}`,
-        'SIS-12345678',
-        false,
-      ),
+    expect(setFieldValue).toHaveBeenCalledWith(
+      `attributes.${peruInsuranceTypeAttributeTypeUuid}`,
+      peruInsuranceSisConceptUuid,
+      false,
     );
-
     expect(setFieldValue).toHaveBeenCalledWith(
       `attributes.${peruInsuranceAccreditationStatusAttributeTypeUuid}`,
       peruInsuranceAccreditationActiveConceptUuid,
@@ -452,11 +507,89 @@ describe('SisLookupField', () => {
     );
     expect(setFieldValue).toHaveBeenCalledWith(
       `attributes.${peruInsuranceAccreditationCheckedAtAttributeTypeUuid}`,
-      '2026-06-10T09:30:00-05:00',
+      expect.stringMatching(checkedAtIsoPattern),
       false,
     );
-    expect(setFieldTouched).toHaveBeenCalledWith(`attributes.${peruInsuranceCodeAttributeTypeUuid}`, true, false);
-    expect(screen.getByText('Acreditación SIS vigente cargada')).toBeInTheDocument();
+    expect(setFieldValue).toHaveBeenCalledWith(
+      `attributes.${peruInsuranceCodeAttributeTypeUuid}`,
+      'SIS-11112222',
+      false,
+    );
+    expect(setFieldValue).toHaveBeenCalledWith(
+      `attributes.${peruSisTypeDescriptionAttributeTypeUuid}`,
+      'SIS Para Todos',
+      false,
+    );
+    expect(setFieldValue).toHaveBeenCalledWith(
+      `attributes.${peruSisEessNameAttributeTypeUuid}`,
+      'C.S. San Juan',
+      false,
+    );
+    expect(setFieldTouched).toHaveBeenCalledWith(`attributes.${peruInsuranceTypeAttributeTypeUuid}`, true, false);
+    expect(screen.getByText('Verificación SIS aplicada al formulario')).toBeInTheDocument();
+  });
+
+  it('disables the online link, preselects pendiente, and applies the pending status when offline', async () => {
+    const user = userEvent.setup();
+    const { setFieldValue } = renderLookup(<SisLookupField />, buildFormValues(), { isOffline: true });
+
+    expect(screen.getByRole('button', { name: /verificar sis \(en línea\)/i })).toBeDisabled();
+    expect(screen.getByText(/sin conexión: no se puede abrir la consulta sis en línea/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /registrar resultado de verificación/i }));
+
+    expect(screen.getByRole('radio', { name: 'No consultada / pendiente' })).toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: /aplicar al formulario/i }));
+
+    expect(setFieldValue).toHaveBeenCalledWith(
+      `attributes.${peruInsuranceTypeAttributeTypeUuid}`,
+      peruInsuranceSisConceptUuid,
+      false,
+    );
+    expect(setFieldValue).toHaveBeenCalledWith(
+      `attributes.${peruInsuranceAccreditationStatusAttributeTypeUuid}`,
+      peruInsuranceAccreditationPendingConceptUuid,
+      false,
+    );
+    expect(screen.getByText('Acreditación pendiente registrada en el formulario')).toBeInTheDocument();
+  });
+
+  it('prefills the mini-form from the automatic lookup instead of writing directly', async () => {
+    const user = userEvent.setup();
+    const { setFieldValue } = renderLookup(<SisLookupField />);
+
+    await user.click(screen.getByRole('button', { name: /consultar sis/i }));
+
+    expect(await screen.findByRole('radio', { name: 'Vigente' })).toBeChecked();
+    expect(screen.getByLabelText(/código de afiliado/i)).toHaveValue('SIS-12345678');
+    expect(setFieldValue).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: /aplicar al formulario/i }));
+
+    expect(setFieldValue).toHaveBeenCalledWith(
+      `attributes.${peruInsuranceTypeAttributeTypeUuid}`,
+      peruInsuranceSisConceptUuid,
+      false,
+    );
+    expect(setFieldValue).toHaveBeenCalledWith(
+      `attributes.${peruInsuranceCodeAttributeTypeUuid}`,
+      'SIS-12345678',
+      false,
+    );
+    expect(setFieldValue).toHaveBeenCalledWith(
+      `attributes.${peruInsuranceAccreditationStatusAttributeTypeUuid}`,
+      peruInsuranceAccreditationActiveConceptUuid,
+      false,
+    );
+  });
+
+  it('hides the automatic lookup when the external lookups flag is disabled', () => {
+    mockUseFeatureFlag.mockReturnValue(false);
+    renderLookup(<SisLookupField />);
+
+    expect(screen.queryByRole('button', { name: /consultar sis/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /verificar sis \(en línea\)/i })).toBeInTheDocument();
   });
 
   it('validates the DNI before searching SIS', async () => {

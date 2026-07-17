@@ -68,7 +68,7 @@ export function assertAppointmentPayloadDates(appointment: AppointmentPayload, t
 export function assertRecurringPatternDates(appointment: AppointmentPayload, recurringPattern: RecurringPattern): void {
   const startDate = new Date(appointment.startDateTime);
   const endDate = new Date(recurringPattern.endDate);
-  if (!isRecurringAppointmentRangeAllowed(startDate, endDate)) {
+  if (Number.isNaN(startDate.valueOf()) || Number.isNaN(endDate.valueOf()) || endDate < startDate) {
     throw new Error('Recurring appointment end date cannot be before its start date.');
   }
 }

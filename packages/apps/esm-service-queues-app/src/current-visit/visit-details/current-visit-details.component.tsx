@@ -5,12 +5,20 @@ import {
   StructuredListRow,
   StructuredListWrapper,
 } from '@carbon/react';
-import { formatTime, type OpenmrsResource, parseDate, useConfig, useSession, type Visit } from '@openmrs/esm-framework';
-import { isAdmissionUser } from '@sihsalus/esm-rbac';
+import {
+  formatTime,
+  type OpenmrsResource,
+  parseDate,
+  userHasAccess,
+  useConfig,
+  useSession,
+  type Visit,
+} from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../config-schema';
+import { visitNotesPrivilege, vitalsPrivilege } from '../../constants';
 import { type DiagnosisItem, type Encounter, type Note, type Observation } from '../../types/index';
 import styles from '../current-visit.scss';
 import { useVitalsFromObs } from '../hooks/useVitalsConceptMetadata';
@@ -33,7 +41,8 @@ const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encount
   const { t } = useTranslation();
   const { concepts, visitNoteEncounterTypeUuid } = useConfig<ConfigObject>();
   const session = useSession();
-  const canViewVisitSummary = !isAdmissionUser(session?.user);
+  const canViewVisitSummary = userHasAccess(visitNotesPrivilege, session?.user);
+  const canViewVitals = userHasAccess(vitalsPrivilege, session?.user);
 
   const [diagnoses, notes, vitalsToRetrieve]: [Array<DiagnosisItem>, Array<Note>, Array<Encounter>] = useMemo(() => {
     const notes: Array<Note> = [];
@@ -92,13 +101,15 @@ const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encount
               </StructuredListRow>
             ) : null}
 
-            <StructuredListRow className={styles.structuredListRow}>
-              <StructuredListCell>{t('vitals', 'Vitals')}</StructuredListCell>
-              <StructuredListCell>
-                {' '}
-                <Vitals vitals={vitals} patientUuid={patientUuid} visitType={visitTypes.CURRENT} visit={visit} />
-              </StructuredListCell>
-            </StructuredListRow>
+            {canViewVitals ? (
+              <StructuredListRow className={styles.structuredListRow}>
+                <StructuredListCell>{t('vitals', 'Vitals')}</StructuredListCell>
+                <StructuredListCell>
+                  {' '}
+                  <Vitals vitals={vitals} patientUuid={patientUuid} visitType={visitTypes.CURRENT} visit={visit} />
+                </StructuredListCell>
+              </StructuredListRow>
+            ) : null}
           </StructuredListBody>
         </StructuredListWrapper>
       </div>

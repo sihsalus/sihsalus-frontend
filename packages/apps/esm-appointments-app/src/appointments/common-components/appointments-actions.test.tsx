@@ -523,6 +523,32 @@ describe('AppointmentActions', () => {
     expect(mockChangeAppointmentStatus).toHaveBeenCalledWith('CheckedIn', appointment.uuid);
   });
 
+  it('fails closed when multiple queue mappings match the same service and location', async () => {
+    appointment.status = AppointmentStatus.SCHEDULED;
+    const mapping = {
+      appointmentServiceUuid: appointment.service.uuid,
+      appointmentLocationUuid: appointment.location.uuid,
+      queueUuid: 'mapped-queue-uuid',
+      queueLocationUuid: 'mapped-queue-location-uuid',
+      requiredVisitTypeUuid,
+    };
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentQueueMappings: [
+        mapping,
+        { ...mapping, queueUuid: 'second-queue-uuid', queueLocationUuid: 'second-queue-location-uuid' },
+      ],
+      checkInButton: { enabled: true, showIfActiveVisit: true, customUrl: '' },
+    });
+
+    render(<AppointmentActions {...defaultProps} />);
+    await userEvent.click(screen.getByRole('button', { name: /check in/i }));
+
+    expect(mockGetActiveVisitsForPatient).not.toHaveBeenCalled();
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
+  });
+
   it('blocks reusing an active visit from another appointment location', async () => {
     appointment.status = AppointmentStatus.SCHEDULED;
     mockUseConfig.mockReturnValue({

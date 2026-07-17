@@ -58,7 +58,7 @@ describe('PatientQueueHeader service filter', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
-    mockSession(false);
+    mockSession();
     mockUseQueueLocations.mockReturnValue({ queueLocations: [], isLoading: false, error: undefined });
     mockUseServiceQueuesStore.mockReturnValue(defaultStoreState);
     mockQueueResult([]);
@@ -157,13 +157,13 @@ describe('PatientQueueHeader service filter', () => {
     expect(screen.queryByRole('combobox', { name: /select a service/i })).not.toBeInTheDocument();
   });
 
-  it('locks Admission to the queue location that matches their session location', async () => {
+  it('does not let a role name or session location override a valid persisted Queue Location', () => {
     const sessionQueueLocation = {
       resourceType: 'Location' as const,
       id: 'admission-location',
       name: 'Admission desk',
     };
-    mockSession(true, { uuid: sessionQueueLocation.id, display: 'Stale session display' });
+    mockSession('SIHSALUS Admision', { uuid: sessionQueueLocation.id, display: 'Stale session display' });
     mockUseQueueLocations.mockReturnValue({
       queueLocations: [
         sessionQueueLocation,
@@ -174,8 +174,8 @@ describe('PatientQueueHeader service filter', () => {
     });
     mockUseServiceQueuesStore.mockReturnValue({
       ...defaultStoreState,
-      selectedQueueLocationUuid: 'persisted-location',
-      selectedQueueLocationName: 'Persisted location',
+      selectedQueueLocationUuid: 'other-location',
+      selectedQueueLocationName: 'Other location',
       selectedServiceUuid: mockServiceTriage.uuid,
       selectedServiceDisplay: mockServiceTriage.display,
     });
@@ -183,19 +183,14 @@ describe('PatientQueueHeader service filter', () => {
 
     render(<PatientQueueHeader showFilters />);
 
-    expect(screen.queryByRole('combobox', { name: /select a queue location/i })).not.toBeInTheDocument();
-    expect(screen.getByTestId('admission-queue-location')).toHaveTextContent('Queue location');
-    expect(screen.getByTestId('admission-queue-location')).toHaveTextContent('Admission desk');
-    expect(mockUseQueues).toHaveBeenCalledWith('admission-location');
-    await waitFor(() => {
-      expect(mockUpdateSelectedQueueLocationUuid).toHaveBeenCalledWith('admission-location');
-      expect(mockUpdateSelectedQueueLocationName).toHaveBeenCalledWith('Admission desk');
-      expect(mockUpdateSelectedService).toHaveBeenCalledWith(null, 'All');
-    });
+    expect(screen.getByRole('combobox', { name: /select a queue location/i })).toBeEnabled();
+    expect(mockUseQueues).toHaveBeenCalledWith('other-location');
+    expect(mockUpdateSelectedQueueLocationUuid).not.toHaveBeenCalled();
+    expect(mockUpdateSelectedQueueLocationName).not.toHaveBeenCalled();
   });
 
-  it('clears Admission location and shows a warning when the session location is not a Queue Location', async () => {
-    mockSession(true, { uuid: 'non-queue-location', display: 'Unconfigured location' });
+  it('clears a stale persisted Queue Location after metadata loads successfully', async () => {
+    mockSession('Any role', { uuid: 'non-queue-location', display: 'Unconfigured location' });
     mockUseQueueLocations.mockReturnValue({
       queueLocations: [{ resourceType: 'Location', id: 'queue-location', name: 'Configured queue location' }],
       isLoading: false,
@@ -209,18 +204,15 @@ describe('PatientQueueHeader service filter', () => {
 
     render(<PatientQueueHeader showFilters />);
 
-    expect(screen.getByText('Queue location unavailable')).toBeInTheDocument();
-    expect(screen.getByText(/your session location is not configured as a queue location/i)).toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: /select a queue location/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: /select a service/i })).toBeDisabled();
     await waitFor(() => {
       expect(mockUpdateSelectedQueueLocationUuid).toHaveBeenCalledWith(null);
       expect(mockUpdateSelectedQueueLocationName).toHaveBeenCalledWith(null);
     });
   });
 
-  it('fails closed and clears Admission location when Queue Locations cannot be loaded', async () => {
-    mockSession(true, { uuid: 'admission-location', display: 'Admission desk' });
+  it('preserves persisted Queue Location state while metadata loading fails', () => {
+    mockSession('Any role', { uuid: 'admission-location', display: 'Admission desk' });
     mockUseQueueLocations.mockReturnValue({
       queueLocations: [],
       isLoading: false,
@@ -236,14 +228,12 @@ describe('PatientQueueHeader service filter', () => {
 
     expect(screen.getByText('Failed to load locations')).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /select a service/i })).toBeDisabled();
-    await waitFor(() => {
-      expect(mockUpdateSelectedQueueLocationUuid).toHaveBeenCalledWith(null);
-      expect(mockUpdateSelectedQueueLocationName).toHaveBeenCalledWith(null);
-    });
+    expect(mockUpdateSelectedQueueLocationUuid).not.toHaveBeenCalled();
+    expect(mockUpdateSelectedQueueLocationName).not.toHaveBeenCalled();
   });
 
-  it('keeps the editable location selector for users outside Admission', () => {
-    mockSession(false, { uuid: 'queue-location-1', display: 'Queue location 1' });
+  it('keeps the location filter behavior independent from role names', () => {
+    mockSession('SIHSALUS Admision', { uuid: 'queue-location-1', display: 'Queue location 1' });
     mockUseQueueLocations.mockReturnValue({
       queueLocations: [
         { resourceType: 'Location', id: 'queue-location-1', name: 'Queue location 1' },
@@ -256,7 +246,6 @@ describe('PatientQueueHeader service filter', () => {
     render(<PatientQueueHeader showFilters />);
 
     expect(screen.getByRole('combobox', { name: /select a queue location/i })).toBeEnabled();
-    expect(screen.queryByTestId('admission-queue-location')).not.toBeInTheDocument();
   });
 });
 
@@ -264,11 +253,11 @@ function mockQueueResult(queues: ReturnType<typeof useQueues>['queues'], isLoadi
   mockUseQueues.mockReturnValue({ queues, isLoading, error } as ReturnType<typeof useQueues>);
 }
 
-function mockSession(admissionUser: boolean, sessionLocation?: { uuid: string; display: string }) {
+function mockSession(roleName = 'Nurse', sessionLocation?: { uuid: string; display: string }) {
   mockUseSession.mockReturnValue({
     authenticated: true,
     user: {
-      roles: [{ display: admissionUser ? 'Admission' : 'Nurse' }],
+      roles: [{ display: roleName }],
     },
     sessionLocation,
   } as unknown as ReturnType<typeof useSession>);

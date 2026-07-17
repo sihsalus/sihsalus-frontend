@@ -42,6 +42,7 @@
   "appointmentMetrics": "Appointment metrics",
   "appointmentMetricsLoadError": "",
   "appointmentLocationMissing": "The appointment has no valid location. Correct the appointment before starting care.",
+  "appointmentQueueMappingAmbiguous": "More than one queue rule exists for this service and location. Correct the configuration before checking in the appointment.",
   "appointmentNoteLabel": "Write an additional note",
   "appointmentNotePlaceholder": "Write any additional points here",
   "appointmentNoteTooLong": "Appointment note cannot exceed 500 characters",

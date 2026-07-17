@@ -10,6 +10,7 @@ import userEvent from '@testing-library/user-event';
 import { mockSession, mockVisitAlice } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../../config-schema';
+import { serviceQueuesEditPrivilege } from '../../constants';
 import { useQueues } from '../../hooks/useQueues';
 import { AddPatientToQueueContext } from '../create-queue-entry.workspace';
 import { useQueueLocations } from '../hooks/useQueueLocations';
@@ -52,6 +53,7 @@ const queues = [
     uuid: 'e2ec9cf0-ec38-4d2b-af6c-59c82fa30b90',
     display: 'Service 1',
     name: 'Service 1',
+    location: { uuid: '1', display: 'Location 1' },
     allowedPriorities: [{ uuid: '197852c7-5fd4-4b33-89cc-7bae6848c65a', display: 'High' }],
     allowedStatuses: [{ uuid: '176052c7-5fd4-4b33-89cc-7bae6848c65a', display: 'In Progress' }],
   },
@@ -61,7 +63,16 @@ describe('QueueFields', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseLayoutType.mockReturnValue('small-desktop');
-    mockUseSession.mockReturnValue(mockSession.data);
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      user: {
+        ...mockSession.data.user,
+        privileges: [
+          ...mockSession.data.user.privileges,
+          { uuid: 'queue-edit', display: serviceQueuesEditPrivilege, name: serviceQueuesEditPrivilege, links: [] },
+        ],
+      },
+    });
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
       visitQueueNumberAttributeUuid: 'queue-number-attribute-uuid',
@@ -153,6 +164,13 @@ describe('QueueFields', () => {
     mockUseSession.mockReturnValue({
       ...mockSession.data,
       sessionLocation: null,
+      user: {
+        ...mockSession.data.user,
+        privileges: [
+          ...mockSession.data.user.privileges,
+          { uuid: 'queue-edit', display: serviceQueuesEditPrivilege, name: serviceQueuesEditPrivilege, links: [] },
+        ],
+      },
     } as unknown as ReturnType<typeof useSession>);
 
     render(<QueueFields currentQueueLocationUuid="1" setCallbacks={(value) => (callbacks = value)} />);
@@ -181,6 +199,13 @@ describe('QueueFields', () => {
     mockUseSession.mockReturnValue({
       ...mockSession.data,
       sessionLocation: null,
+      user: {
+        ...mockSession.data.user,
+        privileges: [
+          ...mockSession.data.user.privileges,
+          { uuid: 'queue-edit', display: serviceQueuesEditPrivilege, name: serviceQueuesEditPrivilege, links: [] },
+        ],
+      },
     } as unknown as ReturnType<typeof useSession>);
 
     render(<QueueFields setCallbacks={vi.fn()} />);
@@ -239,7 +264,12 @@ describe('QueueFields', () => {
 
   it('clears an editable service when the Queue Location changes', async () => {
     const user = userEvent.setup();
-    const otherQueue = { ...queues[0], uuid: 'other-queue-uuid', name: 'Other service' };
+    const otherQueue = {
+      ...queues[0],
+      uuid: 'other-queue-uuid',
+      name: 'Other service',
+      location: { uuid: 'obstetric-location', display: 'UPSS - CENTRO OBSTÉTRICO' },
+    };
     mockUseQueues.mockImplementation(
       (queueLocationUuid) =>
         ({
@@ -259,31 +289,45 @@ describe('QueueFields', () => {
     await waitFor(() => expect(service).toHaveValue(''));
   });
 
-  it('always locks Admission to their configured session Queue Location', async () => {
+  it('keeps the workflow Queue Location authoritative regardless of role or session location', async () => {
     mockUseSession.mockReturnValue({
       ...mockSession.data,
       sessionLocation: { ...mockSession.data.sessionLocation, uuid: '1', display: 'Stale display' },
-      user: { ...mockSession.data.user, roles: [{ display: 'Admission' }] },
+      user: { ...mockSession.data.user, privileges: [], roles: [{ display: 'SIHSALUS Admision' }] },
     } as unknown as ReturnType<typeof useSession>);
 
     render(<QueueFields currentQueueLocationUuid="obstetric-location" setCallbacks={vi.fn()} />);
 
-    expect(await screen.findByRole('textbox', { name: 'Queue location' })).toHaveValue('Location 1');
+    expect(await screen.findByRole('textbox', { name: 'Queue location' })).toHaveValue('UPSS - CENTRO OBSTÉTRICO');
     expect(screen.queryByRole('combobox', { name: 'Select a queue location' })).not.toBeInTheDocument();
   });
 
-  it('blocks Admission when their session location is not configured as a Queue Location', async () => {
+  it('requires a workflow context when the user cannot select queue locations', async () => {
     let callbacks: QueueFieldsCallbacks | undefined;
     mockUseSession.mockReturnValue({
       ...mockSession.data,
-      sessionLocation: { ...mockSession.data.sessionLocation, uuid: 'not-a-queue-location' },
-      user: { ...mockSession.data.user, roles: [{ display: 'Admission' }] },
+      user: { ...mockSession.data.user, privileges: [], roles: [{ display: 'Any operational role' }] },
     } as unknown as ReturnType<typeof useSession>);
 
     render(<QueueFields setCallbacks={(value) => (callbacks = value)} />);
 
-    expect(screen.getByText('Queue location unavailable')).toBeInTheDocument();
+    expect(screen.getByText('A queue location is required for this workflow')).toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: 'Select a queue location' })).not.toBeInTheDocument();
+    await waitFor(() => expect(callbacks?.onBeforeVisitSave()).toBe(false));
+  });
+
+  it('rejects a fixed queue UUID that belongs to a different Queue Location', async () => {
+    let callbacks: QueueFieldsCallbacks | undefined;
+
+    render(
+      <QueueFields
+        currentQueueLocationUuid="obstetric-location"
+        currentServiceQueueUuid={queues[0].uuid}
+        setCallbacks={(value) => (callbacks = value)}
+      />,
+    );
+
+    expect(screen.getByText('The selected service is not available at this location')).toBeInTheDocument();
     await waitFor(() => expect(callbacks?.onBeforeVisitSave()).toBe(false));
   });
 

@@ -207,7 +207,7 @@ describe('AppointmentActions', () => {
     expect(screen.queryByRole('button', { name: /check in/i })).not.toBeInTheDocument();
   });
 
-  it('authorizes checkout separately without requiring Add Visits', () => {
+  it('authorizes admission reconciliation separately without requiring Add Visits', () => {
     appointment.status = AppointmentStatus.CHECKEDIN;
     mockUserHasAccess.mockImplementation((requiredPrivileges) =>
       Array.isArray(requiredPrivileges) ? !requiredPrivileges.includes('Add Visits') : true,
@@ -226,7 +226,10 @@ describe('AppointmentActions', () => {
 
     render(<AppointmentActions {...defaultProps} />);
 
-    expect(screen.getByRole('button', { name: /check out/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /regularizar admisión/i })).toHaveAttribute(
+      'title',
+      'La cita está en progreso sin una consulta activa vinculada. Revise y regularice su estado.',
+    );
     expect(mockUserHasAccess).toHaveBeenCalledWith(
       ['app:home.citas.editar', 'Get Visits', 'Edit Visits', 'Get Queue Entries', 'Get Queues', 'Manage Queue Entries'],
       expect.anything(),
@@ -383,7 +386,13 @@ describe('AppointmentActions', () => {
           patient: { uuid: appointment.patient.uuid },
           startDatetime: new Date().toISOString(),
           stopDatetime: null,
-          uuid: '',
+          uuid: 'linked-active-visit-uuid',
+          attributes: [
+            {
+              attributeType: { uuid: '193508ab-20c6-5291-9f23-0257335eaabd' },
+              value: appointment.uuid,
+            },
+          ],
         },
       ],
       error: null,
@@ -393,6 +402,29 @@ describe('AppointmentActions', () => {
 
     render(<AppointmentActions {...defaultProps} />);
     expect(screen.getByText(/check out/i)).toBeInTheDocument();
+  });
+
+  it.each([
+    { case: 'active visits are still loading', error: null, isLoading: true },
+    { case: 'active visits failed to load', error: new Error('visit lookup failed'), isLoading: false },
+  ])('does not report an orphan admission when $case', ({ error, isLoading }) => {
+    appointment.status = AppointmentStatus.CHECKEDIN;
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
+      checkOutButton: { enabled: true, customUrl: '' },
+    });
+    mockUseTodaysVisits.mockReturnValue({
+      visits: [],
+      error,
+      isLoading,
+      mutateVisit: vi.fn(),
+    });
+
+    render(<AppointmentActions {...defaultProps} />);
+
+    expect(screen.getByRole('button', { name: /check out/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /regularizar admisión/i })).not.toBeInTheDocument();
   });
 
   it('renders check-in button when active visit exists and showIfActiveVisit is true', () => {

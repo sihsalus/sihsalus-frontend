@@ -51,7 +51,7 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
   const session = useSession();
   const canCheckIn = userHasAccess(checkInPrivileges, session?.user);
   const canCheckOut = userHasAccess(checkOutPrivileges, session?.user);
-  const { visits, mutateVisit } = useTodaysVisits();
+  const { visits, isLoading: areVisitsLoading, error: visitsError, mutateVisit } = useTodaysVisits();
 
   const patientUuid = appointment.patient.uuid;
   const visitDate = dayjs(appointment.startDateTime);
@@ -76,6 +76,8 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
   const isCheckedIn = appointment.status === AppointmentStatus.CHECKEDIN;
   const isCompleted = appointment.status === AppointmentStatus.COMPLETED;
   const isCancelled = appointment.status === AppointmentStatus.CANCELLED;
+  const canAssessAppointmentVisitLink = Boolean(appointmentVisitAttributeTypeUuid) && !areVisitsLoading && !visitsError;
+  const needsAdmissionReconciliation = isCheckedIn && canAssessAppointmentVisitLink && !hasLinkedActiveVisit;
 
   const handleCheckout = () => {
     if (checkOutButton.customUrl) {
@@ -123,8 +125,22 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
 
       case canCheckOut && checkOutButton.enabled && isCheckedIn:
         return (
-          <Button onClick={handleCheckout} kind="danger--tertiary" size="sm">
-            {t('checkOut', 'Check out')}
+          <Button
+            onClick={handleCheckout}
+            kind="danger--tertiary"
+            size="sm"
+            title={
+              needsAdmissionReconciliation
+                ? t(
+                    'reconcileAdmissionDescription',
+                    'La cita está en progreso sin una consulta activa vinculada. Revise y regularice su estado.',
+                  )
+                : undefined
+            }
+          >
+            {needsAdmissionReconciliation
+              ? t('reconcileAdmission', 'Regularizar admisión')
+              : t('checkOut', 'Check out')}
           </Button>
         );
 

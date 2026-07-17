@@ -199,6 +199,8 @@
   "recurringAppointmentEndCannotBeBeforeStart": "La fecha de finalización de la cita recurrente no puede ser anterior a su fecha de inicio",
   "recurringAppointmentShouldHaveEndDate": "Una cita recurrente debe tener una fecha de finalización",
   "repeatEvery": "Repetir cada",
+  "reconcileAdmission": "Regularizar admisión",
+  "reconcileAdmissionDescription": "La cita está en progreso sin una consulta activa vinculada. Revise y regularice su estado.",
   "reconcileCheckout": "Regularizar cierre",
   "requested": "Solicitada",
   "responsibleProvider": "Personal de salud responsable",

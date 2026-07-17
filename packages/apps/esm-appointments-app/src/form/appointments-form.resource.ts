@@ -10,6 +10,7 @@ import {
   type AppointmentsFetchResponse,
   type RecurringAppointmentsPayload,
 } from '../types';
+import { assertAppointmentPayloadDates, assertRecurringPatternDates } from './appointment-date-validation';
 
 dayjs.extend(isToday);
 
@@ -103,6 +104,7 @@ export function useAppointmentService() {
 }
 
 export function saveAppointment(appointment: AppointmentPayload, abortController: AbortController) {
+  assertAppointmentPayloadDates(appointment);
   return openmrsFetch(`${restBaseUrl}/appointment`, {
     method: 'POST',
     signal: abortController.signal,
@@ -117,6 +119,8 @@ export function saveRecurringAppointments(
   recurringAppointments: RecurringAppointmentsPayload,
   abortController: AbortController,
 ) {
+  assertAppointmentPayloadDates(recurringAppointments.appointmentRequest);
+  assertRecurringPatternDates(recurringAppointments.appointmentRequest, recurringAppointments.recurringPattern);
   return openmrsFetch(`${restBaseUrl}/recurring-appointments`, {
     method: 'POST',
     signal: abortController.signal,

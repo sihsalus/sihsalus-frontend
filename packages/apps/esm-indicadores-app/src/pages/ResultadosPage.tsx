@@ -1,10 +1,13 @@
 import {
   Button,
   ContentSwitcher,
+  DatePicker,
+  DatePickerInput,
   InlineLoading,
   InlineNotification,
   Modal,
   NumberInput,
+  Pagination,
   Select,
   SelectItem,
   Switch,
@@ -19,7 +22,7 @@ import {
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BatchCalcularNowResponse, Granularity, RecalcularAnioResponse } from '../api/types';
-import PaginationBar from '../components/PaginationBar';
+import MetaProgressCard from '../components/MetaProgressCard';
 import { notifyError, notifySuccess, useIndicadores } from '../features/indicadores/hooks';
 import { useCalcularAhora, useRecalcularAnio, useResultados, useResultadosSeries } from '../features/resultados/hooks';
 import styles from '../indicators-dashboard.module.scss';
@@ -68,6 +71,7 @@ const ResultadosPage: React.FC = () => {
             indicador_id: filters.indicador_id,
             anio: currentYear(),
             granularity,
+            include_meta: true,
           }
         : null,
     [filters.indicador_id, granularity],
@@ -326,34 +330,34 @@ const ResultadosPage: React.FC = () => {
             <SelectItem key={indicador.id} value={indicador.id} text={indicador.nombre} />
           ))}
         </Select>
-        <label className={styles.fieldGroup}>
-          <span>{t('from', 'Desde')}</span>
-          <input
-            className={styles.nativeInput}
-            type="date"
-            value={filters.periodo_inicio}
-            onChange={(event) => {
-              setPage(1);
-              setFilters((current) => ({ ...current, periodo_inicio: event.target.value }));
-            }}
+        <DatePicker datePickerType="single" dateFormat="Y-m-d"
+          value={filters.periodo_inicio}
+          onChange={(dates: Date[]) => {
+            setPage(1);
+            const d = dates[0];
+            setFilters((current) => ({ ...current, periodo_inicio: d ? d.toISOString().slice(0, 10) : '' }));
+          }}>
+          <DatePickerInput
+            id="resultado-desde"
+            labelText={t('from', 'Desde')}
           />
-        </label>
-        <label className={styles.fieldGroup}>
-          <span>{t('to', 'Hasta')}</span>
-          <input
-            className={styles.nativeInput}
-            type="date"
-            value={filters.periodo_fin}
-            onChange={(event) => {
-              setPage(1);
-              setFilters((current) => ({ ...current, periodo_fin: event.target.value }));
-            }}
+        </DatePicker>
+        <DatePicker datePickerType="single" dateFormat="Y-m-d"
+          value={filters.periodo_fin}
+          onChange={(dates: Date[]) => {
+            setPage(1);
+            const d = dates[0];
+            setFilters((current) => ({ ...current, periodo_fin: d ? d.toISOString().slice(0, 10) : '' }));
+          }}>
+          <DatePickerInput
+            id="resultado-hasta"
+            labelText={t('to', 'Hasta')}
           />
-        </label>
+        </DatePicker>
       </div>
 
       {/* View mode switcher + granularity */}
-      <div className={styles.headerActions} style={{ marginBottom: '0.75rem' }}>
+      <div className={`${styles.headerActions} ${styles.contentSwitcherRow}`}>
         <ContentSwitcher
           onChange={({ name }) => setViewMode(name as 'historical' | 'series')}
           selectedIndex={viewMode === 'series' ? 0 : 1}
@@ -380,6 +384,20 @@ const ResultadosPage: React.FC = () => {
 
       {isLoading ? <InlineLoading description={t('loadingResults', 'Cargando resultados...')} /> : null}
       {error ? <div className={styles.errorBanner}>{error.message}</div> : null}
+
+      {/* ── Meta progress card (series view only) ── */}
+      {!isLoading && !error && viewMode === 'series' && filters.indicador_id && seriesData?.items.length ? (
+        (() => {
+          // Find first row with a non-null meta
+          const metaRow = seriesData.items.find((item) => item.meta != null);
+          if (metaRow?.meta == null) {
+            return null;
+          }
+          // Calculate accumulated value from all rows
+          const accumulatedValue = seriesData.items.reduce((sum, item) => sum + (item.valor ?? 0), 0);
+          return <MetaProgressCard meta={metaRow.meta} currentValue={accumulatedValue} />;
+        })()
+      ) : null}
 
       {/* ── Series view ── */}
       {!isLoading && !error && viewMode === 'series' ? (
@@ -449,13 +467,13 @@ const ResultadosPage: React.FC = () => {
                 </TableBody>
               </Table>
             </div>
-            <PaginationBar
-              entityLabel="resultados"
+            <Pagination
               page={historicalData.page}
               pageSize={historicalData.size}
-              total={historicalData.total}
-              totalPages={historicalData.pages}
-              onPageChange={setPage}
+              pageSizes={[10]}
+              totalItems={historicalData.total}
+              onChange={({ page }: { page: number }) => setPage(page)}
+              size="sm"
             />
           </>
         ) : (
@@ -482,7 +500,7 @@ const ResultadosPage: React.FC = () => {
         }}
         onRequestSubmit={handleRecalcularConfirm}
       >
-        <p style={{ marginBottom: '1rem' }}>
+        <p className={styles.modalBodyText}>
           {t(
             'recalcModalBody',
             'Esta acción recalcula todos los meses del año seleccionado para los indicadores activos. Si hay un indicador seleccionado en los filtros, sólo se recalcula ese indicador.',
@@ -506,7 +524,7 @@ const ResultadosPage: React.FC = () => {
           allowEmpty={false}
         />
         {filters.indicador_id ? (
-          <p style={{ marginTop: '0.75rem', color: '#525252', fontSize: '0.875rem' }}>
+          <p className={styles.scopeHint}>
             {t('recalcModalScopeHint', 'Se recalculará solo el indicador seleccionado: {{nombre}}.', {
               nombre: indicadoresData?.items.find((i) => i.id === filters.indicador_id)?.nombre ?? filters.indicador_id,
             })}

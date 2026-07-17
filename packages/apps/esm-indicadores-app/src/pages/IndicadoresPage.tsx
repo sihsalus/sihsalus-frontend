@@ -1,6 +1,7 @@
 import {
   Button,
   InlineLoading,
+  Pagination,
   Table,
   TableBody,
   TableCell,
@@ -13,7 +14,6 @@ import {
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-import PaginationBar from '../components/PaginationBar';
 import {
   notifyError,
   notifySuccess,
@@ -116,13 +116,13 @@ const IndicadoresPage: React.FC = () => {
                 </TableBody>
               </Table>
             </div>
-            <PaginationBar
-              entityLabel="indicadores"
+            <Pagination
               page={data.page}
               pageSize={data.size}
-              total={data.total}
-              totalPages={data.pages}
-              onPageChange={setPage}
+              pageSizes={[10]}
+              totalItems={data.total}
+              onChange={({ page }: { page: number }) => setPage(page)}
+              size="sm"
             />
           </>
         ) : (

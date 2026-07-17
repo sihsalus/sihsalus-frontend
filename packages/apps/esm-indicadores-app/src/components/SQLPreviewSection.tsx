@@ -1,4 +1,4 @@
-import { Button, InlineLoading, Tile } from '@carbon/react';
+import { Button, InlineLoading } from '@carbon/react';
 import React, { useState } from 'react';
 
 import { useSQLPreview } from '../features/indicadores/hooks';
@@ -15,7 +15,7 @@ const SQLPreviewSection: React.FC<SQLPreviewSectionProps> = ({ indicadorId, vers
   const { data, isLoading, error } = useSQLPreview(indicadorId, versionId);
 
   return (
-    <Tile className={styles.sqlTile}>
+    <div className={styles.sqlBlock}>
       <div className={styles.sqlHeader}>
         <div>
           <strong>SQL generado</strong>
@@ -41,7 +41,7 @@ const SQLPreviewSection: React.FC<SQLPreviewSectionProps> = ({ indicadorId, vers
           </div>
         ) : null
       ) : null}
-    </Tile>
+    </div>
   );
 };
 

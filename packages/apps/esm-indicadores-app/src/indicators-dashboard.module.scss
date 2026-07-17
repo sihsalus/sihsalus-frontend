@@ -1,3 +1,5 @@
+@use "@carbon/styles/scss/theme" as theme;
+
 .container {
   padding: 1rem;
 }
@@ -9,11 +11,11 @@
   align-items: flex-start;
   gap: 1rem;
   margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid theme.$border-subtle-00;
 }
 
 .moduleHeader {
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e0e0e0;
   margin-bottom: 1.5rem;
 }
 
@@ -30,7 +32,7 @@
 
 .subtitle,
 .mutedText {
-  color: #525252;
+  color: theme.$text-secondary;
 }
 
 .subtitle {
@@ -38,56 +40,27 @@
   max-width: 60rem;
 }
 
-.navTabs {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.navTab,
-.navTabActive,
-.inlineLink,
-.buttonLink {
-  color: #0f62fe;
+.inlineLink {
+  color: theme.$link-primary;
   text-decoration: none;
 }
 
 .backLink {
   display: inline-flex;
   margin-bottom: 0.5rem;
-  color: #0f62fe;
+  color: theme.$link-primary;
   text-decoration: none;
   font-size: 0.875rem;
 }
 
 .backLink:hover,
-.inlineLink:hover,
-.navTab:hover {
+.inlineLink:hover {
   text-decoration: underline;
-}
-
-.buttonLink {
-  color: inherit;
-}
-
-.navTab,
-.navTabActive {
-  padding: 0.5rem 0.75rem;
-  border-radius: 999px;
-  border: 1px solid #c6c6c6;
-}
-
-.navTabActive {
-  background: #edf5ff;
-  border-color: #0f62fe;
-  color: #002d9c;
-  font-weight: 600;
 }
 
 .headerActions,
 .tableActions,
-.filterSwitches,
-.paginationActions {
+.filterSwitches {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
@@ -97,11 +70,34 @@
   margin-top: 0.25rem;
 }
 
+.contentSwitcherRow {
+  margin-bottom: 0.75rem;
+}
+
+.scopeHint {
+  margin-top: 0.75rem;
+  color: theme.$text-secondary;
+  font-size: 0.875rem;
+}
+
+.validationError {
+  color: theme.$text-error;
+}
+
+.modalBody {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.modalBodyText {
+  margin-bottom: 1rem;
+}
+
 .empty {
   text-align: center;
   padding: 2rem;
-  color: #525252;
-  border: 1px dashed #c6c6c6;
+  color: theme.$text-secondary;
+  border: 1px dashed theme.$border-subtle-01;
 }
 
 .formStack {
@@ -123,13 +119,13 @@
 .section,
 .detailCard,
 .infoTile,
-.sqlTile {
+.sqlBlock {
   margin-top: 1rem;
 }
 
 .formSectionCard {
-  border: 1px solid #e0e0e0;
-  background: #ffffff;
+  border: 1px solid theme.$border-subtle-00;
+  background: theme.$layer-01;
   padding: 1.25rem;
   display: grid;
   gap: 1rem;
@@ -141,7 +137,7 @@
 
 .sectionHint {
   margin: 0.25rem 0 0;
-  color: #6f6f6f;
+  color: theme.$text-helper;
   font-size: 0.875rem;
   max-width: 52rem;
 }
@@ -149,7 +145,7 @@
 .sectionMiniTitle {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #161616;
+  color: theme.$text-primary;
 }
 
 .formGrid,
@@ -190,9 +186,9 @@
 }
 
 .ageBlock {
-  border: 1px solid #e0e0e0;
+  border: 1px solid theme.$border-subtle-00;
   padding: 1rem;
-  background: #f8f8f8;
+  background: theme.$layer-02;
 }
 
 .ageBlockHeader {
@@ -211,15 +207,15 @@
 
 .errorBanner {
   background: #fff1f1;
-  border: 1px solid #da1e28;
-  color: #a2191f;
+  border: 1px solid theme.$text-error;
+  color: theme.$text-error;
   padding: 0.75rem 1rem;
 }
 
 .tableSurface {
-  overflow: hidden;
-  border: 1px solid #e0e0e0;
-  background: #ffffff;
+  overflow-x: auto;
+  border: 1px solid theme.$border-subtle-00;
+  background: theme.$layer-01;
 }
 
 .definitionList {
@@ -234,7 +230,7 @@
 
 .fieldHelp {
   margin: 0;
-  color: #6f6f6f;
+  color: theme.$text-helper;
   font-size: 0.875rem;
 }
 
@@ -251,7 +247,7 @@
   padding: 0.35rem 0.6rem;
   background: #edf5ff;
   border: 1px solid #a6c8ff;
-  color: #002d9c;
+  color: theme.$link-inverse;
   font-size: 0.875rem;
 }
 
@@ -266,8 +262,8 @@
 }
 
 .searchResultsPanel {
-  border: 1px solid #e0e0e0;
-  background: #ffffff;
+  border: 1px solid theme.$border-subtle-00;
+  background: theme.$layer-01;
 }
 
 .searchResultsList {
@@ -297,8 +293,7 @@
   padding-top: 0.25rem;
 }
 
-.sqlHeader,
-.paginationBar {
+.sqlHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -312,8 +307,8 @@
 }
 
 .codeBlock {
-  background: #161616;
-  color: #f4f4f4;
+  background: theme.$background-inverse;
+  color: theme.$layer-02;
   padding: 1rem;
   overflow-x: auto;
   white-space: pre-wrap;
@@ -324,29 +319,117 @@
   gap: 1rem;
 }
 
-.fieldGroup {
+.detailGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: start;
+}
+
+.detailMain,
+.detailAside {
+  min-width: 0;
+}
+
+.versionMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: theme.$text-secondary;
+}
+
+.versionMeta strong {
+  color: theme.$text-primary;
+  font-weight: 600;
+}
+
+.historyList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.historyItem {
+  border: 1px solid theme.$border-subtle-00;
+  background: theme.$layer-01;
+}
+
+.historyDetails {
+  width: 100%;
+}
+
+.historyDetails[open] {
+  background: theme.$layer-01;
+}
+
+.historySummary {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.625rem 0.875rem;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition: background-color 0.12s ease;
+}
+
+.historySummary::-webkit-details-marker {
+  display: none;
+}
+
+.historySummary::before {
+  content: '\25B8';
+  display: inline-block;
+  margin-right: 0.5rem;
+  color: theme.$text-secondary;
+  font-size: 0.75rem;
+  transition: transform 0.12s ease;
+}
+
+.historyDetails[open] .historySummary::before {
+  transform: rotate(90deg);
+}
+
+.historySummary:hover,
+.historySummary:focus-visible {
+  background: theme.$layer-hover-01;
+  outline: none;
+}
+
+.historySummary:focus-visible {
+  box-shadow: inset 0 0 0 2px theme.$focus;
+}
+
+.historyItemTitle {
+  font-weight: 600;
+  color: theme.$text-primary;
   font-size: 0.875rem;
-  color: #161616;
 }
 
-.nativeInput {
-  min-height: 2.5rem;
-  border: 1px solid #8d8d8d;
-  padding: 0.5rem 0.75rem;
+.historyItemDate {
+  font-size: 0.8125rem;
+  color: theme.$text-secondary;
 }
 
-.paginationBar {
-  margin-top: 1rem;
-  padding-top: 0.5rem;
+.historyDetailsBody {
+  padding: 0.75rem 0.875rem 1rem;
+  border-top: 1px solid theme.$border-subtle-00;
 }
 
-.paginationSummary {
-  color: #525252;
-  font-size: 0.875rem;
+.sqlBlock {
+  border: 1px solid theme.$border-subtle-00;
+  background: theme.$layer-02;
+  padding: 0.75rem 1rem;
 }
+
 
 .failedList {
   margin: 0.5rem 0 0;
@@ -367,6 +450,12 @@
   gap: 0.25rem;
 }
 
+@media (max-width: 800px) {
+  .detailGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 672px) {
   .container {
     padding: 0.5rem;
@@ -374,8 +463,7 @@
 
   .moduleHeader,
   .header,
-  .sqlHeader,
-  .paginationBar {
+  .sqlHeader {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -390,6 +478,49 @@
 
   .ageBlockHeader {
     flex-direction: column;
-    align-items: flex-start;
   }
+}
+
+/* Meta Progress Card */
+.metaProgressCard {
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.metaProgressHeader {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.metaProgressLabel {
+  display: block;
+  font-size: 0.75rem;
+  color: theme.$text-secondary;
+  margin-bottom: 0.25rem;
+}
+
+.metaProgressValue {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.metaProgressBarTrack {
+  height: 0.5rem;
+  background-color: theme.$border-subtle-00;
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+
+.metaProgressBar {
+  height: 100%;
+  background-color: theme.$link-primary;
+  border-radius: 0.25rem;
+  transition: width 0.3s ease;
+}
+
+/* Metas Table */
+.metasTable {
+  margin-top: 1rem;
 }

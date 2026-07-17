@@ -19,8 +19,13 @@ vi.mock('../features/resultados/hooks', async () => ({
   useRecalcularAnio: vi.fn(),
 }));
 
-import { notifyError, notifySuccess, useIndicadores } from '../features/indicadores/hooks';
-import { useCalcularAhora, useRecalcularAnio, useResultados, useResultadosSeries } from '../features/resultados/hooks';
+import { useIndicadores, notifyError, notifySuccess } from '../features/indicadores/hooks';
+import {
+  useCalcularAhora,
+  useRecalcularAnio,
+  useResultados,
+  useResultadosSeries,
+} from '../features/resultados/hooks';
 
 const mockUseIndicadores = vi.mocked(useIndicadores);
 const mockUseResultados = vi.mocked(useResultados);
@@ -89,6 +94,18 @@ describe('ResultadosPage series granularity', () => {
 
     mockUseCalcularAhora.mockReturnValue({
       calcularAhora: vi.fn().mockResolvedValue({ calculados: 0, errores: [], total: 0 }),
+    });
+
+    mockUseRecalcularAnio.mockReturnValue({
+      recalcularAnio: vi.fn().mockResolvedValue({
+        anio: 2026,
+        indicador_id: null,
+        meses_procesados: 12,
+        indicadores_considerados: 0,
+        recalculados: 0,
+        errores: [],
+        total: 0,
+      }),
     });
 
     mockUseRecalcularAnio.mockReturnValue({
@@ -274,11 +291,13 @@ describe('ResultadosPage calculate / recalculate actions', () => {
 
   it('shows summary with partial-errors language when the response has errors', async () => {
     mockUseCalcularAhora.mockReturnValue({
-      calcularAhora: vi.fn().mockResolvedValue({
-        calculados: 1,
-        errores: [{ indicador_id: 'ind-002', indicador_nombre: 'Anemia', error: 'boom' }],
-        total: 2,
-      }),
+      calcularAhora: vi
+        .fn()
+        .mockResolvedValue({
+          calculados: 1,
+          errores: [{ indicador_id: 'ind-002', indicador_nombre: 'Anemia', error: 'boom' }],
+          total: 2,
+        }),
     });
 
     renderPage();
@@ -521,7 +540,9 @@ describe('ResultadosPage calculate / recalculate actions', () => {
       meses_procesados: 12,
       indicadores_considerados: 2,
       recalculados: 0,
-      errores: [{ indicador_id: 'ind-001', indicador_nombre: 'Control prenatal', mes: '2025-01', error: 'timeout' }],
+      errores: [
+        { indicador_id: 'ind-001', indicador_nombre: 'Control prenatal', mes: '2025-01', error: 'timeout' },
+      ],
       total: 24,
     });
     mockUseRecalcularAnio.mockReturnValue({ recalcularAnio: recalcMock });

@@ -12,7 +12,7 @@ import type {
   SeriesResponse,
 } from './types';
 
-function ensureQuery(params: Record<string, string | number | undefined>) {
+function ensureQuery(params: Record<string, string | number | boolean | undefined>) {
   const search = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== '') {
@@ -54,10 +54,11 @@ export async function recalcularAnio(params: RecalcularAnioParams): Promise<Reca
 
 export async function getResultadosSeries(params: GetSeriesParams): Promise<SeriesResponse> {
   const reportesSqlBase = await getReportesSqlApiPath();
-  const queryParams: Record<string, string | number | undefined> = {
+  const queryParams: Record<string, string | number | boolean | undefined> = {
     indicador_id: params.indicador_id,
     anio: params.anio,
     granularity: params.granularity ?? 'mensual',
+    include_meta: params.include_meta,
   };
 
   return withMockFallback(

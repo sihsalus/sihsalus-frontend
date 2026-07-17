@@ -67,9 +67,9 @@ function expectInvalidatesResultadosKeys(matcher: KeyMatcher | null) {
   expect(isInvalidated(['resultados', { indicador_id: 'ind-001' }])).toBe(true);
   // And the `resultados-series` namespace too.
   expect(isInvalidated(['resultados-series', { indicador_id: 'ind-001', anio: 2026 }])).toBe(true);
-  expect(isInvalidated(['resultados-series', { indicador_id: 'ind-002', anio: 2026, granularity: 'trimestral' }])).toBe(
-    true,
-  );
+  expect(
+    isInvalidated(['resultados-series', { indicador_id: 'ind-002', anio: 2026, granularity: 'trimestral' }]),
+  ).toBe(true);
   // Other namespaces must NOT be touched.
   expect(isInvalidated(['indicadores', 1, 10])).toBe(false);
   expect(isInvalidated(['indicador', 'ind-001'])).toBe(false);
@@ -181,7 +181,7 @@ describe('useRecalcularAnio', () => {
   });
 });
 
-describe('resultados hooks', () => {
+describe('useResultados', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -219,6 +219,12 @@ describe('resultados hooks', () => {
     });
 
     expect(result.current.data).toBeUndefined();
+  });
+});
+
+describe('useResultadosSeries', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
   it('loads resultados series when params are provided', async () => {

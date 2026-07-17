@@ -21,7 +21,9 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     if: >
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.conclusion == 'success') ||
       startsWith(github.ref, 'refs/tags/sihsalus-v')
     permissions:
       contents: write
@@ -33,6 +35,51 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          persist-credentials: false
+          # workflow_run otherwise checks out the current default branch, which
+          # may no longer be the commit that passed CI.
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.ref }}
+
+      - name: Validate release source
+        id: source
+        env:
+          CI_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          CI_EVENT: ${{ github.event.workflow_run.event }}
+          CI_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
+          CI_SHA: ${{ github.event.workflow_run.head_sha }}
+          SOURCE_REF: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.ref }}
+        run: |
+          set -euo pipefail
+          RELEASE_SHA="$(git rev-parse HEAD)"
+          EXPECTED_SHA="$(git rev-parse "${SOURCE_REF}^{commit}")"
+
+          if [[ "${RELEASE_SHA}" != "${EXPECTED_SHA}" ]]; then
+            echo "::error::Checked-out commit does not match the release source."
+            exit 1
+          fi
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
+            if [[ "${CI_EVENT}" != "push" || "${CI_REPOSITORY}" != "${GITHUB_REPOSITORY}" || "${CI_SHA}" != "${RELEASE_SHA}" ]]; then
+              echo "::error::Release source does not match the successful CI push."
+              exit 1
+            fi
+
+            case "${CI_BRANCH}" in
+              main|pre-release) ;;
+              *)
+                echo "::error::Unexpected release branch: ${CI_BRANCH}"
+                exit 1
+                ;;
+            esac
+            SOURCE_BRANCH="${CI_BRANCH}"
+          else
+            SOURCE_BRANCH="tag"
+          fi
+
+          {
+            echo "branch=${SOURCE_BRANCH}"
+            echo "sha=${RELEASE_SHA}"
+          } >> "${GITHUB_OUTPUT}"
 
       # Derive build provenance from git. On a `sihsalus-vX.Y.Z` tag the version is
       # exact; on branch builds it is `git describe` relative to the last such tag
@@ -40,8 +87,9 @@ jobs:
       - name: Compute version
         id: version
         run: |
+          GIT_SHA="${{ steps.source.outputs.sha }}"
           SHA_SHORT="$(git rev-parse --short HEAD)"
-          BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          BUILD_TIME="$(git show -s --format=%cI HEAD)"
           PACKAGE_VERSION="$(node -p "require('./package.json').version" 2>/dev/null || true)"
           if [[ "${GITHUB_REF}" == refs/tags/sihsalus-v* ]]; then
             VERSION="${GITHUB_REF#refs/tags/sihsalus-v}"
@@ -59,6 +107,7 @@ jobs:
           {
             echo "version=${VERSION}"
             echo "major_minor=${MAJOR_MINOR}"
+            echo "git_sha=${GIT_SHA}"
             echo "sha_short=${SHA_SHORT}"
             echo "build_time=${BUILD_TIME}"
           } >> "${GITHUB_OUTPUT}"
@@ -75,36 +124,42 @@ jobs:
       - uses: docker/metadata-action@v6
         id: meta
         with:
+          context: git
           images: ghcr.io/sihsalus/sihsalus-frontend
           tags: |
-            type=sha,prefix=sha-,format=long
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || github.event.workflow_run.head_branch == 'main' }}
-            type=raw,value=next,enable=${{ github.ref == 'refs/heads/pre-release' || github.event.workflow_run.head_branch == 'pre-release' }}
-            type=raw,value=${{ steps.version.outputs.version }},enable=${{ startsWith(github.ref, 'refs/tags/sihsalus-v') }}
-            type=raw,value=${{ steps.version.outputs.major_minor }},enable=${{ startsWith(github.ref, 'refs/tags/sihsalus-v') }}
+            type=raw,value=sha-${{ steps.source.outputs.sha }}
+            type=raw,value=latest,enable=${{ steps.source.outputs.branch == 'main' }}
+            type=raw,value=next,enable=${{ steps.source.outputs.branch == 'pre-release' }}
+            type=raw,value=${{ steps.version.outputs.version }},enable=${{ steps.source.outputs.branch == 'tag' }}
+            type=raw,value=${{ steps.version.outputs.major_minor }},enable=${{ steps.source.outputs.branch == 'tag' }}
 
-      - uses: docker/build-push-action@v7
+      # Publish only the commit-addressed image here. Mutable aliases are moved
+      # only after Trivy has accepted this exact registry digest.
+      - name: Build and publish immutable image
+        uses: docker/build-push-action@v7
+        id: build
         with:
           context: .
           target: secure-init
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ghcr.io/sihsalus/sihsalus-frontend:sha-${{ steps.source.outputs.sha }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
           build-args: |
             APP_VERSION=${{ steps.version.outputs.version }}
-            GIT_SHA=${{ steps.version.outputs.sha_short }}
+            GIT_SHA=${{ steps.version.outputs.git_sha }}
             BUILD_TIME=${{ steps.version.outputs.build_time }}
           cache-from: type=gha,scope=release-amd64
           cache-to: type=gha,scope=release-amd64,mode=max
 
-      - name: Scan published image
+      - name: Scan immutable image before promotion
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ghcr.io/sihsalus/sihsalus-frontend:sha-${{ github.sha }}
+          image-ref: ghcr.io/sihsalus/sihsalus-frontend@${{ steps.build.outputs.digest }}
           format: sarif
           output: trivy-release-results.sarif
           severity: HIGH,CRITICAL
+          exit-code: '1'
           ignore-unfixed: true
           vuln-type: os,library
 
@@ -114,19 +169,53 @@ jobs:
         with:
           sarif_file: trivy-release-results.sarif
 
+      - name: Revalidate branch tip before promotion
+        if: github.event_name == 'workflow_run'
+        env:
+          RELEASE_BRANCH: ${{ steps.source.outputs.branch }}
+          RELEASE_SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          set -euo pipefail
+          CURRENT_SHA="$(git ls-remote origin "refs/heads/${RELEASE_BRANCH}" | awk '{print $1}')"
+          if [[ -z "${CURRENT_SHA}" || "${CURRENT_SHA}" != "${RELEASE_SHA}" ]]; then
+            echo "::error::Branch advanced while the image was built; refusing to promote a stale image."
+            exit 1
+          fi
+
+      - name: Promote verified image aliases
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+          IMMUTABLE_IMAGE: ghcr.io/sihsalus/sihsalus-frontend:sha-${{ steps.source.outputs.sha }}
+          SOURCE_IMAGE: ghcr.io/sihsalus/sihsalus-frontend@${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r image_tag; do
+            if [[ -z "${image_tag}" || "${image_tag}" == "${IMMUTABLE_IMAGE}" ]]; then
+              continue
+            fi
+
+            docker buildx imagetools create --tag "${image_tag}" "${SOURCE_IMAGE}"
+            PROMOTED_DIGEST="$(docker buildx imagetools inspect "${image_tag}" --format '{{.Manifest.Digest}}')"
+            if [[ "${PROMOTED_DIGEST}" != "${IMAGE_DIGEST}" ]]; then
+              echo "::error::Promoted alias does not resolve to the scanned digest: ${image_tag}"
+              exit 1
+            fi
+          done <<< "${IMAGE_TAGS}"
+
       - name: Notify sihsalus deployment
         if: >
-          (github.event.workflow_run.head_branch == 'main' || github.ref == 'refs/heads/main') &&
+          steps.source.outputs.branch == 'main' &&
           env.HAS_DEPLOY_TOKEN == 'true'
         uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.DEPLOY_TOKEN }}
           repository: sihsalus/sihsalus-frontend
           event-type: frontend-published
-          client-payload: '{"image":"ghcr.io/sihsalus/sihsalus-frontend:latest","sha":"${{ github.sha }}"}'
+          client-payload: '{"image":"ghcr.io/sihsalus/sihsalus-frontend:latest","digest":"${{ steps.build.outputs.digest }}","sha":"${{ steps.source.outputs.sha }}"}'
 
       - name: Create GitHub Release (on tags)
-        if: startsWith(github.ref, 'refs/tags/sihsalus-v')
+        if: steps.source.outputs.branch == 'tag'
         uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true

@@ -54,6 +54,25 @@ describe('appointment writes', () => {
     );
   });
 
+  it('only posts a historical edit when its original date is explicitly preserved', () => {
+    const historicalAppointment = {
+      ...validAppointment,
+      uuid: 'appointment-uuid',
+      startDateTime: '2025-06-10T09:00:00-05:00',
+      endDateTime: '2025-06-10T09:30:00-05:00',
+    };
+
+    expect(() => saveAppointment(historicalAppointment, new AbortController())).toThrow(
+      'Appointment start date cannot be in the past',
+    );
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+
+    const originalStartDate = new Date(historicalAppointment.startDateTime);
+    saveAppointment(historicalAppointment, new AbortController(), originalStartDate);
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+  });
+
   it('does not call the recurring API when its end date precedes its start date', () => {
     const payload: RecurringAppointmentsPayload = {
       appointmentRequest: validAppointment,

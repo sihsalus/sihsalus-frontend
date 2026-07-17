@@ -11,11 +11,14 @@ export const queueTableVisitAttributeQueueNumberColumn: QueueTableColumnFunction
   }
 
   function getVisitQueueNumber(queueEntry: QueueEntry) {
-    return queueEntry.visit?.attributes?.find((e) => e?.attributeType?.uuid === visitQueueNumberAttributeUuid)?.value;
+    const value = queueEntry.visit?.attributes?.find(
+      (e) => e?.attributeType?.uuid === visitQueueNumberAttributeUuid,
+    )?.value;
+    return value == null || String(value).trim() === '' ? null : String(value);
   }
 
   const QueueTableVisitAttributeQueueNumberCell = ({ queueEntry }: { queueEntry: QueueEntry }) => {
-    return <span>{getVisitQueueNumber(queueEntry)}</span>;
+    return <span>{getVisitQueueNumber(queueEntry) ?? '--'}</span>;
   };
 
   return {

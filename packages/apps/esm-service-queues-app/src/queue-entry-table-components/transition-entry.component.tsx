@@ -25,9 +25,15 @@ const TransitionMenu: React.FC<TransitionMenuProps> = ({ queueEntry }) => {
   const { t } = useTranslation();
   const session = useSession();
   const canEdit = canEditServiceQueues(session?.user);
+  const ticketNumber = queueEntry.visitQueueNumber?.trim();
+  const hasTicketNumber = Boolean(ticketNumber);
 
   const launchTransitionPriorityModal = useCallback(() => {
-    serveQueueEntry(queueEntry?.queue.name, queueEntry?.visitQueueNumber, 'calling').then(
+    if (!ticketNumber) {
+      return;
+    }
+
+    serveQueueEntry(queueEntry.queue.name, ticketNumber, 'calling').then(
       ({ status }) => {
         if (status === 200) {
           mutate(`${restBaseUrl}/queueutil/assignticket`);
@@ -50,7 +56,7 @@ const TransitionMenu: React.FC<TransitionMenuProps> = ({ queueEntry }) => {
       closeModal: () => dispose(),
       queueEntry,
     });
-  }, [queueEntry, t]);
+  }, [queueEntry, t, ticketNumber]);
 
   if (!canEdit) {
     return null;
@@ -64,7 +70,10 @@ const TransitionMenu: React.FC<TransitionMenuProps> = ({ queueEntry }) => {
         [styles.normalIcon]: queueEntry?.priorityComment !== 'Requeued',
       })}
       onClick={launchTransitionPriorityModal}
-      iconDescription={t('call', 'Call')}
+      iconDescription={
+        hasTicketNumber ? t('call', 'Call') : t('callUnavailableWithoutTicket', 'Call unavailable: no queue number')
+      }
+      disabled={!hasTicketNumber}
       hasIconOnly
       tooltipAlignment="end"
     />

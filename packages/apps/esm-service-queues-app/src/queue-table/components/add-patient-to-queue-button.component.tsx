@@ -1,32 +1,45 @@
 import { Button } from '@carbon/react';
-import { AddIcon, launchWorkspace2, useLocations, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
-import React from 'react';
+import { AddIcon, launchWorkspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { serviceQueuesPatientSearchWorkspace, serviceQueuesStartVisitWorkspace } from '../../constants';
+import { isVisitLocation, useQueueLocations } from '../../create-queue-entry/hooks/useQueueLocations';
+import { useQueues } from '../../hooks/useQueues';
 import { CanEditServiceQueues } from '../../permissions';
 import { useServiceQueuesStore } from '../../store/store';
 
 const AddPatientToQueueButton: React.FC = () => {
   const { t } = useTranslation();
   const { selectedQueueLocationName, selectedQueueLocationUuid, selectedServiceUuid } = useServiceQueuesStore();
-  const visitLocations = useLocations('Visit Location');
-  const selectedVisitLocation = visitLocations?.find((location) => location.uuid === selectedQueueLocationUuid);
-  const requiredVisitLocation = selectedVisitLocation
-    ? {
-        uuid: selectedVisitLocation.uuid,
-        display: selectedVisitLocation.display ?? selectedQueueLocationName ?? selectedVisitLocation.uuid,
-      }
+  const { queueLocations, isLoading: isLoadingQueueLocations, error: queueLocationsError } = useQueueLocations();
+  const { queues } = useQueues(selectedQueueLocationUuid);
+  const selectedQueueLocation = selectedQueueLocationUuid
+    ? queueLocations.find((location) => location.id === selectedQueueLocationUuid)
     : undefined;
+  const selectedQueueLocationIsVisitLocation = selectedQueueLocation ? isVisitLocation(selectedQueueLocation) : false;
+  const requiredVisitLocation =
+    selectedQueueLocationUuid && selectedQueueLocationIsVisitLocation
+      ? {
+          uuid: selectedQueueLocationUuid,
+          display: selectedQueueLocation?.name ?? selectedQueueLocationName ?? selectedQueueLocationUuid,
+        }
+      : undefined;
+  const selectedQueueUuid = useMemo(() => {
+    if (!selectedServiceUuid) {
+      return undefined;
+    }
+
+    const matchingQueues = queues.filter((queue) => queue.service?.uuid === selectedServiceUuid);
+    return matchingQueues.length === 1 ? matchingQueues[0].uuid : undefined;
+  }, [queues, selectedServiceUuid]);
+  const isQueueLocationUnavailable =
+    !selectedQueueLocationUuid || isLoadingQueueLocations || Boolean(queueLocationsError) || !selectedQueueLocation;
 
   return (
     <CanEditServiceQueues>
       <Button
-        disabled={!requiredVisitLocation}
-        title={
-          requiredVisitLocation
-            ? undefined
-            : t('selectOperationalQueueLocation', 'Select an operational visit location before adding a patient')
-        }
+        disabled={isQueueLocationUnavailable}
+        title={isQueueLocationUnavailable ? t('selectQueueLocation', 'Select an available queue location') : undefined}
         kind="primary"
         renderIcon={(props) => <AddIcon size={16} {...props} />}
         size="sm"
@@ -44,7 +57,7 @@ const AddPatientToQueueButton: React.FC = () => {
               ) {
                 launchChildWorkspace(serviceQueuesPatientSearchWorkspace, {
                   currentQueueLocationUuid: selectedQueueLocationUuid,
-                  currentServiceQueueUuid: selectedServiceUuid,
+                  currentServiceQueueUuid: selectedQueueUuid,
                   patient,
                   requiredVisitLocation,
                   selectedPatientUuid: patientUuid,
@@ -55,7 +68,7 @@ const AddPatientToQueueButton: React.FC = () => {
               startVisitWorkspaceName: serviceQueuesStartVisitWorkspace,
               startVisitWorkspaceProps: {
                 currentQueueLocationUuid: selectedQueueLocationUuid,
-                currentServiceQueueUuid: selectedServiceUuid,
+                currentServiceQueueUuid: selectedQueueUuid,
                 openedFrom: 'service-queues-add-patient',
                 requiredVisitLocation,
                 workspaceTitle: t('addPatientToQueue', 'Add patient to queue'),

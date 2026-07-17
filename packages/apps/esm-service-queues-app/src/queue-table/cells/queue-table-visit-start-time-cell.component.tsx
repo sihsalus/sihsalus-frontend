@@ -4,11 +4,16 @@ import { type QueueEntry, type QueueTableCellComponentProps, type QueueTableColu
 
 export const queueTableVisitStartTimeColumn: QueueTableColumnFunction = (key, header) => {
   function getVisitStartTime(queueEntry: QueueEntry) {
-    return formatDatetime(new Date(queueEntry.visit?.startDatetime));
+    if (!queueEntry.visit?.startDatetime) {
+      return null;
+    }
+
+    const startDatetime = new Date(queueEntry.visit.startDatetime);
+    return Number.isNaN(startDatetime.valueOf()) ? null : formatDatetime(startDatetime);
   }
 
   const QueueTableVisitStartTimeCell = ({ queueEntry }: QueueTableCellComponentProps) => {
-    return <span>{getVisitStartTime(queueEntry)}</span>;
+    return <span>{getVisitStartTime(queueEntry) ?? '--'}</span>;
   };
 
   return {

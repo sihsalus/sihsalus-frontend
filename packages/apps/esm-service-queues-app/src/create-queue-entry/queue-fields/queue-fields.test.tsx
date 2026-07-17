@@ -12,7 +12,7 @@ import { mockSession, mockVisitAlice } from 'test-utils';
 import { type ConfigObject, configSchema } from '../../config-schema';
 
 import QueueFields, { type QueueFieldsCallbacks } from './queue-fields.component';
-import { postQueueEntry } from './queue-fields.resource';
+import { postQueueEntry, postQueueEntryWithoutVisit } from './queue-fields.resource';
 
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseLayoutType = vi.mocked(useLayoutType);
@@ -45,12 +45,18 @@ vi.mock('../../hooks/useQueues', () => {
 vi.mock('./queue-fields.resource', () => {
   return {
     postQueueEntry: vi.fn(),
+    postQueueEntryWithoutVisit: vi.fn(),
   };
 });
 const mockPostQueueEntry = vi.mocked(postQueueEntry).mockResolvedValue({
   created: true,
   response: {} as FetchResponse,
 });
+const mockPostQueueEntryWithoutVisit = vi.mocked(postQueueEntryWithoutVisit).mockResolvedValue({
+  created: true,
+  response: {} as FetchResponse,
+  queueEntry: { uuid: 'queue-entry-uuid' },
+} as Awaited<ReturnType<typeof postQueueEntryWithoutVisit>>);
 
 describe('QueueFields', () => {
   beforeEach(() => {
@@ -105,6 +111,38 @@ describe('QueueFields', () => {
     expect(callbacks).toBeDefined();
     await act(async () => expect(callbacks?.onBeforeVisitSave()).toBe(false));
     expect(mockPostQueueEntry).not.toHaveBeenCalled();
+  });
+
+  it('creates an administrative queue entry without requiring a visit or queue ticket configuration', async () => {
+    const user = userEvent.setup();
+    let callbacks: QueueFieldsCallbacks | undefined;
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      visitQueueNumberAttributeUuid: null,
+    });
+
+    render(
+      <QueueFields
+        patientUuid="patient-without-visit"
+        setCallbacks={(value) => (callbacks = value)}
+        visitRequired={false}
+      />,
+    );
+
+    const queueUuid = 'e2ec9cf0-ec38-4d2b-af6c-59c82fa30b90';
+    await user.selectOptions(screen.getByLabelText('Select a service'), queueUuid);
+    await waitFor(() => expect(callbacks?.onBeforeVisitSave()).toBe(true));
+    await callbacks?.onVisitCreatedOrUpdated();
+
+    expect(mockPostQueueEntryWithoutVisit).toHaveBeenCalledWith(
+      queueUuid,
+      'patient-without-visit',
+      '197852c7-5fd4-4b33-89cc-7bae6848c65a',
+      '176052c7-5fd4-4b33-89cc-7bae6848c65a',
+      0,
+    );
+    expect(mockPostQueueEntry).not.toHaveBeenCalled();
+    expect(screen.queryByText(/queue ticket/i)).not.toBeInTheDocument();
   });
 
   it('uses the appointment queue location while the session location is unavailable', async () => {

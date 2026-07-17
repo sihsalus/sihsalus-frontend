@@ -30,6 +30,7 @@ import {
   ACTIVE_VISIT_QUEUE_CONFLICT,
   MULTIPLE_ACTIVE_VISIT_QUEUE_ENTRIES,
   postQueueEntry,
+  postQueueEntryWithoutVisit,
   QUEUE_ENTRY_CREATION_UNVERIFIED,
   QUEUE_TICKET_GENERATION_FAILED,
 } from './queue-fields.resource';
@@ -45,13 +46,15 @@ export interface QueueFieldsProps {
   currentQueueLocationUuid?: string;
   patientGender?: string;
   requestedServiceName?: string;
+  patientUuid?: string;
+  visitRequired?: boolean;
   onQueueEntryAdded?: () => void | Promise<void>;
   setCallbacks(callbacks: QueueFieldsCallbacks): void;
 }
 
 export interface QueueFieldsCallbacks {
   onBeforeVisitSave: () => boolean;
-  onVisitCreatedOrUpdated: (visit: Visit) => Promise<unknown>;
+  onVisitCreatedOrUpdated: (visit?: Visit) => Promise<unknown>;
 }
 
 /**
@@ -61,7 +64,9 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   currentServiceQueueUuid,
   currentQueueLocationUuid,
   patientGender,
+  patientUuid,
   requestedServiceName,
+  visitRequired = true,
   onQueueEntryAdded,
   setCallbacks,
 }) => {
@@ -107,7 +112,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
       selectedService &&
       priority &&
       status &&
-      visitQueueNumberAttributeUuid &&
+      (!visitRequired || visitQueueNumberAttributeUuid) &&
       !isLoadingQueueLocations &&
       !isLoadingQueues,
   );
@@ -118,23 +123,28 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   }, [isValid]);
 
   const onSubmit = useCallback(
-    (visit: Visit) => {
+    (visit?: Visit) => {
       if (!onBeforeVisitSave()) {
         return Promise.reject(new Error('Queue fields are incomplete.'));
       }
 
-      if (selectedQueueLocation && selectedService && priority && status) {
-        return postQueueEntry(
-          visit.uuid,
-          selectedService,
-          visit.patient.uuid,
-          priority,
-          status,
-          sortWeight,
-          selectedQueueLocation,
-          visitQueueNumberAttributeUuid,
-          visit.startDatetime,
-        )
+      const resolvedPatientUuid = visit?.patient?.uuid ?? patientUuid;
+      if (selectedQueueLocation && selectedService && priority && status && resolvedPatientUuid) {
+        const createQueueEntry = visit
+          ? postQueueEntry(
+              visit.uuid,
+              selectedService,
+              resolvedPatientUuid,
+              priority,
+              status,
+              sortWeight,
+              selectedQueueLocation,
+              visitQueueNumberAttributeUuid,
+              visit.startDatetime,
+            )
+          : postQueueEntryWithoutVisit(selectedService, resolvedPatientUuid, priority, status, sortWeight);
+
+        return createQueueEntry
           .catch((error) => {
             showSnackbar({
               title: t('queueEntryError', 'No se pudo agregar el paciente a la cola'),
@@ -192,6 +202,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
       selectedService,
       priority,
       status,
+      patientUuid,
       sortWeight,
       visitQueueNumberAttributeUuid,
       memoMutateQueueEntries,
@@ -254,7 +265,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
 
   return (
     <div>
-      {!visitQueueNumberAttributeUuid && (
+      {visitRequired && !visitQueueNumberAttributeUuid && (
         <InlineNotification
           className={styles.inlineNotification}
           hideCloseButton

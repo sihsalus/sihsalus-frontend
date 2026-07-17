@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import styles from './create-queue-entry.scss';
 import { AddPatientToQueueContext } from './create-queue-entry.workspace';
 import ExistingVisitFormComponent from './existing-visit-form/existing-visit-form.component';
+import QueueOnlyForm from './queue-only-form/queue-only-form.component';
 
 interface CreateQueueEntryWorkspace2Props {
   selectedPatientUuid: string;
@@ -87,7 +88,14 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
   }, []);
 
   useEffect(() => {
-    if (!selectedPatientUuid || isLoading || error || activeVisit || hasLaunchedStartVisitWorkspace.current) {
+    if (
+      !selectedPatientUuid ||
+      isLoading ||
+      error ||
+      activeVisit ||
+      !requiredVisitLocation ||
+      hasLaunchedStartVisitWorkspace.current
+    ) {
       return;
     }
 
@@ -193,8 +201,18 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
               onQueueEntryAdded={handleQueueEntryAdded}
               requestedServiceName={requestedServiceName}
             />
-          ) : (
+          ) : requiredVisitLocation ? (
             <DataTableSkeleton role="progressbar" />
+          ) : (
+            <QueueOnlyForm
+              closeWorkspace={handleCloseWindow}
+              currentQueueLocationUuid={currentQueueLocationUuid}
+              currentServiceQueueUuid={currentServiceQueueUuid}
+              onBeforeQueueEntrySave={() => onBeforeQueueEntrySave?.() ?? true}
+              onQueueEntryAdded={handleQueueEntryAdded}
+              patientUuid={selectedPatientUuid}
+              requestedServiceName={requestedServiceName}
+            />
           )}
         </AddPatientToQueueContext.Provider>
       </div>

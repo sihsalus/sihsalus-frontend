@@ -36,6 +36,18 @@ const transitionedEntry = {
   priorityComment: 'Requires assistance',
 } as unknown as QueueEntry;
 
+const sourceEntryWithoutVisit = {
+  ...sourceEntry,
+  visit: null,
+  patient: { uuid: 'patient-uuid' },
+} as QueueEntry;
+
+const transitionedEntryWithoutVisit = {
+  ...transitionedEntry,
+  visit: null,
+  patient: sourceEntryWithoutVisit.patient,
+} as QueueEntry;
+
 const transitionParams = {
   queueEntryToTransition: sourceEntry.uuid,
   newQueue: transitionedEntry.queue.uuid,
@@ -138,6 +150,40 @@ describe('transitionQueueEntry', () => {
     expect(result.data.uuid).toBe(transitionedEntry.uuid);
     expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
     expect(mockOpenmrsFetch.mock.calls.some(([url]) => url === `${restBaseUrl}/queue-entry/transition`)).toBe(false);
+  });
+
+  it('reconciles an administrative entry without a visit by patient and source queue', async () => {
+    const endedSource = {
+      ...sourceEntryWithoutVisit,
+      endedAt: transitionedEntryWithoutVisit.startedAt,
+    } as QueueEntry;
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response(endedSource))
+      .mockResolvedValueOnce(response({ results: [transitionedEntryWithoutVisit] }));
+
+    const result = await transitionQueueEntry(transitionParams);
+
+    expect(result.data.uuid).toBe(transitionedEntryWithoutVisit.uuid);
+    expect(mockOpenmrsFetch.mock.calls[1][0]).toContain('patient=patient-uuid');
+    expect(mockOpenmrsFetch.mock.calls[1][0]).toContain('queueComingFrom=source-queue');
+    expect(mockOpenmrsFetch.mock.calls[1][0]).not.toContain('visit=');
+  });
+
+  it('does not reconcile a visit-backed successor as the transition of a visitless entry', async () => {
+    const endedSource = {
+      ...sourceEntryWithoutVisit,
+      endedAt: transitionedEntryWithoutVisit.startedAt,
+    } as QueueEntry;
+    const laterClinicalVisitEntry = {
+      ...transitionedEntryWithoutVisit,
+      uuid: 'entry-from-later-clinical-visit',
+      visit: { uuid: 'later-visit' },
+    } as QueueEntry;
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response(endedSource))
+      .mockResolvedValueOnce(response({ results: [laterClinicalVisitEntry] }));
+
+    await expect(transitionQueueEntry(transitionParams)).rejects.toThrow(/already ended/i);
   });
 
   it('reconciles a retry when the requested successor is on a later page', async () => {
@@ -292,6 +338,20 @@ describe('endQueueEntry', () => {
         ([url], index) => index > 0 && url === `${restBaseUrl}/queue-entry/${sourceEntry.uuid}`,
       ),
     ).toBe(false);
+  });
+
+  it('detects a concurrent transition when closing an entry without a visit', async () => {
+    const endedEntry = {
+      ...sourceEntryWithoutVisit,
+      endedAt: transitionedEntryWithoutVisit.startedAt,
+    } as QueueEntry;
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response(endedEntry))
+      .mockResolvedValueOnce(response({ results: [transitionedEntryWithoutVisit] }));
+
+    await expect(endQueueEntry(sourceEntryWithoutVisit.uuid)).rejects.toBeInstanceOf(QueueEntryTransitionConflictError);
+    expect(mockOpenmrsFetch.mock.calls[1][0]).toContain('patient=patient-uuid');
+    expect(mockOpenmrsFetch.mock.calls[1][0]).toContain('queueComingFrom=source-queue');
   });
 });
 

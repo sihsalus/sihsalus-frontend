@@ -7,11 +7,11 @@ import {
   logError,
   showToast,
   useLayoutType,
-  useLocations,
   useSession,
 } from '@openmrs/esm-framework';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { isVisitLocation, useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations';
 import { useQueueEntries } from '../hooks/useQueueEntries';
 import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
 import PatientQueueHeader from '../patient-queue-header/patient-queue-header.component';
@@ -45,8 +45,20 @@ const QueueTablesForAllStatuses: React.FC<QueueTablesForAllStatusesProps> = ({
   );
   const session = useSession();
   const canEdit = canEditServiceQueues(session?.user);
-  const visitLocations = useLocations('Visit Location');
-  const selectedQueueVisitLocation = visitLocations.find((location) => location.uuid === selectedQueue?.location?.uuid);
+  const { queueLocations, isLoading: isLoadingQueueLocations, error: queueLocationsError } = useQueueLocations();
+  const selectedQueueLocationUuid = selectedQueue?.location?.uuid;
+  const selectedQueueLocation = selectedQueueLocationUuid
+    ? queueLocations.find((location) => location.id === selectedQueueLocationUuid)
+    : undefined;
+  const queueLocationUnavailable =
+    !selectedQueueLocationUuid || isLoadingQueueLocations || Boolean(queueLocationsError) || !selectedQueueLocation;
+  const requiredVisitLocation =
+    selectedQueueLocationUuid && selectedQueueLocation && isVisitLocation(selectedQueueLocation)
+      ? {
+          uuid: selectedQueueLocationUuid,
+          display: selectedQueueLocation.name ?? selectedQueue?.location?.display ?? selectedQueueLocationUuid,
+        }
+      : undefined;
 
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -68,23 +80,20 @@ const QueueTablesForAllStatuses: React.FC<QueueTablesForAllStatusesProps> = ({
                   buttonText: t('addPatientToQueue', 'Add patient to queue'),
                   overlayHeader: t('addPatientToQueue', 'Add patient to queue'),
                   buttonProps: {
-                    disabled: !selectedQueueVisitLocation,
+                    disabled: queueLocationUnavailable,
                     kind: 'secondary',
                     renderIcon: (props) => <Add size={16} {...props} />,
                     size: isDesktop(layout) ? 'sm' : 'lg',
                   },
                   selectPatientAction: (selectedPatientUuid) => {
-                    if (!selectedQueueVisitLocation) {
+                    if (queueLocationUnavailable) {
                       return;
                     }
                     launchWorkspace('create-queue-entry-workspace', {
                       selectedPatientUuid,
                       currentServiceQueueUuid: selectedQueue.uuid,
-                      currentQueueLocationUuid: selectedQueueVisitLocation.uuid,
-                      requiredVisitLocation: {
-                        uuid: selectedQueueVisitLocation.uuid,
-                        display: selectedQueueVisitLocation.display,
-                      },
+                      currentQueueLocationUuid: selectedQueueLocationUuid,
+                      requiredVisitLocation,
                     });
                   },
                 }}

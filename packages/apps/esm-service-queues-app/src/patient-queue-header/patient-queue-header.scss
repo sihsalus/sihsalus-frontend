@@ -43,7 +43,7 @@
 
 .locationContextValue {
   @include type.type-style('body-compact-01');
-  color: $text-01;
+  color: var(--cds-text-primary);
   font-weight: 600;
 }
 

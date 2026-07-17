@@ -322,11 +322,12 @@ describe('Field', () => {
     expect(screen.getByRole('button', { name: /buscar en base local$/i })).toBeInTheDocument();
   });
 
-  it('keeps SIS hidden when external identity providers are disabled', () => {
+  it('keeps manual SIS verification available when external identity providers are disabled', () => {
     mockUseFeatureFlag.mockReturnValue(false);
 
     render(<Field name="sisLookup" />, { wrapper: ContextWrapper });
 
+    expect(screen.getByRole('button', { name: /verificar sis \(en línea\)/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /consultar sis/i })).not.toBeInTheDocument();
   });
 

@@ -201,6 +201,9 @@ const mockOpenmrsConfig: RegistrationConfig = {
     registrationFormUuid: null,
   },
   freeTextFieldConceptUuid: '',
+  sisVerification: {
+    productConceptUuid: '72b9edbf-1ec8-4b1a-8957-b1597aab8757',
+  },
 };
 const configWithObs = JSON.parse(JSON.stringify(mockOpenmrsConfig));
 

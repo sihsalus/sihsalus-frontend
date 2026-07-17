@@ -1,7 +1,7 @@
 import { getConfig } from '@openmrs/esm-framework';
 import { describe, expect, it, vi } from 'vitest';
 
-import { getReportesSqlApiPath, getReportesSqlResourcePath } from './config';
+import { getReportesSqlApiPath, getReportesSqlResourcePath, isDemoDataEnabled } from './config';
 
 const mockedGetConfig = vi.mocked(getConfig);
 
@@ -61,6 +61,26 @@ describe('getReportesSqlApiPath', () => {
 
     // openmrsFetch will handle the /openmrs prefix; the resolver must not add it.
     expect(result).not.toContain('/openmrs');
+  });
+});
+
+describe('isDemoDataEnabled', () => {
+  it('is disabled by default', async () => {
+    mockedGetConfig.mockResolvedValue({});
+
+    await expect(isDemoDataEnabled()).resolves.toBe(false);
+  });
+
+  it('is enabled only by an explicit true value', async () => {
+    mockedGetConfig.mockResolvedValue({ enableDemoData: true });
+
+    await expect(isDemoDataEnabled()).resolves.toBe(true);
+  });
+
+  it('does not coerce truthy strings into demo mode', async () => {
+    mockedGetConfig.mockResolvedValue({ enableDemoData: 'true' } as never);
+
+    await expect(isDemoDataEnabled()).resolves.toBe(false);
   });
 });
 

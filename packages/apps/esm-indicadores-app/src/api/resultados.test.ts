@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { getReportesSqlApiPath, getReportesSqlResourcePath } from './config';
 import { getIndicadores, previewSql } from './indicadores';
-import { calcularAhora, getResultados, recalcularAnio } from './resultados';
+import { calcularAhora, getResultados, getResultadosSeries, recalcularAnio } from './resultados';
 
 vi.mock('./config');
 
@@ -139,6 +139,63 @@ describe('calcularAhora routing', () => {
     mockedOpenmrsFetch.mockRejectedValue(fetchError);
 
     await expect(calcularAhora()).rejects.toBe(fetchError);
+  });
+});
+
+describe('getResultadosSeries routing', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('calls openmrsFetch with /services/reportes-sql/resultados/series', async () => {
+    mockResourcePath('/services/reportes-sql');
+    mockedOpenmrsFetch.mockResolvedValue({
+      data: { items: [], indicador_id: 'ind-001', anio: 2026, granularity: 'mensual' },
+    } as any);
+
+    await getResultadosSeries({ indicador_id: 'ind-001', anio: 2026, granularity: 'mensual' });
+
+    const calledUrl = mockedOpenmrsFetch.mock.calls[0][0] as string;
+    expect(calledUrl).toContain('/services/reportes-sql/resultados/series');
+  });
+
+  it('serializes include_meta=true into the query string', async () => {
+    mockResourcePath('/services/reportes-sql');
+    mockedOpenmrsFetch.mockResolvedValue({
+      data: { items: [], indicador_id: 'ind-001', anio: 2026, granularity: 'mensual' },
+    } as any);
+
+    await getResultadosSeries({ indicador_id: 'ind-001', anio: 2026, granularity: 'mensual', include_meta: true });
+
+    const calledUrl = mockedOpenmrsFetch.mock.calls[0][0] as string;
+    expect(calledUrl).toContain('include_meta=true');
+  });
+
+  it('omits include_meta from query string when undefined', async () => {
+    mockResourcePath('/services/reportes-sql');
+    mockedOpenmrsFetch.mockResolvedValue({
+      data: { items: [], indicador_id: 'ind-001', anio: 2026, granularity: 'mensual' },
+    } as any);
+
+    await getResultadosSeries({ indicador_id: 'ind-001', anio: 2026, granularity: 'mensual' });
+
+    const calledUrl = mockedOpenmrsFetch.mock.calls[0][0] as string;
+    expect(calledUrl).not.toContain('include_meta');
+  });
+
+  it('includes all expected query parameters', async () => {
+    mockResourcePath('/services/reportes-sql');
+    mockedOpenmrsFetch.mockResolvedValue({
+      data: { items: [], indicador_id: 'ind-001', anio: 2026, granularity: 'trimestral' },
+    } as any);
+
+    await getResultadosSeries({ indicador_id: 'ind-001', anio: 2026, granularity: 'trimestral', include_meta: true });
+
+    const calledUrl = mockedOpenmrsFetch.mock.calls[0][0] as string;
+    expect(calledUrl).toContain('indicador_id=ind-001');
+    expect(calledUrl).toContain('anio=2026');
+    expect(calledUrl).toContain('granularity=trimestral');
+    expect(calledUrl).toContain('include_meta=true');
   });
 });
 

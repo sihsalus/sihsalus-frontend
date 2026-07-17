@@ -16,7 +16,11 @@ const QueueTableExpandedRow: FC<{ queueEntry: QueueEntry }> = ({ queueEntry }) =
       </TabList>
       <TabPanels>
         <TabPanel>
-          <CurrentVisit patientUuid={queueEntry.patient.uuid} visitUuid={queueEntry.visit.uuid} />
+          {queueEntry.visit?.uuid ? (
+            <CurrentVisit patientUuid={queueEntry.patient.uuid} visitUuid={queueEntry.visit.uuid} />
+          ) : (
+            <p>{t('noVisitAssociatedWithQueueEntry', 'No visit is associated with this queue entry.')}</p>
+          )}
         </TabPanel>
         <TabPanel>
           <PastVisit patientUuid={queueEntry.patient.uuid} />

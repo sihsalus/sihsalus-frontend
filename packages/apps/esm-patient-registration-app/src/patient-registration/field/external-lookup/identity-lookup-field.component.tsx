@@ -212,7 +212,10 @@ export const IdentityLookupField = () => {
       setLookupStatus({
         documentKey,
         kind: 'warning',
-        title: t('identityLookupNoDocument', 'Ingrese un número de documento (DNI, CE, pasaporte, DIE o CNV)'),
+        title: t(
+          'identityLookupNoDocument',
+          'Ingrese un número de documento (DNI, CE, pasaporte, cédula de identidad o CNV)',
+        ),
       });
       return;
     }
@@ -485,13 +488,7 @@ export const IdentityLookupField = () => {
       {personMatch && !promotionActive ? (
         <div className={styles.externalLookupAction}>
           <span>{personMatch.display}</span>
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={UserFollow}
-            onClick={handlePromotePerson}
-            disabled={isBusy}
-          >
+          <Button kind="ghost" size="sm" renderIcon={UserFollow} onClick={handlePromotePerson} disabled={isBusy}>
             {t('identityLookupPromoteAction', 'Registrar como paciente (reutiliza su registro)')}
           </Button>
           {isActivatingPromotion ? (

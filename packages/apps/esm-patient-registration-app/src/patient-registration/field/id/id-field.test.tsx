@@ -52,8 +52,9 @@ const passportIdentifierType = {
 };
 
 const dieIdentifierType = {
-  name: 'Documento de Identidad Extranjero',
-  fieldName: 'documentoDeIdentidadExtranjero',
+  name: 'DIE',
+  description: 'Documento de Identidad Extranjero',
+  fieldName: 'die',
   required: false,
   uuid: '8d793bee-c2cc-11de-8d13-0010c6dffd0f',
   format: null,
@@ -451,22 +452,22 @@ describe('Identifiers', () => {
     expect(screen.getByText('Carnet de Extranjeria')).toBeInTheDocument();
   });
 
-  it('keeps DNI and DIE mutually exclusive in the identifier configuration panel', async () => {
+  it('presents DIE as Cédula de Identidad and keeps it mutually exclusive with DNI', async () => {
     const user = userEvent.setup();
     renderIdentifiersWithState({
       dni: buildIdentifier(dniIdentifierType),
     });
 
     await user.click(screen.getByRole('button', { name: 'Configure' }));
-    await user.click(screen.getByRole('checkbox', { name: 'Documento de Identidad Extranjero' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Identity card issued by country of origin' }));
 
     expect(screen.getByRole('checkbox', { name: 'DNI' })).not.toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'Documento de Identidad Extranjero' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Identity card issued by country of origin' })).toBeChecked();
 
     await user.click(screen.getByRole('button', { name: 'Configure identifiers' }));
 
     expect(screen.queryByText('DNI')).not.toBeInTheDocument();
-    expect(screen.getByText('Documento de Identidad Extranjero')).toBeInTheDocument();
+    expect(screen.getByText('Identity card issued by country of origin')).toBeInTheDocument();
   });
 
   it('keeps DNI and Pasaporte mutually exclusive in the identifier configuration panel', async () => {
@@ -645,12 +646,12 @@ describe('Identifiers', () => {
     expect(screen.getByRole('checkbox', { name: 'Nº de Historia Clínica' })).toBeDisabled();
     expect(screen.getByRole('checkbox', { name: 'DNI' })).toBeDisabled();
 
-    await user.click(screen.getByRole('checkbox', { name: 'Documento de Identidad Extranjero' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Identity card issued by country of origin' }));
     await user.click(screen.getByRole('button', { name: 'Configure identifiers' }));
 
     expect(screen.getByText('Nº de Historia Clínica')).toBeInTheDocument();
     expect(screen.queryByText('DNI')).not.toBeInTheDocument();
-    expect(screen.getByText('Documento de Identidad Extranjero')).toBeInTheDocument();
+    expect(screen.getByText('Identity card issued by country of origin')).toBeInTheDocument();
   });
 
   it('hides the generic Otros identifier outside emergency registration', async () => {

@@ -25,7 +25,7 @@ const peruDefaultPatientIdentifierTypeUuids = [
 export const peruForeignPatientIdentifierTypeUuids = [
   peruCarnetExtranjeriaPatientIdentifierTypeUuid, // Carné de Extranjería
   peruPassportPatientIdentifierTypeUuid, // Pasaporte
-  peruDiePatientIdentifierTypeUuid, // Documento de Identidad Extranjero
+  peruDiePatientIdentifierTypeUuid, // DIE; se presenta al usuario como Cédula de Identidad
 ];
 
 const peruPreRegistrationSections = ['identityLookup'];

@@ -1,35 +1,23 @@
-import { notifyError, useDeleteIndicador, useIndicadores, useUpdateIndicador } from '../features/indicadores/hooks';
 import { act, fireEvent, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { renderWithSwr } from 'test-utils';
+import { notifyError, notifySuccess, useDeleteIndicador, useIndicadores } from '../features/indicadores/hooks';
 import IndicadoresPage from './IndicadoresPage';
 
-vi.mock('../features/indicadores/hooks', async () => ({
-  ...(await vi.importActual('../features/indicadores/hooks')),
+vi.mock('../features/indicadores/hooks', () => ({
+  getIndicatorsErrorMessage: vi.fn((_error, fallback) => fallback),
   useIndicadores: vi.fn(),
-  useUpdateIndicador: vi.fn(),
   useDeleteIndicador: vi.fn(),
   notifyError: vi.fn(),
   notifySuccess: vi.fn(),
 }));
 
-const mockUseIndicadores = vi.mocked(useIndicadores);
-const mockUseUpdateIndicador = vi.mocked(useUpdateIndicador);
-
-const activeIndicator = {
-  id: 'ind-001',
+const indicator = {
+  id: 'indicator-a',
   nombre: 'Atenciones de control prenatal',
-  descripcion: 'Gestantes atendidas con control prenatal en el periodo.',
+  descripcion: 'Gestantes atendidas.',
   activo: true,
   creado_en: '2026-01-15T10:00:00.000Z',
-};
-
-const inactiveIndicator = {
-  id: 'ind-003',
-  nombre: 'Atenciones odontológicas preventivas',
-  descripcion: 'Indicador de seguimiento para profilaxis y flúor.',
-  activo: false,
-  creado_en: '2026-03-20T14:45:00.000Z',
 };
 
 function renderPage() {
@@ -40,96 +28,81 @@ function renderPage() {
   );
 }
 
-describe('IndicadoresPage Toggle', () => {
+describe('IndicadoresPage backend contract', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(useIndicadores).mockReturnValue({
+      data: { items: [indicator], total: 1, page: 1, size: 10, pages: 1 },
+      error: undefined,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+    vi.mocked(useDeleteIndicador).mockReturnValue({ deleteIndicador: vi.fn().mockResolvedValue(undefined) });
+  });
+
+  it('renders active list metadata without an unsupported state toggle', () => {
+    renderPage();
+
+    expect(screen.getByText('Activo')).toBeInTheDocument();
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+  });
+
+  it('reports deactivation success only after DELETE resolves', async () => {
+    const deleteIndicador = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(useDeleteIndicador).mockReturnValue({ deleteIndicador });
+    renderPage();
+
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /Desactivar$/ })));
+
+    expect(deleteIndicador).toHaveBeenCalledWith('indicator-a');
+    expect(notifySuccess).toHaveBeenCalledWith('Indicador desactivado');
+  });
+
+  it('sends only one DELETE while deactivation is pending', async () => {
+    let resolveDelete!: () => void;
+    const pendingDelete = new Promise<void>((resolve) => {
+      resolveDelete = resolve;
+    });
+    const deleteIndicador = vi.fn(async () => pendingDelete);
+    vi.mocked(useDeleteIndicador).mockReturnValue({ deleteIndicador });
+    renderPage();
+    const button = screen.getByRole('button', { name: /Desactivar$/ });
+
+    act(() => {
+      fireEvent.click(button);
+      fireEvent.click(button);
+    });
+
+    expect(deleteIndicador).toHaveBeenCalledTimes(1);
+    expect(notifySuccess).not.toHaveBeenCalled();
+    await act(async () => resolveDelete());
+    expect(notifySuccess).toHaveBeenCalledWith('Indicador desactivado');
+  });
+
+  it.each([422, 500])('does not report success after HTTP %s deactivation failure', async (status) => {
     vi.mocked(useDeleteIndicador).mockReturnValue({
-      deleteIndicador: vi.fn().mockResolvedValue(undefined),
+      deleteIndicador: vi.fn().mockRejectedValue({ response: { status } }),
     });
-  });
-
-  it('renders Toggle as "Activo" when indicador.activo is true', () => {
-    const mockUpdateIndicador = vi.fn().mockResolvedValue(activeIndicator);
-    mockUseIndicadores.mockReturnValue({
-      data: { items: [activeIndicator], total: 1, page: 1, size: 10, pages: 1 },
-      error: undefined,
-      isLoading: false,
-      isError: false,
-      refetch: vi.fn(),
-    } as never);
-    mockUseUpdateIndicador.mockReturnValue({ updateIndicador: mockUpdateIndicador });
-
     renderPage();
 
-    // The Toggle switch should have accessible name "Activo"
-    const toggle = screen.getByRole('switch', { name: 'Activo' });
-    expect(toggle).toBeInTheDocument();
-    // The toggle should be checked (toggled)
-    expect(toggle).toBeChecked();
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /Desactivar$/ })));
+
+    expect(notifySuccess).not.toHaveBeenCalled();
+    expect(notifyError).toHaveBeenCalledWith('No se pudo desactivar el indicador.');
   });
 
-  it('renders Toggle as "Inactivo" when indicador.activo is false', () => {
-    const mockUpdateIndicador = vi.fn().mockResolvedValue(inactiveIndicator);
-    mockUseIndicadores.mockReturnValue({
-      data: { items: [inactiveIndicator], total: 1, page: 1, size: 10, pages: 1 },
-      error: undefined,
+  it('does not expose a technical list error', () => {
+    vi.mocked(useIndicadores).mockReturnValue({
+      data: undefined,
+      error: new Error('SQL timeout at host 10.0.0.1'),
       isLoading: false,
-      isError: false,
+      isError: true,
       refetch: vi.fn(),
-    } as never);
-    mockUseUpdateIndicador.mockReturnValue({ updateIndicador: mockUpdateIndicador });
-
+    });
     renderPage();
 
-    const toggle = screen.getByRole('switch', { name: 'Inactivo' });
-    expect(toggle).toBeInTheDocument();
-    expect(toggle).not.toBeChecked();
-  });
-
-  it('calls updateIndicador with inverted activo when Toggle is clicked', async () => {
-    const mockUpdateIndicador = vi.fn().mockResolvedValue({ ...activeIndicator, activo: false });
-    mockUseIndicadores.mockReturnValue({
-      data: { items: [activeIndicator], total: 1, page: 1, size: 10, pages: 1 },
-      error: undefined,
-      isLoading: false,
-      isError: false,
-      refetch: vi.fn(),
-    } as never);
-    mockUseUpdateIndicador.mockReturnValue({ updateIndicador: mockUpdateIndicador });
-
-    renderPage();
-
-    const toggle = screen.getByRole('switch', { name: 'Activo' });
-    await act(async () => {
-      fireEvent.click(toggle);
-    });
-
-    expect(mockUpdateIndicador).toHaveBeenCalledTimes(1);
-    expect(mockUpdateIndicador).toHaveBeenCalledWith('ind-001', {
-      nombre: 'Atenciones de control prenatal',
-      descripcion: 'Gestantes atendidas con control prenatal en el periodo.',
-      activo: false,
-    });
-  });
-
-  it('shows error notification when updateIndicador fails on toggle', async () => {
-    const mockUpdateIndicador = vi.fn().mockRejectedValue(new Error('Network Error'));
-    mockUseIndicadores.mockReturnValue({
-      data: { items: [activeIndicator], total: 1, page: 1, size: 10, pages: 1 },
-      error: undefined,
-      isLoading: false,
-      isError: false,
-      refetch: vi.fn(),
-    } as never);
-    mockUseUpdateIndicador.mockReturnValue({ updateIndicador: mockUpdateIndicador });
-
-    renderPage();
-
-    const toggle = screen.getByRole('switch', { name: 'Activo' });
-    await act(async () => {
-      fireEvent.click(toggle);
-    });
-
-    expect(notifyError).toHaveBeenCalledWith('Network Error');
+    expect(screen.getByText('No se pudieron cargar los indicadores.')).toBeInTheDocument();
+    expect(screen.queryByText(/SQL timeout/)).not.toBeInTheDocument();
   });
 });

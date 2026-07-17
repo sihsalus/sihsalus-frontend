@@ -3,8 +3,10 @@ name: SPA Image
 on:
   pull_request:
     paths:
+      - '.github/workflows/spa-image.yml'
       - 'packages/apps/**'
       - 'packages/libs/**'
+      - 'packages/tooling/**'
       - 'Dockerfile'
       - 'nginx.spa.conf'
       - 'package.json'

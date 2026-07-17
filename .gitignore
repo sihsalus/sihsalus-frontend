@@ -66,5 +66,6 @@ verify.log
 # Codex
 .codex
 .atl/
+.codegraph/
 packages/tooling/configs/vitest-config.js.map
 packages/tooling/configs/vitest-config.d.ts.map

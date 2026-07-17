@@ -2,7 +2,7 @@ import { Layer, OverflowMenu, OverflowMenuItem } from '@carbon/react';
 import { launchWorkspace2, showModal, useLayoutType } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CanEditServiceQueues } from '../../permissions';
+import { CanManageServiceQueueRoomCatalog } from '../../permissions';
 import type { QueueRoom } from '../../types';
 import styles from './admin-page.scss';
 
@@ -26,7 +26,7 @@ const QueueRoomActionMenu: React.FC<QueueRoomActionMenuProps> = ({ queueRoom }) 
   }, [queueRoom]);
 
   return (
-    <CanEditServiceQueues>
+    <CanManageServiceQueueRoomCatalog>
       <Layer>
         <OverflowMenu
           aria-label={t('actions', 'Actions')}
@@ -44,7 +44,7 @@ const QueueRoomActionMenu: React.FC<QueueRoomActionMenuProps> = ({ queueRoom }) 
           />
         </OverflowMenu>
       </Layer>
-    </CanEditServiceQueues>
+    </CanManageServiceQueueRoomCatalog>
   );
 };
 

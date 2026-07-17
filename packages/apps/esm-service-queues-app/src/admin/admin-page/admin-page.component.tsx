@@ -16,7 +16,7 @@ import { Add } from '@carbon/react/icons';
 import { EmptyCardIllustration, ErrorState, launchWorkspace2, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { canEditServiceQueues } from '../../permissions';
+import { canManageServiceQueueCatalog, canManageServiceQueueRoomCatalog } from '../../permissions';
 import { useQueueRooms, useQueuesMutable } from '../queue-admin.resource';
 import styles from './admin-page.scss';
 import QueueActionMenu from './queue-action-menu.component';
@@ -28,7 +28,8 @@ const AdminPage = () => {
   const isTablet = layout === 'tablet';
   const responsiveSize = isTablet ? 'lg' : 'sm';
   const session = useSession();
-  const canEdit = canEditServiceQueues(session?.user);
+  const canManageQueues = canManageServiceQueueCatalog(session?.user);
+  const canManageQueueRooms = canManageServiceQueueRoomCatalog(session?.user);
 
   const { queues, isLoading: isLoadingQueues, error: queuesError } = useQueuesMutable();
   const { queueRooms, isLoading: isLoadingQueueRooms, error: queueRoomsError } = useQueueRooms();
@@ -109,7 +110,7 @@ const AdminPage = () => {
       <div className={styles.section}>
         <div className={styles.sectionHeader}>
           <h2>{t('queues', 'Queues')}</h2>
-          {!queuesError && canEdit && (
+          {!queuesError && canManageQueues && (
             <Button kind="ghost" renderIcon={(props) => <Add size={16} {...props} />} onClick={handleAddQueue}>
               {t('addQueue', 'Add queue')}
             </Button>
@@ -136,7 +137,7 @@ const AdminPage = () => {
                         {headers.map((header) => (
                           <TableHeader key={header.key}>{header.header}</TableHeader>
                         ))}
-                        {canEdit ? <TableHeader aria-label={t('actions', 'Actions')} /> : null}
+                        {canManageQueues ? <TableHeader aria-label={t('actions', 'Actions')} /> : null}
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -148,7 +149,7 @@ const AdminPage = () => {
                             {row.cells.map((cell) => (
                               <TableCell key={cell.id}>{cell.value}</TableCell>
                             ))}
-                            {canEdit ? (
+                            {canManageQueues ? (
                               <TableCell className="cds--table-column-menu">
                                 {queue ? <QueueActionMenu queue={queue} /> : null}
                               </TableCell>
@@ -175,7 +176,7 @@ const AdminPage = () => {
       <div className={styles.section}>
         <div className={styles.sectionHeader}>
           <h2>{t('queueRooms', 'Queue rooms')}</h2>
-          {!queueRoomsError && canEdit && (
+          {!queueRoomsError && canManageQueueRooms && (
             <Button kind="ghost" renderIcon={(props) => <Add size={16} {...props} />} onClick={handleAddQueueRoom}>
               {t('addQueueRoom', 'Add queue room')}
             </Button>
@@ -202,7 +203,7 @@ const AdminPage = () => {
                         {headers.map((header) => (
                           <TableHeader key={header.key}>{header.header}</TableHeader>
                         ))}
-                        {canEdit ? <TableHeader aria-label={t('actions', 'Actions')} /> : null}
+                        {canManageQueueRooms ? <TableHeader aria-label={t('actions', 'Actions')} /> : null}
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -214,7 +215,7 @@ const AdminPage = () => {
                             {row.cells.map((cell) => (
                               <TableCell key={cell.id}>{cell.value}</TableCell>
                             ))}
-                            {canEdit ? (
+                            {canManageQueueRooms ? (
                               <TableCell className="cds--table-column-menu">
                                 {queueRoom ? <QueueRoomActionMenu queueRoom={queueRoom} /> : null}
                               </TableCell>

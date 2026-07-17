@@ -29,7 +29,7 @@ export const configSchema = {
   appointmentQueueMappings: {
     _type: Type.Array,
     _description:
-      'Exact mappings from appointment service and location UUIDs to a queue and queue location. Unmapped services require manual queue selection.',
+      'Required exact mappings from appointment service and location UUIDs to a queue and queue location. Check-in is blocked when no mapping exists.',
     _default: [],
     _elements: {
       _validators: [

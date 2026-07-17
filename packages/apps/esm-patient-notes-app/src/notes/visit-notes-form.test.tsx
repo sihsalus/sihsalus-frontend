@@ -1,4 +1,10 @@
-import { getDefaultsFromConfigSchema, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
+import {
+  getDefaultsFromConfigSchema,
+  showSnackbar,
+  userHasAccess,
+  useConfig,
+  useSession,
+} from '@openmrs/esm-framework';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -73,6 +79,7 @@ const mockUseProviderSignatureDetails = vi.mocked(useProviderSignatureDetails);
 const mockUseVisitNoteClinicalContext = vi.mocked(useVisitNoteClinicalContext);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 
 const getMockConfig = (overrides: Partial<ConfigObject> = {}): ConfigObject => {
   const defaults = getDefaultsFromConfigSchema(configSchema);
@@ -125,6 +132,7 @@ mockUseConfig.mockReturnValue(getMockConfig());
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockUserHasAccess.mockReturnValue(true);
   mockUseSession.mockReturnValue(mockSessionDataResponse.data);
   mockUseConfig.mockReturnValue(getMockConfig());
   mockFetchDiagnosisConceptsByName.mockResolvedValue([]);
@@ -145,20 +153,15 @@ beforeEach(() => {
   });
 });
 
-test('closes the visit summary workspace without rendering it for admission users', async () => {
+test('closes the visit summary workspace when its edit privilege is denied', async () => {
   const closeWorkspace = vi.fn();
-  mockUseSession.mockReturnValue({
-    ...mockSessionDataResponse.data,
-    user: {
-      ...mockSessionDataResponse.data.user,
-      roles: [{ display: 'Admisión', name: 'Admisión', uuid: 'admission-role-uuid' }],
-    },
-  });
+  mockUserHasAccess.mockReturnValue(false);
 
   render(<VisitNotesForm {...defaultProps} closeWorkspace={closeWorkspace} />);
 
   expect(screen.queryByText(/visit note/i)).not.toBeInTheDocument();
   await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ closeWindow: true, discardUnsavedChanges: true }));
+  expect(mockUserHasAccess).toHaveBeenCalledWith('app:hoja.clinica.resumenConsulta.editar', expect.anything());
 });
 
 test('renders the visit notes form with all the relevant fields and values', () => {

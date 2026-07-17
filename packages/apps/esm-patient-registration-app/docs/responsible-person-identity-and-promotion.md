@@ -257,7 +257,7 @@ En `/Users/duvet05/Downloads/sihsalus-content/configuration/backend_configuratio
 - `Fecha y Hora de Verificación de Identidad` (`4a9e2c7f-6d1b-4b8a-9f3e-2c5d7a0b1e6f`), `Format=java.lang.String`;
 - `Observación de Verificación de Identidad` (`d3e5b4d9-93c2-461e-822e-3cecd64b1842`), `Format=java.lang.String`.
 
-El set `Tipo de Documento de Identidad` ya mapea `DNI`, `CE`, `PASS`, `DIE`, `CNV` y `Sin Documento` en OCL. Los sets de estado y fuente también están en OCL mediante mappings `CONCEPT-SET`.
+El set `Tipo de Documento de Identidad` ya mapea `DNI`, `CE`, `PASS`, `DIE`, `CNV` y `Sin Documento` en OCL. `DIE` conserva su código interoperable y se presenta al usuario como `Cédula de Identidad`. Los sets de estado y fuente también están en OCL mediante mappings `CONCEPT-SET`.
 
 También existe metadata documental para profesionales en `/Users/duvet05/Downloads/sihsalus-content/configuration/backend_configuration/attributetypes/attribute_types.csv`, pero son atributos de `Provider`. Eso sirve para RENHICE/proveedores, no reemplaza la identidad civil de `Person`; si un doctor aparece en búsqueda de responsables, su documento de provider puede ayudar a etiquetar o comparar, pero el flujo de responsable/promoción debe usar los `PersonAttributeType` documentales.
 
@@ -266,7 +266,7 @@ En `/Users/duvet05/Downloads/sihsalus-content/configuration/backend_configuratio
 - `DNI`, con regex `^[0-9]{8}$` y unicidad `UNIQUE`;
 - `CE`, con regex `^[A-Za-z0-9]{6,12}$` y unicidad `UNIQUE`;
 - `PASS`, con regex `^[A-Za-z0-9]{6,9}$` y unicidad `UNIQUE`;
-- `DIE`, sin validación específica y `NON_UNIQUE`;
+- `DIE`, presentado como `Cédula de Identidad`, sin validación específica y `NON_UNIQUE` porque el formato y la unicidad dependen del país emisor;
 - `CNV`, con regex `^[0-9]{12}$` y unicidad `UNIQUE`.
 
 Eso significa que la validación fuerte por regex existe para `PatientIdentifierType`. Como `PersonAttributeType` no tiene columna de regex ni validator, el frontend y cualquier importador/capa backend propia deben reutilizar esas mismas reglas antes de guardar documento civil como atributo de persona.
@@ -277,7 +277,7 @@ Mantener para el alcance inmediato el modelo de documento primario de admisión/
 
 1. `Tipo de Documento de Identidad`
    - `Format`: `org.openmrs.Concept`.
-   - `Foreign`: set de conceptos de tipos de documento (`DNI`, `CE`, `PASS`, `DIE`, `CNV`, `SIN DOCUMENTO`).
+   - `Foreign`: set de conceptos de tipos de documento (`DNI`, `CE`, `PASS`, `DIE` —presentado como `Cédula de Identidad`—, `CNV`, `SIN DOCUMENTO`).
    - `Searchable`: `true`.
 
 2. `Código de Documento de Identidad`
@@ -361,7 +361,7 @@ Por lo tanto, para persona/responsable hay que aplicar defensa en capas:
    - CE: `^[A-Za-z0-9]{6,12}$`;
    - PASS: `^[A-Za-z0-9]{6,9}$`;
    - CNV: `^[0-9]{12}$`;
-   - DIE: validación laxa o configurable.
+   - DIE / Cédula de Identidad: sin una regla única; el formato depende del país emisor.
 
 2. Backend / importador:
    - el webservice RENIEC debe normalizar y validar antes de devolver datos;
@@ -1166,7 +1166,7 @@ Acciones:
   - DNI -> `550e8400-e29b-41d4-a716-446655440001`;
   - CE -> `550e8400-e29b-41d4-a716-446655440002`;
   - PASS -> `550e8400-e29b-41d4-a716-446655440003`;
-  - DIE -> `8d793bee-c2cc-11de-8d13-0010c6dffd0f`;
+  - DIE (etiqueta visible `Cédula de Identidad`) -> `8d793bee-c2cc-11de-8d13-0010c6dffd0f`;
   - CNV -> `8d79403a-c2cc-11de-8d13-0010c6dffd0f`.
 - Definir configuración frontend:
   - `personDocumentTypeAttributeTypeUuid`;

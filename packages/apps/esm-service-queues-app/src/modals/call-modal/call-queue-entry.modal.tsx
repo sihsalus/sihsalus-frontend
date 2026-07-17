@@ -24,6 +24,8 @@ const CallQueueEntryModal: React.FC<CallQueueEntryModalProps> = ({ closeModal, q
   const defaultTransitionStatus = config.concepts.defaultTransitionStatus;
 
   const mappedQueueEntry = mapVisitQueueEntryProperties(queueEntry, config.visitQueueNumberAttributeUuid);
+  const ticketNumber = mappedQueueEntry.visitQueueNumber?.trim();
+  const hasTicketNumber = Boolean(ticketNumber);
 
   const preferredIdentifiers = mappedQueueEntry.identifiers.filter((identifier) =>
     config.defaultIdentifierTypes.includes(identifier?.identifierType?.uuid),
@@ -32,6 +34,10 @@ const CallQueueEntryModal: React.FC<CallQueueEntryModalProps> = ({ closeModal, q
   const { mutateQueueEntries } = useMutateQueueEntries();
 
   const launchEditPriorityModal = useCallback(async () => {
+    if (!ticketNumber) {
+      return;
+    }
+
     try {
       await updateQueueEntry(
         mappedQueueEntry.queueEntryUuid,
@@ -39,7 +45,7 @@ const CallQueueEntryModal: React.FC<CallQueueEntryModalProps> = ({ closeModal, q
         mappedQueueEntry.priority?.uuid,
         defaultTransitionStatus,
       );
-      await serveQueueEntry(mappedQueueEntry.queue.name, mappedQueueEntry.visitQueueNumber, 'serving');
+      await serveQueueEntry(mappedQueueEntry.queue.name, ticketNumber, 'serving');
 
       showSnackbar({
         isLowContrast: true,
@@ -71,8 +77,8 @@ const CallQueueEntryModal: React.FC<CallQueueEntryModalProps> = ({ closeModal, q
     mappedQueueEntry.queue.name,
     mappedQueueEntry.queueEntryUuid,
     mappedQueueEntry.queueUuid,
-    mappedQueueEntry.visitQueueNumber,
     t,
+    ticketNumber,
   ]);
 
   const handleRequeuePatient = useCallback(() => {
@@ -129,6 +135,14 @@ const CallQueueEntryModal: React.FC<CallQueueEntryModalProps> = ({ closeModal, q
                 <Tag key={identifier.uuid}>{identifier.display}</Tag>
               ))}
             </div>
+            {!hasTicketNumber && (
+              <p className={styles.p}>
+                {t(
+                  'callUnavailableWithoutQueueNumber',
+                  'This queue entry has no queue number and cannot be sent to the calling screen.',
+                )}
+              </p>
+            )}
           </section>
         </div>
       </ModalBody>
@@ -136,7 +150,9 @@ const CallQueueEntryModal: React.FC<CallQueueEntryModalProps> = ({ closeModal, q
         <Button kind="secondary" onClick={() => handleRequeuePatient()}>
           {t('requeue', 'Requeue')}
         </Button>
-        <Button onClick={() => void launchEditPriorityModal()}>{t('serve', 'Serve')}</Button>
+        <Button disabled={!hasTicketNumber} onClick={() => void launchEditPriorityModal()}>
+          {t('serve', 'Serve')}
+        </Button>
       </ModalFooter>
     </div>
   );

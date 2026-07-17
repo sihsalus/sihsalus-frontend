@@ -67,6 +67,10 @@
   margin-top: layout.$spacing-10;
 }
 
+.workflowNotice {
+  margin: layout.$spacing-05 layout.$spacing-05 0;
+}
+
 @media screen and (max-width: 600px) {
   .dateTimeSection {
     flex-direction: column;

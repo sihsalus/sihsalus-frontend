@@ -5,7 +5,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 140px;
+  width: 100%;
+  max-width: 140px;
   min-height: 7.5rem;
   background-color: theme.$layer-01;
   border: 1px solid theme.$border-subtle-00;

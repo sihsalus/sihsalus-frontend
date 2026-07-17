@@ -180,15 +180,15 @@ describe('userHasAccess', () => {
     expect(userHasAccess('app:hoja.clinica', userWithChartSummaryOnly)).toBe(false);
   });
 
-  it('grants admission queue access without queue editing or chart access', () => {
+  it('does not infer queue or chart access from the legacy admission privilege', () => {
     const admissionUser = {
       privileges: [createPrivilege('app:adt')],
       roles: [createRole('Admision')],
     };
 
     expect(userHasAccess('app:home.admision', admissionUser)).toBe(true);
-    expect(userHasAccess('app:home.colasAtencion', admissionUser)).toBe(true);
-    expect(userHasAccess('app:service-queues', admissionUser)).toBe(true);
+    expect(userHasAccess('app:home.colasAtencion', admissionUser)).toBe(false);
+    expect(userHasAccess('app:service-queues', admissionUser)).toBe(false);
     expect(userHasAccess('app:home.colasAtencion.editar', admissionUser)).toBe(false);
     expect(userHasAccess('app:hoja.clinica', admissionUser)).toBe(false);
   });

@@ -29,11 +29,11 @@ export interface FiltroDiagnosticoForm {
 }
 
 export interface FiltroOrdenForm {
-  concepto_uuids: Array<string>;
+  concepto_uuid: string;
 }
 
 export interface FiltrosEventoForm {
-  location_uuids: Array<string>;
+  location_uuids?: Array<string>;
   minimo_ocurrencias?: number;
   diagnosticos?: Array<FiltroDiagnosticoForm>;
   ordenes?: Array<FiltroOrdenForm>;
@@ -51,7 +51,7 @@ export interface PoblacionForm {
 
 export interface DefinicionIndicadorForm {
   tipo: TipoIndicador;
-  evento: FiltrosEventoForm | null;
+  evento?: FiltrosEventoForm;
   poblacion?: PoblacionForm;
 }
 
@@ -76,7 +76,6 @@ export interface IndicadorCreatePayload {
 export interface IndicadorUpdatePayload {
   nombre: string;
   descripcion: string | null;
-  activo?: boolean;
 }
 
 export interface EncounterTypeOption {
@@ -138,12 +137,15 @@ export interface GetSeriesParams {
   include_meta?: boolean;
 }
 
-export interface IndicadorMeta {
+export interface IndicadorMetaRecord {
   id: string;
   indicador_version_id: string;
   anio: number;
   valor_meta: number;
   creado_en: string;
+}
+
+export interface IndicadorMeta extends IndicadorMetaRecord {
   indicador_nombre: string;
   version_numero: number;
 }
@@ -169,7 +171,7 @@ export interface BatchCalcularNowResponse {
 export interface ErrorRecalculo {
   indicador_id: string;
   indicador_nombre: string;
-  mes: string;
+  mes: number;
   error: string;
 }
 

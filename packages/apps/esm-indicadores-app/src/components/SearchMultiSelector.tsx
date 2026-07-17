@@ -1,7 +1,8 @@
 import { Button, InlineLoading, Search, Tile } from '@carbon/react';
-import { useDebounce } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, useDebounce } from '@openmrs/esm-framework';
 import { useEffect, useMemo, useState } from 'react';
 
+import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import styles from '../indicators-dashboard.module.scss';
 
 interface SearchMultiSelectorProps<T> {
@@ -95,7 +96,9 @@ function SearchMultiSelector<T>({
           {isLoading ? (
             <InlineLoading description="Buscando..." />
           ) : error ? (
-            <div className={styles.errorBanner}>{error.message}</div>
+            <div className={styles.errorBanner}>
+              {getUserFacingErrorMessage(error, 'No se pudieron cargar las opciones.', indicatorsErrorMessageOptions)}
+            </div>
           ) : filteredResults.length ? (
             <div className={styles.searchResultsList} role="listbox" aria-label={label}>
               {filteredResults.map((item) => (

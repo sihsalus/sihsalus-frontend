@@ -16,9 +16,17 @@ export const configSchema = {
       '(e.g. http://127.0.0.1:8000) — openmrsFetch passes absolute URLs through unchanged, ' +
       'so no dev-server proxy is needed.',
   },
+  enableDemoData: {
+    _type: Type.Boolean,
+    _default: false,
+    _description:
+      'Enables local example data when reportes-sql is unavailable. Keep disabled outside explicit demos; ' +
+      'write operations always require the real backend even when this option is enabled.',
+  },
 };
 
 export type Config = {
   indicatorsApiPath: string;
   reportesSqlApiPath: string;
+  enableDemoData: boolean;
 };

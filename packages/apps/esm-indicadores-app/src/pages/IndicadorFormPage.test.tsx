@@ -11,12 +11,15 @@ import { MemoryRouter, useNavigate, useParams } from 'react-router-dom';
 import { renderWithSwr } from 'test-utils';
 import IndicadorFormPage from './IndicadorFormPage';
 
-vi.mock('../features/indicadores/hooks', async () => ({
-  ...(await vi.importActual('../features/indicadores/hooks')),
+vi.mock('../features/indicadores/hooks', () => ({
+  getIndicatorsErrorMessage: vi.fn((_error, fallback) => fallback),
   useIndicador: vi.fn(),
   useCreateIndicador: vi.fn(),
   useUpdateIndicador: vi.fn(),
   useResolvedOrdenes: vi.fn(),
+  useLocationSearch: vi.fn(() => ({ data: [], error: undefined, isLoading: false })),
+  useDiagnosticoSearch: vi.fn(() => ({ data: [], error: undefined, isLoading: false })),
+  useOrdenSearch: vi.fn(() => ({ data: [], error: undefined, isLoading: false })),
   notifyError: vi.fn(),
   notifySuccess: vi.fn(),
 }));
@@ -45,7 +48,7 @@ const sampleIndicator = {
       id: 'ver-001-1',
       indicador_id: 'ind-001',
       version: 1,
-      definicion: { tipo: 'conteo_atenciones' as const, evento: null },
+      definicion: { tipo: 'conteo_atenciones' as const },
       creado_en: '2026-01-15T10:00:00.000Z',
     },
   ],
@@ -99,11 +102,7 @@ describe('IndicadorFormPage — create mode', () => {
   it('shows helper text about defining metadata', () => {
     renderCreatePage();
 
-    expect(
-      screen.getByText(
-        /Definí la metadata y la lógica base del indicador/,
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Definí la metadata y la lógica base del indicador/)).toBeInTheDocument();
   });
 
   it('calls createIndicador on form submit with correct payload', async () => {
@@ -167,8 +166,9 @@ describe('IndicadorFormPage — create mode', () => {
       fireEvent.click(submitButton);
     });
 
-    expect(notifyError).toHaveBeenCalledWith('Error del servidor');
-    expect(screen.getByText('Error del servidor')).toBeInTheDocument();
+    expect(notifyError).toHaveBeenCalledWith('No se pudo guardar el indicador.');
+    expect(screen.getByText('No se pudo guardar el indicador.')).toBeInTheDocument();
+    expect(notifySuccess).not.toHaveBeenCalled();
   });
 });
 
@@ -213,7 +213,8 @@ describe('IndicadorFormPage — edit mode', () => {
 
     renderEditPage();
 
-    expect(screen.getByText('Fallo al obtener el indicador')).toBeInTheDocument();
+    expect(screen.getByText('No se pudo cargar el indicador.')).toBeInTheDocument();
+    expect(screen.queryByText('Fallo al obtener el indicador')).not.toBeInTheDocument();
   });
 
   it('shows "No se encontró el indicador." when data is null', () => {
@@ -268,13 +269,10 @@ describe('IndicadorFormPage — edit mode', () => {
       });
 
       expect(mockUpdateIndicador).toHaveBeenCalledTimes(1);
-      expect(mockUpdateIndicador).toHaveBeenCalledWith(
-        'ind-001',
-        expect.objectContaining({
-          nombre: 'Atenciones de control prenatal',
-          activo: true,
-        }),
-      );
+      expect(mockUpdateIndicador).toHaveBeenCalledWith('ind-001', {
+        nombre: 'Atenciones de control prenatal',
+        descripcion: 'Gestantes atendidas con control prenatal.',
+      });
     });
 
     it('shows success notification and navigates after update', async () => {
@@ -301,8 +299,28 @@ describe('IndicadorFormPage — edit mode', () => {
         fireEvent.click(submitButton);
       });
 
-      expect(notifyError).toHaveBeenCalledWith('Error al actualizar');
-      expect(screen.getByText('Error al actualizar')).toBeInTheDocument();
+      expect(notifyError).toHaveBeenCalledWith('No se pudo guardar el indicador.');
+      expect(screen.getByText('No se pudo guardar el indicador.')).toBeInTheDocument();
+      expect(notifySuccess).not.toHaveBeenCalled();
+    });
+
+    it('blocks duplicate update submissions while the first request is pending', async () => {
+      let resolveUpdate: (value: unknown) => void = () => {};
+      mockUpdateIndicador.mockReturnValue(
+        new Promise((resolve) => {
+          resolveUpdate = resolve;
+        }),
+      );
+      renderEditPage();
+
+      const submitButton = screen.getByRole('button', { name: 'Guardar' });
+      fireEvent.click(submitButton);
+      fireEvent.click(submitButton);
+
+      expect(mockUpdateIndicador).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('button', { name: 'Guardando...' })).toBeDisabled();
+
+      await act(async () => resolveUpdate(sampleIndicator));
     });
   });
 });

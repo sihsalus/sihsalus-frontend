@@ -20,8 +20,7 @@ function makeDefinicionWithOrdenes(uuids: Array<string>): DefinicionIndicadorFor
   return {
     tipo: 'conteo_atenciones',
     evento: {
-      location_uuids: [],
-      ordenes: [{ concepto_uuids: uuids }],
+      ordenes: uuids.map((concepto_uuid) => ({ concepto_uuid })),
     },
   };
 }
@@ -30,7 +29,6 @@ function makeDefinicionWithoutOrdenes(): DefinicionIndicadorForm {
   return {
     tipo: 'conteo_atenciones',
     evento: {
-      location_uuids: [],
       ordenes: [],
     },
   };
@@ -158,7 +156,6 @@ describe('DefinicionView periodo removal', () => {
   it('still renders Tipo correctly without periodo', () => {
     const definicion: DefinicionIndicadorForm = {
       tipo: 'conteo_pacientes',
-      evento: null,
     };
     render(<DefinicionView definicion={definicion} />);
 

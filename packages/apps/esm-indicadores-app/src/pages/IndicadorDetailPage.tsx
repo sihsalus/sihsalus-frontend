@@ -1,10 +1,12 @@
 import { Button, Tag, Tile } from '@carbon/react';
-import React, { useMemo, useState } from 'react';
+import { getUserFacingErrorMessage } from '@openmrs/esm-framework';
+import React, { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { DefinicionIndicadorForm } from '../api/types';
 import DefinicionView from '../components/DefinicionView';
 import IndicadorForm from '../components/IndicadorForm';
 import SQLPreviewSection from '../components/SQLPreviewSection';
+import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import {
   notifyError,
   notifySuccess,
@@ -22,6 +24,8 @@ const IndicadorDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
   const [showVersionForm, setShowVersionForm] = useState(false);
+  const [isSubmittingVersion, setSubmittingVersion] = useState(false);
+  const submittingVersionRef = useRef(false);
   const { data, isLoading, error } = useIndicador(id);
   const { createVersion } = useCreateVersion(id);
 
@@ -34,7 +38,7 @@ const IndicadorDetailPage: React.FC = () => {
     if (!latestVersion) {
       return [];
     }
-    return latestVersion.definicion.evento?.ordenes?.flatMap((item) => item.concepto_uuids) ?? [];
+    return latestVersion.definicion.evento?.ordenes?.map((item) => item.concepto_uuid) ?? [];
   }, [latestVersion]);
 
   const { data: ordenesData } = useResolvedOrdenes(ordenUuids);
@@ -48,17 +52,29 @@ const IndicadorDetailPage: React.FC = () => {
     if (!definicion) {
       return;
     }
+    if (submittingVersionRef.current) {
+      return;
+    }
+    submittingVersionRef.current = true;
 
     setServerError(null);
+    setSubmittingVersion(true);
 
     try {
       await createVersion(definicion);
       setShowVersionForm(false);
       notifySuccess('Versión creada');
     } catch (createError) {
-      const message = createError instanceof Error ? createError.message : 'No se pudo crear la versión';
+      const message = getUserFacingErrorMessage(
+        createError,
+        'No se pudo crear la versión.',
+        indicatorsErrorMessageOptions,
+      );
       setServerError(message);
       notifyError(message);
+    } finally {
+      submittingVersionRef.current = false;
+      setSubmittingVersion(false);
     }
   };
 
@@ -69,7 +85,11 @@ const IndicadorDetailPage: React.FC = () => {
       </Link>
 
       {isLoading ? <p>Cargando indicador...</p> : null}
-      {error ? <div className={styles.errorBanner}>{error.message}</div> : null}
+      {error ? (
+        <div className={styles.errorBanner}>
+          {getUserFacingErrorMessage(error, 'No se pudo cargar el indicador.', indicatorsErrorMessageOptions)}
+        </div>
+      ) : null}
 
       {data ? (
         <div className={styles.detailLayout}>
@@ -99,6 +119,7 @@ const IndicadorDetailPage: React.FC = () => {
                 defaultValues={latestVersion ? parseDefinicion(latestVersion.definicion, ordenesData) : undefined}
                 initialMetadata={{ nombre: data.nombre, descripcion: data.descripcion }}
                 serverError={serverError}
+                isSubmitting={isSubmittingVersion}
                 onSubmit={handleCreateVersion}
               />
             </Tile>

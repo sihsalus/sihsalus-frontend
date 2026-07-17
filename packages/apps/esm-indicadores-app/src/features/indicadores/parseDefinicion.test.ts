@@ -7,8 +7,7 @@ function makeDefinicionWithOrdenes(uuids: Array<string>): DefinicionIndicadorFor
   return {
     tipo: 'conteo_atenciones',
     evento: {
-      location_uuids: [],
-      ordenes: [{ concepto_uuids: uuids }],
+      ordenes: uuids.map((concepto_uuid) => ({ concepto_uuid })),
     },
   };
 }

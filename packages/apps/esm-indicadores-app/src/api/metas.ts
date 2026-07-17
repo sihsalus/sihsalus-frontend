@@ -1,59 +1,52 @@
-import {
-  deleteMetaMock,
-  getAllMetasMock,
-  getMetaMock,
-  upsertMetaMock,
-} from '../mocks/indicators-data';
-import { fetchJson, toJsonBody, withMockFallback } from './client';
+import { fetchJson, mutateJson, toJsonBody } from './client';
 import { getReportesSqlResourcePath } from './config';
-import type { IndicadorMeta, IndicadorMetaCreatePayload } from './types';
+import type { IndicadorMeta, IndicadorMetaCreatePayload, IndicadorMetaRecord } from './types';
 
-function ensureQuery(params: Record<string, string | number | undefined>) {
+function ensureQuery(params: Record<string, string | number>) {
   const search = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== '') {
-      search.set(key, String(value));
-    }
+    search.set(key, String(value));
   });
-  const query = search.toString();
-  return query ? `?${query}` : '';
+  return `?${search.toString()}`;
 }
 
-export async function getAllMetas(): Promise<Array<IndicadorMeta>> {
-  const metasPath = await getReportesSqlResourcePath('metas');
-  return withMockFallback(
-    () => fetchJson<Array<IndicadorMeta>>(`${metasPath}/`),
-    () => getAllMetasMock(),
+export function isMetaNotFoundError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const candidate = error as {
+    status?: number;
+    response?: { status?: number };
+    responseBody?: { detail?: { field?: unknown; message?: unknown } };
+  };
+  const detail = candidate.responseBody?.detail;
+
+  return (
+    (candidate.status === 404 || candidate.response?.status === 404) &&
+    detail?.field === 'indicador_version_id' &&
+    detail.message === 'Meta no encontrada'
   );
 }
 
-export async function getMeta(
-  indicador_version_id: string,
-  anio: number,
-): Promise<IndicadorMeta> {
+export async function getMetaByVersion(indicadorVersionId: string, anio: number): Promise<IndicadorMeta> {
   const metasPath = await getReportesSqlResourcePath('metas');
-  return withMockFallback(
-    () => fetchJson<IndicadorMeta>(`${metasPath}/${ensureQuery({ indicador_version_id, anio })}`),
-    () => getMetaMock(indicador_version_id, anio),
-  );
+  return fetchJson<IndicadorMeta>(`${metasPath}${ensureQuery({ indicador_version_id: indicadorVersionId, anio })}`);
 }
 
-export async function upsertMeta(payload: IndicadorMetaCreatePayload): Promise<IndicadorMeta> {
+export async function getMetaByIndicator(indicadorId: string, anio: number): Promise<IndicadorMeta> {
   const metasPath = await getReportesSqlResourcePath('metas');
-  return withMockFallback(
-    () => fetchJson<IndicadorMeta>(`${metasPath}/`, { method: 'PUT', ...toJsonBody(payload) }),
-    () => upsertMetaMock(payload),
-  );
+  return fetchJson<IndicadorMeta>(`${metasPath}${ensureQuery({ indicador_id: indicadorId, anio })}`);
 }
 
-export async function deleteMeta(indicador_version_id: string, anio: number): Promise<void> {
+export async function upsertMeta(payload: IndicadorMetaCreatePayload): Promise<IndicadorMetaRecord> {
   const metasPath = await getReportesSqlResourcePath('metas');
-  return withMockFallback(
-    async () => {
-      await fetchJson(`${metasPath}/${ensureQuery({ indicador_version_id, anio })}`, { method: 'DELETE' });
-    },
-    async () => {
-      deleteMetaMock(indicador_version_id, anio);
-    },
-  );
+  return mutateJson<IndicadorMetaRecord>(`${metasPath}/`, { method: 'PUT', ...toJsonBody(payload) });
+}
+
+export async function deleteMeta(indicadorVersionId: string, anio: number): Promise<void> {
+  const metasPath = await getReportesSqlResourcePath('metas');
+  await mutateJson<void>(`${metasPath}${ensureQuery({ indicador_version_id: indicadorVersionId, anio })}`, {
+    method: 'DELETE',
+  });
 }

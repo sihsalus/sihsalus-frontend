@@ -1,6 +1,8 @@
 import { Button, InlineLoading } from '@carbon/react';
+import { getUserFacingErrorMessage } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 
+import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import { useSQLPreview } from '../features/indicadores/hooks';
 import styles from '../indicators-dashboard.module.scss';
 
@@ -30,7 +32,9 @@ const SQLPreviewSection: React.FC<SQLPreviewSectionProps> = ({ indicadorId, vers
         isLoading ? (
           <InlineLoading description="Generando SQL..." />
         ) : error ? (
-          <div className={styles.errorBanner}>{error.message}</div>
+          <div className={styles.errorBanner}>
+            {getUserFacingErrorMessage(error, 'No se pudo generar la vista previa SQL.', indicatorsErrorMessageOptions)}
+          </div>
         ) : data ? (
           <div className={styles.sqlBody}>
             <div className={styles.mutedText}>

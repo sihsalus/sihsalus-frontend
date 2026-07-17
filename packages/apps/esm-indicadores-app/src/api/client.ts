@@ -1,6 +1,7 @@
-import { type FetchConfig, type FetchResponse, openmrsFetch } from '@openmrs/esm-framework';
+import { type FetchConfig, type FetchResponse, logError, openmrsFetch } from '@openmrs/esm-framework';
 
-import { activateMockMode, resetMockMode } from './mock-mode';
+import { isDemoDataEnabled } from './config';
+import { activateMockMode, reportBackendUnavailable, resetMockMode } from './mock-mode';
 
 function normalizeError(error: unknown): Error {
   if (error instanceof Error) {
@@ -12,6 +13,25 @@ function normalizeError(error: unknown): Error {
   }
 
   return new Error('No se pudo completar la solicitud.');
+}
+
+function getHttpStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== 'object') {
+    return undefined;
+  }
+
+  const candidate = error as { status?: number; statusCode?: number; response?: { status?: number } };
+  return candidate.response?.status ?? candidate.status ?? candidate.statusCode;
+}
+
+function canUseDemoFallback(error: unknown): boolean {
+  const status = getHttpStatus(error);
+  if (status !== undefined) {
+    return status >= 500;
+  }
+
+  const message = normalizeError(error).message;
+  return error instanceof TypeError || /network|failed to fetch|fetch failed|load failed/i.test(message);
 }
 
 export async function fetchJson<T>(url: string, init?: FetchConfig): Promise<T> {
@@ -26,8 +46,17 @@ export async function withMockFallback<T>(request: () => Promise<T>, fallback: (
     return data;
   } catch (error) {
     const normalized = normalizeError(error);
-    activateMockMode(normalized.message);
-    return fallback();
+    logError(error, 'Indicadores: consulta a reportes-sql');
+    const backendUnavailable = canUseDemoFallback(error);
+    if (backendUnavailable && (await isDemoDataEnabled())) {
+      activateMockMode(normalized.message);
+      return fallback();
+    }
+
+    if (backendUnavailable) {
+      reportBackendUnavailable(normalized.message);
+    }
+    throw error;
   }
 }
 

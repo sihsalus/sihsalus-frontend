@@ -1,7 +1,8 @@
 import { act, fireEvent, screen } from '@testing-library/react';
+import { logError } from '@openmrs/esm-framework';
 import { MemoryRouter } from 'react-router-dom';
 import { renderWithSwr } from 'test-utils';
-import type { SeriesResponse } from '../api/types';
+import type { BatchCalcularNowResponse, RecalcularAnioResponse, SeriesResponse } from '../api/types';
 import ResultadosPage from './ResultadosPage';
 
 vi.mock('../features/indicadores/hooks', async () => ({
@@ -9,6 +10,7 @@ vi.mock('../features/indicadores/hooks', async () => ({
   useIndicadores: vi.fn(),
   notifyError: vi.fn(),
   notifySuccess: vi.fn(),
+  getIndicatorsErrorMessage: vi.fn((_error, fallback) => fallback),
 }));
 
 vi.mock('../features/resultados/hooks', async () => ({
@@ -20,18 +22,14 @@ vi.mock('../features/resultados/hooks', async () => ({
 }));
 
 import { useIndicadores, notifyError, notifySuccess } from '../features/indicadores/hooks';
-import {
-  useCalcularAhora,
-  useRecalcularAnio,
-  useResultados,
-  useResultadosSeries,
-} from '../features/resultados/hooks';
+import { useCalcularAhora, useRecalcularAnio, useResultados, useResultadosSeries } from '../features/resultados/hooks';
 
 const mockUseIndicadores = vi.mocked(useIndicadores);
 const mockUseResultados = vi.mocked(useResultados);
 const mockUseResultadosSeries = vi.mocked(useResultadosSeries);
 const mockUseCalcularAhora = vi.mocked(useCalcularAhora);
 const mockUseRecalcularAnio = vi.mocked(useRecalcularAnio);
+const mockLogError = vi.mocked(logError);
 
 const indicadores = {
   items: [
@@ -289,15 +287,34 @@ describe('ResultadosPage calculate / recalculate actions', () => {
     expect(notifySuccess).toHaveBeenCalled();
   });
 
+  it('starts only one batch calculation while the POST is pending', async () => {
+    let resolveCalculation!: (value: BatchCalcularNowResponse) => void;
+    const calcularMock = vi.fn(
+      () =>
+        new Promise<BatchCalcularNowResponse>((resolve) => {
+          resolveCalculation = resolve;
+        }),
+    );
+    mockUseCalcularAhora.mockReturnValue({ calcularAhora: calcularMock });
+    renderPage();
+    const button = screen.getByRole('button', { name: /Calcular ahora/ });
+
+    act(() => {
+      fireEvent.click(button);
+      fireEvent.click(button);
+    });
+
+    expect(calcularMock).toHaveBeenCalledTimes(1);
+    await act(async () => resolveCalculation({ calculados: 1, errores: [], total: 1 }));
+  });
+
   it('shows summary with partial-errors language when the response has errors', async () => {
     mockUseCalcularAhora.mockReturnValue({
-      calcularAhora: vi
-        .fn()
-        .mockResolvedValue({
-          calculados: 1,
-          errores: [{ indicador_id: 'ind-002', indicador_nombre: 'Anemia', error: 'boom' }],
-          total: 2,
-        }),
+      calcularAhora: vi.fn().mockResolvedValue({
+        calculados: 1,
+        errores: [{ indicador_id: 'ind-002', indicador_nombre: 'Anemia', error: 'boom' }],
+        total: 2,
+      }),
     });
 
     renderPage();
@@ -310,8 +327,9 @@ describe('ResultadosPage calculate / recalculate actions', () => {
     expect(notifySuccess).toHaveBeenCalled();
     // The page should render a warning notification with the partial-error subtitle
     expect(screen.getByText(/1 de 2 calculados/)).toBeInTheDocument();
-    // The failed indicator list should mention the indicator id and error
-    expect(screen.getByText('(ind-002): boom')).toBeInTheDocument();
+    expect(screen.getByText('(ind-002): No se pudo calcular este indicador.')).toBeInTheDocument();
+    expect(screen.queryByText(/boom/)).not.toBeInTheDocument();
+    expect(mockLogError).toHaveBeenCalledTimes(1);
   });
 
   it('treats total-failure (0 calculated, all errored) as an error toast and an error notification', async () => {
@@ -337,9 +355,10 @@ describe('ResultadosPage calculate / recalculate actions', () => {
     expect(notifySuccess).not.toHaveBeenCalled();
     // The on-page summary should also use the error variant subtitle.
     expect(screen.getByText(/0 de 2 calculados, todos con error/)).toBeInTheDocument();
-    // Failed indicator details are still rendered alongside the error summary.
-    expect(screen.getByText('(ind-001): timeout')).toBeInTheDocument();
-    expect(screen.getByText('(ind-002): boom')).toBeInTheDocument();
+    expect(screen.getByText('(ind-001): No se pudo calcular este indicador.')).toBeInTheDocument();
+    expect(screen.getByText('(ind-002): No se pudo calcular este indicador.')).toBeInTheDocument();
+    expect(screen.queryByText(/timeout|boom/)).not.toBeInTheDocument();
+    expect(mockLogError).toHaveBeenCalledTimes(1);
   });
 
   it('shows error notification when calcularAhora hook rejects', async () => {
@@ -354,7 +373,7 @@ describe('ResultadosPage calculate / recalculate actions', () => {
       fireEvent.click(button);
     });
 
-    expect(notifyError).toHaveBeenCalledWith('Network Error');
+    expect(notifyError).toHaveBeenCalledWith('No se pudieron calcular los indicadores.');
   });
 
   it('opens the recalculate-year modal when clicking the secondary action', () => {
@@ -399,6 +418,38 @@ describe('ResultadosPage calculate / recalculate actions', () => {
 
     expect(recalcMock).toHaveBeenCalledWith({ anio: 2025 });
     expect(notifySuccess).toHaveBeenCalled();
+  });
+
+  it('starts only one annual recalculation while the POST is pending', async () => {
+    let resolveRecalculation!: (value: RecalcularAnioResponse) => void;
+    const recalcMock = vi.fn(
+      () =>
+        new Promise<RecalcularAnioResponse>((resolve) => {
+          resolveRecalculation = resolve;
+        }),
+    );
+    mockUseRecalcularAnio.mockReturnValue({ recalcularAnio: recalcMock });
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: /Recalcular año/ }));
+    const confirm = screen.getByRole('button', { name: /Confirmar/ });
+
+    act(() => {
+      fireEvent.click(confirm);
+      fireEvent.click(confirm);
+    });
+
+    expect(recalcMock).toHaveBeenCalledTimes(1);
+    await act(async () =>
+      resolveRecalculation({
+        anio: new Date().getFullYear(),
+        indicador_id: null,
+        meses_procesados: 12,
+        indicadores_considerados: 1,
+        recalculados: 12,
+        errores: [],
+        total: 12,
+      }),
+    );
   });
 
   it('scopes the recalculate to the selected indicator when one is set', async () => {
@@ -468,7 +519,7 @@ describe('ResultadosPage calculate / recalculate actions', () => {
         {
           indicador_id: 'ind-002',
           indicador_nombre: 'Anemia',
-          mes: '2025-03',
+          mes: 3,
           error: 'timeout',
         },
       ],
@@ -492,7 +543,11 @@ describe('ResultadosPage calculate / recalculate actions', () => {
     expect(notifySuccess).toHaveBeenCalled();
     expect(screen.getByText(/2025: 23 recalculados, 1 con error/)).toBeInTheDocument();
     // Failed indicator details should include the mes
-    expect(screen.getByText('(ind-002, 2025-03): timeout')).toBeInTheDocument();
+    expect(
+      screen.getByText('(ind-002, mes 3): No se pudo recalcular este indicador para el mes indicado.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/timeout/)).not.toBeInTheDocument();
+    expect(mockLogError).toHaveBeenCalledTimes(1);
   });
 
   it('treats annual recalc total-failure (0 recalculated, all errored) as an error toast', async () => {
@@ -504,8 +559,8 @@ describe('ResultadosPage calculate / recalculate actions', () => {
       recalculados: 0,
       // All items failed — errores.length equals total so the page classifies this as total failure
       errores: [
-        { indicador_id: 'ind-001', indicador_nombre: 'Control prenatal', mes: '2025-01', error: 'timeout' },
-        { indicador_id: 'ind-002', indicador_nombre: 'Anemia', mes: '2025-01', error: 'timeout' },
+        { indicador_id: 'ind-001', indicador_nombre: 'Control prenatal', mes: 1, error: 'timeout' },
+        { indicador_id: 'ind-002', indicador_nombre: 'Anemia', mes: 1, error: 'timeout' },
       ],
       total: 2,
     });
@@ -540,9 +595,7 @@ describe('ResultadosPage calculate / recalculate actions', () => {
       meses_procesados: 12,
       indicadores_considerados: 2,
       recalculados: 0,
-      errores: [
-        { indicador_id: 'ind-001', indicador_nombre: 'Control prenatal', mes: '2025-01', error: 'timeout' },
-      ],
+      errores: [{ indicador_id: 'ind-001', indicador_nombre: 'Control prenatal', mes: 1, error: 'timeout' }],
       total: 24,
     });
     mockUseRecalcularAnio.mockReturnValue({ recalcularAnio: recalcMock });
@@ -586,7 +639,8 @@ describe('ResultadosPage calculate / recalculate actions', () => {
     expect(notifyError).toHaveBeenCalled();
     expect(notifySuccess).not.toHaveBeenCalled();
     expect(screen.getByText(/0 de 5 calculados, todos con error/)).toBeInTheDocument();
-    expect(screen.getByText('(ind-001): timeout')).toBeInTheDocument();
+    expect(screen.getByText('(ind-001): No se pudo calcular este indicador.')).toBeInTheDocument();
+    expect(screen.queryByText(/timeout/)).not.toBeInTheDocument();
   });
 
   it('closes the recalculate-year modal via Cancel without calling the hook', async () => {

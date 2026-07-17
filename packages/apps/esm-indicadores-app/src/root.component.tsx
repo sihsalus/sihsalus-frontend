@@ -50,7 +50,7 @@ const TabsLayout: React.FC = () => {
 };
 
 const IndicatorsContent: React.FC = () => {
-  const { isMockMode, errorMessage } = useMockMode();
+  const { isMockMode, isBackendAvailable } = useMockMode();
   useIndicatorsHealth();
   const spaBase = trimTrailingSlash(window.getOpenmrsSpaBase?.() ?? globalThis.spaBase ?? '/openmrs/spa');
   const basePath = `${spaBase}/indicators`;
@@ -61,8 +61,16 @@ const IndicatorsContent: React.FC = () => {
         {isMockMode ? (
           <InlineNotification
             kind="warning"
-            title="Modo demo activo"
-            subtitle={`La API no respondió correctamente. Se están mostrando datos mock. ${errorMessage ?? ''}`}
+            title="Datos de demostración activos"
+            subtitle="La API no respondió. Los datos visibles son ejemplos y ninguna escritura se simulará."
+            lowContrast
+          />
+        ) : null}
+        {!isMockMode && !isBackendAvailable ? (
+          <InlineNotification
+            kind="error"
+            title="Servicio de indicadores no disponible"
+            subtitle="No se mostrarán datos de ejemplo ni se simularán operaciones."
             lowContrast
           />
         ) : null}

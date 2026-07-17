@@ -718,6 +718,52 @@ describe('Patient registration validation', () => {
     expect(await validateFormValues(validRelationshipValues)).toBeFalsy();
   });
 
+  it('should reject more than one active mother relationship', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonUuid: 'mother-one-uuid',
+          relation: 'Madre',
+          relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
+        },
+        {
+          action: 'ADD',
+          relatedPersonUuid: 'mother-two-uuid',
+          relation: 'Mother',
+          relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
+        },
+      ],
+    };
+
+    const validationError = await validateFormValues(invalidFormValues);
+
+    expect(validationError.errors).toContain('patientCanOnlyHaveOneMother');
+  });
+
+  it('should ignore a deleted mother when enforcing the single mother rule', async () => {
+    const validRelationshipValues = {
+      ...validFormValues,
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonUuid: 'mother-one-uuid',
+          relation: 'Madre',
+          relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
+        },
+        {
+          action: 'DELETE',
+          relatedPersonUuid: 'mother-two-uuid',
+          relation: 'Madre',
+          relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
+        },
+      ],
+    };
+
+    expect(await validateFormValues(validRelationshipValues)).toBeFalsy();
+  });
+
   it('should reject more than one primary responsible person', async () => {
     const invalidFormValues = {
       ...validFormValues,

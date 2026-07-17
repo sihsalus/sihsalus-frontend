@@ -6,6 +6,7 @@ import {
   showSnackbar,
   useConfig,
   useLocations,
+  usePatient,
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
@@ -50,6 +51,7 @@ const mockSaveAppointment = vi.mocked(saveAppointment);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseLocations = vi.mocked(useLocations);
+const mockUsePatient = vi.mocked(usePatient);
 const mockUseProviders = vi.mocked(useProviders);
 const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
@@ -155,6 +157,12 @@ describe('AppointmentForm', () => {
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
       appointmentTypes: ['Scheduled', 'WalkIn'],
+    });
+    mockUsePatient.mockReturnValue({
+      error: null,
+      isLoading: false,
+      patient: { id: mockPatient.uuid, gender: 'male' } as fhir.Patient,
+      patientUuid: mockPatient.uuid,
     });
     mockUseLocations.mockReturnValue(mockLocations.data.results);
     mockUseSession.mockReturnValue(mockSession.data);
@@ -298,6 +306,18 @@ describe('AppointmentForm', () => {
     await user.click(cancelButton);
 
     expect(defaultProps.closeWorkspace).toHaveBeenCalledTimes(1);
+  });
+
+  it('notifies the appointments table when the workspace is closed', async () => {
+    const onWorkspaceClose = vi.fn();
+    mockOpenmrsFetch.mockResolvedValueOnce(mockUseAppointmentServiceData as unknown as FetchResponse);
+
+    const { unmount } = renderWithSwr(<AppointmentForm {...defaultProps} onWorkspaceClose={onWorkspaceClose} />);
+
+    await waitForLoadingToFinish();
+    unmount();
+
+    expect(onWorkspaceClose).toHaveBeenCalledTimes(1);
   });
 
   it('renders a success snackbar upon successfully scheduling an appointment', async () => {
@@ -752,6 +772,45 @@ describe('AppointmentForm', () => {
     await waitForLoadingToFinish();
 
     expect(screen.getByRole('combobox', { name: /select a provider/i })).toHaveValue('');
+  });
+
+  it('filters appointment services using configured patient gender rules', async () => {
+    const restrictedService = {
+      ...mockUseAppointmentServiceData[0],
+      name: 'Atención ambulatoria por obstetra',
+      uuid: 'female-only-service',
+    };
+    const unrestrictedService = {
+      ...mockUseAppointmentServiceData[0],
+      name: 'Consulta ambulatoria por médico general',
+      uuid: 'unrestricted-service',
+    };
+    mockUsePatient.mockReturnValue({
+      error: null,
+      isLoading: false,
+      patient: { id: mockPatient.uuid, gender: 'male' } as fhir.Patient,
+      patientUuid: mockPatient.uuid,
+    });
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentTypes: ['Scheduled', 'WalkIn'],
+      appointmentServiceGenderRules: [
+        {
+          appointmentServiceUuid: restrictedService.uuid,
+          allowedGenders: ['F'],
+        },
+      ],
+    });
+    mockOpenmrsFetch.mockResolvedValue({
+      data: [restrictedService, unrestrictedService],
+    } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.queryByRole('option', { name: restrictedService.name })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: unrestrictedService.name })).toBeInTheDocument();
   });
 
   it('filters the responsible providers as the user types', async () => {

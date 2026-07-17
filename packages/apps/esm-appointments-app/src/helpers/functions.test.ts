@@ -81,22 +81,42 @@ describe('appointment labels', () => {
 });
 
 describe('appointment service gender filtering', () => {
-  it('hides obstetric services for male patients', () => {
-    expect(isAppointmentServiceAvailableForGender({ name: 'Atención ambulatoria por obstetra' }, 'M')).toBe(false);
+  const obstetricService = {
+    uuid: 'a6d7f9b3-2c5e-48d1-93e4-7f8a6b5c2d02',
+    name: 'Atención ambulatoria por obstetra',
+  };
+  const femaleOnlyRule = [
+    {
+      appointmentServiceUuid: obstetricService.uuid,
+      allowedGenders: ['F'],
+    },
+  ];
+
+  it('hides a configured female-only service for male patients', () => {
+    expect(isAppointmentServiceAvailableForGender(obstetricService, 'M', femaleOnlyRule)).toBe(false);
   });
 
-  it('shows obstetric services for female patients', () => {
-    expect(isAppointmentServiceAvailableForGender({ name: 'Atención ambulatoria por obstetra' }, 'F')).toBe(true);
+  it('shows a configured female-only service for female patients', () => {
+    expect(isAppointmentServiceAvailableForGender(obstetricService, 'F', femaleOnlyRule)).toBe(true);
   });
 
   it('keeps unrestricted services available for every patient', () => {
-    expect(isAppointmentServiceAvailableForGender({ name: 'Consulta ambulatoria por médico general' }, 'M')).toBe(true);
-    expect(isAppointmentServiceAvailableForGender({ name: 'Consulta ambulatoria por médico general' }, 'F')).toBe(true);
+    const unrestrictedService = { uuid: 'general-medicine', name: 'Consulta ambulatoria por médico general' };
+
+    expect(isAppointmentServiceAvailableForGender(unrestrictedService, 'M', femaleOnlyRule)).toBe(true);
+    expect(isAppointmentServiceAvailableForGender(unrestrictedService, 'F', femaleOnlyRule)).toBe(true);
+  });
+
+  it('does not infer restrictions from the service name', () => {
+    expect(isAppointmentServiceAvailableForGender(obstetricService, 'M')).toBe(true);
   });
 
   it('honors explicit service restrictions when provided by the backend', () => {
-    expect(isAppointmentServiceAvailableForGender({ name: 'Servicio especializado', allowedGenders: ['F'] }, 'M')).toBe(
-      false,
-    );
+    expect(
+      isAppointmentServiceAvailableForGender(
+        { uuid: 'specialized-service', name: 'Servicio especializado', allowedGenders: ['F'] },
+        'M',
+      ),
+    ).toBe(false);
   });
 });

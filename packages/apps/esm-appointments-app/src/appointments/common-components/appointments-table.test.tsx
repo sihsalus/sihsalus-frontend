@@ -1,5 +1,11 @@
-import { getDefaultsFromConfigSchema, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import {
+  getDefaultsFromConfigSchema,
+  launchWorkspace2,
+  useConfig,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { getByTextWithMarkup } from 'test-utils';
 
@@ -65,6 +71,7 @@ const mockAppointments = [
 ] as unknown as Array<Appointment>;
 
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
 const mockExportAppointmentsToSpreadsheet = vi.mocked(exportAppointmentsToSpreadsheet);
 const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
@@ -253,6 +260,37 @@ describe('AppointmentsTable', () => {
 
     expect(screen.getByRole('button', { name: /actions/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /options/i })).not.toBeInTheDocument();
+  });
+
+  it('marks the appointment being edited until its workspace closes', async () => {
+    const user = userEvent.setup();
+    const editableAppointment = {
+      ...mockAppointments[0],
+      startDateTime: new Date(Date.now() + 86_400_000).toISOString(),
+      status: AppointmentStatus.SCHEDULED,
+    };
+    mockLaunchWorkspace2.mockResolvedValue(true);
+
+    renderAppointmentsTable({ appointments: [editableAppointment] });
+
+    const appointmentRow = screen.getByRole('row', { name: /john wilson 100gej .* hiv clinic outpatient/i });
+    await user.click(screen.getByRole('button', { name: /actions/i }));
+    await user.click(screen.getByText(/edit appointment/i));
+
+    expect(appointmentRow).toHaveAttribute('aria-current', 'true');
+    expect(mockLaunchWorkspace2).toHaveBeenCalledWith(
+      'appointments-form-workspace',
+      expect.objectContaining({
+        appointment: editableAppointment,
+        context: 'editing',
+        onWorkspaceClose: expect.any(Function),
+      }),
+    );
+
+    const workspaceProps = mockLaunchWorkspace2.mock.calls.at(-1)?.[1] as { onWorkspaceClose: () => void };
+    act(() => workspaceProps.onWorkspaceClose());
+
+    expect(appointmentRow).not.toHaveAttribute('aria-current');
   });
 
   it.each([

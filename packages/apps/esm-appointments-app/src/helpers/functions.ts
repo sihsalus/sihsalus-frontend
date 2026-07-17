@@ -86,9 +86,15 @@ export const getGender = (gender: string, t: (key: string, defaultValue: string)
 };
 
 type GenderRestrictedAppointmentService = {
+  uuid: string;
   name: string;
   gender?: string;
   allowedGenders?: Array<string>;
+};
+
+type AppointmentServiceGenderRule = {
+  appointmentServiceUuid: string;
+  allowedGenders: Array<string>;
 };
 
 const normalizeGender = (gender?: string): string | undefined => {
@@ -103,22 +109,19 @@ const normalizeGender = (gender?: string): string | undefined => {
   return undefined;
 };
 
-const normalizeServiceName = (name: string) =>
-  name
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-
 /**
  * Returns whether an appointment service is appropriate for the patient's gender.
- * Explicit service restrictions take precedence; the name fallback supports the
- * current MINSA catalog, where obstetric and gynecologic services are named only.
+ * Frontend configuration takes precedence over optional eligibility metadata
+ * returned by the appointment service API. Unconfigured services are unrestricted.
  */
 export const isAppointmentServiceAvailableForGender = (
   service: GenderRestrictedAppointmentService,
   patientGender?: string,
+  configuredRules: Array<AppointmentServiceGenderRule> = [],
 ): boolean => {
-  const allowedGenders = service.allowedGenders ?? (service.gender ? [service.gender] : undefined);
+  const configuredRule = configuredRules.find((rule) => rule.appointmentServiceUuid === service.uuid);
+  const allowedGenders =
+    configuredRule?.allowedGenders ?? service.allowedGenders ?? (service.gender ? [service.gender] : undefined);
   const normalizedPatientGender = normalizeGender(patientGender);
 
   if (allowedGenders?.length) {
@@ -128,10 +131,7 @@ export const isAppointmentServiceAvailableForGender = (
     );
   }
 
-  const normalizedServiceName = normalizeServiceName(service.name);
-  const isFemaleOnlyByName = /\b(obstetra|obstetricia|ginecolog[ií]a)\b/.test(normalizedServiceName);
-
-  return !isFemaleOnlyByName || normalizedPatientGender === 'F';
+  return true;
 };
 
 const allowedAppointmentStatusTransitions: Record<AppointmentStatus, ReadonlySet<AppointmentStatus>> = {

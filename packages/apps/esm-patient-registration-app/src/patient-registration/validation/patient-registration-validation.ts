@@ -259,6 +259,7 @@ export function hasResponsibleRelationship(
 }
 
 const fatherRelationshipTypeUuid = '8d91a210-c2cc-11de-8d13-0010c6dffd0f';
+const motherRelationshipTypeUuid = 'e6be4def-dbc8-462a-8714-53da66903cb8';
 
 function normalizeRelationshipLabel(value?: string) {
   return (value ?? '')
@@ -272,8 +273,12 @@ function isActiveCompleteRelationship(relationship: RelationshipValue) {
   return relationship.action !== 'DELETE' && !!relationship.relationshipType && hasRelatedPerson(relationship);
 }
 
-export function hasMultipleFatherRelationships(relationships: Array<RelationshipValue> | undefined) {
-  const fatherRelationships =
+function hasMultipleRelationshipsOfType(
+  relationships: Array<RelationshipValue> | undefined,
+  expectedRelationshipTypeUuid: string,
+  relationshipLabels: Array<string>,
+) {
+  const matchingRelationships =
     relationships?.filter((relationship) => {
       if (!isActiveCompleteRelationship(relationship)) {
         return false;
@@ -281,12 +286,20 @@ export function hasMultipleFatherRelationships(relationships: Array<Relationship
 
       const [relationshipTypeUuid, direction] = relationship.relationshipType.split('/');
       return (
-        (relationshipTypeUuid === fatherRelationshipTypeUuid && direction === 'aIsToB') ||
-        ['father', 'padre'].includes(normalizeRelationshipLabel(relationship.relation))
+        (relationshipTypeUuid === expectedRelationshipTypeUuid && direction === 'aIsToB') ||
+        relationshipLabels.includes(normalizeRelationshipLabel(relationship.relation))
       );
     }) ?? [];
 
-  return fatherRelationships.length > 1;
+  return matchingRelationships.length > 1;
+}
+
+export function hasMultipleFatherRelationships(relationships: Array<RelationshipValue> | undefined) {
+  return hasMultipleRelationshipsOfType(relationships, fatherRelationshipTypeUuid, ['father', 'padre']);
+}
+
+export function hasMultipleMotherRelationships(relationships: Array<RelationshipValue> | undefined) {
+  return hasMultipleRelationshipsOfType(relationships, motherRelationshipTypeUuid, ['mother', 'madre']);
 }
 
 export function hasMultiplePrimaryResponsiblePersons(relationships: Array<RelationshipValue> | undefined) {
@@ -628,6 +641,11 @@ export function getValidationSchema(
         'patient-has-only-one-father',
         t('patientCanOnlyHaveOneFather', 'The patient can only have one father'),
         (relationships?: Array<RelationshipValue>) => !hasMultipleFatherRelationships(relationships),
+      )
+      .test(
+        'patient-has-only-one-mother',
+        t('patientCanOnlyHaveOneMother', 'The patient can only have one mother'),
+        (relationships?: Array<RelationshipValue>) => !hasMultipleMotherRelationships(relationships),
       )
       .test(
         'patient-has-only-one-primary-responsible',

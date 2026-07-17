@@ -1,5 +1,11 @@
 {
   "@sihsalus/esm-appointments-app": {
+    "appointmentServiceGenderRules": [
+      {
+        "appointmentServiceUuid": "a6d7f9b3-2c5e-48d1-93e4-7f8a6b5c2d02",
+        "allowedGenders": ["F"]
+      }
+    ],
     "appointmentQueueMappings": [
       {
         "appointmentServiceUuid": "7ba3aa21-cc56-47ca-bb4d-a60549f666c0",

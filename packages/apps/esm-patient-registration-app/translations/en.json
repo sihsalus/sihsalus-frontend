@@ -308,6 +308,7 @@
   "incompleteRelationshipHelpText": "Select the relationship and the related person before adding another family link.",
   "incompleteRelationshipTitle": "Complete the pending family link",
   "patientCanOnlyHaveOneFather": "The patient can only have one father",
+  "patientCanOnlyHaveOneMother": "The patient can only have one mother",
   "patientCanOnlyHaveOnePrimaryResponsible": "Select only one primary responsible person",
   "patientFamilyLinksHelpText": "Add the family members linked to the patient.",
   "patientFamilyLinksSection": "Patient family links",

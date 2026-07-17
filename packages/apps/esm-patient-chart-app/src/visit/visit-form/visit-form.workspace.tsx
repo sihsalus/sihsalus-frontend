@@ -64,6 +64,7 @@ import { invalidateUseVisits, useInfiniteVisits } from '../visits-widget/visit.r
 import BaseVisitType from './base-visit-type.component';
 import CompanionList, { usePatientCompanions } from './companion-list.component';
 import LocationSelector from './location-selector.component';
+import { getMinorCompanionRequirementState, isPatientMinor } from './minor-companion-validation';
 import { MemoizedRecommendedVisitType } from './recommended-visit-type.component';
 import VisitAttributeTypeFields from './visit-attribute-type.component';
 import VisitDateTimeField from './visit-date-time.component';
@@ -196,8 +197,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     config.restrictByVisitLocationTag && isEmrApiModuleInstalled,
   );
   const { emrConfiguration } = useEmrConfiguration(isEmrApiModuleInstalled);
-  const { patientUuid, patient } = usePatient(initialPatientUuid);
-  const { companions, isLoading: isLoadingCompanions, companionRelationshipTypeUuid } = usePatientCompanions(patientUuid);
+  const { patientUuid, patient, isLoading: isLoadingPatient } = usePatient(initialPatientUuid);
+  const { companions, isLoading: isLoadingCompanions } = usePatientCompanions(patientUuid);
   const [contentSwitcherIndex, setContentSwitcherIndex] = useState(config.showRecommendedVisitTypeTab ? 0 : 1);
   const visitHeaderSlotState = useMemo(() => ({ patientUuid }), [patientUuid]);
   const { activePatientEnrollment, isLoading } = useActivePatientEnrollment(patientUuid);
@@ -277,8 +278,12 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     const birthDate = dayjs(birthDateValue);
     return birthDate.isValid() ? birthDate.startOf('day') : null;
   }, [patientBirthDateValue]);
-  const isMinorPatient = Boolean(patientBirthDate && dayjs().diff(patientBirthDate, 'year') < 18);
-  const companionRequired = !visitToEdit && isMinorPatient && Boolean(companionRelationshipTypeUuid);
+  const isMinorPatient = isPatientMinor(patientBirthDateValue);
+  const companionRequired = !visitToEdit && isMinorPatient;
+  const companionRequirementState =
+    !visitToEdit && isLoadingPatient
+      ? 'loading'
+      : getMinorCompanionRequirementState(companionRequired, isLoadingCompanions, companions.length);
 
   const visitFormSchema = useMemo(() => {
     const createVisitAttributeSchema = (required: boolean) =>
@@ -713,7 +718,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
         return;
       }
 
-      if (companionRequired && isLoadingCompanions) {
+      if (companionRequirementState === 'loading') {
         showSnackbar({
           title: t('companionsLoading', 'No se pudo validar el acompañante'),
           subtitle: t('companionsLoadingMessage', 'Espere a que se carguen los acompañantes e intente nuevamente.'),
@@ -723,7 +728,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
         return;
       }
 
-      if (companionRequired && companions.length === 0) {
+      if (companionRequirementState === 'missing') {
         showSnackbar({
           title: t('companionRequiredForMinorTitle', 'Acompañante obligatorio'),
           subtitle: t(
@@ -1170,9 +1175,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       t,
       validateVisitStartStopDatetime,
       visitToEdit,
-      companionRequired,
-      companions.length,
-      isLoadingCompanions,
+      companionRequirementState,
     ],
   );
 

@@ -33,7 +33,10 @@
       "component": "careLogbookMergePatientsAction",
       "name": "care-logbook-merge-patients-action",
       "slot": "top-nav-actions-slot",
-      "privileges": ["app:home.libroAtenciones.editar", "app:opciones.fusionarPacientes"],
+      "privileges": [
+        "app:home.libroAtenciones.editar",
+        "app:opciones.fusionarPacientes"
+      ],
       "online": true,
       "offline": false
     },
@@ -43,7 +46,8 @@
       "slot": "patient-actions-slot",
       "privileges": "app:home.libroAtenciones.editar",
       "online": true,
-      "offline": false
+      "offline": false,
+      "order": 9
     }
   ],
   "pages": [

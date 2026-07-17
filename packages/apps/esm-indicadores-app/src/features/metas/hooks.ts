@@ -1,15 +1,27 @@
 import { useCallback } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 
-import { deleteMeta, getAllMetas, upsertMeta } from '../../api/metas';
+import { deleteMeta, getMetaByIndicator, isMetaNotFoundError, upsertMeta } from '../../api/metas';
 import type { IndicadorMeta, IndicadorMetaCreatePayload } from '../../api/types';
 
-function isMetasKey(key: unknown): boolean {
-  return Array.isArray(key) && key[0] === 'metas';
+function isMetaKey(key: unknown): boolean {
+  return Array.isArray(key) && key[0] === 'meta';
 }
 
-export function useMetas() {
-  const { data, error, isLoading, mutate } = useSWR<Array<IndicadorMeta>, Error>(['metas'], () => getAllMetas());
+export function useMetaByIndicator(indicadorId: string, anio: number | null) {
+  const { data, error, isLoading, mutate } = useSWR<IndicadorMeta | null, Error>(
+    indicadorId && anio !== null ? ['meta', 'indicator', indicadorId, anio] : null,
+    async () => {
+      try {
+        return await getMetaByIndicator(indicadorId, anio as number);
+      } catch (lookupError) {
+        if (isMetaNotFoundError(lookupError)) {
+          return null;
+        }
+        throw lookupError;
+      }
+    },
+  );
 
   return {
     data,
@@ -26,7 +38,7 @@ export function useUpsertMeta() {
   const upsert = useCallback(
     async (payload: IndicadorMetaCreatePayload) => {
       const result = await upsertMeta(payload);
-      await mutate((key) => isMetasKey(key));
+      await mutate((key) => isMetaKey(key));
       return result;
     },
     [mutate],
@@ -39,9 +51,9 @@ export function useDeleteMeta() {
   const { mutate } = useSWRConfig();
 
   const remove = useCallback(
-    async (indicador_version_id: string, anio: number) => {
-      await deleteMeta(indicador_version_id, anio);
-      await mutate((key) => isMetasKey(key));
+    async (indicadorVersionId: string, anio: number) => {
+      await deleteMeta(indicadorVersionId, anio);
+      await mutate((key) => isMetaKey(key));
     },
     [mutate],
   );

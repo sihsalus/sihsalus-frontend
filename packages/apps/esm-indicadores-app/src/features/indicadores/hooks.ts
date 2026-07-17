@@ -34,7 +34,7 @@ const indicadoresKey = (page: number, size: number) => ['indicadores', page, siz
 const indicadorKey = (id: string) => ['indicador', id] as const;
 
 export function useIndicadores(page: number, size: number) {
-  const { data, error, isLoading, mutate } = useSWR<PaginatedResponse<IndicadorDetail>, Error>(
+  const { data, error, isLoading, mutate } = useSWR<PaginatedResponse<Indicador>, Error>(
     indicadoresKey(page, size),
     () => getIndicadores(page, size),
   );

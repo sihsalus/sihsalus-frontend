@@ -19,10 +19,12 @@ import {
   TableRow,
   Tile,
 } from '@carbon/react';
-import React, { useMemo, useState } from 'react';
+import { getUserFacingErrorMessage, logError } from '@openmrs/esm-framework';
+import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BatchCalcularNowResponse, Granularity, RecalcularAnioResponse } from '../api/types';
 import MetaProgressCard from '../components/MetaProgressCard';
+import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import { notifyError, notifySuccess, useIndicadores } from '../features/indicadores/hooks';
 import { useCalcularAhora, useRecalcularAnio, useResultados, useResultadosSeries } from '../features/resultados/hooks';
 import styles from '../indicators-dashboard.module.scss';
@@ -46,6 +48,7 @@ const ResultadosPage: React.FC = () => {
   const [isRecalcModalOpen, setRecalcModalOpen] = useState(false);
   const [recalcAnio, setRecalcAnio] = useState<number>(currentYear());
   const [recalcAnioError, setRecalcAnioError] = useState<string | null>(null);
+  const actionLockRef = useRef(false);
   const pageSize = 10;
 
   const { data: indicadoresData } = useIndicadores(1, 100);
@@ -85,11 +88,19 @@ const ResultadosPage: React.FC = () => {
   const anyActionRunning = isCalcularRunning || isRecalcularRunning;
 
   const handleCalcular = async () => {
+    if (actionLockRef.current) {
+      return;
+    }
+
+    actionLockRef.current = true;
     setCalcularRunning(true);
     try {
       const result = await calcularAhora();
       setSummary({ kind: 'calcular', result });
       const failed = result.errores.length;
+      if (failed > 0) {
+        logError({ errores: result.errores }, 'Indicadores: errores técnicos del cálculo de lote');
+      }
       // Classify as total failure when no items succeeded AND there is at
       // least one error AND the backend actually attempted at least one
       // item. This is safer than requiring `failed >= total` because the
@@ -107,9 +118,16 @@ const ResultadosPage: React.FC = () => {
         notifySuccess(baseMessage);
       }
     } catch (calculationError) {
-      notifyError(calculationError instanceof Error ? calculationError.message : 'No se pudo calcular los indicadores');
+      notifyError(
+        getUserFacingErrorMessage(
+          calculationError,
+          'No se pudieron calcular los indicadores.',
+          indicatorsErrorMessageOptions,
+        ),
+      );
     } finally {
       setCalcularRunning(false);
+      actionLockRef.current = false;
     }
   };
 
@@ -120,8 +138,8 @@ const ResultadosPage: React.FC = () => {
     if (value > currentYear()) {
       return t('recalcAnioFuture', 'El año no puede ser futuro.');
     }
-    if (value < 1900) {
-      return t('recalcAnioTooOld', 'El año debe ser mayor o igual a 1900.');
+    if (value < 2000) {
+      return t('recalcAnioTooOld', 'El año debe ser mayor o igual a 2000.');
     }
     return null;
   };
@@ -133,12 +151,17 @@ const ResultadosPage: React.FC = () => {
   };
 
   const handleRecalcularConfirm = async () => {
+    if (actionLockRef.current) {
+      return;
+    }
+
     const validationError = validateAnio(recalcAnio);
     if (validationError) {
       setRecalcAnioError(validationError);
       return;
     }
     setRecalcAnioError(null);
+    actionLockRef.current = true;
     setRecalcularRunning(true);
     try {
       const payload = filters.indicador_id
@@ -148,6 +171,9 @@ const ResultadosPage: React.FC = () => {
       setSummary({ kind: 'recalcular', result, anio: recalcAnio });
       setRecalcModalOpen(false);
       const failed = result.errores.length;
+      if (failed > 0) {
+        logError({ errores: result.errores }, 'Indicadores: errores técnicos del recálculo anual');
+      }
       // Classify as total failure when no items were recalculated AND there
       // is at least one error AND the backend attempted at least one item.
       // Safer than `failed >= total` because the backend's `total` may be
@@ -167,10 +193,15 @@ const ResultadosPage: React.FC = () => {
       }
     } catch (recalcError) {
       notifyError(
-        recalcError instanceof Error ? recalcError.message : t('recalcFailed', 'No se pudo recalcular el año'),
+        getUserFacingErrorMessage(
+          recalcError,
+          t('recalcFailed', 'No se pudo recalcular el año'),
+          indicatorsErrorMessageOptions,
+        ),
       );
     } finally {
       setRecalcularRunning(false);
+      actionLockRef.current = false;
     }
   };
 
@@ -224,7 +255,7 @@ const ResultadosPage: React.FC = () => {
                   {' ('}
                   {err.indicador_id}
                   {'): '}
-                  {err.error}
+                  {t('indicatorCalculationFailed', 'No se pudo calcular este indicador.')}
                 </li>
               ))}
             </ul>
@@ -276,9 +307,9 @@ const ResultadosPage: React.FC = () => {
                 <strong>{err.indicador_nombre}</strong>
                 {' ('}
                 {err.indicador_id}
-                {err.mes ? `, ${err.mes}` : ''}
+                {err.mes ? `, ${t('month', 'mes')} ${err.mes}` : ''}
                 {'): '}
-                {err.error}
+                {t('indicatorRecalculationFailed', 'No se pudo recalcular este indicador para el mes indicado.')}
               </li>
             ))}
           </ul>
@@ -330,29 +361,29 @@ const ResultadosPage: React.FC = () => {
             <SelectItem key={indicador.id} value={indicador.id} text={indicador.nombre} />
           ))}
         </Select>
-        <DatePicker datePickerType="single" dateFormat="Y-m-d"
+        <DatePicker
+          datePickerType="single"
+          dateFormat="Y-m-d"
           value={filters.periodo_inicio}
           onChange={(dates: Date[]) => {
             setPage(1);
             const d = dates[0];
             setFilters((current) => ({ ...current, periodo_inicio: d ? d.toISOString().slice(0, 10) : '' }));
-          }}>
-          <DatePickerInput
-            id="resultado-desde"
-            labelText={t('from', 'Desde')}
-          />
+          }}
+        >
+          <DatePickerInput id="resultado-desde" labelText={t('from', 'Desde')} />
         </DatePicker>
-        <DatePicker datePickerType="single" dateFormat="Y-m-d"
+        <DatePicker
+          datePickerType="single"
+          dateFormat="Y-m-d"
           value={filters.periodo_fin}
           onChange={(dates: Date[]) => {
             setPage(1);
             const d = dates[0];
             setFilters((current) => ({ ...current, periodo_fin: d ? d.toISOString().slice(0, 10) : '' }));
-          }}>
-          <DatePickerInput
-            id="resultado-hasta"
-            labelText={t('to', 'Hasta')}
-          />
+          }}
+        >
+          <DatePickerInput id="resultado-hasta" labelText={t('to', 'Hasta')} />
         </DatePicker>
       </div>
 
@@ -383,21 +414,29 @@ const ResultadosPage: React.FC = () => {
       </div>
 
       {isLoading ? <InlineLoading description={t('loadingResults', 'Cargando resultados...')} /> : null}
-      {error ? <div className={styles.errorBanner}>{error.message}</div> : null}
+      {error ? (
+        <div className={styles.errorBanner}>
+          {getUserFacingErrorMessage(
+            error,
+            t('resultsLoadFailed', 'No se pudieron cargar los resultados.'),
+            indicatorsErrorMessageOptions,
+          )}
+        </div>
+      ) : null}
 
       {/* ── Meta progress card (series view only) ── */}
-      {!isLoading && !error && viewMode === 'series' && filters.indicador_id && seriesData?.items.length ? (
-        (() => {
-          // Find first row with a non-null meta
-          const metaRow = seriesData.items.find((item) => item.meta != null);
-          if (metaRow?.meta == null) {
-            return null;
-          }
-          // Calculate accumulated value from all rows
-          const accumulatedValue = seriesData.items.reduce((sum, item) => sum + (item.valor ?? 0), 0);
-          return <MetaProgressCard meta={metaRow.meta} currentValue={accumulatedValue} />;
-        })()
-      ) : null}
+      {!isLoading && !error && viewMode === 'series' && filters.indicador_id && seriesData?.items.length
+        ? (() => {
+            // Find first row with a non-null meta
+            const metaRow = seriesData.items.find((item) => item.meta != null);
+            if (metaRow?.meta == null) {
+              return null;
+            }
+            // Calculate accumulated value from all rows
+            const accumulatedValue = seriesData.items.reduce((sum, item) => sum + (item.valor ?? 0), 0);
+            return <MetaProgressCard meta={metaRow.meta} currentValue={accumulatedValue} />;
+          })()
+        : null}
 
       {/* ── Series view ── */}
       {!isLoading && !error && viewMode === 'series' ? (

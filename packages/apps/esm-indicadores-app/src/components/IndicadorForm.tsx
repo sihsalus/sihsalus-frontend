@@ -1,4 +1,4 @@
-import { Button, Select, SelectItem, TextArea, TextInput, Tile, Toggle } from '@carbon/react';
+import { Button, Select, SelectItem, TextArea, TextInput, Tile } from '@carbon/react';
 import React, { useMemo, useState } from 'react';
 
 import type {
@@ -18,7 +18,7 @@ type FormMode = 'create' | 'edit' | 'version';
 interface IndicadorFormProps {
   mode: FormMode;
   defaultValues?: Partial<IndicadorFormValues>;
-  initialMetadata?: Pick<IndicadorUpdatePayload, 'nombre' | 'descripcion' | 'activo'>;
+  initialMetadata?: Pick<IndicadorUpdatePayload, 'nombre' | 'descripcion'>;
   isSubmitting?: boolean;
   serverError?: string | null;
   onSubmit: (payload: {
@@ -59,25 +59,34 @@ function buildDefinicion(values: IndicadorFormValues): DefinicionIndicadorForm {
   const locationUuids = values.selectedLocations.map((item) => item.uuid);
   const diagnosticoUuids = values.selectedDiagnosticos.map((item) => item.uuid);
   const ordenUuids = values.selectedOrdenes.map((item) => item.uuid);
+  const minimoOcurrencias = parseNumber(values.minimoOcurrencias);
+  const diagnosticos =
+    values.filtroClinico === 'diagnosticos' && diagnosticoUuids.length
+      ? [
+          {
+            concepto_uuids: diagnosticoUuids,
+            tipo_diagnostico: (values.diagnosticoTipo || undefined) as TipoDiagnostico | undefined,
+          },
+        ]
+      : undefined;
+  const ordenes =
+    values.filtroClinico === 'ordenes' && ordenUuids.length
+      ? ordenUuids.map((concepto_uuid) => ({ concepto_uuid }))
+      : undefined;
+  const hasEvento =
+    locationUuids.length > 0 ||
+    Boolean(diagnosticos?.length) ||
+    Boolean(ordenes?.length) ||
+    (minimoOcurrencias !== undefined && minimoOcurrencias !== 1);
 
-  const evento =
-    locationUuids.length || diagnosticoUuids.length || ordenUuids.length || values.minimoOcurrencias
-      ? {
-          location_uuids: locationUuids,
-          minimo_ocurrencias: parseNumber(values.minimoOcurrencias) ?? 1,
-          diagnosticos:
-            values.filtroClinico === 'diagnosticos' && diagnosticoUuids.length
-              ? [
-                  {
-                    concepto_uuids: diagnosticoUuids,
-                    tipo_diagnostico: (values.diagnosticoTipo || undefined) as TipoDiagnostico | undefined,
-                  },
-                ]
-              : undefined,
-          ordenes:
-            values.filtroClinico === 'ordenes' && ordenUuids.length ? [{ concepto_uuids: ordenUuids }] : undefined,
-        }
-      : null;
+  const evento = hasEvento
+    ? {
+        location_uuids: locationUuids.length ? locationUuids : undefined,
+        minimo_ocurrencias: minimoOcurrencias !== 1 ? minimoOcurrencias : undefined,
+        diagnosticos,
+        ordenes,
+      }
+    : undefined;
 
   const poblacion = {
     min_anios: parseNumber(values.minAnios),
@@ -93,8 +102,8 @@ function buildDefinicion(values: IndicadorFormValues): DefinicionIndicadorForm {
 
   return {
     tipo: values.tipo,
-    evento,
-    poblacion: hasPoblacion ? poblacion : undefined,
+    ...(evento ? { evento } : {}),
+    ...(hasPoblacion ? { poblacion } : {}),
   };
 }
 
@@ -112,7 +121,6 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
     nombre: initialMetadata?.nombre ?? initialValues?.nombre ?? '',
     descripcion: initialMetadata?.descripcion ?? initialValues?.descripcion ?? '',
   });
-  const [activo, setActivo] = useState<boolean>(initialMetadata?.activo ?? true);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const isEditMode = mode === 'edit';
@@ -149,14 +157,37 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
       return;
     }
 
+    const minimoOcurrencias = parseNumber(values.minimoOcurrencias);
+    if (
+      values.minimoOcurrencias.trim() &&
+      (minimoOcurrencias === undefined || !Number.isInteger(minimoOcurrencias) || minimoOcurrencias < 1)
+    ) {
+      setValidationError('El mínimo de ocurrencias debe ser un número entero mayor o igual a 1.');
+      return;
+    }
+
+    const minimumAgeValues = [values.minDias, values.minMeses, values.minAnios].filter((value) => value.trim());
+    if (minimumAgeValues.length > 1) {
+      setValidationError('Ingresá la edad mínima en una sola unidad: días, meses o años.');
+      return;
+    }
+
+    const maximumAgeValues = [values.maxDias, values.maxMeses, values.maxAnios].filter((value) => value.trim());
+    if (maximumAgeValues.length > 1) {
+      setValidationError('Ingresá la edad máxima en una sola unidad: días, meses o años.');
+      return;
+    }
+
+    const ageValues = [...minimumAgeValues, ...maximumAgeValues].map(parseNumber);
+    if (ageValues.some((value) => value === undefined || !Number.isInteger(value) || value < 0)) {
+      setValidationError('Las edades deben ser números enteros mayores o iguales a 0.');
+      return;
+    }
+
     const metadata: IndicadorUpdatePayload = {
       nombre: (isVersionMode ? initialMetadata?.nombre : values.nombre)?.trim() ?? '',
       descripcion: (isVersionMode ? initialMetadata?.descripcion : values.descripcion)?.trim() || null,
     };
-
-    if (isEditMode) {
-      metadata.activo = activo;
-    }
 
     await onSubmit({
       metadata,
@@ -191,14 +222,6 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
               onChange={(event) => updateField('descripcion', event.target.value)}
               disabled={isSubmitting}
             />
-            {isEditMode ? (
-              <Toggle
-                id="activo-toggle"
-                labelText={activo ? 'Activo' : 'Inactivo'}
-                toggled={activo}
-                onToggle={(toggled) => setActivo(toggled)}
-              />
-            ) : null}
           </div>
         </section>
       ) : null}

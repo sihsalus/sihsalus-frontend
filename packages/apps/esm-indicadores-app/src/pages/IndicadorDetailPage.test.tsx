@@ -3,6 +3,8 @@ import {
   notifySuccess,
   useCreateVersion,
   useIndicador,
+  useResolvedDiagnosticos,
+  useResolvedLocations,
   useResolvedOrdenes,
 } from '../features/indicadores/hooks';
 import { act, fireEvent, screen } from '@testing-library/react';
@@ -10,17 +12,31 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { renderWithSwr } from 'test-utils';
 import IndicadorDetailPage from './IndicadorDetailPage';
 
-vi.mock('../features/indicadores/hooks', async () => ({
-  ...(await vi.importActual('../features/indicadores/hooks')),
+vi.mock('../features/indicadores/hooks', () => ({
+  getIndicatorsErrorMessage: vi.fn((_error, fallback) => fallback),
   useIndicador: vi.fn(),
   useCreateVersion: vi.fn(),
+  useResolvedLocations: vi.fn(),
+  useResolvedDiagnosticos: vi.fn(),
   useResolvedOrdenes: vi.fn(),
+  useSQLPreview: vi.fn(() => ({
+    data: undefined,
+    error: undefined,
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+  })),
+  useLocationSearch: vi.fn(() => ({ data: [], error: undefined, isLoading: false })),
+  useDiagnosticoSearch: vi.fn(() => ({ data: [], error: undefined, isLoading: false })),
+  useOrdenSearch: vi.fn(() => ({ data: [], error: undefined, isLoading: false })),
   notifyError: vi.fn(),
   notifySuccess: vi.fn(),
 }));
 
 const mockUseIndicador = vi.mocked(useIndicador);
 const mockUseCreateVersion = vi.mocked(useCreateVersion);
+const mockUseResolvedLocations = vi.mocked(useResolvedLocations);
+const mockUseResolvedDiagnosticos = vi.mocked(useResolvedDiagnosticos);
 const mockUseResolvedOrdenes = vi.mocked(useResolvedOrdenes);
 
 const sampleIndicator = {
@@ -34,14 +50,14 @@ const sampleIndicator = {
       id: 'ver-001-1',
       indicador_id: 'ind-001',
       version: 1,
-      definicion: { tipo: 'conteo_atenciones' as const, evento: null },
+      definicion: { tipo: 'conteo_atenciones' as const },
       creado_en: '2026-01-15T10:00:00.000Z',
     },
     {
       id: 'ver-001-2',
       indicador_id: 'ind-001',
       version: 2,
-      definicion: { tipo: 'conteo_atenciones' as const, evento: null },
+      definicion: { tipo: 'conteo_atenciones' as const },
       creado_en: '2026-02-20T14:30:00.000Z',
     },
   ],
@@ -72,6 +88,18 @@ describe('IndicadorDetailPage', () => {
       error: undefined,
       isLoading: false,
     } as never);
+    mockUseResolvedLocations.mockReturnValue({
+      data: [],
+      displayMap: new Map(),
+      error: undefined,
+      isLoading: false,
+    } as never);
+    mockUseResolvedDiagnosticos.mockReturnValue({
+      data: [],
+      resolveMap: new Map(),
+      error: undefined,
+      isLoading: false,
+    } as never);
   });
 
   it('shows loading state while fetching', () => {
@@ -99,7 +127,8 @@ describe('IndicadorDetailPage', () => {
 
     renderPage();
 
-    expect(screen.getByText('Error al cargar el indicador')).toBeInTheDocument();
+    expect(screen.getByText('No se pudo cargar el indicador.')).toBeInTheDocument();
+    expect(screen.queryByText('Error al cargar el indicador')).not.toBeInTheDocument();
   });
 
   it('renders indicator name, description, and active tag', () => {
@@ -226,9 +255,9 @@ describe('IndicadorDetailPage', () => {
     expect(createVersionMock).toHaveBeenCalledWith(
       expect.objectContaining({
         tipo: 'conteo_atenciones',
-        evento: null,
       }),
     );
+    expect(createVersionMock.mock.calls[0][0]).not.toHaveProperty('evento');
     expect(notifySuccess).toHaveBeenCalledWith('Versión creada');
   });
 
@@ -253,6 +282,34 @@ describe('IndicadorDetailPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Crear versión' }));
     });
 
-    expect(notifyError).toHaveBeenCalledWith('Error del servidor');
+    expect(notifyError).toHaveBeenCalledWith('No se pudo crear la versión.');
+    expect(notifySuccess).not.toHaveBeenCalled();
+  });
+
+  it('blocks duplicate version creation while the first request is pending', async () => {
+    let resolveCreate: (value: unknown) => void = () => {};
+    const createVersionMock = vi.fn().mockReturnValue(
+      new Promise((resolve) => {
+        resolveCreate = resolve;
+      }),
+    );
+    mockUseCreateVersion.mockReturnValue({ createVersion: createVersionMock });
+    mockUseIndicador.mockReturnValue({
+      data: sampleIndicator,
+      error: undefined,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva versión' }));
+
+    const button = screen.getByRole('button', { name: 'Crear versión' });
+    fireEvent.click(button);
+    fireEvent.click(button);
+
+    expect(createVersionMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Guardando...' })).toBeDisabled();
+    await act(async () => resolveCreate(undefined));
   });
 });

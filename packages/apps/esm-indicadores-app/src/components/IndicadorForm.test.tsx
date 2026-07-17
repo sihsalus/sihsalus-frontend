@@ -2,20 +2,16 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { IndicadorUpdatePayload } from '../api/types';
 import IndicadorForm from './IndicadorForm';
 
-describe('IndicadorForm activo toggle', () => {
-  const editInitialMetadata: Pick<IndicadorUpdatePayload, 'nombre' | 'descripcion' | 'activo'> = {
+describe('IndicadorForm metadata contract', () => {
+  const editInitialMetadata: Pick<IndicadorUpdatePayload, 'nombre' | 'descripcion'> = {
     nombre: 'Indicador de prueba',
     descripcion: 'Descripción de prueba',
-    activo: true,
   };
 
-  it('renders activo Toggle in edit mode', () => {
+  it('does not render an unsupported activo toggle in edit mode', () => {
     render(<IndicadorForm mode="edit" initialMetadata={editInitialMetadata} onSubmit={vi.fn()} />);
 
-    // The Toggle switch should have accessible name "Activo"
-    const toggle = screen.getByRole('switch', { name: 'Activo' });
-    expect(toggle).toBeInTheDocument();
-    expect(toggle).toBeChecked();
+    expect(screen.queryByRole('switch', { name: /activo|inactivo/i })).not.toBeInTheDocument();
   });
 
   it('does NOT render activo Toggle in create mode', () => {
@@ -25,17 +21,7 @@ describe('IndicadorForm activo toggle', () => {
     expect(screen.queryByRole('switch', { name: 'Inactivo' })).not.toBeInTheDocument();
   });
 
-  it('renders Toggle as unchecked when initialMetadata.activo is false', () => {
-    render(
-      <IndicadorForm mode="edit" initialMetadata={{ ...editInitialMetadata, activo: false }} onSubmit={vi.fn()} />,
-    );
-
-    const toggle = screen.getByRole('switch', { name: 'Inactivo' });
-    expect(toggle).toBeInTheDocument();
-    expect(toggle).not.toBeChecked();
-  });
-
-  it('includes activo in submitted metadata when form is submitted in edit mode', async () => {
+  it('submits only metadata supported by PUT /indicadores/:id', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
 
     render(<IndicadorForm mode="edit" initialMetadata={editInitialMetadata} onSubmit={onSubmit} />);
@@ -50,31 +36,10 @@ describe('IndicadorForm activo toggle', () => {
     expect(submittedPayload.metadata).toMatchObject({
       nombre: 'Indicador de prueba',
       descripcion: 'Descripción de prueba',
-      activo: true,
     });
+    expect(submittedPayload.metadata).not.toHaveProperty('activo');
     // Edit mode should NOT include definicion
     expect(submittedPayload.definicion).toBeUndefined();
-  });
-
-  it('includes toggled-off activo in submitted metadata when user toggles before submit', async () => {
-    const onSubmit = vi.fn().mockResolvedValue(undefined);
-
-    render(<IndicadorForm mode="edit" initialMetadata={editInitialMetadata} onSubmit={onSubmit} />);
-
-    // Toggle activo off
-    const toggle = screen.getByRole('switch', { name: 'Activo' });
-    await act(async () => {
-      fireEvent.click(toggle);
-    });
-
-    // Now submit
-    const submitButton = screen.getByRole('button', { name: 'Guardar' });
-    await act(async () => {
-      fireEvent.click(submitButton);
-    });
-
-    const submittedPayload = onSubmit.mock.calls[0][0];
-    expect(submittedPayload.metadata.activo).toBe(false);
   });
 });
 
@@ -118,5 +83,68 @@ describe('IndicadorForm periodo removal', () => {
     expect(submittedPayload.definicion).toBeDefined();
     expect(submittedPayload.definicion).not.toHaveProperty('periodo');
     expect(submittedPayload.definicion.tipo).toBe('conteo_atenciones');
+  });
+});
+
+describe('IndicadorForm reportes-sql contract', () => {
+  it('omits an empty evento instead of sending null', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(<IndicadorForm mode="create" onSubmit={onSubmit} />);
+
+    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Indicador sin filtros' } });
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Guardar' })));
+
+    expect(onSubmit.mock.calls[0][0].definicion).not.toHaveProperty('evento');
+  });
+
+  it('serializes each selected order as a concepto_uuid item', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <IndicadorForm
+        mode="create"
+        defaultValues={{
+          nombre: 'Indicador con órdenes',
+          filtroClinico: 'ordenes',
+          selectedOrdenes: [
+            { uuid: 'order-a', display: 'Orden A' },
+            { uuid: 'order-b', display: 'Orden B' },
+          ],
+        }}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Guardar' })));
+
+    expect(onSubmit.mock.calls[0][0].definicion.evento.ordenes).toEqual([
+      { concepto_uuid: 'order-a' },
+      { concepto_uuid: 'order-b' },
+    ]);
+  });
+
+  it.each([
+    ['mínima', 'Edad mínima años', 'Edad mínima meses'],
+    ['máxima', 'Edad máxima años', 'Edad máxima días'],
+  ])('rejects more than one unit for the %s age bound', async (_bound, firstLabel, secondLabel) => {
+    const onSubmit = vi.fn();
+    render(<IndicadorForm mode="create" defaultValues={{ nombre: 'Edad inválida' }} onSubmit={onSubmit} />);
+
+    fireEvent.change(screen.getByLabelText(firstLabel), { target: { value: '1' } });
+    fireEvent.change(screen.getByLabelText(secondLabel), { target: { value: '2' } });
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Guardar' })));
+
+    expect(screen.getByText(/una sola unidad/i)).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('rejects fractional and negative age values before calling the backend', async () => {
+    const onSubmit = vi.fn();
+    render(<IndicadorForm mode="create" defaultValues={{ nombre: 'Edad inválida' }} onSubmit={onSubmit} />);
+
+    fireEvent.change(screen.getByLabelText('Edad mínima días'), { target: { value: '-1' } });
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Guardar' })));
+
+    expect(screen.getByText(/enteros mayores o iguales a 0/i)).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 });

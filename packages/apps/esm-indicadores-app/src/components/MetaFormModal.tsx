@@ -1,73 +1,121 @@
-import { ComboBox, Modal, NumberInput, Select, SelectItem } from '@carbon/react';
-import React, { useEffect, useMemo, useState } from 'react';
+import { ComboBox, InlineLoading, InlineNotification, Modal, NumberInput, Select, SelectItem } from '@carbon/react';
+import { getUserFacingErrorMessage } from '@openmrs/esm-framework';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { IndicadorDetail, IndicadorMeta, IndicadorMetaCreatePayload } from '../api/types';
-import { useIndicadores } from '../features/indicadores/hooks';
+import type { Indicador, IndicadorMeta, IndicadorMetaCreatePayload, IndicadorVersion } from '../api/types';
+import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
+import { useIndicador, useIndicadores } from '../features/indicadores/hooks';
 import styles from '../indicators-dashboard.module.scss';
 
 interface MetaFormModalProps {
   isOpen: boolean;
   initialMeta?: IndicadorMeta | null;
+  initialIndicatorId?: string;
   isSubmitting?: boolean;
   onClose: () => void;
-  onSubmit: (payload: IndicadorMetaCreatePayload) => Promise<void>;
+  onSubmit: (payload: IndicadorMetaCreatePayload, indicatorId: string) => Promise<void>;
 }
 
 const MIN_YEAR = 2000;
 const MAX_YEAR = 2100;
 
-function findVersionIndicator(indicators: Array<IndicadorDetail>, versionId?: string): IndicadorDetail | undefined {
-  if (!versionId) {
-    return undefined;
-  }
-  return indicators.find((indicator) => indicator.versiones.some((version) => version.id === versionId));
-}
-
 const MetaFormModal: React.FC<MetaFormModalProps> = ({
   isOpen,
   initialMeta,
+  initialIndicatorId,
   isSubmitting,
   onClose,
   onSubmit,
 }) => {
   const { t } = useTranslation();
-  const { data: indicadoresData } = useIndicadores(1, 1000);
+  const { data: indicadoresData } = useIndicadores(1, 100);
   const indicators = indicadoresData?.items ?? [];
 
   const initialIndicator = useMemo(
-    () => findVersionIndicator(indicators, initialMeta?.indicador_version_id),
-    [indicators, initialMeta?.indicador_version_id],
+    () => indicators.find((indicator) => indicator.id === initialIndicatorId),
+    [indicators, initialIndicatorId],
   );
 
-  const [selectedIndicator, setSelectedIndicator] = useState<IndicadorDetail | null>(initialIndicator ?? null);
+  const [selectedIndicator, setSelectedIndicator] = useState<Indicador | null>(initialIndicator ?? null);
   const [selectedVersionId, setSelectedVersionId] = useState<string>(initialMeta?.indicador_version_id ?? '');
   const [anio, setAnio] = useState<number | ''>(initialMeta?.anio ?? '');
   const [valorMeta, setValorMeta] = useState<number | ''>(initialMeta?.valor_meta ?? '');
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
+  const initializationKeyRef = useRef<string | null>(null);
+  const initialIndicatorHydrationKeyRef = useRef<string | null>(null);
+  const submitLockRef = useRef(false);
+  const {
+    data: selectedIndicatorDetail,
+    isLoading: versionsLoading,
+    error: versionsError,
+  } = useIndicador(selectedIndicator?.id ?? '');
 
   useEffect(() => {
     if (!isOpen) {
+      initializationKeyRef.current = null;
       return;
     }
-    const indicator = findVersionIndicator(indicators, initialMeta?.indicador_version_id);
-    setSelectedIndicator(indicator ?? null);
+
+    const initializationKey = `${initialMeta?.id ?? 'new'}:${initialIndicatorId ?? ''}`;
+    if (initializationKeyRef.current === initializationKey) {
+      return;
+    }
+
+    initializationKeyRef.current = initializationKey;
+    initialIndicatorHydrationKeyRef.current = initialIndicatorId ? null : initializationKey;
+    setSelectedIndicator(null);
     setSelectedVersionId(initialMeta?.indicador_version_id ?? '');
     setAnio(initialMeta?.anio ?? '');
     setValorMeta(initialMeta?.valor_meta ?? '');
     setValidationMessage(null);
-  }, [isOpen, indicators, initialMeta]);
-
-  const versiones = selectedIndicator?.versiones ?? [];
+  }, [
+    initialIndicatorId,
+    initialMeta?.anio,
+    initialMeta?.id,
+    initialMeta?.indicador_version_id,
+    initialMeta?.valor_meta,
+    isOpen,
+  ]);
 
   useEffect(() => {
-    if (selectedIndicator && selectedVersionId) {
-      const stillAvailable = versiones.some((version) => version.id === selectedVersionId);
-      if (!stillAvailable) {
-        setSelectedVersionId('');
-      }
+    if (!isOpen || !initialIndicator) {
+      return;
     }
-  }, [selectedIndicator, selectedVersionId, versiones]);
+
+    const initializationKey = `${initialMeta?.id ?? 'new'}:${initialIndicatorId ?? ''}`;
+    if (initialIndicatorHydrationKeyRef.current === initializationKey) {
+      return;
+    }
+
+    initialIndicatorHydrationKeyRef.current = initializationKey;
+    setSelectedIndicator(initialIndicator);
+  }, [initialIndicator, initialIndicatorId, initialMeta?.id, isOpen]);
+
+  const latestVersion = useMemo(
+    () =>
+      selectedIndicatorDetail?.versiones.reduce(
+        (latest, version) => (!latest || version.version > latest.version ? version : latest),
+        undefined as IndicadorVersion | undefined,
+      ),
+    [selectedIndicatorDetail],
+  );
+  const versionOptions = initialMeta
+    ? [{ id: initialMeta.indicador_version_id, version: initialMeta.version_numero }]
+    : latestVersion
+      ? [{ id: latestVersion.id, version: latestVersion.version }]
+      : [];
+
+  useEffect(() => {
+    if (!selectedIndicator) {
+      setSelectedVersionId('');
+      return;
+    }
+    if (!selectedIndicatorDetail) {
+      return;
+    }
+    setSelectedVersionId(initialMeta?.indicador_version_id ?? latestVersion?.id ?? '');
+  }, [initialMeta?.indicador_version_id, latestVersion, selectedIndicator, selectedIndicatorDetail]);
 
   const validate = (): string | null => {
     if (!selectedIndicator) {
@@ -82,38 +130,49 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
         maxYear: MAX_YEAR,
       });
     }
-    if (valorMeta === '' || Number(valorMeta) < 0) {
+    if (valorMeta === '' || !Number.isFinite(valorMeta) || Number(valorMeta) < 0) {
       return t('metaValidationValue', 'La meta no puede ser negativa.');
     }
     return null;
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting || submitLockRef.current) {
+      return;
+    }
+
     setValidationMessage(null);
     const error = validate();
     if (error) {
       setValidationMessage(error);
       return;
     }
-    await onSubmit({
-      indicador_version_id: selectedVersionId,
-      anio: Number(anio),
-      valor_meta: Number(valorMeta),
-    });
+    if (!selectedIndicator) {
+      return;
+    }
+    submitLockRef.current = true;
+    try {
+      await onSubmit(
+        {
+          indicador_version_id: selectedVersionId,
+          anio: Number(anio),
+          valor_meta: Number(valorMeta),
+        },
+        selectedIndicator.id,
+      );
+    } finally {
+      submitLockRef.current = false;
+    }
   };
 
-  const primaryButton = isSubmitting ? (
-    <span>{t('saving', 'Guardando...')}</span>
-  ) : (
-    t('save', 'Guardar')
-  );
+  const primaryButton = isSubmitting ? <span>{t('saving', 'Guardando...')}</span> : t('save', 'Guardar');
 
   return (
     <Modal
       open={isOpen}
       modalHeading={initialMeta ? t('editMeta', 'Editar meta') : t('newMeta', 'Nueva meta')}
       primaryButtonText={primaryButton}
-      primaryButtonDisabled={isSubmitting}
+      primaryButtonDisabled={isSubmitting || versionsLoading || Boolean(versionsError)}
       secondaryButtonText={t('cancel', 'Cancelar')}
       onRequestClose={onClose}
       onRequestSubmit={handleSubmit}
@@ -124,30 +183,45 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
             {validationMessage}
           </div>
         ) : null}
+        {versionsError ? (
+          <InlineNotification
+            kind="error"
+            title={t('versionsLoadFailed', 'No se pudieron cargar las versiones')}
+            subtitle={getUserFacingErrorMessage(
+              versionsError,
+              t('retryLater', 'Intentá nuevamente.'),
+              indicatorsErrorMessageOptions,
+            )}
+            lowContrast
+            hideCloseButton
+          />
+        ) : null}
 
         <ComboBox
           id="meta-indicador"
           titleText={t('indicator', 'Indicador')}
           items={indicators}
-          itemToString={(item?: IndicadorDetail) => item?.nombre ?? ''}
+          itemToString={(item?: Indicador) => item?.nombre ?? ''}
           selectedItem={selectedIndicator}
-          onChange={(data: { selectedItem: IndicadorDetail | null | undefined }) => {
+          onChange={(data: { selectedItem: Indicador | null | undefined }) => {
             setSelectedIndicator(data.selectedItem ?? null);
             setSelectedVersionId('');
           }}
           placeholder={t('selectIndicator', 'Seleccioná un indicador')}
-          disabled={isSubmitting}
+          disabled={Boolean(initialMeta) || isSubmitting}
         />
+
+        {versionsLoading ? <InlineLoading description={t('loadingVersions', 'Cargando versiones...')} /> : null}
 
         <Select
           id="meta-version"
-          labelText={t('version', 'Versión')}
+          labelText={initialMeta ? t('metaVersion', 'Versión de la meta') : t('currentVersion', 'Versión vigente')}
           value={selectedVersionId}
           onChange={(event) => setSelectedVersionId(event.target.value)}
-          disabled={!selectedIndicator || isSubmitting}
+          disabled
         >
           <SelectItem value="" text={t('selectVersion', 'Seleccioná una versión')} />
-          {versiones.map((version) => (
+          {versionOptions.map((version) => (
             <SelectItem key={version.id} value={version.id} text={String(version.version)} />
           ))}
         </Select>
@@ -161,7 +235,7 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
           onChange={(_event, { value }) => {
             setAnio(typeof value === 'number' ? value : value === '' ? '' : Number(value));
           }}
-          disabled={isSubmitting}
+          disabled={Boolean(initialMeta) || isSubmitting}
           allowEmpty
         />
 

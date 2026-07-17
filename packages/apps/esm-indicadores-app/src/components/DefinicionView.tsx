@@ -20,7 +20,7 @@ const DefinicionView: React.FC<DefinicionViewProps> = ({ definicion }) => {
     [definicion.evento?.diagnosticos],
   );
   const ordenUuids = useMemo(
-    () => definicion.evento?.ordenes?.flatMap((item) => item.concepto_uuids) ?? [],
+    () => definicion.evento?.ordenes?.map((item) => item.concepto_uuid) ?? [],
     [definicion.evento?.ordenes],
   );
 
@@ -45,15 +45,13 @@ const DefinicionView: React.FC<DefinicionViewProps> = ({ definicion }) => {
         {definicion.evento?.diagnosticos?.length
           ? definicion.evento.diagnosticos
               .map((item) => item.concepto_uuids.map((uuid) => resolveMap.get(uuid)?.nombre ?? uuid).join(', '))
-              .join(' | ')
+              .join(', ')
           : 'Sin filtro'}
       </div>
       <div>
         <strong>Órdenes:</strong>{' '}
         {definicion.evento?.ordenes?.length
-          ? definicion.evento.ordenes
-              .map((item) => item.concepto_uuids.map((uuid) => ordenesData?.[uuid] ?? uuid).join(', '))
-              .join(' | ')
+          ? definicion.evento.ordenes.map((item) => ordenesData?.[item.concepto_uuid] ?? item.concepto_uuid).join(', ')
           : 'Sin filtro'}
       </div>
       <div>

@@ -96,6 +96,23 @@ for (const [moduleName, bundlePath] of Object.entries(imports)) {
 
   if (!fs.existsSync(resolvedPath)) {
     fail(`${moduleName}: importmap target does not exist: ${bundlePath}`);
+    continue;
+  }
+
+  // Root-level workspace remotes are rebuilt in place on every release. Their
+  // import-map target must therefore be content-addressed; otherwise a browser
+  // or proxy can retain an old remote that points at chunks no longer present.
+  if (!relativePath.includes('/') && relativePath.endsWith('.js')) {
+    const contentAddress = relativePath.match(/\.([a-f0-9]{16})\.js$/)?.[1];
+    if (!contentAddress) {
+      fail(`${moduleName}: root JavaScript importmap target is not content-addressed: ${bundlePath}`);
+      continue;
+    }
+
+    const actualDigest = crypto.createHash('sha256').update(fs.readFileSync(resolvedPath)).digest('hex');
+    if (!actualDigest.startsWith(contentAddress)) {
+      fail(`${moduleName}: importmap content address does not match bundle bytes: ${bundlePath}`);
+    }
   }
 }
 

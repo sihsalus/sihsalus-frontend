@@ -4,6 +4,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const chalk = require('chalk');
+const { copyContentAddressedEntry } = require('./content-addressed-entry');
 const { getSpaArtifactFiles } = require('./spa-artifact-manifest');
 const { getAppShellBuildEnvironment } = require('./build-app-shell');
 
@@ -118,8 +119,13 @@ for (const distDir of appDirs) {
     continue;
   }
 
+  // Keep the stable filename for compatibility and build manifests, but make
+  // browsers load a content-addressed alias. Some deployments historically
+  // cached stable entrypoints for a year; a unique URL prevents an old remote
+  // from referencing chunks that were removed by a newer deployment.
   copyFileReplacingIfNeeded(entryFilePath, path.join(outDir, entryFileName));
-  importmap.imports[pkg.name] = `./${entryFileName}`;
+  const addressedEntryFileName = copyContentAddressedEntry(entryFilePath, outDir, entryFileName);
+  importmap.imports[pkg.name] = `./${addressedEntryFileName}`;
   localBaseNames.add(pkg.name.replace(/^@[^/]+\//, ''));
 
   const buildManifestName = `${entryFileName}.buildmanifest.json`;
@@ -157,7 +163,7 @@ for (const distDir of appDirs) {
     logWarn(`${pkg.name}: no routes.json — will have no pages or extensions registered`);
   }
 
-  logInfo(`OK ${tag} ${pkg.name} -> ${entryFileName} (${chunkCount} chunks)`);
+  logInfo(`OK ${tag} ${pkg.name} -> ${addressedEntryFileName} (${chunkCount} chunks)`);
 }
 
 if (notBuilt.length > 0) {

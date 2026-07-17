@@ -224,6 +224,12 @@
   max-width: 32rem;
 }
 
+.externalLookupForm {
+  display: grid;
+  row-gap: layout.$spacing-05;
+  max-width: 32rem;
+}
+
 .identifierFieldRow {
   display: flex;
   align-items: center;

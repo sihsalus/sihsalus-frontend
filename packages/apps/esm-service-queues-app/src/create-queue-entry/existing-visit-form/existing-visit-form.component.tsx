@@ -1,5 +1,5 @@
-import { Button, ButtonSet, Form, Row } from '@carbon/react';
-import { ExtensionSlot, useLayoutType, usePatient, type Visit } from '@openmrs/esm-framework';
+import { Button, ButtonSet, Form, InlineNotification, Row } from '@carbon/react';
+import { ExtensionSlot, isDesktop, useLayoutType, usePatient, type Visit } from '@openmrs/esm-framework';
 import { safeCopyFinanciadorToVisit } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import React, { useCallback, useState } from 'react';

@@ -1,5 +1,5 @@
-import { Button, ButtonSet, Form } from '@carbon/react';
-import { usePatient } from '@openmrs/esm-framework';
+import { Button, ButtonSet, Form, InlineNotification } from '@carbon/react';
+import { isDesktop, useLayoutType, usePatient } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -28,6 +28,7 @@ const QueueOnlyForm: React.FC<QueueOnlyFormProps> = ({
   requestedServiceName,
 }) => {
   const { t } = useTranslation();
+  const layout = useLayoutType();
   const { patient } = usePatient(patientUuid);
   const [callbacks, setCallbacks] = useState<QueueFieldsCallbacks | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,7 +60,18 @@ const QueueOnlyForm: React.FC<QueueOnlyFormProps> = ({
   );
 
   return (
-    <Form className={styles.form} onSubmit={handleSubmit}>
+    <Form aria-busy={isSubmitting} className={styles.form} onSubmit={handleSubmit}>
+      <InlineNotification
+        className={styles.workflowNotice}
+        hideCloseButton
+        kind="info"
+        lowContrast
+        title={t('administrativeQueueEntry', 'Administrative queue entry')}
+        subtitle={t(
+          'administrativeQueueEntryDescription',
+          'The patient will be added to this queue without creating a clinical visit or queue number.',
+        )}
+      />
       <QueueFields
         currentQueueLocationUuid={currentQueueLocationUuid}
         currentServiceQueueUuid={currentServiceQueueUuid}
@@ -69,12 +81,26 @@ const QueueOnlyForm: React.FC<QueueOnlyFormProps> = ({
         setCallbacks={setCallbacks}
         visitRequired={false}
       />
-      <ButtonSet className={styles.desktopButtons}>
-        <Button className={styles.button} kind="secondary" onClick={closeWorkspace} type="button">
+      <ButtonSet className={isDesktop(layout) ? styles.desktopButtons : styles.tabletButtons}>
+        <Button
+          className={styles.button}
+          disabled={isSubmitting}
+          kind="secondary"
+          onClick={closeWorkspace}
+          type="button"
+        >
           {t('discard', 'Discard')}
         </Button>
-        <Button className={styles.button} disabled={isSubmitting || !callbacks} kind="primary" type="submit">
-          {t('addPatientToQueue', 'Add patient to queue')}
+        <Button
+          aria-busy={isSubmitting}
+          className={styles.button}
+          disabled={isSubmitting || !callbacks}
+          kind="primary"
+          type="submit"
+        >
+          {isSubmitting
+            ? t('addingPatientToQueue', 'Adding patient to queue…')
+            : t('addPatientToQueue', 'Add patient to queue')}
         </Button>
       </ButtonSet>
     </Form>

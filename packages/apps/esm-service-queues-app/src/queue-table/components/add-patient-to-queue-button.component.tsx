@@ -12,7 +12,7 @@ const AddPatientToQueueButton: React.FC = () => {
   const { t } = useTranslation();
   const { selectedQueueLocationName, selectedQueueLocationUuid, selectedServiceUuid } = useServiceQueuesStore();
   const { queueLocations, isLoading: isLoadingQueueLocations, error: queueLocationsError } = useQueueLocations();
-  const { queues } = useQueues(selectedQueueLocationUuid);
+  const { queues, isLoading: isLoadingQueues, error: queuesError } = useQueues(selectedQueueLocationUuid);
   const selectedQueueLocation = selectedQueueLocationUuid
     ? queueLocations.find((location) => location.id === selectedQueueLocationUuid)
     : undefined;
@@ -24,22 +24,39 @@ const AddPatientToQueueButton: React.FC = () => {
           display: selectedQueueLocation?.name ?? selectedQueueLocationName ?? selectedQueueLocationUuid,
         }
       : undefined;
-  const selectedQueueUuid = useMemo(() => {
+  const matchingQueues = useMemo(() => {
     if (!selectedServiceUuid) {
-      return undefined;
+      return [];
     }
 
-    const matchingQueues = queues.filter((queue) => queue.service?.uuid === selectedServiceUuid);
-    return matchingQueues.length === 1 ? matchingQueues[0].uuid : undefined;
+    return queues.filter((queue) => queue.service?.uuid === selectedServiceUuid);
   }, [queues, selectedServiceUuid]);
-  const isQueueLocationUnavailable =
-    !selectedQueueLocationUuid || isLoadingQueueLocations || Boolean(queueLocationsError) || !selectedQueueLocation;
+  const selectedQueueUuid = matchingQueues.length === 1 ? matchingQueues[0].uuid : undefined;
+  const isResolvingQueueContext = isLoadingQueueLocations || (Boolean(selectedServiceUuid) && Boolean(isLoadingQueues));
+  const queueContextError = queueLocationsError ?? (selectedServiceUuid ? queuesError : undefined);
+  const isQueueLocationUnavailable = !selectedQueueLocationUuid || !selectedQueueLocation;
+  const isSelectedServiceUnavailable =
+    Boolean(selectedServiceUuid) && !isLoadingQueues && !queuesError && matchingQueues.length === 0;
+  const isDisabled =
+    isResolvingQueueContext || Boolean(queueContextError) || isQueueLocationUnavailable || isSelectedServiceUnavailable;
+  const disabledReason = isResolvingQueueContext
+    ? t('loadingQueueContext', 'Loading queues…')
+    : queueContextError
+      ? t('queueContextUnavailable', 'Queues are temporarily unavailable')
+      : isSelectedServiceUnavailable
+        ? t('selectedServiceUnavailable', 'The selected service is not available at this location')
+        : isQueueLocationUnavailable
+          ? t('selectQueueLocation', 'Select an available queue location')
+          : undefined;
+  const buttonLabel = disabledReason ?? t('addPatientToQueue', 'Add patient to queue');
 
   return (
     <CanEditServiceQueues>
       <Button
-        disabled={isQueueLocationUnavailable}
-        title={isQueueLocationUnavailable ? t('selectQueueLocation', 'Select an available queue location') : undefined}
+        aria-busy={isResolvingQueueContext}
+        aria-label={buttonLabel}
+        disabled={isDisabled}
+        title={disabledReason}
         kind="primary"
         renderIcon={(props) => <AddIcon size={16} {...props} />}
         size="sm"
@@ -77,7 +94,7 @@ const AddPatientToQueueButton: React.FC = () => {
           )
         }
       >
-        {t('addPatientToQueue', 'Add patient to queue')}
+        {buttonLabel}
       </Button>
     </CanEditServiceQueues>
   );

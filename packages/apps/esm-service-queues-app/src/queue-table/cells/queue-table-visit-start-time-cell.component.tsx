@@ -1,4 +1,5 @@
 import { formatDatetime } from '@openmrs/esm-framework';
+import { useTranslation } from 'react-i18next';
 
 import { type QueueEntry, type QueueTableCellComponentProps, type QueueTableColumnFunction } from '../../types';
 
@@ -13,7 +14,9 @@ export const queueTableVisitStartTimeColumn: QueueTableColumnFunction = (key, he
   }
 
   const QueueTableVisitStartTimeCell = ({ queueEntry }: QueueTableCellComponentProps) => {
-    return <span>{getVisitStartTime(queueEntry) ?? '--'}</span>;
+    const { t } = useTranslation();
+    const emptyValue = queueEntry.visit ? t('notAvailable', 'Not available') : t('notApplicable', 'Not applicable');
+    return <span>{getVisitStartTime(queueEntry) ?? emptyValue}</span>;
   };
 
   return {

@@ -176,7 +176,7 @@ describe('AddPatientToQueueButton', () => {
 
     render(<AddPatientToQueueButton />);
 
-    expect(screen.getByRole('button', { name: /add patient to queue/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /select an available queue location/i })).toBeDisabled();
   });
 
   it('fails closed while the selected queue location metadata is loading', () => {
@@ -188,7 +188,9 @@ describe('AddPatientToQueueButton', () => {
 
     render(<AddPatientToQueueButton />);
 
-    expect(screen.getByRole('button', { name: /add patient to queue/i })).toBeDisabled();
+    const button = screen.getByRole('button', { name: /loading queues/i });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-busy', 'true');
   });
 
   it('fails closed when the selected UUID is not an authoritative Queue Location', () => {
@@ -200,6 +202,44 @@ describe('AddPatientToQueueButton', () => {
 
     render(<AddPatientToQueueButton />);
 
-    expect(screen.getByRole('button', { name: /add patient to queue/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /queues are temporarily unavailable/i })).toBeDisabled();
+  });
+
+  it('waits for the selected service to resolve to a queue', () => {
+    mockUseQueues.mockReturnValue({
+      queues: [],
+      isLoading: true,
+      error: undefined,
+    } as ReturnType<typeof useQueues>);
+
+    render(<AddPatientToQueueButton />);
+
+    const button = screen.getByRole('button', { name: /loading queues/i });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('shows when the selected service cannot be loaded', () => {
+    mockUseQueues.mockReturnValue({
+      queues: [],
+      isLoading: false,
+      error: new Error('Unable to load queues'),
+    } as ReturnType<typeof useQueues>);
+
+    render(<AddPatientToQueueButton />);
+
+    expect(screen.getByRole('button', { name: /queues are temporarily unavailable/i })).toBeDisabled();
+  });
+
+  it('shows when the selected service is unavailable at the authoritative location', () => {
+    mockUseQueues.mockReturnValue({
+      queues: [queueForService('other-queue-uuid', 'other-service-concept-uuid')],
+      isLoading: false,
+      error: undefined,
+    } as ReturnType<typeof useQueues>);
+
+    render(<AddPatientToQueueButton />);
+
+    expect(screen.getByRole('button', { name: /selected service is not available/i })).toBeDisabled();
   });
 });

@@ -15,7 +15,36 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: layout.$spacing-03;
   margin-top: layout.$spacing-03;
+}
+
+.dropdownSkeletonContainer {
+  width: 14rem;
+}
+
+.errorContainer {
+  max-width: 26rem;
+}
+
+.locationContext {
+  display: flex;
+  flex-direction: column;
+  min-width: 14rem;
+  gap: layout.$spacing-01;
+  padding: layout.$spacing-03 layout.$spacing-05;
+  border-inline-start: 1px solid $ui-03;
+}
+
+.locationContextLabel {
+  @include type.type-style('label-01');
+  color: $text-02;
+}
+
+.locationContextValue {
+  @include type.type-style('body-compact-01');
+  color: $text-01;
+  font-weight: 600;
 }
 
 .view {

@@ -1,4 +1,4 @@
-import { ExtensionSlot, launchWorkspace } from '@openmrs/esm-framework';
+import { ExtensionSlot, launchWorkspace, useSession } from '@openmrs/esm-framework';
 import { render } from '@testing-library/react';
 import { mockQueueTriage } from 'test-utils';
 
@@ -9,6 +9,7 @@ import QueueTablesForAllStatuses from './queue-tables-for-all-statuses.component
 const mockExtensionSlot = vi.mocked(ExtensionSlot);
 const mockLaunchWorkspace = vi.mocked(launchWorkspace);
 const mockUseQueueLocations = vi.mocked(useQueueLocations);
+const mockUseSession = vi.mocked(useSession);
 
 vi.mock('../create-queue-entry/hooks/useQueueLocations', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../create-queue-entry/hooks/useQueueLocations')>()),
@@ -36,7 +37,8 @@ vi.mock('../queue-table/queue-table-metrics.component', () => ({
 }));
 
 type PatientSearchExtensionState = {
-  buttonProps: { disabled: boolean };
+  buttonText: string;
+  buttonProps: { 'aria-busy': boolean; disabled: boolean; title?: string };
   selectPatientAction: (patientUuid: string) => void;
 };
 
@@ -53,6 +55,11 @@ const selectedQueue = {
 describe('QueueTablesForAllStatuses queue location semantics', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionLocation: { uuid: 'queue-location-uuid' },
+      user: { roles: [{ display: 'Nurse' }] },
+    } as unknown as ReturnType<typeof useSession>);
   });
 
   it('allows adding to a queue-only location without requiring a visit location', () => {
@@ -112,14 +119,47 @@ describe('QueueTablesForAllStatuses queue location semantics', () => {
     });
   });
 
+  it('blocks Admission from adding through a direct URL to a queue at another location', () => {
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionLocation: { uuid: 'another-session-location' },
+      user: { roles: [{ display: 'Admission' }] },
+    } as unknown as ReturnType<typeof useSession>);
+    mockUseQueueLocations.mockReturnValue({
+      queueLocations: [
+        {
+          resourceType: 'Location',
+          id: 'queue-location-uuid',
+          name: 'Queue at another location',
+          meta: { tag: [{ code: 'Queue Location' }] },
+        },
+      ],
+      isLoading: false,
+      error: undefined,
+    });
+
+    renderView();
+    const extensionState = getPatientSearchExtensionState();
+
+    expect(extensionState.buttonProps.disabled).toBe(true);
+    expect(extensionState.buttonText).toBe('This queue does not belong to your session location');
+    expect(extensionState.buttonProps.title).toBe('This queue does not belong to your session location');
+    extensionState.selectPatientAction('patient-uuid');
+    expect(mockLaunchWorkspace).not.toHaveBeenCalled();
+  });
+
   it.each([
     {
       scenario: 'queue locations are loading',
       result: { queueLocations: [], isLoading: true, error: undefined },
+      expectedText: 'Loading queues…',
+      expectedBusy: true,
     },
     {
       scenario: 'queue location loading failed',
       result: { queueLocations: [], isLoading: false, error: new Error('FHIR request failed') },
+      expectedText: 'Queues are temporarily unavailable',
+      expectedBusy: false,
     },
     {
       scenario: 'the selected queue location is missing from FHIR metadata',
@@ -135,14 +175,19 @@ describe('QueueTablesForAllStatuses queue location semantics', () => {
         isLoading: false,
         error: undefined,
       },
+      expectedText: 'This queue location is not available',
+      expectedBusy: false,
     },
-  ])('fails closed when $scenario', ({ result }) => {
+  ])('fails closed with a visible reason when $scenario', ({ result, expectedText, expectedBusy }) => {
     mockUseQueueLocations.mockReturnValue(result);
 
     renderView();
     const extensionState = getPatientSearchExtensionState();
 
     expect(extensionState.buttonProps.disabled).toBe(true);
+    expect(extensionState.buttonProps['aria-busy']).toBe(expectedBusy);
+    expect(extensionState.buttonProps.title).toBe(expectedText);
+    expect(extensionState.buttonText).toBe(expectedText);
     extensionState.selectPatientAction('patient-uuid');
     expect(mockLaunchWorkspace).not.toHaveBeenCalled();
   });

@@ -53,6 +53,7 @@ describe('QueueOnlyForm', () => {
       />,
     );
 
+    expect(screen.getByText(/without creating a clinical visit.*queue number/i)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /add patient to queue/i }));
 
     await waitFor(() => expect(closeWorkspace).toHaveBeenCalledOnce());
@@ -68,5 +69,28 @@ describe('QueueOnlyForm', () => {
         visitRequired: false,
       }),
     );
+  });
+
+  it('shows a busy state and prevents discarding while the entry is being created', async () => {
+    const user = userEvent.setup();
+    let resolveSubmit!: () => void;
+    mocks.onVisitCreatedOrUpdated.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSubmit = resolve;
+        }),
+    );
+
+    render(<QueueOnlyForm closeWorkspace={vi.fn()} patientUuid="patient-uuid" />);
+
+    await user.click(screen.getByRole('button', { name: /add patient to queue/i }));
+
+    const submittingButton = screen.getByRole('button', { name: /adding patient to queue/i });
+    expect(submittingButton).toBeDisabled();
+    expect(submittingButton).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('button', { name: /discard/i })).toBeDisabled();
+
+    resolveSubmit();
+    await waitFor(() => expect(screen.getByRole('button', { name: /add patient to queue/i })).toBeEnabled());
   });
 });

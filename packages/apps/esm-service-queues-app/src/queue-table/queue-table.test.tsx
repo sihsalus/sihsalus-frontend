@@ -277,7 +277,7 @@ describe('QueueTable', () => {
 
     const row = screen.getByText(visitlessEntry.patient.person.display).closest('tr');
     expect(row).not.toBeNull();
-    expect(within(row).getAllByText('--')).toHaveLength(2);
+    expect(within(row).getAllByText('Not applicable')).toHaveLength(2);
   });
 });
 

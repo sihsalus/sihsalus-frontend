@@ -6,6 +6,7 @@ import {
   Select,
   SelectItem,
   SelectSkeleton,
+  TextInput,
 } from '@carbon/react';
 import {
   getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
@@ -16,6 +17,7 @@ import {
   type Visit,
 } from '@openmrs/esm-framework';
 import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
+import { isAdmissionUser } from '@sihsalus/esm-rbac';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -71,9 +73,10 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   setCallbacks,
 }) => {
   const { t } = useTranslation();
-  const { queueLocations, isLoading: isLoadingQueueLocations } = useQueueLocations();
-  const { sessionLocation } = useSession();
+  const { queueLocations, isLoading: isLoadingQueueLocations, error: queueLocationsError } = useQueueLocations();
+  const { sessionLocation, user } = useSession();
   const sessionLocationUuid = sessionLocation?.uuid;
+  const admissionUser = isAdmissionUser(user);
   const {
     visitQueueNumberAttributeUuid,
     concepts: { defaultStatusConceptUuid, defaultPriorityConceptUuid, emergencyPriorityConceptUuid },
@@ -81,7 +84,12 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   const [selectedQueueLocation, setSelectedQueueLocation] = useState('');
   const { currentQueueLocationUuid: contextQueueLocationUuid, currentServiceQueueUuid: contextServiceQueueUuid } =
     useContext(AddPatientToQueueContext);
-  const requiredQueueLocationUuid = currentQueueLocationUuid ?? contextQueueLocationUuid;
+  const requestedQueueLocationUuid = currentQueueLocationUuid ?? contextQueueLocationUuid;
+  const sessionQueueLocation = useMemo(
+    () => (sessionLocationUuid ? queueLocations.find((location) => location.id === sessionLocationUuid) : undefined),
+    [queueLocations, sessionLocationUuid],
+  );
+  const requiredQueueLocationUuid = admissionUser ? sessionQueueLocation?.id : requestedQueueLocationUuid;
   const availableQueueLocations = useMemo(() => {
     const normalizedGender = patientGender?.trim().toLowerCase();
     const isMalePatient = normalizedGender === 'm' || normalizedGender === 'male' || normalizedGender === 'masculino';
@@ -94,10 +102,28 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
       (location) => location.id === requiredQueueLocationUuid || !/obst[eé]tric/i.test(location.name ?? ''),
     );
   }, [patientGender, queueLocations, requiredQueueLocationUuid]);
-  const { queues, isLoading: isLoadingQueues } = useQueues(selectedQueueLocation);
+  const { queues, isLoading: isLoadingQueues, error: queuesError } = useQueues(selectedQueueLocation);
   const [selectedService, setSelectedService] = useState('');
   const selectedServiceQueueUuid = currentServiceQueueUuid ?? contextServiceQueueUuid;
+  const isQueueLocationFixed = admissionUser || Boolean(requiredQueueLocationUuid);
+  const isServiceQueueFixed = Boolean(selectedServiceQueueUuid);
+  const displayedQueueLocationUuid = requiredQueueLocationUuid || selectedQueueLocation;
+  const displayedServiceQueueUuid = selectedServiceQueueUuid || selectedService;
+  const selectedQueueLocationName =
+    queueLocations.find((location) => location.id === displayedQueueLocationUuid)?.name ?? displayedQueueLocationUuid;
+  const selectedServiceName =
+    queues.find((queue) => queue.uuid === displayedServiceQueueUuid)?.name ?? displayedServiceQueueUuid;
+  const isRequiredQueueLocationAvailable = requiredQueueLocationUuid
+    ? availableQueueLocations.some((location) => location.id === requiredQueueLocationUuid)
+    : true;
+  const isRequiredServiceAvailable = selectedServiceQueueUuid
+    ? queues.some((queue) => queue.uuid === selectedServiceQueueUuid)
+    : true;
   const selectedQueue = useMemo(() => queues.find((q) => q.uuid === selectedService), [queues, selectedService]);
+  const isSelectedQueueLocationAvailable = availableQueueLocations.some(
+    (location) => location.id === selectedQueueLocation,
+  );
+  const isSelectedServiceAvailable = queues.some((queue) => queue.uuid === selectedService);
   const priorities = selectedQueue?.allowedPriorities ?? [];
   const statuses = selectedQueue?.allowedStatuses ?? [];
   const [priority, setPriority] = useState('');
@@ -109,12 +135,16 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   const sortWeight = priority === emergencyPriorityConceptUuid ? 1 : 0;
   const isValid = Boolean(
     selectedQueueLocation &&
+      isSelectedQueueLocationAvailable &&
       selectedService &&
+      isSelectedServiceAvailable &&
       priority &&
       status &&
       (!visitRequired || visitQueueNumberAttributeUuid) &&
       !isLoadingQueueLocations &&
-      !isLoadingQueues,
+      !isLoadingQueues &&
+      !queueLocationsError &&
+      !queuesError,
   );
 
   const onBeforeVisitSave = useCallback(() => {
@@ -229,6 +259,21 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   }, [selectedServiceQueueUuid]);
 
   useEffect(() => {
+    if (selectedServiceQueueUuid || isLoadingQueues || queuesError || !selectedService) {
+      return;
+    }
+
+    if (!queues.some((queue) => queue.uuid === selectedService)) {
+      setSelectedService('');
+    }
+  }, [isLoadingQueues, queues, queuesError, selectedService, selectedServiceQueueUuid]);
+
+  useEffect(() => {
+    if (admissionUser) {
+      setSelectedQueueLocation(sessionQueueLocation?.id ?? '');
+      return;
+    }
+
     if (requiredQueueLocationUuid) {
       setSelectedQueueLocation(requiredQueueLocationUuid);
       return;
@@ -241,7 +286,14 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
     const defaultLocation =
       availableQueueLocations.find((location) => location.id === sessionLocationUuid) ?? availableQueueLocations[0];
     setSelectedQueueLocation(defaultLocation?.id ?? '');
-  }, [availableQueueLocations, requiredQueueLocationUuid, selectedQueueLocation, sessionLocationUuid]);
+  }, [
+    admissionUser,
+    availableQueueLocations,
+    requiredQueueLocationUuid,
+    selectedQueueLocation,
+    sessionLocationUuid,
+    sessionQueueLocation,
+  ]);
 
   useEffect(() => {
     const nextPriority = priorities.some((allowedPriority) => allowedPriority.uuid === defaultPriorityConceptUuid)
@@ -279,14 +331,64 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
         <ResponsiveWrapper>
           {isLoadingQueueLocations ? (
             <SelectSkeleton />
+          ) : queueLocationsError ? (
+            <InlineNotification
+              className={styles.inlineNotification}
+              hideCloseButton
+              kind="error"
+              lowContrast
+              subtitle={t(
+                'queueLocationsLoadErrorMessage',
+                'Check your connection and try loading the queue locations again.',
+              )}
+              title={t('queueLocationsLoadErrorTitle', 'Queue locations could not be loaded')}
+            />
+          ) : !availableQueueLocations.length ? (
+            <InlineNotification
+              className={styles.inlineNotification}
+              hideCloseButton
+              kind="error"
+              lowContrast
+              subtitle={t('configureQueueLocations', 'Configure at least one queue location to continue.')}
+              title={t('noQueueLocationsConfigured', 'No queue locations are configured')}
+            />
+          ) : admissionUser && !sessionQueueLocation ? (
+            <InlineNotification
+              className={styles.inlineNotification}
+              hideCloseButton
+              kind="warning"
+              lowContrast
+              subtitle={t(
+                'sessionLocationIsNotQueueLocation',
+                'Your session location is not configured as a queue location. Contact an administrator before adding patients.',
+              )}
+              title={t('queueLocationUnavailable', 'Queue location unavailable')}
+            />
+          ) : !isRequiredQueueLocationAvailable ? (
+            <InlineNotification
+              className={styles.inlineNotification}
+              hideCloseButton
+              kind="warning"
+              lowContrast
+              title={t('selectedQueueLocationUnavailable', 'This queue location is not available')}
+            />
+          ) : isQueueLocationFixed ? (
+            <TextInput
+              id="queueLocation"
+              labelText={t('queueLocation', 'Queue location')}
+              name="queueLocation"
+              readOnly
+              value={selectedQueueLocationName}
+            />
           ) : (
             <Select
-              disabled={Boolean(requiredQueueLocationUuid)}
+              aria-required="true"
               labelText={<RequiredFieldLabel label={t('selectQueueLocation', 'Select a queue location')} />}
               id="queueLocation"
               name="queueLocation"
               invalid={showValidationErrors && !selectedQueueLocation}
               invalidText={t('required', 'Required')}
+              required
               value={selectedQueueLocation}
               onChange={(event) => setSelectedQueueLocation(event.target.value)}
             >
@@ -319,22 +421,49 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
         ) : null}
         {isLoadingQueues ? (
           <SelectSkeleton />
+        ) : queuesError ? (
+          <InlineNotification
+            className={styles.inlineNotification}
+            hideCloseButton
+            kind="error"
+            lowContrast
+            subtitle={t('queuesLoadErrorMessage', 'Check your connection and try loading the queue services again.')}
+            title={t('queuesLoadErrorTitle', 'Queue services could not be loaded')}
+          />
         ) : !queues?.length ? (
           <InlineNotification
             className={styles.inlineNotification}
+            hideCloseButton
             kind={'error'}
             lowContrast
             subtitle={t('configureServices', 'Please configure services to continue.')}
             title={t('noServicesConfigured', 'No services configured')}
           />
+        ) : !isRequiredServiceAvailable ? (
+          <InlineNotification
+            className={styles.inlineNotification}
+            hideCloseButton
+            kind="warning"
+            lowContrast
+            title={t('selectedServiceUnavailable', 'The selected service is not available at this location')}
+          />
+        ) : isServiceQueueFixed ? (
+          <TextInput
+            id="service"
+            labelText={t('service', 'Service')}
+            name="service"
+            readOnly
+            value={selectedServiceName}
+          />
         ) : (
           <Select
-            disabled={Boolean(currentServiceQueueUuid)}
+            aria-required="true"
             labelText={<RequiredFieldLabel label={t('selectService', 'Select a service')} />}
             id="service"
             name="service"
             invalid={showValidationErrors && !selectedService}
             invalidText={t('required', 'Required')}
+            required
             value={selectedService}
             onChange={(event) => setSelectedService(event.target.value)}
           >
@@ -352,7 +481,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
       {/* Status section of the form would go here; historical version of this code can be found at
           https://github.com/openmrs/openmrs-esm-patient-management/blame/6c31e5ff2579fc89c2fd0d12c13510a1f2e913e0/packages/esm-service-queues-app/src/patient-search/visit-form-queue-fields/visit-form-queue-fields.component.tsx#L115 */}
 
-      {selectedService ? (
+      {selectedQueue ? (
         <section className={styles.section}>
           <div className={styles.sectionTitle}>
             <RequiredFieldLabel label={t('priority', 'Priority')} />
@@ -377,11 +506,13 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
             </InlineNotification>
           ) : priorities.length ? (
             <RadioButtonGroup
+              aria-label={t('priority', 'Priority')}
+              aria-required="true"
               className={styles.radioButtonWrapper}
-              name="priority"
               id="priority"
               invalid={showValidationErrors && !priority}
               invalidText={t('required', 'Required')}
+              name="priority"
               valueSelected={priority}
               onChange={(uuid) => setPriority(String(uuid))}
             >
@@ -393,7 +524,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
         </section>
       ) : null}
 
-      {selectedService && !isLoadingQueues && !statuses.length ? (
+      {selectedQueue && !isLoadingQueues && !statuses.length ? (
         <section className={styles.section}>
           <div className={styles.sectionTitle}>{t('status', 'Status')}</div>
           <InlineNotification

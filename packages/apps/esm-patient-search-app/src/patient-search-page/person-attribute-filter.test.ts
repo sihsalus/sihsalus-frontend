@@ -67,4 +67,12 @@ describe('matchesPersonAttributeFilter', () => {
       ),
     ).toBe(true);
   });
+
+  it('matches incomplete identity documents only from the beginning', () => {
+    const documentAttributeType = { uuid: 'document-number', display: 'Número de documento' };
+    const attribute = { value: '12345678', attributeType: documentAttributeType } as PersonAttribute;
+
+    expect(matchesPersonAttributeFilter(attribute, documentAttributeType.uuid, '1234', 'prefix')).toBe(true);
+    expect(matchesPersonAttributeFilter(attribute, documentAttributeType.uuid, '3456', 'prefix')).toBe(false);
+  });
 });

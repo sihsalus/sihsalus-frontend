@@ -1,6 +1,7 @@
 import {
   getDefaultsFromConfigSchema,
   launchWorkspace2,
+  showSnackbar,
   useConfig,
   userHasAccess,
   useSession,
@@ -37,6 +38,7 @@ const mockChangeAppointmentStatus = vi.mocked(changeAppointmentStatus);
 const mockGetAppointmentStatus = vi.mocked(getAppointmentStatus);
 const mockEnsureAppointmentVisitLink = vi.mocked(ensureAppointmentVisitLink);
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
+const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockGetActiveVisitsForPatient = vi.mocked(getActiveVisitsForPatient);
@@ -86,6 +88,13 @@ const appointment: Appointment = {
   dateAppointmentScheduled: null,
 };
 const requiredVisitTypeUuid = 'required-visit-type-uuid';
+const appointmentQueueMapping = {
+  appointmentServiceUuid: appointment.service.uuid,
+  appointmentLocationUuid: appointment.location.uuid,
+  queueUuid: 'mapped-queue-uuid',
+  queueLocationUuid: 'mapped-queue-location-uuid',
+  requiredVisitTypeUuid,
+};
 
 const defaultProps = {
   visits: [],
@@ -789,6 +798,7 @@ describe('AppointmentActions', () => {
 
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
+      appointmentQueueMappings: [appointmentQueueMapping],
       checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
     });
 
@@ -817,11 +827,13 @@ describe('AppointmentActions', () => {
           attributeType: '193508ab-20c6-5291-9f23-0257335eaabd',
           value: appointment.uuid,
         },
-        currentQueueLocationUuid: appointment.location.uuid,
+        currentQueueLocationUuid: appointmentQueueMapping.queueLocationUuid,
+        currentServiceQueueUuid: appointmentQueueMapping.queueUuid,
         requiredVisitLocation: {
           uuid: appointment.location.uuid,
           display: appointment.location.name,
         },
+        requiredVisitTypeUuid,
         openedFrom: 'appointments-check-in',
         onVisitStarted: expect.any(Function),
       }),
@@ -829,11 +841,41 @@ describe('AppointmentActions', () => {
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
   });
 
+  it('blocks check-in when the service and location have no exact queue mapping', async () => {
+    appointment.status = AppointmentStatus.SCHEDULED;
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentQueueMappings: [],
+      checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
+    });
+    mockUseTodaysVisits.mockReturnValue({
+      visits: [],
+      mutateVisit: vi.fn(),
+      error: null,
+      isLoading: false,
+    });
+
+    render(<AppointmentActions {...defaultProps} />);
+    await userEvent.click(screen.getByRole('button', { name: /check in/i }));
+
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(mockGetActiveVisitsForPatient).not.toHaveBeenCalled();
+    expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        subtitle:
+          'No existe una cola configurada para el servicio y la sede de esta cita. Contacte al administrador antes de continuar.',
+      }),
+    );
+  });
+
   it('checks in the appointment after the start visit workspace creates a visit', async () => {
     appointment.status = AppointmentStatus.SCHEDULED;
 
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
+      appointmentQueueMappings: [appointmentQueueMapping],
       checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
     });
 

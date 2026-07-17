@@ -37,6 +37,7 @@ const ACTIVE_VISIT_LOCATION_MISMATCH = 'ACTIVE_VISIT_LOCATION_MISMATCH';
 const ACTIVE_VISIT_TYPE_MISMATCH = 'ACTIVE_VISIT_TYPE_MISMATCH';
 const APPOINTMENT_LOCATION_MISSING = 'APPOINTMENT_LOCATION_MISSING';
 const APPOINTMENT_QUEUE_MAPPING_AMBIGUOUS = 'APPOINTMENT_QUEUE_MAPPING_AMBIGUOUS';
+const APPOINTMENT_QUEUE_MAPPING_MISSING = 'APPOINTMENT_QUEUE_MAPPING_MISSING';
 const APPOINTMENT_VISIT_TYPE_MAPPING_MISSING = 'APPOINTMENT_VISIT_TYPE_MAPPING_MISSING';
 const MULTIPLE_ACTIVE_VISITS = 'MULTIPLE_ACTIVE_VISITS';
 
@@ -60,11 +61,6 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
       )
     : [];
   const queueMapping = exactQueueMappings.length === 1 ? exactQueueMappings[0] : undefined;
-  const serviceMappings = (appointmentQueueMappings ?? []).filter(
-    (mapping) => mapping.appointmentServiceUuid === appointment.service.uuid,
-  );
-  const visitTypeMapping = queueMapping ?? (serviceMappings.length === 1 ? serviceMappings[0] : undefined);
-
   const showCheckInFailure = (error: unknown) =>
     showSnackbar({
       title: t('checkInFailed', 'No se pudo admitir la cita'),
@@ -104,6 +100,10 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
             [APPOINTMENT_QUEUE_MAPPING_AMBIGUOUS]: t(
               'appointmentQueueMappingAmbiguous',
               'Existe más de una regla de cola para este servicio y sede. Corrija la configuración antes de admitir la cita.',
+            ),
+            [APPOINTMENT_QUEUE_MAPPING_MISSING]: t(
+              'appointmentQueueMappingMissing',
+              'No existe una cola configurada para el servicio y la sede de esta cita. Contacte al administrador antes de continuar.',
             ),
             [APPOINTMENT_VISIT_LINK_CONFIGURATION_MISSING]: t(
               'appointmentVisitLinkNotConfigured',
@@ -281,10 +281,15 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
                   });
                 }
                 const requiredAppointmentLocationUuid = getAppointmentLocationUuid();
-                const requiredQueueLocationUuid = queueMapping?.queueLocationUuid ?? requiredAppointmentLocationUuid;
                 if (!(await validateAppointmentStatus())) {
                   return;
                 }
+                if (!queueMapping) {
+                  throw Object.assign(new Error('No queue mapping matches this appointment service and location.'), {
+                    code: APPOINTMENT_QUEUE_MAPPING_MISSING,
+                  });
+                }
+                const requiredQueueLocationUuid = queueMapping.queueLocationUuid;
 
                 const activeVisits = await fetchActiveVisits();
 
@@ -298,13 +303,13 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
                   await launchWorkspace2(addActiveVisitToQueueWorkspace, {
                     activeVisit: activeVisits[0],
                     currentQueueLocationUuid: requiredQueueLocationUuid,
-                    currentServiceQueueUuid: queueMapping?.queueUuid,
+                    currentServiceQueueUuid: queueMapping.queueUuid,
                     requestedServiceName: appointment.service.name,
                     requiredVisitLocation: {
                       uuid: requiredAppointmentLocationUuid,
                       display: appointment.location?.name ?? '',
                     },
-                    requiredVisitTypeUuid: visitTypeMapping?.requiredVisitTypeUuid,
+                    requiredVisitTypeUuid: queueMapping.requiredVisitTypeUuid,
                     selectedPatientUuid: patientUuid,
                     startVisitWorkspaceName: appointmentsStartVisitWorkspace,
                     visitFormOpenedFrom: 'appointments-check-in',
@@ -333,16 +338,16 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
                     value: appointment.uuid,
                   },
                   currentQueueLocationUuid: requiredQueueLocationUuid,
-                  currentServiceQueueUuid: queueMapping?.queueUuid,
+                  currentServiceQueueUuid: queueMapping.queueUuid,
                   requestedServiceName: appointment.service.name,
                   requiredVisitLocation: {
                     uuid: requiredAppointmentLocationUuid,
                     display: appointment.location?.name ?? '',
                   },
-                  requiredVisitTypeUuid: visitTypeMapping?.requiredVisitTypeUuid,
+                  requiredVisitTypeUuid: queueMapping.requiredVisitTypeUuid,
                   showPatientHeader: true,
                   openedFrom: 'appointments-check-in',
-                  onBeforeVisitSave: (visit?: Visit) => validateBeforePersistence(visit, false),
+                  onBeforeVisitSave: (visit?: Visit) => validateBeforePersistence(visit, true),
                   onVisitStarted: async () => {
                     mutateVisits?.();
                     await checkIn(

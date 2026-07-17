@@ -66,6 +66,21 @@ describe('getCompatibleUserFacingErrorMessage', () => {
     expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
+  it('prioritizes a known local code over a legacy host fallback', () => {
+    const error = { code: 'QUEUE_MAPPING_MISSING', message: 'Technical configuration detail' };
+    const runtimeNormalizer = vi.fn<UserFacingErrorMessageNormalizer>().mockReturnValue('Fallback');
+
+    expect(
+      getCompatibleUserFacingErrorMessage(
+        error,
+        'Fallback',
+        { codeMessages: { QUEUE_MAPPING_MISSING: 'Falta configurar la cola.' }, log: false },
+        runtimeNormalizer,
+      ),
+    ).toBe('Falta configurar la cola.');
+    expect(runtimeNormalizer).not.toHaveBeenCalled();
+  });
+
   it('does not mask the original error when the host normalizer itself fails', () => {
     const error = new Error('Original visit failure');
     const normalizerError = new TypeError('Host normalizer failure');

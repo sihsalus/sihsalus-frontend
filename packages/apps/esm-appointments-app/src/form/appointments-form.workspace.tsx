@@ -309,7 +309,7 @@ const AppointmentsForm: React.FC<
           message: translateFrom(moduleName, 'durationErrorMessage', 'Duration should be greater than zero'),
         }),
       location: z.string().refine((value) => value !== '', {
-        message: translateFrom(moduleName, 'locationRequired', 'Location is required'),
+        message: translateFrom(moduleName, 'locationRequired', 'UPSS is required'),
       }),
       provider: z.string().refine((value) => value !== '', {
         message: translateFrom(moduleName, 'providerRequired', 'Provider is required'),
@@ -399,7 +399,10 @@ const AppointmentsForm: React.FC<
     reset,
     formState: { errors, isDirty },
   } = useForm<AppointmentFormData>({
-    mode: 'all',
+    // Validate required fields on submit so opening an asynchronously populated
+    // selector does not show an error before the user has attempted to save.
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
     resolver: zodResolver(appointmentsFormSchema),
     defaultValues: {
       location: appointment?.location?.uuid ?? '',
@@ -734,7 +737,7 @@ const AppointmentsForm: React.FC<
             />
           )}
           <section className={styles.formGroup}>
-            <span className={styles.heading}>{t('location', 'Location')}</span>
+            <span className={styles.heading}>{t('location', 'UPSS')}</span>
             <ResponsiveWrapper>
               <Controller
                 name="location"
@@ -1249,7 +1252,7 @@ function getAppointmentValidationSummary(
   t: (key: string, fallback: string) => string,
 ) {
   const labels: Record<string, string> = {
-    location: t('location', 'Ubicación'),
+    location: t('location', 'UPSS'),
     selectedService: t('service', 'Servicio'),
     appointmentType: t('appointmentType', 'Tipo de cita'),
     provider: t('responsibleProvider', 'Personal de salud responsable'),

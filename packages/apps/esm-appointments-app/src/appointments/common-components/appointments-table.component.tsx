@@ -325,6 +325,9 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                             <TableExpandRow
                               key={key}
                               {...rowProps}
+                              aria-current={
+                                editingAppointmentUuid === matchingAppointment.uuid ? 'true' : undefined
+                              }
                               className={classNames(rowProps.className, {
                                 [styles.editingRow]: editingAppointmentUuid === matchingAppointment.uuid,
                               })}
@@ -346,14 +349,22 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                                     <OverflowMenuItem
                                       className={styles.menuItem}
                                       itemText={t('editAppointment', 'Edit appointment')}
-                                      onClick={() => {
-                                        setEditingAppointmentUuid(matchingAppointment.uuid);
-                                        launchWorkspace2('appointments-form-workspace', {
+                                      onClick={async () => {
+                                        const appointmentUuid = matchingAppointment.uuid;
+                                        const workspaceOpened = await launchWorkspace2('appointments-form-workspace', {
                                           patientUuid: matchingAppointment.patient.uuid,
                                           appointment: matchingAppointment,
                                           context: 'editing',
                                           workspaceTitle: t('editAppointment', 'Edit appointment'),
+                                          onWorkspaceClose: () =>
+                                            setEditingAppointmentUuid((currentUuid) =>
+                                              currentUuid === appointmentUuid ? null : currentUuid,
+                                            ),
                                         });
+
+                                        if (workspaceOpened) {
+                                          setEditingAppointmentUuid(appointmentUuid);
+                                        }
                                       }}
                                     />
                                   </OverflowMenu>

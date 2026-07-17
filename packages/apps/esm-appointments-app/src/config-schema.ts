@@ -21,6 +21,26 @@ export const configSchema = {
       'Configurable appointment types for rendering. Values are sent to the backend as appointment kinds (Scheduled, WalkIn, Virtual).',
     _default: ['Scheduled', 'WalkIn', 'Virtual'],
   },
+  appointmentServiceGenderRules: {
+    _type: Type.Array,
+    _description:
+      'Gender eligibility rules for appointment services. Services without a rule are available for every patient gender.',
+    _default: [],
+    _elements: {
+      appointmentServiceUuid: {
+        _type: Type.UUID,
+        _description: 'Appointment service UUID to restrict.',
+      },
+      allowedGenders: {
+        _type: Type.Array,
+        _elements: {
+          _type: Type.String,
+        },
+        _default: [],
+        _description: 'Accepted patient genders. Supported canonical values are F, M, O, and U.',
+      },
+    },
+  },
   appointmentVisitAttributeTypeUuid: {
     _type: Type.UUID,
     _description: 'Visit attribute type used to persist the originating appointment UUID on an OpenMRS visit',
@@ -118,6 +138,10 @@ export interface ConfigObject {
   allowAllDayAppointments: boolean;
   appointmentStatuses: Array<string>;
   appointmentTypes: Array<string>;
+  appointmentServiceGenderRules: Array<{
+    appointmentServiceUuid: string;
+    allowedGenders: Array<string>;
+  }>;
   appointmentVisitAttributeTypeUuid: string;
   appointmentQueueMappings: Array<{
     appointmentServiceUuid: string;

@@ -128,6 +128,7 @@ interface AppointmentsFormProps {
   patientUuid?: string;
   context?: string;
   workspaceTitle?: string;
+  onWorkspaceClose?: () => void;
 }
 
 // MINSA appointment services are configured without a default `durationMins`,
@@ -260,6 +261,7 @@ const AppointmentsForm: React.FC<
   const patientUuid = props.patientUuid ?? workspaceProps.patientUuid;
   const context = props.context ?? workspaceProps.context ?? 'creating';
   const workspaceTitle = props.workspaceTitle ?? workspaceProps.workspaceTitle;
+  const onWorkspaceClose = props.onWorkspaceClose ?? workspaceProps.onWorkspaceClose;
   const closeWorkspace = props.closeWorkspace ?? (() => Promise.resolve(true));
   const promptBeforeClosing = props.promptBeforeClosing;
   const { patient } = usePatient(patientUuid);
@@ -273,11 +275,13 @@ const AppointmentsForm: React.FC<
   const canEditAppointmentStartDate = userHasAccess(appointmentStartDateEditPrivilege, session?.user);
   const { selectedDate } = useContext(SelectedDateContext);
   const { data: services, isLoading } = useAppointmentService();
+  const { appointmentTypes, allowAllDayAppointments, appointmentServiceGenderRules } = useConfig<ConfigObject>();
   const availableServices = services?.filter((service) =>
-    isAppointmentServiceAvailableForGender(service, patient?.gender),
+    isAppointmentServiceAvailableForGender(service, patient?.gender, appointmentServiceGenderRules),
   );
-  const { appointmentTypes, allowAllDayAppointments } = useConfig<ConfigObject>();
   const mappedAppointmentTypes = appointmentTypes ?? [];
+
+  useEffect(() => () => onWorkspaceClose?.(), [onWorkspaceClose]);
   const title =
     workspaceTitle ??
     (context === 'editing'

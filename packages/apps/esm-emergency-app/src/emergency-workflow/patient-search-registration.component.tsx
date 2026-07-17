@@ -51,6 +51,7 @@ import { generateIdentifier, saveEmergencyPatient } from '../resources/patient-r
 import { EmergencyNationalityField } from './components/emergency-nationality-field.component';
 import InitialPrioritySelector, { type InitialPriority } from './components/initial-priority-selector.component';
 import { getEmergencyIdentityDocumentTypes } from './emergency-identity-documents';
+import { useInsuranceTypeConceptAnswers } from './insurance-type.resource';
 import { getAutomaticNationalityUpdate, isCompletedPeruDni } from './patient-nationality';
 import { useNationalityConceptAnswers } from './patient-nationality.resource';
 import { buildEmergencyPatientAttributes } from './patient-registration-attributes';
@@ -157,6 +158,11 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
     () => (nationalityOptions ? new Set(nationalityOptions.map((option) => option.uuid)) : undefined),
     [nationalityOptions],
   );
+  const {
+    data: insuranceTypeOptions,
+    error: insuranceTypeOptionsError,
+    isLoading: isLoadingInsuranceTypeOptions,
+  } = useInsuranceTypeConceptAnswers(config.patientRegistration.insuranceTypeConceptSetUuid);
 
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
@@ -1014,35 +1020,25 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                                   <Select
                                     id="insuranceType"
                                     labelText={t('insuranceType', 'Tipo')}
-                                    disabled={isRegistering}
+                                    disabled={
+                                      isRegistering || isLoadingInsuranceTypeOptions || !!insuranceTypeOptionsError
+                                    }
                                     value={field.value || ''}
                                     onChange={(e) => field.onChange(e.target.value)}
                                   >
-                                    <SelectItem value="" text={t('select', 'Seleccionar')} />
                                     <SelectItem
-                                      value={config.patientRegistration.insuranceTypeConcepts.sisGratuitoUuid}
-                                      text="SIS Gratuito"
+                                      value=""
+                                      text={
+                                        insuranceTypeOptionsError
+                                          ? t('insuranceCatalogUnavailable', 'Catálogo de seguros no disponible')
+                                          : isLoadingInsuranceTypeOptions
+                                            ? t('loadingInsuranceTypes', 'Cargando tipos de seguro...')
+                                            : t('select', 'Seleccionar')
+                                      }
                                     />
-                                    <SelectItem
-                                      value={config.patientRegistration.insuranceTypeConcepts.sisEmprendedorUuid}
-                                      text="SIS Emprendedor"
-                                    />
-                                    <SelectItem
-                                      value={config.patientRegistration.insuranceTypeConcepts.sisSemicontributivoUuid}
-                                      text="SIS Semicontributivo"
-                                    />
-                                    <SelectItem
-                                      value={config.patientRegistration.insuranceTypeConcepts.essaludUuid}
-                                      text="EsSalud"
-                                    />
-                                    <SelectItem
-                                      value={config.patientRegistration.insuranceTypeConcepts.privateUuid}
-                                      text={t('privateInsurance', 'Seguro Privado')}
-                                    />
-                                    <SelectItem
-                                      value={config.patientRegistration.insuranceTypeConcepts.noneUuid}
-                                      text={t('noInsurance', 'Ninguno')}
-                                    />
+                                    {(insuranceTypeOptions ?? []).map((option) => (
+                                      <SelectItem key={option.uuid} value={option.uuid} text={option.display} />
+                                    ))}
                                   </Select>
                                 )}
                               />

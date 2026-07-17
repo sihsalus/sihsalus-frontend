@@ -79,6 +79,8 @@ export interface AppointmentService {
   startTime: string;
   uuid: string;
   serviceTypes?: Array<ServiceTypes>;
+  gender?: string;
+  allowedGenders?: Array<string>;
   color?: string;
   startTimeTimeFormat?: amPm;
   endTimeTimeFormat?: amPm;

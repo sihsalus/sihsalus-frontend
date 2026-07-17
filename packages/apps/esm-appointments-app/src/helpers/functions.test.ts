@@ -1,6 +1,12 @@
 import esTranslations from '../../translations/es.json';
 import { AppointmentKind, AppointmentStatus } from '../types';
-import { canTransition, getAppointmentKindLabel, getAppointmentStatusLabel, isAppointmentEditable } from './functions';
+import {
+  canTransition,
+  getAppointmentKindLabel,
+  getAppointmentStatusLabel,
+  isAppointmentEditable,
+  isAppointmentServiceAvailableForGender,
+} from './functions';
 
 describe('canTransition', () => {
   it.each([
@@ -71,5 +77,26 @@ describe('appointment labels', () => {
   it('does not expose unknown backend values directly', () => {
     expect(getAppointmentStatusLabel('UnexpectedStatus', t)).toBe('Estado no reconocido');
     expect(getAppointmentKindLabel('UnexpectedKind', t)).toBe('Tipo no reconocido');
+  });
+});
+
+describe('appointment service gender filtering', () => {
+  it('hides obstetric services for male patients', () => {
+    expect(isAppointmentServiceAvailableForGender({ name: 'Atención ambulatoria por obstetra' }, 'M')).toBe(false);
+  });
+
+  it('shows obstetric services for female patients', () => {
+    expect(isAppointmentServiceAvailableForGender({ name: 'Atención ambulatoria por obstetra' }, 'F')).toBe(true);
+  });
+
+  it('keeps unrestricted services available for every patient', () => {
+    expect(isAppointmentServiceAvailableForGender({ name: 'Consulta ambulatoria por médico general' }, 'M')).toBe(true);
+    expect(isAppointmentServiceAvailableForGender({ name: 'Consulta ambulatoria por médico general' }, 'F')).toBe(true);
+  });
+
+  it('honors explicit service restrictions when provided by the backend', () => {
+    expect(isAppointmentServiceAvailableForGender({ name: 'Servicio especializado', allowedGenders: ['F'] }, 'M')).toBe(
+      false,
+    );
   });
 });

@@ -60,7 +60,7 @@ import {
   moduleName,
   weekDays,
 } from '../constants';
-import { isAppointmentEditable } from '../helpers';
+import { isAppointmentEditable, isAppointmentServiceAvailableForGender } from '../helpers';
 import SelectedDateContext from '../hooks/selectedDateContext';
 import { useProviders } from '../hooks/useProviders';
 import { getAppointmentStatus } from '../patient-appointments/patient-appointments.resource';
@@ -272,6 +272,9 @@ const AppointmentsForm: React.FC<
   const canEditAppointmentStartDate = userHasAccess(appointmentStartDateEditPrivilege, session?.user);
   const { selectedDate } = useContext(SelectedDateContext);
   const { data: services, isLoading } = useAppointmentService();
+  const availableServices = services?.filter((service) =>
+    isAppointmentServiceAvailableForGender(service, patient?.gender),
+  );
   const { appointmentTypes, allowAllDayAppointments } = useConfig<ConfigObject>();
   const mappedAppointmentTypes = appointmentTypes ?? [];
   const title =
@@ -808,8 +811,8 @@ const AppointmentsForm: React.FC<
                     value={value}
                   >
                     <SelectItem text={t('chooseService', 'Select service')} value="" />
-                    {services?.length > 0 &&
-                      services.map((service) => (
+                    {availableServices?.length > 0 &&
+                      availableServices.map((service) => (
                         <SelectItem key={service.uuid} text={service.name} value={service.name}>
                           {service.name}
                         </SelectItem>

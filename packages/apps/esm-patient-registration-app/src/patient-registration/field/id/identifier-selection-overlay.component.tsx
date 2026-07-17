@@ -27,6 +27,7 @@ import styles from './identifier-selection.scss';
 interface PatientIdentifierOverlayProps {
   setFieldValue: (fieldName: string, value: FormValues['identifiers'] | PatientIdentifierValue) => void;
   closeOverlay: () => void;
+  hiddenPatientIdentifierTypeUuids: ReadonlyArray<string>;
 }
 
 const exclusiveIdentifierTypeUuids: Record<string, string | Array<string>> = {
@@ -87,7 +88,11 @@ function removeIdentifiersByTypeUuid(
   );
 }
 
-const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ closeOverlay, setFieldValue }) => {
+const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({
+  closeOverlay,
+  hiddenPatientIdentifierTypeUuids,
+  setFieldValue,
+}) => {
   const layout = useLayoutType();
   const { currentSession, identifierTypes = [] } = useContext(ResourcesContext);
   const { isOffline, values, initialFormValues } = useContext(PatientRegistrationContext);
@@ -100,10 +105,11 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
     () =>
       identifierTypes.filter(
         (identifierType) =>
-          identifierType.uuid !== peruOtherPatientIdentifierTypeUuid ||
-          isEmergencyIdentifierContext(currentSession?.sessionLocation),
+          !hiddenPatientIdentifierTypeUuids.includes(identifierType.uuid) &&
+          (identifierType.uuid !== peruOtherPatientIdentifierTypeUuid ||
+            isEmergencyIdentifierContext(currentSession?.sessionLocation)),
       ),
-    [currentSession?.sessionLocation, identifierTypes],
+    [currentSession?.sessionLocation, hiddenPatientIdentifierTypeUuids, identifierTypes],
   );
 
   useEffect(() => {

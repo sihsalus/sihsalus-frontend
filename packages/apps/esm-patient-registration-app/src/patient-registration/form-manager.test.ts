@@ -248,6 +248,38 @@ describe('FormManager', () => {
       expect(mockDeletePatientIdentifier).toHaveBeenCalledWith('patient-uuid', 'aUuid', undefined);
     });
 
+    it('preserves an unchanged system-managed SIS identifier during patient edits', async () => {
+      const sisIdentifier = {
+        ...formValues.identifiers.foo,
+        identifierUuid: 'sis-contract-identifier-uuid',
+        identifierName: 'SIS Contrato',
+        identifierTypeUuid: '406574d4-396a-4787-9c4e-0bbfa30de39f',
+        identifierValue: 'SIS-CONTRACT-001',
+        initialValue: 'SIS-CONTRACT-001',
+        preferred: false,
+        selectedSource: undefined,
+      };
+
+      const result = await FormManager.savePatientIdentifiers(
+        false,
+        'patient-uuid',
+        { sisContrato: sisIdentifier },
+        { sisContrato: sisIdentifier },
+        'Nyc',
+      );
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          uuid: 'sis-contract-identifier-uuid',
+          identifier: 'SIS-CONTRACT-001',
+          identifierType: '406574d4-396a-4787-9c4e-0bbfa30de39f',
+        }),
+      ]);
+      expect(mockAddPatientIdentifier).not.toHaveBeenCalled();
+      expect(mockUpdatePatientIdentifier).not.toHaveBeenCalled();
+      expect(mockDeletePatientIdentifier).not.toHaveBeenCalled();
+    });
+
     it('persists each changed value when an identifier is edited again after a partial failure', async () => {
       const transaction = new SavePatientTransactionManager();
       const changedIdentifiers = {

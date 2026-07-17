@@ -5,6 +5,9 @@ export const peruCarnetExtranjeriaPatientIdentifierTypeUuid = '550e8400-e29b-41d
 export const peruPassportPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440003';
 export const peruOtherPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440004';
 export const peruDiePatientIdentifierTypeUuid = '8d793bee-c2cc-11de-8d13-0010c6dffd0f';
+export const peruSisIdnumregPatientIdentifierTypeUuid = '6ff8b876-0aea-4219-b03f-dfc428ae05f4';
+export const peruSisContractPatientIdentifierTypeUuid = '406574d4-396a-4787-9c4e-0bbfa30de39f';
+export const peruSisTemporaryPatientIdentifierTypeUuid = '97d1a1f2-6b38-4319-9ea2-46a8763ad671';
 export const peruInsuranceTypeAttributeTypeUuid = '56188294-b42c-481d-a987-4b495116c580';
 export const peruInsuranceCodeAttributeTypeUuid = '374b130f-7457-476f-87b1-f182aa77c434';
 export const peruInsuranceAccreditationStatusAttributeTypeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1005';
@@ -20,6 +23,12 @@ export const peruNationalityConceptUuid = 'e0370dea-d480-4721-a438-97a77d6c3349'
 
 const peruDefaultPatientIdentifierTypeUuids = [
   peruDniPatientIdentifierTypeUuid, // DNI
+];
+
+export const peruSystemManagedPatientIdentifierTypeUuids = [
+  peruSisIdnumregPatientIdentifierTypeUuid,
+  peruSisContractPatientIdentifierTypeUuid,
+  peruSisTemporaryPatientIdentifierTypeUuid,
 ];
 
 export const peruForeignPatientIdentifierTypeUuids = [
@@ -433,6 +442,12 @@ export function getEffectiveRegistrationConfig(config: RegistrationConfig): Regi
     ...config.defaultPatientIdentifierTypes,
     ...peruDefaultPatientIdentifierTypeUuids.filter((uuid) => !config.defaultPatientIdentifierTypes.includes(uuid)),
   ];
+  const hiddenPatientIdentifierTypeUuids = [
+    ...config.hiddenPatientIdentifierTypeUuids,
+    ...peruSystemManagedPatientIdentifierTypeUuids.filter(
+      (uuid) => !config.hiddenPatientIdentifierTypeUuids.includes(uuid),
+    ),
+  ];
 
   return {
     ...config,
@@ -465,5 +480,6 @@ export function getEffectiveRegistrationConfig(config: RegistrationConfig): Regi
       companionRelationshipType,
     },
     defaultPatientIdentifierTypes,
+    hiddenPatientIdentifierTypeUuids,
   };
 }

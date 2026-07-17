@@ -198,6 +198,8 @@
   "recurringAppointmentEndCannotBeBeforeStart": "The recurring appointment end date cannot be before its start date",
   "recurringAppointmentShouldHaveEndDate": "A recurring appointment should have an end date",
   "repeatEvery": "Repeat every",
+  "reconcileAdmission": "Reconcile admission",
+  "reconcileAdmissionDescription": "The appointment is in progress without a linked active visit. Review and reconcile its state.",
   "reconcileCheckout": "Reconcile checkout",
   "requested": "Requested",
   "responsibleProvider": "Responsible provider",

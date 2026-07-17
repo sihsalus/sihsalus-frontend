@@ -1,4 +1,5 @@
 import { getGlobalStore, useStore } from '@openmrs/esm-framework';
+import { useEffect } from 'react';
 import type { StoreApi } from 'zustand/vanilla';
 
 /**
@@ -19,6 +20,8 @@ interface ServiceQueuesStore {
   selectedServiceDisplay?: string;
   selectedQueueStatusUuid?: string;
   selectedQueueStatusDisplay?: string;
+  /** When true, service-queues hides its standard metrics/table so the emergency UI replaces them */
+  emergencyUiActive?: boolean;
 }
 
 /**
@@ -96,6 +99,39 @@ export function useServiceQueuesLocationAndName(): {
     locationUuid: selectedQueueLocationUuid || undefined,
     locationName: selectedQueueLocationName || undefined,
   };
+}
+
+// Ref-counted claims so the queue-table and metrics extensions can independently
+// mark the emergency UI as active without racing each other's unmount cleanup.
+const emergencyUiClaims = new Set<symbol>();
+
+/**
+ * Declares that this component is rendering emergency UI in place of the
+ * standard service-queues UI. service-queues reads `emergencyUiActive` from its
+ * store and hides its default metrics/table while at least one claim is active.
+ */
+export function useEmergencyUiActiveClaim(active: boolean): void {
+  useEffect(() => {
+    if (!active) {
+      return;
+    }
+
+    const store = getServiceQueuesStore();
+    if (!store) {
+      return;
+    }
+
+    const claim = Symbol('emergency-ui-claim');
+    emergencyUiClaims.add(claim);
+    store.setState({ emergencyUiActive: true });
+
+    return () => {
+      emergencyUiClaims.delete(claim);
+      if (emergencyUiClaims.size === 0) {
+        store.setState({ emergencyUiActive: false });
+      }
+    };
+  }, [active]);
 }
 
 /**

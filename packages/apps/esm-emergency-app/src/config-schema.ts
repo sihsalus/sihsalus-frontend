@@ -59,16 +59,6 @@ export const configSchema = {
   },
 
   /**
-   * UUID del servicio de emergencias (Triage service)
-   * Este servicio se usa para gestionar el flujo de pacientes en emergencias
-   */
-  emergencyServiceUuid: {
-    _type: Type.UUID,
-    _default: 'd62d58e9-ec91-4108-9643-00f5f23bf51c',
-    _description: 'UUID del servicio de triage/emergencias',
-  },
-
-  /**
    * UUID de la ubicación principal de emergencias
    * Por ejemplo: Outpatient Clinic (fallback)
    */
@@ -257,78 +247,6 @@ export const configSchema = {
       _default: '67a71486-1a54-468f-ac3e-7091a9a79584',
       _description: 'UUID del encounter type "Triaje"',
     },
-    vitalSignsConcepts: {
-      temperatureUuid: {
-        _type: Type.ConceptUuid,
-        _default: '5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        _description: 'UUID del concepto Temperatura (CIEL 5088)',
-      },
-      heartRateUuid: {
-        _type: Type.ConceptUuid,
-        _default: '5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        _description: 'UUID del concepto Frecuencia cardíaca / Pulso (CIEL 5087)',
-      },
-      respiratoryRateUuid: {
-        _type: Type.ConceptUuid,
-        _default: '5242AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        _description: 'UUID del concepto Frecuencia respiratoria (CIEL 5242)',
-      },
-      systolicBpUuid: {
-        _type: Type.ConceptUuid,
-        _default: '5085AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        _description: 'UUID del concepto Presión arterial sistólica (CIEL 5085)',
-      },
-      diastolicBpUuid: {
-        _type: Type.ConceptUuid,
-        _default: '5086AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        _description: 'UUID del concepto Presión arterial diastólica (CIEL 5086)',
-      },
-      oxygenSaturationUuid: {
-        _type: Type.ConceptUuid,
-        _default: '5092AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        _description: 'UUID del concepto Saturación de oxígeno (CIEL 5092)',
-      },
-      consciousnessLevelUuid: {
-        _type: Type.ConceptUuid,
-        _default: '2944f99e-bda8-4acc-8a4e-d5709dd82041',
-        _description: 'UUID del concepto Conciencia y orientación (tipo Text)',
-      },
-      weightUuid: {
-        _type: Type.ConceptUuid,
-        _default: '5089AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        _description: 'UUID del concepto Peso Corporal (CIEL 5089)',
-      },
-      heightUuid: {
-        _type: Type.ConceptUuid,
-        _default: '5090AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        _description: 'UUID del concepto Talla (CIEL 5090)',
-      },
-      anamnesisUuid: {
-        _type: Type.ConceptUuid,
-        _default: '6d99603e-ae9d-4838-8a09-ba75e27ff1e9',
-        _description: 'UUID del concepto Anamnesis (texto libre)',
-      },
-      illnessDurationUuid: {
-        _type: Type.ConceptUuid,
-        _default: '577876b1-0b6e-4c57-b4c3-7af969a1d501',
-        _description: 'UUID del concepto Tiempo de enfermedad',
-      },
-      onsetTypeUuid: {
-        _type: Type.ConceptUuid,
-        _default: '34e03399-cb72-484b-85b8-616ef19919c1',
-        _description: 'UUID del concepto Forma de inicio',
-      },
-      courseUuid: {
-        _type: Type.ConceptUuid,
-        _default: 'e7d98188-16ba-4ef3-aed9-e891680bacf9',
-        _description: 'UUID del concepto Curso',
-      },
-      clinicalExamUuid: {
-        _type: Type.ConceptUuid,
-        _default: '830f3546-14fb-4d45-b889-a736b85a039c',
-        _description: 'UUID del concepto Examen Clínico (texto libre)',
-      },
-    },
   },
 
   /**
@@ -387,26 +305,6 @@ export const configSchema = {
   },
 
   /**
-   * Auto-crear visita al seleccionar paciente existente
-   * Si es true, se creará automáticamente una visita de emergencia al seleccionar un paciente
-   */
-  autoCreateVisitOnPatientSelect: {
-    _type: Type.Boolean,
-    _default: true,
-    _description: 'Crear automáticamente visita de emergencia al seleccionar un paciente existente',
-  },
-
-  /**
-   * Preguntar antes de crear visita en nuevo registro
-   * Si es true, se mostrará un prompt preguntando si desea crear la visita después del registro
-   */
-  promptVisitCreationOnNewPatient: {
-    _type: Type.Boolean,
-    _default: true,
-    _description: 'Mostrar prompt para crear visita al registrar un nuevo paciente',
-  },
-
-  /**
    * Configuración para registro rápido de pacientes
    */
   patientRegistration: {
@@ -444,11 +342,6 @@ export const configSchema = {
       _type: Type.UUID,
       _default: '35d2234e-129a-4c40-abb2-1ae0b2400003',
       _description: 'UUID de la ubicación por defecto para registro de pacientes en emergencias (UPSS - EMERGENCIA)',
-    },
-    phoneNumberAttributeTypeUuid: {
-      _type: Type.UUID,
-      _default: '14d4f066-15f5-102d-96e4-000c29c2a5d7', // UUID común para atributo de teléfono
-      _description: 'UUID del tipo de atributo para número de teléfono',
     },
     identifierSourceUuid: {
       _type: Type.UUID,
@@ -604,7 +497,6 @@ export interface PriorityConfig {
 export interface Config {
   emergencyTriageQueueUuid: string;
   emergencyAttentionQueueUuid: string;
-  emergencyServiceUuid: string;
   emergencyLocationUuid: string;
   upssEmergencyLocationUuid: string;
   queueStatuses: {
@@ -623,22 +515,6 @@ export interface Config {
   };
   triageEncounter: {
     encounterTypeUuid: string;
-    vitalSignsConcepts: {
-      temperatureUuid: string;
-      heartRateUuid: string;
-      respiratoryRateUuid: string;
-      systolicBpUuid: string;
-      diastolicBpUuid: string;
-      oxygenSaturationUuid: string;
-      consciousnessLevelUuid: string;
-      weightUuid: string;
-      heightUuid: string;
-      anamnesisUuid: string;
-      illnessDurationUuid: string;
-      onsetTypeUuid: string;
-      courseUuid: string;
-      clinicalExamUuid: string;
-    };
   };
   attentionEncounter: {
     encounterTypeUuid: string;
@@ -651,8 +527,6 @@ export interface Config {
   autoRefreshInterval: number;
   emergencyVisitTypeUuid: string;
   closeVisitOnDisposition: boolean;
-  autoCreateVisitOnPatientSelect: boolean;
-  promptVisitCreationOnNewPatient: boolean;
   patientRegistration: {
     defaultIdentifierTypeUuid: string;
     foreignCardIdentifierTypeUuid: string;
@@ -661,7 +535,6 @@ export interface Config {
     liveBirthCertificateIdentifierTypeUuid: string;
     otherIdentifierTypeUuid: string;
     defaultLocationUuid: string;
-    phoneNumberAttributeTypeUuid: string;
     identifierSourceUuid: string;
     openMrsIdIdentifierTypeUuid: string;
     unknownPatientAttributeTypeUuid: string;

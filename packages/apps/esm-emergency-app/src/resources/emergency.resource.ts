@@ -579,41 +579,6 @@ export async function updateEmergencyQueueEntry(
  * @returns Promise with the ended queue entry
  */
 /**
- * Create a triage encounter with vital signs observations
- * @param patientUuid - UUID of the patient
- * @param visitUuid - UUID of the visit
- * @param locationUuid - UUID of the location
- * @param encounterTypeUuid - UUID of the triage encounter type
- * @param observations - Array of observations (concept + value)
- * @returns Promise with the created encounter
- */
-export async function createTriageEncounter(
-  patientUuid: string,
-  visitUuid: string,
-  locationUuid: string,
-  encounterTypeUuid: string,
-  observations: Array<{ concept: string; value: string | number }>,
-) {
-  return openmrsFetch(`${restBaseUrl}/encounter`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: {
-      patient: patientUuid,
-      visit: visitUuid,
-      encounterType: encounterTypeUuid,
-      location: locationUuid,
-      encounterDatetime: dayjs().format(omrsDateFormat),
-      obs: observations.map((obs) => ({
-        concept: obs.concept,
-        value: obs.value,
-      })),
-    },
-  });
-}
-
-/**
  * Transition a patient from triage queue to attention queue
  * using the Queue Module transition endpoint.
  *

@@ -72,7 +72,6 @@ export function useEmergencyConfig() {
     () => ({
       emergencyTriageQueueUuid: config.emergencyTriageQueueUuid,
       emergencyAttentionQueueUuid: config.emergencyAttentionQueueUuid,
-      emergencyServiceUuid: config.emergencyServiceUuid,
       emergencyLocationUuid: config.emergencyLocationUuid,
       upssEmergencyLocationUuid: config.upssEmergencyLocationUuid,
 
@@ -86,8 +85,6 @@ export function useEmergencyConfig() {
 
       autoRefreshInterval: config.autoRefreshInterval,
       emergencyVisitTypeUuid: config.emergencyVisitTypeUuid,
-      autoCreateVisitOnPatientSelect: config.autoCreateVisitOnPatientSelect,
-      promptVisitCreationOnNewPatient: config.promptVisitCreationOnNewPatient,
 
       patientRegistration: config.patientRegistration,
     }),

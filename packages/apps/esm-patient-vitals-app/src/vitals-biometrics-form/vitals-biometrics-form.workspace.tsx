@@ -22,13 +22,13 @@ import {
   useSession,
   Workspace2,
 } from '@openmrs/esm-framework';
-import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import {
   type DefaultPatientWorkspaceProps,
   type PatientWorkspace2DefinitionProps,
   useReferenceRanges,
   useVisitOrOfflineVisit,
 } from '@openmrs/esm-patient-common-lib';
+import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -192,7 +192,16 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   const session = useSession();
   const patient = usePatient(patientUuid);
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
-  const { data: conceptUnits, conceptMetadata, conceptRanges, isLoading } = useVitalsConceptMetadata();
+  const {
+    data: conceptUnits,
+    conceptMetadata,
+    conceptRanges,
+    isLoading,
+    error: conceptMetadataError,
+  } = useVitalsConceptMetadata();
+  // With no concept metadata every range check silently passes; the form still
+  // allows saving, but the user must know the values are not being validated.
+  const referenceRangesUnavailable = Boolean(conceptMetadataError) || (!isLoading && !conceptMetadata?.length);
   const referenceRangeConceptUuids = useMemo(
     () => [
       config.concepts.temperatureUuid,
@@ -755,6 +764,20 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
 
   return renderWorkspace(
     <Form className={styles.form} data-openmrs-role="Vitals and Biometrics Form">
+      {referenceRangesUnavailable && (
+        <Column className={styles.errorContainer}>
+          <InlineNotification
+            kind="warning"
+            lowContrast
+            hideCloseButton
+            title={t('referenceRangesUnavailable', 'Reference ranges could not be loaded')}
+            subtitle={t(
+              'referenceRangesUnavailableSubtitle',
+              'Values will be recorded without range validation or abnormal-value flags. Verify them carefully.',
+            )}
+          />
+        </Column>
+      )}
       <div className={styles.grid}>
         <Stack>
           <Column>

@@ -197,6 +197,34 @@ export const esmPatientChartSchema = {
       },
     ],
   },
+  visitTypeEligibilityRules: {
+    _type: Type.Array,
+    _description:
+      'Rules that relate visit locations, visit types and patient genders in the add-patient-to-queue workflow.',
+    _elements: {
+      locationUuid: {
+        _type: Type.UUID,
+        _description: 'Visit location for which this rule applies.',
+      },
+      visitTypeUuids: {
+        _type: Type.Array,
+        _elements: {
+          _type: Type.UUID,
+        },
+        _default: [],
+        _description: 'Visit types available at this location.',
+      },
+      allowedGenders: {
+        _type: Type.Array,
+        _elements: {
+          _type: Type.String,
+        },
+        _default: [],
+        _description: 'Optional accepted patient genders. An empty list accepts every gender.',
+      },
+    },
+    _default: [],
+  },
   defaultVisitAttributesFromPatientAddress: {
     _type: Type.Array,
     _description:
@@ -319,6 +347,7 @@ export interface ChartConfig {
     }>;
   }>;
   visitTypeResourceUrl: string;
+  visitTypeEligibilityRules: Array<VisitTypeEligibilityRule>;
   visitAttributeTypes: Array<{
     displayInThePatientBanner: boolean;
     required: boolean;
@@ -341,4 +370,10 @@ export interface ChartConfig {
   falseConceptUuid: string;
   otherConceptUuid: string;
   drugOrderTypeUUID: string;
+}
+
+export interface VisitTypeEligibilityRule {
+  locationUuid: string;
+  visitTypeUuids: Array<string>;
+  allowedGenders?: Array<string>;
 }

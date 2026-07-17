@@ -49,7 +49,7 @@ import classNames from 'classnames';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Controller, FormProvider, useForm } from 'react-hook-form';
+import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
@@ -67,6 +67,7 @@ import LocationSelector from './location-selector.component';
 import { MemoizedRecommendedVisitType } from './recommended-visit-type.component';
 import VisitAttributeTypeFields from './visit-attribute-type.component';
 import VisitDateTimeField from './visit-date-time.component';
+import { filterVisitTypesByEligibility } from './visit-type-eligibility';
 import {
   createVisitAttribute,
   deleteVisitAttribute,
@@ -472,7 +473,42 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     formState: { errors, isDirty, isSubmitting },
     setError,
     reset,
+    setValue,
   } = methods;
+  const selectedVisitLocation = useWatch({ control, name: 'visitLocation' });
+  const selectedVisitType = useWatch({ control, name: 'visitType' });
+  const availableVisitTypes = useMemo(
+    () =>
+      isQueueRegistration
+        ? filterVisitTypesByEligibility(
+            allVisitTypes,
+            config.visitTypeEligibilityRules,
+            selectedVisitLocation?.uuid,
+            patient?.gender,
+          )
+        : allVisitTypes,
+    [
+      allVisitTypes,
+      config.visitTypeEligibilityRules,
+      isQueueRegistration,
+      patient?.gender,
+      selectedVisitLocation?.uuid,
+    ],
+  );
+  const allowedVisitTypeUuids = useMemo(
+    () => (isQueueRegistration ? new Set(availableVisitTypes.map(({ uuid }) => uuid)) : undefined),
+    [availableVisitTypes, isQueueRegistration],
+  );
+
+  useEffect(() => {
+    if (
+      selectedVisitType &&
+      allVisitTypes.length &&
+      !availableVisitTypes.some((visitType) => visitType.uuid === selectedVisitType)
+    ) {
+      setValue('visitType', '', { shouldDirty: true, shouldValidate: true });
+    }
+  }, [allVisitTypes.length, availableVisitTypes, selectedVisitType, setValue]);
 
   // default values are cached so form needs to be reset when they change (e.g. when default visit location finishes loading)
   useEffect(() => {
@@ -1287,7 +1323,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                   <h1 className={styles.sectionTitle}>{`${t('visitType_title', 'Tipo de consulta')} *`}</h1>
                   <div className={styles.sectionField}>
                     <p className={styles.bodyShort02}>
-                      {allVisitTypes.find((visitType) => visitType.uuid === requiredVisitTypeUuid)?.display ??
+                      {availableVisitTypes.find((visitType) => visitType.uuid === requiredVisitTypeUuid)?.display ??
                         t('configuredAppointmentVisitType', 'Tipo asignado por el servicio de la cita')}
                     </p>
                   </div>
@@ -1307,6 +1343,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                         </ContentSwitcher>
                         {contentSwitcherIndex === 0 && !isLoading && (
                           <MemoizedRecommendedVisitType
+                            allowedVisitTypeUuids={allowedVisitTypeUuids}
                             patientUuid={patientUuid}
                             patientProgramEnrollment={(() => {
                               return activePatientEnrollment?.find(
@@ -1316,11 +1353,11 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                             locationUuid={getValues('visitLocation')?.uuid}
                           />
                         )}
-                        {contentSwitcherIndex === 1 && <BaseVisitType visitTypes={allVisitTypes} />}
+                        {contentSwitcherIndex === 1 && <BaseVisitType visitTypes={availableVisitTypes} />}
                       </>
                     ) : (
                       // Defaults to showing all possible visit types if recommended visits are not enabled
-                      <BaseVisitType visitTypes={allVisitTypes} />
+                      <BaseVisitType visitTypes={availableVisitTypes} />
                     )}
                   </div>
 

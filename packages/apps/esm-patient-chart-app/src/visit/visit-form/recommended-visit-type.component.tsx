@@ -7,12 +7,14 @@ import { useRecommendedVisitTypes } from '../hooks/useRecommendedVisitTypes';
 import BaseVisitType from './base-visit-type.component';
 
 interface RecommendedVisitTypeProp {
+  allowedVisitTypeUuids?: Set<string>;
   patientUuid: string;
   patientProgramEnrollment: PatientProgram;
   locationUuid: string;
 }
 
 const RecommendedVisitType: React.FC<RecommendedVisitTypeProp> = ({
+  allowedVisitTypeUuids,
   patientUuid,
   patientProgramEnrollment,
   locationUuid,
@@ -23,10 +25,13 @@ const RecommendedVisitType: React.FC<RecommendedVisitTypeProp> = ({
     patientProgramEnrollment?.program?.uuid,
     locationUuid,
   );
+  const availableRecommendedVisitTypes = allowedVisitTypeUuids
+    ? recommendedVisitTypes.filter((visitType) => allowedVisitTypeUuids.has(visitType.uuid))
+    : recommendedVisitTypes;
 
   return (
     <div style={{ marginTop: '0.625rem' }}>
-      {isLoading ? <StructuredListSkeleton /> : <BaseVisitType visitTypes={recommendedVisitTypes} />}
+      {isLoading ? <StructuredListSkeleton /> : <BaseVisitType visitTypes={availableRecommendedVisitTypes} />}
     </div>
   );
 };

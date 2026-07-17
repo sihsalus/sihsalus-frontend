@@ -194,6 +194,7 @@ const mockOpenmrsConfig: RegistrationConfig = {
     submitButton: '#',
   },
   defaultPatientIdentifierTypes: [],
+  hiddenPatientIdentifierTypeUuids: [],
   registrationObs: {
     encounterTypeUuid: null,
     encounterProviderRoleUuid: 'asdf',

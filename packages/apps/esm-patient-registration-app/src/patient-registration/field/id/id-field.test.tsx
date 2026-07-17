@@ -7,7 +7,7 @@ import { mockIdentifierTypes, mockOpenmrsId, mockPatient, mockSession } from 'te
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../../../config-schema';
 import { type Resources, ResourcesContext } from '../../../offline.resources';
-import { type AddressTemplate, type IdentifierSource } from '../../patient-registration.types';
+import { type AddressTemplate, type FormValues, type IdentifierSource } from '../../patient-registration.types';
 import { PatientRegistrationContext, type PatientRegistrationContextProps } from '../../patient-registration-context';
 
 import { countIdentityDocumentIdentifiers, Identifiers, setIdentifierSource } from './id-field.component';
@@ -141,6 +141,12 @@ const peruIdentifierTypes = [
   sisIdnumregIdentifierType,
 ];
 
+const hiddenSisIdentifierTypeUuids = [
+  sisIdnumregIdentifierType.uuid,
+  sisContractIdentifierType.uuid,
+  sisTemporaryIdentifierType.uuid,
+];
+
 function buildIdentifier(identifierType, identifierValue = '') {
   return {
     identifierTypeUuid: identifierType.uuid,
@@ -204,14 +210,17 @@ const mockContextValues: PatientRegistrationContextProps = {
 } as unknown as PatientRegistrationContextProps;
 
 function renderIdentifiersWithState(
-  initialIdentifiers = {},
+  initialIdentifiers: FormValues['identifiers'] = {},
   sessionLocation = mockResourcesContextValue.currentSession.sessionLocation,
 ) {
+  let currentIdentifiers = initialIdentifiers;
+
   function StatefulIdentifiers() {
     const [values, setValues] = React.useState({
       ...mockInitialFormValues,
       identifiers: initialIdentifiers,
     });
+    currentIdentifiers = values.identifiers;
 
     const setFieldValue = vi.fn((fieldName, value) => {
       if (fieldName === 'identifiers') {
@@ -251,7 +260,10 @@ function renderIdentifiersWithState(
     );
   }
 
-  return render(<StatefulIdentifiers />);
+  return {
+    ...render(<StatefulIdentifiers />),
+    getIdentifiers: () => currentIdentifiers,
+  };
 }
 
 describe('Identifiers', () => {
@@ -548,6 +560,54 @@ describe('Identifiers', () => {
     await user.click(screen.getByRole('checkbox', { name: 'SIS Contrato' }));
 
     expect(screen.getByRole('checkbox', { name: 'DNI' })).toBeDisabled();
+  });
+
+  it('hides configured SIS identifiers while preserving their values when another identifier changes', async () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
+      defaultPatientIdentifierTypes: ['OpenMRS ID'],
+      hiddenPatientIdentifierTypeUuids: hiddenSisIdentifierTypeUuids,
+    });
+
+    const initialIdentifiers = {
+      dni: buildIdentifier(dniIdentifierType, '12345678'),
+      sisContrato: {
+        ...buildIdentifier(sisContractIdentifierType, 'SIS-CONTRACT-001'),
+        identifierUuid: 'sis-contract-identifier-uuid',
+        initialValue: 'SIS-CONTRACT-001',
+      },
+      sisAfiliacionTemporal: {
+        ...buildIdentifier(sisTemporaryIdentifierType, 'SIS-TEMP-001'),
+        identifierUuid: 'sis-temporary-identifier-uuid',
+        initialValue: 'SIS-TEMP-001',
+      },
+      sisIdnumreg: {
+        ...buildIdentifier(sisIdnumregIdentifierType, 'SIS-REG-001'),
+        identifierUuid: 'sis-idnumreg-identifier-uuid',
+        initialValue: 'SIS-REG-001',
+      },
+    };
+    const user = userEvent.setup();
+    const { getIdentifiers } = renderIdentifiersWithState(initialIdentifiers);
+
+    expect(screen.queryByText('SIS Contrato')).not.toBeInTheDocument();
+    expect(screen.queryByText('SIS Afiliación RN/Temporal')).not.toBeInTheDocument();
+    expect(screen.queryByText('SIS Idnumreg')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Configure' }));
+
+    expect(screen.queryByRole('checkbox', { name: 'SIS Contrato' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'SIS Afiliación RN/Temporal' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'SIS Idnumreg' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Carnet de Extranjeria' }));
+    await user.click(screen.getByRole('button', { name: 'Configure identifiers' }));
+
+    expect(getIdentifiers()).toMatchObject({
+      sisContrato: initialIdentifiers.sisContrato,
+      sisAfiliacionTemporal: initialIdentifiers.sisAfiliacionTemporal,
+      sisIdnumreg: initialIdentifiers.sisIdnumreg,
+    });
   });
 
   it('deletes identifier inputs while keeping the configuration panel in sync', async () => {

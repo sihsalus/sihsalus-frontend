@@ -95,6 +95,7 @@ export interface RegistrationConfig {
     submitButton: string;
   };
   defaultPatientIdentifierTypes: Array<string>;
+  hiddenPatientIdentifierTypeUuids: Array<string>;
   registrationObs: {
     encounterTypeUuid: string | null;
     encounterProviderRoleUuid: string;
@@ -473,6 +474,15 @@ export const esmPatientRegistrationSchema = {
   },
   defaultPatientIdentifierTypes: {
     _type: Type.Array,
+    _elements: {
+      _type: Type.PatientIdentifierTypeUuid,
+    },
+    _default: [],
+  },
+  hiddenPatientIdentifierTypeUuids: {
+    _type: Type.Array,
+    _description:
+      'UUIDs of optional, system-managed patient identifier types to hide from manual registration controls while preserving existing values.',
     _elements: {
       _type: Type.PatientIdentifierTypeUuid,
     },

@@ -14,11 +14,15 @@ import {
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
 import { formatDate, useConfig } from '@openmrs/esm-framework';
-import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
+import {
+  LEGACY_SIS_PRODUCT_CONCEPT_UUIDS,
+  launchPatientWorkspace,
+  SIS_CONCEPT_UUID,
+} from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
-import { useInsuranceProvider } from '../hooks/useInsuranceProvider';
+import { type InsuranceEntry, useInsuranceProvider } from '../hooks/useInsuranceProvider';
 import { patientFormEntryWorkspace } from '../utils/constants';
 import styles from './consulta-externa-dashboard.scss';
 
@@ -28,12 +32,32 @@ interface FinanciadorProps {
 
 type TagType = NonNullable<TagProps<'div'>['type']>;
 
-const insuranceTagType: Record<string, TagType> = {
+/**
+ * Mapeo por UUID de concepto (visit attribute «Financiador» del catálogo
+ * canónico «Tipo de seguro»). Los conceptos vienen del content package.
+ */
+const insuranceTagTypeByConceptUuid: Record<string, TagType> = {
+  [SIS_CONCEPT_UUID]: 'green',
+  ...Object.fromEntries(LEGACY_SIS_PRODUCT_CONCEPT_UUIDS.map((uuid) => [uuid, 'green' as TagType])),
+  'af799b5e-313c-4352-80c4-5007dcd42f29': 'blue', // EsSalud
+  'ec420364-fde1-452d-9c48-fafb4ea73a58': 'purple', // Seguro Privado
+  'c69b424f-4d9c-4ba9-aeae-045ff5a5e530': 'warm-gray', // Particular / sin seguro
+};
+
+/** Fallback por display para las obs legacy, que no traen UUID de concepto. */
+const insuranceTagTypeByDisplay: Record<string, TagType> = {
   SIS: 'green',
   EsSalud: 'blue',
   Privado: 'purple',
   Particular: 'warm-gray',
 };
+
+function getInsuranceTagType(entry: InsuranceEntry): TagType {
+  if (entry.conceptUuid && insuranceTagTypeByConceptUuid[entry.conceptUuid]) {
+    return insuranceTagTypeByConceptUuid[entry.conceptUuid];
+  }
+  return insuranceTagTypeByDisplay[entry.display] ?? 'gray';
+}
 
 const Financiador: React.FC<FinanciadorProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
@@ -48,13 +72,14 @@ const Financiador: React.FC<FinanciadorProps> = ({ patientUuid }) => {
 
   const rows = insuranceEntries.map((entry) => ({
     id: entry.uuid,
-    date: formatDate(new Date(entry.obsDatetime), { time: true }),
+    date: entry.obsDatetime ? formatDate(new Date(entry.obsDatetime), { time: true }) : '—',
     provider: (
-      <Tag type={insuranceTagType[entry.display] || 'gray'} size="sm">
+      <Tag type={getInsuranceTagType(entry)} size="sm">
         {entry.display}
       </Tag>
     ),
-    encounter: entry.encounterType || '—',
+    encounter:
+      entry.source === 'visit-attribute' ? t('activeVisitFinanciador', 'Visita activa') : entry.encounterType || '—',
   }));
 
   const handleLaunchForm = () => {

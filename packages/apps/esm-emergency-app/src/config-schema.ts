@@ -448,37 +448,11 @@ export const configSchema = {
       _description:
         'UUID opcional del visit attribute type para observaciones administrativas de registro de emergencia.',
     },
-    insuranceTypeConcepts: {
-      sisGratuitoUuid: {
-        _type: Type.ConceptUuid,
-        _default: 'b61a9ff9-1485-4388-9f67-9c341f847f85',
-        _description: 'UUID del concepto SIS Gratuito',
-      },
-      sisEmprendedorUuid: {
-        _type: Type.ConceptUuid,
-        _default: 'cc6958d9-7948-4f29-b244-4ff896c0b2ee',
-        _description: 'UUID del concepto SIS Emprendedor',
-      },
-      sisSemicontributivoUuid: {
-        _type: Type.ConceptUuid,
-        _default: 'e43e0a71-0b5d-4fc2-b599-a76e4562ae5a',
-        _description: 'UUID del concepto SIS Semicontributivo',
-      },
-      essaludUuid: {
-        _type: Type.ConceptUuid,
-        _default: 'af799b5e-313c-4352-80c4-5007dcd42f29',
-        _description: 'UUID del concepto EsSalud',
-      },
-      privateUuid: {
-        _type: Type.ConceptUuid,
-        _default: 'ec420364-fde1-452d-9c48-fafb4ea73a58',
-        _description: 'UUID del concepto Seguro Privado',
-      },
-      noneUuid: {
-        _type: Type.ConceptUuid,
-        _default: 'c69b424f-4d9c-4ba9-aeae-045ff5a5e530',
-        _description: 'UUID del concepto Ninguno',
-      },
+    insuranceTypeConceptSetUuid: {
+      _type: Type.ConceptUuid,
+      _default: '6b932638-242e-49ef-8ba7-0ae87199835c',
+      _description:
+        'UUID del catálogo canónico «Tipo de seguro» (pregunta coded / concept set) del que se cargan las opciones del campo Seguro.',
     },
   },
 };
@@ -556,13 +530,6 @@ export interface Config {
       mergedUuid: string | null;
     };
     administrativeNotesVisitAttributeTypeUuid: string | null;
-    insuranceTypeConcepts: {
-      sisGratuitoUuid: string;
-      sisEmprendedorUuid: string;
-      sisSemicontributivoUuid: string;
-      essaludUuid: string;
-      privateUuid: string;
-      noneUuid: string;
-    };
+    insuranceTypeConceptSetUuid: string;
   };
 }

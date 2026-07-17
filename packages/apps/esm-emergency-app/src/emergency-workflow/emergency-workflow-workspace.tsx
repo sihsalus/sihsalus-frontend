@@ -7,6 +7,7 @@
  */
 
 import { type DefaultWorkspaceProps, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { safeCopyFinanciadorToVisit } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type Config } from '../config-schema';
@@ -82,6 +83,20 @@ const EmergencyWorkflowWorkspace: React.FC<EmergencyWorkflowWorkspaceProps> = ({
         });
         return;
       }
+
+      // 2.5. Copy financiador persona→visita. Fire-and-forget: la atención de
+      // emergencia no se condiciona a ningún trámite administrativo (Ley 27604),
+      // así que un fallo aquí nunca bloquea el encolado.
+      void safeCopyFinanciadorToVisit({ patientUuid, visitUuid }).then((result) => {
+        if (!result.ok) {
+          showSnackbar({
+            title: t('financiadorCopyFailed', 'No se pudo registrar el seguro en la visita'),
+            subtitle: t('financiadorCopyFailedSubtitle', 'Admisión puede completarlo más tarde. La atención continúa.'),
+            kind: 'warning',
+            isLowContrast: true,
+          });
+        }
+      });
 
       // 3. Create queue entry
       let queueEntryUuid: string | undefined;

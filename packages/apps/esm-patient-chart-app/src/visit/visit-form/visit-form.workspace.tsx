@@ -40,6 +40,7 @@ import {
   createOfflineVisitForPatient,
   type DefaultPatientWorkspaceProps,
   type PatientWorkspace2DefinitionProps,
+  safeCopyFinanciadorToVisit,
   time12HourFormatRegex,
   useActivePatientEnrollment,
 } from '@openmrs/esm-patient-common-lib';
@@ -196,7 +197,11 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   );
   const { emrConfiguration } = useEmrConfiguration(isEmrApiModuleInstalled);
   const { patientUuid, patient } = usePatient(initialPatientUuid);
-  const { companions, isLoading: isLoadingCompanions, companionRelationshipTypeUuid } = usePatientCompanions(patientUuid);
+  const {
+    companions,
+    isLoading: isLoadingCompanions,
+    companionRelationshipTypeUuid,
+  } = usePatientCompanions(patientUuid);
   const [contentSwitcherIndex, setContentSwitcherIndex] = useState(config.showRecommendedVisitTypeTab ? 0 : 1);
   const visitHeaderSlotState = useMemo(() => ({ patientUuid }), [patientUuid]);
   const { activePatientEnrollment, isLoading } = useActivePatientEnrollment(patientUuid);
@@ -973,6 +978,15 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
             setIsVisitSaved(true);
             setPersistedVisitPendingPostSubmit(visit);
+
+            // Copia el financiador persona→visita (plan de seguros SIS, F2).
+            // Solo al INICIAR una consulta (no al editarla, para no pisar
+            // correcciones manuales de Admisión). Fire-and-forget: es
+            // idempotente y nunca bloquea el inicio; un fallo se registra en
+            // consola y Admisión puede completar el dato después.
+            if (!visitToEdit) {
+              void safeCopyFinanciadorToVisit({ patientUuid, visitUuid: visit.uuid });
+            }
           }
 
           if (!completedPostSubmitActions.current.has('visit-attributes')) {

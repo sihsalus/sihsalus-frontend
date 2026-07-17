@@ -43,6 +43,7 @@ export {
 } from './encounters/use-schemas-concept-set';
 export * from './error-state';
 export * from './expression-evaluator';
+export * from './financiador/financiador.resource';
 export * from './form-entry/form-entry';
 export * from './form-entry-interop';
 export { default as FormsList } from './forms-selector/forms-list.component';

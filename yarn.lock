@@ -7860,6 +7860,7 @@ __metadata:
   resolution: "@sihsalus/esm-care-logbook-app@workspace:packages/apps/esm-care-logbook-app"
   dependencies:
     "@openmrs/esm-framework": "workspace:*"
+    "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
@@ -7881,6 +7882,7 @@ __metadata:
   peerDependencies:
     "@carbon/react": 1.x
     "@openmrs/esm-framework": "*"
+    "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
     react-i18next: 16.x
@@ -8120,6 +8122,7 @@ __metadata:
     "@carbon/react": "npm:^1.83.0"
     "@hookform/resolvers": "npm:^3.3.0"
     "@openmrs/esm-framework": "workspace:*"
+    "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
@@ -8133,6 +8136,7 @@ __metadata:
     zod: "npm:^3.22.0"
   peerDependencies:
     "@openmrs/esm-framework": "*"
+    "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
     react-dom: 18.x
@@ -9459,6 +9463,7 @@ __metadata:
   dependencies:
     "@carbon/react": "npm:^1.71.0"
     "@hookform/resolvers": "npm:^3.9.1"
+    "@openmrs/esm-patient-common-lib": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@sihsalus/esm-rbac": "workspace:*"
@@ -9471,6 +9476,7 @@ __metadata:
     zod: "npm:^3.24.1"
   peerDependencies:
     "@openmrs/esm-framework": "*"
+    "@openmrs/esm-patient-common-lib": "*"
     react: ^18.3.1
     react-i18next: 16.x
     react-router-dom: 6.x

@@ -113,6 +113,64 @@ describe('admissions resources', () => {
     });
   });
 
+  it('resolves hasSis from the Financiador visit attribute and only falls back to the text heuristic without it', async () => {
+    const financiadorAttributeTypeUuid = '3a988e33-a6c0-4b76-b924-01abb998944b';
+    const sisConceptUuid = '97c6e901-7570-4ab8-a9c0-9cf2b0f5bc0c';
+    const essaludConceptUuid = 'af799b5e-313c-4352-80c4-5007dcd42f29';
+
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          {
+            uuid: 'visit-financiador-sis',
+            attributes: [
+              {
+                uuid: 'attr-1',
+                value: { uuid: sisConceptUuid, display: 'SIS' },
+                attributeType: { uuid: financiadorAttributeTypeUuid, display: 'Financiador' },
+              },
+            ],
+            patient: {
+              uuid: 'patient-sis',
+              // Sin rastro textual de SIS: el atributo manda.
+              identifiers: [{ identifier: 'DNI-1', identifierType: { display: 'DNI' } }],
+            },
+          },
+          {
+            uuid: 'visit-financiador-essalud',
+            attributes: [
+              {
+                uuid: 'attr-2',
+                value: essaludConceptUuid,
+                attributeType: { uuid: financiadorAttributeTypeUuid, display: 'Financiador' },
+              },
+            ],
+            patient: {
+              uuid: 'patient-essalud',
+              // El texto contiene "SIS" pero el atributo dice EsSalud: gana el atributo.
+              identifiers: [{ identifier: 'SIS-999', identifierType: { display: 'SIS' } }],
+            },
+          },
+          {
+            uuid: 'visit-legacy',
+            patient: {
+              uuid: 'patient-legacy',
+              // Sin atributo: aplica el fallback legacy por regex.
+              identifiers: [{ identifier: 'SIS-123', identifierType: { display: 'Seguro Integral de Salud' } }],
+            },
+          },
+        ],
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    const { result } = renderHook(() => useAdmissions(25), { wrapper });
+
+    await waitFor(() => expect(result.current.admissions).toHaveLength(3));
+    expect(result.current.admissions[0]).toMatchObject({ uuid: 'visit-financiador-sis', hasSis: 'Sí' });
+    expect(result.current.admissions[1]).toMatchObject({ uuid: 'visit-financiador-essalud', hasSis: 'No' });
+    expect(result.current.admissions[2]).toMatchObject({ uuid: 'visit-legacy', hasSis: 'Sí' });
+  });
+
   it('keeps identity document type and number for non-DNI identifiers', async () => {
     mockOpenmrsFetch.mockResolvedValueOnce({
       data: {

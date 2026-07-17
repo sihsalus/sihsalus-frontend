@@ -11,6 +11,7 @@ import {
 import { type FormValues, type PatientIdentifierType, PatientIdentifierValue } from '../../patient-registration.types';
 import { PatientRegistrationContext } from '../../patient-registration-context';
 import {
+  peruDiePatientIdentifierTypeUuid,
   peruDniPatientIdentifierTypeUuid,
   peruForeignPatientIdentifierTypeUuids,
   peruOtherPatientIdentifierTypeUuid,
@@ -101,6 +102,7 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({
   );
   const [searchString, setSearchString] = useState('');
   const { t } = useTranslation(moduleName);
+  const foreignIdentityCardLabel = t('foreignIdentityCardLabel', 'Identity card issued by country of origin');
   const availableIdentifierTypes = useMemo(
     () =>
       identifierTypes.filter(
@@ -122,10 +124,17 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({
     () =>
       availableIdentifierTypes.filter((identifier) =>
         normalizeSearchValue(
-          [identifier?.name, identifier?.display, identifier?.description].filter(Boolean).join(' '),
+          [
+            identifier?.name,
+            identifier?.display,
+            identifier?.description,
+            identifier.uuid === peruDiePatientIdentifierTypeUuid ? foreignIdentityCardLabel : null,
+          ]
+            .filter(Boolean)
+            .join(' '),
         ).includes(normalizeSearchValue(searchString)),
       ),
-    [availableIdentifierTypes, searchString],
+    [availableIdentifierTypes, foreignIdentityCardLabel, searchString],
   );
 
   const handleCheckingIdentifier = useCallback(
@@ -184,6 +193,8 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({
     () =>
       filteredIdentifiers.map((identifierType) => {
         const patientIdentifier = unsavedIdentifierTypes[identifierType.fieldName];
+        const identifierTypeLabel =
+          identifierType.uuid === peruDiePatientIdentifierTypeUuid ? foreignIdentityCardLabel : identifierType.name;
         const selectedIdentityDocumentCount = countIdentityDocumentIdentifiers(unsavedIdentifierTypes, identifierTypes);
         const identifierTypeDescription = getIdentifierTypeDescription(identifierType);
         const isDisabled =
@@ -202,13 +213,13 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({
               labelText={
                 identifierTypeDescription ? (
                   <span className={styles.identifierLabel}>
-                    <span>{identifierType.name}</span>
+                    <span>{identifierTypeLabel}</span>
                     <span className={styles.identifierDescription} aria-hidden="true">
                       {identifierTypeDescription}
                     </span>
                   </span>
                 ) : (
-                  identifierType.name
+                  identifierTypeLabel
                 )
               }
               onChange={(_event, { checked }) => handleCheckingIdentifier(identifierType, checked)}
@@ -260,6 +271,7 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({
       handleCheckingIdentifier,
       t,
       handleSelectingIdentifierSource,
+      foreignIdentityCardLabel,
     ],
   );
 
@@ -313,7 +325,7 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({
           <p className={styles.requirementMessage} role="alert">
             {t(
               'identifierSelectionRequiresIdentityDocument',
-              'Select at least one identity document (DNI, CE, passport, DIE, or CNV).',
+              'Select at least one identity document (DNI, CE, passport, identity card, or CNV).',
             )}
           </p>
         ) : null}

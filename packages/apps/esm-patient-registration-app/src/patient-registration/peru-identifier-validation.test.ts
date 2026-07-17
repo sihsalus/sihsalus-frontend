@@ -1,9 +1,9 @@
+import { getPeruIdentifierRule } from './peru-identifier-validation';
 import {
   peruCarnetExtranjeriaPatientIdentifierTypeUuid,
+  peruDiePatientIdentifierTypeUuid,
   peruPassportPatientIdentifierTypeUuid,
 } from './peru-registration-config';
-
-import { getPeruIdentifierRule } from './peru-identifier-validation';
 
 describe('Peru identifier validation', () => {
   it('aligns CE with the backend PatientIdentifierType format', () => {
@@ -32,5 +32,9 @@ describe('Peru identifier validation', () => {
     expect(rule?.pattern.test('AB12345678')).toBe(false);
     expect(rule?.sanitize('ab-123456789')).toBe('AB1234567');
     expect(rule?.maxLength).toBe(9);
+  });
+
+  it('does not invent a country-independent format for foreign identity cards', () => {
+    expect(getPeruIdentifierRule({ uuid: peruDiePatientIdentifierTypeUuid, name: 'DIE' })).toBeUndefined();
   });
 });

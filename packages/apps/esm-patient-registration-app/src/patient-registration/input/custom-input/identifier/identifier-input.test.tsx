@@ -110,6 +110,17 @@ describe('identifier input', () => {
     expect(screen.getByLabelText(openmrsID.identifierName)).toBeInTheDocument();
   });
 
+  it('presents the interoperable DIE type as Cédula de Identidad', () => {
+    setupIdentifierInput({
+      ...openmrsID,
+      autoGeneration: false,
+      identifierName: 'DIE',
+      identifierTypeUuid: '8d793bee-c2cc-11de-8d13-0010c6dffd0f',
+    });
+
+    expect(screen.getByLabelText('Identity card issued by country of origin')).toBeInTheDocument();
+  });
+
   it('allows Ctrl and Command clipboard shortcuts in the DNI input', () => {
     const dniIdentifier = {
       ...openmrsID,

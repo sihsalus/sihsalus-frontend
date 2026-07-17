@@ -326,7 +326,7 @@ export const configSchema = {
     dieIdentifierTypeUuid: {
       _type: Type.UUID,
       _default: '8d793bee-c2cc-11de-8d13-0010c6dffd0f',
-      _description: 'UUID del tipo de documento DIE',
+      _description: 'UUID del tipo interoperable DIE, presentado como Cédula de Identidad',
     },
     liveBirthCertificateIdentifierTypeUuid: {
       _type: Type.UUID,

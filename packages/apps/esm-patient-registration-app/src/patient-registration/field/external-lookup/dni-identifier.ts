@@ -5,7 +5,7 @@ import { peruDniPatientIdentifierTypeUuid } from '../../peru-registration-config
 
 export const dniPattern = peruDniPattern;
 
-/** Returns every populated civil-document identifier (DNI, CE, passport, DIE or CNV). */
+/** Returns every populated civil-document identifier (DNI, CE, passport, foreign identity card or CNV). */
 export function getDocumentIdentifierEntries(
   identifiers: Record<string, PatientIdentifierValue> = {},
   identifierTypes: Array<PatientIdentifierType> = [],

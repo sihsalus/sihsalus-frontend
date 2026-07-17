@@ -15,7 +15,7 @@ describe('getEmergencyIdentityDocumentTypes', () => {
       { label: 'DNI', value: 'dni-uuid' },
       { label: 'CE', value: 'ce-uuid' },
       { label: 'Pasaporte', value: 'passport-uuid' },
-      { label: 'DIE', value: 'die-uuid' },
+      { label: 'Cédula de Identidad', value: 'die-uuid' },
       { label: 'CNV', value: 'cnv-uuid' },
       { label: 'Otros', value: 'other-uuid' },
     ]);

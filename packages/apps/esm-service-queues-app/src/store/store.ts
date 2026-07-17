@@ -22,6 +22,8 @@ export interface ServiceQueuesState {
   selectedAppointmentStatus: string;
   selectedQueueRoomTimestamp: Date;
   isPermanentProviderQueueRoom: boolean;
+  /** Set by the emergency app while its UI replaces the standard metrics/table */
+  emergencyUiActive?: boolean;
 }
 
 const initialServiceQueuesState: ServiceQueuesState = {
@@ -34,6 +36,7 @@ const initialServiceQueuesState: ServiceQueuesState = {
   selectedAppointmentStatus: '',
   selectedQueueRoomTimestamp: new Date(),
   isPermanentProviderQueueRoom: getValueFromSessionStorage('isPermanentProviderQueueRoom') === 'true',
+  emergencyUiActive: false,
 };
 
 const serviceQueuesStore = createGlobalStore<ServiceQueuesState>('serviceQueues', initialServiceQueuesState);

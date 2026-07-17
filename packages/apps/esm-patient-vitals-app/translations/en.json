@@ -80,6 +80,8 @@
   "recordBiometrics": "Record biometrics",
   "recordVitals": "Record vitals",
   "recordVitalsAndBiometrics": "Record Vitals and Biometrics",
+  "referenceRangesUnavailable": "Reference ranges could not be loaded",
+  "referenceRangesUnavailableSubtitle": "Values will be recorded without range validation or abnormal-value flags. Verify them carefully.",
   "respirationRate": "Respiration rate",
   "respiratoryRate": "R. rate",
   "respiratoryRateAbbreviated": "R. Rate",

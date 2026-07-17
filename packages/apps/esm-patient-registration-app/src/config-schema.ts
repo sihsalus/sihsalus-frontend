@@ -1,5 +1,7 @@
 import { Type, validator, validators } from '@openmrs/esm-framework';
 
+import { peruSisProductConceptUuid } from './patient-registration/peru-registration-config';
+
 export interface SectionDefinition {
   id: string;
   name?: string;
@@ -102,6 +104,9 @@ export interface RegistrationConfig {
     registrationFormUuid: string | null;
   };
   freeTextFieldConceptUuid: string;
+  sisVerification: {
+    productConceptUuid: string;
+  };
 }
 
 export const builtInSections: Array<SectionDefinition> = [
@@ -510,6 +515,14 @@ export const esmPatientRegistrationSchema = {
   freeTextFieldConceptUuid: {
     _default: '5622AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     _type: Type.ConceptUuid,
+  },
+  sisVerification: {
+    productConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: peruSisProductConceptUuid,
+      _description:
+        'Concepto coded "Producto SIS" cuyas respuestas (SIS Gratuito, SIS Para Todos, etc.) alimentan el desplegable del mini-formulario de verificación SIS manual.',
+    },
   },
   _validators: [
     validator(

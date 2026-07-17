@@ -11,6 +11,16 @@ export const peruInsuranceAccreditationStatusAttributeTypeUuid = '9b3df0a1-0c58-
 export const peruInsuranceAccreditationCheckedAtAttributeTypeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1006';
 export const peruInsuranceAccreditationActiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2051';
 export const peruInsuranceAccreditationInactiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2052';
+export const peruInsuranceAccreditationPendingConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2053';
+// Concepto "SIS" (respuesta del set canónico "Tipo de seguro" 6b932638-…) en sihsalus-content.
+export const peruInsuranceSisConceptUuid = '97c6e901-7570-4ab8-a9c0-9cf2b0f5bc0c';
+// Concepto "Producto SIS" (pregunta coded con los planes SIS como respuestas) en sihsalus-content.
+// Sobrescribible vía config `sisVerification.productConceptUuid`.
+export const peruSisProductConceptUuid = '72b9edbf-1ec8-4b1a-8957-b1597aab8757';
+// Person attributes SETISIS (sihsalus-content, personattributetypes.csv):
+// "Descripción de Tipo de Seguro SIS" y "Nombre EESS SIS".
+export const peruSisTypeDescriptionAttributeTypeUuid = '4bf4517f-38f4-44a2-a6c4-52b2e797034a';
+export const peruSisEessNameAttributeTypeUuid = '2b0382d9-5f7c-425d-ad6e-a4489dafd2f5';
 export const peruPhoneAttributeTypeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
 export const peruMobilePhoneAttributeTypeUuid = 'fee4e8ef-aef8-4bb9-8ed0-7ded6055c61f';
 export const peruEmailAttributeTypeUuid = '4bdf3a33-2f63-11f0-8ab4-1a7535b1b3e8';
@@ -258,7 +268,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     customConceptAnswers: [
       { uuid: peruInsuranceAccreditationActiveConceptUuid, label: 'Vigente' },
       { uuid: peruInsuranceAccreditationInactiveConceptUuid, label: 'No vigente' },
-      { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2053', label: 'Pendiente' },
+      { uuid: peruInsuranceAccreditationPendingConceptUuid, label: 'Pendiente' },
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2054', label: 'No consultada' },
     ],
     defaultValue: '9b3df0a1-0c58-4f55-9868-9c38f1db2054',

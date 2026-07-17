@@ -4,15 +4,12 @@ import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 
-import { careLogbookPrivilege, moduleName } from '../constants';
+import { careLogbookBasePath, careLogbookPrivilege, moduleName } from '../constants';
 
 export default function CareLogbookDashboardLink() {
   const { t } = useTranslation(moduleName);
-  const dashboardPath = '/home/admission';
-  const href = `${globalThis.spaBase}${dashboardPath}`;
-
-  const isActive =
-    globalThis.location.pathname.includes(dashboardPath) || globalThis.location.pathname.includes('/admission');
+  const href = `${globalThis.spaBase}${careLogbookBasePath}`;
+  const isActive = globalThis.location.pathname.includes(careLogbookBasePath);
 
   return (
     <RequirePrivilege privilege={careLogbookPrivilege} hideUnauthorized>

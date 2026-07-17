@@ -220,7 +220,7 @@ El flujo de identidad no debe depender solo del DNI. En registro, emergencia, bu
 
 Reglas transversales:
 
-- `@sihsalus/esm-care-logbook-app` se presenta como `Libro de Atenciones`; la ruta historica `/admission` se conserva por compatibilidad.
+- `@sihsalus/esm-care-logbook-app` se presenta como `Libro de Atenciones` en `/home/care-logbook`; `/admission` y `/home/admission` solo redirigen por compatibilidad.
 - Pacientes no identificados o incapaces de comunicarse pueden registrarse sin DNI, telefono, direccion o fecha exacta de nacimiento.
 - Cuando el paciente no puede aportar datos o consentimiento, se debe capturar responsable, institucion o autoridad responsable.
 - `zipcode/postcode` y telefono no son filtros avanzados por defecto en Patient Search. Pueden existir como datos demograficos/contacto, pero no como pivotes principales de busqueda.

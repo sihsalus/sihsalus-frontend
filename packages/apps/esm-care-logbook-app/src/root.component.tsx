@@ -1,31 +1,31 @@
-import { useLeftNav } from '@openmrs/esm-framework';
 import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
-import { basePath, careLogbookPrivilege } from './constants';
+import { careLogbookBasePath, careLogbookMergePrivileges, careLogbookPrivilege } from './constants';
 import AdmissionHome from './pages/admission-home.component';
 import PatientMerge from './pages/patient-merge.component';
 import PatientAdmissionDetail from './patient/patient-admission-detail.component';
 import styles from './root.scss';
 
 export default function Root() {
-  useLeftNav({
-    name: 'homepage-dashboard-slot',
-    basePath,
-    mode: 'normal',
-  });
-
   return (
     <AppErrorBoundary appName="esm-care-logbook-app">
       <RequirePrivilege privilege={careLogbookPrivilege}>
         <div className={styles.root}>
           <BrowserRouter
-            basename={`${globalThis.getOpenmrsSpaBase().slice(0, -1)}${basePath}`}
+            basename={`${globalThis.getOpenmrsSpaBase().slice(0, -1)}${careLogbookBasePath}`}
             future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
           >
             <Routes>
               <Route index element={<AdmissionHome />} />
-              <Route path="merge" element={<PatientMerge />} />
+              <Route
+                path="merge"
+                element={
+                  <RequirePrivilege privilege={careLogbookMergePrivileges}>
+                    <PatientMerge />
+                  </RequirePrivilege>
+                }
+              />
               <Route path="patient/:patientUuid" element={<PatientAdmissionDetail />} />
             </Routes>
           </BrowserRouter>

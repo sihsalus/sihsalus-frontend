@@ -4,7 +4,7 @@ import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { basePath, careLogbookEditPrivilege, moduleName } from '../constants';
+import { careLogbookBasePath, careLogbookMergePrivileges, moduleName } from '../constants';
 
 interface CareLogbookMergePatientsMenuItemProps {
   closeMenu?: () => void;
@@ -13,12 +13,12 @@ interface CareLogbookMergePatientsMenuItemProps {
 export default function CareLogbookMergePatientsMenuItem({ closeMenu }: CareLogbookMergePatientsMenuItemProps) {
   const { t } = useTranslation(moduleName);
   const openMergePatients = useCallback(
-    () => navigate({ to: `${globalThis.getOpenmrsSpaBase().slice(0, -1)}${basePath}/merge` }),
+    () => navigate({ to: `${globalThis.getOpenmrsSpaBase().slice(0, -1)}${careLogbookBasePath}/merge` }),
     [],
   );
 
   return (
-    <RequirePrivilege privilege={careLogbookEditPrivilege} hideUnauthorized>
+    <RequirePrivilege privilege={careLogbookMergePrivileges} hideUnauthorized>
       <OverflowMenuItem
         itemText={t('mergeDuplicatePatients', 'Fusionar historias duplicadas')}
         onClick={openMergePatients}

@@ -119,11 +119,11 @@ describe('QueueTablesForAllStatuses queue location semantics', () => {
     });
   });
 
-  it('blocks Admission from adding through a direct URL to a queue at another location', () => {
+  it('uses the selected queue location instead of the session location for a direct URL', () => {
     mockUseSession.mockReturnValue({
       authenticated: true,
       sessionLocation: { uuid: 'another-session-location' },
-      user: { roles: [{ display: 'Admission' }] },
+      user: { roles: [{ display: 'Any role' }] },
     } as unknown as ReturnType<typeof useSession>);
     mockUseQueueLocations.mockReturnValue({
       queueLocations: [
@@ -141,11 +141,14 @@ describe('QueueTablesForAllStatuses queue location semantics', () => {
     renderView();
     const extensionState = getPatientSearchExtensionState();
 
-    expect(extensionState.buttonProps.disabled).toBe(true);
-    expect(extensionState.buttonText).toBe('This queue does not belong to your session location');
-    expect(extensionState.buttonProps.title).toBe('This queue does not belong to your session location');
+    expect(extensionState.buttonProps.disabled).toBe(false);
     extensionState.selectPatientAction('patient-uuid');
-    expect(mockLaunchWorkspace).not.toHaveBeenCalled();
+    expect(mockLaunchWorkspace).toHaveBeenCalledWith('create-queue-entry-workspace', {
+      selectedPatientUuid: 'patient-uuid',
+      currentServiceQueueUuid: 'queue-uuid',
+      currentQueueLocationUuid: 'queue-location-uuid',
+      requiredVisitLocation: undefined,
+    });
   });
 
   it.each([

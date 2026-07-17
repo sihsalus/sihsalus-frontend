@@ -36,6 +36,7 @@ const ACTIVE_VISIT_CHANGED = 'ACTIVE_VISIT_CHANGED';
 const ACTIVE_VISIT_LOCATION_MISMATCH = 'ACTIVE_VISIT_LOCATION_MISMATCH';
 const ACTIVE_VISIT_TYPE_MISMATCH = 'ACTIVE_VISIT_TYPE_MISMATCH';
 const APPOINTMENT_LOCATION_MISSING = 'APPOINTMENT_LOCATION_MISSING';
+const APPOINTMENT_QUEUE_MAPPING_AMBIGUOUS = 'APPOINTMENT_QUEUE_MAPPING_AMBIGUOUS';
 const APPOINTMENT_VISIT_TYPE_MAPPING_MISSING = 'APPOINTMENT_VISIT_TYPE_MAPPING_MISSING';
 const MULTIPLE_ACTIVE_VISITS = 'MULTIPLE_ACTIVE_VISITS';
 
@@ -51,13 +52,14 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
   const { mutateAppointments } = useMutateAppointments();
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const appointmentLocationUuid = appointment.location?.uuid;
-  const queueMapping = appointmentLocationUuid
-    ? (appointmentQueueMappings ?? []).find(
+  const exactQueueMappings = appointmentLocationUuid
+    ? (appointmentQueueMappings ?? []).filter(
         (mapping) =>
           mapping.appointmentServiceUuid === appointment.service.uuid &&
           mapping.appointmentLocationUuid === appointmentLocationUuid,
       )
-    : undefined;
+    : [];
+  const queueMapping = exactQueueMappings.length === 1 ? exactQueueMappings[0] : undefined;
   const serviceMappings = (appointmentQueueMappings ?? []).filter(
     (mapping) => mapping.appointmentServiceUuid === appointment.service.uuid,
   );
@@ -98,6 +100,10 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
             [APPOINTMENT_LOCATION_MISSING]: t(
               'appointmentLocationMissing',
               'La cita no tiene una sede válida. Regularice la cita antes de iniciar la atención.',
+            ),
+            [APPOINTMENT_QUEUE_MAPPING_AMBIGUOUS]: t(
+              'appointmentQueueMappingAmbiguous',
+              'Existe más de una regla de cola para este servicio y sede. Corrija la configuración antes de admitir la cita.',
             ),
             [APPOINTMENT_VISIT_LINK_CONFIGURATION_MISSING]: t(
               'appointmentVisitLinkNotConfigured',
@@ -269,6 +275,11 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
               setIsCheckingIn(true);
               try {
                 assertVisitLinkIsConfigured();
+                if (exactQueueMappings.length > 1) {
+                  throw Object.assign(new Error('Multiple queue mappings match this appointment.'), {
+                    code: APPOINTMENT_QUEUE_MAPPING_AMBIGUOUS,
+                  });
+                }
                 const requiredAppointmentLocationUuid = getAppointmentLocationUuid();
                 const requiredQueueLocationUuid = queueMapping?.queueLocationUuid ?? requiredAppointmentLocationUuid;
                 if (!(await validateAppointmentStatus())) {

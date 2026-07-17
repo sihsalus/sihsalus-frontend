@@ -1,28 +1,39 @@
-import { describe, expect, it } from 'vitest';
+import { userHasAccess } from '@openmrs/esm-framework';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { clinicalChartPrivilege } from './constants';
 import { hasClinicalChartAccess } from './clinical-chart-access';
 
+const mockUserHasAccess = vi.mocked(userHasAccess);
+
 describe('hasClinicalChartAccess', () => {
-  it.each([
-    ['current privilege in name', { privileges: [{ name: 'app:hoja.clinica' }], roles: [] }],
-    ['current privilege in display', { privileges: [{ display: 'app:hoja.clinica' }], roles: [] }],
-    ['legacy privilege', { privileges: [{ display: 'app:clinical.chart' }], roles: [] }],
-    ['System Developer role', { privileges: [], roles: [{ display: 'System Developer' }] }],
-    [
-      'localized System Developer role',
-      { privileges: [], roles: [{ name: 'System Developer', display: 'Desarrollador del sistema' }] },
-    ],
-    ['inherited superuser role', { privileges: [], roles: [{ display: 'Application: Has Super User Privileges' }] }],
-  ])('allows access for %s', (_case, user) => {
-    expect(hasClinicalChartAccess(user)).toBe(true);
+  beforeEach(() => {
+    mockUserHasAccess.mockReset();
   });
 
-  it.each([
-    ['no user', undefined],
-    ['no privileges', { privileges: [], roles: [] }],
-    ['only a child privilege', { privileges: [{ display: 'app:hoja.clinica.resumen' }], roles: [] }],
-    ['unrelated administrative role', { privileges: [], roles: [{ display: 'Organizational: System Administrator' }] }],
-  ])('denies access for %s', (_case, user) => {
+  it('delegates chart authorization to the shared privilege evaluator', () => {
+    const user = {
+      privileges: [{ display: clinicalChartPrivilege }],
+      roles: [{ display: 'Any operational role' }],
+    };
+    mockUserHasAccess.mockReturnValue(true);
+
+    expect(hasClinicalChartAccess(user)).toBe(true);
+    expect(mockUserHasAccess).toHaveBeenCalledWith(clinicalChartPrivilege, user);
+  });
+
+  it('denies access when the shared privilege evaluator denies it', () => {
+    const user = {
+      privileges: [{ display: 'app:home.admision' }],
+      roles: [{ display: 'SIHSALUS Admision' }],
+    };
+    mockUserHasAccess.mockReturnValue(false);
+
     expect(hasClinicalChartAccess(user)).toBe(false);
+  });
+
+  it('denies access before the user is available', () => {
+    expect(hasClinicalChartAccess(undefined)).toBe(false);
+    expect(mockUserHasAccess).not.toHaveBeenCalled();
   });
 });

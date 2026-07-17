@@ -17,6 +17,10 @@ export const timeZone = 'America/Lima';
 export const getStartOfDay = () => dayjs().tz(timeZone).startOf('day').toISOString();
 export const serviceQueuesPrivilege = 'app:home.colasAtencion';
 export const serviceQueuesEditPrivilege = 'app:home.colasAtencion.editar';
+export const visitNotesPrivilege = 'app:hoja.clinica.resumenConsulta';
+export const visitNotesEditPrivilege = 'app:hoja.clinica.resumenConsulta.editar';
+export const vitalsPrivilege = 'app:hoja.clinica.signosVitales';
+export const vitalsEditPrivilege = 'app:hoja.clinica.signosVitales.editar';
 export const queueEntryCommentMaxLength = 600;
 
 export const datePickerPlaceHolder = 'dd/mm/yyyy';

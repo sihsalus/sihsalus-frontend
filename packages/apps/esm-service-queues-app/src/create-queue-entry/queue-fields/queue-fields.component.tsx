@@ -12,16 +12,17 @@ import {
   getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
   ResponsiveWrapper,
   showSnackbar,
+  userHasAccess,
   useConfig,
   useSession,
   type Visit,
 } from '@openmrs/esm-framework';
 import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
-import { isAdmissionUser } from '@sihsalus/esm-rbac';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../config-schema';
+import { serviceQueuesEditPrivilege } from '../../constants';
 import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
 import { useQueues } from '../../hooks/useQueues';
 import { AddPatientToQueueContext } from '../create-queue-entry.workspace';
@@ -76,7 +77,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   const { queueLocations, isLoading: isLoadingQueueLocations, error: queueLocationsError } = useQueueLocations();
   const { sessionLocation, user } = useSession();
   const sessionLocationUuid = sessionLocation?.uuid;
-  const admissionUser = isAdmissionUser(user);
+  const canSelectQueueLocation = userHasAccess(serviceQueuesEditPrivilege, user);
   const {
     visitQueueNumberAttributeUuid,
     concepts: { defaultStatusConceptUuid, defaultPriorityConceptUuid, emergencyPriorityConceptUuid },
@@ -84,12 +85,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   const [selectedQueueLocation, setSelectedQueueLocation] = useState('');
   const { currentQueueLocationUuid: contextQueueLocationUuid, currentServiceQueueUuid: contextServiceQueueUuid } =
     useContext(AddPatientToQueueContext);
-  const requestedQueueLocationUuid = currentQueueLocationUuid ?? contextQueueLocationUuid;
-  const sessionQueueLocation = useMemo(
-    () => (sessionLocationUuid ? queueLocations.find((location) => location.id === sessionLocationUuid) : undefined),
-    [queueLocations, sessionLocationUuid],
-  );
-  const requiredQueueLocationUuid = admissionUser ? sessionQueueLocation?.id : requestedQueueLocationUuid;
+  const requiredQueueLocationUuid = currentQueueLocationUuid ?? contextQueueLocationUuid;
   const availableQueueLocations = useMemo(() => {
     const normalizedGender = patientGender?.trim().toLowerCase();
     const isMalePatient = normalizedGender === 'm' || normalizedGender === 'male' || normalizedGender === 'masculino';
@@ -105,25 +101,33 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   const { queues, isLoading: isLoadingQueues, error: queuesError } = useQueues(selectedQueueLocation);
   const [selectedService, setSelectedService] = useState('');
   const selectedServiceQueueUuid = currentServiceQueueUuid ?? contextServiceQueueUuid;
-  const isQueueLocationFixed = admissionUser || Boolean(requiredQueueLocationUuid);
+  const isQueueLocationFixed = Boolean(requiredQueueLocationUuid);
   const isServiceQueueFixed = Boolean(selectedServiceQueueUuid);
   const displayedQueueLocationUuid = requiredQueueLocationUuid || selectedQueueLocation;
   const displayedServiceQueueUuid = selectedServiceQueueUuid || selectedService;
   const selectedQueueLocationName =
     queueLocations.find((location) => location.id === displayedQueueLocationUuid)?.name ?? displayedQueueLocationUuid;
+  const queueMatchesLocation = useCallback(
+    (queue: (typeof queues)[number], queueUuid?: string) =>
+      Boolean(queueUuid) && queue.uuid === queueUuid && queue.location?.uuid === displayedQueueLocationUuid,
+    [displayedQueueLocationUuid],
+  );
   const selectedServiceName =
-    queues.find((queue) => queue.uuid === displayedServiceQueueUuid)?.name ?? displayedServiceQueueUuid;
+    queues.find((queue) => queueMatchesLocation(queue, displayedServiceQueueUuid))?.name ?? displayedServiceQueueUuid;
   const isRequiredQueueLocationAvailable = requiredQueueLocationUuid
     ? availableQueueLocations.some((location) => location.id === requiredQueueLocationUuid)
     : true;
   const isRequiredServiceAvailable = selectedServiceQueueUuid
-    ? queues.some((queue) => queue.uuid === selectedServiceQueueUuid)
+    ? queues.some((queue) => queueMatchesLocation(queue, selectedServiceQueueUuid))
     : true;
-  const selectedQueue = useMemo(() => queues.find((q) => q.uuid === selectedService), [queues, selectedService]);
+  const selectedQueue = useMemo(
+    () => queues.find((queue) => queueMatchesLocation(queue, selectedService)),
+    [queueMatchesLocation, queues, selectedService],
+  );
   const isSelectedQueueLocationAvailable = availableQueueLocations.some(
     (location) => location.id === selectedQueueLocation,
   );
-  const isSelectedServiceAvailable = queues.some((queue) => queue.uuid === selectedService);
+  const isSelectedServiceAvailable = queues.some((queue) => queueMatchesLocation(queue, selectedService));
   const priorities = selectedQueue?.allowedPriorities ?? [];
   const statuses = selectedQueue?.allowedStatuses ?? [];
   const [priority, setPriority] = useState('');
@@ -263,19 +267,19 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
       return;
     }
 
-    if (!queues.some((queue) => queue.uuid === selectedService)) {
+    if (!queues.some((queue) => queueMatchesLocation(queue, selectedService))) {
       setSelectedService('');
     }
-  }, [isLoadingQueues, queues, queuesError, selectedService, selectedServiceQueueUuid]);
+  }, [isLoadingQueues, queueMatchesLocation, queues, queuesError, selectedService, selectedServiceQueueUuid]);
 
   useEffect(() => {
-    if (admissionUser) {
-      setSelectedQueueLocation(sessionQueueLocation?.id ?? '');
+    if (requiredQueueLocationUuid) {
+      setSelectedQueueLocation(requiredQueueLocationUuid);
       return;
     }
 
-    if (requiredQueueLocationUuid) {
-      setSelectedQueueLocation(requiredQueueLocationUuid);
+    if (!canSelectQueueLocation) {
+      setSelectedQueueLocation('');
       return;
     }
 
@@ -287,12 +291,11 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
       availableQueueLocations.find((location) => location.id === sessionLocationUuid) ?? availableQueueLocations[0];
     setSelectedQueueLocation(defaultLocation?.id ?? '');
   }, [
-    admissionUser,
     availableQueueLocations,
+    canSelectQueueLocation,
     requiredQueueLocationUuid,
     selectedQueueLocation,
     sessionLocationUuid,
-    sessionQueueLocation,
   ]);
 
   useEffect(() => {
@@ -352,17 +355,17 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
               subtitle={t('configureQueueLocations', 'Configure at least one queue location to continue.')}
               title={t('noQueueLocationsConfigured', 'No queue locations are configured')}
             />
-          ) : admissionUser && !sessionQueueLocation ? (
+          ) : !isQueueLocationFixed && !canSelectQueueLocation ? (
             <InlineNotification
               className={styles.inlineNotification}
               hideCloseButton
               kind="warning"
               lowContrast
               subtitle={t(
-                'sessionLocationIsNotQueueLocation',
-                'Your session location is not configured as a queue location. Contact an administrator before adding patients.',
+                'queueLocationContextRequiredMessage',
+                'Open this action from an appointment or queue, or ask a queue manager to select the destination.',
               )}
-              title={t('queueLocationUnavailable', 'Queue location unavailable')}
+              title={t('queueLocationContextRequired', 'A queue location is required for this workflow')}
             />
           ) : !isRequiredQueueLocationAvailable ? (
             <InlineNotification

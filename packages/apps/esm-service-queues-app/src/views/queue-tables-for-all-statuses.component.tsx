@@ -9,7 +9,6 @@ import {
   useLayoutType,
   useSession,
 } from '@openmrs/esm-framework';
-import { isAdmissionUser } from '@sihsalus/esm-rbac';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isVisitLocation, useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations';
@@ -46,28 +45,20 @@ const QueueTablesForAllStatuses: React.FC<QueueTablesForAllStatusesProps> = ({
   );
   const session = useSession();
   const canEdit = canEditServiceQueues(session?.user);
-  const admissionUser = isAdmissionUser(session?.user);
   const { queueLocations, isLoading: isLoadingQueueLocations, error: queueLocationsError } = useQueueLocations();
   const selectedQueueLocationUuid = selectedQueue?.location?.uuid;
   const selectedQueueLocation = selectedQueueLocationUuid
     ? queueLocations.find((location) => location.id === selectedQueueLocationUuid)
     : undefined;
-  const admissionLocationMismatch = admissionUser && selectedQueueLocationUuid !== session?.sessionLocation?.uuid;
   const queueLocationUnavailable =
-    !selectedQueueLocationUuid ||
-    isLoadingQueueLocations ||
-    Boolean(queueLocationsError) ||
-    !selectedQueueLocation ||
-    admissionLocationMismatch;
+    !selectedQueueLocationUuid || isLoadingQueueLocations || Boolean(queueLocationsError) || !selectedQueueLocation;
   const queueLocationUnavailableReason = isLoadingQueueLocations
     ? t('loadingQueueContext', 'Loading queues…')
     : queueLocationsError
       ? t('queueContextUnavailable', 'Queues are temporarily unavailable')
-      : admissionLocationMismatch
-        ? t('queueLocationDoesNotMatchSession', 'This queue does not belong to your session location')
-        : !selectedQueueLocation
-          ? t('selectedQueueLocationUnavailable', 'This queue location is not available')
-          : undefined;
+      : !selectedQueueLocation
+        ? t('selectedQueueLocationUnavailable', 'This queue location is not available')
+        : undefined;
   const requiredVisitLocation =
     selectedQueueLocationUuid && selectedQueueLocation && isVisitLocation(selectedQueueLocation)
       ? {

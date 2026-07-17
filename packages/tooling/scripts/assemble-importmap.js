@@ -4,7 +4,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const chalk = require('chalk');
-const { copyContentAddressedEntry } = require('./content-addressed-entry');
+const { copyContentAddressedBuildManifest, copyContentAddressedEntry } = require('./content-addressed-entry');
 const { getSpaArtifactFiles } = require('./spa-artifact-manifest');
 const { getAppShellBuildEnvironment } = require('./build-app-shell');
 
@@ -132,6 +132,7 @@ for (const distDir of appDirs) {
   const buildManifestPath = path.join(distDir, buildManifestName);
   if (fs.existsSync(buildManifestPath)) {
     copyFileReplacingIfNeeded(buildManifestPath, path.join(outDir, buildManifestName));
+    copyContentAddressedBuildManifest(buildManifestPath, outDir, entryFileName, addressedEntryFileName);
   }
 
   // Copy chunk files (skip directories and manifests)

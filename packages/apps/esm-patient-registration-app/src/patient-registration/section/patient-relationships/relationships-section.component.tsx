@@ -35,6 +35,7 @@ import { PatientRegistrationContext } from '../../patient-registration-context';
 import { getEffectiveRegistrationConfig } from '../../peru-registration-config';
 import {
   hasMultipleFatherRelationships,
+  hasMultipleMotherRelationships,
   hasMultiplePrimaryResponsiblePersons,
   hasRelatedPerson,
   hasResponsibleRelationship,
@@ -1032,6 +1033,13 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
                   kind="error"
                   lowContrast
                   title={t('patientCanOnlyHaveOneFather', 'The patient can only have one father')}
+                />
+              ) : null}
+              {hasMultipleMotherRelationships(relationships) ? (
+                <InlineNotification
+                  kind="error"
+                  lowContrast
+                  title={t('patientCanOnlyHaveOneMother', 'The patient can only have one mother')}
                 />
               ) : null}
               {requiresResponsibleRelationship &&

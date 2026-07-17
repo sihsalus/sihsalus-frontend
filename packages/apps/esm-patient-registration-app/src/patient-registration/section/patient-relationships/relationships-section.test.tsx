@@ -409,6 +409,41 @@ describe('RelationshipsSection', () => {
     expect(setFieldValue).toHaveBeenCalledWith('relationships[1].action', 'UPDATE');
   });
 
+  it('shows an error when the patient has more than one active mother', () => {
+    const relationships = [
+      {
+        action: 'ADD',
+        relatedPersonName: 'Maria Quispe',
+        relatedPersonUuid: 'mother-one',
+        relation: 'Madre',
+        relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
+      },
+      {
+        action: 'ADD',
+        relatedPersonName: 'Ana Quispe',
+        relatedPersonUuid: 'mother-two',
+        relation: 'Madre',
+        relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
+      },
+    ] as FormValues['relationships'];
+    const formValues = { relationships } as FormValues;
+    mockResourcesContextValue = { ...mockResourcesContextValue, relationshipTypes };
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={formValues} onSubmit={vi.fn()}>
+          <Form>
+            <PatientRegistrationContext.Provider value={{ ...initialContextValues, values: formValues }}>
+              <RelationshipsSection />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    expect(screen.getByText('The patient can only have one mother')).toBeInTheDocument();
+  });
+
   it('deduplicates relationship options and hides child/grandchild options for minor patients', () => {
     mockResourcesContextValue = {
       ...mockResourcesContextValue,

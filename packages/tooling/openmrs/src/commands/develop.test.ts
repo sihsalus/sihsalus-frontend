@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 
+import { shouldProxyApiRequest } from './develop-path-filter';
 import { createInMemoryRateLimit, readRateLimitEnv } from './develop-rate-limit';
 
 function createResponse() {
@@ -83,6 +84,18 @@ describe('readRateLimitEnv', () => {
         process.env.SIHSALUS_TEST_RATE_LIMIT_MAX = previousValue;
       }
     }
+  });
+});
+
+describe('shouldProxyApiRequest', () => {
+  it('proxies OpenMRS REST and FHIR resources needed during login', () => {
+    expect(shouldProxyApiRequest('/openmrs/ws/rest/v1/module', '/openmrs', '/openmrs/spa')).toBe(true);
+    expect(shouldProxyApiRequest('/openmrs/ws/fhir2/R4/Location', '/openmrs', '/openmrs/spa')).toBe(true);
+  });
+
+  it('does not proxy SPA routes or unrelated paths', () => {
+    expect(shouldProxyApiRequest('/openmrs/spa/login/location', '/openmrs', '/openmrs/spa')).toBe(false);
+    expect(shouldProxyApiRequest('/health', '/openmrs', '/openmrs/spa')).toBe(false);
   });
 });
 

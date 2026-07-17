@@ -33,12 +33,8 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
   const { queueLocations, isLoading, error } = useQueueLocations();
   const { dashboardTitle } = useConfig<ConfigObject>();
   const userSession = useSession();
-  const {
-    selectedQueueLocationName,
-    selectedQueueLocationUuid,
-    selectedServiceDisplay,
-    selectedServiceUuid,
-  } = useServiceQueuesStore();
+  const { selectedQueueLocationName, selectedQueueLocationUuid, selectedServiceDisplay, selectedServiceUuid } =
+    useServiceQueuesStore();
   const { queues, isLoading: isLoadingQueues, error: queuesError } = useQueues(selectedQueueLocationUuid);
   const availableQueues = queues ?? [];
   const shouldShowFilters = showFilters ?? showLocationDropdown ?? false;
@@ -59,9 +55,7 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
 
   const serviceOptions = useMemo(() => {
     const allServicesOption = { id: 'all', name: t('all', 'All') };
-    const selectedServiceIsAvailable = availableServiceOptions.some(
-      (option) => option.id === selectedServiceUuid,
-    );
+    const selectedServiceIsAvailable = availableServiceOptions.some((option) => option.id === selectedServiceUuid);
     const persistedServiceOption =
       selectedServiceUuid && !selectedServiceIsAvailable && (isLoadingQueues || queuesError)
         ? { id: selectedServiceUuid, name: selectedServiceDisplay ?? t('service', 'Service') }
@@ -71,7 +65,7 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
   }, [availableServiceOptions, isLoadingQueues, queuesError, selectedServiceDisplay, selectedServiceUuid, t]);
 
   const selectedService = selectedServiceUuid
-    ? serviceOptions.find((option) => option.id === selectedServiceUuid) ?? serviceOptions[0]
+    ? (serviceOptions.find((option) => option.id === selectedServiceUuid) ?? serviceOptions[0])
     : serviceOptions[0];
 
   useEffect(() => {
@@ -139,6 +133,18 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
     queueLocations,
     userSession?.sessionLocation?.uuid,
   ]);
+
+  useEffect(() => {
+    if (isLoading || error || !selectedQueueLocationUuid) {
+      return;
+    }
+
+    if (!queueLocations.some((location) => location.id === selectedQueueLocationUuid)) {
+      updateSelectedQueueLocationUuid(null);
+      updateSelectedQueueLocationName(null);
+      updateSelectedService(null, t('all', 'All'));
+    }
+  }, [error, isLoading, queueLocations, selectedQueueLocationUuid, t]);
 
   return (
     <PageHeader className={styles.header} data-testid="patient-queue-header">

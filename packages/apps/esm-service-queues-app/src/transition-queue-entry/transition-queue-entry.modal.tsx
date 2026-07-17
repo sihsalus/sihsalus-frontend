@@ -48,12 +48,18 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ c
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const defaultTransitionStatus = config.concepts.defaultTransitionStatus;
+  const ticketNumber = queueEntry?.visitQueueNumber?.trim();
+  const hasTicketNumber = Boolean(ticketNumber);
 
   const preferredIdentifiers = getPreferredIdentifiers(queueEntry?.identifiers, config.defaultIdentifierTypes);
 
   const { mutateQueueEntries } = useMutateQueueEntries();
 
   const launchEditPriorityModal = useCallback(async () => {
+    if (!ticketNumber) {
+      return;
+    }
+
     try {
       await updateQueueEntry(
         queueEntry?.queueEntryUuid,
@@ -61,7 +67,7 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ c
         queueEntry?.priority?.uuid,
         defaultTransitionStatus,
       );
-      await serveQueueEntry(queueEntry?.queue.name, queueEntry?.visitQueueNumber, 'serving');
+      await serveQueueEntry(queueEntry.queue.name, ticketNumber, 'serving');
 
       showSnackbar({
         isLowContrast: true,
@@ -93,8 +99,8 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ c
     queueEntry?.queue.name,
     queueEntry?.queueEntryUuid,
     queueEntry?.queueUuid,
-    queueEntry?.visitQueueNumber,
     t,
+    ticketNumber,
   ]);
 
   const handleRequeuePatient = useCallback(() => {
@@ -148,6 +154,14 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ c
                 <Tag key={identifier.uuid}>{identifier.display}</Tag>
               ))}
             </div>
+            {!hasTicketNumber && (
+              <p className={styles.p}>
+                {t(
+                  'callUnavailableWithoutQueueNumber',
+                  'This queue entry has no queue number and cannot be sent to the calling screen.',
+                )}
+              </p>
+            )}
           </section>
         </div>
       </ModalBody>
@@ -155,7 +169,9 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ c
         <Button kind="secondary" onClick={() => handleRequeuePatient()}>
           {t('requeue', 'Requeue')}
         </Button>
-        <Button onClick={() => void launchEditPriorityModal()}>{t('serve', 'Serve')}</Button>
+        <Button disabled={!hasTicketNumber} onClick={() => void launchEditPriorityModal()}>
+          {t('serve', 'Serve')}
+        </Button>
       </ModalFooter>
     </div>
   );

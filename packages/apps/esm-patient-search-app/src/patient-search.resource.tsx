@@ -22,14 +22,39 @@ const patientProperties = [
 
 const patientSearchCustomRepresentation = `custom:(${patientProperties.join(',')})`;
 
-export function isForbiddenUserPropertiesError(error: unknown) {
+function getResponseStatus(error: unknown) {
   const responseStatus =
     typeof error === 'object' && error
       ? ((error as { response?: { status?: number }; status?: number }).response?.status ??
         (error as { status?: number }).status)
       : undefined;
 
-  return responseStatus === 403 || (error instanceof Error && /\b403\b/.test(error.message));
+  if (responseStatus) {
+    return responseStatus;
+  }
+
+  const statusFromMessage = error instanceof Error ? error.message.match(/\b([45]\d{2})\b/)?.[1] : undefined;
+  return statusFromMessage ? Number(statusFromMessage) : undefined;
+}
+
+export function isForbiddenUserPropertiesError(error: unknown) {
+  const responseStatus = getResponseStatus(error);
+
+  return responseStatus === 403;
+}
+
+async function fetchRecentlyViewedPatient(url: string): Promise<FetchResponse<SearchedPatient> | null> {
+  try {
+    return await openmrsFetch<SearchedPatient>(url);
+  } catch (error) {
+    // A patient may be removed after their UUID was saved in patientsVisited. That stale
+    // preference must not prevent the remaining recent patients or global search from loading.
+    if (getResponseStatus(error) === 404) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 const userPropertiesWritePrivileges = ['Edit Users', 'Manage Users', 'Edit User Properties'];
@@ -223,16 +248,15 @@ export function useRestPatients(
 
   const shouldFetch = isSearching && patientUuids !== null && patientUuids.length > 0;
 
-  const { data, isLoading, isValidating, setSize, error, size } = useSWRInfinite<FetchResponse<SearchedPatient>, Error>(
-    shouldFetch ? getPatientUrl : null,
-    openmrsFetch,
-    {
-      keepPreviousData: true,
-      initialSize: patientUuids ? Math.min(resultsToFetch, patientUuids.length) : 0,
-    },
-  );
+  const { data, isLoading, isValidating, setSize, error, size } = useSWRInfinite<
+    FetchResponse<SearchedPatient> | null,
+    Error
+  >(shouldFetch ? getPatientUrl : null, fetchRecentlyViewedPatient, {
+    keepPreviousData: true,
+    initialSize: patientUuids ? Math.min(resultsToFetch, patientUuids.length) : 0,
+  });
 
-  const mappedData = data?.flatMap((res) => res.data) ?? null;
+  const mappedData = data?.flatMap((res) => (res?.data ? [res.data] : [])) ?? null;
 
   return useMemo(
     () => ({

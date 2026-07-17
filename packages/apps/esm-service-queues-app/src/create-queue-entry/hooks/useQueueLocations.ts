@@ -1,24 +1,24 @@
-import { fhirBaseUrl, getLocale, openmrsFetch } from '@openmrs/esm-framework';
+import { fhirBaseUrl, getLocale, useFhirFetchAll } from '@openmrs/esm-framework';
 import { useMemo } from 'react';
-import useSWRImmutable from 'swr/immutable';
 
-interface FHIRResponse {
-  entry: Array<{ resource: fhir.Location }>;
-  total: number;
-  type: string;
-  resourceType: string;
+type LocationTag = fhir.Coding & { name?: string };
+
+export function isVisitLocation(location: fhir.Location): boolean {
+  return Boolean(
+    location.meta?.tag?.some((tag: LocationTag) =>
+      [tag.code, tag.name, tag.display].some((value) => value?.trim().toLowerCase() === 'visit location'),
+    ),
+  );
 }
 
 export function useQueueLocations() {
   const apiUrl = `${fhirBaseUrl}/Location?_summary=data&_tag=queue location`;
-  const { data, error, isLoading } = useSWRImmutable<{ data: FHIRResponse }>(apiUrl, openmrsFetch);
+  const { data, error, isLoading } = useFhirFetchAll<fhir.Location>(apiUrl, { immutable: true });
 
   const queueLocations = useMemo(
-    () =>
-      data?.data?.entry
-        ?.map((response) => response.resource)
-        .sort((a, b) => a.name.localeCompare(b.name, getLocale())) ?? [],
-    [data?.data?.entry],
+    () => data?.slice().sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '', getLocale())) ?? [],
+    [data],
   );
+
   return { queueLocations, isLoading, error };
 }

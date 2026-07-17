@@ -3,6 +3,7 @@
 # Stage 1: Build local @sihsalus/* modules — deterministic, no network required
 FROM node:24-alpine AS builder
 WORKDIR /app
+RUN apk upgrade --no-cache
 RUN corepack enable && corepack prepare yarn@4.13.0 --activate
 
 # Copy root manifests first
@@ -34,7 +35,7 @@ RUN --mount=type=cache,target=/app/node_modules/.cache \
 FROM node:24-alpine AS init
 WORKDIR /app
 
-RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+RUN apk upgrade --no-cache && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 ENV NODE_ENV=production \
     IBM_TELEMETRY_DISABLED=true \
@@ -67,7 +68,7 @@ CMD ["node", "packages/tooling/scripts/assemble-importmap.js"]
 FROM node:24-alpine AS secure-init
 WORKDIR /app
 
-RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+RUN apk upgrade --no-cache && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 ENV NODE_ENV=production \
     IBM_TELEMETRY_DISABLED=true \
@@ -124,6 +125,8 @@ RUN yarn assemble
 
 # Stage 5: Lightweight precompiled SPA server
 FROM nginx:1.31-alpine AS spa-nginx
+
+RUN apk upgrade --no-cache
 
 COPY nginx.spa.conf /etc/nginx/conf.d/default.conf
 COPY --from=spa-artifact /app/dist/spa/ /usr/share/nginx/html/

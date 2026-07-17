@@ -1,12 +1,12 @@
-import { ActionMenuButton2, PenIcon, UserHasAccess, useSession } from '@openmrs/esm-framework';
+import { ActionMenuButton2, PenIcon, UserHasAccess } from '@openmrs/esm-framework';
 import {
   type PatientChartWorkspaceActionButtonProps,
   usePatientChartStore,
   useStartVisitIfNeeded,
 } from '@openmrs/esm-patient-common-lib';
-import { isAdmissionUser } from '@sihsalus/esm-rbac';
 import React, { type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
+import { visitNotesEditPrivilege } from './constants';
 
 /**
  * This button uses the patient chart store and MUST only be used
@@ -14,7 +14,6 @@ import { useTranslation } from 'react-i18next';
  */
 const VisitNoteActionButton: React.FC<PatientChartWorkspaceActionButtonProps> = ({ groupProps }) => {
   const { t } = useTranslation();
-  const session = useSession();
   const patientChartContext = usePatientChartStore();
   const patientUuid = groupProps?.patientUuid ?? patientChartContext.patientUuid;
   const patientChartGroupProps =
@@ -30,12 +29,8 @@ const VisitNoteActionButton: React.FC<PatientChartWorkspaceActionButtonProps> = 
 
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid ?? undefined);
 
-  if (isAdmissionUser(session?.user)) {
-    return null;
-  }
-
   return (
-    <UserHasAccess privilege="app:hoja.clinica.resumenConsulta">
+    <UserHasAccess privilege={visitNotesEditPrivilege}>
       <ActionMenuButton2
         icon={(props: ComponentProps<typeof PenIcon>) => <PenIcon {...props} />}
         label={t('visitNote', 'Visit note')}

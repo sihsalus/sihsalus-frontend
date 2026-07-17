@@ -3,12 +3,6 @@ export type TipoDiagnostico = 'definitivo' | 'presuntivo';
 export type Sexo = 'M' | 'F';
 
 /**
- * @deprecated `periodo` is no longer part of the indicator definition.
- * Kept only for backward compat with legacy data that may still reference it.
- */
-export type PeriodoIndicador = 'mes_actual' | 'trimestre_actual' | 'semestre_actual' | 'anual_actual';
-
-/**
  * Granularity for time-series rollup queries.
  */
 export type Granularity = 'mensual' | 'trimestral' | 'semestral' | 'anual';
@@ -35,11 +29,11 @@ export interface FiltroDiagnosticoForm {
 }
 
 export interface FiltroOrdenForm {
-  concepto_uuids: Array<string>;
+  concepto_uuid: string;
 }
 
 export interface FiltrosEventoForm {
-  location_uuids: Array<string>;
+  location_uuids?: Array<string>;
   minimo_ocurrencias?: number;
   diagnosticos?: Array<FiltroDiagnosticoForm>;
   ordenes?: Array<FiltroOrdenForm>;
@@ -57,7 +51,7 @@ export interface PoblacionForm {
 
 export interface DefinicionIndicadorForm {
   tipo: TipoIndicador;
-  evento: FiltrosEventoForm | null;
+  evento?: FiltrosEventoForm;
   poblacion?: PoblacionForm;
 }
 
@@ -82,7 +76,6 @@ export interface IndicadorCreatePayload {
 export interface IndicadorUpdatePayload {
   nombre: string;
   descripcion: string | null;
-  activo?: boolean;
 }
 
 export interface EncounterTypeOption {
@@ -127,6 +120,7 @@ export interface SerieRow {
   mes_referencia?: string;
   trimestre?: number;
   semestre?: number;
+  meta?: number | null;
 }
 
 export interface SeriesResponse {
@@ -140,6 +134,26 @@ export interface GetSeriesParams {
   indicador_id: string;
   anio?: number;
   granularity?: Granularity;
+  include_meta?: boolean;
+}
+
+export interface IndicadorMetaRecord {
+  id: string;
+  indicador_version_id: string;
+  anio: number;
+  valor_meta: number;
+  creado_en: string;
+}
+
+export interface IndicadorMeta extends IndicadorMetaRecord {
+  indicador_nombre: string;
+  version_numero: number;
+}
+
+export interface IndicadorMetaCreatePayload {
+  indicador_version_id: string;
+  anio: number;
+  valor_meta: number;
 }
 
 export interface ErrorCalculo {
@@ -157,7 +171,7 @@ export interface BatchCalcularNowResponse {
 export interface ErrorRecalculo {
   indicador_id: string;
   indicador_nombre: string;
-  mes: string;
+  mes: number;
   error: string;
 }
 

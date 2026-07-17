@@ -2,11 +2,13 @@ import { useSyncExternalStore } from 'react';
 
 export interface MockModeState {
   isMockMode: boolean;
+  isBackendAvailable: boolean;
   errorMessage?: string;
 }
 
 let state: MockModeState = {
   isMockMode: false,
+  isBackendAvailable: true,
 };
 
 const listeners = new Set<() => void>();
@@ -20,6 +22,16 @@ function emit() {
 export function activateMockMode(errorMessage: string) {
   state = {
     isMockMode: true,
+    isBackendAvailable: false,
+    errorMessage,
+  };
+  emit();
+}
+
+export function reportBackendUnavailable(errorMessage: string) {
+  state = {
+    isMockMode: false,
+    isBackendAvailable: false,
     errorMessage,
   };
   emit();
@@ -28,6 +40,7 @@ export function activateMockMode(errorMessage: string) {
 export function resetMockMode() {
   state = {
     isMockMode: false,
+    isBackendAvailable: true,
   };
   emit();
 }

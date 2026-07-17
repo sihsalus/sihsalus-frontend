@@ -11,16 +11,62 @@ describe('service queue route privilege contract', () => {
     expect(workspace?.privileges).toEqual(expect.arrayContaining(visitMutationPrivileges));
   });
 
-  it('allows admission users to load queue editing surfaces', () => {
+  it('requires the edit privilege on every queue mutation surface', () => {
     const editingSurfaces = [
-      ...routes.extensions.filter(({ name }) => name.includes('queue') || name.includes('visit')),
+      ...routes.extensions.filter(({ name, privileges }) =>
+        name !== 'visit-form-queue-fields' && Array.isArray(privileges)
+          ? privileges.includes('Manage Queue Entries')
+          : false,
+      ),
       ...routes.modals,
-      ...routes.workspaces,
-      ...routes.workspaces2,
+      ...routes.workspaces.filter(({ name }) => name !== 'service-queues-linelist-filter'),
+      ...routes.workspaces2.filter(({ name }) =>
+        [
+          'queue-patient-search-workspace',
+          'queue-patient-search-add-to-queue-workspace',
+          'queue-patient-search-start-visit-workspace',
+          'service-queues-service-form',
+          'service-queues-room-workspace',
+        ].includes(name),
+      ),
     ];
 
-    expect(editingSurfaces.some(({ privileges }) => JSON.stringify(privileges).includes('colasAtencion.editar'))).toBe(
-      false,
+    expect(editingSurfaces.length).toBeGreaterThan(0);
+    editingSurfaces.forEach(({ privileges }) => {
+      expect(Array.isArray(privileges) ? privileges : [privileges]).toContain('app:home.colasAtencion.editar');
+    });
+  });
+
+  it('uses clinical privileges for clinical workspaces embedded in queues', () => {
+    const vitalsWorkspace = routes.workspaces2.find(({ name }) => name === 'service-queues-patient-vitals-workspace');
+    const visitNotesWorkspace = routes.workspaces2.find(({ name }) => name === 'service-queues-visit-notes-workspace');
+
+    expect(vitalsWorkspace?.privileges).toContain('app:hoja.clinica.signosVitales.editar');
+    expect(visitNotesWorkspace?.privileges).toContain('app:hoja.clinica.resumenConsulta.editar');
+  });
+
+  it('requires native catalog permissions on queue and room administration workspaces', () => {
+    const queueWorkspaces = [...routes.workspaces, ...routes.workspaces2].filter(
+      ({ name }) => name === 'service-queues-service-form',
     );
+    const roomWorkspaces = [...routes.workspaces, ...routes.workspaces2].filter(
+      ({ name }) => name === 'service-queues-room-workspace',
+    );
+
+    queueWorkspaces.forEach(({ privileges }) => {
+      expect(privileges).toEqual(
+        expect.arrayContaining(['app:home.colasAtencion.editar', 'Get Queues', 'Manage Queues']),
+      );
+    });
+    roomWorkspaces.forEach(({ privileges }) => {
+      expect(privileges).toEqual(
+        expect.arrayContaining([
+          'app:home.colasAtencion.editar',
+          'Get Queue Rooms',
+          'Get Queues',
+          'Manage Queue Rooms',
+        ]),
+      );
+    });
   });
 });

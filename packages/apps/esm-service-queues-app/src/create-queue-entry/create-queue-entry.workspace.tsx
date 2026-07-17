@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 
 import styles from './create-queue-entry.scss';
 import ExistingVisitFormComponent from './existing-visit-form/existing-visit-form.component';
+import QueueOnlyForm from './queue-only-form/queue-only-form.component';
 
 interface PatientSearchProps extends DefaultWorkspaceProps {
   selectedPatientUuid: string;
@@ -101,7 +102,7 @@ const CreateQueueEntryWorkspace: React.FC<PatientSearchProps> = ({
             currentQueueLocationUuid={currentQueueLocationUuid}
             currentServiceQueueUuid={currentServiceQueueUuid}
           />
-        ) : (
+        ) : requiredVisitLocation ? (
           <ExtensionSlot
             name="start-visit-workspace-form-slot"
             state={{
@@ -113,6 +114,13 @@ const CreateQueueEntryWorkspace: React.FC<PatientSearchProps> = ({
               promptBeforeClosing,
               openedFrom: 'service-queues-add-patient',
             }}
+          />
+        ) : (
+          <QueueOnlyForm
+            closeWorkspace={closeWorkspace}
+            currentQueueLocationUuid={currentQueueLocationUuid}
+            currentServiceQueueUuid={currentServiceQueueUuid}
+            patientUuid={selectedPatientUuid}
           />
         )}
       </AddPatientToQueueContext.Provider>

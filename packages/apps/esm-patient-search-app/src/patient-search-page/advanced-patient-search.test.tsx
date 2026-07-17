@@ -286,13 +286,15 @@ describe('AdvancedPatientSearchComponent', () => {
       expect(screen.getAllByRole('banner')).toHaveLength(2);
     });
 
-    it('matches document numbers exactly when refining a name search', async () => {
+    it('matches a document-number prefix when refining a name search', async () => {
       renderComponent();
 
       await user.type(screen.getByLabelText(/^N.mero de Documento de Identidad$/i), '1234');
       await user.click(screen.getByRole('button', { name: /search/i }));
 
-      expect(screen.getByText(/0 search result/)).toBeInTheDocument();
+      const patientBanners = screen.getAllByRole('banner');
+      expect(patientBanners).toHaveLength(1);
+      expect(within(patientBanners[0]).getByText(/Joshua Johnson/)).toBeInTheDocument();
     });
 
     it('searches by identity document number entered in refine search when query is empty', async () => {

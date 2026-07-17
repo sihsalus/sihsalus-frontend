@@ -133,7 +133,7 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
                 attribute,
                 attributeUuid,
                 normalizedFilterValue,
-                attributeUuid === identityDocumentNumberAttributeUuid,
+                attributeUuid === identityDocumentNumberAttributeUuid ? 'prefix' : 'contains',
               ),
             );
 

@@ -1,26 +1,19 @@
 import type {
-  BatchCalcularNowResponse,
   DefinicionIndicadorForm,
   DiagnosticoOption,
   GetResultadosParams,
   GetSeriesParams,
   Indicador,
-  IndicadorCreatePayload,
   IndicadorDetail,
   IndicadorResultado,
   IndicadorSQLPreview,
-  IndicadorUpdatePayload,
-  IndicadorVersion,
   LocationOption,
   OrdenOption,
   PaginatedResponse,
-  RecalcularAnioParams,
-  RecalcularAnioResponse,
   SerieRow,
   SeriesResponse,
 } from '../api/types';
 
-const nowIso = () => new Date().toISOString();
 const uid = (prefix: string) => `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
 
 const mockLocations: Array<LocationOption> = [
@@ -66,11 +59,11 @@ const definicionOdonto: DefinicionIndicadorForm = {
   evento: {
     location_uuids: ['loc-odontologia'],
     minimo_ocurrencias: 1,
-    ordenes: [{ concepto_uuids: ['ord-fluor'] }],
+    ordenes: [{ concepto_uuid: 'ord-fluor' }],
   },
 };
 
-let indicadores: Array<IndicadorDetail> = [
+const indicadores: Array<IndicadorDetail> = [
   {
     id: 'ind-001',
     nombre: 'Atenciones de control prenatal',
@@ -121,7 +114,7 @@ let indicadores: Array<IndicadorDetail> = [
   },
 ];
 
-let resultados: Array<IndicadorResultado> = [
+const resultados: Array<IndicadorResultado> = [
   {
     id: uid('res'),
     indicador_version_id: 'ver-001-1',
@@ -171,7 +164,7 @@ function definitionToSql(definicion: DefinicionIndicadorForm) {
   const selectTarget = definicion.tipo === 'conteo_pacientes' ? 'COUNT(DISTINCT patient_id)' : 'COUNT(*)';
   const locations = definicion.evento?.location_uuids ?? [];
   const diagnosticos = definicion.evento?.diagnosticos?.flatMap((item) => item.concepto_uuids) ?? [];
-  const ordenes = definicion.evento?.ordenes?.flatMap((item) => item.concepto_uuids) ?? [];
+  const ordenes = definicion.evento?.ordenes?.map((item) => item.concepto_uuid) ?? [];
   const clauses = ['encounter_datetime BETWEEN %(periodo_inicio)s AND %(periodo_fin)s'];
 
   if (locations.length) {
@@ -195,8 +188,10 @@ function definitionToSql(definicion: DefinicionIndicadorForm) {
 }
 
 export function listIndicadores(page: number, size: number): PaginatedResponse<Indicador> {
-  const items = indicadores.map(({ versiones: _versiones, ...indicador }) => indicador);
-  return toPaginatedResponse(items, page, size);
+  const activeIndicators = indicadores
+    .filter((indicator) => indicator.activo)
+    .map(({ versiones: _versiones, ...indicator }) => indicator);
+  return toPaginatedResponse(activeIndicators, page, size);
 }
 
 export function getIndicadorById(id: string): IndicadorDetail {
@@ -205,70 +200,6 @@ export function getIndicadorById(id: string): IndicadorDetail {
     throw new Error('Indicador no encontrado');
   }
   return indicador;
-}
-
-export function createIndicadorMock(payload: IndicadorCreatePayload): Indicador {
-  const id = uid('ind');
-  const createdAt = nowIso();
-  const detail: IndicadorDetail = {
-    id,
-    nombre: payload.nombre,
-    descripcion: payload.descripcion,
-    activo: true,
-    creado_en: createdAt,
-    versiones: [
-      {
-        id: uid('ver'),
-        indicador_id: id,
-        version: 1,
-        definicion: payload.definicion,
-        creado_en: createdAt,
-      },
-    ],
-  };
-  indicadores = [detail, ...indicadores];
-  return {
-    id,
-    nombre: detail.nombre,
-    descripcion: detail.descripcion,
-    activo: detail.activo,
-    creado_en: detail.creado_en,
-  };
-}
-
-export function updateIndicadorMock(id: string, payload: IndicadorUpdatePayload): Indicador {
-  const indicador = getIndicadorById(id);
-  indicador.nombre = payload.nombre;
-  indicador.descripcion = payload.descripcion;
-  if (payload.activo !== undefined) {
-    indicador.activo = payload.activo;
-  }
-  return {
-    id: indicador.id,
-    nombre: indicador.nombre,
-    descripcion: indicador.descripcion,
-    activo: indicador.activo,
-    creado_en: indicador.creado_en,
-  };
-}
-
-export function deleteIndicadorMock(id: string) {
-  indicadores = indicadores.filter((item) => item.id !== id);
-  resultados = resultados.filter((item) => !item.indicador_version_id.startsWith(`ver-${id}`));
-}
-
-export function createVersionMock(id: string, definicion: DefinicionIndicadorForm): IndicadorVersion {
-  const indicador = getIndicadorById(id);
-  const nextVersion = indicador.versiones.reduce((max, item) => Math.max(max, item.version), 0) + 1;
-  const version: IndicadorVersion = {
-    id: uid('ver'),
-    indicador_id: id,
-    version: nextVersion,
-    definicion,
-    creado_en: nowIso(),
-  };
-  indicador.versiones = [version, ...indicador.versiones];
-  return version;
 }
 
 export function getSqlPreviewMock(id: string, versionId?: string): IndicadorSQLPreview {
@@ -370,75 +301,6 @@ export function listResultados(params: GetResultadosParams): PaginatedResponse<I
   });
 
   return toPaginatedResponse(filtered, params.page, params.size);
-}
-
-export function calcularAhoraMock(): BatchCalcularNowResponse {
-  const activeIndicators = indicadores.filter((item) => item.activo);
-  const nuevosResultados = activeIndicators.map((indicador) => {
-    const version = latestVersion(indicador);
-    return {
-      id: uid('res'),
-      indicador_version_id: version.id,
-      indicador_nombre: indicador.nombre,
-      indicador_version_num: version.version,
-      periodo_inicio: '2026-05-01',
-      periodo_fin: '2026-05-31',
-      valor: Math.floor(Math.random() * 400) + 1,
-      calculado_en: nowIso(),
-      mes_referencia: '2026-05-01',
-      es_canonico: true,
-    } satisfies IndicadorResultado;
-  });
-
-  resultados = [...nuevosResultados, ...resultados];
-
-  return {
-    calculados: nuevosResultados.length,
-    errores: [],
-    total: activeIndicators.length,
-  };
-}
-
-export function recalcularAnioMock(params: RecalcularAnioParams): RecalcularAnioResponse {
-  const anio = params.anio;
-  const filtered = params.indicador_id
-    ? indicadores.filter((item) => item.id === params.indicador_id)
-    : indicadores.filter((item) => item.activo);
-
-  const mesesProcesados = 12;
-  const nuevosResultados: Array<IndicadorResultado> = [];
-
-  filtered.forEach((indicador) => {
-    const version = latestVersion(indicador);
-    for (let mes = 1; mes <= mesesProcesados; mes += 1) {
-      const mesReferencia = `${anio}-${String(mes).padStart(2, '0')}-01`;
-      const periodoFin = `${anio}-${String(mes).padStart(2, '0')}-${new Date(anio, mes, 0).getDate()}`;
-      nuevosResultados.push({
-        id: uid('res'),
-        indicador_version_id: version.id,
-        indicador_nombre: indicador.nombre,
-        indicador_version_num: version.version,
-        periodo_inicio: mesReferencia,
-        periodo_fin: periodoFin,
-        valor: Math.floor(Math.random() * 400) + 1,
-        calculado_en: nowIso(),
-        mes_referencia: mesReferencia,
-        es_canonico: true,
-      });
-    }
-  });
-
-  resultados = [...nuevosResultados, ...resultados];
-
-  return {
-    anio,
-    indicador_id: params.indicador_id ?? null,
-    meses_procesados: mesesProcesados,
-    indicadores_considerados: filtered.length,
-    recalculados: nuevosResultados.length,
-    errores: [],
-    total: filtered.length * mesesProcesados,
-  };
 }
 
 export function searchLocationsMock(query: string): Array<LocationOption> {

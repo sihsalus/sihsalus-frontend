@@ -18,9 +18,12 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 - Componentes de dashboard y configuración de filtros.
 - Traducciones y estilos propios del tablero analítico.
 
-## TODO backend/integración
+## Backend e integración
 
-- El módulo valida `reportesSqlApiPath` (`/services/reportes-sql` por defecto). Si la respuesta falla, entra en **modo demo** y usa la vista mock del front.
+- El módulo valida `reportesSqlApiPath` (`/services/reportes-sql` por defecto) y opera en modo **fail-closed**.
+- Los datos demo solo se habilitan explícitamente con `enableDemoData: true` y se limitan a consultas que fallen por red o HTTP 5xx.
+- Las respuestas HTTP 4xx nunca usan datos demo. Las escrituras siempre se ejecutan contra `reportes-sql` y nunca tienen fallback mock.
+- En producción, `enableDemoData` debe permanecer en `false`.
 - Mantener el botón del módulo en el menú (`app-menu-item-slot`) para acceso sin depender del backend.
 
 Estado histórico QLTY 2026-07-04:
@@ -28,7 +31,7 @@ Estado histórico QLTY 2026-07-04:
 - La configuración versionada usaba `http://127.0.0.1:8000`, una URL que apuntaba al localhost del navegador y no al host QLTY.
 - Ese override fue retirado; la aplicación usa ahora `/services/reportes-sql` por defecto.
 - La ruta publica `/services/reportes-sql/health` responde `404` y `/openmrs/services/reportes-sql/health` responde `502`.
-- QLTY debe asumirse en modo demo hasta que `reportesSqlApiPath` apunte a un backend alcanzable por el navegador y el gateway.
+- QLTY requiere una ruta `reportesSqlApiPath` operativa. Una ruta no disponible se muestra como error y no habilita el modo demo automáticamente.
 
 ## Backend local FastAPI
 

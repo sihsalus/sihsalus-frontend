@@ -1,7 +1,4 @@
 import {
-  createIndicadorMock,
-  createVersionMock,
-  deleteIndicadorMock,
   getIndicadorById,
   getSqlPreviewMock,
   listIndicadores,
@@ -11,11 +8,9 @@ import {
   searchDiagnosticosMock,
   searchLocationsMock,
   searchOrdenesMock,
-  updateIndicadorMock,
 } from '../mocks/indicators-data';
-import { fetchJson, toJsonBody, withMockFallback } from './client';
+import { fetchJson, mutateJson, toJsonBody, withMockFallback } from './client';
 import { getReportesSqlApiPath, getReportesSqlResourcePath } from './config';
-import { getMockModeState } from './mock-mode';
 import type {
   DefinicionIndicadorForm,
   DiagnosticoOption,
@@ -76,42 +71,25 @@ export async function getIndicador(id: string): Promise<IndicadorDetail> {
 
 export async function createIndicador(payload: IndicadorCreatePayload): Promise<Indicador> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
-  return withMockFallback(
-    () => fetchJson<Indicador>(`${indicadoresPath}/`, { method: 'POST', ...toJsonBody(payload) }),
-    () => createIndicadorMock(payload),
-  );
+  return mutateJson<Indicador>(`${indicadoresPath}/`, { method: 'POST', ...toJsonBody(payload) });
 }
 
 export async function updateIndicador(id: string, payload: IndicadorUpdatePayload): Promise<Indicador> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
-  return withMockFallback(
-    () => fetchJson<Indicador>(`${indicadoresPath}/${id}`, { method: 'PUT', ...toJsonBody(payload) }),
-    () => updateIndicadorMock(id, payload),
-  );
+  return mutateJson<Indicador>(`${indicadoresPath}/${id}`, { method: 'PUT', ...toJsonBody(payload) });
 }
 
 export async function deleteIndicador(id: string): Promise<void> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
-  return withMockFallback(
-    async () => {
-      await fetchJson(`${indicadoresPath}/${id}`, { method: 'DELETE' });
-    },
-    async () => {
-      deleteIndicadorMock(id);
-    },
-  );
+  await mutateJson<void>(`${indicadoresPath}/${id}`, { method: 'DELETE' });
 }
 
 export async function createVersion(id: string, definicion: DefinicionIndicadorForm): Promise<IndicadorVersion> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
-  return withMockFallback(
-    () =>
-      fetchJson<IndicadorVersion>(`${indicadoresPath}/${id}/versiones`, {
-        method: 'POST',
-        ...toJsonBody({ definicion }),
-      }),
-    () => createVersionMock(id, definicion),
-  );
+  return mutateJson<IndicadorVersion>(`${indicadoresPath}/${id}/versiones`, {
+    method: 'POST',
+    ...toJsonBody({ definicion }),
+  });
 }
 
 export async function previewSql(id: string, versionId?: string): Promise<IndicadorSQLPreview> {
@@ -196,8 +174,4 @@ export async function resolveOrdenes(uuids: Array<string>): Promise<Record<strin
     },
     () => resolveOrdenesMock(uuids),
   );
-}
-
-export function isMockModeEnabled() {
-  return getMockModeState().isMockMode;
 }

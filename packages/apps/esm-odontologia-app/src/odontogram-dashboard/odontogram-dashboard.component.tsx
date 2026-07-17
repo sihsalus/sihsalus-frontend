@@ -108,6 +108,8 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
       ? { type: editContext.recordType, baseEncounterUuid: editContext.baseEncounterUuid ?? null }
       : null;
   const draftActive = Boolean(draft) && viewingEdit;
+  const isCreatingBase =
+    showEditor && editContext?.recordType === 'base' && editContext.encounterUuid == null;
 
   const activeGroup = useMemo(() => {
     if (!groups.length) {
@@ -335,7 +337,7 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
     return <OdontogramSkeleton />;
   }
 
-  if (error || !hasBase || !activeBase) {
+  if (error || ((!hasBase || !activeBase) && !isCreatingBase)) {
     return <OdontogramEmpty onGenerate={canEdit ? startNewBase : undefined} />;
   }
 

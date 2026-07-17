@@ -1,7 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import { getUserFacingErrorMessage } from '@openmrs/esm-framework';
+import React, { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { DefinicionIndicadorForm } from '../api/types';
 import IndicadorForm from '../components/IndicadorForm';
+import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
 import {
   notifyError,
   notifySuccess,
@@ -21,6 +23,8 @@ const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [isSubmitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const { createIndicador } = useCreateIndicador();
   const { updateIndicador } = useUpdateIndicador();
   const { data: indicador, isLoading, error } = useIndicador(mode === 'edit' ? (id ?? '') : '');
@@ -29,7 +33,7 @@ const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
     if (!indicador?.versiones.length) {
       return [];
     }
-    return indicador.versiones[0].definicion.evento?.ordenes?.flatMap((item) => item.concepto_uuids) ?? [];
+    return indicador.versiones[0].definicion.evento?.ordenes?.map((item) => item.concepto_uuid) ?? [];
   }, [indicador]);
 
   const { data: ordenesData } = useResolvedOrdenes(ordenUuids);
@@ -53,7 +57,12 @@ const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
     metadata: { nombre: string; descripcion: string | null };
     definicion?: DefinicionIndicadorForm;
   }) => {
+    if (submittingRef.current) {
+      return;
+    }
+    submittingRef.current = true;
     setServerError(null);
+    setSubmitting(true);
 
     try {
       if (mode === 'create') {
@@ -69,9 +78,16 @@ const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
         navigate(`/${id}`);
       }
     } catch (submitError) {
-      const message = submitError instanceof Error ? submitError.message : 'No se pudo guardar el indicador';
+      const message = getUserFacingErrorMessage(
+        submitError,
+        'No se pudo guardar el indicador.',
+        indicatorsErrorMessageOptions,
+      );
       setServerError(message);
       notifyError(message);
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
     }
   };
 
@@ -87,7 +103,11 @@ const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
       </div>
 
       {mode === 'edit' && isLoading ? <p>Cargando indicador...</p> : null}
-      {mode === 'edit' && error ? <div className={styles.errorBanner}>{error.message}</div> : null}
+      {mode === 'edit' && error ? (
+        <div className={styles.errorBanner}>
+          {getUserFacingErrorMessage(error, 'No se pudo cargar el indicador.', indicatorsErrorMessageOptions)}
+        </div>
+      ) : null}
       {mode === 'edit' && !indicador && !isLoading && !error ? (
         <div className={styles.errorBanner}>No se encontró el indicador.</div>
       ) : null}
@@ -104,12 +124,9 @@ const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
           <IndicadorForm
             mode={mode}
             defaultValues={defaultValues}
-            initialMetadata={
-              indicador
-                ? { nombre: indicador.nombre, descripcion: indicador.descripcion, activo: indicador.activo }
-                : undefined
-            }
+            initialMetadata={indicador ? { nombre: indicador.nombre, descripcion: indicador.descripcion } : undefined}
             serverError={serverError}
+            isSubmitting={isSubmitting}
             onSubmit={handleSubmit}
           />
         </div>

@@ -25,6 +25,16 @@ export function getCompatibleUserFacingErrorMessage(
   options: UserFacingErrorMessageOptions = {},
   runtimeNormalizer?: UserFacingErrorMessageNormalizer,
 ): string {
+  const mappedMessage =
+    getMappedMessage(options.codeMessages, getErrorCode(error)) ??
+    getMappedMessage(options.statusMessages, getHttpStatus(error));
+  if (mappedMessage) {
+    if (options.log !== false) {
+      console.error(isNonEmptyString(options.logContext) ? `${options.logContext}:` : 'Error técnico:', error);
+    }
+    return mappedMessage;
+  }
+
   if (typeof runtimeNormalizer === 'function') {
     try {
       const message = runtimeNormalizer(error, fallback, options);
@@ -40,16 +50,6 @@ export function getCompatibleUserFacingErrorMessage(
 
   if (options.log !== false) {
     console.error(isNonEmptyString(options.logContext) ? `${options.logContext}:` : 'Error técnico:', error);
-  }
-
-  const codeMessage = getMappedMessage(options.codeMessages, getErrorCode(error));
-  if (codeMessage) {
-    return codeMessage;
-  }
-
-  const statusMessage = getMappedMessage(options.statusMessages, getHttpStatus(error));
-  if (statusMessage) {
-    return statusMessage;
   }
 
   return isNonEmptyString(fallback) ? fallback : getUnexpectedErrorMessage();

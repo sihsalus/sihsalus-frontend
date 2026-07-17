@@ -5,11 +5,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mockNavigate = vi.hoisted(() => vi.fn());
 const mockShowSnackbar = vi.hoisted(() => vi.fn());
 const mockUseSession = vi.hoisted(() => vi.fn());
-const mockIsAdmissionUser = vi.hoisted(() => vi.fn());
+const mockUserHasAccess = vi.hoisted(() =>
+  vi.fn((requiredPrivilege: string, user?: { privileges?: Array<{ display?: string; name?: string }> }) =>
+    user?.privileges?.some(
+      (privilege) => privilege.name === requiredPrivilege || privilege.display === requiredPrivilege,
+    ),
+  ),
+);
 
 vi.mock('@openmrs/esm-framework', () => ({
   navigate: mockNavigate,
   showSnackbar: mockShowSnackbar,
+  userHasAccess: mockUserHasAccess,
   useSession: mockUseSession,
 }));
 
@@ -19,7 +26,6 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@sihsalus/esm-rbac', () => ({
   AppErrorBoundary: ({ children }: { children?: ReactNode }) => <>{children}</>,
-  isAdmissionUser: mockIsAdmissionUser,
 }));
 
 vi.mock('./patient-chart/patient-chart.component', () => ({
@@ -40,8 +46,7 @@ describe('Patient chart root', () => {
     });
     mockNavigate.mockClear();
     mockShowSnackbar.mockClear();
-    mockIsAdmissionUser.mockReset();
-    mockIsAdmissionUser.mockReturnValue(false);
+    mockUserHasAccess.mockClear();
   });
 
   it('allows direct chart access with the clinical chart privilege', async () => {
@@ -109,7 +114,7 @@ describe('Patient chart root', () => {
     });
   });
 
-  it('redirects admission users even when a broad chart privilege is inherited', async () => {
+  it('uses the chart privilege without making decisions from an unrelated role or privilege', async () => {
     const user = {
       privileges: [
         { name: 'app:home.admision', display: 'Admisión' },
@@ -121,13 +126,12 @@ describe('Patient chart root', () => {
       authenticated: true,
       user,
     });
-    mockIsAdmissionUser.mockReturnValue(true);
     const { default: Root } = await import('./root.component');
 
     render(<Root />);
 
-    expect(mockIsAdmissionUser).toHaveBeenCalledWith(user);
-    expect(screen.queryByText('Patient chart')).not.toBeInTheDocument();
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/spa/search' }));
+    expect(mockUserHasAccess).toHaveBeenCalledWith('app:hoja.clinica', user);
+    expect(screen.getByText('Patient chart')).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

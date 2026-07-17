@@ -1,7 +1,7 @@
-import { openmrsFetch, useConfig } from '@openmrs/esm-framework';
+import { logError, openmrsFetch, useConfig } from '@openmrs/esm-framework';
 import { useEffect } from 'react';
 
-import { activateMockMode, resetMockMode } from '../api/mock-mode';
+import { activateMockMode, reportBackendUnavailable, resetMockMode } from '../api/mock-mode';
 import { type Config } from '../config-schema';
 
 const DEFAULT_ERROR = 'No se pudo conectar con el API de indicadores.';
@@ -37,7 +37,13 @@ export function useIndicatorsHealth(): void {
         }
       } catch (error) {
         if (isMounted && !controller.signal.aborted) {
-          activateMockMode(normalizeErrorMessage(error));
+          const message = normalizeErrorMessage(error);
+          logError(error, 'Indicadores: health check de reportes-sql');
+          if (config.enableDemoData === true) {
+            activateMockMode(message);
+          } else {
+            reportBackendUnavailable(message);
+          }
         }
       }
     };
@@ -48,5 +54,5 @@ export function useIndicatorsHealth(): void {
       isMounted = false;
       controller.abort();
     };
-  }, [config.reportesSqlApiPath]);
+  }, [config.enableDemoData, config.reportesSqlApiPath]);
 }

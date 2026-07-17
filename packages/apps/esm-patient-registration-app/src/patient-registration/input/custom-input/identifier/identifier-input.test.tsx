@@ -110,6 +110,17 @@ describe('identifier input', () => {
     expect(screen.getByLabelText(openmrsID.identifierName)).toBeInTheDocument();
   });
 
+  it('presents the interoperable DIE type as Cédula de Identidad', () => {
+    setupIdentifierInput({
+      ...openmrsID,
+      autoGeneration: false,
+      identifierName: 'DIE',
+      identifierTypeUuid: '8d793bee-c2cc-11de-8d13-0010c6dffd0f',
+    });
+
+    expect(screen.getByLabelText('Identity card issued by country of origin')).toBeInTheDocument();
+  });
+
   it('allows Ctrl and Command clipboard shortcuts in the DNI input', () => {
     const dniIdentifier = {
       ...openmrsID,
@@ -151,6 +162,51 @@ describe('identifier input', () => {
       `identifiers.${fieldName}.identifierValue`,
       '12345678',
     );
+  });
+
+  it('updates a controlled DNI once per keystroke without recursive changes', async () => {
+    const user = userEvent.setup();
+    const setFieldValueSpy = vi.fn();
+    const dniIdentifier = {
+      ...openmrsID,
+      autoGeneration: false,
+      identifierName: 'DNI',
+      identifierTypeUuid: 'dni-uuid',
+      identifierValue: '',
+      initialValue: '',
+      required: true,
+    };
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={{ identifiers: { [fieldName]: dniIdentifier } }} onSubmit={vi.fn()}>
+          {(formik) => (
+            <Form noValidate>
+              <PatientRegistrationContext.Provider
+                value={{
+                  ...mockContextValues,
+                  values: formik.values as FormValues,
+                  setFieldValue: (field, value, shouldValidate) => {
+                    setFieldValueSpy(field, value);
+                    return formik.setFieldValue(field, value, shouldValidate);
+                  },
+                  setFieldTouched: formik.setFieldTouched,
+                }}
+              >
+                <IdentifierInput patientIdentifier={dniIdentifier} fieldName={fieldName} />
+              </PatientRegistrationContext.Provider>
+            </Form>
+          )}
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    const input = screen.getByRole('textbox', { name: 'DNI' });
+    await user.type(input, '12a34-5678');
+
+    expect(input).toHaveValue('12345678');
+    expect(setFieldValueSpy).toHaveBeenCalledTimes(10);
+    expect(setFieldValueSpy).toHaveBeenLastCalledWith(`identifiers.${fieldName}.identifierValue`, '12345678');
   });
 
   it('displays an edit button when there is an initial value', async () => {

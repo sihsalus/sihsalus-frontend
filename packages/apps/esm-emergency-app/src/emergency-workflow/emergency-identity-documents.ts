@@ -15,7 +15,7 @@ export function getEmergencyIdentityDocumentTypes(config: EmergencyIdentifierCon
     { label: 'DNI', value: config.defaultIdentifierTypeUuid },
     { label: 'CE', value: config.foreignCardIdentifierTypeUuid },
     { label: 'Pasaporte', value: config.passportIdentifierTypeUuid },
-    { label: 'DIE', value: config.dieIdentifierTypeUuid },
+    { label: 'Cédula de Identidad', value: config.dieIdentifierTypeUuid },
     { label: 'CNV', value: config.liveBirthCertificateIdentifierTypeUuid },
     { label: 'Otros', value: config.otherIdentifierTypeUuid },
   ].filter((type) => type.value);

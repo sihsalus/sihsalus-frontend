@@ -1,50 +1,50 @@
 import {
   Button,
   InlineLoading,
+  Pagination,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  Tag,
   Tile,
-  Toggle,
 } from '@carbon/react';
-import React, { useState } from 'react';
+import { getUserFacingErrorMessage } from '@openmrs/esm-framework';
+import React, { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-import PaginationBar from '../components/PaginationBar';
-import {
-  notifyError,
-  notifySuccess,
-  useDeleteIndicador,
-  useIndicadores,
-  useUpdateIndicador,
-} from '../features/indicadores/hooks';
+import { indicatorsErrorMessageOptions } from '../features/indicadores/error-handling';
+import { notifyError, notifySuccess, useDeleteIndicador, useIndicadores } from '../features/indicadores/hooks';
 import styles from '../indicators-dashboard.module.scss';
 
 const IndicadoresPage: React.FC = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(() => new Set());
+  const deletingIdsRef = useRef(new Set<string>());
   const pageSize = 10;
   const { data, isLoading, error } = useIndicadores(page, pageSize);
   const { deleteIndicador } = useDeleteIndicador();
-  const { updateIndicador } = useUpdateIndicador();
 
   const handleDelete = async (id: string) => {
+    if (deletingIdsRef.current.has(id)) {
+      return;
+    }
+
+    deletingIdsRef.current.add(id);
+    setDeletingIds(new Set(deletingIdsRef.current));
     try {
       await deleteIndicador(id);
-      notifySuccess('Indicador eliminado');
+      notifySuccess('Indicador desactivado');
     } catch (deleteError) {
-      notifyError(deleteError instanceof Error ? deleteError.message : 'No se pudo eliminar el indicador');
-    }
-  };
-
-  const handleToggleActivo = async (id: string, nombre: string, descripcion: string | null, activo: boolean) => {
-    try {
-      await updateIndicador(id, { nombre, descripcion, activo: !activo });
-    } catch (toggleError) {
-      notifyError(toggleError instanceof Error ? toggleError.message : 'No se pudo actualizar el estado');
+      notifyError(
+        getUserFacingErrorMessage(deleteError, 'No se pudo desactivar el indicador.', indicatorsErrorMessageOptions),
+      );
+    } finally {
+      deletingIdsRef.current.delete(id);
+      setDeletingIds(new Set(deletingIdsRef.current));
     }
   };
 
@@ -61,7 +61,11 @@ const IndicadoresPage: React.FC = () => {
       </div>
 
       {isLoading ? <InlineLoading description="Cargando indicadores..." /> : null}
-      {error ? <div className={styles.errorBanner}>{error.message}</div> : null}
+      {error ? (
+        <div className={styles.errorBanner}>
+          {getUserFacingErrorMessage(error, 'No se pudieron cargar los indicadores.', indicatorsErrorMessageOptions)}
+        </div>
+      ) : null}
 
       {!isLoading && !error ? (
         data?.items.length ? (
@@ -87,15 +91,7 @@ const IndicadoresPage: React.FC = () => {
                       </TableCell>
                       <TableCell>{indicador.descripcion ?? 'Sin descripción'}</TableCell>
                       <TableCell>
-                        <Toggle
-                          id={`toggle-${indicador.id}`}
-                          labelText={indicador.activo ? 'Activo' : 'Inactivo'}
-                          hideLabel
-                          toggled={indicador.activo}
-                          onToggle={() =>
-                            handleToggleActivo(indicador.id, indicador.nombre, indicador.descripcion, indicador.activo)
-                          }
-                        />
+                        <Tag type="green">Activo</Tag>
                       </TableCell>
                       <TableCell>{new Date(indicador.creado_en).toLocaleString('es-PE')}</TableCell>
                       <TableCell>
@@ -106,8 +102,13 @@ const IndicadoresPage: React.FC = () => {
                           <Button size="sm" kind="ghost" onClick={() => navigate(`/${indicador.id}/edit`)}>
                             Editar
                           </Button>
-                          <Button size="sm" kind="danger--ghost" onClick={() => handleDelete(indicador.id)}>
-                            Eliminar
+                          <Button
+                            size="sm"
+                            kind="danger--ghost"
+                            onClick={() => handleDelete(indicador.id)}
+                            disabled={deletingIds.has(indicador.id)}
+                          >
+                            Desactivar
                           </Button>
                         </div>
                       </TableCell>
@@ -116,13 +117,13 @@ const IndicadoresPage: React.FC = () => {
                 </TableBody>
               </Table>
             </div>
-            <PaginationBar
-              entityLabel="indicadores"
+            <Pagination
               page={data.page}
               pageSize={data.size}
-              total={data.total}
-              totalPages={data.pages}
-              onPageChange={setPage}
+              pageSizes={[10]}
+              totalItems={data.total}
+              onChange={({ page }: { page: number }) => setPage(page)}
+              size="sm"
             />
           </>
         ) : (

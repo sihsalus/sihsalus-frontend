@@ -181,7 +181,7 @@ describe('useRecalcularAnio', () => {
   });
 });
 
-describe('resultados hooks', () => {
+describe('useResultados', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -219,6 +219,12 @@ describe('resultados hooks', () => {
     });
 
     expect(result.current.data).toBeUndefined();
+  });
+});
+
+describe('useResultadosSeries', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
   it('loads resultados series when params are provided', async () => {

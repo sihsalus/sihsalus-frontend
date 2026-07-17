@@ -1,4 +1,4 @@
-import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, useConfig, useSession } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockQueueSurgery, mockQueueTriage, mockServiceTriage } from 'test-utils';
@@ -6,12 +6,20 @@ import { mockQueueSurgery, mockQueueTriage, mockServiceTriage } from 'test-utils
 import { type ConfigObject, configSchema } from '../config-schema';
 import { useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations';
 import { useQueues } from '../hooks/useQueues';
-import { updateSelectedService, useServiceQueuesStore } from '../store/store';
+import {
+  updateSelectedQueueLocationName,
+  updateSelectedQueueLocationUuid,
+  updateSelectedService,
+  useServiceQueuesStore,
+} from '../store/store';
 import PatientQueueHeader from './patient-queue-header.component';
 
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockUseSession = vi.mocked(useSession);
 const mockUseQueueLocations = vi.mocked(useQueueLocations);
 const mockUseQueues = vi.mocked(useQueues);
+const mockUpdateSelectedQueueLocationName = vi.mocked(updateSelectedQueueLocationName);
+const mockUpdateSelectedQueueLocationUuid = vi.mocked(updateSelectedQueueLocationUuid);
 const mockUpdateSelectedService = vi.mocked(updateSelectedService);
 const mockUseServiceQueuesStore = vi.mocked(useServiceQueuesStore);
 
@@ -50,6 +58,7 @@ describe('PatientQueueHeader service filter', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
+    mockSession();
     mockUseQueueLocations.mockReturnValue({ queueLocations: [], isLoading: false, error: undefined });
     mockUseServiceQueuesStore.mockReturnValue(defaultStoreState);
     mockQueueResult([]);
@@ -82,11 +91,7 @@ describe('PatientQueueHeader service filter', () => {
 
   it('shows unique services plus All when several queues are available', async () => {
     const user = userEvent.setup();
-    mockQueueResult([
-      mockQueueTriage,
-      { ...mockQueueTriage, uuid: 'duplicate-triage-queue' },
-      mockQueueSurgery,
-    ]);
+    mockQueueResult([mockQueueTriage, { ...mockQueueTriage, uuid: 'duplicate-triage-queue' }, mockQueueSurgery]);
 
     render(<PatientQueueHeader showFilters />);
 
@@ -151,8 +156,109 @@ describe('PatientQueueHeader service filter', () => {
 
     expect(screen.queryByRole('combobox', { name: /select a service/i })).not.toBeInTheDocument();
   });
+
+  it('does not let a role name or session location override a valid persisted Queue Location', () => {
+    const sessionQueueLocation = {
+      resourceType: 'Location' as const,
+      id: 'admission-location',
+      name: 'Admission desk',
+    };
+    mockSession('SIHSALUS Admision', { uuid: sessionQueueLocation.id, display: 'Stale session display' });
+    mockUseQueueLocations.mockReturnValue({
+      queueLocations: [
+        sessionQueueLocation,
+        { resourceType: 'Location', id: 'other-location', name: 'Other location' },
+      ],
+      isLoading: false,
+      error: undefined,
+    });
+    mockUseServiceQueuesStore.mockReturnValue({
+      ...defaultStoreState,
+      selectedQueueLocationUuid: 'other-location',
+      selectedQueueLocationName: 'Other location',
+      selectedServiceUuid: mockServiceTriage.uuid,
+      selectedServiceDisplay: mockServiceTriage.display,
+    });
+    mockQueueResult([mockQueueTriage]);
+
+    render(<PatientQueueHeader showFilters />);
+
+    expect(screen.getByRole('combobox', { name: /select a queue location/i })).toBeEnabled();
+    expect(mockUseQueues).toHaveBeenCalledWith('other-location');
+    expect(mockUpdateSelectedQueueLocationUuid).not.toHaveBeenCalled();
+    expect(mockUpdateSelectedQueueLocationName).not.toHaveBeenCalled();
+  });
+
+  it('clears a stale persisted Queue Location after metadata loads successfully', async () => {
+    mockSession('Any role', { uuid: 'non-queue-location', display: 'Unconfigured location' });
+    mockUseQueueLocations.mockReturnValue({
+      queueLocations: [{ resourceType: 'Location', id: 'queue-location', name: 'Configured queue location' }],
+      isLoading: false,
+      error: undefined,
+    });
+    mockUseServiceQueuesStore.mockReturnValue({
+      ...defaultStoreState,
+      selectedQueueLocationUuid: 'persisted-location',
+      selectedQueueLocationName: 'Persisted location',
+    });
+
+    render(<PatientQueueHeader showFilters />);
+
+    expect(screen.queryByRole('combobox', { name: /select a queue location/i })).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockUpdateSelectedQueueLocationUuid).toHaveBeenCalledWith(null);
+      expect(mockUpdateSelectedQueueLocationName).toHaveBeenCalledWith(null);
+    });
+  });
+
+  it('preserves persisted Queue Location state while metadata loading fails', () => {
+    mockSession('Any role', { uuid: 'admission-location', display: 'Admission desk' });
+    mockUseQueueLocations.mockReturnValue({
+      queueLocations: [],
+      isLoading: false,
+      error: new Error('FHIR request failed'),
+    });
+    mockUseServiceQueuesStore.mockReturnValue({
+      ...defaultStoreState,
+      selectedQueueLocationUuid: 'persisted-location',
+      selectedQueueLocationName: 'Persisted location',
+    });
+
+    render(<PatientQueueHeader showFilters />);
+
+    expect(screen.getByText('Failed to load locations')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /select a service/i })).toBeDisabled();
+    expect(mockUpdateSelectedQueueLocationUuid).not.toHaveBeenCalled();
+    expect(mockUpdateSelectedQueueLocationName).not.toHaveBeenCalled();
+  });
+
+  it('keeps the location filter behavior independent from role names', () => {
+    mockSession('SIHSALUS Admision', { uuid: 'queue-location-1', display: 'Queue location 1' });
+    mockUseQueueLocations.mockReturnValue({
+      queueLocations: [
+        { resourceType: 'Location', id: 'queue-location-1', name: 'Queue location 1' },
+        { resourceType: 'Location', id: 'queue-location-2', name: 'Queue location 2' },
+      ],
+      isLoading: false,
+      error: undefined,
+    });
+
+    render(<PatientQueueHeader showFilters />);
+
+    expect(screen.getByRole('combobox', { name: /select a queue location/i })).toBeEnabled();
+  });
 });
 
 function mockQueueResult(queues: ReturnType<typeof useQueues>['queues'], isLoading = false, error?: Error) {
   mockUseQueues.mockReturnValue({ queues, isLoading, error } as ReturnType<typeof useQueues>);
+}
+
+function mockSession(roleName = 'Nurse', sessionLocation?: { uuid: string; display: string }) {
+  mockUseSession.mockReturnValue({
+    authenticated: true,
+    user: {
+      roles: [{ display: roleName }],
+    },
+    sessionLocation,
+  } as unknown as ReturnType<typeof useSession>);
 }

@@ -8,6 +8,7 @@ import {
   MULTIPLE_ACTIVE_VISIT_QUEUE_ENTRIES,
   MultipleActiveVisitQueueEntriesError,
   postQueueEntry,
+  postQueueEntryWithoutVisit,
   QUEUE_ENTRY_CREATION_UNVERIFIED,
   QueueEntryCreationVerificationError,
 } from './queue-fields.resource';
@@ -47,6 +48,211 @@ const createdActiveEntry = {
   queue: { uuid: input.queueUuid },
   visit: { uuid: input.visitUuid },
 };
+
+describe('postQueueEntryWithoutVisit', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('creates and verifies a queue entry without a visit', async () => {
+    const startedAt = new Date('2026-07-16T14:25:30.125Z');
+    const persistedEntry = {
+      uuid: 'new-entry',
+      queue: { uuid: input.queueUuid },
+    };
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce({ data: { uuid: persistedEntry.uuid }, status: 201 } as never)
+      .mockResolvedValueOnce({ data: { results: [persistedEntry] } } as never);
+
+    await expect(
+      postQueueEntryWithoutVisit(
+        input.queueUuid,
+        input.patientUuid,
+        input.priorityUuid,
+        input.statusUuid,
+        input.sortWeight,
+        startedAt,
+      ),
+    ).resolves.toMatchObject({ created: true, queueEntry: persistedEntry });
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(3);
+    expect(mockOpenmrsFetch.mock.calls[0][0]).toContain('/queue-entry?');
+    expect(mockOpenmrsFetch.mock.calls[0][0]).toContain(`patient=${input.patientUuid}`);
+    expect(mockOpenmrsFetch.mock.calls[0][0]).toContain(`queue=${input.queueUuid}`);
+    expect(mockOpenmrsFetch.mock.calls[1][0]).toMatch(/\/queue-entry$/);
+    expect(mockOpenmrsFetch.mock.calls[1][1]).toMatchObject({
+      method: 'POST',
+      body: {
+        queue: { uuid: input.queueUuid },
+        patient: { uuid: input.patientUuid },
+        status: { uuid: input.statusUuid },
+        priority: { uuid: input.priorityUuid },
+        startedAt,
+        sortWeight: input.sortWeight,
+      },
+    });
+    expect(mockOpenmrsFetch.mock.calls[1][1]?.body).not.toHaveProperty('visit');
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('/queue-entry-number'))).toBe(false);
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('/visit-queue-entry'))).toBe(false);
+    expect(mockOpenmrsFetch.mock.calls[2][0]).toContain('/queue-entry?');
+  });
+
+  it('uses the current time when startedAt is omitted', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-16T16:45:30.250Z'));
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce({ data: { uuid: 'new-entry' }, status: 201 } as never)
+      .mockResolvedValueOnce({
+        data: { results: [{ uuid: 'new-entry', queue: { uuid: input.queueUuid } }] },
+      } as never);
+
+    await postQueueEntryWithoutVisit(
+      input.queueUuid,
+      input.patientUuid,
+      input.priorityUuid,
+      input.statusUuid,
+      input.sortWeight,
+    );
+
+    expect(mockOpenmrsFetch.mock.calls[1][1]?.body).toMatchObject({
+      startedAt: new Date('2026-07-16T16:45:30.250Z'),
+    });
+  });
+
+  it('reuses an existing active entry for the patient and queue', async () => {
+    const existingEntry = {
+      uuid: 'existing-entry',
+      queue: { uuid: input.queueUuid },
+    };
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: { results: [existingEntry] } } as never);
+
+    await expect(
+      postQueueEntryWithoutVisit(
+        input.queueUuid,
+        input.patientUuid,
+        input.priorityUuid,
+        input.statusUuid,
+        input.sortWeight,
+      ),
+    ).resolves.toMatchObject({ created: false, queueEntry: existingEntry });
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('coalesces simultaneous creates for the same patient and queue', async () => {
+    const persistedEntry = {
+      uuid: 'new-entry',
+      queue: { uuid: input.queueUuid },
+    };
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce({ data: { uuid: persistedEntry.uuid }, status: 201 } as never)
+      .mockResolvedValueOnce({ data: { results: [persistedEntry] } } as never);
+
+    const firstCreate = postQueueEntryWithoutVisit(
+      input.queueUuid,
+      input.patientUuid,
+      input.priorityUuid,
+      input.statusUuid,
+      input.sortWeight,
+    );
+    const secondCreate = postQueueEntryWithoutVisit(
+      input.queueUuid,
+      input.patientUuid,
+      input.priorityUuid,
+      input.statusUuid,
+      input.sortWeight,
+    );
+
+    expect(secondCreate).toBe(firstCreate);
+    await expect(Promise.all([firstCreate, secondCreate])).resolves.toEqual([
+      expect.objectContaining({ created: true, queueEntry: persistedEntry }),
+      expect.objectContaining({ created: true, queueEntry: persistedEntry }),
+    ]);
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('reconciles a concurrent create instead of reporting a false failure', async () => {
+    const concurrentEntry = {
+      uuid: 'concurrent-entry',
+      queue: { uuid: input.queueUuid },
+    };
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockRejectedValueOnce(new Error('duplicate'))
+      .mockResolvedValueOnce({ data: { results: [concurrentEntry] } } as never);
+
+    await expect(
+      postQueueEntryWithoutVisit(
+        input.queueUuid,
+        input.patientUuid,
+        input.priorityUuid,
+        input.statusUuid,
+        input.sortWeight,
+      ),
+    ).resolves.toMatchObject({ created: false, queueEntry: concurrentEntry });
+  });
+
+  it('preserves the write error when reconciliation cannot find an entry', async () => {
+    const writeError = new Error('write failed');
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockRejectedValueOnce(writeError)
+      .mockResolvedValueOnce({ data: { results: [] } } as never);
+
+    await expect(
+      postQueueEntryWithoutVisit(
+        input.queueUuid,
+        input.patientUuid,
+        input.priorityUuid,
+        input.statusUuid,
+        input.sortWeight,
+      ),
+    ).rejects.toBe(writeError);
+  });
+
+  it('fails closed when the created entry cannot be verified by reading it back', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce({ data: { uuid: 'new-entry' }, status: 201 } as never)
+      .mockResolvedValueOnce({ data: { results: [] } } as never);
+
+    await expect(
+      postQueueEntryWithoutVisit(
+        input.queueUuid,
+        input.patientUuid,
+        input.priorityUuid,
+        input.statusUuid,
+        input.sortWeight,
+      ),
+    ).rejects.toBeInstanceOf(QueueEntryCreationVerificationError);
+  });
+
+  it('does not accept a different entry as verification of the POST response', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce({ data: { uuid: 'new-entry' }, status: 201 } as never)
+      .mockResolvedValueOnce({
+        data: { results: [{ uuid: 'different-entry', queue: { uuid: input.queueUuid } }] },
+      } as never);
+
+    await expect(
+      postQueueEntryWithoutVisit(
+        input.queueUuid,
+        input.patientUuid,
+        input.priorityUuid,
+        input.statusUuid,
+        input.sortWeight,
+      ),
+    ).rejects.toBeInstanceOf(QueueEntryCreationVerificationError);
+  });
+});
 
 describe('postQueueEntry', () => {
   beforeEach(() => {

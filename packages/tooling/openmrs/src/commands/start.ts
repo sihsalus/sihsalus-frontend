@@ -255,29 +255,32 @@ export async function runStart(args: StartArgs) {
 
   // Proxy all /openmrs/* API requests to the backend (except /openmrs/spa/**)
   expressApp.use(
-    createProxyMiddleware((path) => path.startsWith('/openmrs') && !path.startsWith(spaPath), {
+    createProxyMiddleware({
+      pathFilter: (path) => path.startsWith('/openmrs') && !path.startsWith(spaPath),
       target: backend,
       changeOrigin: true,
       secure: !allowSelfSignedTls,
-      onProxyReq(proxyReq) {
-        if (addCookie) {
-          const origCookie = proxyReq.getHeader('cookie');
-          const newCookie = `${origCookie};${addCookie}`;
-          proxyReq.setHeader('cookie', newCookie);
-        }
-      },
-      onProxyRes(proxyRes) {
-        // Remove CSP headers from backend — they block browser requests
-        // when serving from localhost (the backend's CSP allowlist doesn't
-        // include all the origins the local dev server needs).
-        if (proxyRes.headers) {
-          delete proxyRes.headers['content-security-policy'];
-          delete proxyRes.headers['content-security-policy-report-only'];
-          const setCookie = proxyRes.headers['set-cookie'];
-          if (setCookie) {
-            proxyRes.headers['set-cookie'] = rewriteLocalDevSetCookie(setCookie);
+      on: {
+        proxyReq(proxyReq) {
+          if (addCookie) {
+            const origCookie = proxyReq.getHeader('cookie');
+            const newCookie = `${origCookie};${addCookie}`;
+            proxyReq.setHeader('cookie', newCookie);
           }
-        }
+        },
+        proxyRes(proxyRes) {
+          // Remove CSP headers from backend — they block browser requests
+          // when serving from localhost (the backend's CSP allowlist doesn't
+          // include all the origins the local dev server needs).
+          if (proxyRes.headers) {
+            delete proxyRes.headers['content-security-policy'];
+            delete proxyRes.headers['content-security-policy-report-only'];
+            const setCookie = proxyRes.headers['set-cookie'];
+            if (setCookie) {
+              proxyRes.headers['set-cookie'] = rewriteLocalDevSetCookie(setCookie);
+            }
+          }
+        },
       },
     }),
   );

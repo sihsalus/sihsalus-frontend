@@ -15,7 +15,16 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: layout.$spacing-03;
   margin-top: layout.$spacing-03;
+}
+
+.dropdownSkeletonContainer {
+  width: 14rem;
+}
+
+.errorContainer {
+  max-width: 26rem;
 }
 
 .view {

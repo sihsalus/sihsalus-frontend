@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { getByTextWithMarkup } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../../config-schema';
+import { clinicalChartPrivilege } from '../../constants';
 import { exportAppointmentsToSpreadsheet } from '../../helpers/excel';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
 import { type Appointment, type AppointmentKind, AppointmentStatus } from '../../types';
@@ -146,6 +147,66 @@ describe('AppointmentsTable', () => {
     expect(screen.getByRole('row', { name: /john wilson 100gej .* hiv clinic outpatient/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /john wilson/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /john wilson/i })).toHaveAttribute('href', 'url-to-patient-chart');
+  });
+
+  it('renders the patient name without a clinical-chart link when the user cannot access the chart', () => {
+    mockUserHasAccess.mockImplementation((privilege) => privilege !== clinicalChartPrivilege);
+
+    renderAppointmentsTable({ appointments: mockAppointments, tableHeading: 'todaysAppointments' });
+
+    expect(screen.getByText('John Wilson')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'John Wilson' })).not.toBeInTheDocument();
+  });
+
+  it('labels the primary patient identifier with its real type', () => {
+    const appointmentWithIdentifiers = {
+      ...mockAppointments[0],
+      patient: {
+        ...mockAppointments[0].patient,
+        identifier: '10000NH',
+        identifiers: [
+          { identifier: '100GEJ', identifierName: 'OpenMRS ID' },
+          { identifier: '10000NH', identifierName: 'N° Historia Clínica' },
+        ],
+      },
+    };
+
+    renderAppointmentsTable({ appointments: [appointmentWithIdentifiers], tableHeading: 'todaysAppointments' });
+
+    expect(screen.getByRole('columnheader', { name: /historia clínica/i })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '10000NH' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /appointment time/i })).toBeInTheDocument();
+  });
+
+  it('shows each identifier type in its cell when a table contains mixed identifier types', () => {
+    const historyNumberAppointment = {
+      ...mockAppointments[0],
+      patient: {
+        ...mockAppointments[0].patient,
+        identifier: '10000NH',
+        identifiers: [{ identifier: '10000NH', identifierName: 'N° Historia Clínica' }],
+      },
+    };
+    const dniAppointment = {
+      ...mockAppointments[0],
+      uuid: 'appointment-with-dni',
+      patient: {
+        ...mockAppointments[0].patient,
+        uuid: 'patient-with-dni',
+        name: 'Jane Doe',
+        identifier: '12345678',
+        identifiers: [{ identifier: '12345678', identifierName: 'DNI' }],
+      },
+    };
+
+    renderAppointmentsTable({
+      appointments: [historyNumberAppointment, dniAppointment],
+      tableHeading: 'todaysAppointments',
+    });
+
+    expect(screen.getByRole('columnheader', { name: /identifier/i })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'N° Historia Clínica: 10000NH' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'DNI: 12345678' })).toBeInTheDocument();
   });
 
   it('updates the search string when the search input changes', async () => {

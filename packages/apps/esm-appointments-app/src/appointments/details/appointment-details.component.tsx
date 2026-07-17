@@ -1,4 +1,5 @@
 import { formatDate, formatDatetime, usePatient } from '@openmrs/esm-framework';
+import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -12,11 +13,57 @@ interface AppointmentDetailsProps {
   appointment: Appointment;
 }
 
+interface ExactAgeLabels {
+  day: string;
+  days: string;
+  month: string;
+  months: string;
+  year: string;
+  years: string;
+}
+
+export function formatExactAge(
+  birthDate: string | Date,
+  referenceDate: string | number | Date,
+  labels: ExactAgeLabels,
+): string {
+  const birth = dayjs(birthDate).startOf('day');
+  const reference = dayjs(referenceDate).startOf('day');
+
+  if (!birth.isValid() || !reference.isValid() || birth.isAfter(reference)) {
+    return '';
+  }
+
+  const years = reference.diff(birth, 'year');
+  const afterYears = birth.add(years, 'year');
+  const months = reference.diff(afterYears, 'month');
+  const afterMonths = afterYears.add(months, 'month');
+  const days = reference.diff(afterMonths, 'day');
+  const formatUnit = (value: number, singular: string, plural: string) =>
+    `${value} ${value === 1 ? singular : plural}`;
+
+  return [
+    formatUnit(years, labels.year, labels.years),
+    formatUnit(months, labels.month, labels.months),
+    formatUnit(days, labels.day, labels.days),
+  ].join(' ');
+}
+
 const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({ appointment }) => {
   const { t } = useTranslation();
   const [, setIsEnabledQuery] = useState(false);
   const { appointmentsCount, isLoading } = usePatientAppointmentHistory(appointment.patient.uuid);
   const { patient } = usePatient(appointment.patient.uuid);
+  const exactAge = patient?.birthDate
+    ? formatExactAge(patient.birthDate, appointment.startDateTime, {
+        day: t('ageDay', 'day'),
+        days: t('ageDays', 'days'),
+        month: t('ageMonth', 'month'),
+        months: t('ageMonths', 'months'),
+        year: t('ageYear', 'year'),
+        years: t('ageYears', 'years'),
+      })
+    : '';
 
   useEffect(() => {
     if (!isLoading) {
@@ -38,7 +85,7 @@ const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({ appointment }) 
           </div>
           <div className={styles.labelContainer}>
             <p className={styles.labelBold}>{t('age', 'Age')}: </p>
-            <p className={styles.label}>{appointment.patient.age}</p>
+            <p className={styles.label}>{exactAge || appointment.patient.age || '—'}</p>
           </div>
           <div className={styles.labelContainer}>
             <p className={styles.labelBold}>{t('gender', 'Gender')}: </p>

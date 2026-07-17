@@ -104,7 +104,7 @@ export const configSchema = {
   patientIdentifierType: {
     _type: Type.String,
     _description: 'The name of the patient identifier type to be used for the patient identifier field',
-    _default: 'DNI',
+    _default: 'N° Historia Clínica',
   },
   showUnscheduledAppointmentsTab: {
     _type: Type.Boolean,

@@ -5,6 +5,7 @@ export const omrsDateFormat = 'YYYY-MM-DDTHH:mm:ss.SSSZZ';
 export const appointmentLocationTagName = 'Appointment Location';
 export const appointmentsPrivilege = 'app:home.citas';
 export const appointmentsEditPrivilege = 'app:home.citas.editar';
+export const clinicalChartPrivilege = 'app:hoja.clinica';
 export const appointmentIssuedDateEditPrivilege = 'app:appointments.issueDate.edit';
 export const appointmentStartDateEditPrivilege = 'app:appointments.startDate.edit';
 export const chartAppointmentsReadPrivilege = 'app:hoja.clinica.citas';

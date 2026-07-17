@@ -170,6 +170,12 @@ export enum DurationPeriod {
 export interface Identifier {
   identifier: string;
   identifierName?: string;
+  identifierType?: {
+    uuid?: string;
+    name?: string;
+    display?: string;
+  };
+  preferred?: boolean;
 }
 
 export interface DailyAppointmentsCountByService {

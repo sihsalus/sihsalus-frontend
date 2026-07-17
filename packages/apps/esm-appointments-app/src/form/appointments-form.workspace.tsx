@@ -629,11 +629,20 @@ const AppointmentsForm: React.FC<
     };
 
     const abortController = new AbortController();
+    const originalStartDate = appointment?.startDateTime ? new Date(appointment.startDateTime) : undefined;
+    const saveRequest = () => {
+      if (isRecurringAppointment) {
+        return originalStartDate
+          ? saveRecurringAppointments(recurringAppointmentPayload, abortController, originalStartDate)
+          : saveRecurringAppointments(recurringAppointmentPayload, abortController);
+      }
 
-    (isRecurringAppointment
-      ? saveRecurringAppointments(recurringAppointmentPayload, abortController)
-      : saveAppointment(appointmentPayload, abortController)
-    ).then(
+      return originalStartDate
+        ? saveAppointment(appointmentPayload, abortController, originalStartDate)
+        : saveAppointment(appointmentPayload, abortController);
+    };
+
+    saveRequest().then(
       ({ status }) => {
         if (isSuccessfulAppointmentResponse(status)) {
           setIsSubmitting(false);

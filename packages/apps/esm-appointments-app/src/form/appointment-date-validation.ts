@@ -2,6 +2,11 @@ import type { AppointmentPayload, RecurringPattern } from '../types';
 
 type AppointmentFormContext = 'creating' | 'editing';
 
+interface AppointmentDateValidationOptions {
+  originalStartDate?: Date;
+  today?: Date;
+}
+
 function getLocalDayTimestamp(value: Date): number | null {
   const date = new Date(value);
   if (Number.isNaN(date.valueOf())) {
@@ -47,12 +52,16 @@ export function isRecurringAppointmentRangeAllowed(startDate: Date, endDate: Dat
   return startDay !== null && endDay !== null && endDay >= startDay;
 }
 
-export function assertAppointmentPayloadDates(appointment: AppointmentPayload, today: Date = new Date()): void {
+export function assertAppointmentPayloadDates(
+  appointment: AppointmentPayload,
+  { originalStartDate, today = new Date() }: AppointmentDateValidationOptions = {},
+): void {
   const startDate = new Date(appointment.startDateTime);
   const endDate = new Date(appointment.endDateTime);
   const issuedDate = new Date(appointment.dateAppointmentScheduled);
 
-  if (!appointment.uuid && !isAppointmentStartDateAllowed(startDate, 'creating', undefined, today)) {
+  const context = appointment.uuid ? 'editing' : 'creating';
+  if (!isAppointmentStartDateAllowed(startDate, context, originalStartDate, today)) {
     throw new Error('Appointment start date cannot be in the past.');
   }
 

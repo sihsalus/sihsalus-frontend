@@ -103,8 +103,12 @@ export function useAppointmentService() {
   };
 }
 
-export function saveAppointment(appointment: AppointmentPayload, abortController: AbortController) {
-  assertAppointmentPayloadDates(appointment);
+export function saveAppointment(
+  appointment: AppointmentPayload,
+  abortController: AbortController,
+  originalStartDate?: Date,
+) {
+  assertAppointmentPayloadDates(appointment, { originalStartDate });
   return openmrsFetch(`${restBaseUrl}/appointment`, {
     method: 'POST',
     signal: abortController.signal,
@@ -118,8 +122,9 @@ export function saveAppointment(appointment: AppointmentPayload, abortController
 export function saveRecurringAppointments(
   recurringAppointments: RecurringAppointmentsPayload,
   abortController: AbortController,
+  originalStartDate?: Date,
 ) {
-  assertAppointmentPayloadDates(recurringAppointments.appointmentRequest);
+  assertAppointmentPayloadDates(recurringAppointments.appointmentRequest, { originalStartDate });
   assertRecurringPatternDates(recurringAppointments.appointmentRequest, recurringAppointments.recurringPattern);
   return openmrsFetch(`${restBaseUrl}/recurring-appointments`, {
     method: 'POST',

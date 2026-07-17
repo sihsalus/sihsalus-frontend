@@ -1,15 +1,13 @@
 import { render, screen } from '@testing-library/react';
 
+import { careLogbookMergePrivileges } from './constants';
 import Root from './root.component';
-
-vi.mock('@openmrs/esm-framework', async () => ({
-  ...(await vi.importActual('@openmrs/esm-framework')),
-  useLeftNav: vi.fn(),
-}));
 
 vi.mock('@sihsalus/esm-rbac', () => ({
   AppErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  RequirePrivilege: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  RequirePrivilege: ({ children, privilege }: { children: React.ReactNode; privilege: string | string[] }) => (
+    <div data-required-privileges={Array.isArray(privilege) ? privilege.join(',') : privilege}>{children}</div>
+  ),
 }));
 
 vi.mock('./pages/admission-home.component', () => ({
@@ -32,8 +30,8 @@ describe('Root', () => {
     globalThis.getOpenmrsSpaBase = vi.fn(() => '/openmrs/spa/');
   });
 
-  it('renders the admission home route', () => {
-    window.history.pushState({}, 'Admission', '/openmrs/spa/admission');
+  it('renders the care logbook home route', () => {
+    window.history.pushState({}, 'Care logbook', '/openmrs/spa/home/care-logbook');
 
     render(<Root />);
 
@@ -41,15 +39,21 @@ describe('Root', () => {
   });
 
   it('renders the duplicate patient merge route', () => {
-    window.history.pushState({}, 'Admission merge', '/openmrs/spa/admission/merge');
+    window.history.pushState({}, 'Care logbook merge', '/openmrs/spa/home/care-logbook/merge');
 
     render(<Root />);
 
-    expect(screen.getByText('Patient merge route')).toBeInTheDocument();
+    const mergeRoute = screen.getByText('Patient merge route');
+
+    expect(mergeRoute).toBeInTheDocument();
+    expect(mergeRoute.closest('[data-required-privileges]')).toHaveAttribute(
+      'data-required-privileges',
+      careLogbookMergePrivileges.join(','),
+    );
   });
 
   it('renders the patient admission detail route', () => {
-    window.history.pushState({}, 'Patient admission detail', '/openmrs/spa/admission/patient/patient-uuid');
+    window.history.pushState({}, 'Patient admission detail', '/openmrs/spa/home/care-logbook/patient/patient-uuid');
 
     render(<Root />);
 

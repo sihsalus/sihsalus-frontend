@@ -1,6 +1,6 @@
 import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle, registerBreadcrumbs } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
-import { basePath, moduleName } from './constants';
+import { careLogbookBasePath, moduleName } from './constants';
 import CareLogbookAppMenuLink from './links/care-logbook-app-menu-link.component';
 import CareLogbookDashboardLink from './links/care-logbook-dashboard-link.component';
 import CareLogbookMergePatientsAction from './links/care-logbook-merge-patients-action.component';
@@ -12,6 +12,10 @@ const options = {
   moduleName,
 };
 
+function LegacyCareLogbookDashboardAlias() {
+  return null;
+}
+
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 
 export function startupApp() {
@@ -19,7 +23,7 @@ export function startupApp() {
 
   registerBreadcrumbs([
     {
-      path: `${globalThis.getOpenmrsSpaBase().slice(0, -1)}${basePath}`,
+      path: `${globalThis.getOpenmrsSpaBase().slice(0, -1)}${careLogbookBasePath}`,
       title: () =>
         Promise.resolve(
           globalThis.i18next.t('admission', {
@@ -30,7 +34,7 @@ export function startupApp() {
       parent: `${globalThis.spaBase}/home`,
     },
     {
-      path: `${globalThis.getOpenmrsSpaBase().slice(0, -1)}${basePath}/merge`,
+      path: `${globalThis.getOpenmrsSpaBase().slice(0, -1)}${careLogbookBasePath}/merge`,
       title: () =>
         Promise.resolve(
           globalThis.i18next.t('mergeDuplicatePatientRecords', {
@@ -38,18 +42,25 @@ export function startupApp() {
             ns: moduleName,
           }),
         ),
-      parent: `${globalThis.getOpenmrsSpaBase().slice(0, -1)}${basePath}`,
+      parent: `${globalThis.getOpenmrsSpaBase().slice(0, -1)}${careLogbookBasePath}`,
     },
   ]);
 }
 
 export const root = getSyncLifecycle(Root, options);
 
+export const legacyAdmissionRedirect = getAsyncLifecycle(
+  () => import('./legacy-admission-redirect.component'),
+  options,
+);
+
 export const careLogbookAppMenuLink = getSyncLifecycle(CareLogbookAppMenuLink, options);
 
-export const careLogbookHomeDashboard = getAsyncLifecycle(() => import('./pages/admission-home.component'), options);
+export const careLogbookHomeDashboard = root;
 
 export const careLogbookHomeDashboardLink = getSyncLifecycle(CareLogbookDashboardLink, options);
+
+export const careLogbookLegacyHomeDashboardAlias = getSyncLifecycle(LegacyCareLogbookDashboardAlias, options);
 
 export const careLogbookMergePatientsAction = getSyncLifecycle(CareLogbookMergePatientsAction, options);
 

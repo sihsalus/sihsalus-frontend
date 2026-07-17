@@ -14,17 +14,31 @@
       "name": "care-logbook-home-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "meta": {
-        "name": "admission",
-        "slot": "admission-dashboard-slot",
-        "title": "admissionReportByUps"
+        "name": "care-logbook",
+        "slot": "care-logbook-dashboard-slot",
+        "title": "admissionReportByUps",
+        "path": "/home/care-logbook"
       },
       "privileges": "app:home.libroAtenciones",
       "order": 20
     },
     {
+      "component": "careLogbookLegacyHomeDashboardAlias",
+      "name": "care-logbook-legacy-home-dashboard-alias",
+      "slot": "homepage-dashboard-slot",
+      "meta": {
+        "name": "admission",
+        "slot": "care-logbook-dashboard-slot",
+        "title": "admissionReportByUps",
+        "path": "/home/care-logbook"
+      },
+      "privileges": "app:home.libroAtenciones",
+      "order": 1000
+    },
+    {
       "component": "careLogbookHomeDashboard",
       "name": "care-logbook-home-dashboard",
-      "slot": "admission-dashboard-slot",
+      "slot": "care-logbook-dashboard-slot",
       "privileges": "app:home.libroAtenciones",
       "online": true,
       "offline": false
@@ -44,7 +58,7 @@
       "component": "careLogbookMergePatientsMenuItem",
       "name": "care-logbook-merge-patients-menu-item",
       "slot": "patient-actions-slot",
-      "privileges": "app:home.libroAtenciones.editar",
+      "privileges": ["app:home.libroAtenciones.editar", "app:opciones.fusionarPacientes"],
       "online": true,
       "offline": false,
       "order": 9
@@ -52,8 +66,14 @@
   ],
   "pages": [
     {
-      "component": "root",
+      "component": "legacyAdmissionRedirect",
       "route": "admission",
+      "online": true,
+      "offline": false
+    },
+    {
+      "component": "legacyAdmissionRedirect",
+      "route": "home/admission",
       "online": true,
       "offline": false
     }

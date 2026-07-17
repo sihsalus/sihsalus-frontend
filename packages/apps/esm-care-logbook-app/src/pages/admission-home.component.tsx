@@ -1,10 +1,11 @@
 import {
   Button,
-  InlineLoading,
+  DataTableSkeleton,
   InlineNotification,
   Layer,
   Select,
   SelectItem,
+  SkeletonText,
   Table,
   TableBody,
   TableCell,
@@ -18,6 +19,7 @@ import {
 import { Download, Launch } from '@carbon/react/icons';
 import {
   ConfigurableLink,
+  EmptyCardIllustration,
   PageHeader,
   PageHeaderContent,
   RegistrationPictogram,
@@ -28,7 +30,7 @@ import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { careLogbookPrivilege, moduleName } from '../constants';
+import { careLogbookBasePath, careLogbookMergePrivileges, careLogbookPrivilege, moduleName } from '../constants';
 import { useAdmissions } from '../resources/admissions.resource';
 import styles from './admission-home.scss';
 
@@ -141,6 +143,23 @@ function escapeCsvValue(value: string) {
   return `"${value.replace(/"/g, '""')}"`;
 }
 
+interface CareLogbookTableEmptyStateProps {
+  title: string;
+  helper: string;
+}
+
+function CareLogbookTableEmptyState({ title, helper }: CareLogbookTableEmptyStateProps) {
+  return (
+    <div className={styles.emptyState} data-testid="care-logbook-empty-state" role="status">
+      <div aria-hidden="true" data-testid="care-logbook-empty-state-illustration">
+        <EmptyCardIllustration />
+      </div>
+      <p className={styles.emptyStateTitle}>{title}</p>
+      <p className={styles.emptyStateHelper}>{helper}</p>
+    </div>
+  );
+}
+
 export default function AdmissionHome() {
   const { t } = useTranslation(moduleName);
   const config = useConfig() as AdmissionConfig;
@@ -206,6 +225,7 @@ export default function AdmissionHome() {
       return matchesSearch && matchesStatus;
     });
   }, [admissions, searchTerm, sexLabels, statusFilter]);
+  const hasActiveFilters = Boolean(searchTerm.trim()) || statusFilter !== 'all';
 
   const reportSummary = useMemo(
     () => ({
@@ -275,11 +295,13 @@ export default function AdmissionHome() {
               title={t('admissionReportByUps', 'Libro de Atenciones')}
               illustration={<RegistrationPictogram />}
             />
-            <ConfigurableLink to={`${spaBasePath}/admission/merge`} className={styles.headerAction}>
-              <Button kind="secondary" renderIcon={Launch} as="span">
-                {t('mergeDuplicatePatients', 'Fusionar historias duplicadas')}
-              </Button>
-            </ConfigurableLink>
+            <RequirePrivilege privilege={careLogbookMergePrivileges} hideUnauthorized>
+              <ConfigurableLink to={`${spaBasePath}${careLogbookBasePath}/merge`} className={styles.headerAction}>
+                <Button kind="secondary" renderIcon={Launch} as="span">
+                  {t('mergeDuplicatePatients', 'Fusionar historias duplicadas')}
+                </Button>
+              </ConfigurableLink>
+            </RequirePrivilege>
           </PageHeader>
 
           <div className={styles.content}>
@@ -293,28 +315,36 @@ export default function AdmissionHome() {
                 </header>
                 <div className={styles.summaryTileDetails}>
                   <div className={styles.summaryTileLabel}>{t('admissions', 'Atenciones')}</div>
-                  <div className={styles.summaryTileValue}>{reportSummary.total}</div>
+                  <div className={styles.summaryTileValue}>
+                    {isLoading ? <SkeletonText width="2rem" /> : error ? '—' : reportSummary.total}
+                  </div>
                 </div>
               </Tile>
               <Tile className={styles.summaryTile}>
                 <header className={styles.summaryTileHeader}>{t('activeAdmissions', 'En curso')}</header>
                 <div className={styles.summaryTileDetails}>
                   <div className={styles.summaryTileLabel}>{t('admissions', 'Atenciones')}</div>
-                  <div className={styles.summaryTileValue}>{reportSummary.active}</div>
+                  <div className={styles.summaryTileValue}>
+                    {isLoading ? <SkeletonText width="2rem" /> : error ? '—' : reportSummary.active}
+                  </div>
                 </div>
               </Tile>
               <Tile className={styles.summaryTile}>
                 <header className={styles.summaryTileHeader}>{t('finishedAdmissions', 'Finalizadas')}</header>
                 <div className={styles.summaryTileDetails}>
                   <div className={styles.summaryTileLabel}>{t('admissions', 'Atenciones')}</div>
-                  <div className={styles.summaryTileValue}>{reportSummary.finished}</div>
+                  <div className={styles.summaryTileValue}>
+                    {isLoading ? <SkeletonText width="2rem" /> : error ? '—' : reportSummary.finished}
+                  </div>
                 </div>
               </Tile>
               <Tile className={styles.summaryTile}>
                 <header className={styles.summaryTileHeader}>{t('reportedUpsServices', 'UPSS/servicios')}</header>
                 <div className={styles.summaryTileDetails}>
                   <div className={styles.summaryTileLabel}>{t('services', 'Servicios')}</div>
-                  <div className={styles.summaryTileValue}>{reportSummary.services}</div>
+                  <div className={styles.summaryTileValue}>
+                    {isLoading ? <SkeletonText width="2rem" /> : error ? '—' : reportSummary.services}
+                  </div>
                 </div>
               </Tile>
             </section>
@@ -334,12 +364,14 @@ export default function AdmissionHome() {
                   'Paciente, documento, HCE, seguro, responsable, servicio...',
                 )}
                 value={searchTerm}
+                disabled={isLoading || Boolean(error)}
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
               <Select
                 id="admission-status-filter"
                 labelText={t('filterByStatus', 'Filtrar por estado')}
                 value={statusFilter}
+                disabled={isLoading || Boolean(error)}
                 onChange={(event) => setStatusFilter(event.target.value)}
               >
                 <SelectItem value="all" text={t('allStatuses', 'Todos los estados')} />
@@ -351,13 +383,12 @@ export default function AdmissionHome() {
                 kind="primary"
                 renderIcon={Download}
                 onClick={exportFilteredAdmissions}
-                disabled={filteredAdmissions.length === 0}
+                disabled={isLoading || Boolean(error) || filteredAdmissions.length === 0}
               >
                 {t('exportCsv', 'Exportar CSV')}
               </Button>
             </section>
 
-            {isLoading ? <InlineLoading description={t('loadingAdmissions', 'Cargando atenciones')} /> : null}
             {error ? (
               <InlineNotification
                 kind="error"
@@ -367,85 +398,112 @@ export default function AdmissionHome() {
             ) : null}
 
             <Layer>
-              <TableContainer className={styles.tableWrap}>
-                <Table className={styles.table}>
-                  <colgroup>
-                    <col className={styles.dateColumn} />
-                    <col className={styles.identifierColumn} />
-                    <col className={styles.documentTypeColumn} />
-                    <col className={styles.identifierColumn} />
-                    <col className={styles.statusColumn} />
-                    <col className={styles.responsibleColumn} />
-                    <col className={styles.shortColumn} />
-                    <col className={styles.shortColumn} />
-                    <col className={styles.personColumn} />
-                    <col className={styles.addressColumn} />
-                    <col className={styles.ageColumn} />
-                    <col className={styles.sexColumn} />
-                    <col className={styles.serviceColumn} />
-                    <col className={styles.orderColumn} />
-                    <col className={styles.communicationColumn} />
-                  </colgroup>
-                  <TableHead>
-                    <TableRow>
-                      <TableHeader>{t('dateTime', 'Fecha y hora')}</TableHeader>
-                      <TableHeader>{t('medicalRecordNumber', 'HCE / código temporal')}</TableHeader>
-                      <TableHeader>{t('documentType', 'Tipo doc.')}</TableHeader>
-                      <TableHeader>{t('documentNumber', 'N° documento')}</TableHeader>
-                      <TableHeader>{t('identificationStatus', 'Estado identificación')}</TableHeader>
-                      <TableHeader>{t('responsiblePerson', 'Responsable')}</TableHeader>
-                      <TableHeader>{t('birthDateShort', 'F. Nac.')}</TableHeader>
-                      <TableHeader>{t('hasSis', 'Tiene SIS')}</TableHeader>
-                      <TableHeader>{t('fullName', 'Nombres y apellidos')}</TableHeader>
-                      <TableHeader>{t('address', 'Dirección')}</TableHeader>
-                      <TableHeader>{t('age', 'Edad')}</TableHeader>
-                      <TableHeader>{t('sex', 'Sexo')}</TableHeader>
-                      <TableHeader>{t('service', 'Servicio')}</TableHeader>
-                      <TableHeader>{t('orderNumber', 'Número de orden')}</TableHeader>
-                      <TableHeader>{t('communicationCondition', 'Condición comunicación')}</TableHeader>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredAdmissions.map((admission, index) => (
-                      <TableRow key={admission.uuid}>
-                        <TableCell>{formatDateTime(admission.startDatetime)}</TableCell>
-                        <TableCell>{admission.medicalRecordNumber}</TableCell>
-                        <TableCell>{admission.documentType || t('pending', 'Pendiente')}</TableCell>
-                        <TableCell>{admission.documentNumber || t('pending', 'Pendiente')}</TableCell>
-                        <TableCell>{admission.identificationStatus}</TableCell>
-                        <TableCell>
-                          {[admission.responsibleName, admission.responsibleRelationship].filter(Boolean).join(' - ')}
-                        </TableCell>
-                        <TableCell>{formatDate(admission.birthDate)}</TableCell>
-                        <TableCell>{admission.hasSis}</TableCell>
-                        <TableCell>
-                          {admission.patientUuid ? (
-                            <ConfigurableLink
-                              to={`${spaBasePath}/admission/patient/${admission.patientUuid}`}
-                              className={styles.patientLink}
-                            >
-                              {admission.patientName}
-                            </ConfigurableLink>
-                          ) : (
-                            admission.patientName
-                          )}
-                        </TableCell>
-                        <TableCell>{admission.address}</TableCell>
-                        <TableCell>
-                          {formatAgeWithUnit(admission.birthDate, admission.startDatetime, ageLabels)}
-                        </TableCell>
-                        <TableCell>{formatSex(admission.gender, sexLabels)}</TableCell>
-                        <TableCell>{admission.service}</TableCell>
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell>{admission.communicationCondition}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {!isLoading && filteredAdmissions.length === 0 ? (
-                  <p className={styles.empty}>{t('noAdmissionsFound', 'No se encontraron atenciones recientes.')}</p>
-                ) : null}
-              </TableContainer>
+              {isLoading ? (
+                <div className={styles.tableSkeleton}>
+                  <DataTableSkeleton
+                    aria-label={t('loadingAdmissions', 'Cargando atenciones')}
+                    columnCount={15}
+                    rowCount={5}
+                    role="progressbar"
+                    zebra
+                  />
+                </div>
+              ) : (
+                <div className={styles.tableSurface}>
+                  <TableContainer className={styles.tableWrap}>
+                    <Table aria-label={t('reportedAdmissions', 'Atenciones registradas')} className={styles.table}>
+                      <colgroup>
+                        <col className={styles.dateColumn} />
+                        <col className={styles.identifierColumn} />
+                        <col className={styles.documentTypeColumn} />
+                        <col className={styles.identifierColumn} />
+                        <col className={styles.statusColumn} />
+                        <col className={styles.responsibleColumn} />
+                        <col className={styles.shortColumn} />
+                        <col className={styles.shortColumn} />
+                        <col className={styles.personColumn} />
+                        <col className={styles.addressColumn} />
+                        <col className={styles.ageColumn} />
+                        <col className={styles.sexColumn} />
+                        <col className={styles.serviceColumn} />
+                        <col className={styles.orderColumn} />
+                        <col className={styles.communicationColumn} />
+                      </colgroup>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeader>{t('dateTime', 'Fecha y hora')}</TableHeader>
+                          <TableHeader>{t('medicalRecordNumber', 'HCE / código temporal')}</TableHeader>
+                          <TableHeader>{t('documentType', 'Tipo doc.')}</TableHeader>
+                          <TableHeader>{t('documentNumber', 'N° documento')}</TableHeader>
+                          <TableHeader>{t('identificationStatus', 'Estado identificación')}</TableHeader>
+                          <TableHeader>{t('responsiblePerson', 'Responsable')}</TableHeader>
+                          <TableHeader>{t('birthDateShort', 'F. Nac.')}</TableHeader>
+                          <TableHeader>{t('hasSis', 'Tiene SIS')}</TableHeader>
+                          <TableHeader>{t('fullName', 'Nombres y apellidos')}</TableHeader>
+                          <TableHeader>{t('address', 'Dirección')}</TableHeader>
+                          <TableHeader>{t('age', 'Edad')}</TableHeader>
+                          <TableHeader>{t('sex', 'Sexo')}</TableHeader>
+                          <TableHeader>{t('service', 'Servicio')}</TableHeader>
+                          <TableHeader>{t('orderNumber', 'Número de orden')}</TableHeader>
+                          <TableHeader>{t('communicationCondition', 'Condición comunicación')}</TableHeader>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {filteredAdmissions.map((admission, index) => (
+                          <TableRow key={admission.uuid}>
+                            <TableCell>{formatDateTime(admission.startDatetime)}</TableCell>
+                            <TableCell>{admission.medicalRecordNumber}</TableCell>
+                            <TableCell>{admission.documentType || t('pending', 'Pendiente')}</TableCell>
+                            <TableCell>{admission.documentNumber || t('pending', 'Pendiente')}</TableCell>
+                            <TableCell>{admission.identificationStatus}</TableCell>
+                            <TableCell>
+                              {[admission.responsibleName, admission.responsibleRelationship]
+                                .filter(Boolean)
+                                .join(' - ')}
+                            </TableCell>
+                            <TableCell>{formatDate(admission.birthDate)}</TableCell>
+                            <TableCell>{admission.hasSis}</TableCell>
+                            <TableCell>
+                              {admission.patientUuid ? (
+                                <ConfigurableLink
+                                  to={`${spaBasePath}${careLogbookBasePath}/patient/${admission.patientUuid}`}
+                                  className={styles.patientLink}
+                                >
+                                  {admission.patientName}
+                                </ConfigurableLink>
+                              ) : (
+                                admission.patientName
+                              )}
+                            </TableCell>
+                            <TableCell>{admission.address}</TableCell>
+                            <TableCell>
+                              {formatAgeWithUnit(admission.birthDate, admission.startDatetime, ageLabels)}
+                            </TableCell>
+                            <TableCell>{formatSex(admission.gender, sexLabels)}</TableCell>
+                            <TableCell>{admission.service}</TableCell>
+                            <TableCell>{index + 1}</TableCell>
+                            <TableCell>{admission.communicationCondition}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  {!error && filteredAdmissions.length === 0 ? (
+                    <CareLogbookTableEmptyState
+                      title={
+                        hasActiveFilters
+                          ? t('noMatchingAdmissions', 'No hay atenciones que coincidan')
+                          : t('noAdmissionsFound', 'No hay atenciones recientes para mostrar')
+                      }
+                      helper={
+                        hasActiveFilters
+                          ? t('checkFilters', 'Comprobar los filtros anteriores')
+                          : t('noAdmissionsFoundHint', 'Las atenciones registradas aparecerán aquí')
+                      }
+                    />
+                  ) : null}
+                </div>
+              )}
             </Layer>
           </div>
         </main>

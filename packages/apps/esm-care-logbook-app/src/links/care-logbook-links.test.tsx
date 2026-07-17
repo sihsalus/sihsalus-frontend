@@ -2,6 +2,7 @@ import { navigate } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { careLogbookMergePrivileges } from '../constants';
 import CareLogbookAppMenuLink from './care-logbook-app-menu-link.component';
 import CareLogbookDashboardLink from './care-logbook-dashboard-link.component';
 import CareLogbookMergePatientsAction from './care-logbook-merge-patients-action.component';
@@ -18,7 +19,9 @@ vi.mock('@openmrs/esm-framework', async () => {
 });
 
 vi.mock('@sihsalus/esm-rbac', () => ({
-  RequirePrivilege: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  RequirePrivilege: ({ children, privilege }: { children: React.ReactNode; privilege: string | string[] }) => (
+    <div data-required-privileges={Array.isArray(privilege) ? privilege.join(',') : privilege}>{children}</div>
+  ),
 }));
 
 const mockNavigate = vi.mocked(navigate);
@@ -33,14 +36,14 @@ describe('care logbook navigation links', () => {
   it('renders the app menu link to the care logbook', () => {
     render(<CareLogbookAppMenuLink />);
 
-    expect(screen.getByRole('link', { name: /atenciones/i })).toHaveAttribute('href', '/openmrs/spa/admission');
+    expect(screen.getByRole('link', { name: /atenciones/i })).toHaveAttribute('href', '/openmrs/spa/home/care-logbook');
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('renders the dashboard tile link to the care logbook', () => {
     render(<CareLogbookDashboardLink />);
 
-    expect(screen.getByRole('link', { name: /atenciones/i })).toHaveAttribute('href', '/openmrs/spa/home/admission');
+    expect(screen.getByRole('link', { name: /atenciones/i })).toHaveAttribute('href', '/openmrs/spa/home/care-logbook');
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
@@ -48,17 +51,27 @@ describe('care logbook navigation links', () => {
     const user = userEvent.setup();
     render(<CareLogbookMergePatientsAction />);
 
-    await user.click(screen.getByRole('button', { name: /fusionar historias/i }));
+    const mergeAction = screen.getByRole('button', { name: /fusionar historias/i });
+    await user.click(mergeAction);
 
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/spa/admission/merge' });
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/spa/home/care-logbook/merge' });
+    expect(mergeAction.closest('[data-required-privileges]')).toHaveAttribute(
+      'data-required-privileges',
+      careLogbookMergePrivileges.join(','),
+    );
   });
 
   it('renders the patient actions merge entry as a text menu item', async () => {
     const user = userEvent.setup();
     render(<CareLogbookMergePatientsMenuItem closeMenu={vi.fn()} />);
 
-    await user.click(screen.getByRole('menuitem', { name: /fusionar historias/i }));
+    const mergeMenuItem = screen.getByRole('menuitem', { name: /fusionar historias/i });
+    await user.click(mergeMenuItem);
 
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/spa/admission/merge' });
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/spa/home/care-logbook/merge' });
+    expect(mergeMenuItem.closest('[data-required-privileges]')).toHaveAttribute(
+      'data-required-privileges',
+      careLogbookMergePrivileges.join(','),
+    );
   });
 });

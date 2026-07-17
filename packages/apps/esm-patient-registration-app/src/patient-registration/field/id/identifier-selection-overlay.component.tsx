@@ -311,7 +311,7 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({
         <p className={styles.bodyLong02}>
           {t('IDInstructions', "Select the identifiers you'd like to add for this patient:")}
         </p>
-        {availableIdentifierTypes.length > 7 && (
+        {availableIdentifierTypes.length > 5 && (
           <div className={styles.space05}>
             <Search
               labelText={t('searchIdentifierPlaceholder', 'Search identifier')}

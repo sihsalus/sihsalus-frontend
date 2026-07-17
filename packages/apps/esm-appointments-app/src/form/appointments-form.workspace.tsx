@@ -1,6 +1,7 @@
 import {
   Button,
   ButtonSet,
+  ComboBox,
   DatePicker,
   DatePickerInput,
   Form,
@@ -60,7 +61,7 @@ import {
   moduleName,
   weekDays,
 } from '../constants';
-import { isAppointmentEditable } from '../helpers';
+import { isAppointmentEditable, isAppointmentServiceAvailableForGender } from '../helpers';
 import SelectedDateContext from '../hooks/selectedDateContext';
 import { useProviders } from '../hooks/useProviders';
 import { getAppointmentStatus } from '../patient-appointments/patient-appointments.resource';
@@ -277,6 +278,9 @@ const AppointmentsForm: React.FC<
   const canEditAppointmentStartDate = userHasAccess(appointmentStartDateEditPrivilege, session?.user);
   const { selectedDate } = useContext(SelectedDateContext);
   const { data: services, isLoading } = useAppointmentService();
+  const availableServices = services?.filter((service) =>
+    isAppointmentServiceAvailableForGender(service, patient?.gender),
+  );
   const { appointmentTypes, allowAllDayAppointments } = useConfig<ConfigObject>();
   const mappedAppointmentTypes = appointmentTypes ?? [];
   const title =
@@ -768,7 +772,7 @@ const AppointmentsForm: React.FC<
 
   return (
     <Workspace2 title={title} hasUnsavedChanges={isDirty && !isSuccessful}>
-      <Form onSubmit={handleSubmit(handleSaveAppointment)}>
+      <Form className={styles.form} onSubmit={handleSubmit(handleSaveAppointment)}>
         <Stack gap={4}>
           {Object.keys(errors).length > 0 && (
             <InlineNotification
@@ -861,8 +865,8 @@ const AppointmentsForm: React.FC<
                     value={value}
                   >
                     <SelectItem text={t('chooseService', 'Select service')} value="" />
-                    {services?.length > 0 &&
-                      services.map((service) => (
+                    {availableServices?.length > 0 &&
+                      availableServices.map((service) => (
                         <SelectItem key={service.uuid} text={service.name} value={service.name}>
                           {service.name}
                         </SelectItem>
@@ -1130,25 +1134,22 @@ const AppointmentsForm: React.FC<
               <Controller
                 name="provider"
                 control={control}
-                render={({ field: { onChange, value, onBlur, ref } }) => (
-                  <Select
+                render={({ field: { onChange, value, onBlur } }) => (
+                  <ComboBox
                     id="provider"
                     invalid={!!errors?.provider}
                     invalidText={errors?.provider?.message}
-                    labelText={<RequiredFieldLabel label={t('selectProvider', 'Select a provider')} />}
-                    onChange={onChange}
+                    items={providers?.providers ?? []}
+                    itemToString={(provider) => provider?.display ?? ''}
+                    onChange={({ selectedItem }) => onChange(selectedItem?.uuid ?? '')}
                     onBlur={onBlur}
-                    value={value}
-                    ref={ref}
-                  >
-                    <SelectItem text={t('chooseProvider', 'Choose a provider')} value="" />
-                    {providers?.providers?.length > 0 &&
-                      providers?.providers?.map((provider) => (
-                        <SelectItem key={provider.uuid} text={provider.display} value={provider.uuid}>
-                          {provider.display}
-                        </SelectItem>
-                      ))}
-                  </Select>
+                    placeholder={t('chooseProvider', 'Choose a provider')}
+                    selectedItem={providers?.providers?.find((provider) => provider.uuid === value) ?? null}
+                    shouldFilterItem={({ inputValue, item }) =>
+                      item.display.toLocaleLowerCase().includes((inputValue ?? '').toLocaleLowerCase())
+                    }
+                    titleText={<RequiredFieldLabel label={t('selectProvider', 'Select a provider')} />}
+                  />
                 )}
               />
             </ResponsiveWrapper>

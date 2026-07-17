@@ -79,6 +79,8 @@ export interface AppointmentService {
   startTime: string;
   uuid: string;
   serviceTypes?: Array<ServiceTypes>;
+  gender?: string;
+  allowedGenders?: Array<string>;
   color?: string;
   startTimeTimeFormat?: amPm;
   endTimeTimeFormat?: amPm;
@@ -168,6 +170,12 @@ export enum DurationPeriod {
 export interface Identifier {
   identifier: string;
   identifierName?: string;
+  identifierType?: {
+    uuid?: string;
+    name?: string;
+    display?: string;
+  };
+  preferred?: boolean;
 }
 
 export interface DailyAppointmentsCountByService {

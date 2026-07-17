@@ -45,6 +45,114 @@
       }
     ]
   },
+  "@sihsalus/esm-patient-chart-app": {
+    "visitTypeEligibilityRules": [
+      {
+        "locationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400001",
+        "visitTypeUuids": [
+          "b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09",
+          "23939157-9af0-457b-8f6c-211eb5459311",
+          "f70a865a-6cae-4d04-8d05-acb5bf88fa16",
+          "ae40aab4-c57d-4bb1-a27e-2cacc24dd07f",
+          "61e8b805-136e-44fa-ac81-7a5ccd65f881",
+          "54cd95e3-5fdf-4339-b717-3c649b0cad0c",
+          "dfd5a7e3-f61e-4275-af45-70eff9070c4b",
+          "e3045dfa-22c5-4bec-8856-46e3faab996a",
+          "560864ec-38ef-4c51-9b22-ec10de234f57",
+          "794d8ac5-924e-455a-bbdc-365c1ef009f7"
+        ]
+      },
+      {
+        "locationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400001",
+        "visitTypeUuids": ["00d5ce5a-5211-4dfb-b9dd-d551bc7d1afd"],
+        "allowedGenders": ["F"]
+      },
+      {
+        "locationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400002",
+        "visitTypeUuids": [
+          "e4c8b6d9-7f3a-4e7b-91a2-58b9f6c2d4b5",
+          "f8238c67-4514-46d2-87d0-330b64c7638e",
+          "f8238c67-4514-46d2-87d0-330b64c76311",
+          "f8238c67-4514-46d2-87d0-330b64c76314",
+          "f8238c67-4514-46d2-87d0-330b64c76315",
+          "f8238c67-4514-46d2-87d0-330b64c76316",
+          "f8238c67-4514-46d2-87d0-330b64c76317"
+        ]
+      },
+      {
+        "locationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400002",
+        "visitTypeUuids": [
+          "f8238c67-4514-46d2-87d0-330b64c76312",
+          "f8238c67-4514-46d2-87d0-330b64c76313"
+        ],
+        "allowedGenders": ["F"]
+      },
+      {
+        "locationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400003",
+        "visitTypeUuids": [
+          "c2a1d3e2-4b8f-4326-94d9-7f6c9a1b7c98",
+          "c2a1d3e2-4b8f-4326-94d9-7f6c9a1b7c00",
+          "c2a1d3e2-4b8f-4326-94d9-7f6c9a1b7c01",
+          "c2a1d3e2-4b8f-4326-94d9-7f6c9a1b7c02",
+          "c2a1d3e2-4b8f-4326-94d9-7f6c9a1b7c03"
+        ]
+      },
+      {
+        "locationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400003",
+        "visitTypeUuids": ["c2a1d3e2-4b8f-4326-94d9-7f6c9a1b7c04"],
+        "allowedGenders": ["F"]
+      },
+      {
+        "locationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400004",
+        "visitTypeUuids": ["f8238c67-4514-46d2-87d0-330b64c76315"]
+      },
+      {
+        "locationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400004",
+        "visitTypeUuids": [
+          "19fa588e-3185-41c2-a5d1-21c3a4af944b",
+          "f8238c67-4514-46d2-87d0-330b64c76313",
+          "c2a1d3e2-4b8f-4326-94d9-7f6c9a1b7c04"
+        ],
+        "allowedGenders": ["F"]
+      },
+      {
+        "locationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400005",
+        "visitTypeUuids": ["f8238c67-4514-46d2-87d0-330b64c76311"]
+      },
+      {
+        "locationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400006",
+        "visitTypeUuids": ["04ffb8cf-1761-42bb-9881-1150fdfbbc2d"]
+      },
+      {
+        "locationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400013",
+        "visitTypeUuids": ["04ffb8cf-1761-42bb-9881-1150fdfbbc2d"]
+      },
+      {
+        "locationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400008",
+        "visitTypeUuids": ["04ffb8cf-1761-42bb-9881-1150fdfbbc2d"]
+      },
+      {
+        "locationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400007",
+        "visitTypeUuids": ["110001d9-7f3a-4e7b-91a2-580b216a7c42"]
+      },
+      {
+        "locationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400009",
+        "visitTypeUuids": ["b52d05db-61de-403a-b4f0-ace71295798e"]
+      },
+      {
+        "locationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400010",
+        "visitTypeUuids": ["b52d05db-61de-403a-b4f0-ace71295798e"]
+      },
+      {
+        "locationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400011",
+        "visitTypeUuids": ["b52d05db-61de-403a-b4f0-ace71295798e"]
+      },
+      {
+        "locationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400012",
+        "visitTypeUuids": ["b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09"]
+      }
+    ]
+  },
   "core": {
     "Translation overrides": {
       "es": {

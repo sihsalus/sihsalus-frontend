@@ -51,7 +51,6 @@ const AppointmentsHeader: React.FC<AppointmentHeaderProps> = ({ appointmentServi
         {typeof onChange === 'function' && (
           <div className={styles.serviceFilter}>
             <MultiSelect
-              autoAlign
               className={styles.serviceTypeFilter}
               id="serviceTypeMultiSelect"
               items={serviceTypeOptions}

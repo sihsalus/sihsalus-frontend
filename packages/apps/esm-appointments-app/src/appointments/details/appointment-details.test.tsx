@@ -4,7 +4,7 @@ import { mockPatient } from 'test-utils';
 
 import type { Appointment, AppointmentKind, AppointmentStatus } from '../../types';
 
-import AppointmentDetails from './appointment-details.component';
+import AppointmentDetails, { formatExactAge } from './appointment-details.component';
 
 const appointment: Appointment = {
   uuid: '7cd38a6d-377e-491b-8284-b04cf8b8c6d8',
@@ -83,7 +83,7 @@ test('renders appointment details correctly', async () => {
   expect(screen.getByText(/Patient name/i)).toBeInTheDocument();
   expect(screen.getByText(/John Wilson/i)).toBeInTheDocument();
   expect(screen.getByText(/Age/i)).toBeInTheDocument();
-  expect(screen.getByText(/34/i)).toBeInTheDocument();
+  expect(screen.getByText('1 year 5 months 8 days')).toBeInTheDocument();
   expect(screen.getByText(/Gender/i)).toBeInTheDocument();
   expect(screen.getByText(/Male/i)).toBeInTheDocument();
   expect(screen.getByText(/Date of birth/i)).toBeInTheDocument();
@@ -102,4 +102,17 @@ test('renders appointment details correctly', async () => {
   expect(screen.getByText('3', { exact: true })).toBeInTheDocument();
   expect(screen.getByText(/Upcoming/i)).toBeInTheDocument();
   expect(screen.getByText('4', { exact: true })).toBeInTheDocument();
+});
+
+test('formats an exact calendar age in years, months, and days', () => {
+  expect(
+    formatExactAge('1980-04-15', '2026-07-17T10:00:00-05:00', {
+      day: 'día',
+      days: 'días',
+      month: 'mes',
+      months: 'meses',
+      year: 'año',
+      years: 'años',
+    }),
+  ).toBe('46 años 3 meses 2 días');
 });

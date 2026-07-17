@@ -40,7 +40,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../config-schema';
-import { appointmentsEditPrivilege } from '../../constants';
+import { appointmentsEditPrivilege, clinicalChartPrivilege } from '../../constants';
 import { EmptyState } from '../../empty-state/empty-state.component';
 import { isAppointmentEditable } from '../../helpers';
 import { exportAppointmentsToSpreadsheet } from '../../helpers/excel';
@@ -63,6 +63,32 @@ interface AppointmentsTableProps {
   hasActiveFilters?: boolean;
 }
 
+const normalizeIdentifierType = (value?: string) =>
+  value
+    ?.trim()
+    .toLocaleLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '');
+
+function resolvePatientIdentifier(appointment: Appointment, configuredIdentifierType?: string) {
+  const identifiers = appointment.patient.identifiers ?? [];
+  const getIdentifierType = (identifier?: (typeof identifiers)[number]) =>
+    identifier?.identifierName ?? identifier?.identifierType?.name ?? identifier?.identifierType?.display;
+  const primaryIdentifier = identifiers.find(
+    (identifier) => identifier.identifier === appointment.patient.identifier,
+  );
+  const configuredIdentifier = identifiers.find(
+    (identifier) =>
+      normalizeIdentifierType(getIdentifierType(identifier)) === normalizeIdentifierType(configuredIdentifierType),
+  );
+  const selectedIdentifier = primaryIdentifier ?? configuredIdentifier;
+
+  return {
+    type: getIdentifierType(selectedIdentifier) ?? configuredIdentifierType ?? '',
+    value: selectedIdentifier?.identifier ?? appointment.patient.identifier,
+  };
+}
+
 const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
   appointmentStatus,
   appointments,
@@ -79,6 +105,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
   const { customPatientChartUrl, patientIdentifierType } = useConfig<ConfigObject>();
   const session = useSession();
   const canEdit = userHasAccess(appointmentsEditPrivilege, session?.user);
+  const canAccessPatientChart = userHasAccess(clinicalChartPrivilege, session?.user);
   const { visits } = useTodaysVisits();
   const layout = useLayoutType();
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
@@ -117,17 +144,26 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
       sectionTitlesByConfigKey[tableHeading] ??
       `${translatedTableHeading} ${t('appointments', 'Appointments')}`);
   const emptyDisplayText = appointmentSectionTitle.toLocaleLowerCase();
+  const resolvedIdentifiers = new Map(
+    results?.map((appointment) => [appointment.uuid, resolvePatientIdentifier(appointment, patientIdentifierType)]),
+  );
+  const identifierTypes = Array.from(
+    new Set(Array.from(resolvedIdentifiers.values(), ({ type }) => type).filter(Boolean)),
+  );
+  const hasMixedIdentifierTypes = identifierTypes.length > 1;
   const headerData = [
     {
       header: t('patientName', 'Patient name'),
       key: 'patientName',
     },
     {
-      header: t('identifier', 'Identifier'),
+      header: identifierTypes.length === 1 ? identifierTypes[0] : t('identifier', 'Identifier'),
       key: 'identifier',
     },
     {
-      header: t('dateTime', 'Date & Time'),
+      header: isTodayAppointmentsTable
+        ? t('appointmentTime', 'Appointment time')
+        : t('appointmentDateTime', 'Appointment date and time'),
       key: 'dateTime',
     },
     {
@@ -146,7 +182,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
 
   const rowData = results?.map((appointment) => ({
     id: appointment.uuid,
-    patientName: (
+    patientName: canAccessPatientChart ? (
       <ConfigurableLink
         className={styles.link}
         to={customPatientChartUrl}
@@ -154,11 +190,17 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
       >
         {appointment.patient.name}
       </ConfigurableLink>
+    ) : (
+      appointment.patient.name
     ),
     nextAppointmentDate: '--',
-    identifier: patientIdentifierType
-      ? (appointment.patient[patientIdentifierType.replaceAll(' ', '')] ?? appointment.patient.identifier)
-      : appointment.patient.identifier,
+    identifier: (() => {
+      const resolvedIdentifier = resolvedIdentifiers.get(appointment.uuid);
+
+      return hasMixedIdentifierTypes && resolvedIdentifier?.type
+        ? `${resolvedIdentifier.type}: ${resolvedIdentifier.value}`
+        : resolvedIdentifier?.value;
+    })(),
     dateTime: formatDatetime(new Date(appointment.startDateTime)),
     serviceType: appointment.service.name,
     location: appointment.location?.name ?? appointment.service.location?.display ?? '—',

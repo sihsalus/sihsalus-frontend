@@ -9,6 +9,11 @@ import { esmPatientRegistrationSchema, type RegistrationConfig } from '../../../
 import { type Resources, ResourcesContext } from '../../../offline.resources';
 import { type AddressTemplate, type FormValues, type IdentifierSource } from '../../patient-registration.types';
 import { PatientRegistrationContext, type PatientRegistrationContextProps } from '../../patient-registration-context';
+import {
+  peruSisContractPatientIdentifierTypeUuid,
+  peruSisIdnumregPatientIdentifierTypeUuid,
+  peruSisTemporaryPatientIdentifierTypeUuid,
+} from '../../peru-registration-config';
 
 import { countIdentityDocumentIdentifiers, Identifiers, setIdentifierSource } from './id-field.component';
 import { isEmergencyIdentifierContext } from './identifier-selection-overlay.component';
@@ -79,7 +84,7 @@ const sisContractIdentifierType = {
   name: 'SIS Contrato',
   fieldName: 'sisContrato',
   required: false,
-  uuid: 'sis-contract-identifier-type-uuid',
+  uuid: peruSisContractPatientIdentifierTypeUuid,
   format: null,
   isPrimary: false,
   uniquenessBehavior: 'UNIQUE' as const,
@@ -90,14 +95,14 @@ const sisTemporaryIdentifierType = {
   ...sisContractIdentifierType,
   name: 'SIS Afiliación RN/Temporal',
   fieldName: 'sisAfiliacionTemporal',
-  uuid: 'sis-temporary-identifier-type-uuid',
+  uuid: peruSisTemporaryPatientIdentifierTypeUuid,
 };
 
 const sisIdnumregIdentifierType = {
   ...sisContractIdentifierType,
   name: 'SIS Idnumreg',
   fieldName: 'sisIdnumreg',
-  uuid: 'sis-idnumreg-identifier-type-uuid',
+  uuid: peruSisIdnumregPatientIdentifierTypeUuid,
 };
 
 const clinicalHistoryIdentifierType = {
@@ -140,12 +145,6 @@ const peruIdentifierTypes = [
   sisTemporaryIdentifierType,
   sisContractIdentifierType,
   sisIdnumregIdentifierType,
-];
-
-const hiddenSisIdentifierTypeUuids = [
-  sisIdnumregIdentifierType.uuid,
-  sisContractIdentifierType.uuid,
-  sisTemporaryIdentifierType.uuid,
 ];
 
 function buildIdentifier(identifierType, identifierValue = '') {
@@ -554,22 +553,9 @@ describe('Identifiers', () => {
         peruIdentifierTypes,
       ),
     ).toBe(0);
-
-    const user = userEvent.setup();
-    renderIdentifiersWithState({ dni: buildIdentifier(dniIdentifierType) });
-    await user.click(screen.getByRole('button', { name: 'Configure' }));
-    await user.click(screen.getByRole('checkbox', { name: 'SIS Contrato' }));
-
-    expect(screen.getByRole('checkbox', { name: 'DNI' })).toBeDisabled();
   });
 
   it('hides configured SIS identifiers while preserving their values when another identifier changes', async () => {
-    mockUseConfig.mockReturnValue({
-      ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
-      defaultPatientIdentifierTypes: ['OpenMRS ID'],
-      hiddenPatientIdentifierTypeUuids: hiddenSisIdentifierTypeUuids,
-    });
-
     const initialIdentifiers = {
       dni: buildIdentifier(dniIdentifierType, '12345678'),
       sisContrato: {

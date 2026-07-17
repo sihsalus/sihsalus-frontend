@@ -10,6 +10,7 @@ import {
   peruNationalityConceptSetUuid,
   peruNationalityConceptUuid,
   peruPhoneAttributeTypeUuid,
+  peruSystemManagedPatientIdentifierTypeUuids,
 } from './peru-registration-config';
 
 describe('getEffectiveRegistrationConfig', () => {
@@ -63,6 +64,24 @@ describe('getEffectiveRegistrationConfig', () => {
     const config = getEffectiveRegistrationConfig(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
 
     expect(config.defaultPatientIdentifierTypes).toEqual([peruDniPatientIdentifierTypeUuid]);
+  });
+
+  it('hides system-managed SIS identifiers from manual registration', () => {
+    const config = getEffectiveRegistrationConfig(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
+
+    expect(config.hiddenPatientIdentifierTypeUuids).toEqual(peruSystemManagedPatientIdentifierTypeUuids);
+  });
+
+  it('preserves configured hidden identifiers while adding the SIS identifiers', () => {
+    const configured = getDefaultsFromConfigSchema(esmPatientRegistrationSchema) as RegistrationConfig;
+    configured.hiddenPatientIdentifierTypeUuids = ['custom-system-identifier'];
+
+    const config = getEffectiveRegistrationConfig(configured);
+
+    expect(config.hiddenPatientIdentifierTypeUuids).toEqual([
+      'custom-system-identifier',
+      ...peruSystemManagedPatientIdentifierTypeUuids,
+    ]);
   });
 
   it('merges responsible person data and relationships into one visible section', () => {

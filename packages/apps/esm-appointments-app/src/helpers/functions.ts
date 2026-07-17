@@ -85,6 +85,55 @@ export const getGender = (gender: string, t: (key: string, defaultValue: string)
   }
 };
 
+type GenderRestrictedAppointmentService = {
+  name: string;
+  gender?: string;
+  allowedGenders?: Array<string>;
+};
+
+const normalizeGender = (gender?: string): string | undefined => {
+  const normalizedGender = gender?.trim().toLowerCase();
+
+  if (!normalizedGender) return undefined;
+  if (['f', 'female', 'femenino', 'mujer'].includes(normalizedGender)) return 'F';
+  if (['m', 'male', 'masculino', 'hombre'].includes(normalizedGender)) return 'M';
+  if (['o', 'other', 'otro'].includes(normalizedGender)) return 'O';
+  if (['u', 'unknown', 'desconocido'].includes(normalizedGender)) return 'U';
+
+  return undefined;
+};
+
+const normalizeServiceName = (name: string) =>
+  name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+/**
+ * Returns whether an appointment service is appropriate for the patient's gender.
+ * Explicit service restrictions take precedence; the name fallback supports the
+ * current MINSA catalog, where obstetric and gynecologic services are named only.
+ */
+export const isAppointmentServiceAvailableForGender = (
+  service: GenderRestrictedAppointmentService,
+  patientGender?: string,
+): boolean => {
+  const allowedGenders = service.allowedGenders ?? (service.gender ? [service.gender] : undefined);
+  const normalizedPatientGender = normalizeGender(patientGender);
+
+  if (allowedGenders?.length) {
+    return (
+      normalizedPatientGender !== undefined &&
+      allowedGenders.some((gender) => normalizeGender(gender) === normalizedPatientGender)
+    );
+  }
+
+  const normalizedServiceName = normalizeServiceName(service.name);
+  const isFemaleOnlyByName = /\b(obstetra|obstetricia|ginecolog[ií]a)\b/.test(normalizedServiceName);
+
+  return !isFemaleOnlyByName || normalizedPatientGender === 'F';
+};
+
 const allowedAppointmentStatusTransitions: Record<AppointmentStatus, ReadonlySet<AppointmentStatus>> = {
   [AppointmentStatus.REQUESTED]: new Set([AppointmentStatus.SCHEDULED, AppointmentStatus.CANCELLED]),
   // Appointments 2.1.0 requires the broad Reset Appointment Status privilege for WaitList -> Scheduled.

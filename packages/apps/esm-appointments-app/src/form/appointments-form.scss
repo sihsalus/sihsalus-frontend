@@ -12,6 +12,7 @@ $openmrs-background-grey: #ededed;
 
 .formGroup {
   display: flex;
+  width: 100%;
   margin-bottom: layout.$spacing-02;
   padding: layout.$spacing-05;
   min-width: 0;
@@ -20,9 +21,33 @@ $openmrs-background-grey: #ededed;
 }
 
 .form {
+  width: 100%;
   min-width: 0;
   max-width: 100%;
+  box-sizing: border-box;
   overflow-x: hidden;
+
+  :global(.cds--stack-vertical) {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  :global(.cds--stack-vertical) > *,
+  .formGroup > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  :global(.cds--form-item),
+  :global(.cds--list-box__wrapper),
+  :global(.cds--list-box),
+  :global(.cds--select),
+  :global(.cds--text-area__wrapper),
+  :global(.cds--number) {
+    min-width: 0;
+    max-width: 100%;
+  }
 }
 
 :global(.omrs-breakpoint-gt-tablet) .formGroup {

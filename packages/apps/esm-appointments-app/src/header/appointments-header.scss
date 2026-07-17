@@ -50,7 +50,7 @@
 
 .serviceTypeFilter {
   :global(.cds--list-box__field) {
-    inline-size: 14rem;
+    inline-size: 16rem;
     overflow: hidden;
   }
 
@@ -61,13 +61,14 @@
   }
 
   :global(.cds--list-box__menu) {
+    inline-size: min(24rem, calc(100vw - 2rem));
     max-block-size: min(32rem, calc(100vh - 8rem));
   }
 
   :global(.cds--list-box__menu-item),
   :global(.cds--list-box__menu-item__option) {
     block-size: auto;
-    min-block-size: 2.5rem;
+    min-block-size: 3rem;
   }
 
   :global(.cds--list-box__menu-item__option) {
@@ -75,6 +76,13 @@
     align-items: center;
     overflow: visible;
     padding-block: layout.$spacing-03;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  :global(.cds--list-box__menu-item .cds--checkbox-label-text) {
+    overflow: visible;
+    line-height: 1.25rem;
     text-overflow: clip;
     white-space: normal;
   }
@@ -126,6 +134,10 @@
 
   .serviceTypeFilter {
     :global(.cds--list-box__field) {
+      inline-size: 100%;
+    }
+
+    :global(.cds--list-box__menu) {
       inline-size: 100%;
     }
   }

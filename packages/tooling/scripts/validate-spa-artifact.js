@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const chalk = require('chalk');
+const { getContentAddressedBuildManifestIssues } = require('./content-addressed-entry');
 const { findInvalidWebpackShareScopeReferences, findUnboundReactReferences } = require('./javascript-runtime-contract');
 const { formatSpaArtifactIssue, getSpaArtifactFiles, inspectSpaArtifacts } = require('./spa-artifact-manifest');
 
@@ -112,6 +113,10 @@ for (const [moduleName, bundlePath] of Object.entries(imports)) {
     const actualDigest = crypto.createHash('sha256').update(fs.readFileSync(resolvedPath)).digest('hex');
     if (!actualDigest.startsWith(contentAddress)) {
       fail(`${moduleName}: importmap content address does not match bundle bytes: ${bundlePath}`);
+    }
+
+    for (const issue of getContentAddressedBuildManifestIssues(outDir, relativePath)) {
+      fail(`${moduleName}: ${issue}`);
     }
   }
 }

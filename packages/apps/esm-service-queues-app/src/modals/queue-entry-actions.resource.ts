@@ -47,7 +47,7 @@ interface QueueEntrySearchResponse {
 }
 
 const transitionReconciliationRepresentation =
-  'custom:(uuid,endedAt,startedAt,queue:(uuid),status:(uuid),priority:(uuid),priorityComment,visit:(uuid),queueComingFrom:(uuid))';
+  'custom:(uuid,endedAt,startedAt,queue:(uuid),status:(uuid),priority:(uuid),priorityComment,patient:(uuid),visit:(uuid),queueComingFrom:(uuid))';
 
 export const QUEUE_ENTRY_TRANSITION_CONFLICT = 'QUEUE_ENTRY_TRANSITION_CONFLICT';
 
@@ -95,7 +95,7 @@ function queueEntryMatchesTransition(
 
   return (
     candidate.uuid !== source.uuid &&
-    candidate.visit?.uuid === source.visit?.uuid &&
+    isSameQueueEntrySubject(candidate, source) &&
     candidate.queueComingFrom?.uuid === source.queue?.uuid &&
     candidateStartedAt === sourceEndedAt &&
     candidate.queue?.uuid === (params.newQueue ?? source.queue?.uuid) &&
@@ -112,7 +112,7 @@ function isPossibleDirectTransitionSuccessor(candidate: QueueEntry, source: Queu
 
   return (
     candidate.uuid !== source.uuid &&
-    candidate.visit?.uuid === source.visit?.uuid &&
+    isSameQueueEntrySubject(candidate, source) &&
     candidate.queueComingFrom?.uuid === source.queue?.uuid &&
     Number.isFinite(sourceEndedAt) &&
     Number.isFinite(candidateStartedAt) &&
@@ -121,11 +121,36 @@ function isPossibleDirectTransitionSuccessor(candidate: QueueEntry, source: Queu
   );
 }
 
+/**
+ * Visit-backed transitions are reconciled by visit. Administrative entries have no visit, so their
+ * patient is the stable subject; requiring the candidate to also have no visit prevents a later
+ * clinical visit for the same patient from being mistaken for the transition successor.
+ */
+function isSameQueueEntrySubject(candidate: QueueEntry, source: QueueEntry): boolean {
+  const sourceVisitUuid = source.visit?.uuid;
+  if (sourceVisitUuid) {
+    return candidate.visit?.uuid === sourceVisitUuid;
+  }
+
+  return !candidate.visit?.uuid && Boolean(source.patient?.uuid) && candidate.patient?.uuid === source.patient.uuid;
+}
+
+function getQueueEntrySubjectSearchParam(source: QueueEntry): { visit: string } | { patient: string } | null {
+  if (source.visit?.uuid) {
+    return { visit: source.visit.uuid };
+  }
+  if (source.patient?.uuid) {
+    return { patient: source.patient.uuid };
+  }
+  return null;
+}
+
 async function findDirectTransitionSuccessor(
   source: QueueEntry,
   abortController?: AbortController,
 ): Promise<QueueEntry | null> {
-  if (!source.endedAt || !source.visit?.uuid || !source.queue?.uuid) {
+  const subjectSearchParam = getQueueEntrySubjectSearchParam(source);
+  if (!source.endedAt || !source.queue?.uuid || !subjectSearchParam) {
     return null;
   }
 
@@ -135,7 +160,7 @@ async function findDirectTransitionSuccessor(
 
   while (true) {
     const searchParams = new URLSearchParams({
-      visit: source.visit.uuid,
+      ...subjectSearchParam,
       queueComingFrom: source.queue.uuid,
       limit: String(pageSize),
       startIndex: String(startIndex),
@@ -188,7 +213,8 @@ async function reconcileTransition(
   params: TransitionQueueEntryParams,
   abortController?: AbortController,
 ): Promise<FetchResponse<QueueEntry> | null> {
-  if (!source.endedAt || !source.visit?.uuid || !source.queue?.uuid) {
+  const subjectSearchParam = getQueueEntrySubjectSearchParam(source);
+  if (!source.endedAt || !source.queue?.uuid || !subjectSearchParam) {
     return null;
   }
 
@@ -198,7 +224,7 @@ async function reconcileTransition(
 
   while (true) {
     const searchParams = new URLSearchParams({
-      visit: source.visit.uuid,
+      ...subjectSearchParam,
       queueComingFrom: source.queue.uuid,
       limit: String(pageSize),
       startIndex: String(startIndex),

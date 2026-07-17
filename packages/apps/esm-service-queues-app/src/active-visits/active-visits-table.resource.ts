@@ -28,13 +28,13 @@ export interface MappedVisitQueueEntry {
   startedAt: Date;
   endedAt: Date;
   visitType: string;
-  visitUuid: string;
+  visitUuid?: string;
   visitTypeUuid: string;
   queueUuid: string;
   queueEntryUuid: string;
   queueLocation: string;
   sortWeight: number;
-  visitQueueNumber: string;
+  visitQueueNumber?: string;
   identifiers: Array<Identifer>;
   queueComingFrom: string;
 }
@@ -90,7 +90,7 @@ export const mapVisitQueueEntryProperties = (
   visitQueueNumberAttributeUuid: string,
 ): MappedVisitQueueEntry => ({
   id: queueEntry.uuid,
-  encounters: queueEntry.visit?.encounters?.map(mapEncounterProperties),
+  encounters: queueEntry.visit?.encounters?.map(mapEncounterProperties) ?? [],
   name: queueEntry.display,
   patientUuid: queueEntry.patient.uuid,
   patientAge: queueEntry.patient.person?.age + '',
@@ -103,7 +103,7 @@ export const mapVisitQueueEntryProperties = (
   status: queueEntry.status,
   startedAt: dayjs(queueEntry.startedAt).toDate(),
   endedAt: queueEntry.endedAt ? dayjs(queueEntry.endedAt).toDate() : null,
-  visitType: queueEntry.visit?.visitType?.display,
+  visitType: queueEntry.visit?.visitType?.display ?? '--',
   queueLocation: queueEntry.queue?.location?.uuid,
   visitTypeUuid: queueEntry.visit?.visitType?.uuid,
   visitUuid: queueEntry.visit?.uuid,
@@ -111,9 +111,9 @@ export const mapVisitQueueEntryProperties = (
   queueEntryUuid: queueEntry.uuid,
   sortWeight: queueEntry.sortWeight,
   visitQueueNumber: queueEntry.visit?.attributes?.find((e) => e?.attributeType?.uuid === visitQueueNumberAttributeUuid)
-    ?.value,
-  identifiers: queueEntry.patient?.identifiers as Identifer[],
-  queueComingFrom: queueEntry?.queueComingFrom?.name,
+    ?.value as string | undefined,
+  identifiers: (queueEntry.patient?.identifiers as Identifer[]) ?? [],
+  queueComingFrom: queueEntry?.queueComingFrom?.name ?? '--',
 });
 
 export async function updateQueueEntry(

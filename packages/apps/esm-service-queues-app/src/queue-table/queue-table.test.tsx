@@ -253,6 +253,32 @@ describe('QueueTable', () => {
     expect(aliceRow).not.toBeNull();
     expect(within(aliceRow).getByText('42')).toBeInTheDocument();
   });
+
+  it('shows safe fallbacks for visit-backed columns when an entry has no visit', () => {
+    mockUseConfig.mockReturnValue({
+      ...configDefaults,
+      visitQueueNumberAttributeUuid: 'queue-number-visit-attr-type-uuid',
+      queueTables: {
+        ...configDefaults.queueTables,
+        tableDefinitions: [
+          {
+            columns: ['patient-name', 'visit-start-time', 'queue-number'],
+          },
+        ],
+      },
+    });
+    const visitlessEntry = {
+      ...mockQueueEntries[0],
+      uuid: 'visitless-queue-entry',
+      visit: null,
+    };
+
+    renderQueueTable({ queueEntries: [visitlessEntry] });
+
+    const row = screen.getByText(visitlessEntry.patient.person.display).closest('tr');
+    expect(row).not.toBeNull();
+    expect(within(row).getAllByText('Not applicable')).toHaveLength(2);
+  });
 });
 
 function renderQueueTable(props = {}) {

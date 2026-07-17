@@ -7,11 +7,12 @@ import {
   logError,
   showToast,
   useLayoutType,
-  useLocations,
   useSession,
 } from '@openmrs/esm-framework';
+import { isAdmissionUser } from '@sihsalus/esm-rbac';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { isVisitLocation, useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations';
 import { useQueueEntries } from '../hooks/useQueueEntries';
 import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
 import PatientQueueHeader from '../patient-queue-header/patient-queue-header.component';
@@ -45,8 +46,35 @@ const QueueTablesForAllStatuses: React.FC<QueueTablesForAllStatusesProps> = ({
   );
   const session = useSession();
   const canEdit = canEditServiceQueues(session?.user);
-  const visitLocations = useLocations('Visit Location');
-  const selectedQueueVisitLocation = visitLocations.find((location) => location.uuid === selectedQueue?.location?.uuid);
+  const admissionUser = isAdmissionUser(session?.user);
+  const { queueLocations, isLoading: isLoadingQueueLocations, error: queueLocationsError } = useQueueLocations();
+  const selectedQueueLocationUuid = selectedQueue?.location?.uuid;
+  const selectedQueueLocation = selectedQueueLocationUuid
+    ? queueLocations.find((location) => location.id === selectedQueueLocationUuid)
+    : undefined;
+  const admissionLocationMismatch = admissionUser && selectedQueueLocationUuid !== session?.sessionLocation?.uuid;
+  const queueLocationUnavailable =
+    !selectedQueueLocationUuid ||
+    isLoadingQueueLocations ||
+    Boolean(queueLocationsError) ||
+    !selectedQueueLocation ||
+    admissionLocationMismatch;
+  const queueLocationUnavailableReason = isLoadingQueueLocations
+    ? t('loadingQueueContext', 'Loading queues…')
+    : queueLocationsError
+      ? t('queueContextUnavailable', 'Queues are temporarily unavailable')
+      : admissionLocationMismatch
+        ? t('queueLocationDoesNotMatchSession', 'This queue does not belong to your session location')
+        : !selectedQueueLocation
+          ? t('selectedQueueLocationUnavailable', 'This queue location is not available')
+          : undefined;
+  const requiredVisitLocation =
+    selectedQueueLocationUuid && selectedQueueLocation && isVisitLocation(selectedQueueLocation)
+      ? {
+          uuid: selectedQueueLocationUuid,
+          display: selectedQueueLocation.name ?? selectedQueue?.location?.display ?? selectedQueueLocationUuid,
+        }
+      : undefined;
 
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -65,26 +93,25 @@ const QueueTablesForAllStatuses: React.FC<QueueTablesForAllStatusesProps> = ({
               <ExtensionSlot
                 name="patient-search-button-slot"
                 state={{
-                  buttonText: t('addPatientToQueue', 'Add patient to queue'),
+                  buttonText: queueLocationUnavailableReason ?? t('addPatientToQueue', 'Add patient to queue'),
                   overlayHeader: t('addPatientToQueue', 'Add patient to queue'),
                   buttonProps: {
-                    disabled: !selectedQueueVisitLocation,
+                    'aria-busy': isLoadingQueueLocations,
+                    disabled: queueLocationUnavailable,
+                    title: queueLocationUnavailableReason,
                     kind: 'secondary',
                     renderIcon: (props) => <Add size={16} {...props} />,
                     size: isDesktop(layout) ? 'sm' : 'lg',
                   },
                   selectPatientAction: (selectedPatientUuid) => {
-                    if (!selectedQueueVisitLocation) {
+                    if (queueLocationUnavailable) {
                       return;
                     }
                     launchWorkspace('create-queue-entry-workspace', {
                       selectedPatientUuid,
                       currentServiceQueueUuid: selectedQueue.uuid,
-                      currentQueueLocationUuid: selectedQueueVisitLocation.uuid,
-                      requiredVisitLocation: {
-                        uuid: selectedQueueVisitLocation.uuid,
-                        display: selectedQueueVisitLocation.display,
-                      },
+                      currentQueueLocationUuid: selectedQueueLocationUuid,
+                      requiredVisitLocation,
                     });
                   },
                 }}

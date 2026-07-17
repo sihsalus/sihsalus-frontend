@@ -54,7 +54,8 @@
       "name": "request-interconsulta-action-button",
       "component": "requestInterconsultaActionButton",
       "privileges": "app:hoja.clinica.interconsultas.editar",
-      "slot": "patient-actions-slot"
+      "slot": "patient-actions-slot",
+      "order": 6
     }
   ],
   "modals": [

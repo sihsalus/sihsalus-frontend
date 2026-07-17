@@ -195,7 +195,7 @@ jobs:
               continue
             fi
 
-            docker buildx imagetools create --tag "${image_tag}" "${SOURCE_IMAGE}"
+            docker buildx imagetools create --prefer-index=false --tag "${image_tag}" "${SOURCE_IMAGE}"
             PROMOTED_DIGEST="$(docker buildx imagetools inspect "${image_tag}" --format '{{.Manifest.Digest}}')"
             if [[ "${PROMOTED_DIGEST}" != "${IMAGE_DIGEST}" ]]; then
               echo "::error::Promoted alias does not resolve to the scanned digest: ${image_tag}"

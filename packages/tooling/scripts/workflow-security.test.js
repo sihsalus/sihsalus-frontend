@@ -39,4 +39,8 @@ test('release scans the immutable digest before promoting mutable aliases', () =
   assert.match(scanStep, /image-ref: .*@\$\{\{ steps\.build\.outputs\.digest \}\}/);
   assert.match(scanStep, /severity: HIGH,CRITICAL/);
   assert.match(scanStep, /exit-code: '1'/);
+
+  const promotionStep = releaseWorkflow.slice(promotionIndex);
+  assert.match(promotionStep, /imagetools create --prefer-index=false/);
+  assert.match(promotionStep, /PROMOTED_DIGEST.*IMAGE_DIGEST/s);
 });

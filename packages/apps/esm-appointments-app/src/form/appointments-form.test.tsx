@@ -58,7 +58,10 @@ async function fillRequiredAppointmentFields(user: ReturnType<typeof userEvent.s
   await user.selectOptions(screen.getByRole('combobox', { name: /select a location/i }), ['Inpatient Ward']);
   await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), ['Outpatient']);
   await user.selectOptions(screen.getByRole('combobox', { name: /select the type of appointment/i }), ['Scheduled']);
-  await user.selectOptions(screen.getByRole('combobox', { name: /select a provider/i }), ['doctor - James Cook']);
+  const providerComboBox = screen.getByRole('combobox', { name: /select a provider/i });
+  await user.clear(providerComboBox);
+  await user.type(providerComboBox, 'James Cook');
+  await user.click(screen.getByRole('option', { name: 'doctor - James Cook' }));
 
   if (allDay) {
     await user.click(screen.getByLabelText(/all day/i));
@@ -700,7 +703,7 @@ describe('AppointmentForm', () => {
 
     await waitForLoadingToFinish();
 
-    expect(screen.getByRole('combobox', { name: /select a provider/i })).toHaveValue(mockProviders.data[0].uuid);
+    expect(screen.getByRole('combobox', { name: /select a provider/i })).toHaveValue(mockProviders.data[0].display);
   });
 
   it('leaves the responsible provider unselected when the user has no provider account', async () => {
@@ -715,6 +718,25 @@ describe('AppointmentForm', () => {
     await waitForLoadingToFinish();
 
     expect(screen.getByRole('combobox', { name: /select a provider/i })).toHaveValue('');
+  });
+
+  it('filters the responsible providers as the user types', async () => {
+    const user = userEvent.setup();
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      currentProvider: undefined,
+    } as unknown as ReturnType<typeof useSession>);
+    mockOpenmrsFetch.mockResolvedValue(mockUseAppointmentServiceData as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+
+    const providerComboBox = screen.getByRole('combobox', { name: /select a provider/i });
+    await user.type(providerComboBox, 'Amstrong');
+
+    expect(screen.getByRole('option', { name: 'doctor - Amstrong Neil' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'doctor - James Cook' })).not.toBeInTheDocument();
   });
 
   it('preserves the original issue date when a read-only form value is tampered with', async () => {

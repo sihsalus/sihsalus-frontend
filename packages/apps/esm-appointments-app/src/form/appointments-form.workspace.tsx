@@ -1,6 +1,7 @@
 import {
   Button,
   ButtonSet,
+  ComboBox,
   DatePicker,
   DatePickerInput,
   Form,
@@ -718,7 +719,7 @@ const AppointmentsForm: React.FC<
 
   return (
     <Workspace2 title={title} hasUnsavedChanges={isDirty && !isSuccessful}>
-      <Form onSubmit={handleSubmit(handleSaveAppointment)}>
+      <Form className={styles.form} onSubmit={handleSubmit(handleSaveAppointment)}>
         <Stack gap={4}>
           {Object.keys(errors).length > 0 && (
             <InlineNotification
@@ -1076,25 +1077,22 @@ const AppointmentsForm: React.FC<
               <Controller
                 name="provider"
                 control={control}
-                render={({ field: { onChange, value, onBlur, ref } }) => (
-                  <Select
+                render={({ field: { onChange, value, onBlur } }) => (
+                  <ComboBox
                     id="provider"
                     invalid={!!errors?.provider}
                     invalidText={errors?.provider?.message}
-                    labelText={<RequiredFieldLabel label={t('selectProvider', 'Select a provider')} />}
-                    onChange={onChange}
+                    items={providers?.providers ?? []}
+                    itemToString={(provider) => provider?.display ?? ''}
+                    onChange={({ selectedItem }) => onChange(selectedItem?.uuid ?? '')}
                     onBlur={onBlur}
-                    value={value}
-                    ref={ref}
-                  >
-                    <SelectItem text={t('chooseProvider', 'Choose a provider')} value="" />
-                    {providers?.providers?.length > 0 &&
-                      providers?.providers?.map((provider) => (
-                        <SelectItem key={provider.uuid} text={provider.display} value={provider.uuid}>
-                          {provider.display}
-                        </SelectItem>
-                      ))}
-                  </Select>
+                    placeholder={t('chooseProvider', 'Choose a provider')}
+                    selectedItem={providers?.providers?.find((provider) => provider.uuid === value) ?? null}
+                    shouldFilterItem={({ inputValue, item }) =>
+                      item.display.toLocaleLowerCase().includes((inputValue ?? '').toLocaleLowerCase())
+                    }
+                    titleText={<RequiredFieldLabel label={t('selectProvider', 'Select a provider')} />}
+                  />
                 )}
               />
             </ResponsiveWrapper>

@@ -29,6 +29,23 @@ async function openAppointmentsForm(page: Page) {
 }
 
 test.describe('Formulario de citas', () => {
+  test('se ajusta al ancho del workspace sin desplazamiento horizontal', async ({ page }) => {
+    await openAppointmentsForm(page);
+
+    const duration = page.getByRole('spinbutton', { name: /Duración|Duration/i });
+    const form = page.locator('form').filter({ has: duration });
+    await expect(form).toBeVisible();
+
+    const overflowingContainers = await form.evaluate((element) =>
+      [element, element.parentElement]
+        .filter((container): container is HTMLElement => container instanceof HTMLElement)
+        .filter((container) => container.scrollWidth > container.clientWidth + 1)
+        .map((container) => ({ clientWidth: container.clientWidth, scrollWidth: container.scrollWidth })),
+    );
+
+    expect(overflowingContainers).toEqual([]);
+  });
+
   test('la duración por defecto es 30 minutos', async ({ page }) => {
     await openAppointmentsForm(page);
 

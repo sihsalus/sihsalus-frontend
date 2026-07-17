@@ -12,6 +12,7 @@ import {
   removeTrailingSlash,
   shouldAllowSelfSignedTls,
 } from '../utils';
+import { shouldProxyApiRequest } from './develop-path-filter';
 import { createInMemoryRateLimit, readRateLimitEnv } from './develop-rate-limit';
 
 export interface DevelopArgs {
@@ -168,10 +169,13 @@ export async function runDevelop(args: DevelopArgs) {
   // This may include the JS bundles when using an import map that refers to
   // JS bundles located at the same domain as `apiUrl`.
   app.use(
-    apiUrl,
     apiRateLimit,
     createProxyMiddleware({
-      pathFilter: (path) => new RegExp(`${apiUrl}/.*`).test(path) && !shouldServeSpaIndex(path),
+      // Mount the proxy at the application root. Mounting it on `apiUrl` makes
+      // Express strip that prefix before http-proxy-middleware evaluates its
+      // path filter, so valid requests such as /openmrs/ws/fhir2/R4/Location
+      // are rejected locally with a 404 instead of reaching OpenMRS.
+      pathFilter: (path) => shouldProxyApiRequest(path, apiUrl, spaPath),
       target: backend,
       changeOrigin: true,
       secure: !allowSelfSignedTls,

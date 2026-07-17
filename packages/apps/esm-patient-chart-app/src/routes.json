@@ -38,7 +38,8 @@
       "component": "startVisitActionButton",
       "slot": "patient-actions-slot",
       "online": true,
-      "offline": true
+      "offline": true,
+      "order": 0
     },
     {
       "name": "clinical-views-summary",
@@ -52,7 +53,8 @@
       "slot": "patient-actions-slot",
       "privileges": "app:hoja.clinica.visitas.editar",
       "online": true,
-      "offline": true
+      "offline": true,
+      "order": 1
     },
     {
       "name": "mark-alive-button",
@@ -60,7 +62,8 @@
       "component": "markPatientAliveActionButton",
       "privileges": "app:hoja.clinica.visitas.editar",
       "online": true,
-      "offline": true
+      "offline": true,
+      "order": 8
     },
     {
       "name": "stop-visit-button-patient-search",
@@ -76,7 +79,8 @@
       "component": "cancelVisitActionButton",
       "privileges": "app:hoja.clinica.visitas.editar",
       "online": true,
-      "offline": true
+      "offline": true,
+      "order": 2
     },
     {
       "name": "cancel-visit-button",
@@ -92,7 +96,8 @@
       "component": "markPatientDeceasedActionButton",
       "privileges": "app:hoja.clinica.visitas.editar",
       "online": true,
-      "offline": true
+      "offline": true,
+      "order": 8
     },
     {
       "name": "add-past-visit-button",
@@ -101,7 +106,8 @@
       "featureFlag": "rde",
       "privileges": "app:hoja.clinica.visitas.editar",
       "online": true,
-      "offline": true
+      "offline": true,
+      "order": 3
     },
     {
       "name": "add-past-visit-button",

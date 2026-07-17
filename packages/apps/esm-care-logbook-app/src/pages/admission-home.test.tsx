@@ -3,12 +3,14 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { type PropsWithChildren } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 
+import { careLogbookMergePrivileges } from '../constants';
 import { type AdmissionRow, useAdmissions } from '../resources/admissions.resource';
 import AdmissionHome from './admission-home.component';
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
   ConfigurableLink: ({ children, to }: PropsWithChildren<{ to: string }>) => <a href={to}>{children}</a>,
+  EmptyCardIllustration: () => <svg />,
   PageHeader: ({ children }: PropsWithChildren) => <header>{children}</header>,
   PageHeaderContent: ({ children }: PropsWithChildren) => <div>{children}</div>,
   RegistrationPictogram: () => <span />,
@@ -17,7 +19,9 @@ vi.mock('@openmrs/esm-framework', async () => ({
 
 vi.mock('@sihsalus/esm-rbac', () => ({
   AppErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  RequirePrivilege: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  RequirePrivilege: ({ children, privilege }: { children: React.ReactNode; privilege: string | string[] }) => (
+    <div data-required-privileges={Array.isArray(privilege) ? privilege.join(',') : privilege}>{children}</div>
+  ),
 }));
 
 vi.mock('../resources/admissions.resource', () => ({
@@ -150,9 +154,15 @@ describe('AdmissionHome', () => {
     expect(getMetricValue('En curso')).toHaveTextContent('1');
     expect(getMetricValue('Finalizadas')).toHaveTextContent('1');
     expect(getMetricValue('UPSS/servicios')).toHaveTextContent('2');
-    expect(screen.getByRole('link', { name: /fusionar historias duplicadas/i })).toHaveAttribute(
+    const mergeLink = screen.getByRole('link', { name: /fusionar historias duplicadas/i });
+    expect(mergeLink).toHaveAttribute('href', '/openmrs/spa/home/care-logbook/merge');
+    expect(mergeLink.closest('[data-required-privileges]')).toHaveAttribute(
+      'data-required-privileges',
+      careLogbookMergePrivileges.join(','),
+    );
+    expect(screen.getByRole('link', { name: 'Ada Lovelace' })).toHaveAttribute(
       'href',
-      '/openmrs/spa/admission/merge',
+      '/openmrs/spa/home/care-logbook/patient/patient-1',
     );
     expect(mockUseAdmissions).toHaveBeenCalledWith(75);
   });
@@ -226,7 +236,9 @@ describe('AdmissionHome', () => {
     fireEvent.change(screen.getByLabelText(/filtrar por estado/i), { target: { value: 'Activa' } });
 
     expect(screen.queryByRole('cell', { name: 'Grace Hopper' })).not.toBeInTheDocument();
-    expect(screen.getByText(/no se encontraron atenciones recientes/i)).toBeInTheDocument();
+    expect(screen.getByTestId('care-logbook-empty-state-illustration')).toBeInTheDocument();
+    expect(screen.getByText(/no hay atenciones que coincidan/i)).toBeInTheDocument();
+    expect(screen.getByText(/comprobar los filtros anteriores/i)).toBeInTheDocument();
   });
 
   it('filters the report by HCE, temporal code, insurance code, and structured responsible data', () => {
@@ -333,21 +345,59 @@ describe('AdmissionHome', () => {
     expect(mockUseAdmissions).toHaveBeenCalledWith(50);
   });
 
-  it('shows loading and error states', () => {
-    mockUseAdmissions.mockReturnValue({ admissions: [], error: new Error('boom'), isLoading: true });
+  it('shows only the table skeleton while care encounters are loading', () => {
+    mockUseAdmissions.mockReturnValue({ admissions: [], error: undefined, isLoading: true });
 
     renderAdmissionHome();
 
-    expect(screen.getByText(/cargando atenciones/i)).toBeInTheDocument();
-    expect(screen.getByText(/no se pudo cargar el libro de atenciones/i)).toBeInTheDocument();
-    expect(screen.queryByText(/no se encontraron atenciones recientes/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: /cargando atenciones/i })).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('care-logbook-empty-state')).not.toBeInTheDocument();
+    expect(screen.queryByText(/no hay atenciones/i)).not.toBeInTheDocument();
+    expect(getMetricValue('Atenciones registradas')).not.toHaveTextContent('0');
+    expect(screen.getByRole('textbox', { name: /buscar por paciente/i })).toBeDisabled();
+    expect(screen.getByLabelText(/filtrar por estado/i)).toBeDisabled();
+    expect(screen.getByRole('button', { name: /exportar csv/i })).toBeDisabled();
   });
 
-  it('shows the empty state when no care encounters are returned after loading', () => {
+  it('shows the load error without also reporting an empty result', () => {
+    mockUseAdmissions.mockReturnValue({ admissions: [], error: new Error('boom'), isLoading: false });
+
+    renderAdmissionHome();
+
+    expect(screen.getByText(/no se pudo cargar el libro de atenciones/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('care-logbook-empty-state')).not.toBeInTheDocument();
+    expect(screen.queryByText(/no hay atenciones/i)).not.toBeInTheDocument();
+    expect(getMetricValue('Atenciones registradas')).toHaveTextContent('—');
+    expect(screen.getByRole('textbox', { name: /buscar por paciente/i })).toBeDisabled();
+    expect(screen.getByLabelText(/filtrar por estado/i)).toBeDisabled();
+    expect(screen.getByRole('button', { name: /exportar csv/i })).toBeDisabled();
+  });
+
+  it('shows an illustrated empty state when no care encounters exist', () => {
     mockUseAdmissions.mockReturnValue({ admissions: [], error: undefined, isLoading: false });
 
     renderAdmissionHome();
 
-    expect(screen.getByText(/no se encontraron atenciones recientes/i)).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveAttribute('data-testid', 'care-logbook-empty-state');
+    expect(screen.getByTestId('care-logbook-empty-state-illustration')).toBeInTheDocument();
+    expect(screen.getByText(/no hay atenciones recientes para mostrar/i)).toBeInTheDocument();
+    expect(screen.getByText(/las atenciones registradas aparecerán aquí/i)).toBeInTheDocument();
+  });
+
+  it('renders data without a table skeleton or empty-state messaging', () => {
+    mockUseAdmissions.mockReturnValue({
+      admissions: [createAdmission({ patientName: 'Ada Lovelace' })],
+      error: undefined,
+      isLoading: false,
+    });
+
+    renderAdmissionHome();
+
+    expect(screen.getByRole('table', { name: /atenciones registradas/i })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Ada Lovelace' })).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('care-logbook-empty-state')).not.toBeInTheDocument();
+    expect(screen.queryByText(/no hay atenciones/i)).not.toBeInTheDocument();
   });
 });

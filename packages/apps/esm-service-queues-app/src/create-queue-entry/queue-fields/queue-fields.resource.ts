@@ -231,6 +231,72 @@ function getQueueNumberFromResponse(response: FetchResponse<QueueTicketResponse>
   return value ? String(value).trim() : null;
 }
 
+/**
+ * Creates a queue entry that is not attached to a visit.
+ *
+ * Queue locations may represent administrative workflows where a clinical visit
+ * does not exist yet. Those entries belong to the queue itself, so this path uses
+ * the queue-entry resource directly and deliberately does not generate a visit
+ * queue number.
+ */
+export async function postQueueEntryWithoutVisit(
+  queueUuid: string,
+  patientUuid: string,
+  priority: string,
+  status: string,
+  sortWeight: number,
+  startedAt: Date = new Date(),
+) {
+  const searchParams = { patient: patientUuid, queue: queueUuid };
+  const [existingEntry] = await findActiveQueueEntries(searchParams);
+  if (existingEntry) {
+    return { created: false, queueEntry: existingEntry };
+  }
+
+  const abortController = new AbortController();
+  let response: FetchResponse<{ uuid?: string }>;
+  try {
+    response = await openmrsFetch<{ uuid?: string }>(`${restBaseUrl}/queue-entry`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: abortController.signal,
+      body: {
+        queue: { uuid: queueUuid },
+        patient: { uuid: patientUuid },
+        status: { uuid: status },
+        priority: { uuid: priority },
+        startedAt,
+        sortWeight,
+      },
+    });
+  } catch (error) {
+    try {
+      const [entryCreatedConcurrently] = await findActiveQueueEntries(searchParams);
+      if (entryCreatedConcurrently) {
+        return { created: false, queueEntry: entryCreatedConcurrently };
+      }
+    } catch {
+      // Preserve the original write failure if the reconciliation read also fails.
+    }
+
+    throw error;
+  }
+
+  const activeEntriesAfterCreate = await findActiveQueueEntries(searchParams);
+  const createdEntryUuid = response.data?.uuid;
+  const persistedEntry = createdEntryUuid
+    ? activeEntriesAfterCreate.find((entry) => entry.uuid === createdEntryUuid)
+    : activeEntriesAfterCreate[0];
+
+  if (!persistedEntry || persistedEntry.queue?.uuid !== queueUuid) {
+    throw new QueueEntryCreationVerificationError();
+  }
+
+  return { created: true, response, queueEntry: persistedEntry };
+}
+
 export async function postQueueEntry(
   visitUuid: string,
   queueUuid: string,

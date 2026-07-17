@@ -84,6 +84,8 @@
   "recordBiometrics": "Registrar datos biométricos",
   "recordVitals": "Registrar signos vitales",
   "recordVitalsAndBiometrics": "Registrar Signos Vitales y Datos Biométricos",
+  "referenceRangesUnavailable": "No se pudieron cargar los rangos de referencia",
+  "referenceRangesUnavailableSubtitle": "Los valores se registrarán sin validación de rangos ni marcas de valores anormales. Verifíquelos con cuidado.",
   "respirationRate": "Frecuencia respiratoria",
   "respiratoryRate": "FR",
   "respiratoryRateAbbreviated": "FR",

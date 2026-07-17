@@ -46,7 +46,8 @@
       "slot": "patient-actions-slot",
       "privileges": "app:opciones.registrarPaciente",
       "online": true,
-      "offline": true
+      "offline": true,
+      "order": 4
     },
     {
       "component": "editPatientDetailsButton",

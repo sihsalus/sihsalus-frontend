@@ -104,14 +104,14 @@ test.describe('Peru admission accreditation checks', () => {
   });
 
   test('duplicate patient merge entry point opens the legacy merge flow', async ({ page }) => {
-    await page.goto('admission/merge', { waitUntil: 'domcontentloaded' });
+    await page.goto('home/care-logbook/merge', { waitUntil: 'domcontentloaded' });
 
     await expect(page).not.toHaveURL(/\/login/);
     await expect(page).toHaveURL(/\/openmrs\/admin\/patients\/findDuplicatePatients\.htm$/);
   });
 
   test('admission report by UPS exposes the required columns', async ({ page }) => {
-    await page.goto('admission', { waitUntil: 'domcontentloaded' });
+    await page.goto('home/care-logbook', { waitUntil: 'domcontentloaded' });
 
     await expect(page).not.toHaveURL(/\/login/);
     await expect(page.getByRole('heading', { name: /Libro de Atenciones|Admissions report by UPS/i })).toBeVisible();

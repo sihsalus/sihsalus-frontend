@@ -1,5 +1,5 @@
 import { Button, MenuButton, MenuItem } from '@carbon/react';
-import { AddIcon, showModal, useLayoutType, type Visit } from '@openmrs/esm-framework';
+import { AddIcon, showModal, useLayoutType, userHasAccess, useSession, type Visit } from '@openmrs/esm-framework';
 import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import React, { type ComponentProps, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,9 @@ const ActiveVisitActions: React.FC<ActiveVisitActionsInterface> = ({ visit: _vis
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
   const isMobile = layout === 'phone';
+  const session = useSession();
+  // Recording vitals requires its own privilege, not just visit editing
+  const canEditVitals = userHasAccess('app:hoja.clinica.signosVitales.editar', session?.user);
 
   const launchAllergiesFormWorkspace = useLaunchWorkspaceRequiringVisit('patient-allergy-form-workspace');
   const launchAppointmentsFormWorkspace = useLaunchWorkspaceRequiringVisit('appointments-form-workspace');
@@ -39,11 +42,13 @@ const ActiveVisitActions: React.FC<ActiveVisitActionsInterface> = ({ visit: _vis
               onClick={launchOrderBasketFormWorkspace}
               renderIcon={AddIcon}
             />
-            <MenuItem
-              label={t('addVitals', 'Add vitals')}
-              onClick={launchVitalsAndBiometricsFormWorkspace}
-              renderIcon={AddIcon}
-            />
+            {canEditVitals && (
+              <MenuItem
+                label={t('addVitals', 'Add vitals')}
+                onClick={launchVitalsAndBiometricsFormWorkspace}
+                renderIcon={AddIcon}
+              />
+            )}
             <MenuItem
               label={t('addAntecedent', 'Add antecedent')}
               onClick={launchConditionsFormWorkspace}
@@ -88,11 +93,13 @@ const ActiveVisitActions: React.FC<ActiveVisitActionsInterface> = ({ visit: _vis
           <VisitActionsComponent patientUuid={patientUuid} />
 
           <MenuButton label={t('more', 'More')} kind="ghost">
-            <MenuItem
-              label={t('addVitals', 'Add vitals')}
-              onClick={launchVitalsAndBiometricsFormWorkspace}
-              renderIcon={AddIcon}
-            />
+            {canEditVitals && (
+              <MenuItem
+                label={t('addVitals', 'Add vitals')}
+                onClick={launchVitalsAndBiometricsFormWorkspace}
+                renderIcon={AddIcon}
+              />
+            )}
             <MenuItem
               label={t('addAntecedent', 'Add antecedent')}
               onClick={launchConditionsFormWorkspace}

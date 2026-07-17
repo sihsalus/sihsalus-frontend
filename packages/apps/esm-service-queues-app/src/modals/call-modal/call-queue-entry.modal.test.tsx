@@ -99,4 +99,18 @@ describe('CallQueueEntryModal', () => {
     expect(closeModal).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
+
+  it('does not offer the calling action for an entry without a visit ticket', async () => {
+    const user = userEvent.setup();
+    const visitlessEntry = { ...mockQueueEntryAlice, visit: null };
+
+    render(<CallQueueEntryModal queueEntry={visitlessEntry} closeModal={vi.fn()} />);
+
+    expect(screen.getByText(/has no queue number and cannot be sent to the calling screen/i)).toBeInTheDocument();
+    const serveButton = screen.getByRole('button', { name: 'Serve' });
+    expect(serveButton).toBeDisabled();
+    await user.click(serveButton);
+    expect(mockUpdateQueueEntry).not.toHaveBeenCalled();
+    expect(mockServeQueueEntry).not.toHaveBeenCalled();
+  });
 });

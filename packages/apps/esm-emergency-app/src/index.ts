@@ -11,7 +11,7 @@
  *   conditional rendering.
  *
  * Exports registered via `getAsyncLifecycle()`:
- * - Pages: root, emergencyHome
+ * - Pages: root
  * - Workspaces: emergencyWorkflow, attentionForm (triage vitals use the shared vitals workspace)
  * - Extensions: header, alerts, metrics, queue table, priority cards (standalone + integrated)
  * - Modals: serve, remove, transition, move, clear queue entries
@@ -63,36 +63,11 @@ export const emergencyDashboardLink = getSyncLifecycle(createDashboardLink(dashb
 });
 
 /**
- * Emergency Home Page
- * Standalone home page for emergency department with custom slots
- */
-export const emergencyHome = getAsyncLifecycle(() => import('./emergency-home/emergency-home.component'), options);
-
-/**
  * Emergency Workflow Workspace
  * Integrated workspace for the complete emergency workflow
  */
 export const emergencyWorkflowWorkspace = getAsyncLifecycle(
   () => import('./emergency-workflow/emergency-workflow-workspace'),
-  options,
-);
-
-/**
- * Emergency Metrics Extensions (Legacy - kept for backward compatibility)
- * These are registered as extensions in the emergency-metrics-slot
- */
-export const totalPatientsCard = getAsyncLifecycle(
-  () => import('./emergency-dashboard/emergency-metrics/metrics-cards/total-patients-card.extension'),
-  options,
-);
-
-export const priorityBreakdownCard = getAsyncLifecycle(
-  () => import('./emergency-dashboard/emergency-metrics/metrics-cards/priority-breakdown-card.extension'),
-  options,
-);
-
-export const averageWaitTimeCard = getAsyncLifecycle(
-  () => import('./emergency-dashboard/emergency-metrics/metrics-cards/average-wait-time-card.extension'),
   options,
 );
 

@@ -5,18 +5,18 @@ import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { basePath, careLogbookEditPrivilege, moduleName } from '../constants';
+import { careLogbookBasePath, careLogbookMergePrivileges, moduleName } from '../constants';
 import styles from './links.scss';
 
 export default function CareLogbookMergePatientsAction() {
   const { t } = useTranslation(moduleName);
   const openMergePatients = useCallback(
-    () => navigate({ to: `${globalThis.getOpenmrsSpaBase().slice(0, -1)}${basePath}/merge` }),
+    () => navigate({ to: `${globalThis.getOpenmrsSpaBase().slice(0, -1)}${careLogbookBasePath}/merge` }),
     [],
   );
 
   return (
-    <RequirePrivilege privilege={careLogbookEditPrivilege} hideUnauthorized>
+    <RequirePrivilege privilege={careLogbookMergePrivileges} hideUnauthorized>
       <HeaderGlobalAction
         aria-label={t('mergeDuplicatePatients', 'Fusionar historias clínicas duplicadas')}
         aria-labelledby={t('mergeDuplicatePatients', 'Fusionar historias clínicas duplicadas')}

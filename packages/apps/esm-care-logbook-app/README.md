@@ -1,14 +1,14 @@
 # SIH Salus Libro de Atenciones App
 
-Microfrontend para el libro operativo de atenciones por UPSS/servicio. El package interno es `esm-care-logbook-app`; la ruta `/admission` se conserva por compatibilidad historica.
+Microfrontend para el libro operativo de atenciones por UPSS/servicio. El package interno es `esm-care-logbook-app` y su ruta canónica es `/home/care-logbook`; `/admission` y `/home/admission` solo redirigen para conservar enlaces históricos.
 
 Tambien concentra evidencia funcional del perfil `N1.ADM` de la acreditacion SIHCE MINSA 373-2025, donde "admision" aparece como perfil normativo amplio de identificacion, registro, programacion y documentacion inicial.
 
 ## Funcionalidad
 
-- Registro/listado de atenciones por UPSS/servicio en `/admission`.
-- Fusion de historias clinicas duplicadas en `/admission/merge`, delegando al flujo legacy de OpenMRS `findDuplicatePatients.htm`, que luego abre `mergePatients.form` para comparar y fusionar los pacientes seleccionados.
-- Programacion de turnos desde `/admission/patient/:uuid`, mostrando turnos proximos y abriendo el workspace real de Appointments para registrar citas con prestadores.
+- Registro/listado de atenciones por UPSS/servicio en `/home/care-logbook`.
+- Fusion de historias clinicas duplicadas en `/home/care-logbook/merge`, delegando al flujo legacy de OpenMRS `findDuplicatePatients.htm`, que luego abre `mergePatients.form` para comparar y fusionar los pacientes seleccionados.
+- Programacion de turnos desde `/home/care-logbook/patient/:uuid`, mostrando turnos proximos y abriendo el workspace real de Appointments para registrar citas con prestadores.
 - Resumen de identificacion minima del paciente para pantallas clinicas que consumen `patient-info-slot`.
 - Accesos desde menu de aplicaciones, dashboard de inicio y acciones superiores.
 - Ubicacion de pacientes sin DNI mediante fecha/hora, HCE o codigo temporal, estado de identificacion, responsable, servicio, ubicacion y estado de visita.
@@ -19,7 +19,7 @@ Tambien concentra evidencia funcional del perfil `N1.ADM` de la acreditacion SIH
 - Titulo de pantalla: `Libro de Atenciones`.
 - Nombre anterior: `Registro de Atenciones`; no usar en copy nuevo salvo notas historicas.
 - Tabla/historial: atenciones activas y finalizadas por UPSS/servicio.
-- Ruta tecnica: `/admission`.
+- Ruta tecnica canonica: `/home/care-logbook`.
 - Package tecnico: `@sihsalus/esm-care-logbook-app`.
 
 Evitar `Admisiones` como label visible general: sugiere hospitalizacion o ingreso administrativo, mientras que esta pantalla lista atenciones/consultas por servicio.
@@ -74,6 +74,7 @@ La prueba completa de campos de admision requiere que el content package este de
 
 ## Riesgos conocidos
 
-- La ruta tecnica heredada (`/admission`) puede inducir a error si se expone como `Admisiones`; en UI debe mantenerse `Libro de Atenciones`.
+- Las rutas heredadas `/admission` y `/home/admission` existen únicamente como redirecciones temporales hacia `/home/care-logbook`; no debe montarse ahí una segunda implementación.
+- El alias interno de dashboard `admission` se conserva oculto para migrar configuraciones existentes de `defaultDashboardPerRole`; toda navegación visible usa `care-logbook`.
 - El flujo depende de configuracion real de ubicaciones/UPS; datos demo incompletos producen reportes pobres o confusos.
 - Las integraciones con citas deben delegar al workspace de Appointments; duplicar esa logica genera divergencia.

@@ -50,6 +50,7 @@ describe('TransitionQueueEntryModal', () => {
     ],
     queueUuid: 'fa1e98f1-f002-4174-9e55-34d60951e710',
     queueEntryUuid: '712289ab-32c0-430f-87b6-d9c1e4e4686e',
+    visitQueueNumber: '42',
     patientUuid: 'cc75ad73-c24b-499c-8db9-a7ef4fc0b36d',
     priorityUuid: 'f9684018-a4d3-4d6f-9dd5-b4b1e89af3e7',
     queue: {
@@ -132,5 +133,19 @@ describe('TransitionQueueEntryModal', () => {
     );
     expect(closeModal).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('does not offer the calling action when the entry has no ticket', async () => {
+    const user = userEvent.setup();
+    const entryWithoutTicket = { ...queueEntry, visitUuid: undefined, visitQueueNumber: undefined };
+
+    render(<TransitionQueueEntryModal queueEntry={entryWithoutTicket} closeModal={vi.fn()} />);
+
+    expect(screen.getByText(/has no queue number and cannot be sent to the calling screen/i)).toBeInTheDocument();
+    const serveButton = screen.getByRole('button', { name: 'Serve' });
+    expect(serveButton).toBeDisabled();
+    await user.click(serveButton);
+    expect(mockUpdateQueueEntry).not.toHaveBeenCalled();
+    expect(mockServeQueueEntry).not.toHaveBeenCalled();
   });
 });

@@ -98,9 +98,23 @@
   margin-bottom: 1rem;
 }
 
+.tableSurface {
+  border: 1px solid colors.$gray-20;
+  background: #ffffff;
+}
+
 .tableWrap {
   overflow-x: auto;
-  background: #ffffff;
+}
+
+.tableSkeleton {
+  overflow-x: auto;
+  border: 1px solid colors.$gray-20;
+  background: colors.$white;
+
+  > * {
+    min-width: 117rem;
+  }
 }
 
 .table {
@@ -189,10 +203,27 @@
   }
 }
 
-.empty {
-  margin: 0;
-  padding: 1rem;
-  color: #525252;
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: layout.$spacing-10 layout.$spacing-05;
+  border-top: 1px solid $ui-03;
+  background: colors.$white;
+  text-align: center;
+}
+
+.emptyStateTitle {
+  @include type.type-style("heading-compact-02");
+  margin-top: layout.$spacing-05;
+  margin-bottom: layout.$spacing-03;
+  color: $text-02;
+}
+
+.emptyStateHelper {
+  @include type.type-style("body-compact-01");
+  color: $text-02;
 }
 
 @media (max-width: 42rem) {

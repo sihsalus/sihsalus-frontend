@@ -1,5 +1,6 @@
 import { Dropdown, DropdownSkeleton, InlineNotification, type OnChangeData } from '@carbon/react';
 import { PageHeader, PageHeaderContent, ServiceQueuesPictogram, useConfig, useSession } from '@openmrs/esm-framework';
+import { isAdmissionUser } from '@sihsalus/esm-rbac';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
@@ -33,16 +34,21 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
   const { queueLocations, isLoading, error } = useQueueLocations();
   const { dashboardTitle } = useConfig<ConfigObject>();
   const userSession = useSession();
-  const {
-    selectedQueueLocationName,
-    selectedQueueLocationUuid,
-    selectedServiceDisplay,
-    selectedServiceUuid,
-  } = useServiceQueuesStore();
-  const { queues, isLoading: isLoadingQueues, error: queuesError } = useQueues(selectedQueueLocationUuid);
+  const { selectedQueueLocationName, selectedQueueLocationUuid, selectedServiceDisplay, selectedServiceUuid } =
+    useServiceQueuesStore();
+  const admissionUser = isAdmissionUser(userSession?.user);
+  const sessionLocationUuid = userSession?.sessionLocation?.uuid;
+  const sessionQueueLocation = useMemo(
+    () => (sessionLocationUuid ? queueLocations.find((location) => location.id === sessionLocationUuid) : undefined),
+    [queueLocations, sessionLocationUuid],
+  );
+  const sessionQueueLocationName =
+    sessionQueueLocation?.name ?? userSession?.sessionLocation?.display ?? sessionLocationUuid;
+  const effectiveQueueLocationUuid = admissionUser ? (sessionQueueLocation?.id ?? null) : selectedQueueLocationUuid;
+  const { queues, isLoading: isLoadingQueues, error: queuesError } = useQueues(effectiveQueueLocationUuid);
   const availableQueues = queues ?? [];
   const shouldShowFilters = showFilters ?? showLocationDropdown ?? false;
-  const shouldShowLocationDropdown = shouldShowFilters && queueLocations.length > 1;
+  const shouldShowLocationDropdown = !admissionUser && shouldShowFilters && queueLocations.length > 1;
   const showServiceDropdown = shouldShowFilters;
 
   const availableServiceOptions = useMemo(() => {
@@ -59,9 +65,7 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
 
   const serviceOptions = useMemo(() => {
     const allServicesOption = { id: 'all', name: t('all', 'All') };
-    const selectedServiceIsAvailable = availableServiceOptions.some(
-      (option) => option.id === selectedServiceUuid,
-    );
+    const selectedServiceIsAvailable = availableServiceOptions.some((option) => option.id === selectedServiceUuid);
     const persistedServiceOption =
       selectedServiceUuid && !selectedServiceIsAvailable && (isLoadingQueues || queuesError)
         ? { id: selectedServiceUuid, name: selectedServiceDisplay ?? t('service', 'Service') }
@@ -71,7 +75,7 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
   }, [availableServiceOptions, isLoadingQueues, queuesError, selectedServiceDisplay, selectedServiceUuid, t]);
 
   const selectedService = selectedServiceUuid
-    ? serviceOptions.find((option) => option.id === selectedServiceUuid) ?? serviceOptions[0]
+    ? (serviceOptions.find((option) => option.id === selectedServiceUuid) ?? serviceOptions[0])
     : serviceOptions[0];
 
   useEffect(() => {
@@ -118,7 +122,7 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
   );
 
   useEffect(() => {
-    if (isLoading || error || selectedQueueLocationUuid) {
+    if (admissionUser || isLoading || error || selectedQueueLocationUuid) {
       return;
     }
 
@@ -132,12 +136,44 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
       handleQueueLocationChange({ selectedItem: sessionQueueLocation });
     }
   }, [
+    admissionUser,
     selectedQueueLocationUuid,
     error,
     handleQueueLocationChange,
     isLoading,
     queueLocations,
     userSession?.sessionLocation?.uuid,
+  ]);
+
+  useEffect(() => {
+    if (!admissionUser) {
+      return;
+    }
+
+    const authoritativeLocationUuid = !isLoading && !error && sessionQueueLocation ? sessionLocationUuid : null;
+    const authoritativeLocationName = authoritativeLocationUuid ? sessionQueueLocationName : null;
+    const locationChanged = selectedQueueLocationUuid !== authoritativeLocationUuid;
+
+    if (locationChanged) {
+      updateSelectedQueueLocationUuid(authoritativeLocationUuid);
+    }
+    if (selectedQueueLocationName !== authoritativeLocationName) {
+      updateSelectedQueueLocationName(authoritativeLocationName);
+    }
+    if (locationChanged && selectedServiceUuid) {
+      updateSelectedService(null, t('all', 'All'));
+    }
+  }, [
+    admissionUser,
+    error,
+    isLoading,
+    selectedQueueLocationName,
+    selectedQueueLocationUuid,
+    selectedServiceUuid,
+    sessionLocationUuid,
+    sessionQueueLocation,
+    sessionQueueLocationName,
+    t,
   ]);
 
   return (
@@ -159,6 +195,30 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
               hideCloseButton
             />
           </div>
+        ) : admissionUser && shouldShowFilters ? (
+          sessionQueueLocation ? (
+            <div
+              aria-label={t('queueLocation', 'Queue location')}
+              className={styles.locationContext}
+              data-testid="admission-queue-location"
+              role="group"
+            >
+              <span className={styles.locationContextLabel}>{t('queueLocation', 'Queue location')}</span>
+              <span className={styles.locationContextValue}>{sessionQueueLocationName}</span>
+            </div>
+          ) : (
+            <div className={styles.errorContainer}>
+              <InlineNotification
+                kind="warning"
+                title={t('queueLocationUnavailable', 'Queue location unavailable')}
+                subtitle={t(
+                  'sessionLocationIsNotQueueLocation',
+                  'Your session location is not configured as a queue location. Contact an administrator before adding patients.',
+                )}
+                hideCloseButton
+              />
+            </div>
+          )
         ) : (
           shouldShowLocationDropdown && (
             <Dropdown
@@ -180,7 +240,12 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
           <Dropdown
             aria-label={t('selectService', 'Select a service')}
             className={styles.dropdown}
-            disabled={isLoadingQueues || Boolean(queuesError) || availableServiceOptions.length === 0}
+            disabled={
+              isLoadingQueues ||
+              Boolean(queuesError) ||
+              availableServiceOptions.length === 0 ||
+              (admissionUser && !sessionQueueLocation)
+            }
             id="serviceDropdown"
             label={selectedService?.name ?? t('all', 'All')}
             items={serviceOptions}

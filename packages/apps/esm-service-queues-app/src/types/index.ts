@@ -475,7 +475,8 @@ export interface QueueEntry {
   queue: Queue;
   startedAt: string;
   status: Concept;
-  visit: Visit;
+  /** Queue 3 allows administrative queue entries that are not associated with a clinical visit. */
+  visit?: Visit | null;
   sortWeight: number;
   queueComingFrom: Queue;
   previousQueueEntry: QueueEntry;

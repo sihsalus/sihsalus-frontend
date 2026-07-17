@@ -24,10 +24,7 @@ export const MODALS = {
   REMOVE_QUEUE_ENTRY: 'emergency-remove-queue-entry-modal',
   MOVE_QUEUE_ENTRY: 'emergency-move-queue-entry-modal',
   TRANSITION_QUEUE_ENTRY: 'emergency-transition-queue-entry-modal',
-  EDIT_QUEUE_ENTRY: 'emergency-edit-queue-entry-modal',
-  UNDO_TRANSITION: 'emergency-undo-transition-modal',
   CLEAR_QUEUE_ENTRIES: 'emergency-clear-queue-entries-modal',
-  CONFIRM_ACTION: 'emergency-queue-confirm-action-modal',
 } as const;
 
 /** Workspace identifiers — used in launchWorkspace() and index.ts registration */

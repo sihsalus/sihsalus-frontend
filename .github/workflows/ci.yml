@@ -168,4 +168,6 @@ jobs:
       - uses: ./.github/actions/setup-node-env
 
       - name: Security Audit
-        run: yarn npm audit --severity high
+        # Yarn otherwise audits only direct dependencies of the active root
+        # workspace and misses vulnerable transitive packages in workspaces.
+        run: yarn npm audit --all --recursive --severity high

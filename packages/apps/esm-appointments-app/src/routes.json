@@ -122,6 +122,23 @@
   ],
   "modals": [
     {
+      "name": "appointment-arrival-modal",
+      "component": "appointmentArrivalModal",
+      "privileges": [
+        "app:home.citas.editar",
+        "Get Patients",
+        "Get Locations",
+        "Get Visits",
+        "Add Visits",
+        "Edit Visits",
+        "Get Visit Types",
+        "Get Visit Attribute Types",
+        "Get Queue Entries",
+        "Get Queues",
+        "Manage Queue Entries"
+      ]
+    },
+    {
       "name": "end-appointment-modal",
       "component": "endAppointmentModal",
       "privileges": [

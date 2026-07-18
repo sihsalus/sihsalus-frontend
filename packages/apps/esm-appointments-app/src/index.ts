@@ -112,6 +112,11 @@ export const exportedAppointmentsFormWorkspace = getAsyncLifecycle(
   options,
 );
 
+export const appointmentArrivalModal = getAsyncLifecycle(
+  () => import('./appointments/common-components/appointment-arrival.modal'),
+  options,
+);
+
 export const endAppointmentModal = getAsyncLifecycle(
   () => import('./appointments/common-components/end-appointment.modal'),
   options,

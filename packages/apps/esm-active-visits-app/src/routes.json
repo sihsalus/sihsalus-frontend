@@ -12,6 +12,13 @@
       "order": 0
     },
     {
+      "name": "pending-sis-accreditations-widget",
+      "slot": "homepage-widgets-slot",
+      "component": "pendingSisAccreditations",
+      "privileges": "app:home.admision",
+      "order": 1
+    },
+    {
       "name": "visit-summary-widget",
       "slot": "visit-summary-slot",
       "component": "visitDetail",

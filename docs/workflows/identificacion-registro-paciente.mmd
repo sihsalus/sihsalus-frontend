@@ -1,0 +1,83 @@
+flowchart TD
+    A["Paciente llega al establecimiento"] --> B{"¿Puede identificarse y comunicar decisiones?"}
+
+    B -->|"No"| U1["Derivar inmediatamente a emergencia / triaje"]
+    U1 --> U2{"¿Documento o informante permite identificarlo?"}
+    U2 -->|"Sí"| U3["Buscar y confirmar paciente existente"]
+    U2 -->|"No"| U4["Registrar paciente no identificado"]
+    U4 --> U5["Asignar identificador institucional provisional"]
+    U3 --> U6{"¿Hay representante o informante presente?"}
+    U5 --> U6
+    U6 -->|"Sí"| U7["Registrar identidad declarada, relación y contacto"]
+    U6 -->|"No"| U8["Documentar ausencia de representante o informante"]
+    U7 --> U9{"¿La representación legal está verificada?"}
+    U9 -->|"Sí"| U10["Registrar representación para decisiones clínicas"]
+    U9 -->|"No"| U11["Registrar solo como informante o acompañante"]
+    U10 --> U12["Continuar atención de emergencia"]
+    U11 --> U12
+    U8 --> U12
+    U12 --> U13["Registrar evaluación, tratamiento y decisiones"]
+    U13 --> U14["Identificar al paciente cuando sea posible"]
+    U14 --> U15{"¿Se utilizó un registro provisional?"}
+    U15 -->|"Sí"| U16["Conciliar con la historia clínica correcta"]
+    U16 --> U17["Evitar duplicados y conservar trazabilidad"]
+    U15 -->|"No"| U18["Mantener la historia clínica existente"]
+    U17 --> U19["Completar identidad, responsable y seguro posteriormente"]
+    U18 --> U19
+    U19 --> U20["Continuar el destino clínico indicado"]
+
+    B -->|"Sí"| C{"¿Es peruano?"}
+    C -->|"Sí"| D["Buscar por DNI, historia clínica o nombres"]
+    C -->|"No"| E["Seleccionar nacionalidad y tipo de documento"]
+    E --> F{"¿Tiene documento extranjero?"}
+    F -->|"Sí"| G["Buscar por CE, CPP, pasaporte u otro documento"]
+    F -->|"No"| H["Buscar por nombres, fecha de nacimiento y nacionalidad"]
+    D --> I{"¿Existen coincidencias?"}
+    G --> I
+    H --> I
+
+    I -->|"Exacta"| J["Verificar identidad y datos demográficos"]
+    I -->|"Posibles duplicados"| K["Comparar pacientes encontrados"]
+    K --> L{"¿Es el mismo paciente?"}
+    L -->|"Sí"| J
+    L -->|"No"| M["Registrar paciente nuevo"]
+    I -->|"Sin coincidencias"| M
+    M --> N["Registrar y validar datos de identidad"]
+    N --> O{"¿Carece de documento oficial?"}
+    O -->|"Sí"| P["Asignar identificador institucional"]
+    O -->|"No"| Q["Conservar documento verificado"]
+
+    J --> R{"¿Requiere actualizar datos?"}
+    R -->|"Sí"| S["Actualizar con trazabilidad"]
+    R -->|"No"| T["Seleccionar paciente"]
+    S --> T
+    P --> T
+    Q --> T
+
+    T --> V{"¿Es menor o requiere representante legal?"}
+    V -->|"Sí"| W["Buscar o registrar responsable legal"]
+    W --> X["Verificar documento, vínculo y contacto"]
+    X --> Y["Vincular responsable legal al paciente"]
+    V -->|"No"| Z["Continuar sin representante"]
+    Y --> AA{"¿Llegó con acompañante?"}
+    Z --> AA
+
+    AA -->|"Sí"| AB["Seleccionar responsable u otro acompañante"]
+    AA -->|"No"| AC["Registrar atención sin acompañante"]
+    AB --> AD{"¿Tiene seguro o financiador?"}
+    AC --> AD
+
+    AD -->|"Sí"| AE["Seleccionar SIS, EsSalud, EPS, privado u otro"]
+    AD -->|"No"| AF["Registrar pago particular o condición aplicable"]
+    AE --> AG["Verificar cobertura para la fecha y el servicio"]
+    AG --> AH{"¿Cobertura confirmada?"}
+    AH -->|"Sí"| AI["Asignar financiador a la atención"]
+    AH -->|"No disponible"| AJ["Marcar verificación pendiente"]
+    AH -->|"No vigente"| AF
+
+    AI --> AK{"¿Qué atención necesita?"}
+    AJ --> AK
+    AF --> AK
+    AK -->|"Programada"| AL["Agendar cita"]
+    AK -->|"Atención de hoy"| AM["Registrar llegada"]
+    AK -->|"Atención directa"| AN["Iniciar flujo de consulta"]

@@ -1,7 +1,9 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import useSWR from 'swr';
 import useSWRInfinite from 'swr/infinite';
 
+import { isPatientSearchTermValid, normalizePatientSearchTerm } from './patient-search-constants';
 import type { PatientSearchResponse, SearchedPatient, User } from './types';
 
 type InfinitePatientSearchResponse = FetchResponse<{
@@ -85,7 +87,7 @@ export function useInfinitePatientSearch(
   resultsToFetch: number = 10,
   customRepresentation: string = patientSearchCustomRepresentation,
 ): PatientSearchResponse {
-  const normalizedSearchQuery = searchQuery?.trim() ?? '';
+  const normalizedSearchQuery = normalizePatientSearchTerm(searchQuery);
   const getUrl = useCallback(
     (
       page: number,
@@ -110,7 +112,7 @@ export function useInfinitePatientSearch(
     [normalizedSearchQuery, customRepresentation, includeDead, resultsToFetch],
   );
 
-  const shouldFetch = isSearching && Boolean(normalizedSearchQuery);
+  const shouldFetch = isSearching && isPatientSearchTermValid(normalizedSearchQuery);
 
   const { data, isLoading, isValidating, setSize, error, size } = useSWRInfinite<InfinitePatientSearchResponse, Error>(
     shouldFetch ? getUrl : null,
@@ -132,6 +134,60 @@ export function useInfinitePatientSearch(
     }),
     [mappedData, isLoading, error, data, isValidating, setSize, size],
   );
+}
+
+const activeVisitPatientsCacheKey = 'sihsalus-patient-search-active-visit-patients';
+const activeVisitsPageSize = 100;
+
+interface ActiveVisitPatientReference {
+  uuid?: string;
+  patient?: { uuid?: string };
+}
+
+export async function getActiveVisitPatientUuids() {
+  const patientUuids = new Set<string>();
+  const seenVisitUuids = new Set<string>();
+
+  for (let startIndex = 0; ; startIndex += activeVisitsPageSize) {
+    const searchParams = new URLSearchParams({
+      includeInactive: 'false',
+      includeParentLocations: 'true',
+      limit: String(activeVisitsPageSize),
+      startIndex: String(startIndex),
+      v: 'custom:(uuid,patient:(uuid))',
+    });
+    const response = await openmrsFetch<{ results?: Array<ActiveVisitPatientReference> }>(
+      `${restBaseUrl}/visit?${searchParams.toString()}`,
+    );
+    const page = response.data?.results ?? [];
+    let addedVisits = 0;
+
+    for (const visit of page) {
+      if (visit.uuid && !seenVisitUuids.has(visit.uuid)) {
+        seenVisitUuids.add(visit.uuid);
+        addedVisits += 1;
+        if (visit.patient?.uuid) {
+          patientUuids.add(visit.patient.uuid);
+        }
+      }
+    }
+
+    if (page.length < activeVisitsPageSize || addedVisits === 0) {
+      break;
+    }
+  }
+
+  return [...patientUuids];
+}
+
+export function useActiveVisitPatientUuids(enabled: boolean) {
+  const { data, error, isLoading } = useSWR<Array<string>>(
+    enabled ? activeVisitPatientsCacheKey : null,
+    getActiveVisitPatientUuids,
+  );
+  const patientUuids = useMemo(() => new Set(data ?? []), [data]);
+
+  return { patientUuids, error, isLoading: enabled && isLoading };
 }
 
 /**

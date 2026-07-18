@@ -5,7 +5,7 @@ import { renderWithSwr } from 'test-utils';
 import { type AdvancedPatientSearchState, type SearchFieldConfig } from '../../types';
 
 import { usePersonAttributeType } from './person-attributes.resource';
-import { getOptionalIntegerInputValue, SearchField } from './search-field.component';
+import { getAgeInputRange, getOptionalIntegerInputValue, SearchField } from './search-field.component';
 
 vi.mock('./person-attributes.resource', async () => ({
   usePersonAttributeType: vi.fn(),
@@ -46,7 +46,7 @@ vi.mock('react-hook-form', async () => ({
       field: {
         onChange: vi.fn(),
         onBlur: vi.fn(),
-        value: '',
+        value: name === 'hasActiveVisit' ? false : name === 'ageUnit' ? 'years' : '',
         name,
         ref: vi.fn(),
       },
@@ -127,22 +127,6 @@ describe('SearchField', () => {
     });
   });
 
-  describe('Date of Birth field', () => {
-    const dobField: SearchFieldConfig = {
-      name: 'dateOfBirth',
-      type: 'dateOfBirth',
-    };
-
-    it('renders one unified date of birth field', () => {
-      render(<SearchField field={dobField} {...defaultProps} />);
-
-      expect(screen.getByLabelText('Date of birth')).toBeInTheDocument();
-      expect(screen.queryByLabelText('Day of Birth')).not.toBeInTheDocument();
-      expect(screen.queryByLabelText('Month of Birth')).not.toBeInTheDocument();
-      expect(screen.queryByLabelText('Year of Birth')).not.toBeInTheDocument();
-    });
-  });
-
   describe('Age field', () => {
     const ageField: SearchFieldConfig = {
       name: 'age',
@@ -159,6 +143,7 @@ describe('SearchField', () => {
       expect(ageInput).toHaveAttribute('type', 'number');
       expect(ageInput).toHaveAttribute('min', '0');
       expect(ageInput).toHaveAttribute('max', '120');
+      expect(screen.getByLabelText('Unit')).toBeInTheDocument();
     });
 
     it('uses safe age limits when configuration omits them', () => {
@@ -175,6 +160,20 @@ describe('SearchField', () => {
       const ageInput = screen.getByLabelText('Age');
       expect(ageInput).toHaveAttribute('min', '0');
       expect(ageInput).toHaveAttribute('max', '140');
+    });
+
+    it('uses clinically bounded ranges for days, months, and years', () => {
+      expect(getAgeInputRange('days')).toEqual({ min: 0, max: 27 });
+      expect(getAgeInputRange('months')).toEqual({ min: 0, max: 23 });
+      expect(getAgeInputRange('years')).toEqual({ min: 0, max: 140 });
+    });
+  });
+
+  describe('Active consultation field', () => {
+    it('renders an explicit checkbox', () => {
+      render(<SearchField field={{ name: 'activeVisit', type: 'activeVisit' }} {...defaultProps} />);
+
+      expect(screen.getByRole('checkbox', { name: 'Has an active consultation' })).toBeInTheDocument();
     });
   });
 

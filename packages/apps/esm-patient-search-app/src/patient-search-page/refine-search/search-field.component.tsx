@@ -1,19 +1,12 @@
-import { ContentSwitcher, NumberInput, Switch, TextInput } from '@carbon/react';
-import { OpenmrsDatePicker } from '@openmrs/esm-framework';
-import {
-  calendarDateToLocalDate,
-  getLocalCalendarDate,
-  getOldestAllowedPatientBirthdate,
-  normalizePatientAgeRange,
-  shouldPreventPlainNumberKey,
-  shouldPreventPlainNumberPaste,
-} from '@openmrs/esm-utils';
+import { Checkbox, ContentSwitcher, NumberInput, Select, SelectItem, Switch, TextInput } from '@carbon/react';
+import { normalizePatientAgeRange, shouldPreventPlainNumberKey, shouldPreventPlainNumberPaste } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React from 'react';
 import { type Control, Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
-import { type AdvancedPatientSearchState, type SearchFieldConfig } from '../../types';
+import { type AdvancedPatientSearchState, type PatientAgeUnit, type SearchFieldConfig } from '../../types';
+import { MAX_PATIENT_AGE_DAYS, MAX_PATIENT_AGE_MONTHS } from '../patient-age-filter';
 
 import { PersonAttributeField } from './person-attribute-field.component';
 import styles from './search-field.scss';
@@ -24,6 +17,18 @@ export function getOptionalIntegerInputValue(value: string | number) {
   }
 
   return Number(value);
+}
+
+export function getAgeInputRange(unit: PatientAgeUnit, minimumYears?: number, maximumYears?: number) {
+  if (unit === 'days') {
+    return { min: 0, max: MAX_PATIENT_AGE_DAYS };
+  }
+  if (unit === 'months') {
+    return { min: 0, max: MAX_PATIENT_AGE_MONTHS };
+  }
+
+  const { minimumAge, maximumAge } = normalizePatientAgeRange(minimumYears, maximumYears);
+  return { min: minimumAge, max: maximumAge };
 }
 
 const preventInvalidIntegerKey = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -49,63 +54,6 @@ interface SearchFieldProps {
   inTabletOrOverlay: boolean;
   isTablet: boolean;
 }
-
-const BirthdateSearchField: React.FC<Omit<SearchFieldProps, 'field'>> = ({ control, inTabletOrOverlay, isTablet }) => {
-  const { t } = useTranslation();
-  const referenceDate = getLocalCalendarDate();
-  const oldestAllowedBirthdate = getOldestAllowedPatientBirthdate(referenceDate);
-
-  return (
-    <div className={classNames(styles.birthdateField, { [styles.fieldTabletOrOverlay]: inTabletOrOverlay })}>
-      <Controller
-        name="dateOfBirth"
-        control={control}
-        render={({ field: dayField, fieldState: dayState }) => (
-          <Controller
-            name="monthOfBirth"
-            control={control}
-            render={({ field: monthField, fieldState: monthState }) => (
-              <Controller
-                name="yearOfBirth"
-                control={control}
-                render={({ field: yearField, fieldState: yearState }) => {
-                  const selectedDate =
-                    dayField.value && monthField.value && yearField.value
-                      ? calendarDateToLocalDate({
-                          day: dayField.value,
-                          month: monthField.value,
-                          year: yearField.value,
-                        })
-                      : null;
-                  const error = dayState.error ?? monthState.error ?? yearState.error;
-
-                  return (
-                    <OpenmrsDatePicker
-                      id="dateOfBirth"
-                      labelText={t('dateOfBirth', 'Date of birth')}
-                      value={selectedDate}
-                      onChange={(date) => {
-                        const nextDate = date ? getLocalCalendarDate(date) : null;
-                        dayField.onChange(nextDate?.day ?? null);
-                        monthField.onChange(nextDate?.month ?? null);
-                        yearField.onChange(nextDate?.year ?? null);
-                      }}
-                      minDate={oldestAllowedBirthdate ? calendarDateToLocalDate(oldestAllowedBirthdate) : undefined}
-                      maxDate={calendarDateToLocalDate(referenceDate)}
-                      invalid={!!error}
-                      invalidText={dayState.error?.message ?? monthState.error?.message ?? yearState.error?.message}
-                      size={isTablet ? 'lg' : 'md'}
-                    />
-                  );
-                }}
-              />
-            )}
-          />
-        )}
-      />
-    </div>
-  );
-};
 
 export const SearchField: React.FC<SearchFieldProps> = ({ field, control, inTabletOrOverlay, isTablet }) => {
   const { t } = useTranslation();
@@ -135,7 +83,7 @@ export const SearchField: React.FC<SearchFieldProps> = ({ field, control, inTabl
                   <Switch name="female" text={t('female', 'Female')} />
                 </ContentSwitcher>
                 <ContentSwitcher
-                  id="gender"
+                  id="gender-secondary"
                   size={isTablet ? 'lg' : 'md'}
                   onChange={({ name }) => onChange(name)}
                   selectedIndex={['other', 'unknown'].indexOf(value)}
@@ -149,40 +97,74 @@ export const SearchField: React.FC<SearchFieldProps> = ({ field, control, inTabl
         </div>
       );
 
-    case 'dateOfBirth':
-      return <BirthdateSearchField control={control} inTabletOrOverlay={inTabletOrOverlay} isTablet={isTablet} />;
-
-    case 'age': {
-      const { minimumAge: minAge, maximumAge: maxAge } = normalizePatientAgeRange(field.min, field.max);
-
+    case 'age':
       return (
-        <div className={classNames({ [styles.fieldTabletOrOverlay]: inTabletOrOverlay })}>
+        <div className={classNames(styles.ageField, { [styles.fieldTabletOrOverlay]: inTabletOrOverlay })}>
           <Controller
-            name="age"
+            name="ageUnit"
             control={control}
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <NumberInput
-                id={field.name}
-                value={value ?? ''}
-                onChange={(_event, { value: inputValue }) => onChange(getOptionalIntegerInputValue(inputValue))}
-                onKeyDown={preventInvalidIntegerKey}
-                onPaste={preventInvalidIntegerPaste(minAge, maxAge)}
-                type="number"
-                label={t('age', 'Age')}
-                invalid={!!error}
-                invalidText={error?.message}
-                min={minAge}
-                max={maxAge}
-                allowEmpty
-                hideSteppers
-                size={isTablet ? 'lg' : 'md'}
-                placeholder={field.placeholder}
-              />
-            )}
+            render={({ field: unitField }) => {
+              const unit = unitField.value ?? 'years';
+              const { min, max } = getAgeInputRange(unit, field.min, field.max);
+
+              return (
+                <>
+                  <Controller
+                    name="age"
+                    control={control}
+                    render={({ field: ageField, fieldState: { error } }) => (
+                      <NumberInput
+                        id={field.name}
+                        value={ageField.value ?? ''}
+                        onChange={(_event, { value }) => ageField.onChange(getOptionalIntegerInputValue(value))}
+                        onKeyDown={preventInvalidIntegerKey}
+                        onPaste={preventInvalidIntegerPaste(min, max)}
+                        type="number"
+                        label={t('age', 'Age')}
+                        invalid={!!error}
+                        invalidText={error?.message}
+                        min={min}
+                        max={max}
+                        allowEmpty
+                        hideSteppers
+                        size={isTablet ? 'lg' : 'md'}
+                        placeholder={field.placeholder}
+                      />
+                    )}
+                  />
+                  <Select
+                    id="age-unit"
+                    labelText={t('ageUnit', 'Unit')}
+                    value={unit}
+                    onChange={(event) => unitField.onChange(event.target.value as PatientAgeUnit)}
+                    size={isTablet ? 'lg' : 'md'}
+                  >
+                    <SelectItem value="days" text={t('days', 'Days')} />
+                    <SelectItem value="months" text={t('months', 'Months')} />
+                    <SelectItem value="years" text={t('years', 'Years')} />
+                  </Select>
+                </>
+              );
+            }}
           />
         </div>
       );
-    }
+
+    case 'activeVisit':
+      return (
+        <Controller
+          name="hasActiveVisit"
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <Checkbox
+              id="has-active-visit"
+              labelText={t('hasActiveVisit', 'Has an active consultation')}
+              checked={value}
+              onChange={(_event, { checked }) => onChange(checked)}
+            />
+          )}
+        />
+      );
 
     case 'postcode':
       return (
@@ -194,7 +176,7 @@ export const SearchField: React.FC<SearchFieldProps> = ({ field, control, inTabl
               <TextInput
                 id={field.name}
                 labelText={t('postcode', 'Postcode')}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.currentTarget.value)}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => onChange(event.currentTarget.value)}
                 value={value}
                 size={isTablet ? 'lg' : 'md'}
                 placeholder={field.placeholder}

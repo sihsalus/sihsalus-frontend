@@ -29,26 +29,18 @@ export const configSchema = {
         gender: {
           enabled: true,
         },
-        dateOfBirth: {
-          enabled: true,
-        },
         age: {
-          enabled: false,
+          enabled: true,
           min: MIN_PATIENT_AGE_YEARS,
           max: MAX_PATIENT_AGE_YEARS,
+        },
+        activeVisit: {
+          enabled: true,
         },
         postcode: {
           enabled: false,
         },
         personAttributes: [
-          {
-            attributeTypeUuid: '6f5c0b8a-9e91-4d41-9a8c-8b0f3c2e7a11',
-            answerConceptSetUuid: '0ee5c6c4-16d0-5952-b3b3-d3a098e184fa',
-          },
-          {
-            attributeTypeUuid: 'c0d1a2b3-4e5f-4a6b-9c7d-8e9f0a1b2c3d',
-            placeholder: 'DNI, CE, pasaporte u otro documento',
-          },
           {
             attributeTypeUuid: 'a7e3f8c1-2d4b-4f9a-8c6e-1b2d3f4a5c6e',
             answerConceptSetUuid: 'eae30f8f-02f7-497a-a9e6-5b6516301a6d',
@@ -68,23 +60,13 @@ export const configSchema = {
           _default: true,
         },
       },
-      dateOfBirth: {
-        _type: Type.Object,
-        _description: 'Configuration for the date of birth field',
-        enabled: {
-          _type: Type.Boolean,
-          _description:
-            'Optional. If true, determines whether to display the date of birth field or not. Defaults to true',
-          _default: true,
-        },
-      },
       age: {
         _type: Type.Object,
         _description: 'Configuration for the age field',
         enabled: {
           _type: Type.Boolean,
-          _description: 'The age filter is not displayed in the SIH Salus patient search',
-          _default: false,
+          _description: 'Whether to display the age and age-unit filter',
+          _default: true,
         },
         min: {
           _type: Type.Number,
@@ -97,6 +79,15 @@ export const configSchema = {
           _description: 'The maximum value for the age field',
           _default: MAX_PATIENT_AGE_YEARS,
           _validators: [validators.inRange(MIN_PATIENT_AGE_YEARS, MAX_PATIENT_AGE_YEARS)],
+        },
+      },
+      activeVisit: {
+        _type: Type.Object,
+        _description: 'Configuration for the active consultation filter',
+        enabled: {
+          _type: Type.Boolean,
+          _description: 'Whether to display the active consultation checkbox',
+          _default: true,
         },
       },
       postcode: {
@@ -198,7 +189,7 @@ export const configSchema = {
   },
 };
 
-export type BuiltInFieldType = 'gender' | 'dateOfBirth' | 'age' | 'postcode';
+export type BuiltInFieldType = 'activeVisit' | 'gender' | 'age' | 'postcode';
 
 export interface PersonAttributeFieldConfig {
   attributeTypeUuid: string;
@@ -223,8 +214,8 @@ export type PatientSearchConfig = {
     showRecentlySearchedPatients: boolean;
     searchFilterFields: {
       gender: BuiltInFieldConfig;
-      dateOfBirth: BuiltInFieldConfig;
       age: BuiltInFieldConfig & { min?: number };
+      activeVisit: BuiltInFieldConfig;
       postcode: BuiltInFieldConfig;
       personAttributes: Array<PersonAttributeFieldConfig>;
     };

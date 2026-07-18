@@ -3,6 +3,7 @@ import React, { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { PatientSearchContext } from '../patient-search-context';
+import { normalizePatientSearchTerm } from '../patient-search-constants';
 import PatientSearchOverlay from '../patient-search-overlay/patient-search-overlay.component';
 import { getPatientSearchReturnUrl } from '../search-return-url';
 
@@ -15,7 +16,7 @@ const PatientSearchPageComponent: React.FC<PatientSearchPageComponentProps> = ()
   const [searchParams] = useSearchParams();
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
-  const searchQuery = searchParams?.get('query') ?? '';
+  const searchQuery = normalizePatientSearchTerm(searchParams?.get('query') ?? '');
 
   // If a user directly falls on openmrs/spa/search?query= in a tablet view.
   // On clicking the <- on the overlay should take the user on the home page.

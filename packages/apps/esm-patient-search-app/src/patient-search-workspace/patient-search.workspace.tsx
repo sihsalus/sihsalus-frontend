@@ -2,6 +2,7 @@ import { useConfig, useDebounce } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 
 import { type PatientSearchConfig } from '../config-schema';
+import { isPatientSearchTermValid } from '../patient-search-constants';
 import PatientSearchBar from '../patient-search-bar/patient-search-bar.component';
 import { PatientSearchContext, type PatientSearchContextProps } from '../patient-search-context';
 import AdvancedPatientSearchComponent from '../patient-search-page/advanced-patient-search.component';
@@ -24,7 +25,7 @@ const PatientSearchWorkspace: React.FC<PatientSearchWorkspaceProps> = ({
     search: { disableTabletSearchOnKeyUp },
   } = useConfig<PatientSearchConfig>();
   const [searchTerm, setSearchTerm] = useState(initialQuery);
-  const showSearchResults = Boolean(searchTerm?.trim());
+  const showSearchResults = isPatientSearchTermValid(searchTerm);
   const debouncedSearchTerm = useDebounce(searchTerm);
 
   const handleClearSearchTerm = useCallback(() => setSearchTerm(''), []);

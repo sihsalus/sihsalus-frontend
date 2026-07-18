@@ -40,13 +40,14 @@ describe('PatientSearchBar', () => {
     const user = userEvent.setup();
     const onClearMock = vi.fn();
 
-    render(<PatientSearchBar onClear={onClearMock} onSubmit={vi.fn()} />);
+    render(<PatientSearchBar initialSearchTerm="Juan" onClear={onClearMock} onSubmit={vi.fn()} />);
 
     const clearButton = screen.getByRole('button', { name: 'Clear' });
 
     await user.click(clearButton);
 
     expect(onClearMock).toHaveBeenCalled();
+    expect(screen.getByRole('searchbox')).toHaveValue('');
   });
 
   it('calls the onSubmit callback on form submission', async () => {
@@ -62,5 +63,24 @@ describe('PatientSearchBar', () => {
     await user.click(searchButton);
 
     expect(onSubmitMock).toHaveBeenCalledWith('Search Term');
+  });
+
+  it('requires three characters and limits the query to one hundred characters', async () => {
+    const user = userEvent.setup();
+    const onSubmitMock = vi.fn();
+    render(<PatientSearchBar onSubmit={onSubmitMock} onClear={vi.fn()} />);
+    const searchInput = screen.getByRole('searchbox');
+    const searchButton = screen.getByRole('button', { name: 'Search' });
+
+    expect(searchInput).toHaveAttribute('maxlength', '100');
+    await user.type(searchInput, 'Jo');
+    expect(searchButton).toBeDisabled();
+
+    await user.type(searchInput, 'h');
+    expect(searchButton).toBeEnabled();
+
+    await user.clear(searchInput);
+    await user.type(searchInput, 'a'.repeat(101));
+    expect(searchInput).toHaveValue('a'.repeat(100));
   });
 });

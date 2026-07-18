@@ -4,6 +4,7 @@ import { mockSession } from 'test-utils';
 import useSWRInfinite from 'swr/infinite';
 
 import {
+  getActiveVisitPatientUuids,
   isForbiddenUserPropertiesError,
   useInfinitePatientSearch,
   useRecentlyViewedPatients,
@@ -137,6 +138,31 @@ describe('patient search resource', () => {
     renderHook(() => useInfinitePatientSearch('   ', true));
 
     expect(mockUseSWRInfinite.mock.calls.at(-1)?.[0]).toBeNull();
+  });
+
+  it('does not fetch a patient query shorter than three characters', () => {
+    renderHook(() => useInfinitePatientSearch('Jo', true));
+
+    expect(mockUseSWRInfinite.mock.calls.at(-1)?.[0]).toBeNull();
+  });
+
+  it('collects unique patients from every active visit page', async () => {
+    const firstPage = Array.from({ length: 100 }, (_, index) => ({
+      uuid: `visit-${index}`,
+      patient: { uuid: index % 2 === 0 ? 'patient-a' : 'patient-b' },
+    }));
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: firstPage } } as Awaited<ReturnType<typeof openmrsFetch>>)
+      .mockResolvedValueOnce({
+        data: { results: [{ uuid: 'visit-100', patient: { uuid: 'patient-c' } }] },
+      } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    await expect(getActiveVisitPatientUuids()).resolves.toEqual(['patient-a', 'patient-b', 'patient-c']);
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
+    expect(mockOpenmrsFetch.mock.calls[0][0]).toContain('includeInactive=false');
+    expect(mockOpenmrsFetch.mock.calls[0][0]).toContain('startIndex=0');
+    expect(mockOpenmrsFetch.mock.calls[1][0]).toContain('startIndex=100');
   });
 
   it('skips missing recently viewed patients without hiding available patients', async () => {

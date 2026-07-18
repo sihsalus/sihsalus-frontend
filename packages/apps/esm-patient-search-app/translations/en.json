@@ -1,6 +1,7 @@
 {
   "addPatient": "Add patient",
   "age": "Age",
+  "ageUnit": "Unit",
   "any": "Any",
   "apply": "Apply",
   "birthdateInFuture": "Date of birth cannot be in the future",
@@ -13,6 +14,7 @@
   "countOfFiltersApplied_other": "{{count}} filters applied",
   "dayOfBirth": "Day of Birth",
   "dateOfBirth": "Date of birth",
+  "days": "Days",
   "error": "Error",
   "errorCopy": "Sorry, there was an error. Please try again or contact the site administrator.",
   "errorFetchingPatients": "Error fetching patients",
@@ -25,14 +27,18 @@
   "errorUpdatingRecentlyViewedPatients": "Error updating recently viewed patients",
   "female": "Female",
   "filtersAppliedText": "search queries added",
+  "hasActiveVisit": "Has an active consultation",
   "identityDocumentNumber": "Identity document number",
   "invalidAge": "Enter an age between {{min}} and {{max}}",
+  "invalidAgeForUnit": "Enter an age between {{min}} and {{max}} for the selected unit",
   "invalidBirthdate": "Enter a valid date of birth",
   "invalidDayOfBirth": "Enter a day between 1 and 31",
   "invalidMonthOfBirth": "Enter a month between 1 and 12",
   "invalidYearOfBirth": "Enter a year between {{min}} and {{max}}",
   "male": "Male",
+  "minimumSearchCharacters": "Enter at least {{count}} characters",
   "monthOfBirth": "Month of Birth",
+  "months": "Months",
   "nextPage": "Next page",
   "noPatientChartsFoundMessage": "Sorry, no patient charts were found",
   "other": "Other",
@@ -60,5 +66,6 @@
   "trySearchWithPatientUniqueID": "Try to search again using the patient's unique ID number",
   "unknown": "Unknown",
   "unsupportedAttributeFormat": "Unsupported attribute format: {{format}}",
-  "yearOfBirth": "Year of Birth"
+  "yearOfBirth": "Year of Birth",
+  "years": "Years"
 }

@@ -1,6 +1,7 @@
 import { useConfig, useDebounce, Workspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { type PatientSearchConfig } from '../config-schema';
+import { isPatientSearchTermValid } from '../patient-search-constants';
 import PatientSearchBar from '../patient-search-bar/patient-search-bar.component';
 import { PatientSearchContext2 } from '../patient-search-context';
 import AdvancedPatientSearchComponent from '../patient-search-page/advanced-patient-search.component';
@@ -34,7 +35,7 @@ const PatientSearchWorkspace2: React.FC<
   } = useConfig<PatientSearchConfig>();
   const [searchTerm, setSearchTerm] = useState(initialQuery);
   const debouncedSearchTerm = useDebounce(searchTerm);
-  const showSearchResults = Boolean(debouncedSearchTerm?.trim());
+  const showSearchResults = isPatientSearchTermValid(debouncedSearchTerm);
 
   const handleClearSearchTerm = useCallback(() => setSearchTerm(''), []);
 

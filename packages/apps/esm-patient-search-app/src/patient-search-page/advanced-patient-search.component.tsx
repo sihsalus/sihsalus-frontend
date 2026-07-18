@@ -1,17 +1,17 @@
 import { useConfig } from '@openmrs/esm-framework';
-import { parsePatientBirthdate } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 
 import { type PatientSearchConfig } from '../config-schema';
-import { useInfinitePatientSearch } from '../patient-search.resource';
+import { isPatientSearchTermValid, normalizePatientSearchTerm } from '../patient-search-constants';
+import { useActiveVisitPatientUuids, useInfinitePatientSearch } from '../patient-search.resource';
 import { PatientSearchContext, usePatientSearchContext2 } from '../patient-search-context';
 import { type AdvancedPatientSearchState } from '../types';
 
 import styles from './advanced-patient-search.scss';
+import { matchesPatientAge } from './patient-age-filter';
 import PatientSearchComponent from './patient-search-lg.component';
 import { matchesPersonAttributeFilter } from './person-attribute-filter';
-import { identityDocumentNumberAttributeUuid } from './refine-search/person-attribute-field.component';
 import RefineSearch, { initialFilters } from './refine-search/refine-search.component';
 
 interface AdvancedPatientSearchProps {
@@ -26,20 +26,20 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
   inTabletOrOverlay,
 }) => {
   const [filters, setFilters] = useState<AdvancedPatientSearchState>(initialFilters);
-  const [activeQuery, setActiveQuery] = useState(query);
+  const [activeQuery, setActiveQuery] = useState(() => normalizePatientSearchTerm(query));
   const config = useConfig<PatientSearchConfig>();
   const { nonNavigationSelectPatientAction } = useContext(PatientSearchContext);
   const patientSearchContext2 = usePatientSearchContext2();
   const isEmbeddedSelection = Boolean(nonNavigationSelectPatientAction || patientSearchContext2?.onPatientSelected);
 
   useEffect(() => {
-    setActiveQuery(query);
+    setActiveQuery(normalizePatientSearchTerm(query));
   }, [query]);
 
   const filtersApplied = useMemo(() => {
     let count = 0;
     Object.entries(filters).forEach(([key, value]) => {
-      if (key !== 'attributes' && key !== 'query' && value !== initialFilters[key]) {
+      if (key !== 'attributes' && key !== 'query' && key !== 'ageUnit' && value !== initialFilters[key]) {
         count++;
       }
     });
@@ -57,7 +57,12 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
     isLoading,
     isValidating,
     fetchError,
-  } = useInfinitePatientSearch(activeQuery, config.includeDead, !!activeQuery, 50);
+  } = useInfinitePatientSearch(activeQuery, config.includeDead, isPatientSearchTermValid(activeQuery), 50);
+  const {
+    patientUuids: activeVisitPatientUuids,
+    isLoading: areActiveVisitsLoading,
+    error: activeVisitsError,
+  } = useActiveVisitPatientUuids(filters.hasActiveVisit);
 
   useEffect(() => {
     // hasMore reflects the last fetched page's `next` link, so advancing on it
@@ -70,10 +75,6 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
 
   const filteredResults = useMemo(() => {
     if (searchResults && filtersApplied) {
-      const identityDocumentSearchQuery = filters.attributes?.[identityDocumentNumberAttributeUuid]?.trim() ?? '';
-      const shouldSkipIdentityDocumentAttributeFilters =
-        !!identityDocumentSearchQuery && activeQuery === identityDocumentSearchQuery;
-
       return searchResults.filter((patient) => {
         // Gender filter
         if (filters.gender !== 'any') {
@@ -88,20 +89,6 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
           }
         }
 
-        // A birthdate is a calendar date. Parsing it as a JS Date shifts UTC-midnight
-        // values to the previous day in Peru and other time zones west of UTC.
-        if (filters.dateOfBirth != null || filters.monthOfBirth != null || filters.yearOfBirth != null) {
-          const birthdate = parsePatientBirthdate(patient.person.birthdate);
-          if (
-            !birthdate ||
-            (filters.dateOfBirth != null && birthdate.day !== filters.dateOfBirth) ||
-            (filters.monthOfBirth != null && birthdate.month !== filters.monthOfBirth) ||
-            (filters.yearOfBirth != null && birthdate.year !== filters.yearOfBirth)
-          ) {
-            return false;
-          }
-        }
-
         // Postcode filter
         if (filters.postcode) {
           if (!patient.person.addresses?.some((address) => address.postalCode === filters.postcode)) {
@@ -111,9 +98,13 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
 
         // Age filter
         if (filters.age != null) {
-          if (Number(patient.person.age) !== Number(filters.age)) {
+          if (!matchesPatientAge(patient, Number(filters.age), filters.ageUnit)) {
             return false;
           }
+        }
+
+        if (filters.hasActiveVisit && !activeVisitPatientUuids.has(patient.uuid)) {
+          return false;
         }
 
         // Person attributes filter
@@ -121,10 +112,6 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
           for (const [attributeUuid, value] of Object.entries(filters.attributes)) {
             const normalizedFilterValue = value?.trim().toLowerCase();
             if (!normalizedFilterValue) continue;
-            if (shouldSkipIdentityDocumentAttributeFilters && attributeUuid === identityDocumentNumberAttributeUuid) {
-              continue;
-            }
-
             const matchingAttributes = patient.attributes?.filter(
               (attribute) => attribute.attributeType.uuid === attributeUuid,
             );
@@ -133,7 +120,7 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
                 attribute,
                 attributeUuid,
                 normalizedFilterValue,
-                attributeUuid === identityDocumentNumberAttributeUuid ? 'prefix' : 'contains',
+                'contains',
               ),
             );
 
@@ -148,7 +135,11 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
     }
 
     return searchResults;
-  }, [activeQuery, filtersApplied, filters, searchResults]);
+  }, [activeVisitPatientUuids, filtersApplied, filters, searchResults]);
+
+  const activeVisitFilterIsLoading = filters.hasActiveVisit && areActiveVisitsLoading;
+  const visibleResults = activeVisitFilterIsLoading ? [] : filteredResults;
+  const paginationResetKey = useMemo(() => JSON.stringify([activeQuery, filters]), [activeQuery, filters]);
 
   return (
     <div
@@ -176,13 +167,14 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
       >
         <PatientSearchComponent
           query={activeQuery}
+          paginationResetKey={paginationResetKey}
           stickyPagination={stickyPagination}
           inTabletOrOverlay={inTabletOrOverlay}
-          isLoading={isLoading}
+          isLoading={isLoading || activeVisitFilterIsLoading}
           isValidating={isValidating}
           hasMore={hasMore}
-          fetchError={fetchError}
-          searchResults={filteredResults ?? []}
+          fetchError={fetchError ?? activeVisitsError ?? null}
+          searchResults={visibleResults ?? []}
           showAddPatient={!isEmbeddedSelection}
         />
       </div>

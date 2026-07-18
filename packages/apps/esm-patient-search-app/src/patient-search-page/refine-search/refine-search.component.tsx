@@ -12,8 +12,13 @@ import {
   type PatientSearchConfig,
   type PersonAttributeFieldConfig,
 } from '../../config-schema';
+import {
+  isPatientSearchTermValid,
+  MAX_PATIENT_SEARCH_CHARACTERS,
+  MIN_PATIENT_SEARCH_CHARACTERS,
+  normalizePatientSearchTerm,
+} from '../../patient-search-constants';
 import { type AdvancedPatientSearchState, type SearchFieldConfig, type SearchFieldType } from '../../types';
-import { identityDocumentNumberAttributeUuid } from './person-attribute-field.component';
 import styles from './refine-search.scss';
 import { createRefineSearchSchema } from './refine-search.validation';
 import { RefineSearchTablet } from './refine-search-tablet.component';
@@ -22,11 +27,10 @@ import { SearchField } from './search-field.component';
 export const initialFilters: AdvancedPatientSearchState = {
   query: '',
   gender: 'any',
-  dateOfBirth: null,
-  monthOfBirth: null,
-  yearOfBirth: null,
   postcode: '',
   age: null,
+  ageUnit: 'years',
+  hasActiveVisit: false,
   attributes: {},
 };
 
@@ -64,21 +68,17 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
     defaultValues: {
       query: searchQuery,
       gender: 'any',
-      dateOfBirth: null,
-      monthOfBirth: null,
-      yearOfBirth: null,
       age: null,
+      ageUnit: 'years',
+      hasActiveVisit: false,
       postcode: '',
       attributes: {},
     },
   });
 
   const queryValue = useWatch({ control, name: 'query' });
-  const documentNumberValue = useWatch({
-    control,
-    name: `attributes.${identityDocumentNumberAttributeUuid}`,
-  });
-  const hasPrimarySearchCriterion = Boolean(queryValue?.trim() || documentNumberValue?.trim());
+  const hasPrimarySearchCriterion = isPatientSearchTermValid(queryValue);
+  const queryIsTooShort = Boolean(queryValue?.trim()) && !hasPrimarySearchCriterion;
 
   useEffect(() => {
     setValue('query', searchQuery);
@@ -91,12 +91,12 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
       );
       const normalizedData = {
         ...data,
-        query: data.query.trim(),
+        query: normalizePatientSearchTerm(data.query),
         attributes: normalizedAttributes,
       };
-      const query = normalizedData.query || normalizedAttributes[identityDocumentNumberAttributeUuid] || '';
+      const query = normalizedData.query;
 
-      if (!query) {
+      if (!isPatientSearchTermValid(query)) {
         return;
       }
 
@@ -122,7 +122,7 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
     const fields: Array<SearchFieldConfig> = [];
 
     Object.entries(config.search.searchFilterFields).forEach(([fieldName, fieldConfig]) => {
-      if (fieldName !== 'personAttributes' && fieldName !== 'age' && (fieldConfig as BuiltInFieldConfig).enabled) {
+      if (fieldName !== 'personAttributes' && (fieldConfig as BuiltInFieldConfig).enabled) {
         const { min, max } = fieldConfig as BuiltInFieldConfig;
         fields.push({
           name: fieldName,
@@ -182,6 +182,11 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
                 placeholder={t('searchForPatient', 'Search for a patient by name or identifier number')}
                 size={isTablet ? 'lg' : 'md'}
                 value={value ?? ''}
+                maxLength={MAX_PATIENT_SEARCH_CHARACTERS}
+                invalid={queryIsTooShort}
+                invalidText={t('minimumSearchCharacters', 'Enter at least {{count}} characters', {
+                  count: MIN_PATIENT_SEARCH_CHARACTERS,
+                })}
               />
             )}
           />

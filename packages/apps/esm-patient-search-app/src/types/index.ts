@@ -100,15 +100,16 @@ export interface PatientSearchResponse {
 export interface AdvancedPatientSearchState {
   query: string;
   gender: 'any' | 'male' | 'female' | 'other' | 'unknown';
-  dateOfBirth: number | null;
-  monthOfBirth: number | null;
-  yearOfBirth: number | null;
   postcode: string;
   age: number | null;
+  ageUnit: PatientAgeUnit;
+  hasActiveVisit: boolean;
   attributes: {
     [key: string]: string;
   };
 }
+
+export type PatientAgeUnit = 'days' | 'months' | 'years';
 
 export interface User {
   uuid: string;
@@ -169,7 +170,7 @@ export interface LocationResponse {
   entry: Array<LocationEntry>;
 }
 
-export type SearchFieldType = 'age' | 'dateOfBirth' | 'gender' | 'personAttribute' | 'postcode';
+export type SearchFieldType = 'activeVisit' | 'age' | 'gender' | 'personAttribute' | 'postcode';
 
 export interface SearchFieldConfig {
   name: string;

@@ -1,15 +1,16 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { mockAdvancedSearchResults } from 'test-utils';
 
 import { configSchema, type PatientSearchConfig } from '../config-schema';
-import { useInfinitePatientSearch } from '../patient-search.resource';
+import { useActiveVisitPatientUuids, useInfinitePatientSearch } from '../patient-search.resource';
 import { PatientSearchContext } from '../patient-search-context';
 import { type PatientSearchResponse } from '../types';
 
 import AdvancedPatientSearchComponent from './advanced-patient-search.component';
+import { getPatientAgeForUnit } from './patient-age-filter';
 import {
   useAttributeConceptAnswers,
   useConfiguredAnswerConcepts,
@@ -18,12 +19,14 @@ import {
 
 const mockUseConfig = vi.mocked(useConfig<PatientSearchConfig>);
 const mockUseInfinitePatientSearch = vi.mocked(useInfinitePatientSearch);
+const mockUseActiveVisitPatientUuids = vi.mocked(useActiveVisitPatientUuids);
 const mockUsePersonAttributeType = vi.mocked(usePersonAttributeType);
 const mockUseAttributeConceptAnswers = vi.mocked(useAttributeConceptAnswers);
 const mockUseConfiguredAnswerConcepts = vi.mocked(useConfiguredAnswerConcepts);
 
 vi.mock('../patient-search.resource', async () => ({
   useInfinitePatientSearch: vi.fn(),
+  useActiveVisitPatientUuids: vi.fn(),
 }));
 
 vi.mock('./refine-search/person-attributes.resource', async () => ({
@@ -109,6 +112,11 @@ describe('AdvancedPatientSearchComponent', () => {
 
   beforeEach(() => {
     mockUseInfinitePatientSearch.mockReturnValue(mockSearchResults);
+    mockUseActiveVisitPatientUuids.mockReturnValue({
+      patientUuids: new Set(),
+      error: undefined,
+      isLoading: false,
+    });
     mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema) as PatientSearchConfig);
     mockUsePersonAttributeType.mockImplementation((attributeTypeUuid: string) => ({
       isLoading: false,
@@ -190,12 +198,14 @@ describe('AdvancedPatientSearchComponent', () => {
     expect(screen.queryByRole('button', { name: /add patient/i })).not.toBeInTheDocument();
   });
 
-  it('does not show postcode or telephone filters by default', () => {
+  it('shows age and status filters without redundant document filters', () => {
     renderComponent();
 
     expect(screen.queryByLabelText(/postcode/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/telephone|tel[eé]fono|phone/i)).not.toBeInTheDocument();
-    expect(screen.getByLabelText(/número de documento de identidad/i)).toBeInTheDocument();
+    expect(screen.queryByText('CÃ³digo de Documento de Identidad')).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/age/i)).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /active consultation/i })).toBeInTheDocument();
   });
 
   describe('Filtering', () => {
@@ -208,10 +218,11 @@ describe('AdvancedPatientSearchComponent', () => {
       expect(screen.getByText(/0 search result/)).toBeInTheDocument();
     });
 
-    it('filters OpenMRS UTC-midnight birthdates as calendar dates in the Peru timezone', async () => {
+    it('filters exact patient age in completed years', async () => {
       renderComponent();
 
-      fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2019-09-25' } });
+      const expectedAge = getPatientAgeForUnit(mockAdvancedSearchResults[0].person.birthdate, 'years');
+      fireEvent.change(screen.getByLabelText(/age/i), { target: { value: String(expectedAge) } });
       await user.click(screen.getByRole('button', { name: /search/i }));
 
       const patientBanners = screen.getAllByRole('banner');
@@ -219,11 +230,11 @@ describe('AdvancedPatientSearchComponent', () => {
       expect(within(patientBanners[0]).getByText(/Joshua Johnson/i)).toBeInTheDocument();
     });
 
-    it('filters by person attribute correctly', async () => {
+    it('filters identity verification status correctly', async () => {
       renderComponent();
 
-      const documentCodeInput = screen.getByLabelText(/número de documento de identidad/i);
-      await user.type(documentCodeInput, '12345678');
+      await user.click(screen.getByRole('combobox', { name: /estado de verificaci.n de identidad/i }));
+      await user.click(screen.getByRole('option', { name: 'Validado por RENIEC' }));
       await user.click(screen.getByRole('button', { name: /search/i }));
 
       const patientBanners = screen.getAllByRole('banner');
@@ -286,10 +297,12 @@ describe('AdvancedPatientSearchComponent', () => {
       expect(screen.getAllByRole('banner')).toHaveLength(2);
     });
 
-    it('matches a document-number prefix when refining a name search', async () => {
+    it('combines multiple filters correctly', async () => {
       renderComponent();
 
-      await user.type(screen.getByLabelText(/^N.mero de Documento de Identidad$/i), '1234');
+      await user.click(screen.getByRole('tab', { name: /^male$/i }));
+      const expectedAge = getPatientAgeForUnit(mockAdvancedSearchResults[0].person.birthdate, 'years');
+      fireEvent.change(screen.getByLabelText(/age/i), { target: { value: String(expectedAge) } });
       await user.click(screen.getByRole('button', { name: /search/i }));
 
       const patientBanners = screen.getAllByRole('banner');
@@ -297,22 +310,15 @@ describe('AdvancedPatientSearchComponent', () => {
       expect(within(patientBanners[0]).getByText(/Joshua Johnson/)).toBeInTheDocument();
     });
 
-    it('searches by identity document number entered in refine search when query is empty', async () => {
-      renderComponent({ query: '' });
-
-      await user.type(screen.getByLabelText(/número de documento de identidad/i), '10000001');
-      await user.click(screen.getByRole('button', { name: /search/i }));
-
-      await waitFor(() => {
-        expect(mockUseInfinitePatientSearch).toHaveBeenLastCalledWith('10000001', true, true, 50);
+    it('filters patients that have an active consultation', async () => {
+      mockUseActiveVisitPatientUuids.mockReturnValue({
+        patientUuids: new Set([mockAdvancedSearchResults[0].uuid]),
+        error: undefined,
+        isLoading: false,
       });
-    });
-
-    it('combines multiple filters correctly', async () => {
       renderComponent();
 
-      await user.click(screen.getByRole('tab', { name: /^male$/i }));
-      fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2019-09-25' } });
+      await user.click(screen.getByRole('checkbox', { name: /active consultation/i }));
       await user.click(screen.getByRole('button', { name: /search/i }));
 
       const patientBanners = screen.getAllByRole('banner');

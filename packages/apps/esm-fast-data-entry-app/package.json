@@ -78,6 +78,5 @@
     "playwright": "^1.50.1",
     "react-hook-form": "^7.34.2",
     "uuid": "^14.0.0"
-  },
-  "packageManager": "yarn@4.9.1"
+  }
 }

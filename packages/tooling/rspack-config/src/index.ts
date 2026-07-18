@@ -113,6 +113,7 @@ const frameworkInternalSharedDependencies = new Set([
 ]);
 
 const production = 'production';
+const anyVersionIncludingPrereleases = '>=0.0.0-0';
 const { ModuleFederationPluginV1: ModuleFederationPlugin } = container;
 function getFrameworkVersion() {
   try {
@@ -485,11 +486,13 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
             const installedVersion = getInstalledVersion(sharedHostDependency);
             const packageName = getPackageNameForDependency(depName);
             obj[depName] = {
-              // A '*' spec is meant as "accept anything", but semver ranges exclude
-              // prereleases (e.g. 9.0.3-pre.4728 from the source-built app shell), which
-              // floods the console with "Unsatisfied version" warnings. `false` disables
-              // the version check entirely, matching the intent of '*'.
-              requiredVersion: versionSpec === '*' ? false : versionSpec,
+              // Rspack V1 normalizes `false` back to `*` for host-provided dependencies,
+              // which excludes prereleases. Use an explicit range that also accepts
+              // source-built prerelease versions.
+              requiredVersion:
+                versionSpec === '*' || (!versionSpec && alwaysHostSharedDependencies.has(depName))
+                  ? anyVersionIncludingPrereleases
+                  : versionSpec,
               strictVersion: false,
               singleton: true,
               import: alwaysHostSharedDependencies.has(depName) || isProvidedByFrameworkInternal ? false : depName,

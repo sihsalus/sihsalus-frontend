@@ -14,6 +14,7 @@ import { getEffectiveRegistrationConfig } from './patient-registration/peru-regi
 
 const metadataFetchTimeoutMs = 10_000;
 const serviceWorkerMessageTimeoutMs = 1_000;
+let hasWarnedAboutOfflineRouteRegistration = false;
 
 interface PatientIdentifierTypeResponse {
   description?: string;
@@ -230,8 +231,9 @@ async function cacheAndFetch<T = unknown>(url?: string, options: { required?: bo
     }),
     serviceWorkerMessageTimeoutMs,
   ).catch((error) => {
-    if (options.required !== false) {
-      console.warn(`Failed to register offline cache route for ${url}. Continuing with network request.`, error);
+    if (options.required !== false && !hasWarnedAboutOfflineRouteRegistration) {
+      hasWarnedAboutOfflineRouteRegistration = true;
+      console.warn('Offline cache route registration is unavailable. Continuing with network requests.', error);
     }
   });
 

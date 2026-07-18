@@ -5,7 +5,11 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const chalk = require('chalk');
 const { getContentAddressedBuildManifestIssues } = require('./content-addressed-entry');
-const { findInvalidWebpackShareScopeReferences, findUnboundReactReferences } = require('./javascript-runtime-contract');
+const {
+  findInvalidWebpackShareScopeReferences,
+  findPrereleaseIncompatibleFrameworkRanges,
+  findUnboundReactReferences,
+} = require('./javascript-runtime-contract');
 const { formatSpaArtifactIssue, getSpaArtifactFiles, inspectSpaArtifacts } = require('./spa-artifact-manifest');
 
 const logInfo = (msg) => console.log(`${chalk.green.bold('[validate-spa]')} ${msg}`);
@@ -147,6 +151,10 @@ for (const { name, source } of appShellJavaScriptFiles) {
     const invalidShareScopeReferences = findInvalidWebpackShareScopeReferences(source);
     if (invalidShareScopeReferences.length > 0) {
       fail(`${name} contains ${invalidShareScopeReferences.length} unresolved Webpack share scope reference(s)`);
+    }
+    const incompatibleFrameworkRanges = findPrereleaseIncompatibleFrameworkRanges(source);
+    if (incompatibleFrameworkRanges.length > 0) {
+      fail(`${name} contains ${incompatibleFrameworkRanges.length} prerelease-incompatible framework range(s)`);
     }
   } catch (error) {
     fail(`${name} could not be checked for unresolved runtime globals: ${error.message}`);

@@ -1,7 +1,11 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 
-const { findInvalidWebpackShareScopeReferences, findUnboundReactReferences } = require('./javascript-runtime-contract');
+const {
+  findInvalidWebpackShareScopeReferences,
+  findPrereleaseIncompatibleFrameworkRanges,
+  findUnboundReactReferences,
+} = require('./javascript-runtime-contract');
 
 test('detects JSX compiled against a missing React global', () => {
   const references = findUnboundReactReferences(
@@ -43,6 +47,22 @@ test('detects an unresolved Webpack share scope identifier', () => {
 
 test('accepts the share scope after Webpack resolves it to the bundle runtime', () => {
   const references = findInvalidWebpackShareScopeReferences('container.init(__webpack_require__.S.default);');
+
+  assert.deepEqual(references, []);
+});
+
+test('detects wildcard framework ranges that reject prerelease versions', () => {
+  const references = findPrereleaseIncompatibleFrameworkRanges(
+    'shareKey:"@openmrs/esm-framework/src/internal",import:null,requiredVersion:"*",singleton:true',
+  );
+
+  assert.equal(references.length, 1);
+});
+
+test('accepts framework ranges that explicitly include prerelease versions', () => {
+  const references = findPrereleaseIncompatibleFrameworkRanges(
+    'shareKey:"@openmrs/esm-framework",import:null,requiredVersion:">=0.0.0-0",singleton:true',
+  );
 
   assert.deepEqual(references, []);
 });

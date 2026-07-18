@@ -293,7 +293,6 @@ function loadScript(
       scriptElement.addEventListener('load', loadFn);
       scriptElement.addEventListener('error', errFn);
     } else {
-      console.warn(`Script at ${url} already loaded. Not loading it again.`);
       resolve(null);
     }
   }

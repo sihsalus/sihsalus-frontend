@@ -248,9 +248,9 @@ describe('dynamic-loading', () => {
       script.dispatchEvent(new Event('load'));
       await firstPromise;
 
-      // Second load — script is in DOM but slug not on window, so it resolves with a warning
+      // Second load is idempotent while the federated container finishes initialization.
       await expect(preloadImport('@openmrs/esm-foo')).resolves.toBeNull();
-      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('already loaded'));
+      expect(warnSpy).not.toHaveBeenCalled();
     });
 
     it('resolves both callers when the same script is preloaded concurrently', async () => {

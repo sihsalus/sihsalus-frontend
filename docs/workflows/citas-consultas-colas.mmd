@@ -1,0 +1,29 @@
+flowchart TD
+    A["Paciente requiere atención"] --> B{"¿Tiene cita?"}
+
+    B -->|"Sí"| C["Cita programada"]
+    C --> D["Registrar llegada"]
+
+    B -->|"No"| E["Atención sin cita"]
+    E --> F["Seleccionar servicio / UPSS"]
+    F --> D
+
+    D --> G["Crear o reutilizar consulta activa"]
+    G --> H{"¿El servicio usa cola?"}
+
+    H -->|"Sí"| I{"¿Existe una cola configurada?"}
+    I -->|"Sí"| J["Agregar a la cola del servicio"]
+    J --> K["Paciente en espera"]
+    K --> L["Llamar paciente"]
+    L --> M["Iniciar atención"]
+
+    I -->|"No"| N["Mostrar error de configuración"]
+    N --> O["No duplicar llegada ni crear otra entrada"]
+
+    H -->|"No: atención directa"| M
+
+    M --> P["Registrar consulta clínica"]
+    P --> Q["Diagnósticos, órdenes y tratamiento"]
+    Q --> R["Finalizar atención"]
+    R --> S["Actualizar estado de la cola, si corresponde"]
+    S --> T["Cerrar o mantener la consulta según el flujo"]

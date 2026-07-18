@@ -16,20 +16,33 @@ import {
   TableToolbar,
   TableToolbarContent,
   TableToolbarSearch,
+  Tag,
   Tile,
+  Toggle,
 } from '@carbon/react';
 import { Add, Renew } from '@carbon/react/icons';
-import { showSnackbar, usePagination } from '@openmrs/esm-framework';
+import { showModal, showSnackbar, useConfig, usePagination } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import type { TFunction } from 'i18next';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { fuaManagePrivilege } from '../constant';
+import type { Config } from '../config-schema';
+import {
+  fuaManagePrivilege,
+  sisAccreditationNoConsultadaConceptUuid,
+  sisAccreditationNoVigenteConceptUuid,
+  sisAccreditationPendienteConceptUuid,
+  sisAccreditationVigenteConceptUuid,
+} from '../constant';
 import {
   FuaGenerationError,
   generateFuaFromVisit,
   generateFuasFromVisits,
+  getVisitAccreditationStatusUuid,
+  getVisitFinanciadorDisplay,
+  getVisitFinanciadorUuid,
+  isSisFinanciador,
   useVisits,
   type VisitSummary,
 } from '../hooks/useVisit';
@@ -52,6 +65,38 @@ function getPatientName(visit: VisitSummary) {
 
 function getArea(visit: VisitSummary) {
   return visit.location?.display?.trim() || 'N/A';
+}
+
+type AccreditationTagType = 'green' | 'red' | 'magenta' | 'gray';
+
+interface AccreditationInfo {
+  isVigente: boolean;
+  label: string;
+  tagType: AccreditationTagType;
+}
+
+function getAccreditationInfo(statusUuid: string | null, t: TFunction): AccreditationInfo {
+  switch (statusUuid) {
+    case sisAccreditationVigenteConceptUuid:
+      return { isVigente: true, label: t('accreditationVigente', 'Vigente'), tagType: 'green' };
+    case sisAccreditationNoVigenteConceptUuid:
+      return { isVigente: false, label: t('accreditationNoVigente', 'No vigente'), tagType: 'red' };
+    case sisAccreditationPendienteConceptUuid:
+      return { isVigente: false, label: t('accreditationPendiente', 'Pendiente'), tagType: 'magenta' };
+    case sisAccreditationNoConsultadaConceptUuid:
+      return { isVigente: false, label: t('accreditationNoConsultada', 'No consultada'), tagType: 'gray' };
+    default:
+      return { isVigente: false, label: t('accreditationSinRegistrar', 'Sin registrar'), tagType: 'gray' };
+  }
+}
+
+interface VisitRowInfo {
+  visit: VisitSummary;
+  rowId: string;
+  financiadorDisplay: string;
+  isSis: boolean;
+  accreditationStatusUuid: string | null;
+  accreditation: AccreditationInfo;
 }
 
 function getFuaGenerationErrorMessage(error: unknown, t: TFunction) {
@@ -92,43 +137,75 @@ function getFuaGenerationErrorMessage(error: unknown, t: TFunction) {
 
 const VisitTable: React.FC = () => {
   const { t } = useTranslation();
+  const { sisInsuranceConceptUuid, legacySisProductConceptUuids } = useConfig<Config>();
   const { visits, isLoading, isValidating, mutate } = useVisits();
   const [searchString, setSearchString] = useState('');
+  const [showAllVisits, setShowAllVisits] = useState(false);
   const [generatingVisitUuid, setGeneratingVisitUuid] = useState<string | null>(null);
   const [isBulkGenerating, setIsBulkGenerating] = useState(false);
   const [isBulkSelectionMode, setIsBulkSelectionMode] = useState(false);
   const [dataTableKey, setDataTableKey] = useState(0);
 
+  const visitInfos = useMemo<Array<VisitRowInfo>>(
+    () =>
+      visits.map((visit, index) => {
+        const financiadorUuid = getVisitFinanciadorUuid(visit);
+        const accreditationStatusUuid = getVisitAccreditationStatusUuid(visit);
+
+        return {
+          visit,
+          rowId: visit.uuid ?? `${visit.startDatetime ?? 'visit'}-${index}`,
+          financiadorDisplay: getVisitFinanciadorDisplay(visit) ?? t('noFinanciador', 'Sin financiador'),
+          isSis: isSisFinanciador(financiadorUuid, sisInsuranceConceptUuid, legacySisProductConceptUuids ?? []),
+          accreditationStatusUuid,
+          accreditation: getAccreditationInfo(accreditationStatusUuid, t),
+        };
+      }),
+    [visits, sisInsuranceConceptUuid, legacySisProductConceptUuids, t],
+  );
+
   const filteredData = useMemo(() => {
+    const financiadorFiltered = showAllVisits ? visitInfos : visitInfos.filter((info) => info.isSis);
+
     if (!searchString) {
-      return visits;
+      return financiadorFiltered;
     }
 
     const search = searchString.toLowerCase();
-    return visits.filter((visit) =>
-      [getPatientName(visit), getArea(visit), formatVisitDate(visit.startDatetime)].some((value) =>
-        value.toLowerCase().includes(search),
-      ),
+    return financiadorFiltered.filter((info) =>
+      [
+        getPatientName(info.visit),
+        getArea(info.visit),
+        formatVisitDate(info.visit.startDatetime),
+        info.financiadorDisplay,
+        info.accreditation.label,
+      ].some((value) => value.toLowerCase().includes(search)),
     );
-  }, [visits, searchString]);
+  }, [visitInfos, showAllVisits, searchString]);
 
   const pageSizes = [10, 20, 30, 40, 50];
   const [currentPageSize, setPageSize] = useState(10);
   const { results, goTo, currentPage } = usePagination(filteredData, currentPageSize);
 
+  const infoByRowId = useMemo(() => new Map(results.map((info) => [info.rowId, info])), [results]);
+
   const headers = [
     { key: 'patient', header: t('patient', 'Paciente') },
     { key: 'area', header: t('area', 'Área') },
+    { key: 'financiador', header: t('financiador', 'Financiador') },
+    { key: 'acreditacion', header: t('accreditation', 'Acreditación') },
     { key: 'fechaCreacion', header: t('creationDate', 'Fecha de Creación') },
     { key: 'actions', header: t('actions', 'Acciones') },
   ];
 
-  const rows = results.map((visit, index) => ({
-    id: visit.uuid ?? `${visit.startDatetime ?? 'visit'}-${index}`,
-    patient: getPatientName(visit),
-    area: getArea(visit),
-    fechaCreacion: formatVisitDate(visit.startDatetime),
-    actions: visit.uuid ?? '',
+  const rows = results.map((info) => ({
+    id: info.rowId,
+    patient: getPatientName(info.visit),
+    area: getArea(info.visit),
+    financiador: info.financiadorDisplay,
+    acreditacion: info.accreditation.label,
+    fechaCreacion: formatVisitDate(info.visit.startDatetime),
+    actions: info.visit.uuid ?? '',
   }));
 
   const handleRefresh = useCallback(() => {
@@ -164,6 +241,44 @@ const VisitTable: React.FC = () => {
     [mutate, t],
   );
 
+  const requestGenerateFua = useCallback(
+    (visitUuid: string) => {
+      if (!visitUuid) {
+        return;
+      }
+
+      const info = infoByRowId.get(visitUuid);
+
+      if (!info?.isSis) {
+        return;
+      }
+
+      if (info.accreditation.isVigente) {
+        void handleGenerateFua(visitUuid);
+        return;
+      }
+
+      const dispose = showModal('fua-accreditation-warning-modal', {
+        accreditationStatusLabel: info.accreditation.label.toLocaleLowerCase(),
+        patientName: getPatientName(info.visit),
+        closeModal: () => dispose(),
+        onConfirm: () => {
+          // Auditoría del override (contingencia FUA papel): el FUA es
+          // declaración jurada y un error de afiliación es causal de rechazo.
+          console.warn('[esm-fua-app] Override de acreditación SIS no vigente al generar FUA', {
+            visitUuid,
+            accreditationStatusUuid: info.accreditationStatusUuid,
+            accreditationStatus: info.accreditation.label,
+            timestamp: new Date().toISOString(),
+          });
+          dispose();
+          void handleGenerateFua(visitUuid);
+        },
+      });
+    },
+    [infoByRowId, handleGenerateFua],
+  );
+
   const handleBulkGenerateFuas = useCallback(
     async (visitUuids: Array<string>) => {
       const selectedVisitUuids = visitUuids.filter(Boolean);
@@ -172,10 +287,46 @@ const VisitTable: React.FC = () => {
         return;
       }
 
+      const eligibleVisitUuids: Array<string> = [];
+      const excludedVisits: Array<{ visitUuid: string; accreditationStatus: string }> = [];
+
+      for (const visitUuid of selectedVisitUuids) {
+        const info = infoByRowId.get(visitUuid);
+
+        if (info?.isSis && info.accreditation.isVigente) {
+          eligibleVisitUuids.push(visitUuid);
+        } else {
+          excludedVisits.push({
+            visitUuid,
+            accreditationStatus: info?.accreditation.label ?? t('accreditationSinRegistrar', 'Sin registrar'),
+          });
+        }
+      }
+
+      if (excludedVisits.length > 0) {
+        console.warn('[esm-fua-app] Visitas excluidas de la generación masiva de FUA por acreditación SIS', {
+          excludedVisits,
+          timestamp: new Date().toISOString(),
+        });
+        showSnackbar({
+          kind: 'warning',
+          title: t('bulkVisitsExcludedTitle', 'Visitas excluidas del lote'),
+          subtitle: t(
+            'bulkVisitsExcludedSubtitle',
+            'Se excluyeron {{count}} visitas sin acreditación SIS vigente. Genérelas individualmente si corresponde (contingencia FUA papel).',
+            { count: excludedVisits.length },
+          ),
+        });
+      }
+
+      if (eligibleVisitUuids.length === 0) {
+        return;
+      }
+
       setIsBulkGenerating(true);
 
       try {
-        const { successful, failed } = await generateFuasFromVisits(selectedVisitUuids);
+        const { successful, failed } = await generateFuasFromVisits(eligibleVisitUuids);
 
         if (successful > 0) {
           showSnackbar({
@@ -211,7 +362,7 @@ const VisitTable: React.FC = () => {
         setIsBulkGenerating(false);
       }
     },
-    [mutate, t],
+    [infoByRowId, mutate, t],
   );
 
   const handleCancelBulkSelection = useCallback(() => {
@@ -240,6 +391,15 @@ const VisitTable: React.FC = () => {
                     size="sm"
                   />
                 </Layer>
+                <Toggle
+                  aria-label={t('showAllVisitsToggleLabel', 'Mostrar visitas de todos los financiadores')}
+                  id="fua-show-all-visits-toggle"
+                  labelA={t('showAllVisits', 'Mostrar todas')}
+                  labelB={t('showAllVisits', 'Mostrar todas')}
+                  onToggle={(toggled: boolean) => setShowAllVisits(toggled)}
+                  size="sm"
+                  toggled={showAllVisits}
+                />
                 <RequirePrivilege privilege={fuaManagePrivilege} hideUnauthorized>
                   {isBulkSelectionMode ? (
                     <>
@@ -291,46 +451,86 @@ const VisitTable: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row) => (
-                  <TableRow key={row.id} {...getRowProps({ row })}>
-                    {isBulkSelectionMode ? (
-                      <RequirePrivilege privilege={fuaManagePrivilege} hideUnauthorized>
-                        <TableSelectRow {...getSelectionProps({ row })} disabled={isBulkGenerating} />
-                      </RequirePrivilege>
-                    ) : null}
-                    {row.cells.map((cell) => (
-                      <TableCell key={cell.id} className={styles.tableCell}>
-                        {cell.info.header === 'actions' ? (
-                          <RequirePrivilege privilege={fuaManagePrivilege} hideUnauthorized>
-                            <Button
-                              kind="ghost"
-                              size="sm"
-                              renderIcon={Add}
-                              iconDescription={t('generateFua', 'Generar FUA')}
-                              disabled={!cell.value || generatingVisitUuid === cell.value || isBulkGenerating}
-                              onClick={() => handleGenerateFua(cell.value)}
-                            >
-                              {generatingVisitUuid === cell.value
-                                ? t('generatingFua', 'Generando FUA...')
-                                : t('generateFua', 'Generar FUA')}
-                            </Button>
-                          </RequirePrivilege>
-                        ) : (
-                          cell.value
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
+                {rows.map((row) => {
+                  const rowInfo = infoByRowId.get(row.id);
+
+                  return (
+                    <TableRow key={row.id} {...getRowProps({ row })}>
+                      {isBulkSelectionMode ? (
+                        <RequirePrivilege privilege={fuaManagePrivilege} hideUnauthorized>
+                          <TableSelectRow
+                            {...getSelectionProps({ row })}
+                            disabled={isBulkGenerating || !rowInfo?.isSis}
+                          />
+                        </RequirePrivilege>
+                      ) : null}
+                      {row.cells.map((cell) => (
+                        <TableCell key={cell.id} className={styles.tableCell}>
+                          {cell.info.header === 'actions' ? (
+                            <RequirePrivilege privilege={fuaManagePrivilege} hideUnauthorized>
+                              <span
+                                title={
+                                  rowInfo && !rowInfo.isSis
+                                    ? t(
+                                        'fuaOnlyForSisVisits',
+                                        'El FUA solo aplica a visitas con financiador SIS. Esta visita tiene otro financiador o no lo tiene registrado.',
+                                      )
+                                    : undefined
+                                }
+                              >
+                                <Button
+                                  kind="ghost"
+                                  size="sm"
+                                  renderIcon={Add}
+                                  iconDescription={t('generateFua', 'Generar FUA')}
+                                  disabled={
+                                    !cell.value ||
+                                    !rowInfo?.isSis ||
+                                    generatingVisitUuid === cell.value ||
+                                    isBulkGenerating
+                                  }
+                                  onClick={() => requestGenerateFua(cell.value)}
+                                >
+                                  {generatingVisitUuid === cell.value
+                                    ? t('generatingFua', 'Generando FUA...')
+                                    : t('generateFua', 'Generar FUA')}
+                                </Button>
+                              </span>
+                            </RequirePrivilege>
+                          ) : cell.info.header === 'financiador' ? (
+                            <Tag size="sm" type={rowInfo?.isSis ? 'blue' : 'gray'}>
+                              {cell.value}
+                            </Tag>
+                          ) : cell.info.header === 'acreditacion' ? (
+                            <Tag size="sm" type={rowInfo?.accreditation.tagType ?? 'gray'}>
+                              {cell.value}
+                            </Tag>
+                          ) : (
+                            cell.value
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
             {rows.length === 0 ? (
               <div className={styles.tileContainer}>
                 <Tile className={styles.tile}>
                   <div className={styles.tileContent}>
-                    <p className={styles.content}>{t('noVisitsFound', 'No se encontraron visitas')}</p>
+                    <p className={styles.content}>
+                      {showAllVisits
+                        ? t('noVisitsFound', 'No se encontraron visitas')
+                        : t('noSisVisitsFound', 'No se encontraron visitas con financiador SIS')}
+                    </p>
                     <p className={styles.emptyStateHelperText}>
-                      {t('checkFilters', 'Por favor revisa los filtros de arriba e intenta de nuevo')}
+                      {showAllVisits
+                        ? t('checkFilters', 'Por favor revisa los filtros de arriba e intenta de nuevo')
+                        : t(
+                            'noSisVisitsHelper',
+                            'Active «Mostrar todas» para ver las visitas de otros financiadores (sin generación de FUA)',
+                          )}
                     </p>
                   </div>
                 </Tile>

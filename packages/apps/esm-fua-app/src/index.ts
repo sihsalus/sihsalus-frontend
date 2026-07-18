@@ -119,6 +119,11 @@ export const cancelFuaModal = getAsyncLifecycle(() => import('./modals/cancel-fu
 
 export const fuaHistorialModal = getAsyncLifecycle(() => import('./modals/fua-historial.modal'), options);
 
+export const fuaAccreditationWarningModal = getAsyncLifecycle(
+  () => import('./modals/accreditation-warning.modal'),
+  options,
+);
+
 // ================================================================================
 // PATIENT CHART WIDGET
 // ================================================================================

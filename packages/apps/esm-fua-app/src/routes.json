@@ -160,6 +160,10 @@
     {
       "name": "fua-historial-modal",
       "component": "fuaHistorialModal"
+    },
+    {
+      "name": "fua-accreditation-warning-modal",
+      "component": "fuaAccreditationWarningModal"
     }
   ]
 }

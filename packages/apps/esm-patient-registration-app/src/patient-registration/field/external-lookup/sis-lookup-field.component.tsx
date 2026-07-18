@@ -25,6 +25,7 @@ import {
   peruInsuranceCodeAttributeTypeUuid,
   peruInsuranceSisConceptUuid,
   peruInsuranceTypeAttributeTypeUuid,
+  peruInsuranceVerificationMethodAttributeTypeUuid,
   peruSisEessNameAttributeTypeUuid,
   peruSisProductConceptUuid,
   peruSisTypeDescriptionAttributeTypeUuid,
@@ -45,8 +46,15 @@ type LookupStatus = {
 
 export type SisAccreditationSelection = 'active' | 'inactive' | 'pending';
 
+/**
+ * Valores del person attribute "Método de Verificación de Seguro"
+ * (`bc1e5c92-…`, FreeText). `siteds` queda reservado para EPS/privados.
+ */
+export type SisVerificationMethod = 'manual-web' | 'setisis';
+
 export interface SisVerificationResult {
   status: SisAccreditationSelection;
+  method: SisVerificationMethod;
   insuranceCode?: string;
   productDisplay?: string;
   eessName?: string;
@@ -64,10 +72,9 @@ type SetFieldTouched = (field: string, isTouched?: boolean, shouldValidate?: boo
 
 /**
  * Writes a SIS verification result (manual or automatic) into the registration
- * form: financiador = SIS, estado de acreditación, fecha/hora de verificación y,
- * si están disponibles, código de afiliado, producto SIS y EESS de adscripción.
- * Nota de trazabilidad: el MÉTODO de verificación (manual-web vs. servicio) aún
- * no se persiste porque el content no define un person attribute para ello.
+ * form: financiador = SIS, estado de acreditación, fecha/hora de verificación,
+ * método de verificación (manual-web | setisis) y, si están disponibles,
+ * código de afiliado, producto SIS y EESS de adscripción.
  */
 export function applySisVerificationToForm(
   result: SisVerificationResult,
@@ -78,6 +85,7 @@ export function applySisVerificationToForm(
     [`attributes.${peruInsuranceTypeAttributeTypeUuid}`, peruInsuranceSisConceptUuid],
     [`attributes.${peruInsuranceAccreditationStatusAttributeTypeUuid}`, accreditationStatusConceptUuids[result.status]],
     [`attributes.${peruInsuranceAccreditationCheckedAtAttributeTypeUuid}`, result.checkedAt],
+    [`attributes.${peruInsuranceVerificationMethodAttributeTypeUuid}`, result.method],
   ];
 
   if (result.insuranceCode) {
@@ -106,6 +114,7 @@ export function applySisInsuranceToForm(
   applySisVerificationToForm(
     {
       status: insurance.active ? 'active' : 'inactive',
+      method: 'setisis',
       insuranceCode: insurance.insuranceCode,
       checkedAt: insurance.checkedAt,
     },
@@ -148,6 +157,7 @@ export const SisLookupField = () => {
   const [isAutoLoading, setIsAutoLoading] = useState(false);
   const [status, setStatus] = useState<LookupStatus | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [verificationMethod, setVerificationMethod] = useState<SisVerificationMethod>('manual-web');
   const [accreditation, setAccreditation] = useState<SisAccreditationSelection | ''>('');
   const [selectedProductUuid, setSelectedProductUuid] = useState('');
   const [affiliateCode, setAffiliateCode] = useState('');
@@ -185,6 +195,7 @@ export const SisLookupField = () => {
   };
 
   const openManualForm = () => {
+    setVerificationMethod('manual-web');
     setAccreditation((current) => current || (isOffline ? 'pending' : ''));
     setIsFormOpen(true);
   };
@@ -238,6 +249,7 @@ export const SisLookupField = () => {
 
       // The automatic result prefills the mini-form (instead of writing the
       // form values directly) so the operator reviews it before applying.
+      setVerificationMethod('setisis');
       setAccreditation(insurance.active ? 'active' : 'inactive');
       setAffiliateCode(insurance.insuranceCode);
       setIsFormOpen(true);
@@ -266,6 +278,7 @@ export const SisLookupField = () => {
     applySisVerificationToForm(
       {
         status: accreditation,
+        method: verificationMethod,
         insuranceCode: affiliateCode.trim() || undefined,
         productDisplay: product?.display,
         eessName: eessName.trim() || undefined,

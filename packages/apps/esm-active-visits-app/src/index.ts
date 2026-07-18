@@ -17,6 +17,11 @@ export function startupApp() {
 
 export const activeVisits = getAsyncLifecycle(() => import('./active-visits-widget/active-visits.component'), options);
 
+export const pendingSisAccreditations = getAsyncLifecycle(
+  () => import('./pending-sis-accreditations/pending-sis-accreditations.component'),
+  options,
+);
+
 export const visitDetail = getAsyncLifecycle(() => import('./visits-summary/visit-detail.component'), options);
 
 export const homeActiveVisitsTile = getAsyncLifecycle(

@@ -27,6 +27,7 @@ import {
   peruInsuranceCodeAttributeTypeUuid,
   peruInsuranceSisConceptUuid,
   peruInsuranceTypeAttributeTypeUuid,
+  peruInsuranceVerificationMethodAttributeTypeUuid,
   peruSisEessNameAttributeTypeUuid,
   peruSisTypeDescriptionAttributeTypeUuid,
 } from '../../peru-registration-config';
@@ -525,6 +526,11 @@ describe('SisLookupField', () => {
       'C.S. San Juan',
       false,
     );
+    expect(setFieldValue).toHaveBeenCalledWith(
+      `attributes.${peruInsuranceVerificationMethodAttributeTypeUuid}`,
+      'manual-web',
+      false,
+    );
     expect(setFieldTouched).toHaveBeenCalledWith(`attributes.${peruInsuranceTypeAttributeTypeUuid}`, true, false);
     expect(screen.getByText('Verificación SIS aplicada al formulario')).toBeInTheDocument();
   });
@@ -550,6 +556,11 @@ describe('SisLookupField', () => {
     expect(setFieldValue).toHaveBeenCalledWith(
       `attributes.${peruInsuranceAccreditationStatusAttributeTypeUuid}`,
       peruInsuranceAccreditationPendingConceptUuid,
+      false,
+    );
+    expect(setFieldValue).toHaveBeenCalledWith(
+      `attributes.${peruInsuranceVerificationMethodAttributeTypeUuid}`,
+      'manual-web',
       false,
     );
     expect(screen.getByText('Acreditación pendiente registrada en el formulario')).toBeInTheDocument();
@@ -580,6 +591,30 @@ describe('SisLookupField', () => {
     expect(setFieldValue).toHaveBeenCalledWith(
       `attributes.${peruInsuranceAccreditationStatusAttributeTypeUuid}`,
       peruInsuranceAccreditationActiveConceptUuid,
+      false,
+    );
+    expect(setFieldValue).toHaveBeenCalledWith(
+      `attributes.${peruInsuranceVerificationMethodAttributeTypeUuid}`,
+      'setisis',
+      false,
+    );
+  });
+
+  it('records the manual method when the operator reopens the mini-form after an automatic lookup', async () => {
+    const user = userEvent.setup();
+    const { setFieldValue } = renderLookup(<SisLookupField />);
+
+    await user.click(screen.getByRole('button', { name: /consultar sis/i }));
+    expect(await screen.findByRole('radio', { name: 'Vigente' })).toBeChecked();
+
+    // The operator dismisses the automatic result and records a manual one.
+    await user.click(screen.getByRole('button', { name: /cerrar/i }));
+    await user.click(screen.getByRole('button', { name: /registrar resultado de verificación/i }));
+    await user.click(screen.getByRole('button', { name: /aplicar al formulario/i }));
+
+    expect(setFieldValue).toHaveBeenCalledWith(
+      `attributes.${peruInsuranceVerificationMethodAttributeTypeUuid}`,
+      'manual-web',
       false,
     );
   });

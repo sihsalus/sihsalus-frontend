@@ -104,11 +104,13 @@ describe('RefineSearch', () => {
     renderComponent();
 
     expect(screen.getByText('Sex')).toBeInTheDocument();
-    expect(screen.getByLabelText('Date of birth')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Age')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Date of birth')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Age')).toBeInTheDocument();
+    expect(screen.getByLabelText('Unit')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /active consultation/i })).toBeInTheDocument();
     expect(screen.queryByLabelText('Postcode')).not.toBeInTheDocument();
-    expect(screen.getByText('Tipo de Documento de Identidad')).toBeInTheDocument();
-    expect(screen.getByLabelText('Número de Documento de Identidad')).toBeInTheDocument();
+    expect(screen.queryByText('Tipo de Documento de Identidad')).not.toBeInTheDocument();
+    expect(screen.queryByText('CÃ³digo de Documento de Identidad')).not.toBeInTheDocument();
     expect(screen.getByText('Estado de Verificación de Identidad')).toBeInTheDocument();
     expect(screen.getByText('Estado de Identificación en Admisión')).toBeInTheDocument();
   });
@@ -120,13 +122,17 @@ describe('RefineSearch', () => {
     expect(searchButton).toHaveTextContent('Search (2 filters applied)');
   });
 
-  it('requires a name or document number before searching', async () => {
+  it('requires at least three characters before searching', async () => {
     renderComponent();
 
     const searchButton = screen.getByRole('button', { name: /search/i });
     expect(searchButton).toBeDisabled();
 
-    await user.type(screen.getByLabelText(/apellidos y nombres/i), 'Ahuanari Flores');
+    await user.type(screen.getByLabelText(/apellidos y nombres/i), 'Ah');
+    expect(searchButton).toBeDisabled();
+    expect(screen.getByText('Enter at least 3 characters')).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText(/apellidos y nombres/i), 'u');
     expect(searchButton).toBeEnabled();
   });
 
@@ -135,6 +141,7 @@ describe('RefineSearch', () => {
 
     const searchInput = screen.getByLabelText(/apellidos y nombres/i);
     expect(searchInput).toHaveAttribute('placeholder', 'Search for a patient by name or identifier number');
+    expect(searchInput).toHaveAttribute('maxlength', '100');
 
     await user.type(searchInput, 'LM-OTRO-2026');
     await user.click(screen.getByRole('button', { name: /search/i }));
@@ -150,11 +157,10 @@ describe('RefineSearch', () => {
     expect(mockSetFilters).toHaveBeenCalledWith({
       query: '',
       gender: 'any',
-      dateOfBirth: null,
-      monthOfBirth: null,
-      yearOfBirth: null,
       postcode: '',
       age: null,
+      ageUnit: 'years',
+      hasActiveVisit: false,
       attributes: {},
     });
   });
@@ -169,34 +175,14 @@ describe('RefineSearch', () => {
       expect.objectContaining({
         query: 'Ahuanari',
         gender: 'any',
-        dateOfBirth: null,
-        monthOfBirth: null,
-        yearOfBirth: null,
         postcode: '',
         attributes: {
-          '6f5c0b8a-9e91-4d41-9a8c-8b0f3c2e7a11': '',
-          'c0d1a2b3-4e5f-4a6b-9c7d-8e9f0a1b2c3d': '',
           'a7e3f8c1-2d4b-4f9a-8c6e-1b2d3f4a5c6e': '',
           '787f1ea9-1792-45e5-9076-699b1a0638cb': '',
         },
         age: null,
-      }),
-    );
-  });
-
-  it('uses the identity document number as the search query when the main query is empty', async () => {
-    renderComponent();
-
-    await user.type(screen.getByLabelText('Número de Documento de Identidad'), '10000001');
-    await user.click(screen.getByRole('button', { name: /search/i }));
-
-    expect(mockSetSearchQuery).toHaveBeenCalledWith('10000001');
-    expect(mockSetFilters).toHaveBeenCalledWith(
-      expect.objectContaining({
-        query: '',
-        attributes: expect.objectContaining({
-          'c0d1a2b3-4e5f-4a6b-9c7d-8e9f0a1b2c3d': '10000001',
-        }),
+        ageUnit: 'years',
+        hasActiveVisit: false,
       }),
     );
   });
@@ -244,18 +230,20 @@ describe('RefineSearch', () => {
       );
     });
 
-    it('handles date of birth inputs correctly', async () => {
+    it('handles age and active consultation inputs correctly', async () => {
       renderComponent();
 
       await user.type(screen.getByLabelText(/apellidos y nombres/i), 'Ahuanari');
-      fireEvent.change(screen.getByLabelText('Date of birth'), { target: { value: '1990-03-15' } });
+      fireEvent.change(screen.getByLabelText('Age'), { target: { value: '8' } });
+      await user.selectOptions(screen.getByLabelText('Unit'), 'months');
+      await user.click(screen.getByRole('checkbox', { name: /active consultation/i }));
       await user.click(screen.getByRole('button', { name: /search/i }));
 
       expect(mockSetFilters).toHaveBeenCalledWith(
         expect.objectContaining({
-          dateOfBirth: 15,
-          monthOfBirth: 3,
-          yearOfBirth: 1990,
+          age: 8,
+          ageUnit: 'months',
+          hasActiveVisit: true,
         }),
       );
     });

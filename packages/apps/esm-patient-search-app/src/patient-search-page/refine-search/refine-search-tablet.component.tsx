@@ -44,7 +44,7 @@ export const RefineSearchTablet: React.FC<RefineSearchTabletProps> = ({
     const fields: Array<SearchFieldConfig> = [];
 
     Object.entries(config.search.searchFilterFields).forEach(([fieldName, fieldConfig]) => {
-      if (fieldName !== 'personAttributes' && fieldName !== 'age' && (fieldConfig as BuiltInFieldConfig).enabled) {
+      if (fieldName !== 'personAttributes' && (fieldConfig as BuiltInFieldConfig).enabled) {
         const { min, max } = fieldConfig as BuiltInFieldConfig;
         fields.push({
           name: fieldName,
@@ -64,8 +64,8 @@ export const RefineSearchTablet: React.FC<RefineSearchTabletProps> = ({
     });
 
     const genderField = fields.find((field) => field.type === 'gender');
-    const dobField = fields.find((field) => field.type === 'dateOfBirth');
-    const otherFields = fields.filter((field) => !['gender', 'dateOfBirth'].includes(field.type));
+    const ageField = fields.find((field) => field.type === 'age');
+    const otherFields = fields.filter((field) => !['gender', 'age'].includes(field.type));
 
     const otherFieldsRows = otherFields
       .reduce((rows, field, index) => {
@@ -74,8 +74,8 @@ export const RefineSearchTablet: React.FC<RefineSearchTabletProps> = ({
         rows[rowIndex].push(field);
         return rows;
       }, [] as SearchFieldConfig[][])
-      .map((row, index) => (
-        <div key={index} className={styles.otherFieldsRow}>
+      .map((row) => (
+        <div key={row.map(({ name }) => name).join('-')} className={styles.otherFieldsRow}>
           {row.map((field) => (
             <div key={field.name} className={styles.fieldTabletOrOverlay}>
               <SearchField field={field} control={control} inTabletOrOverlay={true} isTablet={isTablet} />
@@ -86,16 +86,16 @@ export const RefineSearchTablet: React.FC<RefineSearchTabletProps> = ({
 
     return (
       <>
-        {Boolean(genderField || dobField) && (
+        {Boolean(genderField || ageField) && (
           <div className={classNames(styles.padded, styles.refineSearchDialogGenderSexRow)}>
             {genderField && (
               <div className={styles.fieldTabletOrOverlay}>
                 <SearchField field={genderField} control={control} inTabletOrOverlay={true} isTablet={isTablet} />
               </div>
             )}
-            {dobField && (
+            {ageField && (
               <div className={styles.fieldTabletOrOverlay}>
-                <SearchField field={dobField} control={control} inTabletOrOverlay={true} isTablet={isTablet} />
+                <SearchField field={ageField} control={control} inTabletOrOverlay={true} isTablet={isTablet} />
               </div>
             )}
           </div>

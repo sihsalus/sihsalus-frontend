@@ -6,10 +6,18 @@ import { useTranslation } from 'react-i18next';
 import PatientSearch from '../compact-patient-search/patient-search.component';
 import { type PatientSearchConfig } from '../config-schema';
 import useArrowNavigation from '../hooks/useArrowNavigation';
+import {
+  isPatientSearchTermValid,
+  limitPatientSearchTerm,
+  MAX_PATIENT_SEARCH_CHARACTERS,
+} from '../patient-search-constants';
 import { useInfinitePatientSearch } from '../patient-search.resource';
 import { PatientSearchContext } from '../patient-search-context';
 
 import styles from './compact-patient-search.scss';
+
+// Carbon forwards native input attributes, although SearchProps does not currently expose maxLength.
+const searchInputLengthProps = { maxLength: MAX_PATIENT_SEARCH_CHARACTERS };
 
 interface CompactPatientSearchProps {
   initialSearchTerm: string;
@@ -27,10 +35,10 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
   const config = useConfig<PatientSearchConfig>();
   const inputRef = useRef<HTMLInputElement>(null);
   const bannerContainerRef = useRef<HTMLDivElement>(null);
-  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
+  const [searchTerm, setSearchTerm] = useState(() => limitPatientSearchTerm(initialSearchTerm));
   const normalizedSearchTerm = useMemo(() => searchTerm?.trim() ?? '', [searchTerm]);
   const debouncedSearchTerm = useDebounce(normalizedSearchTerm);
-  const shouldSearch = Boolean(normalizedSearchTerm) && normalizedSearchTerm === debouncedSearchTerm;
+  const shouldSearch = isPatientSearchTermValid(normalizedSearchTerm) && normalizedSearchTerm === debouncedSearchTerm;
   const patientSearchResponse = useInfinitePatientSearch(
     debouncedSearchTerm,
     config.includeDead,
@@ -39,7 +47,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
   const { data: patients } = patientSearchResponse;
   const visiblePatients = shouldSearch ? patients : null;
 
-  const handleChange = useCallback((val) => setSearchTerm(val), []);
+  const handleChange = useCallback((val: string) => setSearchTerm(limitPatientSearchTerm(val)), []);
 
   const handleClear = useCallback(() => setSearchTerm(''), []);
 
@@ -115,6 +123,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
     >
       <form onSubmit={(event) => event.preventDefault()} className={styles.searchArea}>
         <Search
+          {...searchInputLengthProps}
           autoFocus
           className={styles.patientSearchInput}
           closeButtonLabelText={t('clearSearch', 'Clear')}
@@ -127,7 +136,12 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
           size="lg"
           value={searchTerm}
         />
-        <Button type="submit" onClick={(event) => event.preventDefault()} {...buttonProps}>
+        <Button
+          type="submit"
+          onClick={(event) => event.preventDefault()}
+          {...buttonProps}
+          disabled={!isPatientSearchTermValid(searchTerm)}
+        >
           {t('search', 'Search')}
         </Button>
       </form>

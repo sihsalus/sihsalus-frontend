@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 
 import { type PatientSearchConfig } from '../config-schema';
 import useArrowNavigation from '../hooks/useArrowNavigation';
+import { isPatientSearchTermValid, limitPatientSearchTerm } from '../patient-search-constants';
 import {
   isForbiddenUserPropertiesError,
   useInfinitePatientSearch,
@@ -42,12 +43,12 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
   const bannerContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
+  const [searchTerm, setSearchTerm] = useState(() => limitPatientSearchTerm(initialSearchTerm));
   const normalizedSearchTerm = searchTerm?.trim() ?? '';
   const debouncedSearchTerm = useDebounce(normalizedSearchTerm);
   const hasCurrentSearchTerm = Boolean(normalizedSearchTerm);
   const isDebouncing = normalizedSearchTerm !== debouncedSearchTerm;
-  const shouldSearch = hasCurrentSearchTerm && !isDebouncing;
+  const shouldSearch = isPatientSearchTermValid(normalizedSearchTerm) && !isDebouncing;
 
   const config = useConfig<PatientSearchConfig>();
   const { showRecentlySearchedPatients } = config.search;
@@ -201,7 +202,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
     setSearchTerm('');
   }, []);
 
-  const handleSearchTermChange = (searchTerm: string) => setSearchTerm(searchTerm ?? '');
+  const handleSearchTermChange = (searchTerm: string) => setSearchTerm(limitPatientSearchTerm(searchTerm));
 
   return (
     <PatientSearchContext.Provider

@@ -8,25 +8,14 @@ const mockUseConfig = vi.mocked(useConfig<PatientSearchConfig>);
 
 describe('PatientSearchRootComponent', () => {
   beforeEach(() => {
+    const defaults = getDefaultsFromConfigSchema(configSchema) as PatientSearchConfig;
     mockUseConfig.mockReturnValue({
-      ...getDefaultsFromConfigSchema(configSchema),
+      ...defaults,
       search: {
-        disableTabletSearchOnKeyUp: false,
-        patientChartUrl: '',
+        ...defaults.search,
         showRecentlySearchedPatients: false,
-        searchFilterFields: {
-          gender: {
-            enabled: true,
-          },
-          dateOfBirth: {
-            enabled: true,
-          },
-          age: {
-            enabled: true,
-          },
-        },
       },
-    } as PatientSearchConfig);
+    });
   });
 
   afterAll(() => {

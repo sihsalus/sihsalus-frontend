@@ -1,6 +1,6 @@
 import { usePagination } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useLogPatientSearchError } from '../hooks/useLogPatientSearchError';
@@ -12,6 +12,7 @@ import { EmptyState, ErrorState, LoadingState, PatientSearchResults } from './pa
 
 interface PatientSearchComponentProps {
   query: string;
+  paginationResetKey?: string;
   inTabletOrOverlay?: boolean;
   stickyPagination?: boolean;
   searchResults: Array<SearchedPatient>;
@@ -31,30 +32,40 @@ const PatientSearchComponent: React.FC<PatientSearchComponentProps> = ({
   hasMore,
   fetchError,
   query,
+  paginationResetKey = query,
   showAddPatient = true,
 }) => {
   const { t } = useTranslation();
-  const resultsToShow = inTabletOrOverlay ? 15 : 20;
+  const resultsToShow = 10;
   const totalResults = searchResults.length;
 
   const { results, goTo, totalPages, currentPage, showNextButton, paginated } = usePagination(
     searchResults,
     resultsToShow,
   );
-  const previousQuery = useRef(query);
+  const previousPaginationResetKey = useRef(paginationResetKey);
+  const resultsTopRef = useRef<HTMLDivElement>(null);
   const lastValidPage = Math.max(1, totalPages);
   const isCurrentPageOutOfRange = currentPage > lastValidPage;
   const searchInProgress = isLoading || isValidating || hasMore || isCurrentPageOutOfRange;
   useLogPatientSearchError(fetchError, 'Patient search request failed');
 
   useEffect(() => {
-    if (previousQuery.current !== query) {
-      previousQuery.current = query;
+    if (previousPaginationResetKey.current !== paginationResetKey) {
+      previousPaginationResetKey.current = paginationResetKey;
       goTo(1);
     } else if (isCurrentPageOutOfRange) {
       goTo(lastValidPage);
     }
-  }, [goTo, isCurrentPageOutOfRange, lastValidPage, query]);
+  }, [goTo, isCurrentPageOutOfRange, lastValidPage, paginationResetKey]);
+
+  const handlePageChange = useCallback(
+    (page: number) => {
+      goTo(page);
+      resultsTopRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    },
+    [goTo],
+  );
 
   let searchResultsView: React.ReactNode;
   if (fetchError) {
@@ -73,6 +84,7 @@ const PatientSearchComponent: React.FC<PatientSearchComponentProps> = ({
         [styles.searchResultsDesktop]: !inTabletOrOverlay,
         [styles.searchResultsTabletOrOverlay]: inTabletOrOverlay,
       })}
+      ref={resultsTopRef}
     >
       <div
         className={classNames({
@@ -99,7 +111,7 @@ const PatientSearchComponent: React.FC<PatientSearchComponentProps> = ({
           })}
         >
           <Pagination
-            setCurrentPage={goTo}
+            setCurrentPage={handlePageChange}
             currentPage={currentPage}
             hasMore={showNextButton}
             totalPages={totalPages}

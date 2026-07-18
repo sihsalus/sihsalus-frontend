@@ -45,6 +45,20 @@ describe('compact patient search extension', () => {
     expect(mockUseInfinitePatientSearch).toHaveBeenCalledWith('', true, false);
   });
 
+  it('requires three characters and limits header searches to one hundred characters', async () => {
+    const user = userEvent.setup();
+    render(<CompactPatientSearchComponent initialSearchTerm="Jo" />);
+    const searchbox = screen.getByRole('searchbox');
+
+    expect(searchbox).toHaveAttribute('maxlength', '100');
+    expect(screen.getByRole('button', { name: 'Search' })).toBeDisabled();
+    expect(mockUseInfinitePatientSearch).toHaveBeenLastCalledWith('Jo', true, false);
+
+    await user.type(searchbox, 'h');
+    expect(screen.getByRole('button', { name: 'Search' })).toBeEnabled();
+    expect(mockUseInfinitePatientSearch).toHaveBeenLastCalledWith('Joh', true, true);
+  });
+
   it('selects the focused patient with ArrowDown and Enter', async () => {
     const user = userEvent.setup();
     const selectPatientAction = vi.fn();

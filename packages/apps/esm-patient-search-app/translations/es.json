@@ -1,6 +1,7 @@
 {
   "addPatient": "Agregar paciente",
   "age": "Edad",
+  "ageUnit": "Unidad",
   "any": "Cualquier",
   "apply": "Aplicar",
   "birthdateInFuture": "La fecha de nacimiento no puede ser futura",
@@ -14,6 +15,7 @@
   "countOfFiltersApplied_other": "{{count}} filtros aplicados",
   "dayOfBirth": "Día de Nacimiento",
   "dateOfBirth": "Fecha de nacimiento",
+  "days": "Días",
   "error": "Error",
   "errorCopy": "Lo sentimos, ocurrió un error. Inténtelo nuevamente o contacte al administrador del sistema.",
   "errorFetchingPatients": "Error al obtener pacientes",
@@ -26,14 +28,18 @@
   "errorUpdatingRecentlyViewedPatients": "Error al actualizar pacientes recientemente vistos",
   "female": "Femenino",
   "filtersAppliedText": "búsquedas agregadas",
+  "hasActiveVisit": "Tiene consulta activa",
   "identityDocumentNumber": "Número de documento de identidad",
   "invalidAge": "Ingrese una edad entre {{min}} y {{max}}",
+  "invalidAgeForUnit": "Ingrese una edad entre {{min}} y {{max}} para la unidad seleccionada",
   "invalidBirthdate": "Ingrese una fecha de nacimiento válida",
   "invalidDayOfBirth": "Ingrese un día entre 1 y 31",
   "invalidMonthOfBirth": "Ingrese un mes entre 1 y 12",
   "invalidYearOfBirth": "Ingrese un año entre {{min}} y {{max}}",
   "male": "Masculino",
+  "minimumSearchCharacters": "Ingrese al menos {{count}} caracteres",
   "monthOfBirth": "Mes de Nacimiento",
+  "months": "Meses",
   "nextPage": "Siguiente página",
   "noPatientChartsFoundMessage": "Lo sentimos, no se han encontrado historias clínicas de pacientes",
   "other": "Otro",
@@ -63,5 +69,6 @@
   "trySearchWithPatientUniqueID": "Intente buscar nuevamente usando un dato de identificación del paciente",
   "unknown": "Desconocido",
   "unsupportedAttributeFormat": "Formato de atributo no soportado: {{format}}",
-  "yearOfBirth": "Año de Nacimiento"
+  "yearOfBirth": "Año de Nacimiento",
+  "years": "Años"
 }

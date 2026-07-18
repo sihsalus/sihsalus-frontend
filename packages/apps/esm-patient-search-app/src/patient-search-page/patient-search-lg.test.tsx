@@ -1,7 +1,14 @@
 import { logError, usePagination } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { mockAdvancedSearchResults } from 'test-utils';
 
 import PatientSearchComponent from './patient-search-lg.component';
+
+vi.mock('./patient-search-views.component', async () => ({
+  ...(await vi.importActual('./patient-search-views.component')),
+  PatientSearchResults: () => <div>Patient results</div>,
+}));
 
 const mockUsePagination = vi.mocked(usePagination);
 const mockLogError = vi.mocked(logError);
@@ -73,6 +80,43 @@ describe('PatientSearchComponent', () => {
     rerender(<PatientSearchComponent {...defaultProps} query="Pedro" isValidating />);
 
     expect(goTo).not.toHaveBeenCalled();
+  });
+
+  it('paginates ten patients at a time', () => {
+    render(<PatientSearchComponent {...defaultProps} />);
+
+    expect(mockUsePagination).toHaveBeenCalledWith([], 10);
+  });
+
+  it('scrolls to the result heading after changing page', async () => {
+    const user = userEvent.setup();
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    mockUsePagination.mockReturnValue({
+      currentPage: 1,
+      goTo,
+      goToNext: vi.fn(),
+      goToPrevious: vi.fn(),
+      paginated: true,
+      results: [mockAdvancedSearchResults[0] as never],
+      showNextButton: true,
+      showPreviousButton: false,
+      totalPages: 2,
+    });
+
+    render(
+      <PatientSearchComponent
+        {...defaultProps}
+        searchResults={[mockAdvancedSearchResults[0], mockAdvancedSearchResults[1]] as never}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: /next page/i }));
+
+    expect(goTo).toHaveBeenCalledWith(2);
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
   });
 
   it.each([

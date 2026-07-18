@@ -3,6 +3,8 @@ import type { SearchedPatient } from '../types';
 import {
   admissionIdentificationStatusAttributeTypeUuid,
   admissionIdentificationStatusConceptUuids,
+  identityVerificationStatusAttributeTypeUuid,
+  identityVerificationStatusConceptUuids,
   matchesPersonAttributeFilter,
 } from './person-attribute-filter';
 
@@ -64,6 +66,31 @@ describe('matchesPersonAttributeFilter', () => {
         },
         admissionIdentificationStatusAttributeTypeUuid,
         configuredConceptUuid,
+      ),
+    ).toBe(true);
+  });
+
+  it.each([
+    {
+      label: 'a hydrated RENIEC concept',
+      value: {
+        uuid: identityVerificationStatusConceptUuids.verifiedByReniec,
+        display: 'Validado por RENIEC',
+      },
+    },
+    { label: 'a legacy RENIEC status', value: 'validado_reniec' },
+  ])('matches identity verification from $label', ({ value }) => {
+    expect(
+      matchesPersonAttributeFilter(
+        {
+          value,
+          attributeType: {
+            uuid: identityVerificationStatusAttributeTypeUuid,
+            display: 'Estado de Verificación de Identidad',
+          },
+        } as PersonAttribute,
+        identityVerificationStatusAttributeTypeUuid,
+        identityVerificationStatusConceptUuids.verifiedByReniec,
       ),
     ).toBe(true);
   });

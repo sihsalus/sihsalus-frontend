@@ -5,14 +5,14 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Config } from '../config-schema';
-import { fuaReadPrivilege } from '../constant';
+import { fuaReadPrivilege, resolveFuaGeneratorEndpoint } from '../constant';
 
 import styles from './fua-viewer-page.scss';
 
 const FuaViewerPageContent: React.FC = () => {
   const config = useConfig<Config>();
   const { t } = useTranslation();
-  const endpoint = config.fuaGeneratorEndpoint;
+  const endpoint = resolveFuaGeneratorEndpoint(config.fuaGeneratorEndpoint);
   const [htmlContent, setHtmlContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

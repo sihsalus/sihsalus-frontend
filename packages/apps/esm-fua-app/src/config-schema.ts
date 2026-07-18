@@ -1,4 +1,5 @@
 import { Type } from '@openmrs/esm-framework';
+import { LEGACY_SIS_PRODUCT_CONCEPT_UUIDS, SIS_CONCEPT_UUID } from '@openmrs/esm-patient-common-lib';
 
 export const configSchema = {
   enableFuaApprovalWorkflow: {
@@ -8,8 +9,11 @@ export const configSchema = {
   },
   fuaGeneratorEndpoint: {
     _type: Type.String,
-    _default: 'http://gidis-hsc-dev.inf.pucp.edu.pe/services/fua-generator/demo',
-    _description: 'URL del endpoint del generador de FUA (fallback cuando backend no disponible)',
+    _default: '',
+    _description:
+      'URL del endpoint del generador de FUA. Dejar vacío para usar la ruta relativa del gateway del distro ' +
+      '(/services/fua-generator), que el gateway ya proxya al microservicio. Configurar una URL absoluta solo ' +
+      'para entornos que no pasan por el gateway.',
   },
   encounterTypeUuid: {
     _type: Type.UUID,
@@ -28,8 +32,18 @@ export const configSchema = {
   },
   sisInsuranceConceptUuid: {
     _type: Type.UUID,
-    _default: '',
-    _description: 'UUID del concepto de seguro SIS en OpenMRS',
+    _default: SIS_CONCEPT_UUID,
+    _description:
+      'UUID del concepto SIS del catálogo canónico «Tipo de seguro». Solo las visitas cuyo visit attribute ' +
+      'Financiador tenga este valor (o uno de legacySisProductConceptUuids) son candidatas a FUA.',
+  },
+  legacySisProductConceptUuids: {
+    _type: Type.Array,
+    _element: { _type: Type.UUID },
+    _default: [...LEGACY_SIS_PRODUCT_CONCEPT_UUIDS],
+    _description:
+      'UUIDs de conceptos legacy de productos SIS (Gratuito, Semicontributivo, Emprendedor) que datos existentes ' +
+      'pueden tener como Financiador de la visita. Se tratan como SIS para el gating de FUA.',
   },
   fuaApiBasePath: {
     _type: Type.String,
@@ -45,5 +59,6 @@ export type Config = {
   clinicianEncounterRole: string;
   cie10ConceptSetUuid: string;
   sisInsuranceConceptUuid: string;
+  legacySisProductConceptUuids: Array<string>;
   fuaApiBasePath: string;
 };

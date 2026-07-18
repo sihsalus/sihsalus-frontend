@@ -1,7 +1,22 @@
 import { makeUrl, openmrsFetch } from '@openmrs/esm-framework';
+import {
+  FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+} from '@openmrs/esm-patient-common-lib';
+
+import { resolveFuaGeneratorEndpoint } from '../constant';
 
 import { revalidateFuaRequestCaches } from './useFuaRequests';
-import { FuaGenerationError, generateFuaFromVisit, generateFuasFromVisits } from './useVisit';
+import {
+  FuaGenerationError,
+  generateFuaFromVisit,
+  generateFuasFromVisits,
+  getVisitAccreditationStatusUuid,
+  getVisitFinanciadorDisplay,
+  getVisitFinanciadorUuid,
+  isSisFinanciador,
+  type VisitSummary,
+} from './useVisit';
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
@@ -100,5 +115,60 @@ describe('FUA generation requests', () => {
 
     expect(error).toBeInstanceOf(FuaGenerationError);
     expect(error).toMatchObject({ status: 503, responseBody: 'Service unavailable' });
+  });
+});
+
+describe('visit financiador helpers', () => {
+  const sisConceptUuid = 'sis-concept-uuid';
+  const legacySisUuids = ['legacy-gratuito-uuid', 'legacy-semicontributivo-uuid'];
+
+  const visit: VisitSummary = {
+    uuid: 'visit-uuid',
+    attributes: [
+      {
+        uuid: 'attr-financiador',
+        attributeType: { uuid: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID },
+        value: { uuid: sisConceptUuid, display: 'SIS' },
+      },
+      {
+        uuid: 'attr-acreditacion',
+        attributeType: { uuid: SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID },
+        value: { uuid: 'vigente-concept-uuid', display: 'Vigente' },
+      },
+    ],
+  };
+
+  it('reads the financiador and accreditation status from the visit attributes', () => {
+    expect(getVisitFinanciadorUuid(visit)).toBe(sisConceptUuid);
+    expect(getVisitFinanciadorDisplay(visit)).toBe('SIS');
+    expect(getVisitAccreditationStatusUuid(visit)).toBe('vigente-concept-uuid');
+  });
+
+  it('returns null when the visit has no financiador or accreditation attributes', () => {
+    const bareVisit: VisitSummary = { uuid: 'visit-uuid', attributes: [] };
+
+    expect(getVisitFinanciadorUuid(bareVisit)).toBeNull();
+    expect(getVisitFinanciadorDisplay(bareVisit)).toBeNull();
+    expect(getVisitAccreditationStatusUuid(bareVisit)).toBeNull();
+    expect(getVisitFinanciadorUuid({ uuid: 'visit-uuid' })).toBeNull();
+  });
+
+  it('treats the canonical SIS concept and legacy SIS products as SIS', () => {
+    expect(isSisFinanciador(sisConceptUuid, sisConceptUuid, legacySisUuids)).toBe(true);
+    expect(isSisFinanciador('legacy-gratuito-uuid', sisConceptUuid, legacySisUuids)).toBe(true);
+    expect(isSisFinanciador('private-concept-uuid', sisConceptUuid, legacySisUuids)).toBe(false);
+    expect(isSisFinanciador(null, sisConceptUuid, legacySisUuids)).toBe(false);
+  });
+});
+
+describe('resolveFuaGeneratorEndpoint', () => {
+  it('falls back to the relative gateway path when no endpoint is configured', () => {
+    expect(resolveFuaGeneratorEndpoint('')).toBe('/services/fua-generator');
+    expect(resolveFuaGeneratorEndpoint('   ')).toBe('/services/fua-generator');
+    expect(resolveFuaGeneratorEndpoint(undefined)).toBe('/services/fua-generator');
+  });
+
+  it('keeps an explicitly configured absolute endpoint', () => {
+    expect(resolveFuaGeneratorEndpoint('https://example.org/fua')).toBe('https://example.org/fua');
   });
 });

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Config } from '../config-schema';
-import { ModuleFuaRestURL } from '../constant';
+import { ModuleFuaRestURL, resolveFuaGeneratorEndpoint } from '../constant';
 
 import styles from './fua-html-viewer.scss';
 
@@ -17,7 +17,7 @@ interface FuaHtmlViewerProps {
 const FuaHtmlViewer: React.FC<FuaHtmlViewerProps> = ({ fuaId, visitUuid, endpoint }) => {
   const config = useConfig<Config>();
   const { t } = useTranslation();
-  const fuaEndpoint = endpoint || config.fuaGeneratorEndpoint;
+  const fuaEndpoint = endpoint || resolveFuaGeneratorEndpoint(config.fuaGeneratorEndpoint);
   const [htmlContent, setHtmlContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

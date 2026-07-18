@@ -15,6 +15,13 @@
         "requiredVisitTypeUuid": "f70a865a-6cae-4d04-8d05-acb5bf88fa16"
       },
       {
+        "appointmentServiceUuid": "b3c2d4e5-f6a7-48d9-93e1-8f7a6b5c4d02",
+        "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400001",
+        "queueUuid": "d4e5f6a7-b8c9-40d1-e2f3-a4b5c6d7e8f9",
+        "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400001",
+        "requiredVisitTypeUuid": "ae40aab4-c57d-4bb1-a27e-2cacc24dd07f"
+      },
+      {
         "appointmentServiceUuid": "a6d7f9b3-2c5e-48d1-93e4-7f8a6b5c2d02",
         "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400004",
         "queueUuid": "c9d0e1f2-a3b4-45c6-d7e8-f9a0b1c2d3e4",

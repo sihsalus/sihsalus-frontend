@@ -363,7 +363,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             ? createTimeFormatSchema(true)
             : createTimeFormatSchema(false),
         programType: z.string().optional(),
-        visitType: z.string().refine((value) => !!value, t('visitTypeRequired', 'Visit type is required')),
+        visitType: z.string().refine((value) => !!value, t('visitTypeRequired', 'Care type is required')),
         visitLocation: z.object({
           display: z.string().optional(),
           uuid: z
@@ -1384,7 +1384,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                           kind="error"
                           lowContrast={true}
                           title={t('missingVisitType', 'Missing visit type')}
-                          subtitle={t('selectVisitType', 'Please select a Visit Type')}
+                          subtitle={t('selectVisitType', 'Select a care type')}
                         />
                       </div>
                     </section>

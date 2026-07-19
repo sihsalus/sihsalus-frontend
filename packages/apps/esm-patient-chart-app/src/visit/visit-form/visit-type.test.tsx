@@ -72,12 +72,12 @@ describe('VisitTypeOverview', () => {
     render(<BaseVisitType visitTypes={mockVisitTypes} />);
   };
 
-  it('should select a visit type from the category dropdown', async () => {
+  it('should select a care type from the flat dropdown', async () => {
     const user = userEvent.setup();
 
     renderVisitTypeOverview();
 
-    await user.click(screen.getByRole('combobox', { name: /categoría de consulta/i }));
+    await user.click(screen.getByRole('combobox', { name: /tipo de atención/i }));
     await user.click(screen.getByText('HIV Return Visit'));
 
     expect(mockOnChange).toHaveBeenCalledWith('some-uuid2');

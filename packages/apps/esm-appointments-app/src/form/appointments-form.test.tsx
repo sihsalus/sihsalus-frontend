@@ -370,6 +370,70 @@ describe('AppointmentForm', () => {
     });
   });
 
+  it('warns but allows saving when the provider category is not confirmed in warn mode', async () => {
+    const user = userEvent.setup();
+    const categoryUuid = 'a0d4e64e-eb63-4271-bdf1-ffa10392c282';
+    const categorizedService = {
+      ...mockUseAppointmentServiceData[0],
+      speciality: { uuid: categoryUuid, display: 'Odontología general' },
+    };
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentTypes: ['Scheduled', 'WalkIn'],
+      providerSchedulingCategoryValidation: {
+        mode: 'warn',
+        providerAttributeTypeUuid: '3961cbdd-3240-4b70-99ca-5f63af488b15',
+      },
+    });
+    mockOpenmrsFetch.mockResolvedValue({
+      data: [categorizedService],
+    } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+
+    expect(screen.getByText('Categoría de agenda no confirmada')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+  });
+
+  it('blocks saving with a field error when the provider category is not enabled in strict mode', async () => {
+    const user = userEvent.setup();
+    const categorizedService = {
+      ...mockUseAppointmentServiceData[0],
+      speciality: {
+        uuid: 'a0d4e64e-eb63-4271-bdf1-ffa10392c282',
+        display: 'Odontología general',
+      },
+    };
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentTypes: ['Scheduled', 'WalkIn'],
+      providerSchedulingCategoryValidation: {
+        mode: 'strict',
+        providerAttributeTypeUuid: '3961cbdd-3240-4b70-99ca-5f63af488b15',
+      },
+    });
+    mockOpenmrsFetch.mockResolvedValue({
+      data: [categorizedService],
+    } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(
+      await screen.findByText(
+        'El personal de salud no está habilitado para la categoría de agenda del servicio seleccionado.',
+      ),
+    ).toBeInTheDocument();
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
+  });
+
   it('schedules an all-day appointment using the full selected day', async () => {
     const user = userEvent.setup();
 

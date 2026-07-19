@@ -78,6 +78,7 @@ import {
   isAppointmentStartDateAllowed,
   isRecurringAppointmentRangeAllowed,
 } from './appointment-date-validation';
+import { assessProviderSchedulingCategory } from './provider-scheduling-category';
 //TO DO FIX THIS SHIT
 import {
   checkAppointmentConflict,
@@ -280,7 +281,12 @@ const AppointmentsForm: React.FC<
   const canEditAppointmentStartDate = userHasAccess(appointmentStartDateEditPrivilege, session?.user);
   const { selectedDate } = useContext(SelectedDateContext);
   const { data: services, isLoading } = useAppointmentService();
-  const { appointmentTypes, allowAllDayAppointments, appointmentServiceGenderRules } = useConfig<ConfigObject>();
+  const {
+    appointmentTypes,
+    allowAllDayAppointments,
+    appointmentServiceGenderRules,
+    providerSchedulingCategoryValidation,
+  } = useConfig<ConfigObject>();
   const availableServices = services?.filter((service) =>
     isAppointmentServiceAvailableForGender(service, patient?.gender, appointmentServiceGenderRules),
   );
@@ -322,7 +328,7 @@ const AppointmentsForm: React.FC<
           message: translateFrom(moduleName, 'durationErrorMessage', 'Duration should be greater than zero'),
         }),
       location: z.string().refine((value) => value !== '', {
-        message: translateFrom(moduleName, 'locationRequired', 'UPSS is required'),
+        message: translateFrom(moduleName, 'locationRequired', 'Location is required'),
       }),
       provider: z.string().refine((value) => value !== '', {
         message: translateFrom(moduleName, 'providerRequired', 'Provider is required'),
@@ -434,6 +440,25 @@ const AppointmentsForm: React.FC<
           'Date appointment issued cannot be after the appointment date',
         ),
       },
+    )
+    .refine(
+      (formValues) => {
+        const service = services?.find(({ name }) => name === formValues.selectedService);
+        const provider = providers.providers?.find(({ uuid }) => uuid === formValues.provider);
+        return !assessProviderSchedulingCategory({
+          mode: providerSchedulingCategoryValidation.mode,
+          provider,
+          providerAttributeTypeUuid: providerSchedulingCategoryValidation.providerAttributeTypeUuid,
+          service,
+        }).shouldBlock;
+      },
+      {
+        path: ['provider'],
+        message: t(
+          'providerSchedulingCategoryMismatch',
+          'El personal de salud no está habilitado para la categoría de agenda del servicio seleccionado.',
+        ),
+      },
     );
 
   type AppointmentFormData = z.infer<typeof appointmentsFormSchema>;
@@ -480,6 +505,15 @@ const AppointmentsForm: React.FC<
       formIsRecurringAppointment: isRecurringAppointment,
       dateAppointmentScheduled: defaultDateAppointmentScheduled,
     },
+  });
+
+  const selectedService = services?.find(({ name }) => name === watch('selectedService'));
+  const selectedProvider = providers.providers?.find(({ uuid }) => uuid === watch('provider'));
+  const providerSchedulingCategoryAssessment = assessProviderSchedulingCategory({
+    mode: providerSchedulingCategoryValidation.mode,
+    provider: selectedProvider,
+    providerAttributeTypeUuid: providerSchedulingCategoryValidation.providerAttributeTypeUuid,
+    service: selectedService,
   });
 
   useEffect(() => setValue('formIsRecurringAppointment', isRecurringAppointment), [isRecurringAppointment, setValue]);
@@ -798,7 +832,7 @@ const AppointmentsForm: React.FC<
             />
           )}
           <section className={styles.formGroup}>
-            <span className={styles.heading}>{t('location', 'UPSS')}</span>
+            <span className={styles.heading}>{t('location', 'Location')}</span>
             <ResponsiveWrapper>
               <Controller
                 name="location"
@@ -881,7 +915,7 @@ const AppointmentsForm: React.FC<
             </ResponsiveWrapper>
           </section>
           <section className={styles.formGroup}>
-            <span className={styles.heading}>{t('appointmentType_title', 'Appointment Type')}</span>
+            <span className={styles.heading}>{t('appointmentType_title', 'Appointment modality')}</span>
             <ResponsiveWrapper>
               <Controller
                 name="appointmentType"
@@ -1157,6 +1191,25 @@ const AppointmentsForm: React.FC<
                 )}
               />
             </ResponsiveWrapper>
+            {providerSchedulingCategoryAssessment.shouldWarn ? (
+              <InlineNotification
+                hideCloseButton
+                kind="warning"
+                lowContrast
+                title={t('providerSchedulingCategoryWarningTitle', 'Categoría de agenda no confirmada')}
+                subtitle={
+                  providerSchedulingCategoryAssessment.reason === 'configuration-missing'
+                    ? t(
+                        'providerSchedulingCategoryConfigurationMissing',
+                        'No se pudo validar la categoría del personal porque falta configurar el atributo correspondiente.',
+                      )
+                    : t(
+                        'providerSchedulingCategoryWarning',
+                        'El personal de salud seleccionado no tiene habilitada la categoría de agenda de este servicio. Puede continuar mientras el hospital completa el catálogo.',
+                      )
+                }
+              />
+            ) : null}
           </section>
           <section className={styles.formGroup}>
             <span className={styles.heading}>{t('dateScheduled', 'Date appointment issued')}</span>
@@ -1314,7 +1367,7 @@ function getAppointmentValidationSummary(
   t: (key: string, fallback: string) => string,
 ) {
   const labels: Record<string, string> = {
-    location: t('location', 'UPSS'),
+    location: t('location', 'Location'),
     selectedService: t('service', 'Servicio'),
     appointmentType: t('appointmentType', 'Tipo de cita'),
     provider: t('responsibleProvider', 'Personal de salud responsable'),

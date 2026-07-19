@@ -436,9 +436,9 @@ describe('Visit form', () => {
     expect(screen.getByRole('textbox', { name: /Hora/i })).toBeRequired();
     expect(screen.getByRole('combobox', { name: /Time Format/i })).toBeRequired();
     expect(screen.getByRole('combobox', { name: /Select a location/i })).toBeInTheDocument();
-    const visitTypeCategory = screen.getByRole('combobox', { name: /categoría de consulta/i });
-    expect(visitTypeCategory).toBeInTheDocument();
-    await user.click(visitTypeCategory);
+    const visitType = screen.getByRole('combobox', { name: /tipo de atención/i });
+    expect(visitType).toBeInTheDocument();
+    await user.click(visitType);
     expect(await screen.findByText(/HIV Return Visit/i)).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /AM/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /PM/i })).toBeInTheDocument();
@@ -509,7 +509,7 @@ describe('Visit form', () => {
       mutateEmrConfiguration: null,
     });
     renderVisitForm();
-    expect(screen.queryByRole('combobox', { name: /categoría de consulta/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /tipo de atención/i })).not.toBeInTheDocument();
   });
 
   it('renders a validation error when required fields are not filled', async () => {
@@ -525,7 +525,7 @@ describe('Visit form', () => {
     await user.click(saveButton);
 
     expect(screen.getByText(/missing visit type/i)).toBeInTheDocument();
-    expect(screen.getByText(/please select a visit type/i)).toBeInTheDocument();
+    expect(screen.getByText(/select a care type/i)).toBeInTheDocument();
 
     await selectVisitType(user);
   });
@@ -1590,9 +1590,7 @@ describe('Visit form', () => {
     });
     await user.selectOptions(punctualityPicker, 'Late');
 
-    const insuranceNumberInput = screen.getByRole('textbox', {
-      name: 'Insurance Policy Number (optional)',
-    });
+    const insuranceNumberInput = screen.getByRole('textbox', { name: 'Insurance Policy Number (optional)' });
     await user.clear(insuranceNumberInput);
     await user.type(insuranceNumberInput, '1873290');
 
@@ -1791,7 +1789,9 @@ describe('Visit form', () => {
     await selectVisitType(user);
     await user.selectOptions(screen.getByRole('combobox', { name: /Select a location/i }), 'Inpatient Ward');
     await user.selectOptions(screen.getByRole('combobox', { name: 'Punctuality (optional)' }), 'On time');
-    const insuranceNumberInput = screen.getByRole('textbox', { name: 'Insurance Policy Number (optional)' });
+    const insuranceNumberInput = screen.getByRole('textbox', {
+      name: 'Insurance Policy Number (optional)',
+    });
     await user.clear(insuranceNumberInput);
     await user.type(insuranceNumberInput, '183299');
 
@@ -1922,7 +1922,7 @@ describe('Visit form', () => {
 });
 
 async function selectVisitType(user: ReturnType<typeof userEvent.setup>, visitType = 'Outpatient Visit') {
-  await user.click(screen.getByRole('combobox', { name: /categoría de consulta/i }));
+  await user.click(screen.getByRole('combobox', { name: /tipo de atención/i }));
   await user.click(await screen.findByText(visitType));
 }
 

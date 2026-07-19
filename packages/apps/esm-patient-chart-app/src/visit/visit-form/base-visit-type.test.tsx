@@ -72,26 +72,28 @@ describe('VisitTypeOverview', () => {
     render(<BaseVisitType visitTypes={mockVisitTypes} />);
   };
 
-  it('renders the visit type category selector', async () => {
+  it('renders every configured care type in a flat selector', async () => {
     const user = userEvent.setup();
     renderVisitTypeOverview();
 
-    const categoryDropdown = screen.getByRole('combobox', { name: /categoría de consulta/i });
-    expect(categoryDropdown).toBeInTheDocument();
+    const visitTypeDropdown = screen.getByRole('combobox', {
+      name: /tipo de atención/i,
+    });
+    expect(visitTypeDropdown).toBeInTheDocument();
 
-    await user.click(categoryDropdown);
+    await user.click(visitTypeDropdown);
 
     mockVisitTypes.forEach((visitType) => {
       expect(screen.getByText(visitType.display)).toBeInTheDocument();
     });
   });
 
-  it('selects a visit type when the category has no child options', async () => {
+  it('selects the configured care type UUID', async () => {
     const user = userEvent.setup();
 
     renderVisitTypeOverview();
 
-    await user.click(screen.getByRole('combobox', { name: /categoría de consulta/i }));
+    await user.click(screen.getByRole('combobox', { name: /tipo de atención/i }));
     await user.click(screen.getByText('Outpatient Visit'));
 
     expect(mockOnChange).toHaveBeenCalledWith('some-uuid1');

@@ -106,7 +106,7 @@ describe('AppointmentsOverview', () => {
     await user.click(pastAppointmentsTab);
     expect(screen.getByRole('table')).toBeInTheDocument();
 
-    const expectedColumnHeaders = [/date/, /UPSS/, /service/];
+    const expectedColumnHeaders = [/date/, /location/, /service/];
     expectedColumnHeaders.forEach((header) => {
       expect(screen.getByRole('columnheader', { name: new RegExp(header, 'i') })).toBeInTheDocument();
     });

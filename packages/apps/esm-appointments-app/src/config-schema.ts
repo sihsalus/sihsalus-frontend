@@ -1,6 +1,22 @@
 import { Type, validator, validators } from '@openmrs/esm-framework';
 
 const patientChartUrlPlaceholder = `\${openmrsSpaBase}/patient/\${patientUuid}/chart`;
+const arrivalPolicies = ['queue-optional', 'queue-required', 'direct'] as const;
+const providerSchedulingCategoryValidationModes = ['off', 'warn', 'strict'] as const;
+
+const hasNonEmptyString = (value: unknown) => typeof value === 'string' && value.trim().length > 0;
+
+export type AppointmentArrivalPolicy = (typeof arrivalPolicies)[number];
+export type ProviderSchedulingCategoryValidationMode = (typeof providerSchedulingCategoryValidationModes)[number];
+
+export interface AppointmentArrivalRule {
+  appointmentServiceUuid: string;
+  appointmentLocationUuid: string;
+  arrivalPolicy: AppointmentArrivalPolicy;
+  requiredVisitTypeUuid: string;
+  queueUuid?: string;
+  queueLocationUuid?: string;
+}
 
 export const configSchema = {
   allowAllDayAppointments: {
@@ -46,37 +62,58 @@ export const configSchema = {
     _description: 'Visit attribute type used to persist the originating appointment UUID on an OpenMRS visit',
     _default: '193508ab-20c6-5291-9f23-0257335eaabd',
   },
-  appointmentQueueMappings: {
+  careRoutingContractVersion: {
+    _type: Type.String,
+    _description: 'Version of the canonical appointment-to-care routing contract deployed with SIH.SALUS content',
+    _default: '',
+  },
+  appointmentArrivalRules: {
     _type: Type.Array,
     _description:
-      'Required exact mappings from appointment service and location UUIDs to a queue and queue location. Check-in is blocked when no mapping exists.',
+      'Exact rules from appointment service and location UUIDs to a direct or queue-based arrival workflow. Arrival is blocked when no unique rule exists.',
     _default: [],
     _elements: {
       _validators: [
-        validator(
-          (mapping: Record<string, unknown>) =>
-            [
-              'appointmentServiceUuid',
-              'appointmentLocationUuid',
-              'queueUuid',
-              'queueLocationUuid',
-              'requiredVisitTypeUuid',
-            ].every((field) => {
-              const value = mapping?.[field];
-              return typeof value === 'string' && value.trim().length > 0;
-            }),
-          'Each appointment queue mapping must define service, appointment location, queue, queue location, and required visit type UUIDs.',
-        ),
+        validator((rule: Record<string, unknown>) => {
+          const hasBaseFields = ['appointmentServiceUuid', 'appointmentLocationUuid', 'requiredVisitTypeUuid'].every(
+            (field) => hasNonEmptyString(rule?.[field]),
+          );
+          const arrivalPolicy = rule?.arrivalPolicy;
+          if (!hasBaseFields || !arrivalPolicies.includes(arrivalPolicy as AppointmentArrivalPolicy)) {
+            return false;
+          }
+
+          const hasQueueUuid = hasNonEmptyString(rule?.queueUuid);
+          const hasQueueLocationUuid = hasNonEmptyString(rule?.queueLocationUuid);
+          return arrivalPolicy === 'direct'
+            ? !hasQueueUuid && !hasQueueLocationUuid
+            : hasQueueUuid && hasQueueLocationUuid;
+        }, 'Each appointment arrival rule must define service, appointment location, policy and required visit type UUIDs; queue policies also require queue and queue location UUIDs, while direct policies must omit them.'),
       ],
       appointmentServiceUuid: { _type: Type.UUID },
       appointmentLocationUuid: { _type: Type.UUID },
+      arrivalPolicy: {
+        _type: Type.String,
+        _validators: [validators.oneOf(arrivalPolicies)],
+      },
+      requiredVisitTypeUuid: { _type: Type.UUID },
       queueUuid: { _type: Type.UUID },
       queueLocationUuid: { _type: Type.UUID },
-      requiredVisitTypeUuid: { _type: Type.UUID },
-      compatibleActiveVisitTypeUuids: {
-        _type: Type.Array,
-        _elements: { _type: Type.UUID },
-      },
+    },
+  },
+  providerSchedulingCategoryValidation: {
+    mode: {
+      _type: Type.String,
+      _description:
+        'How to validate that the selected provider is enabled for the appointment service scheduling category',
+      _default: 'off',
+      _validators: [validators.oneOf(providerSchedulingCategoryValidationModes)],
+    },
+    providerAttributeTypeUuid: {
+      _type: Type.UUID,
+      _description:
+        'Multi-valued Provider attribute whose FreeText values are exact AppointmentSpeciality UUIDs enabled for scheduling',
+      _default: '3961cbdd-3240-4b70-99ca-5f63af488b15',
     },
   },
   checkInButton: {
@@ -143,14 +180,12 @@ export interface ConfigObject {
     allowedGenders: Array<string>;
   }>;
   appointmentVisitAttributeTypeUuid: string;
-  appointmentQueueMappings: Array<{
-    appointmentServiceUuid: string;
-    appointmentLocationUuid: string;
-    queueUuid: string;
-    queueLocationUuid: string;
-    requiredVisitTypeUuid: string;
-    compatibleActiveVisitTypeUuids?: Array<string>;
-  }>;
+  careRoutingContractVersion: string;
+  appointmentArrivalRules: Array<AppointmentArrivalRule>;
+  providerSchedulingCategoryValidation: {
+    mode: ProviderSchedulingCategoryValidationMode;
+    providerAttributeTypeUuid: string;
+  };
   checkInButton: {
     enabled: boolean;
     showIfActiveVisit: boolean;

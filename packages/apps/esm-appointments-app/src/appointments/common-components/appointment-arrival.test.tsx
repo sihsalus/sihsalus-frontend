@@ -8,7 +8,7 @@ import {
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { type ConfigObject, configSchema } from '../../config-schema';
+import { type AppointmentArrivalRule, type ConfigObject, configSchema } from '../../config-schema';
 import {
   changeAppointmentStatus,
   ensureAppointmentVisitLink,
@@ -73,9 +73,15 @@ const appointment: Appointment = {
   },
   provider: {
     uuid: 'f9badd80-ab76-11e2-9e96-0800200c9a66',
-    person: { uuid: '24252571-dd5a-11e6-9d9c-0242ac150002', display: 'Dr James Cook' },
+    person: {
+      uuid: '24252571-dd5a-11e6-9d9c-0242ac150002',
+      display: 'Dr James Cook',
+    },
   },
-  location: { name: 'HIV Clinic', uuid: '2131aff8-2e2a-480a-b7ab-4ac53250262b' },
+  location: {
+    name: 'HIV Clinic',
+    uuid: '2131aff8-2e2a-480a-b7ab-4ac53250262b',
+  },
   startDateTime: new Date().toISOString(),
   appointmentKind: AppointmentKind.WALKIN,
   status: AppointmentStatus.SCHEDULED,
@@ -90,9 +96,10 @@ const appointment: Appointment = {
   dateAppointmentScheduled: null,
 };
 
-const appointmentQueueMapping = {
+const appointmentArrivalRule: AppointmentArrivalRule = {
   appointmentServiceUuid: appointment.service.uuid,
   appointmentLocationUuid: appointment.location.uuid,
+  arrivalPolicy: 'queue-optional',
   queueUuid: 'mapped-queue-uuid',
   queueLocationUuid: 'mapped-queue-location-uuid',
   requiredVisitTypeUuid,
@@ -111,8 +118,8 @@ const activeVisit = {
 const closeModal = vi.fn();
 const mutateVisits = vi.fn();
 
-const queueMappingMissingMessage =
-  'No existe una cola configurada para el servicio y la sede de esta cita. Contacte al administrador antes de continuar.';
+const arrivalRuleMissingMessage =
+  'No existe una regla de llegada configurada para el servicio y la ubicación de esta cita. Contacte al administrador antes de continuar.';
 
 const expectedPatientChartUrl = (getDefaultsFromConfigSchema(configSchema) as ConfigObject).customPatientChartUrl;
 
@@ -148,7 +155,7 @@ describe('AppointmentArrivalModal', () => {
     mockGetActiveVisitsForPatient.mockResolvedValue(visitsResponse([]));
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
-      appointmentQueueMappings: [appointmentQueueMapping],
+      appointmentArrivalRules: [appointmentArrivalRule],
       checkInButton: { enabled: true, showIfActiveVisit: true, customUrl: '' },
     });
   });
@@ -163,35 +170,40 @@ describe('AppointmentArrivalModal', () => {
     expect(screen.getByRole('button', { name: /cancelar/i })).toBeEnabled();
   });
 
-  it('shows the missing queue mapping error inline without closing the modal', async () => {
+  it('fails closed when the service and location have no arrival rule', () => {
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
-      appointmentQueueMappings: [],
+      appointmentArrivalRules: [],
       checkInButton: { enabled: true, showIfActiveVisit: true, customUrl: '' },
     });
 
     renderModal();
-    await userEvent.click(getQueueButton());
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(queueMappingMissingMessage);
+    expect(screen.getByRole('alert')).toHaveTextContent(arrivalRuleMissingMessage);
     expect(closeModal).not.toHaveBeenCalled();
     expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
     expect(mockShowSnackbar).not.toHaveBeenCalled();
-    expect(getDirectButton()).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /enviar a cola de espera/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /iniciar atención directamente/i })).not.toBeInTheDocument();
   });
 
-  it('still allows starting care directly after the queue option failed', async () => {
+  it('offers only direct care for a direct arrival rule', async () => {
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
-      appointmentQueueMappings: [],
+      appointmentArrivalRules: [
+        {
+          appointmentServiceUuid: appointment.service.uuid,
+          appointmentLocationUuid: appointment.location.uuid,
+          arrivalPolicy: 'direct',
+          requiredVisitTypeUuid,
+        },
+      ],
       checkInButton: { enabled: true, showIfActiveVisit: true, customUrl: '' },
     });
 
     renderModal();
-    await userEvent.click(getQueueButton());
-    expect(await screen.findByRole('alert')).toHaveTextContent(queueMappingMissingMessage);
-
+    expect(screen.queryByRole('button', { name: /enviar a cola de espera/i })).not.toBeInTheDocument();
     await userEvent.click(getDirectButton());
 
     await waitFor(() =>
@@ -200,40 +212,57 @@ describe('AppointmentArrivalModal', () => {
     expect(closeModal).toHaveBeenCalled();
   });
 
-  it('fails closed with an inline error when multiple queue mappings match', async () => {
+  it('offers only the queue for a queue-required arrival rule', () => {
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
-      appointmentQueueMappings: [
-        appointmentQueueMapping,
-        { ...appointmentQueueMapping, queueUuid: 'second-queue-uuid', queueLocationUuid: 'second-queue-location-uuid' },
+      appointmentArrivalRules: [{ ...appointmentArrivalRule, arrivalPolicy: 'queue-required' }],
+      checkInButton: { enabled: true, showIfActiveVisit: true, customUrl: '' },
+    });
+
+    renderModal();
+
+    expect(getQueueButton()).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /iniciar atención directamente/i })).not.toBeInTheDocument();
+  });
+
+  it('fails closed with an inline error when multiple arrival rules match', () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentArrivalRules: [
+        appointmentArrivalRule,
+        {
+          ...appointmentArrivalRule,
+          queueUuid: 'second-queue-uuid',
+          queueLocationUuid: 'second-queue-location-uuid',
+        },
       ],
       checkInButton: { enabled: true, showIfActiveVisit: true, customUrl: '' },
     });
 
     renderModal();
-    await userEvent.click(getQueueButton());
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Existe más de una regla de cola para este servicio y sede. Corrija la configuración antes de admitir la cita.',
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Existe más de una regla de llegada para este servicio y ubicación. Corrija la configuración antes de admitir la cita.',
     );
+    expect(screen.queryByRole('button', { name: /enviar a cola de espera/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /iniciar atención directamente/i })).not.toBeInTheDocument();
     expect(mockGetActiveVisitsForPatient).not.toHaveBeenCalled();
     expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
     expect(closeModal).not.toHaveBeenCalled();
   });
 
-  it('shows an inline error for both options when the appointment has no location', async () => {
-    const legacyAppointment = { ...appointment, location: undefined } as unknown as Appointment;
+  it('fails closed when the appointment has no location', () => {
+    const legacyAppointment = {
+      ...appointment,
+      location: undefined,
+    } as unknown as Appointment;
 
     renderModal(legacyAppointment);
-    await userEvent.click(getQueueButton());
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'La cita no tiene una sede válida. Regularice la cita antes de iniciar la atención.',
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'La cita no tiene una ubicación válida. Regularice la cita antes de iniciar la atención.',
     );
-
-    await userEvent.click(getDirectButton());
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'La cita no tiene una sede válida. Regularice la cita antes de iniciar la atención.',
-    );
+    expect(screen.queryByRole('button', { name: /enviar a cola de espera/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /iniciar atención directamente/i })).not.toBeInTheDocument();
     expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
     expect(closeModal).not.toHaveBeenCalled();
   });
@@ -263,7 +292,9 @@ describe('AppointmentArrivalModal', () => {
     expect(closeModal).toHaveBeenCalled();
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
 
-    const launchOptions = mockLaunchWorkspace2.mock.calls[0][1] as { onQueueEntryAdded: () => Promise<void> };
+    const launchOptions = mockLaunchWorkspace2.mock.calls[0][1] as {
+      onQueueEntryAdded: () => Promise<void>;
+    };
     await act(async () => launchOptions.onQueueEntryAdded());
 
     expect(mockChangeAppointmentStatus).toHaveBeenCalledWith('CheckedIn', appointment.uuid);
@@ -277,10 +308,18 @@ describe('AppointmentArrivalModal', () => {
       'appointments-start-visit-workspace',
       expect.objectContaining({
         patientUuid: appointment.patient.uuid,
-        additionalVisitAttributes: [{ attributeType: appointmentVisitAttributeTypeUuid, value: appointment.uuid }],
-        visitPersistenceCorrelation: { attributeType: appointmentVisitAttributeTypeUuid, value: appointment.uuid },
-        currentQueueLocationUuid: appointmentQueueMapping.queueLocationUuid,
-        currentServiceQueueUuid: appointmentQueueMapping.queueUuid,
+        additionalVisitAttributes: [
+          {
+            attributeType: appointmentVisitAttributeTypeUuid,
+            value: appointment.uuid,
+          },
+        ],
+        visitPersistenceCorrelation: {
+          attributeType: appointmentVisitAttributeTypeUuid,
+          value: appointment.uuid,
+        },
+        currentQueueLocationUuid: appointmentArrivalRule.queueLocationUuid,
+        currentServiceQueueUuid: appointmentArrivalRule.queueUuid,
         requiredVisitLocation: {
           uuid: appointment.location.uuid,
           display: appointment.location.name,
@@ -293,7 +332,9 @@ describe('AppointmentArrivalModal', () => {
     expect(closeModal).toHaveBeenCalled();
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
 
-    const launchOptions = mockLaunchWorkspace2.mock.calls[0][1] as { onVisitStarted: () => Promise<void> };
+    const launchOptions = mockLaunchWorkspace2.mock.calls[0][1] as {
+      onVisitStarted: () => Promise<void>;
+    };
     await act(async () => launchOptions.onVisitStarted());
 
     expect(mockChangeAppointmentStatus).toHaveBeenCalledWith(AppointmentStatus.CHECKEDIN, appointment.uuid);
@@ -301,7 +342,12 @@ describe('AppointmentArrivalModal', () => {
 
   it('blocks enqueuing with an active visit from another location', async () => {
     mockGetActiveVisitsForPatient.mockResolvedValue(
-      visitsResponse([{ ...activeVisit, location: { uuid: 'other-location', name: 'Otra sede' } }]),
+      visitsResponse([
+        {
+          ...activeVisit,
+          location: { uuid: 'other-location', name: 'Otra sede' },
+        },
+      ]),
     );
 
     renderModal();
@@ -317,7 +363,12 @@ describe('AppointmentArrivalModal', () => {
 
   it('blocks enqueuing with an incompatible active visit type', async () => {
     mockGetActiveVisitsForPatient.mockResolvedValue(
-      visitsResponse([{ ...activeVisit, visitType: { uuid: 'other-visit-type', display: 'Otro tipo' } }]),
+      visitsResponse([
+        {
+          ...activeVisit,
+          visitType: { uuid: 'other-visit-type', display: 'Otro tipo' },
+        },
+      ]),
     );
 
     renderModal();
@@ -331,9 +382,14 @@ describe('AppointmentArrivalModal', () => {
   });
 
   it('rejects queue persistence when the active visit changes location while the workspace is open', async () => {
-    mockGetActiveVisitsForPatient
-      .mockResolvedValueOnce(visitsResponse([activeVisit]))
-      .mockResolvedValueOnce(visitsResponse([{ ...activeVisit, location: { uuid: 'other-location', name: 'Otra' } }]));
+    mockGetActiveVisitsForPatient.mockResolvedValueOnce(visitsResponse([activeVisit])).mockResolvedValueOnce(
+      visitsResponse([
+        {
+          ...activeVisit,
+          location: { uuid: 'other-location', name: 'Otra' },
+        },
+      ]),
+    );
 
     renderModal();
     await userEvent.click(getQueueButton());
@@ -402,8 +458,16 @@ describe('AppointmentArrivalModal', () => {
         'appointments-start-visit-workspace',
         expect.objectContaining({
           patientUuid: appointment.patient.uuid,
-          additionalVisitAttributes: [{ attributeType: appointmentVisitAttributeTypeUuid, value: appointment.uuid }],
-          visitPersistenceCorrelation: { attributeType: appointmentVisitAttributeTypeUuid, value: appointment.uuid },
+          additionalVisitAttributes: [
+            {
+              attributeType: appointmentVisitAttributeTypeUuid,
+              value: appointment.uuid,
+            },
+          ],
+          visitPersistenceCorrelation: {
+            attributeType: appointmentVisitAttributeTypeUuid,
+            value: appointment.uuid,
+          },
           requiredVisitLocation: {
             uuid: appointment.location.uuid,
             display: appointment.location.name,
@@ -417,7 +481,11 @@ describe('AppointmentArrivalModal', () => {
 
     const [, launchOptions] = mockLaunchWorkspace2.mock.calls[0] as [
       string,
-      { currentServiceQueueUuid?: string; currentQueueLocationUuid?: string; onVisitStarted: () => Promise<void> },
+      {
+        currentServiceQueueUuid?: string;
+        currentQueueLocationUuid?: string;
+        onVisitStarted: () => Promise<void>;
+      },
     ];
     expect(launchOptions.currentServiceQueueUuid).toBeUndefined();
     expect(launchOptions.currentQueueLocationUuid).toBeUndefined();
@@ -453,10 +521,17 @@ describe('AppointmentArrivalModal', () => {
     });
   });
 
-  it('starts care directly with an active visit even when the service has no queue mapping', async () => {
+  it('reuses an active visit for a direct-only arrival rule', async () => {
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
-      appointmentQueueMappings: [],
+      appointmentArrivalRules: [
+        {
+          appointmentServiceUuid: appointment.service.uuid,
+          appointmentLocationUuid: appointment.location.uuid,
+          arrivalPolicy: 'direct',
+          requiredVisitTypeUuid,
+        },
+      ],
       checkInButton: { enabled: true, showIfActiveVisit: true, customUrl: '' },
     });
     mockGetActiveVisitsForPatient.mockResolvedValue(visitsResponse([activeVisit]));
@@ -471,7 +546,12 @@ describe('AppointmentArrivalModal', () => {
 
   it('blocks starting care directly with an active visit from another location', async () => {
     mockGetActiveVisitsForPatient.mockResolvedValue(
-      visitsResponse([{ ...activeVisit, location: { uuid: 'other-location', name: 'Otra sede' } }]),
+      visitsResponse([
+        {
+          ...activeVisit,
+          location: { uuid: 'other-location', name: 'Otra sede' },
+        },
+      ]),
     );
 
     renderModal();

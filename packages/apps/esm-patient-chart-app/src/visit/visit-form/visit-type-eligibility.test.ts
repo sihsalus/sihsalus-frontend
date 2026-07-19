@@ -5,14 +5,18 @@ import { type VisitTypeEligibilityRule } from '../../config-schema';
 import { filterVisitTypesByEligibility } from './visit-type-eligibility';
 
 const visitTypes = [
-  { uuid: 'general', display: 'Consulta Ambulatoria - Medicina General' },
-  { uuid: 'gynecology', display: 'Consulta Ambulatoria - Ginecología' },
-  { uuid: 'emergency', display: 'Emergencia - Medicina' },
+  { uuid: 'ambulatory', display: 'Consulta Ambulatoria' },
+  { uuid: 'group', display: 'Atención Grupal' },
+  { uuid: 'emergency', display: 'Emergencia' },
 ] as Array<VisitType>;
 
 const rules: Array<VisitTypeEligibilityRule> = [
-  { locationUuid: 'outpatient', visitTypeUuids: ['general'] },
-  { locationUuid: 'outpatient', visitTypeUuids: ['gynecology'], allowedGenders: ['F'] },
+  { locationUuid: 'outpatient', visitTypeUuids: ['ambulatory'] },
+  {
+    locationUuid: 'outpatient',
+    visitTypeUuids: ['group'],
+    allowedGenders: ['F'],
+  },
   { locationUuid: 'emergency', visitTypeUuids: ['emergency'] },
 ];
 
@@ -25,14 +29,14 @@ describe('filterVisitTypesByEligibility', () => {
 
   it('excludes gender-restricted visit types for an incompatible patient', () => {
     expect(filterVisitTypesByEligibility(visitTypes, rules, 'outpatient', 'male').map(({ uuid }) => uuid)).toEqual([
-      'general',
+      'ambulatory',
     ]);
   });
 
   it('includes gender-restricted visit types for a compatible patient', () => {
     expect(filterVisitTypesByEligibility(visitTypes, rules, 'outpatient', 'F').map(({ uuid }) => uuid)).toEqual([
-      'general',
-      'gynecology',
+      'ambulatory',
+      'group',
     ]);
   });
 

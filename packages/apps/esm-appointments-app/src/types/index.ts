@@ -75,7 +75,7 @@ export interface AppointmentService {
   location?: OpenmrsResource;
   maxAppointmentsLimit: number | null;
   name: string;
-  specialityUuid?: OpenmrsResource | Record<string, never>;
+  speciality?: OpenmrsResource | Record<string, never>;
   startTime: string;
   uuid: string;
   serviceTypes?: Array<ServiceTypes>;
@@ -159,6 +159,12 @@ export interface Provider {
   response?: string;
   person: OpenmrsResource;
   name?: string;
+  attributes?: Array<{
+    uuid: string;
+    attributeType?: OpenmrsResource;
+    value?: unknown;
+    voided?: boolean;
+  }>;
 }
 
 export enum DurationPeriod {

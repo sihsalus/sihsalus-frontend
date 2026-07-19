@@ -16,16 +16,6 @@
   border: 0;
 }
 
-.dropdownGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: layout.$spacing-05;
-}
-
-.singleColumn {
-  grid-template-columns: 1fr;
-}
-
 .tileContainer {
   background-color: $ui-02;
   padding: layout.$spacing-09 0;
@@ -51,10 +41,4 @@
 .helper {
   @include type.type-style('body-compact-01');
   color: $text-02;
-}
-
-@media (max-width: 42rem) {
-  .dropdownGrid {
-    grid-template-columns: 1fr;
-  }
 }

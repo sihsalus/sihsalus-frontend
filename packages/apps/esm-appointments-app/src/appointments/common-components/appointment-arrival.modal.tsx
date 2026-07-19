@@ -32,9 +32,10 @@ const ACTIVE_VISIT_CHANGED = 'ACTIVE_VISIT_CHANGED';
 const ACTIVE_VISIT_LOCATION_MISMATCH = 'ACTIVE_VISIT_LOCATION_MISMATCH';
 const ACTIVE_VISIT_TYPE_MISMATCH = 'ACTIVE_VISIT_TYPE_MISMATCH';
 const APPOINTMENT_LOCATION_MISSING = 'APPOINTMENT_LOCATION_MISSING';
-const APPOINTMENT_QUEUE_MAPPING_AMBIGUOUS = 'APPOINTMENT_QUEUE_MAPPING_AMBIGUOUS';
-const APPOINTMENT_QUEUE_MAPPING_MISSING = 'APPOINTMENT_QUEUE_MAPPING_MISSING';
-const APPOINTMENT_VISIT_TYPE_MAPPING_MISSING = 'APPOINTMENT_VISIT_TYPE_MAPPING_MISSING';
+const APPOINTMENT_ARRIVAL_RULE_AMBIGUOUS = 'APPOINTMENT_ARRIVAL_RULE_AMBIGUOUS';
+const APPOINTMENT_ARRIVAL_RULE_INVALID = 'APPOINTMENT_ARRIVAL_RULE_INVALID';
+const APPOINTMENT_ARRIVAL_RULE_MISSING = 'APPOINTMENT_ARRIVAL_RULE_MISSING';
+const APPOINTMENT_ARRIVAL_ACTION_NOT_ALLOWED = 'APPOINTMENT_ARRIVAL_ACTION_NOT_ALLOWED';
 const MULTIPLE_ACTIVE_VISITS = 'MULTIPLE_ACTIVE_VISITS';
 
 type ArrivalAction = 'queue' | 'direct';
@@ -49,10 +50,10 @@ interface AppointmentArrivalModalProps {
 /**
  * Modal de registro de llegada de una cita. Ofrece dos rutas:
  *
- * 1. «Enviar a cola de espera»: el flujo de admisión existente (visita + queue
+ * 1. «Enviar a cola de espera»: el flujo de admisión existente (consulta + queue
  *    entry vía workspaces). Los errores de validación previos al lanzamiento
- *    del workspace (p. ej. cola no configurada para servicio+sede) se muestran
- *    inline dentro del modal sin cerrarlo, dejando disponible la otra opción.
+ *    del workspace se muestran inline dentro del modal sin cerrarlo. La política
+ *    configurada determina si esta ruta es obligatoria, opcional o no aplica.
  * 2. «Iniciar atención directamente»: marca la cita como admitida y asegura
  *    una consulta activa (reutiliza la activa o abre el formulario de inicio de
  *    consulta sin parámetros de cola) sin crear queue entry, y navega a la
@@ -64,23 +65,26 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
   closeModal,
   mutateVisits,
 }) => {
-  const { appointmentQueueMappings, appointmentVisitAttributeTypeUuid, checkInButton, customPatientChartUrl } =
+  const { appointmentArrivalRules, appointmentVisitAttributeTypeUuid, checkInButton, customPatientChartUrl } =
     useConfig<ConfigObject>();
   const { t } = useTranslation();
   const { mutateAppointments } = useMutateAppointments();
   const [pendingAction, setPendingAction] = useState<ArrivalAction | null>(null);
-  const [inlineErrorMessage, setInlineErrorMessage] = useState<string | null>(null);
+  const [inlineError, setInlineError] = useState<unknown>(null);
   const isBusy = pendingAction !== null;
 
   const appointmentLocationUuid = appointment.location?.uuid;
-  const exactQueueMappings = appointmentLocationUuid
-    ? (appointmentQueueMappings ?? []).filter(
-        (mapping) =>
-          mapping.appointmentServiceUuid === appointment.service.uuid &&
-          mapping.appointmentLocationUuid === appointmentLocationUuid,
+  const exactArrivalRules = appointmentLocationUuid
+    ? (appointmentArrivalRules ?? []).filter(
+        (rule) =>
+          rule.appointmentServiceUuid === appointment.service.uuid &&
+          rule.appointmentLocationUuid === appointmentLocationUuid,
       )
     : [];
-  const queueMapping = exactQueueMappings.length === 1 ? exactQueueMappings[0] : undefined;
+  const arrivalRule = exactArrivalRules.length === 1 ? exactArrivalRules[0] : undefined;
+  const canSendToQueue =
+    arrivalRule?.arrivalPolicy === 'queue-optional' || arrivalRule?.arrivalPolicy === 'queue-required';
+  const canStartDirectly = arrivalRule?.arrivalPolicy === 'queue-optional' || arrivalRule?.arrivalPolicy === 'direct';
 
   const getCheckInErrorMessageOptions = () =>
     ({
@@ -105,21 +109,25 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           'activeVisitTypeMismatch',
           'El tipo de la consulta activa no corresponde al servicio de la cita. Regularice la consulta antes de continuar.',
         ),
-        [APPOINTMENT_VISIT_TYPE_MAPPING_MISSING]: t(
-          'appointmentVisitTypeMappingMissing',
-          'Este servicio no tiene una regla aprobada para reutilizar una consulta activa. Inicie una nueva atención cuando no exista otra consulta activa.',
-        ),
         [APPOINTMENT_LOCATION_MISSING]: t(
           'appointmentLocationMissing',
-          'La cita no tiene una sede válida. Regularice la cita antes de iniciar la atención.',
+          'La cita no tiene una ubicación válida. Regularice la cita antes de iniciar la atención.',
         ),
-        [APPOINTMENT_QUEUE_MAPPING_AMBIGUOUS]: t(
-          'appointmentQueueMappingAmbiguous',
-          'Existe más de una regla de cola para este servicio y sede. Corrija la configuración antes de admitir la cita.',
+        [APPOINTMENT_ARRIVAL_RULE_AMBIGUOUS]: t(
+          'appointmentArrivalRuleAmbiguous',
+          'Existe más de una regla de llegada para este servicio y ubicación. Corrija la configuración antes de admitir la cita.',
         ),
-        [APPOINTMENT_QUEUE_MAPPING_MISSING]: t(
-          'appointmentQueueMappingMissing',
-          'No existe una cola configurada para el servicio y la sede de esta cita. Contacte al administrador antes de continuar.',
+        [APPOINTMENT_ARRIVAL_RULE_MISSING]: t(
+          'appointmentArrivalRuleMissing',
+          'No existe una regla de llegada configurada para el servicio y la ubicación de esta cita. Contacte al administrador antes de continuar.',
+        ),
+        [APPOINTMENT_ARRIVAL_RULE_INVALID]: t(
+          'appointmentArrivalRuleInvalid',
+          'La regla de llegada de este servicio está incompleta. Corrija la configuración antes de admitir la cita.',
+        ),
+        [APPOINTMENT_ARRIVAL_ACTION_NOT_ALLOWED]: t(
+          'appointmentArrivalActionNotAllowed',
+          'La modalidad de llegada seleccionada no está habilitada para este servicio.',
         ),
         [APPOINTMENT_VISIT_LINK_CONFIGURATION_MISSING]: t(
           'appointmentVisitLinkNotConfigured',
@@ -129,13 +137,51 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       logContext: 'Check in appointment',
     }) as const;
 
-  const getCheckInErrorMessage = (error: unknown) =>
-    getCompatibleUserFacingErrorMessage(
-      error,
-      t('appointmentCheckInFailed', 'No se pudo completar la admisión de la cita. Intente nuevamente.'),
-      getCheckInErrorMessageOptions(),
-      frameworkGetUserFacingErrorMessage,
-    );
+  const getRoutingConfigurationError = () => {
+    if (!appointmentLocationUuid) {
+      return Object.assign(new Error('The appointment does not have a location.'), {
+        code: APPOINTMENT_LOCATION_MISSING,
+      });
+    }
+    if (exactArrivalRules.length > 1) {
+      return Object.assign(new Error('Multiple arrival rules match this appointment.'), {
+        code: APPOINTMENT_ARRIVAL_RULE_AMBIGUOUS,
+      });
+    }
+    if (!arrivalRule) {
+      return Object.assign(new Error('No arrival rule matches this appointment service and location.'), {
+        code: APPOINTMENT_ARRIVAL_RULE_MISSING,
+      });
+    }
+
+    const isQueuePolicy =
+      arrivalRule.arrivalPolicy === 'queue-optional' || arrivalRule.arrivalPolicy === 'queue-required';
+    const hasCompleteQueue = Boolean(arrivalRule.queueUuid && arrivalRule.queueLocationUuid);
+    if ((isQueuePolicy && !hasCompleteQueue) || (arrivalRule.arrivalPolicy === 'direct' && hasCompleteQueue)) {
+      return Object.assign(new Error('The arrival rule has inconsistent queue fields.'), {
+        code: APPOINTMENT_ARRIVAL_RULE_INVALID,
+      });
+    }
+    return null;
+  };
+
+  const assertArrivalActionIsConfigured = (action: ArrivalAction) => {
+    const configurationError = getRoutingConfigurationError();
+    if (configurationError) {
+      throw configurationError;
+    }
+    if (!arrivalRule) {
+      throw Object.assign(new Error('No arrival rule matches this appointment service and location.'), {
+        code: APPOINTMENT_ARRIVAL_RULE_MISSING,
+      });
+    }
+    if ((action === 'queue' && !canSendToQueue) || (action === 'direct' && !canStartDirectly)) {
+      throw Object.assign(new Error('The selected arrival action is not allowed by the routing rule.'), {
+        code: APPOINTMENT_ARRIVAL_ACTION_NOT_ALLOWED,
+      });
+    }
+    return arrivalRule;
+  };
 
   // Errores que ocurren cuando el modal ya se cerró (callbacks de los
   // workspaces) siguen llegando al usuario como snackbar, igual que antes.
@@ -202,20 +248,13 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     }
   };
 
-  const assertVisitTypeIsCompatible = (visit: Visit, requireMapping: boolean) => {
-    if (!queueMapping) {
-      if (requireMapping) {
-        throw Object.assign(new Error('No approved visit type mapping exists for the appointment service.'), {
-          code: APPOINTMENT_VISIT_TYPE_MAPPING_MISSING,
-        });
-      }
-      return;
+  const assertVisitTypeIsCompatible = (visit: Visit) => {
+    if (!arrivalRule) {
+      throw Object.assign(new Error('No approved arrival rule exists for the appointment service.'), {
+        code: APPOINTMENT_ARRIVAL_RULE_MISSING,
+      });
     }
-
-    const compatibleVisitTypeUuids = queueMapping.compatibleActiveVisitTypeUuids?.length
-      ? queueMapping.compatibleActiveVisitTypeUuids
-      : [queueMapping.requiredVisitTypeUuid];
-    if (!visit.visitType?.uuid || !compatibleVisitTypeUuids.includes(visit.visitType.uuid)) {
+    if (!visit.visitType?.uuid || visit.visitType.uuid !== arrivalRule.requiredVisitTypeUuid) {
       throw Object.assign(new Error('The active visit type is not compatible with the appointment service.'), {
         code: ACTIVE_VISIT_TYPE_MISMATCH,
       });
@@ -239,7 +278,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     return appointmentLocationUuid;
   };
 
-  const validateBeforePersistence = async (expectedVisit?: Visit, requireMappedVisitType = false) => {
+  const validateBeforePersistence = async (expectedVisit?: Visit) => {
     try {
       assertVisitLinkIsConfigured();
       if (!(await validateAppointmentStatus(Boolean(expectedVisit)))) {
@@ -254,7 +293,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       }
       if (expectedVisit && activeVisit) {
         assertVisitMatchesAppointmentLocation(activeVisit);
-        assertVisitTypeIsCompatible(activeVisit, requireMappedVisitType);
+        assertVisitTypeIsCompatible(activeVisit);
         await ensureAppointmentVisitLink(activeVisit.uuid, appointment.uuid, appointmentVisitAttributeTypeUuid);
       }
       return true;
@@ -296,31 +335,27 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
 
   const handleSendToQueue = async () => {
     setPendingAction('queue');
-    setInlineErrorMessage(null);
+    setInlineError(null);
     try {
+      const rule = assertArrivalActionIsConfigured('queue');
       assertVisitLinkIsConfigured();
-      if (exactQueueMappings.length > 1) {
-        throw Object.assign(new Error('Multiple queue mappings match this appointment.'), {
-          code: APPOINTMENT_QUEUE_MAPPING_AMBIGUOUS,
-        });
-      }
       const requiredAppointmentLocationUuid = getAppointmentLocationUuid();
       if (!(await validateAppointmentStatus())) {
         closeModal();
         return;
       }
-      if (!queueMapping) {
-        throw Object.assign(new Error('No queue mapping matches this appointment service and location.'), {
-          code: APPOINTMENT_QUEUE_MAPPING_MISSING,
+      if (!rule.queueUuid || !rule.queueLocationUuid) {
+        throw Object.assign(new Error('The queue arrival rule is incomplete.'), {
+          code: APPOINTMENT_ARRIVAL_RULE_INVALID,
         });
       }
-      const requiredQueueLocationUuid = queueMapping.queueLocationUuid;
+      const requiredQueueLocationUuid = rule.queueLocationUuid;
 
       const activeVisits = await fetchActiveVisits();
 
       if (activeVisits[0]) {
         assertVisitMatchesAppointmentLocation(activeVisits[0]);
-        assertVisitTypeIsCompatible(activeVisits[0], true);
+        assertVisitTypeIsCompatible(activeVisits[0]);
         if (!checkInButton.showIfActiveVisit) {
           mutateVisits?.();
           closeModal();
@@ -329,17 +364,17 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         await launchWorkspace2(addActiveVisitToQueueWorkspace, {
           activeVisit: activeVisits[0],
           currentQueueLocationUuid: requiredQueueLocationUuid,
-          currentServiceQueueUuid: queueMapping.queueUuid,
+          currentServiceQueueUuid: rule.queueUuid,
           requestedServiceName: appointment.service.name,
           requiredVisitLocation: {
             uuid: requiredAppointmentLocationUuid,
             display: appointment.location?.name ?? '',
           },
-          requiredVisitTypeUuid: queueMapping.requiredVisitTypeUuid,
+          requiredVisitTypeUuid: rule.requiredVisitTypeUuid,
           selectedPatientUuid: patientUuid,
           startVisitWorkspaceName: appointmentsStartVisitWorkspace,
           visitFormOpenedFrom: 'appointments-check-in',
-          onBeforeQueueEntrySave: (visit: Visit) => validateBeforePersistence(visit, true),
+          onBeforeQueueEntrySave: (visit: Visit) => validateBeforePersistence(visit),
           onQueueEntryAdded: () =>
             checkInFromWorkspaceCallback(
               t(
@@ -365,16 +400,16 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           value: appointment.uuid,
         },
         currentQueueLocationUuid: requiredQueueLocationUuid,
-        currentServiceQueueUuid: queueMapping.queueUuid,
+        currentServiceQueueUuid: rule.queueUuid,
         requestedServiceName: appointment.service.name,
         requiredVisitLocation: {
           uuid: requiredAppointmentLocationUuid,
           display: appointment.location?.name ?? '',
         },
-        requiredVisitTypeUuid: queueMapping.requiredVisitTypeUuid,
+        requiredVisitTypeUuid: rule.requiredVisitTypeUuid,
         showPatientHeader: true,
         openedFrom: 'appointments-check-in',
-        onBeforeVisitSave: (visit?: Visit) => validateBeforePersistence(visit, true),
+        onBeforeVisitSave: (visit?: Visit) => validateBeforePersistence(visit),
         onVisitStarted: async () => {
           mutateVisits?.();
           await checkInFromWorkspaceCallback(
@@ -387,7 +422,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       });
       closeModal();
     } catch (error) {
-      setInlineErrorMessage(getCheckInErrorMessage(error));
+      setInlineError(error);
     } finally {
       setPendingAction(null);
     }
@@ -395,8 +430,9 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
 
   const handleStartDirectly = async () => {
     setPendingAction('direct');
-    setInlineErrorMessage(null);
+    setInlineError(null);
     try {
+      const rule = assertArrivalActionIsConfigured('direct');
       assertVisitLinkIsConfigured();
       const requiredAppointmentLocationUuid = getAppointmentLocationUuid();
       if (!(await validateAppointmentStatus())) {
@@ -408,7 +444,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
 
       if (activeVisits[0]) {
         assertVisitMatchesAppointmentLocation(activeVisits[0]);
-        assertVisitTypeIsCompatible(activeVisits[0], false);
+        assertVisitTypeIsCompatible(activeVisits[0]);
         await ensureAppointmentVisitLink(activeVisits[0].uuid, appointment.uuid, appointmentVisitAttributeTypeUuid);
         await checkIn(
           t(
@@ -441,10 +477,10 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           uuid: requiredAppointmentLocationUuid,
           display: appointment.location?.name ?? '',
         },
-        requiredVisitTypeUuid: queueMapping?.requiredVisitTypeUuid,
+        requiredVisitTypeUuid: rule.requiredVisitTypeUuid,
         showPatientHeader: true,
         openedFrom: 'appointments-direct-start',
-        onBeforeVisitSave: (visit?: Visit) => validateBeforePersistence(visit, false),
+        onBeforeVisitSave: (visit?: Visit) => validateBeforePersistence(visit),
         onVisitStarted: async () => {
           mutateVisits?.();
           await checkInFromWorkspaceCallback(
@@ -458,11 +494,14 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       });
       closeModal();
     } catch (error) {
-      setInlineErrorMessage(getCheckInErrorMessage(error));
+      setInlineError(error);
     } finally {
       setPendingAction(null);
     }
   };
+
+  const routingConfigurationError = getRoutingConfigurationError();
+  const displayedError = inlineError ?? routingConfigurationError;
 
   return (
     <>
@@ -481,14 +520,19 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           </p>
         </div>
         <p>{t('arrivalModalDescription', 'Seleccione cómo desea registrar la llegada del paciente.')}</p>
-        {inlineErrorMessage ? (
+        {displayedError ? (
           <InlineNotification
             hideCloseButton
             kind="error"
             lowContrast
             role="alert"
             title={t('checkInFailed', 'No se pudo admitir la cita')}
-            subtitle={inlineErrorMessage}
+            subtitle={getCompatibleUserFacingErrorMessage(
+              displayedError,
+              t('appointmentCheckInFailed', 'No se pudo completar la admisión de la cita. Intente nuevamente.'),
+              getCheckInErrorMessageOptions(),
+              frameworkGetUserFacingErrorMessage,
+            )}
           />
         ) : null}
       </ModalBody>
@@ -496,20 +540,24 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         <Button disabled={isBusy} kind="secondary" onClick={closeModal}>
           {t('cancel', 'Cancelar')}
         </Button>
-        <Button disabled={isBusy} kind="tertiary" onClick={handleStartDirectly}>
-          {pendingAction === 'direct' ? (
-            <InlineLoading description={t('startingDirectCare', 'Iniciando atención') + '...'} />
-          ) : (
-            t('startCareDirectly', 'Iniciar atención directamente')
-          )}
-        </Button>
-        <Button disabled={isBusy} kind="primary" onClick={handleSendToQueue}>
-          {pendingAction === 'queue' ? (
-            <InlineLoading description={t('sendingToQueue', 'Enviando a cola de espera') + '...'} />
-          ) : (
-            t('sendToWaitingQueue', 'Enviar a cola de espera')
-          )}
-        </Button>
+        {canStartDirectly && !routingConfigurationError ? (
+          <Button disabled={isBusy} kind={canSendToQueue ? 'tertiary' : 'primary'} onClick={handleStartDirectly}>
+            {pendingAction === 'direct' ? (
+              <InlineLoading description={t('startingDirectCare', 'Iniciando atención') + '...'} />
+            ) : (
+              t('startCareDirectly', 'Iniciar atención directamente')
+            )}
+          </Button>
+        ) : null}
+        {canSendToQueue && !routingConfigurationError ? (
+          <Button disabled={isBusy} kind="primary" onClick={handleSendToQueue}>
+            {pendingAction === 'queue' ? (
+              <InlineLoading description={t('sendingToQueue', 'Enviando a cola de espera') + '...'} />
+            ) : (
+              t('sendToWaitingQueue', 'Enviar a cola de espera')
+            )}
+          </Button>
+        ) : null}
       </ModalFooter>
     </>
   );

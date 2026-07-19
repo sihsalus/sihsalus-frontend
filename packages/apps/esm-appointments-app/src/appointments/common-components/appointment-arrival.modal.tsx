@@ -510,6 +510,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
 
   const routingConfigurationError = getRoutingConfigurationError();
   const displayedErrorMessage =
+    // error-exposure-guard-ignore -- getCheckInErrorMessage normalizes through getCompatibleUserFacingErrorMessage before rendering
     inlineErrorMessage ?? (routingConfigurationError ? getCheckInErrorMessage(routingConfigurationError) : null);
 
   return (

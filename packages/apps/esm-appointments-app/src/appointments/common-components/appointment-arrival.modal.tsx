@@ -70,7 +70,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
   const { t } = useTranslation();
   const { mutateAppointments } = useMutateAppointments();
   const [pendingAction, setPendingAction] = useState<ArrivalAction | null>(null);
-  const [inlineErrorMessage, setInlineErrorMessage] = useState<string | null>(null);
+  const [inlineError, setInlineError] = useState<unknown>(null);
   const isBusy = pendingAction !== null;
 
   const appointmentLocationUuid = appointment.location?.uuid;
@@ -136,14 +136,6 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       },
       logContext: 'Check in appointment',
     }) as const;
-
-  const getCheckInErrorMessage = (error: unknown) =>
-    getCompatibleUserFacingErrorMessage(
-      error,
-      t('appointmentCheckInFailed', 'No se pudo completar la admisión de la cita. Intente nuevamente.'),
-      getCheckInErrorMessageOptions(),
-      frameworkGetUserFacingErrorMessage,
-    );
 
   const getRoutingConfigurationError = () => {
     if (!appointmentLocationUuid) {
@@ -343,7 +335,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
 
   const handleSendToQueue = async () => {
     setPendingAction('queue');
-    setInlineErrorMessage(null);
+    setInlineError(null);
     try {
       const rule = assertArrivalActionIsConfigured('queue');
       assertVisitLinkIsConfigured();
@@ -430,7 +422,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       });
       closeModal();
     } catch (error) {
-      setInlineErrorMessage(getCheckInErrorMessage(error));
+      setInlineError(error);
     } finally {
       setPendingAction(null);
     }
@@ -438,7 +430,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
 
   const handleStartDirectly = async () => {
     setPendingAction('direct');
-    setInlineErrorMessage(null);
+    setInlineError(null);
     try {
       const rule = assertArrivalActionIsConfigured('direct');
       assertVisitLinkIsConfigured();
@@ -502,16 +494,14 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       });
       closeModal();
     } catch (error) {
-      setInlineErrorMessage(getCheckInErrorMessage(error));
+      setInlineError(error);
     } finally {
       setPendingAction(null);
     }
   };
 
   const routingConfigurationError = getRoutingConfigurationError();
-  const displayedErrorMessage =
-    // error-exposure-guard-ignore -- getCheckInErrorMessage normalizes through getCompatibleUserFacingErrorMessage before rendering
-    inlineErrorMessage ?? (routingConfigurationError ? getCheckInErrorMessage(routingConfigurationError) : null);
+  const displayedError = inlineError ?? routingConfigurationError;
 
   return (
     <>
@@ -530,14 +520,19 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           </p>
         </div>
         <p>{t('arrivalModalDescription', 'Seleccione cómo desea registrar la llegada del paciente.')}</p>
-        {displayedErrorMessage ? (
+        {displayedError ? (
           <InlineNotification
             hideCloseButton
             kind="error"
             lowContrast
             role="alert"
             title={t('checkInFailed', 'No se pudo admitir la cita')}
-            subtitle={displayedErrorMessage}
+            subtitle={getCompatibleUserFacingErrorMessage(
+              displayedError,
+              t('appointmentCheckInFailed', 'No se pudo completar la admisión de la cita. Intente nuevamente.'),
+              getCheckInErrorMessageOptions(),
+              frameworkGetUserFacingErrorMessage,
+            )}
           />
         ) : null}
       </ModalBody>

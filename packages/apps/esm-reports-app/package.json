@@ -37,12 +37,12 @@
     "url": "https://github.com/openmrs/openmrs-esm-admin-tools/issues"
   },
   "dependencies": {
-    "@carbon/react": "^1.83.0",
+    "@carbon/react": "^1.112.0",
     "@datasert/cronjs-matcher": "^1.2.0",
     "@datasert/cronjs-parser": "^1.2.0",
     "@sihsalus/esm-rbac": "workspace:*",
     "cronstrue": "^2.41.0",
-    "dayjs": "^1.8.36",
+    "dayjs": "^1.11.21",
     "lodash-es": "^4.17.21"
   },
   "peerDependencies": {

@@ -29,7 +29,10 @@ import {
   appointmentStartDateEditPrivilege,
 } from '../constants';
 import { useProviders } from '../hooks/useProviders';
-import { getAppointmentStatus } from '../patient-appointments/patient-appointments.resource';
+import {
+  changeAppointmentStatus,
+  getAppointmentStatus,
+} from '../patient-appointments/patient-appointments.resource';
 import { type Appointment, AppointmentKind, AppointmentStatus } from '../types';
 
 import { saveAppointment } from './appointments-form.resource';
@@ -45,6 +48,7 @@ const defaultProps = {
 };
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockChangeAppointmentStatus = vi.mocked(changeAppointmentStatus);
 const mockGetAppointmentStatus = vi.mocked(getAppointmentStatus);
 const mockGetUserFacingErrorMessage = vi.mocked(getUserFacingErrorMessage);
 const mockSaveAppointment = vi.mocked(saveAppointment);
@@ -130,6 +134,7 @@ vi.mock('../hooks/useProviders', async () => ({
 
 vi.mock('../patient-appointments/patient-appointments.resource', async () => ({
   ...(await vi.importActual('../patient-appointments/patient-appointments.resource')),
+  changeAppointmentStatus: vi.fn(),
   getAppointmentStatus: vi.fn(),
 }));
 
@@ -150,6 +155,7 @@ describe('AppointmentForm', () => {
     mockSaveAppointment.mockResolvedValue({} as FetchResponse<unknown>);
     mockOpenmrsFetch.mockResolvedValue({ data: {} } as FetchResponse<unknown>);
     mockGetAppointmentStatus.mockResolvedValue(AppointmentStatus.SCHEDULED);
+    mockChangeAppointmentStatus.mockResolvedValue({} as Awaited<ReturnType<typeof changeAppointmentStatus>>);
     mockGetUserFacingErrorMessage.mockImplementation((error, fallback, options) => {
       const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
       return code != null ? (options.codeMessages?.[code as string] ?? fallback) : fallback;
@@ -632,7 +638,7 @@ describe('AppointmentForm', () => {
     );
   });
 
-  it('does not expose or submit appointment status when editing', async () => {
+  it('shows the current appointment status when editing without adding it to the details payload', async () => {
     const user = userEvent.setup();
     const appointment = makeEditableAppointment();
 
@@ -643,8 +649,14 @@ describe('AppointmentForm', () => {
 
     await waitForLoadingToFinish();
     expect(screen.getByLabelText(/is this a recurring appointment/i)).toBeInTheDocument();
-    expect(screen.queryByLabelText(/select status/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/appointment status/i)).not.toBeInTheDocument();
+    const statusSelect = screen.getByLabelText(/select status/i) as HTMLSelectElement;
+    const statusOptions = Array.from(statusSelect.options, ({ value }) => value);
+    expect(statusSelect).toHaveValue(AppointmentStatus.SCHEDULED);
+    expect(statusOptions).toEqual([
+      AppointmentStatus.SCHEDULED,
+      AppointmentStatus.CANCELLED,
+      AppointmentStatus.MISSED,
+    ]);
 
     await user.click(screen.getByRole('button', { name: /save and close/i }));
 
@@ -656,6 +668,28 @@ describe('AppointmentForm', () => {
     );
     expect(mockSaveAppointment.mock.calls[0][0]).not.toHaveProperty('status');
     expect(mockSaveAppointment.mock.calls[0][0]).toEqual(expect.objectContaining({ uuid: appointment.uuid }));
+    expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
+  });
+
+  it('updates a valid administrative status after saving edited appointment details', async () => {
+    const user = userEvent.setup();
+    const appointment = makeEditableAppointment();
+
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 200 } as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
+
+    await waitForLoadingToFinish();
+    await user.selectOptions(screen.getByLabelText(/select status/i), AppointmentStatus.CANCELLED);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() =>
+      expect(mockChangeAppointmentStatus).toHaveBeenCalledWith(AppointmentStatus.CANCELLED, appointment.uuid),
+    );
+    expect(mockSaveAppointment.mock.invocationCallOrder[0]).toBeLessThan(
+      mockChangeAppointmentStatus.mock.invocationCallOrder[0],
+    );
   });
 
   it('blocks editing when another appointment causes a patient double-booking conflict', async () => {

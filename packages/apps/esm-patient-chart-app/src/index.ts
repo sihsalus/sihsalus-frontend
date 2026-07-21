@@ -182,6 +182,22 @@ export const startVisitWorkspace = getAsyncLifecycle(() => import('./visit/visit
   moduleName,
 });
 
+export const companionPersonSearchWorkspace = getAsyncLifecycle(
+  () => import('./visit/visit-form/companion-person-search.workspace'),
+  {
+    featureName: 'companion-person-search',
+    moduleName,
+  },
+);
+
+export const companionPersonRegistrationWorkspace = getAsyncLifecycle(
+  () => import('./visit/visit-form/companion-person-registration.workspace'),
+  {
+    featureName: 'companion-person-registration',
+    moduleName,
+  },
+);
+
 // t('markPatientDeceased', 'Marcar paciente como fallecido')
 export const markPatientDeceasedForm = getAsyncLifecycle(
   () => import('./mark-patient-deceased/mark-patient-deceased-form.workspace'),

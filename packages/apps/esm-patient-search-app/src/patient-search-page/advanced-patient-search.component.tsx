@@ -62,7 +62,7 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
     patientUuids: activeVisitPatientUuids,
     isLoading: areActiveVisitsLoading,
     error: activeVisitsError,
-  } = useActiveVisitPatientUuids(filters.hasActiveVisit);
+  } = useActiveVisitPatientUuids(filters.activeVisitStatus !== 'any');
 
   useEffect(() => {
     // hasMore reflects the last fetched page's `next` link, so advancing on it
@@ -103,8 +103,11 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
           }
         }
 
-        if (filters.hasActiveVisit && !activeVisitPatientUuids.has(patient.uuid)) {
-          return false;
+        if (filters.activeVisitStatus !== 'any') {
+          const hasActiveVisit = activeVisitPatientUuids.has(patient.uuid);
+          if (filters.activeVisitStatus === 'active' ? !hasActiveVisit : hasActiveVisit) {
+            return false;
+          }
         }
 
         // Person attributes filter
@@ -137,7 +140,7 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
     return searchResults;
   }, [activeVisitPatientUuids, filtersApplied, filters, searchResults]);
 
-  const activeVisitFilterIsLoading = filters.hasActiveVisit && areActiveVisitsLoading;
+  const activeVisitFilterIsLoading = filters.activeVisitStatus !== 'any' && areActiveVisitsLoading;
   const visibleResults = activeVisitFilterIsLoading ? [] : filteredResults;
   const paginationResetKey = useMemo(() => JSON.stringify([activeQuery, filters]), [activeQuery, filters]);
 

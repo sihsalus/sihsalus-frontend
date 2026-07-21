@@ -3,6 +3,7 @@
   "age": "Edad",
   "ageUnit": "Unidad",
   "any": "Cualquier",
+  "anyConsultationStatus": "Cualquier estado",
   "apply": "Aplicar",
   "birthdateInFuture": "La fecha de nacimiento no puede ser futura",
   "birthdateTooOld": "La fecha de nacimiento no puede ser de hace más de 140 años",
@@ -10,6 +11,7 @@
   "clearSearch": "Borrar",
   "close": "Cerrar",
   "closeSearch": "Cerrar Panel de Búsqueda",
+  "consultationStatus": "Estado de consulta",
   "countOfFiltersApplied_one": "{{count}} filtros aplicados",
   "countOfFiltersApplied_many": "{{count}} filtros aplicados",
   "countOfFiltersApplied_other": "{{count}} filtros aplicados",
@@ -69,6 +71,8 @@
   "trySearchWithPatientUniqueID": "Intente buscar nuevamente usando un dato de identificación del paciente",
   "unknown": "Desconocido",
   "unsupportedAttributeFormat": "Formato de atributo no soportado: {{format}}",
+  "withActiveConsultation": "Con consulta activa",
+  "withoutActiveConsultation": "Sin consulta activa",
   "yearOfBirth": "Año de Nacimiento",
   "years": "Años"
 }

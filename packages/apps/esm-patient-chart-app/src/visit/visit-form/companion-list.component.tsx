@@ -1,13 +1,19 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
-import { InlineLoading } from '@carbon/react';
+import { Button, ButtonSet, InlineLoading, RadioButton, RadioButtonGroup } from '@carbon/react';
 import { type FetchResponse, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { type CompanionRecord } from './companion.resource';
 import styles from './visit-form.scss';
 
 interface CompanionListProps {
-  patientUuid: string;
+  companions: Array<CompanionRecord>;
+  isLoading: boolean;
+  onRegisterPerson?: () => void;
+  onSearchPerson?: () => void;
+  onSelectCompanion: (relationshipUuid: string) => void;
   required?: boolean;
+  selectedCompanionRelationshipUuid?: string;
 }
 
 const defaultCompanionRelationshipTypeUuid = '3501ac02-0fb0-4ced-8a3e-f578f0ff5276';
@@ -35,7 +41,8 @@ export function getPatientCompanions(
         (relationship.personA.uuid === patientUuid || relationship.personB.uuid === patientUuid),
     )
     .map((relationship) => ({
-      uuid: relationship.uuid,
+      relationshipUuid: relationship.uuid,
+      personUuid: relationship.personA.uuid === patientUuid ? relationship.personB.uuid : relationship.personA.uuid,
       name: relationship.personA.uuid === patientUuid ? relationship.personB.display : relationship.personA.display,
     }));
 }
@@ -56,7 +63,7 @@ export function usePatientCompanions(patientUuid: string) {
     patientUuid && companionRelationshipTypeUuid
       ? `${restBaseUrl}/relationship?person=${patientUuid}&relation=${companionRelationshipTypeUuid}&v=custom:(uuid,personA:(uuid,display),personB:(uuid,display),relationshipType:(uuid))`
       : null;
-  const { data, isLoading } = useSWR<FetchResponse<RelationshipResults>>(url, openmrsFetch);
+  const { data, error, isLoading, mutate } = useSWR<FetchResponse<RelationshipResults>>(url, openmrsFetch);
 
   const companions = getPatientCompanions(
     data?.data?.results ?? [],
@@ -64,16 +71,19 @@ export function usePatientCompanions(patientUuid: string) {
     companionRelationshipTypeUuid,
   );
 
-  return { companions, companionRelationshipTypeUuid, isLoading };
+  return { companions, companionRelationshipTypeUuid, error, isLoading, mutate };
 }
 
-const CompanionList: React.FC<CompanionListProps> = ({ patientUuid, required = false }) => {
+const CompanionList: React.FC<CompanionListProps> = ({
+  companions,
+  isLoading,
+  onRegisterPerson,
+  onSearchPerson,
+  onSelectCompanion,
+  required = false,
+  selectedCompanionRelationshipUuid,
+}) => {
   const { t } = useTranslation();
-  const { companions, companionRelationshipTypeUuid, isLoading } = usePatientCompanions(patientUuid);
-
-  if (!companionRelationshipTypeUuid) {
-    return null;
-  }
 
   return (
     <section>
@@ -85,11 +95,22 @@ const CompanionList: React.FC<CompanionListProps> = ({ patientUuid, required = f
         {isLoading ? (
           <InlineLoading description={t('loading', 'Loading...')} />
         ) : companions.length ? (
-          <ul>
+          <RadioButtonGroup
+            legendText={t('selectCompanionForVisit', 'Seleccione el acompañante para esta consulta')}
+            name="visit-companion"
+            onChange={(relationshipUuid: string) => onSelectCompanion(relationshipUuid)}
+            orientation="vertical"
+            valueSelected={selectedCompanionRelationshipUuid}
+          >
             {companions.map((companion) => (
-              <li key={companion.uuid}>{companion.name}</li>
+              <RadioButton
+                id={`visit-companion-${companion.relationshipUuid}`}
+                key={companion.relationshipUuid}
+                labelText={companion.name}
+                value={companion.relationshipUuid}
+              />
             ))}
-          </ul>
+          </RadioButtonGroup>
         ) : (
           <p>
             {required
@@ -97,6 +118,20 @@ const CompanionList: React.FC<CompanionListProps> = ({ patientUuid, required = f
               : t('noCompanionsRegistered', 'No hay acompañantes registrados')}
           </p>
         )}
+        {required && (onSearchPerson || onRegisterPerson) ? (
+          <ButtonSet className={styles.companionActions} stacked>
+            {onSearchPerson ? (
+              <Button kind="tertiary" onClick={onSearchPerson} size="sm" type="button">
+                {t('selectExistingPerson', 'Seleccionar persona existente')}
+              </Button>
+            ) : null}
+            {onRegisterPerson ? (
+              <Button kind="ghost" onClick={onRegisterPerson} size="sm" type="button">
+                {t('registerNewPerson', 'Registrar nueva persona')}
+              </Button>
+            ) : null}
+          </ButtonSet>
+        ) : null}
       </div>
     </section>
   );

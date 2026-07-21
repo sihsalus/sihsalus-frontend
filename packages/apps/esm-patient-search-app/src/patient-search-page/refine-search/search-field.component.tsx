@@ -1,4 +1,4 @@
-import { Checkbox, ContentSwitcher, NumberInput, Select, SelectItem, Switch, TextInput } from '@carbon/react';
+import { ContentSwitcher, NumberInput, Select, SelectItem, Switch, TextInput } from '@carbon/react';
 import { normalizePatientAgeRange, shouldPreventPlainNumberKey, shouldPreventPlainNumberPaste } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React from 'react';
@@ -153,15 +153,20 @@ export const SearchField: React.FC<SearchFieldProps> = ({ field, control, inTabl
     case 'activeVisit':
       return (
         <Controller
-          name="hasActiveVisit"
+          name="activeVisitStatus"
           control={control}
           render={({ field: { onChange, value } }) => (
-            <Checkbox
-              id="has-active-visit"
-              labelText={t('hasActiveVisit', 'Has an active consultation')}
-              checked={value}
-              onChange={(_event, { checked }) => onChange(checked)}
-            />
+            <Select
+              id="active-visit-status"
+              labelText={t('consultationStatus', 'Consultation status')}
+              onChange={(event) => onChange(event.target.value)}
+              size={isTablet ? 'lg' : 'md'}
+              value={value}
+            >
+              <SelectItem value="any" text={t('anyConsultationStatus', 'Any status')} />
+              <SelectItem value="active" text={t('withActiveConsultation', 'With active consultation')} />
+              <SelectItem value="inactive" text={t('withoutActiveConsultation', 'Without active consultation')} />
+            </Select>
           )}
         />
       );

@@ -33,8 +33,8 @@ describe('getPatientCompanions', () => {
     ];
 
     expect(getPatientCompanions(relationships, patientUuid, companionRelationshipTypeUuid)).toEqual([
-      { uuid: 'companion-from-a', name: 'Acompañante Uno' },
-      { uuid: 'companion-from-b', name: 'Acompañante Dos' },
+      { relationshipUuid: 'companion-from-a', personUuid: 'companion-one', name: 'Acompañante Uno' },
+      { relationshipUuid: 'companion-from-b', personUuid: 'companion-two', name: 'Acompañante Dos' },
     ]);
   });
 });

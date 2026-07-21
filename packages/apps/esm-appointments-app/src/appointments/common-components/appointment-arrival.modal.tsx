@@ -506,7 +506,6 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
   return (
     <>
       <ModalHeader
-        className={styles.modalHeader}
         closeModal={closeModal}
         title={t('arrivalModalTitle', 'Registrar llegada')}
       />

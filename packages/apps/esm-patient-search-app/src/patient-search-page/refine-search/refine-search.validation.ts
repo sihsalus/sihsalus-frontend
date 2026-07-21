@@ -26,7 +26,7 @@ export function createRefineSearchSchema(
       postcode: z.string(),
       age: optionalFilterInteger(MIN_PATIENT_AGE_YEARS, MAX_PATIENT_AGE_YEARS, invalidAgeMessage),
       ageUnit: z.enum(['days', 'months', 'years']),
-      hasActiveVisit: z.boolean(),
+      activeVisitStatus: z.enum(['any', 'active', 'inactive']),
       attributes: z.record(z.string()),
     })
     .superRefine(({ age, ageUnit }, context) => {

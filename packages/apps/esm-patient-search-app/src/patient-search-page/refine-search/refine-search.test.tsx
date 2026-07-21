@@ -107,7 +107,7 @@ describe('RefineSearch', () => {
     expect(screen.queryByLabelText('Date of birth')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Age')).toBeInTheDocument();
     expect(screen.getByLabelText('Unit')).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /active consultation/i })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /consultation status/i })).toHaveValue('any');
     expect(screen.queryByLabelText('Postcode')).not.toBeInTheDocument();
     expect(screen.queryByText('Tipo de Documento de Identidad')).not.toBeInTheDocument();
     expect(screen.queryByText('CÃ³digo de Documento de Identidad')).not.toBeInTheDocument();
@@ -160,7 +160,7 @@ describe('RefineSearch', () => {
       postcode: '',
       age: null,
       ageUnit: 'years',
-      hasActiveVisit: false,
+      activeVisitStatus: 'any',
       attributes: {},
     });
   });
@@ -182,7 +182,7 @@ describe('RefineSearch', () => {
         },
         age: null,
         ageUnit: 'years',
-        hasActiveVisit: false,
+        activeVisitStatus: 'any',
       }),
     );
   });
@@ -236,14 +236,14 @@ describe('RefineSearch', () => {
       await user.type(screen.getByLabelText(/apellidos y nombres/i), 'Ahuanari');
       fireEvent.change(screen.getByLabelText('Age'), { target: { value: '8' } });
       await user.selectOptions(screen.getByLabelText('Unit'), 'months');
-      await user.click(screen.getByRole('checkbox', { name: /active consultation/i }));
+      await user.selectOptions(screen.getByRole('combobox', { name: /consultation status/i }), 'active');
       await user.click(screen.getByRole('button', { name: /search/i }));
 
       expect(mockSetFilters).toHaveBeenCalledWith(
         expect.objectContaining({
           age: 8,
           ageUnit: 'months',
-          hasActiveVisit: true,
+          activeVisitStatus: 'active',
         }),
       );
     });

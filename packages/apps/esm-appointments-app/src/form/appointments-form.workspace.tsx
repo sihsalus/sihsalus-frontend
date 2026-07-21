@@ -699,19 +699,22 @@ const AppointmentsForm: React.FC<
                 ? t('appointmentEdited', 'Appointment edited')
                 : t('appointmentScheduled', 'Appointment scheduled'),
           });
+          return;
         }
-        if (status === 204) {
-          setIsSubmitting(false);
-          showSnackbar({
-            title:
-              context === 'editing'
-                ? t('appointmentEditError', 'Error editing appointment')
-                : t('appointmentFormError', 'Error scheduling appointment'),
-            kind: 'error',
-            isLowContrast: false,
-            subtitle: t('noContent', 'No Content'),
-          });
-        }
+
+        setIsSubmitting(false);
+        showSnackbar({
+          title:
+            context === 'editing'
+              ? t('appointmentEditError', 'Error editing appointment')
+              : t('appointmentFormError', 'Error scheduling appointment'),
+          kind: 'error',
+          isLowContrast: false,
+          subtitle:
+            status === 204
+              ? t('noContent', 'No Content')
+              : t('appointmentSaveFailed', 'No se pudo guardar la cita. Revise los datos e intente nuevamente.'),
+        });
       },
       (error) => {
         setIsSubmitting(false);
@@ -808,9 +811,36 @@ const AppointmentsForm: React.FC<
       </Workspace2>
     );
 
+  const handleAppointmentValidationErrors = (validationErrors: Record<string, unknown>) => {
+    const validationMessages = getAppointmentValidationMessages(validationErrors, t);
+
+    if (!validationMessages.length) {
+      return;
+    }
+
+    showSnackbar({
+      isLowContrast: true,
+      kind: 'warning',
+      title:
+        validationMessages.length === 1
+          ? t('fieldWithErrors', 'The following field has errors:')
+          : t('fieldsWithErrors', 'The following fields have errors:'),
+      subtitle: (
+        <ul className={styles.formErrorList}>
+          {validationMessages.map((message) => (
+            <li key={message}>{message}</li>
+          ))}
+        </ul>
+      ),
+    });
+  };
+
   return (
     <Workspace2 title={title} hasUnsavedChanges={isDirty && !isSuccessful}>
-      <Form className={styles.form} onSubmit={handleSubmit(handleSaveAppointment)}>
+      <Form
+        className={styles.form}
+        onSubmit={handleSubmit(handleSaveAppointment, handleAppointmentValidationErrors)}
+      >
         <Stack gap={4}>
           {Object.keys(errors).length > 0 && (
             <InlineNotification
@@ -947,16 +977,18 @@ const AppointmentsForm: React.FC<
             </ResponsiveWrapper>
           </section>
 
-          <section className={styles.formGroup}>
-            <span className={styles.heading}>{t('recurringAppointment', 'Recurring Appointment')}</span>
-            <Toggle
-              id="recurringToggle"
-              labelB={t('yes', 'Yes')}
-              labelA={t('no', 'No')}
-              labelText={t('isRecurringAppointment', 'Is this a recurring appointment?')}
-              onClick={() => setIsRecurringAppointment(!isRecurringAppointment)}
-            />
-          </section>
+          {context !== 'creating' ? (
+            <section className={styles.formGroup}>
+              <span className={styles.heading}>{t('recurringAppointment', 'Recurring Appointment')}</span>
+              <Toggle
+                id="recurringToggle"
+                labelB={t('yes', 'Yes')}
+                labelA={t('no', 'No')}
+                labelText={t('isRecurringAppointment', 'Is this a recurring appointment?')}
+                onClick={() => setIsRecurringAppointment(!isRecurringAppointment)}
+              />
+            </section>
+          ) : null}
 
           <section className={styles.formGroup}>
             <span className={styles.heading}>{t('dateTime', 'Date & Time')}</span>
@@ -1159,6 +1191,7 @@ const AppointmentsForm: React.FC<
               <ResponsiveWrapper>
                 <Workload
                   appointmentDate={watch('appointmentDateTime').startDate}
+                  minDate={context === 'creating' ? dayjs().startOf('day').toDate() : undefined}
                   onWorkloadDateChange={handleWorkloadDateChange}
                   selectedService={watch('selectedService')}
                 />
@@ -1366,6 +1399,13 @@ function getAppointmentValidationSummary(
   errors: Record<string, unknown>,
   t: (key: string, fallback: string) => string,
 ) {
+  return getAppointmentValidationMessages(errors, t).join(' • ');
+}
+
+function getAppointmentValidationMessages(
+  errors: Record<string, unknown>,
+  t: (key: string, fallback: string) => string,
+) {
   const labels: Record<string, string> = {
     location: t('location', 'Location'),
     selectedService: t('service', 'Servicio'),
@@ -1394,8 +1434,7 @@ function getAppointmentValidationSummary(
           : '';
       return message ? `${labels[key] ?? key}: ${message}` : null;
     })
-    .filter(Boolean)
-    .join(' • ');
+    .filter((message): message is string => Boolean(message));
 }
 
 export default AppointmentsForm;

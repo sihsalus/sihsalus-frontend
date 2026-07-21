@@ -311,8 +311,16 @@ async function startWithProxy(cliArgs) {
   const cliManagedPaths = new Set(['/importmap.json', '/routes.registry.json', '/routes.json']);
 
   const app = express();
-  const staticHandler = express.static(distSpa, createSpaStaticOptions());
-  const spaIndexHtml = readFileSync(join(distSpa, 'index.html'), 'utf8');
+  // Index requests are handled below so the session-specific registry URLs are
+  // always served. Static assets still come directly from the assembled SPA.
+  const staticHandler = express.static(distSpa, createSpaStaticOptions({ index: false }));
+  // The production service worker can retain an older import map between local
+  // development sessions. Give each dev-server session unique registry URLs so
+  // modules added after a pull/restart cannot be hidden by a stale cached map.
+  const registryRevision = Date.now();
+  const spaIndexHtml = readFileSync(join(distSpa, 'index.html'), 'utf8')
+    .replaceAll(`${spaPath}/importmap.json`, `${spaPath}/importmap.json?dev=${registryRevision}`)
+    .replaceAll(`${spaPath}/routes.registry.json`, `${spaPath}/routes.registry.json?dev=${registryRevision}`);
   const spaIndexRateLimit = createInMemoryRateLimit({
     windowMs: readRateLimitEnv('SIHSALUS_SPA_RATE_LIMIT_WINDOW_MS', 60_000),
     max: readRateLimitEnv('SIHSALUS_SPA_RATE_LIMIT_MAX', 0),

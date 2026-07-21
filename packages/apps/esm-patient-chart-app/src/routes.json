@@ -275,6 +275,16 @@
       "window": "start-visit-workspace-window"
     },
     {
+      "name": "visit-companion-search-workspace",
+      "component": "companionPersonSearchWorkspace",
+      "window": "start-visit-workspace-window"
+    },
+    {
+      "name": "visit-companion-registration-workspace",
+      "component": "companionPersonRegistrationWorkspace",
+      "window": "start-visit-workspace-window"
+    },
+    {
       "name": "mark-patient-deceased-workspace-form",
       "component": "markPatientDeceasedForm",
       "window": "mark-patient-deceased-workspace-window",

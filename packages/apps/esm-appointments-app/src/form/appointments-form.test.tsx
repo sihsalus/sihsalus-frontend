@@ -203,6 +203,7 @@ describe('AppointmentForm', () => {
     expect(screen.getByRole('option', { name: /scheduled/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /walkin/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/date appointment issued/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/is this a recurring appointment/i)).not.toBeInTheDocument();
 
     expect(screen.getByRole('textbox', { name: /time/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /discard/i })).toBeInTheDocument();
@@ -224,6 +225,30 @@ describe('AppointmentForm', () => {
     expect(screen.queryByLabelText(/all day/i)).not.toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /time/i })).toBeInTheDocument();
     expect(screen.getByRole('spinbutton', { name: /duration/i })).toBeInTheDocument();
+  });
+
+  it('reports validation errors in a global notification like patient registration', async () => {
+    const user = userEvent.setup();
+    mockOpenmrsFetch.mockResolvedValue(mockUseAppointmentServiceData as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isLowContrast: true,
+          kind: 'warning',
+          title: 'The following fields have errors:',
+          subtitle: expect.anything(),
+        }),
+      ),
+    );
+    const notification = mockShowSnackbar.mock.calls.at(-1)?.[0];
+    expect(JSON.stringify(notification?.subtitle)).toContain('Location');
+    expect(JSON.stringify(notification?.subtitle)).toContain('serviceRequired');
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
   });
 
   it('defaults the duration to 30 minutes for a new appointment, even after picking a service without durationMins', async () => {
@@ -617,6 +642,7 @@ describe('AppointmentForm', () => {
     renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
 
     await waitForLoadingToFinish();
+    expect(screen.getByLabelText(/is this a recurring appointment/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/select status/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/appointment status/i)).not.toBeInTheDocument();
 

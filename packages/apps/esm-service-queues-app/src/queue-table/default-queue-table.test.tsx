@@ -267,6 +267,30 @@ describe('DefaultQueueTable', () => {
       ).toBeInTheDocument();
     });
   });
+
+  it('uses the standard full-width table filter and filters queue patients', async () => {
+    const user = userEvent.setup();
+    mockQueueLocations.mockReturnValue({ queueLocations: [], isLoading: false, error: null });
+    mockUseQueueRooms.mockReturnValue({ rooms: [], isLoading: false, error: undefined });
+    mockUseQueueEntries.mockReturnValue({
+      queueEntries: mockQueueEntries,
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+      totalCount: 2,
+    });
+
+    rendeDefaultQueueTable();
+
+    const search = await screen.findByRole('searchbox', { name: /filter table/i });
+    expect(search).toHaveAttribute('placeholder', 'Filter table');
+
+    await user.type(search, 'Alice');
+
+    expect(screen.getByRole('link', { name: /Alice Johnson/i })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Brian Johnson/i })).not.toBeInTheDocument();
+  });
 });
 
 function rendeDefaultQueueTable() {

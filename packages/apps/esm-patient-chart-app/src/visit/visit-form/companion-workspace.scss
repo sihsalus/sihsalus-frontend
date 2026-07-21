@@ -1,0 +1,42 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.workspaceContent {
+  padding: layout.$spacing-05;
+}
+
+.registrationForm {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+}
+
+.workspaceFooter {
+  margin-top: auto;
+}
+
+.helperText {
+  margin-top: layout.$spacing-02;
+  color: colors.$gray-60;
+  @include type.type-style('label-01');
+}
+
+.personResult {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-04;
+}
+
+.personName {
+  color: colors.$gray-100;
+  @include type.type-style('heading-compact-01');
+}
+
+.invalidText {
+  margin-top: layout.$spacing-02;
+  color: colors.$red-60;
+  @include type.type-style('label-01');
+}

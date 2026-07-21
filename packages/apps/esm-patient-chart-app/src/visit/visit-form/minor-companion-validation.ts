@@ -17,7 +17,7 @@ export function isPatientMinor(birthDateValue?: string | null, referenceDate: Da
 export function getMinorCompanionRequirementState(
   companionRequired: boolean,
   isLoadingCompanions: boolean,
-  companionCount: number,
+  hasSelectedCompanion: boolean,
 ): MinorCompanionRequirementState {
   if (!companionRequired) {
     return 'not-required';
@@ -27,5 +27,5 @@ export function getMinorCompanionRequirementState(
     return 'loading';
   }
 
-  return companionCount > 0 ? 'satisfied' : 'missing';
+  return hasSelectedCompanion ? 'satisfied' : 'missing';
 }

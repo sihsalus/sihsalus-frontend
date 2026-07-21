@@ -103,6 +103,16 @@
       }
     },
     {
+      "name": "admission-patient-appointments-summary-widget",
+      "component": "patientAppointmentsDetailedSummary",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "privileges": "app:home.citas",
+      "order": 10,
+      "meta": {
+        "fullWidth": true
+      }
+    },
+    {
       "name": "patient-upcoming-appointment-widget",
       "component": "patientUpcomingAppointmentsWidget",
       "slot": "visit-form-top-slot",

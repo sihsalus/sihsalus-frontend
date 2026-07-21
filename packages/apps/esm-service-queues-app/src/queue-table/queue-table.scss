@@ -34,10 +34,14 @@
 }
 
 .loaderContainer {
+  position: absolute;
+  inset: 0 layout.$spacing-09 0 auto;
+  z-index: 2;
+  width: layout.$spacing-07;
   display: flex;
-  flex: 1;
   justify-content: center;
   align-items: center;
+  pointer-events: none;
 
   :global(.cds--inline-loading) {
     justify-content: end;
@@ -53,12 +57,12 @@
   }
 }
 
-.search {
-  max-width: 16rem;
-  display: inline;
+.searchbar {
+  width: 100%;
+  flex: 1;
 
   input {
-    background-color: $ui-02 !important;
+    background-color: colors.$gray-10;
   }
 }
 
@@ -91,21 +95,15 @@
   }
 
   .toolbarContainer {
+    position: relative;
     display: flex;
-    justify-content: space-between;
+    width: 100%;
   }
 
-  .toolbarContent {
+  .toolbar {
     display: flex;
+    width: 100%;
     align-items: center;
-    z-index: 1; // prevent dropdown from getting covered by table elements
-    column-gap: layout.$spacing-03;
-  }
-
-  :global(.cds--table-toolbar) {
-    flex: 3;
-    position: static;
-    overflow: visible;
   }
 }
 

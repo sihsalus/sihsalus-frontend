@@ -1,4 +1,4 @@
-import { ContentSwitcher, DataTableSkeleton, Layer, Switch, TableToolbarSearch } from '@carbon/react';
+import { ContentSwitcher, DataTableSkeleton, Layer, Search, Switch } from '@carbon/react';
 import { getUserFacingErrorMessage, isDesktop, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { useEffect, useMemo, useState } from 'react';
@@ -35,7 +35,6 @@ function QueueTableSection() {
   const layout = useLayoutType();
   const { selectedServiceUuid, selectedQueueLocationUuid, selectedQueueStatusUuid } = useServiceQueuesStore();
   const [searchTerm, setSearchTerm] = useState('');
-  const searchClassName = typeof styles.search === 'string' ? styles.search : undefined;
 
   const searchCriteria = useMemo(() => {
     return {
@@ -95,19 +94,15 @@ function QueueTableSection() {
       queueUuid={null}
       statusUuid={null}
       tableFilters={
-        <TableToolbarSearch
-          className={searchClassName}
+        <Search
+          className={styles.searchbar}
+          labelText={t('filterTable', 'Filter table')}
           onChange={(e) => {
-            if (typeof e === 'string') {
-              setSearchTerm(e);
-            } else if (e && 'target' in e) {
-              const target = e.target as HTMLInputElement;
-              setSearchTerm(target.value);
-            }
+            setSearchTerm(e.target.value);
           }}
-          placeholder={t('searchThisList', 'Search this list')}
+          placeholder={t('filterTable', 'Filter table')}
           size={isDesktop(layout) ? 'sm' : 'lg'}
-          persistent
+          value={searchTerm}
         />
       }
     />

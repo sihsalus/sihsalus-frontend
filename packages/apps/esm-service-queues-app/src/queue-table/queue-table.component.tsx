@@ -13,8 +13,6 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  TableToolbar,
-  TableToolbarContent,
 } from '@carbon/react';
 import { EmptyCardIllustration, isDesktop, useLayoutType, usePagination } from '@openmrs/esm-framework';
 import classNames from 'classnames';
@@ -105,7 +103,7 @@ function QueueTable({
       size={responsiveSize}
       useZebraStyles={columns?.length > 1}
     >
-      {({ rows, headers, getTableProps, getHeaderProps, getRowProps, getToolbarProps, getExpandHeaderProps }) => (
+      {({ rows, headers, getTableProps, getHeaderProps, getRowProps, getExpandHeaderProps }) => (
         <>
           <TableContainer className={styles.tableContainer}>
             <div className={styles.toolbarContainer}>
@@ -115,11 +113,7 @@ function QueueTable({
                 </div>
               ) : null}
 
-              {tableFilters && (
-                <TableToolbar {...getToolbarProps()}>
-                  <TableToolbarContent className={styles.toolbarContent}>{tableFilters}</TableToolbarContent>
-                </TableToolbar>
-              )}
+              {tableFilters ? <div className={styles.toolbar}>{tableFilters}</div> : null}
             </div>
             <Table {...getTableProps()} className={styles.queueTable}>
               <TableHead>

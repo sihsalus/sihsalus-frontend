@@ -5,7 +5,7 @@ import {
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { getByTextWithMarkup } from 'test-utils';
 
@@ -151,7 +151,7 @@ describe('AppointmentsTable', () => {
     await screen.findByRole('heading', { name: /scheduled appointment/i });
     expect(screen.getByRole('search', { name: /filter table/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /download/i })).toBeInTheDocument();
-    expect(screen.getByRole('row', { name: /john wilson 100gej .* hiv clinic outpatient/i })).toBeInTheDocument();
+    expect(screen.getByRole('row', { name: /john wilson - .* hiv clinic outpatient/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /john wilson/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /john wilson/i })).toHaveAttribute('href', 'url-to-patient-chart');
   });
@@ -165,7 +165,7 @@ describe('AppointmentsTable', () => {
     expect(screen.queryByRole('link', { name: 'John Wilson' })).not.toBeInTheDocument();
   });
 
-  it('labels the primary patient identifier with its real type', () => {
+  it('shows a dash in the DNI column when the patient only has a clinical history identifier', () => {
     const appointmentWithIdentifiers = {
       ...mockAppointments[0],
       patient: {
@@ -180,12 +180,14 @@ describe('AppointmentsTable', () => {
 
     renderAppointmentsTable({ appointments: [appointmentWithIdentifiers], tableHeading: 'todaysAppointments' });
 
-    expect(screen.getByRole('columnheader', { name: /historia clínica/i })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: '10000NH' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /DNI/ })).toBeInTheDocument();
+    const patientRow = screen.getByRole('row', { name: /John Wilson/i });
+    expect(within(patientRow).getByRole('cell', { name: '-' })).toBeInTheDocument();
+    expect(screen.queryByRole('cell', { name: '10000NH' })).not.toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /appointment time/i })).toBeInTheDocument();
   });
 
-  it('shows each identifier type in its cell when a table contains mixed identifier types', () => {
+  it('shows only DNI values and does not fall back to another identifier type', () => {
     const historyNumberAppointment = {
       ...mockAppointments[0],
       patient: {
@@ -211,9 +213,13 @@ describe('AppointmentsTable', () => {
       tableHeading: 'todaysAppointments',
     });
 
-    expect(screen.getByRole('columnheader', { name: /identifier/i })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'N° Historia Clínica: 10000NH' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'DNI: 12345678' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /DNI/ })).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('row', { name: /John Wilson/i })).getByRole('cell', { name: '-' }),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('row', { name: /Jane Doe/i })).getByRole('cell', { name: '12345678' }),
+    ).toBeInTheDocument();
   });
 
   it('updates the search string when the search input changes', async () => {
@@ -242,7 +248,7 @@ describe('AppointmentsTable', () => {
         expect.objectContaining({
           id: '7cd38a6d-377e-491b-8284-b04cf8b8c6d8',
           patientName: expect.anything(),
-          identifier: '100GEJ',
+          identifier: '-',
         }),
       ]),
       expect.stringContaining('scheduled_appointments'),
@@ -273,7 +279,7 @@ describe('AppointmentsTable', () => {
 
     renderAppointmentsTable({ appointments: [editableAppointment] });
 
-    const appointmentRow = screen.getByRole('row', { name: /john wilson 100gej .* hiv clinic outpatient/i });
+    const appointmentRow = screen.getByRole('row', { name: /john wilson - .* hiv clinic outpatient/i });
     await user.click(screen.getByRole('button', { name: /actions/i }));
     await user.click(screen.getByText(/edit appointment/i));
 

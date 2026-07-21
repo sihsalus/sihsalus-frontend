@@ -70,23 +70,16 @@ const normalizeIdentifierType = (value?: string) =>
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '');
 
-function resolvePatientIdentifier(appointment: Appointment, configuredIdentifierType?: string) {
+function resolveDniIdentifier(appointment: Appointment) {
   const identifiers = appointment.patient.identifiers ?? [];
   const getIdentifierType = (identifier?: (typeof identifiers)[number]) =>
     identifier?.identifierName ?? identifier?.identifierType?.name ?? identifier?.identifierType?.display;
-  const primaryIdentifier = identifiers.find(
-    (identifier) => identifier.identifier === appointment.patient.identifier,
-  );
-  const configuredIdentifier = identifiers.find(
-    (identifier) =>
-      normalizeIdentifierType(getIdentifierType(identifier)) === normalizeIdentifierType(configuredIdentifierType),
-  );
-  const selectedIdentifier = primaryIdentifier ?? configuredIdentifier;
+  const dniIdentifier = identifiers.find((identifier) => {
+    const normalizedType = normalizeIdentifierType(getIdentifierType(identifier));
+    return normalizedType === 'dni' || normalizedType?.includes('documento nacional de identidad');
+  });
 
-  return {
-    type: getIdentifierType(selectedIdentifier) ?? configuredIdentifierType ?? '',
-    value: selectedIdentifier?.identifier ?? appointment.patient.identifier,
-  };
+  return dniIdentifier?.identifier?.trim() || '-';
 }
 
 const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
@@ -102,7 +95,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
   const [editingAppointmentUuid, setEditingAppointmentUuid] = useState<string | null>(null);
   const searchResults = useAppointmentSearchResults(appointments, searchString);
   const { results, goTo, currentPage } = usePagination(searchResults, pageSize);
-  const { customPatientChartUrl, patientIdentifierType } = useConfig<ConfigObject>();
+  const { customPatientChartUrl } = useConfig<ConfigObject>();
   const session = useSession();
   const canEdit = userHasAccess(appointmentsEditPrivilege, session?.user);
   const canAccessPatientChart = userHasAccess(clinicalChartPrivilege, session?.user);
@@ -144,20 +137,16 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
       sectionTitlesByConfigKey[tableHeading] ??
       `${translatedTableHeading} ${t('appointments', 'Appointments')}`);
   const emptyDisplayText = appointmentSectionTitle.toLocaleLowerCase();
-  const resolvedIdentifiers = new Map(
-    results?.map((appointment) => [appointment.uuid, resolvePatientIdentifier(appointment, patientIdentifierType)]),
+  const resolvedDniIdentifiers = new Map(
+    results?.map((appointment) => [appointment.uuid, resolveDniIdentifier(appointment)]),
   );
-  const identifierTypes = Array.from(
-    new Set(Array.from(resolvedIdentifiers.values(), ({ type }) => type).filter(Boolean)),
-  );
-  const hasMixedIdentifierTypes = identifierTypes.length > 1;
   const headerData = [
     {
       header: t('patientName', 'Patient name'),
       key: 'patientName',
     },
     {
-      header: identifierTypes.length === 1 ? identifierTypes[0] : t('identifier', 'Identifier'),
+      header: 'DNI',
       key: 'identifier',
     },
     {
@@ -194,13 +183,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
       appointment.patient.name
     ),
     nextAppointmentDate: '--',
-    identifier: (() => {
-      const resolvedIdentifier = resolvedIdentifiers.get(appointment.uuid);
-
-      return hasMixedIdentifierTypes && resolvedIdentifier?.type
-        ? `${resolvedIdentifier.type}: ${resolvedIdentifier.value}`
-        : resolvedIdentifier?.value;
-    })(),
+    identifier: resolvedDniIdentifiers.get(appointment.uuid) ?? '-',
     dateTime: formatDatetime(new Date(appointment.startDateTime)),
     serviceType: appointment.service.name,
     location: appointment.location?.name ?? appointment.service.location?.display ?? '—',
@@ -335,7 +318,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                               {row.cells.map((cell) => (
                                 <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
                               ))}
-                              <TableCell className="cds--table-column-menu">
+                              <TableCell className={classNames('cds--table-column-menu', styles.actionsCell)}>
                                 {canEdit &&
                                 isAppointmentEditable(matchingAppointment.status) &&
                                 (isFutureAppointment || (isTodayAppointment && !hasActiveVisitToday)) ? (

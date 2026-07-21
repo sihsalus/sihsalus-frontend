@@ -2,6 +2,7 @@ import {
   getDefaultsFromConfigSchema,
   launchWorkspace2,
   useConfig,
+  usePatient,
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
@@ -74,6 +75,7 @@ const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
 const mockExportAppointmentsToSpreadsheet = vi.mocked(exportAppointmentsToSpreadsheet);
 const mockUseSession = vi.mocked(useSession);
+const mockUsePatient = vi.mocked(usePatient);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockUseTodaysVisits = vi.mocked(useTodaysVisits);
 
@@ -98,6 +100,12 @@ describe('AppointmentsTable', () => {
       checkOutButton: { enabled: false, customUrl: null },
     });
     mockUseSession.mockReturnValue({ user: { uuid: 'user-uuid' } } as ReturnType<typeof useSession>);
+    mockUsePatient.mockReturnValue({
+      patient: null,
+      patientUuid: mockAppointments[0].patient.uuid,
+      isLoading: false,
+      error: null,
+    });
     mockUserHasAccess.mockReturnValue(true);
     mockUseTodaysVisits.mockReturnValue({
       visits: [],
@@ -220,6 +228,24 @@ describe('AppointmentsTable', () => {
     expect(
       within(screen.getByRole('row', { name: /Jane Doe/i })).getByRole('cell', { name: '12345678' }),
     ).toBeInTheDocument();
+  });
+
+  it('loads the DNI from the complete patient resource when the appointment response omits it', () => {
+    mockUsePatient.mockReturnValue({
+      patient: {
+        id: mockAppointments[0].patient.uuid,
+        resourceType: 'Patient',
+        identifier: [{ type: { text: 'DNI' }, value: '87654321' }],
+      },
+      patientUuid: mockAppointments[0].patient.uuid,
+      isLoading: false,
+      error: null,
+    });
+
+    renderAppointmentsTable({ appointments: mockAppointments, tableHeading: 'todaysAppointments' });
+
+    expect(screen.getByRole('cell', { name: '87654321' })).toBeInTheDocument();
+    expect(screen.queryByRole('cell', { name: '-' })).not.toBeInTheDocument();
   });
 
   it('updates the search string when the search input changes', async () => {

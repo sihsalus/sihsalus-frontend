@@ -29,6 +29,7 @@ import {
   useConfig,
   useLayoutType,
   usePagination,
+  usePatient,
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
@@ -70,16 +71,54 @@ const normalizeIdentifierType = (value?: string) =>
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '');
 
+const dniIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440001';
+
+function isDniIdentifierType(value?: string) {
+  const normalizedType = normalizeIdentifierType(value);
+  return normalizedType === 'dni' || normalizedType?.includes('documento nacional de identidad');
+}
+
 function resolveDniIdentifier(appointment: Appointment) {
   const identifiers = appointment.patient.identifiers ?? [];
   const getIdentifierType = (identifier?: (typeof identifiers)[number]) =>
     identifier?.identifierName ?? identifier?.identifierType?.name ?? identifier?.identifierType?.display;
   const dniIdentifier = identifiers.find((identifier) => {
-    const normalizedType = normalizeIdentifierType(getIdentifierType(identifier));
-    return normalizedType === 'dni' || normalizedType?.includes('documento nacional de identidad');
+    return (
+      identifier.identifierType?.uuid === dniIdentifierTypeUuid || isDniIdentifierType(getIdentifierType(identifier))
+    );
   });
 
-  return dniIdentifier?.identifier?.trim() || '-';
+  return dniIdentifier?.identifier?.trim() || undefined;
+}
+
+function resolveFhirDniIdentifier(patient?: fhir.Patient | null) {
+  const dniIdentifier = patient?.identifier?.find((identifier) => {
+    const type = identifier.type;
+    return (
+      isDniIdentifierType(type?.text) ||
+      type?.coding?.some(
+        (coding) =>
+          coding.code === dniIdentifierTypeUuid ||
+          isDniIdentifierType(coding.code) ||
+          isDniIdentifierType(coding.display),
+      )
+    );
+  });
+
+  return dniIdentifier?.value?.trim() || undefined;
+}
+
+function PatientDniFromPatientResource({ patientUuid }: { patientUuid: string }) {
+  const { patient, isLoading } = usePatient(patientUuid);
+  const dni = resolveFhirDniIdentifier(patient);
+
+  return <>{dni ?? (isLoading ? '…' : '-')}</>;
+}
+
+function PatientDniCell({ appointment }: { appointment: Appointment }) {
+  const appointmentDni = resolveDniIdentifier(appointment);
+
+  return appointmentDni ?? <PatientDniFromPatientResource patientUuid={appointment.patient.uuid} />;
 }
 
 const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
@@ -316,7 +355,13 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                               })}
                             >
                               {row.cells.map((cell) => (
-                                <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
+                                <TableCell key={cell.id}>
+                                  {cell.info.header === 'identifier' ? (
+                                    <PatientDniCell appointment={matchingAppointment} />
+                                  ) : (
+                                    (cell.value?.content ?? cell.value)
+                                  )}
+                                </TableCell>
                               ))}
                               <TableCell className={classNames('cds--table-column-menu', styles.actionsCell)}>
                                 {canEdit &&

@@ -53,7 +53,14 @@ export const peruForeignPatientIdentifierTypeUuids = [
 const peruPreRegistrationSections = ['identityLookup'];
 const peruSections = ['filiation', 'bloodData', 'insurance', 'responsiblePerson', 'medicalRecord'];
 const peruResponsiblePersonSection = 'responsiblePerson';
-const peruIdentityLookupFieldOrder = ['id', 'reniecLookup', 'sisLookup'];
+const peruIdentityLookupFieldOrder = ['id', 'reniecLookup'];
+const peruInsuranceFieldOrder = [
+  'sisLookup',
+  'insuranceType',
+  'insuranceCode',
+  'insuranceAccreditationStatus',
+  'insuranceAccreditationCheckedAt',
+];
 const peruDemographicsFieldOrder = ['name', 'dob', 'gender', 'nationality'];
 const peruContactFieldOrder = ['address', 'birthAddress', 'phone', 'mobilePhone', 'email'];
 const peruLandlinePhoneValidationRegex = '^(?:(?:\\+51)?[1-8][0-9]{7}|0[1-8][0-9]{7})$';
@@ -75,7 +82,7 @@ const companionRelationshipType = '3501ac02-0fb0-4ced-8a3e-f578f0ff5276/aIsToB';
 const peruSectionDefinitions: Array<SectionDefinition> = [
   {
     id: 'identityLookup',
-    name: 'Validación de identidad y seguro',
+    name: 'Validación de identidad',
     fields: peruIdentityLookupFieldOrder,
   },
   {
@@ -96,7 +103,7 @@ const peruSectionDefinitions: Array<SectionDefinition> = [
   {
     id: 'insurance',
     name: 'Financiador',
-    fields: ['insuranceType', 'insuranceCode', 'insuranceAccreditationStatus', 'insuranceAccreditationCheckedAt'],
+    fields: peruInsuranceFieldOrder,
   },
   {
     id: 'responsiblePerson',
@@ -363,7 +370,8 @@ function orderPeruDemographicsFields(fields: Array<string>) {
 }
 
 function normalizePeruLookupSection(sectionDefinitions: Array<SectionDefinition>) {
-  const lookupFields = new Set([...peruIdentityLookupFieldOrder, 'minsaLookup']);
+  const identityLookupFields = new Set([...peruIdentityLookupFieldOrder, 'minsaLookup']);
+  const relocatedFields = new Set([...identityLookupFields, 'sisLookup']);
 
   return sectionDefinitions.map((section) => {
     if (section.id === 'identityLookup') {
@@ -371,7 +379,7 @@ function normalizePeruLookupSection(sectionDefinitions: Array<SectionDefinition>
         ...peruIdentityLookupFieldOrder.filter((field) => section.fields.includes(field)),
         ...section.fields
           .map((field) => (field === 'minsaLookup' ? 'reniecLookup' : field))
-          .filter((field) => !peruIdentityLookupFieldOrder.includes(field)),
+          .filter((field) => field !== 'sisLookup' && !peruIdentityLookupFieldOrder.includes(field)),
       ].filter((field, index, fields) => fields.indexOf(field) === index);
 
       return {
@@ -380,9 +388,19 @@ function normalizePeruLookupSection(sectionDefinitions: Array<SectionDefinition>
       };
     }
 
+    if (section.id === 'insurance') {
+      return {
+        ...section,
+        fields: [
+          'sisLookup',
+          ...section.fields.filter((field) => field !== 'sisLookup' && !identityLookupFields.has(field)),
+        ],
+      };
+    }
+
     return {
       ...section,
-      fields: section.fields.filter((field) => !lookupFields.has(field)),
+      fields: section.fields.filter((field) => !relocatedFields.has(field)),
     };
   });
 }

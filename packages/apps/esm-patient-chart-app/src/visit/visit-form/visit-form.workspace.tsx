@@ -64,6 +64,7 @@ import { invalidateUseVisits, useInfiniteVisits } from '../visits-widget/visit.r
 
 import BaseVisitType from './base-visit-type.component';
 import CompanionList, { usePatientCompanions } from './companion-list.component';
+import { type CompanionRecord } from './companion.resource';
 import LocationSelector from './location-selector.component';
 import { getMinorCompanionRequirementState, isPatientMinor } from './minor-companion-validation';
 import { MemoizedRecommendedVisitType } from './recommended-visit-type.component';
@@ -93,6 +94,8 @@ import styles from './visit-form.scss';
 dayjs.extend(isSameOrBefore);
 
 const VISIT_SAVE_OUTCOME_UNKNOWN = 'VISIT_SAVE_OUTCOME_UNKNOWN';
+const companionPersonSearchWorkspace = 'visit-companion-search-workspace';
+const companionPersonRegistrationWorkspace = 'visit-companion-registration-workspace';
 const DETERMINISTIC_VISIT_CREATE_REJECTION_STATUSES = new Set([
   400, 401, 403, 404, 405, 406, 409, 410, 412, 413, 414, 415, 416, 417, 422,
 ]);
@@ -199,7 +202,13 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   );
   const { emrConfiguration } = useEmrConfiguration(isEmrApiModuleInstalled);
   const { patientUuid, patient, isLoading: isLoadingPatient } = usePatient(initialPatientUuid);
-  const { companions, isLoading: isLoadingCompanions } = usePatientCompanions(patientUuid);
+  const {
+    companions,
+    companionRelationshipTypeUuid,
+    isLoading: isLoadingCompanions,
+    mutate: mutateCompanions,
+  } = usePatientCompanions(patientUuid);
+  const [selectedCompanionRelationshipUuid, setSelectedCompanionRelationshipUuid] = useState<string>();
   const [contentSwitcherIndex, setContentSwitcherIndex] = useState(config.showRecommendedVisitTypeTab ? 0 : 1);
   const visitHeaderSlotState = useMemo(() => ({ patientUuid }), [patientUuid]);
   const { activePatientEnrollment, isLoading } = useActivePatientEnrollment(patientUuid);
@@ -281,10 +290,55 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   }, [patientBirthDateValue]);
   const isMinorPatient = isPatientMinor(patientBirthDateValue);
   const companionRequired = !visitToEdit && isMinorPatient;
+
+  useEffect(() => {
+    if (!companionRequired) {
+      setSelectedCompanionRelationshipUuid(undefined);
+      return;
+    }
+
+    const selectedCompanionStillExists = companions.some(
+      ({ relationshipUuid }) => relationshipUuid === selectedCompanionRelationshipUuid,
+    );
+    if (selectedCompanionStillExists) {
+      return;
+    }
+
+    setSelectedCompanionRelationshipUuid(companions.length === 1 ? companions[0].relationshipUuid : undefined);
+  }, [companionRequired, companions, selectedCompanionRelationshipUuid]);
+
+  const handleCompanionSaved = useCallback(
+    async (companion: CompanionRecord) => {
+      await mutateCompanions().catch(() => undefined);
+      setSelectedCompanionRelationshipUuid(companion.relationshipUuid);
+    },
+    [mutateCompanions],
+  );
+
+  const launchCompanionWorkspace = useCallback(
+    (workspaceName: string) => {
+      if (!isWorkspace2Props(props) || !companionRelationshipTypeUuid) {
+        return;
+      }
+
+      void props.launchChildWorkspace(workspaceName, {
+        patientUuid,
+        relationshipTypeUuid: companionRelationshipTypeUuid,
+        existingCompanionPersonUuids: companions.map(({ personUuid }) => personUuid),
+        requireAdult: companionRequired,
+        onCompanionSaved: handleCompanionSaved,
+      });
+    },
+    [companionRelationshipTypeUuid, companionRequired, companions, handleCompanionSaved, patientUuid, props],
+  );
   const companionRequirementState =
     !visitToEdit && isLoadingPatient
       ? 'loading'
-      : getMinorCompanionRequirementState(companionRequired, isLoadingCompanions, companions.length);
+      : getMinorCompanionRequirementState(
+          companionRequired,
+          isLoadingCompanions,
+          Boolean(selectedCompanionRelationshipUuid),
+        );
 
   const visitFormSchema = useMemo(() => {
     const createVisitAttributeSchema = (required: boolean) =>
@@ -734,7 +788,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           title: t('companionRequiredForMinorTitle', 'Acompañante obligatorio'),
           subtitle: t(
             'companionRequiredForMinor',
-            'Para iniciar la consulta de un menor de edad debe existir al menos un acompañante registrado.',
+            'Seleccione o registre un acompañante adulto antes de iniciar la consulta del menor.',
           ),
           kind: 'error',
           isLowContrast: false,
@@ -1294,8 +1348,24 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
               {/* This field lets the user select a location for the visit. The location is required for the visit to be saved. Defaults to the active session location */}
               <LocationSelector control={control} lockedLocation={requiredVisitLocation} />
 
-              {/* Lists the patient's companions (Acompañante relationships). */}
-              <CompanionList patientUuid={patientUuid} required={companionRequired} />
+              {/* Loads and selects the patient's persisted Acompañante relationships. */}
+              <CompanionList
+                companions={companions}
+                isLoading={isLoadingCompanions}
+                onRegisterPerson={
+                  companionRequired && isWorkspace2
+                    ? () => launchCompanionWorkspace(companionPersonRegistrationWorkspace)
+                    : undefined
+                }
+                onSearchPerson={
+                  companionRequired && isWorkspace2
+                    ? () => launchCompanionWorkspace(companionPersonSearchWorkspace)
+                    : undefined
+                }
+                onSelectCompanion={setSelectedCompanionRelationshipUuid}
+                required={companionRequired}
+                selectedCompanionRelationshipUuid={selectedCompanionRelationshipUuid}
+              />
 
               {/* Lists available program types. This feature is dependent on the `showRecommendedVisitTypeTab` config being set
           to true. */}

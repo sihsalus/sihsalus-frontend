@@ -17,12 +17,12 @@ describe('minor companion validation', () => {
   });
 
   it('blocks a minor while companions load or when none are registered', () => {
-    expect(getMinorCompanionRequirementState(true, true, 0)).toBe('loading');
-    expect(getMinorCompanionRequirementState(true, false, 0)).toBe('missing');
+    expect(getMinorCompanionRequirementState(true, true, false)).toBe('loading');
+    expect(getMinorCompanionRequirementState(true, false, false)).toBe('missing');
   });
 
   it('allows a minor with a companion and does not affect adults', () => {
-    expect(getMinorCompanionRequirementState(true, false, 1)).toBe('satisfied');
-    expect(getMinorCompanionRequirementState(false, false, 0)).toBe('not-required');
+    expect(getMinorCompanionRequirementState(true, false, true)).toBe('satisfied');
+    expect(getMinorCompanionRequirementState(false, false, false)).toBe('not-required');
   });
 });

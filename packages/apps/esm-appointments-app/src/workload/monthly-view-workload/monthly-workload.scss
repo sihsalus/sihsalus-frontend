@@ -1,238 +1,185 @@
 @use '@carbon/colors';
 @use '@carbon/layout';
 @use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
 
-.monthly-cell {
-  border-left: 1px solid colors.$gray-20;
-  border-bottom: 1px solid colors.$gray-20;
-  border-right: 1px solid colors.$gray-20;
+.calendar {
+  width: 100%;
+  max-width: 32rem;
+  overflow: hidden;
+  border: 1px solid colors.$gray-20;
   background: colors.$white;
-  color: colors.$black;
-  cursor: pointer;
-  text-align: right;
-  @include type.type-style('body-compact-02');
-
-  &:nth-child(-n + 7) {
-    border-top: 1px solid colors.$gray-20;
-  }
-
-  &:nth-child(7n) {
-    border-right: 1px solid colors.$gray-20;
-  }
-
-  &-today {
-    background-color: colors.$blue-70;
-    color: colors.$white;
-  }
-
-  &-selected {
-    background-color: colors.$gray-10;
-    color: colors.$white;
-  }
-
-  &-current {
-    color: colors.$black;
-  }
-
-  &:hover {
-    background-color: colors.$blue-30-hover;
-    color: colors.$white;
-  }
-
-  &-active {
-    background-color: colors.$magenta-30;
-    color: colors.$white;
-  }
+  box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
 }
 
-.monthly-cell-disabled {
-  background: colors.$white;
-  color: colors.$gray-20;
-}
-
-.monthly-cell-disabled:last-child {
-  display: none;
-}
-
-.identifiers {
-  @include type.type-style('body-compact-02');
-  color: $ui-04;
-  display: list-item;
-
-  span:not(:first-child) {
-    margin: 0 layout.$spacing-04;
-  }
-}
-
-.identifierTag {
+.calendarHeader {
+  min-height: layout.$spacing-09;
+  padding: layout.$spacing-04;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-03;
+  border-bottom: 1px solid colors.$gray-20;
+  background: colors.$gray-10;
 }
 
-.weekly-cell {
-  position: relative;
+.calendarTitleContainer {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  color: colors.$gray-80;
+}
+
+.calendarEyebrow {
+  margin: 0 0 layout.$spacing-01;
+  color: colors.$gray-60;
+  @include type.type-style('label-01');
+}
+
+.calendarTitle {
+  margin: 0;
+  color: colors.$gray-100;
+  text-transform: capitalize;
+  @include type.type-style('heading-compact-02');
+}
+
+.monthNavigation {
+  flex: none;
+  display: flex;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.weekday {
+  min-height: layout.$spacing-07;
+  padding: layout.$spacing-02;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid colors.$gray-20;
+  background: colors.$gray-10;
+  color: colors.$gray-70;
+  text-transform: capitalize;
+  @include type.type-style('label-01');
+}
+
+.dayCell {
+  min-width: 0;
   border-right: 1px solid colors.$gray-20;
   border-bottom: 1px solid colors.$gray-20;
-  min-height: 7.5rem;
-  color: colors.$white;
 
-  .week-time {
-    display: none;
-  }
-
-  &:nth-child(-n + 8) {
-    border-top: 1px solid colors.$gray-20;
-  }
-
-  &:first-child {
-    border-top: none;
-  }
-
-  &:nth-child(8n + 1) {
-    border-bottom: none;
-
-    .week-time {
-      white-space: nowrap;
-      display: inline;
-      color: colors.$white;
-      position: absolute;
-      top: -11px;
-      height: layout.$spacing-06;
-      width: layout.$spacing-07;
-    }
+  &:nth-child(7n) {
+    border-right: 0;
   }
 }
 
-.selectedDate {
-  background-color: #005d5d;
-  height: 100%;
+.dayButton {
   width: 100%;
-}
-
-.currentData {
-  margin: 2px;
-  padding-top: 2px;
-}
-
-.serviceArea {
-  padding: 0.0125rem;
-  display: grid;
-  grid-template-columns: 4fr 1fr;
-  justify-content: flex-start;
-  text-align: left;
-  margin: layout.$spacing-01;
-  @include type.type-style('label-01');
-  color: #020f1b;
+  min-height: 3.5rem;
+  padding: layout.$spacing-02;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: layout.$spacing-01;
+  border: 0;
+  background: colors.$white;
+  color: colors.$gray-100;
   cursor: pointer;
+  font: inherit;
+  text-align: left;
 
-  & > span:first-child {
-    text-align: left;
-    text-overflow: ellipsis;
+  &:hover:not(:disabled) {
+    background: colors.$blue-10;
   }
 
-  & > span:nth-child(2) {
-    text-align: right;
+  &:focus-visible {
+    position: relative;
+    z-index: 1;
+    outline: 2px solid colors.$blue-60;
+    outline-offset: -2px;
   }
 }
 
-.smallDesktop {
-  height: auto;
+.dayButtonAdjacent {
+  background: colors.$gray-10;
+  color: colors.$gray-40;
 }
 
-.largeDesktop {
-  height: auto;
+.dayButtonDisabled {
+  background: colors.$gray-10;
+  color: colors.$gray-40;
+  cursor: not-allowed;
 }
 
-.red {
-  background-color: colors.$red-70;
+.dayButtonToday {
+  box-shadow: inset 0 0 0 2px colors.$blue-60;
+}
+
+.dayButtonSelected {
+  background: colors.$blue-60;
   color: colors.$white;
-  font-weight: bold;
+
+  &:hover:not(:disabled) {
+    background: colors.$blue-70;
+  }
 }
 
-.purple {
-  background-color: colors.$yellow-70;
-  color: colors.$white;
-  font-weight: bold;
-}
-
-.blue {
-  color: colors.$blue-70;
-  font-weight: bold;
-}
-.black {
-  color: colors.$black;
-  font-weight: bold;
-}
-
-.green {
-  background-color: colors.$green-70;
-  color: colors.$white;
-  font-weight: bold;
-}
-
-.calendarDate {
+.dayNumber {
   @include type.type-style('heading-compact-01');
 }
 
-.wrapper {
-  position: relative;
-}
-
-.monthlyCalendar {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0px, 1fr));
-  grid-template-rows: repeat(6, minmax(0px, 1fr));
-}
-
-.selectedDate {
-  background-color: red;
-}
-
-.calendarViewContainer {
-  margin: 5px;
-}
-
-.backgroundColor {
-  margin: 1px 0 0;
-  transition: width 0.24s ease-in-out;
-  position: relative;
-  min-height: calc(100vh - 80px);
-  background-color: colors.$white;
-}
-
-.container {
-  display: flex;
-  justify-content: center;
+.appointmentCount,
+.countExample {
+  min-width: layout.$spacing-05;
+  height: layout.$spacing-05;
+  padding: 0 layout.$spacing-02;
+  display: inline-flex;
   align-items: center;
-  width: 100%;
-  height: layout.$spacing-06;
+  justify-content: center;
+  border-radius: 999px;
+  background: colors.$blue-20;
+  color: colors.$blue-80;
+  @include type.type-style('label-01');
 }
 
-.workLoadCard {
+.appointmentCountEmpty {
+  background: colors.$gray-20;
+  color: colors.$gray-60;
+}
+
+.dayButtonSelected .appointmentCount {
+  background: colors.$white;
+  color: colors.$blue-70;
+}
+
+.calendarFooter {
+  min-height: layout.$spacing-07;
+  padding: layout.$spacing-03 layout.$spacing-04;
   display: flex;
-  color: colors.$black;
+  align-items: center;
+  gap: layout.$spacing-03;
+  color: colors.$gray-70;
+  @include type.type-style('label-01');
 }
 
-.activeWorkloadCard {
-  background-color: colors.$blue-10;
-
-  & label {
-    color: colors.$blue-60;
+@media (max-width: 32rem) {
+  .calendarHeader {
+    padding-inline: layout.$spacing-03;
   }
-}
 
-.workLoadContainer {
-  display: flex;
-  flex-direction: column;
-  background-color: white;
-  padding-bottom: layout.$spacing-05;
-}
+  .dayButton {
+    min-height: 3rem;
+    padding: layout.$spacing-02;
+  }
 
-.headerContainer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: layout.$spacing-06;
+  .appointmentCount,
+  .countExample {
+    min-width: layout.$spacing-04;
+    height: layout.$spacing-04;
+    padding-inline: layout.$spacing-01;
+  }
 }

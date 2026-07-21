@@ -127,7 +127,8 @@
       "name": "home-appointments-tile",
       "slot": "home-metrics-tiles-slot",
       "component": "homeAppointmentsTile",
-      "privileges": "app:home.citas"
+      "privileges": "app:home.citas",
+      "order": 0
     }
   ],
   "modals": [

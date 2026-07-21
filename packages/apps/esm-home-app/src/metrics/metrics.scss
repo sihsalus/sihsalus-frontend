@@ -2,9 +2,11 @@
 
 .metricTilesSlot {
   display: flex;
+  flex-wrap: wrap;
   margin: layout.$spacing-03 layout.$spacing-03 0 layout.$spacing-03;
 
   [data-extension-id] {
-    flex-grow: 1;
+    flex: 1 1 15rem;
+    min-width: 0;
   }
 }

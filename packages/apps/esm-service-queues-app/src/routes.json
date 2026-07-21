@@ -96,6 +96,14 @@
       "order": 3
     },
     {
+      "name": "patients-in-queue-tile",
+      "component": "homePatientsInQueueTile",
+      "slot": "home-metrics-tiles-slot",
+      "privileges": "app:home.colasAtencion",
+      "online": true,
+      "order": 1
+    },
+    {
       "name": "transition-overflow-menu-item",
       "component": "transitionOverflowMenuItem",
       "slot": "transition-overflow-menu-item-slot",

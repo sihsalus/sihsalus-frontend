@@ -22,6 +22,11 @@ export const pendingSisAccreditations = getAsyncLifecycle(
   options,
 );
 
+export const homePendingSisAccreditationsTile = getAsyncLifecycle(
+  () => import('./home-page-tiles/pending-sis-accreditations-metric-tile/pending-sis-accreditations-tile.component'),
+  options,
+);
+
 export const visitDetail = getAsyncLifecycle(() => import('./visits-summary/visit-detail.component'), options);
 
 export const homeActiveVisitsTile = getAsyncLifecycle(

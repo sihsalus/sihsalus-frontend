@@ -220,7 +220,7 @@ export function useQueueEntriesMetrics(searchCriteria?: QueueEntrySearchCriteria
   }
   const apiUrl = `${restBaseUrl}/queue-entry-metrics?` + searchParam.toString();
 
-  const { data } = useSWR<
+  const { data, error, isLoading } = useSWR<
     {
       data: {
         count: number;
@@ -233,5 +233,7 @@ export function useQueueEntriesMetrics(searchCriteria?: QueueEntrySearchCriteria
   return {
     count: data ? data?.data?.count : 0,
     averageWaitTime: data?.data?.averageWaitTime,
+    error,
+    isLoading,
   };
 }

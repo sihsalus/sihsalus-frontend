@@ -19,6 +19,13 @@
       "order": 1
     },
     {
+      "name": "pending-sis-accreditations-tile",
+      "slot": "home-metrics-tiles-slot",
+      "component": "homePendingSisAccreditationsTile",
+      "privileges": "app:home.admision",
+      "order": 2
+    },
+    {
       "name": "visit-summary-widget",
       "slot": "visit-summary-slot",
       "component": "visitDetail",

@@ -99,7 +99,7 @@ describe('DefaultQueueTable', () => {
     await screen.findByRole('table');
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(screen.getByText(/patients currently in queue/i)).toBeInTheDocument();
+    expect(screen.getByText(/patients in queue/i)).toBeInTheDocument();
     expect(screen.getByText(/no patients to display/i)).toBeInTheDocument();
 
     const queueTableCard = screen.getByTestId('queue-table-card');
@@ -146,6 +146,7 @@ describe('DefaultQueueTable', () => {
       selectedServiceUuid: 'service-uuid',
       selectedQueueLocationUuid: 'location-uuid',
       selectedQueueStatusUuid: mockStatusWaiting.uuid,
+      selectedQueueStatusDisplay: mockStatusWaiting.display,
       selectedAppointmentStatus: '',
       selectedQueueRoomTimestamp: new Date(),
       isPermanentProviderQueueRoom: false,
@@ -164,6 +165,7 @@ describe('DefaultQueueTable', () => {
     rendeDefaultQueueTable();
 
     expect(await screen.findByRole('tab', { name: /^waiting$/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('heading', { name: `Patients: ${mockStatusWaiting.display}` })).toBeInTheDocument();
     expect(mockUseQueueEntries).toHaveBeenCalledWith({
       service: 'service-uuid',
       location: 'location-uuid',
@@ -243,7 +245,7 @@ describe('DefaultQueueTable', () => {
 
     await screen.findByRole('table');
 
-    expect(screen.getByText(/patients currently in queue/i)).toBeInTheDocument();
+    expect(screen.getByText(/patients in queue/i)).toBeInTheDocument();
     expect(screen.queryByText(/no patients to display/i)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Brian Johnson/i })).toBeInTheDocument();
     const john = screen.getByRole('link', { name: /Alice Johnson/i });

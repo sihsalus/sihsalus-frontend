@@ -23,5 +23,9 @@ describe('active visits route privilege contract', () => {
 
   it('protects the pending SIS accreditations worklist with the admisión privilege', () => {
     expect(extension('pending-sis-accreditations-widget')).toMatchObject({ privileges: 'app:home.admision' });
+    expect(extension('pending-sis-accreditations-tile')).toMatchObject({
+      privileges: 'app:home.admision',
+      slot: 'home-metrics-tiles-slot',
+    });
   });
 });

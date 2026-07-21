@@ -290,6 +290,77 @@ function createInMemoryRateLimit({ windowMs, max }) {
   };
 }
 
+const devRuntimeReadyTimeoutMs = 180_000;
+
+function waitForDelay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+async function fetchWithTimeout(url, timeoutMs = 10_000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { cache: 'no-store', signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function isLocalDevBundleUrl(value) {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' && (url.hostname === 'localhost' || url.hostname === '127.0.0.1');
+  } catch {
+    return false;
+  }
+}
+
+async function waitForDevRuntime(cliPort) {
+  const deadline = Date.now() + devRuntimeReadyTimeoutMs;
+  let lastError;
+
+  while (Date.now() < deadline) {
+    try {
+      const importmapResponse = await fetchWithTimeout(`http://localhost:${cliPort}${spaPath}/importmap.json`);
+      if (!importmapResponse.ok) {
+        throw new Error(`Import map returned HTTP ${importmapResponse.status}`);
+      }
+
+      const importmap = await importmapResponse.json();
+      const localBundleUrls = [...new Set(Object.values(importmap?.imports ?? {}).filter(isLocalDevBundleUrl))];
+      if (localBundleUrls.length === 0) {
+        throw new Error('The import map does not contain local development bundles yet.');
+      }
+
+      await Promise.all(
+        localBundleUrls.map(async (url) => {
+          const response = await fetchWithTimeout(url, 30_000);
+          if (!response.ok) {
+            throw new Error(`${url} returned HTTP ${response.status}`);
+          }
+          await response.body?.cancel();
+        }),
+      );
+
+      logInfo(`Development runtime ready (${localBundleUrls.length} local bundles)`);
+      return;
+    } catch (error) {
+      lastError = error;
+      await waitForDelay(500);
+    }
+  }
+
+  throw new Error(
+    `Development bundles did not become ready within ${Math.floor(devRuntimeReadyTimeoutMs / 1000)} seconds: ${
+      lastError?.message ?? lastError ?? 'unknown error'
+    }`,
+  );
+}
+
 /**
  * Start a reverse proxy on port 8080 that:
  * 1. Serves pre-built bundles and chunks from dist/spa/ for /openmrs/spa/ paths
@@ -311,6 +382,14 @@ async function startWithProxy(cliArgs) {
   const cliManagedPaths = new Set(['/importmap.json', '/routes.registry.json', '/routes.json']);
 
   const app = express();
+  let devRuntimeReadyPromise;
+  const ensureDevRuntimeReady = () => {
+    if (!devAppsEnv) {
+      return Promise.resolve();
+    }
+    devRuntimeReadyPromise ??= waitForDevRuntime(cliPort);
+    return devRuntimeReadyPromise;
+  };
   // Index requests are handled below so the session-specific registry URLs are
   // always served. Static assets still come directly from the assembled SPA.
   const staticHandler = express.static(distSpa, createSpaStaticOptions({ index: false }));
@@ -389,11 +468,18 @@ async function startWithProxy(cliArgs) {
     staticHandler(req, res, next);
   });
 
-  app.get([spaPath, `${spaPath}/*`], spaIndexRateLimit, (req, res, next) => {
+  app.get([spaPath, `${spaPath}/*`], spaIndexRateLimit, async (req, res, next) => {
     if (cliManagedPaths.has(req.path) || !isSpaIndexRequestPath(req.originalUrl || req.path, spaPath)) {
       return next();
     }
-    res.type('html').send(spaIndexHtml);
+    try {
+      await ensureDevRuntimeReady();
+      res.type('html').send(spaIndexHtml);
+    } catch (error) {
+      logFail(error.message);
+      res.setHeader('retry-after', '5');
+      res.status(503).send('The local development bundles are not ready. Retry in a few seconds.');
+    }
   });
 
   // Proxy everything else to the openmrs CLI (importmap, index.html, API, etc.)

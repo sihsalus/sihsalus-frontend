@@ -22,9 +22,17 @@ describe('getEffectiveRegistrationConfig', () => {
     const contact = config.sectionDefinitions.find((section) => section.id === 'contact');
     const filiation = config.sectionDefinitions.find((section) => section.id === 'filiation');
     const bloodData = config.sectionDefinitions.find((section) => section.id === 'bloodData');
+    const insurance = config.sectionDefinitions.find((section) => section.id === 'insurance');
     const nationality = config.fieldDefinitions.find((field) => field.id === 'nationality');
 
-    expect(identityLookup?.fields).toEqual(['id', 'reniecLookup', 'sisLookup']);
+    expect(identityLookup?.fields).toEqual(['id', 'reniecLookup']);
+    expect(insurance?.fields).toEqual([
+      'sisLookup',
+      'insuranceType',
+      'insuranceCode',
+      'insuranceAccreditationStatus',
+      'insuranceAccreditationCheckedAt',
+    ]);
     expect(demographics?.fields).toEqual(['name', 'dob', 'gender', 'nationality']);
     expect(contact).toMatchObject({
       id: 'contact',
@@ -123,7 +131,6 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(config.sectionDefinitions.find((section) => section.id === 'identityLookup')?.fields).toEqual([
       'id',
       'reniecLookup',
-      'sisLookup',
     ]);
     expect(demographics?.fields).toEqual(['name', 'dob', 'gender', 'nationality']);
   });
@@ -154,8 +161,10 @@ describe('getEffectiveRegistrationConfig', () => {
     ]);
     expect(fieldsById.bloodGroup.codedInputType).toBe('radio');
     expect(fieldsById.rhFactor.codedInputType).toBe('radio');
-    expect(config.sectionDefinitions.find((section) => section.id === 'identityLookup')?.fields).toContain('sisLookup');
-    expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.fields).not.toContain('sisLookup');
+    expect(config.sectionDefinitions.find((section) => section.id === 'identityLookup')?.fields).not.toContain(
+      'sisLookup',
+    );
+    expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.fields[0]).toBe('sisLookup');
     expect(config.fieldConfigurations.phone.personAttributeUuid).toBe(peruPhoneAttributeTypeUuid);
     expect(config.fieldConfigurations.phone.placeholder).toBe('012345678');
     expect(config.fieldConfigurations.phone.validation?.matches).toBe('^(?:(?:\\+51)?[1-8][0-9]{7}|0[1-8][0-9]{7})$');

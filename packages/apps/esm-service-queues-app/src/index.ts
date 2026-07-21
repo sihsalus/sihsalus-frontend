@@ -61,6 +61,11 @@ export const metricsCardAverageWaitTime = getAsyncLifecycle(
   options,
 );
 
+export const homePatientsInQueueTile = getAsyncLifecycle(
+  () => import('./home-page-tiles/patients-in-queue-tile.component'),
+  options,
+);
+
 export const adminPageCardLink = getAsyncLifecycle(
   () => import('./admin/admin-page-card-link/admin-page-card-link.extension'),
   {

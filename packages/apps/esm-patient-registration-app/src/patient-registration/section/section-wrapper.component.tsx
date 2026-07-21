@@ -37,7 +37,7 @@ export const SectionWrapper = ({ sectionDefinition, index }: SectionWrapperProps
   const helperText = isIdentityLookupSection
     ? t(
         'identityLookupSectionHelpText',
-        'Ingrese el DNI del paciente y consulte RENIEC/SIS antes de completar los datos.',
+        'Ingrese el DNI del paciente y consulte RENIEC antes de completar los datos.',
       )
     : t('allFieldsRequiredText', 'All fields are required unless marked optional');
 

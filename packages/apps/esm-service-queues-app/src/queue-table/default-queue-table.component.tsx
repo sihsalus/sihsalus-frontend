@@ -14,6 +14,11 @@ import QueueTableExpandedRow from './queue-table-expanded-row.component';
 function DefaultQueueTable() {
   const { t } = useTranslation();
   const layout = useLayoutType();
+  const { selectedQueueStatusDisplay, selectedQueueStatusUuid } = useServiceQueuesStore();
+  const tableHeading =
+    selectedQueueStatusUuid && selectedQueueStatusDisplay
+      ? t('patientsByQueueStatus', 'Patients: {{status}}', { status: selectedQueueStatusDisplay })
+      : t('patientsInQueue', 'Patients in queue');
 
   return (
     <div className={styles.defaultQueueTable}>
@@ -21,7 +26,7 @@ function DefaultQueueTable() {
       <Layer className={classNames(styles.tableSection, styles.container)} data-testid="queue-table-card">
         <div className={styles.headerContainer}>
           <div className={!isDesktop(layout) ? styles.tabletHeading : styles.desktopHeading}>
-            <h4>{t('patientsCurrentlyInQueue', 'Patients currently in queue')}</h4>
+            <h4>{tableHeading}</h4>
           </div>
         </div>
         <QueueTableSection />

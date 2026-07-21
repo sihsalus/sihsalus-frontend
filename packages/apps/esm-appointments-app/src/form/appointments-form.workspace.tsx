@@ -61,10 +61,18 @@ import {
   moduleName,
   weekDays,
 } from '../constants';
-import { isAppointmentEditable, isAppointmentServiceAvailableForGender } from '../helpers';
+import {
+  canTransition,
+  getAppointmentStatusLabel,
+  isAppointmentEditable,
+  isAppointmentServiceAvailableForGender,
+} from '../helpers';
 import SelectedDateContext from '../hooks/selectedDateContext';
 import { useProviders } from '../hooks/useProviders';
-import { getAppointmentStatus } from '../patient-appointments/patient-appointments.resource';
+import {
+  changeAppointmentStatus,
+  getAppointmentStatus,
+} from '../patient-appointments/patient-appointments.resource';
 import {
   type Appointment,
   AppointmentKind,
@@ -141,6 +149,12 @@ interface AppointmentsFormProps {
 // so new appointments fall back to this duration until the user overrides it.
 const DEFAULT_APPOINTMENT_DURATION_MINUTES = 30;
 const APPOINTMENT_EDIT_STATUS_CONFLICT = 'APPOINTMENT_EDIT_STATUS_CONFLICT';
+const APPOINTMENT_STATUS_TRANSITION_CONFLICT = 'APPOINTMENT_STATUS_TRANSITION_CONFLICT';
+const administrativelyEditableStatuses = [
+  AppointmentStatus.SCHEDULED,
+  AppointmentStatus.CANCELLED,
+  AppointmentStatus.MISSED,
+] as const;
 
 const time12HourFormatRegexPattern = '^(1[0-2]|0?[1-9]):[0-5][0-9]$';
 
@@ -343,6 +357,7 @@ const AppointmentsForm: React.FC<
       appointmentType: z.string().refine((value) => value !== '', {
         message: translateFrom(moduleName, 'appointmentTypeRequired', 'Appointment type is required'),
       }),
+      appointmentStatus: z.nativeEnum(AppointmentStatus),
       selectedService: z.string().refine((value) => value !== '', {
         message: translateFrom(moduleName, 'serviceRequired', 'Service is required'),
       }),
@@ -489,6 +504,7 @@ const AppointmentsForm: React.FC<
         '', // assumes only a single previously-scheduled provider with state "ACCEPTED", if multiple, just takes the first
       appointmentNote: appointment?.comments || '',
       appointmentType: getAppointmentTypeFromKind(appointment?.appointmentKind, mappedAppointmentTypes),
+      appointmentStatus: appointment?.status ?? AppointmentStatus.SCHEDULED,
       selectedService: appointment?.service?.name || '',
       recurringPatternType: defaultRecurringPatternType,
       recurringPatternPeriod: defaultRecurringPatternPeriod,
@@ -515,6 +531,12 @@ const AppointmentsForm: React.FC<
     providerAttributeTypeUuid: providerSchedulingCategoryValidation.providerAttributeTypeUuid,
     service: selectedService,
   });
+  const editableAppointmentStatuses = appointment?.status
+    ? [
+        appointment.status,
+        ...administrativelyEditableStatuses.filter((status) => canTransition(appointment.status, status)),
+      ]
+    : [];
 
   useEffect(() => setValue('formIsRecurringAppointment', isRecurringAppointment), [isRecurringAppointment, setValue]);
 
@@ -612,6 +634,32 @@ const AppointmentsForm: React.FC<
     }
   };
 
+  const updateAppointmentStatus = async (selectedStatus: AppointmentStatus) => {
+    if (context !== 'editing' || selectedStatus === appointment.status) {
+      return;
+    }
+
+    const currentStatus = (await getAppointmentStatus(appointment.uuid)) as AppointmentStatus;
+    if (currentStatus === selectedStatus) {
+      return;
+    }
+    if (!isAppointmentEditable(currentStatus) || !canTransition(currentStatus, selectedStatus)) {
+      throw Object.assign(new Error('The selected appointment status transition is no longer valid.'), {
+        code: APPOINTMENT_STATUS_TRANSITION_CONFLICT,
+      });
+    }
+
+    try {
+      await changeAppointmentStatus(selectedStatus, appointment.uuid);
+    } catch (error) {
+      // A lost response may still mean the backend committed the transition.
+      const reconciledStatus = await getAppointmentStatus(appointment.uuid).catch(() => undefined);
+      if (reconciledStatus !== selectedStatus) {
+        throw error;
+      }
+    }
+  };
+
   // Same for creating and editing
   const handleSaveAppointment = async (data: AppointmentFormData) => {
     setIsSubmitting(true);
@@ -685,8 +733,36 @@ const AppointmentsForm: React.FC<
     };
 
     saveRequest().then(
-      ({ status }) => {
+      async ({ status }) => {
         if (isSuccessfulAppointmentResponse(status)) {
+          try {
+            await updateAppointmentStatus(data.appointmentStatus);
+          } catch (error) {
+            setIsSubmitting(false);
+            mutateAppointments();
+            showSnackbar({
+              title: t('appointmentStatusUpdateFailed', 'No se pudo actualizar el estado de la cita'),
+              kind: 'error',
+              isLowContrast: false,
+              subtitle: getUserFacingErrorMessage(
+                error,
+                t(
+                  'appointmentDetailsSavedStatusUpdateFailed',
+                  'Los datos de la cita se guardaron, pero no se pudo actualizar su estado. Revise el estado actual e intente nuevamente.',
+                ),
+                {
+                  codeMessages: {
+                    [APPOINTMENT_STATUS_TRANSITION_CONFLICT]: t(
+                      'appointmentStatusTransitionChanged',
+                      'El estado de la cita cambi\u00f3 y la transici\u00f3n seleccionada ya no est\u00e1 permitida. Actualice la lista.',
+                    ),
+                  },
+                  logContext: `Update appointment status: ${appointment.uuid}`,
+                },
+              ),
+            });
+            return;
+          }
           setIsSubmitting(false);
           setIsSuccessful(true);
           mutateAppointments();
@@ -976,6 +1052,32 @@ const AppointmentsForm: React.FC<
               />
             </ResponsiveWrapper>
           </section>
+
+          {context === 'editing' ? (
+            <section className={styles.formGroup}>
+              <span className={styles.heading}>{t('appointmentStatus', 'Appointment status')}</span>
+              <ResponsiveWrapper>
+                <Controller
+                  name="appointmentStatus"
+                  control={control}
+                  render={({ field: { onBlur, onChange, value, ref } }) => (
+                    <Select
+                      id="appointmentStatus"
+                      labelText={t('selectStatus', 'Select status')}
+                      onBlur={onBlur}
+                      onChange={onChange}
+                      ref={ref}
+                      value={value}
+                    >
+                      {editableAppointmentStatuses.map((status) => (
+                        <SelectItem key={status} text={getAppointmentStatusLabel(status, t)} value={status} />
+                      ))}
+                    </Select>
+                  )}
+                />
+              </ResponsiveWrapper>
+            </section>
+          ) : null}
 
           {context !== 'creating' ? (
             <section className={styles.formGroup}>

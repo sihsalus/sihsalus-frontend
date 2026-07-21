@@ -99,6 +99,21 @@
   max-width: none;
 }
 
+.actionsCell {
+  position: relative;
+  padding-block: 0 !important;
+  vertical-align: middle !important;
+
+  > :global(.cds--overflow-menu) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: auto !important;
+    max-block-size: none;
+    max-height: none;
+  }
+}
+
 .content {
   @include type.type-style('heading-compact-02');
   color: $text-02;

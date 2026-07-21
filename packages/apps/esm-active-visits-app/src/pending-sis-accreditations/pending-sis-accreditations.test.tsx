@@ -1,5 +1,5 @@
-import { getDefaultsFromConfigSchema, useConfig, useSession } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { getDefaultsFromConfigSchema, navigate, useConfig, useSession } from '@openmrs/esm-framework';
+import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 
 import { type ActiveVisitsConfigSchema, configSchema } from '../config-schema';
@@ -16,6 +16,7 @@ vi.mock('./pending-sis-accreditations.resource', async () => ({
 const mockUsePendingSisAccreditations = vi.mocked(usePendingSisAccreditations);
 const mockUseConfig = vi.mocked(useConfig<ActiveVisitsConfigSchema>);
 const mockUseSession = vi.mocked(useSession);
+const mockNavigate = vi.mocked(navigate);
 
 const admisionSession = {
   authenticated: true,
@@ -73,6 +74,16 @@ describe('PendingSisAccreditationsTable', () => {
     expect(screen.getByText('Pendiente')).toBeInTheDocument();
     expect(screen.getByText('Sin registrar')).toBeInTheDocument();
     expect(screen.getByText('Emergencia')).toBeInTheDocument();
+  });
+
+  it('opens patient editing from the accreditation action and returns to home after saving', () => {
+    render(<PendingSisAccreditationsTable />);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Acreditar' })[0]);
+
+    expect(mockNavigate).toHaveBeenCalledWith({
+      to: expect.stringMatching(/\/patient\/patient-1\/edit\?focusSection=insurance&afterUrl=.*%2Fhome$/),
+    });
   });
 
   it('renders nothing (and does not fetch) without the admisión privilege', () => {

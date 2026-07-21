@@ -107,7 +107,7 @@ export const missedAppointmentsPanelConfigSchema = {
   showForToday: {
     _type: Type.Boolean,
     _description: 'Whether to display this panel when viewing scheduled appointments for today',
-    _default: false,
+    _default: true,
   },
   showForFutureDate: {
     _type: Type.Boolean,

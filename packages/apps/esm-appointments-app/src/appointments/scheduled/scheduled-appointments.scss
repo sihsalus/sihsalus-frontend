@@ -2,5 +2,10 @@
 
 .switcher {
   margin: layout.$spacing-05 0;
-  max-width: 70%;
+  width: 100%;
+  overflow-x: auto;
+
+  :global(.cds--content-switcher-btn) {
+    min-width: 10rem;
+  }
 }

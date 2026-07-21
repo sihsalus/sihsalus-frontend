@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { type AppointmentArrivalRule, configSchema } from './config-schema';
+import { missedAppointmentsPanelConfigSchema } from './scheduled-appointments-config-schema';
 
 const frontendConfig = JSON.parse(readFileSync(resolve(process.cwd(), '../../../config/frontend.json'), 'utf8'));
 const appointmentsConfig = frontendConfig['@sihsalus/esm-appointments-app'];
@@ -10,6 +11,11 @@ const arrivalRules = appointmentsConfig.appointmentArrivalRules as Array<Appoint
 describe('appointments configuration', () => {
   it('requires timed appointments by default', () => {
     expect(configSchema.allowAllDayAppointments._default).toBe(false);
+  });
+
+  it('shows missed appointments for the current date', () => {
+    expect(missedAppointmentsPanelConfigSchema.status._default).toBe('Missed');
+    expect(missedAppointmentsPanelConfigSchema.showForToday._default).toBe(true);
   });
 
   it('uses the SIHSALUS appointment visit attribute', () => {

@@ -77,6 +77,10 @@ const ScheduledAppointments: React.FC<ScheduledAppointmentsProps> = ({ appointme
   }, [allowedExtensions, currentTab]);
 
   const panelsToShow = scheduledAppointmentPanels.filter(shouldShowPanel);
+  const selectedPanelIndex = Math.max(
+    0,
+    panelsToShow.findIndex((panel) => panel.name === currentTab),
+  );
 
   return (
     <>
@@ -84,7 +88,7 @@ const ScheduledAppointments: React.FC<ScheduledAppointmentsProps> = ({ appointme
         className={styles.switcher}
         size={responsiveSize}
         onChange={({ name }) => setCurrentTab(name)}
-        selectedIndex={panelsToShow.findIndex((panel) => panel.name === currentTab) ?? 0}
+        selectedIndex={selectedPanelIndex}
         selectionMode="manual"
       >
         {panelsToShow.map((panel) => (

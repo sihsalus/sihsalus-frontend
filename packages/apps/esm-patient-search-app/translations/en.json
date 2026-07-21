@@ -3,6 +3,7 @@
   "age": "Age",
   "ageUnit": "Unit",
   "any": "Any",
+  "anyConsultationStatus": "Any status",
   "apply": "Apply",
   "birthdateInFuture": "Date of birth cannot be in the future",
   "birthdateTooOld": "Date of birth cannot be more than 140 years ago",
@@ -10,6 +11,7 @@
   "clearSearch": "Clear",
   "close": "Close",
   "closeSearch": "Close Search Panel",
+  "consultationStatus": "Consultation status",
   "countOfFiltersApplied_one": "{{count}} filters applied",
   "countOfFiltersApplied_other": "{{count}} filters applied",
   "dayOfBirth": "Day of Birth",
@@ -66,6 +68,8 @@
   "trySearchWithPatientUniqueID": "Try to search again using the patient's unique ID number",
   "unknown": "Unknown",
   "unsupportedAttributeFormat": "Unsupported attribute format: {{format}}",
+  "withActiveConsultation": "With active consultation",
+  "withoutActiveConsultation": "Without active consultation",
   "yearOfBirth": "Year of Birth",
   "years": "Years"
 }

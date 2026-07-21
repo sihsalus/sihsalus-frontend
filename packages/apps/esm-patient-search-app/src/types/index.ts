@@ -103,7 +103,7 @@ export interface AdvancedPatientSearchState {
   postcode: string;
   age: number | null;
   ageUnit: PatientAgeUnit;
-  hasActiveVisit: boolean;
+  activeVisitStatus: 'any' | 'active' | 'inactive';
   attributes: {
     [key: string]: string;
   };

@@ -30,7 +30,7 @@ export const initialFilters: AdvancedPatientSearchState = {
   postcode: '',
   age: null,
   ageUnit: 'years',
-  hasActiveVisit: false,
+  activeVisitStatus: 'any',
   attributes: {},
 };
 
@@ -70,7 +70,7 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
       gender: 'any',
       age: null,
       ageUnit: 'years',
-      hasActiveVisit: false,
+      activeVisitStatus: 'any',
       postcode: '',
       attributes: {},
     },

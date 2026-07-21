@@ -205,7 +205,7 @@ describe('AdvancedPatientSearchComponent', () => {
     expect(screen.queryByText(/telephone|tel[eé]fono|phone/i)).not.toBeInTheDocument();
     expect(screen.queryByText('CÃ³digo de Documento de Identidad')).not.toBeInTheDocument();
     expect(screen.getByLabelText(/age/i)).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /active consultation/i })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /consultation status/i })).toHaveValue('any');
   });
 
   describe('Filtering', () => {
@@ -318,12 +318,28 @@ describe('AdvancedPatientSearchComponent', () => {
       });
       renderComponent();
 
-      await user.click(screen.getByRole('checkbox', { name: /active consultation/i }));
+      await user.selectOptions(screen.getByRole('combobox', { name: /consultation status/i }), 'active');
       await user.click(screen.getByRole('button', { name: /search/i }));
 
       const patientBanners = screen.getAllByRole('banner');
       expect(patientBanners).toHaveLength(1);
       expect(within(patientBanners[0]).getByText(/Joshua Johnson/)).toBeInTheDocument();
+    });
+
+    it('filters patients that do not have an active consultation', async () => {
+      mockUseActiveVisitPatientUuids.mockReturnValue({
+        patientUuids: new Set([mockAdvancedSearchResults[0].uuid]),
+        error: undefined,
+        isLoading: false,
+      });
+      renderComponent();
+
+      await user.selectOptions(screen.getByRole('combobox', { name: /consultation status/i }), 'inactive');
+      await user.click(screen.getByRole('button', { name: /search/i }));
+
+      const patientBanners = screen.getAllByRole('banner');
+      expect(patientBanners).toHaveLength(1);
+      expect(within(patientBanners[0]).getByText(/Joseph Davis/)).toBeInTheDocument();
     });
 
     it('resets filters correctly', async () => {

@@ -9,7 +9,7 @@ const validFilters = {
   postcode: '',
   age: null,
   ageUnit: 'years' as const,
-  hasActiveVisit: false,
+  activeVisitStatus: 'any' as const,
   attributes: {},
 };
 

@@ -46,7 +46,7 @@ vi.mock('react-hook-form', async () => ({
       field: {
         onChange: vi.fn(),
         onBlur: vi.fn(),
-        value: name === 'hasActiveVisit' ? false : name === 'ageUnit' ? 'years' : '',
+        value: name === 'activeVisitStatus' ? 'any' : name === 'ageUnit' ? 'years' : '',
         name,
         ref: vi.fn(),
       },
@@ -170,10 +170,14 @@ describe('SearchField', () => {
   });
 
   describe('Active consultation field', () => {
-    it('renders an explicit checkbox', () => {
+    it('renders explicit options for patients with and without an active consultation', () => {
       render(<SearchField field={{ name: 'activeVisit', type: 'activeVisit' }} {...defaultProps} />);
 
-      expect(screen.getByRole('checkbox', { name: 'Has an active consultation' })).toBeInTheDocument();
+      const status = screen.getByRole('combobox', { name: 'Consultation status' });
+      expect(status).toHaveValue('any');
+      expect(screen.getByRole('option', { name: 'Any status' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'With active consultation' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'Without active consultation' })).toBeInTheDocument();
     });
   });
 

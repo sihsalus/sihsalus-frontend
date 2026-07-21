@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { serviceQueuesBasePath } from './constants';
 import Root from './root.component';
 
 type RequirePrivilegeProps = {
@@ -54,6 +55,15 @@ describe('Service queues root', () => {
     mockRequirePrivilege.mockImplementation(() => null);
     render(<Root />);
 
+    expect(screen.queryByText('Service queues home')).not.toBeInTheDocument();
+  });
+
+  it('renders the call display at the /screen route instead of the queues home', () => {
+    window.history.pushState({}, 'Call display', `${serviceQueuesBasePath}/screen`);
+
+    render(<Root />);
+
+    expect(screen.getByText('Queue screen')).toBeInTheDocument();
     expect(screen.queryByText('Service queues home')).not.toBeInTheDocument();
   });
 });

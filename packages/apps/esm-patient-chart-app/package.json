@@ -42,7 +42,7 @@
     "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
-    "uuid": "^14.0.0"
+    "uuid": "^14.0.1"
   },
   "peerDependencies": {
     "@carbon/react": "1.x",

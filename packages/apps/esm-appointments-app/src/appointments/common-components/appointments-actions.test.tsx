@@ -190,7 +190,7 @@ describe('AppointmentActions', () => {
 
     expect(screen.getByRole('button', { name: /regularizar admisión/i })).toHaveAttribute(
       'title',
-      'La cita está en progreso sin una consulta activa vinculada. Revise y regularice su estado.',
+      'La cita tiene la llegada registrada pero no tiene una consulta activa vinculada. Revise y regularice su estado.',
     );
     expect(mockUserHasAccess).toHaveBeenCalledWith(
       ['app:home.citas.editar', 'Get Visits', 'Edit Visits', 'Get Queue Entries', 'Get Queues', 'Manage Queue Entries'],

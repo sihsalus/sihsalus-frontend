@@ -99,11 +99,11 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         ),
         [ACTIVE_VISIT_CHANGED]: t(
           'activeVisitChanged',
-          'La consulta activa del paciente cambió. Cierre este formulario y vuelva a iniciar la admisión.',
+          'La consulta activa del paciente cambió. Cierre este formulario y vuelva a registrar la llegada.',
         ),
         [ACTIVE_VISIT_LOCATION_MISMATCH]: t(
           'activeVisitLocationMismatch',
-          'La consulta activa pertenece a otra sede o servicio. Finalícela o regularícela antes de admitir esta cita.',
+          'La consulta activa pertenece a otra sede o servicio. Finalícela o regularícela antes de registrar la llegada.',
         ),
         [ACTIVE_VISIT_TYPE_MISMATCH]: t(
           'activeVisitTypeMismatch',
@@ -115,7 +115,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         ),
         [APPOINTMENT_ARRIVAL_RULE_AMBIGUOUS]: t(
           'appointmentArrivalRuleAmbiguous',
-          'Existe más de una regla de llegada para este servicio y ubicación. Corrija la configuración antes de admitir la cita.',
+          'Existe más de una regla de llegada para este servicio y ubicación. Corrija la configuración antes de registrar la llegada.',
         ),
         [APPOINTMENT_ARRIVAL_RULE_MISSING]: t(
           'appointmentArrivalRuleMissing',
@@ -123,7 +123,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         ),
         [APPOINTMENT_ARRIVAL_RULE_INVALID]: t(
           'appointmentArrivalRuleInvalid',
-          'La regla de llegada de este servicio está incompleta. Corrija la configuración antes de admitir la cita.',
+          'La regla de llegada de este servicio está incompleta. Corrija la configuración antes de registrar la llegada.',
         ),
         [APPOINTMENT_ARRIVAL_ACTION_NOT_ALLOWED]: t(
           'appointmentArrivalActionNotAllowed',
@@ -187,10 +187,10 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
   // workspaces) siguen llegando al usuario como snackbar, igual que antes.
   const showCheckInFailureSnackbar = (error: unknown) =>
     showSnackbar({
-      title: t('checkInFailed', 'No se pudo admitir la cita'),
+      title: t('checkInFailed', 'No se pudo registrar la llegada'),
       subtitle: getCompatibleUserFacingErrorMessage(
         error,
-        t('appointmentCheckInFailed', 'No se pudo completar la admisión de la cita. Intente nuevamente.'),
+        t('appointmentCheckInFailed', 'No se pudo registrar la llegada del paciente. Intente nuevamente.'),
         getCheckInErrorMessageOptions(),
         frameworkGetUserFacingErrorMessage,
       ),
@@ -312,7 +312,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
 
     await changeAppointmentStatus(AppointmentStatus.CHECKEDIN, appointment.uuid);
     showSnackbar({
-      title: t('checkedIn', 'Cita en progreso'),
+      title: t('checkedIn', 'Llegada registrada'),
       subtitle,
       kind: 'success',
       isLowContrast: true,
@@ -379,7 +379,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
             checkInFromWorkspaceCallback(
               t(
                 'appointmentCheckedInWithExistingVisit',
-                'La cita fue admitida usando la consulta activa y el paciente fue agregado a la cola.',
+                'Se registró la llegada usando la consulta activa y el paciente fue agregado a la cola.',
               ),
             ),
         });
@@ -415,7 +415,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           await checkInFromWorkspaceCallback(
             t(
               'appointmentCheckedInAfterVisitStarted',
-              'La consulta fue iniciada, el paciente fue agregado a la cola y la cita fue admitida.',
+              'La consulta fue iniciada, el paciente fue agregado a la cola y se registró la llegada a la cita.',
             ),
           );
         },
@@ -449,7 +449,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         await checkIn(
           t(
             'appointmentCheckedInDirectly',
-            'La cita fue admitida usando la consulta activa. Puede continuar la atención en la historia del paciente.',
+            'Se registró la llegada usando la consulta activa. Puede continuar la atención en la historia del paciente.',
           ),
         );
         mutateVisits?.();
@@ -486,7 +486,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           await checkInFromWorkspaceCallback(
             t(
               'appointmentCheckedInAfterDirectVisitStarted',
-              'La consulta fue iniciada y la cita fue admitida sin pasar por la cola.',
+              'La consulta fue iniciada y se registró la llegada sin pasar por la cola.',
             ),
           );
           navigateToPatientChart();
@@ -505,10 +505,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
 
   return (
     <>
-      <ModalHeader
-        closeModal={closeModal}
-        title={t('arrivalModalTitle', 'Registrar llegada')}
-      />
+      <ModalHeader closeModal={closeModal} title={t('arrivalModalTitle', 'Registrar llegada')} />
       <ModalBody>
         <div className={styles.appointmentSummary}>
           <p className={styles.patientName}>{appointment.patient.name}</p>
@@ -525,10 +522,10 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
             kind="error"
             lowContrast
             role="alert"
-            title={t('checkInFailed', 'No se pudo admitir la cita')}
+            title={t('checkInFailed', 'No se pudo registrar la llegada')}
             subtitle={getCompatibleUserFacingErrorMessage(
               displayedError,
-              t('appointmentCheckInFailed', 'No se pudo completar la admisión de la cita. Intente nuevamente.'),
+              t('appointmentCheckInFailed', 'No se pudo registrar la llegada del paciente. Intente nuevamente.'),
               getCheckInErrorMessageOptions(),
               frameworkGetUserFacingErrorMessage,
             )}

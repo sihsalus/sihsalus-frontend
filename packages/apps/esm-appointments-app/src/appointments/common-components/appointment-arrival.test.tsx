@@ -242,7 +242,7 @@ describe('AppointmentArrivalModal', () => {
     renderModal();
 
     expect(screen.getByRole('alert')).toHaveTextContent(
-      'Existe más de una regla de llegada para este servicio y ubicación. Corrija la configuración antes de admitir la cita.',
+      'Existe más de una regla de llegada para este servicio y ubicación. Corrija la configuración antes de registrar la llegada.',
     );
     expect(screen.queryByRole('button', { name: /enviar a cola de espera/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /iniciar atención directamente/i })).not.toBeInTheDocument();
@@ -354,7 +354,7 @@ describe('AppointmentArrivalModal', () => {
     await userEvent.click(getQueueButton());
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'La consulta activa pertenece a otra sede o servicio. Finalícela o regularícela antes de admitir esta cita.',
+      'La consulta activa pertenece a otra sede o servicio. Finalícela o regularícela antes de registrar la llegada.',
     );
     expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
     expect(mockEnsureAppointmentVisitLink).not.toHaveBeenCalled();
@@ -558,7 +558,7 @@ describe('AppointmentArrivalModal', () => {
     await userEvent.click(getDirectButton());
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'La consulta activa pertenece a otra sede o servicio. Finalícela o regularícela antes de admitir esta cita.',
+      'La consulta activa pertenece a otra sede o servicio. Finalícela o regularícela antes de registrar la llegada.',
     );
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();

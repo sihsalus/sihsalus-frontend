@@ -58,12 +58,12 @@ describe('appointment labels', () => {
   const t = (_key: string, defaultValue: string) => defaultValue;
 
   it('uses localized labels for known backend values', () => {
-    expect(getAppointmentStatusLabel(AppointmentStatus.CHECKEDIN, t)).toBe('Cita en progreso');
+    expect(getAppointmentStatusLabel(AppointmentStatus.CHECKEDIN, t)).toBe('Llegada registrada');
     expect(getAppointmentKindLabel(AppointmentKind.WALKIN, t)).toBe('Sin cita');
   });
 
   it('uses grammatical Spanish labels for appointment tabs and collections', () => {
-    expect(esTranslations.checkedIn).toBe('Cita en progreso');
+    expect(esTranslations.checkedIn).toBe('Llegada registrada');
     expect(esTranslations.expectedAppointmentsTab).toBe('Esperadas');
     expect(esTranslations.inProgressAppointmentsTab).toBe('En progreso');
     expect(esTranslations.completedAppointmentsTab).toBe('Completadas');

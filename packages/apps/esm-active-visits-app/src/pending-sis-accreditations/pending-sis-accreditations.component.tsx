@@ -1,4 +1,5 @@
 import {
+  Button,
   DataTable,
   DataTableSkeleton,
   InlineLoading,
@@ -19,6 +20,7 @@ import {
   ErrorState,
   formatDatetime,
   isDesktop,
+  navigate,
   parseDate,
   useConfig,
   useLayoutType,
@@ -87,7 +89,15 @@ const PendingSisAccreditationsTable = () => {
     { id: 2, key: 'visitStartTime', header: t('visitStart', 'Hora de inicio') },
     { id: 3, key: 'accreditationStatus', header: t('accreditationStatus', 'Estado de acreditación') },
     { id: 4, key: 'location', header: t('location', 'Ubicación') },
+    { id: 5, key: 'actions', header: t('actions', 'Acciones') },
   ];
+
+  const handleAccredit = (patientUuid: string) => {
+    const afterUrl = encodeURIComponent(`${globalThis.spaBase}/home`);
+    navigate({
+      to: `${globalThis.spaBase}/patient/${patientUuid}/edit?focusSection=insurance&afterUrl=${afterUrl}`,
+    });
+  };
 
   if (!canViewList) {
     return null;
@@ -157,6 +167,14 @@ const PendingSisAccreditationsTable = () => {
         return <AccreditationStatusTag status={visit.accreditationStatus} />;
       case 'location':
         return visit.location;
+      case 'actions':
+        return visit.patientUuid ? (
+          <Button kind="ghost" size="sm" onClick={() => handleAccredit(visit.patientUuid)}>
+            {t('accredit', 'Acreditar')}
+          </Button>
+        ) : (
+          '--'
+        );
       default:
         return null;
     }

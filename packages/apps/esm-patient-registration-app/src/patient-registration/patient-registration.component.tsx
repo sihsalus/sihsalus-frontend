@@ -341,6 +341,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       )
       .filter((section) => section && (section.id !== 'medicalRecord' || canEditMedicalRecord));
   }, [canEditMedicalRecord, config.sections, config.sectionDefinitions]);
+  const focusedSection = useMemo(() => new URLSearchParams(search ?? '').get('focusSection'), [search]);
 
   const onFormSubmit = async (values: FormValues, helpers: FormikHelpers<FormValues>) => {
     const abortController = new AbortController();
@@ -652,6 +653,12 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
         initialFormState.isLoading ||
         initialAddressState.isLoading ||
         patientUuidMapState.isLoading));
+
+  useEffect(() => {
+    if (!isLoadingInitialData && focusedSection && sections.some(({ id }) => id === focusedSection)) {
+      scrollIntoView(focusedSection);
+    }
+  }, [focusedSection, isLoadingInitialData, sections]);
 
   if (isLoadingInitialData) {
     return <InlineLoading description={t('loadingPatientRegistration', 'Cargando datos del paciente...')} />;

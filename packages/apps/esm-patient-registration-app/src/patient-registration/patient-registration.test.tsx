@@ -102,6 +102,7 @@ vi.mock('react-router-dom', async () => ({
   ...(await vi.importActual('react-router-dom')),
   useLocation: () => ({
     pathname: 'openmrs/spa/patient-registration',
+    search: window.location.search,
   }),
   useHistory: () => [],
   useParams: vi.fn().mockReturnValue({ patientUuid: undefined }),
@@ -867,6 +868,27 @@ describe('Updating an existing patient record', () => {
 
     await screen.findByRole('button', { name: /update patient/i });
     expect(screen.queryByText(/medical record|historia clínica/i)).not.toBeInTheDocument();
+  });
+
+  it('moves directly to the requested section after patient data loads', async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    window.history.replaceState({}, '', '?focusSection=insurance');
+    mockUseInitialFormValues.mockReturnValue([
+      { ...initialFormValues, patientUuid: mockPatient.uuid },
+      vi.fn(),
+      { isLoading: false },
+    ]);
+
+    render(<PatientRegistration isOffline={false} savePatientForm={vi.fn()} />, { wrapper: Wrapper });
+
+    await waitFor(() =>
+      expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start', inline: 'center' }),
+    );
+    window.history.replaceState({}, '', '/');
   });
 
   it('shows the medical record section to an archivist while editing', async () => {

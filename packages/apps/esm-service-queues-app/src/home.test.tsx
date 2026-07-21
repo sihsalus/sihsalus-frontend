@@ -43,12 +43,12 @@ describe('Home Component', () => {
     window.history.pushState({}, '', originalPathname || '/');
   });
 
-  it('renders QueueScreen when activeTicketScreen is "screen"', () => {
+  it('renders the default queue table regardless of the "/screen" sub-path', () => {
     const originalPathname = window.location.pathname;
     window.history.pushState({}, '', '/some-path/screen');
 
     render(<Home />);
-    expect(screen.getByText(/patients currently in queue/i)).toBeInTheDocument();
+    expect(screen.getByText(/patients in queue/i)).toBeInTheDocument();
 
     window.history.pushState({}, '', originalPathname || '/');
   });

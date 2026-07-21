@@ -133,7 +133,7 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
               needsAdmissionReconciliation
                 ? t(
                     'reconcileAdmissionDescription',
-                    'La cita está en progreso sin una consulta activa vinculada. Revise y regularice su estado.',
+                    'La cita tiene la llegada registrada pero no tiene una consulta activa vinculada. Revise y regularice su estado.',
                   )
                 : undefined
             }

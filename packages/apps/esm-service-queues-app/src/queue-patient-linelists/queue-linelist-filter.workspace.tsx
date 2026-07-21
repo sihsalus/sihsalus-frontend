@@ -171,12 +171,12 @@ const QueueLinelistFilter: React.FC<DefaultWorkspaceProps> = ({ closeWorkspace }
 
           <Stack gap={4} className={styles.grid}>
             <Column>
-              <p className={styles.heading}>{t('visitType', 'Visit Type')}</p>
+              <p className={styles.heading}>{t('visitType', 'Care type')}</p>
               <Layer>
                 <Dropdown
                   id="visitType"
-                  label={t('selectAVisitType', 'Select visit type')}
-                  titleText={t('selectAVisitType', 'Select visit type')}
+                  label={t('selectAVisitType', 'Select care type')}
+                  titleText={t('selectAVisitType', 'Select care type')}
                   items={allVisitTypes}
                   onChange={(event) => setVisitType(event.selectedItem.toString)}
                   size="sm"

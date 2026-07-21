@@ -30,7 +30,7 @@ describe('QueueLinelistFilter', () => {
     expect(screen.getByLabelText('And')).toBeInTheDocument();
     expect(screen.getByLabelText('Date')).toBeInTheDocument();
     expect(screen.getByText("Use today's date")).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: /Select visit type/i })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /Select care type/i })).toBeInTheDocument();
     expect(screen.getByText('Cancel')).toBeInTheDocument();
     expect(screen.getByText('Apply filters')).toBeInTheDocument();
   });
@@ -87,7 +87,7 @@ describe('QueueLinelistFilter', () => {
 
     render(<QueueLinelistFilter {...workspaceProps} />);
 
-    const visitTypeDropdown = screen.getByRole('combobox', { name: /Select visit type/i });
+    const visitTypeDropdown = screen.getByRole('combobox', { name: /Select care type/i });
     await user.click(visitTypeDropdown);
 
     const type1Option = screen.getByText('Outpatient Visit');

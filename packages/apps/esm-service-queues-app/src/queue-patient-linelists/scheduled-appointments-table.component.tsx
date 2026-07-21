@@ -123,7 +123,7 @@ const AppointmentsTable: React.FC = () => {
       },
       {
         id: 4,
-        header: t('visitType', 'Visit Type'),
+        header: t('visitType', 'Care type'),
         key: 'visitType',
       },
       {

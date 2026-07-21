@@ -109,7 +109,7 @@ function getColumnFromDefinition(t: TFunction, columnDef: ColumnDefinition): Que
     case 'queue-number': {
       return queueTableVisitAttributeQueueNumberColumn(
         id,
-        translatedHeader ?? t('queueNumber', 'Queue Number'),
+        translatedHeader ?? t('queueNumber', 'Ticket number'),
         columnDef.config,
       );
     }

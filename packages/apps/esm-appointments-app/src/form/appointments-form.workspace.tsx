@@ -977,16 +977,18 @@ const AppointmentsForm: React.FC<
             </ResponsiveWrapper>
           </section>
 
-          <section className={styles.formGroup}>
-            <span className={styles.heading}>{t('recurringAppointment', 'Recurring Appointment')}</span>
-            <Toggle
-              id="recurringToggle"
-              labelB={t('yes', 'Yes')}
-              labelA={t('no', 'No')}
-              labelText={t('isRecurringAppointment', 'Is this a recurring appointment?')}
-              onClick={() => setIsRecurringAppointment(!isRecurringAppointment)}
-            />
-          </section>
+          {context !== 'creating' ? (
+            <section className={styles.formGroup}>
+              <span className={styles.heading}>{t('recurringAppointment', 'Recurring Appointment')}</span>
+              <Toggle
+                id="recurringToggle"
+                labelB={t('yes', 'Yes')}
+                labelA={t('no', 'No')}
+                labelText={t('isRecurringAppointment', 'Is this a recurring appointment?')}
+                onClick={() => setIsRecurringAppointment(!isRecurringAppointment)}
+              />
+            </section>
+          ) : null}
 
           <section className={styles.formGroup}>
             <span className={styles.heading}>{t('dateTime', 'Date & Time')}</span>

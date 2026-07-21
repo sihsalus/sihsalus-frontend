@@ -203,6 +203,7 @@ describe('AppointmentForm', () => {
     expect(screen.getByRole('option', { name: /scheduled/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /walkin/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/date appointment issued/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/is this a recurring appointment/i)).not.toBeInTheDocument();
 
     expect(screen.getByRole('textbox', { name: /time/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /discard/i })).toBeInTheDocument();
@@ -641,6 +642,7 @@ describe('AppointmentForm', () => {
     renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
 
     await waitForLoadingToFinish();
+    expect(screen.getByLabelText(/is this a recurring appointment/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/select status/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/appointment status/i)).not.toBeInTheDocument();
 

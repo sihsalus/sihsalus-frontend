@@ -1,18 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { launchPatientWorkspace } from '..';
-
 import { EmptyState } from '.';
-
-vi.mock('@openmrs/esm-patient-common-lib', async () => {
-  const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');
-
-  return {
-    ...originalModule,
-    launchPatientWorkspace: vi.fn(),
-  };
-});
 
 describe('EmptyState', () => {
   it('renders an empty state widget card', () => {
@@ -20,7 +9,7 @@ describe('EmptyState', () => {
       <EmptyState
         headerTitle="appointments"
         displayText="appointments"
-        launchForm={() => launchPatientWorkspace('sample-form-workspace')}
+        launchForm={vi.fn()}
       />,
     );
 
@@ -31,21 +20,15 @@ describe('EmptyState', () => {
 
   it('renders a link that launches a form in the workspace when the launchForm prop is provided', async () => {
     const user = userEvent.setup();
+    const launchForm = vi.fn();
 
-    render(
-      <EmptyState
-        headerTitle="appointments"
-        displayText="appointments"
-        launchForm={() => launchPatientWorkspace('sample-form-workspace')}
-      />,
-    );
+    render(<EmptyState headerTitle="appointments" displayText="appointments" launchForm={launchForm} />);
 
     const recordAppointmentsLink = screen.getByText(/record appointments/i);
     expect(recordAppointmentsLink).toBeInTheDocument();
 
     await user.click(recordAppointmentsLink);
 
-    expect(launchPatientWorkspace).toHaveBeenCalledTimes(1);
-    expect(launchPatientWorkspace).toHaveBeenCalledWith('sample-form-workspace');
+    expect(launchForm).toHaveBeenCalledTimes(1);
   });
 });

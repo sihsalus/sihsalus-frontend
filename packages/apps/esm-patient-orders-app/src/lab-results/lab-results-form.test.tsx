@@ -107,7 +107,7 @@ describe('LabResultsForm', () => {
     await user.click(saveButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Test Concept must be between 0 and 100')).toBeInTheDocument();
+      expect(screen.getByText('Test Concept debe estar entre 0 y 100')).toBeInTheDocument();
     });
   });
 
@@ -145,7 +145,7 @@ describe('LabResultsForm', () => {
     await user.click(saveButton);
 
     await waitFor(() => {
-      expect(screen.queryByText('Test Concept must be a whole number')).not.toBeInTheDocument();
+      expect(screen.queryByText('Test Concept debe ser un número entero')).not.toBeInTheDocument();
     });
   });
 
@@ -230,7 +230,7 @@ describe('LabResultsForm', () => {
     await user.type(input, '0');
 
     await waitFor(() => {
-      expect(screen.queryByText('Test Concept must be between 0 and 100')).not.toBeInTheDocument();
+      expect(screen.queryByText('Test Concept debe estar entre 0 y 100')).not.toBeInTheDocument();
     });
   });
 
@@ -266,7 +266,7 @@ describe('LabResultsForm', () => {
     await user.click(saveButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Test Concept must be less than or equal to 100')).toBeInTheDocument();
+      expect(screen.getByText('Test Concept debe ser menor o igual a 100')).toBeInTheDocument();
     });
   });
 
@@ -381,30 +381,30 @@ describe('LabResultsForm', () => {
     const setMember1Input = screen.getByLabelText('Set Member (50 - 150 mg/dL)');
     await user.clear(setMember1Input);
     await user.type(setMember1Input, '50');
-    expect(screen.queryByText('Set Member must be between 50 and 150')).not.toBeInTheDocument();
+    expect(screen.queryByText('Set Member debe estar entre 50 y 150')).not.toBeInTheDocument();
 
     const setMember2Input = screen.getByLabelText('Set Member 2 (5 - 30 mg/dL)');
     await user.clear(setMember2Input);
     await user.type(setMember2Input, '10');
-    expect(screen.queryByText('Set Member must be between 5 and 30')).not.toBeInTheDocument();
+    expect(screen.queryByText('Set Member debe estar entre 5 y 30')).not.toBeInTheDocument();
 
     // Out of range input, upper limit
     await user.clear(setMember1Input);
     await user.type(setMember1Input, '151');
-    expect(await screen.findByText('Set Member must be between 50 and 150')).toBeInTheDocument();
+    expect(await screen.findByText('Set Member debe estar entre 50 y 150')).toBeInTheDocument();
 
     await user.clear(setMember2Input);
     await user.type(setMember2Input, '31');
-    expect(await screen.findByText('Set Member 2 must be between 5 and 30')).toBeInTheDocument();
-
+    expect(await screen.findByText('Set Member 2 debe estar entre 5 y 30')).toBeInTheDocument();
+    
     // Out of range input, lower limit
     await user.clear(setMember1Input);
     await user.type(setMember1Input, '49');
-    expect(await screen.findByText('Set Member must be between 50 and 150')).toBeInTheDocument();
+    expect(await screen.findByText('Set Member debe estar entre 50 y 150')).toBeInTheDocument();
 
     await user.clear(setMember2Input);
     await user.type(setMember2Input, '4');
-    expect(await screen.findByText('Set Member 2 must be between 5 and 30')).toBeInTheDocument();
+    expect(await screen.findByText('Set Member 2 debe estar entre 5 y 30')).toBeInTheDocument();
   });
 
   test('lab results form submits the correct lab result payload when the concept is not a set', async () => {

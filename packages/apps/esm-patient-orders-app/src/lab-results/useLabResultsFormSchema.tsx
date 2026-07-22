@@ -117,7 +117,7 @@ const createNumericSchema = (
   const baseSchema = z
     .preprocess(processNumber, z.number().optional())
     .refine((val) => val === undefined || !Number.isNaN(val), {
-      message: `${display} must be a valid number`,
+      message: `${display} debe ser un número válido`,
     })
     .refine(
       (val) => {
@@ -128,7 +128,7 @@ const createNumericSchema = (
         return true;
       },
       {
-        message: !allowDecimal ? `${display} must be a whole number` : `${display} must be a valid number`,
+        message: !allowDecimal ? `${display} debe ser un número entero` : `${display} debe ser un número válido`,
       },
     );
 
@@ -142,19 +142,19 @@ const createNumericSchema = (
 
   if (hasLowerLimit && hasUpperLimit) {
     return baseSchema.refine((val) => val === undefined || (val >= lowerLimit && val <= upperLimit), {
-      message: `${display} must be between ${lowerLimit} and ${upperLimit}`,
+      message: `${display} debe estar entre ${lowerLimit} y ${upperLimit}`,
     });
   }
 
   if (hasLowerLimit) {
     return baseSchema.refine((val) => val === undefined || val >= lowerLimit, {
-      message: `${display} must be greater than or equal to ${lowerLimit}`,
+      message: `${display} debe ser mayor o igual a ${lowerLimit}`,
     });
   }
 
   if (hasUpperLimit) {
     return baseSchema.refine((val) => val === undefined || val <= upperLimit, {
-      message: `${display} must be less than or equal to ${upperLimit}`,
+      message: `${display} debe ser menor o igual a ${upperLimit}`,
     });
   }
 };

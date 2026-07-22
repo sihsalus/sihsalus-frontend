@@ -141,6 +141,8 @@
   "durationErrorMessage": "Duration should be greater than zero",
   "durationInMinutes": "Duration (minutes)",
   "durationMins": "Duration min",
+  "differentProviderSelectedTitle": "Another healthcare provider selected",
+  "differentProviderSelectedWarning": "You selected {{providerName}} instead of yourself. Verify the responsible provider before saving the appointment.",
   "edit": "Edit",
   "editAppointment": "Edit appointment",
   "emptyStateText": "There are no <1>{{displayText}}</1> to display",

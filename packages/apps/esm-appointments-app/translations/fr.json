@@ -91,6 +91,8 @@
   "durationErrorMessage": "La durée doit être supérieure à zéro",
   "durationInMinutes": "Durée (minutes)",
   "durationMins": "Durée min",
+  "differentProviderSelectedTitle": "Un autre professionnel de santé a été sélectionné",
+  "differentProviderSelectedWarning": "Vous avez sélectionné {{providerName}} à votre place. Vérifiez le professionnel responsable avant d'enregistrer le rendez-vous.",
   "edit": "Modifier",
   "editAppointment": "Edit appointment",
   "emptyStateText": "Pas de <1>{{displayText}}</1> à afficher",

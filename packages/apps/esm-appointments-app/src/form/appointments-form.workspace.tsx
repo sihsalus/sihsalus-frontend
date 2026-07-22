@@ -51,7 +51,6 @@ import { z } from 'zod';
 
 import { type ConfigObject } from '../config-schema';
 import {
-  appointmentIssuedDateEditPrivilege,
   appointmentLocationTagName,
   appointmentNoteMaxLength,
   appointmentStartDateEditPrivilege,
@@ -176,14 +175,6 @@ const isExternalConsultationLocation = (location?: { display?: string; name?: st
       .includes('consulta externa'),
   );
 
-function resolveAppointmentIssuedDate(
-  canEditIssuedDate: boolean,
-  submittedDate: Date | undefined,
-  originalDate: Date,
-): Date {
-  return canEditIssuedDate && submittedDate ? submittedDate : originalDate;
-}
-
 const normalizeAppointmentKind = (appointmentType: string): AppointmentKind => {
   const normalizedType = appointmentType.trim().toLowerCase();
 
@@ -305,7 +296,6 @@ const AppointmentsForm: React.FC<
     Boolean(session?.currentProvider?.uuid) &&
     Boolean(session?.sessionLocation?.uuid) &&
     isExternalConsultationLocation(session?.sessionLocation);
-  const canEditAppointmentIssuedDate = userHasAccess(appointmentIssuedDateEditPrivilege, session?.user);
   const canEditAppointmentStartDate = userHasAccess(appointmentStartDateEditPrivilege, session?.user);
   const { selectedDate } = useContext(SelectedDateContext);
   const { data: services, isLoading } = useAppointmentService();
@@ -540,7 +530,14 @@ const AppointmentsForm: React.FC<
   });
 
   const selectedService = services?.find(({ name }) => name === watch('selectedService'));
-  const selectedProvider = providers.providers?.find(({ uuid }) => uuid === watch('provider'));
+  const selectedProviderUuid = watch('provider');
+  const selectedProvider = providers.providers?.find(({ uuid }) => uuid === selectedProviderUuid);
+  const isDifferentProviderSelected = Boolean(
+    session?.currentProvider?.uuid &&
+      selectedProviderUuid &&
+      selectedProviderUuid !== session.currentProvider.uuid &&
+      selectedProvider,
+  );
   const providerSchedulingCategoryAssessment = assessProviderSchedulingCategory({
     mode: providerSchedulingCategoryValidation.mode,
     provider: selectedProvider,
@@ -838,7 +835,6 @@ const AppointmentsForm: React.FC<
       location,
       provider,
       appointmentNote,
-      dateAppointmentScheduled,
     } = data;
 
     const selectedAppointmentService = services?.find((service) => service.name === selectedService);
@@ -851,12 +847,6 @@ const AppointmentsForm: React.FC<
     const endDateTime = isAllDayAppointment
       ? dayjs(startDate).endOf('day')
       : startDateTime.add(duration ?? 0, 'minutes');
-    const effectiveDateAppointmentScheduled = resolveAppointmentIssuedDate(
-      context !== 'editing' && canEditAppointmentIssuedDate,
-      dateAppointmentScheduled,
-      defaultDateAppointmentScheduled,
-    );
-
     const payload: AppointmentPayload = {
       appointmentKind: normalizeAppointmentKind(selectedAppointmentType),
       serviceUuid: serviceUuid,
@@ -867,7 +857,7 @@ const AppointmentsForm: React.FC<
       patientUuid: patientUuid,
       comments: appointmentNote,
       uuid: context === 'editing' ? appointment.uuid : undefined,
-      dateAppointmentScheduled: dayjs(effectiveDateAppointmentScheduled).format(),
+      dateAppointmentScheduled: dayjs(defaultDateAppointmentScheduled).format(),
     };
 
     if (context === 'creating') {
@@ -1343,6 +1333,19 @@ const AppointmentsForm: React.FC<
                 )}
               />
             </ResponsiveWrapper>
+            {isDifferentProviderSelected ? (
+              <InlineNotification
+                hideCloseButton
+                kind="warning"
+                lowContrast
+                title={t('differentProviderSelectedTitle', 'Otro personal de salud seleccionado')}
+                subtitle={t(
+                  'differentProviderSelectedWarning',
+                  'Ha seleccionado a {{providerName}} en lugar de usted. Verifique el responsable antes de guardar la cita.',
+                  { providerName: selectedProvider?.display },
+                )}
+              />
+            ) : null}
             {providerSchedulingCategoryAssessment.shouldWarn ? (
               <InlineNotification
                 hideCloseButton
@@ -1378,7 +1381,7 @@ const AppointmentsForm: React.FC<
                       maxDate={new Date()}
                       id="dateAppointmentScheduledPickerInput"
                       data-testid="dateAppointmentScheduledPickerInput"
-                      isReadOnly={context === 'editing' || !canEditAppointmentIssuedDate}
+                      isReadOnly
                       labelText={t('dateScheduledDetail', 'Date appointment issued')}
                       style={{ width: '100%' }}
                     />

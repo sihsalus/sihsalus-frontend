@@ -24,7 +24,6 @@ import {
 
 import { type ConfigObject, configSchema } from '../config-schema';
 import {
-  appointmentIssuedDateEditPrivilege,
   appointmentNoteMaxLength,
   appointmentStartDateEditPrivilege,
 } from '../constants';
@@ -847,18 +846,17 @@ describe('AppointmentForm', () => {
     expect(mockSaveAppointment).not.toHaveBeenCalled();
   });
 
-  it('keeps the appointment issue date read-only without the special privilege', async () => {
+  it('keeps the appointment issue date read-only', async () => {
     mockOpenmrsFetch.mockResolvedValue(mockUseAppointmentServiceData as unknown as FetchResponse);
 
     renderWithSwr(<AppointmentForm {...defaultProps} />);
 
     await waitForLoadingToFinish();
 
-    expect(mockUserHasAccess).toHaveBeenCalledWith(appointmentIssuedDateEditPrivilege, mockSession.data.user);
     expect(screen.getByTestId('dateAppointmentScheduledPickerInput')).toHaveAttribute('readonly');
   });
 
-  it('allows editing the appointment issue date with the special privilege', async () => {
+  it('keeps the appointment issue date read-only even when the user has all privileges', async () => {
     mockUserHasAccess.mockReturnValue(true);
     mockOpenmrsFetch.mockResolvedValue(mockUseAppointmentServiceData as unknown as FetchResponse);
 
@@ -866,7 +864,7 @@ describe('AppointmentForm', () => {
 
     await waitForLoadingToFinish();
 
-    expect(screen.getByTestId('dateAppointmentScheduledPickerInput')).not.toHaveAttribute('readonly');
+    expect(screen.getByTestId('dateAppointmentScheduledPickerInput')).toHaveAttribute('readonly');
   });
 
   it('keeps the appointment start date read-only without the start-date privilege', async () => {
@@ -907,7 +905,7 @@ describe('AppointmentForm', () => {
     expect(mockSaveAppointment).not.toHaveBeenCalled();
   });
 
-  it('rejects a future appointment issue date even when the user can edit the field', async () => {
+  it('rejects a future appointment issue date if the read-only form value is tampered with', async () => {
     const user = userEvent.setup();
     mockUserHasAccess.mockReturnValue(true);
     mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
@@ -937,6 +935,32 @@ describe('AppointmentForm', () => {
     await waitForLoadingToFinish();
 
     expect(screen.getByRole('combobox', { name: /select a provider/i })).toHaveValue(mockProviders.data[0].display);
+  });
+
+  it('warns a provider when they select another responsible provider', async () => {
+    const user = userEvent.setup();
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      currentProvider: { ...mockSession.data.currentProvider, uuid: mockProviders.data[0].uuid },
+    } as ReturnType<typeof useSession>);
+    mockOpenmrsFetch.mockResolvedValue(mockUseAppointmentServiceData as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.queryByText('Otro personal de salud seleccionado')).not.toBeInTheDocument();
+    const providerComboBox = screen.getByRole('combobox', { name: /select a provider/i });
+    await user.clear(providerComboBox);
+    await user.type(providerComboBox, 'Amstrong');
+    await user.click(screen.getByRole('option', { name: mockProviders.data[1].display }));
+
+    expect(screen.getByText('Otro personal de salud seleccionado')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        `Ha seleccionado a ${mockProviders.data[1].display} en lugar de usted. Verifique el responsable antes de guardar la cita.`,
+      ),
+    ).toBeInTheDocument();
   });
 
   it('leaves the responsible provider unselected when the user has no provider account', async () => {

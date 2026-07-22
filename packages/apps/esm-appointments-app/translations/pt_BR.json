@@ -91,6 +91,8 @@
   "durationErrorMessage": "A duração deve ser maior que zero",
   "durationInMinutes": "Duração (minutos)",
   "durationMins": "Duração mínima",
+  "differentProviderSelectedTitle": "Outro profissional de saúde selecionado",
+  "differentProviderSelectedWarning": "Você selecionou {{providerName}} em vez de si mesmo. Verifique o profissional responsável antes de salvar a consulta.",
   "edit": "Editar",
   "editAppointment": "Edit appointment",
   "emptyStateText": "Não tem <1>  {{displayText}}  </1> para mostrar",

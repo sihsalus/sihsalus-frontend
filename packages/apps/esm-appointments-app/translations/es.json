@@ -143,6 +143,8 @@
   "durationErrorMessage": "La duración debe ser mayor que cero",
   "durationInMinutes": "Duración (minutos)",
   "durationMins": "Duración (min)",
+  "differentProviderSelectedTitle": "Otro personal de salud seleccionado",
+  "differentProviderSelectedWarning": "Ha seleccionado a {{providerName}} en lugar de usted. Verifique el responsable antes de guardar la cita.",
   "edit": "Editar",
   "editAppointment": "Editar cita",
   "emptyStateText": "No hay <1>{{displayText}}</1> para mostrar",

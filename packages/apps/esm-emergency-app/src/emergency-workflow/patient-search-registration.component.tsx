@@ -29,7 +29,7 @@ import {
 } from '@carbon/react';
 import { CheckmarkFilled, SendFilled, User, UserFollow } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { OpenmrsDatePicker, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { age, OpenmrsDatePicker, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import {
   calendarDateToLocalDate,
   estimatePatientBirthdateFromAge,
@@ -642,7 +642,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                               </p>
                               <div className={styles.patientResultMeta}>
                                 <span>
-                                  {patient.person?.age || '?'} {t('years', 'años')}
+                                  {patient.person?.birthdate ? (age(patient.person.birthdate) ?? '?') : '?'}
                                 </span>
                                 <span className={styles.separator}>|</span>
                                 <span>{formatGenderLabel(patient.person?.gender) || t('unknown', 'Desconocido')}</span>
@@ -1157,11 +1157,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                       {readyPatient.person?.personName?.display || readyPatient.person?.display || readyPatient.display}
                     </p>
                     <div className={styles.patientResultMeta}>
-                      {readyPatient.person?.age != null && (
-                        <span>
-                          {readyPatient.person.age} {t('years', 'años')}
-                        </span>
-                      )}
+                      {readyPatient.person?.birthdate && <span>{age(readyPatient.person.birthdate)}</span>}
                       {readyPatient.person?.gender && (
                         <>
                           <span className={styles.separator}>|</span>

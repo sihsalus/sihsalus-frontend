@@ -8,7 +8,7 @@ import {
   useConfig,
   usePatient,
 } from '@openmrs/esm-framework';
-import { ageAsDuration } from '@openmrs/esm-utils';
+import { age } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,7 +21,6 @@ import { type Attribute } from '../types';
 import styles from './patient-banner-contact-details.module.scss';
 
 const contactDetailsLoadingTimeoutMs = 10000;
-type AgeDuration = Partial<Record<'years' | 'months' | 'weeks' | 'days', number>>;
 
 interface ContactDetailsProps {
   patientId: string;
@@ -61,12 +60,6 @@ function EmptyState({ message }: { message: string }) {
   return <p className={styles.emptyState}>{message}</p>;
 }
 
-function getDurationValue(duration: AgeDuration, unit: keyof AgeDuration) {
-  const value = duration[unit];
-
-  return typeof value === 'number' && value >= 0 ? value : null;
-}
-
 function formatAgeUnit(
   value: number,
   singularKey: string,
@@ -85,30 +78,8 @@ function formatAgeWithUnit(
   ageInYears: number | undefined,
   t: ReturnType<typeof useTranslation>['t'],
 ) {
-  const duration = birthdate ? (ageAsDuration(birthdate) as AgeDuration | null) : null;
-
-  if (duration) {
-    const years = getDurationValue(duration, 'years');
-    if (years !== null && years > 0) {
-      return formatAgeUnit(years, 'ageYear', 'year', 'ageYears', 'years', t);
-    }
-
-    const months = getDurationValue(duration, 'months');
-    if (months !== null && months > 0) {
-      return formatAgeUnit(months, 'ageMonth', 'month', 'ageMonths', 'months', t);
-    }
-
-    const weeks = getDurationValue(duration, 'weeks');
-    if (weeks !== null && weeks > 0) {
-      return formatAgeUnit(weeks, 'ageWeek', 'week', 'ageWeeks', 'weeks', t);
-    }
-
-    const days = getDurationValue(duration, 'days');
-    if (days !== null && days > 0) {
-      return formatAgeUnit(Math.floor(days / 7), 'ageWeek', 'week', 'ageWeeks', 'weeks', t);
-    }
-
-    return formatAgeUnit(0, 'ageWeek', 'week', 'ageWeeks', 'weeks', t);
+  if (birthdate) {
+    return age(birthdate) ?? '';
   }
 
   return ageInYears !== undefined ? formatAgeUnit(ageInYears, 'ageYear', 'year', 'ageYears', 'years', t) : '';

@@ -240,12 +240,12 @@ describe('PatientBannerContactDetails', () => {
     );
   });
 
-  it('renders demographic age with year, month, or week units', () => {
+  it('renders the exact demographic age with years, months, and days', () => {
     for (const { birthdate, expectedAge } of [
-      { birthdate: '2010-06-16', expectedAge: /16 years/i },
-      { birthdate: '2025-06-16', expectedAge: /12 months/i },
-      { birthdate: '2026-05-28', expectedAge: /3 weeks/i },
-      { birthdate: '2026-05-18', expectedAge: /4 weeks/i },
+      { birthdate: '2010-06-16', expectedAge: /16 years 0 months 2 days/i },
+      { birthdate: '2025-06-16', expectedAge: /1 year 0 months 2 days/i },
+      { birthdate: '2026-05-28', expectedAge: /0 years 0 months 21 days/i },
+      { birthdate: '2026-05-18', expectedAge: /0 years 1 month 0 days/i },
     ]) {
       mockUsePatientAdditionalAttributes.mockReturnValue({
         additionalAttributes: [],

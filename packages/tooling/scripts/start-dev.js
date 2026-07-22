@@ -290,7 +290,11 @@ function createInMemoryRateLimit({ windowMs, max }) {
   };
 }
 
-const devRuntimeReadyTimeoutMs = 180_000;
+const configuredDevRuntimeReadyTimeoutMs = Number(process.env.SIHSALUS_DEV_RUNTIME_READY_TIMEOUT_MS);
+const devRuntimeReadyTimeoutMs =
+  Number.isFinite(configuredDevRuntimeReadyTimeoutMs) && configuredDevRuntimeReadyTimeoutMs > 0
+    ? configuredDevRuntimeReadyTimeoutMs
+    : 600_000;
 
 function waitForDelay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));

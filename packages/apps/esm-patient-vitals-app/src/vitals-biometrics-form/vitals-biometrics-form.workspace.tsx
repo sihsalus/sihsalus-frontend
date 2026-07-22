@@ -11,7 +11,6 @@ import {
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  age,
   createErrorHandler,
   ExtensionSlot,
   getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
@@ -49,7 +48,6 @@ import {
   type ConditionalFieldOverrides,
   calculateBodyMassIndex,
   calculateGlasgowComaScaleTotal,
-  extractNumbers,
   getAgeInDays,
   getMuacColorCode,
   isConditionalFieldVisible,
@@ -353,7 +351,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   useEffect(() => {
     const patientBirthDate = patient?.patient?.birthDate;
     if (patientBirthDate && midUpperArmCircumference != null) {
-      const patientAge = extractNumbers(age(patientBirthDate));
+      const patientAge = Math.floor(getAgeInDays(patientBirthDate) / 365.2425);
       getMuacColorCode(patientAge, midUpperArmCircumference, setMuacColorCode);
     }
   }, [patient.patient?.birthDate, midUpperArmCircumference]);

@@ -25,7 +25,7 @@ import {
   RegistrationPictogram,
   useConfig,
 } from '@openmrs/esm-framework';
-import { ageAsDuration } from '@openmrs/esm-utils';
+import { age } from '@openmrs/esm-utils';
 import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -39,17 +39,6 @@ const EXCEL_CSV_PREAMBLE = '\uFEFFsep=,\r\n';
 interface AdmissionConfig {
   admissionReportPageSize?: number;
 }
-
-interface AgeLabels {
-  month: string;
-  months: string;
-  week: string;
-  weeks: string;
-  year: string;
-  years: string;
-}
-
-type AgeDuration = Partial<Record<'years' | 'months' | 'weeks' | 'days', number>>;
 
 function formatDate(value?: string) {
   if (!value) return '';
@@ -99,44 +88,8 @@ function formatSex(gender: string, labels: { female: string; male: string }) {
   return gender;
 }
 
-function getDurationValue(duration: AgeDuration, unit: keyof AgeDuration) {
-  const value = duration[unit];
-
-  return typeof value === 'number' && value >= 0 ? value : null;
-}
-
-function formatAgeUnit(value: number, singularLabel: string, pluralLabel: string) {
-  return `${value} ${value === 1 ? singularLabel : pluralLabel}`;
-}
-
-function formatAgeWithUnit(birthDate: string | undefined, referenceDate: string | undefined, labels: AgeLabels) {
-  const duration = birthDate ? (ageAsDuration(birthDate, referenceDate ?? new Date()) as AgeDuration | null) : null;
-
-  if (!duration) {
-    return '';
-  }
-
-  const years = getDurationValue(duration, 'years');
-  if (years && years > 0) {
-    return formatAgeUnit(years, labels.year, labels.years);
-  }
-
-  const months = getDurationValue(duration, 'months');
-  if (months && months > 0) {
-    return formatAgeUnit(months, labels.month, labels.months);
-  }
-
-  const weeks = getDurationValue(duration, 'weeks');
-  if (weeks && weeks > 0) {
-    return formatAgeUnit(weeks, labels.week, labels.weeks);
-  }
-
-  const days = getDurationValue(duration, 'days');
-  if (days && days > 0) {
-    return formatAgeUnit(Math.ceil(days / 7), labels.week, labels.weeks);
-  }
-
-  return formatAgeUnit(0, labels.week, labels.weeks);
+function formatAgeWithUnit(birthDate: string | undefined, referenceDate: string | undefined) {
+  return birthDate ? (age(birthDate, referenceDate ?? new Date()) ?? '') : '';
 }
 
 function escapeCsvValue(value: string) {
@@ -166,17 +119,6 @@ export default function AdmissionHome() {
   const { admissions, error, isLoading } = useAdmissions(config.admissionReportPageSize ?? 50);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const ageLabels = useMemo(
-    () => ({
-      month: t('ageMonth', 'mes'),
-      months: t('ageMonths', 'meses'),
-      week: t('ageWeek', 'semana'),
-      weeks: t('ageWeeks', 'semanas'),
-      year: t('ageYear', 'año'),
-      years: t('ageYears', 'años'),
-    }),
-    [t],
-  );
   const sexLabels = useMemo(
     () => ({
       female: t('femaleInitial', 'F'),
@@ -266,7 +208,7 @@ export default function AdmissionHome() {
       admission.hasSis,
       admission.patientName,
       admission.address,
-      formatAgeWithUnit(admission.birthDate, admission.startDatetime, ageLabels),
+      formatAgeWithUnit(admission.birthDate, admission.startDatetime),
       formatSex(admission.gender, sexLabels),
       admission.service,
       String(index + 1),
@@ -477,7 +419,7 @@ export default function AdmissionHome() {
                             </TableCell>
                             <TableCell>{admission.address}</TableCell>
                             <TableCell>
-                              {formatAgeWithUnit(admission.birthDate, admission.startDatetime, ageLabels)}
+                              {formatAgeWithUnit(admission.birthDate, admission.startDatetime)}
                             </TableCell>
                             <TableCell>{formatSex(admission.gender, sexLabels)}</TableCell>
                             <TableCell>{admission.service}</TableCell>

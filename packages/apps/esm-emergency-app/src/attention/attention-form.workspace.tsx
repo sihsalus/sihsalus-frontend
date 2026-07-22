@@ -8,7 +8,7 @@
 
 import { Button, Form, InlineLoading, Stack, TextArea } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type DefaultWorkspaceProps, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { age, type DefaultWorkspaceProps, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -43,7 +43,7 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEn
   });
 
   const patientDisplay = queueEntry.patient?.person?.display || queueEntry.patient?.display || '';
-  const patientAge = queueEntry.patient?.person?.age;
+  const patientAge = queueEntry.patient?.person?.birthdate ? age(queueEntry.patient.person.birthdate) : null;
   const patientGender = queueEntry.patient?.person?.gender;
 
   const onSubmit = useCallback(
@@ -123,7 +123,7 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEn
           <div>
             <h5>{patientDisplay}</h5>
             <span className={styles.patientMeta}>
-              {patientAge ? `${patientAge} ${t('years', 'años')}` : ''}
+              {patientAge ?? ''}
               {patientGender === 'M' ? t('male', 'Masculino') : patientGender === 'F' ? t('female', 'Femenino') : ''}
               {' — '}
               {queueEntry.priority?.display}

@@ -39,6 +39,7 @@ function renderPatientAdmissionDetail(route = '/patient/patient-uuid') {
 describe('PatientAdmissionDetail', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.i18next.language = 'es';
     mockUsePatientDetail.mockReturnValue({
       patient: {
         person: {
@@ -101,7 +102,7 @@ describe('PatientAdmissionDetail', () => {
     expect(screen.getByText(/person — separado de datos clínicos/i)).toBeInTheDocument();
     expect(screen.getByText('Historia clinica: HC-99 · DNI: 12345678')).toBeInTheDocument();
     expect(screen.getByText(/estimada/i)).toBeInTheDocument();
-    expect(screen.getByText('36 años')).toBeInTheDocument();
+    expect(screen.getByText(/36 años 6 meses \d+ días/)).toBeInTheDocument();
     expect(screen.getByText('Femenino')).toBeInTheDocument();
     expect(screen.getByText('Av. Peru 123, Lima, Lima')).toBeInTheDocument();
     expect(screen.getByText('Grupo sanguineo')).toBeInTheDocument();

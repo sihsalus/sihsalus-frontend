@@ -247,7 +247,7 @@ describe('AddLabOrder', () => {
       renderAddLabOrderWorkspace();
       expect(screen.getByText(/joshua johnson/i)).toBeInTheDocument();
       expect(screen.getByText(/male/i)).toBeInTheDocument();
-      expect(screen.getByText(/6 yrs, 6 mths/i)).toBeInTheDocument();
+      expect(screen.getByText(/6 years 6 months 1 day/i)).toBeInTheDocument();
       expect(screen.getByText('25 — Sept — 2019')).toBeInTheDocument();
     } finally {
       vi.useRealTimers();

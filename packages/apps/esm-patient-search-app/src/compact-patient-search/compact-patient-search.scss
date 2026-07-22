@@ -2,7 +2,8 @@
 @use '@openmrs/esm-styleguide/src/vars' as *;
 
 .patientSearchBar {
-  width: 50vw;
+  width: clamp(22rem, 36vw, 42rem);
+  max-width: 100%;
   position: relative;
 }
 

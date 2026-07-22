@@ -36,8 +36,7 @@
 }
 
 .logoWrapper {
-  flex: 0 1 auto;
-  min-width: 0;
+  flex: 0 0 auto;
 }
 
 .divider {
@@ -50,10 +49,14 @@
 .topNavInfoSlot {
   display: flex;
   align-items: center;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   gap: layout.$spacing-03;
   min-width: 0;
   overflow: hidden;
+}
+
+.headerGlobalBar {
+  min-width: 0;
 }
 
 .panelWrapper {
@@ -63,13 +66,14 @@
 .headerGlobalBar :global(.cds--header__action).userMenuButton {
   width: auto;
   min-width: layout.$spacing-09;
-  max-width: 15rem;
+  max-width: 12rem;
   gap: layout.$spacing-03;
   padding: 0 layout.$spacing-04 !important;
 }
 
 .userDisplayName {
   color: #ffffff;
+  max-width: 8.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

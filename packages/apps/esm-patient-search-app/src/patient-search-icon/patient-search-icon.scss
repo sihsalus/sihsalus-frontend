@@ -2,8 +2,11 @@
 
 .patientSearchIconWrapper {
   display: flex;
+  flex: 0 1 auto;
   justify-content: flex-end;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .searchIconButton {

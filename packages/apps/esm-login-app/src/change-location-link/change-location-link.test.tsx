@@ -60,5 +60,7 @@ describe('ChangeLocationLink', () => {
 
     expect(screen.getByRole('button', { name: /Change/i })).toBeInTheDocument();
     expect(screen.getByText(/UPSS - CONSULTA EXTERNA/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^Ubicación:?$/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/UPSS - CONSULTA EXTERNA/i)).toHaveAttribute('title', 'UPSS - CONSULTA EXTERNA');
   });
 });

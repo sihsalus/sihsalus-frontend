@@ -60,7 +60,7 @@
   "appointmentLocationMissing": "The appointment has no valid location. Correct the appointment before starting care.",
   "appointmentNoteLabel": "Write an additional note",
   "appointmentNotePlaceholder": "Write any additional points here",
-  "appointmentNoteTooLong": "Appointment note cannot exceed 500 characters",
+  "appointmentNoteTooLong": "Appointment note cannot exceed {{maxLength}} characters",
   "appointmentNotes": "Appointment Notes",
   "appointmentNowVisible": "It is now visible on the Appointments page",
   "appointments": "Appointments",

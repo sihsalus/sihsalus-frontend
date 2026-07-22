@@ -352,10 +352,10 @@ const AppointmentsForm: React.FC<
         message: translateFrom(moduleName, 'providerRequired', 'Provider is required'),
       }),
       appointmentNote: z.string().max(appointmentNoteMaxLength, {
-        message: translateFrom(
-          moduleName,
+        message: t(
           'appointmentNoteTooLong',
           `Appointment note cannot exceed ${appointmentNoteMaxLength} characters`,
+          { maxLength: appointmentNoteMaxLength },
         ),
       }),
       appointmentType: z.string().refine((value) => value !== '', {

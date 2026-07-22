@@ -60,7 +60,7 @@
   "appointmentLocationMissing": "La cita no tiene una ubicación válida. Regularice la cita antes de iniciar la atención.",
   "appointmentNoteLabel": "Escriba una nota adicional",
   "appointmentNotePlaceholder": "Escriba cualquier punto adicional aquí",
-  "appointmentNoteTooLong": "La nota de la cita no puede superar los 500 caracteres",
+  "appointmentNoteTooLong": "La nota de la cita no puede superar los {{maxLength}} caracteres",
   "appointmentNotes": "Notas de la Cita",
   "appointmentNowVisible": "Ahora es visible en la página de Citas",
   "appointments": "Citas",

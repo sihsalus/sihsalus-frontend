@@ -34,6 +34,7 @@
   "appointmentMetricsLoadError": "",
   "appointmentNoteLabel": "Escrever uma nota adicional",
   "appointmentNotePlaceholder": "Escreva pontos adicionais aqui",
+  "appointmentNoteTooLong": "A nota do agendamento não pode exceder {{maxLength}} caracteres",
   "appointmentNotes": "Notas do Agendamento",
   "appointmentNowVisible": "Está agora visível na página de Agendamentos",
   "appointments": "Marcação de Consultas",

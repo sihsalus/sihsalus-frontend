@@ -279,6 +279,40 @@ describe('AppointmentForm', () => {
     expect(durationInput).toHaveValue(30);
   });
 
+  it('accepts an appointment note at the backend limit of 255 characters', async () => {
+    const user = userEvent.setup();
+    const noteAtLimit = 'a'.repeat(appointmentNoteMaxLength);
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+    fireEvent.change(screen.getByLabelText(/write an additional note/i), { target: { value: noteAtLimit } });
+    await fillRequiredAppointmentFields(user);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    expect(mockSaveAppointment).toHaveBeenCalledWith(
+      expect.objectContaining({ comments: noteAtLimit }),
+      expect.anything(),
+    );
+  });
+
+  it('prevents entering more than 255 characters and keeps the counter at the backend limit', async () => {
+    const user = userEvent.setup();
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+    const noteInput = screen.getByLabelText(/write an additional note/i);
+    await user.type(noteInput, 'a'.repeat(appointmentNoteMaxLength + 1));
+
+    expect(noteInput).toHaveValue('a'.repeat(appointmentNoteMaxLength));
+    expect(screen.getByText(`${appointmentNoteMaxLength}/${appointmentNoteMaxLength}`)).toBeInTheDocument();
+  });
+
   it('does not use the login facility as the appointment location and defaults to the selected service location', async () => {
     const user = userEvent.setup();
     const serviceLocation = mockLocations.data.results.at(1);

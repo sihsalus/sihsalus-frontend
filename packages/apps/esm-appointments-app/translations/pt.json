@@ -34,6 +34,7 @@
   "appointmentMetricsLoadError": "",
   "appointmentNoteLabel": "Escreva uma nota adicional",
   "appointmentNotePlaceholder": "Providencie aqui quaisquer pontos adicionais",
+  "appointmentNoteTooLong": "A nota da consulta não pode exceder {{maxLength}} caracteres",
   "appointmentNotes": "Notas da Consulta",
   "appointmentNowVisible": "Agora está visível na página de consultas",
   "appointments": "Consultas",

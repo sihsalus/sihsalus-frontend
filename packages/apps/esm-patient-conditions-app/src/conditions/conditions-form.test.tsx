@@ -80,10 +80,9 @@ describe('Conditions form', () => {
     expect(screen.getByRole('group', { name: /antecedent type/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/onset date/i)).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /clinical status/i })).toBeInTheDocument();
-    expect(screen.getByRole('searchbox', { name: /enter antecedent/i })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /antecedent/i })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /patol|patholog/i })).toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: /surgical|quirúrgico/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /clear search input/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/^active/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^active/i)).not.toBeChecked();
     expect(screen.getByLabelText(/inactive/i)).toBeInTheDocument();
@@ -120,7 +119,7 @@ describe('Conditions form', () => {
     const user = userEvent.setup();
     renderConditionsForm();
 
-    const conditionSearchInput = screen.getByRole('searchbox', { name: /enter antecedent/i });
+    const conditionSearchInput = screen.getByRole('combobox', { name: /antecedent/i });
     expect(screen.queryByRole('menuitem', { name: /Headache/i })).not.toBeInTheDocument();
     expect(screen.queryByDisplayValue('Headache')).not.toBeInTheDocument();
 
@@ -132,7 +131,7 @@ describe('Conditions form', () => {
     const user = userEvent.setup();
     renderConditionsForm();
 
-    const conditionSearchInput = screen.getByRole('searchbox', { name: /enter antecedent/i });
+    const conditionSearchInput = screen.getByRole('combobox', { name: /antecedent/i });
     expect(screen.queryByRole('menuitem', { name: /Post-acute sequelae of COVID-19/i })).not.toBeInTheDocument();
     expect(screen.queryByDisplayValue(/Post-acute sequelae of COVID-19/i)).not.toBeInTheDocument();
 
@@ -159,7 +158,7 @@ describe('Conditions form', () => {
     const submitButton = screen.getByRole('button', { name: /save & close/i });
     const activeStatusInput = screen.getByRole('radio', { name: 'Active' });
     const antecedentTypeInput = screen.getByRole('radio', { name: /patol|patholog/i });
-    const conditionSearchInput = screen.getByRole('searchbox', { name: /enter antecedent/i });
+    const conditionSearchInput = screen.getByRole('combobox', { name: /antecedent/i });
 
     const onsetDateInput = screen.getByRole('textbox', { name: /onset date/i });
     expect(onsetDateInput).toBeInTheDocument();
@@ -168,7 +167,7 @@ describe('Conditions form', () => {
 
     await user.click(antecedentTypeInput);
     await user.type(conditionSearchInput, 'Headache');
-    await user.click(screen.getByRole('button', { name: /headache/i }));
+    await user.click(screen.getByRole('option', { name: /headache/i }));
     await user.click(activeStatusInput);
     await user.click(onsetDateInput);
     await user.paste('2020-05-05');
@@ -213,8 +212,8 @@ describe('Conditions form', () => {
     renderConditionsForm();
 
     await user.click(screen.getByRole('radio', { name: /patol|patholog/i }));
-    await user.type(screen.getByRole('searchbox', { name: /enter antecedent/i }), 'Headache');
-    await user.click(screen.getByRole('button', { name: /headache/i }));
+    await user.type(screen.getByRole('combobox', { name: /antecedent/i }), 'Headache');
+    await user.click(screen.getByRole('option', { name: /headache/i }));
     await user.click(screen.getByLabelText(/^active/i));
     await user.click(screen.getByRole('button', { name: /save & close/i }));
 
@@ -248,8 +247,8 @@ describe('Conditions form', () => {
     expect(screen.getByRole('radio', { name: /surgical|quirúrgico/i })).toBeDisabled();
     expect(screen.getByLabelText(/inactive/i)).toBeChecked();
 
-    await user.type(screen.getByRole('searchbox', { name: /enter antecedent/i }), 'Headache');
-    await user.click(screen.getByRole('button', { name: /headache/i }));
+    await user.type(screen.getByRole('combobox', { name: /antecedent/i }), 'Headache');
+    await user.click(screen.getByRole('option', { name: /headache/i }));
     await user.click(screen.getByRole('textbox', { name: /onset date/i }));
     await user.paste('2020-05-05');
     await user.click(screen.getByRole('button', { name: /save & close/i }));
@@ -278,7 +277,7 @@ describe('Conditions form', () => {
     const submitButton = screen.getByRole('button', { name: /save & close/i });
     const activeStatusInput = screen.getByRole('radio', { name: 'Active' });
     const antecedentTypeInput = screen.getByRole('radio', { name: /patol|patholog/i });
-    const conditionSearchInput = screen.getByRole('searchbox', { name: /enter antecedent/i });
+    const conditionSearchInput = screen.getByRole('combobox', { name: /antecedent/i });
     const onsetDateInput = screen.getByRole('textbox', { name: /onset date/i });
 
     const error = {
@@ -292,7 +291,7 @@ describe('Conditions form', () => {
     mockCreateCondition.mockRejectedValue(error);
     await user.click(antecedentTypeInput);
     await user.type(conditionSearchInput, 'Headache');
-    await user.click(screen.getByRole('button', { name: /Headache/i }));
+    await user.click(screen.getByRole('option', { name: /Headache/i }));
     await user.click(onsetDateInput);
     await user.paste('2020-05-05');
     await user.click(activeStatusInput);
@@ -314,7 +313,7 @@ describe('Conditions form', () => {
 
     renderConditionsForm();
 
-    const conditionSearchInput = screen.getByRole('searchbox', { name: /enter antecedent/i });
+    const conditionSearchInput = screen.getByRole('combobox', { name: /antecedent/i });
     const antecedentTypeInput = screen.getByRole('radio', { name: /patol|patholog/i });
     const submitButton = screen.getByRole('button', { name: /save & close/i });
     const form = submitButton.closest('form');
@@ -328,7 +327,7 @@ describe('Conditions form', () => {
     expect(screen.getByText(/a clinical status is required/i)).toBeInTheDocument();
 
     await user.type(conditionSearchInput, 'Headache');
-    await user.click(screen.getByRole('button', { name: /headache/i }));
+    await user.click(screen.getByRole('option', { name: /headache/i }));
     fireEvent.submit(form);
 
     await waitFor(() => expect(screen.getByText(/a clinical status is required/i)).toBeInTheDocument());

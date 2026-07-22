@@ -23,6 +23,7 @@ const mockUseLocations = vi.mocked(useLocations);
 const mockUseSession = vi.mocked(useSession);
 const mockMappedVisitQueueEntry = {
   ...mockMappedQueueEntry,
+  patientAge: '32 years 0 months 0 days',
   priority: mockMappedQueueEntry.priority.display as 'Emergency' | 'Not Urgent' | 'Priority',
   priorityUuid: mockMappedQueueEntry.priority.uuid,
   service: mockMappedQueueEntry.queue.display,
@@ -53,6 +54,7 @@ describe('ChangeStatusModal', () => {
   let consoleSpy: MockInstance;
 
   beforeEach(() => {
+    mockUpdateQueueEntry.mockReset();
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
       concepts: {},
@@ -77,7 +79,7 @@ describe('ChangeStatusModal', () => {
     } as FetchResponse);
 
     renderChangeStatusModal();
-    expect(screen.getByText(/Brian Johnson\s*·\s*F\s*·\s*32 years/i)).toBeInTheDocument();
+    expect(screen.getByText(/Brian Johnson\s*·\s*F\s*·\s*32 years 0 months 0 days/i)).toBeInTheDocument();
     expect(screen.getByText(/queue service/i)).toBeInTheDocument();
     expect(screen.getByText(/queue priority/i)).toBeInTheDocument();
 

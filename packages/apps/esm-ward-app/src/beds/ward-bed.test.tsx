@@ -63,16 +63,22 @@ const _mockWardPatientBrianProps: WardPatient = {
 
 describe('Ward bed', () => {
   it('renders a single bed with patient details', () => {
-    render(
-      <WardBed
-        patientCards={[<DefaultWardPatientCard key={mockPatientAlice.uuid} wardPatient={mockWardPatientAliceProps} />]}
-        bed={mockBed}
-      />,
-    );
-    const patientName = screen.getByText('Alice Johnson');
-    expect(patientName).toBeInTheDocument();
-    const patientAge = `${mockPatientAlice.person.age} yrs`;
-    expect(screen.getByText(patientAge)).toBeInTheDocument();
+    vi.useFakeTimers().setSystemTime(new Date('2026-07-22T12:00:00Z'));
+
+    try {
+      render(
+        <WardBed
+          patientCards={[
+            <DefaultWardPatientCard key={mockPatientAlice.uuid} wardPatient={mockWardPatientAliceProps} />,
+          ]}
+          bed={mockBed}
+        />,
+      );
+      expect(screen.getByText('Alice Johnson')).toBeInTheDocument();
+      expect(screen.getByText('26 years 6 months 21 days')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('renders a divider for shared patients', () => {

@@ -306,6 +306,61 @@ describe('AppointmentForm', () => {
     expect(locationSelect).toHaveValue(serviceLocation.uuid);
   });
 
+  it('locks a Consulta Externa provider to the current session location when creating an appointment', async () => {
+    const user = userEvent.setup();
+    const externalConsultationLocation = {
+      ...mockLocations.data.results[0],
+      uuid: 'external-consultation-location-uuid',
+      display: 'UPSS - CONSULTA EXTERNA',
+      name: 'UPSS - CONSULTA EXTERNA',
+    };
+    const anotherLocation = mockLocations.data.results[1];
+    const service = {
+      ...mockUseAppointmentServiceData[0],
+      location: anotherLocation,
+    };
+    mockUseLocations.mockReturnValue([externalConsultationLocation, anotherLocation]);
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      sessionLocation: externalConsultationLocation,
+    } as ReturnType<typeof useSession>);
+    mockOpenmrsFetch.mockResolvedValue({ data: [service] } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+
+    const locationSelect = screen.getByRole('combobox', { name: /select a location/i });
+    expect(locationSelect).toHaveValue(externalConsultationLocation.uuid);
+    expect(locationSelect).toBeDisabled();
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), [service.name]);
+
+    expect(locationSelect).toHaveValue(externalConsultationLocation.uuid);
+  });
+
+  it('keeps the appointment location editable for admission users in Consulta Externa', async () => {
+    const externalConsultationLocation = {
+      ...mockSession.data.sessionLocation,
+      display: 'UPSS - CONSULTA EXTERNA',
+      name: 'UPSS - CONSULTA EXTERNA',
+    };
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      currentProvider: undefined,
+      sessionLocation: externalConsultationLocation,
+    } as unknown as ReturnType<typeof useSession>);
+    mockOpenmrsFetch.mockResolvedValue(mockUseAppointmentServiceData as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+
+    const locationSelect = screen.getByRole('combobox', { name: /select a location/i });
+    expect(locationSelect).toBeEnabled();
+    expect(locationSelect).toHaveValue('');
+  });
+
   it('prevents scientific notation, signs, and decimals in appointment duration', async () => {
     mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
 

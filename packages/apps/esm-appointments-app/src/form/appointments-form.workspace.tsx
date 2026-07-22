@@ -167,6 +167,15 @@ const isValidTime = (timeStr: string) => timeStr.match(new RegExp(time12HourForm
 
 const isSuccessfulAppointmentResponse = (status?: number) => status >= 200 && status < 300 && status !== 204;
 
+const isExternalConsultationLocation = (location?: { display?: string; name?: string }) =>
+  [location?.display, location?.name].some((value) =>
+    value
+      ?.normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .includes('consulta externa'),
+  );
+
 function resolveAppointmentIssuedDate(
   canEditIssuedDate: boolean,
   submittedDate: Date | undefined,
@@ -291,6 +300,11 @@ const AppointmentsForm: React.FC<
   const locations = useLocations(appointmentLocationTagName);
   const providers = useProviders();
   const session = useSession();
+  const isExternalConsultationProviderCreating =
+    context === 'creating' &&
+    Boolean(session?.currentProvider?.uuid) &&
+    Boolean(session?.sessionLocation?.uuid) &&
+    isExternalConsultationLocation(session?.sessionLocation);
   const canEditAppointmentIssuedDate = userHasAccess(appointmentIssuedDateEditPrivilege, session?.user);
   const canEditAppointmentStartDate = userHasAccess(appointmentStartDateEditPrivilege, session?.user);
   const { selectedDate } = useContext(SelectedDateContext);
@@ -497,7 +511,9 @@ const AppointmentsForm: React.FC<
     reValidateMode: 'onChange',
     resolver: zodResolver(appointmentsFormSchema),
     defaultValues: {
-      location: appointment?.location?.uuid ?? '',
+      location: isExternalConsultationProviderCreating
+        ? session?.sessionLocation?.uuid
+        : (appointment?.location?.uuid ?? ''),
       provider:
         appointment?.providers?.find((provider) => provider.response === 'ACCEPTED')?.uuid ??
         session?.currentProvider?.uuid ??
@@ -945,6 +961,7 @@ const AppointmentsForm: React.FC<
                 control={control}
                 render={({ field: { onChange, value, onBlur, ref } }) => (
                   <Select
+                    disabled={isExternalConsultationProviderCreating}
                     id="location"
                     invalid={!!errors?.location}
                     invalidText={errors?.location?.message}
@@ -997,7 +1014,7 @@ const AppointmentsForm: React.FC<
                         }
                       }
 
-                      if (selectedService?.location?.uuid) {
+                      if (!isExternalConsultationProviderCreating && selectedService?.location?.uuid) {
                         setValue('location', selectedService.location.uuid, {
                           shouldDirty: true,
                           shouldValidate: true,

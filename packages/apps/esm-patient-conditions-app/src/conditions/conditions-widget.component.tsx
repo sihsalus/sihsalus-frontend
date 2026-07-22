@@ -44,6 +44,7 @@ interface ConditionsWidgetProps {
   setHasSubmissibleValue?: (value: boolean) => void;
   setIsSubmittingForm: Dispatch<boolean>;
   lockedAntecedentType?: boolean;
+  patientBirthDate?: string;
 }
 
 interface RequiredFieldLabelProps {
@@ -61,6 +62,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
   setErrorUpdating,
   setIsSubmittingForm,
   lockedAntecedentType,
+  patientBirthDate,
 }) => {
   const { t } = useTranslation();
   const { conditions, mutate } = useConditions(patientUuid);
@@ -350,6 +352,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
                   {...field}
                   id="onsetDate"
                   data-testid="onsetDate"
+                  minDate={patientBirthDate ? dayjs(patientBirthDate).startOf('day').toDate() : undefined}
                   maxDate={new Date()}
                   labelText={t('onsetDate', 'Onset date')}
                   invalid={Boolean(fieldState?.error?.message)}

@@ -1,12 +1,13 @@
 import { Button, ButtonSet, Form, InlineLoading, InlineNotification } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useLayoutType, Workspace2 } from '@openmrs/esm-framework';
+import { useLayoutType, usePatient, Workspace2 } from '@openmrs/esm-framework';
 import type { AntecedentTypeCode } from '@openmrs/esm-patient-common-lib';
 import {
   type DefaultPatientWorkspaceProps,
   type PatientWorkspace2DefinitionProps,
 } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
+import dayjs from 'dayjs';
 import type { TFunction } from 'i18next';
 import React, { useCallback, useState } from 'react';
 import { FormProvider, type SubmitHandler, useForm } from 'react-hook-form';
@@ -25,7 +26,7 @@ export interface ConditionFormProps {
   workspaceTitle?: string;
 }
 
-const createSchema = (formContext: 'creating' | 'editing', t: TFunction) => {
+export const createSchema = (formContext: 'creating' | 'editing', t: TFunction, patientBirthDate?: string) => {
   const isCreating = formContext === 'creating';
 
   const clinicalStatusValidation = z.string().refine((clinicalStatus) => !isCreating || !!clinicalStatus, {
@@ -48,7 +49,19 @@ const createSchema = (formContext: 'creating' | 'editing', t: TFunction) => {
     onsetDateTime: z
       .date()
       .nullable()
-      .refine((onsetDateTime) => onsetDateTime <= new Date(), {
+      .refine(
+        (onsetDateTime) =>
+          !onsetDateTime ||
+          !patientBirthDate ||
+          !dayjs(onsetDateTime).startOf('day').isBefore(dayjs(patientBirthDate).startOf('day')),
+        {
+          message: t(
+            'onsetDateCannotBeBeforeBirthDate',
+            "Onset date cannot be earlier than the patient's birth date",
+          ),
+        },
+      )
+      .refine((onsetDateTime) => !onsetDateTime || !dayjs(onsetDateTime).startOf('day').isAfter(dayjs().startOf('day')), {
         message: t('onsetDateCannotBeInTheFuture', 'Onset date cannot be in the future'),
       }),
   });
@@ -67,6 +80,7 @@ function isWorkspace2Props(props: ConditionsWorkspaceProps): props is Conditions
 const ConditionsForm: React.FC<ConditionsWorkspaceProps> = (props) => {
   const closeWorkspace = props.closeWorkspace;
   const patientUuid = isWorkspace2Props(props) ? props.groupProps.patientUuid : props.patientUuid;
+  const patientFromGroup = isWorkspace2Props(props) ? props.groupProps.patient : null;
   const condition = isWorkspace2Props(props) ? props.workspaceProps.condition : props.condition;
   const formContext = (isWorkspace2Props(props) ? props.workspaceProps.formContext : props.formContext) ?? 'creating';
   const defaultAntecedentType = isWorkspace2Props(props)
@@ -80,6 +94,8 @@ const ConditionsForm: React.FC<ConditionsWorkspaceProps> = (props) => {
     : props.lockedAntecedentType;
   const workspaceTitle = isWorkspace2Props(props) ? props.workspaceProps.workspaceTitle : props.workspaceTitle;
   const { t } = useTranslation();
+  const { patient: fetchedPatient } = usePatient(patientUuid);
+  const patient = patientFromGroup ?? fetchedPatient;
   const isTablet = useLayoutType() === 'tablet';
   const { conditions } = useConditions(patientUuid);
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
@@ -90,7 +106,7 @@ const ConditionsForm: React.FC<ConditionsWorkspaceProps> = (props) => {
   const matchingCondition = conditions?.find((c) => c?.id === condition?.id);
   const editableCondition = matchingCondition ?? condition;
 
-  const schema = createSchema(formContext, t);
+  const schema = createSchema(formContext, t, patient?.birthDate);
 
   const defaultValues = {
     abatementDateTime:
@@ -137,6 +153,7 @@ const ConditionsForm: React.FC<ConditionsWorkspaceProps> = (props) => {
             setErrorUpdating={setErrorUpdating}
             setIsSubmittingForm={setIsSubmittingForm}
             lockedAntecedentType={lockedAntecedentType}
+            patientBirthDate={patient?.birthDate}
           />
           <div>
             {errorCreating ? (

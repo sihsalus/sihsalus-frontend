@@ -75,6 +75,7 @@
   "noPastDiagnosesToDisplay": "No hay diagnósticos pasados para mostrar",
   "noResultsFor": "Sin resultados para",
   "onsetDate": "Fecha de aparición",
+  "onsetDateCannotBeBeforeBirthDate": "La fecha de aparición no puede ser anterior a la fecha de nacimiento del paciente",
   "onsetDateCannotBeInTheFuture": "La fecha de inicio no puede estar en el futuro",
   "pastDiagnoses": "Diagnósticos pasados",
   "pastDiagnoses_lower": "diagnósticos pasados",

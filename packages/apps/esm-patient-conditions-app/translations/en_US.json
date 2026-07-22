@@ -61,6 +61,7 @@
   "noConditionsToDisplay": "No conditions to display",
   "noResultsFor": "No results for",
   "onsetDate": "Onset date",
+  "onsetDateCannotBeBeforeBirthDate": "Onset date cannot be earlier than the patient's birth date",
   "onsetDateCannotBeInTheFuture": "Onset date cannot be in the future",
   "recordAntecedent": "Record antecedent",
   "recordCondition": "Record a Condition",

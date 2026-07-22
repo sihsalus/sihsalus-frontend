@@ -4,6 +4,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
+import type { TFunction } from 'i18next';
 import {
   getByTextWithMarkup,
   mockFhirConditionsResponse,
@@ -12,7 +13,7 @@ import {
   searchedCondition,
 } from 'test-utils';
 import { createCondition, useConditionsSearch } from './conditions.resource';
-import ConditionsForm, { type ConditionFormProps } from './conditions-form.workspace';
+import ConditionsForm, { createSchema, type ConditionFormProps } from './conditions-form.workspace';
 
 dayjs.extend(utc);
 
@@ -93,6 +94,29 @@ describe('Conditions form', () => {
     expect(cancelButton).toBeInTheDocument();
     expect(cancelButton).toBeEnabled();
     expect(submitButton).toBeInTheDocument();
+  });
+
+  it('rejects an onset date earlier than the patient birth date with a descriptive error', () => {
+    const t = ((_key: string, defaultValue: string) => defaultValue) as TFunction;
+    const schema = createSchema('creating', t, '2019-09-25');
+
+    const result = schema.safeParse({
+      abatementDateTime: null,
+      antecedentType: 'pathological',
+      clinicalStatus: 'active',
+      conditionName: 'Headache',
+      onsetDateTime: new Date(2019, 8, 24),
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues).toContainEqual(
+        expect.objectContaining({
+          path: ['onsetDateTime'],
+          message: "Onset date cannot be earlier than the patient's birth date",
+        }),
+      );
+    }
   });
 
   it('closes the form and the workspace when the cancel button is clicked', async () => {

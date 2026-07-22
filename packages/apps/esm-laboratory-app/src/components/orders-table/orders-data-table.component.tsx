@@ -22,6 +22,7 @@ import {
   Tile,
 } from '@carbon/react';
 import {
+  age,
   ExtensionSlot,
   formatDate,
   type OrderUrgency,
@@ -340,7 +341,11 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
               )?.identifier,
               patientUuid: patientUuid,
               patientName: patient?.person?.display,
-              patientAge: patient?.person?.age,
+              patientAge: patient?.person?.birthdate
+                ? age(patient.person.birthdate)
+                : patient?.person?.age != null
+                  ? String(patient.person.age)
+                  : undefined,
               patientDob: patient?.person?.birthdate ? formatDate(parseDate(patient.person.birthdate)) : undefined,
               patientSex: patient?.person?.gender,
               totalOrders: flattenedLabOrdersForPatient.length,

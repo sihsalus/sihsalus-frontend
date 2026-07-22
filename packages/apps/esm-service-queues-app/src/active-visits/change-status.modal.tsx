@@ -147,7 +147,7 @@ const ChangeStatusModal: React.FC<ChangeStatusModalProps> = ({ queueEntry, close
                 {t('patientInfo', '{{name}}{{sexInfo}}{{ageInfo}}', {
                   name: queueEntry.name,
                   sexInfo: queueEntry.patientSex ? ` · ${queueEntry.patientSex} · ` : '',
-                  ageInfo: queueEntry.patientAge ? `${queueEntry.patientAge} ${t('years', 'years')}` : '',
+                  ageInfo: queueEntry.patientAge || '',
                 })}
               </h5>
             </div>

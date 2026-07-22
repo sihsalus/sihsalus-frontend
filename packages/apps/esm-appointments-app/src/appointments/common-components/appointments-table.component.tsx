@@ -26,6 +26,7 @@ import {
   formatDatetime,
   isDesktop,
   launchWorkspace2,
+  showModal,
   useConfig,
   useLayoutType,
   usePagination,
@@ -43,7 +44,7 @@ import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import { appointmentsEditPrivilege, clinicalChartPrivilege } from '../../constants';
 import { EmptyState } from '../../empty-state/empty-state.component';
-import { isAppointmentEditable } from '../../helpers';
+import { canTransition, isAppointmentEditable } from '../../helpers';
 import { exportAppointmentsToSpreadsheet } from '../../helpers/excel';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
 import { type Appointment, AppointmentStatus } from '../../types';
@@ -337,6 +338,12 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                     const hasActiveVisitToday = visits?.some(
                       (visit) => visit?.patient?.uuid === patientUuid && visit?.startDatetime,
                     );
+                    const canEditAppointment =
+                      canEdit &&
+                      isAppointmentEditable(matchingAppointment.status) &&
+                      (isFutureAppointment || (isTodayAppointment && !hasActiveVisitToday));
+                    const canCancelAppointment =
+                      canEdit && canTransition(matchingAppointment.status, AppointmentStatus.CANCELLED);
 
                     return (
                       <React.Fragment key={row.id}>
@@ -364,9 +371,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                                 </TableCell>
                               ))}
                               <TableCell className={classNames('cds--table-column-menu', styles.actionsCell)}>
-                                {canEdit &&
-                                isAppointmentEditable(matchingAppointment.status) &&
-                                (isFutureAppointment || (isTodayAppointment && !hasActiveVisitToday)) ? (
+                                {canEditAppointment || canCancelAppointment ? (
                                   <OverflowMenu
                                     align="left"
                                     aria-label={t('actions', 'Actions')}
@@ -374,27 +379,47 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                                     iconDescription={t('actions', 'Actions')}
                                     size={responsiveSize}
                                   >
-                                    <OverflowMenuItem
-                                      className={styles.menuItem}
-                                      itemText={t('editAppointment', 'Edit appointment')}
-                                      onClick={async () => {
-                                        const appointmentUuid = matchingAppointment.uuid;
-                                        const workspaceOpened = await launchWorkspace2('appointments-form-workspace', {
-                                          patientUuid: matchingAppointment.patient.uuid,
-                                          appointment: matchingAppointment,
-                                          context: 'editing',
-                                          workspaceTitle: t('editAppointment', 'Edit appointment'),
-                                          onWorkspaceClose: () =>
-                                            setEditingAppointmentUuid((currentUuid) =>
-                                              currentUuid === appointmentUuid ? null : currentUuid,
-                                            ),
-                                        });
+                                    {canEditAppointment ? (
+                                      <OverflowMenuItem
+                                        className={styles.menuItem}
+                                        itemText={t('editAppointment', 'Edit appointment')}
+                                        onClick={async () => {
+                                          const appointmentUuid = matchingAppointment.uuid;
+                                          const workspaceOpened = await launchWorkspace2(
+                                            'appointments-form-workspace',
+                                            {
+                                              patientUuid: matchingAppointment.patient.uuid,
+                                              appointment: matchingAppointment,
+                                              context: 'editing',
+                                              workspaceTitle: t('editAppointment', 'Edit appointment'),
+                                              onWorkspaceClose: () =>
+                                                setEditingAppointmentUuid((currentUuid) =>
+                                                  currentUuid === appointmentUuid ? null : currentUuid,
+                                                ),
+                                            },
+                                          );
 
-                                        if (workspaceOpened) {
-                                          setEditingAppointmentUuid(appointmentUuid);
-                                        }
-                                      }}
-                                    />
+                                          if (workspaceOpened) {
+                                            setEditingAppointmentUuid(appointmentUuid);
+                                          }
+                                        }}
+                                      />
+                                    ) : null}
+                                    {canCancelAppointment ? (
+                                      <OverflowMenuItem
+                                        className={styles.menuItem}
+                                        hasDivider={canEditAppointment}
+                                        id={`cancelAppointment-${matchingAppointment.uuid}`}
+                                        isDelete
+                                        itemText={t('cancelAppointment', 'Cancel appointment')}
+                                        onClick={() => {
+                                          const dispose = showModal('cancel-appointment-modal', {
+                                            appointmentUuid: matchingAppointment.uuid,
+                                            closeCancelModal: () => dispose(),
+                                          });
+                                        }}
+                                      />
+                                    ) : null}
                                   </OverflowMenu>
                                 ) : null}
                               </TableCell>

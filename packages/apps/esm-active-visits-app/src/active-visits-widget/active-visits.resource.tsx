@@ -1,4 +1,5 @@
 import {
+  age,
   formatDatetime,
   type OpenmrsResource,
   openmrsFetch,
@@ -44,7 +45,7 @@ export function useActiveVisits() {
   const mapVisitProperties = (visit: Visit): ActiveVisit => {
     // create base object
     const activeVisits: ActiveVisit = {
-      age: String(visit?.patient?.person?.age),
+      age: visit?.patient?.person?.birthdate ? (age(visit.patient.person.birthdate) ?? '--') : '--',
       id: visit.uuid,
       idNumber: null,
       gender: visit?.patient?.person?.gender,

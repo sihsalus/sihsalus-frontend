@@ -6,11 +6,11 @@ export const appointmentLocationTagName = 'Appointment Location';
 export const appointmentsPrivilege = 'app:home.citas';
 export const appointmentsEditPrivilege = 'app:home.citas.editar';
 export const clinicalChartPrivilege = 'app:hoja.clinica';
-export const appointmentIssuedDateEditPrivilege = 'app:appointments.issueDate.edit';
 export const appointmentStartDateEditPrivilege = 'app:appointments.startDate.edit';
 export const chartAppointmentsReadPrivilege = 'app:hoja.clinica.citas';
 export const chartAppointmentsEditPrivilege = 'app:hoja.clinica.citas.editar';
-export const appointmentNoteMaxLength = 600;
+// The appointments backend persists patient_appointment.comments as VARCHAR(255).
+export const appointmentNoteMaxLength = 255;
 
 export const moduleName = '@sihsalus/esm-appointments-app';
 

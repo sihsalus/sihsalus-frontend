@@ -1,4 +1,4 @@
-import { formatDate, openmrsFetch, parseDate, restBaseUrl, type Visit } from '@openmrs/esm-framework';
+import { age, formatDate, openmrsFetch, parseDate, restBaseUrl, type Visit } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import useSWR from 'swr';
@@ -93,7 +93,7 @@ export const mapVisitQueueEntryProperties = (
   encounters: queueEntry.visit?.encounters?.map(mapEncounterProperties) ?? [],
   name: queueEntry.display,
   patientUuid: queueEntry.patient.uuid,
-  patientAge: queueEntry.patient.person?.age + '',
+  patientAge: queueEntry.patient.person?.birthdate ? (age(queueEntry.patient.person.birthdate) ?? '--') : '--',
   patientDob: queueEntry?.patient?.person?.birthdate
     ? formatDate(parseDate(queueEntry.patient.person.birthdate), { time: false })
     : '--',

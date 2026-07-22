@@ -27,7 +27,7 @@ export interface GroupedOrders {
   patientUuid: string;
   patientId?: string;
   patientName?: string;
-  patientAge?: number;
+  patientAge?: string;
   patientDob?: string;
   patientSex?: string;
   totalOrders: number;

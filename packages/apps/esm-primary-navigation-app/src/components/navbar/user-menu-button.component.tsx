@@ -47,7 +47,11 @@ const UserMenuButton: React.FC<MenuButtonProps> = ({ isActivePanel, togglePanel,
           }}
         >
           {isActivePanel('userMenu') ? <CloseIcon size={20} /> : <UserAvatarIcon size={20} />}
-          {userDisplay ? <span className={styles.userDisplayName}>{userDisplay}</span> : null}
+          {userDisplay ? (
+            <span className={styles.userDisplayName} title={userDisplay}>
+              {userDisplay}
+            </span>
+          ) : null}
         </HeaderGlobalAction>
         <UserMenuPanel expanded={isActivePanel('userMenu')} hidePanel={hidePanel('userMenu')} />
       </div>

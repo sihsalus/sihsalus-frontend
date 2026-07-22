@@ -61,6 +61,7 @@
   "noConditionsToDisplay": "Aucune condition médicale à afficher",
   "noResultsFor": "Pas de résultat pour",
   "onsetDate": "Date de d'apparition",
+  "onsetDateCannotBeBeforeBirthDate": "La date d'apparition ne peut pas être antérieure à la date de naissance du patient",
   "onsetDateCannotBeInTheFuture": "La date de début ne peut pas être dans le futur",
   "recordAntecedent": "Ajouter un antécédent",
   "recordCondition": "Ajouter une condition médicale",

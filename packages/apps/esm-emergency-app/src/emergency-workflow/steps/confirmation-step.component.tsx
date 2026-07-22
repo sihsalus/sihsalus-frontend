@@ -21,6 +21,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { CheckmarkFilled, Close, Renew, User } from '@carbon/react/icons';
+import { age } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { type WorkflowState } from '../types';
@@ -41,7 +42,9 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ workflowState, onRe
     workflowState.patientData?.display ||
     t('unknown', 'Desconocido');
 
-  const patientAge = workflowState.patientData?.person?.age;
+  const patientAge = workflowState.patientData?.person?.birthdate
+    ? age(workflowState.patientData.person.birthdate)
+    : null;
   const patientGender = workflowState.patientData?.person?.gender;
   const patientIdentifier = workflowState.patientData?.identifiers?.[0];
   const isDirectEmergency = workflowState.initialClassification === 'emergency';
@@ -117,7 +120,7 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ workflowState, onRe
                 <div className={styles.patientMeta}>
                   {patientAge != null && (
                     <span>
-                      {patientAge} {t('years', 'a\u00f1os')}
+                      {patientAge}
                     </span>
                   )}
                   {patientAge != null && <span className={styles.separator}>|</span>}

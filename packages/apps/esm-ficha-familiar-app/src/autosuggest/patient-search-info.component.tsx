@@ -1,6 +1,6 @@
 import { Tag, Tile } from '@carbon/react';
 import type { Patient } from '@openmrs/esm-framework';
-import { getPreferredIdentifier, PatientPhoto } from '@openmrs/esm-framework';
+import { age, getPreferredIdentifier, PatientPhoto } from '@openmrs/esm-framework';
 import React from 'react';
 
 import styles from './patient-search-info.scss';
@@ -20,7 +20,8 @@ const PatientSearchInfo: React.FC<PatientSearchInfoProps> = ({ patient }) => {
       <div className={styles.patientDetails}>
         <h2 className={styles.patientName}>{patient.person.display}</h2>
         <div className={styles.demographics}>
-          {patient?.person?.gender} <span className={styles.middot}>&middot;</span> {patient?.person?.age}
+          {patient?.person?.gender} <span className={styles.middot}>&middot;</span>{' '}
+          {patient.person?.birthdate ? age(patient.person.birthdate) : '-'}
           <span className={styles.middot}>&middot;</span>
           {identifier && (
             <Tag>

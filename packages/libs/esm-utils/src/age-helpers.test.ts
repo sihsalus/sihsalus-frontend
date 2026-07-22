@@ -1,104 +1,72 @@
 import dayjs from 'dayjs';
 import type { i18n } from 'i18next';
 import { describe, expect, it, vi } from 'vitest';
-import { age, ageAsDuration } from '.';
+import { age, ageAsDuration, exactAgeAsDuration } from '.';
 
 window.i18next = { language: 'en' } as i18n;
 
 describe('Age Helper', () => {
-  // test cases mostly taken from
-  // https://webarchive.nationalarchives.gov.uk/ukgwa/20160921162509mp_/http://systems.digital.nhs.uk/data/cui/uig/patben.pdf
-  // (Table 8)
   const now = dayjs('2024-07-30T08:30:55Z');
 
   it.each([
     {
       label: 'just born',
       birthDate: now,
-      expectedOutput: '0 min',
+      expectedOutput: '0 years 0 months 0 days',
     },
     {
-      label: 'aged 1 hour 30 minutes',
-      birthDate: now.subtract(1, 'hour').subtract(30, 'minutes'),
-      expectedOutput: '90 min',
+      label: 'aged one day',
+      birthDate: '2024-07-29',
+      expectedOutput: '0 years 0 months 1 day',
     },
     {
-      label: 'aged 1 day 2 hours 5 minutes',
-      birthDate: now.subtract(1, 'day').subtract(2, 'hours').subtract(5, 'minutes'),
-      expectedOutput: '26 hr',
+      label: 'aged 72 years, 11 months and 6 days',
+      birthDate: '1951-08-24',
+      expectedOutput: '72 years 11 months 6 days',
     },
     {
-      label: 'aged 3 days 17 hours 7 minutes',
-      birthDate: now.subtract(3, 'days').subtract(17, 'hours').subtract(30, 'minutes'),
-      expectedOutput: '3 days',
-    },
-    {
-      label: 'aged 27 days 5 hours 2 minutes',
-      birthDate: now.subtract(27, 'days').subtract(5, 'hours').subtract(2, 'minutes'),
-      expectedOutput: '27 days',
-    },
-    {
-      label: 'aged 28 days 5 hours 2 minutes',
-      birthDate: now.subtract(28, 'days').subtract(5, 'hours').subtract(2, 'minutes'),
-      expectedOutput: '4 wks',
-    },
-    {
-      label: 'aged 29 days 5 hours 2 minutes',
-      birthDate: now.subtract(29, 'days').subtract(5, 'hours').subtract(2, 'minutes'),
-      expectedOutput: '4 wks, 1 day',
-    },
-    {
-      label: 'aged 1 year 1 day 5 hours',
-      birthDate: now.subtract(1, 'year').subtract(1, 'day').subtract(5, 'hours'),
-      expectedOutput: '12 mths, 1 day',
-    },
-    {
-      label: 'aged 1 year 8 days 5 hours',
-      birthDate: now.subtract(1, 'year').subtract(8, 'days').subtract(5, 'hours'),
-      expectedOutput: '12 mths, 8 days',
-    },
-    {
-      label: 'aged 1 year 38 days 5 hours',
-      birthDate: now.subtract(1, 'year').subtract(38, 'days').subtract(5, 'hours'),
-      expectedOutput: '13 mths, 8 days',
-    },
-    {
-      label: 'aged 4 years 38 days',
-      birthDate: now.subtract(4, 'years').subtract(38, 'days').subtract(5, 'hours'),
-      expectedOutput: '4 yrs, 1 mth',
-    },
-    {
-      label: 'aged 18 years 38 days',
-      birthDate: now.subtract(18, 'years').subtract(38, 'days'),
-      expectedOutput: '18 yrs',
+      label: 'aged one year and eight days',
+      birthDate: '2023-07-22',
+      expectedOutput: '1 year 0 months 8 days',
     },
     {
       label: 'born in 2000',
       birthDate: '2000',
-      expectedOutput: '24 yrs',
-    },
-    {
-      label: 'born 10 years, 10 months ago estimated',
-      birthDate: '2014',
-      expectedOutput: '10 yrs',
+      expectedOutput: '24 years 0 months 0 days',
     },
     {
       label: 'born in June 2020',
       birthDate: '2020-06',
-      expectedOutput: '4 yrs, 1 mth',
+      expectedOutput: '4 years 1 month 0 days',
     },
     {
       label: 'born Feb 29th 2020',
       birthDate: '2020-02-29',
-      expectedOutput: '4 yrs, 5 mths',
+      expectedOutput: '4 years 5 months 1 day',
     },
     {
       label: 'born January 1st 2020',
       birthDate: '2020-01-01',
-      expectedOutput: '4 yrs, 6 mths',
+      expectedOutput: '4 years 6 months 29 days',
     },
   ])("should produce '$expectedOutput' for person $label", ({ birthDate, expectedOutput }) => {
     expect(age(birthDate, now)).toBe(expectedOutput);
+  });
+
+  it('uses full localized Spanish units without omitting zero-valued units', () => {
+    window.i18next.language = 'es';
+
+    expect(age('1951-08-24', now)).toBe('72 años 11 meses 6 días');
+
+    window.i18next.language = 'en';
+  });
+
+  it('returns the exact age as years, months and days', () => {
+    expect(exactAgeAsDuration('1951-08-24', now)).toEqual({ years: 72, months: 11, days: 6 });
+  });
+
+  it('returns null when the birth date is after the reference date', () => {
+    expect(age('2024-07-31', now)).toBeNull();
   });
 });
 

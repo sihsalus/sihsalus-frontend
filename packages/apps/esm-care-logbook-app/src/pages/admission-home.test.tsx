@@ -71,6 +71,7 @@ function createAdmission(overrides: Partial<AdmissionRow>): AdmissionRow {
 describe('AdmissionHome', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.i18next.language = 'es';
     window.history.pushState({}, '', '/');
     globalThis.getOpenmrsSpaBase = vi.fn(() => '/openmrs/spa/');
     mockUseConfig.mockReturnValue({ admissionReportPageSize: 75 });
@@ -167,7 +168,7 @@ describe('AdmissionHome', () => {
     expect(mockUseAdmissions).toHaveBeenCalledWith(75);
   });
 
-  it('renders age with year, month, and week units in a single age column', () => {
+  it('renders exact age with years, months, and days in a single age column', () => {
     mockUseAdmissions.mockReturnValue({
       admissions: [
         createAdmission({
@@ -195,9 +196,9 @@ describe('AdmissionHome', () => {
 
     renderAdmissionHome();
 
-    expect(screen.getByRole('cell', { name: '36 años' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: '12 meses' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: '3 semanas' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '36 años 0 meses 0 días' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '1 año 0 meses 2 días' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '0 años 0 meses 21 días' })).toBeInTheDocument();
   });
 
   it('filters the report by search text and status', () => {
@@ -331,7 +332,7 @@ describe('AdmissionHome', () => {
     expect(csv).toContain('"Sí comunica"');
     expect(csv).toContain('"Jr. Unión 123, Huánuco"');
     expect(csv).toContain('"F"');
-    expect(csv).toContain('"6 años"');
+    expect(csv).toContain('"6 años 11 meses 8 días"');
     expect(csv).not.toContain('Ã');
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:atenciones');
   });

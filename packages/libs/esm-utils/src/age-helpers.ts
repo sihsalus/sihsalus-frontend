@@ -1,6 +1,38 @@
 /** @module @category Utility */
 import dayjs from 'dayjs';
-import { formatDuration, parseDateInput } from './dates/date-util';
+import { parseDateInput } from './dates/date-util';
+import { getLocale } from './get-locale';
+
+export type ExactAgeDuration = Required<Pick<Intl.DurationInput, 'years' | 'months' | 'days'>>;
+
+/**
+ * Calculates a calendar age with years, months and days. All three units are
+ * always present so patient demographics are displayed consistently at every age.
+ */
+export function exactAgeAsDuration(
+  birthDate: dayjs.ConfigType,
+  currentDate: dayjs.ConfigType = dayjs(),
+): ExactAgeDuration | null {
+  const to = dayjs(currentDate).startOf('day');
+  const parsedBirthDate = parseDateInput(birthDate, to);
+
+  if (!to.isValid() || parsedBirthDate == null || !parsedBirthDate.isValid()) {
+    return null;
+  }
+
+  const from = parsedBirthDate.startOf('day');
+  if (from.isAfter(to)) {
+    return null;
+  }
+
+  const years = to.diff(from, 'year');
+  const afterYears = from.add(years, 'year');
+  const months = to.diff(afterYears, 'month');
+  const afterMonths = afterYears.add(months, 'month');
+  const days = to.diff(afterMonths, 'day');
+
+  return { years, months, days };
+}
 
 /**
  * Gets the age of a person as a structured duration object, following NHS Digital guidelines
@@ -64,34 +96,34 @@ export function ageAsDuration(
 }
 
 /**
- * Gets a human readable and locale supported representation of a person's age, given their birthDate,
- * The representation logic follows the guideline here:
- * https://webarchive.nationalarchives.gov.uk/ukgwa/20160921162509mp_/http://systems.digital.nhs.uk/data/cui/uig/patben.pdf
- * (See Tables 7 and 8)
+ * Gets a localized, exact representation of a person's calendar age. Years,
+ * months and days are always included, including zero-valued units.
  *
  * @param birthDate The birthDate. If birthDate is null, returns null.
  * @param currentDate Optional. If provided, calculates the age of the person at the provided currentDate (instead of now).
  * @returns A human-readable string version of the age.
  *
  * @example
- * age('2020-02-29', '2024-07-30') // => '4 yrs, 5 mths'
+ * age('1953-08-16', '2026-07-22') // => '72 years 11 months 6 days'
  *
  * @example
  * // String dates with partial precision are supported
- * age('2000', '2024-07-30') // => '24 yrs'
+ * age('2000', '2024-07-30') // => '24 years 0 months 0 days'
  */
 export function age(birthDate: dayjs.ConfigType, currentDate: dayjs.ConfigType = dayjs()): string | null {
-  const durationInput = ageAsDuration(birthDate, currentDate);
+  const durationInput = exactAgeAsDuration(birthDate, currentDate);
 
   if (durationInput == null) {
     return null;
   }
 
-  const options: Intl.DurationFormatOptions = { style: 'short', localeMatcher: 'lookup' };
+  const locale = getLocale();
+  const formatUnit = (value: number, unit: 'year' | 'month' | 'day') =>
+    new Intl.NumberFormat(locale, { style: 'unit', unit, unitDisplay: 'long' }).format(value);
 
-  if ('minutes' in durationInput && durationInput.minutes === 0) {
-    options.minutesDisplay = 'always';
-  }
-
-  return formatDuration(durationInput, options);
+  return [
+    formatUnit(durationInput.years, 'year'),
+    formatUnit(durationInput.months, 'month'),
+    formatUnit(durationInput.days, 'day'),
+  ].join(' ');
 }

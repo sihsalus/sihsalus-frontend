@@ -16,7 +16,7 @@
       "slot": "homepage-widgets-slot",
       "component": "pendingSisAccreditations",
       "privileges": "app:home.admision",
-      "order": 1
+      "order": 2
     },
     {
       "name": "pending-sis-accreditations-tile",

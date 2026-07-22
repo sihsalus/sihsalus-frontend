@@ -75,6 +75,7 @@
   "noPastDiagnosesToDisplay": "No past diagnoses to display",
   "noResultsFor": "No results for",
   "onsetDate": "Onset date",
+  "onsetDateCannotBeBeforeBirthDate": "Onset date cannot be earlier than the patient's birth date",
   "onsetDateCannotBeInTheFuture": "Onset date cannot be in the future",
   "pastDiagnoses": "Past diagnoses",
   "pastDiagnoses_lower": "past diagnoses",

@@ -1,8 +1,12 @@
 @use "@carbon/layout";
 
 .changeLocationButton {
-  width: fit-content;
+  display: flex;
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
   max-width: 22rem;
+  overflow: hidden;
   background-color: transparent;
   color: white;
   font-size: 14px;
@@ -14,15 +18,11 @@
 }
 
 .currentLocationText {
+  min-width: 0;
   overflow: hidden;
   padding-inline-start: layout.$spacing-02;
   padding-inline-end: layout.$spacing-04;
   text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.locationLabel {
-  padding-inline-start: layout.$spacing-03;
   white-space: nowrap;
 }
 
@@ -33,7 +33,6 @@
     padding-inline: layout.$spacing-04 !important;
   }
 
-  .locationLabel,
   .currentLocationText {
     display: none;
   }

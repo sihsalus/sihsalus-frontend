@@ -3,30 +3,6 @@
 @use '@carbon/type';
 @use '@openmrs/esm-styleguide/src/vars' as *;
 
-.condition {
-  padding: layout.$spacing-04;
-  border-top: 0.0625rem solid $grey-2;
-
-  &:first-of-type {
-    border-top: none;
-  }
-
-  &:last-of-type {
-    border-bottom: none;
-  }
-}
-
-.conditionsList {
-  background-color: $ui-02;
-  max-height: 14rem;
-  overflow-y: auto;
-  border: 1px solid $ui-03;
-
-  li:hover {
-    background-color: $ui-03;
-  }
-}
-
 .emptyResults {
   @include type.type-style('body-compact-01');
   color: $text-02;
@@ -72,18 +48,6 @@
 
 .errorContainer {
   margin: layout.$spacing-05;
-}
-
-.conditionsError {
-  :global(.cds--search-input):focus {
-    outline: layout.$spacing-01 solid $danger;
-  }
-
-  :global(.cds--search-magnifier) {
-    svg {
-      fill: $danger;
-    }
-  }
 }
 
 .errorMessage {

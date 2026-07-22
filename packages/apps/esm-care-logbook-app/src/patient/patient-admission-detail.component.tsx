@@ -1,6 +1,6 @@
 import { Button, InlineLoading, InlineNotification, Tag } from '@carbon/react';
 import { Add, ArrowLeft } from '@carbon/react/icons';
-import { launchWorkspace2 } from '@openmrs/esm-framework';
+import { age, launchWorkspace2 } from '@openmrs/esm-framework';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom';
@@ -126,7 +126,7 @@ export default function PatientAdmissionDetail() {
               </div>
               <div>
                 <dt>{t('age', 'Edad')}</dt>
-                <dd>{patient.person?.age != null ? `${patient.person.age} años` : '-'}</dd>
+                <dd>{patient.person?.birthdate ? (age(patient.person.birthdate) ?? '-') : '-'}</dd>
               </div>
               <div>
                 <dt>{t('sex', 'Sexo')}</dt>

@@ -1,4 +1,5 @@
 import {
+  age,
   type Encounter as CoreEncounter,
   formatDate,
   type Obs,
@@ -79,7 +80,7 @@ export const mapVisitQueueEntryProperties = (
   encounters: queueEntry.visit?.encounters?.map(mapEncounterProperties) ?? [],
   name: queueEntry.display,
   patientUuid: queueEntry.patient.uuid,
-  patientAge: queueEntry.patient.person?.age + '',
+  patientAge: queueEntry.patient.person?.birthdate ? (age(queueEntry.patient.person.birthdate) ?? '--') : '--',
   patientDob: queueEntry?.patient?.person?.birthdate
     ? formatDate(parseDate(queueEntry.patient.person.birthdate), { time: false })
     : '--',

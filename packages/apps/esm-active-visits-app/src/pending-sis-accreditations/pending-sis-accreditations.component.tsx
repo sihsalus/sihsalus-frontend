@@ -51,6 +51,8 @@ const statusTagTypes: Record<PendingAccreditationStatus, 'blue' | 'gray' | 'red'
   missing: 'red',
 };
 
+const pendingSisContainerClassName = `${styles.activeVisitsContainer} ${styles.pendingSisAccreditationsContainer}`;
+
 function AccreditationStatusTag({ status }: { status: PendingAccreditationStatus }) {
   const { t } = useTranslation();
 
@@ -105,7 +107,7 @@ const PendingSisAccreditationsTable = () => {
 
   if (isLoading) {
     return (
-      <div className={styles.activeVisitsContainer}>
+      <div className={pendingSisContainerClassName}>
         <div className={styles.activeVisitsDetailHeaderContainer}>
           <div className={!isDesktop(layout) ? styles.tabletHeading : styles.desktopHeading}>
             <h4>{headerTitle}</h4>
@@ -125,7 +127,7 @@ const PendingSisAccreditationsTable = () => {
 
   if (error) {
     return (
-      <div className={styles.activeVisitsContainer}>
+      <div className={pendingSisContainerClassName}>
         <Layer>
           <ErrorState error={error} headerTitle={headerTitle} />
         </Layer>
@@ -135,7 +137,7 @@ const PendingSisAccreditationsTable = () => {
 
   if (!pendingVisits.length) {
     return (
-      <div className={styles.activeVisitsContainer}>
+      <div className={pendingSisContainerClassName}>
         <Layer>
           <Tile className={styles.tile}>
             <div className={!isDesktop(layout) ? styles.tabletHeading : styles.desktopHeading}>
@@ -181,7 +183,7 @@ const PendingSisAccreditationsTable = () => {
   };
 
   return (
-    <div className={styles.activeVisitsContainer}>
+    <div className={pendingSisContainerClassName}>
       <div className={styles.activeVisitsDetailHeaderContainer}>
         <div className={!isDesktop(layout) ? styles.tabletHeading : styles.desktopHeading}>
           <h4>{headerTitle}</h4>

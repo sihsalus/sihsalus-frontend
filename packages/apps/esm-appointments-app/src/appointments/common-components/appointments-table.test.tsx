@@ -1,6 +1,7 @@
 import {
   getDefaultsFromConfigSchema,
   launchWorkspace2,
+  showModal,
   useConfig,
   usePatient,
   userHasAccess,
@@ -73,6 +74,7 @@ const mockAppointments = [
 
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
+const mockShowModal = vi.mocked(showModal);
 const mockExportAppointmentsToSpreadsheet = vi.mocked(exportAppointmentsToSpreadsheet);
 const mockUseSession = vi.mocked(useSession);
 const mockUsePatient = vi.mocked(usePatient);
@@ -323,6 +325,36 @@ describe('AppointmentsTable', () => {
     act(() => workspaceProps.onWorkspaceClose());
 
     expect(appointmentRow).not.toHaveAttribute('aria-current');
+  });
+
+  it('offers appointment cancellation as a red text action and opens the protected confirmation modal', async () => {
+    const user = userEvent.setup();
+    const dispose = vi.fn();
+    const cancellableAppointment = {
+      ...mockAppointments[0],
+      startDateTime: new Date(Date.now() + 86_400_000).toISOString(),
+      status: AppointmentStatus.SCHEDULED,
+    };
+    mockShowModal.mockReturnValue(dispose);
+
+    renderAppointmentsTable({ appointments: [cancellableAppointment] });
+
+    await user.click(screen.getByRole('button', { name: /actions/i }));
+    const cancelAction = document.getElementById(`cancelAppointment-${cancellableAppointment.uuid}`);
+
+    expect(cancelAction).toBeInTheDocument();
+    expect(cancelAction?.closest('li')).toHaveClass('cds--overflow-menu-options__option--danger');
+    expect(cancelAction?.querySelector('svg')).not.toBeInTheDocument();
+    await user.click(cancelAction);
+
+    expect(mockShowModal).toHaveBeenCalledWith('cancel-appointment-modal', {
+      appointmentUuid: cancellableAppointment.uuid,
+      closeCancelModal: expect.any(Function),
+    });
+
+    const modalProps = mockShowModal.mock.calls.at(-1)?.[1] as { closeCancelModal: () => void };
+    modalProps.closeCancelModal();
+    expect(dispose).toHaveBeenCalledOnce();
   });
 
   it.each([

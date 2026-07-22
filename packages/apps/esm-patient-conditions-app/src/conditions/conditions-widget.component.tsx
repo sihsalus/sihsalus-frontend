@@ -1,21 +1,19 @@
-import classNames from 'classnames';
 import dayjs from 'dayjs';
 import type { TFunction } from 'i18next';
-import React, { type Dispatch, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { type Dispatch, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import 'dayjs/plugin/utc';
 import {
+  ComboBox,
   FormGroup,
   FormLabel,
   InlineLoading,
   Layer,
   RadioButton,
   RadioButtonGroup,
-  Search,
   Stack,
   Tile,
 } from '@carbon/react';
-import { WarningFilled } from '@carbon/react/icons';
 import { OpenmrsDatePicker, ResponsiveWrapper, showSnackbar, useDebounce, useSession } from '@openmrs/esm-framework';
 import {
   type AntecedentTypeCode,
@@ -46,20 +44,12 @@ interface ConditionsWidgetProps {
   setHasSubmissibleValue?: (value: boolean) => void;
   setIsSubmittingForm: Dispatch<boolean>;
   lockedAntecedentType?: boolean;
+  patientBirthDate?: string;
 }
 
 interface RequiredFieldLabelProps {
   label: string;
   t: TFunction;
-}
-
-interface SearchResultsProps {
-  isSearching: boolean;
-  onConditionChange: (condition: CodedCondition) => void;
-  searchResults: CodedCondition[];
-  selectedCondition: CodedCondition;
-  t: TFunction;
-  value: string;
 }
 
 const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
@@ -72,6 +62,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
   setErrorUpdating,
   setIsSubmittingForm,
   lockedAntecedentType,
+  patientBirthDate,
 }) => {
   const { t } = useTranslation();
   const { conditions, mutate } = useConditions(patientUuid);
@@ -82,7 +73,6 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
     watch,
   } = useFormContext<ConditionsFormSchema>();
   const session = useSession();
-  const searchInputRef = useRef(null);
   const clinicalStatus = watch('clinicalStatus');
   const matchingCondition = conditions?.find((condition) => condition?.id === conditionToEdit?.id);
   const editableCondition = matchingCondition ?? conditionToEdit;
@@ -104,7 +94,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
     [editableAntecedentType, lockedAntecedentType],
   );
 
-  const handleConditionChange = useCallback((selectedCondition: CodedCondition) => {
+  const handleConditionChange = useCallback((selectedCondition: CodedCondition | null) => {
     setSelectedCondition(selectedCondition);
   }, []);
 
@@ -240,18 +230,11 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
     t,
   ]);
 
-  const focusOnSearchInput = useCallback(() => {
-    searchInputRef?.current?.focus();
-  }, []);
-
   const handleSearchTermChange = (searchTerm: string) => {
     setSearchTerm(searchTerm);
   };
 
   useEffect(() => {
-    if (errors?.conditionName) {
-      focusOnSearchInput();
-    }
     if (isSubmittingForm) {
       if (Object.keys(errors).length > 0) {
         setIsSubmittingForm(false);
@@ -264,7 +247,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
         handleCreate();
       }
     }
-  }, [handleUpdate, isEditing, handleCreate, isSubmittingForm, errors, setIsSubmittingForm, focusOnSearchInput]);
+  }, [handleUpdate, isEditing, handleCreate, isSubmittingForm, errors, setIsSubmittingForm]);
 
   return (
     <div className={styles.formContainer}>
@@ -302,7 +285,9 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
             </p>
           )}
         </FormGroup>
-        <FormGroup legendText={<RequiredFieldLabel label={t('antecedent', 'Antecedent')} t={t} />}>
+        <FormGroup
+          legendText={isEditing ? <RequiredFieldLabel label={t('antecedent', 'Antecedent')} t={t} /> : ''}
+        >
           {isEditing ? (
             <FormLabel className={styles.conditionLabel}>{displayName}</FormLabel>
           ) : (
@@ -310,54 +295,50 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
               <Controller
                 name="conditionName"
                 control={control}
-                render={({ field: { onChange, value } }) => (
+                render={({ field: { onChange } }) => (
                   <ResponsiveWrapper>
-                    <Search
-                      autoFocus
-                      className={classNames({
-                        [styles.conditionsError]: errors?.conditionName,
-                      })}
+                    <ComboBox<CodedCondition>
+                      allowCustomValue={false}
+                      autoAlign
                       disabled={isEditing}
                       id="conditionsSearch"
-                      aria-labelledby={errors?.conditionName ? 'conditionsSearchError' : undefined}
-                      labelText={t('enterAntecedent', 'Enter antecedent')}
-                      onChange={(event) => {
-                        const val = event.target.value;
-                        onChange(val);
-                        handleSearchTermChange(val);
+                      invalid={Boolean(errors?.conditionName)}
+                      invalidText={errors?.conditionName?.message}
+                      items={searchResults ?? []}
+                      itemToString={(item) => item?.display ?? ''}
+                      onChange={({ selectedItem }) => {
+                        const condition = selectedItem ?? null;
+                        handleConditionChange(condition);
+                        onChange(condition?.display ?? '');
+                        setSearchTerm(condition?.display ?? '');
                       }}
-                      onClear={() => {
-                        setSearchTerm('');
-                        setSelectedCondition(null);
+                      onInputChange={(inputValue) => {
+                        handleSearchTermChange(inputValue);
+                        if (selectedCondition && inputValue !== selectedCondition.display) {
+                          setSelectedCondition(null);
+                          onChange('');
+                        }
                       }}
                       placeholder={t('searchAntecedents', 'Search antecedents')}
-                      ref={searchInputRef}
-                      renderIcon={errors?.conditionName && ((props) => <WarningFilled fill="red" {...props} />)}
-                      value={(() => {
-                        if (selectedCondition) {
-                          return selectedCondition.display;
-                        }
-                        if (debouncedSearchTerm) {
-                          return value;
-                        }
-                      })()}
+                      selectedItem={selectedCondition}
+                      shouldFilterItem={() => true}
+                      titleText={<RequiredFieldLabel label={t('antecedent', 'Antecedent')} t={t} />}
                     />
                   </ResponsiveWrapper>
                 )}
               />
-              {errors?.conditionName && (
-                <p id="conditionsSearchError" className={styles.errorMessage}>
-                  {errors.conditionName.message}
-                </p>
-              )}
-              <SearchResults
-                isSearching={isSearching}
-                onConditionChange={handleConditionChange}
-                searchResults={searchResults}
-                selectedCondition={selectedCondition}
-                t={t}
-                value={searchTerm}
-              />
+              {isSearching ? (
+                <InlineLoading className={styles.loader} description={t('searching', 'Searching') + '...'} />
+              ) : null}
+              {!isSearching && searchTerm && !selectedCondition && !searchResults?.length ? (
+                <Layer>
+                  <Tile className={styles.emptyResults}>
+                    <span>
+                      {t('noResultsFor', 'No results for')} <strong>"{searchTerm}"</strong>
+                    </span>
+                  </Tile>
+                </Layer>
+              ) : null}
             </>
           )}
         </FormGroup>
@@ -371,6 +352,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
                   {...field}
                   id="onsetDate"
                   data-testid="onsetDate"
+                  minDate={patientBirthDate ? dayjs(patientBirthDate).startOf('day').toDate() : undefined}
                   maxDate={new Date()}
                   labelText={t('onsetDate', 'Onset date')}
                   invalid={Boolean(fieldState?.error?.message)}
@@ -443,47 +425,6 @@ function RequiredFieldLabel({ label, t }: RequiredFieldLabelProps) {
         *
       </span>
     </span>
-  );
-}
-
-function SearchResults({
-  isSearching,
-  onConditionChange,
-  searchResults,
-  selectedCondition,
-  t,
-  value,
-}: SearchResultsProps) {
-  if (!value || selectedCondition) {
-    return null;
-  }
-
-  if (isSearching) {
-    return <InlineLoading className={styles.loader} description={t('searching', 'Searching') + '...'} />;
-  }
-
-  if (searchResults?.length > 0) {
-    return (
-      <ul className={styles.conditionsList}>
-        {searchResults?.map((searchResult) => (
-          <li key={searchResult?.uuid}>
-            <button className={styles.condition} onClick={() => onConditionChange(searchResult)} type="button">
-              {searchResult.display}
-            </button>
-          </li>
-        ))}
-      </ul>
-    );
-  }
-
-  return (
-    <Layer>
-      <Tile className={styles.emptyResults}>
-        <span>
-          {t('noResultsFor', 'No results for')} <strong>"{value}"</strong>
-        </span>
-      </Tile>
-    </Layer>
   );
 }
 

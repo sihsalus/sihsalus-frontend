@@ -7,7 +7,7 @@
  */
 
 import { Button, ModalBody, ModalFooter, ModalHeader, Tag } from '@carbon/react';
-import { launchWorkspace, launchWorkspace2, showSnackbar } from '@openmrs/esm-framework';
+import { age, launchWorkspace, launchWorkspace2, showSnackbar } from '@openmrs/esm-framework';
 import { getPreferredIdentifier } from '@openmrs/esm-utils';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -37,7 +37,7 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
 
   const patientName = queueEntry.patient.person?.display || queueEntry.patient.display;
   const gender = queueEntry.patient.person?.gender || '';
-  const age = queueEntry.patient.person?.age;
+  const patientAge = queueEntry.patient.person?.birthdate ? age(queueEntry.patient.person.birthdate) : null;
   const identifiers = queueEntry.patient.identifiers || [];
   const preferredIdentifier = getPreferredIdentifier(identifiers);
   const otherIdentifiers = identifiers.filter((id) => id.uuid !== preferredIdentifier?.uuid);
@@ -122,7 +122,7 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
             {t('patientGender', 'Sexo')}: &nbsp; {gender}
           </p>
           <p className={styles.p}>
-            {t('patientAge', 'Edad')}: &nbsp; {age}
+            {t('patientAge', 'Edad')}: &nbsp; {patientAge ?? '-'}
           </p>
           <div>
             {identifiers.map((identifier) => (

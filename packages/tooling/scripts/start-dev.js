@@ -463,6 +463,13 @@ async function startWithProxy(cliArgs) {
   // Serve pre-built assets from dist/spa/, skip CLI-managed files
   app.use(spaPath, (req, res, next) => {
     if (cliManagedPaths.has(req.path)) {
+      // Import maps are immutable once SystemJS has bootstrapped the page. Do
+      // not let a browser reuse a registry from a previous dev-server session.
+      res.set({
+        'cache-control': 'no-store, no-cache, must-revalidate',
+        expires: '0',
+        pragma: 'no-cache',
+      });
       return next();
     }
     staticHandler(req, res, next);
@@ -474,7 +481,14 @@ async function startWithProxy(cliArgs) {
     }
     try {
       await ensureDevRuntimeReady();
-      res.type('html').send(spaIndexHtml);
+      res
+        .set({
+          'cache-control': 'no-store, no-cache, must-revalidate',
+          expires: '0',
+          pragma: 'no-cache',
+        })
+        .type('html')
+        .send(spaIndexHtml);
     } catch (error) {
       logFail(error.message);
       res.setHeader('retry-after', '5');

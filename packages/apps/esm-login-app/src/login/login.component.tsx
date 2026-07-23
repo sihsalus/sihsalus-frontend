@@ -25,7 +25,7 @@ export interface LoginReferrer {
   referrer?: string;
 }
 
-type LoginErrorKey = 'invalidCredentials' | 'serverUnavailable' | 'sessionEndpointNotFound';
+type LoginErrorKey = 'invalidCredentials' | 'accountLocked' | 'serverUnavailable' | 'sessionEndpointNotFound';
 type LoginView = 'login' | 'passwordRecovery';
 
 interface BuildInfo {
@@ -67,14 +67,49 @@ function useBuildInfo(): BuildInfo {
 }
 
 // t('invalidCredentials', 'Invalid username or password')
+// t('accountLocked', 'Account temporarily locked')
+// t('accountLockedDetail', 'Your account was locked after several failed attempts. Wait about {{minutes}} minutes and try again, or ask an administrator to unlock it.')
 // t('serverUnavailable', 'The authentication server is not responding. Please try again later.')
 // t('sessionEndpointNotFound', 'The login service is not available at this backend address. Please contact support or try a different environment.')
 const loginErrorFallbacks = {
   invalidCredentials: 'Invalid username or password',
+  accountLocked: 'Account temporarily locked',
   serverUnavailable: 'The authentication server is not responding. Please try again later.',
   sessionEndpointNotFound:
     'The login service is not available at this backend address. Please contact support or try a different environment.',
 } satisfies Record<LoginErrorKey, string>;
+
+/**
+ * OpenMRS core locks an account after `security.allowedFailedLoginsBeforeLockout`
+ * failed attempts (default 7) and throws a distinct ContextAuthenticationException
+ * ("Invalid number of connection attempts. Please try again later.") while the
+ * lockout window (`security.unlockAccountAfter`, default 5 min) is active. That
+ * message rides in the body of the openmrsFetch error; its exact field varies, so
+ * we probe the common shapes.
+ */
+function getServerErrorMessage(error: unknown): string {
+  if (!error || typeof error !== 'object') {
+    return typeof error === 'string' ? error : '';
+  }
+  const candidate = error as {
+    message?: unknown;
+    responseBody?: { error?: { message?: unknown }; message?: unknown };
+    response?: { statusText?: unknown };
+  };
+  const parts = [
+    candidate.responseBody?.error?.message,
+    candidate.responseBody?.message,
+    candidate.message,
+    candidate.response?.statusText,
+  ];
+  return parts.filter((part) => typeof part === 'string').join(' ');
+}
+
+// Matches the OpenMRS lockout message across versions/locales without matching the
+// generic "invalid username or password". Deliberately narrow: keys on the
+// "connection attempts"/"try again later"/"locked" phrasing, not on "invalid".
+const accountLockedPattern =
+  /number of connection attempts|too many .*attempts|account .*lock|locked|try again later|intentos de conexi[oó]n|cuenta .*bloque|bloque/i;
 
 function getLoginErrorKey(error: unknown): LoginErrorKey {
   const session = (error as { session?: { backendUnavailable?: boolean } })?.session;
@@ -82,6 +117,7 @@ function getLoginErrorKey(error: unknown): LoginErrorKey {
   const errorToInspect = nestedError ?? error;
   const status = (errorToInspect as { response?: { status?: number } })?.response?.status;
   const message = errorToInspect instanceof Error ? errorToInspect.message : String(errorToInspect ?? '');
+  const serverMessage = getServerErrorMessage(errorToInspect);
 
   if (session?.backendUnavailable) {
     return 'serverUnavailable';
@@ -95,6 +131,12 @@ function getLoginErrorKey(error: unknown): LoginErrorKey {
     return 'serverUnavailable';
   }
 
+  // A locked account is a 401 like bad credentials, so it can only be told apart
+  // by the backend message; check it before falling through to invalidCredentials.
+  if (accountLockedPattern.test(serverMessage)) {
+    return 'accountLocked';
+  }
+
   return 'invalidCredentials';
 }
 
@@ -106,6 +148,7 @@ const Login: React.FC = () => {
     showPasswordOnSeparateScreen,
     provider: loginProvider,
     links: loginLinks,
+    accountLockout,
   } = useConfig<ConfigSchema>();
   const isLoginEnabled = useConnectivity();
   const { t } = useTranslation();
@@ -473,16 +516,30 @@ const Login: React.FC = () => {
                   >
                     {t('forgotPassword', 'Forgot your password?')}
                   </Button>
-                  {errorMessage && (
-                    <div className={styles.errorMessage}>
-                      <InlineNotification
-                        kind="error"
-                        subtitle={t(errorMessage, loginErrorFallbacks[errorMessage as LoginErrorKey])}
-                        title={getCoreTranslation('error')}
-                        onClick={() => setErrorMessage('')}
-                      />
-                    </div>
-                  )}
+                  {errorMessage &&
+                    (errorMessage === 'accountLocked' ? (
+                      <div className={styles.errorMessage}>
+                        <InlineNotification
+                          kind="warning"
+                          subtitle={t(
+                            'accountLockedDetail',
+                            'Your account was locked after several failed attempts. Wait about {{minutes}} minutes and try again, or ask an administrator to unlock it.',
+                            { minutes: accountLockout.retryAfterMinutes },
+                          )}
+                          title={t('accountLocked', 'Account temporarily locked')}
+                          onClick={() => setErrorMessage('')}
+                        />
+                      </div>
+                    ) : (
+                      <div className={styles.errorMessage}>
+                        <InlineNotification
+                          kind="error"
+                          subtitle={t(errorMessage, loginErrorFallbacks[errorMessage as LoginErrorKey])}
+                          title={getCoreTranslation('error')}
+                          onClick={() => setErrorMessage('')}
+                        />
+                      </div>
+                    ))}
                 </form>
               ) : (
                 <form className={styles.recoveryForm} onSubmit={handleRecoverySubmit} noValidate>

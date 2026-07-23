@@ -226,6 +226,39 @@ describe('Login', () => {
     expect(await screen.findByText(/The login service is not available at this backend address/i)).toBeInTheDocument();
   });
 
+  it('shows the account-locked warning instead of an invalid-credentials error when the backend reports a lockout', async () => {
+    mockLogin.mockRejectedValue({
+      loaded: false,
+      session: null,
+      error: {
+        response: { status: 401 },
+        responseBody: {
+          error: { message: 'Invalid number of connection attempts. Please try again later.' },
+        },
+      },
+    });
+
+    renderWithRouter(
+      Login,
+      {},
+      {
+        route: '/login',
+      },
+    );
+    const user = userEvent.setup();
+
+    await user.type(screen.getByRole('textbox', { name: /Username/i }), 'admision');
+    await user.click(screen.getByRole('button', { name: /Continue/i }));
+    await screen.findByLabelText(/^password$/i);
+    await user.type(screen.getByLabelText(/^password$/i), 'correct-but-locked');
+    await user.click(screen.getByRole('button', { name: /log in/i }));
+
+    // The friendly lockout copy is shown...
+    expect(await screen.findByText(/locked after several failed attempts/i)).toBeInTheDocument();
+    // ...and NOT the misleading generic credentials error.
+    expect(screen.queryByText(/invalid username or password/i)).not.toBeInTheDocument();
+  });
+
   it('sends the user to the location select page on login if there is more than one location', async () => {
     mockLogin.mockResolvedValue({
       session: {

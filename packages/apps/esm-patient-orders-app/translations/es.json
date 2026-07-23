@@ -1,6 +1,6 @@
 {
   "actionsMenu": "Menú de acciones",
-  "activeVisitLocationRequired": "La visita activa debe tener una ubicación asistencial para realizar órdenes",
+  "activeVisitLocationRequired": "La visita activa debe tener una UPSS asistencial para realizar órdenes",
   "activeVisitRequired": "Se requiere una consulta activa para realizar órdenes",
   "add": "Agregar",
   "additionalInstructions": "Instrucciones adicionales",

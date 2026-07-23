@@ -285,7 +285,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
       if (!locationUuid) {
         showSnackbar({
           title: t('errorSaving', 'Error saving vaccination'),
-          subtitle: t('activeVisitLocationRequired', 'An active visit with an operational location is required.'),
+          subtitle: t('activeVisitLocationRequired', 'An active visit with an operational UPSS is required.'),
           kind: 'error',
           isLowContrast: false,
         });

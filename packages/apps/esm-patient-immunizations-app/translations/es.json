@@ -2,7 +2,7 @@
   "actions": "Acciones",
   "active": "activa",
   "activeScheduleVersion": "v{{version}} activa",
-  "activeVisitLocationRequired": "Se requiere una visita activa con una ubicación asistencial.",
+  "activeVisitLocationRequired": "Se requiere una visita activa con una UPSS asistencial.",
   "add": "Agregar",
   "addImmunizations": "Agregar inmunizaciones",
   "administered": "Aplicada",

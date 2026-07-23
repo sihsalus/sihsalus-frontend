@@ -57,7 +57,7 @@ const QueueTablesForAllStatuses: React.FC<QueueTablesForAllStatusesProps> = ({
     : queueLocationsError
       ? t('queueContextUnavailable', 'Queues are temporarily unavailable')
       : !selectedQueueLocation
-        ? t('selectedQueueLocationUnavailable', 'This queue location is not available')
+        ? t('selectedQueueLocationUnavailable', 'This queue UPSS is not available')
         : undefined;
   const requiredVisitLocation =
     selectedQueueLocationUuid && selectedQueueLocation && isVisitLocation(selectedQueueLocation)

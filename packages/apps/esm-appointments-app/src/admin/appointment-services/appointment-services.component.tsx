@@ -134,8 +134,8 @@ const AppointmentServices: React.FC = () => {
             <Layer>
               <Dropdown
                 id="default"
-                titleText={t('selectLocation', 'Select location')}
-                label={t('selectLocation', 'Select location')}
+                titleText={t('selectLocation', 'Select UPSS')}
+                label={t('selectLocation', 'Select UPSS')}
                 items={locations}
                 itemToString={(item) => (item ? item.display : '')}
                 selectedItem={props.values.location}

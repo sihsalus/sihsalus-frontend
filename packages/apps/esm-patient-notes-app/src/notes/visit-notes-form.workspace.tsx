@@ -755,7 +755,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
       if (!locationUuid) {
         showSnackbar({
           title: t('visitNoteSaveError', 'Error saving visit note'),
-          subtitle: t('activeVisitLocationRequired', 'An active visit with an operational location is required.'),
+          subtitle: t('activeVisitLocationRequired', 'An active visit with an operational UPSS is required.'),
           kind: 'error',
           isLowContrast: false,
         });

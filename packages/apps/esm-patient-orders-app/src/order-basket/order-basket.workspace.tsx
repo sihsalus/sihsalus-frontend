@@ -175,7 +175,7 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
     const locationUuid = activeVisit.location?.uuid;
     if (!locationUuid) {
       setCreatingEncounterError(
-        t('activeVisitLocationRequired', 'The active visit must have an operational location to make orders'),
+        t('activeVisitLocationRequired', 'The active visit must have an operational UPSS to make orders'),
       );
       return;
     }

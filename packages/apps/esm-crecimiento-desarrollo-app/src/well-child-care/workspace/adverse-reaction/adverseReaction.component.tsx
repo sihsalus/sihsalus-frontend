@@ -72,7 +72,7 @@ const AdverseReactionFormWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
       return false;
     }
     if (!patientUuid || !locationUuid) {
-      setError(t('missingPatientOrLocation', 'Se requiere una visita activa con una ubicación asistencial'));
+      setError(t('missingPatientOrLocation', 'Se requiere una visita activa con una UPSS asistencial'));
       return false;
     }
     return true;

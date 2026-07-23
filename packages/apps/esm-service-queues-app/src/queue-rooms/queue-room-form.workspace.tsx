@@ -48,10 +48,10 @@ const createQueueRoomSchema = (t: TFunction) =>
       .min(1, t('queueRoomServiceIsRequired', 'Queue room service is required')),
     queueLocation: z
       .string({
-        required_error: t('queueLocationRequired', 'Queue location is required'),
+        required_error: t('queueLocationRequired', 'Queue UPSS is required'),
       })
       .trim()
-      .min(1, t('queueLocationRequired', 'Queue location is required')),
+      .min(1, t('queueLocationRequired', 'Queue UPSS is required')),
   });
 
 type QueueRoomFormData = z.infer<ReturnType<typeof createQueueRoomSchema>>;
@@ -136,11 +136,11 @@ const QueueRoomForm: React.FC<DefaultWorkspaceProps> = ({ closeWorkspace }) => {
                   id="queueRoomLocation"
                   invalid={!!errors.queueLocation}
                   invalidText={errors.queueLocation?.message}
-                  labelText={t('queueLocation', 'Queue location')}
+                  labelText={t('queueLocation', 'Queue UPSS')}
                   onChange={(e) => onChange(e.target.value)}
                   value={value || ''}
                 >
-                  <SelectItem text={t('selectQueueRoomLocation', 'Select a queue room location')} value="" />
+                  <SelectItem text={t('selectQueueRoomLocation', 'Select the queue room UPSS')} value="" />
                   {queueLocations
                     ?.filter((location) => location.id && location.name)
                     .map((location) => (

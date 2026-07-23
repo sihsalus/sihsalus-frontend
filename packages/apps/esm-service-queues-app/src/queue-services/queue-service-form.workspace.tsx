@@ -56,10 +56,10 @@ const createQueueServiceSchema = (t: TFunction) =>
       .min(1, t('statusConceptSetRequired', 'Status concept set is required')),
     userLocation: z
       .string({
-        required_error: t('queueLocationRequired', 'Queue location is required'),
+        required_error: t('queueLocationRequired', 'Queue UPSS is required'),
       })
       .trim()
-      .min(1, t('queueLocationRequired', 'Queue location is required')),
+      .min(1, t('queueLocationRequired', 'Queue UPSS is required')),
   });
 
 type QueueServiceFormData = z.infer<ReturnType<typeof createQueueServiceSchema>>;
@@ -193,9 +193,9 @@ const QueueServiceForm: React.FC<DefaultWorkspaceProps> = ({ closeWorkspace }) =
                   id="location"
                   invalid={!!errors?.userLocation}
                   invalidText={errors?.userLocation?.message}
-                  labelText={t('selectALocation', 'Select a location')}
+                  labelText={t('selectALocation', 'Select a UPSS')}
                 >
-                  <SelectItem text={t('selectALocation', 'Select a location')} value="" />
+                  <SelectItem text={t('selectALocation', 'Select a UPSS')} value="" />
                   {queueLocations?.length > 0 &&
                     queueLocations.map((location) => (
                       <SelectItem key={location.id} text={location.name} value={location.id}>

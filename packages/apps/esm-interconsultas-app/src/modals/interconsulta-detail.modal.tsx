@@ -61,7 +61,7 @@ const InterconsultaDetailModal: React.FC<InterconsultaDetailModalProps> = ({ clo
         ]
       : []),
     { label: t('requestedBy', 'Solicitante'), value: order.orderer?.display ?? '—' },
-    { label: t('originLocation', 'Location origen'), value: order.encounter?.location?.display ?? '—' },
+    { label: t('originLocation', 'Origin UPSS'), value: order.encounter?.location?.display ?? '—' },
     { label: t('reasonForRequest', 'Motivo'), value: order.instructions || '—' },
     ...(order.fulfillerComment
       ? [

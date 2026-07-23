@@ -421,9 +421,9 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           display: z.string().optional(),
           uuid: z
             .string({
-              required_error: t('visitLocationRequired', 'Visit location is required'),
+              required_error: t('visitLocationRequired', 'Care UPSS is required'),
             })
-            .min(1, t('visitLocationRequired', 'Visit location is required')),
+            .min(1, t('visitLocationRequired', 'Care UPSS is required')),
         }),
         visitAttributes: z.object(visitAttributes),
       })

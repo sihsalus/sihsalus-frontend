@@ -54,7 +54,7 @@ const AdminPage = () => {
     },
     {
       key: 'location',
-      header: t('location', 'Location'),
+      header: t('location', 'UPSS'),
     },
   ];
 

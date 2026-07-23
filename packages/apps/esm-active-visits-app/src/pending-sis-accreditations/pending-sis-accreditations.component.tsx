@@ -90,7 +90,7 @@ const PendingSisAccreditationsTable = () => {
     { id: 1, key: 'identifier', header: t('dni', 'DNI') },
     { id: 2, key: 'visitStartTime', header: t('visitStart', 'Hora de inicio') },
     { id: 3, key: 'accreditationStatus', header: t('accreditationStatus', 'Estado de acreditación') },
-    { id: 4, key: 'location', header: t('location', 'Ubicación') },
+    { id: 4, key: 'location', header: t('location', 'UPSS') },
     { id: 5, key: 'actions', header: t('actions', 'Acciones') },
   ];
 

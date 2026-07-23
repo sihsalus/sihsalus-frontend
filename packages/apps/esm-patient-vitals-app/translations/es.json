@@ -68,7 +68,7 @@
   "noActiveVisit": "Una consulta activa es obligatoria para registrar signos vitales.",
   "noDataRecorded": "No se han registrado datos para este paciente",
   "noSessionLocation": "No se pudo determinar la ubicación de la sesión. Por favor, inicie sesión nuevamente.",
-  "noVisitLocation": "No se pudo determinar la ubicación de la consulta activa.",
+  "noVisitLocation": "No se pudo determinar la UPSS de la consulta activa.",
   "normalRange": "Rango normal",
   "notAvailable": "No disponible",
   "notes": "Notas",

@@ -119,7 +119,7 @@ const closeModal = vi.fn();
 const mutateVisits = vi.fn();
 
 const arrivalRuleMissingMessage =
-  'No existe una regla de llegada configurada para el servicio y la ubicación de esta cita. Contacte al administrador antes de continuar.';
+  'No existe una regla de llegada configurada para el servicio y la UPSS de esta cita. Contacte al administrador antes de continuar.';
 
 const expectedPatientChartUrl = (getDefaultsFromConfigSchema(configSchema) as ConfigObject).customPatientChartUrl;
 
@@ -242,7 +242,7 @@ describe('AppointmentArrivalModal', () => {
     renderModal();
 
     expect(screen.getByRole('alert')).toHaveTextContent(
-      'Existe más de una regla de llegada para este servicio y ubicación. Corrija la configuración antes de registrar la llegada.',
+      'Existe más de una regla de llegada para este servicio y UPSS. Corrija la configuración antes de registrar la llegada.',
     );
     expect(screen.queryByRole('button', { name: /enviar a cola de espera/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /iniciar atención directamente/i })).not.toBeInTheDocument();
@@ -259,7 +259,7 @@ describe('AppointmentArrivalModal', () => {
 
     renderModal(legacyAppointment);
     expect(screen.getByRole('alert')).toHaveTextContent(
-      'La cita no tiene una ubicación válida. Regularice la cita antes de iniciar la atención.',
+      'La cita no tiene una UPSS válida. Regularice la cita antes de iniciar la atención.',
     );
     expect(screen.queryByRole('button', { name: /enviar a cola de espera/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /iniciar atención directamente/i })).not.toBeInTheDocument();
@@ -354,7 +354,7 @@ describe('AppointmentArrivalModal', () => {
     await userEvent.click(getQueueButton());
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'La consulta activa pertenece a otra sede o servicio. Finalícela o regularícela antes de registrar la llegada.',
+      'La consulta activa pertenece a otra UPSS o servicio. Finalícela o regularícela antes de registrar la llegada.',
     );
     expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
     expect(mockEnsureAppointmentVisitLink).not.toHaveBeenCalled();
@@ -558,7 +558,7 @@ describe('AppointmentArrivalModal', () => {
     await userEvent.click(getDirectButton());
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'La consulta activa pertenece a otra sede o servicio. Finalícela o regularícela antes de registrar la llegada.',
+      'La consulta activa pertenece a otra UPSS o servicio. Finalícela o regularícela antes de registrar la llegada.',
     );
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();

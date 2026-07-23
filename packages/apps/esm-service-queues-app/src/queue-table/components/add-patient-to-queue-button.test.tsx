@@ -176,7 +176,7 @@ describe('AddPatientToQueueButton', () => {
 
     render(<AddPatientToQueueButton />);
 
-    expect(screen.getByRole('button', { name: /select an available queue location/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /select an available queue UPSS/i })).toBeDisabled();
   });
 
   it('fails closed while the selected queue location metadata is loading', () => {

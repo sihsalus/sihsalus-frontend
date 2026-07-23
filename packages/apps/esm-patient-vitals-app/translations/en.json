@@ -64,7 +64,7 @@
   "noActiveVisit": "An active visit is required to record vitals and biometrics.",
   "noDataRecorded": "No data has been recorded for this patient",
   "noSessionLocation": "Could not determine session location. Please log in again.",
-  "noVisitLocation": "Could not determine the active visit location.",
+  "noVisitLocation": "Could not determine the active visit UPSS.",
   "normalRange": "Normal range",
   "notAvailable": "Not available",
   "notes": "Notes",

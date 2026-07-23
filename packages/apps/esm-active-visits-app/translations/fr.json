@@ -13,7 +13,7 @@
   "indication": "Indication",
   "medications": "Médicaments",
   "name": "Nom",
-  "noActiveVisitsForLocation": "Il n'y aucune visite en cours pour cette localisation",
+  "noActiveVisitsForLocation": "Il n'y a aucune visite active à afficher pour cet établissement",
   "noDiagnosesFound": "Aucun diagnostic",
   "noEncountersFound": "Aucune consultation trouvée",
   "noMedicationsFound": "Aucun traitement trouvé",

@@ -71,8 +71,8 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
     const locationUuid = config.credScheduling?.appointmentLocationUuid;
     if (!locationUuid) {
       showSnackbar({
-        title: t('locationError', 'Error de ubicación'),
-        subtitle: t('noAppointmentLocationUuid', 'No se configuró la ubicación asistencial para las citas CRED.'),
+        title: t('locationError', 'Error de UPSS'),
+        subtitle: t('noAppointmentLocationUuid', 'No se configuró la UPSS asistencial para las citas CRED.'),
         kind: 'error',
       });
       return;

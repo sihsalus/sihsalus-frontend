@@ -44,9 +44,9 @@ const AddPatientToQueueButton: React.FC = () => {
     : queueContextError
       ? t('queueContextUnavailable', 'Queues are temporarily unavailable')
       : isSelectedServiceUnavailable
-        ? t('selectedServiceUnavailable', 'The selected service is not available at this location')
+        ? t('selectedServiceUnavailable', 'The selected service is not available at this UPSS')
         : isQueueLocationUnavailable
-          ? t('selectQueueLocation', 'Select an available queue location')
+          ? t('selectQueueLocation', 'Select an available queue UPSS')
           : undefined;
   const buttonLabel = disabledReason ?? t('addPatientToQueue', 'Add patient to queue');
 

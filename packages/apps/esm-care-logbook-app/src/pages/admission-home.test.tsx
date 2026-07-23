@@ -130,7 +130,8 @@ describe('AdmissionHome', () => {
       'Dirección',
       'Edad',
       'Sexo',
-      'Servicio',
+      'Tipo de visita',
+      'UPSS',
       'Número de orden',
       'Condición comunicación',
     ]) {
@@ -150,11 +151,13 @@ describe('AdmissionHome', () => {
     expect(screen.getByText(/9\/05\/26, 8:30/)).toBeInTheDocument();
     expect(screen.getAllByRole('cell', { name: 'F' })[0]).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Consulta externa' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Admision Central' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Topico' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: '1' })).toBeInTheDocument();
     expect(getMetricValue('Atenciones registradas')).toHaveTextContent('2');
     expect(getMetricValue('En curso')).toHaveTextContent('1');
     expect(getMetricValue('Finalizadas')).toHaveTextContent('1');
-    expect(getMetricValue('UPSS/servicios')).toHaveTextContent('2');
+    expect(getMetricValue('Tipos de visita reportados')).toHaveTextContent('2');
     const mergeLink = screen.getByRole('link', { name: /fusionar historias duplicadas/i });
     expect(mergeLink).toHaveAttribute('href', '/openmrs/spa/home/care-logbook/merge');
     expect(mergeLink.closest('[data-required-privileges]')).toHaveAttribute(
@@ -328,6 +331,9 @@ describe('AdmissionHome', () => {
     expect(csv).toContain('"Estado identificación"');
     expect(csv).toContain('"Condición comunicación"');
     expect(csv).toContain('"Sexo"');
+    expect(csv).toContain('"Tipo de visita"');
+    expect(csv).toContain('"UPSS"');
+    expect(csv).toContain('"Admision Central"');
     expect(csv).toContain('"María Peña Ñaupari"');
     expect(csv).toContain('"Sí comunica"');
     expect(csv).toContain('"Jr. Unión 123, Huánuco"');

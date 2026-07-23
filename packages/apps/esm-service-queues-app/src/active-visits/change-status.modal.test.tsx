@@ -84,7 +84,7 @@ describe('ChangeStatusModal', () => {
     expect(screen.getByText(/queue priority/i)).toBeInTheDocument();
 
     // user selects queue location
-    const queueLocation = screen.getByRole('combobox', { name: /Select a queue location/i });
+    const queueLocation = screen.getByRole('combobox', { name: /Select a queue UPSS/i });
     await user.selectOptions(queueLocation, 'some-uuid1');
 
     // user selects a service
@@ -138,7 +138,7 @@ describe('ChangeStatusModal', () => {
     await user.selectOptions(queueServiceTypes, '176052c7-5fd4-4b33-89cc-7bae6848c65a');
 
     // user selects queue location
-    const queueLocation = screen.getByRole('combobox', { name: /Select a queue location/i });
+    const queueLocation = screen.getByRole('combobox', { name: /Select a queue UPSS/i });
     await user.selectOptions(queueLocation, 'some-uuid1');
 
     // user selects queue status
@@ -172,7 +172,7 @@ describe('ChangeStatusModal', () => {
     renderChangeStatusModal();
 
     await user.click(screen.getByRole('button', { name: /move to next service/i }));
-    expect(screen.getByText(/Queue location is required/i)).toBeInTheDocument();
+    expect(screen.getByText(/Queue UPSS is required/i)).toBeInTheDocument();
     expect(screen.getByText(/service is required/i)).toBeInTheDocument();
     expect(screen.getByText(/status is required/i)).toBeInTheDocument();
   });

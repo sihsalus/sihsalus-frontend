@@ -180,7 +180,7 @@ describe('ActiveVisitsTable', () => {
 
     render(<ActiveVisitsTable />);
 
-    expect(screen.getByText('There are no active visits to display for this location.')).toBeInTheDocument();
+    expect(screen.getByText('There are no active visits to display for this facility.')).toBeInTheDocument();
   });
 
   it('should not display the table when the data is loading', () => {

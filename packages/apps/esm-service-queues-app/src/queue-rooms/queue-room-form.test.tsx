@@ -39,7 +39,7 @@ describe('QueueRoomForm', () => {
 
     expect(screen.getByLabelText(/queue room name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/queue room service/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/queue location/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/queue UPSS/i)).toBeInTheDocument();
     expect(screen.getByText('Cancel')).toBeInTheDocument();
     expect(screen.getByText('Save')).toBeInTheDocument();
   });
@@ -51,7 +51,7 @@ describe('QueueRoomForm', () => {
 
     await user.click(screen.getByText('Save'));
     expect(await screen.findByLabelText('Queue room name')).toHaveValue('');
-    expect(screen.getByLabelText('Queue location')).toHaveValue('');
+    expect(screen.getByLabelText('Queue UPSS')).toHaveValue('');
     expect(screen.getByLabelText('Queue room service')).toHaveValue('');
   });
 
@@ -65,7 +65,7 @@ describe('QueueRoomForm', () => {
     await user.type(queueRoomNameInput, 'Room 123');
     await user.click(screen.getByText('Save'));
     expect(await screen.findByLabelText('Queue room name')).toHaveValue('Room 123');
-    expect(screen.getByLabelText('Queue location')).toHaveValue('');
+    expect(screen.getByLabelText('Queue UPSS')).toHaveValue('');
     expect(screen.getByLabelText('Queue room service')).toHaveValue('');
   });
 

@@ -120,7 +120,7 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
       { id: 'service', key: 'service', header: t('destinationService', 'Servicio destino') },
       { id: 'urgency', key: 'urgency', header: t('priority', 'Prioridad') },
       { id: 'orderer', key: 'orderer', header: t('requestedBy', 'Solicitante') },
-      { id: 'location', key: 'location', header: t('originLocation', 'Location origen') },
+      { id: 'location', key: 'location', header: t('originLocation', 'Origin UPSS') },
       { id: 'status', key: 'status', header: t('status', 'Estado') },
       { id: 'actions', key: 'actions', header: t('actions', 'Acciones') },
     ],
@@ -243,7 +243,7 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
                   onChange={({ selectedItem }: { selectedItem: FilterOption }) =>
                     setLocationFilter(selectedItem?.uuid ?? '')
                   }
-                  titleText={t('filterByOriginLocation', 'Location origen') + ':'}
+                  titleText={t('filterByOriginLocation', 'Origin UPSS') + ':'}
                   type="inline"
                 />
               </Layer>

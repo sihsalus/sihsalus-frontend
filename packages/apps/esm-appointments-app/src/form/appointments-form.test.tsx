@@ -60,7 +60,7 @@ const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 
 async function fillRequiredAppointmentFields(user: ReturnType<typeof userEvent.setup>, allDay = false) {
-  await user.selectOptions(screen.getByRole('combobox', { name: /select a location/i }), ['Inpatient Ward']);
+  await user.selectOptions(screen.getByRole('combobox', { name: /select a UPSS/i }), ['Inpatient Ward']);
   await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), ['Outpatient']);
   await user.selectOptions(screen.getByRole('combobox', { name: /select the type of appointment/i }), ['Scheduled']);
   const providerComboBox = screen.getByRole('combobox', { name: /select a provider/i });
@@ -187,7 +187,7 @@ describe('AppointmentForm', () => {
 
     await waitForLoadingToFinish();
 
-    expect(screen.getByLabelText(/select a location/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/select a UPSS/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/select a service/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/select the type of appointment/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/write an additional note/i)).toBeInTheDocument();
@@ -251,7 +251,7 @@ describe('AppointmentForm', () => {
       ),
     );
     const notification = mockShowSnackbar.mock.calls.at(-1)?.[0];
-    expect(JSON.stringify(notification?.subtitle)).toContain('Location');
+    expect(JSON.stringify(notification?.subtitle)).toContain('UPSS');
     expect(JSON.stringify(notification?.subtitle)).toContain('serviceRequired');
     expect(mockSaveAppointment).not.toHaveBeenCalled();
   });
@@ -330,7 +330,7 @@ describe('AppointmentForm', () => {
 
     await waitForLoadingToFinish();
 
-    const locationSelect = screen.getByRole('combobox', { name: /select a location/i });
+    const locationSelect = screen.getByRole('combobox', { name: /select a UPSS/i });
     expect(locationSelect).toHaveValue('');
     expect(locationSelect).not.toHaveValue(mockSession.data.sessionLocation.uuid);
 
@@ -363,7 +363,7 @@ describe('AppointmentForm', () => {
 
     await waitForLoadingToFinish();
 
-    const locationSelect = screen.getByRole('combobox', { name: /select a location/i });
+    const locationSelect = screen.getByRole('combobox', { name: /select a UPSS/i });
     expect(locationSelect).toHaveValue(externalConsultationLocation.uuid);
     expect(locationSelect).toBeDisabled();
 
@@ -389,7 +389,7 @@ describe('AppointmentForm', () => {
 
     await waitForLoadingToFinish();
 
-    const locationSelect = screen.getByRole('combobox', { name: /select a location/i });
+    const locationSelect = screen.getByRole('combobox', { name: /select a UPSS/i });
     expect(locationSelect).toBeEnabled();
     expect(locationSelect).toHaveValue('');
   });

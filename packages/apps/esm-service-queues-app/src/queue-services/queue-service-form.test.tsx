@@ -55,7 +55,7 @@ describe('QueueServiceForm', () => {
       name: /select a service type/i,
     });
     const locationSelect = screen.getByRole('combobox', {
-      name: /select a location/i,
+      name: /select a UPSS/i,
     });
     const priorityConceptSetSelect = screen.getByRole('combobox', {
       name: /priority concept set/i,
@@ -99,7 +99,7 @@ describe('QueueServiceForm', () => {
       name: /select a service type/i,
     });
     const locationSelect = screen.getByRole('combobox', {
-      name: /select a location/i,
+      name: /select a UPSS/i,
     });
     const saveButton = screen.getByRole('button', { name: /save/i });
 
@@ -135,7 +135,7 @@ describe('QueueServiceForm', () => {
       name: /select a service type/i,
     });
     const locationSelect = screen.getByRole('combobox', {
-      name: /select a location/i,
+      name: /select a UPSS/i,
     });
     const saveButton = screen.getByRole('button', { name: /save/i });
 

@@ -513,7 +513,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
           title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
           kind: 'error',
           isLowContrast: false,
-          subtitle: t('noVisitLocation', 'Could not determine the active visit location.'),
+          subtitle: t('noVisitLocation', 'Could not determine the active visit UPSS.'),
         });
         return;
       }

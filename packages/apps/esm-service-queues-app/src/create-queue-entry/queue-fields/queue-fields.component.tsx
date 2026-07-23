@@ -330,7 +330,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
         />
       )}
       <section className={styles.section}>
-        <div className={styles.sectionTitle}>{t('queueLocation', 'Queue location')}</div>
+        <div className={styles.sectionTitle}>{t('queueLocation', 'Queue UPSS')}</div>
         <ResponsiveWrapper>
           {isLoadingQueueLocations ? (
             <SelectSkeleton />
@@ -342,9 +342,9 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
               lowContrast
               subtitle={t(
                 'queueLocationsLoadErrorMessage',
-                'Check your connection and try loading the queue locations again.',
+                'Check your connection and try loading the queue UPSS again.',
               )}
-              title={t('queueLocationsLoadErrorTitle', 'Queue locations could not be loaded')}
+              title={t('queueLocationsLoadErrorTitle', 'Queue UPSS could not be loaded')}
             />
           ) : !availableQueueLocations.length ? (
             <InlineNotification
@@ -352,8 +352,8 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
               hideCloseButton
               kind="error"
               lowContrast
-              subtitle={t('configureQueueLocations', 'Configure at least one queue location to continue.')}
-              title={t('noQueueLocationsConfigured', 'No queue locations are configured')}
+              subtitle={t('configureQueueLocations', 'Configure at least one queue UPSS to continue.')}
+              title={t('noQueueLocationsConfigured', 'No queue UPSS are configured')}
             />
           ) : !isQueueLocationFixed && !canSelectQueueLocation ? (
             <InlineNotification
@@ -365,7 +365,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
                 'queueLocationContextRequiredMessage',
                 'Open this action from an appointment or queue, or ask a queue manager to select the destination.',
               )}
-              title={t('queueLocationContextRequired', 'A queue location is required for this workflow')}
+              title={t('queueLocationContextRequired', 'A queue UPSS is required for this workflow')}
             />
           ) : !isRequiredQueueLocationAvailable ? (
             <InlineNotification
@@ -373,12 +373,12 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
               hideCloseButton
               kind="warning"
               lowContrast
-              title={t('selectedQueueLocationUnavailable', 'This queue location is not available')}
+              title={t('selectedQueueLocationUnavailable', 'This queue UPSS is not available')}
             />
           ) : isQueueLocationFixed ? (
             <TextInput
               id="queueLocation"
-              labelText={t('queueLocation', 'Queue location')}
+              labelText={t('queueLocation', 'Queue UPSS')}
               name="queueLocation"
               readOnly
               value={selectedQueueLocationName}
@@ -386,7 +386,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
           ) : (
             <Select
               aria-required="true"
-              labelText={<RequiredFieldLabel label={t('selectQueueLocation', 'Select a queue location')} />}
+              labelText={<RequiredFieldLabel label={t('selectQueueLocation', 'Select a queue UPSS')} />}
               id="queueLocation"
               name="queueLocation"
               invalid={showValidationErrors && !selectedQueueLocation}
@@ -396,7 +396,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
               onChange={(event) => setSelectedQueueLocation(event.target.value)}
             >
               {!selectedQueueLocation ? (
-                <SelectItem text={t('selectQueueLocation', 'Select a queue location')} value="" />
+                <SelectItem text={t('selectQueueLocation', 'Select a queue UPSS')} value="" />
               ) : null}
               {availableQueueLocations?.length > 0 &&
                 availableQueueLocations.map((location) => (
@@ -448,7 +448,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
             hideCloseButton
             kind="warning"
             lowContrast
-            title={t('selectedServiceUnavailable', 'The selected service is not available at this location')}
+            title={t('selectedServiceUnavailable', 'The selected service is not available at this UPSS')}
           />
         ) : isServiceQueueFixed ? (
           <TextInput

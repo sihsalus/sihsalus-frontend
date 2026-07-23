@@ -138,7 +138,7 @@ const PerinatalRegisterForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWo
       if (!locationUuid) {
         showSnackbar({
           title: t('perinatalDataSaveError', 'Error saving perinatal data'),
-          subtitle: t('activeVisitLocationRequired', 'An active visit with an operational location is required.'),
+          subtitle: t('activeVisitLocationRequired', 'An active visit with an operational UPSS is required.'),
           kind: 'error',
           isLowContrast: false,
         });

@@ -150,7 +150,7 @@ const ActiveVisitsTable = () => {
             </div>
             <EmptyDataIllustration />
             <p className={styles.content}>
-              {t('noActiveVisitsForLocation', 'There are no active visits to display for this location.')}
+              {t('noActiveVisitsForLocation', 'There are no active visits to display for this facility.')}
             </p>
           </Tile>
         </Layer>

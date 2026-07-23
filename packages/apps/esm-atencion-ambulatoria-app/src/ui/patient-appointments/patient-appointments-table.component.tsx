@@ -58,7 +58,7 @@ const PatientAppointmentsTable: React.FC<AppointmentTableProps> = ({
   const tableHeaders: DataTableHeader[] = useMemo(
     () => [
       { key: 'date', header: t('date', 'Date') },
-      { key: 'location', header: t('location', 'Location') },
+      { key: 'location', header: t('location', 'UPSS') },
       { key: 'service', header: t('service', 'Service') },
       { key: 'status', header: t('status', 'Status') },
       { key: 'type', header: t('type', 'Type') },

@@ -172,8 +172,8 @@ export default function PatientAdmissionDetail() {
                     <tr>
                       <th>{t('date', 'Fecha')}</th>
                       <th>{t('time', 'Hora')}</th>
-                      <th>{t('upsService', 'UPSS/servicio')}</th>
-                      <th>{t('location', 'Ubicación')}</th>
+                      <th>{t('visitType', 'Tipo de visita')}</th>
+                      <th>{t('location', 'UPSS')}</th>
                       <th>{t('status', 'Estado')}</th>
                     </tr>
                   </thead>
@@ -232,9 +232,9 @@ export default function PatientAdmissionDetail() {
                     <tr>
                       <th>{t('date', 'Fecha')}</th>
                       <th>{t('time', 'Hora')}</th>
-                      <th>{t('upsService', 'UPSS/servicio')}</th>
+                      <th>{t('service', 'Servicio')}</th>
                       <th>{t('provider', 'Prestador')}</th>
-                      <th>{t('location', 'Ubicación')}</th>
+                      <th>{t('location', 'UPSS')}</th>
                       <th>{t('status', 'Estado')}</th>
                     </tr>
                   </thead>

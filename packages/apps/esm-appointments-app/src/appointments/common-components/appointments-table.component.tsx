@@ -196,7 +196,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
       key: 'dateTime',
     },
     {
-      header: t('location', 'Location'),
+      header: t('location', 'UPSS'),
       key: 'location',
     },
     {

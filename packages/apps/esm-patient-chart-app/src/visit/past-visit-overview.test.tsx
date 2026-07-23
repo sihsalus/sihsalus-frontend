@@ -73,7 +73,7 @@ describe('PastVisitOverview', () => {
     expect(screen.getByRole('heading', { name: /Past Visits/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Cancel/i })).toBeInTheDocument();
 
-    const tableHeaders = [/Start Date/i, /Type/i, /Location/i, /End Date/i];
+    const tableHeaders = [/Start Date/i, /Type/i, /UPSS/i, /End Date/i];
     tableHeaders.forEach((header) => {
       expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
     });

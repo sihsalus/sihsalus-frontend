@@ -166,7 +166,7 @@ const AppointmentsTable: React.FC = () => {
   };
 
   const pageSizes = useMemo(() => {
-    const numberOfPages = Math.ceil(appointmentQueueEntries?.length / 100);
+    const numberOfPages = Math.ceil((appointmentQueueEntries?.length ?? 0) / 100);
     return [...Array(numberOfPages).keys()].map((x) => {
       return (x + 1) * 100;
     });

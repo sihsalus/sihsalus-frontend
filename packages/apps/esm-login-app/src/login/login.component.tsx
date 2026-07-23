@@ -67,8 +67,8 @@ function useBuildInfo(): BuildInfo {
 }
 
 // t('invalidCredentials', 'Invalid username or password')
-// t('accountLocked', 'Account temporarily locked')
-// t('accountLockedDetail', 'Your account was locked after several failed attempts. Wait about {{minutes}} minutes and try again, or ask an administrator to unlock it.')
+// t('accountLocked', 'Too many failed attempts')
+// t('accountLockedDetail', 'After {{attempts}} failed attempts your account is temporarily locked for about {{minutes}} minutes. Wait and try again, or ask an administrator to unlock it.')
 // t('serverUnavailable', 'The authentication server is not responding. Please try again later.')
 // t('sessionEndpointNotFound', 'The login service is not available at this backend address. Please contact support or try a different environment.')
 const loginErrorFallbacks = {
@@ -79,45 +79,12 @@ const loginErrorFallbacks = {
     'The login service is not available at this backend address. Please contact support or try a different environment.',
 } satisfies Record<LoginErrorKey, string>;
 
-/**
- * OpenMRS core locks an account after `security.allowedFailedLoginsBeforeLockout`
- * failed attempts (default 7) and throws a distinct ContextAuthenticationException
- * ("Invalid number of connection attempts. Please try again later.") while the
- * lockout window (`security.unlockAccountAfter`, default 5 min) is active. That
- * message rides in the body of the openmrsFetch error; its exact field varies, so
- * we probe the common shapes.
- */
-function getServerErrorMessage(error: unknown): string {
-  if (!error || typeof error !== 'object') {
-    return typeof error === 'string' ? error : '';
-  }
-  const candidate = error as {
-    message?: unknown;
-    responseBody?: { error?: { message?: unknown }; message?: unknown };
-    response?: { statusText?: unknown };
-  };
-  const parts = [
-    candidate.responseBody?.error?.message,
-    candidate.responseBody?.message,
-    candidate.message,
-    candidate.response?.statusText,
-  ];
-  return parts.filter((part) => typeof part === 'string').join(' ');
-}
-
-// Matches the OpenMRS lockout message across versions/locales without matching the
-// generic "invalid username or password". Deliberately narrow: keys on the
-// "connection attempts"/"try again later"/"locked" phrasing, not on "invalid".
-const accountLockedPattern =
-  /number of connection attempts|too many .*attempts|account .*lock|locked|try again later|intentos de conexi[oó]n|cuenta .*bloque|bloque/i;
-
 function getLoginErrorKey(error: unknown): LoginErrorKey {
   const session = (error as { session?: { backendUnavailable?: boolean } })?.session;
   const nestedError = (error as { error?: unknown })?.error;
   const errorToInspect = nestedError ?? error;
   const status = (errorToInspect as { response?: { status?: number } })?.response?.status;
   const message = errorToInspect instanceof Error ? errorToInspect.message : String(errorToInspect ?? '');
-  const serverMessage = getServerErrorMessage(errorToInspect);
 
   if (session?.backendUnavailable) {
     return 'serverUnavailable';
@@ -129,12 +96,6 @@ function getLoginErrorKey(error: unknown): LoginErrorKey {
 
   if (status >= 500 || /failed to fetch|gateway timeout|status of 0|load failed|network/i.test(message)) {
     return 'serverUnavailable';
-  }
-
-  // A locked account is a 401 like bad credentials, so it can only be told apart
-  // by the backend message; check it before falling through to invalidCredentials.
-  if (accountLockedPattern.test(serverMessage)) {
-    return 'accountLocked';
   }
 
   return 'invalidCredentials';
@@ -161,6 +122,13 @@ const Login: React.FC = () => {
 
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  // OpenMRS does not surface the lockout reason over REST: a locked account and a
+  // wrong password both return `200 {authenticated:false}` with no message (verified
+  // against the backend). So we can't *detect* a lockout — we track consecutive
+  // failures per username and, once they reach the configured threshold, proactively
+  // explain the lockout policy instead of the misleading "invalid credentials".
+  const failedAttemptsRef = useRef(0);
+  const lastAttemptedUserRef = useRef('');
   const [password, setPassword] = useState('');
   const [passwordInvalid, setPasswordInvalid] = useState(false);
   const [activeView, setActiveView] = useState<LoginView>('login');
@@ -302,6 +270,35 @@ const Login: React.FC = () => {
         return false;
       }
 
+      // Reset the failure streak when the attempted username changes.
+      if (lastAttemptedUserRef.current !== currentUsername) {
+        lastAttemptedUserRef.current = currentUsername;
+        failedAttemptsRef.current = 0;
+      }
+
+      // A credential failure becomes the lockout guidance once the streak reaches the
+      // configured threshold (mirror of the backend `allowedFailedLoginsBeforeLockout`).
+      // Transport errors (server/endpoint) are surfaced as-is.
+      const resolveFailureKey = (baseKey: LoginErrorKey): LoginErrorKey => {
+        // Only credential failures count toward a lockout; a server/endpoint outage
+        // is not a failed attempt and must not inflate the streak.
+        if (baseKey !== 'invalidCredentials') {
+          return baseKey;
+        }
+        failedAttemptsRef.current += 1;
+        return failedAttemptsRef.current >= accountLockout.failedAttemptsBeforeLockout ? 'accountLocked' : baseKey;
+      };
+
+      const clearInputsAfterFailure = () => {
+        setUsername('');
+        setPassword('');
+        setUsernameInvalid(false);
+        setPasswordInvalid(false);
+        if (showPasswordOnSeparateScreen) {
+          setShowPasswordField(false);
+        }
+      };
+
       try {
         setIsLoggingIn(true);
         const sessionStore = await refetchCurrentUser(currentUsername, currentPassword);
@@ -309,6 +306,7 @@ const Login: React.FC = () => {
         const authenticated = sessionStore?.session?.authenticated;
 
         if (authenticated) {
+          failedAttemptsRef.current = 0;
           if (session.sessionLocation) {
             let to = loginLinks?.loginSuccess || '/home';
             if (location?.state?.referrer) {
@@ -324,26 +322,14 @@ const Login: React.FC = () => {
             navigate('/login/location', { state: location.state });
           }
         } else {
-          setErrorMessage(getLoginErrorKey({ session }));
-          setUsername('');
-          setPassword('');
-          setUsernameInvalid(false);
-          setPasswordInvalid(false);
-          if (showPasswordOnSeparateScreen) {
-            setShowPasswordField(false);
-          }
+          setErrorMessage(resolveFailureKey(getLoginErrorKey({ session })));
+          clearInputsAfterFailure();
         }
 
         return true;
       } catch (error: unknown) {
-        setErrorMessage(getLoginErrorKey(error));
-        setUsername('');
-        setPassword('');
-        setUsernameInvalid(false);
-        setPasswordInvalid(false);
-        if (showPasswordOnSeparateScreen) {
-          setShowPasswordField(false);
-        }
+        setErrorMessage(resolveFailureKey(getLoginErrorKey(error)));
+        clearInputsAfterFailure();
       } finally {
         setIsLoggingIn(false);
       }
@@ -357,6 +343,7 @@ const Login: React.FC = () => {
       loginLinks,
       location,
       continueLogin,
+      accountLockout.failedAttemptsBeforeLockout,
     ],
   );
 
@@ -523,10 +510,13 @@ const Login: React.FC = () => {
                           kind="warning"
                           subtitle={t(
                             'accountLockedDetail',
-                            'Your account was locked after several failed attempts. Wait about {{minutes}} minutes and try again, or ask an administrator to unlock it.',
-                            { minutes: accountLockout.retryAfterMinutes },
+                            'After {{attempts}} failed attempts your account is temporarily locked for about {{minutes}} minutes. Wait and try again, or ask an administrator to unlock it.',
+                            {
+                              attempts: accountLockout.failedAttemptsBeforeLockout,
+                              minutes: accountLockout.retryAfterMinutes,
+                            },
                           )}
-                          title={t('accountLocked', 'Account temporarily locked')}
+                          title={t('accountLocked', 'Too many failed attempts')}
                           onClick={() => setErrorMessage('')}
                         />
                       </div>

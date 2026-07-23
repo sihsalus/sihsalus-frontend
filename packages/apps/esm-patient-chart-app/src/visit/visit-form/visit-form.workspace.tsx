@@ -40,7 +40,6 @@ import {
   createOfflineVisitForPatient,
   type DefaultPatientWorkspaceProps,
   type PatientWorkspace2DefinitionProps,
-  safeCopyFinanciadorToVisit,
   time12HourFormatRegex,
   useActivePatientEnrollment,
 } from '@openmrs/esm-patient-common-lib';
@@ -945,12 +944,23 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             minutes,
             currentSeconds,
           );
+      const submittedVisitAttributes = Object.entries(visitAttributes)
+        .filter(([attributeType, value]) => Boolean(attributeType && value))
+        .map(([attributeType, value]) => ({ attributeType, value }));
+      const initialVisitAttributes = [...(additionalVisitAttributes ?? [])];
+      if (!visitToEdit) {
+        for (const attribute of submittedVisitAttributes) {
+          if (!initialVisitAttributes.some(({ attributeType }) => attributeType === attribute.attributeType)) {
+            initialVisitAttributes.push(attribute);
+          }
+        }
+      }
       const payload: NewVisitPayload = {
         patient: patientUuid,
         startDatetime: toDateObjectStrict(toOmrsIsoString(startDatetime)),
         visitType: visitType,
         location: visitLocation?.uuid,
-        attributes: additionalVisitAttributes?.length ? [...additionalVisitAttributes] : undefined,
+        attributes: initialVisitAttributes.length ? initialVisitAttributes : undefined,
       };
 
       if (
@@ -1069,15 +1079,13 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
             setIsVisitSaved(true);
             setPersistedVisitPendingPostSubmit(visit);
+          }
 
-            // Copia el financiador persona→visita (plan de seguros SIS, F2).
-            // Solo al INICIAR una consulta (no al editarla, para no pisar
-            // correcciones manuales de Admisión). Fire-and-forget: es
-            // idempotente y nunca bloquea el inicio; un fallo se registra en
-            // consola y Admisión puede completar el dato después.
-            if (!visitToEdit) {
-              void safeCopyFinanciadorToVisit({ patientUuid, visitUuid: visit.uuid });
+          if (!visitToEdit) {
+            for (const { attributeType } of submittedVisitAttributes) {
+              completedPostSubmitActions.current.add(`visit-attribute:${attributeType}`);
             }
+            completedPostSubmitActions.current.add('visit-attributes');
           }
 
           if (!completedPostSubmitActions.current.has('visit-attributes')) {

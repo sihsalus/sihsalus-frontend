@@ -1,6 +1,5 @@
 import { Button, ButtonSet, Form, InlineNotification, Row } from '@carbon/react';
 import { ExtensionSlot, isDesktop, useLayoutType, usePatient, type Visit } from '@openmrs/esm-framework';
-import { safeCopyFinanciadorToVisit } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -59,14 +58,6 @@ const ExistingVisitForm: React.FC<ExistingVisitFormProps> = ({
         }
 
         await callbacks.onVisitCreatedOrUpdated(visit);
-
-        // Al encolar sobre una visita EXISTENTE, sincroniza el financiador
-        // persona→visita (plan de seguros SIS, F2) para que visitas antiguas
-        // también tengan el atributo. Idempotente y fire-and-forget: nunca
-        // bloquea el encolado.
-        if (visit.patient?.uuid) {
-          void safeCopyFinanciadorToVisit({ patientUuid: visit.patient.uuid, visitUuid: visit.uuid });
-        }
 
         closeWorkspace();
         mutateQueueEntries();

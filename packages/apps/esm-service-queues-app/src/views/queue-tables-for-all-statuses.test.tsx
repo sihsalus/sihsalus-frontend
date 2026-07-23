@@ -178,7 +178,7 @@ describe('QueueTablesForAllStatuses queue location semantics', () => {
         isLoading: false,
         error: undefined,
       },
-      expectedText: 'This queue location is not available',
+      expectedText: 'This queue UPSS is not available',
       expectedBusy: false,
     },
   ])('fails closed with a visible reason when $scenario', ({ result, expectedText, expectedBusy }) => {

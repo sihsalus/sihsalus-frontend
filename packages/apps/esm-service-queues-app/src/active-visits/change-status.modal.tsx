@@ -67,7 +67,7 @@ const ChangeStatusModal: React.FC<ChangeStatusModalProps> = ({ queueEntry, close
   const schema = useMemo(
     () =>
       z.object({
-        location: z.string({ required_error: t('queueLocationRequired', 'Queue location is required') }),
+        location: z.string({ required_error: t('queueLocationRequired', 'Queue UPSS is required') }),
         priority: z.string({ required_error: t('priorityIsRequired', 'Priority is required') }),
         service: z.string({ required_error: t('serviceIsRequired', 'Service is required') }),
         status: z.string({ required_error: t('statusIsRequired', 'Status is required') }),
@@ -153,13 +153,13 @@ const ChangeStatusModal: React.FC<ChangeStatusModalProps> = ({ queueEntry, close
             </div>
             <Stack gap={4}>
               <section>
-                <div className={styles.sectionTitle}>{t('queueLocation', 'Queue location')}</div>
+                <div className={styles.sectionTitle}>{t('queueLocation', 'Queue UPSS')}</div>
                 <Controller
                   name="location"
                   control={control}
                   render={({ field: { onChange, value } }) => (
                     <Select
-                      labelText={t('selectQueueLocation', 'Select a queue location')}
+                      labelText={t('selectQueueLocation', 'Select a queue UPSS')}
                       id="location"
                       invalid={!!errors.location}
                       invalidText={errors.location?.message}
@@ -169,7 +169,7 @@ const ChangeStatusModal: React.FC<ChangeStatusModalProps> = ({ queueEntry, close
                       }}
                     >
                       {!getValues()?.location && (
-                        <SelectItem text={t('selectQueueLocation', 'Select a queue location')} value="" />
+                        <SelectItem text={t('selectQueueLocation', 'Select a queue UPSS')} value="" />
                       )}
                       {queueLocations?.length > 0 &&
                         queueLocations.map((location) => (

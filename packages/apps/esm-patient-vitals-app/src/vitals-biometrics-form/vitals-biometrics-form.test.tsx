@@ -614,7 +614,7 @@ describe('VitalsBiometricsForm', () => {
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: false,
       kind: 'error',
-      subtitle: 'Could not determine the active visit location.',
+      subtitle: 'Could not determine the active visit UPSS.',
       title: 'Error saving vitals and biometrics',
     });
   });

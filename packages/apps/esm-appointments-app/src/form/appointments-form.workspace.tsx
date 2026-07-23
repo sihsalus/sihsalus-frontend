@@ -346,7 +346,7 @@ const AppointmentsForm: React.FC<
           message: translateFrom(moduleName, 'durationErrorMessage', 'Duration should be greater than zero'),
         }),
       location: z.string().refine((value) => value !== '', {
-        message: translateFrom(moduleName, 'locationRequired', 'Location is required'),
+        message: translateFrom(moduleName, 'locationRequired', 'UPSS is required'),
       }),
       provider: z.string().refine((value) => value !== '', {
         message: translateFrom(moduleName, 'providerRequired', 'Provider is required'),
@@ -944,7 +944,7 @@ const AppointmentsForm: React.FC<
             />
           )}
           <section className={styles.formGroup}>
-            <span className={styles.heading}>{t('location', 'Location')}</span>
+            <span className={styles.heading}>{t('location', 'UPSS')}</span>
             <ResponsiveWrapper>
               <Controller
                 name="location"
@@ -955,13 +955,13 @@ const AppointmentsForm: React.FC<
                     id="location"
                     invalid={!!errors?.location}
                     invalidText={errors?.location?.message}
-                    labelText={<RequiredFieldLabel label={t('selectALocation', 'Select a location')} />}
+                    labelText={<RequiredFieldLabel label={t('selectALocation', 'Select a UPSS')} />}
                     onChange={onChange}
                     onBlur={onBlur}
                     ref={ref}
                     value={value}
                   >
-                    <SelectItem text={t('chooseLocation', 'Choose a location')} value="" />
+                    <SelectItem text={t('chooseLocation', 'Choose a UPSS')} value="" />
                     {locations?.length > 0 &&
                       locations.map((location) => (
                         <SelectItem key={location.uuid} text={location.display} value={location.uuid}>
@@ -1529,7 +1529,7 @@ function getAppointmentValidationMessages(
   t: (key: string, fallback: string) => string,
 ) {
   const labels: Record<string, string> = {
-    location: t('location', 'Location'),
+    location: t('location', 'UPSS'),
     selectedService: t('service', 'Servicio'),
     appointmentType: t('appointmentType', 'Tipo de cita'),
     provider: t('responsibleProvider', 'Personal de salud responsable'),

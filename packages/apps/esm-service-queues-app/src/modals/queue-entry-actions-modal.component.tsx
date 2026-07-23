@@ -333,7 +333,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
                 {/* Read this issue description for why we're using 8 locations as the cut off https://openmrs.atlassian.net/jira/software/c/projects/O3/issues/O3-4131 */}
                 {queues.length <= 8 ? (
                   <RadioButtonGroup
-                    legendText={t('serviceLocation', 'Service location')}
+                    legendText={t('serviceLocation', 'Service UPSS')}
                     className={styles.radioButtonGroup}
                     id="queue"
                     name="queue"
@@ -350,7 +350,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
                 ) : (
                   <ComboBox<Queue>
                     id="queue"
-                    titleText={t('serviceLocation', 'Service location')}
+                    titleText={t('serviceLocation', 'Service UPSS')}
                     selectedItem={selectedQueue}
                     items={queues}
                     itemToString={getQueueDisplayText}

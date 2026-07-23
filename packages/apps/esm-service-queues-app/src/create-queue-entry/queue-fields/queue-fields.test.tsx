@@ -86,7 +86,7 @@ describe('QueueFields', () => {
     let callbacks: QueueFieldsCallbacks | undefined;
     render(<QueueFields setCallbacks={(value) => (callbacks = value)} />);
 
-    expect(screen.getByLabelText('Select a queue location')).toBeInTheDocument();
+    expect(screen.getByLabelText('Select a queue UPSS')).toBeInTheDocument();
     expect(screen.getByLabelText('Select a service')).toBeInTheDocument();
 
     const queueUuid = 'e2ec9cf0-ec38-4d2b-af6c-59c82fa30b90';
@@ -175,7 +175,7 @@ describe('QueueFields', () => {
 
     render(<QueueFields currentQueueLocationUuid="1" setCallbacks={(value) => (callbacks = value)} />);
 
-    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Queue location' })).toHaveValue('Location 1'));
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Queue UPSS' })).toHaveValue('Location 1'));
 
     const queueUuid = 'e2ec9cf0-ec38-4d2b-af6c-59c82fa30b90';
     await user.selectOptions(screen.getByLabelText('Select a service'), queueUuid);
@@ -210,7 +210,7 @@ describe('QueueFields', () => {
 
     render(<QueueFields setCallbacks={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByLabelText('Select a queue location')).toHaveValue('1'));
+    await waitFor(() => expect(screen.getByLabelText('Select a queue UPSS')).toHaveValue('1'));
   });
 
   it('hides obstetric locations for male patients', () => {
@@ -228,21 +228,21 @@ describe('QueueFields', () => {
       </AddPatientToQueueContext.Provider>,
     );
 
-    const location = await screen.findByRole('textbox', { name: 'Queue location' });
+    const location = await screen.findByRole('textbox', { name: 'Queue UPSS' });
     const service = await screen.findByRole('textbox', { name: 'Service' });
 
     expect(location).toHaveValue('Location 1');
     expect(location).toHaveAttribute('readonly');
     expect(service).toHaveValue('Service 1');
     expect(service).toHaveAttribute('readonly');
-    expect(screen.queryByRole('combobox', { name: 'Select a queue location' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Select a queue UPSS' })).not.toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: 'Select a service' })).not.toBeInTheDocument();
   });
 
   it('shows a contextual error instead of a stale fixed Queue Location UUID', () => {
     render(<QueueFields currentQueueLocationUuid="missing-location" setCallbacks={vi.fn()} />);
 
-    expect(screen.getByText('This queue location is not available')).toBeInTheDocument();
+    expect(screen.getByText('This queue UPSS is not available')).toBeInTheDocument();
     expect(screen.queryByDisplayValue('missing-location')).not.toBeInTheDocument();
   });
 
@@ -256,7 +256,7 @@ describe('QueueFields', () => {
       />,
     );
 
-    expect(screen.getByText('The selected service is not available at this location')).toBeInTheDocument();
+    expect(screen.getByText('The selected service is not available at this UPSS')).toBeInTheDocument();
     expect(screen.queryByDisplayValue('missing-service')).not.toBeInTheDocument();
     expect(screen.queryByText('No priorities available')).not.toBeInTheDocument();
     await waitFor(() => expect(callbacks?.onBeforeVisitSave()).toBe(false));
@@ -285,7 +285,7 @@ describe('QueueFields', () => {
     await user.selectOptions(service, queues[0].uuid);
     expect(service).toHaveValue(queues[0].uuid);
 
-    await user.selectOptions(screen.getByLabelText('Select a queue location'), 'obstetric-location');
+    await user.selectOptions(screen.getByLabelText('Select a queue UPSS'), 'obstetric-location');
     await waitFor(() => expect(service).toHaveValue(''));
   });
 
@@ -298,8 +298,8 @@ describe('QueueFields', () => {
 
     render(<QueueFields currentQueueLocationUuid="obstetric-location" setCallbacks={vi.fn()} />);
 
-    expect(await screen.findByRole('textbox', { name: 'Queue location' })).toHaveValue('UPSS - CENTRO OBSTÉTRICO');
-    expect(screen.queryByRole('combobox', { name: 'Select a queue location' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('textbox', { name: 'Queue UPSS' })).toHaveValue('UPSS - CENTRO OBSTÉTRICO');
+    expect(screen.queryByRole('combobox', { name: 'Select a queue UPSS' })).not.toBeInTheDocument();
   });
 
   it('requires a workflow context when the user cannot select queue locations', async () => {
@@ -311,8 +311,8 @@ describe('QueueFields', () => {
 
     render(<QueueFields setCallbacks={(value) => (callbacks = value)} />);
 
-    expect(screen.getByText('A queue location is required for this workflow')).toBeInTheDocument();
-    expect(screen.queryByRole('combobox', { name: 'Select a queue location' })).not.toBeInTheDocument();
+    expect(screen.getByText('A queue UPSS is required for this workflow')).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Select a queue UPSS' })).not.toBeInTheDocument();
     await waitFor(() => expect(callbacks?.onBeforeVisitSave()).toBe(false));
   });
 
@@ -327,7 +327,7 @@ describe('QueueFields', () => {
       />,
     );
 
-    expect(screen.getByText('The selected service is not available at this location')).toBeInTheDocument();
+    expect(screen.getByText('The selected service is not available at this UPSS')).toBeInTheDocument();
     await waitFor(() => expect(callbacks?.onBeforeVisitSave()).toBe(false));
   });
 
@@ -340,8 +340,8 @@ describe('QueueFields', () => {
 
     render(<QueueFields setCallbacks={vi.fn()} />);
 
-    expect(screen.getByText('Queue locations could not be loaded')).toBeInTheDocument();
-    expect(screen.queryByText('No queue locations are configured')).not.toBeInTheDocument();
+    expect(screen.getByText('Queue UPSS could not be loaded')).toBeInTheDocument();
+    expect(screen.queryByText('No queue UPSS are configured')).not.toBeInTheDocument();
   });
 
   it('shows when no queue locations are configured', () => {
@@ -349,8 +349,8 @@ describe('QueueFields', () => {
 
     render(<QueueFields setCallbacks={vi.fn()} />);
 
-    expect(screen.getByText('No queue locations are configured')).toBeInTheDocument();
-    expect(screen.queryByText('Queue locations could not be loaded')).not.toBeInTheDocument();
+    expect(screen.getByText('No queue UPSS are configured')).toBeInTheDocument();
+    expect(screen.queryByText('Queue UPSS could not be loaded')).not.toBeInTheDocument();
   });
 
   it('distinguishes a services loading failure from missing configuration', () => {
@@ -370,7 +370,7 @@ describe('QueueFields', () => {
     const user = userEvent.setup();
     render(<QueueFields setCallbacks={vi.fn()} />);
 
-    const queueLocation = screen.getByRole('combobox', { name: 'Select a queue location' });
+    const queueLocation = screen.getByRole('combobox', { name: 'Select a queue UPSS' });
     const service = screen.getByRole('combobox', { name: 'Select a service' });
     expect(queueLocation).toBeRequired();
     expect(queueLocation).toHaveAttribute('aria-required', 'true');

@@ -75,7 +75,7 @@ export function useEmergencyVisit() {
         if (!emergencyLocationUuid) {
           showSnackbar({
             title: t('errorCreatingVisit', 'Error al crear visita'),
-            subtitle: t('emergencyLocationNotConfigured', 'No se configuró la ubicación operativa de emergencia.'),
+            subtitle: t('emergencyLocationNotConfigured', 'No se configuró la UPSS operativa de emergencia.'),
             kind: 'error',
           });
           return null;

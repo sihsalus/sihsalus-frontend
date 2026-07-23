@@ -161,14 +161,14 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
           <div className={styles.errorContainer}>
             <InlineNotification
               kind="error"
-              title={t('failedToLoadLocations', 'Failed to load locations')}
+              title={t('failedToLoadLocations', 'Failed to load UPSS')}
               hideCloseButton
             />
           </div>
         ) : (
           shouldShowLocationDropdown && (
             <Dropdown
-              aria-label={t('selectQueueLocation', 'Select a queue location')}
+              aria-label={t('selectQueueLocation', 'Select a queue UPSS')}
               className={styles.dropdown}
               id="queueLocationDropdown"
               label={selectedQueueLocationName ?? t('all', 'All')}
@@ -176,7 +176,7 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
                 queueLocations.length !== 1 ? [{ id: 'all', name: t('all', 'All') }, ...queueLocations] : queueLocations
               }
               itemToString={(item: QueueLocationOption | null) => item?.name ?? ''}
-              titleText={t('location', 'Location')}
+              titleText={t('location', 'UPSS')}
               type="inline"
               onChange={handleQueueLocationChange}
             />

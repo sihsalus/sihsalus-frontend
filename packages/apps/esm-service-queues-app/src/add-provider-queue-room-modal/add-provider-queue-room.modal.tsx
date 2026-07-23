@@ -49,10 +49,10 @@ const createProviderQueueRoomSchema = (t: TFunction) =>
   z.object({
     queueLocationUuid: z
       .string({
-        required_error: t('queueLocationIsRequired', 'Queue location is required'),
+        required_error: t('queueLocationIsRequired', 'Queue UPSS is required'),
       })
       .trim()
-      .min(1, t('queueLocationIsRequired', 'Queue location is required')),
+      .min(1, t('queueLocationIsRequired', 'Queue UPSS is required')),
     queueProviderMapUuid: z.string(),
     queueRoomUuid: z
       .string({
@@ -185,14 +185,14 @@ const AddProviderQueueRoomModal: React.FC<AddProviderQueueRoomModalProps> = ({ c
                 render={({ field }) => (
                   <Dropdown
                     {...field}
-                    aria-label={t('queueLocation', 'Queue location')}
+                    aria-label={t('queueLocation', 'Queue UPSS')}
                     id="queueLocation"
                     initialSelectedItem={queueLocations?.find((location) => location.id === selectedQueueLocationUuid)}
                     invalid={!!errors.queueLocationUuid}
                     invalidText={errors.queueLocationUuid?.message}
                     items={queueLocations ?? []}
                     itemToString={(item) => item?.name ?? ''}
-                    label={t('queueLocation', 'Queue location')}
+                    label={t('queueLocation', 'Queue UPSS')}
                     onChange={(e) => {
                       if (!e.selectedItem) {
                         return;
@@ -200,7 +200,7 @@ const AddProviderQueueRoomModal: React.FC<AddProviderQueueRoomModalProps> = ({ c
                       field.onChange(e.selectedItem?.id);
                       handleQueueLocationChange(e);
                     }}
-                    titleText={t('queueLocation', 'Queue location')}
+                    titleText={t('queueLocation', 'Queue UPSS')}
                   />
                 )}
               />
@@ -279,7 +279,7 @@ const AddProviderQueueRoomModal: React.FC<AddProviderQueueRoomModalProps> = ({ c
                     checked={Boolean(field.value)}
                     className={styles.checkbox}
                     id="permanentLocation"
-                    labelText={t('retainLocation', 'Retain location')}
+                    labelText={t('retainLocation', 'Retain UPSS')}
                     onChange={(_, { checked }) => {
                       field.onChange(checked);
                       handleRetainLocation(checked);

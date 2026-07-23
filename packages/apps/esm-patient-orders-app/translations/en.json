@@ -1,6 +1,6 @@
 {
   "actionsMenu": "Actions menu",
-  "activeVisitLocationRequired": "The active visit must have an operational location to make orders",
+  "activeVisitLocationRequired": "The active visit must have an operational UPSS to make orders",
   "activeVisitRequired": "An active visit is required to make orders",
   "add": "Add",
   "additionalInstructions": "Additional instructions",

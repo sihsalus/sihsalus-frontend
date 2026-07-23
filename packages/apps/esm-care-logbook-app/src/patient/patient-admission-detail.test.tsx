@@ -113,7 +113,9 @@ describe('PatientAdmissionDetail', () => {
 
     expect(screen.getByTestId('admission-history-section')).toBeInTheDocument();
     expect(screen.getByText(/visit\/encounter — datos clínicos/i)).toBeInTheDocument();
-    expect(screen.getAllByRole('columnheader', { name: 'UPSS/servicio' })).toHaveLength(2);
+    expect(screen.getByRole('columnheader', { name: 'Tipo de visita' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Servicio' })).toBeInTheDocument();
+    expect(screen.getAllByRole('columnheader', { name: 'UPSS' })).toHaveLength(2);
     expect(screen.getByRole('cell', { name: 'Consulta externa' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Admision Central' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Activa' })).toBeInTheDocument();

@@ -28,7 +28,7 @@ const PastVisitOverview: React.FC<DefaultPatientWorkspaceProps> = ({ patientUuid
     () => [
       { key: 'startDate', header: t('startDate', 'Start date') },
       { key: 'visitType', header: t('type', 'Type') },
-      { key: 'location', header: t('location', 'Location') },
+      { key: 'location', header: t('location', 'UPSS') },
       { key: 'endDate', header: t('endDate_title', 'End date'), colSpan: 2 },
     ],
     [t],

@@ -113,10 +113,10 @@ describe('AddProviderQueueRoom', () => {
     expect(screen.getByRole('heading', { name: /add provider queue room/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: /queue location/i })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /queue UPSS/i })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /queue service/i })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /queue room/i })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /retain location/i })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /retain UPSS/i })).toBeInTheDocument();
   });
 
   it('should allow selecting a queue room from the dropdown', async () => {
@@ -134,7 +134,7 @@ describe('AddProviderQueueRoom', () => {
     const user = userEvent.setup();
     renderAddProviderQueueRoom();
 
-    const retainLocationCheckbox = screen.getByRole('checkbox', { name: /retain location/i });
+    const retainLocationCheckbox = screen.getByRole('checkbox', { name: /retain UPSS/i });
     await user.click(retainLocationCheckbox);
     expect(retainLocationCheckbox).toBeChecked();
   });
@@ -144,7 +144,7 @@ describe('AddProviderQueueRoom', () => {
     renderAddProviderQueueRoom();
 
     const submitButton = screen.getByRole('button', { name: /save/i });
-    const queueLocationDropdown = screen.getByRole('combobox', { name: /queue location/i });
+    const queueLocationDropdown = screen.getByRole('combobox', { name: /queue UPSS/i });
     const queueRoomDropdown = screen.getByRole('combobox', { name: /queue room/i });
     const queueServiceDropdown = screen.getByRole('combobox', { name: /queue service/i });
 

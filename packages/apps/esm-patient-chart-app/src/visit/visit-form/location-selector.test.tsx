@@ -39,7 +39,7 @@ describe('tests location selector', () => {
 
     renderLocationSelector();
 
-    expect(screen.getByText(/ubicación de la consulta/i)).toBeInTheDocument();
+    expect(screen.getByText(/UPSS de atención/i)).toBeInTheDocument();
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
     expect(screen.getByText('Inpatient Ward')).toBeInTheDocument();
   });
@@ -47,7 +47,7 @@ describe('tests location selector', () => {
   it('renders a combobox with options to pick from if disableChangingVisitLocation is falsy', () => {
     renderLocationSelector();
 
-    expect(screen.getByRole('combobox', { name: /select a location/i })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /select a UPSS/i })).toBeInTheDocument();
     expect(screen.queryByRole('paragraph')).not.toBeInTheDocument();
   });
 

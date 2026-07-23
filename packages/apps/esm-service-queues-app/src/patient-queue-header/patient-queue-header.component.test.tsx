@@ -183,7 +183,7 @@ describe('PatientQueueHeader service filter', () => {
 
     render(<PatientQueueHeader showFilters />);
 
-    expect(screen.getByRole('combobox', { name: /select a queue location/i })).toBeEnabled();
+    expect(screen.getByRole('combobox', { name: /select a queue UPSS/i })).toBeEnabled();
     expect(mockUseQueues).toHaveBeenCalledWith('other-location');
     expect(mockUpdateSelectedQueueLocationUuid).not.toHaveBeenCalled();
     expect(mockUpdateSelectedQueueLocationName).not.toHaveBeenCalled();
@@ -204,7 +204,7 @@ describe('PatientQueueHeader service filter', () => {
 
     render(<PatientQueueHeader showFilters />);
 
-    expect(screen.queryByRole('combobox', { name: /select a queue location/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /select a queue UPSS/i })).not.toBeInTheDocument();
     await waitFor(() => {
       expect(mockUpdateSelectedQueueLocationUuid).toHaveBeenCalledWith(null);
       expect(mockUpdateSelectedQueueLocationName).toHaveBeenCalledWith(null);
@@ -226,7 +226,7 @@ describe('PatientQueueHeader service filter', () => {
 
     render(<PatientQueueHeader showFilters />);
 
-    expect(screen.getByText('Failed to load locations')).toBeInTheDocument();
+    expect(screen.getByText('Failed to load UPSS')).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /select a service/i })).toBeDisabled();
     expect(mockUpdateSelectedQueueLocationUuid).not.toHaveBeenCalled();
     expect(mockUpdateSelectedQueueLocationName).not.toHaveBeenCalled();
@@ -245,7 +245,7 @@ describe('PatientQueueHeader service filter', () => {
 
     render(<PatientQueueHeader showFilters />);
 
-    expect(screen.getByRole('combobox', { name: /select a queue location/i })).toBeEnabled();
+    expect(screen.getByRole('combobox', { name: /select a queue UPSS/i })).toBeEnabled();
   });
 });
 

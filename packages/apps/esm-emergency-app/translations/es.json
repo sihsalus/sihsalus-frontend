@@ -85,7 +85,7 @@
   "emergencyDescription": "Paciente con riesgo vital o descompensación. Requiere evaluación prioritaria.",
   "emergencyDirectAttention": "Paciente enviado a atención inmediata",
   "emergencyDirectAttentionSubtitle": "Prioridad I — El triaje se puede completar durante la atención.",
-  "emergencyLocationNotConfigured": "No se configuró la ubicación operativa de emergencia.",
+  "emergencyLocationNotConfigured": "No se configuró la UPSS operativa de emergencia.",
   "emergencyModuleError": "Error en el módulo de emergencias",
   "emergencyNote": "Datos mínimos para emergencia. El perfil se completa después.",
   "emergencyPatients": "Pacientes en Emergencias",

@@ -59,7 +59,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ control, lockedLoca
 
   return (
     <section data-testid="combo">
-      <div className={styles.sectionTitle}>{`${t('visitLocation', 'Ubicación de la consulta')} *`}</div>
+      <div className={styles.sectionTitle}>{`${t('visitLocation', 'UPSS de atención')} *`}</div>
       <div className={classNames(styles.selectContainer, styles.sectionField)}>
         {!disableChangingVisitLocation ? (
           <Controller
@@ -67,7 +67,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ control, lockedLoca
             name="visitLocation"
             render={({ field: { onBlur, onChange, value } }) => (
               <ComboBox
-                aria-label={t('selectLocation', 'Select a location')}
+                aria-label={t('selectLocation', 'Select a UPSS')}
                 id="location"
                 invalid={!!errors.visitLocation?.uuid}
                 invalidText={t('required', 'Required')}
@@ -79,7 +79,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ control, lockedLoca
                 readOnly={disableChangingVisitLocation}
                 required
                 selectedItem={value ?? null}
-                titleText={t('selectLocation', 'Select a location')}
+                titleText={t('selectLocation', 'Select a UPSS')}
               />
             )}
           />

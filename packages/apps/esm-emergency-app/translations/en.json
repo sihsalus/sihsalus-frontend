@@ -85,7 +85,7 @@
   "emergencyDescription": "Patient at vital risk or decompensation. Requires priority evaluation.",
   "emergencyDirectAttention": "Patient sent for immediate care",
   "emergencyDirectAttentionSubtitle": "Priority I — Triage can be completed during care.",
-  "emergencyLocationNotConfigured": "The emergency operational location is not configured.",
+  "emergencyLocationNotConfigured": "The emergency operational UPSS is not configured.",
   "emergencyModuleError": "Emergency module error",
   "emergencyNote": "Minimum data for emergency. Profile can be completed later.",
   "emergencyPatients": "Emergency Patients",

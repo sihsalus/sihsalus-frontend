@@ -174,7 +174,7 @@ export default function AdmissionHome() {
       total: filteredAdmissions.length,
       active: filteredAdmissions.filter((admission) => admission.status === 'Activa').length,
       finished: filteredAdmissions.filter((admission) => admission.status === 'Finalizada').length,
-      services: new Set(filteredAdmissions.map((admission) => admission.service).filter(Boolean)).size,
+      visitTypes: new Set(filteredAdmissions.map((admission) => admission.service).filter(Boolean)).size,
     }),
     [filteredAdmissions],
   );
@@ -193,7 +193,8 @@ export default function AdmissionHome() {
       t('address', 'Dirección'),
       t('age', 'Edad'),
       t('sex', 'Sexo'),
-      t('service', 'Servicio'),
+      t('visitType', 'Tipo de visita'),
+      t('location', 'UPSS'),
       t('orderNumber', 'Número de orden'),
       t('communicationCondition', 'Condición comunicación'),
     ];
@@ -211,6 +212,7 @@ export default function AdmissionHome() {
       formatAgeWithUnit(admission.birthDate, admission.startDatetime),
       formatSex(admission.gender, sexLabels),
       admission.service,
+      admission.location,
       String(index + 1),
       admission.communicationCondition,
     ]);
@@ -281,11 +283,13 @@ export default function AdmissionHome() {
                 </div>
               </Tile>
               <Tile className={styles.summaryTile}>
-                <header className={styles.summaryTileHeader}>{t('reportedUpsServices', 'UPSS/servicios')}</header>
+                <header className={styles.summaryTileHeader}>
+                  {t('reportedVisitTypes', 'Tipos de visita reportados')}
+                </header>
                 <div className={styles.summaryTileDetails}>
-                  <div className={styles.summaryTileLabel}>{t('services', 'Servicios')}</div>
+                  <div className={styles.summaryTileLabel}>{t('visitTypes', 'Tipos de visita')}</div>
                   <div className={styles.summaryTileValue}>
-                    {isLoading ? <SkeletonText width="2rem" /> : error ? '—' : reportSummary.services}
+                    {isLoading ? <SkeletonText width="2rem" /> : error ? '—' : reportSummary.visitTypes}
                   </div>
                 </div>
               </Tile>
@@ -299,7 +303,7 @@ export default function AdmissionHome() {
                 id="admission-report-search"
                 labelText={t(
                   'searchAdmissions',
-                  'Buscar por paciente, documento, HCE, código temporal, seguro, responsable, servicio o ubicación',
+                  'Buscar por paciente, documento, HCE, código temporal, seguro, responsable, tipo de visita o UPSS',
                 )}
                 placeholder={t(
                   'searchAdmissionsPlaceholder',
@@ -344,7 +348,7 @@ export default function AdmissionHome() {
                 <div className={styles.tableSkeleton}>
                   <DataTableSkeleton
                     aria-label={t('loadingAdmissions', 'Cargando atenciones')}
-                    columnCount={15}
+                    columnCount={16}
                     rowCount={5}
                     role="progressbar"
                     zebra
@@ -368,6 +372,7 @@ export default function AdmissionHome() {
                         <col className={styles.ageColumn} />
                         <col className={styles.sexColumn} />
                         <col className={styles.serviceColumn} />
+                        <col className={styles.serviceColumn} />
                         <col className={styles.orderColumn} />
                         <col className={styles.communicationColumn} />
                       </colgroup>
@@ -385,7 +390,8 @@ export default function AdmissionHome() {
                           <TableHeader>{t('address', 'Dirección')}</TableHeader>
                           <TableHeader>{t('age', 'Edad')}</TableHeader>
                           <TableHeader>{t('sex', 'Sexo')}</TableHeader>
-                          <TableHeader>{t('service', 'Servicio')}</TableHeader>
+                          <TableHeader>{t('visitType', 'Tipo de visita')}</TableHeader>
+                          <TableHeader>{t('location', 'UPSS')}</TableHeader>
                           <TableHeader>{t('orderNumber', 'Número de orden')}</TableHeader>
                           <TableHeader>{t('communicationCondition', 'Condición comunicación')}</TableHeader>
                         </TableRow>
@@ -418,11 +424,10 @@ export default function AdmissionHome() {
                               )}
                             </TableCell>
                             <TableCell>{admission.address}</TableCell>
-                            <TableCell>
-                              {formatAgeWithUnit(admission.birthDate, admission.startDatetime)}
-                            </TableCell>
+                            <TableCell>{formatAgeWithUnit(admission.birthDate, admission.startDatetime)}</TableCell>
                             <TableCell>{formatSex(admission.gender, sexLabels)}</TableCell>
                             <TableCell>{admission.service}</TableCell>
+                            <TableCell>{admission.location}</TableCell>
                             <TableCell>{index + 1}</TableCell>
                             <TableCell>{admission.communicationCondition}</TableCell>
                           </TableRow>

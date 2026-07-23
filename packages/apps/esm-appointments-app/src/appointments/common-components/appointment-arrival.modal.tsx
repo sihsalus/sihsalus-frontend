@@ -103,7 +103,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         ),
         [ACTIVE_VISIT_LOCATION_MISMATCH]: t(
           'activeVisitLocationMismatch',
-          'La consulta activa pertenece a otra sede o servicio. Finalícela o regularícela antes de registrar la llegada.',
+          'La consulta activa pertenece a otra UPSS o servicio. Finalícela o regularícela antes de registrar la llegada.',
         ),
         [ACTIVE_VISIT_TYPE_MISMATCH]: t(
           'activeVisitTypeMismatch',
@@ -111,15 +111,15 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         ),
         [APPOINTMENT_LOCATION_MISSING]: t(
           'appointmentLocationMissing',
-          'La cita no tiene una ubicación válida. Regularice la cita antes de iniciar la atención.',
+          'La cita no tiene una UPSS válida. Regularice la cita antes de iniciar la atención.',
         ),
         [APPOINTMENT_ARRIVAL_RULE_AMBIGUOUS]: t(
           'appointmentArrivalRuleAmbiguous',
-          'Existe más de una regla de llegada para este servicio y ubicación. Corrija la configuración antes de registrar la llegada.',
+          'Existe más de una regla de llegada para este servicio y UPSS. Corrija la configuración antes de registrar la llegada.',
         ),
         [APPOINTMENT_ARRIVAL_RULE_MISSING]: t(
           'appointmentArrivalRuleMissing',
-          'No existe una regla de llegada configurada para el servicio y la ubicación de esta cita. Contacte al administrador antes de continuar.',
+          'No existe una regla de llegada configurada para el servicio y la UPSS de esta cita. Contacte al administrador antes de continuar.',
         ),
         [APPOINTMENT_ARRIVAL_RULE_INVALID]: t(
           'appointmentArrivalRuleInvalid',

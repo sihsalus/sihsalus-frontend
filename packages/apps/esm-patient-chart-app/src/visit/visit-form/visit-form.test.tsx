@@ -435,7 +435,7 @@ describe('Visit form', () => {
     expect(screen.getByRole('textbox', { name: /Fecha/i })).toBeRequired();
     expect(screen.getByRole('textbox', { name: /Hora/i })).toBeRequired();
     expect(screen.getByRole('combobox', { name: /Time Format/i })).toBeRequired();
-    expect(screen.getByRole('combobox', { name: /Select a location/i })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /Select a UPSS/i })).toBeInTheDocument();
     const visitType = screen.getByRole('combobox', { name: /tipo de atención/i });
     expect(visitType).toBeInTheDocument();
     await user.click(visitType);
@@ -449,7 +449,7 @@ describe('Visit form', () => {
 
     // Testing the location picker
     const combobox = screen.getByRole('combobox', {
-      name: /Select a location/i,
+      name: /Select a UPSS/i,
     });
     expect(screen.getByText(/Outpatient Visit/i)).toBeInTheDocument();
     expect(combobox).toHaveDisplayValue('Mosoriot');
@@ -481,7 +481,7 @@ describe('Visit form', () => {
     expect(screen.getByRole('button', { name: /Add patient to queue/i })).toBeInTheDocument();
 
     await selectVisitType(user);
-    await user.selectOptions(screen.getByRole('combobox', { name: /Select a location/i }), 'Inpatient Ward');
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
     await user.click(screen.getByRole('button', { name: /Add patient to queue/i }));
 
     await waitFor(() => expect(mockSaveVisit).toHaveBeenCalledTimes(1));
@@ -519,7 +519,7 @@ describe('Visit form', () => {
 
     const saveButton = screen.getByRole('button', { name: /start visit/i });
     const locationPicker = screen.getByRole('combobox', {
-      name: /select a location/i,
+      name: /select a UPSS/i,
     });
     await user.selectOptions(locationPicker, 'Inpatient Ward');
     await user.click(saveButton);
@@ -539,7 +539,7 @@ describe('Visit form', () => {
     const timeInput = screen.getByRole('textbox', { name: /hora/i });
     const amPmSelect = screen.getByRole('combobox', { name: /time format/i });
     const locationPicker = screen.getByRole('combobox', {
-      name: /select a location/i,
+      name: /select a UPSS/i,
     });
     const futureTime = dayjs().add(1, 'hour');
 
@@ -560,7 +560,7 @@ describe('Visit form', () => {
 
     const dateInput = screen.getByRole('textbox', { name: /fecha/i });
     const locationPicker = screen.getByRole('combobox', {
-      name: /select a location/i,
+      name: /select a UPSS/i,
     });
     const dateBeforeBirthDate = '02/04/1986';
 
@@ -581,7 +581,7 @@ describe('Visit form', () => {
     const timeInput = screen.getByRole('textbox', { name: /hora/i });
     const amPmSelect = screen.getByRole('combobox', { name: /time format/i });
     const locationPicker = screen.getByRole('combobox', {
-      name: /select a location/i,
+      name: /select a UPSS/i,
     });
 
     fireEvent.change(timeInput, { target: { value: '0800' } });
@@ -608,7 +608,7 @@ describe('Visit form', () => {
 
     // Set location
     const locationPicker = screen.getByRole('combobox', {
-      name: /Select a location/i,
+      name: /Select a UPSS/i,
     });
     await user.selectOptions(locationPicker, 'Inpatient Ward');
 
@@ -645,7 +645,7 @@ describe('Visit form', () => {
 
     await selectVisitType(user);
     const locationPicker = screen.getByRole('combobox', {
-      name: /Select a location/i,
+      name: /Select a UPSS/i,
     });
     await user.selectOptions(locationPicker, 'Inpatient Ward');
     await user.click(screen.getByRole('button', { name: /Start visit/i }));
@@ -666,7 +666,7 @@ describe('Visit form', () => {
     render(React.createElement(StartVisitForm, { ...testProps, openedFrom: 'appointments-check-in' }));
 
     await selectVisitType(user);
-    await user.selectOptions(screen.getByRole('combobox', { name: /Select a location/i }), 'Inpatient Ward');
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
     await user.click(screen.getByRole('button', { name: /Start visit/i }));
 
     expect(mockSaveVisit).not.toHaveBeenCalled();
@@ -698,7 +698,7 @@ describe('Visit form', () => {
     ]);
     render(React.createElement(StartVisitForm, { ...testProps, openedFrom: 'appointments-check-in' }));
 
-    await user.selectOptions(screen.getByRole('combobox', { name: /Select a location/i }), 'Inpatient Ward');
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
     await user.click(screen.getByRole('button', { name: /Start visit/i }));
 
     expect(mockSaveVisit).not.toHaveBeenCalled();
@@ -831,7 +831,7 @@ describe('Visit form', () => {
 
     await user.click(screen.getByRole('button', { name: /Start visit/i }));
     const retryButton = await screen.findByRole('button', { name: /Reintentar registro|Retry registration/i });
-    expect(screen.queryByRole('combobox', { name: /Select a location/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /Select a UPSS/i })).not.toBeInTheDocument();
     expect(mockSaveVisit).toHaveBeenCalledTimes(1);
 
     await user.click(retryButton);
@@ -1031,13 +1031,13 @@ describe('Visit form', () => {
     );
 
     await selectVisitType(user);
-    await user.selectOptions(screen.getByRole('combobox', { name: /Select a location/i }), 'Inpatient Ward');
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
     await user.click(screen.getByRole('button', { name: /Start visit/i }));
 
     const retryButton = await screen.findByRole('button', { name: /Reintentar registro|Retry registration/i });
     const queueLocationPicker = screen.getByRole('combobox', { name: 'Queue location' });
     const queuePicker = screen.getByRole('combobox', { name: 'Queue service' });
-    expect(screen.getByRole('combobox', { name: /Select a location/i })).toBeDisabled();
+    expect(screen.getByRole('combobox', { name: /Select a UPSS/i })).toBeDisabled();
     expect(queueLocationPicker).toBeDisabled();
     expect(queuePicker).toBeDisabled();
     expect(mockSaveVisit).toHaveBeenCalledTimes(1);
@@ -1092,7 +1092,7 @@ describe('Visit form', () => {
     );
 
     await selectVisitType(user);
-    await user.selectOptions(screen.getByRole('combobox', { name: /Select a location/i }), 'Inpatient Ward');
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
     await user.click(screen.getByRole('button', { name: /Start visit/i }));
 
     const retryButton = await screen.findByRole('button', { name: /Reintentar registro|Retry registration/i });
@@ -1126,7 +1126,7 @@ describe('Visit form', () => {
       }),
     );
 
-    expect(screen.queryByRole('combobox', { name: /Select a location/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /Select a UPSS/i })).not.toBeInTheDocument();
     expect(screen.getByText(requiredVisitLocation.display)).toBeInTheDocument();
     expect(screen.getByText('HIV Return Visit')).toBeInTheDocument();
 
@@ -1154,7 +1154,7 @@ describe('Visit form', () => {
 
     // Set location
     const locationPicker = screen.getByRole('combobox', {
-      name: /Select a location/i,
+      name: /Select a UPSS/i,
     });
     await user.selectOptions(locationPicker, 'Inpatient Ward');
 
@@ -1256,7 +1256,7 @@ describe('Visit form', () => {
     await selectVisitType(user);
 
     const locationPicker = screen.getByRole('combobox', {
-      name: /Select a location/i,
+      name: /Select a UPSS/i,
     });
     await user.selectOptions(locationPicker, 'Inpatient Ward');
 
@@ -1326,7 +1326,7 @@ describe('Visit form', () => {
     await selectVisitType(user);
 
     const locationPicker = screen.getByRole('combobox', {
-      name: /Select a location/i,
+      name: /Select a UPSS/i,
     });
     fireEvent.change(locationPicker, { target: { value: mockLocations.data.results[1].uuid } });
 
@@ -1410,7 +1410,7 @@ describe('Visit form', () => {
     await selectVisitType(user);
     await user.selectOptions(
       screen.getByRole('combobox', {
-        name: /Select a location/i,
+        name: /Select a UPSS/i,
       }),
       'Inpatient Ward',
     );
@@ -1531,7 +1531,7 @@ describe('Visit form', () => {
     await selectVisitType(user);
     await user.selectOptions(
       screen.getByRole('combobox', {
-        name: /Select a location/i,
+        name: /Select a UPSS/i,
       }),
       'Inpatient Ward',
     );
@@ -1597,7 +1597,7 @@ describe('Visit form', () => {
 
     // Set location
     const locationPicker = screen.getByRole('combobox', {
-      name: /Select a location/i,
+      name: /Select a UPSS/i,
     });
     await user.selectOptions(locationPicker, 'Inpatient Ward');
 
@@ -1660,7 +1660,7 @@ describe('Visit form', () => {
 
     // Set location
     const locationPicker = screen.getByRole('combobox', {
-      name: /Select a location/i,
+      name: /Select a UPSS/i,
     });
     await user.selectOptions(locationPicker, 'Inpatient Ward');
 
@@ -1724,7 +1724,7 @@ describe('Visit form', () => {
 
     const saveButton = screen.getByRole('button', { name: /Start Visit/i });
     const locationPicker = screen.getByRole('combobox', {
-      name: /Select a location/i,
+      name: /Select a UPSS/i,
     });
     await user.selectOptions(locationPicker, 'Inpatient Ward');
 
@@ -1756,7 +1756,7 @@ describe('Visit form', () => {
 
     const saveButton = screen.getByRole('button', { name: /Start Visit/i });
     const locationPicker = screen.getByRole('combobox', {
-      name: /Select a location/i,
+      name: /Select a UPSS/i,
     });
     await user.selectOptions(locationPicker, 'Inpatient Ward');
 
@@ -1809,7 +1809,7 @@ describe('Visit form', () => {
 
     renderVisitForm();
     await selectVisitType(user);
-    await user.selectOptions(screen.getByRole('combobox', { name: /Select a location/i }), 'Inpatient Ward');
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
     await user.selectOptions(screen.getByRole('combobox', { name: 'Punctuality (optional)' }), 'On time');
     const insuranceNumberInput = screen.getByRole('textbox', {
       name: 'Insurance Policy Number (optional)',
@@ -1845,7 +1845,7 @@ describe('Visit form', () => {
 
     renderVisitForm();
     await selectVisitType(user);
-    await user.selectOptions(screen.getByRole('combobox', { name: /Select a location/i }), 'Inpatient Ward');
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
     await user.selectOptions(screen.getByRole('combobox', { name: 'Punctuality (optional)' }), 'On time');
     await user.click(screen.getByRole('button', { name: /Start Visit/i }));
 
@@ -1918,7 +1918,7 @@ describe('Visit form', () => {
 
     // Set location
     const locationPicker = screen.getByRole('combobox', {
-      name: /Select a location/i,
+      name: /Select a UPSS/i,
     });
     await user.selectOptions(locationPicker, 'Inpatient Ward');
     await user.click(saveButton);

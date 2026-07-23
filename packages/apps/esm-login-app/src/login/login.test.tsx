@@ -226,36 +226,35 @@ describe('Login', () => {
     expect(await screen.findByText(/The login service is not available at this backend address/i)).toBeInTheDocument();
   });
 
-  it('shows the account-locked warning instead of an invalid-credentials error when the backend reports a lockout', async () => {
-    mockLogin.mockRejectedValue({
-      loaded: false,
-      session: null,
-      error: {
-        response: { status: 401 },
-        responseBody: {
-          error: { message: 'Invalid number of connection attempts. Please try again later.' },
-        },
-      },
+  it('escalates to the lockout guidance after repeated failed attempts for the same user', async () => {
+    // OpenMRS returns 200 {authenticated:false} for both a wrong password and a
+    // locked account, so the component can only warn by counting consecutive
+    // failures. Lower the threshold to keep the test short.
+    mockUseConfig.mockReturnValue({
+      ...mockConfig,
+      accountLockout: { failedAttemptsBeforeLockout: 2, retryAfterMinutes: 5 },
     });
+    mockLogin.mockResolvedValue({ session: { authenticated: false } } as never);
 
-    renderWithRouter(
-      Login,
-      {},
-      {
-        route: '/login',
-      },
-    );
+    renderWithRouter(Login, {}, { route: '/login' });
     const user = userEvent.setup();
 
-    await user.type(screen.getByRole('textbox', { name: /Username/i }), 'admision');
-    await user.click(screen.getByRole('button', { name: /Continue/i }));
-    await screen.findByLabelText(/^password$/i);
-    await user.type(screen.getByLabelText(/^password$/i), 'correct-but-locked');
-    await user.click(screen.getByRole('button', { name: /log in/i }));
+    const submitBadPassword = async () => {
+      await user.type(screen.getByRole('textbox', { name: /Username/i }), 'admision');
+      await user.click(screen.getByRole('button', { name: /Continue/i }));
+      await screen.findByLabelText(/^password$/i);
+      await user.type(screen.getByLabelText(/^password$/i), 'wrong');
+      await user.click(screen.getByRole('button', { name: /log in/i }));
+    };
 
-    // The friendly lockout copy is shown...
-    expect(await screen.findByText(/locked after several failed attempts/i)).toBeInTheDocument();
-    // ...and NOT the misleading generic credentials error.
+    // First failure: generic credentials error, not the lockout warning yet.
+    await submitBadPassword();
+    expect(await screen.findByText(/invalid username or password/i)).toBeInTheDocument();
+    expect(screen.queryByText(/temporarily locked/i)).not.toBeInTheDocument();
+
+    // Second failure reaches the threshold: show the lockout guidance instead.
+    await submitBadPassword();
+    expect(await screen.findByText(/temporarily locked/i)).toBeInTheDocument();
     expect(screen.queryByText(/invalid username or password/i)).not.toBeInTheDocument();
   });
 

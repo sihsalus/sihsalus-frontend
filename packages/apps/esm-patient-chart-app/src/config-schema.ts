@@ -191,6 +191,11 @@ export const esmPatientChartSchema = {
         displayInThePatientBanner: true,
       },
       {
+        uuid: '5e13e902-2030-4f65-b9d5-9a4810c9a603',
+        required: false,
+        displayInThePatientBanner: true,
+      },
+      {
         uuid: '9b640334-69e7-49a8-bc8d-1a379742f2f1',
         required: false,
         displayInThePatientBanner: true,
@@ -285,6 +290,10 @@ export const esmPatientChartSchema = {
       {
         personAttributeTypeUuid: '374b130f-7457-476f-87b1-f182aa77c434',
         visitAttributeTypeUuid: 'aac48226-d143-4274-80e0-264db4e368ee',
+      },
+      {
+        personAttributeTypeUuid: '9b3df0a1-0c58-4f55-9868-9c38f1db1005',
+        visitAttributeTypeUuid: '5e13e902-2030-4f65-b9d5-9a4810c9a603',
       },
     ],
   },

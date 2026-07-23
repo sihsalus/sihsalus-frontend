@@ -1174,6 +1174,16 @@ describe('Visit form', () => {
     expect(mockSaveVisit).toHaveBeenCalledTimes(1);
     expect(mockSaveVisit).toHaveBeenCalledWith(
       expect.objectContaining({
+        attributes: expect.arrayContaining([
+          {
+            attributeType: visitAttributes.punctuality.uuid,
+            value: '66cdc0a1-aa19-4676-af51-80f66d78d9eb',
+          },
+          {
+            attributeType: visitAttributes.insurancePolicyNumber.uuid,
+            value: '183299',
+          },
+        ]),
         location: mockLocations.data.results[1].uuid,
         patient: mockPatient.id,
         visitType: 'some-uuid1',
@@ -1181,33 +1191,18 @@ describe('Visit form', () => {
       expect.any(Object),
     );
 
-    expect(mockCreateVisitAttribute).toHaveBeenCalledTimes(2);
-    expect(mockCreateVisitAttribute).toHaveBeenCalledWith(
-      visitUuid,
-      visitAttributes.punctuality.uuid,
-      '66cdc0a1-aa19-4676-af51-80f66d78d9eb',
-    );
-    expect(mockCreateVisitAttribute).toHaveBeenCalledWith(
-      visitUuid,
-      visitAttributes.insurancePolicyNumber.uuid,
-      '183299',
-    );
+    expect(mockCreateVisitAttribute).not.toHaveBeenCalled();
 
     expect(mockOnVisitCreatedOrUpdatedCallback).toHaveBeenCalled();
 
     expect(mockCloseWorkspace).toHaveBeenCalled();
 
-    expect(showSnackbar).toHaveBeenCalledTimes(2);
+    expect(showSnackbar).toHaveBeenCalledTimes(1);
     expect(showSnackbar).toHaveBeenCalledWith({
       isLowContrast: true,
       subtitle: expect.stringContaining('started successfully'),
       kind: 'success',
       title: 'Visit started',
-    });
-    expect(showSnackbar).toHaveBeenCalledWith({
-      isLowContrast: true,
-      title: expect.stringContaining('Additional visit information updated successfully'),
-      kind: 'success',
     });
   });
 
@@ -1338,12 +1333,19 @@ describe('Visit form', () => {
     fireEvent.click(screen.getByRole('button', { name: /Start visit/i }));
 
     await waitFor(() =>
-      expect(mockCreateVisitAttribute).toHaveBeenCalledWith(
-        visitUuid,
-        visitAttributes.insurancePolicyNumber.uuid,
-        'SIS-UPDATED',
+      expect(mockSaveVisit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          attributes: expect.arrayContaining([
+            {
+              attributeType: visitAttributes.insurancePolicyNumber.uuid,
+              value: 'SIS-UPDATED',
+            },
+          ]),
+        }),
+        expect.any(Object),
       ),
     );
+    expect(mockCreateVisitAttribute).not.toHaveBeenCalled();
   });
 
   it('prefills procedencia from the patient residence address when starting a visit', async () => {
@@ -1415,12 +1417,19 @@ describe('Visit form', () => {
     await user.click(screen.getByRole('button', { name: /Start visit/i }));
 
     await waitFor(() =>
-      expect(mockCreateVisitAttribute).toHaveBeenCalledWith(
-        visitUuid,
-        visitAttributes.provenance.uuid,
-        'San Rafael, Napo, Maynas, Loreto, PERU',
+      expect(mockSaveVisit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          attributes: expect.arrayContaining([
+            {
+              attributeType: visitAttributes.provenance.uuid,
+              value: 'San Rafael, Napo, Maynas, Loreto, PERU',
+            },
+          ]),
+        }),
+        expect.any(Object),
       ),
     );
+    expect(mockCreateVisitAttribute).not.toHaveBeenCalled();
   });
 
   it('keeps the saved procedencia value when editing an existing visit', async () => {
@@ -1529,12 +1538,19 @@ describe('Visit form', () => {
     await user.click(screen.getByRole('button', { name: /Start visit/i }));
 
     await waitFor(() =>
-      expect(mockCreateVisitAttribute).toHaveBeenCalledWith(
-        visitUuid,
-        visitAttributes.provenance.uuid,
-        'MAYNAS, PERÚ, SAN JUAN',
+      expect(mockSaveVisit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          attributes: expect.arrayContaining([
+            {
+              attributeType: visitAttributes.provenance.uuid,
+              value: 'MAYNAS, PERÚ, SAN JUAN',
+            },
+          ]),
+        }),
+        expect.any(Object),
       ),
     );
+    expect(mockCreateVisitAttribute).not.toHaveBeenCalled();
   });
 
   it('lets the user select procedencia from address hierarchy results', async () => {
@@ -1726,7 +1742,7 @@ describe('Visit form', () => {
     expect(mockCloseWorkspace).not.toHaveBeenCalled();
   });
 
-  it('renders an error message if there was a problem updating visit attributes after starting a new visit', async () => {
+  it('does not perform post-create attribute writes when starting a new visit', async () => {
     const user = userEvent.setup();
 
     mockCreateVisitAttribute.mockRejectedValue({
@@ -1757,33 +1773,39 @@ describe('Visit form', () => {
 
     await user.click(saveButton);
 
-    expect(showSnackbar).toHaveBeenCalledTimes(2);
-    expect(showSnackbar).toHaveBeenCalledWith({
-      isLowContrast: false,
-      subtitle: 'No se pudo guardar el atributo de la consulta. Intente nuevamente.',
-      kind: 'error',
-      title: 'No se pudo crear el atributo Punctuality',
-    });
-    expect(showSnackbar).toHaveBeenCalledWith({
-      isLowContrast: false,
-      subtitle: 'La consulta ya fue guardada. Pulse Reintentar para completar el registro; no inicie otra consulta.',
-      kind: 'error',
-      title: 'Consulta iniciada con acciones pendientes',
-    });
-
-    expect(mockOnVisitCreatedOrUpdatedCallback).not.toHaveBeenCalled();
-    expect(mockCloseWorkspace).not.toHaveBeenCalled();
+    expect(mockSaveVisit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attributes: expect.arrayContaining([
+          {
+            attributeType: visitAttributes.punctuality.uuid,
+            value: '66cdc0a1-aa19-4676-af51-80f66d78d9eb',
+          },
+          {
+            attributeType: visitAttributes.insurancePolicyNumber.uuid,
+            value: '183299',
+          },
+        ]),
+      }),
+      expect.any(Object),
+    );
+    expect(mockCreateVisitAttribute).not.toHaveBeenCalled();
+    expect(mockOnVisitCreatedOrUpdatedCallback).toHaveBeenCalled();
+    expect(mockCloseWorkspace).toHaveBeenCalled();
   });
 
-  it('retries only the visit attribute that failed and does not create a second visit', async () => {
+  it('keeps visit attributes in the correlated create payload without posting them again', async () => {
     const user = userEvent.setup();
-    let insuranceAttempts = 0;
-    mockCreateVisitAttribute.mockImplementation((_visitUuid, attributeType) => {
-      if (attributeType === visitAttributes.insurancePolicyNumber.uuid && insuranceAttempts++ === 0) {
-        return Promise.reject(new Error('database detail that must only be logged'));
-      }
-      return Promise.resolve({} as unknown as FetchResponse);
-    });
+    const recoveredVisit = {
+      uuid: 'recovered-visit-with-attributes',
+      patient: { uuid: mockPatient.id },
+      location: mockLocations.data.results[1],
+      visitType: { uuid: 'some-uuid1', display: 'Facility Visit' },
+      startDatetime: new Date().toISOString(),
+      stopDatetime: null,
+      attributes: [],
+    } as unknown as Visit;
+    mockSaveVisit.mockRejectedValueOnce(new Error('connection closed after commit'));
+    mockReconcileVisitCreation.mockResolvedValueOnce(recoveredVisit);
 
     renderVisitForm();
     await selectVisitType(user);
@@ -1796,32 +1818,30 @@ describe('Visit form', () => {
     await user.type(insuranceNumberInput, '183299');
 
     await user.click(screen.getByRole('button', { name: /Start Visit/i }));
-    const retryButton = await screen.findByRole('button', { name: /Reintentar registro|Retry registration/i });
-    await user.click(retryButton);
 
     await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
     expect(mockSaveVisit).toHaveBeenCalledTimes(1);
-    expect(
-      mockCreateVisitAttribute.mock.calls.filter(([, type]) => type === visitAttributes.punctuality.uuid),
-    ).toHaveLength(1);
-    expect(
-      mockCreateVisitAttribute.mock.calls.filter(([, type]) => type === visitAttributes.insurancePolicyNumber.uuid),
-    ).toHaveLength(2);
+    expect(mockReconcileVisitCreation).toHaveBeenCalledWith(
+      mockPatient.id,
+      expect.objectContaining({
+        attributes: expect.arrayContaining([
+          {
+            attributeType: visitAttributes.punctuality.uuid,
+            value: '66cdc0a1-aa19-4676-af51-80f66d78d9eb',
+          },
+          {
+            attributeType: visitAttributes.insurancePolicyNumber.uuid,
+            value: '183299',
+          },
+        ]),
+      }),
+      expect.any(Object),
+    );
+    expect(mockCreateVisitAttribute).not.toHaveBeenCalled();
   });
 
-  it('reconciles an attribute when the write succeeded but its response failed', async () => {
+  it('persists a selected attribute in the initial request without a reconciliation write', async () => {
     const user = userEvent.setup();
-    mockCreateVisitAttribute.mockRejectedValueOnce(new Error('connection closed after commit'));
-    mockGetVisitAttributes.mockResolvedValueOnce([
-      {
-        uuid: 'persisted-punctuality-attribute',
-        attributeType: { uuid: visitAttributes.punctuality.uuid },
-        value: {
-          uuid: '66cdc0a1-aa19-4676-af51-80f66d78d9eb',
-          display: 'On time',
-        },
-      },
-    ]);
 
     renderVisitForm();
     await selectVisitType(user);
@@ -1831,8 +1851,19 @@ describe('Visit form', () => {
 
     await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
     expect(mockSaveVisit).toHaveBeenCalledTimes(1);
-    expect(mockCreateVisitAttribute).toHaveBeenCalledTimes(1);
-    expect(mockGetVisitAttributes).toHaveBeenCalledWith(visitUuid);
+    expect(mockSaveVisit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attributes: expect.arrayContaining([
+          {
+            attributeType: visitAttributes.punctuality.uuid,
+            value: '66cdc0a1-aa19-4676-af51-80f66d78d9eb',
+          },
+        ]),
+      }),
+      expect.any(Object),
+    );
+    expect(mockCreateVisitAttribute).not.toHaveBeenCalled();
+    expect(mockGetVisitAttributes).not.toHaveBeenCalled();
     expect(mockOnVisitCreatedOrUpdatedCallback).toHaveBeenCalledTimes(1);
   });
 

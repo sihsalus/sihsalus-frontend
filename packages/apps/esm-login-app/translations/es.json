@@ -1,6 +1,6 @@
 {
-  "accountLocked": "Cuenta temporalmente bloqueada",
-  "accountLockedDetail": "Tu cuenta se bloqueó por varios intentos fallidos. Espera unos {{minutes}} minutos e inténtalo de nuevo, o pide al administrador que la desbloquee.",
+  "accountLocked": "Demasiados intentos fallidos",
+  "accountLockedDetail": "Tras {{attempts}} intentos fallidos tu cuenta queda bloqueada temporalmente por unos {{minutes}} minutos. Espera e inténtalo de nuevo, o pide al administrador que la desbloquee.",
   "backToLogin": "Volver al inicio de sesión",
   "builtWith": "Desarrollado con",
   "cancel": "Cancelar",

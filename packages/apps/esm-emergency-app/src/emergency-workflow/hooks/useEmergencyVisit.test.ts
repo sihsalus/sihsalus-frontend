@@ -78,7 +78,7 @@ describe('useEmergencyVisit', () => {
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       kind: 'error',
-      subtitle: 'No se configuró la ubicación operativa de emergencia.',
+      subtitle: 'No se configuró la UPSS operativa de emergencia.',
       title: 'Error al crear visita',
     });
   });

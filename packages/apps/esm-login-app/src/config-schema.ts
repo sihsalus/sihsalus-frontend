@@ -166,9 +166,31 @@ export const configSchema = {
     },
     _default: [],
   },
+  accountLockout: {
+    failedAttemptsBeforeLockout: {
+      _type: Type.Number,
+      _default: 7,
+      _description:
+        'Mirror of the backend GP `security.allowedFailedLoginsBeforeLockout`. Only used for the ' +
+        'copy shown when an account is locked; the actual enforcement lives in OpenMRS core.',
+      _validators: [validator((v: unknown) => typeof v === 'number' && v > 0, 'Must be greater than zero')],
+    },
+    retryAfterMinutes: {
+      _type: Type.Number,
+      _default: 5,
+      _description:
+        'Mirror of the backend GP `security.unlockAccountAfter` (minutes). Shown in the "wait N minutes" ' +
+        'hint when an account is locked; the actual wait is enforced by OpenMRS core.',
+      _validators: [validator((v: unknown) => typeof v === 'number' && v > 0, 'Must be greater than zero')],
+    },
+  },
 };
 
 export interface ConfigSchema {
+  accountLockout: {
+    failedAttemptsBeforeLockout: number;
+    retryAfterMinutes: number;
+  };
   announcements: Array<{
     title: string;
     text: string;

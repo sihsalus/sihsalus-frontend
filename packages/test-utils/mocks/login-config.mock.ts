@@ -33,5 +33,9 @@ export const mockConfig: ConfigSchema = {
   footer: {
     additionalLogos: [],
   },
+  accountLockout: {
+    failedAttemptsBeforeLockout: 7,
+    retryAfterMinutes: 5,
+  },
   showPasswordOnSeparateScreen: true,
 };

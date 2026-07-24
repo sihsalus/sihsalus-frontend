@@ -264,6 +264,32 @@ describe('PatientBannerContactDetails', () => {
     }
   });
 
+  it('does not render active status or an empty patient lists section', () => {
+    render(<PatientBannerContactDetails patientId={patientId} deceased={false} />);
+
+    expect(screen.queryByText('Status:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Active')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Patient Lists/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps deceased status visible because it is clinically relevant', () => {
+    mockUsePatientAdditionalAttributes.mockReturnValue({
+      additionalAttributes: [],
+      identifiers: [],
+      isLoading: false,
+      person: {
+        ...loadedPerson,
+        dead: true,
+        deathDate: new Date('2026-06-01'),
+      },
+    });
+
+    render(<PatientBannerContactDetails patientId={patientId} deceased />);
+
+    expect(screen.getByText('Status:').closest('li')).toHaveTextContent(/Deceased/i);
+    expect(screen.getByText('Death date:').closest('li')).toBeInTheDocument();
+  });
+
   it('renders affiliation details without duplicating ethnicity in contact details', () => {
     mockUseEthnicIdentity.mockReturnValue({
       currentValue: 'Ashaninka',

@@ -90,46 +90,46 @@ function getAttributeByTypeUuid(attributes: Array<Attribute>, uuid?: string) {
 }
 
 const PatientLists: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
-  const { t } = useTranslation();
   const { cohorts = [], isLoading } = usePatientListsForPatient(patientUuid);
   const showLoading = useBoundedLoading(isLoading);
+  const sortedLists = useMemo(
+    () =>
+      [...cohorts].sort((a, b) => parseDate(a?.startDate).getTime() - parseDate(b?.startDate).getTime()),
+    [cohorts],
+  );
+
+  if (!showLoading && sortedLists.length === 0) {
+    return null;
+  }
 
   return (
-    <>
+    <div className={styles.col}>
       <p className={styles.heading}>
-        {getCoreTranslation('patientLists', 'Patient Lists')} ({cohorts?.length ?? 0})
+        {getCoreTranslation('patientLists', 'Patient Lists')} ({sortedLists.length})
       </p>
       {showLoading ? (
         <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
-      ) : cohorts?.length > 0 ? (
+      ) : (
         <ul className={styles.detailList}>
-          {(() => {
-            const sortedLists = cohorts.sort(
-              (a, b) => parseDate(a?.startDate).getTime() - parseDate(b?.startDate).getTime(),
-            );
-            const slicedLists = sortedLists.slice(0, 3);
-            return slicedLists?.map((cohort) => (
-              <li key={cohort.uuid}>
-                <ConfigurableLink to={`${window.spaBase}/home/patient-lists/${cohort.uuid}`}>
-                  {cohort.name}
-                </ConfigurableLink>
-              </li>
-            ));
-          })()}
-          {cohorts.length > 3 && (
+          {sortedLists.slice(0, 3).map((cohort) => (
+            <li key={cohort.uuid}>
+              <ConfigurableLink to={`${window.spaBase}/home/patient-lists/${cohort.uuid}`}>
+                {cohort.name}
+              </ConfigurableLink>
+            </li>
+          ))}
+          {sortedLists.length > 3 && (
             <li>
               <ConfigurableLink to={`${window.spaBase}/home/patient-lists`}>
                 {getCoreTranslation('seeMoreLists', 'See {{count}} more lists', {
-                  count: cohorts?.length - 3,
+                  count: sortedLists.length - 3,
                 })}
               </ConfigurableLink>
             </li>
           )}
         </ul>
-      ) : (
-        <EmptyState message={t('noPatientLists', 'No patient lists')} />
       )}
-    </>
+    </div>
   );
 };
 
@@ -263,7 +263,6 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
   const gender = person?.gender
     ? getCoreTranslation(person.gender === 'M' ? 'male' : person.gender === 'F' ? 'female' : 'unknown', person.gender)
     : '';
-  const status = person ? (person.dead ? t('deceased', 'Deceased') : t('active', 'Active')) : '';
   const formattedAge = formatAgeWithUnit(person?.birthdate, person?.age, t);
   const birthplace = getDisplayValue(getAttributeByTypeUuid(additionalAttributes, birthplaceAttributeTypeUuid)?.value);
   const occupation = getDisplayValue(getAttributeByTypeUuid(additionalAttributes, occupationAttributeTypeUuid)?.value);
@@ -275,7 +274,7 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
   const remainingAdditionalAttributes = additionalAttributes.filter(
     ({ attributeType }) => !reservedAttributeTypeUuids.has(attributeType?.uuid),
   );
-  const hasDemographics = Boolean(formattedAge || person?.birthdate || gender || status || person?.deathDate);
+  const hasDemographics = Boolean(formattedAge || person?.birthdate || gender || person?.deathDate);
   const hasIdentifiers = identifiers?.length > 0;
   const hasAdditionalDetails = Boolean(
     ethnicIdentity ||
@@ -298,16 +297,18 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
               value={person?.birthdate ? formatDate(parseDate(person.birthdate), { mode: 'wide', time: false }) : ''}
             />
             <DetailItem label={t('gender', 'Gender')} value={gender} />
-            <DetailItem label={t('status', 'Status')} value={status} />
             {person?.dead && (
-              <DetailItem
-                label={t('deathDate', 'Death date')}
-                value={
-                  person?.deathDate
-                    ? formatDate(parseDate(String(person.deathDate)), { mode: 'wide', time: false })
-                    : ''
-                }
-              />
+              <>
+                <DetailItem label={t('status', 'Status')} value={t('deceased', 'Deceased')} />
+                <DetailItem
+                  label={t('deathDate', 'Death date')}
+                  value={
+                    person?.deathDate
+                      ? formatDate(parseDate(String(person.deathDate)), { mode: 'wide', time: false })
+                      : ''
+                  }
+                />
+              </>
             )}
           </ul>
         ) : (
@@ -433,10 +434,8 @@ export function PatientBannerContactDetails({ patientId, deceased }: ContactDeta
         <div className={styles.col}>
           <Relationships patientId={patientId} />
         </div>
-        <div className={styles.col}>
-          <PatientLists patientUuid={patientId} />
-        </div>
         <PatientAdministrativeDetails patientUuid={patientId} />
+        <PatientLists patientUuid={patientId} />
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import useSWR, { mutate } from 'swr';
 import { type Config } from './config-schema';
 import type { DateFilterContext, FulfillerStatus } from './types';
+import { extractPriorityFromInstructions } from './utils/priority-parser';
 
 const useLabOrdersDefaultParams: UseLabOrdersParams = {
   status: null,
@@ -44,9 +45,14 @@ export function useLabOrders(params: Partial<UseLabOrdersParams> = useLabOrdersD
   let url = `${restBaseUrl}/order?orderTypes=${laboratoryOrderTypeUuid}&v=${customRepresentation}`;
   url = status ? url + `&fulfillerStatus=${status}` : url;
   url = excludeCanceled ? `${url}&excludeCanceledAndExpired=true&excludeDiscontinueOrders=true` : url;
-  url = dateRange
-    ? `${url}&activatedOnOrAfterDate=${dateRange.at(0).toISOString()}&activatedOnOrBeforeDate=${dateRange
-        .at(1)
+  const extendedStartDate = dateRange && dateRange.at(0)
+    ? dayjs(dateRange.at(0)).subtract(30, 'day').startOf('day').toDate()
+    : null;
+
+  url = dateRange && extendedStartDate
+    ? `${url}&activatedOnOrAfterDate=${extendedStartDate.toISOString()}&activatedOnOrBeforeDate=${dayjs(dateRange.at(1))
+        .endOf('day')
+        .toDate()
         .toISOString()}`
     : url;
 
@@ -55,8 +61,45 @@ export function useLabOrders(params: Partial<UseLabOrdersParams> = useLabOrdersD
   }>(`${url}`, openmrsFetch);
 
   const filteredOrders = data?.data?.results?.filter(
-    (order) =>
-      !newOrdersOnly || ((order?.action === 'NEW' || order?.action === 'REVISE') && order?.fulfillerStatus === null),
+    (order) => {
+      if (newOrdersOnly && !((order?.action === 'NEW' || order?.action === 'REVISE') && order?.fulfillerStatus === null)) {
+        return false;
+      }
+
+      if (!dateRange) {
+        return true;
+      }
+
+      const dateActivated = dayjs(order.dateActivated);
+      const filterStart = dayjs(dateRange.at(0)).startOf('day');
+      const filterEnd = dayjs(dateRange.at(1)).endOf('day');
+
+      const isInRange = (d: dayjs.Dayjs) => {
+        return (d.isAfter(filterStart) || d.isSame(filterStart)) && 
+               (d.isBefore(filterEnd) || d.isSame(filterEnd));
+      };
+
+      const { urgency } = extractPriorityFromInstructions(order.instructions, order.urgency);
+      const esProgramada = urgency?.toUpperCase() === '65CF194E-05A7-4832-BA6D-9B7C9940A7C2' || urgency?.toUpperCase() === 'ON_SCHEDULED_DATE';
+
+      if (!esProgramada) {
+        return isInRange(dateActivated);
+      }
+
+      // Lógica para orden programada:
+      // 1. Creada en el rango seleccionado
+      const creadaEnRango = isInRange(dateActivated);
+
+      // 2. Programada para el rango seleccionado (se trunca para evitar desfasamientos por zona horaria)
+      const scheduledDate = order.scheduledDate ? dayjs(order.scheduledDate.substring(0, 10)) : null;
+      const programadaEnRango = scheduledDate && isInRange(scheduledDate);
+
+      // 3. Pendiente del pasado (para evitar que se pierda)
+      const esPendiente = order.fulfillerStatus !== 'COMPLETED' && order.fulfillerStatus !== 'DECLINED' && order.fulfillerStatus !== 'EXCEPTION';
+      const pendienteYPasada = esPendiente && scheduledDate && scheduledDate.isBefore(filterStart);
+
+      return creadaEnRango || programadaEnRango || pendienteYPasada;
+    }
   );
   return {
     labOrders: filteredOrders ?? [],

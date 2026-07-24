@@ -162,6 +162,9 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: os,library
+          # SARIF includes every severity by default, which would make exit-code
+          # block the release on LOW/MEDIUM findings despite the threshold above.
+          limit-severities-for-sarif: true
 
       - name: Upload Trivy scan
         uses: github/codeql-action/upload-sarif@v4

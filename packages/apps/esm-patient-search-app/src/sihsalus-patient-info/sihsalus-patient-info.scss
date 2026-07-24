@@ -17,11 +17,17 @@
   flex-wrap: wrap;
 }
 
+.patientNameRow {
+  column-gap: layout.$spacing-02;
+  row-gap: layout.$spacing-01;
+}
+
 .patientName {
   @include type.type-style('heading-03');
   color: #161616;
   font-weight: 600;
-  margin-right: layout.$spacing-02;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .patientGender {
@@ -30,18 +36,50 @@
   display: inline-flex;
   align-items: center;
   gap: layout.$spacing-01;
-  margin-right: layout.$spacing-03;
+  flex-shrink: 0;
 }
 
 .patientTagsSlot {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: layout.$spacing-02;
+  margin-top: layout.$spacing-02;
+  min-width: 0;
+
+  &:empty {
+    display: none;
+  }
+
+  > * {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: layout.$spacing-02;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  > * > div {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: layout.$spacing-02;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  :global(.cds--tag) {
+    margin: 0;
+    max-width: 100%;
+  }
 }
 
 .patientDemographics {
   @include type.type-style('body-compact-02');
   color: $text-02;
-  gap: layout.$spacing-02;
+  column-gap: layout.$spacing-02;
+  row-gap: layout.$spacing-01;
   margin-top: layout.$spacing-02;
 }
 

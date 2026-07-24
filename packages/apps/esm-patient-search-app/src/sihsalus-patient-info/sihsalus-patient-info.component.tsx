@@ -122,8 +122,8 @@ export function SihsalusPatientInfo({ patient, renderedFrom }: SihsalusPatientIn
             <span>{gender.label}</span>
           </span>
         ) : null}
-        <ExtensionSlot className={styles.patientTagsSlot} name="patient-banner-tags-slot" state={extensionState} />
       </div>
+      <ExtensionSlot className={styles.patientTagsSlot} name="patient-banner-tags-slot" state={extensionState} />
       <div className={styles.patientDemographics}>
         {patient.birthDate ? (
           <>

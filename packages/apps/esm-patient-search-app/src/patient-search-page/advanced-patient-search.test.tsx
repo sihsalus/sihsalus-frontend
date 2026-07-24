@@ -284,8 +284,13 @@ describe('AdvancedPatientSearchComponent', () => {
             { value: null, attributeType: admissionStatusAttributeType },
           ],
         },
+        {
+          ...mockAdvancedSearchResults[0],
+          uuid: 'malformed-attribute-patient',
+          attributes: [null, { value: {}, attributeType: null }],
+        },
       ] as unknown as NonNullable<PatientSearchResponse['data']>;
-      mockUseInfinitePatientSearch.mockReturnValue({ ...mockSearchResults, data: patients, totalResults: 3 });
+      mockUseInfinitePatientSearch.mockReturnValue({ ...mockSearchResults, data: patients, totalResults: 4 });
 
       renderComponent();
 

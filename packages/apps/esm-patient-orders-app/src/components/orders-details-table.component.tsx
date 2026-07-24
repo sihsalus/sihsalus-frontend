@@ -63,6 +63,7 @@ import React, { type ReactNode, useCallback, useEffect, useMemo, useRef, useStat
 import { useTranslation } from 'react-i18next';
 import { useReactToPrint } from 'react-to-print';
 import useSWR, { useSWRConfig } from 'swr';
+import dayjs from 'dayjs';
 
 import type { ConfigObject } from '../config-schema';
 import PrintComponent from '../print/print.component';
@@ -247,12 +248,17 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
   }, [priorityConfigs, t]);
 
   const selectedOrderName = orderTypes?.find((x) => x.uuid === selectedOrderTypeUuid)?.name;
+  const extendedFromDate = useMemo(() => {
+    if (!selectedFromDate) return null;
+    return dayjs(selectedFromDate).subtract(30, 'day').startOf('day').toISOString();
+  }, [selectedFromDate]);
+    
   const {
     data: allOrders,
     error: error,
     isLoading,
     isValidating,
-  } = usePatientOrders(patientUuid, 'any', selectedOrderTypeUuid, selectedFromDate, selectedToDate, careSettingUuid);
+  } = usePatientOrders(patientUuid, 'any', selectedOrderTypeUuid, extendedFromDate, selectedToDate, careSettingUuid);
 
   // launch respective order basket based on order type
   const openOrderForm = useCallback(
@@ -329,14 +335,44 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
   const filteredOrders = useMemo(() => {
     let result = allOrders ?? [];
 
-    // Filtrado por fecha (cliente-side) para evitar desfases de zona horaria
-    if (selectedFromDate) {
-      const fromTime = new Date(selectedFromDate).getTime();
-      result = result.filter((order) => new Date(order.dateActivated).getTime() >= fromTime);
-    }
-    if (selectedToDate) {
-      const toTime = new Date(selectedToDate).getTime();
-      result = result.filter((order) => new Date(order.dateActivated).getTime() <= toTime);
+    // Filtrado por fecha (cliente-side) para evitar desfases de zona horaria y soportar órdenes programadas
+    if (selectedFromDate || selectedToDate) {
+      const filterStart = selectedFromDate ? dayjs(selectedFromDate).startOf('day') : null;
+      const filterEnd = selectedToDate ? dayjs(selectedToDate).endOf('day') : null;
+
+      const isInRange = (d: dayjs.Dayjs) => {
+        return (!filterStart || d.isAfter(filterStart) || d.isSame(filterStart)) && 
+               (!filterEnd || d.isBefore(filterEnd) || d.isSame(filterEnd));
+      };
+
+      result = result.filter((order) => {
+        const dateActivated = dayjs(order.dateActivated);
+        const priorityMatch = order.instructions?.match(/\|\|priorityUuid:([a-fA-F0-9-]+)\|\|/);
+        const parsedUrgency = priorityMatch ? priorityMatch[1] : order.urgency;
+        const esProgramada = parsedUrgency?.toUpperCase() === '65CF194E-05A7-4832-BA6D-9B7C9940A7C2' || parsedUrgency?.toUpperCase() === 'ON_SCHEDULED_DATE';
+
+        if (!esProgramada) {
+          return isInRange(dateActivated);
+        }
+
+        // Lógica para orden programada:
+        // 1. Creada en el rango seleccionado
+        const creadaEnRango = isInRange(dateActivated);
+
+        // 2. Programada para el rango seleccionado (se trunca para evitar desfasamientos por zona horaria)
+        const scheduledDate = order.scheduledDate ? dayjs(order.scheduledDate.substring(0, 10)) : null;
+        const programadaEnRango = scheduledDate && isInRange(scheduledDate);
+
+        // 3. Pendiente del pasado (para evitar que se pierda)
+        const esPendiente = !order.fulfillerStatus || (
+          order.fulfillerStatus.toUpperCase() !== 'COMPLETED' && 
+          order.fulfillerStatus.toUpperCase() !== 'DECLINED' && 
+          order.fulfillerStatus.toUpperCase() !== 'EXCEPTION'
+        );
+        const pendienteYPasada = esPendiente && scheduledDate && filterStart && scheduledDate.isBefore(filterStart);
+
+        return creadaEnRango || programadaEnRango || pendienteYPasada;
+      });
     }
 
     // Filtrado por prioridad

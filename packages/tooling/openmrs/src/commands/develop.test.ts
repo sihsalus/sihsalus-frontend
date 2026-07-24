@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 
 import { shouldProxyApiRequest } from './develop-path-filter';
-import { createInMemoryRateLimit, readRateLimitEnv } from './develop-rate-limit';
+import { createInMemoryRateLimit, readPositiveRateLimitEnv, readRateLimitEnv } from './develop-rate-limit';
 
 function createResponse() {
   return {
@@ -53,6 +53,40 @@ describe('createInMemoryRateLimit', () => {
     expect(next).toHaveBeenCalledTimes(100);
     expect(res.status).not.toHaveBeenCalled();
   });
+
+  it('starts a fresh allowance after the configured window', () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-05-31T00:00:00Z'));
+
+      const limiter = createInMemoryRateLimit({ windowMs: 60_000, max: 1 });
+      const req = { ip: '127.0.0.1', socket: {} };
+      const res = createResponse();
+      const next = vi.fn();
+
+      limiter(req as never, res as never, next);
+      limiter(req as never, res as never, next);
+      vi.advanceTimersByTime(60_000);
+      limiter(req as never, res as never, next);
+
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(res.status).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('tracks clients independently', () => {
+    const limiter = createInMemoryRateLimit({ windowMs: 60_000, max: 1 });
+    const res = createResponse();
+    const next = vi.fn();
+
+    limiter({ ip: '127.0.0.1', socket: {} } as never, res as never, next);
+    limiter({ ip: '127.0.0.2', socket: {} } as never, res as never, next);
+
+    expect(next).toHaveBeenCalledTimes(2);
+    expect(res.status).not.toHaveBeenCalled();
+  });
 });
 
 describe('readRateLimitEnv', () => {
@@ -84,6 +118,37 @@ describe('readRateLimitEnv', () => {
         process.env.SIHSALUS_TEST_RATE_LIMIT_MAX = previousValue;
       }
     }
+  });
+
+  it('keeps security-sensitive limits positive', () => {
+    const previousValue = process.env.SIHSALUS_TEST_RATE_LIMIT_MAX;
+
+    try {
+      process.env.SIHSALUS_TEST_RATE_LIMIT_MAX = '0';
+      expect(readPositiveRateLimitEnv('SIHSALUS_TEST_RATE_LIMIT_MAX', 300)).toBe(300);
+
+      process.env.SIHSALUS_TEST_RATE_LIMIT_MAX = '-50';
+      expect(readPositiveRateLimitEnv('SIHSALUS_TEST_RATE_LIMIT_MAX', 300)).toBe(300);
+
+      process.env.SIHSALUS_TEST_RATE_LIMIT_MAX = '125.9';
+      expect(readPositiveRateLimitEnv('SIHSALUS_TEST_RATE_LIMIT_MAX', 300)).toBe(125);
+    } finally {
+      if (previousValue === undefined) {
+        delete process.env.SIHSALUS_TEST_RATE_LIMIT_MAX;
+      } else {
+        process.env.SIHSALUS_TEST_RATE_LIMIT_MAX = previousValue;
+      }
+    }
+  });
+});
+
+describe('local config file rate limit', () => {
+  it('uses the standard limiter on the route that reads local files', () => {
+    const developSource = readFileSync(new URL('./develop.ts', import.meta.url), 'utf8');
+
+    expect(developSource).toContain('const localConfigRateLimit = rateLimit({');
+    expect(developSource).toContain('app.get(url, localConfigRateLimit, (_, res) => {');
+    expect(developSource).toContain("readPositiveRateLimitEnv('SIHSALUS_DEV_LOCAL_CONFIG_RATE_LIMIT_MAX', 300)");
   });
 });
 

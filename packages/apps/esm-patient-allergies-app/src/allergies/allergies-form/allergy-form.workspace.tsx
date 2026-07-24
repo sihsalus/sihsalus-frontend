@@ -508,6 +508,7 @@ function AllergyFormWorkspace(props: AllergyWorkspaceProps) {
                       control={control}
                       render={({ field: { onChange, value } }) => (
                         <CheckboxGroup
+                          className={styles.reactionsGroup}
                           invalid={!!errors.allergicReactions}
                           invalidText={errors.allergicReactions?.message}
                           legendText={t('selectReactions', 'Select the reactions')}

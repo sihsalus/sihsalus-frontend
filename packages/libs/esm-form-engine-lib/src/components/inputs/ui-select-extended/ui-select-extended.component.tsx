@@ -144,8 +144,10 @@ const UiSelectExtended: React.FC<FormFieldInputProps<string | null | undefined>>
 
   useEffect(() => {
     let ignore = false;
-    if (value && !isDirty && dataSource && isSearchable && sessionMode !== 'enter' && !items.length) {
-      // While in edit mode, search-based instances should fetch the initial item (previously selected value) to resolve its display property
+    if (value && !isDirty && dataSource && isSearchable && !items.length) {
+      // Search-based fields only load options after typing. Resolve an initial
+      // value explicitly so encounter defaults are visible in create mode and
+      // previously saved values remain visible in edit mode.
       setIsLoading(true);
       void dataSource
         .fetchSingleItem(value)
@@ -166,7 +168,7 @@ const UiSelectExtended: React.FC<FormFieldInputProps<string | null | undefined>>
     return (): void => {
       ignore = true;
     };
-  }, [dataSource, isDirty, isSearchable, items.length, sessionMode, value]);
+  }, [dataSource, isDirty, isSearchable, items.length, value]);
 
   if (isLoading) {
     return <DropdownSkeleton />;

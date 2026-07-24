@@ -1,9 +1,14 @@
 import { render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import Appointments from './appointments.component';
 
 describe('Appointments', () => {
   it('renders the appointments dashboard', async () => {
-    render(<Appointments />);
+    render(
+      <MemoryRouter>
+        <Appointments />
+      </MemoryRouter>,
+    );
 
     await screen.findByRole('combobox');
 

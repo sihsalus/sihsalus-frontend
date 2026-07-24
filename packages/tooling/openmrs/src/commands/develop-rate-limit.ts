@@ -14,6 +14,11 @@ export function readRateLimitEnv(name: string, fallback: number): number {
   return Math.floor(parsedValue);
 }
 
+export function readPositiveRateLimitEnv(name: string, fallback: number): number {
+  const parsedValue = readRateLimitEnv(name, fallback);
+  return parsedValue > 0 ? parsedValue : fallback;
+}
+
 export function createInMemoryRateLimit({ windowMs, max }: { windowMs: number; max: number }): RequestHandler {
   if (windowMs <= 0 || max <= 0) {
     return (_req, _res, next) => next();

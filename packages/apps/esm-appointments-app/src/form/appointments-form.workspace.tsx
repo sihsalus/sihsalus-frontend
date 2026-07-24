@@ -68,10 +68,7 @@ import {
 } from '../helpers';
 import SelectedDateContext from '../hooks/selectedDateContext';
 import { useProviders } from '../hooks/useProviders';
-import {
-  changeAppointmentStatus,
-  getAppointmentStatus,
-} from '../patient-appointments/patient-appointments.resource';
+import { changeAppointmentStatus, getAppointmentStatus } from '../patient-appointments/patient-appointments.resource';
 import {
   type Appointment,
   AppointmentKind,
@@ -80,12 +77,12 @@ import {
   type RecurringPattern,
 } from '../types';
 import Workload from '../workload/workload.component';
+import { type AppointmentCareRoutingIssue, getAppointmentCareRoutingIssue } from './appointment-care-routing';
 import {
   isAppointmentIssuedDateAllowed,
   isAppointmentStartDateAllowed,
   isRecurringAppointmentRangeAllowed,
 } from './appointment-date-validation';
-import { assessProviderSchedulingCategory } from './provider-scheduling-category';
 //TO DO FIX THIS SHIT
 import {
   checkAppointmentConflict,
@@ -95,6 +92,7 @@ import {
   useMutateAppointments,
 } from './appointments-form.resource';
 import styles from './appointments-form.scss';
+import { assessProviderSchedulingCategory } from './provider-scheduling-category';
 
 const preventInvalidIntegerKey =
   (constraints: PlainNumberInputConstraints) => (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -174,6 +172,44 @@ const isExternalConsultationLocation = (location?: { display?: string; name?: st
       .toLowerCase()
       .includes('consulta externa'),
   );
+
+function getAppointmentCareRoutingIssueMessage(
+  issue: AppointmentCareRoutingIssue,
+  t: (key: string, defaultValue: string) => string,
+): string {
+  switch (issue) {
+    case 'service-location-missing':
+      return t(
+        'appointmentServiceLocationMissing',
+        'The selected service has no configured UPSS. Contact an administrator before scheduling.',
+      );
+    case 'service-location-unavailable':
+      return t(
+        'appointmentServiceLocationUnavailable',
+        'The UPSS configured for the selected service is unavailable. Contact an administrator before scheduling.',
+      );
+    case 'service-location-mismatch':
+      return t(
+        'appointmentServiceLocationMismatch',
+        'The selected UPSS does not belong to this service. Select the service again to restore its configured UPSS.',
+      );
+    case 'arrival-rule-missing':
+      return t(
+        'appointmentRoutingRuleMissing',
+        'No care route is configured for the selected service and UPSS. Contact an administrator before scheduling.',
+      );
+    case 'arrival-rule-ambiguous':
+      return t(
+        'appointmentRoutingRuleAmbiguous',
+        'More than one care route is configured for the selected service and UPSS. Correct the configuration before scheduling.',
+      );
+    case 'arrival-rule-invalid':
+      return t(
+        'appointmentRoutingRuleInvalid',
+        'The care route configured for the selected service and UPSS is incomplete. Correct the configuration before scheduling.',
+      );
+  }
+}
 
 const normalizeAppointmentKind = (appointmentType: string): AppointmentKind => {
   const normalizedType = appointmentType.trim().toLowerCase();
@@ -300,14 +336,21 @@ const AppointmentsForm: React.FC<
   const { selectedDate } = useContext(SelectedDateContext);
   const { data: services, isLoading } = useAppointmentService();
   const {
+    appointmentArrivalRules,
     appointmentTypes,
     allowAllDayAppointments,
     appointmentServiceGenderRules,
+    careRoutingContractVersion,
     providerSchedulingCategoryValidation,
   } = useConfig<ConfigObject>();
-  const availableServices = services?.filter((service) =>
-    isAppointmentServiceAvailableForGender(service, patient?.gender, appointmentServiceGenderRules),
-  );
+  const enforceAppointmentRouting = Boolean(careRoutingContractVersion?.trim() || appointmentArrivalRules?.length);
+  const availableServices = services
+    ?.filter((service) =>
+      isAppointmentServiceAvailableForGender(service, patient?.gender, appointmentServiceGenderRules),
+    )
+    .filter(
+      (service) => !isExternalConsultationProviderCreating || service.location?.uuid === session?.sessionLocation?.uuid,
+    );
   const mappedAppointmentTypes = appointmentTypes ?? [];
 
   useEffect(() => () => onWorkspaceClose?.(), [onWorkspaceClose]);
@@ -352,17 +395,15 @@ const AppointmentsForm: React.FC<
         message: translateFrom(moduleName, 'providerRequired', 'Provider is required'),
       }),
       appointmentNote: z.string().max(appointmentNoteMaxLength, {
-        message: t(
-          'appointmentNoteTooLong',
-          `Appointment note cannot exceed ${appointmentNoteMaxLength} characters`,
-          { maxLength: appointmentNoteMaxLength },
-        ),
+        message: t('appointmentNoteTooLong', `Appointment note cannot exceed ${appointmentNoteMaxLength} characters`, {
+          maxLength: appointmentNoteMaxLength,
+        }),
       }),
       appointmentType: z.string().refine((value) => value !== '', {
         message: translateFrom(moduleName, 'appointmentTypeRequired', 'Appointment type is required'),
       }),
       appointmentStatus: z.nativeEnum(AppointmentStatus),
-      selectedService: z.string().refine((value) => value !== '', {
+      selectedServiceUuid: z.string().refine((value) => value !== '', {
         message: translateFrom(moduleName, 'serviceRequired', 'Service is required'),
       }),
       recurringPatternType: z.enum(['DAY', 'WEEK']),
@@ -460,9 +501,40 @@ const AppointmentsForm: React.FC<
         ),
       },
     )
+    .superRefine((formValues, context) => {
+      const service = availableServices?.find(({ uuid }) => uuid === formValues.selectedServiceUuid);
+
+      if (formValues.selectedServiceUuid && !service) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t(
+            'appointmentServiceUnavailable',
+            'The selected service is no longer available for this patient or UPSS. Select another service.',
+          ),
+          path: ['selectedServiceUuid'],
+        });
+        return;
+      }
+
+      const routingIssue = getAppointmentCareRoutingIssue({
+        appointmentArrivalRules: appointmentArrivalRules ?? [],
+        enforceArrivalRouting: enforceAppointmentRouting,
+        selectableLocationUuids: new Set(locations.map(({ uuid }) => uuid)),
+        selectedLocationUuid: formValues.location,
+        service,
+      });
+
+      if (routingIssue) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: getAppointmentCareRoutingIssueMessage(routingIssue, t),
+          path: [routingIssue === 'service-location-missing' ? 'selectedServiceUuid' : 'location'],
+        });
+      }
+    })
     .refine(
       (formValues) => {
-        const service = services?.find(({ name }) => name === formValues.selectedService);
+        const service = availableServices?.find(({ uuid }) => uuid === formValues.selectedServiceUuid);
         const provider = providers.providers?.find(({ uuid }) => uuid === formValues.provider);
         return !assessProviderSchedulingCategory({
           mode: providerSchedulingCategoryValidation.mode,
@@ -511,7 +583,7 @@ const AppointmentsForm: React.FC<
       appointmentNote: appointment?.comments || '',
       appointmentType: getAppointmentTypeFromKind(appointment?.appointmentKind, mappedAppointmentTypes),
       appointmentStatus: appointment?.status ?? AppointmentStatus.SCHEDULED,
-      selectedService: appointment?.service?.name || '',
+      selectedServiceUuid: appointment?.service?.uuid || '',
       recurringPatternType: defaultRecurringPatternType,
       recurringPatternPeriod: defaultRecurringPatternPeriod,
       recurringPatternDaysOfWeek: defaultRecurringPatternDaysOfWeek,
@@ -529,7 +601,26 @@ const AppointmentsForm: React.FC<
     },
   });
 
-  const selectedService = services?.find(({ name }) => name === watch('selectedService'));
+  const selectedServiceUuid = watch('selectedServiceUuid');
+  const selectedService = availableServices?.find(({ uuid }) => uuid === selectedServiceUuid);
+  const selectedLocationUuid = watch('location');
+  const configuredServiceLocationUuid = selectedService?.location?.uuid;
+  const configuredServiceLocation = configuredServiceLocationUuid
+    ? locations.find(({ uuid }) => uuid === configuredServiceLocationUuid)
+    : undefined;
+  const appointmentLocations =
+    selectedService && configuredServiceLocationUuid
+      ? configuredServiceLocation
+        ? [configuredServiceLocation]
+        : []
+      : enforceAppointmentRouting
+        ? []
+        : locations;
+  const isAppointmentLocationLocked =
+    isExternalConsultationProviderCreating ||
+    (enforceAppointmentRouting && !selectedService) ||
+    (Boolean(configuredServiceLocationUuid) && selectedLocationUuid === configuredServiceLocationUuid) ||
+    (enforceAppointmentRouting && Boolean(selectedService) && !configuredServiceLocationUuid);
   const selectedProviderUuid = watch('provider');
   const selectedProvider = providers.providers?.find(({ uuid }) => uuid === selectedProviderUuid);
   const isDifferentProviderSelected = Boolean(
@@ -826,7 +917,7 @@ const AppointmentsForm: React.FC<
 
   const constructAppointmentPayload = (data: AppointmentFormData): AppointmentPayload => {
     const {
-      selectedService,
+      selectedServiceUuid,
       startTime,
       timeFormat,
       appointmentDateTime: { startDate },
@@ -837,7 +928,7 @@ const AppointmentsForm: React.FC<
       appointmentNote,
     } = data;
 
-    const selectedAppointmentService = services?.find((service) => service.name === selectedService);
+    const selectedAppointmentService = availableServices?.find((service) => service.uuid === selectedServiceUuid);
     const serviceUuid = selectedAppointmentService?.uuid;
     const [hourValue, minuteValue] = startTime.split(':').map((item) => parseInt(item, 10));
     const hours = (hourValue % 12) + (timeFormat === 'PM' ? 12 : 0);
@@ -919,10 +1010,7 @@ const AppointmentsForm: React.FC<
 
   return (
     <Workspace2 title={title} hasUnsavedChanges={isDirty && !isSuccessful}>
-      <Form
-        className={styles.form}
-        onSubmit={handleSubmit(handleSaveAppointment, handleAppointmentValidationErrors)}
-      >
+      <Form className={styles.form} onSubmit={handleSubmit(handleSaveAppointment, handleAppointmentValidationErrors)}>
         <Stack gap={4}>
           {Object.keys(errors).length > 0 && (
             <InlineNotification
@@ -944,6 +1032,69 @@ const AppointmentsForm: React.FC<
             />
           )}
           <section className={styles.formGroup}>
+            <span className={styles.heading}>{t('service', 'Service')}</span>
+            <ResponsiveWrapper>
+              <Controller
+                name="selectedServiceUuid"
+                control={control}
+                render={({ field: { onBlur, onChange, value, ref } }) => (
+                  <Select
+                    id="service"
+                    invalid={!!errors?.selectedServiceUuid}
+                    invalidText={errors?.selectedServiceUuid?.message}
+                    labelText={<RequiredFieldLabel label={t('selectService', 'Select a service')} />}
+                    onBlur={onBlur}
+                    onChange={(event) => {
+                      const previousServiceUuid = getValues('selectedServiceUuid');
+                      const selectedService = availableServices?.find((service) => service.uuid === event.target.value);
+                      onChange(event);
+
+                      if (context === 'creating') {
+                        const selectedServiceDuration = selectedService?.durationMins;
+                        setValue('duration', selectedServiceDuration ?? DEFAULT_APPOINTMENT_DURATION_MINUTES);
+                      } else if (context === 'editing') {
+                        const previousServiceDuration = availableServices?.find(
+                          (service) => service.uuid === previousServiceUuid,
+                        )?.durationMins;
+                        const selectedServiceDuration = availableServices?.find(
+                          (service) => service.uuid === event.target.value,
+                        )?.durationMins;
+                        if (selectedServiceDuration && previousServiceDuration === getValues('duration')) {
+                          setValue('duration', selectedServiceDuration);
+                        }
+                      }
+
+                      if (!isExternalConsultationProviderCreating && selectedService?.location?.uuid) {
+                        const serviceLocationIsSelectable = locations.some(
+                          ({ uuid }) => uuid === selectedService.location?.uuid,
+                        );
+                        setValue('location', serviceLocationIsSelectable ? selectedService.location.uuid : '', {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
+                      } else if (enforceAppointmentRouting && !isExternalConsultationProviderCreating) {
+                        setValue('location', '', {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
+                      }
+                    }}
+                    ref={ref}
+                    value={value}
+                  >
+                    <SelectItem text={t('chooseService', 'Select service')} value="" />
+                    {availableServices?.length > 0 &&
+                      availableServices.map((service) => (
+                        <SelectItem key={service.uuid} text={service.name} value={service.uuid}>
+                          {service.name}
+                        </SelectItem>
+                      ))}
+                  </Select>
+                )}
+              />
+            </ResponsiveWrapper>
+          </section>
+          <section className={styles.formGroup}>
             <span className={styles.heading}>{t('location', 'UPSS')}</span>
             <ResponsiveWrapper>
               <Controller
@@ -951,7 +1102,7 @@ const AppointmentsForm: React.FC<
                 control={control}
                 render={({ field: { onChange, value, onBlur, ref } }) => (
                   <Select
-                    disabled={isExternalConsultationProviderCreating}
+                    disabled={isAppointmentLocationLocked}
                     id="location"
                     invalid={!!errors?.location}
                     invalidText={errors?.location?.message}
@@ -962,64 +1113,10 @@ const AppointmentsForm: React.FC<
                     value={value}
                   >
                     <SelectItem text={t('chooseLocation', 'Choose a UPSS')} value="" />
-                    {locations?.length > 0 &&
-                      locations.map((location) => (
+                    {appointmentLocations.length > 0 &&
+                      appointmentLocations.map((location) => (
                         <SelectItem key={location.uuid} text={location.display} value={location.uuid}>
                           {location.display}
-                        </SelectItem>
-                      ))}
-                  </Select>
-                )}
-              />
-            </ResponsiveWrapper>
-          </section>
-          <section className={styles.formGroup}>
-            <span className={styles.heading}>{t('service', 'Service')}</span>
-            <ResponsiveWrapper>
-              <Controller
-                name="selectedService"
-                control={control}
-                render={({ field: { onBlur, onChange, value, ref } }) => (
-                  <Select
-                    id="service"
-                    invalid={!!errors?.selectedService}
-                    invalidText={errors?.selectedService?.message}
-                    labelText={<RequiredFieldLabel label={t('selectService', 'Select a service')} />}
-                    onBlur={onBlur}
-                    onChange={(event) => {
-                      const selectedService = services?.find((service) => service.name === event.target.value);
-
-                      if (context === 'creating') {
-                        const selectedServiceDuration = selectedService?.durationMins;
-                        setValue('duration', selectedServiceDuration ?? DEFAULT_APPOINTMENT_DURATION_MINUTES);
-                      } else if (context === 'editing') {
-                        const previousServiceDuration = services?.find(
-                          (service) => service.name === getValues('selectedService'),
-                        )?.durationMins;
-                        const selectedServiceDuration = services?.find(
-                          (service) => service.name === event.target.value,
-                        )?.durationMins;
-                        if (selectedServiceDuration && previousServiceDuration === getValues('duration')) {
-                          setValue('duration', selectedServiceDuration);
-                        }
-                      }
-
-                      if (!isExternalConsultationProviderCreating && selectedService?.location?.uuid) {
-                        setValue('location', selectedService.location.uuid, {
-                          shouldDirty: true,
-                          shouldValidate: true,
-                        });
-                      }
-                      onChange(event);
-                    }}
-                    ref={ref}
-                    value={value}
-                  >
-                    <SelectItem text={t('chooseService', 'Select service')} value="" />
-                    {availableServices?.length > 0 &&
-                      availableServices.map((service) => (
-                        <SelectItem key={service.uuid} text={service.name} value={service.name}>
-                          {service.name}
                         </SelectItem>
                       ))}
                   </Select>
@@ -1295,14 +1392,14 @@ const AppointmentsForm: React.FC<
             </div>
           </section>
 
-          {getValues('selectedService') && (
+          {selectedService && (
             <section className={styles.formGroup}>
               <ResponsiveWrapper>
                 <Workload
                   appointmentDate={watch('appointmentDateTime').startDate}
                   minDate={context === 'creating' ? dayjs().startOf('day').toDate() : undefined}
                   onWorkloadDateChange={handleWorkloadDateChange}
-                  selectedService={watch('selectedService')}
+                  serviceUuid={selectedService.uuid}
                 />
               </ResponsiveWrapper>
             </section>
@@ -1530,7 +1627,7 @@ function getAppointmentValidationMessages(
 ) {
   const labels: Record<string, string> = {
     location: t('location', 'UPSS'),
-    selectedService: t('service', 'Servicio'),
+    selectedServiceUuid: t('service', 'Servicio'),
     appointmentType: t('appointmentType', 'Tipo de cita'),
     provider: t('responsibleProvider', 'Personal de salud responsable'),
     startTime: t('time', 'Hora'),

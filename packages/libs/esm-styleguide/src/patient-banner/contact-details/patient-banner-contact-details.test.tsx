@@ -129,7 +129,7 @@ describe('ContactDetails', () => {
   it("renders the patient's address, contact details, patient lists, and relationships when available", async () => {
     renderWithSwr(<PatientBannerContactDetails patientId={'some-uuid'} deceased={false} />);
 
-    expect(screen.getByText(/address/i)).toBeInTheDocument();
+    expect(screen.getByText(/place of residence/i)).toBeInTheDocument();
     expect(screen.getByText(/contact details/i)).toBeInTheDocument();
     expect(screen.getByText(/familiares/i)).toBeInTheDocument();
     expect(screen.getByText(/Amanda Robinson/)).toBeInTheDocument();
@@ -143,6 +143,73 @@ describe('ContactDetails', () => {
     expect(screen.getByText(/List three/)).toBeInTheDocument();
     expect(screen.getByText(/postal code/i)).toBeInTheDocument();
     expect(screen.getByText(/00100/)).toBeInTheDocument();
+  });
+
+  it('renders residence and birthplace separately without exposing internal address metadata', () => {
+    const openmrsAddressExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/address';
+    const openmrsAddressExtensions = (values: Record<string, string>) => ({
+      url: openmrsAddressExtensionUrl,
+      extension: Object.entries(values).map(([field, value]) => ({
+        url: `${openmrsAddressExtensionUrl}#${field}`,
+        valueString: value,
+      })),
+    });
+
+    mockUsePatient.mockReturnValue({
+      isLoading: false,
+      patient: {
+        address: [
+          {
+            city: 'Birth district',
+            country: 'PERU',
+            district: 'Birth province',
+            extension: [
+              openmrsAddressExtensions({
+                address1: 'Birth populated center',
+                address13: 'PERU|BIRTH REGION|BIRTH PROVINCE|BIRTH DISTRICT',
+                address14: '1603030001',
+                address15: 'SIHSALUS_BIRTH_ADDRESS',
+              }),
+            ],
+            id: 'birth-address-uuid',
+            state: 'Birth region',
+            use: 'home',
+          },
+          {
+            city: 'Residence district',
+            country: 'PERU',
+            district: 'Residence province',
+            extension: [
+              openmrsAddressExtensions({
+                address1: 'Residence populated center',
+                address2: 'Jr. Principal 123',
+                address13: 'PERU|RESIDENCE REGION|RESIDENCE PROVINCE|RESIDENCE DISTRICT',
+                address14: '090501',
+              }),
+            ],
+            id: 'residence-address-uuid',
+            state: 'Residence region',
+            use: 'home',
+          },
+        ],
+      },
+      patientUuid: '123e4567-e89b-12d3-a456-426614174000',
+      error: null,
+    });
+
+    renderWithSwr(<PatientBannerContactDetails patientId={'some-uuid'} deceased={false} />);
+
+    expect(screen.getByText('Place of residence')).toBeInTheDocument();
+    expect(screen.getByText('Place of birth')).toBeInTheDocument();
+    expect(screen.getByText(/Residence populated center/)).toBeInTheDocument();
+    expect(screen.getByText(/Jr. Principal 123/)).toBeInTheDocument();
+    expect(screen.getByText(/Birth populated center/)).toBeInTheDocument();
+    expect(screen.queryByText(/address13/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/address14/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/address15/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/PERU\|/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/1603030001|090501/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/SIHSALUS_BIRTH_ADDRESS/)).not.toBeInTheDocument();
   });
 
   it('patient related name should be a link', async () => {
@@ -186,7 +253,7 @@ describe('ContactDetails', () => {
 
     renderWithSwr(<PatientBannerContactDetails patientId={'some-uuid'} deceased={false} />);
 
-    expect(screen.getByText(/address/i)).toBeInTheDocument();
+    expect(screen.getByText(/place of residence/i)).toBeInTheDocument();
     expect(screen.getByText(/familiares/i)).toBeInTheDocument();
     expect(screen.getByText(/contact details/i)).toBeInTheDocument();
     expect(screen.getByText(/patient lists/i)).toBeInTheDocument();

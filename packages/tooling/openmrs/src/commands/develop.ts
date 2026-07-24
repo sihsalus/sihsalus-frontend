@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 import express from 'express';
+import { rateLimit } from 'express-rate-limit';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { createSpaStaticOptions, isSpaIndexRequestPath } from '../../spa-static-options';
 import {
@@ -13,7 +14,7 @@ import {
   shouldAllowSelfSignedTls,
 } from '../utils';
 import { shouldProxyApiRequest } from './develop-path-filter';
-import { createInMemoryRateLimit, readRateLimitEnv } from './develop-rate-limit';
+import { createInMemoryRateLimit, readPositiveRateLimitEnv, readRateLimitEnv } from './develop-rate-limit';
 
 export interface DevelopArgs {
   port: number;
@@ -61,6 +62,13 @@ export async function runDevelop(args: DevelopArgs) {
   const apiRateLimit = createInMemoryRateLimit({
     windowMs: readRateLimitEnv('SIHSALUS_DEV_API_RATE_LIMIT_WINDOW_MS', 60_000),
     max: readRateLimitEnv('SIHSALUS_DEV_API_RATE_LIMIT_MAX', 0),
+  });
+  const localConfigRateLimit = rateLimit({
+    windowMs: readPositiveRateLimitEnv('SIHSALUS_DEV_LOCAL_CONFIG_RATE_LIMIT_WINDOW_MS', 60_000),
+    limit: readPositiveRateLimitEnv('SIHSALUS_DEV_LOCAL_CONFIG_RATE_LIMIT_MAX', 300),
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: 'Too many local configuration requests',
   });
 
   const localConfigUrlPrefix = '__local_config__';
@@ -147,7 +155,7 @@ export async function runDevelop(args: DevelopArgs) {
 
   configFiles.forEach((file, i) => {
     const url = localConfigUrls[i];
-    app.get(url, indexRateLimit, (_, res) => {
+    app.get(url, localConfigRateLimit, (_, res) => {
       res.contentType('application/json').send(readFileSync(resolve(process.cwd(), file)));
     });
   });

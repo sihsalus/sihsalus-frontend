@@ -1,14 +1,16 @@
-import { showModal } from '@openmrs/esm-framework';
+import { navigate, showModal } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { mockQueueEntries as mockQueueEntryData } from 'test-utils';
 import { useQueueEntries } from '../hooks/useQueueEntries';
+import { serviceQueuesBasePath } from '../constants';
 import { useServiceQueuesStore } from '../store/store';
 import type { QueueEntry } from '../types';
 import MetricsHeader from './metrics-header.component';
 
 const mockShowModal = vi.mocked(showModal);
+const mockNavigate = vi.mocked(navigate);
 const mockUseQueueEntries = vi.mocked(useQueueEntries);
 const mockUseServiceQueuesStore = vi.mocked(useServiceQueuesStore);
 
@@ -74,6 +76,17 @@ describe('MetricsHeader', () => {
       'clear-all-queue-entries-modal',
       expect.objectContaining({ queueEntries: mockQueueEntryData, closeModal: expect.any(Function) }),
     );
+  });
+
+  it('opens the visual queue from the metrics header', async () => {
+    const user = userEvent.setup();
+    mockQueueEntriesResult(mockQueueEntryData);
+
+    render(<MetricsHeader />);
+
+    await user.click(screen.getByRole('button', { name: /visual queue/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith({ to: `${serviceQueuesBasePath}/visual` });
   });
 });
 

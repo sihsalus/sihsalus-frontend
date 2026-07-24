@@ -1,0 +1,197 @@
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.page {
+  margin: layout.$spacing-05;
+}
+
+.boardSection {
+  position: relative;
+  border: 1px solid colors.$gray-20;
+  background: colors.$white-0;
+}
+
+.boardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+  border-bottom: 1px solid colors.$gray-20;
+
+  h2 {
+    @include type.type-style('heading-03');
+    margin: 0 0 layout.$spacing-02;
+  }
+
+  p {
+    @include type.type-style('body-compact-01');
+    margin: 0;
+    color: $text-02;
+  }
+}
+
+.patientTotal {
+  display: flex;
+  align-items: baseline;
+  gap: layout.$spacing-03;
+  white-space: nowrap;
+  color: $text-02;
+
+  span {
+    @include type.type-style('label-01');
+  }
+
+  strong {
+    @include type.type-style('heading-04');
+    color: colors.$gray-100;
+  }
+}
+
+.board {
+  display: grid;
+  grid-auto-columns: minmax(18rem, 1fr);
+  grid-auto-flow: column;
+  gap: layout.$spacing-05;
+  min-height: 25rem;
+  padding: layout.$spacing-05;
+  overflow-x: auto;
+  background: colors.$gray-10;
+}
+
+.lane {
+  min-width: 0;
+  border: 1px solid colors.$gray-20;
+  background: colors.$white-0;
+}
+
+.laneHeader {
+  display: flex;
+  min-height: layout.$spacing-09;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-03;
+  padding: 0 layout.$spacing-04;
+  border-bottom: 3px solid colors.$blue-60;
+
+  h3 {
+    @include type.type-style('heading-compact-02');
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.laneBody {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  max-height: 60vh;
+  min-height: 18rem;
+  padding: layout.$spacing-04;
+  overflow-y: auto;
+}
+
+.patientCard {
+  padding: layout.$spacing-04;
+  border: 1px solid colors.$gray-20;
+  border-left: layout.$spacing-02 solid colors.$blue-60;
+  background: colors.$white-0;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+}
+
+.cardTopLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-03;
+  margin-bottom: layout.$spacing-03;
+}
+
+.position {
+  @include type.type-style('heading-compact-02');
+  display: inline-flex;
+  width: layout.$spacing-07;
+  height: layout.$spacing-07;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: colors.$blue-10;
+  color: colors.$blue-70;
+}
+
+.patientName {
+  @include type.type-style('heading-compact-02');
+  display: block;
+  margin-bottom: layout.$spacing-02;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.queueName {
+  @include type.type-style('label-01');
+  margin: 0 0 layout.$spacing-04;
+  color: $text-02;
+}
+
+.waitTime {
+  @include type.type-style('body-compact-01');
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: layout.$spacing-02;
+  padding-top: layout.$spacing-03;
+  border-top: 1px solid colors.$gray-20;
+
+  svg {
+    color: colors.$blue-60;
+  }
+}
+
+.emptyLane {
+  @include type.type-style('body-compact-01');
+  margin: auto;
+  padding: layout.$spacing-05;
+  text-align: center;
+  color: $text-02;
+}
+
+.emptyBoard,
+.loading {
+  display: flex;
+  min-height: 25rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: layout.$spacing-03;
+  padding: layout.$spacing-07;
+  text-align: center;
+
+  svg {
+    width: 8rem;
+    height: 8rem;
+  }
+}
+
+.refreshing {
+  position: absolute;
+  top: layout.$spacing-03;
+  right: layout.$spacing-05;
+}
+
+@media (max-width: 671px) {
+  .page {
+    margin: layout.$spacing-03;
+  }
+
+  .boardHeader {
+    align-items: flex-start;
+  }
+
+  .board {
+    grid-auto-columns: minmax(85vw, 1fr);
+    padding: layout.$spacing-03;
+  }
+}

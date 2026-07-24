@@ -88,8 +88,8 @@ const AllergiesDetailedSummary: React.FC<AllergiesDetailedSummaryProps> = ({ pat
         </CardHeader>
         <DataTable rows={tableRows} headers={tableHeaders} isSortable useZebraStyles size={isTablet ? 'lg' : 'sm'}>
           {({ rows, headers, getHeaderProps, getTableProps }) => (
-            <TableContainer>
-              <Table aria-label="allergies summary" {...getTableProps()}>
+            <TableContainer className={styles.tableContainer}>
+              <Table className={styles.table} aria-label="allergies summary" {...getTableProps()}>
                 <TableHead>
                   <TableRow>
                     {headers.map((header) => (
@@ -110,7 +110,9 @@ const AllergiesDetailedSummary: React.FC<AllergiesDetailedSummaryProps> = ({ pat
                   {rows.map((row) => (
                     <TableRow key={row.id}>
                       {row.cells.map((cell) => (
-                        <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
+                        <TableCell className={styles.tableCell} key={cell.id}>
+                          {cell.value?.content ?? cell.value}
+                        </TableCell>
                       ))}
                       <TableCell className="cds--table-column-menu">
                         <AllergiesActionMenu

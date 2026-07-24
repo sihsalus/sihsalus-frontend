@@ -19,4 +19,49 @@
 .tableHeader {
   @include type.type-style('heading-compact-01');
   color: $text-02;
+  white-space: normal;
+}
+
+.tableContainer {
+  overflow-x: hidden;
+}
+
+.table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+
+  th:nth-child(1),
+  td:nth-child(1) {
+    width: 13%;
+  }
+
+  th:nth-child(2),
+  td:nth-child(2) {
+    width: 10%;
+  }
+
+  th:nth-child(3),
+  td:nth-child(3) {
+    width: 47%;
+  }
+
+  th:nth-child(4),
+  td:nth-child(4) {
+    width: 25%;
+  }
+
+  th:last-child,
+  td:last-child {
+    width: 3rem;
+  }
+}
+
+.tableCell {
+  height: auto;
+  vertical-align: top;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  line-height: 1.25rem;
 }

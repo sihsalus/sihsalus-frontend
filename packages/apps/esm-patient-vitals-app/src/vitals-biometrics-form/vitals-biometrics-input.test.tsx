@@ -302,7 +302,7 @@ describe('VitalsAndBiometricsInput', () => {
     expect(screen.getByTitle(/eye opening/i)).toBeInTheDocument();
   });
 
-  it('should validate the input based on the provided interpretation and reference range values', async () => {
+  it('renders upward indicators for high and critically high values', async () => {
     const config = useConfig();
 
     renderVitalsBiometricsInput({
@@ -322,10 +322,56 @@ describe('VitalsAndBiometricsInput', () => {
 
     await screen.findByRole('spinbutton');
 
-    expect(screen.getByRole('spinbutton', { name: /heart rate/i })).toBeInTheDocument();
-    const abnormalValueFlag = screen.getByTitle(/abnormal value/i);
+    const abnormalValueFlag = screen.getByTitle(/high abnormal value/i);
     expect(abnormalValueFlag).toBeInTheDocument();
-    expect(abnormalValueFlag).toHaveAccessibleName(/abnormal value/i);
+    expect(abnormalValueFlag).toHaveAttribute('data-direction', 'up');
+    expect(abnormalValueFlag.querySelectorAll('svg')).toHaveLength(2);
+  });
+
+  it('renders a downward indicator for a low value', () => {
+    const config = useConfig();
+
+    renderVitalsBiometricsInput({
+      fieldProperties: [
+        {
+          id: 'pulse',
+          name: 'Heart rate',
+          min: 0,
+          max: 230,
+          type: 'number',
+        },
+      ],
+      interpretation: assessValue(52, getReferenceRangesForConcept(config.concepts.pulseUuid, overridenMetadata)),
+      label: 'Heart rate',
+      unitSymbol: 'bpm',
+    });
+
+    const abnormalValueFlag = screen.getByTitle(/low abnormal value/i);
+    expect(abnormalValueFlag).toHaveAttribute('data-direction', 'down');
+    expect(abnormalValueFlag.querySelectorAll('svg')).toHaveLength(1);
+  });
+
+  it('marks the complete input container as invalid when a range error is shown', () => {
+    renderVitalsBiometricsInput({
+      fieldProperties: [
+        {
+          id: 'temperature',
+          name: 'Temperature',
+          min: 25,
+          max: 47,
+          type: 'number',
+        },
+      ],
+      isValueWithinReferenceRange: false,
+      label: 'Temperature',
+      showErrorMessage: true,
+      unitSymbol: 'C°',
+    });
+
+    const inputContainer = screen.getByText('C°').closest('section');
+
+    expect(inputContainer).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText(/value must be between 25 and 47/i)).toBeInTheDocument();
   });
 });
 

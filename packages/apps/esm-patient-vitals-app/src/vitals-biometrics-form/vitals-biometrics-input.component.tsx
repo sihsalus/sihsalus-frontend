@@ -1,5 +1,5 @@
 import { FormLabel, NumberInput, Select, SelectItem, TextArea } from '@carbon/react';
-import { Warning } from '@carbon/react/icons';
+import { ArrowDown, ArrowUp, Warning } from '@carbon/react/icons';
 import { ResponsiveWrapper, useLayoutType } from '@openmrs/esm-framework';
 import { shouldPreventPlainNumberKey, shouldPreventPlainNumberPaste } from '@openmrs/esm-utils';
 import classNames from 'classnames';
@@ -93,6 +93,8 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
 
   const abnormalValues: Array<AbnormalValue> = ['critically_low', 'critically_high', 'high', 'low'];
   const hasAbnormalValue = !isFocused && interpretation && abnormalValues.includes(interpretation as AbnormalValue);
+  const isHighAbnormalValue = interpretation === 'high' || interpretation === 'critically_high';
+  const isCriticalAbnormalValue = interpretation === 'critically_low' || interpretation === 'critically_high';
 
   function checkValidity(
     value: string,
@@ -182,7 +184,29 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
           </span>
 
           {hasAbnormalValue ? (
-            <span className={styles[interpretation.replace('_', '-')]} title={t('abnormalValue', 'Abnormal value')} />
+            <span
+              aria-label={
+                isHighAbnormalValue
+                  ? t('highAbnormalValue', 'High abnormal value')
+                  : t('lowAbnormalValue', 'Low abnormal value')
+              }
+              className={styles.abnormalValueIndicator}
+              data-direction={isHighAbnormalValue ? 'up' : 'down'}
+              role="img"
+              title={
+                isHighAbnormalValue
+                  ? t('highAbnormalValue', 'High abnormal value')
+                  : t('lowAbnormalValue', 'Low abnormal value')
+              }
+            >
+              {isHighAbnormalValue ? <ArrowUp aria-hidden="true" size={16} /> : <ArrowDown aria-hidden="true" size={16} />}
+              {isCriticalAbnormalValue &&
+                (isHighAbnormalValue ? (
+                  <ArrowUp aria-hidden="true" size={16} />
+                ) : (
+                  <ArrowDown aria-hidden="true" size={16} />
+                ))}
+            </span>
           ) : null}
 
           {showInvalidInputError ? (
@@ -191,7 +215,7 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
             </span>
           ) : null}
         </section>
-        <section className={inputClasses} style={{ ...fieldStyles }}>
+        <section aria-invalid={showInvalidInputError} className={inputClasses} style={{ ...fieldStyles }}>
           <div
             className={classNames({
               [styles.centered]: !isTablet || unitSymbol === 'mmHg',

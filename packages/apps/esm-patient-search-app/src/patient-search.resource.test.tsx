@@ -146,6 +146,38 @@ describe('patient search resource', () => {
     expect(mockUseSWRInfinite.mock.calls.at(-1)?.[0]).toBeNull();
   });
 
+  it('discards null and malformed patient results returned by the server', () => {
+    const validPatient = {
+      uuid: 'patient-a',
+      identifiers: [],
+      person: {
+        personName: {
+          display: 'Patient A',
+        },
+      },
+    };
+    mockUseSWRInfinite.mockReturnValue({
+      data: [
+        {
+          data: {
+            results: [validPatient, null, { ...validPatient, uuid: null }, { uuid: 'patient-without-person' }],
+            links: [],
+            totalCount: 4,
+          },
+        },
+      ],
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+      setSize: vi.fn(),
+      size: 1,
+    } as unknown as ReturnType<typeof useSWRInfinite>);
+
+    const { result } = renderHook(() => useInfinitePatientSearch('Patient', true));
+
+    expect(result.current.data).toEqual([validPatient]);
+  });
+
   it('collects unique patients from every active visit page', async () => {
     const firstPage = Array.from({ length: 100 }, (_, index) => ({
       uuid: `visit-${index}`,

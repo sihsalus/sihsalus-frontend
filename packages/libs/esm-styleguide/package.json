@@ -48,18 +48,18 @@
     "lint": "node ../../tooling/scripts/run-biome.js lint ."
   },
   "dependencies": {
-    "@carbon/charts": "^1.27.0",
-    "@carbon/react": "^1.92.1",
-    "@internationalized/date": "^3.8.0",
+    "@carbon/charts": "^1.27.17",
+    "@carbon/react": "^1.112.0",
+    "@internationalized/date": "^3.12.2",
     "@openmrs/esm-extensions": "workspace:*",
     "@openmrs/esm-routes": "workspace:*",
-    "@react-aria/datepicker": "^3.16.1",
-    "@react-aria/utils": "^3.28.2",
-    "@react-stately/datepicker": "^3.16.1",
+    "@react-aria/datepicker": "^3.17.1",
+    "@react-aria/utils": "^3.34.1",
+    "@react-stately/datepicker": "^3.17.1",
     "d3": "^7.8.0",
     "geopattern": "^1.2.3",
     "lodash-es": "^4.17.21",
-    "react-aria-components": "^1.7.1"
+    "react-aria-components": "^1.19.0"
   },
   "devDependencies": {
     "@openmrs/esm-api": "workspace:*",
@@ -76,7 +76,7 @@
     "@rspack/core": "1.7.11",
     "clean-webpack-plugin": "4.0.0",
     "css-loader": "7.1.4",
-    "sass-embedded": "1.89.0",
+    "sass-embedded": "1.100.0",
     "sass-loader": "16.0.5",
     "swc-loader": "0.2.7",
     "typescript": "6.0.3",

@@ -39,7 +39,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@carbon/react": "^1.92.1",
+    "@carbon/react": "^1.112.0",
     "lodash-es": "^4.17.21"
   },
   "peerDependencies": {
@@ -60,7 +60,7 @@
     "react-dom": "^18.3.1",
     "react-i18next": "^16.0.0",
     "rxjs": "^6.5.3",
-    "swr": "2.2.5",
+    "swr": "2.4.2",
     "typescript": "6.0.3",
     "vitest": "^4.1.7"
   }

@@ -150,6 +150,49 @@ describe('PatientBannerContactDetails', () => {
     expect(screen.queryByText('PERU|UCAYALI|ATALAYA|RAYMONDI|AGUAJAL')).not.toBeInTheDocument();
   });
 
+  it('renders the Peruvian administrative hierarchy with the correct labels', () => {
+    mockUsePatient.mockReturnValue({
+      isLoading: false,
+      patient: {
+        address: [
+          {
+            country: 'PERU',
+            district: 'NAPO',
+            extension: [
+              {
+                url: 'http://openmrs.org/fhir/StructureDefinition/address',
+                extension: [
+                  {
+                    url: 'http://openmrs.org/fhir/StructureDefinition/address#address1',
+                    valueString: 'LORETO',
+                  },
+                  {
+                    url: 'http://openmrs.org/fhir/StructureDefinition/address#address4',
+                    valueString: 'JR. PRINCIPAL 123',
+                  },
+                ],
+              },
+            ],
+            city: 'SANTA CLOTILDE',
+            state: 'MAYNAS',
+            use: 'home',
+          },
+        ],
+      },
+    } as ReturnType<typeof usePatient>);
+
+    render(<PatientBannerContactDetails patientId={patientId} deceased={false} />);
+
+    expect(screen.getByText('Department:').closest('li')).toHaveTextContent('LORETO');
+    expect(screen.getByText('Province:').closest('li')).toHaveTextContent('MAYNAS');
+    expect(screen.getByText('District:').closest('li')).toHaveTextContent('NAPO');
+    expect(screen.getByText('Population center:').closest('li')).toHaveTextContent('SANTA CLOTILDE');
+    expect(screen.getByText('Address:').closest('li')).toHaveTextContent('JR. PRINCIPAL 123');
+    expect(screen.queryByText('Address line 1:')).not.toBeInTheDocument();
+    expect(screen.queryByText('State:')).not.toBeInTheDocument();
+    expect(screen.queryByText('City:')).not.toBeInTheDocument();
+  });
+
   it('stops showing infinite loading for identifiers and relationships', () => {
     mockUsePatientAdditionalAttributes.mockReturnValue({
       additionalAttributes: [],

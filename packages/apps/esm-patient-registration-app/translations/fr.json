@@ -1,6 +1,13 @@
 {
   "addPatient": "Ajouter un patient",
   "addRelationshipButtonText": "Ajouter une relation ou lien de parenté",
+  "address1AddressFieldLabel": "Département",
+  "address3AddressFieldLabel": "Quartier",
+  "address4AddressFieldLabel": "Adresse",
+  "cityVillageAddressFieldLabel": "Localité",
+  "countryAddressFieldLabel": "Pays",
+  "countyDistrictAddressFieldLabel": "District",
+  "stateProvinceAddressFieldLabel": "Province",
   "addressFieldsUnavailableSubtitle": "Actualisez la page. Si le problème persiste, vérifiez que le modèle d'adresse est configuré et que votre session est active.",
   "addressFieldsUnavailableTitle": "Champs d'adresse indisponibles",
   "addressHeader": "Adresse de résidence",

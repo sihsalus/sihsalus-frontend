@@ -42,6 +42,25 @@ El identificador temporal debe generarse con el tipo/fuente configurada de OpenM
 
 El registro Perú muestra residencia, lugar de nacimiento y teléfono en una sola sección visual: `Residencia, nacimiento y contacto`.
 
+Contrato canónico de campos territoriales:
+
+| Campo OpenMRS | Significado en SIH Salus |
+| --- | --- |
+| `country` | País |
+| `address1` | Departamento |
+| `stateProvince` | Provincia |
+| `countyDistrict` | Distrito |
+| `cityVillage` | Centro poblado |
+| `address3` | Barrio |
+| `address4` | Dirección |
+| `address13` | Path jerárquico interno |
+| `address14` | Código UBIGEO interno |
+| `address15` | Marca interna de dirección de nacimiento |
+
+FHIR proyecta `stateProvince` como `state`, `countyDistrict` como `district` y `cityVillage` como `city`; los campos `address*` se reciben como extensiones. Las vistas deben traducir esos alias sin reinterpretar ni mover sus valores.
+
+La terminología sigue la [consulta oficial de centros poblados del INEI](https://www.gob.pe/24116-consultar-informacion-sobre-centros-poblados): departamento, provincia, distrito y centro poblado. Para Santa Clotilde, la referencia territorial es Loreto / Maynas / Napo / Santa Clotilde, según la [ficha distrital de Napo de SINIA/MINAM](https://sinia.minam.gob.pe/mapas/mapa-distrito-napo-2023).
+
 La persistencia sigue separada:
 
 - La residencia se guarda en `person.addresses` como dirección preferida (`preferred: true`) usando la plantilla de dirección activa del backend.

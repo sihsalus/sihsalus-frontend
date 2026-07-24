@@ -20,6 +20,19 @@ const birthAddressMarkerField = 'address15';
 const birthAddressMarker = 'SIHSALUS_BIRTH_ADDRESS';
 const hiddenAddressExtensionFields = new Set(['address13', 'address14', birthAddressMarkerField]);
 const standardAddressFields = ['city', 'district', 'state', 'postalCode', 'country'] as const;
+const peruAddressFieldLabels: Record<string, { defaultValue: string; translationKey: CoreTranslationKey }> = {
+  address1: { defaultValue: 'Department', translationKey: 'department' },
+  address2: { defaultValue: 'Address', translationKey: 'address' },
+  address3: { defaultValue: 'Neighborhood', translationKey: 'neighborhood' },
+  address4: { defaultValue: 'Address', translationKey: 'address' },
+  city: { defaultValue: 'Population center', translationKey: 'populationCenter' },
+  cityVillage: { defaultValue: 'Population center', translationKey: 'populationCenter' },
+  country: { defaultValue: 'Country', translationKey: 'country' },
+  countyDistrict: { defaultValue: 'District', translationKey: 'district' },
+  district: { defaultValue: 'District', translationKey: 'district' },
+  state: { defaultValue: 'Province', translationKey: 'province' },
+  stateProvince: { defaultValue: 'Province', translationKey: 'province' },
+};
 
 function getAddressExtensionField(url?: string) {
   return url?.split('#')[1];
@@ -37,6 +50,14 @@ function getAddressExtensionValue(address: fhir.Address | undefined, field: stri
 
 function isBirthAddress(address: fhir.Address) {
   return getAddressExtensionValue(address, birthAddressMarkerField) === birthAddressMarker;
+}
+
+function getAddressFieldLabel(field: string) {
+  const peruLabel = peruAddressFieldLabels[field];
+
+  return peruLabel
+    ? getCoreTranslation(peruLabel.translationKey, peruLabel.defaultValue)
+    : getCoreTranslation(field as CoreTranslationKey, field);
 }
 
 function getAddressDetails(address?: fhir.Address) {
@@ -63,7 +84,7 @@ function getAddressDetails(address?: fhir.Address) {
   const lineDetails =
     address.line
       ?.map((line, index) => ({
-        field: `address${index + 1}`,
+        field: 'address',
         key: `line-${index}`,
         value: line.trim(),
       }))
@@ -107,7 +128,7 @@ const AddressDetails: React.FC<{ address?: fhir.Address }> = ({ address }) => {
       {details.length ? (
         details.map(({ field, key, value }) => (
           <li key={key}>
-            {getCoreTranslation(field as CoreTranslationKey, field)}: {value}
+            {getAddressFieldLabel(field)}: {value}
           </li>
         ))
       ) : (

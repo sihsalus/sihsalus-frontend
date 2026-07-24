@@ -7,6 +7,7 @@ import React, { useContext, useMemo } from 'react';
 import { spaHomePage } from '../../constants';
 import { isSameMonth } from '../../helpers';
 import SelectedDateContext from '../../hooks/selectedDateContext';
+import { getAppointmentServiceFilterSearch } from '../../hooks/useAppointmentServiceFilter';
 import { type DailyAppointmentsCountByService } from '../../types';
 
 import styles from './monthly-view-workload.scss';
@@ -15,10 +16,16 @@ import MonthlyWorkloadViewExpanded from './monthly-workload-view-expanded.compon
 export interface MonthlyWorkloadViewProps {
   events: Array<DailyAppointmentsCountByService>;
   dateTime: Dayjs;
+  appointmentServiceTypes?: Array<string>;
   showAllServices?: boolean;
 }
 
-const MonthlyWorkloadView: React.FC<MonthlyWorkloadViewProps> = ({ dateTime, events, showAllServices = false }) => {
+const MonthlyWorkloadView: React.FC<MonthlyWorkloadViewProps> = ({
+  appointmentServiceTypes = [],
+  dateTime,
+  events,
+  showAllServices = false,
+}) => {
   const layout = useLayoutType();
   const { selectedDate } = useContext(SelectedDateContext);
 
@@ -47,7 +54,12 @@ const MonthlyWorkloadView: React.FC<MonthlyWorkloadViewProps> = ({ dateTime, eve
   }, [currentData?.services, layout, showAllServices]);
 
   const navigateToAppointmentsByDate = (serviceUuid: string) => {
-    navigate({ to: `${spaHomePage}/appointments/${dayjs(dateTime).format('YYYY-MM-DD')}/${serviceUuid}` });
+    const serviceTypes = serviceUuid ? [serviceUuid] : appointmentServiceTypes;
+    navigate({
+      to: `${spaHomePage}/appointments/${dayjs(dateTime).format('YYYY-MM-DD')}${getAppointmentServiceFilterSearch(
+        serviceTypes,
+      )}`,
+    });
   };
 
   return (
@@ -86,9 +98,9 @@ const MonthlyWorkloadView: React.FC<MonthlyWorkloadViewProps> = ({ dateTime, eve
           </span>
           {currentData?.services && (
             <div className={styles.currentData}>
-              {visibleServices.map(({ serviceName, serviceUuid, count }, i) => (
+              {visibleServices.map(({ serviceName, serviceUuid, count }) => (
                 <div
-                  key={`${serviceUuid}-${count}-${i}`}
+                  key={serviceUuid}
                   role="button"
                   tabIndex={0}
                   onClick={(e) => {
@@ -113,6 +125,7 @@ const MonthlyWorkloadView: React.FC<MonthlyWorkloadViewProps> = ({ dateTime, eve
                   count={currentData.services.length - (layout === 'small-desktop' ? 2 : 4)}
                   events={events}
                   dateTime={dateTime}
+                  appointmentServiceTypes={appointmentServiceTypes}
                 />
               ) : (
                 ''

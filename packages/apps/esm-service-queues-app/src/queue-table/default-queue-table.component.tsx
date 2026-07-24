@@ -114,7 +114,7 @@ function QueueTableSection() {
   );
 }
 
-function StatusSwitcher() {
+export function StatusSwitcher() {
   const { t } = useTranslation();
   const layout = useLayoutType();
   const { statuses, isLoadingQueueStatuses, queueStatusesError } = useQueueStatuses();

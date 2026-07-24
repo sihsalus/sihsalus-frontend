@@ -116,6 +116,7 @@
     ]
   },
   "@sihsalus/esm-patient-chart-app": {
+    "companionVisitAttributeTypeUuid": "710da0b9-e15f-47f0-827a-e97f1937c81d",
     "visitPersistenceTokenAttributeTypeUuid": "eb8b793b-f259-451d-9c09-53aa0ffd0d3f",
     "visitTypeEligibilityRules": [
       {

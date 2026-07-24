@@ -7,6 +7,7 @@ import Home from './home.component';
 import ServicesTable from './queue-patient-linelists/queue-services-table.component';
 import AppointmentsTable from './queue-patient-linelists/scheduled-appointments-table.component';
 import QueueScreen from './queue-screen/queue-screen.component';
+import VisualQueue from './visual-queue/visual-queue.component';
 import QueueTableByStatusView from './views/queue-table-by-status-view.component';
 
 const Root: React.FC = () => {
@@ -23,6 +24,7 @@ const Root: React.FC = () => {
           >
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/visual" element={<VisualQueue />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/queue-table-by-status/:queueUuid" element={<QueueTableByStatusView />} />
               <Route path="/queue-table-by-status/:queueUuid/:statusUuid" element={<QueueTableByStatusView />} />

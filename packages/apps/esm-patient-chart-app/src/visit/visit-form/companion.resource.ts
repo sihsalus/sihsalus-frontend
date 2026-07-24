@@ -1,7 +1,6 @@
 import { openmrsFetch, restBaseUrl, type FetchResponse } from '@openmrs/esm-framework';
 
 export interface CompanionRecord {
-  relationshipUuid: string;
   personUuid: string;
   name: string;
 }
@@ -26,36 +25,9 @@ export interface NewCompanionPersonPayload {
   birthdateEstimated: boolean;
 }
 
-interface RelationshipResponse {
-  uuid: string;
-}
-
 interface PersonResponse {
   uuid: string;
   display?: string;
-}
-
-export async function createCompanionRelationship(
-  patientUuid: string,
-  companionPersonUuid: string,
-  relationshipTypeUuid: string,
-) {
-  const response = await openmrsFetch<RelationshipResponse>(`${restBaseUrl}/relationship`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: {
-      // SIH SALUS configures Acompañante as aIsToB: the companion is A and the patient is B.
-      personA: companionPersonUuid,
-      personB: patientUuid,
-      relationshipType: relationshipTypeUuid,
-    },
-  });
-
-  if (!response.data?.uuid) {
-    throw new Error('The backend did not return the companion relationship UUID.');
-  }
-
-  return response.data.uuid;
 }
 
 export async function createCompanionPerson(payload: NewCompanionPersonPayload) {
@@ -72,4 +44,64 @@ export async function createCompanionPerson(payload: NewCompanionPersonPayload) 
   return response.data;
 }
 
-export type PersonSearchResponse = FetchResponse<{ results: Array<PersonSearchResult> }>;
+export async function getCompanionPerson(personUuid: string) {
+  const response = await openmrsFetch<PersonResponse>(`${restBaseUrl}/person/${personUuid}?v=custom:(uuid,display)`);
+
+  if (!response.data?.uuid) {
+    throw new Error('The backend did not return the companion person.');
+  }
+
+  return response.data;
+}
+
+export function getVisitCompanionPersonUuid(
+  attributes: Array<unknown> | null | undefined,
+  companionVisitAttributeTypeUuid: string | null | undefined,
+) {
+  if (!companionVisitAttributeTypeUuid) {
+    return undefined;
+  }
+
+  const companionAttribute = attributes?.find((attribute) => {
+    if (!attribute || typeof attribute !== 'object' || !('attributeType' in attribute)) {
+      return false;
+    }
+
+    const attributeType = attribute.attributeType;
+    return (
+      attributeType &&
+      typeof attributeType === 'object' &&
+      'uuid' in attributeType &&
+      attributeType.uuid === companionVisitAttributeTypeUuid
+    );
+  });
+  const value =
+    companionAttribute && typeof companionAttribute === 'object' && 'value' in companionAttribute
+      ? companionAttribute.value
+      : undefined;
+
+  if (value && typeof value === 'object' && 'uuid' in value) {
+    return String(value.uuid || '') || undefined;
+  }
+
+  return value ? String(value) : undefined;
+}
+
+export function withVisitCompanionAttribute(
+  visitAttributes: Record<string, string>,
+  companionVisitAttributeTypeUuid: string | null | undefined,
+  companionPersonUuid: string | null | undefined,
+) {
+  if (!companionVisitAttributeTypeUuid) {
+    return visitAttributes;
+  }
+
+  return {
+    ...visitAttributes,
+    [companionVisitAttributeTypeUuid]: companionPersonUuid ?? '',
+  };
+}
+
+export type PersonSearchResponse = FetchResponse<{
+  results: Array<PersonSearchResult>;
+}>;

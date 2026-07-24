@@ -51,6 +51,7 @@ import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import useSWR from 'swr';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
@@ -62,8 +63,13 @@ import { canEditVisit, canStartVisit } from '../visit-access';
 import { invalidateUseVisits, useInfiniteVisits } from '../visits-widget/visit.resource';
 
 import BaseVisitType from './base-visit-type.component';
-import CompanionList, { usePatientCompanions } from './companion-list.component';
-import { type CompanionRecord } from './companion.resource';
+import CompanionList from './companion-list.component';
+import {
+  getCompanionPerson,
+  getVisitCompanionPersonUuid,
+  type CompanionRecord,
+  withVisitCompanionAttribute,
+} from './companion.resource';
 import LocationSelector from './location-selector.component';
 import { getMinorCompanionRequirementState, isPatientMinor } from './minor-companion-validation';
 import { MemoizedRecommendedVisitType } from './recommended-visit-type.component';
@@ -100,7 +106,10 @@ const DETERMINISTIC_VISIT_CREATE_REJECTION_STATUSES = new Set([
 ]);
 
 function isDefinitiveClientRejection(error: unknown) {
-  const candidate = error as { status?: unknown; response?: { status?: unknown } };
+  const candidate = error as {
+    status?: unknown;
+    response?: { status?: unknown };
+  };
   const status = Number(candidate?.status ?? candidate?.response?.status);
   return Number.isInteger(status) && DETERMINISTIC_VISIT_CREATE_REJECTION_STATUSES.has(status);
 }
@@ -130,6 +139,7 @@ interface StartVisitFormWorkspaceProps {
   requestedServiceName?: string;
   visitToEdit?: Visit;
   workspaceTitle?: string;
+  workspaceDescription?: string;
 }
 
 type LegacyStartVisitFormProps = DefaultPatientWorkspaceProps & StartVisitFormWorkspaceProps;
@@ -165,6 +175,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     visitToEdit,
     openedFrom,
     workspaceTitle,
+    workspaceDescription,
   } = workspaceProps;
   const isQueueRegistration = openedFrom === 'service-queues-add-patient' && !visitToEdit;
   const initialPatientUuid = isWorkspace2
@@ -173,7 +184,9 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   const closeCurrentWorkspace = useCallback(
     (options?: { ignoreChanges?: boolean }) => {
       if (isWorkspace2Props(props)) {
-        void props.closeWorkspace({ discardUnsavedChanges: options?.ignoreChanges });
+        void props.closeWorkspace({
+          discardUnsavedChanges: options?.ignoreChanges,
+        });
         return;
       }
 
@@ -201,13 +214,30 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   );
   const { emrConfiguration } = useEmrConfiguration(isEmrApiModuleInstalled);
   const { patientUuid, patient, isLoading: isLoadingPatient } = usePatient(initialPatientUuid);
+  const persistedCompanionPersonUuid = getVisitCompanionPersonUuid(
+    visitToEdit?.attributes,
+    config.companionVisitAttributeTypeUuid,
+  );
   const {
-    companions,
-    companionRelationshipTypeUuid,
-    isLoading: isLoadingCompanions,
-    mutate: mutateCompanions,
-  } = usePatientCompanions(patientUuid);
-  const [selectedCompanionRelationshipUuid, setSelectedCompanionRelationshipUuid] = useState<string>();
+    data: persistedCompanionPerson,
+    error: persistedCompanionPersonError,
+    isLoading: isLoadingPersistedCompanion,
+  } = useSWR(
+    persistedCompanionPersonUuid ? ['visit-companion-person', persistedCompanionPersonUuid] : null,
+    () => getCompanionPerson(persistedCompanionPersonUuid),
+    { shouldRetryOnError: false },
+  );
+  const [selectedCompanion, setSelectedCompanion] = useState<CompanionRecord | undefined>(() =>
+    persistedCompanionPersonUuid
+      ? {
+          personUuid: persistedCompanionPersonUuid,
+          name: persistedCompanionPersonUuid,
+        }
+      : undefined,
+  );
+  const companionSelectionTouched = useRef(false);
+  const companionVisitKey = visitToEdit?.uuid ?? `new:${patientUuid}`;
+  const previousCompanionVisitKey = useRef(companionVisitKey);
   const [contentSwitcherIndex, setContentSwitcherIndex] = useState(config.showRecommendedVisitTypeTab ? 0 : 1);
   const visitHeaderSlotState = useMemo(() => ({ patientUuid }), [patientUuid]);
   const { activePatientEnrollment, isLoading } = useActivePatientEnrollment(patientUuid);
@@ -226,6 +256,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   // A missing attribute type would make the backend reject the whole visit payload,
   // so the correlation token is dropped when the backend does not have it provisioned.
   const persistenceAttributeTypeExists = useVisitAttributeTypeExists(config.visitPersistenceTokenAttributeTypeUuid);
+  const companionAttributeTypeExists = useVisitAttributeTypeExists(config.companionVisitAttributeTypeUuid);
   const effectiveVisitPersistenceCorrelation = useMemo<VisitPersistenceCorrelation | undefined>(() => {
     if (visitToEdit) {
       return undefined;
@@ -291,52 +322,69 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   const companionRequired = !visitToEdit && isMinorPatient;
 
   useEffect(() => {
-    if (!companionRequired) {
-      setSelectedCompanionRelationshipUuid(undefined);
-      return;
+    if (previousCompanionVisitKey.current !== companionVisitKey) {
+      previousCompanionVisitKey.current = companionVisitKey;
+      companionSelectionTouched.current = false;
+      setSelectedCompanion(
+        persistedCompanionPersonUuid
+          ? {
+              personUuid: persistedCompanionPersonUuid,
+              name: persistedCompanionPersonUuid,
+            }
+          : undefined,
+      );
     }
+  }, [companionVisitKey, persistedCompanionPersonUuid]);
 
-    const selectedCompanionStillExists = companions.some(
-      ({ relationshipUuid }) => relationshipUuid === selectedCompanionRelationshipUuid,
-    );
-    if (selectedCompanionStillExists) {
-      return;
+  useEffect(() => {
+    if (
+      persistedCompanionPerson &&
+      !companionSelectionTouched.current &&
+      persistedCompanionPerson.uuid === persistedCompanionPersonUuid
+    ) {
+      setSelectedCompanion({
+        personUuid: persistedCompanionPerson.uuid,
+        name: persistedCompanionPerson.display || persistedCompanionPerson.uuid,
+      });
     }
+  }, [persistedCompanionPerson, persistedCompanionPersonUuid]);
 
-    setSelectedCompanionRelationshipUuid(companions.length === 1 ? companions[0].relationshipUuid : undefined);
-  }, [companionRequired, companions, selectedCompanionRelationshipUuid]);
+  const handleCompanionSelected = useCallback((companion: CompanionRecord) => {
+    companionSelectionTouched.current = true;
+    setSelectedCompanion(companion);
+  }, []);
 
-  const handleCompanionSaved = useCallback(
-    async (companion: CompanionRecord) => {
-      await mutateCompanions().catch(() => undefined);
-      setSelectedCompanionRelationshipUuid(companion.relationshipUuid);
-    },
-    [mutateCompanions],
-  );
+  const handleClearCompanion = useCallback(() => {
+    companionSelectionTouched.current = true;
+    setSelectedCompanion(undefined);
+  }, []);
 
   const launchCompanionWorkspace = useCallback(
     (workspaceName: string) => {
-      if (!isWorkspace2Props(props) || !companionRelationshipTypeUuid) {
+      if (!isWorkspace2Props(props)) {
         return;
       }
 
       void props.launchChildWorkspace(workspaceName, {
         patientUuid,
-        relationshipTypeUuid: companionRelationshipTypeUuid,
-        existingCompanionPersonUuids: companions.map(({ personUuid }) => personUuid),
-        requireAdult: companionRequired,
-        onCompanionSaved: handleCompanionSaved,
+        requireAdult: isMinorPatient,
+        onCompanionSelected: handleCompanionSelected,
       });
     },
-    [companionRelationshipTypeUuid, companionRequired, companions, handleCompanionSaved, patientUuid, props],
+    [handleCompanionSelected, isMinorPatient, patientUuid, props],
   );
+  const isLoadingCompanion =
+    Boolean(persistedCompanionPersonUuid) &&
+    isLoadingPersistedCompanion &&
+    !persistedCompanionPersonError &&
+    !companionSelectionTouched.current;
   const companionRequirementState =
     !visitToEdit && isLoadingPatient
       ? 'loading'
       : getMinorCompanionRequirementState(
           companionRequired,
-          isLoadingCompanions,
-          Boolean(selectedCompanionRelationshipUuid),
+          isLoadingCompanion,
+          Boolean(selectedCompanion?.personUuid),
         );
 
   const visitFormSchema = useMemo(() => {
@@ -795,6 +843,19 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
         return;
       }
 
+      if (selectedCompanion && !companionAttributeTypeExists) {
+        showSnackbar({
+          title: t('companionConfigurationMissing', 'No se pudo guardar el acompañante'),
+          subtitle: t(
+            'companionConfigurationMissingMessage',
+            'El atributo de acompañante por consulta no está configurado. Contacte a soporte.',
+          ),
+          kind: 'error',
+          isLowContrast: false,
+        });
+        return;
+      }
+
       const queueEntryIsRequired =
         openedFrom === 'appointments-check-in' || openedFrom === 'service-queues-add-patient';
       if (queueEntryIsRequired && !isOnline) {
@@ -944,7 +1005,12 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             minutes,
             currentSeconds,
           );
-      const submittedVisitAttributes = Object.entries(visitAttributes)
+      const visitAttributesWithCompanion = withVisitCompanionAttribute(
+        visitAttributes,
+        config.companionVisitAttributeTypeUuid,
+        selectedCompanion?.personUuid,
+      );
+      const submittedVisitAttributes = Object.entries(visitAttributesWithCompanion)
         .filter(([attributeType, value]) => Boolean(attributeType && value))
         .map(([attributeType, value]) => ({ attributeType, value }));
       const initialVisitAttributes = [...(additionalVisitAttributes ?? [])];
@@ -1089,7 +1155,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           }
 
           if (!completedPostSubmitActions.current.has('visit-attributes')) {
-            const visitAttributesResponses = await handleVisitAttributes(visitAttributes, visit.uuid);
+            const visitAttributesResponses = await handleVisitAttributes(visitAttributesWithCompanion, visit.uuid);
             completedPostSubmitActions.current.add('visit-attributes');
             if (visitAttributesResponses.length > 0) {
               showSnackbar({
@@ -1227,6 +1293,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       closeCurrentWorkspace,
       additionalVisitAttributes,
       config.offlineVisitTypeUuid,
+      config.companionVisitAttributeTypeUuid,
       config.showExtraVisitAttributesSlot,
       displayVisitStopDateTimeFields,
       extraVisitInfo,
@@ -1248,6 +1315,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       validateVisitStartStopDatetime,
       visitToEdit,
       companionRequirementState,
+      companionAttributeTypeExists,
+      selectedCompanion,
     ],
   );
 
@@ -1277,6 +1346,16 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                 ? 'No repita la admisión. Pulse Reintentar para verificar la consulta antes de continuar.'
                 : 'No vuelva a enviar el formulario. Ciérrelo y verifique las consultas activas del paciente antes de continuar.',
             )}
+          />
+        ) : null}
+        {workspaceDescription ? (
+          <InlineNotification
+            hideCloseButton
+            kind="info"
+            lowContrast
+            className={styles.workspaceDescription}
+            title={t('startVisitInstructionsTitle', 'Revise los datos de la atención')}
+            subtitle={workspaceDescription}
           />
         ) : null}
         <fieldset
@@ -1356,23 +1435,18 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
               {/* This field lets the user select a location for the visit. The location is required for the visit to be saved. Defaults to the active session location */}
               <LocationSelector control={control} lockedLocation={requiredVisitLocation} />
 
-              {/* Loads and selects the patient's persisted Acompañante relationships. */}
+              {/* The selected person is persisted only on this consultation, never as a patient relationship. */}
               <CompanionList
-                companions={companions}
-                isLoading={isLoadingCompanions}
+                isLoading={isLoadingCompanion}
+                onClearCompanion={handleClearCompanion}
                 onRegisterPerson={
-                  companionRequired && isWorkspace2
-                    ? () => launchCompanionWorkspace(companionPersonRegistrationWorkspace)
-                    : undefined
+                  isWorkspace2 ? () => launchCompanionWorkspace(companionPersonRegistrationWorkspace) : undefined
                 }
                 onSearchPerson={
-                  companionRequired && isWorkspace2
-                    ? () => launchCompanionWorkspace(companionPersonSearchWorkspace)
-                    : undefined
+                  isWorkspace2 ? () => launchCompanionWorkspace(companionPersonSearchWorkspace) : undefined
                 }
-                onSelectCompanion={setSelectedCompanionRelationshipUuid}
                 required={companionRequired}
-                selectedCompanionRelationshipUuid={selectedCompanionRelationshipUuid}
+                selectedCompanion={selectedCompanion}
               />
 
               {/* Lists available program types. This feature is dependent on the `showRecommendedVisitTypeTab` config being set

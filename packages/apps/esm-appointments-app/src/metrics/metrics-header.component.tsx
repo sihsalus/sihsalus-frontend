@@ -17,12 +17,17 @@ import { useTranslation } from 'react-i18next';
 
 import { appointmentsEditPrivilege, spaHomePage } from '../constants';
 import SelectedDateContext from '../hooks/selectedDateContext';
+import { getAppointmentServiceFilterSearch } from '../hooks/useAppointmentServiceFilter';
 
 import styles from './metrics-header.scss';
 
 dayjs.extend(isToday);
 
-const MetricsHeader: React.FC = () => {
+interface MetricsHeaderProps {
+  appointmentServiceTypes: Array<string>;
+}
+
+const MetricsHeader: React.FC<MetricsHeaderProps> = ({ appointmentServiceTypes }) => {
   const { t } = useTranslation();
   const { selectedDate } = useContext(SelectedDateContext);
   const layout = useLayoutType();
@@ -50,7 +55,11 @@ const MetricsHeader: React.FC = () => {
           renderIcon={Calendar}
           size={responsiveSize}
           onClick={() =>
-            navigate({ to: `${spaHomePage}/appointments/calendar/${dayjs(selectedDate).format('YYYY-MM-DD')}` })
+            navigate({
+              to: `${spaHomePage}/appointments/calendar/${dayjs(selectedDate).format(
+                'YYYY-MM-DD',
+              )}${getAppointmentServiceFilterSearch(appointmentServiceTypes)}`,
+            })
           }
         >
           {t('appointmentsCalendar', 'Appointments calendar')}

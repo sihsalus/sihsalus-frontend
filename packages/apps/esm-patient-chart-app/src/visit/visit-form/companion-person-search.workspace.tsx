@@ -7,25 +7,18 @@ import {
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 import dayjs from 'dayjs';
 
-import {
-  createCompanionRelationship,
-  type CompanionRecord,
-  type PersonSearchResponse,
-  type PersonSearchResult,
-} from './companion.resource';
+import { type CompanionRecord, type PersonSearchResponse, type PersonSearchResult } from './companion.resource';
 import styles from './companion-workspace.scss';
 
 export interface CompanionWorkspaceProps {
   patientUuid: string;
-  relationshipTypeUuid: string;
-  existingCompanionPersonUuids: Array<string>;
   requireAdult: boolean;
-  onCompanionSaved: (companion: CompanionRecord) => void | Promise<void>;
+  onCompanionSelected: (companion: CompanionRecord) => void | Promise<void>;
 }
 
 const minimumSearchLength = 3;
@@ -61,25 +54,13 @@ const CompanionPersonSearchWorkspace: React.FC<Workspace2DefinitionProps<Compani
       ? `${restBaseUrl}/person?q=${encodeURIComponent(debouncedQuery)}&v=custom:(uuid,display,age,birthdate)`
       : null;
   const { data, error, isLoading } = useSWR<PersonSearchResponse>(searchUrl, openmrsFetch);
-  const existingCompanionPersonUuids = useMemo(
-    () => new Set(workspaceProps.existingCompanionPersonUuids),
-    [workspaceProps.existingCompanionPersonUuids],
-  );
-  const results = (data?.data?.results ?? []).filter(
-    (person) => person.uuid !== workspaceProps.patientUuid && !existingCompanionPersonUuids.has(person.uuid),
-  );
+  const results = (data?.data?.results ?? []).filter((person) => person.uuid !== workspaceProps.patientUuid);
 
   const handleSelectPerson = async (person: PersonSearchResult) => {
     setSavingPersonUuid(person.uuid);
     setSaveError(null);
     try {
-      const relationshipUuid = await createCompanionRelationship(
-        workspaceProps.patientUuid,
-        person.uuid,
-        workspaceProps.relationshipTypeUuid,
-      );
-      await workspaceProps.onCompanionSaved({
-        relationshipUuid,
+      await workspaceProps.onCompanionSelected({
         personUuid: person.uuid,
         name: person.display,
       });

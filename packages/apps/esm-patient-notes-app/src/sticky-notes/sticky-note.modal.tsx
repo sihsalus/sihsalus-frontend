@@ -71,6 +71,7 @@ const StickyNoteModal: React.FC<StickyNoteModalProps> = ({ close, existingNote, 
           value={value}
           onChange={(e) => setValue(e.target.value)}
           rows={4}
+          maxCount={MAX_NOTE_LENGTH}
           maxLength={MAX_NOTE_LENGTH}
           enableCounter
           counterMode="character"

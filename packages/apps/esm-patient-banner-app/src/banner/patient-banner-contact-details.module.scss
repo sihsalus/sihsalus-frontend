@@ -17,7 +17,7 @@
 .tiles {
   @include type.type-style("body-compact-01");
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
   align-items: stretch;
 }
 

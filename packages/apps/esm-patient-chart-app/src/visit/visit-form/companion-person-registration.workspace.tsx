@@ -12,11 +12,7 @@ import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
-import {
-  createCompanionPerson,
-  createCompanionRelationship,
-  type CompanionRecord,
-} from './companion.resource';
+import { createCompanionPerson, type CompanionRecord } from './companion.resource';
 import { type CompanionWorkspaceProps } from './companion-person-search.workspace';
 import styles from './companion-workspace.scss';
 
@@ -38,7 +34,6 @@ const CompanionPersonRegistrationWorkspace: React.FC<Workspace2DefinitionProps<C
   const { t } = useTranslation();
   const [isSaving, setIsSaving] = useState(false);
   const createdPerson = useRef<{ uuid: string; name: string } | null>(null);
-  const createdRelationshipUuid = useRef<string | null>(null);
   const schema = useMemo(
     () =>
       z.object({
@@ -69,7 +64,9 @@ const CompanionPersonRegistrationWorkspace: React.FC<Workspace2DefinitionProps<C
             message: t('nameContainsInvalidCharacters', 'El nombre contiene caracteres no válidos'),
           }),
         gender: z.enum(['M', 'F', 'O', 'U'], {
-          errorMap: () => ({ message: t('genderRequired', 'Seleccione el sexo') }),
+          errorMap: () => ({
+            message: t('genderRequired', 'Seleccione el sexo'),
+          }),
         }),
         estimatedAge: z
           .string()
@@ -125,23 +122,17 @@ const CompanionPersonRegistrationWorkspace: React.FC<Workspace2DefinitionProps<C
         createdPerson.current = { uuid: person.uuid, name: displayName };
       }
 
-      if (!createdRelationshipUuid.current) {
-        createdRelationshipUuid.current = await createCompanionRelationship(
-          workspaceProps.patientUuid,
-          createdPerson.current.uuid,
-          workspaceProps.relationshipTypeUuid,
-        );
-      }
       const companion: CompanionRecord = {
-        relationshipUuid: createdRelationshipUuid.current,
         personUuid: createdPerson.current.uuid,
         name: createdPerson.current.name,
       };
-      await workspaceProps.onCompanionSaved(companion);
+      await workspaceProps.onCompanionSelected(companion);
       showSnackbar({
         kind: 'success',
         title: t('companionRegistered', 'Acompañante registrado'),
-        subtitle: t('companionRegisteredMessage', '{{name}} fue vinculado al paciente.', { name: companion.name }),
+        subtitle: t('companionRegisteredMessage', '{{name}} fue seleccionado para esta consulta.', {
+          name: companion.name,
+        }),
       });
       await closeWorkspace({ discardUnsavedChanges: true });
     } catch (error) {
@@ -218,12 +209,7 @@ const CompanionPersonRegistrationWorkspace: React.FC<Workspace2DefinitionProps<C
           />
         </Stack>
         <ButtonSet className={styles.workspaceFooter} stacked={false}>
-          <Button
-            disabled={isSaving}
-            kind="secondary"
-            onClick={() => closeWorkspace()}
-            type="button"
-          >
+          <Button disabled={isSaving} kind="secondary" onClick={() => closeWorkspace()} type="button">
             {t('cancel', 'Cancelar')}
           </Button>
           <Button disabled={isSaving} kind="primary" type="submit">

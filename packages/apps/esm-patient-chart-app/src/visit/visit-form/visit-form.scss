@@ -39,6 +39,20 @@
   }
 }
 
+.selectedCompanion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-04;
+}
+
+.selectedCompanionLabel {
+  @include type.type-style("label-01");
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-02;
+}
+
 .dateTimeSection {
   display: flex;
 }
@@ -63,6 +77,10 @@
   flex-direction: column;
   justify-content: start;
   height: 100%;
+}
+
+.workspaceDescription {
+  margin: layout.$spacing-05 layout.$spacing-05 0;
 }
 
 .buttonSet {

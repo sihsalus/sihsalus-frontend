@@ -7,15 +7,24 @@ import { useTranslation } from 'react-i18next';
 
 import { spaHomePage } from '../../constants';
 import SelectedDateContext from '../../hooks/selectedDateContext';
+import { getAppointmentServiceFilterSearch } from '../../hooks/useAppointmentServiceFilter';
 
 import styles from './calendar-header.scss';
 
-const CalendarHeader: React.FC = () => {
+interface CalendarHeaderProps {
+  appointmentServiceTypes: Array<string>;
+}
+
+const CalendarHeader: React.FC<CalendarHeaderProps> = ({ appointmentServiceTypes }) => {
   const { t } = useTranslation();
   const { selectedDate } = useContext(SelectedDateContext);
 
   const handleClick = () => {
-    navigate({ to: `${spaHomePage}/appointments/${dayjs(selectedDate).format('YYYY-MM-DD')}` });
+    navigate({
+      to: `${spaHomePage}/appointments/${dayjs(selectedDate).format('YYYY-MM-DD')}${getAppointmentServiceFilterSearch(
+        appointmentServiceTypes,
+      )}`,
+    });
   };
 
   return (

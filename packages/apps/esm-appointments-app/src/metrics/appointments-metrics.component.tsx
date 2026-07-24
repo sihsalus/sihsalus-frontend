@@ -57,7 +57,7 @@ const AppointmentsMetrics: React.FC<AppointmentMetricsProps> = ({ appointmentSer
 
   return (
     <>
-      <MetricsHeader />
+      <MetricsHeader appointmentServiceTypes={appointmentServiceTypes} />
       <section className={styles.cardContainer}>
         <MetricsCard
           count={{ pendingAppointments: filteredPendingAppointments, arrivedAppointments: filteredArrivedAppointments }}

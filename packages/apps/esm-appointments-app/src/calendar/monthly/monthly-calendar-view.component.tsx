@@ -14,9 +14,10 @@ dayjs.extend(isBetween);
 
 interface MonthlyCalendarViewProps {
   events: Array<DailyAppointmentsCountByService>;
+  appointmentServiceTypes: Array<string>;
 }
 
-const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({ events }) => {
+const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({ appointmentServiceTypes, events }) => {
   const { selectedDate } = useContext(SelectedDateContext);
 
   return (
@@ -24,8 +25,13 @@ const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({ events }) => 
       <MonthlyHeader />
       <div className={styles.wrapper}>
         <div className={styles.monthlyCalendar}>
-          {monthDays(dayjs(selectedDate)).map((dateTime, i) => (
-            <MonthlyViewWorkload key={i} dateTime={dateTime} events={events} />
+          {monthDays(dayjs(selectedDate)).map((dateTime) => (
+            <MonthlyViewWorkload
+              key={dateTime.format('YYYY-MM-DD')}
+              appointmentServiceTypes={appointmentServiceTypes}
+              dateTime={dateTime}
+              events={events}
+            />
           ))}
         </div>
       </div>

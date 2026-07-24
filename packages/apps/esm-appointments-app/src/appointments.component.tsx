@@ -7,26 +7,21 @@ import AppointmentTabs from './appointments/appointment-tabs.component';
 import { omrsDateFormat } from './constants';
 import AppointmentsHeader from './header/appointments-header.component';
 import SelectedDateContext from './hooks/selectedDateContext';
+import { useAppointmentServiceFilter } from './hooks/useAppointmentServiceFilter';
 import AppointmentMetrics from './metrics/appointments-metrics.component';
 
 const Appointments: React.FC = () => {
   const { t } = useTranslation();
-  const [appointmentServiceTypes, setAppointmentServiceTypes] = useState<Array<string>>([]);
   const [selectedDate, setSelectedDate] = useState(dayjs().startOf('day').format(omrsDateFormat));
 
   const params = useParams();
+  const { appointmentServiceTypes, setAppointmentServiceTypes } = useAppointmentServiceFilter(params.serviceType);
 
   useEffect(() => {
     if (params.date) {
       setSelectedDate(dayjs(params.date).startOf('day').format(omrsDateFormat));
     }
   }, [params.date]);
-
-  useEffect(() => {
-    if (params.serviceType) {
-      setAppointmentServiceTypes([params.serviceType]);
-    }
-  }, [params.serviceType]);
 
   return (
     <SelectedDateContext.Provider value={{ selectedDate, setSelectedDate }}>

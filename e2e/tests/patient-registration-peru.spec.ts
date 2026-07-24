@@ -1,5 +1,8 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
 
+const e2eHostname = new URL(process.env.E2E_BASE_URL ?? 'http://localhost:8080/openmrs/spa').hostname;
+const isLocalDevelopment = e2eHostname === 'localhost' || e2eHostname === '127.0.0.1';
+
 async function gotoPatientRegistration(page: Page) {
   await page.goto('patient-registration', { waitUntil: 'domcontentloaded' });
   await page.waitForLoadState('networkidle').catch(() => null);
@@ -174,7 +177,7 @@ test.describe('Peru patient registration', () => {
     const residenceSearch = contact.getByRole('searchbox', { name: /Buscar direcci[oó]n|Search address/i }).first();
 
     await residenceSearch.fill('PER');
-    const peruOption = contact.getByRole('button', { name: /^PERU$/i });
+    const peruOption = contact.getByRole('button', { name: /^PERU(?:\s+\(00\))?$/i });
     await expect(peruOption).toBeVisible({ timeout: 15_000 });
 
     await peruOption.click();
@@ -183,6 +186,7 @@ test.describe('Peru patient registration', () => {
   });
 
   test('fills basic patient data from the RENIEC mock lookup', async ({ page }) => {
+    test.skip(!isLocalDevelopment, 'Synthetic RENIEC identities are only available in local development.');
     await enableExternalIdentityLookups(page);
     await gotoPatientRegistration(page);
 
@@ -190,7 +194,7 @@ test.describe('Peru patient registration', () => {
       page.locator('input[name="identifiers.dni.identifierValue"], #identifiers\\.dni\\.identifierValue').first(),
       '12345678',
     );
-    await page.getByRole('button', { name: /Buscar en RENIEC/i }).click();
+    await page.getByRole('button', { name: /Buscar.*RENIEC/i }).click();
 
     await expect(page.getByText(/Datos RENIEC cargados/i)).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('#givenName')).toHaveValue('Juan');
@@ -201,5 +205,21 @@ test.describe('Peru patient registration', () => {
     await expect(page.getByRole('spinbutton', { name: /mes, Fecha de nacimiento/i })).toContainText('5');
     await expect(page.getByRole('spinbutton', { name: /a[nñ]o, Fecha de nacimiento/i })).toContainText('1990');
     await expect(page.locator('input[name="gender"][value="male"]')).toBeChecked();
+  });
+
+  test('does not expose synthetic RENIEC identities in deployed environments', async ({ page }) => {
+    test.skip(isLocalDevelopment, 'Deployed-environment safety check.');
+    await enableExternalIdentityLookups(page);
+    await gotoPatientRegistration(page);
+
+    await fillTextbox(
+      page.locator('input[name="identifiers.dni.identifierValue"], #identifiers\\.dni\\.identifierValue').first(),
+      '12345678',
+    );
+    await page.getByRole('button', { name: /Buscar.*RENIEC/i }).click();
+
+    await expect(page.getByText(/Sin coincidencias locales ni datos RENIEC/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/Datos RENIEC cargados/i)).toHaveCount(0);
+    await expect(page.locator('#givenName')).toHaveValue('');
   });
 });

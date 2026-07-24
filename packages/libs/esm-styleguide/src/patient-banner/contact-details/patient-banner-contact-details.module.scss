@@ -15,6 +15,10 @@
   color: $text-02;
 }
 
+.secondaryAddressHeading {
+  margin-top: layout.$spacing-05;
+}
+
 .row {
   @include type.type-style('body-compact-01');
   display: flex;

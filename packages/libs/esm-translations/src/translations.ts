@@ -52,6 +52,7 @@ export const coreTranslations = {
   age: 'Age',
   batchActionItemSelected: '{{totalSelected}} item selected',
   batchActionsItemsSelected: '{{totalSelected}} items selected',
+  birthplace: 'Place of birth',
   cancel: 'Cancel',
   change: 'Change',
   // Default value for the implementationName config property
@@ -102,6 +103,7 @@ export const coreTranslations = {
   printing: 'Printing',
   recordNewEntry: 'Record {{displayText}}',
   relationships: 'Relationships',
+  residence: 'Place of residence',
   resetOverrides: 'Reset overrides',
   save: 'Save',
   scriptLoadingFailed: 'Error: Script failed to load',

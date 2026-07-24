@@ -16,6 +16,107 @@ interface ContactDetailsProps {
   deceased: boolean;
 }
 
+const birthAddressMarkerField = 'address15';
+const birthAddressMarker = 'SIHSALUS_BIRTH_ADDRESS';
+const hiddenAddressExtensionFields = new Set(['address13', 'address14', birthAddressMarkerField]);
+const standardAddressFields = ['city', 'district', 'state', 'postalCode', 'country'] as const;
+
+function getAddressExtensionField(url?: string) {
+  return url?.split('#')[1];
+}
+
+function getAddressExtensions(address?: fhir.Address) {
+  return address?.extension?.flatMap((extensionContainer) => extensionContainer.extension ?? []) ?? [];
+}
+
+function getAddressExtensionValue(address: fhir.Address | undefined, field: string) {
+  return getAddressExtensions(address).find(
+    (addressExtension) => getAddressExtensionField(addressExtension.url) === field,
+  )?.valueString;
+}
+
+function isBirthAddress(address: fhir.Address) {
+  return getAddressExtensionValue(address, birthAddressMarkerField) === birthAddressMarker;
+}
+
+function getAddressDetails(address?: fhir.Address) {
+  if (!address) {
+    return [];
+  }
+
+  const extensionDetails = getAddressExtensions(address)
+    .map((addressExtension, index) => ({
+      field: getAddressExtensionField(addressExtension.url),
+      key: `extension-${addressExtension.url}-${index}`,
+      value: addressExtension.valueString?.trim(),
+    }))
+    .filter(
+      (
+        detail,
+      ): detail is {
+        field: string;
+        key: string;
+        value: string;
+      } => !!detail.field && !!detail.value && !hiddenAddressExtensionFields.has(detail.field),
+    );
+
+  const lineDetails =
+    address.line
+      ?.map((line, index) => ({
+        field: `address${index + 1}`,
+        key: `line-${index}`,
+        value: line.trim(),
+      }))
+      .filter(({ value }) => !!value) ?? [];
+
+  const standardDetails = standardAddressFields
+    .map((field) => ({
+      field,
+      key: `standard-${field}`,
+      value: address[field]?.trim(),
+    }))
+    .filter(
+      (
+        detail,
+      ): detail is {
+        field: (typeof standardAddressFields)[number];
+        key: string;
+        value: string;
+      } => !!detail.value,
+    );
+
+  const details = [...extensionDetails, ...lineDetails, ...standardDetails];
+  if (!details.length && address.text?.trim()) {
+    return [{ field: 'address', key: 'text', value: address.text.trim() }];
+  }
+
+  return details.filter(
+    (detail, index) =>
+      details.findIndex(
+        (candidate) =>
+          candidate.field === detail.field && candidate.value.toLocaleLowerCase() === detail.value.toLocaleLowerCase(),
+      ) === index,
+  );
+}
+
+const AddressDetails: React.FC<{ address?: fhir.Address }> = ({ address }) => {
+  const details = getAddressDetails(address);
+
+  return (
+    <ul>
+      {details.length ? (
+        details.map(({ field, key, value }) => (
+          <li key={key}>
+            {getCoreTranslation(field as CoreTranslationKey, field)}: {value}
+          </li>
+        ))
+      ) : (
+        <li>--</li>
+      )}
+    </ul>
+  );
+};
+
 const PatientLists: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
   const { cohorts = [], isLoading } = usePatientListsForPatient(patientUuid);
 
@@ -61,8 +162,10 @@ const PatientLists: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
 
 const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
   const { patient, isLoading } = usePatient(patientId);
-  const address = patient?.address?.find((a) => a.use === 'home');
-  const getAddressKey = (url: string) => url.split('#')[1];
+  const birthAddress = patient?.address?.find(isBirthAddress);
+  const residenceAddress =
+    patient?.address?.find((address) => address.use === 'home' && !isBirthAddress(address)) ??
+    patient?.address?.find((address) => !isBirthAddress(address));
 
   if (isLoading) {
     return <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />;
@@ -70,32 +173,16 @@ const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
 
   return (
     <>
-      <p className={styles.heading}>{getCoreTranslation('address', 'Address')}</p>
-      <ul>
-        {address ? (
-          Object.entries(address)
-            .filter(([key]) => key !== 'id' && key !== 'use')
-            .map(([key, value]) =>
-              key === 'extension' ? (
-                address.extension?.[0]?.extension?.map((add, i) => (
-                  <li key={`address-${key}-${i}`}>
-                    {getCoreTranslation(
-                      getAddressKey(add.url) as CoreTranslationKey,
-                      getAddressKey(add.url) as CoreTranslationKey,
-                    )}
-                    : {add.valueString}
-                  </li>
-                ))
-              ) : (
-                <li key={`address-${key}`}>
-                  {getCoreTranslation(key as CoreTranslationKey, key)}: {value}
-                </li>
-              ),
-            )
-        ) : (
-          <li>--</li>
-        )}
-      </ul>
+      <p className={styles.heading}>{getCoreTranslation('residence', 'Place of residence')}</p>
+      <AddressDetails address={residenceAddress} />
+      {birthAddress && (
+        <>
+          <p className={classNames(styles.heading, styles.secondaryAddressHeading)}>
+            {getCoreTranslation('birthplace', 'Place of birth')}
+          </p>
+          <AddressDetails address={birthAddress} />
+        </>
+      )}
     </>
   );
 };

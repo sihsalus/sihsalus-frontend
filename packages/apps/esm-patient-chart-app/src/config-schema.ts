@@ -78,11 +78,11 @@ export const esmPatientChartSchema = {
       'An array of concept UUIDs. If an observation has a concept UUID that matches any of the ones in this array, it will be hidden from the observations list in the Encounters summary table.',
     _default: [],
   },
-  companionRelationshipTypeUuid: {
+  companionVisitAttributeTypeUuid: {
     _type: Type.UUID,
     _description:
-      'UUID of the Acompañante relationship type, used to list the patient companions on the start visit form.',
-    _default: '3501ac02-0fb0-4ced-8a3e-f578f0ff5276',
+      'Visit attribute type that stores the Person UUID selected as companion for one specific consultation.',
+    _default: '710da0b9-e15f-47f0-827a-e97f1937c81d',
   },
   offlineVisitTypeUuid: {
     _type: Type.UUID,
@@ -339,6 +339,7 @@ export interface ChartConfig {
   diagnosisTypeConceptMap: Record<string, 'presuntivo' | 'definitivo' | 'repetitivo'>;
   numberOfVisitsToLoad: number;
   offlineVisitTypeUuid: string;
+  companionVisitAttributeTypeUuid: string;
   visitPersistenceTokenAttributeTypeUuid: string;
   restrictByVisitLocationTag: boolean;
   showAllEncountersTab: boolean;

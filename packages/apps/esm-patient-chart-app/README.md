@@ -26,6 +26,17 @@ Un cambio pequeno aqui puede romper multiples apps porque muchas extensiones dep
 - El left sidebar debe mostrar labels traducidos; keys como `caseMonitoringEncounters` son defectos.
 - El right sidebar debe conservar acciones criticas: ordenes, FUA, notas de visita, formularios y listas de pacientes.
 
+### Acompañante por consulta
+
+El acompañante seleccionado al iniciar una consulta pertenece únicamente a esa visita. No debe crearse una relación
+permanente entre la persona y el paciente ni reutilizarse automáticamente en atenciones posteriores.
+
+- Configuración frontend: `companionVisitAttributeTypeUuid`.
+- Tipo de atributo de visita SIH SALUS: `710da0b9-e15f-47f0-827a-e97f1937c81d`.
+- Valor almacenado: UUID de la `Person` seleccionada como acompañante.
+- Cardinalidad backend: `0..1` por visita, usando `FreeTextDatatype`.
+- En menores de edad la selección de una persona adulta es obligatoria; en adultos es opcional.
+
 ## Taxonomia clinica del resumen del paciente
 
 Los nombres visibles del resumen deben usar lenguaje clinico entendido por los equipos peruanos. Los nombres tecnicos de FHIR son detalles de implementacion. Por ejemplo, FHIR `Condition` puede representar un problema activo, un diagnostico de una atencion o una condicion historica resuelta; eso no obliga a mostrar una seccion llamada `Condiciones`.

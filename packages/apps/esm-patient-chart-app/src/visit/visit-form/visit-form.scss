@@ -39,6 +39,20 @@
   }
 }
 
+.selectedCompanion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-04;
+  padding: layout.$spacing-04;
+}
+
+.selectedCompanionLabel {
+  @include type.type-style("label-01");
+  color: colors.$gray-70;
+  margin-bottom: layout.$spacing-02;
+}
+
 .dateTimeSection {
   display: flex;
 }

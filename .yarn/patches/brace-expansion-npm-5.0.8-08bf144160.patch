@@ -1,0 +1,48 @@
+diff --git a/dist/commonjs/index.d.ts b/dist/commonjs/index.d.ts
+index f3e2de9d87e1ce462517e49f35733bed8bdf85af..6c84d87835182d0670981dc15f488c2a7d061c98 100644
+--- a/dist/commonjs/index.d.ts
++++ b/dist/commonjs/index.d.ts
+@@ -5,4 +5,5 @@ export type BraceExpansionOptions = {
+     maxLength?: number;
+ };
+ export declare function expand(str: string, options?: BraceExpansionOptions): string[];
++export default expand;
+ //# sourceMappingURL=index.d.ts.map
+diff --git a/dist/commonjs/index.js b/dist/commonjs/index.js
+index be9df86be09c7655787a65c55ae6da01858894c3..50e484413118b86c9e2f12fe197463db6be47fad 100644
+--- a/dist/commonjs/index.js
++++ b/dist/commonjs/index.js
+@@ -260,4 +260,11 @@ function expand_(str, max, maxLength, isTop) {
+     }
+     return acc;
+ }
++// Older minimatch releases call the CommonJS export directly, while current
++// releases use the named `expand` export. Keep both shapes available so all
++// transitive consumers can share the patched implementation.
++const legacyExpand = (str, options) => expand(str, options);
++Object.assign(legacyExpand, exports, { default: legacyExpand });
++Object.defineProperty(legacyExpand, "__esModule", { value: true });
++module.exports = legacyExpand;
+ //# sourceMappingURL=index.js.map
+diff --git a/dist/esm/index.d.ts b/dist/esm/index.d.ts
+index f3e2de9d87e1ce462517e49f35733bed8bdf85af..6c84d87835182d0670981dc15f488c2a7d061c98 100644
+--- a/dist/esm/index.d.ts
++++ b/dist/esm/index.d.ts
+@@ -5,4 +5,5 @@ export type BraceExpansionOptions = {
+     maxLength?: number;
+ };
+ export declare function expand(str: string, options?: BraceExpansionOptions): string[];
++export default expand;
+ //# sourceMappingURL=index.d.ts.map
+diff --git a/dist/esm/index.js b/dist/esm/index.js
+index 6dc0392fc0feedb811e63d70a30be2736af17a3a..c9a29c708e9d54d04fed384dc72f1635e00f9c63 100644
+--- a/dist/esm/index.js
++++ b/dist/esm/index.js
+@@ -256,4 +256,7 @@ function expand_(str, max, maxLength, isTop) {
+     }
+     return acc;
+ }
++// minimatch versions prior to v10 import brace-expansion as a default export.
++// Preserve that API while retaining the current named export.
++export default expand;
+ //# sourceMappingURL=index.js.map

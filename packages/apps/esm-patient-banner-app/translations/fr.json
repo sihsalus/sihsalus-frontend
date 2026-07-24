@@ -7,10 +7,15 @@
   "country": "Pays",
   "countyDistrict": "District",
   "deceased": "Décédé",
+  "department": "Département",
   "district": "District",
   "from_lower": "du",
+  "neighborhood": "Quartier",
+  "populationCenter": "Localité",
   "postalCode": "Code postal",
+  "province": "Province",
   "started": "Démarré",
   "state": "État",
-  "stateProvince": "État"
+  "stateProvince": "État",
+  "streetAddress": "Adresse"
 }

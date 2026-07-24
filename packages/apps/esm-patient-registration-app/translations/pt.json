@@ -1,6 +1,13 @@
 {
   "addPatient": "Add patient",
   "addRelationshipButtonText": "Adicionar Relacionamento",
+  "address1AddressFieldLabel": "Departamento",
+  "address3AddressFieldLabel": "Bairro",
+  "address4AddressFieldLabel": "Endereço",
+  "cityVillageAddressFieldLabel": "Centro povoado",
+  "countryAddressFieldLabel": "País",
+  "countyDistrictAddressFieldLabel": "Distrito",
+  "stateProvinceAddressFieldLabel": "Província",
   "addressFieldsUnavailableSubtitle": "Atualize a página. Se o problema continuar, verifique se o modelo de endereço está configurado e se a sessão está ativa.",
   "addressFieldsUnavailableTitle": "Campos de endereço indisponíveis",
   "addressHeader": "Endereço de residência",

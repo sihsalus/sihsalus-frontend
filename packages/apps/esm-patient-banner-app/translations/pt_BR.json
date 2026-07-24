@@ -7,10 +7,15 @@
   "country": "País",
   "countyDistrict": "Estado",
   "deceased": "Falecido",
+  "department": "Departamento",
   "district": "Estado",
   "from_lower": "de",
+  "neighborhood": "Bairro",
+  "populationCenter": "Centro povoado",
   "postalCode": "Código postal CEP",
+  "province": "Província",
   "started": "Iniciado",
   "state": "Estado",
-  "stateProvince": "Estado"
+  "stateProvince": "Estado",
+  "streetAddress": "Endereço"
 }

@@ -21,6 +21,20 @@ import { useOrderedAddressHierarchyLevels } from '../address-hierarchy.resource'
 const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
 const mockUseOrderedAddressHierarchyLevels = vi.mocked(useOrderedAddressHierarchyLevels);
 
+const peruAddressLabels: Record<string, string> = {
+  address1: 'Department',
+  address3: 'Neighborhood',
+  address4: 'Address',
+  cityVillage: 'Population center',
+  country: 'Country',
+  countyDistrict: 'District',
+  stateProvince: 'Province',
+};
+
+function getExpectedAddressLabel(field: { codeName?: string; displayText: string }) {
+  return (field.codeName && peruAddressLabels[field.codeName]) || field.displayText;
+}
+
 const mockResourcesContextValue = {
   addressTemplate: {} as AddressTemplate,
   currentSession: mockSession.data,
@@ -215,9 +229,56 @@ describe('Address hierarchy', () => {
 
     const allFields = mockedAddressTemplate.lines.flat().filter(({ isToken }) => isToken === 'IS_ADDR_TOKEN');
     allFields.forEach((field) => {
-      const textFieldInput = screen.getByLabelText(`${field.displayText} (optional)`);
+      const textFieldInput = screen.getByLabelText(`${getExpectedAddressLabel(field)} (optional)`);
       expect(textFieldInput).toBeInTheDocument();
     });
+  });
+
+  it('uses the Peruvian administrative labels instead of the backend template labels', () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
+      fieldConfigurations: {
+        address: {
+          useAddressHierarchy: {
+            enabled: false,
+            useQuickSearch: false,
+            searchAddressByLevel: false,
+          },
+        },
+      } as RegistrationConfig['fieldConfigurations'],
+    });
+    mockUseOrderedAddressHierarchyLevels.mockReturnValue({
+      orderedFields: [],
+      isLoadingFieldOrder: false,
+      errorFetchingFieldOrder: undefined,
+    });
+    mockResourcesContextValue.addressTemplate = {
+      ...mockedAddressTemplate,
+      lines: [
+        [
+          { codeName: 'address4', displayText: 'Address line 4', isToken: 'IS_ADDR_TOKEN' },
+          { codeName: 'address3', displayText: 'Address line 3', isToken: 'IS_ADDR_TOKEN' },
+          { codeName: 'cityVillage', displayText: 'City', isToken: 'IS_ADDR_TOKEN' },
+          { codeName: 'countyDistrict', displayText: 'County', isToken: 'IS_ADDR_TOKEN' },
+          { codeName: 'stateProvince', displayText: 'State', isToken: 'IS_ADDR_TOKEN' },
+          { codeName: 'address1', displayText: 'Address line 1', isToken: 'IS_ADDR_TOKEN' },
+          { codeName: 'country', displayText: 'Country', isToken: 'IS_ADDR_TOKEN' },
+        ],
+      ],
+    } as AddressTemplate;
+
+    renderAddressHierarchy(initialContextValues);
+
+    expect(screen.getByLabelText('Address (optional)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Neighborhood (optional)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Population center (optional)')).toBeInTheDocument();
+    expect(screen.getByLabelText('District (optional)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Province (optional)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Department (optional)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Country (optional)')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Address line 1 (optional)')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('State (optional)')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('City (optional)')).not.toBeInTheDocument();
   });
 
   it('defaults country to Peru when the address template has no country default', async () => {
@@ -463,7 +524,7 @@ describe('Address hierarchy', () => {
         orderMap[existingField1.codeName ?? 0] - orderMap[existingField2.codeName ?? 0],
     );
     allFields.forEach((field) => {
-      const textFieldInput = screen.getByLabelText(`${field.displayText} (optional)`);
+      const textFieldInput = screen.getByLabelText(`${getExpectedAddressLabel(field)} (optional)`);
       expect(textFieldInput).toBeInTheDocument();
     });
   });
@@ -552,7 +613,7 @@ describe('Address hierarchy', () => {
     expect(screen.getByRole('searchbox', { name: /search address/i })).toBeInTheDocument();
     const allFields = mockedAddressTemplate.lines.flat().filter(({ isToken }) => isToken === 'IS_ADDR_TOKEN');
     allFields.forEach((field) => {
-      expect(screen.getByLabelText(`${field.displayText} (optional)`)).toBeInTheDocument();
+      expect(screen.getByLabelText(`${getExpectedAddressLabel(field)} (optional)`)).toBeInTheDocument();
     });
   });
 
@@ -588,7 +649,7 @@ describe('Address hierarchy', () => {
     expect(screen.getByLabelText('Province')).toBeRequired();
     expect(screen.queryByLabelText('Country (optional)')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Province (optional)')).not.toBeInTheDocument();
-    expect(screen.getByLabelText('Village (optional)')).not.toBeRequired();
+    expect(screen.getByLabelText('Population center (optional)')).not.toBeRequired();
 
     fireEvent.blur(screen.getByLabelText('Country'));
 
@@ -658,7 +719,7 @@ describe('Address hierarchy', () => {
         orderMap[existingField1.codeName ?? 0] - orderMap[existingField2.codeName ?? 0],
     );
     allFields.forEach((field) => {
-      const textFieldInput = screen.getByLabelText(`${field.displayText} (optional)`);
+      const textFieldInput = screen.getByLabelText(`${getExpectedAddressLabel(field)} (optional)`);
       expect(textFieldInput).toBeInTheDocument();
     });
   });

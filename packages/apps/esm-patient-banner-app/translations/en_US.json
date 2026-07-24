@@ -8,9 +8,11 @@
   "country": "Country",
   "countyDistrict": "District",
   "deceased": "Deceased",
+  "department": "Department",
   "district": "District",
   "ethnicity": "Ethnicity",
   "from_lower": "from",
+  "neighborhood": "Neighborhood",
   "noAdditionalDetails": "No additional details recorded",
   "noContactDetails": "No contact details recorded",
   "noDemographics": "No demographics recorded",
@@ -18,11 +20,14 @@
   "noPatientLists": "No patient lists",
   "noRelationships": "No relationships recorded",
   "noResidence": "No residence recorded",
-  "postalCode": "Postal code",
   "occupation": "Occupation",
+  "populationCenter": "Population center",
+  "postalCode": "Postal code",
+  "province": "Province",
   "residence": "Place of residence",
   "relationship": "Relationship",
   "started": "Started",
   "state": "State",
-  "stateProvince": "State"
+  "stateProvince": "State",
+  "streetAddress": "Address"
 }

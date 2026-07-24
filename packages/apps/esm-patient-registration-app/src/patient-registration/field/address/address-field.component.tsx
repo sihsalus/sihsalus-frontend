@@ -22,6 +22,16 @@ const peruAddressDefaults = {
   country: 'Perú',
 };
 
+const peruAddressFieldLabels: Record<string, { defaultValue: string; translationKey: string }> = {
+  address1: { defaultValue: 'Department', translationKey: 'address1AddressFieldLabel' },
+  address3: { defaultValue: 'Neighborhood', translationKey: 'address3AddressFieldLabel' },
+  address4: { defaultValue: 'Address', translationKey: 'address4AddressFieldLabel' },
+  cityVillage: { defaultValue: 'Population center', translationKey: 'cityVillageAddressFieldLabel' },
+  country: { defaultValue: 'Country', translationKey: 'countryAddressFieldLabel' },
+  countyDistrict: { defaultValue: 'District', translationKey: 'countyDistrictAddressFieldLabel' },
+  stateProvince: { defaultValue: 'Province', translationKey: 'stateProvinceAddressFieldLabel' },
+};
+
 function getStoredUbigeoPathSegments(storedUbigeoPath: string) {
   const path = storedUbigeoPath.includes(addressUbigeoPathSeparator)
     ? storedUbigeoPath
@@ -53,6 +63,7 @@ export const AddressComponent: React.FC<AddressComponentProps> = ({
   searchLabelKey = 'addressHeader',
 }) => {
   const selected = '';
+  const { t } = useTranslation(moduleName);
   const { addressTemplate, addressTemplateError, isLoadingAddressTemplate } = useContext(ResourcesContext);
   const addressLayout = useMemo(() => {
     if (!addressTemplate?.lines) {
@@ -63,16 +74,17 @@ export const AddressComponent: React.FC<AddressComponentProps> = ({
     const fields = allFields?.filter(({ isToken }) => isToken === 'IS_ADDR_TOKEN');
     const allRequiredFields = Object.fromEntries(addressTemplate?.requiredElements?.map((curr) => [curr, curr]) || []);
     return fields.map(({ displayText, codeName }) => {
+      const peruLabel = peruAddressFieldLabels[codeName];
+
       return {
         id: codeName,
         name: codeName,
-        label: displayText,
+        label: peruLabel ? t(peruLabel.translationKey, peruLabel.defaultValue) : displayText,
         required: Boolean(allRequiredFields[codeName]),
       };
     });
-  }, [addressTemplate]);
+  }, [addressTemplate, t]);
 
-  const { t } = useTranslation(moduleName);
   const config = useConfig();
   const isOnline = useConnectivity();
   const {

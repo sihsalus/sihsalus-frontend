@@ -30,6 +30,7 @@ jobs:
       packages: write
       security-events: write
     env:
+      HAS_DISTRO_DEPLOY_KEY: ${{ secrets.DISTRO_RELEASE_DEPLOY_KEY != '' }}
       HAS_DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v7
@@ -217,12 +218,54 @@ jobs:
           event-type: frontend-published
           client-payload: '{"image":"ghcr.io/sihsalus/sihsalus-frontend:latest","digest":"${{ steps.build.outputs.digest }}","sha":"${{ steps.source.outputs.sha }}"}'
 
-      - name: Record scheduled deployment fallback
+      - name: Signal deployment with repository-scoped key
+        id: deploy_tag
         if: >
           steps.source.outputs.branch == 'main' &&
-          env.HAS_DEPLOY_TOKEN != 'true'
+          env.HAS_DEPLOY_TOKEN != 'true' &&
+          env.HAS_DISTRO_DEPLOY_KEY == 'true'
+        continue-on-error: true
+        env:
+          DEPLOY_KEY: ${{ secrets.DISTRO_RELEASE_DEPLOY_KEY }}
+          KNOWN_HOSTS: ${{ vars.DISTRO_GITHUB_KNOWN_HOSTS }}
+          RELEASE_SHA: ${{ steps.source.outputs.sha }}
         run: |
-          echo "::notice::DEPLOY_TOKEN is not configured; DEV and QLTY will discover this verified digest through the distro's scheduled poll."
+          set -euo pipefail
+
+          if [[ -z "${KNOWN_HOSTS}" ]]; then
+            echo "::error::DISTRO_GITHUB_KNOWN_HOSTS is not configured."
+            exit 2
+          fi
+
+          install -d -m 700 "${HOME}/.ssh"
+          printf '%s\n' "${DEPLOY_KEY}" >"${HOME}/.ssh/distro_release_key"
+          printf '%s\n' "${KNOWN_HOSTS}" >"${HOME}/.ssh/known_hosts"
+          chmod 600 "${HOME}/.ssh/distro_release_key" "${HOME}/.ssh/known_hosts"
+          ssh-keygen -y -f "${HOME}/.ssh/distro_release_key" >/dev/null
+
+          export GIT_SSH_COMMAND="ssh -i ${HOME}/.ssh/distro_release_key -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+          checkout="${RUNNER_TEMP}/sihsalus-deploy-signal"
+          release_tag="frontend-release-${RELEASE_SHA}"
+
+          git clone --depth 1 --branch main --no-tags \
+            git@github.com:sihsalus/sihsalus.git "${checkout}"
+
+          if git -C "${checkout}" ls-remote --exit-code --tags origin "refs/tags/${release_tag}" >/dev/null 2>&1; then
+            echo "::notice::Deployment signal ${release_tag} already exists."
+            exit 0
+          fi
+
+          git -C "${checkout}" tag "${release_tag}"
+          git -C "${checkout}" push origin "refs/tags/${release_tag}"
+
+      - name: Record scheduled deployment fallback
+        if: >-
+          always() &&
+          steps.source.outputs.branch == 'main' &&
+          env.HAS_DEPLOY_TOKEN != 'true' &&
+          (env.HAS_DISTRO_DEPLOY_KEY != 'true' || steps.deploy_tag.outcome != 'success')
+        run: |
+          echo "::notice::The immediate deployment signal is unavailable; DEV and QLTY will discover this verified digest through the distro's scheduled poll."
 
       - name: Create GitHub Release (on tags)
         if: steps.source.outputs.branch == 'tag'

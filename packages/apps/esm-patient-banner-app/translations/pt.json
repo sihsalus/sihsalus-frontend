@@ -7,15 +7,10 @@
   "country": "País",
   "countyDistrict": "Distrito",
   "deceased": "Deceased",
-  "department": "Departamento",
   "district": "Distrito",
   "from_lower": "from",
-  "neighborhood": "Bairro",
-  "populationCenter": "Centro povoado",
   "postalCode": "Caixa postal",
-  "province": "Província",
   "started": "Started",
   "state": "Estado",
-  "stateProvince": "Estado",
-  "streetAddress": "Endereço"
+  "stateProvince": "Estado"
 }

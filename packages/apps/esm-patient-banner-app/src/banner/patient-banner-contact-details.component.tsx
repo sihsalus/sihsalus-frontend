@@ -22,10 +22,11 @@ import styles from './patient-banner-contact-details.module.scss';
 
 const contactDetailsLoadingTimeoutMs = 10000;
 
-const peruAddressFieldLabels: Record<string, { defaultValue: string; translationKey: string }> = {
+const peruAddressFieldLabels: Record<string, { defaultValue: string; translationKey: CoreTranslationKey }> = {
   address1: { defaultValue: 'Department', translationKey: 'department' },
+  address2: { defaultValue: 'Address', translationKey: 'address' },
   address3: { defaultValue: 'Neighborhood', translationKey: 'neighborhood' },
-  address4: { defaultValue: 'Address', translationKey: 'streetAddress' },
+  address4: { defaultValue: 'Address', translationKey: 'address' },
   city: { defaultValue: 'Population center', translationKey: 'populationCenter' },
   cityVillage: { defaultValue: 'Population center', translationKey: 'populationCenter' },
   country: { defaultValue: 'Country', translationKey: 'country' },
@@ -102,11 +103,11 @@ function getAttributeByTypeUuid(attributes: Array<Attribute>, uuid?: string) {
   return uuid ? attributes.find(({ attributeType }) => attributeType?.uuid === uuid) : undefined;
 }
 
-function getAddressFieldLabel(fieldName: string, t: ReturnType<typeof useTranslation>['t']) {
+function getAddressFieldLabel(fieldName: string) {
   const peruLabel = peruAddressFieldLabels[fieldName];
 
   return peruLabel
-    ? t(peruLabel.translationKey, peruLabel.defaultValue)
+    ? getCoreTranslation(peruLabel.translationKey, peruLabel.defaultValue)
     : getCoreTranslation(fieldName as CoreTranslationKey, fieldName);
 }
 
@@ -179,12 +180,12 @@ const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
                   .map((addressExtension) => (
                     <DetailItem
                       key={`address-${key}-${addressExtension.url}`}
-                      label={getAddressFieldLabel(getAddressKey(addressExtension.url), t)}
+                      label={getAddressFieldLabel(getAddressKey(addressExtension.url))}
                       value={addressExtension.valueString}
                     />
                   ))
               ) : (
-                <DetailItem key={`address-${key}`} label={getAddressFieldLabel(key, t)} value={value} />
+                <DetailItem key={`address-${key}`} label={getAddressFieldLabel(key)} value={value} />
               ),
             )}
         </ul>

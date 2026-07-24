@@ -11,8 +11,12 @@ const addressFields = {
   cityVillage: 'City',
   country: 'Country',
   countyDistrict: 'District',
+  department: 'Department',
   district: 'District',
+  neighborhood: 'Neighborhood',
+  populationCenter: 'Population center',
   postalCode: 'Postal code',
+  province: 'Province',
   state: 'State',
   stateProvince: 'State',
 };

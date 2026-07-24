@@ -160,35 +160,35 @@ describe('ContactDetails', () => {
       patient: {
         address: [
           {
-            city: 'Birth district',
+            city: 'AGUAJAL',
             country: 'PERU',
-            district: 'Birth province',
+            district: 'RAYMONDI',
             extension: [
               openmrsAddressExtensions({
-                address1: 'Birth populated center',
-                address13: 'PERU|BIRTH REGION|BIRTH PROVINCE|BIRTH DISTRICT',
-                address14: '1603030001',
+                address1: 'UCAYALI',
+                address13: 'PERU|UCAYALI|ATALAYA|RAYMONDI|AGUAJAL',
+                address14: '2502010191',
                 address15: 'SIHSALUS_BIRTH_ADDRESS',
               }),
             ],
             id: 'birth-address-uuid',
-            state: 'Birth region',
+            state: 'ATALAYA',
             use: 'home',
           },
           {
-            city: 'Residence district',
+            city: 'SANTA CLOTILDE',
             country: 'PERU',
-            district: 'Residence province',
+            district: 'NAPO',
             extension: [
               openmrsAddressExtensions({
-                address1: 'Residence populated center',
-                address2: 'Jr. Principal 123',
-                address13: 'PERU|RESIDENCE REGION|RESIDENCE PROVINCE|RESIDENCE DISTRICT',
-                address14: '090501',
+                address1: 'LORETO',
+                address4: 'Jr. Principal 123',
+                address13: 'PERU|LORETO|MAYNAS|NAPO|SANTA CLOTILDE',
+                address14: '1603030001',
               }),
             ],
             id: 'residence-address-uuid',
-            state: 'Residence region',
+            state: 'MAYNAS',
             use: 'home',
           },
         ],
@@ -201,14 +201,23 @@ describe('ContactDetails', () => {
 
     expect(screen.getByText('Place of residence')).toBeInTheDocument();
     expect(screen.getByText('Place of birth')).toBeInTheDocument();
-    expect(screen.getByText(/Residence populated center/)).toBeInTheDocument();
-    expect(screen.getByText(/Jr. Principal 123/)).toBeInTheDocument();
-    expect(screen.getByText(/Birth populated center/)).toBeInTheDocument();
+    expect(screen.getByText('Department: LORETO')).toBeInTheDocument();
+    expect(screen.getByText('Province: MAYNAS')).toBeInTheDocument();
+    expect(screen.getByText('District: NAPO')).toBeInTheDocument();
+    expect(screen.getByText('Population center: SANTA CLOTILDE')).toBeInTheDocument();
+    expect(screen.getByText('Address: Jr. Principal 123')).toBeInTheDocument();
+    expect(screen.getByText('Department: UCAYALI')).toBeInTheDocument();
+    expect(screen.getByText('Province: ATALAYA')).toBeInTheDocument();
+    expect(screen.getByText('District: RAYMONDI')).toBeInTheDocument();
+    expect(screen.getByText('Population center: AGUAJAL')).toBeInTheDocument();
+    expect(screen.queryByText(/Address line 1:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/State:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/City:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/address13/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/address14/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/address15/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/PERU\|/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/1603030001|090501/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/2502010191|1603030001/)).not.toBeInTheDocument();
     expect(screen.queryByText(/SIHSALUS_BIRTH_ADDRESS/)).not.toBeInTheDocument();
   });
 

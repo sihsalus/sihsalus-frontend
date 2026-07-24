@@ -253,9 +253,12 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
                         <TextArea
                           aria-label={fieldProperty.name}
                           className={styles.textarea}
+                          counterMode="character"
+                          enableCounter
                           id={`${fieldId}-${fieldProperty.id}`}
                           labelText=""
                           maxCount={100}
+                          maxLength={100}
                           name={fieldProperty.name}
                           onBlur={() => handleFocusChange(false)}
                           onChange={onChange}

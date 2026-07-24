@@ -274,6 +274,8 @@ describe('VitalsAndBiometricsInput', () => {
 
     const noteInput = screen.getByRole('textbox', { name: /notes/i });
     expect(noteInput).toBeInTheDocument();
+    expect(noteInput).toHaveAttribute('maxlength', '100');
+    expect(screen.getByText('0/100')).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/type any additional notes here/i)).toBeInTheDocument();
     expect(screen.getByTitle(/notes/i)).toBeInTheDocument();
   });

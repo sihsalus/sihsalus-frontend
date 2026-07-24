@@ -39,7 +39,20 @@ describe('StickyNoteModal', () => {
     render(<StickyNoteModal {...defaultProps} />);
 
     expect(screen.getByRole('textbox')).toHaveValue('');
+    expect(screen.getByRole('textbox')).toHaveAttribute('maxlength', '300');
+    expect(screen.getByText('0/300')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save/i })).toBeDisabled();
+  });
+
+  it('does not accept more than 300 characters', async () => {
+    const user = userEvent.setup();
+    render(<StickyNoteModal {...defaultProps} />);
+
+    const textarea = screen.getByRole('textbox');
+    await user.type(textarea, 'a'.repeat(301));
+
+    expect(textarea).toHaveValue('a'.repeat(300));
+    expect(screen.getByText('300/300')).toBeInTheDocument();
   });
 
   it('keeps Save disabled when the input is only whitespace', async () => {

@@ -56,28 +56,26 @@ await context.addCookies((await api.storageState()).cookies);
 
 const page = await context.newPage();
 const failedResponses = [];
-const consoleErrors = [];
+let consoleErrorCount = 0;
 page.on('response', async (response) => {
   const url = response.url();
   if (response.status() >= 400 && (url.includes('/ws/rest/v1/') || url.includes('/ws/fhir2/'))) {
     failedResponses.push({
       status: response.status(),
       method: response.request().method(),
-      url,
-      body: (await response.text().catch(() => '')).slice(0, 2000),
     });
   }
 });
 page.on('console', (message) => {
   if (message.type() === 'error' && !/ServiceWorker|SSL certificate/i.test(message.text())) {
-    consoleErrors.push(message.text());
+    consoleErrorCount += 1;
   }
 });
 
 async function fetchJson(path) {
   const response = await api.get(`${openmrsBase}${path}`);
   if (!response.ok()) {
-    throw new Error(`GET ${path} failed (${response.status()}): ${await response.text()}`);
+    throw new Error(`A verification request failed (${response.status()}).`);
   }
   return response.json();
 }
@@ -118,13 +116,10 @@ async function waitForPersistedFlow(timeoutMs = 30_000) {
     );
 
     lastState = {
-      appointmentStatus: appointment.status,
-      visitUuid: visit?.uuid,
-      visitTypeUuid: visit?.visitType?.uuid,
-      visitLocationUuid: visit?.location?.uuid,
+      appointmentCheckedIn: appointment.status === 'CheckedIn',
+      compatibleVisitFound: Boolean(visit),
       appointmentLinked: Boolean(hasAppointmentLink),
-      queueEntryUuid: queueEntry?.uuid,
-      queueUuid: queueEntry?.queue?.uuid,
+      configuredQueueEntryFound: Boolean(queueEntry),
     };
 
     if (appointment.status === 'CheckedIn' && visit && queueEntry && hasAppointmentLink) {
@@ -180,40 +175,31 @@ try {
   console.log(
     JSON.stringify(
       {
-        patientUuid,
-        appointmentUuid,
         persisted,
         failedResponses,
-        consoleErrors,
+        consoleErrorCount,
       },
       null,
       2,
     ),
   );
 } catch (error) {
-  const visibleAlerts = await page
+  const visibleAlertCount = await page
     .locator('[role="alert"]:visible, .cds--inline-notification:visible')
-    .allTextContents()
-    .then((messages) => messages.map((message) => message.trim()).filter(Boolean))
-    .catch(() => []);
-  const visibleButtons = await page
+    .count()
+    .catch(() => 0);
+  const visibleButtonCount = await page
     .getByRole('button')
-    .evaluateAll((buttons) =>
-      buttons
-        .filter((button) => button instanceof HTMLElement && button.offsetParent !== null)
-        .map((button) => button.textContent?.trim())
-        .filter(Boolean),
-    )
-    .catch(() => []);
+    .count()
+    .catch(() => 0);
   console.error(
     JSON.stringify(
       {
-        error: error instanceof Error ? error.message : String(error),
-        currentUrl: page.url(),
-        visibleAlerts,
-        visibleButtons,
+        errorType: error instanceof Error ? error.name : 'UnknownError',
+        visibleAlertCount,
+        visibleButtonCount,
         failedResponses,
-        consoleErrors,
+        consoleErrorCount,
       },
       null,
       2,

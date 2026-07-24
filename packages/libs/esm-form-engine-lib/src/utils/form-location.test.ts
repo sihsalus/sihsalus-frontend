@@ -13,7 +13,7 @@ describe('resolveFormLocation', () => {
     expect(resolveFormLocation(undefined, sessionLocation as Location)).toBe(sessionLocation);
   });
 
-  it('does not fall back to the login facility when a visit has no location', () => {
-    expect(resolveFormLocation({} as Visit, sessionLocation as Location)).toBeUndefined();
+  it('falls back to the active session location when a visit has no location', () => {
+    expect(resolveFormLocation({} as Visit, sessionLocation as Location)).toBe(sessionLocation);
   });
 });

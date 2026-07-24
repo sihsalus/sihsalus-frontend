@@ -26,7 +26,7 @@ export const EncounterProviderAdapter: FormFieldValueAdapter = {
     context: FormProcessorContextProps,
   ): string | undefined {
     const encounter = sourceObject ?? context.previousDomainObjectValue;
-    return getLatestProvider(encounter)?.uuid;
+    return getLatestProvider(encounter)?.uuid ?? context.currentProvider?.uuid;
   },
   getPreviousValue: function (
     _field: FormField,

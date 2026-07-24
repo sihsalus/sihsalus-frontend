@@ -19,8 +19,8 @@ export const EncounterLocationAdapter: FormFieldValueAdapter = {
     _field: FormField,
     sourceObject: OpenmrsResource,
     context: FormProcessorContextProps,
-  ): string {
-    return getEncounterLocation(sourceObject)?.uuid ?? context.location.uuid;
+  ): string | undefined {
+    return getEncounterLocation(sourceObject)?.uuid ?? context.location?.uuid;
   },
   getPreviousValue: function (
     _field: FormField,

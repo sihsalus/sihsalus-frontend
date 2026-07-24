@@ -76,6 +76,24 @@ describe('CompactPatientBanner', () => {
     expect(screen.getByRole('img')).toBeInTheDocument();
   });
 
+  it('renders patients whose identifier type metadata is missing', () => {
+    const patientWithIncompleteMetadata = {
+      ...patients[0],
+      attributes: [{ attributeType: null, value: '999999999' }],
+      identifiers: [{ ...patients[0].identifiers[0], identifierType: null }],
+    } as unknown as SearchedPatient;
+
+    render(
+      <PatientSearchContext.Provider value={{}}>
+        <CompactPatientBanner patients={[patientWithIncompleteMetadata]} />
+      </PatientSearchContext.Provider>,
+    );
+
+    const patientLink = screen.getByRole('link', { name: 'Smith, John Doe' });
+    expect(patientLink).toBeInTheDocument();
+    expect(within(patientLink).getByText(/1000NLY/)).toBeInTheDocument();
+  });
+
   it('runs the patient click side effect before navigating', async () => {
     const patientClickSideEffect = vi.fn();
     const user = userEvent.setup();

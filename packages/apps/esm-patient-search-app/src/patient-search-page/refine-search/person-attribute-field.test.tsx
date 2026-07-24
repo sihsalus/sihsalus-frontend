@@ -183,6 +183,25 @@ describe('PersonAttributeField', () => {
       expect(conceptAnswers.map(({ display }) => display)).toEqual(['Zulu', 'Alpha']);
     });
 
+    it('ignores incomplete concept answers returned by the server', async () => {
+      mockUseAttributeConceptAnswers.mockReturnValue({
+        conceptAnswers: [
+          null,
+          { uuid: '', display: 'Missing UUID' },
+          { uuid: 'missing-display-uuid' },
+          { uuid: 'valid-uuid', display: 'Valid answer' },
+        ] as unknown as Array<{ uuid: string; display: string }>,
+        isLoadingConceptAnswers: false,
+        errorFetchingConceptAnswers: null,
+      });
+
+      render(<PersonAttributeField {...defaultProps} />);
+      await user.click(screen.getByRole('combobox'));
+
+      expect(screen.getByText('Valid answer')).toBeInTheDocument();
+      expect(screen.queryByText('Missing UUID')).not.toBeInTheDocument();
+    });
+
     it('handles custom concept answers', async () => {
       mockUsePersonAttributeType.mockReturnValue({
         data: {

@@ -116,7 +116,7 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
             const normalizedFilterValue = value?.trim().toLowerCase();
             if (!normalizedFilterValue) continue;
             const matchingAttributes = patient.attributes?.filter(
-              (attribute) => attribute.attributeType.uuid === attributeUuid,
+              (attribute) => attribute?.attributeType?.uuid === attributeUuid,
             );
             const matchesAttributeValue = matchingAttributes?.some((attribute) =>
               matchesPersonAttributeFilter(

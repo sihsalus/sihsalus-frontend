@@ -7,7 +7,7 @@ import { isPatientSearchTermValid, normalizePatientSearchTerm } from './patient-
 import type { PatientSearchResponse, SearchedPatient, User } from './types';
 
 type InfinitePatientSearchResponse = FetchResponse<{
-  results: Array<SearchedPatient>;
+  results: Array<SearchedPatient | null>;
   links: Array<{ rel: 'prev' | 'next' }>;
   totalCount: number;
 }>;
@@ -91,7 +91,7 @@ export function useInfinitePatientSearch(
   const getUrl = useCallback(
     (
       page: number,
-      prevPageData: FetchResponse<{ results: Array<SearchedPatient>; links: Array<{ rel: 'prev' | 'next' }> }>,
+      prevPageData: FetchResponse<{ results: Array<SearchedPatient | null>; links: Array<{ rel: 'prev' | 'next' }> }>,
     ) => {
       if (prevPageData && !prevPageData?.data?.links.some((link) => link.rel === 'next')) {
         return null;
@@ -119,7 +119,9 @@ export function useInfinitePatientSearch(
     openmrsFetch,
   );
 
-  const mappedData = data?.flatMap((res) => res.data?.results ?? []) ?? null;
+  // OpenMRS may preserve an unrepresentable search hit as `null`; one bad hit
+  // must not prevent the remaining patients from rendering.
+  const mappedData = data?.flatMap((res) => res.data?.results ?? []).filter((patient) => patient != null) ?? null;
 
   return useMemo(
     () => ({

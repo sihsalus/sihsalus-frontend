@@ -214,7 +214,9 @@ const ConceptAttributeField: React.FC<ConceptAttributeFieldProps> = ({
 
     const baseItems = field.conceptAnswersUuids?.length ? configuredConceptAnswers || [] : conceptAnswers || [];
 
-    return [...baseItems].sort((a, b) => a.display.localeCompare(b.display));
+    return [...baseItems]
+      .filter((item): item is OpenmrsResource => Boolean(item?.uuid && item?.display))
+      .sort((a, b) => a.display.localeCompare(b.display));
   }, [
     isLoadingConceptAnswers,
     isLoadingConfiguredAnswers,

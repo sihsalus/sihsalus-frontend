@@ -242,6 +242,30 @@ describe('AdvancedPatientSearchComponent', () => {
       expect(within(patientBanners[0]).getByText(/Joshua Johnson/)).toBeInTheDocument();
     });
 
+    it('ignores attributes whose type metadata is missing', async () => {
+      const patientsWithIncompleteMetadata = [
+        {
+          ...mockAdvancedSearchResults[0],
+          attributes: [null, ...mockAdvancedSearchResults[0].attributes],
+        },
+        mockAdvancedSearchResults[1],
+      ] as unknown as NonNullable<PatientSearchResponse['data']>;
+      mockUseInfinitePatientSearch.mockReturnValue({
+        ...mockSearchResults,
+        data: patientsWithIncompleteMetadata,
+      });
+
+      renderComponent();
+
+      await user.click(screen.getByRole('combobox', { name: /estado de verificaci.n de identidad/i }));
+      await user.click(screen.getByRole('option', { name: 'Validado por RENIEC' }));
+      await user.click(screen.getByRole('button', { name: /search/i }));
+
+      const patientBanners = screen.getAllByRole('banner');
+      expect(patientBanners).toHaveLength(1);
+      expect(within(patientBanners[0]).getByText(/Joshua Johnson/)).toBeInTheDocument();
+    });
+
     it('filters admission identification status across concept and legacy values', async () => {
       const admissionStatusAttributeType = {
         uuid: '787f1ea9-1792-45e5-9076-699b1a0638cb',

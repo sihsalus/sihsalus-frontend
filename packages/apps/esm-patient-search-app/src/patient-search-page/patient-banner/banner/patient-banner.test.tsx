@@ -83,6 +83,19 @@ describe('PatientBanner', () => {
     expect(mockExtensionSlot).toHaveBeenCalled();
   });
 
+  it('renders patients whose identifier type metadata is missing', () => {
+    mockUseVisit.mockReturnValue(mockVisitReturn({}));
+    const patientWithIncompleteMetadata = {
+      ...patient,
+      attributes: [{ attributeType: null, value: '999999999' }],
+      identifiers: [{ ...patient.identifiers[0], identifierType: null }],
+    } as unknown as SearchedPatient;
+
+    renderPatientBanner(patientWithIncompleteMetadata);
+
+    expect(screen.getByText('Joshua Johnson')).toBeInTheDocument();
+  });
+
   it.each([
     ['visit data is still loading', { isLoading: true }],
     ['visit data is validating', { isValidating: true }],

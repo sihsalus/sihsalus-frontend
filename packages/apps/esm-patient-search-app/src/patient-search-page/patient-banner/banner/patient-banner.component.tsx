@@ -12,10 +12,10 @@ import {
 } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 
 import { type PatientSearchConfig } from '../../../config-schema';
 import { PatientSearchContext, usePatientSearchContext2 } from '../../../patient-search-context';
+import { mapSearchedPatientToFhir } from '../../../patient-search-mapper';
 import { SihsalusPatientInfo } from '../../../sihsalus-patient-info/sihsalus-patient-info.component';
 import { type FHIRPatientType, type SearchedPatient } from '../../../types';
 
@@ -32,21 +32,6 @@ interface PatientBannerProps {
   patientUuid: string;
   hideActionsOverflow?: boolean;
 }
-
-const getGender = (gender: string) => {
-  switch (gender) {
-    case 'M':
-      return 'male';
-    case 'F':
-      return 'female';
-    case 'O':
-      return 'other';
-    case 'U':
-      return 'unknown';
-    default:
-      return gender;
-  }
-};
 
 const PatientBanner: React.FC<PatientBannerProps> = ({
   patient,
@@ -78,54 +63,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
     setShowContactDetails((value) => !value);
   }, []);
 
-  const fhirMappedPatient: FHIRPatientType = useMemo(() => {
-    const preferredAddress = patient.person.addresses?.find((address) => address.preferred);
-    const addressId = uuidv4();
-    const nameId = uuidv4();
-
-    return {
-      address: preferredAddress
-        ? [
-            {
-              id: addressId,
-              city: preferredAddress.cityVillage,
-              country: preferredAddress.country,
-              state: preferredAddress.stateProvince,
-              use: 'home',
-            },
-          ]
-        : [],
-      birthDate: patient.person.birthdate,
-      deceasedBoolean: patient.person.dead,
-      deceasedDateTime: patient.person.deathDate,
-      gender: getGender(patient.person.gender),
-      id: patient.uuid,
-      identifier: patient.identifiers.map((identifier) => ({
-        id: identifier.uuid,
-        type: {
-          coding: [
-            {
-              code: identifier.identifierType.uuid,
-            },
-          ],
-          text: identifier.identifierType.display,
-        },
-        use: 'official',
-        value: identifier.identifier,
-      })),
-      name: [
-        {
-          family: [patient.person.personName.familyName, patient.person.personName.familyName2]
-            .filter(Boolean)
-            .join(' '),
-          given: [patient.person.personName.givenName, patient.person.personName.middleName],
-          id: nameId,
-          text: patient.person.personName.display,
-        },
-      ],
-      telecom: patient.attributes?.filter((attribute) => attribute.attributeType.display === 'Telephone Number'),
-    };
-  }, [patient]);
+  const fhirMappedPatient: FHIRPatientType = useMemo(() => mapSearchedPatientToFhir(patient), [patient]);
 
   const handleSelectPatient = useCallback(
     (selectedPatientUuid: string) => {

@@ -23,15 +23,9 @@ import {
 } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../config-schema';
-import {
-  appointmentNoteMaxLength,
-  appointmentStartDateEditPrivilege,
-} from '../constants';
+import { appointmentNoteMaxLength, appointmentStartDateEditPrivilege } from '../constants';
 import { useProviders } from '../hooks/useProviders';
-import {
-  changeAppointmentStatus,
-  getAppointmentStatus,
-} from '../patient-appointments/patient-appointments.resource';
+import { changeAppointmentStatus, getAppointmentStatus } from '../patient-appointments/patient-appointments.resource';
 import { type Appointment, AppointmentKind, AppointmentStatus } from '../types';
 
 import { saveAppointment } from './appointments-form.resource';
@@ -60,8 +54,13 @@ const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 
 async function fillRequiredAppointmentFields(user: ReturnType<typeof userEvent.setup>, allDay = false) {
-  await user.selectOptions(screen.getByRole('combobox', { name: /select a UPSS/i }), ['Inpatient Ward']);
-  await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), ['Outpatient']);
+  await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), [
+    mockUseAppointmentServiceData[0].uuid,
+  ]);
+  const locationSelect = screen.getByRole('combobox', { name: /select a UPSS/i }) as HTMLSelectElement;
+  if (!locationSelect.disabled && !locationSelect.value) {
+    await user.selectOptions(locationSelect, ['Inpatient Ward']);
+  }
   await user.selectOptions(screen.getByRole('combobox', { name: /select the type of appointment/i }), ['Scheduled']);
   const providerComboBox = screen.getByRole('combobox', { name: /select a provider/i });
   await user.clear(providerComboBox);
@@ -274,7 +273,7 @@ describe('AppointmentForm', () => {
 
     // Picking a service whose durationMins is null keeps the 30-minute fallback.
     await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), [
-      'Atención ambulatoria por enfermera(o)',
+      servicesWithoutDuration[0].uuid,
     ]);
     expect(durationInput).toHaveValue(30);
   });
@@ -334,9 +333,242 @@ describe('AppointmentForm', () => {
     expect(locationSelect).toHaveValue('');
     expect(locationSelect).not.toHaveValue(mockSession.data.sessionLocation.uuid);
 
-    await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), [service.name]);
+    await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), [service.uuid]);
 
     expect(locationSelect).toHaveValue(serviceLocation.uuid);
+  });
+
+  it('uses service UUIDs and locks the UPSS even when services have the same name', async () => {
+    const user = userEvent.setup();
+    const firstLocation = mockLocations.data.results.at(0);
+    const secondLocation = mockLocations.data.results.at(1);
+    const baseService = mockUseAppointmentServiceData.at(0);
+    if (!firstLocation || !secondLocation || !baseService) {
+      throw new Error('Appointment service and operational location fixtures are required');
+    }
+    const servicesWithDuplicateNames = [
+      { ...baseService, uuid: 'service-a-uuid', name: 'Consulta', location: firstLocation },
+      { ...baseService, uuid: 'service-b-uuid', name: 'Consulta', location: secondLocation },
+    ];
+    mockOpenmrsFetch.mockResolvedValue({ data: servicesWithDuplicateNames } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+
+    const serviceOptions = screen.getAllByRole('option', { name: 'Consulta' }) as Array<HTMLOptionElement>;
+    expect(serviceOptions.map(({ value }) => value)).toEqual(['service-a-uuid', 'service-b-uuid']);
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), 'service-b-uuid');
+
+    const locationSelect = screen.getByRole('combobox', { name: /select a UPSS/i });
+    expect(locationSelect).toHaveValue(secondLocation.uuid);
+    expect(locationSelect).toBeDisabled();
+  });
+
+  it('saves only when the configured service-UPSS pair has one exact care route', async () => {
+    const user = userEvent.setup();
+    const serviceLocation = mockLocations.data.results.at(1);
+    const baseService = mockUseAppointmentServiceData.at(0);
+    if (!serviceLocation || !baseService) {
+      throw new Error('Appointment service and operational location fixtures are required');
+    }
+    const routedService = { ...baseService, location: serviceLocation };
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentTypes: ['Scheduled', 'WalkIn'],
+      careRoutingContractVersion: 'test-contract',
+      appointmentArrivalRules: [
+        {
+          appointmentServiceUuid: routedService.uuid,
+          appointmentLocationUuid: serviceLocation.uuid,
+          arrivalPolicy: 'direct',
+          requiredVisitTypeUuid: 'visit-type-uuid',
+        },
+      ],
+    });
+    mockOpenmrsFetch.mockResolvedValue({ data: [routedService] } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+
+    const locationSelect = screen.getByRole('combobox', { name: /select a UPSS/i });
+    expect(locationSelect).toHaveValue(serviceLocation.uuid);
+    expect(locationSelect).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    expect(mockSaveAppointment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        locationUuid: serviceLocation.uuid,
+        serviceUuid: routedService.uuid,
+      }),
+      expect.anything(),
+    );
+  });
+
+  it('fails closed before saving when the service-UPSS care route is missing', async () => {
+    const user = userEvent.setup();
+    const serviceLocation = mockLocations.data.results.at(1);
+    const baseService = mockUseAppointmentServiceData.at(0);
+    if (!serviceLocation || !baseService) {
+      throw new Error('Appointment service and operational location fixtures are required');
+    }
+    const unroutedService = { ...baseService, location: serviceLocation };
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentTypes: ['Scheduled', 'WalkIn'],
+      careRoutingContractVersion: 'test-contract',
+      appointmentArrivalRules: [],
+    });
+    mockOpenmrsFetch.mockResolvedValue({ data: [unroutedService] } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(
+      await screen.findByText(
+        /No care route is configured for the selected service and UPSS. Contact an administrator before scheduling./,
+      ),
+    ).toBeInTheDocument();
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
+  });
+
+  it('revalidates the UPSS against the newly selected service', async () => {
+    const user = userEvent.setup();
+    const firstLocation = mockLocations.data.results.at(0);
+    const secondLocation = mockLocations.data.results.at(1);
+    const baseService = mockUseAppointmentServiceData.at(0);
+    if (!firstLocation || !secondLocation || !baseService) {
+      throw new Error('Appointment service and operational location fixtures are required');
+    }
+    const unroutedService = { ...baseService, location: firstLocation };
+    const routedService = {
+      ...baseService,
+      uuid: 'routed-service-uuid',
+      name: 'Routed service',
+      location: secondLocation,
+    };
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentTypes: ['Scheduled', 'WalkIn'],
+      careRoutingContractVersion: 'test-contract',
+      appointmentArrivalRules: [
+        {
+          appointmentServiceUuid: routedService.uuid,
+          appointmentLocationUuid: secondLocation.uuid,
+          arrivalPolicy: 'direct',
+          requiredVisitTypeUuid: 'visit-type-uuid',
+        },
+      ],
+    });
+    mockOpenmrsFetch.mockResolvedValue({ data: [unroutedService, routedService] } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(
+      await screen.findByText(
+        /No care route is configured for the selected service and UPSS. Contact an administrator before scheduling./,
+      ),
+    ).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), routedService.uuid);
+
+    const locationSelect = screen.getByRole('combobox', { name: /select a UPSS/i });
+    expect(locationSelect).toHaveValue(secondLocation.uuid);
+    expect(locationSelect).toBeDisabled();
+    await waitFor(() =>
+      expect(
+        screen.queryAllByText(
+          /No care route is configured for the selected service and UPSS. Contact an administrator before scheduling./,
+        ),
+      ).toHaveLength(0),
+    );
+
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+  });
+
+  it('requires an incompatible existing appointment to be repaired before editing', async () => {
+    const user = userEvent.setup();
+    const configuredLocation = mockLocations.data.results.at(0);
+    const staleLocation = mockLocations.data.results.at(1);
+    if (!configuredLocation || !staleLocation) {
+      throw new Error('Appointment service and operational location fixtures are required');
+    }
+    const routedService = { ...makeEditableAppointment().service, location: configuredLocation };
+    const appointment: Appointment = {
+      ...makeEditableAppointment(),
+      service: routedService,
+      location: {
+        name: staleLocation.display ?? staleLocation.name ?? 'Stale UPSS',
+        uuid: staleLocation.uuid,
+      },
+    };
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentTypes: ['Scheduled', 'WalkIn'],
+      careRoutingContractVersion: 'test-contract',
+      appointmentArrivalRules: [
+        {
+          appointmentServiceUuid: routedService.uuid,
+          appointmentLocationUuid: configuredLocation.uuid,
+          arrivalPolicy: 'direct',
+          requiredVisitTypeUuid: 'visit-type-uuid',
+        },
+      ],
+    });
+    mockOpenmrsFetch.mockResolvedValue({ data: [routedService] } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
+
+    await waitForLoadingToFinish();
+    const locationSelect = screen.getByRole('combobox', { name: /select a UPSS/i });
+    expect(locationSelect).toBeEnabled();
+
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(
+      await screen.findAllByText(
+        /The selected UPSS does not belong to this service. Select the service again to restore its configured UPSS./,
+      ),
+    ).not.toHaveLength(0);
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
+
+    await user.selectOptions(locationSelect, configuredLocation.uuid);
+    expect(locationSelect).toHaveValue(configuredLocation.uuid);
+    expect(locationSelect).toBeDisabled();
+  });
+
+  it('blocks editing when the existing appointment service is no longer available', async () => {
+    const user = userEvent.setup();
+    const appointment = makeEditableAppointment();
+    mockOpenmrsFetch.mockResolvedValue({ data: [] } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
+
+    await waitForLoadingToFinish();
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(
+      await screen.findAllByText(
+        /The selected service is no longer available for this patient or UPSS. Select another service./,
+      ),
+    ).not.toHaveLength(0);
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
   });
 
   it('locks a Consulta Externa provider to the current session location when creating an appointment', async () => {
@@ -350,7 +582,7 @@ describe('AppointmentForm', () => {
     const anotherLocation = mockLocations.data.results[1];
     const service = {
       ...mockUseAppointmentServiceData[0],
-      location: anotherLocation,
+      location: externalConsultationLocation,
     };
     mockUseLocations.mockReturnValue([externalConsultationLocation, anotherLocation]);
     mockUseSession.mockReturnValue({
@@ -367,7 +599,7 @@ describe('AppointmentForm', () => {
     expect(locationSelect).toHaveValue(externalConsultationLocation.uuid);
     expect(locationSelect).toBeDisabled();
 
-    await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), [service.name]);
+    await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), [service.uuid]);
 
     expect(locationSelect).toHaveValue(externalConsultationLocation.uuid);
   });
@@ -740,11 +972,7 @@ describe('AppointmentForm', () => {
     const statusSelect = screen.getByLabelText(/select status/i) as HTMLSelectElement;
     const statusOptions = Array.from(statusSelect.options, ({ value }) => value);
     expect(statusSelect).toHaveValue(AppointmentStatus.SCHEDULED);
-    expect(statusOptions).toEqual([
-      AppointmentStatus.SCHEDULED,
-      AppointmentStatus.CANCELLED,
-      AppointmentStatus.MISSED,
-    ]);
+    expect(statusOptions).toEqual([AppointmentStatus.SCHEDULED, AppointmentStatus.CANCELLED, AppointmentStatus.MISSED]);
 
     await user.click(screen.getByRole('button', { name: /save and close/i }));
 

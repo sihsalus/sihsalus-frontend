@@ -1,33 +1,25 @@
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 
-import { useAppointmentService } from '../form/appointments-form.resource';
-
 import MonthlyCalendarView from './monthly-view-workload/monthly-view.component';
 import { useMonthlyCalendarDistribution } from './workload.resource';
 import styles from './workload.scss';
 
 interface WorkloadProps {
-  selectedService: string;
   appointmentDate: Date;
   minDate?: Date;
   onWorkloadDateChange: (pickedDate: Date) => void;
+  serviceUuid: string;
 }
 
-const Workload: React.FC<WorkloadProps> = ({ selectedService, appointmentDate, minDate, onWorkloadDateChange }) => {
-  const { data: services } = useAppointmentService();
-  const serviceUuid = services?.find((service) => service.name === selectedService)?.uuid;
+const Workload: React.FC<WorkloadProps> = ({ serviceUuid, appointmentDate, minDate, onWorkloadDateChange }) => {
   const [displayedMonth, setDisplayedMonth] = useState(() => dayjs(appointmentDate).startOf('month').toDate());
 
   useEffect(() => {
     setDisplayedMonth(dayjs(appointmentDate).startOf('month').toDate());
   }, [appointmentDate]);
 
-  const monthlyCalendarWorkload = useMonthlyCalendarDistribution(
-    serviceUuid,
-    'month',
-    displayedMonth,
-  );
+  const monthlyCalendarWorkload = useMonthlyCalendarDistribution(serviceUuid, 'month', displayedMonth);
 
   const handleDateClick = (pickedDate: Date) => onWorkloadDateChange(pickedDate);
 

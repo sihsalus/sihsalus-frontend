@@ -2,7 +2,7 @@
 
 **Estado:** propuesta de arquitectura y plan de trabajo; pendiente de información y validación institucional.
 
-**Última revisión:** 2026-07-23.
+**Última revisión:** 2026-07-24.
 
 **Ámbito:** Hospital II-1 Santa Clotilde, distrito Napo, provincia Maynas, departamento Loreto.
 
@@ -360,11 +360,21 @@ backend.
 
 #### PR F3 — Citas
 
-- Seleccionar AppointmentServices por UUID.
-- Restringir o bloquear la Location configurada para el servicio.
-- Añadir validación cruzada servicio–Location.
-- Comprobar la ruta de llegada antes de guardar.
-- Cubrir creación, edición, reprogramación, cancelación y llegada.
+**Checkpoint frontend 2026-07-24:** implementado en el formulario; pendiente
+de validación en QLTY y producción.
+
+- [x] Seleccionar AppointmentServices por UUID, sin depender de nombres
+      únicos.
+- [x] Restringir la UPSS a la Location configurada para el servicio.
+- [x] Bloquear servicios de otra UPSS para el personal asistencial de Consulta
+      Externa.
+- [x] Añadir validación cruzada servicio–Location.
+- [x] Exigir una única ruta de llegada antes de guardar cuando el contrato de
+      enrutamiento está habilitado.
+- [x] Fallar cerrado ante rutas ausentes, ambiguas o incompletas, Locations
+      retiradas o combinaciones históricas incompatibles.
+- [x] Cubrir creación, edición/reprogramación y llegada. La cancelación solo
+      cambia el estado y no reescribe servicio ni UPSS.
 
 #### PR F4 — Visits
 

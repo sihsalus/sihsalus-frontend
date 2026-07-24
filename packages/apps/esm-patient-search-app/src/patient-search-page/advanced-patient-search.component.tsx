@@ -91,7 +91,7 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
 
         // Postcode filter
         if (filters.postcode) {
-          if (!patient.person.addresses?.some((address) => address.postalCode === filters.postcode)) {
+          if (!patient.person.addresses?.some((address) => address?.postalCode === filters.postcode)) {
             return false;
           }
         }
@@ -116,7 +116,7 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
             const normalizedFilterValue = value?.trim().toLowerCase();
             if (!normalizedFilterValue) continue;
             const matchingAttributes = patient.attributes?.filter(
-              (attribute) => attribute.attributeType.uuid === attributeUuid,
+              (attribute) => attribute?.attributeType?.uuid === attributeUuid,
             );
             const matchesAttributeValue = matchingAttributes?.some((attribute) =>
               matchesPersonAttributeFilter(

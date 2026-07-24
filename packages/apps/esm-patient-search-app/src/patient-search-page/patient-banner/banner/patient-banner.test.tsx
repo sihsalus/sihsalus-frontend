@@ -111,4 +111,26 @@ describe('PatientBanner', () => {
     expect(screen.queryByRole('button', { name: /start visit/i })).not.toBeInTheDocument();
     expect(mockExtensionSlot).not.toHaveBeenCalled();
   });
+
+  it('renders without failing when optional patient metadata is incomplete', () => {
+    mockUseVisit.mockReturnValue(mockVisitReturn({}));
+
+    renderPatientBanner({
+      ...patient,
+      attributes: [{ attributeType: null, value: null }],
+      identifiers: [
+        {
+          ...patient.identifiers[0],
+          identifierType: null,
+        },
+        null,
+      ],
+      person: {
+        ...patient.person,
+        addresses: [null],
+      },
+    } as unknown as SearchedPatient);
+
+    expect(screen.getByText('Joshua Johnson')).toBeInTheDocument();
+  });
 });

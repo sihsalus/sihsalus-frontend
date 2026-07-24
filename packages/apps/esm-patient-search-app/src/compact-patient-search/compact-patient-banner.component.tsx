@@ -1,12 +1,15 @@
 import { ConfigurableLink, getPatientName, PatientPhoto, useConfig } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { forwardRef, useCallback, useContext, useMemo } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 
 import { type PatientSearchConfig } from '../config-schema';
 import { PatientSearchContext } from '../patient-search-context';
+import {
+  getSearchedPatientDisplayName,
+  mapSearchedPatientToFhir,
+} from '../patient-search-result.utils';
 import { SihsalusPatientInfo } from '../sihsalus-patient-info/sihsalus-patient-info.component';
-import type { FHIRPatientType, SearchedPatient } from '../types';
+import type { SearchedPatient } from '../types';
 
 import styles from './compact-patient-banner.scss';
 
@@ -19,78 +22,11 @@ interface CompactPatientBannerProps {
   patients: Array<SearchedPatient>;
 }
 
-const getGender = (gender: string) => {
-  switch (gender) {
-    case 'M':
-      return 'male';
-    case 'F':
-      return 'female';
-    case 'O':
-      return 'other';
-    case 'U':
-      return 'unknown';
-    default:
-      return gender;
-  }
-};
-
 const CompactPatientBanner = forwardRef<HTMLDivElement, CompactPatientBannerProps>(({ patients }, ref) => {
-  const fhirMappedPatients: Array<FHIRPatientType> = useMemo(() => {
-    // TODO: If/When the online patient search is migrated to the FHIR API at some point, this could
-    // be removed. In fact, it could maybe be done at this point already, but doing it when the
-    // search returns FHIR objects is much simpler because the code which uses the `fhirPatients`
-    // doesn't have to be touched then.
-    return patients.map((patient) => {
-      const preferredAddress = patient.person.addresses?.find((address) => address.preferred);
-      const addressId = uuidv4();
-      const nameId = uuidv4();
-      return {
-        address: preferredAddress
-          ? [
-              {
-                id: addressId,
-                city: preferredAddress.cityVillage,
-                country: preferredAddress.country,
-                state: preferredAddress.stateProvince,
-                use: 'home',
-              },
-            ]
-          : [],
-        birthDate: patient.person.birthdate,
-        deceasedBoolean: patient.person.dead,
-        deceasedDateTime: patient.person.deathDate,
-        gender: getGender(patient.person.gender),
-        id: patient.uuid,
-        identifier: patient.identifiers.map((identifier) => ({
-          id: identifier.uuid,
-          type: {
-            coding: [
-              {
-                code: identifier.identifierType.uuid,
-              },
-            ],
-            text: identifier.identifierType.display,
-          },
-          use: 'official',
-          value: identifier.identifier,
-        })),
-        name: [
-          {
-            id: nameId,
-            given: [patient.person.personName.givenName, patient.person.personName.middleName],
-            family: [patient.person.personName.familyName, patient.person.personName.familyName2]
-              .filter(Boolean)
-              .join(' '),
-            text: patient.person.personName.display,
-          },
-        ],
-        telecom: patient.attributes?.filter((attribute) => attribute.attributeType.display === 'Telephone Number'),
-      };
-    });
-  }, [patients]);
+  const fhirMappedPatients = useMemo(() => patients.map(mapSearchedPatientToFhir), [patients]);
 
   const renderPatient = useCallback(
-    (patient: FHIRPatientType, index: number) => {
+    (patient: fhir.Patient & { id: string }, index: number) => {
       const patientName = getPatientName(patient);
 
       return (
@@ -116,7 +52,7 @@ const ClickablePatientContainer = ({ patient, children }: ClickablePatientContai
   if (nonNavigationSelectPatientAction) {
     return (
       <button
-        aria-label={patient.person.personName.display}
+        aria-label={getSearchedPatientDisplayName(patient)}
         type="button"
         className={classNames(styles.patientSearchResult, styles.patientSearchResultButton, {
           [styles.deceased]: isDeceased,
@@ -133,7 +69,7 @@ const ClickablePatientContainer = ({ patient, children }: ClickablePatientContai
 
   return (
     <ConfigurableLink
-      aria-label={patient.person.personName.display}
+      aria-label={getSearchedPatientDisplayName(patient)}
       className={classNames(styles.patientSearchResult, {
         [styles.deceased]: isDeceased,
       })}

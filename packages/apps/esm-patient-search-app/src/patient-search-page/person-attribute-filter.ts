@@ -63,15 +63,19 @@ const identityVerificationStatusAliases = [
   },
 ] as const;
 
-function normalizeAttributeValue(value: string) {
-  return value
+function normalizeAttributeValue(value: unknown) {
+  return String(value ?? '')
     .trim()
     .toLocaleLowerCase()
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '');
 }
 
-function getAttributeValues(attribute: PersonAttribute) {
+function getAttributeValues(attribute: PersonAttribute | null | undefined) {
+  if (!attribute) {
+    return [];
+  }
+
   const values = [attribute.display];
 
   if (typeof attribute.value === 'string') {
@@ -114,11 +118,15 @@ function matchesStatusAttribute(
 }
 
 export function matchesPersonAttributeFilter(
-  attribute: PersonAttribute,
+  attribute: PersonAttribute | null | undefined,
   attributeTypeUuid: string,
   selectedValue: string,
   stringMatchMode: StringMatchMode = 'contains',
 ) {
+  if (!attribute) {
+    return false;
+  }
+
   if (attributeTypeUuid === admissionIdentificationStatusAttributeTypeUuid) {
     return matchesStatusAttribute(attribute, selectedValue, admissionIdentificationStatusAliases);
   }

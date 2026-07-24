@@ -14,19 +14,34 @@ import { type Appointment, type AppointmentSummary } from '../types';
 
 import SelectedDateContext from './selectedDateContext';
 
-export const useClinicalMetrics = () => {
+const filterAppointmentsByService = (
+  appointments: Array<Appointment>,
+  appointmentServiceTypeUuids: Array<string>,
+) =>
+  appointmentServiceTypeUuids.length > 0
+    ? appointments.filter(({ service }) => service && appointmentServiceTypeUuids.includes(service.uuid))
+    : appointments;
+
+export const useClinicalMetrics = (appointmentServiceTypeUuids: Array<string> = []) => {
   const { selectedDate } = useContext(SelectedDateContext);
-  const endDate = dayjs(new Date(selectedDate).setHours(23, 59, 59, 59)).format(omrsDateFormat);
-  const url = `${restBaseUrl}/appointment/appointmentSummary?startDate=${selectedDate}&endDate=${endDate}`;
+  const startDate = dayjs(selectedDate).startOf('day').format(omrsDateFormat);
+  const endDate = dayjs(selectedDate).endOf('day').format(omrsDateFormat);
+  const url = `${restBaseUrl}/appointment/appointmentSummary?startDate=${startDate}&endDate=${endDate}`;
   const { data, error, isLoading } = useSWR<{
     data: Array<AppointmentSummary>;
   }>(url, openmrsFetch);
+  const appointmentSummary =
+    appointmentServiceTypeUuids.length > 0
+      ? (data?.data ?? []).filter(({ appointmentService }) =>
+          appointmentServiceTypeUuids.includes(appointmentService.uuid),
+        )
+      : (data?.data ?? []);
 
-  const totalAppointments = getServiceCountByAppointmentType(data?.data ?? [], 'allAppointmentsCount');
+  const totalAppointments = getServiceCountByAppointmentType(appointmentSummary, 'allAppointmentsCount');
 
-  const missedAppointments = getServiceCountByAppointmentType(data?.data ?? [], 'missedAppointmentsCount');
+  const missedAppointments = getServiceCountByAppointmentType(appointmentSummary, 'missedAppointmentsCount');
 
-  const transformedAppointments = flattenAppointmentSummary(data?.data ?? []);
+  const transformedAppointments = flattenAppointmentSummary(appointmentSummary);
   const highestServiceLoad = getHighestAppointmentServiceLoad(transformedAppointments);
 
   return {
@@ -40,11 +55,26 @@ export const useClinicalMetrics = () => {
 
 export const useAppointmentsForDate = () => {
   const { selectedDate } = useContext(SelectedDateContext);
-  const url = selectedDate ? `${restBaseUrl}/appointment/all?forDate=${selectedDate}` : null;
+  const startDate = dayjs(selectedDate).startOf('day').format(omrsDateFormat);
+  const endDate = dayjs(selectedDate).endOf('day').format(omrsDateFormat);
+  const searchUrl = `${restBaseUrl}/appointments/search`;
+  const key = selectedDate ? [searchUrl, startDate, endDate] : null;
+  const fetcher = ([url, requestStartDate, requestEndDate]: Array<string>) =>
+    openmrsFetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: {
+        startDate: requestStartDate,
+        endDate: requestEndDate,
+      },
+    });
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: Array<Appointment> }, Error>(
-    url,
-    openmrsFetch,
+    key,
+    fetcher,
+    { errorRetryCount: 2 },
   );
 
   return {
@@ -56,10 +86,14 @@ export const useAppointmentsForDate = () => {
   };
 };
 
-export const useAllAppointmentsByDate = () => {
+export const useAllAppointmentsByDate = (appointmentServiceTypeUuids: Array<string> = []) => {
   const { data, error, isLoading, isValidating, mutate } = useAppointmentsForDate();
 
-  const providersArray = data?.data?.flatMap(({ providers }) => providers ?? []) ?? [];
+  const filteredAppointments = useMemo(
+    () => filterAppointmentsByService(data?.data ?? [], appointmentServiceTypeUuids),
+    [data?.data, appointmentServiceTypeUuids],
+  );
+  const providersArray = filteredAppointments.flatMap(({ providers }) => providers ?? []);
   const validProviders = providersArray.filter((provider) => provider.response === 'ACCEPTED');
   const uniqueProviders = uniqBy(validProviders, (provider) => provider.uuid);
   const providersCount = uniqueProviders.length;
@@ -77,15 +111,7 @@ export const useScheduledAppointments = (appointmentServiceTypeUuids: string[]) 
   const { data, error, isLoading } = useAppointmentsForDate();
 
   const totalScheduledAppointments = useMemo(() => {
-    const appointments = data?.data ?? [];
-
-    if (appointmentServiceTypeUuids.length === 0) {
-      return appointments.length;
-    }
-
-    return appointments.filter(
-      (appointment) => appointment.service && appointmentServiceTypeUuids.includes(appointment.service.uuid),
-    ).length;
+    return filterAppointmentsByService(data?.data ?? [], appointmentServiceTypeUuids).length;
   }, [data?.data, appointmentServiceTypeUuids]);
 
   return {

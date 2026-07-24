@@ -4,6 +4,7 @@ import useSWR from 'swr';
 import useSWRInfinite from 'swr/infinite';
 
 import { isPatientSearchTermValid, normalizePatientSearchTerm } from './patient-search-constants';
+import { isValidSearchedPatient } from './patient-search-result.utils';
 import type { PatientSearchResponse, SearchedPatient, User } from './types';
 
 type InfinitePatientSearchResponse = FetchResponse<{
@@ -119,7 +120,7 @@ export function useInfinitePatientSearch(
     openmrsFetch,
   );
 
-  const mappedData = data?.flatMap((res) => res.data?.results ?? []) ?? null;
+  const mappedData = data?.flatMap((res) => (res.data?.results ?? []).filter(isValidSearchedPatient)) ?? null;
 
   return useMemo(
     () => ({

@@ -1,4 +1,4 @@
-import { mapBillProperties } from './billing.resource';
+import { getPatientPaymentInformation, mapBillProperties } from './billing.resource';
 import type { LineItem, PatientInvoice, Payment } from './types';
 
 type CashPoint = PatientInvoice['cashPoint'];
@@ -94,6 +94,40 @@ const createBaseBill = (overrides: Partial<PatientInvoice> = {}): PatientInvoice
   id: 1,
   resourceVersion: '1.0',
   ...overrides,
+});
+
+describe('getPatientPaymentInformation', () => {
+  it('ignores malformed visit attributes while preserving valid billing information', () => {
+    const result = getPatientPaymentInformation(
+      [
+        null,
+        { attributeType: null, value: null },
+        {
+          attributeType: {
+            name: 'Número de póliza',
+            uuid: 'policy-number-uuid',
+          },
+          value: 'SIS-001',
+        },
+        {
+          attributeType: {
+            name: 'Otro atributo',
+            uuid: 'other-uuid',
+          },
+          value: 'No mostrar',
+        },
+      ],
+      new Set(['policy-number-uuid']),
+    );
+
+    expect(result).toEqual([
+      {
+        name: 'Número de póliza',
+        uuid: 'policy-number-uuid',
+        value: 'SIS-001',
+      },
+    ]);
+  });
 });
 
 describe('mapBillProperties', () => {

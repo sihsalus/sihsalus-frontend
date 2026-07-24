@@ -55,6 +55,26 @@ describe('matchesPersonAttributeFilter', () => {
     ).toBe(false);
   });
 
+  it('does not throw or match malformed attributes returned by REST', () => {
+    expect(
+      matchesPersonAttributeFilter(
+        null,
+        admissionIdentificationStatusAttributeTypeUuid,
+        admissionIdentificationStatusConceptUuids.merged,
+      ),
+    ).toBe(false);
+    expect(
+      matchesPersonAttributeFilter(
+        {
+          value: {},
+          attributeType: null,
+        } as unknown as PersonAttribute,
+        admissionIdentificationStatusAttributeTypeUuid,
+        admissionIdentificationStatusConceptUuids.merged,
+      ),
+    ).toBe(false);
+  });
+
   it('preserves UUID matching for newly configured admission statuses', () => {
     const configuredConceptUuid = '275dc927-e15a-4b45-8c06-21e881f0513b';
 

@@ -112,4 +112,31 @@ describe('CompactPatientBanner', () => {
     expect(patientClickSideEffect).toHaveBeenCalledOnce();
     expect(patientClickSideEffect).toHaveBeenCalledWith('test-patient-uuid');
   });
+
+  it('renders patients whose optional identifier metadata is incomplete', () => {
+    const patientWithIncompleteMetadata = {
+      ...patients[0],
+      attributes: [{ attributeType: null, value: null }],
+      identifiers: [
+        {
+          ...patients[0].identifiers[0],
+          identifierType: null,
+        },
+        null,
+      ],
+      person: {
+        ...patients[0].person,
+        addresses: [null],
+      },
+    } as unknown as SearchedPatient;
+
+    render(
+      <PatientSearchContext.Provider value={{}}>
+        <CompactPatientBanner patients={[patientWithIncompleteMetadata]} />
+      </PatientSearchContext.Provider>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Smith, John Doe' })).toBeInTheDocument();
+    expect(screen.getByText('1000NLY')).toBeInTheDocument();
+  });
 });

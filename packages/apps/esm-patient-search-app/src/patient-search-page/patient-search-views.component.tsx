@@ -4,6 +4,7 @@ import { navigate, UserHasAccess } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { isValidSearchedPatient } from '../patient-search-result.utils';
 import { type SearchedPatient } from '../types';
 import EmptyDataIllustration from '../ui-components/empty-data-illustration.component';
 
@@ -84,9 +85,11 @@ export const ErrorState: React.FC = () => {
 };
 
 export const PatientSearchResults: React.FC<PatientSearchResultsProps> = ({ searchResults }) => {
+  const validSearchResults = searchResults.filter(isValidSearchedPatient);
+
   return (
     <div data-openmrs-role="Search Results">
-      {searchResults.map((patient) => (
+      {validSearchResults.map((patient) => (
         <PatientBanner key={patient.uuid} patientUuid={patient.uuid} patient={patient} />
       ))}
     </div>

@@ -135,21 +135,48 @@ export function useDefaultFacility(): { data: SessionLocation | null } {
   return { data: sessionLocation };
 }
 
+interface VisitPaymentAttribute {
+  attributeType?: {
+    display?: string;
+    name?: string;
+    uuid?: string;
+  } | null;
+  value?: unknown;
+}
+
+export function getPatientPaymentInformation(
+  attributes: Array<unknown>,
+  paymentAttributeTypeUuids: Set<string>,
+) {
+  return attributes.flatMap((attribute) => {
+    if (!attribute || typeof attribute !== 'object') {
+      return [];
+    }
+
+    const paymentAttribute = attribute as VisitPaymentAttribute;
+    const attributeType = paymentAttribute.attributeType;
+
+    if (!attributeType?.uuid || !paymentAttributeTypeUuids.has(attributeType.uuid)) {
+      return [];
+    }
+
+    return [
+      {
+        name: attributeType.name ?? attributeType.display ?? '',
+        uuid: attributeType.uuid,
+        value: paymentAttribute.value,
+      },
+    ];
+  });
+}
+
 export const usePatientPaymentInfo = (patientUuid: string) => {
   const { patientCategory } = useConfig<BillingConfig>();
   const { currentVisit } = useVisit(patientUuid);
   const attributes = currentVisit?.attributes ?? [];
   const paymentAttributeTypeUuids = new Set([patientCategory.insuranceScheme, patientCategory.policyNumber]);
 
-  const paymentInformation = attributes
-    .map((attribute) => ({
-      name: attribute.attributeType.name,
-      uuid: attribute.attributeType.uuid,
-      value: attribute.value,
-    }))
-    .filter(({ uuid }) => paymentAttributeTypeUuids.has(uuid));
-
-  return paymentInformation;
+  return getPatientPaymentInformation(attributes, paymentAttributeTypeUuids);
 };
 
 export function useBillableServices() {

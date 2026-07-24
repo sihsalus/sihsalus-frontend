@@ -3,9 +3,11 @@ import dayjs from 'dayjs';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { filterByServiceType } from '../appointments/utils';
 import SelectedDateContext from '../hooks/selectedDateContext';
 import { useAppointmentList } from '../hooks/useAppointmentList';
 import { useAllAppointmentsByDate, useClinicalMetrics, useScheduledAppointments } from '../hooks/useClinicalMetrics';
+import { AppointmentStatus } from '../types';
 
 import styles from './appointments-metrics.scss';
 import MetricsCard from './metrics-card.component';
@@ -18,9 +20,10 @@ interface AppointmentMetricsProps {
 const AppointmentsMetrics: React.FC<AppointmentMetricsProps> = ({ appointmentServiceTypes }) => {
   const { t } = useTranslation();
 
-  const { highestServiceLoad, error } = useClinicalMetrics();
-  const { totalProviders } = useAllAppointmentsByDate();
-  const { totalScheduledAppointments } = useScheduledAppointments(appointmentServiceTypes);
+  const { highestServiceLoad, error: summaryError } = useClinicalMetrics(appointmentServiceTypes);
+  const { totalProviders, error: providersError } = useAllAppointmentsByDate(appointmentServiceTypes);
+  const { totalScheduledAppointments, error: appointmentsError } =
+    useScheduledAppointments(appointmentServiceTypes);
 
   const { selectedDate } = useContext(SelectedDateContext);
   const formattedStartDate = formatDate(parseDate(selectedDate), { mode: 'standard', time: false });
@@ -28,17 +31,21 @@ const AppointmentsMetrics: React.FC<AppointmentMetricsProps> = ({ appointmentSer
     ? t('scheduledForToday', 'Appointments scheduled today')
     : t('scheduledAppointments', 'Scheduled appointments');
 
-  // TODO we will need rework these after we discuss the logic we want to use
-  const { appointmentList: arrivedAppointments } = useAppointmentList('CheckedIn');
-  const { appointmentList: pendingAppointments } = useAppointmentList('Scheduled');
+  const { appointmentList: arrivedAppointments, error: arrivedAppointmentsError } = useAppointmentList(
+    AppointmentStatus.CHECKEDIN,
+  );
+  const { appointmentList: pendingAppointments, error: pendingAppointmentsError } = useAppointmentList(
+    AppointmentStatus.SCHEDULED,
+  );
 
-  const filteredArrivedAppointments = appointmentServiceTypes
-    ? arrivedAppointments.filter(({ service }) => appointmentServiceTypes.includes(service.uuid))
-    : arrivedAppointments;
-
-  const filteredPendingAppointments = appointmentServiceTypes
-    ? pendingAppointments.filter(({ service }) => appointmentServiceTypes.includes(service.uuid))
-    : pendingAppointments;
+  const filteredArrivedAppointments = filterByServiceType(arrivedAppointments, appointmentServiceTypes);
+  const filteredPendingAppointments = filterByServiceType(pendingAppointments, appointmentServiceTypes);
+  const error =
+    summaryError ??
+    providersError ??
+    appointmentsError ??
+    arrivedAppointmentsError ??
+    pendingAppointmentsError;
 
   if (error) {
     return (

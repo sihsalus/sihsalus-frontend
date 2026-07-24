@@ -1,9 +1,15 @@
-import { type FetchResponse, openmrsFetch } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
+
+import { useAppointmentList } from '../hooks/useAppointmentList';
+import { useAllAppointmentsByDate, useClinicalMetrics, useScheduledAppointments } from '../hooks/useClinicalMetrics';
+import { type Appointment, AppointmentStatus } from '../types';
 
 import AppointmentsMetrics from './appointments-metrics.component';
 
-const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockUseAppointmentList = vi.mocked(useAppointmentList);
+const mockUseAllAppointmentsByDate = vi.mocked(useAllAppointmentsByDate);
+const mockUseClinicalMetrics = vi.mocked(useClinicalMetrics);
+const mockUseScheduledAppointments = vi.mocked(useScheduledAppointments);
 
 vi.mock('../hooks/useClinicalMetrics', async () => ({
   ...(await vi.importActual('../hooks/useClinicalMetrics')),
@@ -28,12 +34,22 @@ vi.mock('../hooks/useClinicalMetrics', async () => ({
   }),
 }));
 
-describe('Appointment metrics', () => {
-  it('should render metrics cards with the correct data', async () => {
-    mockOpenmrsFetch.mockResolvedValueOnce({
-      data: [],
-    } as unknown as FetchResponse);
+vi.mock('../hooks/useAppointmentList', () => ({
+  useAppointmentList: vi.fn(),
+}));
 
+describe('Appointment metrics', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseAppointmentList.mockReturnValue({
+      appointmentList: [],
+      isLoading: false,
+      error: null,
+      mutate: vi.fn(),
+    });
+  });
+
+  it('should render metrics cards with the correct data', async () => {
     render(<AppointmentsMetrics appointmentServiceTypes={['consultation-service-uuid']} />);
 
     await screen.findByText(/appointment metrics/i);
@@ -41,5 +57,30 @@ describe('Appointment metrics', () => {
     expect(screen.getByText(/^appointments$/i)).toBeInTheDocument();
     expect(screen.getByText(/16/i)).toBeInTheDocument();
     expect(screen.getAllByText(/^4$/i)).toHaveLength(2);
+    expect(mockUseClinicalMetrics).toHaveBeenCalledWith(['consultation-service-uuid']);
+    expect(mockUseAllAppointmentsByDate).toHaveBeenCalledWith(['consultation-service-uuid']);
+    expect(mockUseScheduledAppointments).toHaveBeenCalledWith(['consultation-service-uuid']);
+  });
+
+  it('does not treat the empty service selection as an active filter for the status breakdown', () => {
+    const createAppointment = (uuid: string, serviceUuid: string, status: AppointmentStatus) =>
+      ({
+        uuid,
+        status,
+        service: { uuid: serviceUuid },
+      }) as Appointment;
+    mockUseAppointmentList.mockImplementation((status) => ({
+      appointmentList: [
+        createAppointment(`${status}-service-a`, 'service-a', status as AppointmentStatus),
+        createAppointment(`${status}-service-b`, 'service-b', status as AppointmentStatus),
+      ],
+      isLoading: false,
+      error: null,
+      mutate: vi.fn(),
+    }));
+
+    render(<AppointmentsMetrics appointmentServiceTypes={[]} />);
+
+    expect(screen.getAllByText(/^2$/)).toHaveLength(2);
   });
 });

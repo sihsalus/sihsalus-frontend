@@ -409,6 +409,11 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         requiredVisitTypeUuid: rule.requiredVisitTypeUuid,
         showPatientHeader: true,
         openedFrom: 'appointments-check-in',
+        workspaceTitle: t('startAppointmentCareTitle', 'Iniciar atención de la cita'),
+        workspaceDescription: t(
+          'startAppointmentCareWithQueueDescription',
+          'Revise los datos de la atención. Al confirmar, se registrará la llegada y el paciente será agregado a la cola seleccionada.',
+        ),
         onBeforeVisitSave: (visit?: Visit) => validateBeforePersistence(visit),
         onVisitStarted: async () => {
           mutateVisits?.();
@@ -480,6 +485,11 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         requiredVisitTypeUuid: rule.requiredVisitTypeUuid,
         showPatientHeader: true,
         openedFrom: 'appointments-direct-start',
+        workspaceTitle: t('startAppointmentCareTitle', 'Iniciar atención de la cita'),
+        workspaceDescription: t(
+          'startAppointmentCareDirectDescription',
+          'Revise los datos de la atención. Al confirmar, se iniciará la consulta y se registrará la llegada sin enviar al paciente a una cola.',
+        ),
         onBeforeVisitSave: (visit?: Visit) => validateBeforePersistence(visit),
         onVisitStarted: async () => {
           mutateVisits?.();

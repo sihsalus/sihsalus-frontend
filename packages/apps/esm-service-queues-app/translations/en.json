@@ -342,6 +342,8 @@
   "undoTransition": "Undo transition",
   "undoTransitionForPatient": "Undo transition for {{patient}}",
   "unexpectedError": "An unexpected error occurred",
+  "appointmentQueueFieldsLoadError": "The queue information could not be loaded",
+  "appointmentQueueFieldsLoadErrorMessage": "Close this form and check in the appointment again. If the problem continues, contact support.",
   "unexpectedServerResponse": "Unexpected Server Response",
   "unknown": "Unknown",
   "unknownError": "An unknown error occurred",

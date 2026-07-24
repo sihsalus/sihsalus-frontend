@@ -342,6 +342,8 @@
   "undoTransition": "Deshacer cambio de estado",
   "undoTransitionForPatient": "Deshacer cambio de estado de {{patient}}",
   "unexpectedError": "Ocurrió un error inesperado",
+  "appointmentQueueFieldsLoadError": "No se pudo cargar la información de la cola",
+  "appointmentQueueFieldsLoadErrorMessage": "Cierre este formulario y vuelva a registrar la llegada. Si el problema continúa, contacte a soporte.",
   "unexpectedServerResponse": "Respuesta del Servidor Inesperada",
   "unknown": "Desconocido",
   "unknownError": "Ocurrió un error desconocido",

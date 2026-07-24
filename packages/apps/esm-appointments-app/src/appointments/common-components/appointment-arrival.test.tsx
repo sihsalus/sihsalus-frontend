@@ -326,6 +326,9 @@ describe('AppointmentArrivalModal', () => {
         },
         requiredVisitTypeUuid,
         openedFrom: 'appointments-check-in',
+        workspaceTitle: 'Iniciar atención de la cita',
+        workspaceDescription:
+          'Revise los datos de la atención. Al confirmar, se registrará la llegada y el paciente será agregado a la cola seleccionada.',
         onVisitStarted: expect.any(Function),
       }),
     );
@@ -474,6 +477,9 @@ describe('AppointmentArrivalModal', () => {
           },
           requiredVisitTypeUuid,
           openedFrom: 'appointments-direct-start',
+          workspaceTitle: 'Iniciar atención de la cita',
+          workspaceDescription:
+            'Revise los datos de la atención. Al confirmar, se iniciará la consulta y se registrará la llegada sin enviar al paciente a una cola.',
           onVisitStarted: expect.any(Function),
         }),
       ),

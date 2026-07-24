@@ -139,6 +139,7 @@ interface StartVisitFormWorkspaceProps {
   requestedServiceName?: string;
   visitToEdit?: Visit;
   workspaceTitle?: string;
+  workspaceDescription?: string;
 }
 
 type LegacyStartVisitFormProps = DefaultPatientWorkspaceProps & StartVisitFormWorkspaceProps;
@@ -174,6 +175,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     visitToEdit,
     openedFrom,
     workspaceTitle,
+    workspaceDescription,
   } = workspaceProps;
   const isQueueRegistration = openedFrom === 'service-queues-add-patient' && !visitToEdit;
   const initialPatientUuid = isWorkspace2
@@ -1344,6 +1346,16 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                 ? 'No repita la admisión. Pulse Reintentar para verificar la consulta antes de continuar.'
                 : 'No vuelva a enviar el formulario. Ciérrelo y verifique las consultas activas del paciente antes de continuar.',
             )}
+          />
+        ) : null}
+        {workspaceDescription ? (
+          <InlineNotification
+            hideCloseButton
+            kind="info"
+            lowContrast
+            className={styles.workspaceDescription}
+            title={t('startVisitInstructionsTitle', 'Revise los datos de la atención')}
+            subtitle={workspaceDescription}
           />
         ) : null}
         <fieldset

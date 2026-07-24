@@ -183,6 +183,7 @@ const testProps = {
   promptBeforeClosing: mockPromptBeforeClosing,
   showVisitEndDateTimeFields: false,
   setTitle: mockSetTitle,
+  workspaceDescription: undefined as string | undefined,
 };
 
 const mockSaveVisit = vi.mocked(saveVisit);
@@ -455,6 +456,15 @@ describe('Visit form', () => {
     expect(combobox).toHaveDisplayValue('Mosoriot');
     expect(screen.getByRole('option', { name: /Mosoriot/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /Inpatient Ward/i })).toBeInTheDocument();
+  });
+
+  it('shows contextual instructions when the form is opened from an appointment', () => {
+    renderVisitForm(undefined, {
+      workspaceDescription: 'Revise los datos y confirme el inicio de la atención.',
+    });
+
+    expect(screen.getByText(/Revise los datos de la atención|Review the care details/i)).toBeInTheDocument();
+    expect(screen.getByText('Revise los datos y confirme el inicio de la atención.')).toBeInTheDocument();
   });
 
   it('registers the queue admission time internally when opened from service queues', async () => {

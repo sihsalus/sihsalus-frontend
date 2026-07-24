@@ -79,6 +79,10 @@
   height: 100%;
 }
 
+.workspaceDescription {
+  margin: layout.$spacing-05 layout.$spacing-05 0;
+}
+
 .buttonSet {
   margin-top: auto;
   justify-self: end;

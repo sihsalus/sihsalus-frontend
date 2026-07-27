@@ -25,7 +25,9 @@ import { type PatientRegistration } from './patient-registration/patient-registr
 export function setupOffline() {
   setupOfflineSync(patientRegistration, [], syncPatientRegistration, {
     onBeginEditSyncItem(syncItem) {
-      navigate({ to: `${globalThis.spaBase}/patient/${syncItem.content.fhirPatient.id}/edit` });
+      navigate({
+        to: `${globalThis.spaBase}/patient/${syncItem.content.fhirPatient.id}/edit`,
+      });
     },
   });
 
@@ -97,6 +99,7 @@ export async function syncPatientRegistration(
     queuedPatient._patientRegistrationData.initialAddressFieldValues,
     queuedPatient._patientRegistrationData.capturePhotoProps,
     queuedPatient._patientRegistrationData.currentLocation,
+    queuedPatient._patientRegistrationData.identifierTypes ?? [],
     queuedPatient._patientRegistrationData.initialIdentifierValues,
     queuedPatient._patientRegistrationData.currentUser,
     queuedPatient._patientRegistrationData.config,

@@ -52,10 +52,16 @@ import {
   type Patient,
   type PatientAddress,
   type PatientIdentifier,
+  type PatientIdentifierType,
   type PatientRegistration,
   type PatientUuidMapType,
   type RelationshipValue,
 } from './patient-registration.types';
+import {
+  assertIdentifierLocationPolicies,
+  getActiveIdentifierEntries,
+  getIdentifierLocationPayload,
+} from './identifier-location-behavior';
 import {
   addressUbigeoField,
   addressUbigeoPathField,
@@ -210,27 +216,6 @@ function getPatientPayloadSignature(patient: Patient) {
   return JSON.stringify(demographicPayload);
 }
 
-const missingIdentifierLocationMessage =
-  'No se puede registrar al paciente sin una ubicación de sesión. Seleccione una ubicación e intente nuevamente.';
-
-function assertLocationForIdentifiers(hasIdentifiers: boolean, location: string) {
-  if (hasIdentifiers && !location?.trim()) {
-    throw new RegistrationDomainError(
-      registrationErrorCodes.identifierLocationRequired,
-      missingIdentifierLocationMessage,
-    );
-  }
-}
-
-function assertIdentifierLocation(identifiers: FormValues['identifiers'], location: string) {
-  const hasActiveIdentifiers = Object.values(identifiers ?? {}).some(
-    ({ identifierValue, autoGeneration, selectedSource }) =>
-      Boolean(identifierValue || (autoGeneration && selectedSource)),
-  );
-
-  assertLocationForIdentifiers(hasActiveIdentifiers, location);
-}
-
 function ensureTransactionState(transactionManager: SavePatientTransactionManager) {
   transactionManager.deletedAttributeUuids ??= {};
   transactionManager.deletedIdentifierUuids ??= {};
@@ -253,6 +238,7 @@ export type SavePatientForm = (
   initialAddressFieldValues: Record<string, unknown>,
   capturePhotoProps: CapturePhotoProps | null,
   currentLocation: string,
+  identifierTypes: Array<PatientIdentifierType>,
   initialIdentifierValues: FormValues['identifiers'],
   currentUser: Session,
   config: RegistrationConfig,
@@ -268,6 +254,7 @@ export class FormManager {
     initialAddressFieldValues,
     capturePhotoProps,
     currentLocation,
+    identifierTypes,
     initialIdentifierValues,
     currentUser,
     config,
@@ -283,7 +270,7 @@ export class FormManager {
       );
     }
 
-    assertIdentifierLocation(values.identifiers, currentLocation);
+    assertIdentifierLocationPolicies(values.identifiers, identifierTypes, currentLocation);
 
     const syncItem: PatientRegistration = {
       fhirPatient: FormManager.mapPatientToFhirPatient(
@@ -297,6 +284,7 @@ export class FormManager {
         initialAddressFieldValues,
         capturePhotoProps,
         currentLocation,
+        identifierTypes,
         initialIdentifierValues,
         currentUser,
         config,
@@ -323,6 +311,7 @@ export class FormManager {
     initialAddressFieldValues,
     capturePhotoProps,
     currentLocation,
+    identifierTypes,
     initialIdentifierValues,
     currentUser,
     config,
@@ -359,6 +348,7 @@ export class FormManager {
       values.identifiers,
       initialIdentifierValues,
       currentLocation,
+      identifierTypes,
       savePatientTransactionManager,
       signal,
     );
@@ -376,6 +366,7 @@ export class FormManager {
             personUuidToPromote,
             patientIdentifiers,
             currentLocation,
+            identifierTypes,
             savePatientTransactionManager.patientSaved,
             signal,
           );
@@ -387,7 +378,10 @@ export class FormManager {
       savePatientTransactionManager.newPatientIdentifierSignature = getIdentifierFormSignature(values.identifiers);
       // Reuse the person's existing preferred name/address rows in the follow-up
       // demographic update so it edits them instead of appending duplicates.
-      effectivePatientUuidMap = { ...patientUuidMap, ...promotion.patientUuidMap };
+      effectivePatientUuidMap = {
+        ...patientUuidMap,
+        ...promotion.patientUuidMap,
+      };
       promotionAttributes = promotion.verificationAttributes;
     }
 
@@ -529,9 +523,13 @@ export class FormManager {
     personUuid: string,
     patientIdentifiers: Array<PatientIdentifier>,
     currentLocation: string,
+    identifierTypes: ReadonlyArray<PatientIdentifierType>,
     alreadyPromotedInSession: boolean,
     signal?: AbortSignal,
-  ): Promise<{ patientUuidMap: PatientUuidMapType; verificationAttributes: Array<AttributeValue> }> {
+  ): Promise<{
+    patientUuidMap: PatientUuidMapType;
+    verificationAttributes: Array<AttributeValue>;
+  }> {
     if (!alreadyPromotedInSession && (await isPersonAlreadyPatient(personUuid))) {
       throw new RegistrationDomainError(
         registrationErrorCodes.promotionAlreadyPatient,
@@ -567,13 +565,22 @@ export class FormManager {
               attributeType: personIdentityVerificationSourceAttributeTypeUuid,
               value: identityVerificationSourceConceptUuids.reniec,
             },
-            { attributeType: personIdentityVerifiedAtAttributeTypeUuid, value: outcome.verifiedAt },
+            {
+              attributeType: personIdentityVerifiedAtAttributeTypeUuid,
+              value: outcome.verifiedAt,
+            },
           );
         } else if (outcome.status === 'mismatch') {
           throw new RegistrationDomainError(
             registrationErrorCodes.identityVerificationMismatch,
             `Identity verification mismatch while promoting ${personUuid}: ${outcome.observation}`,
-            { technicalDetails: { observation: outcome.observation, personUuid, source: outcome.source } },
+            {
+              technicalDetails: {
+                observation: outcome.observation,
+                personUuid,
+                source: outcome.source,
+              },
+            },
           );
         }
       } catch (error) {
@@ -588,13 +595,17 @@ export class FormManager {
 
     if (!alreadyPromotedInSession) {
       const identifiers = [...patientIdentifiers];
-      const documentIdentifier = buildDocumentIdentifierForPromotion(person, identifiers, currentLocation);
+      const documentIdentifier = buildDocumentIdentifierForPromotion(
+        person,
+        identifiers,
+        identifierTypes,
+        currentLocation,
+      );
 
       if (documentIdentifier) {
         identifiers.push(documentIdentifier);
       }
 
-      assertLocationForIdentifiers(identifiers.length > 0, currentLocation);
       await promotePersonToPatient(personUuid, identifiers, signal);
     }
 
@@ -610,7 +621,10 @@ export class FormManager {
   static async saveRelationships(
     relationships: Array<RelationshipValue> | undefined,
     savePatientResponse: FetchResponse,
-    options: { companionRelationshipType?: string; phoneAttributeTypeUuid?: string } = {},
+    options: {
+      companionRelationshipType?: string;
+      phoneAttributeTypeUuid?: string;
+    } = {},
     transactionManager: SavePatientTransactionManager = new SavePatientTransactionManager(),
     signal?: AbortSignal,
   ) {
@@ -631,7 +645,10 @@ export class FormManager {
   static async saveRelationshipForRow(
     relationship: RelationshipValue,
     thisPatientUuid: string,
-    options: { companionRelationshipType?: string; phoneAttributeTypeUuid?: string },
+    options: {
+      companionRelationshipType?: string;
+      phoneAttributeTypeUuid?: string;
+    },
     transactionManager: SavePatientTransactionManager = new SavePatientTransactionManager(),
     signal?: AbortSignal,
   ) {
@@ -865,12 +882,11 @@ export class FormManager {
     patientIdentifiers: FormValues['identifiers'], // values.identifiers
     initialIdentifierValues: FormValues['identifiers'], // Initial identifiers assigned to the patient
     location: string,
+    identifierTypes: ReadonlyArray<PatientIdentifierType>,
     transactionManager: SavePatientTransactionManager = new SavePatientTransactionManager(),
     signal?: AbortSignal,
   ): Promise<Array<PatientIdentifier>> {
     ensureTransactionState(transactionManager);
-    assertIdentifierLocation(patientIdentifiers, location);
-
     const initializeIdentifierRow = (
       identifierFieldName: string,
       initialIdentifier?: FormValues['identifiers'][string],
@@ -897,11 +913,14 @@ export class FormManager {
       });
     }
 
-    const activeIdentifierEntries = Object.entries(patientIdentifiers ?? {}).filter(
-      ([, { identifierValue, autoGeneration, selectedSource }]) =>
-        Boolean(identifierValue || (autoGeneration && selectedSource)),
-    );
+    const activeIdentifierEntries = getActiveIdentifierEntries(patientIdentifiers);
     const activeIdentifierFields = new Set(activeIdentifierEntries.map(([fieldName]) => fieldName));
+    const identifierLocationPayloads = new Map(
+      activeIdentifierEntries.map(([fieldName, identifier]) => [
+        fieldName,
+        getIdentifierLocationPayload(identifier.identifierTypeUuid, identifierTypes, location),
+      ]),
+    );
     const identifierTypeRequests = activeIdentifierEntries
       /* Since default identifier-types will be present on the form and are also in the not-required state,
         therefore we might be running into situations when there's no value and no source associated,
@@ -927,7 +946,7 @@ export class FormManager {
           uuid: identifierUuid,
           identifier,
           identifierType: identifierTypeUuid,
-          location,
+          ...identifierLocationPayloads.get(identifierFieldName),
           preferred,
         };
 
@@ -1198,9 +1217,19 @@ export class FormManager {
     const mobilePhoneAttributeValue = getPersonAttributeValue(patient, mobilePhoneAttributeTypeUuid);
     const emailAttributeValue = getPersonAttributeValue(patient, emailAttributeTypeUuid);
     const telecom = [
-      phoneAttributeValue ? { system: 'phone' as const, use: 'home' as const, value: phoneAttributeValue } : null,
+      phoneAttributeValue
+        ? {
+            system: 'phone' as const,
+            use: 'home' as const,
+            value: phoneAttributeValue,
+          }
+        : null,
       mobilePhoneAttributeValue
-        ? { system: 'phone' as const, use: 'mobile' as const, value: mobilePhoneAttributeValue }
+        ? {
+            system: 'phone' as const,
+            use: 'mobile' as const,
+            value: mobilePhoneAttributeValue,
+          }
         : null,
       emailAttributeValue ? { system: 'email' as const, value: emailAttributeValue } : null,
     ].filter(Boolean);
@@ -1215,7 +1244,11 @@ export class FormManager {
         given: [name.givenName, name.middleName].filter(Boolean),
         family: name.familyName,
         text: [name.familyName, name.familyName2, name.givenName, name.middleName].filter(Boolean).join(' '),
-        ...(name.familyName2 ? { extension: [{ url: familyName2ExtensionUrl, valueString: name.familyName2 }] } : {}),
+        ...(name.familyName2
+          ? {
+              extension: [{ url: familyName2ExtensionUrl, valueString: name.familyName2 }],
+            }
+          : {}),
       })),
       address: patient.person?.addresses?.map((address) => ({
         id: address.uuid,

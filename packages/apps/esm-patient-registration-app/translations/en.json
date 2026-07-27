@@ -183,6 +183,7 @@
   "identifierInvalidFormat": "Identifier does not match the expected format",
   "identifierRetryDeleteError": "An identifier was removed during a retry. Reload the patient and try again.",
   "identifierRetryUpdateError": "Identification data changed during a retry. Reload the patient and try again.",
+  "identifierLocationBehaviorUnknownError": "The identification configuration is incomplete. Contact the system administrator before registering the patient.",
   "invalidRegistrationData": "Some information is invalid. Review the form and try again.",
   "identifierTypesEditModeUnavailableSubtitle": "Existing identification data is shown, but identifier types are unavailable. Refresh the page before adding or changing identifiers.",
   "identifierTypesUnavailableSubtitle": "Refresh the page. If the problem continues, check that patient identifier types are configured and that your session is active.",

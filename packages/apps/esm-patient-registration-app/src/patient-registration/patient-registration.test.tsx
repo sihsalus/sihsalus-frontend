@@ -542,7 +542,7 @@ describe('Registering a new patient', () => {
     ]);
     mockSearchLocalIdentityByDocument.mockResolvedValue([]);
     const savePatientForm = vi.fn(async (...args) => {
-      const transaction = args[9] as SavePatientTransactionManager;
+      const transaction = args[10] as SavePatientTransactionManager;
       if (savePatientForm.mock.calls.length === 1) {
         transaction.patientSaved = true;
         throw { responseBody: { error: { message: 'relationship failed' } } };
@@ -634,7 +634,8 @@ describe('Registering a new patient', () => {
         actionButtonLabel: 'Open existing patient',
         kind: 'error',
         onActionButtonClick: expect.any(Function),
-        subtitle: 'A patient already exists with this document. Find the existing patient before registering a new one.',
+        subtitle:
+          'A patient already exists with this document. Find the existing patient before registering a new one.',
       }),
     );
     expect(mockGetUserFacingErrorMessage).toHaveBeenCalledWith(
@@ -805,9 +806,7 @@ describe('Registering a new patient', () => {
     await user.type(weight, '-999');
 
     mockSaveEncounter.mockRejectedValue({ status: 400, responseBody: { error: { message: 'an error message' } } });
-    mockGetUserFacingErrorMessage.mockReturnValueOnce(
-      'Some information is invalid. Review the form and try again.',
-    );
+    mockGetUserFacingErrorMessage.mockReturnValueOnce('Some information is invalid. Review the form and try again.');
 
     const registerPatientButton = screen.getByText(/Register Patient/i);
 
@@ -987,7 +986,7 @@ describe('Updating an existing patient record', () => {
 
     await waitFor(() => expect(mockSavePatientForm).toHaveBeenCalled());
     expect(mockSavePatientForm.mock.calls[0][0]).toBe(true);
-    expect(mockSavePatientForm.mock.calls[0][9]).toMatchObject({
+    expect(mockSavePatientForm.mock.calls[0][10]).toMatchObject({
       generatedIdentifiers: { openMrsId: '100QUEUED' },
     });
   });
@@ -1137,6 +1136,7 @@ describe('Updating an existing patient record', () => {
       expect.anything(),
       expect.anything(),
       expect.anything(),
+      expect.anything(),
       expect.objectContaining({ patientSaved: false }),
       expect.anything(),
     );
@@ -1193,6 +1193,7 @@ describe('Updating an existing patient record', () => {
       expect.anything(),
       null,
       'location-uuid',
+      expect.anything(),
       expect.anything(),
       expect.anything(),
       expect.anything(),

@@ -50,9 +50,11 @@ async function fetchRecentlyViewedPatient(url: string): Promise<FetchResponse<Se
   try {
     return await openmrsFetch<SearchedPatient>(url);
   } catch (error) {
-    // A patient may be removed after their UUID was saved in patientsVisited. That stale
-    // preference must not prevent the remaining recent patients or global search from loading.
-    if (getResponseStatus(error) === 404) {
+    // A recently viewed patient can have been removed or become inaccessible after the
+    // user changed role or UPSS. This is only a user preference: it must not prevent the
+    // remaining recent patients or the global search from loading. Authentication and
+    // server errors are deliberately still surfaced.
+    if ([403, 404].includes(getResponseStatus(error) ?? 0)) {
       return null;
     }
 

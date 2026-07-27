@@ -4,9 +4,28 @@ const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 
-const { peerRange, targetVersion, validateReactRouterContract } = require('./validate-react-router-contract');
+const {
+  peerRange,
+  targetVersion,
+  trivyAdvisoryId,
+  trivyExceptionExpiresAt,
+  trivyExceptionPurl,
+  trivyExceptionStatement,
+  validateReactRouterContract,
+} = require('./validate-react-router-contract');
 
-function createFixture({ rootVersion = targetVersion, peerVersion = peerRange, rootRscDependency, source = '' } = {}) {
+function createFixture({
+  rootVersion = targetVersion,
+  peerVersion = peerRange,
+  rootRscDependency,
+  source = '',
+  trivyException = {
+    id: trivyAdvisoryId,
+    purls: [trivyExceptionPurl],
+    expired_at: trivyExceptionExpiresAt,
+    statement: trivyExceptionStatement,
+  },
+} = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'react-router-contract-'));
   const appDirectory = path.join(root, 'packages/apps/clinical-app/src');
   fs.mkdirSync(appDirectory, { recursive: true });
@@ -33,6 +52,7 @@ function createFixture({ rootVersion = targetVersion, peerVersion = peerRange, r
     path.join(root, 'yarn.lock'),
     `"react-router-dom@npm:${rootVersion}":\n  resolution: "react-router-dom@npm:${rootVersion}"\n\n"react-router@npm:${rootVersion}":\n  resolution: "react-router@npm:${rootVersion}"\n`,
   );
+  fs.writeFileSync(path.join(root, '.trivyignore.yaml'), JSON.stringify({ vulnerabilities: [trivyException] }));
   return root;
 }
 
@@ -61,4 +81,64 @@ test('rejects vulnerable resolutions, missing sharing declarations, and removed 
 
 test('keeps the repository contract valid', () => {
   assert.deepEqual(validateReactRouterContract(), []);
+});
+
+test('rejects a Trivy exception that is not scoped to the exact package version', () => {
+  const root = createFixture({
+    trivyException: {
+      id: trivyAdvisoryId,
+      purls: ['pkg:npm/react-router'],
+      expired_at: trivyExceptionExpiresAt,
+      statement: trivyExceptionStatement,
+    },
+  });
+  const failures = validateReactRouterContract(root);
+
+  assert.ok(failures.some((failure) => failure.includes('must be scoped only')));
+});
+
+test('rejects a Trivy exception without the reviewed expiration', () => {
+  const root = createFixture({
+    trivyException: {
+      id: trivyAdvisoryId,
+      purls: [trivyExceptionPurl],
+      statement: trivyExceptionStatement,
+    },
+  });
+  const failures = validateReactRouterContract(root);
+
+  assert.ok(failures.some((failure) => failure.includes('must contain only')));
+});
+
+test('rejects an additional Trivy vulnerability exception', () => {
+  const root = createFixture();
+  fs.writeFileSync(
+    path.join(root, '.trivyignore.yaml'),
+    JSON.stringify({
+      vulnerabilities: [
+        {
+          id: trivyAdvisoryId,
+          purls: [trivyExceptionPurl],
+          expired_at: trivyExceptionExpiresAt,
+          statement: trivyExceptionStatement,
+        },
+        {
+          id: 'CVE-2099-0001',
+          purls: ['pkg:npm/example@1.0.0'],
+          expired_at: trivyExceptionExpiresAt,
+          statement: 'Unreviewed exception',
+        },
+      ],
+    }),
+  );
+  const failures = validateReactRouterContract(root);
+
+  assert.ok(failures.some((failure) => failure.includes('exactly one reviewed')));
+});
+
+test('rejects the Trivy exception after its review deadline', () => {
+  const root = createFixture();
+  const failures = validateReactRouterContract(root, new Date('2026-09-01T00:00:00Z'));
+
+  assert.ok(failures.some((failure) => failure.includes('expired on 2026-08-31')));
 });

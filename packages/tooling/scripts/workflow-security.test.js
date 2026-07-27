@@ -44,6 +44,7 @@ test('release scans the immutable digest before promoting mutable aliases', () =
   assert.match(scanStep, /image-ref: .*@\$\{\{ steps\.build\.outputs\.digest \}\}/);
   assert.match(scanStep, /severity: HIGH,CRITICAL/);
   assert.match(scanStep, /exit-code: '1'/);
+  assert.match(scanStep, /trivyignores: \.trivyignore\.yaml/);
 
   const promotionStep = releaseWorkflow.slice(promotionIndex);
   assert.match(promotionStep, /imagetools create --prefer-index=false/);

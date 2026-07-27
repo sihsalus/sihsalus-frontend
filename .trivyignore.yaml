@@ -1,0 +1,9 @@
+vulnerabilities:
+  - id: GHSA-qwww-vcr4-c8h2
+    purls:
+      - pkg:npm/react-router@7.18.1
+    expired_at: 2026-08-31
+    statement: >-
+      RSC-only advisory is not applicable while SIHSALUS remains a declarative
+      React 18 SPA; CI rejects React Router RSC APIs and react-server-dom
+      dependencies before release.

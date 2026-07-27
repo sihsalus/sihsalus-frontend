@@ -67,5 +67,10 @@ verify.log
 .codex
 .atl/
 .codegraph/
-packages/tooling/configs/vitest-config.js.map
-packages/tooling/configs/vitest-config.d.ts.map
+# Compiled output of the shared tooling configs. Nothing consumes these: every
+# vitest.config.ts imports the extensionless specifier and esbuild resolves the
+# .ts source first. They are only regenerated as a build side effect.
+packages/tooling/configs/*.js
+packages/tooling/configs/*.d.ts
+packages/tooling/configs/*.js.map
+packages/tooling/configs/*.d.ts.map

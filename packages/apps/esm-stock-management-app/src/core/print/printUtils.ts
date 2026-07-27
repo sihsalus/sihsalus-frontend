@@ -1,5 +1,5 @@
 import DOMPurify from 'dompurify';
-import { type DefaultTreeAdapterMap, parse, serialize } from 'parse5';
+import type { DefaultTreeAdapterMap } from 'parse5';
 import { PrintCss } from './PrintStyles';
 
 const staticPrintPolicy = [
@@ -223,7 +223,8 @@ const enforceStaticAllowlist = (parent: ParsedParentNode, insideSvg = false): st
  * formatters. Treat the complete document as untrusted: remarks, item names,
  * locations, titles, and SVG logos can all originate outside this bundle.
  */
-export const prepareSafePrintHtml = (content: string): string => {
+export const prepareSafePrintHtml = async (content: string): Promise<string> => {
+  const { parse, serialize } = await import('parse5');
   const parsedDocument = parse(content);
   const documentTitle = enforceStaticAllowlist(parsedDocument);
   const parsedBody = findParsedElement(parsedDocument, 'body');
@@ -239,8 +240,8 @@ export const prepareSafePrintHtml = (content: string): string => {
   );
 };
 
-const printDocumentInternal = (content: string) => {
-  const printDocument = new Blob([prepareSafePrintHtml(content)], { type: 'text/html' });
+const printDocumentInternal = async (content: string) => {
+  const printDocument = new Blob([await prepareSafePrintHtml(content)], { type: 'text/html' });
   const printUrl = URL.createObjectURL(printDocument);
   const newWin = window.open('', '_blank');
   if (newWin) {
@@ -269,6 +270,6 @@ const printDocumentInternal = (content: string) => {
 
 export const printDocument = (content: string) => {
   setTimeout(() => {
-    printDocumentInternal(content);
+    void printDocumentInternal(content);
   }, 300);
 };

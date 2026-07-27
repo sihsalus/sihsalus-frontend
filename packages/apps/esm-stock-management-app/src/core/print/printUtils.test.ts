@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { prepareSafePrintHtml, printDocument } from './printUtils';
 
 describe('prepareSafePrintHtml', () => {
-  it('keeps static stock content, layout, and embedded images', () => {
-    const result = prepareSafePrintHtml(`
+  it('keeps static stock content, layout, and embedded images', async () => {
+    const result = await prepareSafePrintHtml(`
       <html>
         <head><title>Nota de ingreso &amp; salida</title></head>
         <body>
@@ -23,8 +23,8 @@ describe('prepareSafePrintHtml', () => {
     expect(result).toContain('viewBox="0 0 10 10"');
   });
 
-  it('removes executable, interactive, and remote content from fields and SVG logos', () => {
-    const result = prepareSafePrintHtml(`
+  it('removes executable, interactive, and remote content from fields and SVG logos', async () => {
+    const result = await prepareSafePrintHtml(`
       <html>
         <head>
           <title>Stock</title>
@@ -58,7 +58,7 @@ describe('printDocument', () => {
     vi.restoreAllMocks();
   });
 
-  it('severs the opener, navigates to sanitized HTML, prints, closes, and revokes the blob URL', () => {
+  it('severs the opener, navigates to sanitized HTML, prints, closes, and revokes the blob URL', async () => {
     const listeners = new Map<string, EventListener>();
     const targetWindow = {
       opener: window,
@@ -72,7 +72,7 @@ describe('printDocument', () => {
     const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
 
     printDocument('<html><body><p>Stock</p><script>alert(1)</script></body></html>');
-    vi.runAllTimers();
+    await vi.runAllTimersAsync();
 
     expect(targetWindow.opener).toBeNull();
     expect(targetWindow.location.replace).toHaveBeenCalledWith('blob:safe-stock-print');
@@ -85,13 +85,13 @@ describe('printDocument', () => {
     expect(targetWindow.close).toHaveBeenCalledOnce();
   });
 
-  it('revokes the blob URL when the browser blocks the print window', () => {
+  it('revokes the blob URL when the browser blocks the print window', async () => {
     vi.spyOn(window, 'open').mockReturnValue(null);
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:blocked-stock-print');
     const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
 
     printDocument('<p>Stock</p>');
-    vi.runAllTimers();
+    await vi.runAllTimersAsync();
 
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:blocked-stock-print');
   });

@@ -120,8 +120,11 @@ desde el artefacto local.
 2. **Auditoría clínica server-side ausente y error público inseguro.**
    `GET /ws/rest/v1/sihsalus/audit` devuelve 404 en DEV y QLTY. La respuesta no
    autenticada expone una traza completa de Java/OpenMRS/Tomcat. Los logs del
-   navegador no satisfacen trazabilidad clínica ni administrativa. Seguimiento:
-   `sihsalus-core#95`.
+   navegador no satisfacen trazabilidad clínica ni administrativa. Además,
+   `useAuditLogger` no tiene consumidores de runtime: nunca inicializa la
+   sesión y la única llamada directa a `auditLogger.log` retorna sin registrar
+   porque `sessionRef` es nulo. Hoy no existe auditoría clínica efectiva ni en
+   frontend ni en backend. Seguimiento: `sihsalus-core#95`.
 3. **Candidato completo sin digest desplegado y validado.** La migración de
    Router ya está integrada en `main`, pero la sanitización de impresiones de
    stock continúa en rama candidata. No existe todavía un único SHA/digest con

@@ -44,6 +44,9 @@ definitivos deben provenir de CI después del PR, nunca de este artefacto local.
 - Los E2E ya no incluyen credenciales predeterminadas ni UUID/nombres de
   pacientes en código. Credenciales, UPSS y pacientes sintéticos son
   configuración obligatoria.
+- La plantilla de entorno y la documentación de imágenes médicas dejaron de
+  publicar credenciales reutilizables; cada entorno debe usar cuentas
+  dedicadas y secretos externos al repositorio.
 
 ### Autorización
 
@@ -80,6 +83,10 @@ definitivos deben provenir de CI después del PR, nunca de este artefacto local.
 
 - Salud materna abre formularios por UUID exacto o nombre normalizado exacto;
   rechaza ambigüedad, formularios retirados y coincidencias parciales.
+- El contrato de identificadores de registro respeta
+  `PatientIdentifierType.locationBehavior`: omite UPSS para `NOT_USED`, exige
+  UPSS para `REQUIRED` y preserva el comportamiento `OPTIONAL` en registro,
+  edición, promoción, importación masiva y modo offline.
 - Se eliminó una implementación prenatal CRED muerta y duplicada.
 - Se añadieron validaciones de workspace, RBAC y exposición de errores a CI.
 - Los fallos de exportación de caché Docker ya no invalidan una imagen que sí
@@ -101,10 +108,11 @@ definitivos deben provenir de CI después del PR, nunca de este artefacto local.
    6.30.4 mantienen Dependabot 140, 141 y 142, incluyendo open redirect/XSS.
    La corrección requiere migrar coherentemente a 7.18.0 y validar navegación
    clínica; está planificada en el issue 669.
-4. **Contrato de identificadores pendiente.** El PR 676 está verde y mergeable,
-   pero todavía no está en `main`. Evita enviar una UPSS en identificadores
-   cuyo `PatientIdentifierType.locationBehavior` es `NOT_USED` y falla cerrado
-   ante metadato desconocido.
+4. **Contrato de identificadores sin validación clínica.** El cambio del PR 676
+   está verde e integrado en este candidato, pero todavía no está en `main` ni
+   fue probado en QLTY. Deben cubrirse tipos `NOT_USED`, `REQUIRED`, `OPTIONAL`
+   y metadato ausente en registro, edición, promoción, importación masiva y
+   recuperación offline.
 5. **Cabeceras del proxy no verificadas.** La imagen de release es un
    `secure-init`; el nginx efectivo pertenece al despliegue de distribución.
    Deben verificarse HSTS, CSP, `frame-ancestors`, protección MIME, referrer

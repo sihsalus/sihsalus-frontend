@@ -217,6 +217,15 @@ describe('patient search resource', () => {
     expect(result.current.fetchError).toBeUndefined();
   });
 
+  it('skips recently viewed patients that are no longer accessible to the current user', async () => {
+    renderHook(() => useRestPatients(['patient-outside-current-upss']));
+    const fetcher = mockUseSWRInfinite.mock.calls.at(-1)?.[1] as (url: string) => Promise<unknown>;
+
+    mockOpenmrsFetch.mockRejectedValueOnce({ response: { status: 403 } });
+
+    await expect(fetcher('/openmrs/ws/rest/v1/patient/patient-outside-current-upss')).resolves.toBeNull();
+  });
+
   it('does not suppress server errors while loading recently viewed patients', async () => {
     renderHook(() => useRestPatients(['patient-a']));
     const fetcher = mockUseSWRInfinite.mock.calls.at(-1)?.[1] as (url: string) => Promise<unknown>;

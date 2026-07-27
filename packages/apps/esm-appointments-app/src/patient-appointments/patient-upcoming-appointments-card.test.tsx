@@ -1,5 +1,4 @@
 import { render } from '@testing-library/react';
-import React from 'react';
 
 import PatientUpcomingAppointmentsCard from './patient-upcoming-appointments-card.component';
 import { usePatientAppointments } from './patient-appointments.resource';

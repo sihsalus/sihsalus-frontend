@@ -66,7 +66,7 @@ test.describe('ImagingWorklist - Manager worklist workflow', () => {
     expect(reqs).toHaveLength(0);
   });
 
-  test('Create and delete the steps for the request procedure', async ({ page, api }) => {
+  test('Create and delete the steps for the request procedure', async ({ api }) => {
     const orthancConfiguration = await getFirstOrthancConfiguration(api);
 
     // Create request

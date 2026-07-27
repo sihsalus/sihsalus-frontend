@@ -10,7 +10,7 @@ interface DeleteQueryModalProps {
   queryId: string;
 }
 
-const DeleteQueryModal: React.FC<DeleteQueryModalProps> = ({ closeModal, queryName, queryId, onDelete }) => {
+const DeleteQueryModal: React.FC<DeleteQueryModalProps> = ({ closeModal, queryId, onDelete }) => {
   const { t } = useTranslation();
   const [isDeletingQuery, setIsDeletingQuery] = useState(false);
 

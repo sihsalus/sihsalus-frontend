@@ -10,11 +10,7 @@ interface ClearSearchHistoryModalProps {
   searchItemName: string;
 }
 
-const ClearSearchHistoryModal: React.FC<ClearSearchHistoryModalProps> = ({
-  closeModal,
-  onClearHistory,
-  searchItemName,
-}) => {
+const ClearSearchHistoryModal: React.FC<ClearSearchHistoryModalProps> = ({ closeModal, onClearHistory }) => {
   const { t } = useTranslation();
   const [isRemovingSearchItem, setIsRemovingSearchItem] = useState(false);
 

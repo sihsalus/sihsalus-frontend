@@ -75,6 +75,15 @@ jobs:
       - name: Lint Full Repo
         run: yarn lint:all
 
+      # `lint:all` above only fails on errors, so the ~780 warnings it reports
+      # (noExplicitAny, noArrayIndexKey, noNonNullAssertion) block nothing.
+      # This freezes that count per (file, rule) and refuses to let it grow.
+      # A file not in the baseline has a budget of 0, so new code starts clean.
+      # Dropping below the baseline also fails: run `yarn lint-budget:update` to
+      # bank the fix, which keeps the number exact and monotonically decreasing.
+      - name: Validate Lint Budget
+        run: yarn validate:lint-budget
+
       # e2e is not a workspace, so `turbo run typescript` never typechecks it.
       # Enforce the root suite (e2e/tests), which is type-clean. The modular
       # suites (e2e/<module>) carry ~196 pre-existing type errors and are not

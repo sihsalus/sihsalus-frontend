@@ -37,7 +37,6 @@ type StockOperationItemsFormStepProps = {
 };
 const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = ({
   stockOperationType,
-  stockOperation,
   onNext,
   onPrevious,
   onLaunchItemsForm,

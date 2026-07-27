@@ -27,7 +27,7 @@ const TransactionsBincardPrintout: React.FC<Props> = ({ columns, data, title }) 
       <div className={styles.itemsContainer}>
         <div className={styles.tableContainer}>
           <DataTable data-floating-menu-container rows={data} headers={columns} useZebraStyles>
-            {({ rows, headers, getHeaderProps, getTableProps, onInputChange }) => (
+            {({ rows, headers, getHeaderProps, getTableProps }) => (
               <div>
                 <TableContainer>
                   <Table {...getTableProps()}>

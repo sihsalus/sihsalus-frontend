@@ -472,7 +472,6 @@ export const esmPatientRegistrationSchema = {
   links: {
     submitButton: {
       _type: Type.String,
-      // biome-ignore lint/suspicious/noTemplateCurlyInString: OpenMRS resolves this runtime URL template.
       _default: '${openmrsSpaBase}/patient/${patientUuid}/chart',
       _validators: [validators.isUrlWithTemplateParameters(['patientUuid'])],
     },

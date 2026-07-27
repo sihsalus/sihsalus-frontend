@@ -18,7 +18,6 @@ const TransactionsBincardPrintPreviewModal: React.FC<TransactionsBincardPrintPre
   title,
   columns,
   data,
-  binOrStockCard,
 }) => {
   const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);

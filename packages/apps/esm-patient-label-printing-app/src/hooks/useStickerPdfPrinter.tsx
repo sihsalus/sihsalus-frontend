@@ -49,7 +49,7 @@ export const useStickerPdfPrinter = () => {
 
             try {
               contentWindow.addEventListener('afterprint', cleanup, { once: true });
-            } catch (e) {
+            } catch (_e) {
               // Cross-origin, use polling fallback
             }
 
@@ -65,7 +65,7 @@ export const useStickerPdfPrinter = () => {
 
             setTimeout(cleanup, 30000);
             setTimeout(() => clearInterval(pollInterval), 30000);
-          } catch (error) {
+          } catch (_error) {
             setIsPrinting(false);
             resolve();
           }

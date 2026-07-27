@@ -1,7 +1,6 @@
 import { showModal } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { describe, expect, it, type Mock, vi } from 'vitest';
 import { mockPatientUuid, mockStickyNote } from './sticky-note.test-utils';
 import StickyNotePanel from './sticky-note-panel.component';

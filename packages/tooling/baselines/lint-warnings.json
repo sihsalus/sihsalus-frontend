@@ -1,0 +1,1052 @@
+{
+  "e2e/billing/commands/patient-operations.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "e2e/billing/commands/types.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "e2e/dispensing/commands/encounter-operations.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "e2e/dispensing/commands/types/index.ts": {
+    "lint/suspicious/noExplicitAny": 5
+  },
+  "e2e/dispensing/types/index.ts": {
+    "lint/suspicious/noExplicitAny": 5
+  },
+  "e2e/form-builder/specs/create-form-with-interactive-builder.spec.ts": {
+    "lint/style/noNonNullAssertion": 3
+  },
+  "e2e/patient-imaging/commands/types/index.ts": {
+    "lint/suspicious/noExplicitAny": 4
+  },
+  "e2e/tests/interconsultas-flow.spec.ts": {
+    "lint/style/noNonNullAssertion": 4
+  },
+  "e2e/tests/interconsultation-orders.spec.ts": {
+    "lint/style/noNonNullAssertion": 4
+  },
+  "packages/apps/esm-active-visits-app/src/active-visits-widget/active-visits.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 2
+  },
+  "packages/apps/esm-active-visits-app/src/visits-summary/visits-components/encounter-observations.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-active-visits-app/src/visits-summary/visits-components/medications-summary.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-active-visits-app/src/visits-summary/visits-components/notes-summary.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-active-visits-app/src/visits-summary/visits-components/visit-summary.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-appointments-app/src/appointments/details/appointment-details.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-appointments-app/src/form/appointments-form.workspace.tsx": {
+    "lint/suspicious/noConfusingVoidType": 1
+  },
+  "packages/apps/esm-appointments-app/src/past-visit/encounter-list.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-atencion-ambulatoria-app/src/ui/appointment-filter-calendar/appointment-filter-calendar.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-atencion-ambulatoria-app/src/ui/appointment-filter-calendar/monthly/monthly-calendar-view.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-bed-management-app/src/bed-administration/bed-administration-form.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 2
+  },
+  "packages/apps/esm-cohort-builder-app/src/cohort-builder.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 2
+  },
+  "packages/apps/esm-cohort-builder-app/src/components/saved-cohorts/saved-cohorts.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 2
+  },
+  "packages/apps/esm-cohort-builder-app/src/components/saved-queries/saved-queries.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 2
+  },
+  "packages/apps/esm-cohort-builder-app/src/components/search-by-concepts/search-concept/search-concept.component.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1,
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-cohort-builder-app/src/components/search-results-table/search-results-table.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 2
+  },
+  "packages/apps/esm-coststructure-app/src/components/form/tabs/general-service-tab.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-coststructure-app/src/components/form/tabs/public-service-tab.tsx": {
+    "lint/suspicious/noArrayIndexKey": 2
+  },
+  "packages/apps/esm-coststructure-app/src/components/form/tabs/supply-tab.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-crecimiento-desarrollo-app/src/hooks/usePrenatalAntecedents.ts": {
+    "lint/style/noNonNullAssertion": 1
+  },
+  "packages/apps/esm-crecimiento-desarrollo-app/src/ui/appointment-filter-calendar/appointment-filter-calendar.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-crecimiento-desarrollo-app/src/ui/appointment-filter-calendar/monthly/monthly-calendar-view.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-crecimiento-desarrollo-app/src/ui/growth-chart/hooks/biometrics-utils.ts": {
+    "lint/style/noNonNullAssertion": 1
+  },
+  "packages/apps/esm-crecimiento-desarrollo-app/src/ui/patient-observation-group-table/patient-observation-group-table.component.tsx": {
+    "lint/style/noNonNullAssertion": 1
+  },
+  "packages/apps/esm-crecimiento-desarrollo-app/src/well-child-care/components/neonatal-register/labour-history/labour-history.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-devtools-app/src/devtools/import-map-list/list.component.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 2
+  },
+  "packages/apps/esm-dispensing-app/src/components/medication-event.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-dispensing-app/src/components/medication-event.test.tsx": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/apps/esm-dispensing-app/src/fill-prescription/on-prescription-filled.modal.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-dispensing-app/src/forms/dispense-form.workspace.test.tsx": {
+    "lint/suspicious/noExplicitAny": 5
+  },
+  "packages/apps/esm-dispensing-app/src/forms/medication-dispense-review.test.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-dispensing-app/src/prescriptions/prescription-expanded.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 2
+  },
+  "packages/apps/esm-dispensing-app/src/print-prescription/prescription-printout.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-dyaku-app/src/dyaku-patients/dyaku-patients-sync.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-dyaku-app/src/dyaku-patients/dyaku-patients.resource.ts": {
+    "lint/style/noNonNullAssertion": 1
+  },
+  "packages/apps/esm-fast-data-entry-app/src/form-entry-workflow/form-review-card/FormReviewCard.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-fast-data-entry-app/src/group-form-entry-workflow/SessionMetaWorkspace.test.tsx": {
+    "lint/style/noNonNullAssertion": 2
+  },
+  "packages/apps/esm-fast-data-entry-app/src/group-form-entry-workflow/attendance-table/AttendanceTable.tsx": {
+    "lint/suspicious/noArrayIndexKey": 2
+  },
+  "packages/apps/esm-fast-data-entry-app/src/group-form-entry-workflow/group-search-header/GroupSearchHeader.test.tsx": {
+    "lint/suspicious/noImplicitAnyLet": 1
+  },
+  "packages/apps/esm-fast-data-entry-app/src/group-form-entry-workflow/group-search/CompactGroupResults.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1,
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-fast-data-entry-app/src/patient-card/PatientCard.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1
+  },
+  "packages/apps/esm-ficha-familiar-app/src/autosuggest/autosuggest.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-ficha-familiar-app/src/relationships/patient-info.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-ficha-familiar-app/src/workspace-utils.ts": {
+    "lint/suspicious/noConfusingVoidType": 1
+  },
+  "packages/apps/esm-form-builder-app/src/components/interactive-builder/interactive-builder.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 4
+  },
+  "packages/apps/esm-form-builder-app/src/components/interactive-builder/modals/question/question-form/common/concept-search/concept-search.component.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1,
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-form-builder-app/src/components/interactive-builder/modals/question/question-form/question-types/inputs/obs/obs-type-question.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-form-builder-app/src/components/interactive-builder/modals/question/question-form/question-types/inputs/test-order/test-order-type-question.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-form-builder-app/src/components/interactive-builder/modals/question/question.modal.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-form-engine-app/src/form-renderer/form-error.component.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1
+  },
+  "packages/apps/esm-form-engine-app/src/form-renderer/form-renderer.test.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-form-entry-react-app/src/form-renderer/form-error.component.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1
+  },
+  "packages/apps/esm-form-entry-react-app/src/types/index.ts": {
+    "lint/suspicious/noConfusingVoidType": 1
+  },
+  "packages/apps/esm-fua-app/src/hooks/useFuaRequests.test.ts": {
+    "lint/suspicious/noExplicitAny": 11
+  },
+  "packages/apps/esm-help-menu-app/src/help-menu/help-popup.component.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1
+  },
+  "packages/apps/esm-implementer-tools-app/src/backend-dependencies/openmrs-backend-dependencies.test.ts": {
+    "lint/suspicious/noExplicitAny": 13
+  },
+  "packages/apps/esm-implementer-tools-app/src/backend-dependencies/openmrs-backend-dependencies.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-implementer-tools-app/src/configuration/interactive-editor/config-subtree.component.tsx": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/apps/esm-implementer-tools-app/src/configuration/interactive-editor/config-tree-for-module.component.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-implementer-tools-app/src/configuration/interactive-editor/config-tree.component.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-implementer-tools-app/src/configuration/interactive-editor/description.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-implementer-tools-app/src/configuration/interactive-editor/display-value.tsx": {
+    "lint/suspicious/noArrayIndexKey": 2,
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-implementer-tools-app/src/configuration/interactive-editor/editable-value.component.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-implementer-tools-app/src/configuration/interactive-editor/extension-slots-config-tree.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-implementer-tools-app/src/configuration/interactive-editor/value-editors/array-editor.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1,
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/apps/esm-implementer-tools-app/src/configuration/interactive-editor/value-editors/object-editor.tsx": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/apps/esm-implementer-tools-app/src/configuration/interactive-editor/value-editors/patient-identifier-type-search.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-implementer-tools-app/src/configuration/interactive-editor/value-editors/person-attribute-search.tsx": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/apps/esm-implementer-tools-app/src/configuration/interactive-editor/value-editors/value-editor-field.tsx": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/apps/esm-implementer-tools-app/src/configuration/json-editor/json-editor.component.tsx": {
+    "lint/suspicious/noImplicitAnyLet": 1
+  },
+  "packages/apps/esm-implementer-tools-app/src/frontend-modules/frontend-modules.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-indicadores-app/src/api/resultados.test.ts": {
+    "lint/suspicious/noExplicitAny": 17
+  },
+  "packages/apps/esm-indicadores-app/src/features/resultados/hooks.ts": {
+    "lint/style/noNonNullAssertion": 1
+  },
+  "packages/apps/esm-indicadores-app/src/pages/ResultadosPage.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-login-app/src/login/login.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-odontologia-app/src/odontogram/components/FormDentalClinicalFindings.tsx": {
+    "lint/style/noNonNullAssertion": 1
+  },
+  "packages/apps/esm-odontologia-app/src/odontogram/components/Tooth.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-odontologia-app/src/odontogram/components/ToothDetails.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1,
+    "lint/style/noNonNullAssertion": 2,
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-odontologia-app/src/odontogram/components/ToothInfoModal.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-odontologia-app/src/odontogram/components/ToothVisualization.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1,
+    "lint/style/noNonNullAssertion": 2
+  },
+  "packages/apps/esm-odontologia-app/src/odontogram/components/spacing/SpaceBetweenLegends.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1,
+    "lint/style/noNonNullAssertion": 2
+  },
+  "packages/apps/esm-odontologia-app/src/odontogram/components/spacing/SpaceBetweenTeeth.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1,
+    "lint/style/noNonNullAssertion": 3
+  },
+  "packages/apps/esm-odontologia-app/src/odontogram/components/spacing/SpacingFinding.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1
+  },
+  "packages/apps/esm-offline-tools-app/src/nav/offline-tools-nav-link.component.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-openconceptlab-app/src/previous-imports/import-overview/import-items.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-patient-attachments-app/src/attachments/attachments-grid-overview.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-patient-attachments-app/src/camera-media-uploader/upload-status.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-patient-banner-app/src/print-identifier-sticker/patient-detail.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-patient-banner-app/src/print-identifier-sticker/print-identifier-sticker.modal.tsx": {
+    "lint/suspicious/noConfusingVoidType": 1
+  },
+  "packages/apps/esm-patient-chart-app/src/mark-patient-deceased/mark-patient-deceased-form.test.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-patient-chart-app/src/visit/visits-widget/past-visits-components/visit-summary.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-patient-forms-app/src/forms/form-entry.test.tsx": {
+    "lint/suspicious/noExplicitAny": 7
+  },
+  "packages/apps/esm-patient-forms-app/src/offline-forms/offline-form-helpers.ts": {
+    "lint/style/noNonNullAssertion": 4
+  },
+  "packages/apps/esm-patient-forms-app/src/offline.test.ts": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/apps/esm-patient-imaging-app/src/imaging/components/assign-studies-table.component.test.tsx": {
+    "lint/style/noNonNullAssertion": 2
+  },
+  "packages/apps/esm-patient-imaging-app/src/imaging/components/assign-studies-table.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-patient-imaging-app/src/imaging/components/delete-series.modal.test.tsx": {
+    "lint/style/noNonNullAssertion": 1
+  },
+  "packages/apps/esm-patient-imaging-app/src/imaging/components/instances-details-table.component.test.tsx": {
+    "lint/style/noNonNullAssertion": 2
+  },
+  "packages/apps/esm-patient-imaging-app/src/imaging/components/procedureStep-details-table.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 2
+  },
+  "packages/apps/esm-patient-imaging-app/src/imaging/components/requests-details-table.component.test.tsx": {
+    "lint/style/noNonNullAssertion": 1
+  },
+  "packages/apps/esm-patient-imaging-app/src/imaging/components/requests-details-table.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-patient-label-printing-app/src/hooks/useStickerPdfPrinter.test.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-patient-medications-app/src/add-drug-order/drug-search/drug-browse-results.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-patient-medications-app/src/add-drug-order/drug-search/order-basket-search-results.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-patient-medications-app/src/drug-order-basket-panel/drug-order-basket-panel.extension.tsx": {
+    "lint/suspicious/noArrayIndexKey": 5
+  },
+  "packages/apps/esm-patient-notes-app/src/notes/paginated-notes.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1,
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-patient-notes-app/src/notes/visit-notes-form.workspace.tsx": {
+    "lint/suspicious/noArrayIndexKey": 5
+  },
+  "packages/apps/esm-patient-notes-app/src/types/index.ts": {
+    "lint/suspicious/noExplicitAny": 7
+  },
+  "packages/apps/esm-patient-registration-app/src/patient-registration/field/__mocks__/field.resource.ts": {
+    "lint/suspicious/noImplicitAnyLet": 1
+  },
+  "packages/apps/esm-patient-registration-app/src/patient-registration/field/gender/gender-field.test.tsx": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/apps/esm-patient-registration-app/src/patient-registration/field/person-attributes/person-attributes.resource.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-patient-registration-app/src/patient-registration/input/basic-input/select/select-input.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-patient-registration-app/src/patient-registration/input/combo-input/combo-input.component.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1,
+    "lint/suspicious/noArrayIndexKey": 1,
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-patient-registration-app/src/patient-registration/input/dummy-data/dummy-data-input.component.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-patient-registration-app/src/patient-registration/patient-registration-context.ts": {
+    "lint/suspicious/noExplicitAny": 4
+  },
+  "packages/apps/esm-patient-registration-app/src/patient-registration/patient-registration.test.tsx": {
+    "lint/suspicious/noImplicitAnyLet": 1
+  },
+  "packages/apps/esm-patient-search-app/src/compact-patient-search/patient-search.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-patient-search-app/src/compact-patient-search/recently-searched-patients.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-patient-tests-app/src/test-orders/add-test-order/test-type-search.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1,
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-patient-tests-app/src/test-orders/add-test-order/useTestTypes.ts": {
+    "lint/suspicious/noExplicitAny": 5
+  },
+  "packages/apps/esm-patient-tests-app/src/test-orders/lab-order-basket-panel/lab-order-basket-panel.extension.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-patient-tests-app/src/test-results/filter/filter-set.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 5
+  },
+  "packages/apps/esm-patient-tests-app/src/test-results/grouped-timeline/grouped-timeline.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 5
+  },
+  "packages/apps/esm-patient-tests-app/src/test-results/grouped-timeline/useObstreeData.ts": {
+    "lint/suspicious/noExplicitAny": 11
+  },
+  "packages/apps/esm-patient-tests-app/src/test-results/loadPatientTestData/helpers.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-patient-tests-app/src/test-results/loadPatientTestData/loadPatientData.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-patient-tests-app/src/test-results/overview/common-overview.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-patient-tests-app/src/test-results/panel-timeline/helpers.tsx": {
+    "lint/suspicious/noArrayIndexKey": 2
+  },
+  "packages/apps/esm-patient-tests-app/src/test-results/panel-timeline/timeline.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-patient-tests-app/src/test-results/panel-view/helper.tsx": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/apps/esm-patient-tests-app/src/test-results/panel-view/panel.component.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1
+  },
+  "packages/apps/esm-patient-tests-app/src/test-results/panel-view/usePanelData.tsx": {
+    "lint/suspicious/noExplicitAny": 9
+  },
+  "packages/apps/esm-patient-tests-app/src/test-results/tree-view/tree-view-wrapper.test.tsx": {
+    "lint/suspicious/noExplicitAny": 3
+  },
+  "packages/apps/esm-patient-tests-app/src/test-results/tree-view/tree-view.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-patient-tests-app/src/test-results/trendline/range-selector.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-patient-tests-app/src/test-results/trendline/trendline.component.tsx": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/apps/esm-patient-tests-app/src/test-results/ui-elements/resetFiltersEmptyState/filter-empty-state.component.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1
+  },
+  "packages/apps/esm-primary-navigation-app/src/components/change-language/change-language.modal.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-primary-navigation-app/src/root.component.test.tsx": {
+    "lint/suspicious/noExplicitAny": 3
+  },
+  "packages/apps/esm-primary-navigation-app/test-utils/stubs/openmrs-esm-framework.mock.tsx": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/apps/esm-reports-app/src/components/concept-search/concept-search-results.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1,
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-reports-app/src/components/overview.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-salud-materna-app/src/hooks/usePrenatalAntecedents.ts": {
+    "lint/style/noNonNullAssertion": 1
+  },
+  "packages/apps/esm-salud-materna-app/src/maternal-and-child-health/components/postnatal-care/postpartumControl.component.tsx": {
+    "lint/performance/noAccumulatingSpread": 1
+  },
+  "packages/apps/esm-salud-materna-app/src/maternal-and-child-health/components/prenatal-care/prenatal-supplementation/prenatal-supplementation.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-salud-materna-app/src/maternal-and-child-health/components/prenatal-care/risk-classification/risk-classification.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-salud-materna-app/src/ui/appointment-filter-calendar/appointment-filter-calendar.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-salud-materna-app/src/ui/appointment-filter-calendar/monthly/monthly-calendar-view.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-seguimiento-casos-app/src/case-management/workspace/patient-info.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-service-queues-app/src/active-visits/change-status.modal.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-service-queues-app/src/modals/queue-entry-actions-modal.component.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-service-queues-app/src/modals/queue-entry-confirm-action.modal.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-service-queues-app/src/modals/remove-queue-entry.modal.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-service-queues-app/src/past-visit/past-visit-details/encounter-list.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-service-queues-app/src/past-visit/past-visit-details/notes-list.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-service-queues-app/src/past-visit/past-visit-details/past-visit-summary.component.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-service-queues-app/src/past-visit/past-visit.resource.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-service-queues-app/src/queue-patient-linelists/queue-linelist-base-table.component.tsx": {
+    "lint/suspicious/noExplicitAny": 3
+  },
+  "packages/apps/esm-service-queues-app/src/queue-patient-linelists/scheduled-appointments-table.component.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-service-queues-app/src/queue-table/queue-entry-actions/end-queue-entry.modal.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-service-queues-app/src/queue-table/queue-entry-actions/queue-entry-actions.modal.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-service-queues-app/src/queue-table/queue-entry-actions/queue-entry-confirm-action.modal.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-service-queues-app/src/queue-table/queue-table.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-service-queues-app/src/service-queues.resource.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-service-queues-app/src/side-menu/nav-group/createNavGroup.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-service-queues-app/src/side-menu/nav-group/nav-group.component.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-service-queues-app/src/types/index.ts": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/apps/esm-stock-management-app/src/core/api/types/Location.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-stock-management-app/src/core/components/carbon/controlled-radio-button-group.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-stock-management-app/src/core/components/card/metrics-card-component.tsx": {
+    "lint/suspicious/noExplicitAny": 5
+  },
+  "packages/apps/esm-stock-management-app/src/core/components/side-nav/side-nav.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-stock-management-app/src/core/components/table/table.component.tsx": {
+    "lint/suspicious/noExplicitAny": 5
+  },
+  "packages/apps/esm-stock-management-app/src/core/components/tabs/vertical-tabs.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 2
+  },
+  "packages/apps/esm-stock-management-app/src/core/hooks/debounce-hook.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-stock-management-app/src/core/utils/datetimeUtils.ts": {
+    "lint/style/noNonNullAssertion": 5
+  },
+  "packages/apps/esm-stock-management-app/src/core/utils/stringUtils.ts": {
+    "lint/suspicious/noExplicitAny": 4
+  },
+  "packages/apps/esm-stock-management-app/src/core/utils/utils.ts": {
+    "lint/style/noNonNullAssertion": 1,
+    "lint/suspicious/noExplicitAny": 3
+  },
+  "packages/apps/esm-stock-management-app/src/createDashboardLink.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-home/expired-stock.modal.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1,
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-home/issuing-stock.modal.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1,
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-home/receiving-stock.modal.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-home/stock-home-inventory-card.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-home/stock-home-issuing-card.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-home/stock-home-receiving-card.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-home/useStockList.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-items/add-bulk-stock-item/stock-items-bulk-import.resource.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-items/add-stock-item/drug-selector/drug-selector.component.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-items/add-stock-item/stock-item-references/stock-item-references.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-items/add-stock-item/stock-item-rules/stock-item-rules.component.tsx": {
+    "lint/suspicious/noExplicitAny": 3
+  },
+  "packages/apps/esm-stock-management-app/src/stock-items/add-stock-item/transactions/printout/transactions-bincard-printout.component.tsx": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/apps/esm-stock-management-app/src/stock-items/add-stock-item/transactions/printout/transactions-print-action.component.tsx": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/apps/esm-stock-management-app/src/stock-items/add-stock-item/transactions/printout/transactions-print-bincard-preview.modal.tsx": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/apps/esm-stock-management-app/src/stock-items/add-stock-item/transactions/printout/transactions-print-stockcard-preview.modal.tsx": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/apps/esm-stock-management-app/src/stock-items/add-stock-item/transactions/printout/transactions-stockcard-printout.component.tsx": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/apps/esm-stock-management-app/src/stock-items/stock-items-table.test.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-operations/stock-operations-filters.component.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-operations/stock-operations-forms/input-components/stock-operation-reason-selector.test.tsx": {
+    "lint/suspicious/noExplicitAny": 3
+  },
+  "packages/apps/esm-stock-management-app/src/stock-operations/stock-operations-forms/step1.test.tsx": {
+    "lint/suspicious/noExplicitAny": 17
+  },
+  "packages/apps/esm-stock-management-app/src/stock-operations/stock-operations-forms/step2.test.tsx": {
+    "lint/suspicious/noExplicitAny": 5
+  },
+  "packages/apps/esm-stock-management-app/src/stock-operations/stock-operations-forms/step3.test.tsx": {
+    "lint/suspicious/noExplicitAny": 6
+  },
+  "packages/apps/esm-stock-management-app/src/stock-operations/stock-operations-forms/steps/stock-operation-items-form-step.component.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-operations/stock-operations-forms/stock-operation-stepper/stock-operation-stepper.component.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1,
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-operations/stock-operations-modal/stock-operations-print-button.component.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-operations/stock-operations-table.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-reports/report-list/stock-report-parameters.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1,
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-reports/report-list/stock-report-status.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1,
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-reports/report-list/stock-reports.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1,
+    "lint/suspicious/noExplicitAny": 3
+  },
+  "packages/apps/esm-stock-management-app/src/stock-reports/stock-reports.resource.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-sources/stock-sources-delete/stock-sources-delete.test.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-user-role-scopes/add-stock-user-scope/add-stock-user-role-scope.workspace.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/apps/esm-stock-management-app/src/stock-user-role-scopes/stock-user-role-scopes-items-table.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 2,
+    "lint/suspicious/noExplicitAny": 3
+  },
+  "packages/apps/esm-user-onboarding-app/src/root.test.tsx": {
+    "lint/suspicious/noExplicitAny": 4
+  },
+  "packages/apps/esm-user-onboarding-app/src/tutorial/modal.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-user-onboarding-app/src/tutorial/modal.test.tsx": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/apps/esm-ward-app/src/beds/ward-bed.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-ward-app/src/ward-patient-card/row-elements/ward-patient-header-address.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 2
+  },
+  "packages/apps/esm-ward-app/src/ward-view/default-ward/default-ward-pending-patients.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-ward-app/src/ward-view/maternal-ward/maternal-ward-pending-patients.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-ward-app/src/ward-view/ward.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-ward-app/src/ward-workspace/ward-patient-notes/history/note-history.modal.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/apps/esm-ward-app/src/ward-workspace/ward-patient-notes/history/notes-container.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/libs/esm-api/src/current-user.test.ts": {
+    "lint/suspicious/noExplicitAny": 10
+  },
+  "packages/libs/esm-api/src/current-user.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-api/src/openmrs-fetch.ts": {
+    "lint/suspicious/noExplicitAny": 3
+  },
+  "packages/libs/esm-api/src/types/concept-resource.ts": {
+    "lint/suspicious/noExplicitAny": 4
+  },
+  "packages/libs/esm-api/src/types/fetch.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-api/src/types/openmrs-resource.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-api/src/types/user-resource.ts": {
+    "lint/suspicious/noExplicitAny": 4
+  },
+  "packages/libs/esm-audit-logger/src/AuditLogger.test.ts": {
+    "lint/style/noNonNullAssertion": 5
+  },
+  "packages/libs/esm-config/src/module-config/module-config.test.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-config/src/module-config/module-config.ts": {
+    "lint/performance/noAccumulatingSpread": 1,
+    "lint/suspicious/noExplicitAny": 5,
+    "lint/suspicious/noImplicitAnyLet": 1
+  },
+  "packages/libs/esm-config/src/types.ts": {
+    "lint/suspicious/noConfusingVoidType": 2,
+    "lint/suspicious/noExplicitAny": 5
+  },
+  "packages/libs/esm-config/src/validators/validator.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-config/src/validators/validators.ts": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/libs/esm-dynamic-loading/src/dynamic-loading.test.ts": {
+    "lint/suspicious/noExplicitAny": 13
+  },
+  "packages/libs/esm-dynamic-loading/src/dynamic-loading.ts": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/libs/esm-dynamic-loading/src/import-maps.test.ts": {
+    "lint/suspicious/noExplicitAny": 4
+  },
+  "packages/libs/esm-dynamic-loading/src/route-maps.test.ts": {
+    "lint/suspicious/noExplicitAny": 13
+  },
+  "packages/libs/esm-emr-api/src/location.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-emr-api/src/types/fhir-resource.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-emr-api/src/types/order-resource.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-emr-api/src/types/visit-resource.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-emr-api/src/visit-type.ts": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/libs/esm-emr-api/src/visit-utils.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-expression-evaluator/src/evaluator.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-expression-evaluator/src/extractor.ts": {
+    "lint/suspicious/noConfusingVoidType": 1
+  },
+  "packages/libs/esm-extensions/src/render.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-extensions/src/store.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-extensions/src/workspaces2.ts": {
+    "lint/suspicious/noExplicitAny": 3
+  },
+  "packages/libs/esm-form-engine-lib/src/components/inputs/content-switcher/content-switcher.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/libs/esm-form-engine-lib/src/components/inputs/file/file.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/libs/esm-form-engine-lib/src/components/inputs/multi-select/multi-select.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 2
+  },
+  "packages/libs/esm-form-engine-lib/src/components/inputs/radio/radio.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/libs/esm-form-engine-lib/src/components/previous-value-review/previous-value-review.component.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1
+  },
+  "packages/libs/esm-form-engine-lib/src/components/value/value.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/libs/esm-form-engine-lib/src/datasources/openmrs-data-sources.test.ts": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/libs/esm-form-engine-lib/src/form-engine.component.tsx": {
+    "lint/suspicious/noConfusingVoidType": 1
+  },
+  "packages/libs/esm-form-engine-lib/src/provider/form-factory-helper.ts": {
+    "lint/suspicious/noConfusingVoidType": 1
+  },
+  "packages/libs/esm-form-engine-lib/src/provider/form-factory-provider.tsx": {
+    "lint/suspicious/noConfusingVoidType": 2
+  },
+  "packages/libs/esm-form-engine-lib/src/provider/form-provider.tsx": {
+    "lint/suspicious/noConfusingVoidType": 1
+  },
+  "packages/libs/esm-form-engine-lib/src/types/index.ts": {
+    "lint/suspicious/noConfusingVoidType": 1
+  },
+  "packages/libs/esm-form-engine-lib/src/utils/form-helper.ts": {
+    "lint/suspicious/noConfusingVoidType": 1
+  },
+  "packages/libs/esm-framework/mock-vitest.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-framework/mock.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-framework/setup-tests.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-globals/src/events.ts": {
+    "lint/suspicious/noExplicitAny": 8
+  },
+  "packages/libs/esm-globals/src/types.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-navigation/src/history/history.test.ts": {
+    "lint/suspicious/noExplicitAny": 3
+  },
+  "packages/libs/esm-navigation/src/navigation/navigate.test.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-navigation/src/types.ts": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/libs/esm-offline/src/dynamic-offline-data.ts": {
+    "lint/style/noNonNullAssertion": 5,
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-offline/src/service-worker-messaging.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-offline/src/sync.ts": {
+    "lint/style/noNonNullAssertion": 2,
+    "lint/suspicious/noExplicitAny": 6
+  },
+  "packages/libs/esm-patient-common-lib/src/encounter-list/encounter-list.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/libs/esm-patient-common-lib/src/encounter-list/encounter-observation.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 3
+  },
+  "packages/libs/esm-patient-common-lib/src/encounter-list/o-table.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 3
+  },
+  "packages/libs/esm-patient-common-lib/src/form-entry/form-entry.ts": {
+    "lint/suspicious/noConfusingVoidType": 1
+  },
+  "packages/libs/esm-patient-common-lib/src/orders/useOrderableConceptSets.test.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-patient-common-lib/src/results/helpers.ts": {
+    "lint/style/noNonNullAssertion": 6
+  },
+  "packages/libs/esm-patient-common-lib/src/tabbed-dashboard/tabbed-dashboard.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 2
+  },
+  "packages/libs/esm-react-utils/mock-vitest.tsx": {
+    "lint/suspicious/noExplicitAny": 4
+  },
+  "packages/libs/esm-react-utils/mock.tsx": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/libs/esm-react-utils/src/extensions.test.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-react-utils/src/useConfig.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-react-utils/src/useOpenmrsFetchAll.test.ts": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/libs/esm-react-utils/src/useOpenmrsInfinite.test.ts": {
+    "lint/suspicious/noExplicitAny": 3
+  },
+  "packages/libs/esm-react-utils/src/useOpenmrsInfinite.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-react-utils/src/useOpenmrsPagination.test.ts": {
+    "lint/suspicious/noExplicitAny": 5
+  },
+  "packages/libs/esm-react-utils/src/useOpenmrsPagination.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-react-utils/src/useOpenmrsSWR.ts": {
+    "lint/suspicious/noExplicitAny": 3
+  },
+  "packages/libs/esm-react-utils/src/usePatient.test.ts": {
+    "lint/suspicious/noExplicitAny": 3
+  },
+  "packages/libs/esm-react-utils/src/usePatient.ts": {
+    "lint/style/noNonNullAssertion": 1
+  },
+  "packages/libs/esm-react-utils/src/useStore.ts": {
+    "lint/suspicious/noExplicitAny": 8
+  },
+  "packages/libs/esm-react-utils/src/useVisit.test.ts": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/libs/esm-state/mock-vitest.ts": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/libs/esm-state/mock.ts": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/libs/esm-state/src/state.test.ts": {
+    "lint/suspicious/noExplicitAny": 7
+  },
+  "packages/libs/esm-styleguide/src/custom-overflow-menu/custom-overflow-menu.component.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-styleguide/src/datepicker/auto-close-dialog.component.tsx": {
+    "lint/style/noNonNullAssertion": 1
+  },
+  "packages/libs/esm-styleguide/src/datepicker/date-picker-icon.component.tsx": {
+    "lint/style/noNonNullAssertion": 1
+  },
+  "packages/libs/esm-styleguide/src/datepicker/date-picker-input.component.tsx": {
+    "lint/style/noNonNullAssertion": 1,
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/libs/esm-styleguide/src/datepicker/date-range-picker.test.tsx": {
+    "lint/style/noNonNullAssertion": 4
+  },
+  "packages/libs/esm-styleguide/src/datepicker/date-segment.component.tsx": {
+    "lint/a11y/useKeyWithClickEvents": 1,
+    "lint/style/noNonNullAssertion": 1
+  },
+  "packages/libs/esm-styleguide/src/datepicker/datepicker.test.tsx": {
+    "lint/style/noNonNullAssertion": 4
+  },
+  "packages/libs/esm-styleguide/src/datepicker/hooks.ts": {
+    "lint/correctness/useExhaustiveDependencies": 2,
+    "lint/style/noNonNullAssertion": 1
+  },
+  "packages/libs/esm-styleguide/src/datepicker/month-year.component.tsx": {
+    "lint/style/noNonNullAssertion": 1
+  },
+  "packages/libs/esm-styleguide/src/datepicker/openmrs-date-range-picker.component.tsx": {
+    "lint/style/noNonNullAssertion": 4
+  },
+  "packages/libs/esm-styleguide/src/datepicker/utils.test.ts": {
+    "lint/style/noNonNullAssertion": 14,
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/libs/esm-styleguide/src/icons/icons.tsx": {
+    "lint/correctness/useExhaustiveDependencies": 1,
+    "lint/style/noNonNullAssertion": 1
+  },
+  "packages/libs/esm-styleguide/src/left-nav/index.tsx": {
+    "lint/style/noNonNullAssertion": 1
+  },
+  "packages/libs/esm-styleguide/src/location-picker/location-picker.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/libs/esm-styleguide/src/location-picker/location-picker.test.tsx": {
+    "lint/suspicious/noExplicitAny": 15
+  },
+  "packages/libs/esm-styleguide/src/numeric-observation/interpretation-utils.test.ts": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/libs/esm-styleguide/src/numeric-observation/numeric-observation.test.tsx": {
+    "lint/suspicious/noExplicitAny": 3
+  },
+  "packages/libs/esm-styleguide/src/numeric-observation/use-concept-reference-range.test.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-styleguide/src/page-header/page-header.component.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-styleguide/src/patient-banner/contact-details/patient-banner-contact-details.component.tsx": {
+    "lint/suspicious/noArrayIndexKey": 1
+  },
+  "packages/libs/esm-styleguide/src/patient-banner/contact-details/types.ts": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-styleguide/src/patient-banner/patient-info/patient-banner-patient-info.test.tsx": {
+    "lint/style/noNonNullAssertion": 1
+  },
+  "packages/libs/esm-styleguide/src/patient-photo/patient-photo.test.tsx": {
+    "lint/suspicious/noExplicitAny": 4
+  },
+  "packages/libs/esm-styleguide/src/workspaces/workspace-sidebar-store/useWorkspaceGroupStore.ts": {
+    "lint/correctness/useExhaustiveDependencies": 1
+  },
+  "packages/libs/esm-styleguide/src/workspaces2/action-menu2/action-menu2.component.tsx": {
+    "lint/suspicious/noExplicitAny": 1
+  },
+  "packages/libs/esm-styleguide/src/workspaces2/active-workspace-window.component.tsx": {
+    "lint/correctness/useExhaustiveDependencies": 5
+  },
+  "packages/libs/esm-styleguide/src/workspaces2/workspace2.ts": {
+    "lint/suspicious/noExplicitAny": 4
+  },
+  "packages/libs/esm-utils/src/dates/date-util.test.ts": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/libs/esm-utils/src/retry.ts": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/libs/esm-utils/src/test-helpers.ts": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/test-utils/stubs/esm-framework-internal.mock.tsx": {
+    "lint/suspicious/noExplicitAny": 2
+  },
+  "packages/tooling/openmrs/src/runner.ts": {
+    "lint/performance/noDynamicNamespaceImportAccess": 1
+  },
+  "packages/tooling/scripts/setup-tests.ts": {
+    "lint/suspicious/noExplicitAny": 10
+  }
+}

@@ -83,7 +83,9 @@ export function CustomOverflowMenu({ menuTitle, children }: CustomOverflowMenuPr
   }, [menuIsOpen]);
 
   const handleOverflowMenuItemFocus = useCallback(
-    ({ currentIndex, direction }: { currentIndex?: number; direction: number }) => {
+    // currentIndex stays in the signature for callers, but the position is read
+    // from document.activeElement below rather than trusted from the argument.
+    ({ direction }: { currentIndex?: number; direction: number }) => {
       const enabledItems = menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])');
       if (!enabledItems?.length) {
         return;

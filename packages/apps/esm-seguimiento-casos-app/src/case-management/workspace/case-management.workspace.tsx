@@ -101,7 +101,7 @@ const CaseManagementForm: React.FC<CaseManagementProp> = ({ closeWorkspace }) =>
       });
 
       closeWorkspace();
-    } catch (err) {
+    } catch (_err) {
       showSnackbar({
         kind: 'error',
         title: t('RlshipError', 'Relationship Error'),

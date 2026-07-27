@@ -123,7 +123,7 @@ export const TimelineCell: React.FC<{
   );
 };
 
-export const RowStartCell = ({ title, range, units, shadow = false, testUuid, isString = false }) => {
+export const RowStartCell = ({ title, range, units, shadow = false, testUuid }) => {
   const patientUuid = getPatientUuidFromStore();
   const launchResultsDialog = (patientUuid: string, title: string, testUuid: string) => {
     const dispose = showModal('timeline-results-modal', {

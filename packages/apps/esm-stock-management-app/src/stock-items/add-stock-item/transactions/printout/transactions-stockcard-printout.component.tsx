@@ -137,7 +137,7 @@ const TransactionsStockcardPrintout: React.FC<Props> = ({ columns, items, title 
       <div className={styles.itemsContainer}>
         <div className={styles.tableContainer}>
           <DataTable data-floating-menu-container rows={mappedData} headers={columns} useZebraStyles>
-            {({ rows, headers, getHeaderProps, getTableProps, onInputChange }) => (
+            {({ rows, headers, getHeaderProps, getTableProps }) => (
               <div>
                 <TableContainer>
                   <Table {...getTableProps()}>

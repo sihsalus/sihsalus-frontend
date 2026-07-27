@@ -27,13 +27,6 @@ export type LocationFilterCriteria = ResourceFilterCriteria;
 export type PatientFilterCriteria = ResourceFilterCriteria;
 export type UserFilterCriteria = ResourceFilterCriteria;
 
-interface FHIRResponse {
-  entry: Array<{ resource: fhir.Location }>;
-  total: number;
-  type: string;
-  resourceType: string;
-}
-
 // getLocations
 export function useStockLocations(filter: LocationFilterCriteria) {
   const apiUrl = `${restBaseUrl}/location${toQueryParams(filter, false)}`;

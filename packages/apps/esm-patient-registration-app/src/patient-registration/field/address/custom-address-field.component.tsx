@@ -18,7 +18,7 @@ export const AddressField: React.FC<AddressFieldProps> = ({ fieldDefinition }) =
   return (
     <div className={classNames(styles.customField, styles.halfWidthInDesktopView)}>
       <Field name={fieldDefinition.id}>
-        {({ field, form: { touched, errors }, meta }) => {
+        {({ field }) => {
           return (
             <Input
               id={fieldDefinition.id}

@@ -18,17 +18,11 @@ type StockOperationStepperProps = {
   onChange?: (index: number) => void;
 };
 
-const StockOperationStepper: React.FC<StockOperationStepperProps> = ({
-  steps,
-  hasContainer,
-  onChange,
-  selectedIndex,
-  title,
-}) => {
+const StockOperationStepper: React.FC<StockOperationStepperProps> = ({ steps, onChange, selectedIndex }) => {
   return (
     <Layer className={styles.layer}>
       <ol className={styles.stepperContainer}>
-        {steps.map(({ title, subTitle, icon, disabled }, index) => {
+        {steps.map(({ title, disabled }, index) => {
           const active = selectedIndex >= index;
           return (
             <li

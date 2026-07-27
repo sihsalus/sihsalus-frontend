@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access */
 import {
-  Button,
   DataTable,
   DataTableSkeleton,
   Table,
@@ -63,7 +62,7 @@ const IndividualResultsTable: React.FC<IndividualResultsTableProps> = ({ isLoadi
   const isDesktop = layout === 'small-desktop' || layout === 'large-desktop';
   const { panels } = usePanelData();
 
-  const groupConceptUuid = useMemo(() => {
+  const _groupConceptUuid = useMemo(() => {
     return (
       panels?.find((p) => p.relatedObs?.some((obs) => obs.conceptUuid === subRows.entries[0]?.conceptUuid))
         ?.conceptUuid || subRows.entries[0]?.conceptUuid
@@ -100,7 +99,7 @@ const IndividualResultsTable: React.FC<IndividualResultsTableProps> = ({ isLoadi
       subRows?.entries.length &&
       subRows.entries.map((row, i) => {
         const { units = '', range = '' } = row;
-        const isString = Number.isNaN(Number.parseFloat(row.value));
+        const _isString = Number.isNaN(Number.parseFloat(row.value));
 
         return {
           ...row,

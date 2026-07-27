@@ -325,7 +325,7 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
         itemsPerPageText={t('itemsPerPage', 'Elementos por pagina:')}
         itemRangeText={(min, max, total) => `${min}-${max} ${t('of', 'de')} ${total} ${t('items', 'elementos')}`}
         pageNumberText={t('pageNumber', 'Numero de pagina')}
-        pageRangeText={(current, total) =>
+        pageRangeText={(_current, total) =>
           `${t('of', 'de')} ${total} ${total === 1 ? t('page', 'pagina') : t('pages', 'paginas')}`
         }
         onChange={({ page, pageSize }) => {

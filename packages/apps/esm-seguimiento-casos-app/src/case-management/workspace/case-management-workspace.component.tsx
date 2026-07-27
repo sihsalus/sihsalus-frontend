@@ -54,7 +54,7 @@ const EndRelationshipWorkspace: React.FC<EndRelationshipWorkspaceProps> = ({ clo
         isLowContrast: true,
       });
       closeWorkspace();
-    } catch (error) {
+    } catch (_error) {
       showSnackbar({
         kind: 'error',
         title: t('relationshipError', 'Relationship Error'),

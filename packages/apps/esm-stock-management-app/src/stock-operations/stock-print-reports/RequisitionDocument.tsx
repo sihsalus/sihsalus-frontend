@@ -94,7 +94,7 @@ export const FormatRequisitionDocument = async (data: StockOperationPrintData): 
                 ? Array(emptyRowCount)
                     .fill(0)
                     .map(
-                      (p) => `
+                      (_p) => `
         <tr class="data-row">
             <td valign="middle">&nbsp;</td>
             <td valign="middle">&nbsp;</td>

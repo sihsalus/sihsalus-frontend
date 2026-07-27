@@ -23,7 +23,7 @@ export const DeathInfoSection: React.FC<DeathInfoSectionProps> = ({ fields }) =>
               checked={values.isDead}
               id="isDead"
               labelText={t('isDeadInputLabel', 'Is dead')}
-              onChange={(event, { checked, id }) => setFieldValue(id, checked)}
+              onChange={(_event, { checked, id }) => setFieldValue(id, checked)}
             />
           </div>
         </Layer>

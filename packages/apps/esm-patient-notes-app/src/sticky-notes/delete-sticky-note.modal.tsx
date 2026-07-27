@@ -27,7 +27,7 @@ const DeleteStickyNoteModal = ({ close, noteUuid, mutate, onClose }: DeleteStick
       mutate();
       close();
       onClose();
-    } catch (err) {
+    } catch (_err) {
       showSnackbar({
         kind: 'error',
         title: t('errorDeletingStickyNote', 'Error deleting sticky note'),

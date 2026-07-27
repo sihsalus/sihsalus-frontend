@@ -15,7 +15,7 @@ type ServiceListItem = Service | Concept;
 export default function WaitingPatientsExtension() {
   const { t } = useTranslation();
   const layout = useLayoutType();
-  const { selectedServiceUuid, selectedServiceDisplay, selectedQueueLocationUuid } = useServiceQueuesStore();
+  const { selectedServiceUuid, selectedQueueLocationUuid } = useServiceQueuesStore();
   const { services } = useQueueServices();
   const { serviceCount } = useServiceMetricsCount(selectedServiceUuid, selectedQueueLocationUuid);
   const {

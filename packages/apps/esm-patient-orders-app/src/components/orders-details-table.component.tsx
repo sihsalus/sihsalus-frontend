@@ -927,7 +927,7 @@ function OrderBasketItemActions({
     }
   }, [orderItem, openOrderForm, orders, setOrders, mutateOrders]);
 
-  const handleAddResultsClick = useCallback(() => {
+  const _handleAddResultsClick = useCallback(() => {
     launchPatientWorkspace('test-results-form-workspace', { order: orderItem });
   }, [orderItem]);
 

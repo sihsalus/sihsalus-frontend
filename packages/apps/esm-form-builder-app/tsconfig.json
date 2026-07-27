@@ -17,7 +17,7 @@
       "@openmrs/*": ["../../../node_modules/@openmrs/*"]
     }
   },
-  "include": ["src/**/*", "../../tools/setup-tests.ts"],
+  "include": ["src/**/*"],
   "exclude": ["src/**/*.test.tsx", "src/**/*.test.ts", "src/**/*.test.jsx", "src/**/*.test.js"],
   "types": ["@testing-library/jest-dom", "lodash"]
 }

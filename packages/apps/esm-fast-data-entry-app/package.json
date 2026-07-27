@@ -9,16 +9,16 @@
   "scripts": {
     "start": "openmrs develop",
     "serve": "rspack serve --mode=development",
+    "debug": "yarn serve",
     "build": "rspack --mode=production",
     "analyze": "rspack --mode=production --env analyze=true",
-    "lint": "node ../../tooling/scripts/run-biome.js lint src",
-    "prettier": "node ../../tooling/scripts/run-biome.js format --write src",
-    "typescript": "tsc",
+    "lint": "node ../../tooling/scripts/run-biome.js lint .",
+    "typescript": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
-    "verify": "turbo lint typescript test",
+    "test:watch": "vitest watch",
     "coverage": "vitest run --coverage --passWithNoTests",
     "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js",
-    "test-e2e": "yarn --cwd ../../.. playwright test --config e2e/fast-data-entry/playwright.config.ts"
+    "test:e2e": "yarn --cwd ../../.. playwright test --config e2e/fast-data-entry/playwright.config.ts"
   },
   "browserslist": [
     "extends browserslist-config-openmrs"

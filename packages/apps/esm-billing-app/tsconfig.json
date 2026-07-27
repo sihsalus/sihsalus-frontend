@@ -49,5 +49,5 @@
     "skipLibCheck": true,
     "target": "esnext"
   },
-  "include": ["src/**/*", "e2e/**/*", "test-utils/**/*", "../../tools/setup-tests.ts"]
+  "include": ["src/**/*", "e2e/**/*", "test-utils/**/*"]
 }

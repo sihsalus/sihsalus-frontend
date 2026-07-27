@@ -9,19 +9,17 @@
   "homepage": "https://github.com/openmrs/openmrs-esm-billing-app#readme",
   "scripts": {
     "start": "openmrs develop",
-    "analyze": "rspack --mode=production --env analyze=true",
-    "build": "rspack --mode=production",
-    "coverage": "vitest run --coverage --passWithNoTests",
-    "debug": "yarn serve",
-    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js",
-    "lint": "node ../../tooling/scripts/run-biome.js lint .",
-    "prettier": "node ../../tooling/scripts/run-biome.js format --write src e2e",
     "serve": "rspack serve --mode=development",
-    "test-e2e": "yarn --cwd ../../.. playwright test --config e2e/billing/playwright.config.ts",
+    "debug": "yarn serve",
+    "build": "rspack --mode=production",
+    "analyze": "rspack --mode=production --env analyze=true",
+    "lint": "node ../../tooling/scripts/run-biome.js lint .",
+    "typescript": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest watch",
-    "typescript": "tsc",
-    "verify": "turbo lint && turbo typescript && turbo test --color --concurrency=5"
+    "coverage": "vitest run --coverage --passWithNoTests",
+    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js",
+    "test:e2e": "yarn --cwd ../../.. playwright test --config e2e/billing/playwright.config.ts"
   },
   "browserslist": [
     "extends browserslist-config-openmrs"

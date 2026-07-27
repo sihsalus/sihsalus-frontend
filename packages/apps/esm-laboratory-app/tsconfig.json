@@ -3,5 +3,5 @@
   "compilerOptions": {
     "target": "esnext"
   },
-  "include": ["src/**/*", "../../tools/setup-tests.ts"]
+  "include": ["src/**/*"]
 }

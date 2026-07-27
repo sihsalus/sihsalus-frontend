@@ -11,5 +11,5 @@
       "@openmrs/*/src/public": ["../../../node_modules/@openmrs/*/dist/public.d.ts"]
     }
   },
-  "include": ["src/**/*", "../../tools/setup-tests.ts"]
+  "include": ["src/**/*"]
 }

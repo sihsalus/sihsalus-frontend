@@ -10,5 +10,5 @@
       "@tools/test-helpers": ["../../test-utils/index"]
     }
   },
-  "include": ["src/**/*", "test-utils/**/*", "../../tools/setup-tests.ts"]
+  "include": ["src/**/*", "test-utils/**/*"]
 }

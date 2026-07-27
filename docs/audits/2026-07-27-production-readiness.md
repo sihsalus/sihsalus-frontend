@@ -2,10 +2,12 @@
 
 **Sistema:** SIHSALUS, Hospital II-1 Santa Clotilde, Napo, Maynas, Loreto.
 
-**Base revisada:** `main` en `53d2bd2d6361af005b0a487ff056e1414cbe6744`.
+**Base revisada:** `main` en `5d05d1b56bd2ab7ba3f87b76d07a466cba6477cc`.
 
 **Ramas de correcciones:** `fix/production-readiness-p0-20260727` y
-`fix/react-router-7-security-20260727`.
+`fix/react-router-7-security-20260727` y
+`fix/trivy-router-rsc-exception-20260727`, ya integradas; más
+`fix/sanitize-stock-print-html-20260727`, candidata.
 
 **Decisión actual:** **NO-GO para PROD**. El código pasa la validación técnica
 local, pero faltan gates clínicos, de seguridad y de infraestructura que no se
@@ -18,7 +20,7 @@ pueden sustituir con pruebas unitarias.
 | Instalación reproducible         | `yarn install --immutable` exitoso.                                                                                                                                                                                 |
 | Lint + TypeScript de 90 paquetes | 267/267 tareas exitosas desde un árbol limpio.                                                                                                                                                                      |
 | Pruebas de 90 paquetes           | 112/112 tareas exitosas.                                                                                                                                                                                            |
-| Tooling y contratos CI           | 60/60 pruebas exitosas.                                                                                                                                                                                             |
+| Tooling y contratos CI           | 65/65 pruebas exitosas.                                                                                                                                                                                             |
 | TypeScript E2E raíz              | Exitoso.                                                                                                                                                                                                            |
 | Workspaces clínicos              | Auditoría dura exitosa; los literales Workspace V2 resuelven.                                                                                                                                                       |
 | RBAC de rutas críticas           | 14/14 aplicaciones críticas fallan cerradas en frontend.                                                                                                                                                            |
@@ -26,11 +28,11 @@ pueden sustituir con pruebas unitarias.
 | Build                            | 89/89 tareas exitosas.                                                                                                                                                                                              |
 | SPA ensamblado                   | 66 módulos locales, 81 entradas de import map; artefacto válido.                                                                                                                                                    |
 | Traducciones modificadas         | JSON válido en `en` y `es`.                                                                                                                                                                                         |
-| DEV y QLTY vigentes              | `main` en `53d2bd2d6361af005b0a487ff056e1414cbe6744`, digest `sha256:3514c23b8e8e10943263dcbe40cb3200c4bce78942e788f250ff67d9f0cfc07e`, está desplegado y verificado en ambos ambientes. La migración de Router todavía no está desplegada. |
+| DEV y QLTY vigentes              | Ambos entregan `53d2bd2d6361af005b0a487ff056e1414cbe6744`, digest `sha256:3514c23b8e8e10943263dcbe40cb3200c4bce78942e788f250ff67d9f0cfc07e`. El release de `5d05d1b5` se encuentra pendiente al cerrar esta revisión; no se considera desplegado hasta comprobar SHA y digest en `build-info.json`. |
 
-El artefacto local ensamblado ocupa 148 MiB. El `build-info.json` local conserva
-el SHA base porque las correcciones aún no tienen commit; el SHA y digest
-definitivos deben provenir de CI después del PR, nunca de este artefacto local.
+El artefacto local ensamblado ocupa 148 MiB. El SHA y digest definitivos deben
+provenir de CI después del PR y comprobarse en cada ambiente; nunca se infieren
+desde el artefacto local.
 
 ## 2. Correcciones P0 incluidas
 
@@ -80,6 +82,19 @@ definitivos deben provenir de CI después del PR, nunca de este artefacto local.
 - Las pruebas cubren scripts, event handlers, formularios, iframes, enlaces y
   píxeles remotos.
 
+### Impresión de stock
+
+- Los campos interpolados en notas de ingreso, requisiciones y transferencias
+  se tratan como no confiables; esto incluye observaciones, artículos, UPSS,
+  títulos y logos configurables.
+- El documento pasa por una lista estática y por DOMPurify. Se eliminan scripts,
+  event handlers, formularios, iframes, enlaces, recursos remotos y SVG
+  embebido mediante `data:`.
+- La pestaña de impresión anula `window.opener` y el documento recibe una CSP
+  local con scripts, red, formularios, frames, objetos y base URI bloqueados.
+- Las pruebas conservan tablas, SVG estático y raster base64, y ejercitan los
+  payloads ejecutables y el bloqueo de popups.
+
 ### Integridad de flujos
 
 - Salud materna abre formularios por UUID exacto o nombre normalizado exacto;
@@ -107,12 +122,15 @@ definitivos deben provenir de CI después del PR, nunca de este artefacto local.
    autenticada expone una traza completa de Java/OpenMRS/Tomcat. Los logs del
    navegador no satisfacen trazabilidad clínica ni administrativa. Seguimiento:
    `sihsalus-core#95`.
-3. **Migración de Router aún no integrada.** La rama candidata unifica
-   `react-router`/`react-router-dom` en `7.18.1`, corrige las alertas 140, 141 y
-   142, elimina flags v6 y prueba navegación de Citas. La advisory alta
+3. **Candidato completo sin digest desplegado y validado.** La migración de
+   Router ya está integrada en `main`, pero la sanitización de impresiones de
+   stock continúa en rama candidata. No existe todavía un único SHA/digest con
+   ambas correcciones desplegado en DEV y QLTY. La advisory alta
    `GHSA-qwww-vcr4-c8h2` afecta exclusivamente APIs RSC inestables, que este SPA
-   no usa y que CI prohíbe explícitamente. La decisión y el riesgo residual
-   están documentados en `2026-07-27-react-router-security.md`.
+   no usa y que CI prohíbe explícitamente; la excepción de Trivy está limitada
+   al PURL exacto, vence el 2026-08-31 y tiene pruebas negativas. La decisión y
+   el riesgo residual están documentados en
+   `2026-07-27-react-router-security.md`.
 4. **Contrato de identificadores sin validación clínica.** El cambio del PR 676
    ya está en `main` y QLTY, pero todavía no fue probado con evidencia clínica.
    Deben cubrirse tipos `NOT_USED`, `REQUIRED`, `OPTIONAL` y metadato ausente en
@@ -121,8 +139,15 @@ definitivos deben provenir de CI después del PR, nunca de este artefacto local.
    `X-Frame-Options`, protección MIME, referrer policy, permissions policy y
    no-cache para HTML. Falta demostrar la configuración efectiva de PROD y
    endurecer el `'unsafe-inline'` residual de `script-src`.
-6. **La migración de Router no tiene digest desplegado.** No se permite promover
-   el digest actual de `main` como si incluyera esta corrección.
+6. **Protección de ramas insuficiente.** El ruleset de `main` exige PR, pero no
+   exige aprobación, resolución de conversaciones ni checks concretos. El
+   repositorio de distribución tampoco exige PR ni checks. Por esta brecha, un
+   cambio fallido —como el PR automatizado 652, que actualmente falla calidad e
+   imagen SPA— puede fusionarse sin que GitHub lo impida.
+7. **Promoción PROD no formalizada.** La automatización actual despliega solo
+   DEV y QLTY, lo que evita una promoción accidental, pero no existe ambiente
+   GitHub PROD con aprobación, comprobación de digest ni rollback automatizado.
+   El primer pase a PROD no debe improvisarse con acceso directo al servidor.
 
 ### P1 — resolver o aceptar formalmente antes del go
 
@@ -183,7 +208,7 @@ log sin PHI, y ticket de cualquier desviación.
 
 La etiqueta “listo para producción” solo es válida cuando:
 
-- los seis P0 están cerrados;
+- todos los P0 están cerrados;
 - CI y escaneo corresponden al SHA/digest exactos;
 - la matriz clínica QLTY está firmada;
 - no se usaron pacientes reales en E2E;

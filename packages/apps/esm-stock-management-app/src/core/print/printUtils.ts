@@ -127,12 +127,15 @@ const allowedTagNames = new Set<string>(allowedTags);
 const allowedAttributeNames = new Set<string>(allowedAttributes);
 const embeddedRasterImagePattern = /^data:image\/(?:gif|jpe?g|png|webp);base64,[a-z0-9+/=\s]+$/i;
 
+// Raster-only image sources are enforced upstream by enforceStaticAllowlist,
+// which runs before this pass and drops any non-raster src/href. A custom
+// ALLOWED_URI_REGEXP here is not only redundant, it makes DOMPurify apply that
+// regex to every non-URI attribute and strip SVG geometry (viewBox, d, points).
 const sanitizeStockMarkup = (content: string) =>
   DOMPurify.sanitize(content, {
     ALLOW_DATA_ATTR: false,
     ALLOWED_ATTR: [...allowedAttributes, 'src'],
     ALLOWED_TAGS: [...allowedTags],
-    ALLOWED_URI_REGEXP: embeddedRasterImagePattern,
   });
 
 type ParsedElement = DefaultTreeAdapterMap['element'];

@@ -4,6 +4,7 @@ import {
   ErrorState,
   ExtensionSlot,
   formatDate,
+  getUserFacingErrorMessage,
   parseDate,
   showSnackbar,
   useConfig,
@@ -62,7 +63,11 @@ const Invoice: React.FC = () => {
       showSnackbar({
         title: t('errorPrintingInvoice', 'Error printing invoice'),
         kind: 'error',
-        subtitle: error.message,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('errorPrintingInvoiceMessage', 'No se pudo imprimir el comprobante. Intente nuevamente.'),
+          { logContext: 'Print billing invoice' },
+        ),
       }),
   });
 

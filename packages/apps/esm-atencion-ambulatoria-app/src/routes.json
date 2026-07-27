@@ -9,6 +9,7 @@
       "name": "clinical-encounter",
       "slot": "patient-chart-clinical-encounter-slot",
       "component": "inPatientClinicalEncounter",
+      "privileges": "app:hoja.clinica.consultaExterna",
       "order": 0,
       "online": true,
       "offline": false

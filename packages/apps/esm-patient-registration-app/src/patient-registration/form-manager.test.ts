@@ -24,7 +24,7 @@ import {
   updatePatientIdentifier,
   updateRelationship,
 } from './patient-registration.resource';
-import { type FormValues } from './patient-registration.types';
+import { type FormValues, type PatientIdentifierType } from './patient-registration.types';
 import {
   addressUbigeoField,
   addressUbigeoPathField,
@@ -132,11 +132,28 @@ const formValues: FormValues = {
       selectedSource: {
         uuid: 'some-uuid',
         name: 'unique',
-        autoGenerationOption: { manualEntryEnabled: true, automaticGenerationEnabled: false },
+        autoGenerationOption: {
+          manualEntryEnabled: true,
+          automaticGenerationEnabled: false,
+        },
       },
     },
   },
 };
+
+const notUsedIdentifierTypes = [
+  {
+    locationBehavior: 'NOT_USED',
+    uuid: 'identifierType',
+  },
+] as Array<PatientIdentifierType>;
+
+const requiredIdentifierTypes = [
+  {
+    locationBehavior: 'REQUIRED',
+    uuid: 'identifierType',
+  },
+] as Array<PatientIdentifierType>;
 
 function getPeruRegistrationConfig() {
   return getEffectiveRegistrationConfig(
@@ -148,28 +165,68 @@ describe('FormManager', () => {
   describe('createIdentifiers', () => {
     beforeEach(() => {
       vi.clearAllMocks();
-      mockAddPatientIdentifier.mockResolvedValue({ ok: true, data: { uuid: 'added-identifier-uuid' } } as never);
+      mockAddPatientIdentifier.mockResolvedValue({
+        ok: true,
+        data: { uuid: 'added-identifier-uuid' },
+      } as never);
       mockUpdatePatientIdentifier.mockResolvedValue({ ok: true } as never);
     });
 
-    it('uses the uuid of a field name if it exists', async () => {
-      const result = await FormManager.savePatientIdentifiers(true, undefined, formValues.identifiers, {}, 'Nyc');
+    it('omits UPSS from identifier types whose backend metadata is NOT_USED', async () => {
+      const result = await FormManager.savePatientIdentifiers(
+        true,
+        undefined,
+        formValues.identifiers,
+        {},
+        'Nyc',
+        notUsedIdentifierTypes,
+      );
       expect(result).toEqual([
         {
           uuid: 'aUuid',
           identifier: 'foo',
           identifierType: 'identifierType',
-          location: 'Nyc',
           preferred: true,
         },
       ]);
     });
 
-    it('rejects active identifiers when the session location is missing', async () => {
+    it('requires UPSS only for identifier types whose backend metadata is REQUIRED', async () => {
       await expect(
-        FormManager.savePatientIdentifiers(true, undefined, formValues.identifiers, {}, ''),
+        FormManager.savePatientIdentifiers(true, undefined, formValues.identifiers, {}, '', requiredIdentifierTypes),
       ).rejects.toMatchObject({
         code: registrationErrorCodes.identifierLocationRequired,
+      });
+
+      expect(mockGenerateIdentifier).not.toHaveBeenCalled();
+      expect(mockAddPatientIdentifier).not.toHaveBeenCalled();
+    });
+
+    it('sends the selected UPSS only for identifier types whose backend metadata is REQUIRED', async () => {
+      const result = await FormManager.savePatientIdentifiers(
+        true,
+        undefined,
+        formValues.identifiers,
+        {},
+        'upss-admision-uuid',
+        requiredIdentifierTypes,
+      );
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          identifierType: 'identifierType',
+          location: 'upss-admision-uuid',
+        }),
+      ]);
+    });
+
+    it('fails closed before generating identifiers when location behavior metadata is missing or unknown', async () => {
+      await expect(
+        FormManager.savePatientIdentifiers(true, undefined, formValues.identifiers, {}, 'Nyc', [
+          { locationBehavior: 'SUPPORTED', uuid: 'identifierType' },
+        ] as Array<PatientIdentifierType>),
+      ).rejects.toMatchObject({
+        code: registrationErrorCodes.identifierLocationBehaviorUnknown,
       });
 
       expect(mockGenerateIdentifier).not.toHaveBeenCalled();
@@ -183,12 +240,17 @@ describe('FormManager', () => {
           autoGeneration: true,
           selectedSource: {
             ...formValues.identifiers.foo.selectedSource,
-            autoGenerationOption: { automaticGenerationEnabled: true, manualEntryEnabled: false },
+            autoGenerationOption: {
+              automaticGenerationEnabled: true,
+              manualEntryEnabled: false,
+            },
           },
         },
       };
-      mockGenerateIdentifier.mockResolvedValue({ data: { identifier: '10001V' } });
-      await FormManager.savePatientIdentifiers(true, undefined, identifiers, {}, 'Nyc');
+      mockGenerateIdentifier.mockResolvedValue({
+        data: { identifier: '10001V' },
+      });
+      await FormManager.savePatientIdentifiers(true, undefined, identifiers, {}, 'Nyc', notUsedIdentifierTypes);
       expect(mockGenerateIdentifier.mock.calls).toHaveLength(1);
     });
 
@@ -199,11 +261,14 @@ describe('FormManager', () => {
           autoGeneration: true,
           selectedSource: {
             ...formValues.identifiers.foo.selectedSource,
-            autoGenerationOption: { automaticGenerationEnabled: true, manualEntryEnabled: true },
+            autoGenerationOption: {
+              automaticGenerationEnabled: true,
+              manualEntryEnabled: true,
+            },
           },
         },
       };
-      await FormManager.savePatientIdentifiers(true, undefined, identifiers, {}, 'Nyc');
+      await FormManager.savePatientIdentifiers(true, undefined, identifiers, {}, 'Nyc', notUsedIdentifierTypes);
       expect(mockGenerateIdentifier.mock.calls).toHaveLength(0);
     });
 
@@ -216,19 +281,33 @@ describe('FormManager', () => {
           identifierValue: 'auto-generated',
           selectedSource: {
             ...formValues.identifiers.foo.selectedSource,
-            autoGenerationOption: { automaticGenerationEnabled: true, manualEntryEnabled: false },
+            autoGenerationOption: {
+              automaticGenerationEnabled: true,
+              manualEntryEnabled: false,
+            },
           },
         },
       };
-      mockGenerateIdentifier.mockResolvedValue({ data: { identifier: '10001V' } });
+      mockGenerateIdentifier.mockResolvedValue({
+        data: { identifier: '10001V' },
+      });
 
-      const first = await FormManager.savePatientIdentifiers(true, 'patient-uuid', identifiers, {}, 'Nyc', transaction);
+      const first = await FormManager.savePatientIdentifiers(
+        true,
+        'patient-uuid',
+        identifiers,
+        {},
+        'Nyc',
+        notUsedIdentifierTypes,
+        transaction,
+      );
       const second = await FormManager.savePatientIdentifiers(
         true,
         'patient-uuid',
         identifiers,
         {},
         'Nyc',
+        notUsedIdentifierTypes,
         transaction,
       );
 
@@ -241,8 +320,24 @@ describe('FormManager', () => {
       const transaction = new SavePatientTransactionManager();
       mockDeletePatientIdentifier.mockResolvedValue({ ok: true } as never);
 
-      await FormManager.savePatientIdentifiers(false, 'patient-uuid', {}, formValues.identifiers, 'Nyc', transaction);
-      await FormManager.savePatientIdentifiers(false, 'patient-uuid', {}, formValues.identifiers, 'Nyc', transaction);
+      await FormManager.savePatientIdentifiers(
+        false,
+        'patient-uuid',
+        {},
+        formValues.identifiers,
+        'Nyc',
+        notUsedIdentifierTypes,
+        transaction,
+      );
+      await FormManager.savePatientIdentifiers(
+        false,
+        'patient-uuid',
+        {},
+        formValues.identifiers,
+        'Nyc',
+        notUsedIdentifierTypes,
+        transaction,
+      );
 
       expect(mockDeletePatientIdentifier).toHaveBeenCalledTimes(1);
       expect(mockDeletePatientIdentifier).toHaveBeenCalledWith('patient-uuid', 'aUuid', undefined);
@@ -266,6 +361,13 @@ describe('FormManager', () => {
         { sisContrato: sisIdentifier },
         { sisContrato: sisIdentifier },
         'Nyc',
+        [
+          ...notUsedIdentifierTypes,
+          {
+            locationBehavior: 'NOT_USED',
+            uuid: '406574d4-396a-4787-9c4e-0bbfa30de39f',
+          },
+        ] as Array<PatientIdentifierType>,
       );
 
       expect(result).toEqual([
@@ -283,7 +385,10 @@ describe('FormManager', () => {
     it('persists each changed value when an identifier is edited again after a partial failure', async () => {
       const transaction = new SavePatientTransactionManager();
       const changedIdentifiers = {
-        foo: { ...formValues.identifiers.foo, identifierValue: 'changed-value' },
+        foo: {
+          ...formValues.identifiers.foo,
+          identifierValue: 'changed-value',
+        },
       };
 
       await FormManager.savePatientIdentifiers(
@@ -292,6 +397,7 @@ describe('FormManager', () => {
         changedIdentifiers,
         formValues.identifiers,
         'Nyc',
+        notUsedIdentifierTypes,
         transaction,
       );
       await FormManager.savePatientIdentifiers(
@@ -300,6 +406,7 @@ describe('FormManager', () => {
         formValues.identifiers,
         formValues.identifiers,
         'Nyc',
+        notUsedIdentifierTypes,
         transaction,
       );
 
@@ -317,13 +424,22 @@ describe('FormManager', () => {
       const transaction = new SavePatientTransactionManager();
       mockDeletePatientIdentifier.mockResolvedValue({ ok: true } as never);
 
-      await FormManager.savePatientIdentifiers(false, 'patient-uuid', {}, formValues.identifiers, 'Nyc', transaction);
+      await FormManager.savePatientIdentifiers(
+        false,
+        'patient-uuid',
+        {},
+        formValues.identifiers,
+        'Nyc',
+        notUsedIdentifierTypes,
+        transaction,
+      );
       await FormManager.savePatientIdentifiers(
         false,
         'patient-uuid',
         formValues.identifiers,
         formValues.identifiers,
         'Nyc',
+        notUsedIdentifierTypes,
         transaction,
       );
 
@@ -337,12 +453,32 @@ describe('FormManager', () => {
     it('deletes an identifier added earlier when it is removed before retry', async () => {
       const transaction = new SavePatientTransactionManager();
       const newIdentifiers = {
-        foo: { ...formValues.identifiers.foo, identifierUuid: undefined, initialValue: '' },
+        foo: {
+          ...formValues.identifiers.foo,
+          identifierUuid: undefined,
+          initialValue: '',
+        },
       };
       mockDeletePatientIdentifier.mockResolvedValue({ ok: true } as never);
 
-      await FormManager.savePatientIdentifiers(false, 'patient-uuid', newIdentifiers, {}, 'Nyc', transaction);
-      await FormManager.savePatientIdentifiers(false, 'patient-uuid', {}, {}, 'Nyc', transaction);
+      await FormManager.savePatientIdentifiers(
+        false,
+        'patient-uuid',
+        newIdentifiers,
+        {},
+        'Nyc',
+        notUsedIdentifierTypes,
+        transaction,
+      );
+      await FormManager.savePatientIdentifiers(
+        false,
+        'patient-uuid',
+        {},
+        {},
+        'Nyc',
+        notUsedIdentifierTypes,
+        transaction,
+      );
 
       expect(mockAddPatientIdentifier).toHaveBeenCalledTimes(1);
       expect(mockDeletePatientIdentifier).toHaveBeenCalledWith('patient-uuid', 'added-identifier-uuid', undefined);
@@ -360,7 +496,11 @@ describe('FormManager', () => {
       expect(FormManager.getDeletedNames({ ...formValues, addNameInLocalLanguage: true }, patientUuidMap)).toEqual([]);
       expect(
         FormManager.getDeletedNames(
-          { ...formValues, patientUuid: 'patient-uuid', addNameInLocalLanguage: false },
+          {
+            ...formValues,
+            patientUuid: 'patient-uuid',
+            addNameInLocalLanguage: false,
+          },
           patientUuidMap,
         ),
       ).toEqual([{ nameUuid: 'additional-name-uuid', personUuid: 'patient-uuid' }]);
@@ -373,7 +513,9 @@ describe('FormManager', () => {
         patientUuid: 'patient-uuid',
         attributes: { 'attribute-type-uuid': '' },
       };
-      const patientUuidMap = { 'attribute.attribute-type-uuid': 'attribute-value-uuid' };
+      const patientUuidMap = {
+        'attribute.attribute-type-uuid': 'attribute-value-uuid',
+      };
       mockDeletePersonAttribute.mockRejectedValueOnce(new Error('delete failed'));
 
       await expect(
@@ -391,7 +533,10 @@ describe('FormManager', () => {
     });
 
     it('does not delete the additional name during an ordinary edit', async () => {
-      mockSavePatient.mockResolvedValue({ ok: true, data: { uuid: 'patient-uuid' } } as never);
+      mockSavePatient.mockResolvedValue({
+        ok: true,
+        data: { uuid: 'patient-uuid' },
+      } as never);
       mockDeletePersonName.mockResolvedValue({ ok: true } as never);
       const values = {
         ...formValues,
@@ -407,6 +552,7 @@ describe('FormManager', () => {
         {},
         null,
         'location-uuid',
+        [],
         {},
         {} as Session,
         getPeruRegistrationConfig(),
@@ -455,7 +601,10 @@ describe('FormManager', () => {
           },
         ],
       };
-      mockSavePatient.mockResolvedValue({ ok: true, data: { uuid: 'patient-uuid' } } as never);
+      mockSavePatient.mockResolvedValue({
+        ok: true,
+        data: { uuid: 'patient-uuid' },
+      } as never);
       mockSaveRelationship.mockRejectedValueOnce(new Error('relationship failed'));
 
       await expect(
@@ -466,6 +615,7 @@ describe('FormManager', () => {
           {},
           null,
           'location-uuid',
+          [],
           {},
           {} as Session,
           getPeruRegistrationConfig(),
@@ -481,6 +631,7 @@ describe('FormManager', () => {
           {},
           null,
           'location-uuid',
+          [],
           {},
           {} as Session,
           getPeruRegistrationConfig(),
@@ -511,11 +662,17 @@ describe('FormManager', () => {
       await expect(
         FormManager.savePatientFormOnline(
           true,
-          { ...formValues, patientUuid: 'patient-uuid', identifiers: {}, obs: { 'concept-uuid': 'value' } },
+          {
+            ...formValues,
+            patientUuid: 'patient-uuid',
+            identifiers: {},
+            obs: { 'concept-uuid': 'value' },
+          },
           {},
           {},
           null,
           'location-uuid',
+          [],
           {},
           session,
           config,
@@ -615,10 +772,19 @@ describe('FormManager', () => {
       ]);
       expect(patient.person.attributes).toEqual(
         expect.arrayContaining([
-          { attributeType: peruEmailAttributeTypeUuid, value: 'juan.perez@example.org' },
+          {
+            attributeType: peruEmailAttributeTypeUuid,
+            value: 'juan.perez@example.org',
+          },
           { attributeType: peruPhoneAttributeTypeUuid, value: '999888777' },
-          { attributeType: peruInsuranceCodeAttributeTypeUuid, value: 'SIS-12345678' },
-          { attributeType: peruNationalityAttributeTypeUuid, value: peruNationalityConceptUuid },
+          {
+            attributeType: peruInsuranceCodeAttributeTypeUuid,
+            value: 'SIS-12345678',
+          },
+          {
+            attributeType: peruNationalityAttributeTypeUuid,
+            value: peruNationalityConceptUuid,
+          },
         ]),
       );
     });
@@ -646,7 +812,10 @@ describe('FormManager', () => {
       );
 
       expect(patient.person.attributes).toEqual([
-        { attributeType: peruEmailAttributeTypeUuid, value: 'juan.perez@example.org' },
+        {
+          attributeType: peruEmailAttributeTypeUuid,
+          value: 'juan.perez@example.org',
+        },
       ]);
     });
 
@@ -716,6 +885,13 @@ describe('FormManager', () => {
 
   describe('promotion of an existing person to patient', () => {
     const personUuid = '11111111-2222-3333-4444-555555555555';
+    const promotionIdentifierTypes = [
+      ...notUsedIdentifierTypes,
+      {
+        locationBehavior: 'NOT_USED',
+        uuid: '550e8400-e29b-41d4-a716-446655440001',
+      },
+    ] as Array<PatientIdentifierType>;
 
     function buildPromotionFormValues(): FormValues {
       return {
@@ -744,18 +920,37 @@ describe('FormManager', () => {
         gender: 'F',
         birthdate: '1986-01-01',
         birthdateEstimated: false,
-        names: [{ uuid: 'existing-name-uuid', preferred: true, givenName: 'Rosa', familyName: 'Flores' }],
-        addresses: [{ uuid: 'existing-address-uuid', preferred: true, address1: 'Jr. Principal 123' }],
+        names: [
+          {
+            uuid: 'existing-name-uuid',
+            preferred: true,
+            givenName: 'Rosa',
+            familyName: 'Flores',
+          },
+        ],
+        addresses: [
+          {
+            uuid: 'existing-address-uuid',
+            preferred: true,
+            address1: 'Jr. Principal 123',
+          },
+        ],
         attributes: [
           {
             uuid: 'attr-doc-type',
             value: { uuid: documentTypeConceptUuids.dni, display: 'DNI' },
-            attributeType: { uuid: personDocumentTypeAttributeTypeUuid, format: 'org.openmrs.Concept' },
+            attributeType: {
+              uuid: personDocumentTypeAttributeTypeUuid,
+              format: 'org.openmrs.Concept',
+            },
           },
           {
             uuid: 'attr-doc-number',
             value: '99887766',
-            attributeType: { uuid: personDocumentNumberAttributeTypeUuid, format: 'java.lang.String' },
+            attributeType: {
+              uuid: personDocumentNumberAttributeTypeUuid,
+              format: 'java.lang.String',
+            },
           },
         ],
       };
@@ -770,6 +965,7 @@ describe('FormManager', () => {
         {},
         null,
         currentLocation,
+        promotionIdentifierTypes,
         {},
         {} as Session,
         config,
@@ -784,9 +980,17 @@ describe('FormManager', () => {
       }
       mockIsPersonAlreadyPatient.mockResolvedValue(false);
       mockFetchPersonForPromotion.mockResolvedValue(buildPromotionPerson());
-      mockVerifyIdentityForPromotion.mockResolvedValue({ status: 'unavailable' });
-      mockPromotePersonToPatient.mockResolvedValue({ ok: true, data: { uuid: personUuid } } as never);
-      mockSavePatient.mockResolvedValue({ ok: true, data: { uuid: personUuid } } as never);
+      mockVerifyIdentityForPromotion.mockResolvedValue({
+        status: 'unavailable',
+      });
+      mockPromotePersonToPatient.mockResolvedValue({
+        ok: true,
+        data: { uuid: personUuid },
+      } as never);
+      mockSavePatient.mockResolvedValue({
+        ok: true,
+        data: { uuid: personUuid },
+      } as never);
     });
 
     it('promotes with the person uuid as a plain string and keeps the same uuid end to end', async () => {
@@ -798,17 +1002,29 @@ describe('FormManager', () => {
       const [promotedPersonUuid, identifiers] = mockPromotePersonToPatient.mock.calls[0];
       expect(promotedPersonUuid).toBe(personUuid);
       expect(identifiers).toEqual(
-        expect.arrayContaining([expect.objectContaining({ identifier: 'foo', identifierType: 'identifierType' })]),
+        expect.arrayContaining([
+          expect.objectContaining({
+            identifier: 'foo',
+            identifierType: 'identifierType',
+          }),
+        ]),
       );
       expect(result).toBe(personUuid);
     });
 
-    it('rejects a document identifier derived during promotion when the session location is missing', async () => {
-      await expect(runPromotion({ ...buildPromotionFormValues(), identifiers: {} }, '')).rejects.toMatchObject({
-        code: registrationErrorCodes.identifierLocationRequired,
-      });
+    it('does not attach a UPSS to a document identifier marked NOT_USED during promotion', async () => {
+      await expect(runPromotion({ ...buildPromotionFormValues(), identifiers: {} }, '')).resolves.toBe(personUuid);
 
-      expect(mockPromotePersonToPatient).not.toHaveBeenCalled();
+      const [, identifiers] = mockPromotePersonToPatient.mock.calls[0];
+      expect(identifiers).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            identifier: '99887766',
+            identifierType: '550e8400-e29b-41d4-a716-446655440001',
+          }),
+        ]),
+      );
+      expect(identifiers.find((identifier) => identifier.identifier === '99887766')).not.toHaveProperty('location');
     });
 
     it('maps the person document attributes to a patient identifier without duplicating types', async () => {
@@ -879,9 +1095,10 @@ describe('FormManager', () => {
         ],
       };
       const config = getPeruRegistrationConfig();
-      mockSaveRelationship
-        .mockRejectedValueOnce(new Error('relationship failed'))
-        .mockResolvedValueOnce({ ok: true, data: { uuid: 'relationship-uuid' } } as never);
+      mockSaveRelationship.mockRejectedValueOnce(new Error('relationship failed')).mockResolvedValueOnce({
+        ok: true,
+        data: { uuid: 'relationship-uuid' },
+      } as never);
 
       const save = () =>
         FormManager.savePatientFormOnline(
@@ -891,6 +1108,7 @@ describe('FormManager', () => {
           {},
           null,
           'location-1',
+          promotionIdentifierTypes,
           {},
           {} as Session,
           config,
@@ -926,6 +1144,7 @@ describe('FormManager', () => {
           {},
           null,
           'location-1',
+          promotionIdentifierTypes,
           {},
           {} as Session,
           getPeruRegistrationConfig(),
@@ -941,14 +1160,19 @@ describe('FormManager', () => {
     beforeEach(() => {
       vi.clearAllMocks();
       mockDeleteRelationship.mockResolvedValue({ ok: true } as never);
-      mockSavePerson.mockResolvedValue({ ok: true, data: { uuid: 'created-person-uuid' } } as never);
+      mockSavePerson.mockResolvedValue({
+        ok: true,
+        data: { uuid: 'created-person-uuid' },
+      } as never);
       mockSaveRelationship.mockResolvedValue({ ok: true } as never);
       mockUpdateRelationship.mockResolvedValue({ ok: true } as never);
     });
 
     it('handles registrations without a relationships collection', async () => {
       await expect(
-        FormManager.saveRelationships(undefined, { data: { uuid: 'patient-uuid' } } as never),
+        FormManager.saveRelationships(undefined, {
+          data: { uuid: 'patient-uuid' },
+        } as never),
       ).resolves.toEqual([]);
 
       expect(mockSavePerson).not.toHaveBeenCalled();
@@ -1036,7 +1260,13 @@ describe('FormManager', () => {
     it('rejects an incomplete relationship instead of silently discarding it', async () => {
       await expect(
         FormManager.saveRelationships(
-          [{ action: 'ADD', relatedPersonUuid: '', relationshipType: 'rel-type-uuid/aIsToB' }],
+          [
+            {
+              action: 'ADD',
+              relatedPersonUuid: '',
+              relationshipType: 'rel-type-uuid/aIsToB',
+            },
+          ],
           { data: { uuid: 'patient-uuid' } } as never,
           {},
         ),
@@ -1117,7 +1347,10 @@ describe('FormManager', () => {
         },
       };
       mockSaveRelationship
-        .mockResolvedValueOnce({ ok: true, data: { uuid: 'family-relationship-uuid' } } as never)
+        .mockResolvedValueOnce({
+          ok: true,
+          data: { uuid: 'family-relationship-uuid' },
+        } as never)
         .mockRejectedValueOnce(new Error('companion failed'));
 
       await expect(
@@ -1159,7 +1392,10 @@ describe('FormManager', () => {
         isCompanion: true,
       };
       mockSaveRelationship
-        .mockResolvedValueOnce({ ok: true, data: { uuid: 'family-relationship-uuid' } } as never)
+        .mockResolvedValueOnce({
+          ok: true,
+          data: { uuid: 'family-relationship-uuid' },
+        } as never)
         .mockRejectedValueOnce(new Error('companion failed'));
 
       await expect(

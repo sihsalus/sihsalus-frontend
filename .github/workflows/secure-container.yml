@@ -54,7 +54,8 @@ jobs:
           sbom: true
           provenance: mode=max
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Cache export is an optimization; keep build and scan failures fatal.
+          cache-to: type=gha,mode=max,ignore-error=true
 
       - name: Scan Published Secure Image
         uses: aquasecurity/trivy-action@v0.36.0

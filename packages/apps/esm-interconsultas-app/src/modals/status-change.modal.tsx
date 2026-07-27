@@ -1,5 +1,5 @@
 import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { showSnackbar, useAbortController } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar, useAbortController } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { setInterconsultaFulfillerStatus, useInvalidateInterconsultas } from '../interconsultas.resource';
@@ -52,7 +52,11 @@ const StatusChangeModal: React.FC<StatusChangeModalProps> = ({
         showSnackbar({
           kind: 'error',
           title: t('errorUpdatingInterconsulta', 'Error al actualizar la interconsulta'),
-          subtitle: error?.message,
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('errorUpdatingInterconsultaMessage', 'No se pudo actualizar la interconsulta. Intente nuevamente.'),
+            { logContext: `Update interconsultation ${order.uuid} to ${targetStatus}` },
+          ),
         });
       },
     );

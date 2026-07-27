@@ -39,7 +39,10 @@ const OrderBasketItemTile: React.FC<OrderBasketItemTileProps> = ({ orderBasketIt
                 <WarningIcon size={16} />
                 &nbsp;
                 <span className={styles.label01}>{t('error', 'Error').toUpperCase()}</span> &nbsp;
-                {orderBasketItem.orderError.responseBody?.error?.message ?? orderBasketItem.orderError.message}
+                {t(
+                  'orderSubmissionFailedItemMessage',
+                  'No se pudo registrar esta orden. Revise los datos e intente nuevamente.',
+                )}
               </span>
             </>
           )}

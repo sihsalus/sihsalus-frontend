@@ -1,5 +1,5 @@
-import { showNotification } from '@openmrs/esm-framework';
-import { useMemo } from 'react';
+import { getUserFacingErrorMessage, showNotification } from '@openmrs/esm-framework';
+import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type MothersAndChildrenSearchCriteria, useMotherAndChildren } from '../../hooks/useMotherAndChildren';
 import { type MotherChildRelationships, type PatientAndAdmission } from '../../types';
@@ -38,22 +38,35 @@ export function useMotherChildrenRelationshipsByPatient(
     error: motherDataError,
   } = useMotherAndChildren(getMotherRequestParams, fetch && allWardPatientUuids.length > 0, motherAndChildrenRep);
 
-  if (childrenDataError) {
-    showNotification({
-      title: t('errorLoadingChildren', 'Error loading children info'),
-      kind: 'error',
-      critical: true,
-      description: childrenDataError?.message,
-    });
-  }
-  if (motherDataError) {
-    showNotification({
-      title: t('errorLoadingMother', 'Error loading mother info'),
-      kind: 'error',
-      critical: true,
-      description: motherDataError?.message,
-    });
-  }
+  useEffect(() => {
+    if (childrenDataError) {
+      showNotification({
+        title: t('errorLoadingChildren', 'Error loading children info'),
+        kind: 'error',
+        critical: true,
+        description: getUserFacingErrorMessage(
+          childrenDataError,
+          t('errorLoadingChildrenMessage', 'No se pudo cargar la información de los niños. Intente nuevamente.'),
+          { logContext: 'Load maternal ward children' },
+        ),
+      });
+    }
+  }, [childrenDataError, t]);
+
+  useEffect(() => {
+    if (motherDataError) {
+      showNotification({
+        title: t('errorLoadingMother', 'Error loading mother info'),
+        kind: 'error',
+        critical: true,
+        description: getUserFacingErrorMessage(
+          motherDataError,
+          t('errorLoadingMotherMessage', 'No se pudo cargar la información de las madres. Intente nuevamente.'),
+          { logContext: 'Load maternal ward mothers' },
+        ),
+      });
+    }
+  }, [motherDataError, t]);
 
   const relationships = useMemo(() => {
     const motherByChildUuid = new Map<string, PatientAndAdmission>();

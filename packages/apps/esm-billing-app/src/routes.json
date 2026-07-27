@@ -7,7 +7,8 @@
   "pages": [
     {
       "component": "billableServicesHome",
-      "route": "billable-services"
+      "route": "billable-services",
+      "privileges": "app:serviciosFacturables"
     }
   ],
   "extensions": [
@@ -71,18 +72,21 @@
       "name": "patient-banner-billing-tags",
       "component": "visitAttributeTags",
       "slot": "patient-banner-tags-slot",
+      "privileges": "app:hoja.clinica.facturacion",
       "order": 2
     },
     {
       "name": "billable-services-left-panel-link",
       "component": "billableServicesLeftPanelLink",
       "slot": "billable-services-left-panel-slot",
+      "privileges": "app:serviciosFacturables",
       "order": 0
     },
     {
       "name": "billing-settings-left-panel-menu",
       "component": "billingSettingsLeftPanelMenu",
       "slot": "billable-services-left-panel-slot",
+      "privileges": "app:serviciosFacturables",
       "order": 1
     }
   ],
@@ -114,7 +118,8 @@
     },
     {
       "name": "require-billing-modal",
-      "component": "requirePaymentModal"
+      "component": "requirePaymentModal",
+      "privileges": "app:hoja.clinica.facturacion.editar"
     },
     {
       "name": "delete-line-item-confirmation-modal",

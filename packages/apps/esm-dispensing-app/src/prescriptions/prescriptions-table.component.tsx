@@ -15,7 +15,7 @@ import {
   TableRow,
   Tile,
 } from '@carbon/react';
-import { formatDatetime, parseDate, useConfig } from '@openmrs/esm-framework';
+import { formatDatetime, getUserFacingErrorMessage, parseDate, useConfig } from '@openmrs/esm-framework';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type PharmacyConfig } from '../config-schema';
@@ -95,7 +95,16 @@ const PrescriptionsTable: React.FC<PrescriptionsTableProps> = ({
               <p className={styles.filterEmptyStateContent}>
                 {t('errorLoadingPrescriptions', 'Error loading prescriptions')}
               </p>
-              <p className={styles.filterEmptyStateHelper}>{error?.message}</p>
+              <p className={styles.filterEmptyStateHelper}>
+                {getUserFacingErrorMessage(
+                  error,
+                  t(
+                    'errorLoadingPrescriptionsMessage',
+                    'No se pudieron cargar las prescripciones. Intente nuevamente.',
+                  ),
+                  { logContext: 'Load dispensing prescriptions table' },
+                )}
+              </p>
             </Tile>
           </Layer>
         </div>

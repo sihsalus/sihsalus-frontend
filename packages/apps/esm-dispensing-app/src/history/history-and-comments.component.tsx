@@ -1,6 +1,7 @@
 import { OverflowMenu, OverflowMenuItem, SkeletonText, Tag, Tile } from '@carbon/react';
 import {
   formatDatetime,
+  getUserFacingErrorMessage,
   launchWorkspace2,
   parseDate,
   type Session,
@@ -82,7 +83,11 @@ const HistoryAndComments: React.FC<{
       )}
       {error && (
         <p className={styles.error}>
-          {t('errorLoadingHistory', 'Error loading history')}: {error.message}
+          {getUserFacingErrorMessage(
+            error,
+            t('errorLoadingHistory', 'No se pudo cargar el historial de dispensación. Intente nuevamente.'),
+            { logContext: 'Load dispensing history' },
+          )}
         </p>
       )}
       {!isLoading && !error && !hasHistory && (

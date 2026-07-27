@@ -1,4 +1,5 @@
 import { peruDniPatientIdentifierTypeUuid } from '../peru-registration-config';
+import { type PatientIdentifierType } from '../patient-registration.types';
 import { registrationErrorCodes } from '../registration-errors';
 import {
   documentTypeConceptUuids,
@@ -19,6 +20,9 @@ import {
 
 const dniDefinition = getDocumentTypeDefinitionByConcept(documentTypeConceptUuids.dni);
 const ceDefinition = getDocumentTypeDefinitionByConcept(documentTypeConceptUuids.foreignResidentCard);
+const notUsedDniIdentifierType = [
+  { locationBehavior: 'NOT_USED', uuid: peruDniPatientIdentifierTypeUuid },
+] as Array<PatientIdentifierType>;
 
 function buildPerson(overrides: Partial<PersonForPromotion> = {}): PersonForPromotion {
   return {
@@ -27,18 +31,32 @@ function buildPerson(overrides: Partial<PersonForPromotion> = {}): PersonForProm
     gender: 'F',
     birthdate: '1986-01-01',
     birthdateEstimated: false,
-    names: [{ uuid: 'name-1', preferred: true, givenName: 'Rosa', middleName: 'Elena', familyName: 'Flores' }],
+    names: [
+      {
+        uuid: 'name-1',
+        preferred: true,
+        givenName: 'Rosa',
+        middleName: 'Elena',
+        familyName: 'Flores',
+      },
+    ],
     addresses: [{ uuid: 'address-1', preferred: true, address1: 'Jr. Principal 123' }],
     attributes: [
       {
         uuid: 'attr-1',
         value: { uuid: documentTypeConceptUuids.dni, display: 'DNI' },
-        attributeType: { uuid: personDocumentTypeAttributeTypeUuid, format: 'org.openmrs.Concept' },
+        attributeType: {
+          uuid: personDocumentTypeAttributeTypeUuid,
+          format: 'org.openmrs.Concept',
+        },
       },
       {
         uuid: 'attr-2',
         value: '99887766',
-        attributeType: { uuid: personDocumentNumberAttributeTypeUuid, format: 'java.lang.String' },
+        attributeType: {
+          uuid: personDocumentNumberAttributeTypeUuid,
+          format: 'java.lang.String',
+        },
       },
     ],
     ...overrides,
@@ -71,12 +89,11 @@ describe('isValidDocumentNumber', () => {
 
 describe('buildDocumentIdentifierForPromotion', () => {
   it('maps the DNI person attribute to a DNI patient identifier', () => {
-    const identifier = buildDocumentIdentifierForPromotion(buildPerson(), [], 'location-1');
+    const identifier = buildDocumentIdentifierForPromotion(buildPerson(), [], notUsedDniIdentifierType, 'location-1');
 
     expect(identifier).toEqual({
       identifier: '99887766',
       identifierType: peruDniPatientIdentifierTypeUuid,
-      location: 'location-1',
       preferred: false,
     });
   });
@@ -84,7 +101,14 @@ describe('buildDocumentIdentifierForPromotion', () => {
   it('does not duplicate an identifier type already present in the payload', () => {
     const identifier = buildDocumentIdentifierForPromotion(
       buildPerson(),
-      [{ identifier: '99887766', identifierType: peruDniPatientIdentifierTypeUuid, location: 'location-1' }],
+      [
+        {
+          identifier: '99887766',
+          identifierType: peruDniPatientIdentifierTypeUuid,
+          location: 'location-1',
+        },
+      ],
+      notUsedDniIdentifierType,
       'location-1',
     );
 
@@ -95,7 +119,14 @@ describe('buildDocumentIdentifierForPromotion', () => {
     expect(() =>
       buildDocumentIdentifierForPromotion(
         buildPerson(),
-        [{ identifier: '11223344', identifierType: peruDniPatientIdentifierTypeUuid, location: 'location-1' }],
+        [
+          {
+            identifier: '11223344',
+            identifierType: peruDniPatientIdentifierTypeUuid,
+            location: 'location-1',
+          },
+        ],
+        notUsedDniIdentifierType,
         'location-1',
       ),
     ).toThrow(PromotionDocumentMismatchError);
@@ -103,7 +134,14 @@ describe('buildDocumentIdentifierForPromotion', () => {
     try {
       buildDocumentIdentifierForPromotion(
         buildPerson(),
-        [{ identifier: '11223344', identifierType: peruDniPatientIdentifierTypeUuid, location: 'location-1' }],
+        [
+          {
+            identifier: '11223344',
+            identifierType: peruDniPatientIdentifierTypeUuid,
+            location: 'location-1',
+          },
+        ],
+        notUsedDniIdentifierType,
         'location-1',
       );
     } catch (error) {
@@ -119,7 +157,14 @@ describe('buildDocumentIdentifierForPromotion', () => {
   it('recognizes the same document after normalization', () => {
     const identifier = buildDocumentIdentifierForPromotion(
       buildPerson(),
-      [{ identifier: '998 877-66', identifierType: peruDniPatientIdentifierTypeUuid, location: 'location-1' }],
+      [
+        {
+          identifier: '998 877-66',
+          identifierType: peruDniPatientIdentifierTypeUuid,
+          location: 'location-1',
+        },
+      ],
+      notUsedDniIdentifierType,
       'location-1',
     );
 
@@ -132,17 +177,23 @@ describe('buildDocumentIdentifierForPromotion', () => {
         {
           uuid: 'attr-1',
           value: { uuid: documentTypeConceptUuids.dni, display: 'DNI' },
-          attributeType: { uuid: personDocumentTypeAttributeTypeUuid, format: 'org.openmrs.Concept' },
+          attributeType: {
+            uuid: personDocumentTypeAttributeTypeUuid,
+            format: 'org.openmrs.Concept',
+          },
         },
         {
           uuid: 'attr-2',
           value: 'no-es-un-dni',
-          attributeType: { uuid: personDocumentNumberAttributeTypeUuid, format: 'java.lang.String' },
+          attributeType: {
+            uuid: personDocumentNumberAttributeTypeUuid,
+            format: 'java.lang.String',
+          },
         },
       ],
     });
 
-    expect(buildDocumentIdentifierForPromotion(person, [], 'location-1')).toBeNull();
+    expect(buildDocumentIdentifierForPromotion(person, [], notUsedDniIdentifierType, 'location-1')).toBeNull();
   });
 
   it('creates no identifier for undocumented persons', () => {
@@ -150,13 +201,19 @@ describe('buildDocumentIdentifierForPromotion', () => {
       attributes: [
         {
           uuid: 'attr-1',
-          value: { uuid: documentTypeConceptUuids.undocumented, display: 'Sin documento' },
-          attributeType: { uuid: personDocumentTypeAttributeTypeUuid, format: 'org.openmrs.Concept' },
+          value: {
+            uuid: documentTypeConceptUuids.undocumented,
+            display: 'Sin documento',
+          },
+          attributeType: {
+            uuid: personDocumentTypeAttributeTypeUuid,
+            format: 'org.openmrs.Concept',
+          },
         },
       ],
     });
 
-    expect(buildDocumentIdentifierForPromotion(person, [], 'location-1')).toBeNull();
+    expect(buildDocumentIdentifierForPromotion(person, [], notUsedDniIdentifierType, 'location-1')).toBeNull();
   });
 });
 
@@ -207,7 +264,10 @@ describe('applyPersonToRegistrationForm', () => {
 
     try {
       applyPersonToRegistrationForm(
-        buildPerson({ birthdate: '1990-06-14T00:00:00.000+0000', birthdateEstimated: true }),
+        buildPerson({
+          birthdate: '1990-06-14T00:00:00.000+0000',
+          birthdateEstimated: true,
+        }),
         setFieldValue,
         vi.fn(),
       );

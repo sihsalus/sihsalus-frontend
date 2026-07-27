@@ -1,5 +1,5 @@
 import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { getCoreTranslation, showSnackbar } from '@openmrs/esm-framework';
+import { getCoreTranslation, getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { deleteEncounter } from '../../../ward.resource';
@@ -33,7 +33,11 @@ const DeleteEncounterConfirmation: React.FC<DeleteEncounterConfirmationProps> = 
       showSnackbar({
         kind: 'error',
         title: t('errorDeletingNote', 'Error deleting note'),
-        subtitle: e?.responseBody?.error?.translatedMessage ?? e?.responseBody?.error?.message,
+        subtitle: getUserFacingErrorMessage(
+          e,
+          t('errorDeletingNoteMessage', 'No se pudo eliminar la nota. Intente nuevamente.'),
+          { logContext: `Delete inpatient note encounter ${encounterUuid}` },
+        ),
       });
     } finally {
       setIsDeleting(false);

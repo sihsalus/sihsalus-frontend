@@ -165,6 +165,7 @@
   "endingAppointment": "Completing care",
   "endTime": "End Time",
   "errorCreatingAppointmentService": "Error creating appointment service",
+  "errorCreatingAppointmentServiceMessage": "Could not create the appointment service. Please try again.",
   "expected": "Expected",
   "expectedAppointments": "Expected appointments",
   "expectedAppointmentsTab": "Expected",

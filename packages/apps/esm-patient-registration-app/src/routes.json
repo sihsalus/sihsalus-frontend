@@ -8,18 +8,21 @@
     {
       "component": "root",
       "route": "patient-registration",
+      "privileges": "app:opciones.registrarPaciente",
       "online": true,
       "offline": true
     },
     {
       "component": "editPatient",
       "routeRegex": "patient\\/([a-zA-Z0-9\\-]+)\\/edit",
+      "privileges": "app:opciones.registrarPaciente",
       "online": true,
       "offline": true
     },
     {
       "component": "bulkPatientImport",
       "route": "patient-import",
+      "privileges": "Manage Patients",
       "online": true,
       "offline": false
     }
@@ -37,6 +40,7 @@
       "component": "patientPhotoExtension",
       "name": "patient-photo-widget",
       "slot": "patient-photo-slot",
+      "privileges": "View Patients",
       "online": true,
       "offline": true
     },
@@ -69,11 +73,13 @@
   "modals": [
     {
       "name": "cancel-patient-edit-modal",
-      "component": "cancelPatientEditModal"
+      "component": "cancelPatientEditModal",
+      "privileges": "app:opciones.registrarPaciente"
     },
     {
       "name": "delete-identifier-confirmation-modal",
-      "component": "deleteIdentifierConfirmationModal"
+      "component": "deleteIdentifierConfirmationModal",
+      "privileges": "app:opciones.registrarPaciente"
     }
   ]
 }

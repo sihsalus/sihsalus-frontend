@@ -1,4 +1,4 @@
-import { showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type Config } from '../../config-schema';
@@ -114,10 +114,11 @@ export function useTriageVitalsSavedHandler(queueEntry: EmergencyQueueEntry) {
         showSnackbar({
           title: t('errorCompletingTriage', 'Error al completar triaje'),
           kind: 'error',
-          subtitle:
-            error instanceof Error
-              ? error.message
-              : t('errorMovingPatientToAttentionQueue', 'No se pudo enviar el paciente a la cola de atención'),
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('errorMovingPatientToAttentionQueue', 'No se pudo enviar el paciente a la cola de atención'),
+            { logContext: 'Complete emergency triage and transition queue' },
+          ),
         });
       }
     },

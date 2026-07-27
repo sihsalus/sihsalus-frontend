@@ -1,5 +1,12 @@
 import { Button, InlineLoading } from '@carbon/react';
-import { navigate, openmrsFetch, showSnackbar, useConfig, Workspace2 } from '@openmrs/esm-framework';
+import {
+  getUserFacingErrorMessage,
+  navigate,
+  openmrsFetch,
+  showSnackbar,
+  useConfig,
+  Workspace2,
+} from '@openmrs/esm-framework';
 import {
   type DefaultPatientWorkspaceProps,
   type PatientWorkspace2DefinitionProps,
@@ -102,7 +109,11 @@ const FuaEncounterWorkspaceContent: React.FC<FuaEncounterWorkspaceProps> = (prop
 
         setFuaId(matchingFua.uuid);
       } catch (error) {
-        const message = error instanceof Error ? error.message : t('errorLoadingFua', 'Error al cargar FUA');
+        const message = getUserFacingErrorMessage(
+          error,
+          t('errorLoadingFuaMessage', 'No se pudo cargar el FUA. Intente nuevamente.'),
+          { logContext: 'Load FUA for current visit' },
+        );
         setErrorMessage(message);
         showSnackbar({
           title: t('errorLoadingFua', 'Error al cargar FUA'),

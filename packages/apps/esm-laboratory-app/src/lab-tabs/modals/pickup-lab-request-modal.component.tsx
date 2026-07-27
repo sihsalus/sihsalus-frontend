@@ -1,5 +1,11 @@
 import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { type Order, showNotification, showSnackbar, useAbortController } from '@openmrs/esm-framework';
+import {
+  getUserFacingErrorMessage,
+  type Order,
+  showNotification,
+  showSnackbar,
+  useAbortController,
+} from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { setFulfillerStatus, useInvalidateLabOrders } from '../../laboratory.resource';
@@ -35,7 +41,11 @@ const PickupLabRequestModal: React.FC<PickupLabRequestModalProps> = ({ order, cl
           title: t('errorPickingOrder', 'Error picking order'),
           kind: 'error',
           critical: true,
-          description: error?.message,
+          description: getUserFacingErrorMessage(
+            error,
+            t('errorPickingOrderMessage', 'No se pudo tomar la solicitud. Intente nuevamente.'),
+            { logContext: 'Pick up laboratory request' },
+          ),
         });
       },
     );

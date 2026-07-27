@@ -1,5 +1,5 @@
 import { Button, InlineNotification, ModalBody, ModalFooter, ModalHeader, SkeletonText, Tag } from '@carbon/react';
-import { formatDate } from '@openmrs/esm-framework';
+import { formatDate, getUserFacingErrorMessage } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -45,7 +45,11 @@ const FuaHistorialModalContent: React.FC<FuaHistorialModalProps> = ({ closeModal
             <InlineNotification
               kind="error"
               title={t('errorLoadingHistorial', 'Error al cargar historial')}
-              subtitle={error?.message}
+              subtitle={getUserFacingErrorMessage(
+                error,
+                t('errorLoadingHistorialMessage', 'No se pudo cargar el historial. Intente nuevamente.'),
+                { logContext: `Load FUA status history ${fuaRequest.uuid}` },
+              )}
               hideCloseButton
             />
           )}

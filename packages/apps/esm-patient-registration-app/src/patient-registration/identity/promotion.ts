@@ -5,7 +5,8 @@ import {
   parsePatientBirthdate,
 } from '@openmrs/esm-utils';
 
-import { type PatientIdentifier } from '../patient-registration.types';
+import { type PatientIdentifier, type PatientIdentifierType } from '../patient-registration.types';
+import { getIdentifierLocationPayload } from '../identifier-location-behavior';
 import { RegistrationDomainError, registrationErrorCodes } from '../registration-errors';
 import {
   getDocumentTypeDefinitionByConcept,
@@ -151,6 +152,7 @@ export function clearPromotionSelection(freshPatientUuid: string, setFieldValue:
 export function buildDocumentIdentifierForPromotion(
   person: PersonForPromotion,
   identifiersInPayload: Array<PatientIdentifier>,
+  identifierTypes: ReadonlyArray<PatientIdentifierType>,
   location: string,
 ): PatientIdentifier | null {
   const { documentTypeConceptUuid, documentNumber } = getPersonDocument(person);
@@ -189,7 +191,7 @@ export function buildDocumentIdentifierForPromotion(
   return {
     identifier: normalizedNumber,
     identifierType: definition.patientIdentifierTypeUuid,
-    location,
+    ...getIdentifierLocationPayload(definition.patientIdentifierTypeUuid, identifierTypes, location),
     preferred: false,
   };
 }

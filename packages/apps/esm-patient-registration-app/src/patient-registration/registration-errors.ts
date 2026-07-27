@@ -2,6 +2,7 @@ export const registrationErrorCodes = {
   clinicalConfigurationMissing: 'REGISTRATION_CLINICAL_CONFIGURATION_MISSING',
   duplicatePatientDocument: 'REGISTRATION_DUPLICATE_PATIENT_DOCUMENT',
   duplicatePersonDocument: 'REGISTRATION_DUPLICATE_PERSON_DOCUMENT',
+  identifierLocationBehaviorUnknown: 'REGISTRATION_IDENTIFIER_LOCATION_BEHAVIOR_UNKNOWN',
   identifierLocationRequired: 'REGISTRATION_IDENTIFIER_LOCATION_REQUIRED',
   identifierRetryDeleteUnavailable: 'REGISTRATION_IDENTIFIER_RETRY_DELETE_UNAVAILABLE',
   identifierRetryUpdateUnavailable: 'REGISTRATION_IDENTIFIER_RETRY_UPDATE_UNAVAILABLE',

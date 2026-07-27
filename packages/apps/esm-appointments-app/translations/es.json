@@ -167,6 +167,7 @@
   "endingAppointment": "Finalizando atención",
   "endTime": "Hora de finalización",
   "errorCreatingAppointmentService": "Error al crear el servicio de cita",
+  "errorCreatingAppointmentServiceMessage": "No se pudo crear el servicio de cita. Intente nuevamente.",
   "expected": "Esperado",
   "expectedAppointments": "Citas esperadas",
   "expectedAppointmentsTab": "Esperadas",

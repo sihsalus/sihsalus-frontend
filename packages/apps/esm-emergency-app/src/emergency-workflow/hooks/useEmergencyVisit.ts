@@ -10,7 +10,7 @@
  * - Proper error handling and user feedback
  */
 
-import { openmrsFetch, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, openmrsFetch, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Config } from '../../config-schema';
@@ -130,11 +130,13 @@ export function useEmergencyVisit() {
 
         return visitUuid;
       } catch (error: unknown) {
-        const errorMessage = (error as { responseBody?: { error?: { message?: string } } })?.responseBody?.error
-          ?.message;
         showSnackbar({
           title: t('errorCreatingVisit', 'Error al crear visita'),
-          subtitle: errorMessage || t('couldNotCreateVisit', 'No se pudo crear la visita de emergencia'),
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('couldNotCreateVisit', 'No se pudo crear la visita de emergencia. Intente nuevamente.'),
+            { logContext: 'Create emergency visit' },
+          ),
           kind: 'error',
         });
         return null;

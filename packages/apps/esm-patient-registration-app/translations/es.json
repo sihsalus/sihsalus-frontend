@@ -185,6 +185,7 @@
   "identifierInvalidFormat": "El número no cumple con el formato esperado",
   "identifierRetryDeleteError": "Se eliminó un identificador durante un reintento. Recargue al paciente e inténtelo nuevamente.",
   "identifierRetryUpdateError": "Los datos de identificación cambiaron durante un reintento. Recargue al paciente e inténtelo nuevamente.",
+  "identifierLocationBehaviorUnknownError": "La configuración de identificación está incompleta. Comuníquese con el administrador del sistema antes de registrar al paciente.",
   "invalidRegistrationData": "Algunos datos no son válidos. Revise el formulario e inténtelo nuevamente.",
   "identifierTypesEditModeUnavailableSubtitle": "Se muestran los datos de identificación existentes, pero los tipos de identificador no están disponibles. Actualiza la página antes de agregar o cambiar identificadores.",
   "identifierTypesUnavailableSubtitle": "Actualiza la página. Si el problema continúa, verifica que los tipos de identificador del paciente estén configurados y que la sesión esté activa.",

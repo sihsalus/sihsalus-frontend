@@ -17,18 +17,19 @@ import {
   Tile,
 } from '@carbon/react';
 import { Renew, View } from '@carbon/react/icons';
-import { formatDate, openmrsFetch, showSnackbar, usePagination } from '@openmrs/esm-framework';
+import {
+  formatDate,
+  getUserFacingErrorMessage,
+  openmrsFetch,
+  showSnackbar,
+  usePagination,
+} from '@openmrs/esm-framework';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FuaFormatRestURL } from '../constant';
 import useFuaFormats, { type FuaFormat } from '../hooks/useFuaFormats';
-
-const loadHtmlInWindow = (targetWindow: Window, html: string) => {
-  const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-  targetWindow.addEventListener('load', () => URL.revokeObjectURL(url), { once: true });
-  targetWindow.location.href = url;
-};
+import { loadSafeFuaHtmlInWindow } from '../utils/safe-fua-html';
 
 import styles from './fua-request-table.scss';
 
@@ -88,9 +89,13 @@ const FuaFormatTable: React.FC = () => {
         });
 
         const html = await response.text();
-        loadHtmlInWindow(fuaWindow, html);
+        loadSafeFuaHtmlInWindow(fuaWindow, html);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : t('unknownError', 'Error desconocido');
+        const errorMessage = getUserFacingErrorMessage(
+          error,
+          t('errorLoadingFuaMessage', 'No se pudo cargar el FUA. Intente nuevamente.'),
+          { logContext: `Load FUA format ${fuaFormat.uuid}` },
+        );
         fuaWindow.document.body.textContent = errorMessage;
         showSnackbar({
           kind: 'error',

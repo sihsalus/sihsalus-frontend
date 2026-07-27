@@ -6,11 +6,13 @@
   "pages": [
     {
       "component": "root",
-      "route": "fua-request"
+      "route": "fua-request",
+      "privileges": "app:home.fua"
     },
     {
       "component": "fuaViewerPage",
-      "route": "fua-viewer"
+      "route": "fua-viewer",
+      "privileges": "app:home.fua"
     }
   ],
   "extensions": [
@@ -125,17 +127,20 @@
     {
       "name": "fua-encounter-workspace",
       "component": "fuaEncounterWorkspace",
-      "window": "patient-chart-fua"
+      "window": "patient-chart-fua",
+      "privileges": "app:home.fua.editar"
     },
     {
       "name": "fua-viewer-workspace",
       "component": "fuaViewerWorkspace",
-      "window": "patient-chart-fua"
+      "window": "patient-chart-fua",
+      "privileges": "app:home.fua"
     },
     {
       "name": "patient-fuas-workspace",
       "component": "patientFuasWorkspace",
-      "window": "patient-chart-fua"
+      "window": "patient-chart-fua",
+      "privileges": "app:home.fua"
     }
   ],
   "workspaceWindows2": [
@@ -151,19 +156,23 @@
   "modals": [
     {
       "name": "change-fua-status-modal",
-      "component": "changeFuaStatusModal"
+      "component": "changeFuaStatusModal",
+      "privileges": "app:home.fua.editar"
     },
     {
       "name": "cancel-fua-modal",
-      "component": "cancelFuaModal"
+      "component": "cancelFuaModal",
+      "privileges": "app:home.fua.editar"
     },
     {
       "name": "fua-historial-modal",
-      "component": "fuaHistorialModal"
+      "component": "fuaHistorialModal",
+      "privileges": "app:home.fua"
     },
     {
       "name": "fua-accreditation-warning-modal",
-      "component": "fuaAccreditationWarningModal"
+      "component": "fuaAccreditationWarningModal",
+      "privileges": "app:home.fua"
     }
   ]
 }

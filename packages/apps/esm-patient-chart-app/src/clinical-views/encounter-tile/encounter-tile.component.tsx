@@ -1,5 +1,5 @@
 import { CodeSnippetSkeleton, Column, Layer, Tile } from '@carbon/react';
-import { useLayoutType } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, useLayoutType } from '@openmrs/esm-framework';
 import React, { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -52,7 +52,15 @@ const EncounterData: React.FC<{
         {columns.map((column) => (
           <div key={column.key}>
             <span className={styles.tileTitle}>{t(column.title)}</span>
-            <span className={styles.tileValue}>{error?.message}</span>
+            <span className={styles.tileValue}>
+              {error
+                ? getUserFacingErrorMessage(
+                    error,
+                    t('errorLoadingEncounterSummary', 'No se pudo cargar el resumen. Intente nuevamente.'),
+                    { logContext: `Load encounter summary for ${encounterType}` },
+                  )
+                : t('noEncounterData', 'Sin datos registrados')}
+            </span>
           </div>
         ))}
       </div>

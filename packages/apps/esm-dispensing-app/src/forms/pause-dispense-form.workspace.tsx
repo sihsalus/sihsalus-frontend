@@ -2,6 +2,7 @@ import { Button, ComboBox, Form, InlineLoading } from '@carbon/react';
 import {
   ExtensionSlot,
   getCoreTranslation,
+  getUserFacingErrorMessage,
   ResponsiveWrapper,
   showSnackbar,
   useConfig,
@@ -104,7 +105,11 @@ const PauseDispenseForm: React.FC<Workspace2DefinitionProps<PauseDispenseFormPro
               mode === 'enter' ? 'Error pausing medication dispense.' : 'Error updating dispense record',
             ),
             kind: 'error',
-            subtitle: error?.message,
+            subtitle: getUserFacingErrorMessage(
+              error,
+              t('medicationDispenseSaveErrorMessage', 'No se pudo guardar la dispensación. Intente nuevamente.'),
+              { logContext: 'Pause medication dispense' },
+            ),
           });
           setIsSubmitting(false);
         });

@@ -1,5 +1,5 @@
 import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { showSnackbar } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -29,7 +29,11 @@ const MarkPatientAlive: React.FC<MarkPatientAliveProps> = ({ closeModal, patient
           title: t('errorMarkingPatientAlive', 'Error marking patient alive'),
           kind: 'error',
           isLowContrast: false,
-          subtitle: error?.message,
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('errorMarkingPatientAliveMessage', 'No se pudo actualizar el estado vital. Intente nuevamente.'),
+            { logContext: 'Mark patient alive' },
+          ),
         });
       });
   }, [closeModal, patientUuid, t]);

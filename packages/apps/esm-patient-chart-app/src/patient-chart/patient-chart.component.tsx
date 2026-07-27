@@ -1,4 +1,11 @@
-import { ExtensionSlot, setCurrentVisit, showSnackbar, useLeftNav, usePatient } from '@openmrs/esm-framework';
+import {
+  ExtensionSlot,
+  getUserFacingErrorMessage,
+  setCurrentVisit,
+  showSnackbar,
+  useLeftNav,
+  usePatient,
+} from '@openmrs/esm-framework';
 import {
   getPatientChartStore,
   type PatientWorkspaceGroupProps,
@@ -8,6 +15,7 @@ import { ComponentContext } from '@openmrs/esm-react-utils';
 import { launchWorkspaceGroup2, useWorkspaces, WorkspaceContainer } from '@openmrs/esm-styleguide';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 
 import { moduleName, spaBasePath } from '../constants';
@@ -53,6 +61,7 @@ async function launchPatientChartWorkspaceGroup(
 }
 
 const PatientChart: React.FC = () => {
+  const { t } = useTranslation();
   const { patientUuid, view: encodedView } = useParams();
   const view = encodedView ? decodeURIComponent(encodedView) : undefined;
   const { isLoading: isLoadingPatient, patient } = usePatient(patientUuid);
@@ -182,12 +191,16 @@ const PatientChart: React.FC = () => {
     void launchLatestWorkspaceGroup().catch((error) => {
       showSnackbar({
         kind: 'error',
-        title: 'Error launching workspace group',
-        subtitle: error?.message,
+        title: t('errorLoadingPatientChart', 'Error al cargar la historia clínica'),
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('errorLoadingPatientChartMessage', 'No se pudo cargar la historia clínica. Intente nuevamente.'),
+          { logContext: 'Launch patient chart workspace group' },
+        ),
         isLowContrast: false,
       });
     });
-  }, [hasVisibleLegacyWorkspace, isLoadingPatient, launchLatestWorkspaceGroup, patientChartGroupProps, patientUuid]);
+  }, [hasVisibleLegacyWorkspace, isLoadingPatient, launchLatestWorkspaceGroup, patientChartGroupProps, patientUuid, t]);
 
   return (
     <>

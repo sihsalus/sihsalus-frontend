@@ -3,25 +3,38 @@ import { getOpenmrsBaseUrl, getSpaBaseUrl } from './e2e-urls.mjs';
 
 const spaBase = getSpaBaseUrl('http://localhost:8090/openmrs/spa');
 const openmrsBase = getOpenmrsBaseUrl('http://localhost:8090/openmrs/spa');
-const username = process.env.E2E_USERNAME ?? 'admin';
-const password = process.env.E2E_PASSWORD ?? 'Admin123';
+const username = process.env.E2E_USERNAME;
+const password = process.env.E2E_PASSWORD;
+if (!username || !password) {
+  throw new Error('E2E_USERNAME and E2E_PASSWORD must be configured.');
+}
 
 const browser = await chromium.launch({ headless: true });
-const context = await browser.newContext({ viewport: { width: 1440, height: 1100 }, locale: 'es-PE' });
+const context = await browser.newContext({
+  viewport: { width: 1440, height: 1100 },
+  locale: 'es-PE',
+});
 
 const authorization = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
-const api = await request.newContext({ extraHTTPHeaders: { Authorization: authorization } });
+const api = await request.newContext({
+  extraHTTPHeaders: { Authorization: authorization },
+});
 const locations = await api.get(`${openmrsBase}/ws/rest/v1/location?v=default&limit=1`);
 const firstLocation = locations.ok() ? (await locations.json()).results?.[0]?.uuid : undefined;
 await api.post(`${openmrsBase}/ws/rest/v1/session`, {
-  data: { ...(firstLocation ? { sessionLocation: firstLocation } : {}), locale: 'es' },
+  data: {
+    ...(firstLocation ? { sessionLocation: firstLocation } : {}),
+    locale: 'es',
+  },
   headers: { Authorization: authorization, 'Content-Type': 'application/json' },
 });
 await context.addCookies((await api.storageState()).cookies);
 await api.dispose();
 
 const page = await context.newPage();
-await page.goto(`${spaBase}/patient-registration`, { waitUntil: 'domcontentloaded' });
+await page.goto(`${spaBase}/patient-registration`, {
+  waitUntil: 'domcontentloaded',
+});
 await page.waitForLoadState('networkidle', { timeout: 45_000 }).catch(() => null);
 await page.waitForTimeout(2000);
 

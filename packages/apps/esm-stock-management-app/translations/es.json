@@ -140,6 +140,7 @@
   "errorDeletingUserScope": "Error al eliminar un alcance de usuario",
   "errorEditingStockItem": "Error al editar un artículo de inventario",
   "errorFetchingStockSourceTypes": "Error al obtener los tipos de fuente de inventario",
+  "errorFetchingStockSourceTypesMessage": "No se pudieron cargar los tipos de origen. Intente nuevamente.",
   "errorLoadingStockOperation": "Error al cargar el artículo de inventario",
   "errorLoadingStockOperationTypes": "Error al cargar los tipos de operación de inventario",
   "errorPrintingStockOperation": "Error al imprimir la operación de inventario",

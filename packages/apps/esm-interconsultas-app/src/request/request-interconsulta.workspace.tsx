@@ -12,6 +12,7 @@ import {
   TextArea,
 } from '@carbon/react';
 import {
+  getUserFacingErrorMessage,
   showSnackbar,
   useAbortController,
   useConfig,
@@ -116,7 +117,11 @@ const RequestInterconsultaWorkspace: React.FC<RequestInterconsultaWorkspaceCompo
       showSnackbar({
         kind: 'error',
         title: t('errorCreatingInterconsulta', 'Error al solicitar la interconsulta'),
-        subtitle: error instanceof Error ? error.message : undefined,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('errorCreatingInterconsultaMessage', 'No se pudo solicitar la interconsulta. Intente nuevamente.'),
+          { logContext: 'Create interconsultation request' },
+        ),
       });
     } finally {
       setIsSubmitting(false);

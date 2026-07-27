@@ -8,6 +8,7 @@
     {
       "component": "dispensing",
       "route": "dispensing",
+      "privileges": "app:home.farmacia",
       "online": true,
       "offline": true
     }
@@ -25,6 +26,7 @@
       "name": "patient-diagnoses",
       "component": "patientDiagnoses",
       "slot": "dispensing-condition-and-diagnoses",
+      "privileges": "app:home.farmacia",
       "online": true,
       "offline": true
     },
@@ -32,6 +34,7 @@
       "name": "patient-conditions",
       "component": "patientConditions",
       "slot": "dispensing-condition-and-diagnoses",
+      "privileges": "app:home.farmacia",
       "online": true,
       "offline": true
     },
@@ -58,59 +61,70 @@
     {
       "name": "dispense-action-button",
       "slot": "prescription-action-button-slot",
-      "component": "dispenseActionButton"
+      "component": "dispenseActionButton",
+      "privileges": "app:home.farmacia.editar"
     },
     {
       "name": "pause-action-button",
       "slot": "prescription-action-button-slot",
-      "component": "pauseActionButton"
+      "component": "pauseActionButton",
+      "privileges": "app:home.farmacia.editar"
     },
     {
       "name": "close-action-button",
       "slot": "prescription-action-button-slot",
-      "component": "closeActionButton"
+      "component": "closeActionButton",
+      "privileges": "app:home.farmacia.editar"
     }
   ],
   "workspaces2": [
     {
       "name": "close-dispense-workspace",
       "component": "closeDispenseWorkspace",
-      "window": "dispensing-window"
+      "window": "dispensing-window",
+      "privileges": "app:home.farmacia.editar"
     },
     {
       "name": "pause-dispense-workspace",
       "component": "pauseDispenseWorkspace",
-      "window": "dispensing-window"
+      "window": "dispensing-window",
+      "privileges": "app:home.farmacia.editar"
     },
     {
       "name": "dispense-workspace",
       "component": "dispenseWorkspace",
-      "window": "dispensing-window"
+      "window": "dispensing-window",
+      "privileges": "app:home.farmacia.editar"
     },
     {
       "name": "dispensing-patient-search-workspace",
       "component": "@sihsalus/esm-patient-search-app#patientSearchWorkspace2",
-      "window": "fill-prescription-window"
+      "window": "fill-prescription-window",
+      "privileges": "app:home.farmacia.editar"
     },
     {
       "name": "dispensing-start-visit-workspace",
       "component": "@sihsalus/esm-patient-chart-app#startVisitWorkspace",
-      "window": "fill-prescription-window"
+      "window": "fill-prescription-window",
+      "privileges": "app:home.farmacia.editar"
     },
     {
       "name": "dispensing-order-basket-workspace",
       "component": "@sihsalus/esm-patient-orders-app#orderBasketWorkspace",
-      "window": "fill-prescription-window"
+      "window": "fill-prescription-window",
+      "privileges": "app:home.farmacia.editar"
     },
     {
       "name": "dispensing-order-basket-add-drug-order-workspace",
       "component": "@sihsalus/esm-patient-medications-app#exportedAddDrugOrderWorkspace",
-      "window": "fill-prescription-window"
+      "window": "fill-prescription-window",
+      "privileges": "app:home.farmacia.editar"
     },
     {
       "name": "dispensing-order-basket-add-allergy-workspace",
       "component": "@sihsalus/esm-patient-allergies-app#exportedAllergyFormWorkspace",
-      "window": "fill-prescription-window"
+      "window": "fill-prescription-window",
+      "privileges": "app:home.farmacia.editar"
     }
   ],
   "workspaceWindows2": [
@@ -132,19 +146,23 @@
   "modals": [
     {
       "name": "prescription-print-preview-modal",
-      "component": "printPrescriptionPreviewModal"
+      "component": "printPrescriptionPreviewModal",
+      "privileges": "app:home.farmacia"
     },
     {
       "name": "delete-confirm-modal",
-      "component": "deleteConfirmModal"
+      "component": "deleteConfirmModal",
+      "privileges": "app:home.farmacia.editar"
     },
     {
       "name": "duplicate-dispense-modal",
-      "component": "duplicateDispenseModal"
+      "component": "duplicateDispenseModal",
+      "privileges": "app:home.farmacia.editar"
     },
     {
       "name": "on-prescription-filled-modal",
-      "component": "onPrescriptionFilledModal"
+      "component": "onPrescriptionFilledModal",
+      "privileges": "app:home.farmacia.editar"
     }
   ]
 }

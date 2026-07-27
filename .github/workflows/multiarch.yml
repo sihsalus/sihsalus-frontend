@@ -61,7 +61,11 @@ jobs:
           cache-from: |
             type=gha,scope=release-amd64
             type=gha,scope=multiarch-arm64
-          cache-to: type=gha,scope=multiarch-arm64,mode=max
+          # Cache export is an optimization, not a release artifact. GitHub's
+          # cache service can fail after the multi-platform manifest has
+          # already been pushed; keep build/push failures hard while allowing
+          # only cache-export failures to be non-fatal.
+          cache-to: type=gha,scope=multiarch-arm64,mode=max,ignore-error=true
 
       - name: Scan published image
         uses: aquasecurity/trivy-action@v0.36.0

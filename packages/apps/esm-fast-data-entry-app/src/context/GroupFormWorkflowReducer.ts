@@ -1,11 +1,12 @@
 import { navigate } from '@openmrs/esm-framework';
 import { v4 as uuid } from 'uuid';
 import { initialWorkflowState } from './FormWorkflowContext';
+import { getWorkflowStorageKey, removeLegacyPersistentWorkflow } from './workflow-storage';
 
 export const fdeGroupWorkflowStorageVersion = '1.0.5';
 export const fdeGroupWorkflowStorageName = 'openmrs:fastDataEntryGroupWorkflowState';
 const persistData = (data) => {
-  localStorage.setItem(fdeGroupWorkflowStorageName + ':' + data.userUuid, JSON.stringify(data));
+  sessionStorage.setItem(fdeGroupWorkflowStorageName + ':' + data.userUuid, JSON.stringify(data));
 };
 
 const initialFormState = {
@@ -25,7 +26,12 @@ const initialFormState = {
 const reducer = (state, action) => {
   switch (action.type) {
     case 'INITIALIZE_WORKFLOW_STATE': {
-      const savedData = localStorage.getItem(fdeGroupWorkflowStorageName + ':' + action.userUuid);
+      const storageKey = getWorkflowStorageKey(fdeGroupWorkflowStorageName, action.userUuid);
+      // Cohort membership, patient, encounter and visit UUIDs are clinical
+      // context. Remove the legacy persistent copy and retain them only for
+      // this authenticated browser session.
+      removeLegacyPersistentWorkflow(fdeGroupWorkflowStorageName, action.userUuid);
+      const savedData = sessionStorage.getItem(storageKey);
       const savedDataObject = savedData ? JSON.parse(savedData) : {};
       let newState: { [key: string]: unknown } = {};
       if (savedData && savedDataObject['_storageVersion'] === fdeGroupWorkflowStorageVersion) {

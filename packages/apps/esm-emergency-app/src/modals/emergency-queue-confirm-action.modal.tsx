@@ -1,5 +1,5 @@
 import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { type FetchResponse, showSnackbar } from '@openmrs/esm-framework';
+import { type FetchResponse, getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
 import React, { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
@@ -66,7 +66,11 @@ const EmergencyQueueConfirmActionModal: React.FC<EmergencyQueueConfirmActionModa
         showSnackbar({
           title: submitFailureTitle,
           kind: 'error',
-          subtitle: error?.message,
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('emergencyQueueActionFailedMessage', 'No se pudo completar la acción. Intente nuevamente.'),
+            { logContext: `Emergency queue action for ${queueEntry.uuid}` },
+          ),
         });
       })
       .finally(() => {

@@ -8,7 +8,13 @@
 
 import { Button, Form, InlineLoading, Stack, TextArea } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { age, type DefaultWorkspaceProps, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import {
+  age,
+  type DefaultWorkspaceProps,
+  getUserFacingErrorMessage,
+  showSnackbar,
+  useConfig,
+} from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -105,7 +111,11 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEn
       } catch (error) {
         showSnackbar({
           title: t('errorSavingAttention', 'Error al guardar atención'),
-          subtitle: error?.message || t('unknownError', 'Error desconocido'),
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('errorSavingAttentionMessage', 'No se pudo guardar la atención. Intente nuevamente.'),
+            { logContext: `Save emergency attention for queue entry ${queueEntry.uuid}` },
+          ),
           kind: 'error',
         });
       } finally {

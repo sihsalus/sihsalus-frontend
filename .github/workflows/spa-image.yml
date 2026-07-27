@@ -57,4 +57,5 @@ jobs:
           sbom: true
           provenance: mode=max
           cache-from: type=gha,scope=release-amd64
-          cache-to: type=gha,scope=release-amd64,mode=max
+          # Cache export is an optimization; keep the image build itself strict.
+          cache-to: type=gha,scope=release-amd64,mode=max,ignore-error=true

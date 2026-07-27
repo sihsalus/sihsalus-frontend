@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { type ConfigSchema } from '../config-schema';
 import { hardNavigate } from '../navigation';
 
+import { clearSensitiveBrowserState } from './clear-sensitive-browser-state';
 import { performLogout } from './logout.resource';
 
 const openmrsSpaBasePlaceholder = '$' + '{openmrsSpaBase}';
@@ -19,8 +20,9 @@ const RedirectLogout: React.FC = () => {
   const session = useSession();
 
   useEffect(() => {
-    clearHistory();
     if (!session.authenticated || !isLoginEnabled) {
+      clearHistory();
+      clearSensitiveBrowserState();
       redirectAfterLogout(config);
     } else {
       performLogout()
@@ -33,6 +35,8 @@ const RedirectLogout: React.FC = () => {
             sessionId: '',
           });
 
+          clearHistory();
+          clearSensitiveBrowserState();
           redirectAfterLogout(config);
         })
         .catch((error) => {

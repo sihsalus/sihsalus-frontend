@@ -29,7 +29,7 @@ import {
 } from '@carbon/react';
 import { CheckmarkFilled, SendFilled, User, UserFollow } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { age, OpenmrsDatePicker, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { age, getUserFacingErrorMessage, OpenmrsDatePicker, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import {
   calendarDateToLocalDate,
   estimatePatientBirthdateFromAge,
@@ -540,9 +540,11 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
           title: t('errorRegisteringPatient', 'Error al registrar paciente'),
           subtitle: isExpiredSession
             ? t('sessionExpiredError', 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.')
-            : error instanceof Error
-              ? error.message
-              : t('unknownError', 'Error desconocido'),
+            : getUserFacingErrorMessage(
+                error,
+                t('patientRegistrationFailedMessage', 'No se pudo registrar al paciente. Intente nuevamente.'),
+                { logContext: 'Emergency patient registration' },
+              ),
           kind: 'error',
         });
       } finally {
@@ -641,9 +643,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                                 {patient.person?.personName?.display || patient.display}
                               </p>
                               <div className={styles.patientResultMeta}>
-                                <span>
-                                  {patient.person?.birthdate ? (age(patient.person.birthdate) ?? '?') : '?'}
-                                </span>
+                                <span>{patient.person?.birthdate ? (age(patient.person.birthdate) ?? '?') : '?'}</span>
                                 <span className={styles.separator}>|</span>
                                 <span>{formatGenderLabel(patient.person?.gender) || t('unknown', 'Desconocido')}</span>
                                 {preferredIdentifier && (
@@ -693,7 +693,11 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                 lowContrast
                 hideCloseButton
                 title={t('errorSearching', 'Error en búsqueda')}
-                subtitle={fetchError.message}
+                subtitle={getUserFacingErrorMessage(
+                  fetchError,
+                  t('errorSearchingMessage', 'No se pudo completar la búsqueda. Intente nuevamente.'),
+                  { logContext: 'Emergency patient search' },
+                )}
               />
             )}
 

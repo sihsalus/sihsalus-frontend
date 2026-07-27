@@ -1,5 +1,5 @@
 import { InlineNotification } from '@carbon/react';
-import { useAppContext, useFeatureFlag } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, useAppContext, useFeatureFlag } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -77,10 +77,11 @@ const Ward = ({ wardBeds, wardUnassignedPatients }: { wardBeds: ReactNode; wardU
           kind="error"
           lowContrast={true}
           title={t('errorLoadingWardLocation', 'Error loading ward location')}
-          subtitle={
-            errorLoadingAdmissionLocation?.message ??
-            t('invalidWardLocation', 'Invalid ward location: {{location}}', { location: location?.display ?? '' })
-          }
+          subtitle={getUserFacingErrorMessage(
+            errorLoadingAdmissionLocation,
+            t('errorLoadingWardLocationMessage', 'No se pudo cargar la UPSS de hospitalización. Intente nuevamente.'),
+            { logContext: `Load ward location ${location?.uuid ?? 'unknown'}` },
+          )}
         />
       )}
       {errorLoadingInpatientAdmissions && (
@@ -88,7 +89,11 @@ const Ward = ({ wardBeds, wardUnassignedPatients }: { wardBeds: ReactNode; wardU
           kind="error"
           lowContrast={true}
           title={t('errorLoadingPatients', 'Error loading admitted patients')}
-          subtitle={errorLoadingInpatientAdmissions?.message}
+          subtitle={getUserFacingErrorMessage(
+            errorLoadingInpatientAdmissions,
+            t('errorLoadingPatientsMessage', 'No se pudieron cargar los pacientes hospitalizados. Intente nuevamente.'),
+            { logContext: 'Load inpatient admissions' },
+          )}
         />
       )}
       <div ref={scrollToLoadMoreTrigger}></div>

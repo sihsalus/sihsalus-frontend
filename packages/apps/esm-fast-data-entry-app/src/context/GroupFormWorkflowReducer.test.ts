@@ -34,6 +34,7 @@ const buildState = (formStateOverrides = {}, rootStateOverrides = {}) => ({
 describe('GroupFormWorkflowReducer', () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
   });
 
   afterEach(() => {
@@ -56,14 +57,14 @@ describe('GroupFormWorkflowReducer', () => {
       visits: {},
     });
 
-    expect(JSON.parse(localStorage.getItem(`${fdeGroupWorkflowStorageName}:user-1`))).toMatchObject({
+    expect(JSON.parse(sessionStorage.getItem(`${fdeGroupWorkflowStorageName}:user-1`))).toMatchObject({
       _storageVersion: fdeGroupWorkflowStorageVersion,
       activeFormUuid: 'group-form',
     });
   });
 
   it('restores a saved workflow and derives the current patient and visit state', () => {
-    localStorage.setItem(
+    sessionStorage.setItem(
       `${fdeGroupWorkflowStorageName}:user-1`,
       JSON.stringify({
         _storageVersion: fdeGroupWorkflowStorageVersion,
@@ -97,6 +98,20 @@ describe('GroupFormWorkflowReducer', () => {
       activeVisitUuid: 'visit-a',
       activeSessionUuid: 'generated-session-uuid',
     });
+  });
+
+  it('discards legacy persistent group and patient workflow state', () => {
+    const storageKey = `${fdeGroupWorkflowStorageName}:user-1`;
+    localStorage.setItem(storageKey, JSON.stringify({ groupMembers: ['legacy-patient'] }));
+
+    reducer(initialWorkflowState, {
+      type: 'INITIALIZE_WORKFLOW_STATE',
+      activeFormUuid: 'group-form',
+      userUuid: 'user-1',
+    });
+
+    expect(localStorage.getItem(storageKey)).toBeNull();
+    expect(sessionStorage.getItem(storageKey)).not.toContain('legacy-patient');
   });
 
   it('stores the selected group and clears the active patient state', () => {

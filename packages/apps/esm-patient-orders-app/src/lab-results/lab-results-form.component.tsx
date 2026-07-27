@@ -1,6 +1,13 @@
 import { Button, ButtonSet, Form, InlineLoading, InlineNotification, Stack } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { restBaseUrl, showSnackbar, useAbortController, useLayoutType, Workspace2 } from '@openmrs/esm-framework';
+import {
+  getUserFacingErrorMessage,
+  restBaseUrl,
+  showSnackbar,
+  useAbortController,
+  useLayoutType,
+  Workspace2,
+} from '@openmrs/esm-framework';
 import {
   type DefaultPatientWorkspaceProps,
   type Order,
@@ -255,7 +262,11 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
     } catch (err) {
       showNotification(
         'error',
-        err instanceof Error ? err.message : t('errorSavingLabResults', 'Error saving lab results'),
+        getUserFacingErrorMessage(
+          err,
+          t('errorSavingLabResultsMessage', 'No se pudieron guardar los resultados. Intente nuevamente.'),
+          { logContext: 'Save laboratory results' },
+        ),
       );
     } finally {
       setShowEmptyFormErrorNotification(false);

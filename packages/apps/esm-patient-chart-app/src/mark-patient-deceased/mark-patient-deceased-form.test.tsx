@@ -245,7 +245,7 @@ describe('MarkPatientDeceasedForm', () => {
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: false,
       kind: 'error',
-      subtitle: mockError.message,
+      subtitle: 'No se pudo registrar el fallecimiento. Intente nuevamente.',
       title: 'Error marking patient deceased',
     });
     consoleError.mockRestore();

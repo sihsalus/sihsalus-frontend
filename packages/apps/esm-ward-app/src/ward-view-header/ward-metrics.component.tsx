@@ -1,5 +1,5 @@
-import { showNotification, useAppContext, useFeatureFlag } from '@openmrs/esm-framework';
-import React, { useMemo } from 'react';
+import { getUserFacingErrorMessage, showNotification, useAppContext, useFeatureFlag } from '@openmrs/esm-framework';
+import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { WardMetricType, type WardViewContext } from '../types';
 import { getWardMetricNameTranslation, getWardMetrics } from '../ward-view/ward-view.resource';
@@ -29,15 +29,21 @@ const WardMetrics: React.FC<WardMetricsProps> = ({
     [wardPatientGroupDetails],
   );
 
-  if (!wardPatientGroupDetails) return <></>;
+  useEffect(() => {
+    if (error) {
+      showNotification({
+        kind: 'error',
+        title: t('errorLoadingBedDetails', 'Error loading bed details'),
+        description: getUserFacingErrorMessage(
+          error,
+          t('errorLoadingBedDetailsMessage', 'No se pudieron cargar los datos de camas. Intente nuevamente.'),
+          { logContext: 'Load ward bed metrics' },
+        ),
+      });
+    }
+  }, [error, t]);
 
-  if (error) {
-    showNotification({
-      kind: 'error',
-      title: t('errorLoadingBedDetails', 'Error loading bed details'),
-      description: error.message,
-    });
-  }
+  if (!wardPatientGroupDetails) return <></>;
 
   return (
     <div className={styles.metricsContainer}>

@@ -14,12 +14,18 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { chromium } from '@playwright/test';
 
-const BASE_URL = 'http://gidis-hsc-dev.inf.pucp.edu.pe/openmrs/spa';
-const USERNAME = 'admin';
-const PASSWORD = 'Admin123';
-// Pacientes de prueba obtenidos via API
-const FEMALE_PATIENT_UUID = '19af6b94-7114-47ef-831d-cc63c8601d67'; // María Paola REYES ORTIZ
-const CHILD_PATIENT_UUID = 'e222fb7f-9dad-4c2c-8b2b-98b79699e33c'; // María Beatriz RAMOS CHOQUE
+const BASE_URL = process.env.E2E_BASE_URL;
+const USERNAME = process.env.E2E_USER_ADMIN_USERNAME;
+const PASSWORD = process.env.E2E_USER_ADMIN_PASSWORD;
+const FEMALE_PATIENT_UUID = process.env.E2E_FEMALE_PATIENT_UUID;
+const CHILD_PATIENT_UUID = process.env.E2E_CHILD_PATIENT_UUID;
+
+if (!BASE_URL || !USERNAME || !PASSWORD || !FEMALE_PATIENT_UUID || !CHILD_PATIENT_UUID) {
+  throw new Error(
+    'Configure E2E_BASE_URL, E2E_USER_ADMIN_USERNAME, E2E_USER_ADMIN_PASSWORD, ' +
+      'E2E_FEMALE_PATIENT_UUID and E2E_CHILD_PATIENT_UUID with synthetic test data.',
+  );
+}
 
 const OUTPUT_DIR = path.join(__dirname, 'output');
 
@@ -83,7 +89,10 @@ async function main() {
   // Helper screenshot
   async function shot(name: string) {
     await page.waitForTimeout(1500);
-    await page.screenshot({ path: path.join(OUTPUT_DIR, `${name}.png`), fullPage: false });
+    await page.screenshot({
+      path: path.join(OUTPUT_DIR, `${name}.png`),
+      fullPage: false,
+    });
     console.log(`Screenshot: ${name}`);
   }
 
@@ -106,10 +115,22 @@ async function main() {
 
   // Sub-módulos de Salud Materna
   const maternalSubModules: Array<{ label: string; keywords: string[] }> = [
-    { label: '03-prenatal', keywords: ['Prenatal', 'Control Prenatal', 'Atención Prenatal'] },
-    { label: '04-parto-puerperio', keywords: ['Parto', 'Labor', 'Labour', 'Puerperio', 'Postparto'] },
-    { label: '05-planificacion-familiar', keywords: ['Planificación', 'Family Planning', 'Planificacion'] },
-    { label: '06-prevencion-cancer', keywords: ['Cáncer', 'Cancer', 'Prevención'] },
+    {
+      label: '03-prenatal',
+      keywords: ['Prenatal', 'Control Prenatal', 'Atención Prenatal'],
+    },
+    {
+      label: '04-parto-puerperio',
+      keywords: ['Parto', 'Labor', 'Labour', 'Puerperio', 'Postparto'],
+    },
+    {
+      label: '05-planificacion-familiar',
+      keywords: ['Planificación', 'Family Planning', 'Planificacion'],
+    },
+    {
+      label: '06-prevencion-cancer',
+      keywords: ['Cáncer', 'Cancer', 'Prevención'],
+    },
   ];
 
   for (const mod of maternalSubModules) {
@@ -152,9 +173,15 @@ async function main() {
 
   const credSubModules: Array<{ label: string; urlPath: string }> = [
     { label: '08-cred-controles', urlPath: 'cred-dashboard' },
-    { label: '09-cred-vacunacion', urlPath: 'child-immunization-schedule-dashboard' },
+    {
+      label: '09-cred-vacunacion',
+      urlPath: 'child-immunization-schedule-dashboard',
+    },
     { label: '10-cred-atencion-neonatal', urlPath: 'neonatal-care-dashboard' },
-    { label: '11-cred-cuidado-nino-sano', urlPath: 'well-child-care-dashboard' },
+    {
+      label: '11-cred-cuidado-nino-sano',
+      urlPath: 'well-child-care-dashboard',
+    },
   ];
 
   for (const mod of credSubModules) {
@@ -169,7 +196,9 @@ async function main() {
   // MÓDULO WARD - Hospitalización Materna
   // ─────────────────────────────────────────────────────────────────────────────
 
-  await page.goto(`${BASE_URL}/maternal-ward`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE_URL}/maternal-ward`, {
+    waitUntil: 'domcontentloaded',
+  });
   await page.waitForLoadState('networkidle');
   await shot('12-ward-hospitalizacion-materna');
 
@@ -187,7 +216,9 @@ async function main() {
   // MÓDULO ATENCIÓN AMBULATORIA / COLA DE ESPERA
   // ─────────────────────────────────────────────────────────────────────────────
 
-  await page.goto(`${BASE_URL}/service-queues`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE_URL}/service-queues`, {
+    waitUntil: 'domcontentloaded',
+  });
   await page.waitForLoadState('networkidle');
   await shot('14-cola-atencion');
 
@@ -195,7 +226,9 @@ async function main() {
   // Módulo de Visitas Activas
   // ─────────────────────────────────────────────────────────────────────────────
 
-  await page.goto(`${BASE_URL}/active-visits`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE_URL}/active-visits`, {
+    waitUntil: 'domcontentloaded',
+  });
   await page.waitForLoadState('networkidle');
   await shot('15-visitas-activas');
 

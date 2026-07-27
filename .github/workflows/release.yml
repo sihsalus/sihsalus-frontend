@@ -151,7 +151,9 @@ jobs:
             GIT_SHA=${{ steps.version.outputs.git_sha }}
             BUILD_TIME=${{ steps.version.outputs.build_time }}
           cache-from: type=gha,scope=release-amd64
-          cache-to: type=gha,scope=release-amd64,mode=max
+          # Cache export is an optimization. A transient GitHub cache outage
+          # must not invalidate an image that built and pushed successfully.
+          cache-to: type=gha,scope=release-amd64,mode=max,ignore-error=true
 
       - name: Scan immutable image before promotion
         uses: aquasecurity/trivy-action@v0.36.0

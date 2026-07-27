@@ -2,6 +2,7 @@ import { Button, Column, Form, InlineLoading, InlineNotification, Row, Stack, Te
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   getCoreTranslation,
+  getUserFacingErrorMessage,
   ResponsiveWrapper,
   showSnackbar,
   translateFrom,
@@ -122,7 +123,11 @@ const WardPatientNotesWorkspace: React.FC<WardPatientWorkspaceDefinition> = ({
           showSnackbar({
             isLowContrast: false,
             kind: 'error',
-            subtitle: err?.message,
+            subtitle: getUserFacingErrorMessage(
+              err,
+              t('patientNoteSaveErrorMessage', 'No se pudo guardar la nota. Intente nuevamente.'),
+              { logContext: 'Create inpatient note' },
+            ),
             title: t('patientNoteSaveError', 'Error saving patient note'),
           });
         })

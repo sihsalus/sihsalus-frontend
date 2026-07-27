@@ -11,7 +11,7 @@ import {
   TextArea,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ResponsiveWrapper, showSnackbar, useAppContext } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, ResponsiveWrapper, showSnackbar, useAppContext } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -167,7 +167,14 @@ export default function PatientAdmitOrTransferForm({
               title: t('errorCreatingTransferRequest', 'Error creating transfer request for {{patientName}}', {
                 patientName,
               }),
-              subtitle: (result.reason as Error)?.message,
+              subtitle: getUserFacingErrorMessage(
+                result.reason,
+                t(
+                  'errorCreatingTransferRequestMessage',
+                  'No se pudo crear la solicitud de traslado. Intente nuevamente.',
+                ),
+                { logContext: `Create transfer request for ${wardPatientsToTransfer[i].patient.uuid}` },
+              ),
               kind: 'error',
             });
           }

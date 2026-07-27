@@ -1,5 +1,5 @@
 import { Button, ButtonSet, Dropdown, Layer, SelectItem, TextInput, TimePicker, TimePickerSelect } from '@carbon/react';
-import { showSnackbar, useLocations } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar, useLocations } from '@openmrs/esm-framework';
 import { Form, Formik, type FormikHelpers } from 'formik';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -43,7 +43,11 @@ const AppointmentServices: React.FC = () => {
         showSnackbar({
           title: t('errorCreatingAppointmentService', 'Error creating appointment service'),
           kind: 'error',
-          subtitle: error?.message,
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('errorCreatingAppointmentServiceMessage', 'No se pudo crear el servicio de cita. Intente nuevamente.'),
+            { logContext: 'Create appointment service' },
+          ),
         });
       },
     );

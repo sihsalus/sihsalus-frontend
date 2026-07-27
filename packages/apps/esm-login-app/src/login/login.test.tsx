@@ -296,10 +296,7 @@ describe('Login', () => {
     } as SessionStore);
 
     render(
-      <MemoryRouter
-        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
-        initialEntries={[{ pathname: '/login', state: { referrer: '/patient-registration' } }]}
-      >
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { referrer: '/patient-registration' } }]}>
         <LoginRoutes />
       </MemoryRouter>,
     );

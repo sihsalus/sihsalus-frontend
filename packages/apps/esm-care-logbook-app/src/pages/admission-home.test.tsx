@@ -33,7 +33,7 @@ const mockUseConfig = vi.mocked(useConfig);
 
 function renderAdmissionHome() {
   return render(
-    <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+    <BrowserRouter>
       <AdmissionHome />
     </BrowserRouter>,
   );

@@ -6,9 +6,14 @@ const test = require('node:test');
 const repositoryRoot = path.resolve(__dirname, '../../..');
 const ciWorkflow = readFileSync(path.join(repositoryRoot, '.github/workflows/ci.yml'), 'utf8');
 const releaseWorkflow = readFileSync(path.join(repositoryRoot, '.github/workflows/release.yml'), 'utf8');
+const rootManifest = JSON.parse(readFileSync(path.join(repositoryRoot, 'package.json'), 'utf8'));
 
 test('CI audits every workspace and transitive dependency', () => {
-  assert.match(ciWorkflow, /yarn npm audit --all --recursive --severity high/);
+  assert.match(ciWorkflow, /run: yarn security:audit/);
+  assert.equal(
+    rootManifest.scripts['security:audit'],
+    'yarn validate:react-router && yarn npm audit --all --recursive --severity high --ignore 1124282',
+  );
 });
 
 test('release builds the exact commit that passed CI', () => {

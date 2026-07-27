@@ -12,10 +12,7 @@ export default function Root() {
     <AppErrorBoundary appName="esm-care-logbook-app">
       <RequirePrivilege privilege={careLogbookPrivilege}>
         <div className={styles.root}>
-          <BrowserRouter
-            basename={`${globalThis.getOpenmrsSpaBase().slice(0, -1)}${careLogbookBasePath}`}
-            future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
-          >
+          <BrowserRouter basename={`${globalThis.getOpenmrsSpaBase().slice(0, -1)}${careLogbookBasePath}`}>
             <Routes>
               <Route index element={<AdmissionHome />} />
               <Route

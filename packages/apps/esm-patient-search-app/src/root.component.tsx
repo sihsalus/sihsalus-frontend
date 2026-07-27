@@ -10,10 +10,7 @@ const PatientSearchRootComponent: React.FC = () => {
   return (
     <AppErrorBoundary appName="esm-patient-search-app">
       <RequirePrivilege privilege={patientSearchPrivilege} description="Necesita permiso para buscar pacientes.">
-        <BrowserRouter
-          basename={globalThis.getOpenmrsSpaBase()}
-          future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
-        >
+        <BrowserRouter basename={globalThis.getOpenmrsSpaBase()}>
           <Routes>
             <Route path="search" element={<PatientSearchPageComponent />} />
           </Routes>

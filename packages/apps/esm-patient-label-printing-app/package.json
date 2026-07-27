@@ -43,7 +43,7 @@
     "@openmrs/esm-framework": "*",
     "react": "18.x",
     "react-i18next": "16.x",
-    "react-router-dom": "6.x"
+    "react-router-dom": ">=6.30.4 <8"
   },
   "devDependencies": {
     "@rspack/cli": "1.7.11",

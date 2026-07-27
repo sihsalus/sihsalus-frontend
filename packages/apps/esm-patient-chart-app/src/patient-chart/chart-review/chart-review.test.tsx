@@ -97,7 +97,7 @@ describe('ChartReview', () => {
     mockUseExtensionSlotMeta.mockImplementation((slotName) => slotMetaFromStore(mockStore, slotName));
 
     render(
-      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+      <MemoryRouter>
         <ChartReview patient={mockFhirPatient} patientUuid={mockPatient.id} view="Patient Summary" />
       </MemoryRouter>,
     );

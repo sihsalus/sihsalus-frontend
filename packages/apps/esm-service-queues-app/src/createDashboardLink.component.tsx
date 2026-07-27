@@ -39,7 +39,7 @@ function DashboardExtension({ dashboardLinkConfig }: { dashboardLinkConfig: Dash
 }
 
 export const createDashboardLink = (dashboardLinkConfig: DashboardLinkConfig) => () => (
-  <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+  <BrowserRouter>
     <DashboardExtension dashboardLinkConfig={dashboardLinkConfig} />
   </BrowserRouter>
 );

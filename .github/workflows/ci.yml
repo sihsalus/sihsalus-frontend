@@ -50,6 +50,11 @@ jobs:
       - name: Validate Critical Route Privileges
         run: yarn validate:critical-route-privileges
 
+      # Keep all microfrontends on the patched Router runtime and share a
+      # single navigation context across Module Federation boundaries.
+      - name: Validate React Router Contract
+        run: yarn validate:react-router
+
       # Existing raw error rendering is migrated incrementally. This AST guard
       # compares the PR/push with its Git base and rejects new exposures while
       # allowing controlled React Hook Form validation messages.
@@ -182,4 +187,6 @@ jobs:
       - name: Security Audit
         # Yarn otherwise audits only direct dependencies of the active root
         # workspace and misses vulnerable transitive packages in workspaces.
-        run: yarn npm audit --all --recursive --severity high
+        # Advisory 1124282 affects only unstable RSC APIs. The audit script
+        # first fails closed if any RSC API/dependency enters this declarative SPA.
+        run: yarn security:audit

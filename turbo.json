@@ -14,11 +14,9 @@
         "tsconfig.build.json",
         "rspack.config.js",
         "rspack.config.cjs",
-        "rspack.config.ts",
         ".swcrc",
         "postcss.config.js",
         "translations/**",
-        "dependencies.json",
         "spa-static-options.*"
       ],
       "outputs": ["dist/**"],
@@ -30,10 +28,6 @@
       "outputs": ["dist/**"],
       "env": ["NODE_ENV", "SIHSALUS_AUTH_MODE", "SIHSALUS_FHIR_BASE"]
     },
-    "dev": {
-      "cache": false,
-      "persistent": true
-    },
     "test": {
       "dependsOn": ["^build"],
       "inputs": [
@@ -41,14 +35,15 @@
         "__mocks__/**",
         "$TURBO_ROOT$/packages/tooling/configs/**",
         "$TURBO_ROOT$/packages/tooling/scripts/setup-tests.ts",
+        "$TURBO_ROOT$/packages/test-utils/**",
         "mock.ts",
+        "mock.tsx",
         "mock-vitest.ts",
         "mock-vitest.tsx",
         "setup-tests.ts",
         "src/setup-tests.ts",
         "spa-static-options.*",
-        "vitest.config.ts",
-        "vitest.config.js"
+        "vitest.config.ts"
       ],
       "env": ["TZ"],
       "outputLogs": "errors-only"
@@ -58,15 +53,34 @@
       "persistent": true
     },
     "coverage": {
-      "inputs": ["src/**", "__mocks__/**", "vitest.config.ts", "setup-tests.ts"],
+      "inputs": [
+        "src/**",
+        "__mocks__/**",
+        "$TURBO_ROOT$/packages/tooling/configs/**",
+        "$TURBO_ROOT$/packages/tooling/scripts/setup-tests.ts",
+        "$TURBO_ROOT$/packages/test-utils/**",
+        "vitest.config.ts",
+        "setup-tests.ts",
+        "src/setup-tests.ts"
+      ],
       "outputs": ["coverage/**"]
     },
     "lint": {
-      "inputs": ["src/**/*.{ts,tsx}", "$TURBO_ROOT$/biome.json"]
+      "inputs": ["src/**/*.{ts,tsx,scss,json}", "translations/**", "$TURBO_ROOT$/biome.json"],
+      "outputs": []
     },
     "typescript": {
       "dependsOn": ["build", "^build", "^typescript"],
-      "inputs": ["src/**", "tsconfig.json", "tsconfig.build.json"]
+      "inputs": [
+        "src/**",
+        "tsconfig.json",
+        "tsconfig.build.json",
+        "$TURBO_ROOT$/tsconfig.base.json",
+        "$TURBO_ROOT$/packages/tsconfig.json",
+        "$TURBO_ROOT$/packages/tooling/tsconfig.app.json",
+        "$TURBO_ROOT$/packages/declarations.d.ts"
+      ],
+      "outputs": []
     },
     "extract-translations": {
       "cache": false
@@ -75,14 +89,6 @@
       "dependsOn": ["^build"],
       "inputs": ["src/**", "typedoc.json", "tsconfig.typedoc.json"],
       "outputs": ["docs/**"]
-    },
-    "e2e": {
-      "dependsOn": ["build"],
-      "outputs": ["e2e/results/**"],
-      "cache": false
-    },
-    "clean": {
-      "cache": false
     }
   }
 }

@@ -16,6 +16,7 @@ import type {
   PatientIdentifierType,
 } from '../patient-registration/patient-registration.types';
 import { peruDniPatientIdentifierTypeUuid } from '../patient-registration/peru-registration-config';
+import { getIdentifierLocationPayload } from '../patient-registration/identifier-location-behavior';
 
 import {
   type ImportSummary,
@@ -383,7 +384,7 @@ async function buildPatientIdentifiers(
     identifiers.push({
       identifier: generated.data.identifier,
       identifierType: identifierType.uuid,
-      location: locationUuid,
+      ...getIdentifierLocationPayload(identifierType.uuid, identifierTypes, locationUuid),
       preferred: identifierType.isPrimary,
     });
   }
@@ -391,7 +392,7 @@ async function buildPatientIdentifiers(
   identifiers.push({
     identifier: row.normalized.dni,
     identifierType: peruDniPatientIdentifierTypeUuid,
-    location: locationUuid,
+    ...getIdentifierLocationPayload(peruDniPatientIdentifierTypeUuid, identifierTypes, locationUuid),
     preferred: !identifiers.length,
   });
 

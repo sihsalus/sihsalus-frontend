@@ -23,6 +23,7 @@ const identifierTypes = [
   {
     fieldName: 'dni',
     isPrimary: true,
+    locationBehavior: 'NOT_USED',
     name: 'DNI',
     required: true,
     uuid: peruDniPatientIdentifierTypeUuid,
@@ -48,7 +49,10 @@ describe('bulk patient import safety checks', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockSearchLocalIdentityByDocument.mockResolvedValue([]);
-    mockSavePatient.mockResolvedValue({ data: { uuid: 'created-patient-uuid' }, ok: true } as never);
+    mockSavePatient.mockResolvedValue({
+      data: { uuid: 'created-patient-uuid' },
+      ok: true,
+    } as never);
   });
 
   it('accepts a valid adult row', () => {
@@ -116,6 +120,26 @@ describe('bulk patient import safety checks', () => {
       'same-import-attempt-uuid',
     );
     expect(mockSavePatient).not.toHaveBeenCalled();
+  });
+
+  it('does not send a UPSS on identifier types marked NOT_USED', async () => {
+    const row = normalizeAndValidateImportRow(buildRawRow(), 2);
+
+    await expect(createPatientFromImportRow(row, identifierTypes, 'location-uuid')).resolves.toBe(
+      'created-patient-uuid',
+    );
+
+    expect(mockSavePatient).toHaveBeenCalledWith(
+      expect.objectContaining({
+        identifiers: [
+          {
+            identifier: '12345678',
+            identifierType: peruDniPatientIdentifierTypeUuid,
+            preferred: true,
+          },
+        ],
+      }),
+    );
   });
 });
 

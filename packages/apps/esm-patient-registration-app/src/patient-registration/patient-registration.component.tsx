@@ -409,6 +409,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
         initialAddressFieldValues,
         capturePhotoProps,
         location ?? '',
+        identifierTypes ?? [],
         initialFormValuesState['identifiers'],
         currentSession,
         config,
@@ -434,7 +435,10 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       const savedOrExistingPatientUuid = savedPatientUuid ?? updatedFormValues.patientUuid;
       const afterUrl = resolveRegistrationAfterUrl(rawAfterUrl, savedOrExistingPatientUuid);
       const redirectUrl =
-        afterUrl ?? interpolateUrl(config.links.submitButton, { patientUuid: savedOrExistingPatientUuid });
+        afterUrl ??
+        interpolateUrl(config.links.submitButton, {
+          patientUuid: savedOrExistingPatientUuid,
+        });
 
       setTarget(redirectUrl);
     } catch (error: unknown) {
@@ -468,6 +472,10 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
                 [registrationErrorCodes.duplicatePersonDocument]: t(
                   'duplicatePersonDocumentError',
                   'A person already exists with this document. Use person promotion to avoid a duplicate.',
+                ),
+                [registrationErrorCodes.identifierLocationBehaviorUnknown]: t(
+                  'identifierLocationBehaviorUnknownError',
+                  'The identification configuration is incomplete. Contact the system administrator before registering the patient.',
                 ),
                 [registrationErrorCodes.identifierLocationRequired]: t(
                   'sessionLocationRequiredSubtitle',
@@ -536,7 +544,9 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
                 actionButtonLabel: t('identityLookupOpenPatient', 'Open existing patient'),
                 onActionButtonClick: () =>
                   navigate({
-                    to: interpolateUrl(config.links.submitButton, { patientUuid: existingPatientUuid }),
+                    to: interpolateUrl(config.links.submitButton, {
+                      patientUuid: existingPatientUuid,
+                    }),
                   }),
               }
             : {}),

@@ -6,6 +6,7 @@ export const mockIdentifierTypes = [
     uuid: '05a29f94-c0ed-11e2-94be-8c13b969e334',
     format: null,
     isPrimary: true,
+    locationBehavior: 'NOT_USED',
     uniquenessBehavior: 'UNIQUE' as const,
     identifierSources: [
       {

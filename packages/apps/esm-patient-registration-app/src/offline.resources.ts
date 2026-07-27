@@ -21,6 +21,7 @@ interface PatientIdentifierTypeResponse {
   display: string;
   format: string;
   name: string;
+  locationBehavior?: string | null;
   required: boolean;
   uniquenessBehavior: FetchedPatientIdentifierType['uniquenessBehavior'];
   uuid: string;
@@ -150,7 +151,10 @@ export async function fetchPatientIdentifierTypesWithSources(): Promise<Array<Pa
           identifierSourcesResponse.status === 'rejected' ? identifierSourcesResponse.reason : undefined,
       },
     );
-    return identifierTypes.map((identifierType) => ({ ...identifierType, identifierSources: [] }));
+    return identifierTypes.map((identifierType) => ({
+      ...identifierType,
+      identifierSources: [],
+    }));
   }
 
   const allIdentifierSources = identifierSourcesResponse.value.data.results;
@@ -159,7 +163,9 @@ export async function fetchPatientIdentifierTypesWithSources(): Promise<Array<Pa
     identifierTypes[i].identifierSources = allIdentifierSources
       .filter((source) => source.identifierType.uuid === identifierTypes[i].uuid)
       .map((source) => {
-        const option = find(autoGenOptions.value.data.results, { source: { uuid: source.uuid } });
+        const option = find(autoGenOptions.value.data.results, {
+          source: { uuid: source.uuid },
+        });
         source.autoGenerationOption = option;
         return source;
       });
@@ -170,8 +176,10 @@ export async function fetchPatientIdentifierTypesWithSources(): Promise<Array<Pa
 
 async function fetchPatientIdentifierTypes(): Promise<Array<FetchedPatientIdentifierType>> {
   try {
-    const patientIdentifierTypesResponse = await cacheAndFetch<{ results: Array<PatientIdentifierTypeResponse> }>(
-      `${restBaseUrl}/patientidentifiertype?v=custom:(display,uuid,name,description,format,required,uniquenessBehavior)`,
+    const patientIdentifierTypesResponse = await cacheAndFetch<{
+      results: Array<PatientIdentifierTypeResponse>;
+    }>(
+      `${restBaseUrl}/patientidentifiertype?v=custom:(display,uuid,name,description,format,required,uniquenessBehavior,locationBehavior)`,
     );
     const primaryIdentifierTypeResponse = await cacheAndFetch<{
       results: Array<{ metadataUuid?: string }>;
@@ -238,7 +246,10 @@ async function cacheAndFetch<T = unknown>(url?: string, options: { required?: bo
   });
 
   try {
-    return await openmrsFetch<T>(url, { headers: cacheForOfflineHeaders, signal: abortController.signal });
+    return await openmrsFetch<T>(url, {
+      headers: cacheForOfflineHeaders,
+      signal: abortController.signal,
+    });
   } finally {
     globalThis.clearTimeout(timeout);
   }
@@ -271,6 +282,7 @@ function mapPatientIdentifierType(patientIdentifierType: PatientIdentifierTypeRe
     uuid: patientIdentifierType.uuid,
     format: patientIdentifierType.format,
     isPrimary,
+    locationBehavior: patientIdentifierType.locationBehavior,
     uniquenessBehavior: patientIdentifierType.uniquenessBehavior,
   };
 }

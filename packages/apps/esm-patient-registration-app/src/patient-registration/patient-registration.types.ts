@@ -33,6 +33,12 @@ export interface FetchedPatientIdentifierType {
   isPrimary: boolean;
   /** See: https://github.com/openmrs/openmrs-core/blob/e3fb1ac0a052aeff0f957a150731757dd319693b/api/src/main/java/org/openmrs/PatientIdentifierType.java#L41 */
   uniquenessBehavior: undefined | null | 'UNIQUE' | 'NON_UNIQUE' | 'LOCATION';
+  /**
+   * OpenMRS defines whether an identifier type uses a Location. The server is
+   * authoritative here: callers must not infer this from its name or whether a
+   * session UPSS happens to be selected.
+   */
+  locationBehavior?: string | null;
 }
 
 export interface PatientIdentifierValue {
@@ -93,6 +99,7 @@ export interface PatientRegistration {
     initialAddressFieldValues: Record<string, unknown>;
     capturePhotoProps: CapturePhotoProps | null;
     currentLocation: string;
+    identifierTypes: Array<PatientIdentifierType>;
     initialIdentifierValues: FormValues['identifiers'];
     currentUser: Session;
     config: RegistrationConfig;

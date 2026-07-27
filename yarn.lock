@@ -9546,12 +9546,14 @@ __metadata:
     "@types/react-dom": "npm:^18.3.0"
     css-loader: "npm:^6.8.1"
     dayjs: "npm:^1.11.9"
+    dompurify: "npm:3.4.12"
     dotenv: "npm:^17.3.1"
     file-saver: "npm:^2.0.5"
     i18next: "npm:^25.0.0"
     i18next-parser: "npm:^9.3.0"
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
+    parse5: "npm:7.3.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.45.4"
@@ -20864,7 +20866,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"parse5@npm:^7.0.0, parse5@npm:^7.3.0":
+"parse5@npm:7.3.0, parse5@npm:^7.0.0, parse5@npm:^7.3.0":
   version: 7.3.0
   resolution: "parse5@npm:7.3.0"
   dependencies:

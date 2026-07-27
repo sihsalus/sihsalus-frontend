@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify';
+import { type DefaultTreeAdapterMap, parse, serialize } from 'parse5';
 import { PrintCss } from './PrintStyles';
 
 const staticPrintPolicy = [
@@ -126,18 +127,74 @@ const allowedTagNames = new Set<string>(allowedTags);
 const allowedAttributeNames = new Set<string>(allowedAttributes);
 const embeddedRasterImagePattern = /^data:image\/(?:gif|jpe?g|png|webp);base64,[a-z0-9+/=\s]+$/i;
 
+const sanitizeStockMarkup = (content: string) =>
+  DOMPurify.sanitize(content, {
+    ALLOW_DATA_ATTR: false,
+    ALLOWED_ATTR: [...allowedAttributes, 'src'],
+    ALLOWED_TAGS: [...allowedTags],
+    ALLOWED_URI_REGEXP: embeddedRasterImagePattern,
+  });
+
+type ParsedElement = DefaultTreeAdapterMap['element'];
+type ParsedNode = DefaultTreeAdapterMap['node'];
+type ParsedParentNode = DefaultTreeAdapterMap['parentNode'];
+
+const structuralDocumentTags = new Set(['body', 'head', 'html']);
+
 const escapeHtmlText = (value: string) =>
   value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 
-const enforceStaticAllowlist = (root: ParentNode) => {
-  root.querySelectorAll('*').forEach((element) => {
-    const tagName = element.tagName.toLowerCase();
-    if (!allowedTagNames.has(tagName)) {
-      element.remove();
-      return;
+const isParsedElement = (node: ParsedNode): node is ParsedElement => 'tagName' in node && 'attrs' in node;
+
+const getParsedText = (node: ParsedNode): string => {
+  if ('value' in node && typeof node.value === 'string') {
+    return node.value;
+  }
+  return 'childNodes' in node ? node.childNodes.map(getParsedText).join('') : '';
+};
+
+const findParsedElement = (node: ParsedNode, tagName: string): ParsedElement | null => {
+  if (isParsedElement(node) && node.tagName.toLowerCase() === tagName) {
+    return node;
+  }
+  if ('childNodes' in node) {
+    for (const child of node.childNodes) {
+      const found = findParsedElement(child, tagName);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return null;
+};
+
+/**
+ * parse5 builds a detached syntax tree without creating browser elements,
+ * fetching resources, or executing content. Strip every unsupported node and
+ * attribute there before DOMPurify ever sees an HTML string.
+ */
+const enforceStaticAllowlist = (parent: ParsedParentNode, insideSvg = false): string | undefined => {
+  let documentTitle: string | undefined;
+  const retainedChildren: typeof parent.childNodes = [];
+
+  for (const node of parent.childNodes) {
+    if (!isParsedElement(node)) {
+      retainedChildren.push(node);
+      continue;
     }
 
-    Array.from(element.attributes).forEach((attribute) => {
+    const tagName = node.tagName.toLowerCase();
+    const isInsideSvg = insideSvg || tagName === 'svg';
+    if (tagName === 'title' && !insideSvg) {
+      documentTitle ??= getParsedText(node);
+      continue;
+    }
+
+    if (!structuralDocumentTags.has(tagName) && !allowedTagNames.has(tagName)) {
+      continue;
+    }
+
+    node.attrs = node.attrs.filter((attribute) => {
       const attributeName = attribute.name.toLowerCase();
       const attributeValue = attribute.value.trim();
       const isEmbeddedImage =
@@ -145,15 +202,20 @@ const enforceStaticAllowlist = (root: ParentNode) => {
       const hasUnsafeCssUrl =
         /\burl\s*\(/i.test(attributeValue) && !/\burl\s*\(\s*#[A-Za-z0-9_-]+\s*\)/i.test(attributeValue);
 
-      if (
-        attributeName.startsWith('on') ||
-        hasUnsafeCssUrl ||
-        (!allowedAttributeNames.has(attributeName) && !isEmbeddedImage)
-      ) {
-        element.removeAttribute(attribute.name);
-      }
+      return (
+        !attributeName.startsWith('on') &&
+        !hasUnsafeCssUrl &&
+        (allowedAttributeNames.has(attributeName) || isEmbeddedImage)
+      );
     });
-  });
+
+    const nestedTitle = enforceStaticAllowlist(node, isInsideSvg);
+    documentTitle ??= nestedTitle;
+    retainedChildren.push(node);
+  }
+
+  parent.childNodes = retainedChildren;
+  return documentTitle;
 };
 
 /**
@@ -162,22 +224,10 @@ const enforceStaticAllowlist = (root: ParentNode) => {
  * locations, titles, and SVG logos can all originate outside this bundle.
  */
 export const prepareSafePrintHtml = (content: string): string => {
-  const parsed = new DOMParser().parseFromString(content, 'text/html');
-  const documentTitle = Array.from(parsed.querySelectorAll('title')).find(
-    (element) => !element.closest('svg'),
-  )?.textContent;
-  parsed.querySelectorAll('title').forEach((element) => {
-    if (!element.closest('svg')) {
-      element.remove();
-    }
-  });
-  enforceStaticAllowlist(parsed.body);
-  const sanitizedBody = DOMPurify.sanitize(parsed.body.innerHTML, {
-    ALLOW_DATA_ATTR: false,
-    ALLOWED_ATTR: [...allowedAttributes, 'src'],
-    ALLOWED_TAGS: [...allowedTags],
-    ALLOWED_URI_REGEXP: embeddedRasterImagePattern,
-  });
+  const parsedDocument = parse(content);
+  const documentTitle = enforceStaticAllowlist(parsedDocument);
+  const parsedBody = findParsedElement(parsedDocument, 'body');
+  const sanitizedBody = sanitizeStockMarkup(parsedBody ? serialize(parsedBody) : '');
 
   return (
     '<!doctype html>\n<html><head>' +

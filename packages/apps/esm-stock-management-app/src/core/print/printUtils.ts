@@ -129,8 +129,8 @@ const embeddedRasterImagePattern = /^data:image\/(?:gif|jpe?g|png|webp);base64,[
 const escapeHtmlText = (value: string) =>
   value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 
-const enforceStaticAllowlist = (fragment: DocumentFragment) => {
-  fragment.querySelectorAll('*').forEach((element) => {
+const enforceStaticAllowlist = (root: ParentNode) => {
+  root.querySelectorAll('*').forEach((element) => {
     const tagName = element.tagName.toLowerCase();
     if (!allowedTagNames.has(tagName)) {
       element.remove();
@@ -162,18 +162,17 @@ const enforceStaticAllowlist = (fragment: DocumentFragment) => {
  * locations, titles, and SVG logos can all originate outside this bundle.
  */
 export const prepareSafePrintHtml = (content: string): string => {
-  const template = document.createElement('template');
-  template.innerHTML = content;
-  const documentTitle = Array.from(template.content.querySelectorAll('title')).find(
+  const parsed = new DOMParser().parseFromString(content, 'text/html');
+  const documentTitle = Array.from(parsed.querySelectorAll('title')).find(
     (element) => !element.closest('svg'),
   )?.textContent;
-  template.content.querySelectorAll('title').forEach((element) => {
+  parsed.querySelectorAll('title').forEach((element) => {
     if (!element.closest('svg')) {
       element.remove();
     }
   });
-  enforceStaticAllowlist(template.content);
-  const sanitizedBody = DOMPurify.sanitize(template.innerHTML, {
+  enforceStaticAllowlist(parsed.body);
+  const sanitizedBody = DOMPurify.sanitize(parsed.body.innerHTML, {
     ALLOW_DATA_ATTR: false,
     ALLOWED_ATTR: [...allowedAttributes, 'src'],
     ALLOWED_TAGS: [...allowedTags],

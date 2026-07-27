@@ -8387,6 +8387,7 @@ __metadata:
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@sihsalus/esm-rbac": "workspace:*"
+    dompurify: "npm:3.4.12"
     exceljs: "npm:^4.4.0"
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"

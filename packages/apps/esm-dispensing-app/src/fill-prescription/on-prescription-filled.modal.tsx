@@ -1,5 +1,5 @@
 import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { getPatientName, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
+import { getPatientName, getUserFacingErrorMessage, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
@@ -102,10 +102,15 @@ const OnPrescriptionFilledModal: React.FC<OnPrescriptionFilledModalProps> = ({ p
             showSnackbar({
               title: t('errorDispensingMedication', 'Error dispensing medication'),
               kind: 'error',
-              subtitle: t('errorDispensingMedicationMessage', '{{medication}}: {{error}}', {
-                medication: medicationDisplay,
-                error: error?.message,
-              }),
+              subtitle: getUserFacingErrorMessage(
+                error,
+                t(
+                  'errorDispensingMedicationMessage',
+                  '{{medication}}: no se pudo completar la dispensación. Intente nuevamente.',
+                  { medication: medicationDisplay },
+                ),
+                { logContext: `Fill prescription ${medicationRequestBundle.request.id}` },
+              ),
             });
           });
       }

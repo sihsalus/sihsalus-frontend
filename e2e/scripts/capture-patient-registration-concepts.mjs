@@ -4,8 +4,11 @@ import { chromium, request } from '@playwright/test';
 import { getOpenmrsBaseUrl, getSpaBaseUrl } from './e2e-urls.mjs';
 
 const spaBase = getSpaBaseUrl('http://localhost:8090/openmrs/spa');
-const username = process.env.E2E_USERNAME ?? 'admin';
-const password = process.env.E2E_PASSWORD ?? 'Admin123';
+const username = process.env.E2E_USERNAME;
+const password = process.env.E2E_PASSWORD;
+if (!username || !password) {
+  throw new Error('E2E_USERNAME and E2E_PASSWORD must be configured.');
+}
 const openmrsBase = getOpenmrsBaseUrl('http://localhost:8090/openmrs/spa');
 const outputDir = path.resolve('e2e/screenshots');
 const screenshotPath = path.join(outputDir, 'patient-registration-concepts-after-import.png');
@@ -13,7 +16,10 @@ const screenshotPath = path.join(outputDir, 'patient-registration-concepts-after
 fs.mkdirSync(outputDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
-const context = await browser.newContext({ viewport: { width: 1440, height: 1100 }, locale: 'es-PE' });
+const context = await browser.newContext({
+  viewport: { width: 1440, height: 1100 },
+  locale: 'es-PE',
+});
 const page = await context.newPage();
 const conceptResponses = [];
 
@@ -26,13 +32,21 @@ page.on('response', async (response) => {
 
 async function loginWithApiSession() {
   const authorization = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
-  const api = await request.newContext({ extraHTTPHeaders: { Authorization: authorization } });
+  const api = await request.newContext({
+    extraHTTPHeaders: { Authorization: authorization },
+  });
   const locations = await api.get(`${openmrsBase}/ws/rest/v1/location?v=default&limit=1`);
   const firstLocation = locations.ok() ? (await locations.json()).results?.[0]?.uuid : undefined;
 
   const session = await api.post(`${openmrsBase}/ws/rest/v1/session`, {
-    data: { ...(firstLocation ? { sessionLocation: firstLocation } : {}), locale: 'es' },
-    headers: { Authorization: authorization, 'Content-Type': 'application/json' },
+    data: {
+      ...(firstLocation ? { sessionLocation: firstLocation } : {}),
+      locale: 'es',
+    },
+    headers: {
+      Authorization: authorization,
+      'Content-Type': 'application/json',
+    },
   });
   if (!session.ok()) {
     throw new Error(`API login failed (${session.status()}): ${await session.text()}`);
@@ -44,7 +58,9 @@ async function loginWithApiSession() {
 }
 
 await loginWithApiSession();
-await page.goto(`${spaBase}/patient-registration`, { waitUntil: 'domcontentloaded' });
+await page.goto(`${spaBase}/patient-registration`, {
+  waitUntil: 'domcontentloaded',
+});
 await page.waitForLoadState('networkidle', { timeout: 45_000 }).catch(() => null);
 if (page.url().includes('/login')) {
   throw new Error('Authentication did not establish a browser session; still on login route');

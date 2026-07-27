@@ -183,7 +183,7 @@ describe('<WardPatientNotesWorkspace>', () => {
     expect(mockedShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: false,
       kind: 'error',
-      subtitle: 'Internal Server Error',
+      subtitle: 'No se pudo guardar la nota. Intente nuevamente.',
       title: 'Error saving patient note',
     });
   });

@@ -23,6 +23,7 @@ const buildState = (formStateOverrides = {}) => ({
 describe('FormWorkflowReducer', () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
   });
 
   it('initializes a fresh workflow state when there is no saved session', () => {
@@ -41,14 +42,14 @@ describe('FormWorkflowReducer', () => {
       encounters: {},
     });
 
-    expect(JSON.parse(localStorage.getItem(`${fdeWorkflowStorageName}:user-1`))).toMatchObject({
+    expect(JSON.parse(sessionStorage.getItem(`${fdeWorkflowStorageName}:user-1`))).toMatchObject({
       _storageVersion: fdeWorkflowStorageVersion,
       activeFormUuid: 'triage-form',
     });
   });
 
   it('restores a saved workflow and applies a patient from the URL when provided', () => {
-    localStorage.setItem(
+    sessionStorage.setItem(
       `${fdeWorkflowStorageName}:user-1`,
       JSON.stringify({
         _storageVersion: fdeWorkflowStorageVersion,
@@ -78,6 +79,20 @@ describe('FormWorkflowReducer', () => {
       activePatientUuid: 'patient-b',
     });
     expect(state.forms['triage-form'].patientUuids).toEqual(['patient-a', 'patient-b']);
+  });
+
+  it('discards legacy persistent clinical workflow state', () => {
+    const storageKey = `${fdeWorkflowStorageName}:user-1`;
+    localStorage.setItem(storageKey, JSON.stringify({ patientUuids: ['legacy-patient'] }));
+
+    reducer(initialWorkflowState, {
+      type: 'INITIALIZE_WORKFLOW_STATE',
+      activeFormUuid: 'triage-form',
+      userUuid: 'user-1',
+    });
+
+    expect(localStorage.getItem(storageKey)).toBeNull();
+    expect(sessionStorage.getItem(storageKey)).not.toContain('legacy-patient');
   });
 
   it('dispatches the submit event and moves the workflow into SUBMIT_FOR_NEXT', () => {

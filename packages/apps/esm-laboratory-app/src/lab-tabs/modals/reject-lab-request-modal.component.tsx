@@ -1,5 +1,11 @@
 import { Button, Form, Layer, ModalBody, ModalFooter, ModalHeader, TextArea } from '@carbon/react';
-import { type Order, showNotification, showSnackbar, useAbortController } from '@openmrs/esm-framework';
+import {
+  getUserFacingErrorMessage,
+  type Order,
+  showNotification,
+  showSnackbar,
+  useAbortController,
+} from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { rejectLabOrder, useInvalidateLabOrders } from '../../laboratory.resource';
@@ -42,7 +48,11 @@ const RejectLabRequestModal: React.FC<RejectLabRequestModalProps> = ({ order, cl
           title: t('errorRejectingRequest', 'Error rejecting lab request'),
           kind: 'error',
           critical: true,
-          description: err?.message,
+          description: getUserFacingErrorMessage(
+            err,
+            t('errorRejectingRequestMessage', 'No se pudo rechazar la solicitud. Intente nuevamente.'),
+            { logContext: 'Reject laboratory request' },
+          ),
         });
       },
     );

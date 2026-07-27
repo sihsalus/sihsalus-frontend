@@ -1,5 +1,5 @@
 import { Button, ModalBody, ModalFooter, ModalHeader, TextArea } from '@carbon/react';
-import { showSnackbar, useAbortController } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar, useAbortController } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { setInterconsultaFulfillerStatus, useInvalidateInterconsultas } from '../interconsultas.resource';
@@ -36,7 +36,11 @@ const RejectInterconsultaModal: React.FC<RejectInterconsultaModalProps> = ({ clo
         showSnackbar({
           kind: 'error',
           title: t('errorRejectingInterconsulta', 'Error al rechazar la interconsulta'),
-          subtitle: error?.message,
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('errorRejectingInterconsultaMessage', 'No se pudo rechazar la interconsulta. Intente nuevamente.'),
+            { logContext: `Reject interconsultation ${order.uuid}` },
+          ),
         });
       },
     );

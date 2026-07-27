@@ -6,7 +6,7 @@
  * 2. CONFIRMACION - Success summary with options to register another or close
  */
 
-import { type DefaultWorkspaceProps, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { type DefaultWorkspaceProps, getUserFacingErrorMessage, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { safeCopyFinanciadorToVisit } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -116,13 +116,14 @@ const EmergencyWorkflowWorkspace: React.FC<EmergencyWorkflowWorkspaceProps> = ({
         // only re-attempts the queue entry, so no rollback is needed.
         showSnackbar({
           title: t('errorCreatingQueueEntry', 'Error al agregar a la cola'),
-          subtitle:
-            error instanceof Error
-              ? error.message
-              : t(
-                  'queueEntryFailedVisitKept',
-                  'La visita quedó registrada pero el paciente no entró a la cola. Vuelva a intentarlo.',
-                ),
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t(
+              'queueEntryFailedVisitKept',
+              'La visita quedó registrada pero el paciente no entró a la cola. Vuelva a intentarlo.',
+            ),
+            { logContext: 'Create emergency queue entry after visit' },
+          ),
           kind: 'error',
         });
         return;

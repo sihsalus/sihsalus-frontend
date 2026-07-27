@@ -1,6 +1,6 @@
 import { Dropdown, DropdownSkeleton } from '@carbon/react';
-import { showSnackbar, useConfig } from '@openmrs/esm-framework';
-import React from 'react';
+import { getUserFacingErrorMessage, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import { useConcept } from '../../stock-lookups/stock-lookups.resource';
@@ -13,17 +13,23 @@ const StockSourcesFilter: React.FC<{
   const { stockSourceTypeUUID } = useConfig<ConfigObject>();
   const { items, isLoading, error } = useConcept(stockSourceTypeUUID);
 
+  useEffect(() => {
+    if (error) {
+      showSnackbar({
+        title: t('errorFetchingStockSourceTypes', 'Error fetching stock source types'),
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('errorFetchingStockSourceTypesMessage', 'No se pudieron cargar los tipos de origen. Intente nuevamente.'),
+          { logContext: 'Load stock source types' },
+        ),
+        kind: 'error',
+        isLowContrast: true,
+      });
+    }
+  }, [error, t]);
+
   if (isLoading) {
     return <DropdownSkeleton size="sm" />;
-  }
-
-  if (error) {
-    showSnackbar({
-      title: t('errorFetchingStockSourceTypes', 'Error fetching stock source types'),
-      subtitle: error.message,
-      kind: 'error',
-      isLowContrast: true,
-    });
   }
 
   if (Object.keys(items).length === 0) {

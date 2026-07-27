@@ -21,7 +21,7 @@ import {
   Toggle,
 } from '@carbon/react';
 import { Add, Renew } from '@carbon/react/icons';
-import { showModal, showSnackbar, useConfig, usePagination } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showModal, showSnackbar, useConfig, usePagination } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import type { TFunction } from 'i18next';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -232,7 +232,9 @@ const VisitTable: React.FC = () => {
         showSnackbar({
           kind: 'error',
           title: t('errorGeneratingFua', 'Ocurrió un error al generar el FUA'),
-          subtitle: getFuaGenerationErrorMessage(error, t),
+          subtitle: getUserFacingErrorMessage(error, getFuaGenerationErrorMessage(error, t), {
+            logContext: `Generate FUA for visit ${visitUuid}`,
+          }),
         });
       } finally {
         setGeneratingVisitUuid(null);
@@ -355,8 +357,10 @@ const VisitTable: React.FC = () => {
         showSnackbar({
           kind: 'error',
           title: t('error', 'Error'),
-          subtitle:
-            error instanceof Error ? error.message : t('errorGeneratingFua', 'Ocurrio un error al generar el FUA'),
+          // error-exposure-guard-ignore -- the fallback maps only controlled FUA status categories.
+          subtitle: getUserFacingErrorMessage(error, getFuaGenerationErrorMessage(error, t), {
+            logContext: 'Bulk FUA generation',
+          }),
         });
       } finally {
         setIsBulkGenerating(false);

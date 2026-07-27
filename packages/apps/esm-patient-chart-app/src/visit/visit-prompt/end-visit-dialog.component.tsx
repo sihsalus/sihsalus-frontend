@@ -1,5 +1,12 @@
 import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { openmrsFetch, restBaseUrl, showSnackbar, updateVisit, useVisit } from '@openmrs/esm-framework';
+import {
+  getUserFacingErrorMessage,
+  openmrsFetch,
+  restBaseUrl,
+  showSnackbar,
+  updateVisit,
+  useVisit,
+} from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -139,17 +146,18 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
         title: t('visitEndedAndFUAGenerated', 'Visit ended and FUA Generated'),
       });
     } catch (error: unknown) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : typeof error === 'object' && error && 'message' in error
-            ? String(error.message)
-            : t('unknownError', 'Unknown error');
       showSnackbar({
         title: t('errorEndingVisitOrGeneratingFUA', 'Error ending visit or generating FUA'),
         kind: 'error',
         isLowContrast: false,
-        subtitle: message,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t(
+            'errorEndingVisitOrGeneratingFUAMessage',
+            'No se pudo finalizar la consulta o generar el FUA. Intente nuevamente.',
+          ),
+          { logContext: 'End visit and generate FUA' },
+        ),
       });
     } finally {
       setIsGeneratingFua(false);

@@ -37,6 +37,8 @@ const openmrsSpaBasePlaceholder = '$' + '{openmrsSpaBase}';
 
 describe('RedirectLogout', () => {
   beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
     mockUseConnectivity.mockReturnValue(true);
     mockOpenmrsFetch.mockResolvedValue({} as FetchResponse<unknown>);
 
@@ -56,6 +58,7 @@ describe('RedirectLogout', () => {
   });
 
   it('should redirect to login page upon logout', async () => {
+    sessionStorage.setItem('openmrs:visitStoreState', '{"patientUuid":"patient-1"}');
     render(<RedirectLogout />);
 
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(`${restBaseUrl}/session`, {
@@ -72,6 +75,7 @@ describe('RedirectLogout', () => {
       sessionId: '',
     });
     expect(mockHardNavigate).toHaveBeenCalledWith(`${openmrsSpaBasePlaceholder}/login`);
+    expect(sessionStorage.length).toBe(0);
   });
 
   it('should redirect to the configured logout URL if the provider is `oauth2`', async () => {
@@ -101,6 +105,7 @@ describe('RedirectLogout', () => {
   });
 
   it('should redirect to login if the session is already unauthenticated', async () => {
+    sessionStorage.setItem('queueLocationUuid', 'upss-1');
     mockUseSession.mockReturnValue({
       authenticated: false,
     } as Session);
@@ -108,6 +113,7 @@ describe('RedirectLogout', () => {
     render(<RedirectLogout />);
 
     expect(mockHardNavigate).toHaveBeenCalledWith(`${openmrsSpaBasePlaceholder}/login`);
+    expect(sessionStorage.length).toBe(0);
   });
 
   it('should redirect to login if the application is offline', async () => {
@@ -119,6 +125,7 @@ describe('RedirectLogout', () => {
   });
 
   it('should handle logout failure gracefully', async () => {
+    sessionStorage.setItem('openmrs:visitStoreState', '{"patientUuid":"patient-1"}');
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockOpenmrsFetch.mockRejectedValue(new Error('Logout failed'));
 
@@ -128,6 +135,7 @@ describe('RedirectLogout', () => {
       expect(consoleError).toHaveBeenCalledWith('Logout failed:', new Error('Logout failed'));
     });
 
+    expect(sessionStorage.getItem('openmrs:visitStoreState')).not.toBeNull();
     consoleError.mockRestore();
   });
 

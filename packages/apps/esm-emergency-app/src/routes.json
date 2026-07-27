@@ -8,6 +8,7 @@
     {
       "component": "root",
       "route": "emergency",
+      "privileges": "app:home.emergencia",
       "online": true,
       "offline": false
     }
@@ -18,6 +19,7 @@
       "title": "newEmergencyPatient",
       "component": "emergencyWorkflowWorkspace",
       "type": "form",
+      "privileges": "app:home.emergencia.editar",
       "preferredWindowSize": "wider"
     },
     {
@@ -25,29 +27,35 @@
       "title": "emergencyAttention",
       "component": "attentionFormWorkspace",
       "type": "clinical-form",
+      "privileges": "app:home.emergencia.editar",
       "preferredWindowSize": "wider"
     }
   ],
   "modals": [
     {
       "name": "emergency-serve-patient-modal",
-      "component": "servePatientModal"
+      "component": "servePatientModal",
+      "privileges": "app:home.emergencia.editar"
     },
     {
       "name": "emergency-remove-queue-entry-modal",
-      "component": "removeQueueEntryModal"
+      "component": "removeQueueEntryModal",
+      "privileges": "app:home.emergencia.editar"
     },
     {
       "name": "emergency-transition-queue-entry-modal",
-      "component": "transitionQueueEntryModal"
+      "component": "transitionQueueEntryModal",
+      "privileges": "app:home.emergencia.editar"
     },
     {
       "name": "emergency-move-queue-entry-modal",
-      "component": "moveQueueEntryModal"
+      "component": "moveQueueEntryModal",
+      "privileges": "app:home.emergencia.editar"
     },
     {
       "name": "emergency-clear-queue-entries-modal",
-      "component": "clearQueueEntriesModal"
+      "component": "clearQueueEntriesModal",
+      "privileges": "app:home.emergencia.editar"
     }
   ],
   "extensions": [
@@ -77,48 +85,56 @@
       "name": "Priority I Card",
       "component": "priorityICard",
       "slot": "emergency-priority-card-slot",
+      "privileges": "app:home.emergencia",
       "order": 1
     },
     {
       "name": "Priority II Card",
       "component": "priorityIICard",
       "slot": "emergency-priority-card-slot",
+      "privileges": "app:home.emergencia",
       "order": 2
     },
     {
       "name": "Priority III Card",
       "component": "priorityIIICard",
       "slot": "emergency-priority-card-slot",
+      "privileges": "app:home.emergencia",
       "order": 3
     },
     {
       "name": "Priority IV Card",
       "component": "priorityIVCard",
       "slot": "emergency-priority-card-slot",
+      "privileges": "app:home.emergencia",
       "order": 4
     },
     {
       "name": "Total Active Card",
       "component": "totalActiveCard",
       "slot": "emergency-compact-metrics-slot",
+      "privileges": "app:home.emergencia",
       "order": 1
     },
     {
       "name": "Waiting Triage Card",
       "component": "waitingTriageCard",
       "slot": "emergency-compact-metrics-slot",
+      "privileges": "app:home.emergencia",
       "order": 2
     },
     {
       "name": "Avg Wait Time Compact Card",
       "component": "avgWaitTimeCompactCard",
       "slot": "emergency-compact-metrics-slot",
+      "privileges": "app:home.emergencia",
       "order": 3
     },
     {
       "name": "emergency-header-extension",
       "component": "emergencyHeaderExtension",
       "slot": "service-queues-emergency-header-slot",
+      "privileges": "app:home.emergencia",
       "online": true,
       "offline": false
     },
@@ -126,6 +142,7 @@
       "name": "emergency-alerts-extension",
       "component": "emergencyAlertsExtension",
       "slot": "service-queues-emergency-alerts-slot",
+      "privileges": "app:home.emergencia",
       "online": true,
       "offline": false
     },
@@ -133,6 +150,7 @@
       "name": "emergency-priority-cards-container",
       "component": "emergencyPriorityCardsContainer",
       "slot": "service-queues-emergency-priority-cards-slot",
+      "privileges": "app:home.emergencia",
       "online": true,
       "offline": false
     },
@@ -140,6 +158,7 @@
       "name": "emergency-metrics-extension",
       "component": "emergencyMetricsExtension",
       "slot": "service-queues-emergency-metrics-slot",
+      "privileges": "app:home.emergencia",
       "online": true,
       "offline": false
     },
@@ -147,6 +166,7 @@
       "name": "emergency-queue-table-extension",
       "component": "emergencyQueueTableExtension",
       "slot": "service-queues-emergency-queue-table-slot",
+      "privileges": "app:home.emergencia",
       "online": true,
       "offline": false
     }

@@ -1,6 +1,9 @@
 import { expect, type Page, test } from '@playwright/test';
 
-const patientUuid = process.env.E2E_PATIENT_UUID ?? '8673ee4f-e2ab-4077-ba55-4980f408773e';
+const patientUuid = process.env.E2E_PATIENT_UUID;
+if (!patientUuid) {
+  throw new Error('E2E_PATIENT_UUID must identify a synthetic test patient.');
+}
 
 function isEncounterPayload(payload: unknown): payload is { patient?: string; obs?: unknown[] } {
   return typeof payload === 'object' && payload !== null;

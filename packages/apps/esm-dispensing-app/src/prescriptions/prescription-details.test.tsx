@@ -85,7 +85,8 @@ describe('PrescriptionDetails', () => {
 
       render(<PrescriptionDetails encounterUuid={mockEncounterUuid} patientUuid={mockPatientUuid} />);
 
-      expect(screen.getByText(/error loading allergies/i)).toBeInTheDocument();
+      expect(screen.getByText(/no se pudieron cargar las alergias/i)).toBeInTheDocument();
+      expect(screen.queryByText(errorMessage)).not.toBeInTheDocument();
     });
 
     it('shows no allergies message when patient has no allergies', () => {
@@ -249,7 +250,8 @@ describe('PrescriptionDetails', () => {
 
       render(<PrescriptionDetails encounterUuid={mockEncounterUuid} patientUuid={mockPatientUuid} />);
 
-      expect(screen.getByText(/error loading prescription details/i)).toBeInTheDocument();
+      expect(screen.getByText(/no se pudieron cargar los detalles de la prescripción/i)).toBeInTheDocument();
+      expect(screen.queryByText('Failed to load')).not.toBeInTheDocument();
     });
 
     it('shows empty state when no prescriptions exist', () => {

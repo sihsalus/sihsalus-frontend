@@ -2,6 +2,7 @@ import { Button, ButtonSet, Column, Form, InlineNotification, Row } from '@carbo
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   closeWorkspaceGroup2,
+  getUserFacingErrorMessage,
   showSnackbar,
   useAppContext,
   Workspace2,
@@ -85,7 +86,11 @@ const AdmitPatientFormWorkspace: React.FC<Workspace2DefinitionProps<WardPatientW
               showSnackbar({
                 kind: 'error',
                 title: t('errorAdmittingPatient', 'Failed to admit {{patientName}}', { patientName }),
-                subtitle: (result.reason as Error)?.message,
+                subtitle: getUserFacingErrorMessage(
+                  result.reason,
+                  t('errorAdmittingPatientMessage', 'No se pudo admitir al paciente. Intente nuevamente.'),
+                  { logContext: `Admit patient ${wp.patient.uuid}` },
+                ),
               });
               return;
             }

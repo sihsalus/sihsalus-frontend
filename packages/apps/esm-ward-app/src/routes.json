@@ -37,139 +37,166 @@
     {
       "component": "wardView",
       "name": "ward-view",
-      "slot": "ward-view-slot"
+      "slot": "ward-view-slot",
+      "privileges": "app:home.hospitalizacion"
     },
     {
       "component": "wardPatientActionButtonExtension",
       "name": "ward-patient-action-button",
-      "slot": "action-menu-ward-patient-items-slot"
+      "slot": "action-menu-ward-patient-items-slot",
+      "privileges": "app:home.hospitalizacion.editar"
     },
     {
       "component": "coloredObsTagCardRowExtension",
       "name": "colored-obs-tags-card-row",
-      "slot": "ward-patient-card-slot"
+      "slot": "ward-patient-card-slot",
+      "privileges": "app:home.hospitalizacion"
     },
     {
       "component": "defaultWardView",
       "name": "default-ward",
-      "slot": "default-ward"
+      "slot": "default-ward",
+      "privileges": "app:home.hospitalizacion"
     },
     {
       "component": "maternalWardView",
       "name": "maternal-ward",
-      "slot": "maternal-ward"
+      "slot": "maternal-ward",
+      "privileges": "app:home.hospitalizacion"
     },
     {
       "component": "wardPatientWorkspaceBanner",
       "name": "ward-patient-workspace-banner",
-      "slot": "ward-workspace-patient-banner-slot"
+      "slot": "ward-workspace-patient-banner-slot",
+      "privileges": "app:home.hospitalizacion"
     }
   ],
   "modals": [
     {
       "name": "delete-note-modal",
-      "component": "deleteNoteModal"
+      "component": "deleteNoteModal",
+      "privileges": "app:home.hospitalizacion.editar"
     },
     {
       "name": "note-history-modal",
-      "component": "noteHistoryModal"
+      "component": "noteHistoryModal",
+      "privileges": "app:home.hospitalizacion"
     }
   ],
   "workspaces2": [
     {
       "name": "admission-requests-workspace",
       "component": "admissionRequestWorkspace",
-      "window": "ward-manage-admissions-window"
+      "window": "ward-manage-admissions-window",
+      "privileges": "app:home.hospitalizacion"
     },
     {
       "name": "transfer-elsewhere-workspace",
       "component": "patientTransferRequestWorkspace",
-      "window": "ward-manage-admissions-window"
+      "window": "ward-manage-admissions-window",
+      "privileges": "app:home.hospitalizacion.editar"
     },
     {
       "name": "cancel-admission-request-workspace",
       "component": "cancelAdmissionRequestWorkspace",
-      "window": "ward-manage-admissions-window"
+      "window": "ward-manage-admissions-window",
+      "privileges": "app:home.hospitalizacion.editar"
     },
     {
       "name": "admit-patient-form-workspace",
       "component": "admitPatientFormWorkspace",
-      "window": "ward-manage-admissions-window"
+      "window": "ward-manage-admissions-window",
+      "privileges": "app:home.hospitalizacion.editar"
     },
     {
       "name": "ward-app-patient-search-workspace",
       "component": "@sihsalus/esm-patient-search-app#patientSearchWorkspace2",
-      "window": "ward-manage-admissions-window"
+      "window": "ward-manage-admissions-window",
+      "privileges": "app:home.hospitalizacion.editar"
     },
     {
       "name": "ward-app-start-visit-workspace",
       "component": "@sihsalus/esm-patient-chart-app#startVisitWorkspace",
-      "window": "ward-manage-admissions-window"
+      "window": "ward-manage-admissions-window",
+      "privileges": "app:home.hospitalizacion.editar"
     },
     {
       "name": "create-admission-encounter-workspace",
       "component": "createAdmissionEncounterWorkspace",
-      "window": "ward-manage-admissions-window"
+      "window": "ward-manage-admissions-window",
+      "privileges": "app:home.hospitalizacion.editar"
     },
     {
       "name": "ward-patient-workspace",
       "component": "wardPatientWorkspace",
-      "window": "ward-patient"
+      "window": "ward-patient",
+      "privileges": "app:home.hospitalizacion"
     },
     {
       "name": "ward-patient-vitals-workspace",
       "component": "@sihsalus/esm-patient-vitals-app#vitalsBiometricsFormWorkspace",
-      "window": "ward-patient"
+      "window": "ward-patient",
+      "privileges": "app:home.hospitalizacion.editar"
     },
     {
       "name": "ward-patient-notes-workspace",
       "component": "wardPatientNotesWorkspace",
-      "window": "ward-patient-notes"
+      "window": "ward-patient-notes",
+      "privileges": "app:home.hospitalizacion.editar"
     },
     {
       "name": "ward-patient-transfer-swap-workspace",
       "component": "patientTransferAndSwapWorkspace",
-      "window": "ward-patient-transfer-swap"
+      "window": "ward-patient-transfer-swap",
+      "privileges": "app:home.hospitalizacion.editar"
     },
     {
       "name": "patient-discharge-workspace",
       "component": "patientDischargeWorkspace",
-      "window": "ward-patient-discharge"
+      "window": "ward-patient-discharge",
+      "privileges": "app:home.hospitalizacion.editar"
     },
     {
       "name": "ward-patient-clinical-forms-workspace",
       "component": "@sihsalus/esm-patient-forms-app#clinicalFormsWorkspace",
-      "window": "ward-patient-clinical-forms"
+      "window": "ward-patient-clinical-forms",
+      "privileges": "app:home.hospitalizacion"
     },
     {
       "name": "ward-patient-form-entry-workspace",
       "component": "@sihsalus/esm-patient-forms-app#patientFormEntryWorkspace",
-      "window": "ward-patient-clinical-forms"
+      "window": "ward-patient-clinical-forms",
+      "privileges": "app:home.hospitalizacion.editar"
     },
     {
       "name": "ward-patient-cancel-admission-request-workspace",
       "component": "wardPatientCancelAdmissionRequestWorkspace",
-      "window": "ward-patient-cancel-admission-request"
+      "window": "ward-patient-cancel-admission-request",
+      "privileges": "app:home.hospitalizacion.editar"
     },
     {
       "name": "ward-patient-order-basket-workspace",
       "component": "@sihsalus/esm-patient-orders-app#orderBasketWorkspace",
-      "window": "ward-patient-order-basket"
+      "window": "ward-patient-order-basket",
+      "privileges": "app:home.hospitalizacion.editar"
     },
     {
       "name": "ward-patient-order-basket-add-drug-order-workspace",
       "component": "@sihsalus/esm-patient-medications-app#exportedAddDrugOrderWorkspace",
-      "window": "ward-patient-order-basket"
+      "window": "ward-patient-order-basket",
+      "privileges": "app:home.hospitalizacion.editar"
     },
     {
       "name": "ward-patient-order-basket-add-lab-order-workspace",
       "component": "@sihsalus/esm-patient-tests-app#addLabOrderWorkspace",
-      "window": "ward-patient-order-basket"
+      "window": "ward-patient-order-basket",
+      "privileges": "app:home.hospitalizacion.editar"
     },
     {
       "name": "ward-patient-order-basket-add-general-order-workspace",
       "component": "@sihsalus/esm-patient-orders-app#orderableConceptSearch",
-      "window": "ward-patient-order-basket"
+      "window": "ward-patient-order-basket",
+      "privileges": "app:home.hospitalizacion.editar"
     }
   ],
   "workspaceWindows2": [

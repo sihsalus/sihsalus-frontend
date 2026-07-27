@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   closeWorkspaceGroup2,
   getCoreTranslation,
+  getUserFacingErrorMessage,
   ResponsiveWrapper,
   showSnackbar,
   useAppContext,
@@ -101,7 +102,14 @@ const CancelAdmissionRequest: React.FC<CancelAdmissionRequestProps> = ({
                 title: t('errorCancellingAdmissionRequest', 'Error cancelling admission request for {{patientName}}', {
                   patientName,
                 }),
-                subtitle: (result.reason as Error)?.message,
+                subtitle: getUserFacingErrorMessage(
+                  result.reason,
+                  t(
+                    'errorCancellingAdmissionRequestMessage',
+                    'No se pudo cancelar la solicitud de admisión. Intente nuevamente.',
+                  ),
+                  { logContext: `Cancel admission request for ${allPatientsToCancel[i].patient.uuid}` },
+                ),
                 kind: 'error',
               });
             }

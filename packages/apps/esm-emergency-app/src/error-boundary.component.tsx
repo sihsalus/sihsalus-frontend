@@ -36,18 +36,17 @@ class ErrorBoundaryClass extends React.Component<ErrorBoundaryProps, ErrorBounda
 
   render() {
     if (this.state.hasError) {
-      return <ErrorFallback error={this.state.error} onRetry={this.handleRetry} />;
+      return <ErrorFallback onRetry={this.handleRetry} />;
     }
     return this.props.children;
   }
 }
 
 interface ErrorFallbackProps {
-  error: Error | null;
   onRetry: () => void;
 }
 
-const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, onRetry }) => {
+const ErrorFallback: React.FC<ErrorFallbackProps> = ({ onRetry }) => {
   const { t } = useTranslation();
 
   return (
@@ -55,7 +54,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, onRetry }) => {
       <InlineNotification
         kind="error"
         title={t('emergencyModuleError', 'Error en el módulo de emergencias')}
-        subtitle={error?.message || t('unexpectedError', 'Ocurrió un error inesperado')}
+        subtitle={t('unexpectedError', 'Ocurrió un error inesperado')}
         lowContrast
         hideCloseButton
       />

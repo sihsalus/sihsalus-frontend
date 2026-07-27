@@ -10,6 +10,7 @@
       "name": "stock-nav-menu",
       "slot": "stock-sidebar-slot",
       "component": "stockNavMenu",
+      "privileges": "app:gestionInventario",
       "online": true,
       "offline": true
     },
@@ -189,7 +190,8 @@
     },
     {
       "name": "expired-stock-modal",
-      "component": "expiredStockModal"
+      "component": "expiredStockModal",
+      "privileges": "app:gestionInventario.operaciones"
     },
     {
       "name": "import-bulk-stock-items",
@@ -198,7 +200,8 @@
     },
     {
       "name": "receiving-stock-modal",
-      "component": "receivingStockModal"
+      "component": "receivingStockModal",
+      "privileges": "app:gestionInventario.operaciones.editar"
     },
     {
       "name": "stock-operations-modal",
@@ -207,11 +210,13 @@
     },
     {
       "name": "transactions-print-bincard-preview-modal",
-      "component": "transactionBincardPrintPreviewModal"
+      "component": "transactionBincardPrintPreviewModal",
+      "privileges": "app:gestionInventario.operaciones"
     },
     {
       "name": "transactions-print-stockcard-preview-modal",
-      "component": "transactionStockcardPrintPreviewModal"
+      "component": "transactionStockcardPrintPreviewModal",
+      "privileges": "app:gestionInventario.operaciones"
     }
   ],
   "workspaces": [
@@ -280,7 +285,8 @@
   "pages": [
     {
       "component": "root",
-      "route": "stock-management"
+      "route": "stock-management",
+      "privileges": "app:gestionInventario"
     }
   ]
 }

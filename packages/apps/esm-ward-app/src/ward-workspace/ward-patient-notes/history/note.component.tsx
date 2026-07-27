@@ -11,6 +11,7 @@ import {
 } from '@carbon/react';
 import {
   getCoreTranslation,
+  getUserFacingErrorMessage,
   isDesktop,
   showModal,
   showSnackbar,
@@ -87,7 +88,11 @@ const InPatientNote: React.FC<InPatientNoteProps> = ({ note, mutatePatientNotes,
       showSnackbar({
         isLowContrast: true,
         kind: 'error',
-        subtitle: e?.responseBody?.error?.translatedMessage ?? e?.responseBody?.error?.message,
+        subtitle: getUserFacingErrorMessage(
+          e,
+          t('patientNoteSaveErrorMessage', 'No se pudo guardar la nota. Intente nuevamente.'),
+          { logContext: `Edit inpatient note ${note.obsUuid}` },
+        ),
         title: t('errorSavingPatientNote', 'Error saving patient note'),
       });
     } finally {

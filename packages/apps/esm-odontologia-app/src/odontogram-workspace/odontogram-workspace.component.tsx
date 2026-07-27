@@ -1,5 +1,5 @@
 import { Button, ButtonSet, InlineLoading, Tag } from '@carbon/react';
-import { type DefaultWorkspaceProps, showSnackbar } from '@openmrs/esm-framework';
+import { type DefaultWorkspaceProps, getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -94,10 +94,11 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
       showSnackbar({
         title: t('odontogramSaveError', 'Error saving odontogram'),
         kind: 'error',
-        subtitle:
-          err instanceof Error
-            ? err.message
-            : t('odontogramSaveErrorSubtitle', 'Could not save odontogram. Please try again.'),
+        subtitle: getUserFacingErrorMessage(
+          err,
+          t('odontogramSaveErrorSubtitle', 'Could not save odontogram. Please try again.'),
+          { logContext: 'Save odontogram workspace' },
+        ),
       });
     }
   };

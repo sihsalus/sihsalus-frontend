@@ -21,22 +21,24 @@ import {
   Tooltip,
 } from '@carbon/react';
 import { Download, EventSchedule, Renew, View } from '@carbon/react/icons';
-import { formatDate, openmrsFetch, showModal, showSnackbar, usePagination } from '@openmrs/esm-framework';
+import {
+  formatDate,
+  getUserFacingErrorMessage,
+  openmrsFetch,
+  showModal,
+  showSnackbar,
+  usePagination,
+} from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
-const loadHtmlInWindow = (targetWindow: Window, html: string) => {
-  const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-  targetWindow.addEventListener('load', () => URL.revokeObjectURL(url), { once: true });
-  targetWindow.location.href = url;
-};
 
 import { fuaUpdatePrivilege, ModuleFuaRestURL } from '../constant';
 import useFuaRequests, { type FuaRequest, revalidateFuaRequestCaches, setFuaEstado } from '../hooks/useFuaRequests';
 import { useVisit } from '../hooks/useVisit';
 import { FUA_ESTADOS } from '../modals/change-fua-status.modal';
 import { exportFuasToExcel } from '../utils/fua-export';
+import { loadSafeFuaHtmlInWindow } from '../utils/safe-fua-html';
 
 import { FuaDateRangePicker } from './fua-date-range-picker.component';
 import styles from './fua-request-table.scss';
@@ -216,9 +218,13 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
         );
 
         const html = await response.text();
-        loadHtmlInWindow(fuaWindow, html);
+        loadSafeFuaHtmlInWindow(fuaWindow, html);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : t('unknownError', 'Error desconocido');
+        const errorMessage = getUserFacingErrorMessage(
+          error,
+          t('errorLoadingFuaMessage', 'No se pudo cargar el FUA. Intente nuevamente.'),
+          { logContext: `Load FUA request ${fuaRequest.uuid}` },
+        );
         fuaWindow.document.body.textContent = errorMessage;
         showSnackbar({
           kind: 'error',
@@ -263,7 +269,11 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
         link.remove();
         URL.revokeObjectURL(url);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : t('unknownError', 'Error desconocido');
+        const errorMessage = getUserFacingErrorMessage(
+          error,
+          t('errorDownloadingFuaMessage', 'No se pudo descargar el FUA. Intente nuevamente.'),
+          { logContext: `Download FUA request ${fuaRequest.uuid}` },
+        );
         showSnackbar({
           kind: 'error',
           title: t('errorDownloadingFua', 'Error al descargar FUA'),

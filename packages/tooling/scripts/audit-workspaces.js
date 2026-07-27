@@ -217,6 +217,13 @@ function findInvalidLaunchWorkspace2Calls(sourceFiles, inventory) {
   const failures = [];
 
   for (const sourceFile of sourceFiles) {
+    // Test fixtures intentionally launch invented workspace names to exercise
+    // framework behavior. They are not executable route consumers and must
+    // not create false production failures.
+    if (isTestSourceFile(sourceFile)) {
+      continue;
+    }
+
     const source = fs.readFileSync(sourceFile, 'utf8');
     const relativePath = toRelativePath(sourceFile);
     const launchWorkspace2Calls = findLiteralCalls(source, 'launchWorkspace2');
@@ -237,6 +244,10 @@ function findInvalidLaunchWorkspace2Calls(sourceFiles, inventory) {
   }
 
   return failures;
+}
+
+function isTestSourceFile(filePath) {
+  return /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(filePath);
 }
 
 function describeNonWorkspace2Target(workspaceName, inventory) {

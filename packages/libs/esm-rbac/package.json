@@ -8,7 +8,7 @@
   "source": true,
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
-    "typescript": "tsc",
+    "typescript": "tsc --noEmit",
     "lint": "node ../../tooling/scripts/run-biome.js lint .",
     "test": "vitest run --passWithNoTests"
   },

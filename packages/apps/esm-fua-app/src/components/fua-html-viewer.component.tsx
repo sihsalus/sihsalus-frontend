@@ -1,10 +1,11 @@
 import { InlineLoading } from '@carbon/react';
-import { showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Config } from '../config-schema';
 import { ModuleFuaRestURL, resolveFuaGeneratorEndpoint } from '../constant';
+import { prepareSafeFuaHtml } from '../utils/safe-fua-html';
 
 import styles from './fua-html-viewer.scss';
 
@@ -49,7 +50,11 @@ const FuaHtmlViewer: React.FC<FuaHtmlViewerProps> = ({ fuaId, visitUuid, endpoin
         setHtmlContent(html);
       } catch (err) {
         if (abortController.signal.aborted) return;
-        const errorMessage = err instanceof Error ? err.message : t('unknownError', 'Unknown error');
+        const errorMessage = getUserFacingErrorMessage(
+          err,
+          t('errorLoadingFuaMessage', 'No se pudo cargar el FUA. Intente nuevamente.'),
+          { logContext: 'Load FUA HTML document' },
+        );
         setError(errorMessage);
         showSnackbar({
           title: t('error', 'Error'),
@@ -88,10 +93,11 @@ const FuaHtmlViewer: React.FC<FuaHtmlViewerProps> = ({ fuaId, visitUuid, endpoin
   return (
     <div className={styles.container}>
       <iframe
-        srcDoc={htmlContent}
+        srcDoc={prepareSafeFuaHtml(htmlContent)}
         title={t('fuaDocument', 'FUA Document')}
         className={styles.iframe}
-        sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+        sandbox=""
+        referrerPolicy="no-referrer"
       />
     </div>
   );

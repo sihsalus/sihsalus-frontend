@@ -140,6 +140,7 @@
   "errorDeletingUserScope": "Error deleting a user scope",
   "errorEditingStockItem": "Error editing a stock Item",
   "errorFetchingStockSourceTypes": "Error fetching stock source types",
+  "errorFetchingStockSourceTypesMessage": "Could not load source types. Please try again.",
   "errorLoadingStockOperation": "Error loading stock operation",
   "errorLoadingStockOperationTypes": "Error loading stock operation types",
   "errorPrintingStockOperation": "Error printing stock operation",

@@ -21,13 +21,15 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IBM_TELEMETRY_DISABLED: 'true'
-  TURBO_TELEMETRY_DISABLED: '1'
-  DO_NOT_TRACK: '1'
+  IBM_TELEMETRY_DISABLED: "true"
+  TURBO_TELEMETRY_DISABLED: "1"
+  DO_NOT_TRACK: "1"
   # SPA + backend the suite points at (repo Variables).
   E2E_BASE_URL: ${{ vars.E2E_BASE_URL }}
   E2E_API_BASE_URL: ${{ vars.E2E_API_BASE_URL }}
   E2E_LOGIN_DEFAULT_LOCATION_UUID: ${{ vars.E2E_LOGIN_DEFAULT_LOCATION_UUID }}
+  E2E_PATIENT_UUID: ${{ vars.E2E_PATIENT_UUID }}
+  E2E_APPOINTMENTS_PATIENT_UUID: ${{ vars.E2E_APPOINTMENTS_PATIENT_UUID }}
   # Login used by global-setup.ts (repo Secrets).
   E2E_USER_ADMIN_USERNAME: ${{ secrets.E2E_USER_ADMIN_USERNAME }}
   E2E_USER_ADMIN_PASSWORD: ${{ secrets.E2E_USER_ADMIN_PASSWORD }}
@@ -48,6 +50,26 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/setup-node-env
+
+      - name: Validate isolated E2E configuration
+        shell: bash
+        run: |
+          missing=0
+          for name in \
+            E2E_BASE_URL \
+            E2E_API_BASE_URL \
+            E2E_LOGIN_DEFAULT_LOCATION_UUID \
+            E2E_PATIENT_UUID \
+            E2E_APPOINTMENTS_PATIENT_UUID \
+            E2E_USER_ADMIN_USERNAME \
+            E2E_USER_ADMIN_PASSWORD
+          do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::$name is required for the clinical E2E gate."
+              missing=1
+            fi
+          done
+          exit "$missing"
 
       - name: Install Playwright browser (chromium)
         run: yarn playwright install --with-deps chromium

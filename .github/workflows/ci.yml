@@ -38,6 +38,18 @@ jobs:
       - name: Validate Lint Coverage
         run: yarn validate:lint-coverage
 
+      # Literal Workspace V2 launches must target registered workspaces.
+      # A broken registration otherwise compiles successfully and fails only
+      # when a clinician presses the corresponding action.
+      - name: Validate Workspace Registrations
+        run: yarn validate:workspaces
+
+      # Clinical and administrative entry points must fail closed in the UI.
+      # Backend authorization remains authoritative, but no critical route,
+      # extension, modal, or workspace may be published without a guard.
+      - name: Validate Critical Route Privileges
+        run: yarn validate:critical-route-privileges
+
       # Existing raw error rendering is migrated incrementally. This AST guard
       # compares the PR/push with its Git base and rejects new exposures while
       # allowing controlled React Hook Form validation messages.

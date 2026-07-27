@@ -1,5 +1,5 @@
 import { Button } from '@carbon/react';
-import { showSnackbar, useSession } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar, useSession } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,13 +23,15 @@ const StartVisitButton = ({ patientUuid }: StartVisitButtonProps) => {
         openedFrom: 'patient-chart-start-visit',
       });
     } catch (error) {
-      console.error('Error launching visit form workspace:', error);
-
       showSnackbar({
         isLowContrast: false,
         kind: 'error',
         title: t('errorStartingVisit', 'Error starting visit'),
-        subtitle: error.message ?? t('errorStartingVisitDescription', 'An error occurred while starting the visit'),
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('errorStartingVisitDescription', 'Ocurrió un error al iniciar la consulta. Intente nuevamente.'),
+          { logContext: 'Launch start visit workspace' },
+        ),
       });
     }
   }, [patientUuid, t]);

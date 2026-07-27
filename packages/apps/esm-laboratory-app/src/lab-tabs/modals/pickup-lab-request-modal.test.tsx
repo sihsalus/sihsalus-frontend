@@ -92,7 +92,7 @@ describe('PickupLabRequestModal', () => {
         title: 'Error picking order',
         kind: 'error',
         critical: true,
-        description: 'Network error',
+        description: 'No se pudo tomar la solicitud. Intente nuevamente.',
       });
     });
 

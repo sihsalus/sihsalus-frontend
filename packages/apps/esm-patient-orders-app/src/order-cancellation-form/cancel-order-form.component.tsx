@@ -12,7 +12,7 @@ import {
   TextArea,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { showSnackbar, useConfig, useLayoutType, Workspace2 } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar, useConfig, useLayoutType, Workspace2 } from '@openmrs/esm-framework';
 import {
   type DefaultPatientWorkspaceProps,
   type Order,
@@ -137,7 +137,11 @@ const OrderCancellationForm: React.FC<OrderCancellationFormProps> = (props) => {
             isLowContrast: true,
             title: t('errorCancellingOrder', 'Error cancelling order'),
             kind: 'error',
-            subtitle: err?.message,
+            subtitle: getUserFacingErrorMessage(
+              err,
+              t('errorCancellingOrderMessage', 'No se pudo cancelar la orden. Intente nuevamente.'),
+              { logContext: 'Cancel clinical order' },
+            ),
           });
         },
       );

@@ -100,7 +100,7 @@ describe('RejectLabRequestModal', () => {
         title: 'Error rejecting lab request',
         kind: 'error',
         critical: true,
-        description: 'Server error',
+        description: 'No se pudo rechazar la solicitud. Intente nuevamente.',
       });
     });
 

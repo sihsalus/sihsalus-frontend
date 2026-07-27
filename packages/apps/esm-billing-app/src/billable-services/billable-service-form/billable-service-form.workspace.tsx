@@ -16,6 +16,7 @@ import {
 import { Add, TrashCan } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
+  getUserFacingErrorMessage,
   getCoreTranslation,
   ResponsiveWrapper,
   showSnackbar,
@@ -283,9 +284,13 @@ const BillableServiceFormWorkspace: React.FC<Workspace2DefinitionProps<BillableS
       }
     } catch (error) {
       showSnackbar({
-        title: t('billPaymentError', 'Bill payment error'),
+        title: t('billableServiceSaveError', 'No se pudo guardar el servicio facturable'),
         kind: 'error',
-        subtitle: error instanceof Error ? error.message : String(error),
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('billableServiceSaveErrorMessage', 'Revise los datos e intente nuevamente.'),
+          { logContext: 'Save billable service' },
+        ),
       });
     } finally {
       setIsSubmitting(false);

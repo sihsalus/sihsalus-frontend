@@ -3,6 +3,7 @@ import { useConfig, useSession } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { fdeWorkflowStorageName, fdeWorkflowStorageVersion } from '../context/FormWorkflowReducer';
 import { fdeGroupWorkflowStorageName, fdeGroupWorkflowStorageVersion } from '../context/GroupFormWorkflowReducer';
+import { readActiveSessionFormUuids } from '../context/workflow-storage';
 import { useGetAllForms } from '../hooks';
 import FormsTable from './forms-table';
 import styles from './styles.scss';
@@ -53,25 +54,12 @@ const FormsPage = () => {
   const { forms, isLoading, error } = useGetAllForms();
   const cleanRows = prepareRowsForTable(forms, formCategories);
   const { user } = useSession();
-  const savedFormsData = localStorage.getItem(fdeWorkflowStorageName + ':' + user?.uuid);
-  const savedGroupFormsData = localStorage.getItem(fdeGroupWorkflowStorageName + ':' + user?.uuid);
-  const activeForms = [];
-  const activeGroupForms = [];
-
-  if (savedFormsData && JSON.parse(savedFormsData)?.['_storageVersion'] === fdeWorkflowStorageVersion) {
-    Object.entries(JSON.parse(savedFormsData).forms).forEach(
-      ([formUuid, form]: [string, { [key: string]: unknown }]) => {
-        if (form.workflowState) activeForms.push(formUuid);
-      },
-    );
-  }
-  if (savedGroupFormsData && JSON.parse(savedGroupFormsData)?.['_storageVersion'] === fdeGroupWorkflowStorageVersion) {
-    Object.entries(JSON.parse(savedGroupFormsData).forms).forEach(
-      ([formUuid, form]: [string, { [key: string]: unknown }]) => {
-        if (form.workflowState) activeGroupForms.push(formUuid);
-      },
-    );
-  }
+  const activeForms = readActiveSessionFormUuids(fdeWorkflowStorageName, fdeWorkflowStorageVersion, user?.uuid);
+  const activeGroupForms = readActiveSessionFormUuids(
+    fdeGroupWorkflowStorageName,
+    fdeGroupWorkflowStorageVersion,
+    user?.uuid,
+  );
 
   const categoryRows = formCategoriesToShow.map((name) => {
     const category = formCategories.find((category) => category.name === name);
@@ -93,19 +81,31 @@ const FormsPage = () => {
           <Tab aria-label={t('allForms', 'All Forms')}>
             {`${t('allForms', 'All Forms')} (${cleanRows ? cleanRows?.length : '??'})`}
           </Tab>
-          {categoryRows?.map((category, index) => (
-            <Tab aria-label={category.name} key={index}>
+          {categoryRows?.map((category) => (
+            <Tab aria-label={category.name} key={category.name}>
               {`${t(category.name, category.name)} (${category.rows.length})`}
             </Tab>
           ))}
         </TabList>
         <TabPanels>
           <TabPanel>
-            <FormsTable rows={cleanRows} {...{ error, isLoading, activeForms, activeGroupForms }} />
+            <FormsTable
+              rows={cleanRows}
+              error={error}
+              isLoading={isLoading}
+              activeForms={activeForms}
+              activeGroupForms={activeGroupForms}
+            />
           </TabPanel>
-          {categoryRows?.map((category, index) => (
-            <TabPanel key={index}>
-              <FormsTable rows={category.rows} {...{ error, isLoading, activeForms, activeGroupForms }} />
+          {categoryRows?.map((category) => (
+            <TabPanel key={category.name}>
+              <FormsTable
+                rows={category.rows}
+                error={error}
+                isLoading={isLoading}
+                activeForms={activeForms}
+                activeGroupForms={activeGroupForms}
+              />
             </TabPanel>
           ))}
         </TabPanels>

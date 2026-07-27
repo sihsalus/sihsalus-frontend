@@ -101,8 +101,6 @@ const AddProviderQueueRoomModal: React.FC<AddProviderQueueRoomModalProps> = ({ c
       return;
     }
 
-    localStorage.setItem('queueServiceName', selectedItem.display);
-    localStorage.setItem('queueService', selectedItem.uuid);
     updateSelectedService(selectedItem.uuid, selectedItem.display);
   }, []);
 
@@ -112,8 +110,6 @@ const AddProviderQueueRoomModal: React.FC<AddProviderQueueRoomModalProps> = ({ c
         return;
       }
 
-      localStorage.setItem('queueLocationUuid', selectedItem.id);
-      localStorage.setItem('queueLocationName', selectedItem.name);
       updateSelectedQueueLocationName(selectedItem.name);
       updateSelectedQueueLocationUuid(selectedItem.id);
       setValue('queueLocationUuid', selectedItem.id);
@@ -122,7 +118,6 @@ const AddProviderQueueRoomModal: React.FC<AddProviderQueueRoomModalProps> = ({ c
   );
 
   const handleRetainLocation = useCallback((isChecked: boolean) => {
-    localStorage.setItem('isPermanentProviderQueueRoom', String(isChecked));
     updateIsPermanentProviderQueueRoom(isChecked);
   }, []);
 
@@ -147,8 +142,6 @@ const AddProviderQueueRoomModal: React.FC<AddProviderQueueRoomModalProps> = ({ c
           });
         }
 
-        const timestamp = new Date().toString();
-        localStorage.setItem('lastUpdatedQueueRoomTimestamp', timestamp);
         updateSelectedQueueRoomTimestamp(new Date());
         await mutate();
         closeModal();

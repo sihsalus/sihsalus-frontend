@@ -7,7 +7,13 @@
  */
 
 import { Button, ModalBody, ModalFooter, ModalHeader, Tag } from '@carbon/react';
-import { age, launchWorkspace, launchWorkspace2, showSnackbar } from '@openmrs/esm-framework';
+import {
+  age,
+  getUserFacingErrorMessage,
+  launchWorkspace,
+  launchWorkspace2,
+  showSnackbar,
+} from '@openmrs/esm-framework';
 import { getPreferredIdentifier } from '@openmrs/esm-utils';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -82,7 +88,11 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
         showSnackbar({
           title: t('errorServingPatient', 'Error al atender paciente'),
           kind: 'error',
-          subtitle: error?.message,
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('errorServingPatientMessage', 'No se pudo iniciar la atención. Intente nuevamente.'),
+            { logContext: `Serve emergency patient from queue entry ${queueEntry.uuid}` },
+          ),
         });
       })
       .finally(() => {

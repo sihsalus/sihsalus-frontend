@@ -1,5 +1,5 @@
 import { Button, ModalBody, ModalFooter, ModalHeader, Stack, TextArea } from '@carbon/react';
-import { showSnackbar, useAbortController, useConfig } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar, useAbortController, useConfig } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
@@ -45,7 +45,11 @@ const RespondInterconsultaModal: React.FC<RespondInterconsultaModalProps> = ({ c
       showSnackbar({
         kind: 'error',
         title: t('errorRespondingInterconsulta', 'Error al responder la interconsulta'),
-        subtitle: error instanceof Error ? error.message : undefined,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('errorRespondingInterconsultaMessage', 'No se pudo registrar la respuesta. Intente nuevamente.'),
+          { logContext: 'Respond to interconsultation' },
+        ),
       });
     } finally {
       setIsSubmitting(false);

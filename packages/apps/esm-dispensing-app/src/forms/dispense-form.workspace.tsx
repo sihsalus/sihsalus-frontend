@@ -2,6 +2,7 @@ import { Button, Checkbox, Form, FormLabel, InlineLoading } from '@carbon/react'
 import {
   ExtensionSlot,
   getCoreTranslation,
+  getUserFacingErrorMessage,
   showModal,
   showSnackbar,
   useConfig,
@@ -205,9 +206,16 @@ const DispenseForm: React.FC<Workspace2DefinitionProps<DispenseFormProps, {}, {}
             },
             (error) => {
               showSnackbar({
-                title: 'Stock dispense error',
+                title: t('stockDispenseError', 'Error al actualizar el inventario'),
                 kind: 'error',
-                subtitle: error?.message,
+                subtitle: getUserFacingErrorMessage(
+                  error,
+                  t(
+                    'stockDispenseErrorMessage',
+                    'La dispensación se guardó, pero no se pudo actualizar el inventario.',
+                  ),
+                  { logContext: 'Update stock after medication dispense' },
+                ),
               });
             },
           );
@@ -251,7 +259,11 @@ const DispenseForm: React.FC<Workspace2DefinitionProps<DispenseFormProps, {}, {}
               mode === 'enter' ? 'medicationDispenseError' : 'medicationDispenseUpdatedError',
               mode === 'enter' ? 'Error dispensing medication.' : 'Error updating dispense record',
             ),
-            subtitle: error?.message,
+            subtitle: getUserFacingErrorMessage(
+              error,
+              t('medicationDispenseSaveErrorMessage', 'No se pudo guardar la dispensación. Intente nuevamente.'),
+              { logContext: 'Save medication dispense' },
+            ),
           });
           setIsSubmitting(false);
         },

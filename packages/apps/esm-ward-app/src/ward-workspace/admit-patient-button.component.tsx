@@ -1,6 +1,7 @@
 import { Button } from '@carbon/react';
 import {
   ArrowRightIcon,
+  getUserFacingErrorMessage,
   showSnackbar,
   useAppContext,
   useFeatureFlag,
@@ -91,20 +92,17 @@ const AdmitPatientButton: React.FC<AdmitPatientButtonProps> = ({
                   }),
           });
         } else {
-          // TODO: better way to handle / display error messages
-          // https://openmrs.atlassian.net/browse/O3-5423
-          const err = result.reason;
-          const errorMessage =
-            err?.responseBody?.error?.globalErrors?.[0]?.message ??
-            err?.message ??
-            t('unknownError', 'An unknown error occurred');
           showSnackbar({
             kind: 'error',
             title:
               wpDispositionType === 'ADMIT'
                 ? t('errorAdmittingPatient', 'Failed to admit {{patientName}}', { patientName })
                 : t('errorTransferringPatient', 'Failed to transfer {{patientName}}', { patientName }),
-            subtitle: errorMessage,
+            subtitle: getUserFacingErrorMessage(
+              result.reason,
+              t('errorAdmittingOrTransferringPatientMessage', 'No se pudo completar la operación. Intente nuevamente.'),
+              { logContext: `Admit or transfer patient ${wp.patient.uuid}` },
+            ),
           });
         }
       });

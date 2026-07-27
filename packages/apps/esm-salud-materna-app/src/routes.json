@@ -28,18 +28,21 @@
       "name": "deliveryOrAbortion-chart",
       "component": "deliveryOrAbortionTable",
       "slot": "labour-delivery-delivery-abortion-slot",
+      "privileges": "app:hoja.clinica.partoPuerperio",
       "order": 1
     },
     {
       "name": "partograph-chart",
       "component": "partograph",
       "slot": "labour-delivery-partograph-slot",
+      "privileges": "app:hoja.clinica.partoPuerperio",
       "order": 1
     },
     {
       "name": "summaryOfLaborAndPostpartum-chart",
       "component": "summaryOfLaborAndPostpartumTable",
       "slot": "labour-delivery-summary-slot",
+      "privileges": "app:hoja.clinica.partoPuerperio",
       "order": 1
     },
     {
@@ -94,12 +97,14 @@
       "name": "maternal-history-chart",
       "component": "maternalHistoryTable",
       "slot": "prenatal-maternal-history-slot",
+      "privileges": "app:hoja.clinica.controlPrenatal",
       "order": 1
     },
     {
       "name": "obstetric-history-chart",
       "component": "obstetricHistoryChart",
       "slot": "prenatal-maternal-history-slot",
+      "privileges": "app:hoja.clinica.controlPrenatal",
       "order": 2
     },
     {
@@ -125,18 +130,21 @@
       "name": "immediatePostpartum-chart",
       "component": "immediatePostpartumTable",
       "slot": "postnatal-care-immediate-slot",
+      "privileges": "app:hoja.clinica.atencionPostnatal",
       "order": 1
     },
     {
       "name": "postnatalControls-chart",
       "component": "postpartumControlTable",
       "slot": "postnatal-care-controls-slot",
+      "privileges": "app:hoja.clinica.atencionPostnatal",
       "order": 1
     },
     {
       "name": "postpartum-tracking-widget",
       "component": "postpartumTracking",
       "slot": "postnatal-care-controls-slot",
+      "privileges": "app:hoja.clinica.atencionPostnatal",
       "order": 2
     },
     {
@@ -162,78 +170,91 @@
       "name": "alturaUterina-chart",
       "component": "alturaUterinaChart",
       "slot": "prenatal-current-pregnancy-slot",
+      "privileges": "app:hoja.clinica.controlPrenatal",
       "order": 4
     },
     {
       "name": "current-pregnancy-chart",
       "component": "currentPregnancyTable",
       "slot": "prenatal-current-pregnancy-slot",
+      "privileges": "app:hoja.clinica.controlPrenatal",
       "order": 1
     },
     {
       "name": "prenatal-care-chart",
       "component": "prenatalCareChart",
       "slot": "prenatal-care-chart-slot",
+      "privileges": "app:hoja.clinica.controlPrenatal",
       "order": 1
     },
     {
       "name": "birth-plan-widget",
       "component": "birthPlan",
       "slot": "prenatal-care-chart-slot",
+      "privileges": "app:hoja.clinica.controlPrenatal",
       "order": 2
     },
     {
       "name": "risk-classification-widget",
       "component": "riskClassification",
       "slot": "prenatal-current-pregnancy-slot",
+      "privileges": "app:hoja.clinica.controlPrenatal",
       "order": 5
     },
     {
       "name": "psychoprophylaxis-widget",
       "component": "psychoprophylaxis",
       "slot": "prenatal-care-chart-slot",
+      "privileges": "app:hoja.clinica.controlPrenatal",
       "order": 3
     },
     {
       "name": "prenatal-supplementation-widget",
       "component": "prenatalSupplementation",
       "slot": "prenatal-care-chart-slot",
+      "privileges": "app:hoja.clinica.controlPrenatal",
       "order": 4
     },
     {
       "name": "contraceptive-methods-widget",
       "component": "contraceptiveMethods",
       "slot": "family-planning-methods-slot",
+      "privileges": "app:hoja.clinica.planificacionFamiliar",
       "order": 1
     },
     {
       "name": "fp-counseling-widget",
       "component": "fpCounseling",
       "slot": "family-planning-counseling-slot",
+      "privileges": "app:hoja.clinica.planificacionFamiliar",
       "order": 1
     },
     {
       "name": "fp-followup-widget",
       "component": "fpFollowup",
       "slot": "family-planning-followup-slot",
+      "privileges": "app:hoja.clinica.planificacionFamiliar",
       "order": 1
     },
     {
       "name": "cervical-screening-widget",
       "component": "cervicalScreening",
       "slot": "cancer-prevention-cervical-slot",
+      "privileges": "app:hoja.clinica.prevencionCancer",
       "order": 1
     },
     {
       "name": "breast-screening-widget",
       "component": "breastScreening",
       "slot": "cancer-prevention-breast-slot",
+      "privileges": "app:hoja.clinica.prevencionCancer",
       "order": 1
     },
     {
       "name": "cancer-followup-widget",
       "component": "cancerFollowup",
       "slot": "cancer-prevention-followup-slot",
+      "privileges": "app:hoja.clinica.prevencionCancer",
       "order": 1
     },
     {

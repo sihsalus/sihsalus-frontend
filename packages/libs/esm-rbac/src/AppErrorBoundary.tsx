@@ -37,13 +37,15 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
   render(): ReactNode {
     if (this.state.error) {
       return (
-        <Tile>
+        <Tile role="alert">
           <p>
-            <strong>An unexpected error occurred in {this.props.appName}.</strong>
+            <strong>No se pudo mostrar esta sección.</strong>
           </p>
-          <p style={{ color: '#6f6f6f', marginTop: '0.5rem' }}>{this.state.error.message}</p>
+          <p style={{ color: '#6f6f6f', marginTop: '0.5rem' }}>
+            Recargue la página. Si el problema continúa, comuníquese con el administrador del sistema.
+          </p>
           <Button kind="ghost" size="sm" style={{ marginTop: '1rem' }} onClick={() => globalThis.location?.reload()}>
-            Reload page
+            Recargar página
           </Button>
         </Tile>
       );

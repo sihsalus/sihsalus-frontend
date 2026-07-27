@@ -1,6 +1,6 @@
 import { Button, ButtonSet, Checkbox, CheckboxGroup, Form, InlineNotification, Stack } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { showSnackbar, useAppContext } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar, useAppContext } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { useCallback, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -117,7 +117,11 @@ export default function PatientBedSwapForm({
                     patientName,
                   },
                 ),
-                subtitle: error?.message,
+                subtitle: getUserFacingErrorMessage(
+                  error,
+                  t('errorChangingPatientBedAssignmentMessage', 'No se pudo cambiar la cama. Intente nuevamente.'),
+                  { logContext: `Change bed assignment for ${wardPatientsToSwap[i].patient.uuid}` },
+                ),
               });
             }
           });
@@ -130,7 +134,11 @@ export default function PatientBedSwapForm({
           showSnackbar({
             kind: 'error',
             title: t('errorChangingPatientBedAssignment', 'Error changing patient bed assignment'),
-            subtitle: error?.message,
+            subtitle: getUserFacingErrorMessage(
+              error,
+              t('errorChangingPatientBedAssignmentMessage', 'No se pudo cambiar la cama. Intente nuevamente.'),
+              { logContext: 'Change patient bed assignment' },
+            ),
           });
         })
         .finally(() => {

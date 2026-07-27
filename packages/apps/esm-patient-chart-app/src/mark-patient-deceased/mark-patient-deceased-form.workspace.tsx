@@ -18,6 +18,7 @@ import { WarningFilled } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ExtensionSlot,
+  getUserFacingErrorMessage,
   ResponsiveWrapper,
   showSnackbar,
   useConfig,
@@ -132,7 +133,11 @@ const MarkPatientDeceasedForm: React.FC<MarkPatientDeceasedWorkspaceProps> = (pr
           showSnackbar({
             kind: 'error',
             isLowContrast: false,
-            subtitle: error?.message,
+            subtitle: getUserFacingErrorMessage(
+              error,
+              t('errorMarkingPatientDeceasedMessage', 'No se pudo registrar el fallecimiento. Intente nuevamente.'),
+              { logContext: 'Mark patient deceased' },
+            ),
             title: t('errorMarkingPatientDeceased', 'Error marking patient deceased'),
           });
         });

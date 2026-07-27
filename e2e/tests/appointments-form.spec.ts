@@ -9,17 +9,23 @@ import { expect, type Page, test } from '@playwright/test';
  *  - El flujo de cita recurrente exige una fecha de finalización.
  */
 
-// Paciente de prueba: 100001W - Franco Chiroque Santini (backend dev).
-const PATIENT_UUID = process.env.E2E_APPOINTMENTS_PATIENT_UUID ?? '8fa86bd4-819f-4140-b4f9-216dd77c7f7e';
+const PATIENT_UUID = process.env.E2E_APPOINTMENTS_PATIENT_UUID;
+if (!PATIENT_UUID) {
+  throw new Error('E2E_APPOINTMENTS_PATIENT_UUID must identify a synthetic test patient.');
+}
 
 async function openAppointmentsForm(page: Page) {
-  await page.goto(`patient/${PATIENT_UUID}/chart/Appointments`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`patient/${PATIENT_UUID}/chart/Appointments`, {
+    waitUntil: 'domcontentloaded',
+  });
   await page.waitForLoadState('networkidle').catch(() => null);
   await expect(page).not.toHaveURL(/\/login/);
 
   // El botón de alta aparece como "Agregar" (con data) o como botón de registro (vacío).
   const addButton = page
-    .getByRole('button', { name: /Agregar|Add Appointments|Registrar|Record appointment/i })
+    .getByRole('button', {
+      name: /Agregar|Add Appointments|Registrar|Record appointment/i,
+    })
     .first();
   await expect(addButton).toBeVisible({ timeout: 30_000 });
   await addButton.click();
@@ -32,7 +38,9 @@ test.describe('Formulario de citas', () => {
   test('se ajusta al ancho del workspace sin desplazamiento horizontal', async ({ page }) => {
     await openAppointmentsForm(page);
 
-    const duration = page.getByRole('spinbutton', { name: /Duración|Duration/i });
+    const duration = page.getByRole('spinbutton', {
+      name: /Duración|Duration/i,
+    });
     const form = page.locator('form').filter({ has: duration });
     await expect(form).toBeVisible();
 
@@ -40,7 +48,10 @@ test.describe('Formulario de citas', () => {
       [element, element.parentElement]
         .filter((container): container is HTMLElement => container instanceof HTMLElement)
         .filter((container) => container.scrollWidth > container.clientWidth + 1)
-        .map((container) => ({ clientWidth: container.clientWidth, scrollWidth: container.scrollWidth })),
+        .map((container) => ({
+          clientWidth: container.clientWidth,
+          scrollWidth: container.scrollWidth,
+        })),
     );
 
     expect(overflowingContainers).toEqual([]);
@@ -49,7 +60,9 @@ test.describe('Formulario de citas', () => {
   test('la duración por defecto es 30 minutos', async ({ page }) => {
     await openAppointmentsForm(page);
 
-    const duration = page.getByRole('spinbutton', { name: /Duración|Duration/i });
+    const duration = page.getByRole('spinbutton', {
+      name: /Duración|Duration/i,
+    });
     await expect(duration).toHaveValue('30');
   });
 

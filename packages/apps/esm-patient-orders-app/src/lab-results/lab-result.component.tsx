@@ -1,4 +1,5 @@
 import { InlineLoading, InlineNotification, Tile } from '@carbon/react';
+import { getUserFacingErrorMessage } from '@openmrs/esm-framework';
 import { type Order } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -30,7 +31,11 @@ const LabResults: React.FC<LabResultsProps> = ({ order }) => {
       <InlineNotification
         kind="error"
         title={t('labResultError', 'Error loading lab results')}
-        subtitle={error?.message ?? conceptError?.message}
+        subtitle={getUserFacingErrorMessage(
+          error ?? conceptError,
+          t('labResultErrorMessage', 'No se pudieron cargar los resultados de laboratorio. Intente nuevamente.'),
+          { logContext: 'Load laboratory results' },
+        )}
       />
     );
 

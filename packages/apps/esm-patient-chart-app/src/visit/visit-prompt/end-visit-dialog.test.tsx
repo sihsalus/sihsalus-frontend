@@ -181,7 +181,7 @@ describe('End visit dialog', () => {
     );
     await waitFor(() =>
       expect(mockShowSnackbar).toHaveBeenCalledWith({
-        subtitle: 'Internal error message',
+        subtitle: 'No se pudo finalizar la consulta o generar el FUA. Intente nuevamente.',
         kind: 'error',
         title: 'Error ending visit or generating FUA',
         isLowContrast: false,

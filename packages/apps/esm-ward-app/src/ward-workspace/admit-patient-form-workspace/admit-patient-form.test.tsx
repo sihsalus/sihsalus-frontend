@@ -232,7 +232,7 @@ describe('Testing AdmitPatientForm', () => {
     expect(mockedShowSnackbar).toHaveBeenCalledWith({
       kind: 'error',
       title: 'Failed to admit Alice Johnson',
-      subtitle: 'Failed to create encounter',
+      subtitle: 'No se pudo admitir al paciente. Intente nuevamente.',
     });
   });
 

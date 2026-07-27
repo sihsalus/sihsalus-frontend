@@ -3,6 +3,7 @@ import { Exit } from '@carbon/react/icons';
 import {
   closeWorkspaceGroup2,
   ExtensionSlot,
+  getUserFacingErrorMessage,
   showSnackbar,
   useAppContext,
   useSession,
@@ -53,11 +54,13 @@ export default function PatientDischargeWorkspace({
         }
       })
       .catch((err) => {
-        // TODO: better way to handle / display error messages
-        // https://openmrs.atlassian.net/browse/O3-5423
         showSnackbar({
           title: t('errorDischargingPatient', 'Error discharging patient'),
-          subtitle: err?.responseBody?.error?.globalErrors?.[0]?.message ?? err.message,
+          subtitle: getUserFacingErrorMessage(
+            err,
+            t('errorDischargingPatientMessage', 'No se pudo dar de alta al paciente. Intente nuevamente.'),
+            { logContext: `Discharge patient ${wardPatient?.patient?.uuid}` },
+          ),
           kind: 'error',
         });
       })

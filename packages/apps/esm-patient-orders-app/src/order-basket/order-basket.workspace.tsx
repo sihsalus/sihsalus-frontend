@@ -1,6 +1,13 @@
 /* eslint-disable @typescript-eslint/no-misused-promises, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/unbound-method */
 import { ActionableNotification, Button, ButtonSet, InlineLoading, InlineNotification } from '@carbon/react';
-import { ExtensionSlot, showModal, useConfig, Workspace2 } from '@openmrs/esm-framework';
+import {
+  ExtensionSlot,
+  getUserFacingErrorMessage,
+  logError,
+  showModal,
+  useConfig,
+  Workspace2,
+} from '@openmrs/esm-framework';
 import {
   type DefaultPatientWorkspaceProps,
   getPatientUuidFromStore,
@@ -37,29 +44,6 @@ interface OrderBasketWindowProps {
 
 type Workspace2OrderBasketProps = PatientWorkspace2DefinitionProps<OrderBasketWorkspaceProps, OrderBasketWindowProps>;
 type OrderBasketProps = DefaultPatientWorkspaceProps | Workspace2OrderBasketProps;
-
-type OpenmrsSubmissionError = {
-  message?: string;
-  responseBody?: {
-    error?: {
-      message?: string;
-      globalErrors?: Array<string>;
-      fieldErrors?: Record<string, Array<{ message?: string }>>;
-    };
-  };
-};
-
-function getOpenmrsErrorMessage(error: OpenmrsSubmissionError, fallback: string) {
-  const responseError = error?.responseBody?.error;
-  const fieldErrors = responseError?.fieldErrors
-    ? Object.entries(responseError.fieldErrors).flatMap(([fieldName, errors]) =>
-        errors.map((fieldError) => [fieldName, fieldError?.message].filter(Boolean).join(': ')),
-      )
-    : [];
-  const messages = [responseError?.message, ...(responseError?.globalErrors ?? []), ...fieldErrors].filter(Boolean);
-
-  return messages.join(', ') || error?.message || fallback;
-}
 
 function isWorkspace2Props(props: OrderBasketProps): props is Workspace2OrderBasketProps {
   return 'groupProps' in props && 'workspaceProps' in props;
@@ -200,9 +184,12 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
         await closeWorkspaceWithSavedChanges();
         showOrderSuccessToast(moduleName, orders);
       } catch (e) {
-        console.error(e);
         setCreatingEncounterError(
-          getOpenmrsErrorMessage(e, t('tryReopeningTheWorkspaceAgain', 'Please try launching the workspace again')),
+          getUserFacingErrorMessage(
+            e,
+            t('orderSubmissionFailedMessage', 'No se pudieron registrar las órdenes. Intente nuevamente.'),
+            { logContext: 'Submit orders on new encounter' },
+          ),
         );
       }
     } else {
@@ -213,6 +200,9 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
         await closeWorkspaceWithSavedChanges();
         showOrderSuccessToast(moduleName, orders);
       } else {
+        erroredItems.forEach((item) => {
+          logError(item.orderError, `Submit order item ${item.display}`);
+        });
         setOrdersWithErrors(erroredItems);
       }
     }

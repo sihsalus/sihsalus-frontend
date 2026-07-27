@@ -1,6 +1,6 @@
 import { SkeletonText, Tag, Tile } from '@carbon/react';
 import { WarningFilled } from '@carbon/react/icons';
-import { type PatientUuid, UserHasAccess, useConfig } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, type PatientUuid, UserHasAccess, useConfig } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import ActionButtons from '../components/action-buttons.component';
@@ -89,7 +89,11 @@ const PrescriptionDetails: React.FC<{
               <p>
                 {allergiesError && (
                   <span className={styles.error}>
-                    {t('errorLoadingAllergies', 'Error loading allergies')}: {allergiesError.message}
+                    {getUserFacingErrorMessage(
+                      allergiesError,
+                      t('errorLoadingAllergies', 'No se pudieron cargar las alergias. Intente nuevamente.'),
+                      { logContext: 'Load allergies in dispensing' },
+                    )}
                   </span>
                 )}
                 {!allergiesError && totalAllergies > 0 && (
@@ -119,7 +123,14 @@ const PrescriptionDetails: React.FC<{
       )}
       {error && (
         <p className={styles.error}>
-          {t('errorLoadingPrescriptionDetails', 'Error loading prescription details')}: {error.message}
+          {getUserFacingErrorMessage(
+            error,
+            t(
+              'errorLoadingPrescriptionDetails',
+              'No se pudieron cargar los detalles de la prescripción. Intente nuevamente.',
+            ),
+            { logContext: 'Load prescription details in dispensing' },
+          )}
         </p>
       )}
       {medicationRequestBundles &&

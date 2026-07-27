@@ -11,6 +11,7 @@ import {
 } from '@carbon/react';
 import {
   formatDate,
+  getUserFacingErrorMessage,
   launchWorkspace,
   showModal,
   showSnackbar,
@@ -108,8 +109,7 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
       ? { type: editContext.recordType, baseEncounterUuid: editContext.baseEncounterUuid ?? null }
       : null;
   const draftActive = Boolean(draft) && viewingEdit;
-  const isCreatingBase =
-    showEditor && editContext?.recordType === 'base' && editContext.encounterUuid == null;
+  const isCreatingBase = showEditor && editContext?.recordType === 'base' && editContext.encounterUuid == null;
 
   const activeGroup = useMemo(() => {
     if (!groups.length) {
@@ -280,10 +280,11 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
       showSnackbar({
         kind: 'error',
         title: t('odontogramSaveError', 'Error al guardar odontograma'),
-        subtitle:
-          err instanceof Error
-            ? err.message
-            : t('odontogramSaveErrorSubtitle', 'No se pudo guardar. Intente nuevamente.'),
+        subtitle: getUserFacingErrorMessage(
+          err,
+          t('odontogramSaveErrorSubtitle', 'No se pudo guardar. Intente nuevamente.'),
+          { logContext: 'Save odontogram from dashboard' },
+        ),
       });
     }
   }, [editContext, save, patientUuid, editData, t, mutate, setSelectedEncounterUuid, resetFormSelection]);

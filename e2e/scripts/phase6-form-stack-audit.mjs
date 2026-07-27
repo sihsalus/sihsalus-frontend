@@ -7,14 +7,16 @@ import { chromium, request as playwrightRequest } from 'playwright';
 const spaBase = (process.env.PHASE6_SPA_BASE ?? 'http://localhost:3000/openmrs/spa').replace(/\/$/, '');
 const openmrsBase = spaBase.replace(/\/spa$/, '');
 const artifactRoot = path.resolve(process.cwd(), process.env.PHASE6_ARTIFACT_DIR ?? 'artifacts/phase6-e2e');
-const username = process.env.E2E_USER_ADMIN_USERNAME ?? 'admin';
-const password = process.env.E2E_USER_ADMIN_PASSWORD ?? 'Admin123';
-const defaultLocationUuid = process.env.E2E_LOGIN_DEFAULT_LOCATION_UUID ?? '44c3efb0-2583-4c80-a79e-1f756a03c0a1';
-const patientCandidates = [
-  process.env.E2E_PATIENT_UUID,
-  'e28a32ce-dd2b-4944-b26b-0fa9012aed45',
-  '8673ee4f-e2ab-4077-ba55-4980f408773e',
-].filter(Boolean);
+const username = process.env.E2E_USER_ADMIN_USERNAME;
+const password = process.env.E2E_USER_ADMIN_PASSWORD;
+const defaultLocationUuid = process.env.E2E_LOGIN_DEFAULT_LOCATION_UUID;
+const patientCandidates = [process.env.E2E_PATIENT_UUID].filter(Boolean);
+if (!username || !password || !defaultLocationUuid || !patientCandidates.length) {
+  throw new Error(
+    'Configure E2E_USER_ADMIN_USERNAME, E2E_USER_ADMIN_PASSWORD, ' +
+      'E2E_LOGIN_DEFAULT_LOCATION_UUID and E2E_PATIENT_UUID with synthetic test data.',
+  );
+}
 
 const report = {
   startedAt: new Date().toISOString(),
@@ -449,7 +451,11 @@ async function interactWithForm(page) {
       await field.fill('7');
       await page.waitForTimeout(800);
       const persistedValue = await field.inputValue().catch(() => null);
-      return { interacted: true, kind: `${tagName ?? 'input'}:${type ?? 'default'}`, persistedValue };
+      return {
+        interacted: true,
+        kind: `${tagName ?? 'input'}:${type ?? 'default'}`,
+        persistedValue,
+      };
     }
 
     if (tagName === 'select') {
@@ -553,7 +559,10 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
     viewport: { width: 1600, height: 1200 },
-    recordHar: { path: path.join(artifactRoot, 'phase6-form-stack.har'), content: 'embed' },
+    recordHar: {
+      path: path.join(artifactRoot, 'phase6-form-stack.har'),
+      content: 'embed',
+    },
   });
   const page = await context.newPage();
   const api = await createApiContext();
@@ -603,7 +612,11 @@ async function main() {
     });
   });
 
-  await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
+  await context.tracing.start({
+    screenshots: true,
+    snapshots: true,
+    sources: true,
+  });
 
   try {
     await withFlow('Authentication', 'Verify login flow and initial authenticated shell render', async (flow) => {
@@ -685,7 +698,9 @@ async function main() {
           .catch(() => 'unknown-form');
         await robustClick(firstFormCell, page);
         await page.waitForTimeout(1000);
-        await captureState(page, 'patient-form-entry-workspace-create-open', { formLabel });
+        await captureState(page, 'patient-form-entry-workspace-create-open', {
+          formLabel,
+        });
 
         const iframeCount = await page
           .locator('iframe')
@@ -741,7 +756,9 @@ async function main() {
 
         await robustClick(editRow.editButton, page);
         await page.waitForTimeout(1000);
-        await captureState(page, 'patient-form-entry-workspace-edit-open', { lastCompleted: editRow.lastCompleted });
+        await captureState(page, 'patient-form-entry-workspace-edit-open', {
+          lastCompleted: editRow.lastCompleted,
+        });
         await closeWorkspace(page, false);
         await captureState(page, 'patient-form-entry-workspace-edit-closed');
       },
@@ -767,7 +784,9 @@ async function main() {
           .catch(() => null);
         await robustClick(vitalsLauncher, page);
         await page.waitForTimeout(1000);
-        await captureState(page, 'vitals-legacy-form-entry-open', { buttonText });
+        await captureState(page, 'vitals-legacy-form-entry-open', {
+          buttonText,
+        });
 
         const interaction = await interactWithForm(page);
         flow.observations.push(`Vitals interaction result: ${JSON.stringify(interaction)}`);
@@ -799,7 +818,9 @@ async function main() {
       },
     );
   } finally {
-    await context.tracing.stop({ path: path.join(artifactRoot, 'phase6-form-stack.trace.zip') });
+    await context.tracing.stop({
+      path: path.join(artifactRoot, 'phase6-form-stack.trace.zip'),
+    });
     await api.dispose();
     await context.close();
     await browser.close();

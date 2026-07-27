@@ -17,8 +17,11 @@ type LoginOptions = {
 };
 
 export function getE2ECredentials() {
-  const username = process.env.E2E_USER_ADMIN_USERNAME ?? 'admin';
-  const password = process.env.E2E_USER_ADMIN_PASSWORD ?? 'Admin123';
+  const username = process.env.E2E_USER_ADMIN_USERNAME;
+  const password = process.env.E2E_USER_ADMIN_PASSWORD;
+  if (!username || !password) {
+    throw new Error('E2E_USER_ADMIN_USERNAME and E2E_USER_ADMIN_PASSWORD must be configured.');
+  }
 
   return {
     username,

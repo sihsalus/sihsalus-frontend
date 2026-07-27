@@ -7,8 +7,8 @@ import Home from './home.component';
 import ServicesTable from './queue-patient-linelists/queue-services-table.component';
 import AppointmentsTable from './queue-patient-linelists/scheduled-appointments-table.component';
 import QueueScreen from './queue-screen/queue-screen.component';
-import VisualQueue from './visual-queue/visual-queue.component';
 import QueueTableByStatusView from './views/queue-table-by-status-view.component';
+import VisualQueue from './visual-queue/visual-queue.component';
 
 const Root: React.FC = () => {
   return (
@@ -18,10 +18,7 @@ const Root: React.FC = () => {
         description="Necesita permisos de colas para acceder a esta seccion."
       >
         <main>
-          <BrowserRouter
-            basename={serviceQueuesBasePath}
-            future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
-          >
+          <BrowserRouter basename={serviceQueuesBasePath}>
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/visual" element={<VisualQueue />} />

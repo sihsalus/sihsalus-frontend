@@ -2,9 +2,10 @@
 
 **Sistema:** SIHSALUS, Hospital II-1 Santa Clotilde, Napo, Maynas, Loreto.
 
-**Base revisada:** `main` en `ad7569d6c388b5d8e32f4bf9219d2a6383822efc`.
+**Base revisada:** `main` en `53d2bd2d6361af005b0a487ff056e1414cbe6744`.
 
-**Rama de correcciones:** `fix/production-readiness-p0-20260727`.
+**Ramas de correcciones:** `fix/production-readiness-p0-20260727` y
+`fix/react-router-7-security-20260727`.
 
 **Decisión actual:** **NO-GO para PROD**. El código pasa la validación técnica
 local, pero faltan gates clínicos, de seguridad y de infraestructura que no se
@@ -25,7 +26,7 @@ pueden sustituir con pruebas unitarias.
 | Build                            | 89/89 tareas exitosas.                                                                                                                                                                                              |
 | SPA ensamblado                   | 66 módulos locales, 81 entradas de import map; artefacto válido.                                                                                                                                                    |
 | Traducciones modificadas         | JSON válido en `en` y `es`.                                                                                                                                                                                         |
-| DEV y QLTY vigentes              | El release anterior de `main`, digest `sha256:b88c6f993491f13990bac98338f20565d16b1d5f8362efd623e58c23be1ca15a`, se desplegó exitosamente en ambos ambientes. La rama de esta auditoría todavía no está desplegada. |
+| DEV y QLTY vigentes              | `main` en `53d2bd2d6361af005b0a487ff056e1414cbe6744`, digest `sha256:3514c23b8e8e10943263dcbe40cb3200c4bce78942e788f250ff67d9f0cfc07e`, está desplegado y verificado en ambos ambientes. La migración de Router todavía no está desplegada. |
 
 El artefacto local ensamblado ocupa 148 MiB. El `build-info.json` local conserva
 el SHA base porque las correcciones aún no tienen commit; el SHA y digest
@@ -101,25 +102,27 @@ definitivos deben provenir de CI después del PR, nunca de este artefacto local.
    recientes fueron omitidas. No existe evidencia del SHA/digest de esta rama
    en QLTY para registro, citas, colas, SOAP/examen físico, odontograma,
    laboratorio, dispensación, FUA y hospitalización.
-2. **Auditoría clínica server-side ausente.** En la última revisión autenticada
-   de QLTY, `GET /ws/rest/v1/sihsalus/audit` devolvió 404. Los logs del navegador
-   no satisfacen trazabilidad clínica ni administrativa.
-3. **Tres alertas moderadas de runtime.** `react-router`/`react-router-dom`
-   6.30.4 mantienen Dependabot 140, 141 y 142, incluyendo open redirect/XSS.
-   La corrección requiere migrar coherentemente a 7.18.0 y validar navegación
-   clínica; está planificada en el issue 669.
+2. **Auditoría clínica server-side ausente y error público inseguro.**
+   `GET /ws/rest/v1/sihsalus/audit` devuelve 404 en DEV y QLTY. La respuesta no
+   autenticada expone una traza completa de Java/OpenMRS/Tomcat. Los logs del
+   navegador no satisfacen trazabilidad clínica ni administrativa. Seguimiento:
+   `sihsalus-core#95`.
+3. **Migración de Router aún no integrada.** La rama candidata unifica
+   `react-router`/`react-router-dom` en `7.18.1`, corrige las alertas 140, 141 y
+   142, elimina flags v6 y prueba navegación de Citas. La advisory alta
+   `GHSA-qwww-vcr4-c8h2` afecta exclusivamente APIs RSC inestables, que este SPA
+   no usa y que CI prohíbe explícitamente. La decisión y el riesgo residual
+   están documentados en `2026-07-27-react-router-security.md`.
 4. **Contrato de identificadores sin validación clínica.** El cambio del PR 676
-   está verde e integrado en este candidato, pero todavía no está en `main` ni
-   fue probado en QLTY. Deben cubrirse tipos `NOT_USED`, `REQUIRED`, `OPTIONAL`
-   y metadato ausente en registro, edición, promoción, importación masiva y
-   recuperación offline.
-5. **Cabeceras del proxy no verificadas.** La imagen de release es un
-   `secure-init`; el nginx efectivo pertenece al despliegue de distribución.
-   Deben verificarse HSTS, CSP, `frame-ancestors`, protección MIME, referrer
-   policy y permisos en el endpoint real. El `nginx.spa.conf` de este repo no
-   demuestra la configuración de DEV/QLTY/PROD.
-6. **La rama corregida no tiene digest desplegado.** No se permite promover el
-   digest anterior de `main` como si incluyera estas correcciones.
+   ya está en `main` y QLTY, pero todavía no fue probado con evidencia clínica.
+   Deben cubrirse tipos `NOT_USED`, `REQUIRED`, `OPTIONAL` y metadato ausente en
+   registro, edición, promoción, importación masiva y recuperación offline.
+5. **Cabeceras de PROD no verificadas.** DEV y QLTY sí entregan HSTS, CSP,
+   `X-Frame-Options`, protección MIME, referrer policy, permissions policy y
+   no-cache para HTML. Falta demostrar la configuración efectiva de PROD y
+   endurecer el `'unsafe-inline'` residual de `script-src`.
+6. **La migración de Router no tiene digest desplegado.** No se permite promover
+   el digest actual de `main` como si incluyera esta corrección.
 
 ### P1 — resolver o aceptar formalmente antes del go
 

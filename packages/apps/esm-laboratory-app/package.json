@@ -49,7 +49,7 @@
     "dayjs": "1.x",
     "react": "18.x",
     "react-i18next": "16.x",
-    "react-router-dom": "6.x"
+    "react-router-dom": ">=6.30.4 <8"
   },
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
@@ -65,7 +65,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^16.0.0",
-    "react-router-dom": "^6.11.2",
+    "react-router-dom": "7.18.1",
     "typescript": "6.0.3",
     "vitest": "^4.1.7"
   }

@@ -9,11 +9,7 @@ export default function renderWithRouter<T = unknown>(
 ) {
   return {
     ...render(
-      <MemoryRouter
-        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
-        initialEntries={routes}
-        initialIndex={(route && routes?.indexOf(route)) || undefined}
-      >
+      <MemoryRouter initialEntries={routes} initialIndex={(route && routes?.indexOf(route)) || undefined}>
         <Component {...props} />
       </MemoryRouter>,
     ),

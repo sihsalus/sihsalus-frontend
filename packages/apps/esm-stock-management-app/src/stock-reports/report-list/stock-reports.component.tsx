@@ -117,7 +117,7 @@ const StockReports: React.FC = () => {
 
   const onDownloadReportClick = useCallback((uuid: string, fileExit: string | undefined | null) => {
     if (uuid) {
-      window.open(URL_BATCH_JOB_ARTIFACT(uuid, true), '_blank');
+      window.open(URL_BATCH_JOB_ARTIFACT(uuid, true), '_blank', 'noopener,noreferrer');
     }
   }, []);
 

@@ -165,6 +165,9 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: os,library
+          # The only exception is package-scoped, time-limited, documented, and
+          # validated fail-closed together with the repository's RSC prohibition.
+          trivyignores: .trivyignore.yaml
           # SARIF includes every severity by default, which would make exit-code
           # block the release on LOW/MEDIUM findings despite the threshold above.
           limit-severities-for-sarif: true

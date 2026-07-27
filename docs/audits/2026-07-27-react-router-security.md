@@ -36,10 +36,27 @@ Fuentes primarias:
    `react-router/unstable_rsc` o una dependencia `react-server-dom-*`.
 3. CI ejecuta el control antes del audit. Solo después ignora el identificador
    npm `1124282`; ninguna otra advisory queda exceptuada.
-4. Las pruebas cubren enlace, fecha, filtros de consulta y navegación
+4. El escaneo Trivy del artefacto publicado exceptúa únicamente
+   `GHSA-qwww-vcr4-c8h2` para el PURL exacto
+   `pkg:npm/react-router@7.18.1`. La excepción vence el **2026-08-31** y el
+   mismo guard rechaza que se quite el alcance, la justificación o el
+   vencimiento.
+5. Las pruebas cubren enlace, fecha, filtros de consulta y navegación
    atrás/adelante en Citas, además de las rutas existentes del monorepo.
-5. Si se introduce RSC, se elimina inmediatamente la excepción y se bloquea la
+6. Si se introduce RSC, se elimina inmediatamente la excepción y se bloquea la
    entrega hasta usar una versión corregida.
+
+## Evidencia del artefacto
+
+El **2026-07-27** se reprodujo localmente el escaneo del release con Trivy
+`0.70.0`, la versión fijada por `aquasecurity/trivy-action@v0.36.0`, sobre:
+
+`ghcr.io/sihsalus/sihsalus-frontend@sha256:3315bfb45c165f222f520b6e42601df325a8be24b403ce524ae0f0efc07e3d50`
+
+Resultado para severidades HIGH y CRITICAL, omitiendo vulnerabilidades sin
+corrección: **0 hallazgos activos** y **1 suprimido**. El único suprimido fue
+`GHSA-qwww-vcr4-c8h2` para `react-router` `7.18.1`, identificado por
+`pkg:npm/react-router@7.18.1`.
 
 ## Riesgo residual y salida
 

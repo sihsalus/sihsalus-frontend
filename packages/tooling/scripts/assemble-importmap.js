@@ -15,6 +15,8 @@ const logFail = (msg) => console.error(`${chalk.red.bold('[assemble]')} ${chalk.
 const importmap = { imports: {} };
 const routesRegistry = {};
 const outDir = process.env.SPA_OUTPUT_DIR || 'dist/spa';
+const errorUiFile = 'sihsalus-error-ui.js';
+const spaBootstrapFile = 'sihsalus-spa-bootstrap.js';
 const hostSharedWorkspacePackages = [
   '@openmrs/esm-framework',
   '@openmrs/esm-styleguide',
@@ -614,8 +616,7 @@ function patchIndexHtml() {
   html = html.replace(/<!-- SIHSALUS social preview -->[\s\S]*?<!-- \/SIHSALUS social preview -->\s*/g, '');
   html = html.replace('</head>', `${socialPreviewTags}</head>`);
 
-  const sihsalusErrorUiScript = `<script>
-(function () {
+  const sihsalusErrorUiSource = `(function () {
   function getErrorMessage(error) {
     if (error && typeof error.message === 'string') {
       return error.message;
@@ -707,10 +708,42 @@ function patchIndexHtml() {
     },
     true,
   );
+
+  document.addEventListener('click', function (event) {
+    var target = event.target;
+    if (!target || typeof target.closest !== 'function') {
+      return;
+    }
+
+    var actionElement = target.closest('[data-sihsalus-action]');
+    if (!actionElement) {
+      return;
+    }
+
+    var action = actionElement.getAttribute('data-sihsalus-action');
+    if (action === 'reload') {
+      window.location.reload();
+    } else if (
+      action === 'copy-error' &&
+      actionElement.parentElement &&
+      typeof window.copyText === 'function'
+    ) {
+      window.copyText(actionElement.parentElement);
+    }
+  });
 })();
-</script>`;
+`;
 
   html = html.replace(/<script>[\s\S]*?__sihsalusErrorUiInstalled[\s\S]*?<\/script>/, '');
+  html = html
+    .replace(/\s+onclick=["']location\.reload\(\)["']/g, ' data-sihsalus-action="reload"')
+    .replace(
+      /\s+onclick=["']copyText\(this\.parentElement\)["']/g,
+      ' data-sihsalus-action="copy-error"',
+    );
+
+  fs.writeFileSync(path.join(outDir, errorUiFile), sihsalusErrorUiSource);
+  const sihsalusErrorUiScript = `<script src="${joinUrl(spaPath, errorUiFile)}"></script>`;
   const appShellScript = /(<body><script src="[^"]+"><\/script>)/;
   html = appShellScript.test(html)
     ? html.replace(appShellScript, `$1${sihsalusErrorUiScript}`)
@@ -763,7 +796,27 @@ function patchIndexHtml() {
       .replace(/\$\{API_URL\}|\$API_URL(?![A-Za-z0-9_])/g, apiUrl)
       .replace(/\$\{SPA_PATH\}|\$SPA_PATH(?![A-Za-z0-9_])/g, spaPath);
 
-  fs.writeFileSync(indexPath, envsubst(html));
+  html = envsubst(html);
+
+  const bootstrapScriptPattern = /<script>\s*(initializeSpa\([\s\S]*?\);?)\s*<\/script>/;
+  const bootstrapScript = html.match(bootstrapScriptPattern)?.[1];
+  if (!bootstrapScript) {
+    throw new Error('Cannot externalize the SPA bootstrap because initializeSpa() was not found');
+  }
+  fs.writeFileSync(path.join(outDir, spaBootstrapFile), `${bootstrapScript.trim()}\n`);
+  html = html.replace(
+    bootstrapScriptPattern,
+    `<script src="${joinUrl(spaPath, spaBootstrapFile)}"></script>`,
+  );
+
+  if (/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?\S[\s\S]*?<\/script>/i.test(html)) {
+    throw new Error('Executable inline script remains in index.html');
+  }
+  if (/\son[a-z]+\s*=/i.test(html)) {
+    throw new Error('Inline event handler remains in index.html');
+  }
+
+  fs.writeFileSync(indexPath, html);
   logInfo('OK index.html patched');
 
   // 4. service-worker.js

@@ -3,6 +3,14 @@ const path = require('node:path');
 
 const spaArtifactManifest = Object.freeze([
   Object.freeze({ file: 'index.html', roles: Object.freeze(['startup', 'complete', 'precacheRevision']) }),
+  Object.freeze({
+    file: 'sihsalus-error-ui.js',
+    roles: Object.freeze(['startup', 'complete', 'precacheRevision']),
+  }),
+  Object.freeze({
+    file: 'sihsalus-spa-bootstrap.js',
+    roles: Object.freeze(['startup', 'complete', 'precacheRevision']),
+  }),
   Object.freeze({ file: 'favicon.ico', roles: Object.freeze(['complete', 'precacheRevision']) }),
   Object.freeze({ file: 'routes.registry.json', roles: Object.freeze(['startup', 'complete', 'precacheRevision']) }),
   Object.freeze({ file: 'importmap.json', roles: Object.freeze(['startup', 'complete', 'precacheRevision']) }),

@@ -18,6 +18,8 @@ const logFail = (msg) => console.error(`${chalk.red.bold('[validate-spa]')} ${ch
 
 const outDir = process.env.SPA_OUTPUT_DIR || 'dist/spa';
 const assembleConfigPath = process.env.SPA_ASSEMBLE_CONFIG || 'config/spa-assemble-config.json';
+const expectedSpaPath = (process.env.SPA_PATH || '/openmrs/spa').replace(/\/+$/, '');
+const expectedApiUrl = process.env.API_URL || '/openmrs';
 let failed = false;
 
 function fail(message) {
@@ -318,6 +320,15 @@ if (
 }
 
 const indexHtmlPath = path.join(outDir, 'index.html');
+const errorUiPath = path.join(outDir, 'sihsalus-error-ui.js');
+const spaBootstrapPath = path.join(outDir, 'sihsalus-spa-bootstrap.js');
+const errorUiJavaScript = invalidRequiredArtifacts.has('sihsalus-error-ui.js')
+  ? ''
+  : fs.readFileSync(errorUiPath, 'utf8');
+const spaBootstrapJavaScript = invalidRequiredArtifacts.has('sihsalus-spa-bootstrap.js')
+  ? ''
+  : fs.readFileSync(spaBootstrapPath, 'utf8');
+
 if (fs.existsSync(indexHtmlPath)) {
   const indexHtml = fs.readFileSync(indexHtmlPath, 'utf8');
   if (/Application Error|Something went wrong\. Please try reloading\./.test(indexHtml)) {
@@ -331,21 +342,46 @@ if (fs.existsSync(indexHtmlPath)) {
     'An application module could not be loaded.',
   ];
   for (const text of requiredLocalizedLoadErrorCopy) {
-    if (!indexHtml.includes(text)) {
+    if (!errorUiJavaScript.includes(text)) {
       fail(`Microfrontend load error is missing localized copy: ${text}`);
     }
   }
 
   if (
-    !indexHtml.includes("return document.documentElement.lang.toLowerCase().indexOf('es') === 0;") ||
+    !errorUiJavaScript.includes("return document.documentElement.lang.toLowerCase().indexOf('es') === 0;") ||
     !/title:\s*isSpanishLocale\(\)\s*\?\s*'No se pudo cargar la página'\s*:\s*'The page could not be loaded'/.test(
-      indexHtml,
+      errorUiJavaScript,
     ) ||
     !/description:\s*isSpanishLocale\(\)\s*\?\s*'No se pudo cargar un módulo de la aplicación\.[^']*'\s*:\s*'An application module could not be loaded\.[^']*'/s.test(
-      indexHtml,
+      errorUiJavaScript,
     )
   ) {
     fail('Microfrontend load error is not selected from the document locale at runtime');
+  }
+
+  if (
+    !indexHtml.includes(`src="${expectedSpaPath}/sihsalus-error-ui.js"`) ||
+    !indexHtml.includes(`src="${expectedSpaPath}/sihsalus-spa-bootstrap.js"`)
+  ) {
+    fail('index.html does not load the external SIHSALUS startup scripts');
+  }
+  if (/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?\S[\s\S]*?<\/script>/i.test(indexHtml)) {
+    fail('index.html contains an executable inline script');
+  }
+  if (/\son[a-z]+\s*=/i.test(indexHtml)) {
+    fail('index.html contains an inline event handler');
+  }
+  if (
+    !spaBootstrapJavaScript.includes('initializeSpa({') ||
+    !spaBootstrapJavaScript.includes(`apiUrl: ${JSON.stringify(expectedApiUrl)}`)
+  ) {
+    fail('External SPA bootstrap does not initialize OpenMRS with the expected API URL');
+  }
+  if (
+    !errorUiJavaScript.includes("action === 'reload'") ||
+    !errorUiJavaScript.includes("action === 'copy-error'")
+  ) {
+    fail('External error UI does not preserve fatal error actions');
   }
 
   const documentLocale = indexHtml.match(/<html\s+lang="([^"]+)"/i)?.[1] || '';

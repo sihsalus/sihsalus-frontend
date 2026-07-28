@@ -12,9 +12,17 @@ const {
 } = require('./spa-artifact-manifest');
 
 test('defines the startup, complete, and precache artifact contracts centrally', () => {
-  assert.deepEqual(getSpaArtifactFiles('startup'), ['index.html', 'routes.registry.json', 'importmap.json']);
+  assert.deepEqual(getSpaArtifactFiles('startup'), [
+    'index.html',
+    'sihsalus-error-ui.js',
+    'sihsalus-spa-bootstrap.js',
+    'routes.registry.json',
+    'importmap.json',
+  ]);
   assert.deepEqual(getSpaArtifactFiles('complete'), [
     'index.html',
+    'sihsalus-error-ui.js',
+    'sihsalus-spa-bootstrap.js',
     'favicon.ico',
     'routes.registry.json',
     'importmap.json',
@@ -27,6 +35,8 @@ test('defines the startup, complete, and precache artifact contracts centrally',
   ]);
   assert.deepEqual(getSpaArtifactFiles('precacheRevision'), [
     'index.html',
+    'sihsalus-error-ui.js',
+    'sihsalus-spa-bootstrap.js',
     'favicon.ico',
     'routes.registry.json',
     'importmap.json',
@@ -91,6 +101,8 @@ test('reports missing, non-file, empty, and unreadable artifacts together', (con
     issues.map(({ file, reason }) => ({ file, reason })),
     [
       { file: 'index.html', reason: 'unreadable' },
+      { file: 'sihsalus-error-ui.js', reason: 'missing' },
+      { file: 'sihsalus-spa-bootstrap.js', reason: 'missing' },
       { file: 'favicon.ico', reason: 'missing' },
       { file: 'routes.registry.json', reason: 'not-file' },
       { file: 'importmap.json', reason: 'empty' },
@@ -104,7 +116,8 @@ test('reports missing, non-file, empty, and unreadable artifacts together', (con
   );
   assert.match(formatSpaArtifactIssue(issues[0]), /permission denied/);
   assert.match(formatSpaArtifactIssue(issues[1]), /Missing required file/);
-  assert.match(formatSpaArtifactIssue(issues[2]), /not a file/);
-  assert.match(formatSpaArtifactIssue(issues[3]), /is empty/);
-  assert.match(formatSpaArtifactIssue(issues[4]), /permission denied/);
+  assert.match(formatSpaArtifactIssue(issues[2]), /Missing required file/);
+  assert.match(formatSpaArtifactIssue(issues[4]), /not a file/);
+  assert.match(formatSpaArtifactIssue(issues[5]), /is empty/);
+  assert.match(formatSpaArtifactIssue(issues[6]), /permission denied/);
 });

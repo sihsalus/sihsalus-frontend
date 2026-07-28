@@ -9,7 +9,7 @@ import {
   updateQueueEntry,
 } from '../active-visits/active-visits-table.resource';
 import { type ConfigObject } from '../config-schema';
-import { useMutateQueueEntries } from '../hooks/useQueueEntries';
+import { useMutateQueueEntries } from '../hooks/use-queue-entries';
 
 import { requeueQueueEntry } from './transition-queue-entry.resource';
 import styles from './transition-queue-entry.scss';

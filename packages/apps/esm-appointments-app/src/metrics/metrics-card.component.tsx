@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 dayjs.extend(isSameOrBefore);
 
-import SelectedDateContext from '../hooks/selectedDateContext';
+import SelectedDateContext from '../hooks/selected-date-context';
 import { type Appointment } from '../types';
 
 import styles from './metrics-card.scss';

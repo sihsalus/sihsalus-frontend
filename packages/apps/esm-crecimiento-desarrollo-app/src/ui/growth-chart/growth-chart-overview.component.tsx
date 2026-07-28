@@ -15,7 +15,7 @@ import { credNeonatalEditPrivilege, credWellChildEditPrivilege } from '../../con
 import { getSafePatientName } from '../../utils/utils';
 import GrowthChart from './growth-chart.component';
 import styles from './growth-chart-overview.scss';
-import { useBiometrics } from './hooks/useBiometrics';
+import { useBiometrics } from './hooks/use-biometrics';
 
 interface GrowthChartProps {
   patient: fhir.Patient;

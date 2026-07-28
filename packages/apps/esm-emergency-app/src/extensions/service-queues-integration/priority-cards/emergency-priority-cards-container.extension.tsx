@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { PriorityLevelCard } from '../../../emergency-dashboard/priority-level-cards/priority-level-card.component';
-import { usePriorityConfig } from '../../../hooks/usePriorityConfig';
+import { usePriorityConfig } from '../../../hooks/use-priority-config';
 import { usePatientsByPriority } from '../../../resources/emergency.resource';
 import { useIsEmergencyLocation } from '../../../utils/emergency-detection';
 import styles from './emergency-priority-cards-container.scss';

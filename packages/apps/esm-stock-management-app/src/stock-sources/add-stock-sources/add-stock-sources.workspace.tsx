@@ -12,7 +12,7 @@ import classNames from 'classnames';
 import React, { type ChangeEvent, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
-import { type StockSource } from '../../core/api/types/stockOperation/StockSource';
+import { type StockSource } from '../../core/api/types/stock-operation/stock-source';
 import { useConcept } from '../../stock-lookups/stock-lookups.resource';
 import { handleMutate } from '../../utils';
 import { createOrUpdateStockSource } from '../stock-sources.resource';

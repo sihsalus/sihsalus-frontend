@@ -3,7 +3,7 @@ import { isDesktop, useLayoutType, usePatient } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
+import { useMutateQueueEntries } from '../../hooks/use-queue-entries';
 import styles from '../existing-visit-form/existing-visit-form.scss';
 import QueueFields, { type QueueFieldsCallbacks } from '../queue-fields/queue-fields.component';
 

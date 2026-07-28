@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-import { useQueueEntriesMetrics } from '../hooks/useQueueEntries';
+import { useQueueEntriesMetrics } from '../hooks/use-queue-entries';
 import { type Queue } from '../types';
 import styles from './queue-table-metrics.scss';
 import QueueTableMetricsCard from './queue-table-metrics-card.component';

@@ -4,8 +4,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ImmunizationConfigObject } from '../config-schema';
 import { immunizationEditPrivilege } from '../constants';
-import { deletePatientImmunization, useImmunizations } from '../hooks/useImmunizations';
-import { useImmunizationsConceptSet } from '../hooks/useImmunizationsConceptSet';
+import { deletePatientImmunization, useImmunizations } from '../hooks/use-immunizations';
+import { useImmunizationsConceptSet } from '../hooks/use-immunizations-concept-set';
 import styles from './delete-immunization.scss';
 
 interface DeleteConfirmModelProps {

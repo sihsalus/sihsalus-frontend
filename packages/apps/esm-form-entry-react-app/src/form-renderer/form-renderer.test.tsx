@@ -40,28 +40,28 @@ vi.mock('@openmrs/esm-patient-common-lib', () => ({
   launchPatientWorkspace: vi.fn(),
 }));
 
-vi.mock('../hooks/useFormSchema', () => ({
+vi.mock('../hooks/use-form-schema', () => ({
   __esModule: true,
   default: vi.fn(),
 }));
 
-vi.mock('../hooks/useCustomDataSources', () => ({
+vi.mock('../hooks/use-custom-data-sources', () => ({
   useCustomDataSources: vi.fn(),
 }));
 
 const mockShowLabOrdersNotification = vi.fn();
 
-vi.mock('../hooks/useLabOrderNotification', () => ({
+vi.mock('../hooks/use-lab-order-notification', () => ({
   useLabOrderNotification: vi.fn(() => ({
     showLabOrdersNotification: mockShowLabOrdersNotification,
   })),
 }));
 
-vi.mock('../hooks/useCustomEncounterDatetime', () => ({
+vi.mock('../hooks/use-custom-encounter-datetime', () => ({
   useCustomEncounterDatetime: vi.fn((_, __, preFilled) => preFilled),
 }));
 
-import useFormSchema from '../hooks/useFormSchema';
+import useFormSchema from '../hooks/use-form-schema';
 
 const mockUseFormSchema = vi.mocked(useFormSchema);
 

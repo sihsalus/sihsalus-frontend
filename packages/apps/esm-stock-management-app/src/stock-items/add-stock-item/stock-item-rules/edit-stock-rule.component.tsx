@@ -3,7 +3,7 @@ import { Edit } from '@carbon/react/icons';
 import { launchWorkspace } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type StockRule } from '../../../core/api/types/stockItem/StockRule';
+import { type StockRule } from '../../../core/api/types/stock-item/stock-rule';
 
 interface EditStockRulesActionMenuProps {
   data?: StockRule;

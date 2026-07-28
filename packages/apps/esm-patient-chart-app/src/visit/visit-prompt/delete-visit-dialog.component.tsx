@@ -3,7 +3,7 @@ import { type Visit } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useDeleteVisit } from '../hooks/useDeleteVisit.hook';
+import { useDeleteVisit } from '../hooks/use-delete-visit.hook';
 
 import styles from './start-visit-dialog.scss';
 

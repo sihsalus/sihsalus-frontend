@@ -56,9 +56,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { type ChartConfig } from '../../config-schema';
-import { useDefaultVisitLocation } from '../hooks/useDefaultVisitLocation';
-import { useEmrConfiguration } from '../hooks/useEmrConfiguration';
-import { useVisitAttributeTypes } from '../hooks/useVisitAttributeType';
+import { useDefaultVisitLocation } from '../hooks/use-default-visit-location';
+import { useEmrConfiguration } from '../hooks/use-emr-configuration';
+import { useVisitAttributeTypes } from '../hooks/use-visit-attribute-type';
 import { canEditVisit, canStartVisit } from '../visit-access';
 import { invalidateUseVisits, useInfiniteVisits } from '../visits-widget/visit.resource';
 

@@ -4,7 +4,7 @@ import { type Control, type FormState } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import ControlledNumberInput from '../../../core/components/carbon/controlled-number-input.component';
 import { useStockItem } from '../../stock-items.resource';
-import { type StockItemFormData } from '../../validationSchema';
+import { type StockItemFormData } from '../../validation-schema';
 import DispensingPackageMeasurement from '../dispensing-package-measurement/dispensing-package-measurement.component';
 
 interface StockItemUnitsEditProps {

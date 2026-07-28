@@ -1,6 +1,6 @@
 import { type KeyedMutator } from 'swr';
-import { type StockItemDTO } from '../core/api/types/stockItem/StockItem';
-import { type StockOperationDTO } from '../core/api/types/stockOperation/StockOperationDTO';
+import { type StockItemDTO } from '../core/api/types/stock-item/stock-item';
+import { type StockOperationDTO } from '../core/api/types/stock-operation/stock-operation-dto';
 
 export type SaveStockItem = (item: StockItemDTO) => Promise<void>;
 export type SaveStockOperation = (item: StockOperationDTO) => Promise<void>;

@@ -10,7 +10,7 @@ import { FormEngine } from '@sihsalus/esm-form-engine-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import useFormSchema from '../hooks/useFormSchema';
+import useFormSchema from '../hooks/use-form-schema';
 
 import FormError from './form-error.component';
 import styles from './form-renderer.scss';

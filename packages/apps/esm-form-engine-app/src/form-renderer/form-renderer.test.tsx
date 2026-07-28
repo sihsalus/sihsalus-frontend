@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 
-import useFormSchema from '../hooks/useFormSchema';
+import useFormSchema from '../hooks/use-form-schema';
 
 import FormRenderer from './form-renderer.component';
 
@@ -13,7 +13,7 @@ vi.mock('@sihsalus/esm-form-engine-lib', () => ({
     .mockImplementation(() => React.createElement('div', { 'data-testid': 'openmrs form' }, 'FORM ENGINE LIB')),
 }));
 
-vi.mock('../hooks/useFormSchema', () => ({
+vi.mock('../hooks/use-form-schema', () => ({
   __esModule: true,
   default: vi.fn(),
 }));

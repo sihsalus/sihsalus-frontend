@@ -2,13 +2,13 @@ import { launchWorkspace, userHasAccess, useSession } from '@openmrs/esm-framewo
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { useOdontogramEncounter } from '../hooks/useOdontogramEncounter';
-import { useOdontogramHistory } from '../hooks/useOdontogramHistory';
+import { useOdontogramEncounter } from '../hooks/use-odontogram-encounter';
+import { useOdontogramHistory } from '../hooks/use-odontogram-history';
 import OdontogramDashboard from './odontogram-dashboard.component';
 
-vi.mock('../hooks/useOdontogramEncounter');
-vi.mock('../hooks/useOdontogramHistory');
-vi.mock('../odontogram/components/Odontogram', () => ({
+vi.mock('../hooks/use-odontogram-encounter');
+vi.mock('../hooks/use-odontogram-history');
+vi.mock('../odontogram/components/odontogram', () => ({
   default: ({ readOnly }: { readOnly?: boolean }) => (
     <div data-testid="odontogram-canvas" data-read-only={String(Boolean(readOnly))} />
   ),

@@ -2,11 +2,11 @@ import { showSnackbar } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
-import { setFuaEstado } from '../hooks/useFuaRequests';
+import { setFuaEstado } from '../hooks/use-fua-requests';
 
 import ChangeFuaStatusModal, { FUA_ESTADOS } from './change-fua-status.modal';
 
-vi.mock('../hooks/useFuaRequests', () => ({
+vi.mock('../hooks/use-fua-requests', () => ({
   setFuaEstado: vi.fn(),
 }));
 vi.mock('@openmrs/esm-framework', async () => ({

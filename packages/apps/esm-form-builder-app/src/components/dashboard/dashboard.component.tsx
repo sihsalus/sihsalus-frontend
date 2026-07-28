@@ -20,8 +20,8 @@ import {
   Tile,
 } from '@carbon/react';
 import { Add, DocumentImport, Download, Edit, TrashCan, Undo } from '@carbon/react/icons';
-import { useClobdata } from '@hooks/useClobdata';
-import { useForms } from '@hooks/useForms';
+import { useClobdata } from '@hooks/use-clobdata';
+import { useForms } from '@hooks/use-forms';
 import {
   ConfigurableLink,
   navigate,

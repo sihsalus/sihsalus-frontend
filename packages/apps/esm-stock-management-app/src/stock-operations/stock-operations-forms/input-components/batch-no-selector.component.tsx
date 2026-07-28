@@ -2,9 +2,9 @@ import { ComboBox, SelectSkeleton } from '@carbon/react';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatForDatePicker } from '../../../constants';
-import { type StockBatchWithUoM } from '../../../core/api/types/stockItem/StockBatchDTO';
+import { type StockBatchWithUoM } from '../../../core/api/types/stock-item/stock-batch-dto';
 import { useStockItemBatchInformationHook } from '../../../stock-items/add-stock-item/batch-information/batch-information.resource';
-import { useStockItemBatchNumbers } from '../hooks/useStockItemBatchNumbers';
+import { useStockItemBatchNumbers } from '../hooks/use-stock-item-batch-numbers';
 
 interface BatchNoSelectorProps {
   stockItemUuid: string;

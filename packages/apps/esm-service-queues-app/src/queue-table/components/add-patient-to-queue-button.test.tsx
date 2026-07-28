@@ -8,8 +8,8 @@ import {
   serviceQueuesPatientSearchWorkspace,
   serviceQueuesStartVisitWorkspace,
 } from '../../constants';
-import { useQueueLocations } from '../../create-queue-entry/hooks/useQueueLocations';
-import { useQueues } from '../../hooks/useQueues';
+import { useQueueLocations } from '../../create-queue-entry/hooks/use-queue-locations';
+import { useQueues } from '../../hooks/use-queues';
 import { useServiceQueuesStore } from '../../store/store';
 import type { Queue } from '../../types';
 import AddPatientToQueueButton from './add-patient-to-queue-button.component';
@@ -27,12 +27,12 @@ vi.mock('../../store/store', () => ({
   useServiceQueuesStore: vi.fn(),
 }));
 
-vi.mock('../../create-queue-entry/hooks/useQueueLocations', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../create-queue-entry/hooks/useQueueLocations')>()),
+vi.mock('../../create-queue-entry/hooks/use-queue-locations', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../create-queue-entry/hooks/use-queue-locations')>()),
   useQueueLocations: vi.fn(),
 }));
 
-vi.mock('../../hooks/useQueues', () => ({
+vi.mock('../../hooks/use-queues', () => ({
   useQueues: vi.fn(),
 }));
 

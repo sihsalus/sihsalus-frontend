@@ -1,7 +1,7 @@
 import { ComboBox, TextInputSkeleton } from '@carbon/react';
 import { type ReactNode, useMemo, useState } from 'react';
 import { type Control, Controller, type FieldValues } from 'react-hook-form';
-import { type Concept } from '../../../core/api/types/concept/Concept';
+import { type Concept } from '../../../core/api/types/concept/concept';
 import { useConcepts } from '../../../stock-lookups/stock-lookups.resource';
 
 interface ConceptsSelectorProps<T> {

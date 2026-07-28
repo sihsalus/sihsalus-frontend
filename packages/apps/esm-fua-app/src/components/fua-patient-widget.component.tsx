@@ -7,7 +7,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { fuaReadPrivilege } from '../constant';
-import { useFuasByPatient } from '../hooks/useFuaRequests';
+import { useFuasByPatient } from '../hooks/use-fua-requests';
 
 import styles from './fua-patient-widget.scss';
 

@@ -5,8 +5,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { fuaReadPrivilege } from '../constant';
-import { useFuaHistorial } from '../hooks/useFuaHistorial';
-import type { FuaRequest } from '../hooks/useFuaRequests';
+import { useFuaHistorial } from '../hooks/use-fua-historial';
+import type { FuaRequest } from '../hooks/use-fua-requests';
 
 import styles from './fua-modals.scss';
 

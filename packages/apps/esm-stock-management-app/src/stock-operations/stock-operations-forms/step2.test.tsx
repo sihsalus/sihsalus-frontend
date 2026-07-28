@@ -5,13 +5,13 @@ import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { type UseFormReturn, useFormContext } from 'react-hook-form';
 import { formatForDatePicker } from '../../constants';
-import { type StockItemDTO } from '../../core/api/types/stockItem/StockItem';
+import { type StockItemDTO } from '../../core/api/types/stock-item/stock-item';
 import { useStockItem } from '../../stock-items/stock-items.resource';
 import { useStockOperationTypes } from '../../stock-lookups/stock-lookups.resource';
 import { useStockOperations } from '../stock-operations.resource';
 import { type BaseStockOperationItemFormData } from '../validation-schema';
-import { useFilterableStockItems } from './hooks/useFilterableStockItems';
-import useParties from './hooks/useParties';
+import { useFilterableStockItems } from './hooks/use-filterable-stock-items';
+import useParties from './hooks/use-parties';
 import StockOperationForm from './stock-operation-form.component';
 
 const mockUseConfig = vi.mocked(useConfig);
@@ -67,7 +67,7 @@ vi.mock('../../stock-items/stock-items.resource', () => ({
   }),
 }));
 
-vi.mock('./hooks/useFilterableStockItems', () => ({
+vi.mock('./hooks/use-filterable-stock-items', () => ({
   useFilterableStockItems: vi.fn().mockReturnValue({
     stockItemsList: [],
     setLimit: vi.fn(),
@@ -77,7 +77,7 @@ vi.mock('./hooks/useFilterableStockItems', () => ({
   }),
 }));
 
-vi.mock('./hooks/useParties', () => ({ default: vi.fn() }));
+vi.mock('./hooks/use-parties', () => ({ default: vi.fn() }));
 
 vi.mock('react-hook-form', () => ({
   useForm: vi.fn().mockReturnValue({

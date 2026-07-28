@@ -21,7 +21,7 @@ const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUpdateQueueEntry = vi.mocked(updateQueueEntry);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 
-vi.mock('../../hooks/useQueueEntries', () => ({
+vi.mock('../../hooks/use-queue-entries', () => ({
   useMutateQueueEntries: () => ({ mutateQueueEntries: vi.fn() }),
 }));
 

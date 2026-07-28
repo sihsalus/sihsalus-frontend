@@ -22,7 +22,7 @@ import { prepTestOrderPostData } from '../api';
 
 import { createEmptyLabOrder } from './test-order';
 import styles from './test-type-search.scss';
-import { type TestType, useTestTypes } from './useTestTypes';
+import { type TestType, useTestTypes } from './use-test-types';
 
 export interface TestTypeSearchProps {
   openLabForm: (searchResult: TestOrderBasketItem) => void;

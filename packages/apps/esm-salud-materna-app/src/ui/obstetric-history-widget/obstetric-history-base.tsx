@@ -8,8 +8,8 @@ import { RequirePrivilege } from '@sihsalus/esm-rbac';
 
 import type { ConfigObject } from '../../config-schema';
 import { prenatalCareEditPrivilege } from '../../constants';
-import { useMaternalFormLauncher } from '../../hooks/useMaternalFormLauncher';
-import { usePrenatalAntecedents, usePrenatalConceptMetadata } from '../../hooks/usePrenatalAntecedents';
+import { useMaternalFormLauncher } from '../../hooks/use-maternal-form-launcher';
+import { usePrenatalAntecedents, usePrenatalConceptMetadata } from '../../hooks/use-prenatal-antecedents';
 
 import styles from './obstetric-history-base.scss';
 import ObstetricHistoryChart from './obstetric-history-chart.component';

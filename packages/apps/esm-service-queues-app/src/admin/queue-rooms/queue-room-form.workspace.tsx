@@ -28,8 +28,8 @@ import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
 import { z } from 'zod';
-import { useQueueLocations } from '../../create-queue-entry/hooks/useQueueLocations';
-import { useQueues } from '../../hooks/useQueues';
+import { useQueueLocations } from '../../create-queue-entry/hooks/use-queue-locations';
+import { useQueues } from '../../hooks/use-queues';
 import { saveQueueRoom, updateQueueRoom } from './queue-room.resource';
 import styles from './queue-room-form.scss';
 

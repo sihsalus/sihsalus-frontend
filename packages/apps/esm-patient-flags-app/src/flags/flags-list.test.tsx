@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { mockPatient, mockPatientFlags } from 'test-utils';
 import { type ConfigObject, configSchema } from '../config-schema';
 import FlagsList from './flags-list.component';
-import { usePatientFlags } from './hooks/usePatientFlags';
+import { usePatientFlags } from './hooks/use-patient-flags';
 
 type FlagWithPriority = ReturnType<typeof usePatientFlags>['flags'][0];
 
@@ -13,8 +13,8 @@ const mockLaunchWorkspace = vi.mocked(launchWorkspace2);
 const mockNavigate = vi.mocked(navigate);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 
-vi.mock('./hooks/usePatientFlags', async () => {
-  const originalModule = await vi.importActual('./hooks/usePatientFlags');
+vi.mock('./hooks/use-patient-flags', async () => {
+  const originalModule = await vi.importActual('./hooks/use-patient-flags');
 
   return {
     ...originalModule,

@@ -29,7 +29,7 @@ import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../config-schema';
 import { PRIVILEGE_SYSTEM_DEVELOPER } from '../constants';
-import { closeOverlay, launchOverlay } from '../hooks/useOverlay';
+import { closeOverlay, launchOverlay } from '../hooks/use-overlay';
 
 import Overlay from './overlay.component';
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZES } from './pagination-constants';

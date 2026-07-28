@@ -4,7 +4,7 @@ import { userHasAccess, usePatient, useSession } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { credEarlyStimulationEditPrivilege } from '../../../constants';
-import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
+import { useCREDFormLauncher } from '../../../hooks/use-cred-form-launcher';
 import { calculateAgeInMonths } from '../../../utils/age-group-utils';
 
 import styles from './development-overview.scss';

@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import type { ConfigObject } from '../../config-schema';
 import { labourDeliveryEditPrivilege } from '../../constants';
-import { usePartograph } from '../../hooks/usePartograph';
+import { usePartograph } from '../../hooks/use-partograph';
 import { formEntryWorkspace } from '../../types';
 
 import styles from './labour-delivery.scss';

@@ -1,7 +1,7 @@
 import { getUserFacingErrorMessage, showNotification } from '@openmrs/esm-framework';
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type MothersAndChildrenSearchCriteria, useMotherAndChildren } from '../../hooks/useMotherAndChildren';
+import { type MothersAndChildrenSearchCriteria, useMotherAndChildren } from '../../hooks/use-mother-and-children';
 import { type MotherChildRelationships, type PatientAndAdmission } from '../../types';
 
 const motherAndChildrenRep =

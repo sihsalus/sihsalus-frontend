@@ -2,9 +2,9 @@ import dayjs from 'dayjs';
 import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import SelectedDateContext from '../../hooks/selectedDateContext';
-import { useAppointmentList } from '../../hooks/useAppointmentList';
-import { useScheduledAppointments } from '../../hooks/useClinicalMetrics';
+import SelectedDateContext from '../../hooks/selected-date-context';
+import { useAppointmentList } from '../../hooks/use-appointment-list';
+import { useScheduledAppointments } from '../../hooks/use-clinical-metrics';
 import MetricsCard from '../metrics-card.component';
 
 /**

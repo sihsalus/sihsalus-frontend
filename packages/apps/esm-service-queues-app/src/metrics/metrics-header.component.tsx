@@ -4,7 +4,7 @@ import { isDesktop, navigate, useLayoutType } from '@openmrs/esm-framework';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { serviceQueuesBasePath } from '../constants';
-import { useQueueEntries } from '../hooks/useQueueEntries';
+import { useQueueEntries } from '../hooks/use-queue-entries';
 import ClearQueueEntries from '../modals/clear-queue-entries-modal/clear-queue-entries.component';
 import AddPatientToQueueButton from '../queue-table/components/add-patient-to-queue-button.component';
 import { useServiceQueuesStore } from '../store/store';

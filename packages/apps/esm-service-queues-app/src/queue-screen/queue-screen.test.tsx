@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react';
 
 import QueueScreen from './queue-screen.component';
-import { useActiveTickets } from './useActiveTickets';
+import { useActiveTickets } from './use-active-tickets';
 
 const mockUseActiveTickets = vi.mocked(useActiveTickets);
 
-vi.mock('./useActiveTickets', () => ({
+vi.mock('./use-active-tickets', () => ({
   useActiveTickets: vi.fn(),
 }));
 

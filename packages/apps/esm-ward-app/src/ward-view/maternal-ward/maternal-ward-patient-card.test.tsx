@@ -6,7 +6,7 @@ import { mockInpatientAdmissionAlice } from '../../../../../__mocks__/inpatient-
 import { mockWardBeds } from '../../../../../__mocks__/wardBeds.mock';
 import { mockWardViewContext } from '../../../mock';
 import { configSchema, type WardConfigObject } from '../../config-schema';
-import { useObs } from '../../hooks/useObs';
+import { useObs } from '../../hooks/use-obs';
 import { type WardPatient, type WardViewContext } from '../../types';
 import MaternalWardPatientCard from './maternal-ward-patient-card.component';
 
@@ -14,7 +14,7 @@ const mockUseConfig = vi.mocked(useConfig<WardConfigObject>);
 
 vi.mocked(useAppContext<WardViewContext>).mockReturnValue(mockWardViewContext);
 
-vi.mock('../../hooks/useObs', () => ({
+vi.mock('../../hooks/use-obs', () => ({
   useObs: vi.fn(),
 }));
 

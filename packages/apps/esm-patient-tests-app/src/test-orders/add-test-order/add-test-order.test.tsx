@@ -55,7 +55,7 @@ const mockUseTestTypes = vi.fn().mockReturnValue({
   error: null,
 });
 
-vi.mock('./useTestTypes', async () => ({
+vi.mock('./use-test-types', async () => ({
   useTestTypes: () => mockUseTestTypes(),
 }));
 

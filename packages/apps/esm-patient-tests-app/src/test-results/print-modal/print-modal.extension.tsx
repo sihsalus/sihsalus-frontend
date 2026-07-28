@@ -36,7 +36,7 @@ import {
 } from '@openmrs/esm-framework';
 
 import type { ObsRecord } from '../../types';
-import usePanelData from '../panel-view/usePanelData';
+import usePanelData from '../panel-view/use-panel-data';
 
 import styles from './print-modal.scss';
 

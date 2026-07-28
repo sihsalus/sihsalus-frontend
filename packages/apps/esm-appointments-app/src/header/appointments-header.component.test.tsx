@@ -1,12 +1,12 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
-import SelectedDateContext from '../hooks/selectedDateContext';
-import { useAppointmentServices } from '../hooks/useAppointmentService';
+import SelectedDateContext from '../hooks/selected-date-context';
+import { useAppointmentServices } from '../hooks/use-appointment-service';
 import type { AppointmentService } from '../types';
 import AppointmentsHeader from './appointments-header.component';
 
-vi.mock('../hooks/useAppointmentService');
+vi.mock('../hooks/use-appointment-service');
 
 const mockUseAppointmentServices = vi.mocked(useAppointmentServices);
 const setSelectedDate = vi.fn();

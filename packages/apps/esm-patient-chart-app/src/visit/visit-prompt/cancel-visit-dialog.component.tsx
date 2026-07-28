@@ -3,8 +3,8 @@ import { useVisit } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useDeleteVisit } from '../hooks/useDeleteVisit.hook';
-import { removeQueuedPatient } from '../hooks/useServiceQueue';
+import { useDeleteVisit } from '../hooks/use-delete-visit.hook';
+import { removeQueuedPatient } from '../hooks/use-service-queue';
 import { useVisitQueueEntry } from '../queue-entry/queue.resource';
 
 import styles from './cancel-visit-dialog.scss';

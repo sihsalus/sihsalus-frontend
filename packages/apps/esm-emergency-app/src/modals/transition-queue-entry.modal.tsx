@@ -20,7 +20,7 @@ import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
-import { useEmergencyConfig, usePriorityConfig } from '../hooks/usePriorityConfig';
+import { useEmergencyConfig, usePriorityConfig } from '../hooks/use-priority-config';
 import { type EmergencyQueueEntry, transitionEmergencyQueueEntry, useQueues } from '../resources/emergency.resource';
 import styles from './transition-queue-entry.modal.scss';
 

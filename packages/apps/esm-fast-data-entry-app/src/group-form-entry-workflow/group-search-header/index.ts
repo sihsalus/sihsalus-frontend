@@ -1,3 +1,3 @@
-import GroupSearchHeader from './GroupSearchHeader';
+import GroupSearchHeader from './group-search-header';
 
 export default GroupSearchHeader;

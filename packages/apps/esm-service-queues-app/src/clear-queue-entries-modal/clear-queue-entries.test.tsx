@@ -19,7 +19,7 @@ vi.mock('./clear-queue-entries.resource', () => ({
   batchClearQueueEntries: vi.fn(),
 }));
 
-vi.mock('../hooks/useQueueEntries', () => ({
+vi.mock('../hooks/use-queue-entries', () => ({
   useMutateQueueEntries: () => ({ mutateQueueEntries: mockMutateQueueEntries }),
 }));
 

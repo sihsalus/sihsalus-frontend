@@ -3,11 +3,11 @@ import { type DefaultWorkspaceProps, getUserFacingErrorMessage, showSnackbar } f
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useOdontogramEncounter } from '../hooks/useOdontogramEncounter';
-import OdontogramCanvas from '../odontogram/components/Odontogram';
-import { adultConfig } from '../odontogram/config/adultConfig';
+import { useOdontogramEncounter } from '../hooks/use-odontogram-encounter';
+import OdontogramCanvas from '../odontogram/components/odontogram';
+import { adultConfig } from '../odontogram/config/adult-config';
 import { createEmptyOdontogramData, type OdontogramData } from '../odontogram/types/odontogram';
-import useOdontogramDataStore from '../store/odontogramDataStore';
+import useOdontogramDataStore from '../store/odontogram-data-store';
 import type { OdontogramRecordType } from '../types/odontogram-record';
 import styles from './odontogram-workspace.scss';
 

@@ -14,7 +14,7 @@ import { getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework'
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
-import { usePriorityConfig } from '../hooks/usePriorityConfig';
+import { usePriorityConfig } from '../hooks/use-priority-config';
 import { type EmergencyQueueEntry, transitionEmergencyQueueEntry, useQueues } from '../resources/emergency.resource';
 import styles from './move-queue-entry.modal.scss';
 

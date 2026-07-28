@@ -3,7 +3,7 @@ import isBetween from 'dayjs/plugin/isBetween';
 import React, { useContext } from 'react';
 
 import { monthDays } from '../../helpers';
-import SelectedDateContext from '../../hooks/selectedDateContext';
+import SelectedDateContext from '../../hooks/selected-date-context';
 import { type DailyAppointmentsCountByService } from '../../types';
 import styles from '../appointments-calendar-view-view.scss';
 

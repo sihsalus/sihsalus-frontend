@@ -1,4 +1,4 @@
-import type { FuaRequest } from '../hooks/useFuaRequests';
+import type { FuaRequest } from '../hooks/use-fua-requests';
 
 import { buildExportRows, exportFuasToExcel } from './fua-export';
 

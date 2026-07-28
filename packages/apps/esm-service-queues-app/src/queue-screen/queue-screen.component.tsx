@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import PatientQueueHeader from '../patient-queue-header/patient-queue-header.component';
 
 import styles from './queue-screen.scss';
-import { useActiveTickets } from './useActiveTickets';
+import { useActiveTickets } from './use-active-tickets';
 
 type QueueScreenProps = {};
 

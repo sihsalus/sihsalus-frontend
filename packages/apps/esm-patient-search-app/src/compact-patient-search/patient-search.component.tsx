@@ -2,7 +2,7 @@ import { Layer, Loading, Tile } from '@carbon/react';
 import React, { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useLogPatientSearchError } from '../hooks/useLogPatientSearchError';
+import { useLogPatientSearchError } from '../hooks/use-log-patient-search-error';
 import { type PatientSearchResponse } from '../types';
 import EmptyDataIllustration from '../ui-components/empty-data-illustration.component';
 

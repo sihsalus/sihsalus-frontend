@@ -3,7 +3,7 @@ import { type Visit } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import QueueFields, { type QueueFieldsCallbacks } from '../../create-queue-entry/queue-fields/queue-fields.component';
-import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
+import { useMutateQueueEntries } from '../../hooks/use-queue-entries';
 
 interface AddPatientToQueueModalProps {
   modalTitle: string;

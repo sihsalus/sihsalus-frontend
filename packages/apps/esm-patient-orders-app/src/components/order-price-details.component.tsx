@@ -4,7 +4,7 @@ import { getLocale, InformationIcon } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useOrderPrice } from '../hooks/useOrderPrice';
+import { useOrderPrice } from '../hooks/use-order-price';
 
 import styles from './order-price-details.scss';
 

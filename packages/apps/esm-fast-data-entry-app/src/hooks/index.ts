@@ -1,8 +1,8 @@
-import useFormState from './useFormState';
-import useGetAllForms from './useGetAllForms';
-import useGetEncounter from './useGetEncounter';
-import useGetPatient from './useGetPatient';
-import useSpecificQuestions from './useSpecificQuestions';
+import useFormState from './use-form-state';
+import useGetAllForms from './use-get-all-forms';
+import useGetEncounter from './use-get-encounter';
+import useGetPatient from './use-get-patient';
+import useSpecificQuestions from './use-specific-questions';
 
-export * from './usePostEndpoint';
+export * from './use-post-endpoint';
 export { useFormState, useGetAllForms, useGetEncounter, useGetPatient, useSpecificQuestions };

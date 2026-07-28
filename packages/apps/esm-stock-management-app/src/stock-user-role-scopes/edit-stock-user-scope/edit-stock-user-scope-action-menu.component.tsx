@@ -3,7 +3,7 @@ import { Edit } from '@carbon/react/icons';
 import { launchWorkspace } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type UserRoleScope } from '../../core/api/types/identity/UserRoleScope';
+import { type UserRoleScope } from '../../core/api/types/identity/user-role-scope';
 
 interface EditStockUserRoleActionsMenuProps {
   data: UserRoleScope;

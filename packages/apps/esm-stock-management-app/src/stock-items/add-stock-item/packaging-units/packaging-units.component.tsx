@@ -16,7 +16,7 @@ import { getCoreTranslation, restBaseUrl, showSnackbar } from '@openmrs/esm-fram
 import React, { useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { type StockItemPackagingUOMDTO } from '../../../core/api/types/stockItem/StockItemPackagingUOM';
+import { type StockItemPackagingUOMDTO } from '../../../core/api/types/stock-item/stock-item-packaging-uom';
 import ControlledNumberInput from '../../../core/components/carbon/controlled-number-input.component';
 import { type CustomTableHeader, type CustomTableRow } from '../../../core/components/table/types';
 import { handleMutate } from '../../../utils';
@@ -25,7 +25,7 @@ import PackagingUnitsConceptSelector from '../packaging-units-concept-selector/p
 import DeletePackagingUnitActionButton from './delete-packaging-unit-action-button.component';
 import { useStockItemPackageUnitsHook } from './packaging-units.resource';
 import styles from './packaging-units.scss';
-import { type PackageUnitFormData, packageUnitSchema } from './validationSchema';
+import { type PackageUnitFormData, packageUnitSchema } from './validation-schema';
 
 interface PackagingUnitsProps {
   isEditing?: boolean;

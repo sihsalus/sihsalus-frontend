@@ -5,7 +5,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { appointmentLocationTagName } from '../../constants';
-import { closeOverlay } from '../../hooks/useOverlay';
+import { closeOverlay } from '../../hooks/use-overlay';
 import type { AppointmentService } from '../../types';
 import styles from './appointment-services.scss';
 import { useAppointmentServices } from './appointment-services-hook';

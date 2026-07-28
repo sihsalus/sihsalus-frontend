@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import FlagsList from '../flags-list.component';
-import { useCurrentPath, usePatientFlags } from '../hooks/usePatientFlags';
+import { useCurrentPath, usePatientFlags } from '../hooks/use-patient-flags';
 import { type FlagsRiskCountExtensionConfig } from './extension-config-schema';
 import styles from './flags-risk-count.scss';
 

@@ -1,9 +1,9 @@
 import { InlineLoading } from '@carbon/react';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
-import useOperationTypePermisions from '../hooks/useOperationTypePermisions';
-import { useStockItemBatchNumbers } from '../hooks/useStockItemBatchNumbers';
+import { type StockOperationType } from '../../../core/api/types/stock-operation/stock-operation-type';
+import useOperationTypePermisions from '../hooks/use-operation-type-permisions';
+import { useStockItemBatchNumbers } from '../hooks/use-stock-item-batch-numbers';
 
 type StockOperationitemBatchNoCellProps = {
   operation: StockOperationType;

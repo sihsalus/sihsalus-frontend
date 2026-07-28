@@ -1,4 +1,4 @@
-import { usePersonAttributeTypes } from '@hooks/usePersonAttributeTypes';
+import { usePersonAttributeTypes } from '@hooks/use-person-attribute-types';
 import type { FormField } from '@sihsalus/esm-form-engine-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -24,8 +24,8 @@ vi.mock('../../../../form-field-context', async () => ({
 }));
 
 const mockUsePersonAttributeTypes = vi.mocked(usePersonAttributeTypes);
-vi.mock('@hooks/usePersonAttributeTypes', async () => ({
-  ...(await vi.importActual('@hooks/usePersonAttributeTypes')),
+vi.mock('@hooks/use-person-attribute-types', async () => ({
+  ...(await vi.importActual('@hooks/use-person-attribute-types')),
   usePersonAttributeTypes: vi.fn((value: string) => value),
 }));
 

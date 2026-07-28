@@ -3,8 +3,8 @@ import { useConfig } from '@openmrs/esm-framework';
 import { type ReactNode } from 'react';
 import { type Control, Controller, type FieldValues } from 'react-hook-form';
 import { type ConfigObject } from '../../../config-schema';
-import { type Concept } from '../../../core/api/types/concept/Concept';
-import { type StockItemPackagingUOMDTO } from '../../../core/api/types/stockItem/StockItemPackagingUOM';
+import { type Concept } from '../../../core/api/types/concept/concept';
+import { type StockItemPackagingUOMDTO } from '../../../core/api/types/stock-item/stock-item-packaging-uom';
 import { useConcept } from '../../../stock-lookups/stock-lookups.resource';
 
 interface PackagingUnitsConceptSelectorProps<T> {

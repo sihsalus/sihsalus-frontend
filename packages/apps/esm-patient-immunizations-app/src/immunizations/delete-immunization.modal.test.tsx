@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { mockPatient } from 'test-utils';
 import { type ImmunizationConfigObject } from '../config-schema';
 import { immunizationEditPrivilege, immunizationPrivilege } from '../constants';
-import { deletePatientImmunization } from '../hooks/useImmunizations';
+import { deletePatientImmunization } from '../hooks/use-immunizations';
 import DeleteImmunizationModal from './delete-immunization.modal';
 
 const mockUseConfig = vi.mocked(useConfig<ImmunizationConfigObject>);
@@ -23,13 +23,13 @@ const sessionWithoutPrivileges = {
   user: { privileges: [] },
 } as unknown as ReturnType<typeof useSession>;
 
-vi.mock('../hooks/useImmunizations', async () => ({
-  ...(await vi.importActual('../hooks/useImmunizations')),
+vi.mock('../hooks/use-immunizations', async () => ({
+  ...(await vi.importActual('../hooks/use-immunizations')),
   deletePatientImmunization: vi.fn(),
   useImmunizations: vi.fn().mockReturnValue({ mutate: vi.fn() }),
 }));
 
-vi.mock('../hooks/useImmunizationsConceptSet', async () => ({
+vi.mock('../hooks/use-immunizations-concept-set', async () => ({
   useImmunizationsConceptSet: () => ({
     immunizationsConceptSet: {
       answers: [

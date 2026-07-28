@@ -13,8 +13,8 @@ import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { credNutritionEditPrivilege } from '../../../constants';
-import { useAnemiaScreening } from '../../../hooks/useAnemiaScreening';
-import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
+import { useAnemiaScreening } from '../../../hooks/use-anemia-screening';
+import { useCREDFormLauncher } from '../../../hooks/use-cred-form-launcher';
 
 import styles from './anemia-screening.scss';
 

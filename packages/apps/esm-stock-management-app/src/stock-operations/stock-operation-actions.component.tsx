@@ -1,14 +1,14 @@
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useMemo } from 'react';
 import { stockManagementOperationsEditPrivilege } from '../constants';
-import { type StockOperationDTO } from '../core/api/types/stockOperation/StockOperationDTO';
+import { type StockOperationDTO } from '../core/api/types/stock-operation/stock-operation-dto';
 import {
   OperationType,
   operationFromString,
   type StockOperationType,
   StockOperationTypeHasPrint,
-} from '../core/api/types/stockOperation/StockOperationType';
-import useOperationTypePermisions from './stock-operations-forms/hooks/useOperationTypePermisions';
+} from '../core/api/types/stock-operation/stock-operation-type';
+import useOperationTypePermisions from './stock-operations-forms/hooks/use-operation-type-permisions';
 import StockOperationApprovalButton from './stock-operations-modal/stock-operations-approve-button.component';
 import StockOperationApproveDispatchButton from './stock-operations-modal/stock-operations-approve-dispatch-button.component';
 import StockOperationCancelButton from './stock-operations-modal/stock-operations-cancel-button.component';

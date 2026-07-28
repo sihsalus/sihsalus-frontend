@@ -2,7 +2,7 @@ import { ProgressBar, Tag, Tile } from '@carbon/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { usePsychoprophylaxis } from '../../../../hooks/usePsychoprophylaxis';
+import { usePsychoprophylaxis } from '../../../../hooks/use-psychoprophylaxis';
 
 import styles from './psychoprophylaxis.scss';
 

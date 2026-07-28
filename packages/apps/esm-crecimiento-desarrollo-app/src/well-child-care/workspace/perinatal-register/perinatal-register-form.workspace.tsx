@@ -14,7 +14,7 @@ import {
   savePrenatalAntecedents,
   usePrenatalAntecedents,
   usePrenatalConceptMetadata,
-} from '../../../hooks/usePrenatalAntecedents';
+} from '../../../hooks/use-prenatal-antecedents';
 import type { DefaultPatientWorkspaceProps } from '../../../types';
 import GenericInput from '../../../ui/generic-input/generic-input.component';
 

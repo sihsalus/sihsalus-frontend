@@ -13,8 +13,8 @@ import classNames from 'classnames';
 import React, { useCallback, useMemo, useState } from 'react';
 import { type ControllerRenderProps } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import useEmrConfiguration from '../hooks/useEmrConfiguration';
-import useLocations from '../hooks/useLocations';
+import useEmrConfiguration from '../hooks/use-emr-configuration';
+import useLocations from '../hooks/use-locations';
 import styles from './location-selector.scss';
 
 interface LocationSelectorProps extends RadioButtonGroupProps {

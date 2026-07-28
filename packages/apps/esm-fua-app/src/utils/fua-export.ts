@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import type { Workbook } from 'exceljs';
 
-import type { FuaRequest } from '../hooks/useFuaRequests';
+import type { FuaRequest } from '../hooks/use-fua-requests';
 
 export interface FuaExportRow {
   'N° FUA': string;

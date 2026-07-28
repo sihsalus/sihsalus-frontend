@@ -1,4 +1,4 @@
-import { usePrograms, useProgramWorkStates } from '@hooks/useProgramStates';
+import { usePrograms, useProgramWorkStates } from '@hooks/use-program-states';
 import type { FormField, ProgramState } from '@sihsalus/esm-form-engine-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -22,8 +22,8 @@ vi.mock('../../../../form-field-context', async () => ({
 
 const mockUsePrograms = vi.mocked(usePrograms);
 const mockUseProgramWorkflowStates = vi.mocked(useProgramWorkStates);
-vi.mock('@hooks/useProgramStates', async () => ({
-  ...(await vi.importActual('@hooks/useProgramStates')),
+vi.mock('@hooks/use-program-states', async () => ({
+  ...(await vi.importActual('@hooks/use-program-states')),
   usePrograms: vi.fn(),
   useProgramWorkStates: vi.fn(),
 }));

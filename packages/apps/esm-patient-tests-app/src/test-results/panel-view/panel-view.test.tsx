@@ -4,13 +4,13 @@ import userEvent from '@testing-library/user-event';
 import { mockPanelData } from 'test-utils';
 
 import PanelView from './panel-view.component';
-import usePanelData from './usePanelData';
+import usePanelData from './use-panel-data';
 
 const mockIsDesktop = vi.mocked(isDesktop);
 const mockUseLayoutType = vi.mocked(useLayoutType);
 const mockUsePanelData = vi.mocked(usePanelData);
 
-vi.mock('./usePanelData');
+vi.mock('./use-panel-data');
 
 describe('PanelView', () => {
   beforeEach(() => {

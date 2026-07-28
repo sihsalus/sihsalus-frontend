@@ -1,5 +1,5 @@
 import { ComboBox, FormLabel, InlineNotification, MultiSelect, SelectSkeleton, Stack, Tag } from '@carbon/react';
-import { usePrograms, useProgramWorkStates } from '@hooks/useProgramStates';
+import { usePrograms, useProgramWorkStates } from '@hooks/use-program-states';
 import type { ProgramState } from '@sihsalus/esm-form-engine-lib';
 import type { Program, ProgramWorkflow } from '@types';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';

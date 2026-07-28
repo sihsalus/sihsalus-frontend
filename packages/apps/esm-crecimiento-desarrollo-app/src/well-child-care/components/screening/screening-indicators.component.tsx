@@ -17,8 +17,8 @@ import { CardHeader, ErrorState, useLaunchWorkspaceRequiringVisit } from '@openm
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { credCourseLifeEditPrivilege } from '../../../constants';
-import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
-import { useScreeningIndicators } from '../../../hooks/useScreeningIndicators';
+import { useCREDSchedule } from '../../../hooks/use-cred-schedule';
+import { useScreeningIndicators } from '../../../hooks/use-screening-indicators';
 
 import styles from './screening-indicators.scss';
 

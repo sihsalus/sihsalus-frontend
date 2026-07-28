@@ -30,9 +30,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, formatForDatePicker, today } from '../../constants';
-import { BatchJobTypeReport } from '../../core/api/types/BatchJob';
-import { type Concept } from '../../core/api/types/concept/Concept';
-import { formatDisplayDate } from '../../core/utils/datetimeUtils';
+import { BatchJobTypeReport } from '../../core/api/types/batch-job';
+import { type Concept } from '../../core/api/types/concept/concept';
+import { formatDisplayDate } from '../../core/utils/datetime-utils';
 import { createBatchJob } from '../../stock-batch/stock-batch.resource';
 import { useConcept, useStockTagLocations } from '../../stock-lookups/stock-lookups.resource';
 import { handleMutate } from '../../utils';
@@ -42,7 +42,7 @@ import {
   getReportLimitLabel,
   getReportStartDateLabel,
   ReportParameter,
-} from '../ReportType';
+} from '../report-type';
 import { reportSchema, type StockReportSchema } from '../report-validation-schema';
 import { useReportTypes } from '../stock-reports.resource';
 import styles from './create-stock-report.scss';

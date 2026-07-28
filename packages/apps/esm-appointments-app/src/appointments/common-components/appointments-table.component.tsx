@@ -46,7 +46,7 @@ import { appointmentsEditPrivilege, clinicalChartPrivilege } from '../../constan
 import { EmptyState } from '../../empty-state/empty-state.component';
 import { canTransition, isAppointmentEditable } from '../../helpers';
 import { exportAppointmentsToSpreadsheet } from '../../helpers/excel';
-import { useTodaysVisits } from '../../hooks/useTodaysVisits';
+import { useTodaysVisits } from '../../hooks/use-todays-visits';
 import { type Appointment, AppointmentStatus } from '../../types';
 import AppointmentDetails from '../details/appointment-details.component';
 import { getPageSizes, useAppointmentSearchResults } from '../utils';

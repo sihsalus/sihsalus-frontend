@@ -23,10 +23,10 @@ import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../config-schema';
 import { serviceQueuesEditPrivilege } from '../../constants';
-import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
-import { useQueues } from '../../hooks/useQueues';
+import { useMutateQueueEntries } from '../../hooks/use-queue-entries';
+import { useQueues } from '../../hooks/use-queues';
 import { AddPatientToQueueContext } from '../create-queue-entry.workspace';
-import { useQueueLocations } from '../hooks/useQueueLocations';
+import { useQueueLocations } from '../hooks/use-queue-locations';
 
 import {
   ACTIVE_QUEUE_ENTRY_CONFLICT,

@@ -24,7 +24,7 @@ import {
 
 import { type ConfigObject, configSchema } from '../config-schema';
 import { appointmentNoteMaxLength, appointmentStartDateEditPrivilege } from '../constants';
-import { useProviders } from '../hooks/useProviders';
+import { useProviders } from '../hooks/use-providers';
 import { changeAppointmentStatus, getAppointmentStatus } from '../patient-appointments/patient-appointments.resource';
 import { type Appointment, AppointmentKind, AppointmentStatus } from '../types';
 
@@ -125,8 +125,8 @@ vi.mock('./appointments-form.resource', async () => ({
   saveAppointment: vi.fn(),
 }));
 
-vi.mock('../hooks/useProviders', async () => ({
-  ...(await vi.importActual('../hooks/useProviders')),
+vi.mock('../hooks/use-providers', async () => ({
+  ...(await vi.importActual('../hooks/use-providers')),
   useProviders: vi.fn(),
 }));
 

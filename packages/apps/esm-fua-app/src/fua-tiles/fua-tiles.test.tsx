@@ -1,15 +1,15 @@
 import { render, screen } from '@testing-library/react';
 
-import { useFuaRequests } from '../hooks/useFuaRequests';
-import { useVisits } from '../hooks/useVisit';
+import { useFuaRequests } from '../hooks/use-fua-requests';
+import { useVisits } from '../hooks/use-visit';
 
 import AllFuaRequestsTile from './all-fua-requests-tile.component';
 import CompletedFuaRequestsTile from './completed-fua-requests-tile.component';
 import EnviadoFuaRequestsTile from './enviado-fua-requests-tile.component';
 import InProgressFuaRequestsTile from './in-progress-fua-requests-tile.component';
 
-vi.mock('../hooks/useFuaRequests');
-vi.mock('../hooks/useVisit');
+vi.mock('../hooks/use-fua-requests');
+vi.mock('../hooks/use-visit');
 
 const mockUseFuaRequests = useFuaRequests as vi.MockedFunction<typeof useFuaRequests>;
 const mockUseVisits = useVisits as vi.MockedFunction<typeof useVisits>;

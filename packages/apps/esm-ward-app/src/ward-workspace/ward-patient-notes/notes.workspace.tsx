@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { type WardConfigObject } from '../../config-schema';
 import { moduleName, wardEditPrivilege } from '../../constant';
-import useEmrConfiguration from '../../hooks/useEmrConfiguration';
+import useEmrConfiguration from '../../hooks/use-emr-configuration';
 import { type EncounterPayload, type WardPatientWorkspaceDefinition } from '../../types';
 import WardPatientWorkspaceBanner from '../patient-banner/patient-banner.component';
 import PatientNotesHistory from './history/notes-container.component';

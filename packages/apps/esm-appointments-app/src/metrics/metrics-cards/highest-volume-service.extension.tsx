@@ -1,8 +1,8 @@
 import { formatDate, parseDate } from '@openmrs/esm-framework';
 import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import SelectedDateContext from '../../hooks/selectedDateContext';
-import { useClinicalMetrics } from '../../hooks/useClinicalMetrics';
+import SelectedDateContext from '../../hooks/selected-date-context';
+import { useClinicalMetrics } from '../../hooks/use-clinical-metrics';
 import MetricsCard from '../metrics-card.component';
 
 export default function HighestVolumeServiceExtension() {

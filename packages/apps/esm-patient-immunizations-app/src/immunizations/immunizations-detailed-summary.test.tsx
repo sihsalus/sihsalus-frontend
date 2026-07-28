@@ -14,10 +14,10 @@ import userEvent from '@testing-library/user-event';
 import { mockCurrentVisit, mockPatient, renderWithSwr, waitForLoadingToFinish } from 'test-utils';
 import { configSchema, type ImmunizationConfigObject } from '../config-schema';
 import { immunizationEditPrivilege, immunizationPrivilege } from '../constants';
-import { useImmunizations } from '../hooks/useImmunizations';
+import { useImmunizations } from '../hooks/use-immunizations';
 import ImmunizationsDetailedSummary from './immunizations-detailed-summary.component';
 
-vi.mock('../hooks/useImmunizations', async () => ({
+vi.mock('../hooks/use-immunizations', async () => ({
   useImmunizations: vi.fn(),
 }));
 

@@ -20,7 +20,7 @@ import { WorkspaceContainer } from '@openmrs/esm-framework';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ErrorBoundary from '../error-boundary.component';
-import { useEmergencyConfig } from '../hooks/usePriorityConfig';
+import { useEmergencyConfig } from '../hooks/use-priority-config';
 import CompactMetricsContainer from './compact-metrics/compact-metrics-container.component';
 import EmergencyAlerts from './emergency-alerts/emergency-alerts.component';
 import styles from './emergency-dashboard.scss';

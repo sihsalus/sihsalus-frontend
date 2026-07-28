@@ -6,8 +6,8 @@ import React, { useContext, useMemo } from 'react';
 
 import { spaHomePage } from '../../constants';
 import { isSameMonth } from '../../helpers';
-import SelectedDateContext from '../../hooks/selectedDateContext';
-import { getAppointmentServiceFilterSearch } from '../../hooks/useAppointmentServiceFilter';
+import SelectedDateContext from '../../hooks/selected-date-context';
+import { getAppointmentServiceFilterSearch } from '../../hooks/use-appointment-service-filter';
 import { type DailyAppointmentsCountByService } from '../../types';
 
 import styles from './monthly-view-workload.scss';

@@ -3,7 +3,7 @@ import useSWR from 'swr';
 
 import { type ObsMetaInfo } from '../types/index';
 
-import { type ConceptMetadata } from './hooks/useVitalsConceptMetadata';
+import { type ConceptMetadata } from './hooks/use-vitals-concept-metadata';
 
 export function useVisit(visitUuid?: string) {
   const customRepresentation =

@@ -1,7 +1,7 @@
 import { FormLabel, InlineLoading, InlineNotification, Layer, Search, Tile } from '@carbon/react';
 import { ArrowUpRight } from '@carbon/react/icons';
-import { useConceptId } from '@hooks/useConceptId';
-import { useConceptLookup } from '@hooks/useConceptLookup';
+import { useConceptId } from '@hooks/use-concept-id';
+import { useConceptLookup } from '@hooks/use-concept-lookup';
 import { useDebounce } from '@openmrs/esm-framework';
 import type { Concept } from '@types';
 import React, { useCallback, useEffect, useState } from 'react';

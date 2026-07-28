@@ -5,8 +5,8 @@ import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { credNutritionEditPrivilege } from '../../../constants';
-import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
-import { useSupplementationTracker } from '../../../hooks/useSupplementationTracker';
+import { useCREDFormLauncher } from '../../../hooks/use-cred-form-launcher';
+import { useSupplementationTracker } from '../../../hooks/use-supplementation-tracker';
 
 import styles from './supplementation-tracker.scss';
 

@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react';
 
-import { useQueueEntriesMetrics } from '../hooks/useQueueEntries';
+import { useQueueEntriesMetrics } from '../hooks/use-queue-entries';
 import PatientsInQueueTile from './patients-in-queue-tile.component';
 
-vi.mock('../hooks/useQueueEntries', async () => ({
-  ...(await vi.importActual('../hooks/useQueueEntries')),
+vi.mock('../hooks/use-queue-entries', async () => ({
+  ...(await vi.importActual('../hooks/use-queue-entries')),
   useQueueEntriesMetrics: vi.fn(),
 }));
 

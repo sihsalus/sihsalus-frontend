@@ -23,8 +23,8 @@ import { useTranslation } from 'react-i18next';
 
 import { queueEntryCommentMaxLength, time12HourFormatRegexPattern } from '../../constants';
 import { type amPm, convertTime12to24 } from '../../helpers/time-helpers';
-import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
-import { useQueues } from '../../hooks/useQueues';
+import { useMutateQueueEntries } from '../../hooks/use-queue-entries';
+import { useQueues } from '../../hooks/use-queues';
 import { type QueueEntry } from '../../types';
 import { getUserFacingQueueErrorMessage } from '../../modals/queue-entry-error.utils';
 

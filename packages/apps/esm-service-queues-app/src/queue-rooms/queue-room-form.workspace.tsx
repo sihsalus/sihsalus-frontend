@@ -27,8 +27,8 @@ import { useTranslation } from 'react-i18next';
 import { mutate } from 'swr';
 import { z } from 'zod';
 
-import { useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations';
-import { useQueues } from '../hooks/useQueues';
+import { useQueueLocations } from '../create-queue-entry/hooks/use-queue-locations';
+import { useQueues } from '../hooks/use-queues';
 import { saveQueueRoom } from './queue-room.resource';
 import styles from './queue-room-form.scss';
 

@@ -18,7 +18,7 @@ import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type GroupedObservation } from '../../types';
-import usePanelData from '../panel-view/usePanelData';
+import usePanelData from '../panel-view/use-panel-data';
 
 import styles from './individual-results-table.scss';
 

@@ -5,10 +5,10 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { extractErrorMessagesFromResponse } from '../../constants';
 import { ResourceRepresentation } from '../../core/api/api';
-import { type StockItemInventory } from '../../core/api/types/stockItem/StockItemInventory';
-import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
-import { type StockOperationItemCost } from '../../core/api/types/stockOperation/StockOperationItemCost';
-import { OperationType } from '../../core/api/types/stockOperation/StockOperationType';
+import { type StockItemInventory } from '../../core/api/types/stock-item/stock-item-inventory';
+import { type StockOperationDTO } from '../../core/api/types/stock-operation/stock-operation-dto';
+import { type StockOperationItemCost } from '../../core/api/types/stock-operation/stock-operation-item-cost';
+import { OperationType } from '../../core/api/types/stock-operation/stock-operation-type';
 import { type StockItemInventoryFilter } from '../../stock-items/stock-items.resource';
 import {
   getStockItemInventory,
@@ -16,10 +16,10 @@ import {
   getStockOperationItemsCost,
   useStockOperationAndItems,
 } from '../stock-operations.resource';
-import { PrintGoodsReceivedNoteStockOperation } from '../stock-print-reports/GoodsReceivedNote';
-import { PrintRequisitionStockOperation } from '../stock-print-reports/RequisitionDocument';
-import { BuildStockOperationData } from '../stock-print-reports/StockOperationReport';
-import { PrintTransferOutStockOperation } from '../stock-print-reports/StockTransferDocument';
+import { PrintGoodsReceivedNoteStockOperation } from '../stock-print-reports/goods-received-note';
+import { PrintRequisitionStockOperation } from '../stock-print-reports/requisition-document';
+import { BuildStockOperationData } from '../stock-print-reports/stock-operation-report';
+import { PrintTransferOutStockOperation } from '../stock-print-reports/stock-transfer-document';
 
 interface StockOperationCancelButtonProps {
   operation: StockOperationDTO;

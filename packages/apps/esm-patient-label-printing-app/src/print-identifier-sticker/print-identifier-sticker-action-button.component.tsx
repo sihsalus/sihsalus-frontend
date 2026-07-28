@@ -3,7 +3,7 @@ import { getCoreTranslation, restBaseUrl, showSnackbar, UserHasAccess, useConfig
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
-import { useStickerPdfPrinter } from '../hooks/useStickerPdfPrinter';
+import { useStickerPdfPrinter } from '../hooks/use-sticker-pdf-printer';
 import styles from './print-identifier-sticker-action-button.scss';
 
 interface PrintIdentifierStickerOverflowMenuItemProps {

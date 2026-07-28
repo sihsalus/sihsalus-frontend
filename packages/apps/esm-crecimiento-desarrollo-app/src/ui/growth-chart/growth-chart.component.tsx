@@ -15,7 +15,7 @@ import {
   MeasurementTypeCodesLabel,
   TimeUnitCodes,
 } from './data-sets';
-import { chartData as rawChartData } from './data-sets/WhoStandardDataSets/ChartData';
+import { chartData as rawChartData } from './data-sets/who-standard-data-sets/chart-data';
 import styles from './growth-chart.scss';
 import { buildGrowthChartOptions } from './growth-chart-options';
 import {
@@ -29,9 +29,9 @@ import {
   isWeightForLengthHeightCategory,
   toFiniteNumber,
 } from './growth-chart-utils';
-import { useAppropriateChartData } from './hooks/useAppropriateChartData';
-import { useChartDataForGender } from './hooks/useChartDataForGender';
-import { useChartLines } from './hooks/useChartLines';
+import { useAppropriateChartData } from './hooks/use-appropriate-chart-data';
+import { useChartDataForGender } from './hooks/use-chart-data-for-gender';
+import { useChartLines } from './hooks/use-chart-lines';
 
 const DEFAULT_METADATA = {
   chartLabel: '',

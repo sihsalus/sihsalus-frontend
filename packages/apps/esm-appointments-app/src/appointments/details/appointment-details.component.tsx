@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getGender } from '../../helpers';
-import { usePatientAppointmentHistory } from '../../hooks/usePatientAppointmentHistory';
+import { usePatientAppointmentHistory } from '../../hooks/use-patient-appointment-history';
 import { type Appointment } from '../../types';
 
 import styles from './appointment-details.scss';

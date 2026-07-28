@@ -3,8 +3,8 @@ import { isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../config-schema';
-import { useQueueEntries } from '../hooks/useQueueEntries';
-import useQueueServices from '../hooks/useQueueService';
+import { useQueueEntries } from '../hooks/use-queue-entries';
+import useQueueServices from '../hooks/use-queue-service';
 import { updateSelectedService, useServiceQueuesStore } from '../store/store';
 import { type Concept } from '../types';
 

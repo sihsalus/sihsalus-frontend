@@ -3,7 +3,7 @@ import { getUserFacingErrorMessage, navigate, showSnackbar, useConfig } from '@o
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
-import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
+import { useMutateQueueEntries } from '../../hooks/use-queue-entries';
 import { mapVisitQueueEntryProperties, serveQueueEntry, updateQueueEntry } from '../../service-queues.resource';
 import { type QueueEntry } from '../../types';
 import { requeueQueueEntry } from './call-queue-entry.resource';

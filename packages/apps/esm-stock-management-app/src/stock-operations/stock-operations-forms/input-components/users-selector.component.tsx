@@ -2,11 +2,11 @@ import { Column, ComboBox, InlineNotification, SelectSkeleton, TextInput } from 
 import React, { useEffect } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { type User } from '../../../core/api/types/identity/User';
+import { type User } from '../../../core/api/types/identity/user';
 import { useDebounce } from '../../../core/hooks/debounce-hook';
 import { otherUser } from '../../../core/utils/utils';
 import { useUser } from '../../../stock-lookups/stock-lookups.resource';
-import useSearchUser from '../hooks/useSearchUser';
+import useSearchUser from '../hooks/use-search-user';
 
 const UsersSelector = () => {
   const { userList, setSearchString } = useSearchUser();

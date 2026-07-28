@@ -18,8 +18,8 @@ import { getPreferredIdentifier } from '@openmrs/esm-utils';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { WORKSPACES } from '../constants';
-import { useTriageVitalsSavedHandler } from '../emergency-workflow/hooks/useTriageVitalsSavedHandler';
-import { useEmergencyConfig } from '../hooks/usePriorityConfig';
+import { useTriageVitalsSavedHandler } from '../emergency-workflow/hooks/use-triage-vitals-saved-handler';
+import { useEmergencyConfig } from '../hooks/use-priority-config';
 import {
   type EmergencyQueueEntry,
   updateEmergencyQueueEntry,

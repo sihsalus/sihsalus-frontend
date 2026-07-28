@@ -5,7 +5,7 @@ import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { fuaUpdatePrivilege } from '../constant';
-import { type FuaRequest, setFuaEstado } from '../hooks/useFuaRequests';
+import { type FuaRequest, setFuaEstado } from '../hooks/use-fua-requests';
 
 import styles from './fua-modals.scss';
 

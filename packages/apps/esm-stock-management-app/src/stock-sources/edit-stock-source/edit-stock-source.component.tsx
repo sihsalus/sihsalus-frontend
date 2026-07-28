@@ -3,7 +3,7 @@ import { Edit } from '@carbon/react/icons';
 import { launchWorkspace } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type StockSource } from '../../core/api/types/stockOperation/StockSource';
+import { type StockSource } from '../../core/api/types/stock-operation/stock-source';
 
 interface EditStockSourcesActionMenuProps {
   data?: StockSource;

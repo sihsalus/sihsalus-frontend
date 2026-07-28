@@ -4,12 +4,12 @@ import React, { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import DataList from '../../../core/components/table/table.component';
-import { formatDisplayDate } from '../../../core/utils/datetimeUtils';
+import { formatDisplayDate } from '../../../core/utils/datetime-utils';
 import {
   translateStockLocation,
   translateStockOperationStatus,
   translateStockOperationType,
-} from '../../../core/utils/translationUtils';
+} from '../../../core/utils/translation-utils';
 import StockOperationReference from '../../../stock-operations/stock-operation-reference.component';
 import { type StockItemInventoryFilter } from '../../stock-items.resource';
 import TransactionsPrintAction from './printout/transactions-print-action.component';

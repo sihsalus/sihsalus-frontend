@@ -4,22 +4,22 @@ import userEvent from '@testing-library/user-event';
 import { mockInpatientRequestAlice, mockLocationInpatientWard, mockPatientAlice } from '__mocks__';
 import { renderWithSwr } from 'test-utils';
 import { mockWardViewContext } from '../../../mock';
-import useWardLocation from '../../hooks/useWardLocation';
+import useWardLocation from '../../hooks/use-ward-location';
 import type { WardPatient, WardViewContext } from '../../types';
 import { useCreateEncounter } from '../../ward.resource';
 import CancelAdmissionRequestWorkspace from './cancel-admission-request.workspace';
 
-vi.mock('../../hooks/useWardLocation', () => ({ default: vi.fn() }));
+vi.mock('../../hooks/use-ward-location', () => ({ default: vi.fn() }));
 
-vi.mock('../../hooks/useInpatientRequest', () => ({
+vi.mock('../../hooks/use-inpatient-request', () => ({
   useInpatientRequest: vi.fn(),
 }));
 
-vi.mock('../../hooks/useWardPatientGrouping', () => ({
+vi.mock('../../hooks/use-ward-patient-grouping', () => ({
   useWardPatientGrouping: vi.fn(),
 }));
 
-vi.mock('../../hooks/useInpatientAdmission', () => ({
+vi.mock('../../hooks/use-inpatient-admission', () => ({
   useInpatientAdmission: vi.fn(),
 }));
 

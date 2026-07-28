@@ -2,10 +2,10 @@ import '@carbon/styles/css/styles.css';
 import { AppErrorBoundary } from '@sihsalus/esm-rbac';
 import { useCallback } from 'react';
 
-import OdontogramCanvas from './odontogram/components/Odontogram';
-import { adultConfig } from './odontogram/config/adultConfig';
+import OdontogramCanvas from './odontogram/components/odontogram';
+import { adultConfig } from './odontogram/config/adult-config';
 import type { OdontogramData } from './odontogram/types/odontogram';
-import useOdontogramDataStore from './store/odontogramDataStore';
+import useOdontogramDataStore from './store/odontogram-data-store';
 
 export default function OdontologiaRoot() {
   const data = useOdontogramDataStore((state) => state.data);

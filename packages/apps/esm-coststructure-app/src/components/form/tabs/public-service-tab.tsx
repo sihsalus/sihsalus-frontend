@@ -3,7 +3,7 @@ import { Controller, type UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { calculateAsignedCost, calculateInductor } from '../../../utils/publicservices';
-import NoContent from '../../ui/NoContent/NoContent';
+import NoContent from '../../ui/no-content/no-content';
 import { type CostStructureFormValues } from '../schema/costructure-schema';
 
 import styles from './tabs.styles.scss';

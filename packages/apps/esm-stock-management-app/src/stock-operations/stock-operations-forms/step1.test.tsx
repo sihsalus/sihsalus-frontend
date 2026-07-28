@@ -13,7 +13,7 @@ import { useConfig, useSession } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import { useStockOperationTypes } from '../../stock-lookups/stock-lookups.resource';
 import { useStockOperations } from '../stock-operations.resource';
-import useParties from './hooks/useParties';
+import useParties from './hooks/use-parties';
 import StockOperationForm from './stock-operation-form.component';
 
 const mockUseParties = vi.mocked(useParties);
@@ -53,7 +53,7 @@ vi.mock('../stock-operations.resource', () => ({
   }),
 }));
 
-vi.mock('./hooks/useParties', () => ({
+vi.mock('./hooks/use-parties', () => ({
   __esModule: true,
   default: vi.fn(),
   useParties: vi.fn(),

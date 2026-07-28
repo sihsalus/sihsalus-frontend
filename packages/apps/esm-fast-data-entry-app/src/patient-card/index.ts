@@ -1,3 +1,3 @@
-import PatientCard from './PatientCard';
+import PatientCard from './patient-card';
 
 export default PatientCard;

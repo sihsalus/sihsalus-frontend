@@ -4,7 +4,7 @@ import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
-import { useAnamnesis } from '../hooks/useAnamnesis';
+import { useAnamnesis } from '../hooks/use-anamnesis';
 import { patientFormEntryWorkspace } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 import styles from './consulta-externa-dashboard.scss';

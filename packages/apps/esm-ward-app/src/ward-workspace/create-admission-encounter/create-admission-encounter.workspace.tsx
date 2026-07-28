@@ -8,11 +8,11 @@ import {
 } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAssignedBedByPatient } from '../../hooks/useAssignedBedByPatient';
-import { useInpatientAdmissionByPatients } from '../../hooks/useInpatientAdmissionByPatients';
-import { useInpatientRequestByPatients } from '../../hooks/useInpatientRequestByPatients';
-import useRestPatient from '../../hooks/useRestPatient';
-import useWardLocation from '../../hooks/useWardLocation';
+import { useAssignedBedByPatient } from '../../hooks/use-assigned-bed-by-patient';
+import { useInpatientAdmissionByPatients } from '../../hooks/use-inpatient-admission-by-patients';
+import { useInpatientRequestByPatients } from '../../hooks/use-inpatient-request-by-patients';
+import useRestPatient from '../../hooks/use-rest-patient';
+import useWardLocation from '../../hooks/use-ward-location';
 import type { Bed, WardPatient } from '../../types';
 import AdmitPatientButton from '../admit-patient-button.component';
 import WardPatientWorkspaceBanner from '../patient-banner/patient-banner.component';

@@ -1,16 +1,16 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import { type ResourceFilterCriteria, toQueryParams } from '../core/api/api';
-import { type PageableResult } from '../core/api/types/PageableResult';
-import { type StockBatchDTO } from '../core/api/types/stockItem/StockBatchDTO';
-import { type InventoryGroupBy, type StockItemDTO } from '../core/api/types/stockItem/StockItem';
-import { type StockItemInventory } from '../core/api/types/stockItem/StockItemInventory';
-import { type StockItemPackagingUOMDTO } from '../core/api/types/stockItem/StockItemPackagingUOM';
-import { type StockItemReference, type StockItemReferenceDTO } from '../core/api/types/stockItem/StockItemReference';
-import { type StockItemTransactionDTO } from '../core/api/types/stockItem/StockItemTransaction';
-import { type StockRule } from '../core/api/types/stockItem/StockRule';
-import { type StockOperationItemCost } from '../core/api/types/stockOperation/StockOperationItemCost';
-import { type StockItemFormData } from './validationSchema';
+import { type PageableResult } from '../core/api/types/pageable-result';
+import { type StockBatchDTO } from '../core/api/types/stock-item/stock-batch-dto';
+import { type InventoryGroupBy, type StockItemDTO } from '../core/api/types/stock-item/stock-item';
+import { type StockItemInventory } from '../core/api/types/stock-item/stock-item-inventory';
+import { type StockItemPackagingUOMDTO } from '../core/api/types/stock-item/stock-item-packaging-uom';
+import { type StockItemReference, type StockItemReferenceDTO } from '../core/api/types/stock-item/stock-item-reference';
+import { type StockItemTransactionDTO } from '../core/api/types/stock-item/stock-item-transaction';
+import { type StockRule } from '../core/api/types/stock-item/stock-rule';
+import { type StockOperationItemCost } from '../core/api/types/stock-operation/stock-operation-item-cost';
+import { type StockItemFormData } from './validation-schema';
 
 export interface StockItemFilter extends ResourceFilterCriteria {
   isDrug?: string | null | undefined;

@@ -20,9 +20,9 @@ import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
-import { useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations';
-import useQueueServices from '../hooks/useQueueService';
-import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
+import { useQueueLocations } from '../create-queue-entry/hooks/use-queue-locations';
+import useQueueServices from '../hooks/use-queue-service';
+import { useUserFacingErrorMessage } from '../hooks/use-user-facing-error-message';
 import {
   updateIsPermanentProviderQueueRoom,
   updateSelectedQueueLocationName,

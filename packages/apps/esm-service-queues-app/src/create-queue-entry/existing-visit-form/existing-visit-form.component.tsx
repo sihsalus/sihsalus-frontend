@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
+import { useMutateQueueEntries } from '../../hooks/use-queue-entries';
 import QueueFields, { type QueueFieldsCallbacks } from '../queue-fields/queue-fields.component';
 
 import styles from './existing-visit-form.scss';

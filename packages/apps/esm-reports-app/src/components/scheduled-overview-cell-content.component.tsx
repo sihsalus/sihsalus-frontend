@@ -5,7 +5,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { PRIVILEGE_SYSTEM_DEVELOPER } from '../constants';
-import { closeOverlay, launchOverlay } from '../hooks/useOverlay';
+import { closeOverlay, launchOverlay } from '../hooks/use-overlay';
 
 import EditScheduledReportForm from './edit-scheduled-report/edit-scheduled-report-form.component';
 import NextReportExecution from './next-report-execution.component';

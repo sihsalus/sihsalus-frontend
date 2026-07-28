@@ -14,8 +14,8 @@ import {
   RadioButtonGroup,
   Stack,
 } from '@carbon/react';
-import { useClobdata } from '@hooks/useClobdata';
-import { useForms } from '@hooks/useForms';
+import { useClobdata } from '@hooks/use-clobdata';
+import { useForms } from '@hooks/use-forms';
 import { showSnackbar } from '@openmrs/esm-framework';
 import type { FormField, FormPage, FormSection } from '@sihsalus/esm-form-engine-lib';
 import type { Form as FormType, Schema } from '@types';

@@ -3,9 +3,9 @@ import { render, screen } from '@testing-library/react';
 
 import { credNeonatalEditPrivilege } from '../../constants';
 import GrowthChartOverview from './growth-chart-overview.component';
-import { useBiometrics } from './hooks/useBiometrics';
+import { useBiometrics } from './hooks/use-biometrics';
 
-vi.mock('./hooks/useBiometrics', () => ({
+vi.mock('./hooks/use-biometrics', () => ({
   useBiometrics: vi.fn(),
 }));
 

@@ -14,7 +14,7 @@ import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
-import { useEthnicIdentity } from '../hooks/useEthnicIdentity';
+import { useEthnicIdentity } from '../hooks/use-ethnic-identity';
 import { patientFormEntryWorkspace } from '../utils/constants';
 import styles from './consulta-externa-dashboard.scss';
 

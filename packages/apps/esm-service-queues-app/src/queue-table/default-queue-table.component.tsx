@@ -3,8 +3,8 @@ import { getUserFacingErrorMessage, isDesktop, showSnackbar, useLayoutType } fro
 import classNames from 'classnames';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQueueEntries } from '../hooks/useQueueEntries';
-import useQueueStatuses from '../hooks/useQueueStatuses';
+import { useQueueEntries } from '../hooks/use-queue-entries';
+import useQueueStatuses from '../hooks/use-queue-statuses';
 import { updateSelectedQueueStatus, useServiceQueuesStore } from '../store/store';
 import { useColumns } from './cells/columns.resource';
 import QueueTable from './queue-table.component';

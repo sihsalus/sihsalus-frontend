@@ -3,7 +3,7 @@ import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { immunizationPrivilege } from '../constants';
-import { useImmunizations } from '../hooks/useImmunizations';
+import { useImmunizations } from '../hooks/use-immunizations';
 import ImmunizationHistoryCard from './immunization-history-card.component';
 import styles from './immunization-history-card.scss';
 

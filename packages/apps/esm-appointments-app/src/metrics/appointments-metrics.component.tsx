@@ -4,9 +4,9 @@ import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { filterByServiceType } from '../appointments/utils';
-import SelectedDateContext from '../hooks/selectedDateContext';
-import { useAppointmentList } from '../hooks/useAppointmentList';
-import { useAllAppointmentsByDate, useClinicalMetrics, useScheduledAppointments } from '../hooks/useClinicalMetrics';
+import SelectedDateContext from '../hooks/selected-date-context';
+import { useAppointmentList } from '../hooks/use-appointment-list';
+import { useAllAppointmentsByDate, useClinicalMetrics, useScheduledAppointments } from '../hooks/use-clinical-metrics';
 import { AppointmentStatus } from '../types';
 
 import styles from './appointments-metrics.scss';

@@ -14,8 +14,8 @@ import { type Control, Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { type ChartConfig } from '../../config-schema';
-import { useDefaultFacilityLocation } from '../hooks/useDefaultFacilityLocation';
-import { useDefaultVisitLocation } from '../hooks/useDefaultVisitLocation';
+import { useDefaultFacilityLocation } from '../hooks/use-default-facility-location';
+import { useDefaultVisitLocation } from '../hooks/use-default-visit-location';
 
 import { type VisitFormData } from './visit-form.resource';
 import styles from './visit-form.scss';

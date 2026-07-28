@@ -5,7 +5,7 @@ import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useObs } from '../resources/useObs';
+import { useObs } from '../resources/use-obs';
 
 import styles from './obs-graph.scss';
 

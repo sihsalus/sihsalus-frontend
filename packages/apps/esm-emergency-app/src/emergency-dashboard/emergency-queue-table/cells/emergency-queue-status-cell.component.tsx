@@ -4,7 +4,7 @@ import { useConfig } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { type Config } from '../../../config-schema';
-import { useEmergencyConfig } from '../../../hooks/usePriorityConfig';
+import { useEmergencyConfig } from '../../../hooks/use-priority-config';
 import { type EmergencyQueueTableCellProps } from './emergency-queue-name-cell.component';
 
 export const EmergencyQueueStatusCell: React.FC<EmergencyQueueTableCellProps> = ({ queueEntry }) => {

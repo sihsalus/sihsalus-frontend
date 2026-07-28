@@ -2,7 +2,7 @@ import { Layer, Tile } from '@carbon/react';
 import classNames from 'classnames';
 import React from 'react';
 
-import { useQueueEntriesMetrics } from '../hooks/useQueueEntries';
+import { useQueueEntriesMetrics } from '../hooks/use-queue-entries';
 
 import styles from './queue-table-metrics-card.scss';
 

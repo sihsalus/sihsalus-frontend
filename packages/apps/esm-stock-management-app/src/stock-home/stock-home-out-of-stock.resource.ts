@@ -1,8 +1,8 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import { ResourceRepresentation } from '../core/api/api';
-import { LocationStockItem, type StockItemDTO } from '../core/api/types/stockItem/StockItem';
-import { type StockItemInventory } from '../core/api/types/stockItem/StockItemInventory';
+import { LocationStockItem, type StockItemDTO } from '../core/api/types/stock-item/stock-item';
+import { type StockItemInventory } from '../core/api/types/stock-item/stock-item-inventory';
 
 type StockItemsResponse = {
   results?: Array<StockItemDTO>;

@@ -13,7 +13,7 @@ import {
 import { ArrowLeft } from '@carbon/react/icons';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { type StockOperationDTO } from '../../../core/api/types/stockOperation/StockOperationDTO';
+import { type StockOperationDTO } from '../../../core/api/types/stock-operation/stock-operation-dto';
 import styles from './stock-operation-items-form-step.scc.scss';
 
 const formatDate = (date: Date | string | null) => {

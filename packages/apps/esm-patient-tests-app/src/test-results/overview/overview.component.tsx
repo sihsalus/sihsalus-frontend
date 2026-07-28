@@ -3,7 +3,7 @@ import { navigate } from '@openmrs/esm-framework';
 import React from 'react';
 
 import CommonOverview from './common-overview.component';
-import useOverviewData from './useOverviewData';
+import useOverviewData from './use-overview-data';
 
 const defaultOpenTimeline = (patientUuid, panelUuid) => {
   const url = `/patient/${patientUuid}/testresults/timeline/${panelUuid}`;

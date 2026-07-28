@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import type { ConfigObject } from '../../../../config-schema';
 import { prenatalCareEditPrivilege } from '../../../../constants';
-import { useBirthPlan } from '../../../../hooks/useBirthPlan';
+import { useBirthPlan } from '../../../../hooks/use-birth-plan';
 import { formEntryWorkspace } from '../../../../types';
 
 import styles from './birth-plan.scss';

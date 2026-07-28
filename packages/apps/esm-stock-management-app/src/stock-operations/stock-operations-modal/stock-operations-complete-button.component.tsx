@@ -3,7 +3,7 @@ import { CheckmarkOutline } from '@carbon/react/icons';
 import { showModal } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
+import { type StockOperationDTO } from '../../core/api/types/stock-operation/stock-operation-dto';
 
 interface StockOperationCompleteButtonProps {
   operation: StockOperationDTO;

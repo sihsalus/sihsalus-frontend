@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { appointmentsEditPrivilege, chartAppointmentsEditPrivilege } from '../constants';
-import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patientAppointmentContext';
+import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patient-appointment-context';
 import { type Appointment, AppointmentStatus } from '../types';
 import { PatientAppointmentsActionMenu } from './patient-appointments-action-menu.component';
 

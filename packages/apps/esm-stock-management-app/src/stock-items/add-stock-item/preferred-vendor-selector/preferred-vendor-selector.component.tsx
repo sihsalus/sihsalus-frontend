@@ -2,7 +2,7 @@ import { ComboBox, TextInputSkeleton } from '@carbon/react';
 import { type ReactNode } from 'react';
 import { type Control, Controller, type FieldValues } from 'react-hook-form';
 import { ResourceRepresentation } from '../../../core/api/api';
-import { type StockSource } from '../../../core/api/types/stockOperation/StockSource';
+import { type StockSource } from '../../../core/api/types/stock-operation/stock-source';
 import { useStockSources } from '../../../stock-sources/stock-sources.resource';
 
 interface PreferredVendorSelectorProps<T> {

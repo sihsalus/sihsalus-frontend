@@ -1,7 +1,7 @@
 import { isDesktop, launchWorkspace2, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { usePartograph } from '../../hooks/usePartograph';
+import { usePartograph } from '../../hooks/use-partograph';
 import { formEntryWorkspace } from '../../types';
 import Partograph from './partograph.component';
 
@@ -11,7 +11,7 @@ const mockIsDesktop = vi.mocked(isDesktop);
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
 const mockUsePartograph = vi.mocked(usePartograph);
 
-vi.mock('../../hooks/usePartograph', () => ({
+vi.mock('../../hooks/use-partograph', () => ({
   usePartograph: vi.fn(),
 }));
 

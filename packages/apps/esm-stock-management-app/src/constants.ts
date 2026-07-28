@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { formatDisplayDate } from './core/utils/datetimeUtils';
+import { formatDisplayDate } from './core/utils/datetime-utils';
 
 export const moduleName = '@sihsalus/esm-stock-management-app';
 export const spaRoot = `${window['getOpenmrsSpaBase']}`;

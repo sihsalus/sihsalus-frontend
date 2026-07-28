@@ -1,8 +1,8 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import { type ResourceFilterCriteria, toQueryParams } from '../core/api/api';
-import { type PageableResult } from '../core/api/types/PageableResult';
-import { type StockSource } from '../core/api/types/stockOperation/StockSource';
+import { type PageableResult } from '../core/api/types/pageable-result';
+import { type StockSource } from '../core/api/types/stock-operation/stock-source';
 
 export interface StockSourceFilter extends ResourceFilterCriteria {
   sourceTypeUuid?: string | null;

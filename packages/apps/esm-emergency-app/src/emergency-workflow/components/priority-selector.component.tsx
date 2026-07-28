@@ -9,7 +9,7 @@ import { InlineNotification, RadioButton, RadioButtonGroup } from '@carbon/react
 import { Warning } from '@carbon/react/icons';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { usePriorityConfig } from '../../hooks/usePriorityConfig';
+import { usePriorityConfig } from '../../hooks/use-priority-config';
 import styles from './priority-selector.component.scss';
 
 interface PrioritySelectorProps {

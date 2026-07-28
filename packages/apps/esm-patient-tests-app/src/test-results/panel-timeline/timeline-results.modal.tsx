@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { basePath } from '../../constants';
 import Trendline from '../trendline/trendline.component';
-import usePanelData from '../panel-view/usePanelData';
+import usePanelData from '../panel-view/use-panel-data';
 import HistoricalTable from './historical-table.component';
 
 interface TimelineResultsModalProps {

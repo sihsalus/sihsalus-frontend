@@ -9,7 +9,7 @@ import { type GroupedObservation, type viewOpts } from '../../types';
 import FilterSet, { FilterContext } from '../filter';
 import GroupedTimeline from '../grouped-timeline';
 import IndividualResultsTable from '../individual-results-table/individual-results-table.component';
-import usePanelData from '../panel-view/usePanelData';
+import usePanelData from '../panel-view/use-panel-data';
 import styles from '../results-viewer/results-viewer.scss';
 import TabletOverlay from '../tablet-overlay';
 import Trendline from '../trendline/trendline.component';

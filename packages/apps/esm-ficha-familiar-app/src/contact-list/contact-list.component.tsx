@@ -21,7 +21,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import RelativeNameCell from '../components/relative-name-cell.component';
-import useContacts from '../hooks/useContacts';
+import useContacts from '../hooks/use-contacts';
 import { deleteRelationship } from '../relationships/relationship.resources';
 import { launchFichaFamiliarWorkspace } from '../workspace-utils';
 

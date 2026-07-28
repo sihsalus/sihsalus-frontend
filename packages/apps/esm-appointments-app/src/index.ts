@@ -7,7 +7,7 @@ import {
 } from '@openmrs/esm-framework';
 
 import { configSchema } from './config-schema';
-import { createDashboardLink } from './createDashboardLink.component';
+import { createDashboardLink } from './create-dashboard-link.component';
 import { appointmentCalendarDashboardMeta, dashboardMeta, patientChartDashboardMeta } from './dashboard.meta';
 import {
   cancelledAppointmentsPanelConfigSchema,

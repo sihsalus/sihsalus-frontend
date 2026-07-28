@@ -6,8 +6,8 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AgeRange, ConfigObject } from '../../../config-schema';
 import { credCourseLifeEditPrivilege } from '../../../constants';
-import { useAgeGroups } from '../../../hooks/useAgeGroups';
-import { type CREDControlWithStatus, useCREDSchedule } from '../../../hooks/useCREDSchedule';
+import { useAgeGroups } from '../../../hooks/use-age-groups';
+import { type CREDControlWithStatus, useCREDSchedule } from '../../../hooks/use-cred-schedule';
 import { canRegisterCREDControlFromAgeGroup } from '../../../utils/cred-age-group-actions';
 import { translateCredAgeGroupLabel, translateCredAgeGroupSublabel } from '../../../utils/cred-label-translations';
 

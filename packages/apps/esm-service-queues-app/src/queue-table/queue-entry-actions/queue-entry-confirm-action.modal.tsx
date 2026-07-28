@@ -3,7 +3,7 @@ import { type FetchResponse, getUserFacingErrorMessage, showSnackbar } from '@op
 import React, { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
+import { useMutateQueueEntries } from '../../hooks/use-queue-entries';
 import { type QueueEntry } from '../../types';
 
 import styles from './queue-entry-confirm-action.scss';

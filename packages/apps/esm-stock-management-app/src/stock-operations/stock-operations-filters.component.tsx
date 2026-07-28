@@ -2,8 +2,8 @@ import { DropdownSkeleton, MultiSelect } from '@carbon/react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StockFilters } from '../constants';
-import { StockOperationStatusTypes } from '../core/api/types/stockOperation/StockOperationStatus';
-import { translateStockOperationStatus, translateStockOperationType } from '../core/utils/translationUtils';
+import { StockOperationStatusTypes } from '../core/api/types/stock-operation/stock-operation-status';
+import { translateStockOperationStatus, translateStockOperationType } from '../core/utils/translation-utils';
 import styles from '../stock-items/stock-items-table.scss';
 import { getStockOperationTypes, useConcept } from '../stock-lookups/stock-lookups.resource';
 

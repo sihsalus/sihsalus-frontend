@@ -67,7 +67,7 @@ import {
   responsibleTypeOptions,
 } from './patient-search-registration.validation';
 import type { SearchedPatient } from './types';
-import { usePatientSearch } from './usePatientSearch';
+import { usePatientSearch } from './use-patient-search';
 
 // ============================================================================
 // COMPONENT PROPS

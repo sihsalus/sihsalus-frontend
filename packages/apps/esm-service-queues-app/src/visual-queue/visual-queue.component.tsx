@@ -15,8 +15,8 @@ import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../config-schema';
 import { serviceQueuesBasePath } from '../constants';
-import { useQueueEntries } from '../hooks/useQueueEntries';
-import useQueueStatuses from '../hooks/useQueueStatuses';
+import { useQueueEntries } from '../hooks/use-queue-entries';
+import useQueueStatuses from '../hooks/use-queue-statuses';
 import PatientQueueHeader from '../patient-queue-header/patient-queue-header.component';
 import QueueDuration from '../queue-table/components/queue-duration.component';
 import { StatusSwitcher } from '../queue-table/default-queue-table.component';

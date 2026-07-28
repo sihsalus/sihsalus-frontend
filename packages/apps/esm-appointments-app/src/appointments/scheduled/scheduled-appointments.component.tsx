@@ -13,7 +13,7 @@ import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import React, { useCallback, useContext, useEffect, useReducer, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import SelectedDateContext from '../../hooks/selectedDateContext';
+import SelectedDateContext from '../../hooks/selected-date-context';
 
 import styles from './scheduled-appointments.scss';
 

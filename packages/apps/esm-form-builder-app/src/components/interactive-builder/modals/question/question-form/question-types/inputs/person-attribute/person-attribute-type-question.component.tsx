@@ -1,5 +1,5 @@
 import { ComboBox, FormLabel, InlineLoading, InlineNotification } from '@carbon/react';
-import { usePersonAttributeTypes } from '@hooks/usePersonAttributeTypes';
+import { usePersonAttributeTypes } from '@hooks/use-person-attribute-types';
 import type { PersonAttributeType } from '@types';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';

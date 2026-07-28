@@ -4,7 +4,7 @@ import { formatDate, launchWorkspace2, parseDate, useConfig, useLayoutType } fro
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCurrentPregnancy } from '../../../../hooks/useCurrentPregnancy';
+import { useCurrentPregnancy } from '../../../../hooks/use-current-pregnancy';
 import { formEntryWorkspace } from '../../../../types';
 import type { LabourHistoryTableRow } from '../../../common/types';
 

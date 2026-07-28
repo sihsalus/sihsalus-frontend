@@ -27,7 +27,7 @@ import {
   useConceptAnswersForVisitAttributeType,
   useConceptDisplay,
   useVisitAttributeType,
-} from '../hooks/useVisitAttributeType';
+} from '../hooks/use-visit-attribute-type';
 
 import styles from './visit-attribute-type.scss';
 import { type VisitFormData } from './visit-form.resource';

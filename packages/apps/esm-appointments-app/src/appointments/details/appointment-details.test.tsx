@@ -53,7 +53,7 @@ const appointment: Appointment = {
 
 const mockUsePatient = vi.mocked(usePatient);
 
-vi.mock('../../hooks/usePatientAppointmentHistory', () => ({
+vi.mock('../../hooks/use-patient-appointment-history', () => ({
   usePatientAppointmentHistory: () => ({
     appointmentsCount: {
       completedAppointments: 1,

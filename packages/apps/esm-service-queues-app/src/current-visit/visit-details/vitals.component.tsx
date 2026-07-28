@@ -8,7 +8,7 @@ import { type ConfigObject } from '../../config-schema';
 import { serviceQueuesPatientVitalsWorkspace, vitalsEditPrivilege } from '../../constants';
 import { type PatientVitals } from '../../types/index';
 import { assessValue, calculateBMI, getReferenceRangesForConcept } from '../current-visit.resource';
-import { useVitalsConceptMetadata } from '../hooks/useVitalsConceptMetadata';
+import { useVitalsConceptMetadata } from '../hooks/use-vitals-concept-metadata';
 
 import styles from './triage-note.scss';
 

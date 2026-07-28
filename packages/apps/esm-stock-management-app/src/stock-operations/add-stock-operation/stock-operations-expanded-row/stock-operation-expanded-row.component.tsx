@@ -1,7 +1,7 @@
 import { InlineLoading, Layer, Row } from '@carbon/react';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type StockOperationDTO } from '../../../core/api/types/stockOperation/StockOperationDTO';
+import { type StockOperationDTO } from '../../../core/api/types/stock-operation/stock-operation-dto';
 import { useStockOperationTypes } from '../../../stock-lookups/stock-lookups.resource';
 import StockoperationActions from '../../stock-operation-actions.component';
 import StockOperationLinks from '../../stock-operation-links.component';

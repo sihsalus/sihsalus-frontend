@@ -1,3 +1,3 @@
-import FormsTable from './FormsTable';
+import FormsTable from './forms-table';
 
 export default FormsTable;

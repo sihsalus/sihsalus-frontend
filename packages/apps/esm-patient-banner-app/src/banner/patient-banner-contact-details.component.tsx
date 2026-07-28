@@ -13,10 +13,10 @@ import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../config-schema';
-import { useEthnicIdentity } from '../hooks/useEthnicIdentity';
-import { usePatientAdditionalAttributes, usePatientContactAttributes } from '../hooks/usePatientAttributes';
-import { usePatientListsForPatient } from '../hooks/usePatientListsForPatient';
-import { useRelationships } from '../hooks/useRelationships';
+import { useEthnicIdentity } from '../hooks/use-ethnic-identity';
+import { usePatientAdditionalAttributes, usePatientContactAttributes } from '../hooks/use-patient-attributes';
+import { usePatientListsForPatient } from '../hooks/use-patient-lists-for-patient';
+import { useRelationships } from '../hooks/use-relationships';
 import { type Attribute } from '../types';
 import styles from './patient-banner-contact-details.module.scss';
 

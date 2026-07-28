@@ -3,10 +3,10 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockFhirPatient, renderWithSwr } from 'test-utils';
 import { type ConfigObject, configSchema } from '../config-schema';
-import { useStickerPdfPrinter } from '../hooks/useStickerPdfPrinter';
+import { useStickerPdfPrinter } from '../hooks/use-sticker-pdf-printer';
 import PrintIdentifierStickerOverflowMenuItem from './print-identifier-sticker-action-button.component';
 
-vi.mock('../hooks/useStickerPdfPrinter');
+vi.mock('../hooks/use-sticker-pdf-printer');
 
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockShowSnackbar = vi.mocked(showSnackbar);

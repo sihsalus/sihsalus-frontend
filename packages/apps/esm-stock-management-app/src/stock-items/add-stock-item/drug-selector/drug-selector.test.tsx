@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type FieldValues, useForm } from 'react-hook-form';
-import { type Drug } from '../../../core/api/types/concept/Drug';
+import { type Drug } from '../../../core/api/types/concept/drug';
 import { fetchStockItem } from '../../stock-items.resource';
 import DrugSelector from './drug-selector.component';
 import { useDrugsHook } from './drug-selector.resource';

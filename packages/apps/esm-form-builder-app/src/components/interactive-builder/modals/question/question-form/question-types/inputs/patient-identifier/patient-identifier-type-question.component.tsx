@@ -1,5 +1,5 @@
 import { ComboBox, FormLabel, InlineLoading, InlineNotification } from '@carbon/react';
-import { usePatientIdentifierTypes } from '@hooks/usePatientIdentifierTypes';
+import { usePatientIdentifierTypes } from '@hooks/use-patient-identifier-types';
 import type { PatientIdentifierType } from '@types';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';

@@ -9,7 +9,7 @@ import {
 import { dischargeWorkspaceSiderailExtensionConfigSchema } from './action-menu-buttons/discharge-workspace-siderail-config-schema';
 import { configSchema } from './config-schema';
 import { moduleName } from './constant';
-import { createDashboardLink } from './createDashboardLink';
+import { createDashboardLink } from './create-dashboard-link';
 import { dashboardMeta } from './dashboard.meta';
 
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');

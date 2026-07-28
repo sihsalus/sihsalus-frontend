@@ -3,7 +3,7 @@ import { type OpenmrsResource, type Patient, type Visit } from '@openmrs/esm-fra
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ObsElementConfig } from '../../config-schema';
-import { useObs } from '../../hooks/useObs';
+import { useObs } from '../../hooks/use-obs';
 import { useElementConfig } from '../../ward-view/ward-view.resource';
 import styles from '../ward-patient-card.scss';
 import { getObsEncounterString, obsCustomRepresentation } from './ward-patient-obs.resource';

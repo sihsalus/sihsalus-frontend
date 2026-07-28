@@ -48,7 +48,7 @@ export const addNewRequestWorkspace = getAsyncLifecycle(
 );
 
 export const addNewProcedureStepWorkspace = getAsyncLifecycle(
-  () => import('./imaging/worklist/add-procedureStep-form.workspace'),
+  () => import('./imaging/worklist/add-procedure-step-form.workspace'),
   options,
 );
 
@@ -68,7 +68,7 @@ export const requestDeleteConfirmationDialog = getAsyncLifecycle(
 );
 
 export const procedureSteptDeleteConfirmationDialog = getAsyncLifecycle(
-  () => import('./imaging/components/delete-procedureStep.modal'),
+  () => import('./imaging/components/delete-procedure-step.modal'),
   options,
 );
 
@@ -88,7 +88,7 @@ export const linkStudyConfirmationDialog = getAsyncLifecycle(
 );
 
 export const rejectProcedureStepDialog = getAsyncLifecycle(
-  () => import('./imaging/components/update-procedureStep-status.modal'),
+  () => import('./imaging/components/update-procedure-step-status.modal'),
   options,
 );
 

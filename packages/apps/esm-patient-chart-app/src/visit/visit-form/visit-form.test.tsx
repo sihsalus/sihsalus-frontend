@@ -24,8 +24,8 @@ import React from 'react';
 import { mockLocations, mockPatient, mockVisitTypes, mockVisitWithAttributes } from 'test-utils';
 
 import { type ChartConfig, esmPatientChartSchema } from '../../config-schema';
-import { useEmrConfiguration } from '../hooks/useEmrConfiguration';
-import { useVisitAttributeType } from '../hooks/useVisitAttributeType';
+import { useEmrConfiguration } from '../hooks/use-emr-configuration';
+import { useVisitAttributeType } from '../hooks/use-visit-attribute-type';
 
 import {
   createVisitAttribute,
@@ -226,7 +226,7 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   }),
 }));
 
-vi.mock('../hooks/useVisitAttributeType', async () => ({
+vi.mock('../hooks/use-visit-attribute-type', async () => ({
   useVisitAttributeType: vi.fn((attributeUuid) => {
     if (attributeUuid === visitAttributes.punctuality.uuid) {
       return {
@@ -294,12 +294,12 @@ vi.mock('../hooks/useVisitAttributeType', async () => ({
   })),
 }));
 
-vi.mock('../hooks/useEmrConfiguration', async () => ({
+vi.mock('../hooks/use-emr-configuration', async () => ({
   useEmrConfiguration: vi.fn(() => ({})),
 }));
 
-vi.mock('../hooks/useDefaultFacilityLocation', async () => {
-  const requireActual = await vi.importActual('../hooks/useDefaultFacilityLocation');
+vi.mock('../hooks/use-default-facility-location', async () => {
+  const requireActual = await vi.importActual('../hooks/use-default-facility-location');
 
   return {
     ...requireActual,

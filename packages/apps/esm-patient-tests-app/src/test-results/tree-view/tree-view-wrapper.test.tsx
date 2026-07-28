@@ -26,7 +26,7 @@ vi.mock('../grouped-timeline', async () => ({
 }));
 
 const mockUsePanelData = vi.fn();
-vi.mock('../panel-view/usePanelData', () => ({
+vi.mock('../panel-view/use-panel-data', () => ({
   default: (...args: any[]) => mockUsePanelData(...args),
 }));
 

@@ -2,7 +2,7 @@ import { Pagination } from '@carbon/react';
 import { useLayoutType } from '@openmrs/esm-framework';
 import React from 'react';
 import styles from './pagination.scss';
-import { usePaginationInfo } from './usePaginationInfo';
+import { usePaginationInfo } from './use-pagination-info';
 
 interface FormBuilderPaginationProps {
   currentItems: number;

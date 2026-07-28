@@ -3,10 +3,10 @@ import { act, render, screen, within } from '@testing-library/react';
 import { type PropsWithChildren } from 'react';
 
 import { type ConfigObject } from '../config-schema';
-import { useEthnicIdentity } from '../hooks/useEthnicIdentity';
-import { usePatientAdditionalAttributes, usePatientContactAttributes } from '../hooks/usePatientAttributes';
-import { usePatientListsForPatient } from '../hooks/usePatientListsForPatient';
-import { useRelationships } from '../hooks/useRelationships';
+import { useEthnicIdentity } from '../hooks/use-ethnic-identity';
+import { usePatientAdditionalAttributes, usePatientContactAttributes } from '../hooks/use-patient-attributes';
+import { usePatientListsForPatient } from '../hooks/use-patient-lists-for-patient';
+import { useRelationships } from '../hooks/use-relationships';
 
 import { PatientBannerContactDetails } from './patient-banner-contact-details.component';
 
@@ -17,20 +17,20 @@ vi.mock('@openmrs/esm-framework', async () => ({
   usePatient: vi.fn(),
 }));
 
-vi.mock('../hooks/useEthnicIdentity', () => ({
+vi.mock('../hooks/use-ethnic-identity', () => ({
   useEthnicIdentity: vi.fn(),
 }));
 
-vi.mock('../hooks/usePatientAttributes', () => ({
+vi.mock('../hooks/use-patient-attributes', () => ({
   usePatientAdditionalAttributes: vi.fn(),
   usePatientContactAttributes: vi.fn(),
 }));
 
-vi.mock('../hooks/usePatientListsForPatient', () => ({
+vi.mock('../hooks/use-patient-lists-for-patient', () => ({
   usePatientListsForPatient: vi.fn(),
 }));
 
-vi.mock('../hooks/useRelationships', () => ({
+vi.mock('../hooks/use-relationships', () => ({
   useRelationships: vi.fn(),
 }));
 

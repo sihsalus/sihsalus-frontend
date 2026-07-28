@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import FlagsList from '../flags-list.component';
-import { usePatientFlags } from '../hooks/usePatientFlags';
+import { usePatientFlags } from '../hooks/use-patient-flags';
 import styles from './flags-banner-tag.scss';
 
 interface FlagsBannerTagExtensionProps {

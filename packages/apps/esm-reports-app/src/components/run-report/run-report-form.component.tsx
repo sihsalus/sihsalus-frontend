@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { take } from 'rxjs/operators';
 
-import { closeOverlay } from '../../hooks/useOverlay';
+import { closeOverlay } from '../../hooks/use-overlay';
 import ReportParameter from '../report-parameter.component';
 import { runReportObservable, useLocations, useReportDefinitions, useReportDesigns } from '../reports.resource';
 

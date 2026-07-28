@@ -10,7 +10,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type PatientSearchConfig } from '../config-schema';
-import useArrowNavigation from '../hooks/useArrowNavigation';
+import useArrowNavigation from '../hooks/use-arrow-navigation';
 import { isPatientSearchTermValid, limitPatientSearchTerm } from '../patient-search-constants';
 import {
   isForbiddenUserPropertiesError,

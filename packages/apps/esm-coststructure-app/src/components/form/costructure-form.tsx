@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { baseUrl } from '../../constants';
 import { type Procedure } from '../../hooks/use-get-procedures';
 import { calculateDepreciationByMinutes, calculateTotalValidConsruction } from '../../utils/infrastructure';
-import PageHeader from '../ui/PageHeader/pageHeader';
+import PageHeader from '../ui/page-header/page-header';
 import { ProcedureAutocomplete } from './autocomplete/procedure-autocomplete';
 import styles from './form.scss';
 import { type CostStructureFormValues, costStructureSchema } from './schema/costructure-schema';

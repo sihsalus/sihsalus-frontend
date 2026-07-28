@@ -3,8 +3,8 @@ import { useConfig, useDebounce } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../../config-schema';
-import { type StockItemDTO } from '../../../core/api/types/stockItem/StockItem';
-import { useFilterableStockItems } from '../hooks/useFilterableStockItems';
+import { type StockItemDTO } from '../../../core/api/types/stock-item/stock-item';
+import { useFilterableStockItems } from '../hooks/use-filterable-stock-items';
 import styles from './input-components-styles.scss';
 
 type StockItemSearchProps = {

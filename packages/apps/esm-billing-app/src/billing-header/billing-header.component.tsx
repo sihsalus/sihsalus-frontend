@@ -4,7 +4,7 @@ import { PageHeader, PageHeaderContent, PaymentsDeskPictogram, useSession } from
 import dayjs from 'dayjs';
 import React, { useContext } from 'react';
 import { omrsDateFormat } from '../constants';
-import SelectedDateContext from '../hooks/selectedDateContext';
+import SelectedDateContext from '../hooks/selected-date-context';
 import styles from './billing-header.scss';
 
 interface BillingHeaderProps {

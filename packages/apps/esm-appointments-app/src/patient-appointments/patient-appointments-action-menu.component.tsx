@@ -5,7 +5,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { appointmentsEditPrivilege, chartAppointmentsEditPrivilege } from '../constants';
 import { isAppointmentEditable } from '../helpers';
-import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patientAppointmentContext';
+import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patient-appointment-context';
 
 import { type Appointment } from '../types';
 

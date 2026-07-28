@@ -1,7 +1,7 @@
 import { ChemistryReference } from '@carbon/react/icons';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { usePatientPendingOrders } from '../../hooks/usePatientPendingOrders';
+import { usePatientPendingOrders } from '../../hooks/use-patient-pending-orders';
 import { type WardPatient } from '../../types';
 import styles from '../ward-patient-card.scss';
 

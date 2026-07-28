@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { type FieldValues, useForm } from 'react-hook-form';
-import { type Concept } from '../../../core/api/types/concept/Concept';
+import { type Concept } from '../../../core/api/types/concept/concept';
 import { useConcept } from '../../../stock-lookups/stock-lookups.resource';
 import StockItemCategorySelector from './stock-item-category-selector.component';
 

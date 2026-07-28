@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { deleteEncounter } from './encounter.resource';
 import PsychologyTable from './psychology-table.component';
-import { psychologyTableHeader, useEncounters } from './useEncounters';
+import { psychologyTableHeader, useEncounters } from './use-encounters';
 
 type PsychologyDashboardProps = { patientUuid: string };
 

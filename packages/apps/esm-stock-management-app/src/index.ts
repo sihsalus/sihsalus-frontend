@@ -1,7 +1,7 @@
 import { Box, Home, Location, OperationsRecord, Report, Settings, Store, UserSettings } from '@carbon/react/icons';
 import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
-import { createDashboardLink } from './createDashboardLink';
+import { createDashboardLink } from './create-dashboard-link';
 import Root from './root.component';
 import SideMenu from './side-menu/side-menu.component';
 import appMenu from './stock-app-menu-item/item.component';

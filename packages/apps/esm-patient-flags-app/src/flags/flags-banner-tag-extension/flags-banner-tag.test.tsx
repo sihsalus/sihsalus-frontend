@@ -3,14 +3,14 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPatient, mockPatientFlags } from 'test-utils';
 import { type ConfigObject, configSchema } from '../../config-schema';
-import { usePatientFlags } from '../hooks/usePatientFlags';
+import { usePatientFlags } from '../hooks/use-patient-flags';
 import FlagsBannerTagExtension from './flags-banner-tag.extension';
 
 const mockUsePatientFlags = vi.mocked(usePatientFlags);
 const mockUseConfig = vi.mocked(useConfig);
 
-vi.mock('../hooks/usePatientFlags', async () => {
-  const originalModule = await vi.importActual('../hooks/usePatientFlags');
+vi.mock('../hooks/use-patient-flags', async () => {
+  const originalModule = await vi.importActual('../hooks/use-patient-flags');
 
   return {
     ...originalModule,

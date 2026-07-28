@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { type RecordPermission } from '../core/api/types/RecordPermission';
-import { type StockOperationDTO } from '../core/api/types/stockOperation/StockOperationDTO';
-import { type StockOperationType } from '../core/api/types/stockOperation/StockOperationType';
+import { type RecordPermission } from '../core/api/types/record-permission';
+import { type StockOperationDTO } from '../core/api/types/stock-operation/stock-operation-dto';
+import { type StockOperationType } from '../core/api/types/stock-operation/stock-operation-type';
 
 const mockCanEdit = vi.hoisted(() => vi.fn(() => false));
 

@@ -36,7 +36,7 @@ import { useTranslation } from 'react-i18next';
 import { type Config } from '../../config-schema';
 import { emergencyEditPrivilege } from '../../constants';
 import { emergencyWorkflowWorkspace } from '../../emergency-workflow/constants';
-import { usePriorityConfig } from '../../hooks/usePriorityConfig';
+import { usePriorityConfig } from '../../hooks/use-priority-config';
 import { type EmergencyQueueEntry, useEmergencyQueueEntries } from '../../resources/emergency.resource';
 import { useEmergencyQueueColumns } from './emergency-queue-columns.resource';
 import { getQueueEntryIdentificationStatus } from './emergency-queue-identity.utils';

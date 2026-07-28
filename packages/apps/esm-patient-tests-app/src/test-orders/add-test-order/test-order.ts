@@ -1,6 +1,6 @@
 import type { TestOrderBasketItem } from '../../types';
 
-import { type TestType } from './useTestTypes';
+import { type TestType } from './use-test-types';
 
 type LabOrderRequest = Pick<TestOrderBasketItem, 'action' | 'testType'>;
 

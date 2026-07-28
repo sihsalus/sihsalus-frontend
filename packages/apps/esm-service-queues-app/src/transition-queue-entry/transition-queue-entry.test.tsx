@@ -30,7 +30,7 @@ vi.mock('../active-visits/active-visits-table.resource', () => ({
   updateQueueEntry: vi.fn().mockResolvedValue({ status: 201 }),
 }));
 
-vi.mock('../hooks/useQueueEntries', () => ({
+vi.mock('../hooks/use-queue-entries', () => ({
   useMutateQueueEntries: () => ({ mutateQueueEntries: vi.fn() }),
 }));
 

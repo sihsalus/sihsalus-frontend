@@ -4,7 +4,7 @@ import { CheckmarkFilledIcon, CloseFilledIcon } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useOrderStockInfo } from '../hooks/useOrderStockInfo';
+import { useOrderStockInfo } from '../hooks/use-order-stock-info';
 
 import styles from './order-stock-details.scss';
 

@@ -2,7 +2,7 @@ import { ProgressBar, Tag, Tile } from '@carbon/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { usePrenatalSupplementation } from '../../../../hooks/usePrenatalSupplementation';
+import { usePrenatalSupplementation } from '../../../../hooks/use-prenatal-supplementation';
 
 import styles from './prenatal-supplementation.scss';
 

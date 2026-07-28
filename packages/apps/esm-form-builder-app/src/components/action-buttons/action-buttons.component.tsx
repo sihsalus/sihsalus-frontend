@@ -1,5 +1,5 @@
 import { Button, InlineLoading } from '@carbon/react';
-import { useForm } from '@hooks/useForm';
+import { useForm } from '@hooks/use-form';
 import { showModal, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { handleFormValidation } from '@resources/form-validator.resource';
 import { publishForm, unpublishForm } from '@resources/forms.resource';

@@ -25,7 +25,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
 import { z } from 'zod';
-import { useQueueLocations } from '../../create-queue-entry/hooks/useQueueLocations';
+import { useQueueLocations } from '../../create-queue-entry/hooks/use-queue-locations';
 import type { Queue } from '../../types';
 import { saveQueue, updateQueue, useQueueConceptSets, useServiceConcepts } from './queue.resource';
 import styles from './queue-form.scss';

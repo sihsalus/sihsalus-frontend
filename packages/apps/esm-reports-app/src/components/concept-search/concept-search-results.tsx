@@ -3,7 +3,7 @@ import { useLayoutType } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 
-import { useConceptSearch } from '../../hooks/useConceptSearch';
+import { useConceptSearch } from '../../hooks/use-concept-search';
 
 import styles from './concept-search-results.scss';
 

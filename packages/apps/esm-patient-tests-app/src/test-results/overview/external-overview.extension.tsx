@@ -10,11 +10,11 @@ import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import usePatientResultsData from '../loadPatientTestData/usePatientResultsData';
+import usePatientResultsData from '../load-patient-test-data/use-patient-results-data';
 
 import CommonOverview from './common-overview.component';
 import styles from './external-overview.scss';
-import { type OverviewPanelEntry, parseSingleEntry } from './useOverviewData';
+import { type OverviewPanelEntry, parseSingleEntry } from './use-overview-data';
 
 const resultsToShow = 3;
 

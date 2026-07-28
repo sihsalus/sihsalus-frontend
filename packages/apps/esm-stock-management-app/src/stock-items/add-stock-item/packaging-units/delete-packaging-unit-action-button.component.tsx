@@ -3,7 +3,7 @@ import { TrashCan } from '@carbon/react/icons';
 import { showModal } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type StockItemPackagingUOMDTO } from '../../../core/api/types/stockItem/StockItemPackagingUOM';
+import { type StockItemPackagingUOMDTO } from '../../../core/api/types/stock-item/stock-item-packaging-uom';
 
 interface DeletePackagingUnitActionButtonProps {
   row?: StockItemPackagingUOMDTO;

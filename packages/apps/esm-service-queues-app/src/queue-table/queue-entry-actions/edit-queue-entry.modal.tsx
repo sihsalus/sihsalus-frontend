@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { convertTime12to24 } from '../../helpers/time-helpers';
-import { useQueues } from '../../hooks/useQueues';
+import { useQueues } from '../../hooks/use-queues';
 import { type QueueEntry } from '../../types';
 
 import QueueEntryActionModal from './queue-entry-actions.modal';

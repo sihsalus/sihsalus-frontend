@@ -8,7 +8,7 @@ const mockUseConfig = vi.mocked(useConfig);
 const mockUseSession = vi.mocked(useSession);
 const privilege = (name: string) => ({ uuid: `privilege-${name}`, display: name, name, links: [] });
 
-vi.mock('../hooks/useVitalsConceptMetadata', () => ({
+vi.mock('../hooks/use-vitals-concept-metadata', () => ({
   useVitalsFromObs: vi.fn(() => []),
 }));
 

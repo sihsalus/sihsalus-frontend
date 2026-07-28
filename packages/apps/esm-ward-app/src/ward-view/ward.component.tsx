@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import EmptyBedSkeleton from '../beds/empty-bed-skeleton.component';
-import useWardLocation from '../hooks/useWardLocation';
+import useWardLocation from '../hooks/use-ward-location';
 import { type WardViewContext } from '../types';
 import styles from './ward-view.scss';
 

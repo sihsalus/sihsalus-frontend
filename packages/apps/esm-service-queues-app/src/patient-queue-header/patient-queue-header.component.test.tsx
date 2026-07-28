@@ -4,8 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { mockQueueSurgery, mockQueueTriage, mockServiceTriage } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../config-schema';
-import { useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations';
-import { useQueues } from '../hooks/useQueues';
+import { useQueueLocations } from '../create-queue-entry/hooks/use-queue-locations';
+import { useQueues } from '../hooks/use-queues';
 import {
   updateSelectedQueueLocationName,
   updateSelectedQueueLocationUuid,
@@ -23,11 +23,11 @@ const mockUpdateSelectedQueueLocationUuid = vi.mocked(updateSelectedQueueLocatio
 const mockUpdateSelectedService = vi.mocked(updateSelectedService);
 const mockUseServiceQueuesStore = vi.mocked(useServiceQueuesStore);
 
-vi.mock('../create-queue-entry/hooks/useQueueLocations', () => ({
+vi.mock('../create-queue-entry/hooks/use-queue-locations', () => ({
   useQueueLocations: vi.fn(),
 }));
 
-vi.mock('../hooks/useQueues', () => ({
+vi.mock('../hooks/use-queues', () => ({
   useQueues: vi.fn(),
 }));
 

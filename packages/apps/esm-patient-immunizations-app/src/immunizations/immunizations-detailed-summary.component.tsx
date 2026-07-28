@@ -37,7 +37,7 @@ import React, { type ComponentProps, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ImmunizationConfigObject } from '../config-schema';
 import { immunizationEditPrivilege, immunizationPrivilege } from '../constants';
-import { useImmunizations } from '../hooks/useImmunizations';
+import { useImmunizations } from '../hooks/use-immunizations';
 import type { ImmunizationGrouped } from '../types';
 import {
   scheduleEntriesToSequenceDefinitions,

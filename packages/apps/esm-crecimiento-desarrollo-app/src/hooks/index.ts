@@ -7,32 +7,32 @@ export {
   useProviders,
   useSchemasConceptSet,
 } from '@openmrs/esm-patient-common-lib';
-export { useAgeGroups } from './useAgeGroups';
+export { useAgeGroups } from './use-age-groups';
 // Neonatal & child health
-export { useAlojamientoConjuntoSummary } from './useAlojamientoConjuntoSummary';
+export { useAlojamientoConjuntoSummary } from './use-alojamiento-conjunto-summary';
 // Screening & supplementation
-export { useAnemiaScreening } from './useAnemiaScreening';
+export { useAnemiaScreening } from './use-anemia-screening';
 // Appointments & scheduling
-export { default as useAppointmentsCRED } from './useAppointmentsCRED';
-export { useCephaloCaudalNeurologicalEvaluation } from './useCephaloCaudalNeurologicalEvaluation';
-export { useCREDFormLauncher } from './useCREDFormLauncher';
-export { useCREDFormsForAgeGroup } from './useCREDFormsForAgeGroup';
-export { useCREDSchedule } from './useCREDSchedule';
+export { default as useAppointmentsCRED } from './use-appointments-cred';
+export { useCephaloCaudalNeurologicalEvaluation } from './use-cephalo-caudal-neurological-evaluation';
+export { useCREDFormLauncher } from './use-cred-form-launcher';
+export { useCREDFormsForAgeGroup } from './use-cred-forms-for-age-group';
+export { useCREDSchedule } from './use-cred-schedule';
 // Prenatal context (used by neonatal register)
-export { useCurrentPregnancy } from './useCurrentPregnancy';
-export { default as useEncountersCRED } from './useEncountersCRED';
+export { useCurrentPregnancy } from './use-current-pregnancy';
+export { default as useEncountersCRED } from './use-encounters-cred';
 // Child nutrition
-export { useFeedingAssessment } from './useFeedingAssessment';
-export { useImmediateNewbornAttentions } from './useImmediateNewbornAttentions';
-export { useNeonatalSummary } from './useNeonatalSummary';
-export { useNutritionalAssessment } from './useNutritionalAssessment';
-export { useNutritionFollowup } from './useNutritionFollowup';
-export { usePostpartumControlTable } from './usePostpartumControl';
-export { usePrenatalAntecedents } from './usePrenatalAntecedents';
-export { useScreeningIndicators } from './useScreeningIndicators';
+export { useFeedingAssessment } from './use-feeding-assessment';
+export { useImmediateNewbornAttentions } from './use-immediate-newborn-attentions';
+export { useNeonatalSummary } from './use-neonatal-summary';
+export { useNutritionalAssessment } from './use-nutritional-assessment';
+export { useNutritionFollowup } from './use-nutrition-followup';
+export { usePostpartumControlTable } from './use-postpartum-control';
+export { usePrenatalAntecedents } from './use-prenatal-antecedents';
+export { useScreeningIndicators } from './use-screening-indicators';
 // Early stimulation
-export { useStimulationCounseling } from './useStimulationCounseling';
-export { useStimulationFollowup } from './useStimulationFollowup';
-export { useStimulationSessions } from './useStimulationSessions';
-export { useSupplementationTracker } from './useSupplementationTracker';
-export { useVitalNewBorn } from './useVitalNewBorn';
+export { useStimulationCounseling } from './use-stimulation-counseling';
+export { useStimulationFollowup } from './use-stimulation-followup';
+export { useStimulationSessions } from './use-stimulation-sessions';
+export { useSupplementationTracker } from './use-supplementation-tracker';
+export { useVitalNewBorn } from './use-vital-new-born';

@@ -2,7 +2,7 @@ import { Tag } from '@carbon/react';
 import { type OpenmrsResource, type Patient, type Visit } from '@openmrs/esm-framework';
 import React, { type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useObs } from '../../hooks/useObs';
+import { useObs } from '../../hooks/use-obs';
 import { type CarbonTagType } from '../../types';
 import { useElementConfig } from '../../ward-view/ward-view.resource';
 import {

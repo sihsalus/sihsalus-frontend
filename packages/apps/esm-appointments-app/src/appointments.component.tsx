@@ -6,8 +6,8 @@ import { useParams } from 'react-router-dom';
 import AppointmentTabs from './appointments/appointment-tabs.component';
 import { omrsDateFormat } from './constants';
 import AppointmentsHeader from './header/appointments-header.component';
-import SelectedDateContext from './hooks/selectedDateContext';
-import { useAppointmentServiceFilter } from './hooks/useAppointmentServiceFilter';
+import SelectedDateContext from './hooks/selected-date-context';
+import { useAppointmentServiceFilter } from './hooks/use-appointment-service-filter';
 import AppointmentMetrics from './metrics/appointments-metrics.component';
 
 const Appointments: React.FC = () => {

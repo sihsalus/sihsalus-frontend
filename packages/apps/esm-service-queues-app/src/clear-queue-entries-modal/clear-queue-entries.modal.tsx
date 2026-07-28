@@ -3,7 +3,7 @@ import { getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework'
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useMutateQueueEntries } from '../hooks/useQueueEntries';
+import { useMutateQueueEntries } from '../hooks/use-queue-entries';
 import { type QueueEntry } from '../types';
 
 import { batchClearQueueEntries } from './clear-queue-entries.resource';

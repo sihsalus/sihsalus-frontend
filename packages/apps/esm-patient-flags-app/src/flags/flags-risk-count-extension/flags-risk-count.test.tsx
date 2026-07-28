@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPatient, mockPatientFlags } from 'test-utils';
 import { type ConfigObject, configSchema } from '../../config-schema';
-import { useCurrentPath, usePatientFlags } from '../hooks/usePatientFlags';
+import { useCurrentPath, usePatientFlags } from '../hooks/use-patient-flags';
 import { type FlagsRiskCountExtensionConfig, riskCountExtensionConfigSchema } from './extension-config-schema';
 import FlagsRiskCountExtension from './flags-risk-count.extension';
 
@@ -12,8 +12,8 @@ const mockUseCurrentPath = vi.mocked(useCurrentPath);
 const mockLaunchWorkspace = vi.mocked(launchWorkspace2);
 const mockUseConfig = vi.mocked(useConfig);
 
-vi.mock('../hooks/usePatientFlags', async () => {
-  const originalModule = await vi.importActual('../hooks/usePatientFlags');
+vi.mock('../hooks/use-patient-flags', async () => {
+  const originalModule = await vi.importActual('../hooks/use-patient-flags');
 
   return {
     ...originalModule,

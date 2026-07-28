@@ -2,7 +2,7 @@ import { DefinitionTooltip, Tag } from '@carbon/react';
 import { formatDatetime, parseDate } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCauseOfDeath } from '../hooks/useCauseOfDeath';
+import { useCauseOfDeath } from '../hooks/use-cause-of-death';
 import styles from './deceased-patient-tag.scss';
 
 interface DeceasedPatientBannerTagProps {

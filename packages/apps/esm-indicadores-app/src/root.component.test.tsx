@@ -1,18 +1,18 @@
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { useMockMode } from './api/mock-mode';
-import { useIndicatorsHealth } from './hooks/useIndicatorsHealth';
+import { useIndicatorsHealth } from './hooks/use-indicators-health';
 import RootComponent from './root.component';
 
 const mockRequireModulePrivilege = vi.hoisted(() => vi.fn(({ children }: { children: ReactNode }) => <>{children}</>));
 
-vi.mock('./hooks/useIndicatorsHealth', () => ({ useIndicatorsHealth: vi.fn() }));
+vi.mock('./hooks/use-indicators-health', () => ({ useIndicatorsHealth: vi.fn() }));
 vi.mock('./api/mock-mode', () => ({ useMockMode: vi.fn() }));
-vi.mock('./pages/IndicadoresPage', () => ({ default: () => <div>Indicadores</div> }));
-vi.mock('./pages/IndicadorDetailPage', () => ({ default: () => <div>Detalle</div> }));
-vi.mock('./pages/IndicadorFormPage', () => ({ default: () => <div>Formulario</div> }));
-vi.mock('./pages/MetasPage', () => ({ default: () => <div>Metas</div> }));
-vi.mock('./pages/ResultadosPage', () => ({ default: () => <div>Resultados</div> }));
+vi.mock('./pages/indicadores-page', () => ({ default: () => <div>Indicadores</div> }));
+vi.mock('./pages/indicador-detail-page', () => ({ default: () => <div>Detalle</div> }));
+vi.mock('./pages/indicador-form-page', () => ({ default: () => <div>Formulario</div> }));
+vi.mock('./pages/metas-page', () => ({ default: () => <div>Metas</div> }));
+vi.mock('./pages/resultados-page', () => ({ default: () => <div>Resultados</div> }));
 vi.mock('@sihsalus/esm-rbac', () => ({
   AppErrorBoundary: ({ children }: { children: ReactNode }) => <>{children}</>,
   modulePrivileges: { indicators: 'app:indicadores' },

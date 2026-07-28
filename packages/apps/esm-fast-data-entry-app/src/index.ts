@@ -10,7 +10,7 @@ const options = {
 
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 
-export const root = getAsyncLifecycle(() => import('./Root'), options);
+export const root = getAsyncLifecycle(() => import('./root'), options);
 
 export const formsAppMenuLink = getAsyncLifecycle(() => import('./forms-app-menu-link'), options);
 

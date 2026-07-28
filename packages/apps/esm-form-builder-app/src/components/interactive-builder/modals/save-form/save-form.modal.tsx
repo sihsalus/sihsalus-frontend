@@ -13,8 +13,8 @@ import {
   TextArea,
   TextInput,
 } from '@carbon/react';
-import { useEncounterTypes } from '@hooks/useEncounterTypes';
-import { useForm } from '@hooks/useForm';
+import { useEncounterTypes } from '@hooks/use-encounter-types';
+import { useForm } from '@hooks/use-form';
 import { navigate, showSnackbar } from '@openmrs/esm-framework';
 import {
   deleteClobdata,

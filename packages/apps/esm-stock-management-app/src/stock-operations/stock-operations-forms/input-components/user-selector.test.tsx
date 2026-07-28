@@ -3,10 +3,10 @@ import userEvent from '@testing-library/user-event';
 import { type Control, type FieldValues, type UseFormReturn, useFormContext } from 'react-hook-form';
 import { otherUser } from '../../../core/utils/utils';
 import { useUser } from '../../../stock-lookups/stock-lookups.resource';
-import useSearchUser from '../hooks/useSearchUser';
+import useSearchUser from '../hooks/use-search-user';
 import UsersSelector from './users-selector.component';
 
-vi.mock('../hooks/useSearchUser', () => ({
+vi.mock('../hooks/use-search-user', () => ({
   __esModule: true,
   default: vi.fn(),
 }));

@@ -11,7 +11,7 @@ import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-comm
 import { orderBy } from 'lodash-es';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { disablePatientFlag, enablePatientFlag, usePatientFlags } from '../hooks/usePatientFlags';
+import { disablePatientFlag, enablePatientFlag, usePatientFlags } from '../hooks/use-patient-flags';
 import { getFlagType } from '../utils';
 import styles from './flags-workspace.scss';
 

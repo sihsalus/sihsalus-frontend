@@ -13,8 +13,8 @@ import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { credEarlyStimulationEditPrivilege } from '../../../../constants';
-import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
-import { useStimulationFollowup } from '../../../../hooks/useStimulationFollowup';
+import { useCREDFormLauncher } from '../../../../hooks/use-cred-form-launcher';
+import { useStimulationFollowup } from '../../../../hooks/use-stimulation-followup';
 
 import styles from './stimulation-followup.scss';
 

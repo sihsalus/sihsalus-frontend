@@ -11,9 +11,9 @@ import { mockSession, mockVisitAlice } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../../config-schema';
 import { serviceQueuesEditPrivilege } from '../../constants';
-import { useQueues } from '../../hooks/useQueues';
+import { useQueues } from '../../hooks/use-queues';
 import { AddPatientToQueueContext } from '../create-queue-entry.workspace';
-import { useQueueLocations } from '../hooks/useQueueLocations';
+import { useQueueLocations } from '../hooks/use-queue-locations';
 
 import QueueFields, { type QueueFieldsCallbacks } from './queue-fields.component';
 import { postQueueEntry, postQueueEntryWithoutVisit } from './queue-fields.resource';
@@ -22,9 +22,9 @@ const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseLayoutType = vi.mocked(useLayoutType);
 const mockUseSession = vi.mocked(useSession);
 
-vi.mock('../hooks/useQueueLocations', () => ({ useQueueLocations: vi.fn() }));
+vi.mock('../hooks/use-queue-locations', () => ({ useQueueLocations: vi.fn() }));
 
-vi.mock('../../hooks/useQueues', () => ({ useQueues: vi.fn() }));
+vi.mock('../../hooks/use-queues', () => ({ useQueues: vi.fn() }));
 
 vi.mock('./queue-fields.resource', () => {
   return {

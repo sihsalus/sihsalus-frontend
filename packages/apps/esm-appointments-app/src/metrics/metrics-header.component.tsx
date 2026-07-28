@@ -16,8 +16,8 @@ import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { appointmentsEditPrivilege, spaHomePage } from '../constants';
-import SelectedDateContext from '../hooks/selectedDateContext';
-import { getAppointmentServiceFilterSearch } from '../hooks/useAppointmentServiceFilter';
+import SelectedDateContext from '../hooks/selected-date-context';
+import { getAppointmentServiceFilterSearch } from '../hooks/use-appointment-service-filter';
 
 import styles from './metrics-header.scss';
 

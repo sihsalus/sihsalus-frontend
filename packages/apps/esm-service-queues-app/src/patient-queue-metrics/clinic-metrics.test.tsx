@@ -25,7 +25,7 @@ vi.mock('./queue-metrics.resource', async () => ({
   useServiceMetricsCount: vi.fn().mockReturnValue({ serviceCount: 5 }),
 }));
 
-vi.mock('../hooks/useQueues', async () => {
+vi.mock('../hooks/use-queues', async () => {
   return {
     useQueues: vi.fn().mockReturnValue({ queues: mockQueues, isLoading: false }),
   };

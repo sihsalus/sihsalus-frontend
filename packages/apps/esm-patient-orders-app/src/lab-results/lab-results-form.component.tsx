@@ -31,7 +31,7 @@ import {
 } from './lab-results.resource';
 import styles from './lab-results-form.scss';
 import ResultFormField from './lab-results-form-field.component';
-import { useLabResultsFormSchema } from './useLabResultsFormSchema';
+import { useLabResultsFormSchema } from './use-lab-results-form-schema';
 
 export interface LabResultsFormWorkspaceProps {
   order: Order;

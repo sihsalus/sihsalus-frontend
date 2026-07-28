@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import useGetSupply from '../../../hooks/use-get-supply';
 import { calculateStandardCostSupply, calculateUnitCostSupply } from '../../../utils/supply';
-import NoContent from '../../ui/NoContent/NoContent';
+import NoContent from '../../ui/no-content/no-content';
 import { type CostStructureFormValues } from '../schema/coststructure-schema';
 
 import styles from './tabs.styles.scss';

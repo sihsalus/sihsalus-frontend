@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { type Config, configSchema } from '../config-schema';
 import { useNationalityConceptAnswers } from './patient-nationality.resource';
 import PatientSearchRegistration from './patient-search-registration.component';
-import { usePatientSearch } from './usePatientSearch';
+import { usePatientSearch } from './use-patient-search';
 
 vi.mock('./patient-nationality.resource', () => ({
   useNationalityConceptAnswers: vi.fn(),
@@ -22,7 +22,7 @@ vi.mock('./insurance-type.resource', () => ({
   })),
 }));
 
-vi.mock('./usePatientSearch', () => ({
+vi.mock('./use-patient-search', () => ({
   usePatientSearch: vi.fn(),
 }));
 

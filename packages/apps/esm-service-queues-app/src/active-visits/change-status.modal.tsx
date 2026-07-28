@@ -22,9 +22,9 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { type ConfigObject } from '../config-schema';
-import { useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations';
-import { useMutateQueueEntries } from '../hooks/useQueueEntries';
-import { useQueues } from '../hooks/useQueues';
+import { useQueueLocations } from '../create-queue-entry/hooks/use-queue-locations';
+import { useMutateQueueEntries } from '../hooks/use-queue-entries';
+import { useQueues } from '../hooks/use-queues';
 import { type Queue } from '../types';
 
 import { updateQueueEntry } from './active-visits-table.resource';

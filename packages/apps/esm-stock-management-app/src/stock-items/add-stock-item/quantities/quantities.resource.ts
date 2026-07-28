@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ResourceRepresentation } from '../../../core/api/api';
-import { LocationStockItem } from '../../../core/api/types/stockItem/StockItem';
+import { LocationStockItem } from '../../../core/api/types/stock-item/stock-item';
 import { type StockItemInventoryFilter, useStockItemInventory } from '../../stock-items.resource';
 
 export function useStockItemQuantitiesHook(v?: ResourceRepresentation, initialStockItemUuid?: string) {

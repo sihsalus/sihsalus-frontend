@@ -2,11 +2,11 @@ import { useConfig } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useAnamnesis } from '../hooks/useAnamnesis';
+import { useAnamnesis } from '../hooks/use-anamnesis';
 import { patientFormEntryWorkspace } from '../utils/constants';
 import Anamnesis from './anamnesis.component';
 
-vi.mock('../hooks/useAnamnesis', () => ({
+vi.mock('../hooks/use-anamnesis', () => ({
   useAnamnesis: vi.fn(),
 }));
 

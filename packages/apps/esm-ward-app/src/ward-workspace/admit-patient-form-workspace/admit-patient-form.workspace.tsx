@@ -12,7 +12,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-import useWardLocation from '../../hooks/useWardLocation';
+import useWardLocation from '../../hooks/use-ward-location';
 import type { WardPatientWorkspaceProps, WardViewContext } from '../../types';
 import {
   assignPatientToBed,

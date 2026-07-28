@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockCurrentVisit, mockPatient, mockVisitQueueEntries } from 'test-utils';
 
-import { removeQueuedPatient } from '../hooks/useServiceQueue';
+import { removeQueuedPatient } from '../hooks/use-service-queue';
 import { type MappedVisitQueueEntry, useVisitQueueEntry } from '../queue-entry/queue.resource';
 
 import CancelVisitDialog from './cancel-visit-dialog.component';
@@ -20,8 +20,8 @@ vi.mock('../queue-entry/queue.resource', async () => ({
   useVisitQueueEntry: vi.fn(),
 }));
 
-vi.mock('../hooks/useServiceQueue', async () => {
-  const originalModule = await vi.importActual('../hooks/useServiceQueue');
+vi.mock('../hooks/use-service-queue', async () => {
+  const originalModule = await vi.importActual('../hooks/use-service-queue');
 
   return {
     ...originalModule,

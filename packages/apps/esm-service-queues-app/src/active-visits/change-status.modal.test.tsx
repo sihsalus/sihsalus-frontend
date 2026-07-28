@@ -36,7 +36,7 @@ vi.mock('./active-visits-table.resource', async () => ({
   updateQueueEntry: vi.fn(),
 }));
 
-vi.mock('../create-queue-entry/hooks/useQueueLocations', async () => {
+vi.mock('../create-queue-entry/hooks/use-queue-locations', async () => {
   return {
     useQueueLocations: vi.fn().mockReturnValue({
       queueLocations: mockLocations.data?.results.map((location) => ({ ...location, id: location.uuid })),
@@ -44,7 +44,7 @@ vi.mock('../create-queue-entry/hooks/useQueueLocations', async () => {
   };
 });
 
-vi.mock('../hooks/useQueues', async () => {
+vi.mock('../hooks/use-queues', async () => {
   return {
     useQueues: vi.fn().mockReturnValue({ queues: mockServices }),
   };

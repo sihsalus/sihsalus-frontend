@@ -2,7 +2,7 @@ import { StructuredListSkeleton } from '@carbon/react';
 import { type PatientProgram } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 
-import { useRecommendedVisitTypes } from '../hooks/useRecommendedVisitTypes';
+import { useRecommendedVisitTypes } from '../hooks/use-recommended-visit-types';
 
 import BaseVisitType from './base-visit-type.component';
 

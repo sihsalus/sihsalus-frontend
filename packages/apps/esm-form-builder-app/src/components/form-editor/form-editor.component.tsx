@@ -16,9 +16,9 @@ import {
   Tabs,
 } from '@carbon/react';
 import { ArrowLeft, Download, Maximize, Minimize } from '@carbon/react/icons';
-import { useLanguageOptions } from '@hooks/getLanguageOptionsFromSession';
-import { useClobdata } from '@hooks/useClobdata';
-import { useForm } from '@hooks/useForm';
+import { useLanguageOptions } from '@hooks/get-language-options-from-session';
+import { useClobdata } from '@hooks/use-clobdata';
+import { useForm } from '@hooks/use-form';
 import { ConfigurableLink, showModal, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { handleFormValidation } from '@resources/form-validator.resource';
 import { unretireForm } from '@resources/forms.resource';
@@ -31,7 +31,7 @@ import type { IMarker } from 'react-ace';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import type { ConfigObject } from '../../config-schema';
-import { mergeTranslatedSchema } from '../../utils/translationSchemaUtils';
+import { mergeTranslatedSchema } from '../../utils/translation-schema-utils';
 import ActionButtons from '../action-buttons/action-buttons.component';
 import AuditDetails from '../audit-details/audit-details.component';
 import FormRenderer from '../form-renderer/form-renderer.component';

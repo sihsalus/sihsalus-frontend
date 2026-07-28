@@ -13,7 +13,7 @@ import {
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { wardEditPrivilege } from '../constant';
-import useWardLocation from '../hooks/useWardLocation';
+import useWardLocation from '../hooks/use-ward-location';
 import type { DispositionType, WardPatient, WardViewContext } from '../types';
 import { useAdmitPatient } from '../ward.resource';
 

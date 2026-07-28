@@ -7,7 +7,7 @@ import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import useSWR from 'swr';
 import type { ConfigObject } from '../../config-schema';
 import { prenatalCareEditPrivilege } from '../../constants';
-import { useCurrentPregnancy } from '../../hooks/useCurrentPregnancy';
+import { useCurrentPregnancy } from '../../hooks/use-current-pregnancy';
 import { isWithinPregnancyEpisode } from '../../utils/pregnancy-episode-utils';
 import styles from './maternal-nts-compliance.scss';
 

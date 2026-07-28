@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useLogPatientSearchError } from '../hooks/useLogPatientSearchError';
+import { useLogPatientSearchError } from '../hooks/use-log-patient-search-error';
 import type { SearchedPatient } from '../types';
 import Pagination from '../ui-components/pagination/pagination.component';
 

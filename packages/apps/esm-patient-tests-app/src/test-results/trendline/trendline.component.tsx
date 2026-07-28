@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 import { testResultsBasePath } from '../helpers';
 import CommonDataTable from '../overview/common-datatable.component';
-import usePanelData from '../panel-view/usePanelData';
+import usePanelData from '../panel-view/use-panel-data';
 
 import RangeSelector from './range-selector.component';
 import styles from './trendline.scss';

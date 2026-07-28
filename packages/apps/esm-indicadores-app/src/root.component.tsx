@@ -4,13 +4,13 @@ import React, { useState } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import { useMockMode } from './api/mock-mode';
-import { useIndicatorsHealth } from './hooks/useIndicatorsHealth';
+import { useIndicatorsHealth } from './hooks/use-indicators-health';
 import styles from './indicators-dashboard.module.scss';
-import IndicadorDetailPage from './pages/IndicadorDetailPage';
-import IndicadoresPage from './pages/IndicadoresPage';
-import IndicadorFormPage from './pages/IndicadorFormPage';
-import MetasPage from './pages/MetasPage';
-import ResultadosPage from './pages/ResultadosPage';
+import IndicadorDetailPage from './pages/indicador-detail-page';
+import IndicadoresPage from './pages/indicadores-page';
+import IndicadorFormPage from './pages/indicador-form-page';
+import MetasPage from './pages/metas-page';
+import ResultadosPage from './pages/resultados-page';
 
 const trimTrailingSlash = (path: string) => path.replace(/\/+$/, '');
 

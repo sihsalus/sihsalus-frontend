@@ -1,12 +1,12 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import { type ResourceFilterCriteria, toQueryParams } from '../core/api/api';
-import { type PageableResult } from '../core/api/types/PageableResult';
-import { type InventoryGroupBy } from '../core/api/types/stockItem/StockItem';
-import { type StockItemInventory } from '../core/api/types/stockItem/StockItemInventory';
-import { type StopOperationAction } from '../core/api/types/stockOperation/StockOperationAction';
-import { type StockOperationDTO } from '../core/api/types/stockOperation/StockOperationDTO';
-import { type StockOperationItemCost } from '../core/api/types/stockOperation/StockOperationItemCost';
+import { type PageableResult } from '../core/api/types/pageable-result';
+import { type InventoryGroupBy } from '../core/api/types/stock-item/stock-item';
+import { type StockItemInventory } from '../core/api/types/stock-item/stock-item-inventory';
+import { type StopOperationAction } from '../core/api/types/stock-operation/stock-operation-action';
+import { type StockOperationDTO } from '../core/api/types/stock-operation/stock-operation-dto';
+import { type StockOperationItemCost } from '../core/api/types/stock-operation/stock-operation-item-cost';
 import { type StockOperationItemDtoSchema } from './validation-schema';
 
 const emptyStockOperationResult: PageableResult<StockOperationDTO> = {

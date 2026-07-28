@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import HomeTable from '../../components/tables/home/table.component';
-import PageHeader from '../../components/ui/PageHeader/pageHeader';
+import PageHeader from '../../components/ui/page-header/page-header';
 import useGetCostStructure from '../../hooks/use-get-coststructure';
 
 import styles from './styles.scss';

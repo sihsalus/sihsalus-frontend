@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import useGetEquipment from '../../../hooks/use-get-equipment';
 import { calculateCostEquipment, calculateDepreciationMinutes } from '../../../utils/equipments';
-import NoContent from '../../ui/NoContent/NoContent';
+import NoContent from '../../ui/no-content/no-content';
 import { type CostStructureFormValues } from '../schema/costructure-schema';
 
 import styles from './tabs.styles.scss';

@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 
 import CommonDataTable from './common-datatable.component';
 import styles from './common-overview.scss';
-import { type OverviewPanelEntry } from './useOverviewData';
+import { type OverviewPanelEntry } from './use-overview-data';
 
 const DashboardResultsCount = 5;
 

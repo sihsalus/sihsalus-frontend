@@ -5,7 +5,7 @@ import { getByTextWithMarkup } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../../config-schema';
 import { exportUnscheduledAppointmentsToSpreadsheet } from '../../helpers/excel';
-import { useUnscheduledAppointments } from '../../hooks/useUnscheduledAppointments';
+import { useUnscheduledAppointments } from '../../hooks/use-unscheduled-appointments';
 
 import UnscheduledAppointments from './unscheduled-appointments.component';
 
@@ -20,9 +20,9 @@ vi.mock('../../helpers/excel', async () => {
   };
 });
 
-vi.mock('../../hooks/useUnscheduledAppointments', async () => {
+vi.mock('../../hooks/use-unscheduled-appointments', async () => {
   return {
-    ...(await vi.importActual('../../hooks/useUnscheduledAppointments')),
+    ...(await vi.importActual('../../hooks/use-unscheduled-appointments')),
     useUnscheduledAppointments: vi.fn(),
   };
 });

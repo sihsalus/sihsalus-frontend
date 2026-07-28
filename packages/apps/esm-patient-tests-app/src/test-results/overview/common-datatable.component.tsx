@@ -15,7 +15,7 @@ import classNames from 'classnames';
 import * as React from 'react';
 
 import styles from './common-datatable.scss';
-import { type OverviewPanelData } from './useOverviewData';
+import { type OverviewPanelData } from './use-overview-data';
 
 interface CommonDataTableProps {
   data: Array<OverviewPanelData>;

@@ -7,8 +7,8 @@ import {
   mockPatientBrian,
 } from '../../../../__mocks__';
 import { configSchema, type WardConfigObject } from '../config-schema';
-import { useObs } from '../hooks/useObs';
-import useWardLocation from '../hooks/useWardLocation';
+import { useObs } from '../hooks/use-obs';
+import useWardLocation from '../hooks/use-ward-location';
 import { type WardPatient } from '../types';
 import DefaultWardPatientCard from '../ward-view/default-ward/default-ward-patient-card.component';
 import { bedLayoutToBed, filterBeds } from '../ward-view/ward-view.resource';
@@ -17,7 +17,7 @@ import WardBed from './ward-bed.component';
 const defaultConfig: WardConfigObject = getDefaultsFromConfigSchema(configSchema);
 
 vi.mocked(useConfig).mockReturnValue(defaultConfig);
-vi.mock('../hooks/useObs', () => ({
+vi.mock('../hooks/use-obs', () => ({
   useObs: vi.fn(),
 }));
 vi.mock('../ward-patient-card/row-elements/ward-patient-obs.resource', () => ({
@@ -28,7 +28,7 @@ vi.mock('../ward-patient-card/row-elements/ward-patient-obs.resource', () => ({
 
 const mockBedLayouts = filterBeds(mockAdmissionLocation);
 
-vi.mock('../hooks/useWardLocation', () => ({ default: vi.fn() }));
+vi.mock('../hooks/use-ward-location', () => ({ default: vi.fn() }));
 //@ts-expect-error
 vi.mocked(useObs).mockReturnValue({
   data: [],

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 
-import { useAppointmentList } from '../hooks/useAppointmentList';
-import { useAllAppointmentsByDate, useClinicalMetrics, useScheduledAppointments } from '../hooks/useClinicalMetrics';
+import { useAppointmentList } from '../hooks/use-appointment-list';
+import { useAllAppointmentsByDate, useClinicalMetrics, useScheduledAppointments } from '../hooks/use-clinical-metrics';
 import { type Appointment, AppointmentStatus } from '../types';
 
 import AppointmentsMetrics from './appointments-metrics.component';
@@ -11,8 +11,8 @@ const mockUseAllAppointmentsByDate = vi.mocked(useAllAppointmentsByDate);
 const mockUseClinicalMetrics = vi.mocked(useClinicalMetrics);
 const mockUseScheduledAppointments = vi.mocked(useScheduledAppointments);
 
-vi.mock('../hooks/useClinicalMetrics', async () => ({
-  ...(await vi.importActual('../hooks/useClinicalMetrics')),
+vi.mock('../hooks/use-clinical-metrics', async () => ({
+  ...(await vi.importActual('../hooks/use-clinical-metrics')),
   useClinicalMetrics: vi.fn().mockReturnValue({
     highestServiceLoad: {
       serviceName: 'Outpatient',
@@ -34,7 +34,7 @@ vi.mock('../hooks/useClinicalMetrics', async () => ({
   }),
 }));
 
-vi.mock('../hooks/useAppointmentList', () => ({
+vi.mock('../hooks/use-appointment-list', () => ({
   useAppointmentList: vi.fn(),
 }));
 

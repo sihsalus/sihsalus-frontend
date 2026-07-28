@@ -8,7 +8,7 @@ import {
 import { screen } from '@testing-library/react';
 import { renderWithSwr } from 'test-utils';
 import { mockWardViewContext } from '../../../mock';
-import useEmrConfiguration from '../../hooks/useEmrConfiguration';
+import useEmrConfiguration from '../../hooks/use-emr-configuration';
 import { type WardViewContext } from '../../types';
 import DefaultWardPendingPatients from '../../ward-view/default-ward/default-ward-pending-patients.component';
 import AdmissionRequestsWorkspace, { type AdmissionRequestsWorkspaceProps } from './admission-requests.workspace';
@@ -18,7 +18,7 @@ const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockUseWorkspace2Context = vi.mocked(useWorkspace2Context);
 
-vi.mock('../../hooks/useEmrConfiguration', () => ({ default: vi.fn() }));
+vi.mock('../../hooks/use-emr-configuration', () => ({ default: vi.fn() }));
 const mockedUseEmrConfiguration = vi.mocked(useEmrConfiguration);
 
 const workspaceProps: Workspace2DefinitionProps<AdmissionRequestsWorkspaceProps> = {

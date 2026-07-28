@@ -3,10 +3,10 @@ import { OverflowMenuVertical } from '@carbon/react/icons';
 import { showSnackbar } from '@openmrs/esm-framework';
 import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { OperationType, type StockOperationType } from '../../core/api/types/stockOperation/StockOperationType';
-import { translateStockOperationType } from '../../core/utils/translationUtils';
+import { OperationType, type StockOperationType } from '../../core/api/types/stock-operation/stock-operation-type';
+import { translateStockOperationType } from '../../core/utils/translation-utils';
 import { launchStockoperationAddOrEditWorkSpace } from '../stock-operation.utils';
-import useFilteredOperationTypesByRoles from '../stock-operations-forms/hooks/useFilteredOperationTypesByRoles';
+import useFilteredOperationTypesByRoles from '../stock-operations-forms/hooks/use-filtered-operation-types-by-roles';
 
 const StockOperationTypesSelector = () => {
   const { t } = useTranslation();

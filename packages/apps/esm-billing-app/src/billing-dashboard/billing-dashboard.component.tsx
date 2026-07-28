@@ -6,7 +6,7 @@ import { useParams } from 'react-router-dom';
 import BillingHeader from '../billing-header/billing-header.component';
 import BillsTable from '../bills-table/bills-table.component';
 import { omrsDateFormat } from '../constants';
-import SelectedDateContext from '../hooks/selectedDateContext';
+import SelectedDateContext from '../hooks/selected-date-context';
 import styles from './billing-dashboard.scss';
 
 export function BillingDashboard() {

@@ -6,7 +6,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../config-schema';
-import { FilterEmptyState } from '../ui-elements/resetFiltersEmptyState/filter-empty-state.component';
+import { FilterEmptyState } from '../ui-elements/reset-filters-empty-state/filter-empty-state.component';
 
 import FilterContext from './filter-context';
 import styles from './filter-set.scss';

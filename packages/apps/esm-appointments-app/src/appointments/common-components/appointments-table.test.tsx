@@ -14,7 +14,7 @@ import { getByTextWithMarkup } from 'test-utils';
 import { type ConfigObject, configSchema } from '../../config-schema';
 import { clinicalChartPrivilege } from '../../constants';
 import { exportAppointmentsToSpreadsheet } from '../../helpers/excel';
-import { useTodaysVisits } from '../../hooks/useTodaysVisits';
+import { useTodaysVisits } from '../../hooks/use-todays-visits';
 import { type Appointment, type AppointmentKind, AppointmentStatus } from '../../types';
 
 import AppointmentsTable from './appointments-table.component';
@@ -88,7 +88,7 @@ vi.mock('../../helpers/excel', async () => {
   };
 });
 
-vi.mock('../../hooks/useTodaysVisits', () => ({
+vi.mock('../../hooks/use-todays-visits', () => ({
   useTodaysVisits: vi.fn(),
 }));
 

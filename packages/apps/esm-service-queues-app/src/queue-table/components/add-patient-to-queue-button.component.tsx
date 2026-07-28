@@ -8,8 +8,8 @@ import {
   serviceQueuesPatientSearchWorkspace,
   serviceQueuesStartVisitWorkspace,
 } from '../../constants';
-import { isVisitLocation, useQueueLocations } from '../../create-queue-entry/hooks/useQueueLocations';
-import { useQueues } from '../../hooks/useQueues';
+import { isVisitLocation, useQueueLocations } from '../../create-queue-entry/hooks/use-queue-locations';
+import { useQueues } from '../../hooks/use-queues';
 import { CanEditServiceQueues } from '../../permissions';
 import { useServiceQueuesStore } from '../../store/store';
 

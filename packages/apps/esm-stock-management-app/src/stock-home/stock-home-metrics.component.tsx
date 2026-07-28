@@ -7,7 +7,7 @@ import styles from './stock-home.scss';
 import { useStockInventory } from './stock-home-inventory-expiry.resource';
 import { useStockInventoryItems } from './stock-home-inventory-items.resource';
 import { useOutOfStockDrugs } from './stock-home-out-of-stock.resource';
-import { useDisposalList } from './useDisposalList';
+import { useDisposalList } from './use-disposal-list';
 
 const StockManagementMetrics: React.FC = () => {
   const { t } = useTranslation();

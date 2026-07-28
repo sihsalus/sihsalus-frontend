@@ -1,7 +1,7 @@
 import { ComboBox, SelectSkeleton } from '@carbon/react';
 import { type ReactNode, useMemo } from 'react';
 import { type Control, Controller, type FieldValues } from 'react-hook-form';
-import { type StockItemPackagingUOMDTO } from '../../../core/api/types/stockItem/StockItemPackagingUOM';
+import { type StockItemPackagingUOMDTO } from '../../../core/api/types/stock-item/stock-item-packaging-uom';
 
 interface DispensingPackageMeasurementProps<T> {
   dispensingUnitPackagingUoMUuid?: string;

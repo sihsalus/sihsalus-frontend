@@ -32,7 +32,7 @@ vi.mock('../address-hierarchy.resource', async () => ({
 }));
 
 vi.mock('../../../patient-registration.resource', async () => ({
-  ...((await vi.importActual('../../../../patient-registration.resource')) as vi.Mock),
+  ...((await vi.importActual('../../../patient-registration.resource')) as vi.Mock),
   useAddressHierarchy: vi.fn(),
 }));
 

@@ -21,7 +21,7 @@ import { type ConfigObject } from '../../config-schema';
 import { visitNotesPrivilege, vitalsPrivilege } from '../../constants';
 import { type DiagnosisItem, type Encounter, type Note, type Observation } from '../../types/index';
 import styles from '../current-visit.scss';
-import { useVitalsFromObs } from '../hooks/useVitalsConceptMetadata';
+import { useVitalsFromObs } from '../hooks/use-vitals-concept-metadata';
 
 import VisitNote from './visit-note.component';
 import Vitals from './vitals.component';

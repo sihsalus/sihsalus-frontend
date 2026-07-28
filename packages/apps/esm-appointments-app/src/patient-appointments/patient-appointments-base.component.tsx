@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { appointmentsEditPrivilege, chartAppointmentsEditPrivilege } from '../constants';
-import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patientAppointmentContext';
+import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patient-appointment-context';
 import { usePatientAppointments } from './patient-appointments.resource';
 import styles from './patient-appointments-base.scss';
 import PatientAppointmentsTable from './patient-appointments-table.component';

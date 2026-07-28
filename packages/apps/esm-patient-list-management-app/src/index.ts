@@ -1,7 +1,7 @@
 import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 
 import { configSchema } from './config-schema';
-import { createDashboardLink } from './createDashboardLink.component';
+import { createDashboardLink } from './create-dashboard-link.component';
 import { dashboardMeta } from './dashboard.meta';
 import { setupOffline } from './offline';
 

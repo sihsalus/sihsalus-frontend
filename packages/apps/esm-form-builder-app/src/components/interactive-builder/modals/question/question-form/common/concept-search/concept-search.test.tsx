@@ -1,5 +1,5 @@
-import { useConceptId } from '@hooks/useConceptId';
-import { useConceptLookup } from '@hooks/useConceptLookup';
+import { useConceptId } from '@hooks/use-concept-id';
+import { useConceptLookup } from '@hooks/use-concept-lookup';
 import type { FormField } from '@sihsalus/esm-form-engine-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -35,13 +35,13 @@ const concepts: Array<Concept> = [
   },
 ];
 const mockUseConceptLookup = vi.mocked(useConceptLookup);
-vi.mock('@hooks/useConceptLookup', async () => ({
-  ...(await vi.importActual('@hooks/useConceptLookup')),
+vi.mock('@hooks/use-concept-lookup', async () => ({
+  ...(await vi.importActual('@hooks/use-concept-lookup')),
   useConceptLookup: vi.fn(),
 }));
 const mockUseConceptId = vi.mocked(useConceptId);
-vi.mock('@hooks/useConceptId', async () => ({
-  ...(await vi.importActual('@hooks/useConceptId')),
+vi.mock('@hooks/use-concept-id', async () => ({
+  ...(await vi.importActual('@hooks/use-concept-id')),
   useConceptId: vi.fn(),
 }));
 const onSelectConcept = vi.fn();

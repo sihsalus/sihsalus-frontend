@@ -13,12 +13,12 @@ import React, { useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../config-schema';
 import { credCourseLifeEditPrivilege } from '../../constants';
-import { resolveCREDForm } from '../../hooks/useCREDFormLauncher';
-import { useCREDFormsForAgeGroup } from '../../hooks/useCREDFormsForAgeGroup';
+import { resolveCREDForm } from '../../hooks/use-cred-form-launcher';
+import { useCREDFormsForAgeGroup } from '../../hooks/use-cred-forms-for-age-group';
 import useEncountersCRED, {
   encounterMatchesFormIdentifier,
   findCREDFormEncounterForControl,
-} from '../../hooks/useEncountersCRED';
+} from '../../hooks/use-encounters-cred';
 import { type DefaultPatientWorkspaceProps, formEntryWorkspace } from '../../types';
 import { buildCREDFormWorkspaceProps } from '../../utils/cred-form-launch-utils';
 

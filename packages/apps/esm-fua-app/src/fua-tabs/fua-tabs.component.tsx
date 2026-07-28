@@ -2,9 +2,9 @@ import { Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import FuaFormatTable from '../fua/fuaFormatTable';
-import FuaRequestTable from '../fua/fuaRequestTable';
-import VisitTable from '../fua/visitTable';
+import FuaFormatTable from '../fua/fua-format-table';
+import FuaRequestTable from '../fua/fua-request-table';
+import VisitTable from '../fua/visit-table';
 
 import styles from './fua-tabs.scss';
 

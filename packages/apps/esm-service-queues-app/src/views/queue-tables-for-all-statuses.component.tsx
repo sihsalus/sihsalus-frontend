@@ -11,9 +11,9 @@ import {
 } from '@openmrs/esm-framework';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { isVisitLocation, useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations';
-import { useQueueEntries } from '../hooks/useQueueEntries';
-import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
+import { isVisitLocation, useQueueLocations } from '../create-queue-entry/hooks/use-queue-locations';
+import { useQueueEntries } from '../hooks/use-queue-entries';
+import { useUserFacingErrorMessage } from '../hooks/use-user-facing-error-message';
 import PatientQueueHeader from '../patient-queue-header/patient-queue-header.component';
 import { canEditServiceQueues } from '../permissions';
 import { useColumns } from '../queue-table/cells/columns.resource';

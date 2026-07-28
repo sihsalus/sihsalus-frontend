@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type StockOperationDTO } from '../core/api/types/stockOperation/StockOperationDTO';
-import { OperationType, type StockOperationType } from '../core/api/types/stockOperation/StockOperationType';
-import { translateStockOperationType } from '../core/utils/translationUtils';
-import useStockOperationLinks from './stock-operations-forms/hooks/useStockOperationLinks';
+import { type StockOperationDTO } from '../core/api/types/stock-operation/stock-operation-dto';
+import { OperationType, type StockOperationType } from '../core/api/types/stock-operation/stock-operation-type';
+import { translateStockOperationType } from '../core/utils/translation-utils';
+import useStockOperationLinks from './stock-operations-forms/hooks/use-stock-operation-links';
 import StockOperationRelatedLink from './stock-operations-forms/stock-operation-related-link.component';
 import styles from './stock-operations-table.scss';
 

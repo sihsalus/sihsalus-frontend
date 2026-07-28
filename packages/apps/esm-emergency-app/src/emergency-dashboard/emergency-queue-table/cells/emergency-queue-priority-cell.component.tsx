@@ -3,7 +3,7 @@ import { useConfig } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type Config } from '../../../config-schema';
-import { usePriorityConfig } from '../../../hooks/usePriorityConfig';
+import { usePriorityConfig } from '../../../hooks/use-priority-config';
 import { type EmergencyQueueTableCellProps } from './emergency-queue-name-cell.component';
 import styles from './emergency-queue-priority-cell.scss';
 

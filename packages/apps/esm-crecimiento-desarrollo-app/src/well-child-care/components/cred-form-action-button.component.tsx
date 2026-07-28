@@ -2,7 +2,7 @@ import { ActionMenuButton, DocumentIcon } from '@openmrs/esm-framework';
 import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import React, { type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCREDSchedule } from '../../hooks/useCREDSchedule';
+import { useCREDSchedule } from '../../hooks/use-cred-schedule';
 
 interface CREDFormActionButtonProps {
   patientUuid: string;

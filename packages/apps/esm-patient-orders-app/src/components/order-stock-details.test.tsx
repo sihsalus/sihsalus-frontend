@@ -2,13 +2,13 @@ import { screen } from '@testing-library/react';
 import { useTranslation } from 'react-i18next';
 import { mockOrderStockData, renderWithSwr } from 'test-utils';
 
-import { useOrderStockInfo } from '../hooks/useOrderStockInfo';
+import { useOrderStockInfo } from '../hooks/use-order-stock-info';
 
 import OrderStockDetailsComponent from './order-stock-details.component';
 
 const mockUseOrderStockInfo = vi.mocked(useOrderStockInfo);
 
-vi.mock('../hooks/useOrderStockInfo', () => ({
+vi.mock('../hooks/use-order-stock-info', () => ({
   useOrderStockInfo: vi.fn(),
 }));
 

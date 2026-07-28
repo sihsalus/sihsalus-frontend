@@ -22,7 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import { EmptyState } from '../../empty-state/empty-state.component';
 import { exportUnscheduledAppointmentsToSpreadsheet } from '../../helpers/excel';
-import { useUnscheduledAppointments } from '../../hooks/useUnscheduledAppointments';
+import { useUnscheduledAppointments } from '../../hooks/use-unscheduled-appointments';
 import { getPageSizes, useSearchResults } from '../utils';
 
 const UnscheduledAppointments: React.FC = () => {

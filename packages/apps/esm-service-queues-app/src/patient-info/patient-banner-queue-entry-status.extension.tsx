@@ -4,7 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { canEditServiceQueues } from '../permissions';
-import { useQueueEntries } from '../hooks/useQueueEntries';
+import { useQueueEntries } from '../hooks/use-queue-entries';
 
 import styles from './patient-banner-queue-entry-status.scss';
 

@@ -34,7 +34,7 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => {
   };
 });
 
-vi.mock('../../hooks/useCurrentPregnancy', () => ({
+vi.mock('../../hooks/use-current-pregnancy', () => ({
   useCurrentPregnancy: vi.fn(() => ({ pregnancyStartDate: '2026-01-01' })),
 }));
 

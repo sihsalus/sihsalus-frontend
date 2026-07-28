@@ -3,8 +3,8 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResourceRepresentation } from '../../../core/api/api';
 import DataList from '../../../core/components/table/table.component';
-import { formatDisplayDate } from '../../../core/utils/datetimeUtils';
-import { translateStockLocation } from '../../../core/utils/translationUtils';
+import { formatDisplayDate } from '../../../core/utils/datetime-utils';
+import { translateStockLocation } from '../../../core/utils/translation-utils';
 import { useStockItemQuantitiesHook } from './quantities.resource';
 
 interface StockQuantitiesProps {

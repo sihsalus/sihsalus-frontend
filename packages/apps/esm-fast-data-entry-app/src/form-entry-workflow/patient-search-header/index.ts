@@ -1,3 +1,3 @@
-import PatientSearchHeader from './PatientSearchHeader';
+import PatientSearchHeader from './patient-search-header';
 
 export default PatientSearchHeader;

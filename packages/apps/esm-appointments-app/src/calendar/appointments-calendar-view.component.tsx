@@ -5,9 +5,9 @@ import { useParams } from 'react-router-dom';
 
 import { omrsDateFormat } from '../constants';
 import AppointmentsHeader from '../header/appointments-header.component';
-import SelectedDateContext from '../hooks/selectedDateContext';
-import { useAppointmentServiceFilter } from '../hooks/useAppointmentServiceFilter';
-import { useAppointmentsCalendar } from '../hooks/useAppointmentsCalendar';
+import SelectedDateContext from '../hooks/selected-date-context';
+import { useAppointmentServiceFilter } from '../hooks/use-appointment-service-filter';
+import { useAppointmentsCalendar } from '../hooks/use-appointments-calendar';
 import { type DailyAppointmentsCountByService } from '../types';
 
 import CalendarHeader from './header/calendar-header.component';

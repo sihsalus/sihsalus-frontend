@@ -31,6 +31,12 @@ const safeUserFacingErrorNormalizers = new Set([
   'getUserFacingQueueErrorMessage',
   'useUserFacingErrorMessage',
 ]);
+// The hook module is matched by path, so it has to survive the kebab-case file
+// convention. Accepting only the camelCase spelling would silently stop
+// recognising the sanctioned normalizer the moment its file is renamed, and
+// every call site would then be reported as a raw exposure.
+const userFacingErrorMessageHookModule =
+  /(?:^|\/)(?:useUserFacingErrorMessage|use-user-facing-error-message)(?:\.[cm]?[jt]s)?$/;
 const formHookExports = new Set(['useController', 'useForm', 'useFormContext']);
 const permittedNotificationModules = new Set([
   '@openmrs/esm-framework',
@@ -1040,7 +1046,7 @@ function isPermittedSafeNormalizerCall(call, sourceFile, context) {
   if (symbol.importedName === 'getUserFacingQueueErrorMessage') {
     return /(?:^|\/)queue-entry-error\.utils(?:\.[cm]?[jt]s)?$/.test(symbol.moduleSpecifier);
   }
-  return /(?:^|\/)useUserFacingErrorMessage(?:\.[cm]?[jt]s)?$/.test(symbol.moduleSpecifier);
+  return userFacingErrorMessageHookModule.test(symbol.moduleSpecifier);
 }
 
 function isDerivedFromSafeNormalizer(expression, useNode, sourceFile, context, seen = new Set()) {

@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import { appointmentsEditPrivilege } from '../../constants';
 import { canTransition } from '../../helpers';
-import { useTodaysVisits } from '../../hooks/useTodaysVisits';
+import { useTodaysVisits } from '../../hooks/use-todays-visits';
 import { type Appointment, AppointmentStatus } from '../../types';
 
 import styles from './appointments-actions.scss';

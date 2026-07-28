@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { StockOperationStatusTypes } from '../core/api/types/stockOperation/StockOperationStatus';
-import { OperationType } from '../core/api/types/stockOperation/StockOperationType';
+import { StockOperationStatusTypes } from '../core/api/types/stock-operation/stock-operation-status';
+import { OperationType } from '../core/api/types/stock-operation/stock-operation-type';
 
 export const stockItemPackagingUOMDTOSchema = z.object({
   id: z.string().nullish(),

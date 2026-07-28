@@ -37,9 +37,9 @@ import {
   requestCount,
   requestDeleteConfirmationDialog,
 } from '../constants';
-import { type AddNewProcedureStepWorkspaceProps } from '../worklist/add-procedureStep-form.workspace';
+import { type AddNewProcedureStepWorkspaceProps } from '../worklist/add-procedure-step-form.workspace';
 import styles from './details-table.scss';
-import ProcedureStepTable from './procedureStep-details-table.component';
+import ProcedureStepTable from './procedure-step-details-table.component';
 
 export interface RequestProcedureTableProps {
   isValidating?: boolean;

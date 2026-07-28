@@ -3,8 +3,8 @@ import { PageHeader, PageHeaderContent, ServiceQueuesPictogram, useConfig, useSe
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
-import { useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations';
-import { useQueues } from '../hooks/useQueues';
+import { useQueueLocations } from '../create-queue-entry/hooks/use-queue-locations';
+import { useQueues } from '../hooks/use-queues';
 import {
   updateSelectedQueueLocationName,
   updateSelectedQueueLocationUuid,

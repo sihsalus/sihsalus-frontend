@@ -14,14 +14,14 @@ import { type FieldError, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import { today } from '../../constants';
-import { type StockItemInventory } from '../../core/api/types/stockItem/StockItemInventory';
-import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
+import { type StockItemInventory } from '../../core/api/types/stock-item/stock-item-inventory';
+import { type StockOperationDTO } from '../../core/api/types/stock-operation/stock-operation-dto';
 import {
   OperationType,
   operationFromString,
   type StockOperationType,
   StockOperationTypeIsStockIssue,
-} from '../../core/api/types/stockOperation/StockOperationType';
+} from '../../core/api/types/stock-operation/stock-operation-type';
 import { type TabItem } from '../../core/components/tabs/types';
 import { otherUser, pick } from '../../core/utils/utils';
 import { useStockOperationAndItems } from '../stock-operations.resource';
@@ -31,7 +31,7 @@ import {
   getStockOperationItemFormSchema,
   type StockOperationItemDtoSchema,
 } from '../validation-schema';
-import useOperationTypePermisions from './hooks/useOperationTypePermisions';
+import useOperationTypePermisions from './hooks/use-operation-type-permisions';
 import BaseOperationDetailsFormStep from './steps/base-operation-details-form-step';
 import ReceivedItems from './steps/received-items.component';
 import StockOperationItemsFormStep from './steps/stock-operation-items-form-step.component';

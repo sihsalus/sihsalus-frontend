@@ -13,8 +13,8 @@ import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { credNutritionEditPrivilege } from '../../../../constants';
-import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
-import { useNutritionalAssessment } from '../../../../hooks/useNutritionalAssessment';
+import { useCREDFormLauncher } from '../../../../hooks/use-cred-form-launcher';
+import { useNutritionalAssessment } from '../../../../hooks/use-nutritional-assessment';
 
 import styles from './nutritional-assessment.scss';
 

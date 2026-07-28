@@ -4,7 +4,7 @@ import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type CarbonTagColor, type ConfigObject, carbonTagColors, type PriorityConfig } from '../config-schema';
 import styles from './flags-list.scss';
-import { type FlagWithPriority, usePatientFlags } from './hooks/usePatientFlags';
+import { type FlagWithPriority, usePatientFlags } from './hooks/use-patient-flags';
 
 interface FlagsListProps {
   patientUuid: string;

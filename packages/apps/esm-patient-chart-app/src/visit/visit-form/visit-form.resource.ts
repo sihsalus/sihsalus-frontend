@@ -11,7 +11,7 @@ import { type amPm } from '@openmrs/esm-patient-common-lib';
 import { useMemo, useState } from 'react';
 import useSWR from 'swr';
 
-import { useOfflineVisitType } from '../hooks/useOfflineVisitType';
+import { useOfflineVisitType } from '../hooks/use-offline-visit-type';
 
 const addressExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/address';
 const birthAddressMarkerField = 'address15';

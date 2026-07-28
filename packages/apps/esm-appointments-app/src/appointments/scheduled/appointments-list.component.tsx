@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 
-import { useAppointmentList } from '../../hooks/useAppointmentList';
+import { useAppointmentList } from '../../hooks/use-appointment-list';
 import AppointmentsTable from '../common-components/appointments-table.component';
 import { filterByServiceType } from '../utils';
 

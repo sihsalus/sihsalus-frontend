@@ -1,13 +1,13 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { formatForDatePicker } from '../../../constants';
-import { type StockBatchDTO } from '../../../core/api/types/stockItem/StockBatchDTO';
-import { type StockItemInventory } from '../../../core/api/types/stockItem/StockItemInventory';
+import { type StockBatchDTO } from '../../../core/api/types/stock-item/stock-batch-dto';
+import { type StockItemInventory } from '../../../core/api/types/stock-item/stock-item-inventory';
 import { useStockItemBatchInformationHook } from '../../../stock-items/add-stock-item/batch-information/batch-information.resource';
-import { useStockItemBatchNumbers } from '../hooks/useStockItemBatchNumbers';
+import { useStockItemBatchNumbers } from '../hooks/use-stock-item-batch-numbers';
 import BatchNoSelector from './batch-no-selector.component';
 
-vi.mock('../hooks/useStockItemBatchNumbers', () => ({
+vi.mock('../hooks/use-stock-item-batch-numbers', () => ({
   useStockItemBatchNumbers: vi.fn(),
 }));
 

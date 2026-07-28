@@ -13,7 +13,7 @@ import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
-import { useTreatmentPlan } from '../hooks/useTreatmentPlan';
+import { useTreatmentPlan } from '../hooks/use-treatment-plan';
 import { patientFormEntryWorkspace } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 

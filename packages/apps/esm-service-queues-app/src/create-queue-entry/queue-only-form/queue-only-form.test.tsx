@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   queueFields: vi.fn(),
 }));
 
-vi.mock('../../hooks/useQueueEntries', () => ({
+vi.mock('../../hooks/use-queue-entries', () => ({
   useMutateQueueEntries: () => ({ mutateQueueEntries: mocks.mutateQueueEntries }),
 }));
 

@@ -46,9 +46,9 @@ import {
   BatchJobStatusExpired,
   BatchJobStatusFailed,
   BatchJobStatusPending,
-} from '../../core/api/types/BatchJob';
+} from '../../core/api/types/batch-job';
 import { PrivilegedView } from '../../core/components/privileged-view-component/privileged-view.component';
-import { formatDisplayDateTime } from '../../core/utils/datetimeUtils';
+import { formatDisplayDateTime } from '../../core/utils/datetime-utils';
 import { handleMutate } from '../../utils';
 import { useGetReports } from '../stock-reports.resource';
 import NewReportActionButton from './new-report-button.component';

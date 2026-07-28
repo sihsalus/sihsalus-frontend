@@ -10,12 +10,12 @@ import {
 } from '__mocks__';
 import { renderWithSwr } from 'test-utils';
 import { mockWardViewContext } from '../../../mock';
-import { useAssignedBedByPatient } from '../../hooks/useAssignedBedByPatient';
-import useEmrConfiguration from '../../hooks/useEmrConfiguration';
-import { useInpatientAdmissionByPatients } from '../../hooks/useInpatientAdmissionByPatients';
-import { useInpatientRequestByPatients } from '../../hooks/useInpatientRequestByPatients';
-import useRestPatient from '../../hooks/useRestPatient';
-import useWardLocation from '../../hooks/useWardLocation';
+import { useAssignedBedByPatient } from '../../hooks/use-assigned-bed-by-patient';
+import useEmrConfiguration from '../../hooks/use-emr-configuration';
+import { useInpatientAdmissionByPatients } from '../../hooks/use-inpatient-admission-by-patients';
+import { useInpatientRequestByPatients } from '../../hooks/use-inpatient-request-by-patients';
+import useRestPatient from '../../hooks/use-rest-patient';
+import useWardLocation from '../../hooks/use-ward-location';
 import { type WardViewContext } from '../../types';
 import { useAdmitPatient } from '../../ward.resource';
 import CreateAdmissionEncounterWorkspace from './create-admission-encounter.workspace';
@@ -52,7 +52,7 @@ const _mockUseVisit = vi.mocked(useVisit).mockReturnValue({
   isValidating: false,
 });
 
-vi.mock('../../hooks/useWardLocation', () => ({ default: vi.fn() }));
+vi.mock('../../hooks/use-ward-location', () => ({ default: vi.fn() }));
 const mockedUseWardLocation = vi.mocked(useWardLocation);
 mockedUseWardLocation.mockReturnValue({
   location: mockLocationInpatientWard,
@@ -67,7 +67,7 @@ mockUseSession.mockReturnValue({
 } as ReturnType<typeof useSession>);
 mockUserHasAccess.mockReturnValue(true);
 
-vi.mock('../../hooks/useRestPatient', () => ({ default: vi.fn() }));
+vi.mock('../../hooks/use-rest-patient', () => ({ default: vi.fn() }));
 const _mockUseRestPatient = vi.mocked(useRestPatient).mockReturnValue({
   patient: mockPatientAlice,
   isLoading: false,
@@ -76,7 +76,7 @@ const _mockUseRestPatient = vi.mocked(useRestPatient).mockReturnValue({
   mutate: vi.fn(),
 });
 
-vi.mock('../../hooks/useAssignedBedByPatient', () => ({
+vi.mock('../../hooks/use-assigned-bed-by-patient', () => ({
   useAssignedBedByPatient: vi.fn(),
 }));
 
@@ -98,7 +98,7 @@ vi.mocked(useAssignedBedByPatient).mockReturnValue({
   isLoading: false,
 });
 
-vi.mock('../../hooks/useInpatientAdmissionByPatients', () => ({
+vi.mock('../../hooks/use-inpatient-admission-by-patients', () => ({
   useInpatientAdmissionByPatients: vi.fn(),
 }));
 const mockedUseInpatientAdmissionByPatients = vi.mocked(useInpatientAdmissionByPatients).mockReturnValue({
@@ -113,7 +113,7 @@ const mockedUseInpatientAdmissionByPatients = vi.mocked(useInpatientAdmissionByP
   nextUri: null,
 });
 
-vi.mock('../../hooks/useInpatientRequestByPatients', () => ({
+vi.mock('../../hooks/use-inpatient-request-by-patients', () => ({
   useInpatientRequestByPatients: vi.fn(),
 }));
 const mockedUseInpatientRequestByPatients = vi.mocked(useInpatientRequestByPatients).mockReturnValue({
@@ -128,7 +128,7 @@ const mockedUseInpatientRequestByPatients = vi.mocked(useInpatientRequestByPatie
   nextUri: null,
 });
 
-vi.mock('../../hooks/useEmrConfiguration', () => ({ default: vi.fn() }));
+vi.mock('../../hooks/use-emr-configuration', () => ({ default: vi.fn() }));
 vi.mocked(useEmrConfiguration).mockReturnValue({
   isLoadingEmrConfiguration: false,
   errorFetchingEmrConfiguration: null,

@@ -2,7 +2,7 @@ import { Tag, Tile } from '@carbon/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useObstetricRisk } from '../../../../hooks/useObstetricRisk';
+import { useObstetricRisk } from '../../../../hooks/use-obstetric-risk';
 
 import styles from './risk-classification.scss';
 

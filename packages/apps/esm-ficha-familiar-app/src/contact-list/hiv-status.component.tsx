@@ -1,7 +1,7 @@
 import { SkeletonText } from '@carbon/react';
 import React from 'react';
-import useRelativeHivEnrollment from '../hooks/useRelativeHivEnrollment';
-import useRelativeHTSEncounter from '../hooks/useRelativeHTSEncounter';
+import useRelativeHivEnrollment from '../hooks/use-relative-hiv-enrollment';
+import useRelativeHTSEncounter from '../hooks/use-relative-hts-encounter';
 
 import { useLocalizedHivStatus } from './contact-list.resource';
 

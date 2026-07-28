@@ -1,7 +1,7 @@
 import { Dropdown } from '@carbon/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateStockOperationStatus } from '../../core/utils/translationUtils';
+import { translateStockOperationStatus } from '../../core/utils/translation-utils';
 import styles from './stock-operation-statuses-filter.scss';
 
 const StockOperationStatusesFilter: React.FC = () => {

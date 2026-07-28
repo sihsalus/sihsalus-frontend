@@ -2,11 +2,11 @@ import { showSnackbar } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
-import { cancelFuaRequest } from '../hooks/useFuaRequests';
+import { cancelFuaRequest } from '../hooks/use-fua-requests';
 
 import CancelFuaModal from './cancel-fua.modal';
 
-vi.mock('../hooks/useFuaRequests', () => ({
+vi.mock('../hooks/use-fua-requests', () => ({
   cancelFuaRequest: vi.fn(),
 }));
 vi.mock('@openmrs/esm-framework', async () => ({

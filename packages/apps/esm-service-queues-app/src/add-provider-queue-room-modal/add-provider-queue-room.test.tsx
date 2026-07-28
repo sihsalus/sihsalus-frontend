@@ -2,9 +2,9 @@ import { showSnackbar } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations';
-import useQueueServices from '../hooks/useQueueService';
-import { useQueues } from '../hooks/useQueues';
+import { useQueueLocations } from '../create-queue-entry/hooks/use-queue-locations';
+import useQueueServices from '../hooks/use-queue-service';
+import { useQueues } from '../hooks/use-queues';
 import { type Queue } from '../types';
 
 import AddProviderQueueRoom from './add-provider-queue-room.modal';
@@ -25,16 +25,16 @@ vi.mock('./add-provider-queue-room.resource', () => ({
   useQueueRooms: vi.fn(),
 }));
 
-vi.mock('../hooks/useQueues', () => ({
+vi.mock('../hooks/use-queues', () => ({
   useQueues: vi.fn(),
 }));
 
-vi.mock('../hooks/useQueueService', () => ({
+vi.mock('../hooks/use-queue-service', () => ({
   __esModule: true,
   default: vi.fn(),
 }));
 
-vi.mock('../create-queue-entry/hooks/useQueueLocations', () => ({
+vi.mock('../create-queue-entry/hooks/use-queue-locations', () => ({
   useQueueLocations: vi.fn(),
 }));
 

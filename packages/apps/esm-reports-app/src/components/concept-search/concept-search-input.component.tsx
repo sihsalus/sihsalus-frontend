@@ -2,7 +2,7 @@ import { Search } from '@carbon/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useConceptSearchInput } from '../../hooks/useConceptSearchInput';
+import { useConceptSearchInput } from '../../hooks/use-concept-search-input';
 
 import styles from './concept-search-input.scss';
 import ConceptSearchResults from './concept-search-results';

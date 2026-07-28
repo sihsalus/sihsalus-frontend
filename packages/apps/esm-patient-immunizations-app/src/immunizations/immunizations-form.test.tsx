@@ -32,7 +32,7 @@ const mockToOmrsIsoString = vi.mocked(toOmrsIsoString);
 const mockToDateObjectStrict = vi.mocked(toDateObjectStrict);
 const defaultImmunizationConfig = getDefaultsFromConfigSchema(configSchema) as ImmunizationConfigObject;
 
-vi.mock('../hooks/useImmunizationsConceptSet', () => ({
+vi.mock('../hooks/use-immunizations-concept-set', () => ({
   useImmunizationsConceptSet: vi.fn(() => ({
     immunizationsConceptSet: {
       uuid: '984AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
@@ -64,7 +64,7 @@ vi.mock('../hooks/useImmunizationsConceptSet', () => ({
   })),
 }));
 
-vi.mock('../hooks/useImmunizations', () => ({
+vi.mock('../hooks/use-immunizations', () => ({
   useImmunizations: vi.fn(() => ({
     data: [],
     isLoading: false,

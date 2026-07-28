@@ -21,10 +21,10 @@ import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, formatForDatePicker, to
 import {
   operationFromString,
   type StockOperationType,
-} from '../../../core/api/types/stockOperation/StockOperationType';
+} from '../../../core/api/types/stock-operation/stock-operation-type';
 import { useStockItem } from '../../../stock-items/stock-items.resource';
 import { type BaseStockOperationItemFormData, getStockOperationItemFormSchema } from '../../validation-schema';
-import useOperationTypePermisions from '../hooks/useOperationTypePermisions';
+import useOperationTypePermisions from '../hooks/use-operation-type-permisions';
 import BatchNoSelector from '../input-components/batch-no-selector.component';
 import QtyUomSelector from '../input-components/quantity-uom-selector.component';
 import styles from './stock-item-form.scss';

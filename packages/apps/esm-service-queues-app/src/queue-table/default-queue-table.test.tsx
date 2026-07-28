@@ -15,9 +15,9 @@ import {
 
 import { useQueueRooms } from '../add-provider-queue-room-modal/add-provider-queue-room.resource';
 import { type ConfigObject, configSchema } from '../config-schema';
-import { useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations';
-import { useQueueEntries } from '../hooks/useQueueEntries';
-import useQueueStatuses from '../hooks/useQueueStatuses';
+import { useQueueLocations } from '../create-queue-entry/hooks/use-queue-locations';
+import { useQueueEntries } from '../hooks/use-queue-entries';
+import useQueueStatuses from '../hooks/use-queue-statuses';
 import DefaultQueueTable from '../queue-table/default-queue-table.component';
 import { updateSelectedQueueStatus, useServiceQueuesStore } from '../store/store';
 
@@ -30,8 +30,8 @@ const mockUseQueueStatuses = vi.mocked(useQueueStatuses);
 const mockUpdateSelectedQueueStatus = vi.mocked(updateSelectedQueueStatus);
 const mockUseServiceQueuesStore = vi.mocked(useServiceQueuesStore);
 
-vi.mock('../create-queue-entry/hooks/useQueueLocations', async () => ({
-  ...(await vi.importActual('../create-queue-entry/hooks/useQueueLocations')),
+vi.mock('../create-queue-entry/hooks/use-queue-locations', async () => ({
+  ...(await vi.importActual('../create-queue-entry/hooks/use-queue-locations')),
   useQueueLocations: vi.fn(),
 }));
 
@@ -40,12 +40,12 @@ vi.mock('../add-provider-queue-room-modal/add-provider-queue-room.resource', asy
   useQueueRooms: vi.fn(),
 }));
 
-vi.mock('../hooks/useQueueEntries', async () => ({
-  ...(await vi.importActual('../hooks/useQueueEntries')),
+vi.mock('../hooks/use-queue-entries', async () => ({
+  ...(await vi.importActual('../hooks/use-queue-entries')),
   useQueueEntries: vi.fn(),
 }));
 
-vi.mock('../hooks/useQueueStatuses', () => ({
+vi.mock('../hooks/use-queue-statuses', () => ({
   default: vi.fn(),
 }));
 

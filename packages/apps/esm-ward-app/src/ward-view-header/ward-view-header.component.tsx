@@ -1,5 +1,5 @@
 import React, { type ReactNode } from 'react';
-import useWardLocation from '../hooks/useWardLocation';
+import useWardLocation from '../hooks/use-ward-location';
 import AdmissionRequestsBar from './admission-requests-bar.component';
 import styles from './ward-view-header.scss';
 

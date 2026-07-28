@@ -6,8 +6,8 @@ import { extractErrorMessagesFromResponse } from '../../constants';
 import {
   type StopOperationAction,
   type StopOperationActionType,
-} from '../../core/api/types/stockOperation/StockOperationAction';
-import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
+} from '../../core/api/types/stock-operation/stock-operation-action';
+import { type StockOperationDTO } from '../../core/api/types/stock-operation/stock-operation-dto';
 import { handleMutate } from '../../utils';
 import { executeStockOperationAction } from '../stock-operations.resource';
 import styles from './stock-operations.scss';

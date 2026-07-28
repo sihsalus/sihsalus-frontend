@@ -1,7 +1,7 @@
 import { ComboBox, InlineNotification, SkeletonText } from '@carbon/react';
 import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type StockItemPackagingUOMDTO } from '../../../core/api/types/stockItem/StockItemPackagingUOM';
+import { type StockItemPackagingUOMDTO } from '../../../core/api/types/stock-item/stock-item-packaging-uom';
 import { useStockItem } from '../../../stock-items/stock-items.resource';
 
 interface QtyUomSelectorProps {

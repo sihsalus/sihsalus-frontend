@@ -5,8 +5,8 @@ import React, { useCallback, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { omrsDateFormat } from '../constants';
-import SelectedDateContext from '../hooks/selectedDateContext';
-import { useAppointmentServices } from '../hooks/useAppointmentService';
+import SelectedDateContext from '../hooks/selected-date-context';
+import { useAppointmentServices } from '../hooks/use-appointment-service';
 
 import styles from './appointments-header.scss';
 

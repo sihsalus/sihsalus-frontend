@@ -3,10 +3,10 @@ import { Edit } from '@carbon/react/icons';
 import { showSnackbar } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
+import { type StockOperationDTO } from '../../core/api/types/stock-operation/stock-operation-dto';
 import { launchStockoperationAddOrEditWorkSpace } from '../stock-operation.utils';
 import { useStockOperationAndItems } from '../stock-operations.resource';
-import useFilteredOperationTypesByRoles from '../stock-operations-forms/hooks/useFilteredOperationTypesByRoles';
+import useFilteredOperationTypesByRoles from '../stock-operations-forms/hooks/use-filtered-operation-types-by-roles';
 import styles from './edit-stock-operation-button.scss';
 
 interface EditStockOperationActionMenuProps {

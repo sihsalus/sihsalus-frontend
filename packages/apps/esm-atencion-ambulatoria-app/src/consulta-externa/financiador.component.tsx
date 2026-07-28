@@ -22,7 +22,7 @@ import {
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
-import { type InsuranceEntry, useInsuranceProvider } from '../hooks/useInsuranceProvider';
+import { type InsuranceEntry, useInsuranceProvider } from '../hooks/use-insurance-provider';
 import { patientFormEntryWorkspace } from '../utils/constants';
 import styles from './consulta-externa-dashboard.scss';
 

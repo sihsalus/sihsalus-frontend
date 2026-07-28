@@ -2,10 +2,10 @@ import { Button, DropdownSkeleton, InlineNotification, ModalBody, ModalFooter, M
 import { getCoreTranslation } from '@openmrs/esm-framework';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMutateQueueEntries } from '../hooks/useQueueEntries';
-import { useQueueEntry } from '../hooks/useQueueEntry';
-import { useQueues } from '../hooks/useQueues';
-import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
+import { useMutateQueueEntries } from '../hooks/use-queue-entries';
+import { useQueueEntry } from '../hooks/use-queue-entry';
+import { useQueues } from '../hooks/use-queues';
+import { useUserFacingErrorMessage } from '../hooks/use-user-facing-error-message';
 import { type QueueEntry } from '../types';
 import { transitionQueueEntry, updateActiveQueueEntry } from './queue-entry-actions.resource';
 import QueueEntryActionModal from './queue-entry-actions-modal.component';

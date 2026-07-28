@@ -7,7 +7,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../config-schema';
 import { credCourseLifeEditPrivilege } from '../../../constants';
-import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
+import { useCREDSchedule } from '../../../hooks/use-cred-schedule';
 import { useMutateAppointments } from '../../../ui/form/appointments-form.resource';
 import { getCREDControlsToSchedule } from '../../../utils/cred-control-intervals';
 import { translateCredControlLabel } from '../../../utils/cred-label-translations';

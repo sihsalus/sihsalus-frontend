@@ -7,7 +7,7 @@ import {
   getParentBaseEncounterUuidFromEncounter,
   mapToAmpathOdontogramEncounterPayload,
 } from './ampath-form-odontogram-mapper';
-import { adultConfig } from './config/adultConfig';
+import { adultConfig } from './config/adult-config';
 import { createEmptyOdontogramData } from './types/odontogram';
 
 const config = getDefaultsFromConfigSchema(configSchema) as OdontogramConfig;

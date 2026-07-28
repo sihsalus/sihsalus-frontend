@@ -30,8 +30,8 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { type ImmunizationConfigObject } from '../config-schema';
 import { immunizationEditPrivilege } from '../constants';
-import { useImmunizations } from '../hooks/useImmunizations';
-import { useImmunizationsConceptSet } from '../hooks/useImmunizationsConceptSet';
+import { useImmunizations } from '../hooks/use-immunizations';
+import { useImmunizationsConceptSet } from '../hooks/use-immunizations-concept-set';
 import { type ImmunizationFormData } from '../types';
 import {
   scheduleEntriesToSequenceDefinitions,

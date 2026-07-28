@@ -2,7 +2,7 @@ import { ExtensionSlot, launchWorkspace, useSession } from '@openmrs/esm-framewo
 import { render } from '@testing-library/react';
 import { mockQueueTriage } from 'test-utils';
 
-import { useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations';
+import { useQueueLocations } from '../create-queue-entry/hooks/use-queue-locations';
 import type { Queue } from '../types';
 import QueueTablesForAllStatuses from './queue-tables-for-all-statuses.component';
 
@@ -11,8 +11,8 @@ const mockLaunchWorkspace = vi.mocked(launchWorkspace);
 const mockUseQueueLocations = vi.mocked(useQueueLocations);
 const mockUseSession = vi.mocked(useSession);
 
-vi.mock('../create-queue-entry/hooks/useQueueLocations', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../create-queue-entry/hooks/useQueueLocations')>()),
+vi.mock('../create-queue-entry/hooks/use-queue-locations', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../create-queue-entry/hooks/use-queue-locations')>()),
   useQueueLocations: vi.fn(),
 }));
 
@@ -20,7 +20,7 @@ vi.mock('../permissions', () => ({
   canEditServiceQueues: vi.fn(() => true),
 }));
 
-vi.mock('../hooks/useQueueEntries', () => ({
+vi.mock('../hooks/use-queue-entries', () => ({
   useQueueEntries: vi.fn(() => ({
     queueEntries: [],
     isLoading: true,

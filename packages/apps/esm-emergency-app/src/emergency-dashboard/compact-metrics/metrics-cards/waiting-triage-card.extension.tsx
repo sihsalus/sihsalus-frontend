@@ -3,7 +3,7 @@ import { UserFollow } from '@carbon/react/icons';
 import { ErrorState } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useEmergencyConfig } from '../../../hooks/usePriorityConfig';
+import { useEmergencyConfig } from '../../../hooks/use-priority-config';
 import { useEmergencyMetrics } from '../../../resources/emergency.resource';
 import {
   MetricsCard,

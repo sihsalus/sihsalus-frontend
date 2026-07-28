@@ -35,12 +35,12 @@ import {
   stockManagementOperationsEditPrivilege,
 } from '../constants';
 import { ResourceRepresentation } from '../core/api/api';
-import { formatDisplayDate } from '../core/utils/datetimeUtils';
+import { formatDisplayDate } from '../core/utils/datetime-utils';
 import {
   translateStockLocation,
   translateStockOperationStatus,
   translateStockOperationType,
-} from '../core/utils/translationUtils';
+} from '../core/utils/translation-utils';
 import { handleMutate } from '../utils';
 import StockOperationExpandedRow from './add-stock-operation/stock-operations-expanded-row/stock-operation-expanded-row.component';
 import EditStockOperationActionMenu from './edit-stock-operation/edit-stock-operation-action-menu.component';

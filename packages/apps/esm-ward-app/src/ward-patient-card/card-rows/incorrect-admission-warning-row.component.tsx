@@ -1,7 +1,7 @@
 import { InlineNotification } from '@carbon/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import useWardLocation from '../../hooks/useWardLocation';
+import useWardLocation from '../../hooks/use-ward-location';
 import { type WardPatient } from '../../types';
 
 interface IncorrectAdmissionWarningRowProps {

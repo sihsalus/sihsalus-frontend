@@ -2,10 +2,10 @@ import { DropdownSkeleton, InlineNotification } from '@carbon/react';
 import { type Visit } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useUserFacingErrorMessage } from '../../hooks/useUserFacingErrorMessage';
+import { useUserFacingErrorMessage } from '../../hooks/use-user-facing-error-message';
 import MoveQueueEntryModal from '../move-queue-entry.modal';
 import AddPatientToQueueModal from './add-patient-to-queue.component';
-import { useLatestQueueEntry } from './useLatestQueueEntry';
+import { useLatestQueueEntry } from './use-latest-queue-entry';
 
 interface AddOrMoveModalProps {
   activeVisit: Visit;

@@ -1,8 +1,8 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import { type ResourceFilterCriteria, toQueryParams } from '../core/api/api';
-import { type UserRoleScope } from '../core/api/types/identity/UserRoleScope';
-import { type PageableResult } from '../core/api/types/PageableResult';
+import { type UserRoleScope } from '../core/api/types/identity/user-role-scope';
+import { type PageableResult } from '../core/api/types/pageable-result';
 
 export type UserRoleScopeFilter = ResourceFilterCriteria;
 

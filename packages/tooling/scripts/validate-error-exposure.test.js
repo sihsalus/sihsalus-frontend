@@ -290,6 +290,28 @@ test('approved normalizers ignore only their technical input argument', () => {
   assert.equal(unsafeFindings.length, 6);
 });
 
+test('recognizes the user-facing error hook under either file-naming convention', () => {
+  // The hook is matched by module path. When its file was renamed to kebab-case
+  // the guard stopped recognizing it and reported every call site as a raw
+  // exposure, so both spellings have to keep resolving to the same normalizer.
+  for (const moduleSpecifier of ['../hooks/useUserFacingErrorMessage', '../hooks/use-user-facing-error-message']) {
+    const findings = analyze(`
+      import { useUserFacingErrorMessage } from '${moduleSpecifier}';
+
+      const errorMessage = useUserFacingErrorMessage(error, t('fallback', 'No disponible'));
+      const content = <InlineNotification subtitle={errorMessage} />;
+    `);
+    assert.deepEqual(findings, [], `${moduleSpecifier} should resolve to the approved normalizer`);
+  }
+
+  const impostorFindings = analyze(`
+    import { useUserFacingErrorMessage } from '../hooks/use-user-facing-error-messages';
+
+    const content = <InlineNotification subtitle={useUserFacingErrorMessage(error)} />;
+  `);
+  assert.equal(impostorFindings.length, 1);
+});
+
 test('does not trust local functions that only reuse approved normalizer names', () => {
   const findings = analyze(`
     import { getUserFacingErrorMessage as importedNormalizer } from '@openmrs/esm-framework';

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import PatientSearch from '../compact-patient-search/patient-search.component';
 import { type PatientSearchConfig } from '../config-schema';
-import useArrowNavigation from '../hooks/useArrowNavigation';
+import useArrowNavigation from '../hooks/use-arrow-navigation';
 import {
   isPatientSearchTermValid,
   limitPatientSearchTerm,

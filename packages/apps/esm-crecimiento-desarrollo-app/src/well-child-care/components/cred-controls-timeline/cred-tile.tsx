@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { ControlStatus } from '../../../hooks/useCREDSchedule';
+import type { ControlStatus } from '../../../hooks/use-cred-schedule';
 
 import styles from './cred-matrix.scss';
 

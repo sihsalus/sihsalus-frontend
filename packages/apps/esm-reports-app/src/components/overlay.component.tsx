@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { closeOverlay, useOverlay } from '../hooks/useOverlay';
+import { closeOverlay, useOverlay } from '../hooks/use-overlay';
 
 import styles from './overlay.scss';
 

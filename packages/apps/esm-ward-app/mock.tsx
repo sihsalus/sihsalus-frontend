@@ -4,24 +4,24 @@ import {
   mockInpatientRequests,
   mockLocationInpatientWard,
 } from '__mocks__';
-import { useAdmissionLocation } from './src/hooks/useAdmissionLocation';
-import { useInpatientAdmission } from './src/hooks/useInpatientAdmission';
-import { useInpatientRequest } from './src/hooks/useInpatientRequest';
-import { useWardPatientGrouping } from './src/hooks/useWardPatientGrouping';
+import { useAdmissionLocation } from './src/hooks/use-admission-location';
+import { useInpatientAdmission } from './src/hooks/use-inpatient-admission';
+import { useInpatientRequest } from './src/hooks/use-inpatient-request';
+import { useWardPatientGrouping } from './src/hooks/use-ward-patient-grouping';
 import { type WardViewContext } from './src/types';
 import DefaultWardPatientCardHeader from './src/ward-view/default-ward/default-ward-patient-card-header.component';
 import { createAndGetWardPatientGrouping } from './src/ward-view/ward-view.resource';
 
-vi.mock('./src/hooks/useAdmissionLocation', () => ({
+vi.mock('./src/hooks/use-admission-location', () => ({
   useAdmissionLocation: vi.fn(),
 }));
-vi.mock('./src/hooks/useInpatientAdmission', () => ({
+vi.mock('./src/hooks/use-inpatient-admission', () => ({
   useInpatientAdmission: vi.fn(),
 }));
-vi.mock('./src/hooks/useInpatientRequest', () => ({
+vi.mock('./src/hooks/use-inpatient-request', () => ({
   useInpatientRequest: vi.fn(),
 }));
-vi.mock('./src/hooks/useWardPatientGrouping', () => ({
+vi.mock('./src/hooks/use-ward-patient-grouping', () => ({
   useWardPatientGrouping: vi.fn(),
 }));
 const mockAdmissionLocationResponse = vi.mocked(useAdmissionLocation).mockReturnValue({

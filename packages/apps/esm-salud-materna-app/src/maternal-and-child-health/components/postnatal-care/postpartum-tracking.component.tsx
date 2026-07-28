@@ -3,7 +3,7 @@ import { CheckmarkFilled, Time } from '@carbon/react/icons';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { usePostpartumControlTable } from '../../../hooks/usePostpartumControl';
+import { usePostpartumControlTable } from '../../../hooks/use-postpartum-control';
 
 import styles from './postpartum-tracking.scss';
 

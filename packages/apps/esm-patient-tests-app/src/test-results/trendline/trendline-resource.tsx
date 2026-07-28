@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import useSWR from 'swr';
 
 import { type TreeNode } from '../filter/filter-types';
-import { assessValue } from '../loadPatientTestData/helpers';
+import { assessValue } from '../load-patient-test-data/helpers';
 
 export function computeTrendlineData(treeNode: TreeNode): Array<TreeNode> {
   const tests: Array<TreeNode> = [];

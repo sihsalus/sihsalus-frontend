@@ -4,8 +4,8 @@ import { useParams } from 'react-router-dom';
 import { renderWithSwr } from 'test-utils';
 import { mockWardPatientGroupDetails, mockWardViewContext } from '../../mock';
 import { configSchema, type WardConfigObject } from '../config-schema';
-import { useObs } from '../hooks/useObs';
-import useWardLocation from '../hooks/useWardLocation';
+import { useObs } from '../hooks/use-obs';
+import useWardLocation from '../hooks/use-ward-location';
 import { type WardViewContext } from '../types';
 import DefaultWardView from './default-ward/default-ward-view.component';
 import WardView from './ward-view.component';
@@ -20,7 +20,7 @@ vi.mock('react-router-dom', async () => ({
   useParams: vi.fn().mockReturnValue({}),
 }));
 
-vi.mock('../hooks/useWardLocation', async () => ({
+vi.mock('../hooks/use-ward-location', async () => ({
   default: vi.fn().mockReturnValue({
     location: { uuid: 'abcd', display: 'mock location' },
     isLoadingLocation: false,
@@ -29,7 +29,7 @@ vi.mock('../hooks/useWardLocation', async () => ({
   }),
 }));
 
-vi.mock('../hooks/useObs', async () => ({
+vi.mock('../hooks/use-obs', async () => ({
   useObs: vi.fn(),
 }));
 

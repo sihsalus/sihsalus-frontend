@@ -9,7 +9,7 @@ import {
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ConfigObject, configSchema } from '../../config-schema';
-import { useTodaysVisits } from '../../hooks/useTodaysVisits';
+import { useTodaysVisits } from '../../hooks/use-todays-visits';
 import { type Appointment, AppointmentKind, AppointmentStatus } from '../../types';
 import AppointmentActions from './appointments-actions.component';
 
@@ -73,8 +73,8 @@ const defaultProps = {
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseTodaysVisits = vi.mocked(useTodaysVisits);
 
-vi.mock('../../hooks/useTodaysVisits', async () => ({
-  ...(await vi.importActual('../../hooks/useTodaysVisits')),
+vi.mock('../../hooks/use-todays-visits', async () => ({
+  ...(await vi.importActual('../../hooks/use-todays-visits')),
   useTodaysVisits: vi.fn(),
 }));
 

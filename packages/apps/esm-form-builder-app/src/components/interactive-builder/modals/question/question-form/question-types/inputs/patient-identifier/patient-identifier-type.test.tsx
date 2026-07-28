@@ -1,4 +1,4 @@
-import { usePatientIdentifierTypes } from '@hooks/usePatientIdentifierTypes';
+import { usePatientIdentifierTypes } from '@hooks/use-patient-identifier-types';
 import type { FormField } from '@sihsalus/esm-form-engine-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -24,8 +24,8 @@ vi.mock('../../../../form-field-context', async () => ({
 }));
 
 const mockUsePatientIdentifierTypes = vi.mocked(usePatientIdentifierTypes);
-vi.mock('@hooks/usePatientIdentifierTypes', async () => ({
-  ...(await vi.importActual('@hooks/usePatientIdentifierTypes')),
+vi.mock('@hooks/use-patient-identifier-types', async () => ({
+  ...(await vi.importActual('@hooks/use-patient-identifier-types')),
   usePatientIdentifierTypes: vi.fn((value: string) => value),
 }));
 

@@ -1,6 +1,6 @@
 import { type OpenmrsResource, openmrsFetch, type Patient, restBaseUrl, useSession } from '@openmrs/esm-framework';
-import useEmrConfiguration from './hooks/useEmrConfiguration';
-import useWardLocation from './hooks/useWardLocation';
+import useEmrConfiguration from './hooks/use-emr-configuration';
+import useWardLocation from './hooks/use-ward-location';
 import type { DispositionType, Encounter, ObsPayload } from './types';
 
 export function useCreateEncounter() {

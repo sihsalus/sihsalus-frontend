@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { hasInvalidDependencies } from './backend-dependencies/openmrs-backend-dependencies';
-import { useBackendDependencies } from './backend-dependencies/useBackendDependencies';
+import { useBackendDependencies } from './backend-dependencies/use-backend-dependencies';
 import { useFrontendModules } from './hooks';
 import styles from './implementer-tools.styles.scss';
 import { implementerToolsStore, showModuleDiagnostics, togglePopup } from './store';

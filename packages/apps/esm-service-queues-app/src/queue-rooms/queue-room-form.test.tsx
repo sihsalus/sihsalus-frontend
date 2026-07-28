@@ -6,8 +6,8 @@ import QueueRoomForm from './queue-room-form.workspace';
 
 const mockUseLayoutType = vi.mocked(useLayoutType);
 
-vi.mock('../create-queue-entry/hooks/useQueueLocations', async () => ({
-  ...(await vi.importActual('../create-queue-entry/hooks/useQueueLocations')),
+vi.mock('../create-queue-entry/hooks/use-queue-locations', async () => ({
+  ...(await vi.importActual('../create-queue-entry/hooks/use-queue-locations')),
   useQueueLocations: vi.fn(() => ({
     queueLocations: [
       {

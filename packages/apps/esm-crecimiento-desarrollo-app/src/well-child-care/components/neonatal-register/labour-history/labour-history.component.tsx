@@ -14,7 +14,7 @@ import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { credNeonatalEditPrivilege } from '../../../../constants';
-import { useCurrentPregnancy } from '../../../../hooks/useCurrentPregnancy';
+import { useCurrentPregnancy } from '../../../../hooks/use-current-pregnancy';
 import { formEntryWorkspace } from '../../../../types';
 
 import styles from './labour-history-summary.scss';

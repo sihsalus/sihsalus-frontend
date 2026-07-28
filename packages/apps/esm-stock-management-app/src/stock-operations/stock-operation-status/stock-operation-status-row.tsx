@@ -1,7 +1,7 @@
 import { Row } from '@carbon/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
+import { type StockOperationDTO } from '../../core/api/types/stock-operation/stock-operation-dto';
 import StockOpertationStatus from './stock-operation-status';
 import styles from './stock-operation-status.scss';
 

@@ -66,8 +66,8 @@ import {
   isAppointmentEditable,
   isAppointmentServiceAvailableForGender,
 } from '../helpers';
-import SelectedDateContext from '../hooks/selectedDateContext';
-import { useProviders } from '../hooks/useProviders';
+import SelectedDateContext from '../hooks/selected-date-context';
+import { useProviders } from '../hooks/use-providers';
 import { changeAppointmentStatus, getAppointmentStatus } from '../patient-appointments/patient-appointments.resource';
 import {
   type Appointment,

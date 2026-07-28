@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { mockQueueEntries as mockQueueEntryData } from 'test-utils';
 import { serviceQueuesBasePath } from '../constants';
-import { useQueueEntries } from '../hooks/useQueueEntries';
+import { useQueueEntries } from '../hooks/use-queue-entries';
 import { useServiceQueuesStore } from '../store/store';
 import type { QueueEntry } from '../types';
 import MetricsHeader from './metrics-header.component';
@@ -14,7 +14,7 @@ const mockNavigate = vi.mocked(navigate);
 const mockUseQueueEntries = vi.mocked(useQueueEntries);
 const mockUseServiceQueuesStore = vi.mocked(useServiceQueuesStore);
 
-vi.mock('../hooks/useQueueEntries', () => ({
+vi.mock('../hooks/use-queue-entries', () => ({
   useQueueEntries: vi.fn(),
 }));
 

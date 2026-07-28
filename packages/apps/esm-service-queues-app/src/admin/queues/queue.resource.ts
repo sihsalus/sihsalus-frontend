@@ -1,6 +1,6 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import { useConcept } from '../../hooks/useConcept';
-import { useSystemSetting } from '../../hooks/useSystemSetting';
+import { useConcept } from '../../hooks/use-concept';
+import { useSystemSetting } from '../../hooks/use-system-setting';
 
 function useConfiguredConceptSet(systemSettingName: string) {
   const {

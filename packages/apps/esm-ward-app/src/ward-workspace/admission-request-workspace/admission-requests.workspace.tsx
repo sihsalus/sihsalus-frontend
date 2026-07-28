@@ -10,7 +10,7 @@ import {
 import React, { type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { wardEditPrivilege } from '../../constant';
-import useEmrConfiguration from '../../hooks/useEmrConfiguration';
+import useEmrConfiguration from '../../hooks/use-emr-configuration';
 import { type WardViewContext } from '../../types';
 import AdmissionRequestsEmptyState from './admission-requests-empty-state.component';
 import styles from './admission-requests-workspace.scss';

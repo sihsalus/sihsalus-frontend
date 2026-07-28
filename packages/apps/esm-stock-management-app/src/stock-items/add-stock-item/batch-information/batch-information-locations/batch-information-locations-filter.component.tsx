@@ -2,7 +2,7 @@ import { ComboBox } from '@carbon/react';
 import { type ReactNode } from 'react';
 import { type Control, Controller, type FieldValues } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { translateStockLocation } from '../../../../core/utils/translationUtils';
+import { translateStockLocation } from '../../../../core/utils/translation-utils';
 import { useStockTagLocations } from '../../../../stock-lookups/stock-lookups.resource';
 
 interface BatchInformationLocationsFilterProps<T> {

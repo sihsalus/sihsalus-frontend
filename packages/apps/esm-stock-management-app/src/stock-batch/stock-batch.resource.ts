@@ -1,9 +1,9 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import { type ResourceFilterCriteria, toQueryParams } from '../core/api/api';
-import { type BatchJob, type BatchJobType } from '../core/api/types/BatchJob';
-import { type PageableResult } from '../core/api/types/PageableResult';
-import { type ReportType } from '../stock-reports/ReportType';
+import { type BatchJob, type BatchJobType } from '../core/api/types/batch-job';
+import { type PageableResult } from '../core/api/types/pageable-result';
+import { type ReportType } from '../stock-reports/report-type';
 
 export interface BatchJobFilter extends ResourceFilterCriteria {
   batchJobType?: BatchJobType | null | undefined;

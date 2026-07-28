@@ -15,16 +15,16 @@ import CervicalScreening from './maternal-and-child-health/components/cancer-pre
 import ContraceptiveMethods from './maternal-and-child-health/components/family-planning/contraceptive-methods/contraceptive-methods.component';
 import FpCounseling from './maternal-and-child-health/components/family-planning/fp-counseling/fp-counseling.component';
 import FpFollowup from './maternal-and-child-health/components/family-planning/fp-followup/fp-followup.component';
-import DeliveryOrAbortionTable from './maternal-and-child-health/components/labour-delivery/deliveryOrAbortion.component';
-import SummaryOfLaborAndPostpartumTable from './maternal-and-child-health/components/labour-delivery/summaryOfLaborAndPostpartum.component';
-import ImmediatePostpartumTable from './maternal-and-child-health/components/postnatal-care/immediatePostpartum.component';
+import DeliveryOrAbortionTable from './maternal-and-child-health/components/labour-delivery/delivery-or-abortion.component';
+import SummaryOfLaborAndPostpartumTable from './maternal-and-child-health/components/labour-delivery/summary-of-labor-and-postpartum.component';
+import ImmediatePostpartumTable from './maternal-and-child-health/components/postnatal-care/immediate-postpartum.component';
 import PostpartumTrackingWidget from './maternal-and-child-health/components/postnatal-care/postpartum-tracking.component';
-import PostpartumControlTable from './maternal-and-child-health/components/postnatal-care/postpartumControl.component';
+import PostpartumControlTable from './maternal-and-child-health/components/postnatal-care/postpartum-control.component';
 import BirthPlanWidget from './maternal-and-child-health/components/prenatal-care/birth-plan/birth-plan.component';
-import CurrentPregnancyTable from './maternal-and-child-health/components/prenatal-care/currentPregnancy.component';
-import MaternalHistoryTable from './maternal-and-child-health/components/prenatal-care/maternalHistory.component';
+import CurrentPregnancyTable from './maternal-and-child-health/components/prenatal-care/current-pregnancy.component';
+import MaternalHistoryTable from './maternal-and-child-health/components/prenatal-care/maternal-history.component';
 import PrenatalSupplementationWidget from './maternal-and-child-health/components/prenatal-care/prenatal-supplementation/prenatal-supplementation.component';
-import PrenatalCareChart from './maternal-and-child-health/components/prenatal-care/prenatalCareChart.component';
+import PrenatalCareChart from './maternal-and-child-health/components/prenatal-care/prenatal-care-chart.component';
 import PsychoprophylaxisWidget from './maternal-and-child-health/components/prenatal-care/psychoprophylaxis/psychoprophylaxis.component';
 import RiskClassification from './maternal-and-child-health/components/prenatal-care/risk-classification/risk-classification.component';
 import {
@@ -131,7 +131,7 @@ export const hiddenDashboardMarker = getSyncLifecycle(HiddenDashboardMarker, opt
 
 // Async Components
 export const alturaUterinaChart = getAsyncLifecycle(
-  () => import('./ui/alturaCuello-chart/altura-cuello-overview.component'),
+  () => import('./ui/altura-cuello-chart/altura-cuello-overview.component'),
   options,
 );
 export const monthlyAppointmentFilterCalendar = getAsyncLifecycle(

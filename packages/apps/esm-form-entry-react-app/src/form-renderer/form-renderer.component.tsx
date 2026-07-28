@@ -5,10 +5,10 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FormEngine, type PreFilledQuestions, type SessionMode } from '../form-engine-lib-runtime';
-import { useCustomDataSources } from '../hooks/useCustomDataSources';
-import { useCustomEncounterDatetime } from '../hooks/useCustomEncounterDatetime';
-import useFormSchema from '../hooks/useFormSchema';
-import { useLabOrderNotification } from '../hooks/useLabOrderNotification';
+import { useCustomDataSources } from '../hooks/use-custom-data-sources';
+import { useCustomEncounterDatetime } from '../hooks/use-custom-encounter-datetime';
+import useFormSchema from '../hooks/use-form-schema';
+import { useLabOrderNotification } from '../hooks/use-lab-order-notification';
 import { setFormState } from '../store/form-state.store';
 import type { FormEntryReactConfig, FormWidgetProps } from '../types';
 

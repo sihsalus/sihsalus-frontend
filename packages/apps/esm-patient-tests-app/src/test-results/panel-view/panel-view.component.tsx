@@ -10,10 +10,10 @@ import { testResultsBasePath } from '../helpers';
 import PanelTimelineComponent from '../panel-timeline/panel-timeline-component';
 import Overlay from '../tablet-overlay/tablet-overlay.component';
 import Trendline from '../trendline/trendline.component';
-import { FilterEmptyState } from '../ui-elements/resetFiltersEmptyState/filter-empty-state.component';
+import { FilterEmptyState } from '../ui-elements/reset-filters-empty-state/filter-empty-state.component';
 import LabSetPanel from './panel.component';
 import styles from './panel-view.scss';
-import usePanelData from './usePanelData';
+import usePanelData from './use-panel-data';
 
 interface PanelViewProps {
   expanded: boolean;

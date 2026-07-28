@@ -1,7 +1,7 @@
 import { Tile } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 
-import { useQueueEntriesMetrics } from '../hooks/useQueueEntries';
+import { useQueueEntriesMetrics } from '../hooks/use-queue-entries';
 import styles from './patients-in-queue-tile.scss';
 
 const PatientsInQueueTile = () => {

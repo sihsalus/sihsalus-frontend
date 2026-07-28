@@ -27,7 +27,7 @@ import classNames from 'classnames';
 import React, { type ComponentProps, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { immunizationEditPrivilege } from '../constants';
-import { useImmunizations } from '../hooks/useImmunizations';
+import { useImmunizations } from '../hooks/use-immunizations';
 import styles from './immunizations-overview.scss';
 
 export interface ImmunizationsOverviewProps {

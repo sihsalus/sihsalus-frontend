@@ -19,7 +19,7 @@ import {
   postnatalCareEditPrivilege,
   prenatalCareEditPrivilege,
 } from '../../constants';
-import { useCurrentPregnancy } from '../../hooks/useCurrentPregnancy';
+import { useCurrentPregnancy } from '../../hooks/use-current-pregnancy';
 import { type DefaultPatientWorkspaceProps, formEntryWorkspace } from '../../types';
 import {
   encounterMatchesForm,

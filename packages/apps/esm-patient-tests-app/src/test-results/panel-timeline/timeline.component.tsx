@@ -8,7 +8,7 @@ import { type ParsedTimeType } from '../filter/filter-types';
 
 import { Grid, GridItems, PaddingContainer, RowStartCell, ShadowBox, TimeSlots } from './helpers';
 import styles from './timeline.scss';
-import useScrollIndicator from './useScroll';
+import useScrollIndicator from './use-scroll';
 
 interface PanelNameCornerProps {
   showShadow: boolean;

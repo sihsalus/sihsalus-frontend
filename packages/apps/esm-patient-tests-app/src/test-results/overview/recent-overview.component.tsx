@@ -8,7 +8,7 @@ import { navigateToResults, navigateToTimeline, navigateToTrendline } from '../h
 
 import CommonOverview from './common-overview.component';
 import styles from './recent-overview.scss';
-import useOverviewData from './useOverviewData';
+import useOverviewData from './use-overview-data';
 
 const RECENT_COUNT = 5;
 

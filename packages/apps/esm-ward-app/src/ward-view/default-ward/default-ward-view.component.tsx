@@ -1,5 +1,5 @@
 import { useDefineAppContext } from '@openmrs/esm-framework';
-import { useWardPatientGrouping } from '../../hooks/useWardPatientGrouping';
+import { useWardPatientGrouping } from '../../hooks/use-ward-patient-grouping';
 import { type WardViewContext } from '../../types';
 import WardMetrics from '../../ward-view-header/ward-metrics.component';
 import WardViewHeader from '../../ward-view-header/ward-view-header.component';

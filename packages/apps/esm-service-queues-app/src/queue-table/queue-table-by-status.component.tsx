@@ -4,7 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-import { useQueueEntries } from '../hooks/useQueueEntries';
+import { useQueueEntries } from '../hooks/use-queue-entries';
 import { type Concept, type Queue, type QueueTableTabConfig } from '../types';
 import QueueTable from './queue-table.component';
 import styles from './queue-table.scss';

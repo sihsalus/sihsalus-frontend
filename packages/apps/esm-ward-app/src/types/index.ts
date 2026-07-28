@@ -11,7 +11,7 @@ import type {
   Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 import type React from 'react';
-import type { useWardPatientGrouping } from '../hooks/useWardPatientGrouping';
+import type { useWardPatientGrouping } from '../hooks/use-ward-patient-grouping';
 
 interface WardPatientCardProps {
   wardPatient: WardPatient;

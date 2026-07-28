@@ -9,7 +9,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { emrConfigurationMock, mockInpatientRequestAlice, mockPatientAlice } from '__mocks__';
 import { configSchema, type WardConfigObject } from '../../config-schema';
-import useEmrConfiguration from '../../hooks/useEmrConfiguration';
+import useEmrConfiguration from '../../hooks/use-emr-configuration';
 import { type WardPatient, type WardPatientWorkspaceDefinition } from '../../types';
 import { createPatientNote, usePatientNotes } from './notes.resource';
 import WardPatientNotesWorkspace from './notes.workspace';
@@ -44,7 +44,7 @@ vi.mock('./notes.resource', () => ({
   usePatientNotes: vi.fn(),
 }));
 
-vi.mock('../../hooks/useEmrConfiguration', () => ({ default: vi.fn() }));
+vi.mock('../../hooks/use-emr-configuration', () => ({ default: vi.fn() }));
 
 const mockedUseEmrConfiguration = vi.mocked(useEmrConfiguration);
 const mockedUsePatientNotes = vi.mocked(usePatientNotes);

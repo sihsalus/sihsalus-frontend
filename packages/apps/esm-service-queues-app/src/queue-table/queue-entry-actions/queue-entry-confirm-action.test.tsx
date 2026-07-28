@@ -9,7 +9,7 @@ import VoidQueueEntryModal from './void-queue-entry.modal';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
-vi.mock('../../hooks/useQueues', () => {
+vi.mock('../../hooks/use-queues', () => {
   return {
     useQueues: vi.fn().mockReturnValue({
       queues: mockQueues,

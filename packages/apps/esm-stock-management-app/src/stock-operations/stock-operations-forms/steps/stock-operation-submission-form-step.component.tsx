@@ -5,15 +5,15 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { extractErrorMessagesFromResponse } from '../../../constants';
-import { type StockOperationDTO } from '../../../core/api/types/stockOperation/StockOperationDTO';
-import { type StockOperationItemDTO } from '../../../core/api/types/stockOperation/StockOperationItemDTO';
-import { OperationType, type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
+import { type StockOperationDTO } from '../../../core/api/types/stock-operation/stock-operation-dto';
+import { type StockOperationItemDTO } from '../../../core/api/types/stock-operation/stock-operation-item-dto';
+import { OperationType, type StockOperationType } from '../../../core/api/types/stock-operation/stock-operation-type';
 import { otherUser } from '../../../core/utils/utils';
 import { handleMutate } from '../../../utils';
 import { launchStockOperationsModal } from '../../stock-operation.utils';
 import { createStockOperation, deleteStockOperationItem, updateStockOperation } from '../../stock-operations.resource';
 import { type StockOperationItemDtoSchema } from '../../validation-schema';
-import useOperationTypePermisions from '../hooks/useOperationTypePermisions';
+import useOperationTypePermisions from '../hooks/use-operation-type-permisions';
 import styles from '../stock-operation-form.scss';
 
 type StockOperationSubmissionFormStepProps = {

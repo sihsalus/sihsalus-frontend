@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useVitalsFromObs } from '../../current-visit/hooks/useVitalsConceptMetadata';
+import { useVitalsFromObs } from '../../current-visit/hooks/use-vitals-concept-metadata';
 import Vitals from '../../current-visit/visit-details/vitals.component';
 import {
   type DiagnosisItem,

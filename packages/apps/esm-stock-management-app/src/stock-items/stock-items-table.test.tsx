@@ -1,7 +1,7 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
-import { type StockItemDTO } from '../core/api/types/stockItem/StockItem';
+import { type StockItemDTO } from '../core/api/types/stock-item/stock-item';
 import { handleMutate } from '../utils';
 import { launchAddOrEditStockItemWorkspace } from './stock-item.utils';
 import { stockItemCreatedEvent } from './stock-items.events';

@@ -1,5 +1,5 @@
-import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
-import { OperationType } from '../../core/api/types/stockOperation/StockOperationType';
+import { type StockOperationDTO } from '../../core/api/types/stock-operation/stock-operation-dto';
+import { OperationType } from '../../core/api/types/stock-operation/stock-operation-type';
 
 export function mapIssueStockLocations(stockOperation) {
   /** Since we are using requisition information to issue stock,

@@ -25,7 +25,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { stockManagementItemsEditPrivilege } from '../constants';
 import { ResourceRepresentation } from '../core/api/api';
-import { type StockItemDTO } from '../core/api/types/stockItem/StockItem';
+import { type StockItemDTO } from '../core/api/types/stock-item/stock-item';
 import { type CustomTableHeader } from '../core/components/table/types';
 import { useDebounce } from '../core/hooks/debounce-hook';
 import { handleMutate } from '../utils';

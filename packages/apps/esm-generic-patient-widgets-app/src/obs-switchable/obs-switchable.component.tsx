@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../config-schema';
 import ObsGraph from '../obs-graph/obs-graph.component';
 import ObsTable from '../obs-table/obs-table.component';
-import { useObs } from '../resources/useObs';
+import { useObs } from '../resources/use-obs';
 
 import styles from './obs-switchable.scss';
 

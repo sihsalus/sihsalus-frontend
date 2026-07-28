@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { deleteEncounter } from './encounter.resource';
 import PhysicalTherapyTable from './physical-therapy-table.component';
-import { physicalTherapyTableHeader, useEncounters } from './useEncounters';
+import { physicalTherapyTableHeader, useEncounters } from './use-encounters';
 
 type PhysicalTherapyDashboardProps = { patientUuid: string };
 

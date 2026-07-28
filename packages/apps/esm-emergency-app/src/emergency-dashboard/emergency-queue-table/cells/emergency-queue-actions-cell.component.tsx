@@ -28,8 +28,8 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type Config } from '../../../config-schema';
 import { emergencyEditPrivilege, MODALS, WORKSPACES } from '../../../constants';
-import { useTriageVitalsSavedHandler } from '../../../emergency-workflow/hooks/useTriageVitalsSavedHandler';
-import { useEmergencyConfig } from '../../../hooks/usePriorityConfig';
+import { useTriageVitalsSavedHandler } from '../../../emergency-workflow/hooks/use-triage-vitals-saved-handler';
+import { useEmergencyConfig } from '../../../hooks/use-priority-config';
 import styles from './emergency-queue-actions-cell.scss';
 import { type EmergencyQueueTableCellProps } from './emergency-queue-name-cell.component';
 

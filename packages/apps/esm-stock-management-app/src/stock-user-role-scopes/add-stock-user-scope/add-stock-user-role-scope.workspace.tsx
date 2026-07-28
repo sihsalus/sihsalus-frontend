@@ -39,13 +39,13 @@ import {
   today,
 } from '../../constants';
 import { ResourceRepresentation } from '../../core/api/api';
-import { type Role } from '../../core/api/types/identity/Role';
-import { type User } from '../../core/api/types/identity/User';
-import { type UserRoleScope } from '../../core/api/types/identity/UserRoleScope';
-import { type UserRoleScopeLocation } from '../../core/api/types/identity/UserRoleScopeLocation';
-import { type UserRoleScopeOperationType } from '../../core/api/types/identity/UserRoleScopeOperationType';
-import { type StockOperationType } from '../../core/api/types/stockOperation/StockOperationType';
-import { translateStockLocation, translateStockOperationType } from '../../core/utils/translationUtils';
+import { type Role } from '../../core/api/types/identity/role';
+import { type User } from '../../core/api/types/identity/user';
+import { type UserRoleScope } from '../../core/api/types/identity/user-role-scope';
+import { type UserRoleScopeLocation } from '../../core/api/types/identity/user-role-scope-location';
+import { type UserRoleScopeOperationType } from '../../core/api/types/identity/user-role-scope-operation-type';
+import { type StockOperationType } from '../../core/api/types/stock-operation/stock-operation-type';
+import { translateStockLocation, translateStockOperationType } from '../../core/utils/translation-utils';
 import {
   useRoles,
   useStockOperationTypes,

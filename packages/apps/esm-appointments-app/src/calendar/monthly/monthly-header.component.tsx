@@ -5,7 +5,7 @@ import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { omrsDateFormat } from '../../constants';
-import SelectedDateContext from '../../hooks/selectedDateContext';
+import SelectedDateContext from '../../hooks/selected-date-context';
 
 import DaysOfWeekCard from './days-of-week.component';
 import styles from './monthly-header.scss';

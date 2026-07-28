@@ -2,14 +2,14 @@ import { getLocale } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import { mockOrderPriceData, renderWithSwr } from 'test-utils';
 
-import { useOrderPrice } from '../hooks/useOrderPrice';
+import { useOrderPrice } from '../hooks/use-order-price';
 
 import OrderPriceDetailsComponent from './order-price-details.component';
 
 const mockGetLocale = vi.mocked(getLocale);
 const mockUseOrderPrice = vi.mocked(useOrderPrice);
 
-vi.mock('../hooks/useOrderPrice', () => ({
+vi.mock('../hooks/use-order-price', () => ({
   useOrderPrice: vi.fn(),
 }));
 

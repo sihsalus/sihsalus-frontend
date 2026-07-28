@@ -4,7 +4,7 @@ import { type ReactNode, useEffect, useRef } from 'react';
 import { type Control, type FieldValues, useController } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../../config-schema';
-import { type Concept } from '../../../core/api/types/concept/Concept';
+import { type Concept } from '../../../core/api/types/concept/concept';
 import { useConcept } from '../../../stock-lookups/stock-lookups.resource';
 
 interface StockItemCategorySelectorProps<T> {

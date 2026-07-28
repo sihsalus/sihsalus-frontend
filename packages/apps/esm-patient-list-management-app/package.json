@@ -37,7 +37,7 @@
     "url": "https://github.com/openmrs/openmrs-esm-patient-management/issues"
   },
   "dependencies": {
-    "@carbon/react": "^1.71.0",
+    "@carbon/react": "^1.112.0",
     "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.3.2",
     "dexie": "^3.0.3",

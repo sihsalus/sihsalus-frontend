@@ -10,7 +10,10 @@ export function useAuditLogger(): (event: Omit<AuditEvent, 'timestamp' | 'userUu
   // Start/stop the online-flush listener with the component lifecycle.
   useEffect(() => {
     auditLogger.init();
-    return () => auditLogger.destroy();
+    return () => {
+      auditLogger.clearSession();
+      auditLogger.destroy();
+    };
   }, []);
 
   // Sync session; clear when unauthenticated to prevent cross-user attribution.
@@ -20,7 +23,7 @@ export function useAuditLogger(): (event: Omit<AuditEvent, 'timestamp' | 'userUu
     } else {
       auditLogger.clearSession();
     }
-  }, [session]);
+  }, [session?.authenticated, session?.sessionId, session?.user?.uuid]);
 
   // Stable reference across renders — consumers can use it as a dep safely.
   return useCallback((event: Omit<AuditEvent, 'timestamp' | 'userUuid' | 'sessionId'>) => auditLogger.log(event), []);

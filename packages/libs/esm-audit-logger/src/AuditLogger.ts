@@ -175,4 +175,24 @@ class AuditLogger {
   }
 }
 
-export const auditLogger = new AuditLogger();
+type AuditLoggerGlobal = typeof globalThis & {
+  __sihsalusAuditLogger?: AuditLogger;
+};
+
+const auditLoggerGlobal = globalThis as AuditLoggerGlobal;
+
+// Microfrontends can bundle workspace libraries independently. Keeping the
+// logger on globalThis ensures that the session bridge and every consumer use
+// the same in-memory session and online listener across bundle boundaries.
+export const auditLogger =
+  auditLoggerGlobal.__sihsalusAuditLogger ??
+  (() => {
+    const logger = new AuditLogger();
+    Object.defineProperty(auditLoggerGlobal, '__sihsalusAuditLogger', {
+      configurable: false,
+      enumerable: false,
+      writable: false,
+      value: logger,
+    });
+    return logger;
+  })();

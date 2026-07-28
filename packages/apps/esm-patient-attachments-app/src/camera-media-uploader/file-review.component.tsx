@@ -2,7 +2,6 @@ import { Button, Form, ModalBody, ModalFooter, ModalHeader, Stack, TextArea, Tex
 import { DocumentPdf, DocumentUnknown } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getCoreTranslation, type UploadedFile } from '@openmrs/esm-framework';
-import { useAllowedFileExtensions } from '@openmrs/esm-patient-common-lib';
 import React, { type SyntheticEvent, useCallback, useContext, useState } from 'react';
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -109,7 +108,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   closeModal,
 }) => {
   const { t } = useTranslation(moduleName);
-  const { allowedFileExtensions } = useAllowedFileExtensions();
+  const { allowedExtensions = [] } = useContext(CameraMediaUploaderContext);
   const fileNameWithoutExtension = uploadedFile.fileName.trim().replace(/\.[^\\/.]+$/, '');
 
   const schema = z.object({
@@ -144,9 +143,9 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     const { fileName, fileDescription } = data;
 
     const sanitizedFileName =
-      allowedFileExtensions?.reduce((name, extension) => {
-        const regex = new RegExp(`\\.(${extension})+$`, 'i');
-        return name.replace(regex, '');
+      allowedExtensions.reduce((name, extension) => {
+        const extensionSuffix = `.${extension}`;
+        return name.toLowerCase().endsWith(extensionSuffix) ? name.slice(0, -extensionSuffix.length) : name;
       }, fileName) || fileName;
 
     onSaveFile?.({

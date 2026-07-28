@@ -16,7 +16,7 @@ export interface CameraMediaUploaderContextType {
   handleTakePhoto?: (fileBlob: string) => void;
   cameraOnly?: boolean;
   initialView?: CameraMediaUploadView;
-  error?: Error;
-  setError?: React.Dispatch<React.SetStateAction<Error>>;
-  allowedExtensions?: Array<string> | undefined;
+  error?: Error | null;
+  setError?: React.Dispatch<React.SetStateAction<Error | null>>;
+  allowedExtensions?: Array<string>;
 }

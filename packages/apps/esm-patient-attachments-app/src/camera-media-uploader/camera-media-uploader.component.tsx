@@ -13,6 +13,7 @@ import MediaUploaderComponent from './media-uploader.component';
 import UploadStatusComponent from './upload-status.component';
 
 interface CameraMediaUploaderModalProps {
+  allowedExtensions?: Array<string>;
   cameraOnly?: boolean;
   closeModal: () => void;
   collectDescription?: boolean;
@@ -28,6 +29,7 @@ interface CameraMediaUploadTabsProps {
 }
 
 const CameraMediaUploaderModal: React.FC<CameraMediaUploaderModalProps> = ({
+  allowedExtensions,
   cameraOnly,
   closeModal,
   collectDescription,
@@ -37,28 +39,46 @@ const CameraMediaUploaderModal: React.FC<CameraMediaUploaderModalProps> = ({
   title,
   initialView,
 }) => {
-  const { allowedFileExtensions } = useAllowedFileExtensions();
-  const [error, setError] = useState<Error>(null);
+  const { t } = useTranslation(moduleName);
+  const { allowedFileExtensions, error: configurationError, isConfigured, isLoading } = useAllowedFileExtensions();
+  const [error, setError] = useState<Error | null>(null);
   const [filesToUpload, setFilesToUpload] = useState<Array<UploadedFile>>([]);
   const [uploadFilesToServer, setUploadFilesToServer] = useState(false);
+  const effectiveAllowedExtensions = useMemo(
+    () =>
+      allowedExtensions
+        ? allowedFileExtensions.filter((extension) => allowedExtensions.includes(extension))
+        : allowedFileExtensions,
+    [allowedExtensions, allowedFileExtensions],
+  );
+  const canCapturePhoto = effectiveAllowedExtensions.includes('png');
+  const uploadConfigurationUnavailable =
+    !isLoading && (!isConfigured || effectiveAllowedExtensions.length === 0 || (cameraOnly && !canCapturePhoto));
 
-  const handleTakePhoto = useCallback((file: string) => {
-    setFilesToUpload([
-      {
-        base64Content: file,
-        fileName: 'Image taken from camera',
-        fileType: 'image',
-        fileDescription: '',
-        status: 'uploading',
-        capturedFromWebcam: true,
-      },
-    ]);
-  }, []);
+  const handleTakePhoto = useCallback(
+    (file: string) => {
+      if (!canCapturePhoto) {
+        setError(new Error('PNG attachments are not permitted by the configured allowlist.'));
+        return;
+      }
+      setFilesToUpload([
+        {
+          base64Content: file,
+          fileName: 'Image taken from camera',
+          fileType: 'image',
+          fileDescription: '',
+          status: 'uploading',
+          capturedFromWebcam: true,
+        },
+      ]);
+    },
+    [canCapturePhoto],
+  );
 
   const clearData = useCallback(() => {
     setFilesToUpload([]);
     setUploadFilesToServer(false);
-    setError(undefined);
+    setError(null);
   }, []);
 
   const startUploadingToServer = useCallback(() => {
@@ -78,10 +98,45 @@ const CameraMediaUploaderModal: React.FC<CameraMediaUploaderModalProps> = ({
     return <CameraMediaUploadTabs title={title} />;
   }, [uploadFilesToServer, filesToUpload, startUploadingToServer, title]);
 
+  if (isLoading) {
+    return (
+      <div className={styles.cameraSection}>
+        <ModalHeader closeModal={closeModal} title={title || t('addAttachment_title', 'Add attachment')} />
+        <ModalBody>
+          <InlineNotification
+            hideCloseButton
+            kind="info"
+            subtitle={t('attachmentConfigurationLoading', 'Loading the permitted attachment types.')}
+            title={t('attachmentConfigurationLoadingTitle', 'Checking attachment configuration')}
+          />
+        </ModalBody>
+      </div>
+    );
+  }
+
+  if (configurationError || uploadConfigurationUnavailable) {
+    return (
+      <div className={styles.cameraSection}>
+        <ModalHeader closeModal={closeModal} title={title || t('addAttachment_title', 'Add attachment')} />
+        <ModalBody>
+          <InlineNotification
+            hideCloseButton
+            kind="error"
+            subtitle={t(
+              'attachmentUploadUnavailable',
+              'No permitted attachment types have been configured. Contact the system administrator.',
+            )}
+            title={t('attachmentUploadUnavailableTitle', 'Attachment upload unavailable')}
+          />
+        </ModalBody>
+      </div>
+    );
+  }
+
   return (
     <CameraMediaUploaderContext.Provider
       value={{
-        allowedExtensions: allowedFileExtensions,
+        allowedExtensions: effectiveAllowedExtensions,
         cameraOnly,
         clearData,
         closeModal,
@@ -106,9 +161,12 @@ const CameraMediaUploaderModal: React.FC<CameraMediaUploaderModalProps> = ({
 
 const CameraMediaUploadTabs: React.FC<CameraMediaUploadTabsProps> = ({ title }) => {
   const { t } = useTranslation(moduleName);
-  const { cameraOnly, closeModal, error, initialView } = useContext(CameraMediaUploaderContext);
+  const { allowedExtensions = [], cameraOnly, closeModal, error, initialView } = useContext(CameraMediaUploaderContext);
   const mediaStream = useRef<MediaStream | undefined>();
-  const [view, setView] = useState<CameraMediaUploadView>(initialView ?? 'upload');
+  const canCapturePhoto = allowedExtensions.includes('png');
+  const [view, setView] = useState<CameraMediaUploadView>(
+    initialView === 'camera' && canCapturePhoto ? 'camera' : 'upload',
+  );
 
   const stopCameraStream = useCallback(() => {
     mediaStream.current?.getTracks().forEach((t) => {
@@ -134,7 +192,9 @@ const CameraMediaUploadTabs: React.FC<CameraMediaUploadTabsProps> = ({ title }) 
         <div className={styles.tabs}>
           <Tabs defaultSelectedIndex={view === 'camera' ? 0 : 1}>
             <TabList aria-label="Attachments-upload-section" className={styles.tabList}>
-              <Tab onClick={() => setView('camera')}>{t('webcam', 'Webcam')}</Tab>
+              <Tab disabled={!canCapturePhoto} onClick={() => setView('camera')}>
+                {t('webcam', 'Webcam')}
+              </Tab>
               <Tab onClick={() => setView('upload')}>{t('uploadFiles', 'Upload files')}</Tab>
             </TabList>
             <TabPanels>

@@ -28,7 +28,7 @@ const CameraComponent: React.FC<CameraComponentProps> = ({ mediaStream, stopCame
       }
 
       try {
-        setError?.(undefined);
+        setError?.(null);
         const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: 'user' } });
 
         if (cancelled) {

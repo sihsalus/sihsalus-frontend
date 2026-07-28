@@ -1,6 +1,5 @@
 import { FileUploaderDropContainer, InlineNotification } from '@carbon/react';
 import { useConfig } from '@openmrs/esm-framework';
-import { useAllowedFileExtensions } from '@openmrs/esm-patient-common-lib';
 import { useCallback, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../constants';
@@ -13,24 +12,36 @@ interface ErrorNotification {
   subtitle: string;
 }
 
+export function isAllowedAttachmentFileName(fileName: string, allowedFileExtensions: Array<string>): boolean {
+  const extensionSeparator = fileName.lastIndexOf('.');
+  if (extensionSeparator <= 0 || extensionSeparator === fileName.length - 1 || !allowedFileExtensions.length) {
+    return false;
+  }
+
+  const fileExtension = fileName.slice(extensionSeparator + 1).toLowerCase();
+  return allowedFileExtensions.includes(fileExtension);
+}
+
 const MediaUploaderComponent = () => {
   const { t } = useTranslation(moduleName);
   const { maxFileSize } = useConfig();
-  const { setFilesToUpload, multipleFiles } = useContext(CameraMediaUploaderContext);
-  const { allowedFileExtensions } = useAllowedFileExtensions();
-  const [errorNotification, setErrorNotification] = useState<ErrorNotification>(null);
-
-  const isFileExtensionAllowed = useCallback((fileName: string, allowedFileExtensions: string[]): boolean => {
-    if (!allowedFileExtensions) {
-      return true;
-    }
-
-    const fileExtension = fileName.split('.').pop();
-    return allowedFileExtensions?.includes(fileExtension.toLowerCase());
-  }, []);
+  const { allowedExtensions = [], setFilesToUpload, multipleFiles } = useContext(CameraMediaUploaderContext);
+  const [errorNotification, setErrorNotification] = useState<ErrorNotification | null>(null);
+  const uploadsEnabled = allowedExtensions.length > 0;
 
   const upload = useCallback(
     (files: Array<File>) => {
+      if (!uploadsEnabled) {
+        setErrorNotification({
+          title: t('attachmentUploadUnavailableTitle', 'Attachment upload unavailable'),
+          subtitle: t(
+            'attachmentUploadUnavailable',
+            'No permitted attachment types have been configured. Contact the system administrator.',
+          ),
+        });
+        return;
+      }
+
       files.forEach((file) => {
         if (file.size > maxFileSize * 1024 * 1024) {
           setErrorNotification({
@@ -40,19 +51,15 @@ const MediaUploaderComponent = () => {
               'exceeds the size limit of',
             )} ${maxFileSize} MB.`,
           });
-        } else if (!isFileExtensionAllowed(file.name, allowedFileExtensions)) {
-          const lastExtension = allowedFileExtensions[allowedFileExtensions.length - 1];
-          const supportedExtensions = allowedFileExtensions.slice(0, -1);
-
+        } else if (!isAllowedAttachmentFileName(file.name, allowedExtensions)) {
           setErrorNotification({
             title: t('unsupportedFileType', 'Unsupported file type'),
             subtitle: t(
               'chooseAnAllowedFileType',
-              'The file "{{fileName}}" cannot be uploaded. Please upload a file with one of the following extensions: {{supportedExtensions}}, or {{ lastExtension }}.',
+              'The file "{{fileName}}" cannot be uploaded. Use one of these permitted extensions: {{supportedExtensions}}.',
               {
                 fileName: file.name,
-                lastExtension: lastExtension,
-                supportedExtensions: supportedExtensions.join(', '),
+                supportedExtensions: allowedExtensions.join(', '),
               },
             ),
           });
@@ -75,11 +82,24 @@ const MediaUploaderComponent = () => {
         }
       });
     },
-    [setFilesToUpload, maxFileSize, t, allowedFileExtensions, isFileExtensionAllowed],
+    [allowedExtensions, maxFileSize, setFilesToUpload, t, uploadsEnabled],
   );
 
   return (
     <div className="cds--file__container">
+      {!uploadsEnabled && (
+        <div className={styles.errorContainer}>
+          <InlineNotification
+            hideCloseButton
+            kind="error"
+            subtitle={t(
+              'attachmentUploadUnavailable',
+              'No permitted attachment types have been configured. Contact the system administrator.',
+            )}
+            title={t('attachmentUploadUnavailableTitle', 'Attachment upload unavailable')}
+          />
+        </div>
+      )}
       {errorNotification && (
         <div className={styles.errorContainer}>
           <InlineNotification
@@ -97,13 +117,14 @@ const MediaUploaderComponent = () => {
         })}
         .{' '}
         {t('supportedFiletypes', 'Supported files are {{supportedFiles}}', {
-          supportedFiles: allowedFileExtensions?.join(', '),
+          supportedFiles: allowedExtensions.join(', '),
         })}
         .
       </p>
       <div className={styles.uploadFile}>
         <FileUploaderDropContainer
-          accept={allowedFileExtensions?.map((ext) => '.' + ext) || ['*']}
+          accept={allowedExtensions.map((extension) => `.${extension}`)}
+          disabled={!uploadsEnabled}
           labelText={t('fileSizeInstructions', 'Drag and drop files here or click to upload')}
           tabIndex={0}
           multiple={multipleFiles}

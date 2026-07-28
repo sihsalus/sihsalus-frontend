@@ -53,7 +53,13 @@ const AttachmentPreview: React.FC<AttachmentPreviewProps> = ({
           {isImage ? (
             <img src={attachmentToPreview.src} alt={attachmentToPreview.filename} />
           ) : isPdf ? (
-            <iframe className={styles.pdfViewer} src={attachmentToPreview.src} title="PDFViewer" />
+            <iframe
+              className={styles.pdfViewer}
+              referrerPolicy="no-referrer"
+              sandbox=""
+              src={attachmentToPreview.src}
+              title="PDFViewer"
+            />
           ) : null}
         </div>
         <OverflowMenu align="left" className={styles.overflowMenu} flipped size={responsiveSize}>
@@ -71,7 +77,9 @@ const AttachmentPreview: React.FC<AttachmentPreviewProps> = ({
         <h4 className={styles.title}>{attachmentToPreview.filename}</h4>
         {attachmentToPreview?.description ? (
           <p className={styles.imageDescription}>
-            <Linkify options={{ target: '_blank' }}>{attachmentToPreview.description}</Linkify>
+            <Linkify options={{ rel: 'noopener noreferrer', target: '_blank' }}>
+              {attachmentToPreview.description}
+            </Linkify>
           </p>
         ) : null}
       </div>

@@ -8,9 +8,9 @@ import {
   showModal,
   showSnackbar,
   type UploadedFile,
-  userHasAccess,
   useAttachments,
   useLayoutType,
+  userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, useAllowedFileExtensions } from '@openmrs/esm-patient-common-lib';
@@ -43,7 +43,12 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
   const canRead = userHasAccess('app:hoja.clinica.adjuntos', session?.user);
   const canEdit = userHasAccess('app:hoja.clinica.adjuntos.editar', session?.user);
   const { data, mutate, isValidating, isLoading } = useAttachments(patientUuid, true);
-  const { allowedFileExtensions } = useAllowedFileExtensions();
+  const {
+    allowedFileExtensions,
+    error: attachmentConfigurationError,
+    isConfigured: isAttachmentUploadConfigured,
+    isLoading: isAttachmentConfigurationLoading,
+  } = useAllowedFileExtensions();
 
   const [attachmentToPreview, setAttachmentToPreview] = useState<Attachment | null>(null);
   const [hasUploadError, setHasUploadError] = useState(false);
@@ -102,6 +107,30 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
     if (!canEdit) {
       return;
     }
+
+    if (isAttachmentConfigurationLoading) {
+      showSnackbar({
+        isLowContrast: true,
+        kind: 'info',
+        subtitle: t('attachmentConfigurationLoading', 'Loading the permitted attachment types.'),
+        title: t('attachmentConfigurationLoadingTitle', 'Checking attachment configuration'),
+      });
+      return;
+    }
+
+    if (attachmentConfigurationError || !isAttachmentUploadConfigured) {
+      showSnackbar({
+        isLowContrast: true,
+        kind: 'error',
+        subtitle: t(
+          'attachmentUploadUnavailable',
+          'No permitted attachment types have been configured. Contact the system administrator.',
+        ),
+        title: t('attachmentUploadUnavailableTitle', 'Attachment upload unavailable'),
+      });
+      return;
+    }
+
     const close = showModal('capture-photo-modal', {
       saveFile: (file: UploadedFile) => {
         if (file.capturedFromWebcam && !file.fileName.includes('.')) {
@@ -115,7 +144,16 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
       multipleFiles: true,
       collectDescription: true,
     });
-  }, [allowedFileExtensions, canEdit, mutate, patientUuid]);
+  }, [
+    allowedFileExtensions,
+    attachmentConfigurationError,
+    canEdit,
+    isAttachmentConfigurationLoading,
+    isAttachmentUploadConfigured,
+    mutate,
+    patientUuid,
+    t,
+  ]);
 
   const showDeleteAttachmentModal = useCallback(
     (attachment: Attachment) => {

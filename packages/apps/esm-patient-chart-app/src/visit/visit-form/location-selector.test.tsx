@@ -77,6 +77,29 @@ describe('tests location selector', () => {
     });
   });
 
+  it('loads selectable UPSS from the configured backend location tag', () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      visitLocationTag: 'Care UPSS',
+    });
+
+    renderLocationSelector();
+
+    expect(mockUseLocations).toHaveBeenLastCalledWith('Care UPSS', '');
+  });
+
+  it('keeps backend tag filtering when the EMR API hierarchy helper is unavailable', () => {
+    mockUseFeatureFlag.mockReturnValue(false);
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      visitLocationTag: 'Care UPSS',
+    });
+
+    renderLocationSelector();
+
+    expect(mockUseLocations).toHaveBeenLastCalledWith('Care UPSS', '');
+  });
+
   it('should call use locations with Visit Location restriction when restrictByVisitLocationTag set true ', async () => {
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(esmPatientChartSchema),

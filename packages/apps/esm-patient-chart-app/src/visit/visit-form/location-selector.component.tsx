@@ -38,10 +38,8 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ control, lockedLoca
     sessionLocation,
     config.restrictByVisitLocationTag && isEmrApiModuleInstalled,
   );
-  const locations = useLocations(
-    config.restrictByVisitLocationTag && isEmrApiModuleInstalled ? 'Visit Location' : null,
-    searchTerm,
-  );
+  const visitLocationTag = config.visitLocationTag?.trim() || 'Visit Location';
+  const locations = useLocations(config.restrictByVisitLocationTag ? visitLocationTag : null, searchTerm);
   const { defaultFacility, isLoading: loadingDefaultFacility } = useDefaultFacilityLocation();
   const disableChangingVisitLocation = Boolean(lockedLocation) || config?.disableChangingVisitLocation;
   const locationsToShow: Array<OpenmrsResource> =
@@ -53,7 +51,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ control, lockedLoca
 
   useEffect(() => {
     if (config.restrictByVisitLocationTag && !isEmrApiModuleInstalled) {
-      console.warn('EMR API module is not installed. Visit location will not be restricted by location tag.');
+      console.warn('EMR API module is not installed. The default visit location cannot be resolved from its hierarchy.');
     }
   }, [config.restrictByVisitLocationTag, isEmrApiModuleInstalled]);
 

@@ -36,6 +36,10 @@ interface RelationshipsResponse {
   results: Array<Relationship>;
 }
 
+export function getPatientRelationshipsUrl(patientUuid: string) {
+  return `${restBaseUrl}/relationship?v=${personRelationshipRepresentation}&person=${patientUuid}`;
+}
+
 export function mapPatientRelationships(
   results: Array<Relationship> | undefined,
   patientUuid: string,
@@ -98,7 +102,7 @@ export function useInitialPatientRelationships(patientUuid: string): {
   const config = rawConfig?.sections ? getEffectiveRegistrationConfig(rawConfig) : rawConfig;
   const companionTypeUuid = config?.relationshipOptions?.companionRelationshipType?.split('/')[0];
   const { data, error, isLoading } = useSWR<FetchResponse<RelationshipsResponse>, Error>(
-    shouldFetch ? `${restBaseUrl}/relationship?v=${personRelationshipRepresentation}&person=${patientUuid}` : null,
+    shouldFetch ? getPatientRelationshipsUrl(patientUuid) : null,
     openmrsFetch,
   );
 

@@ -370,6 +370,84 @@ describe('RelationshipsSection', () => {
     expect(setFieldValue).toHaveBeenCalledWith('relationships[0].action', 'UPDATE');
   });
 
+  it('submits father to mother through the real Formik context', async () => {
+    const user = userEvent.setup();
+    const handleSubmit = vi.fn();
+    const fatherRelationshipType = 'father/aIsToB';
+    const motherRelationshipType = 'mother/aIsToB';
+    const formValues = {
+      relationships: [
+        {
+          relatedPersonName: 'Francisco PRUEBA Castillo Lima',
+          relatedPersonUuid: 'francisco-uuid',
+          relation: 'Padre',
+          relationshipType: fatherRelationshipType,
+          initialrelationshipTypeValue: fatherRelationshipType,
+          uuid: 'father-relationship-uuid',
+        },
+      ],
+    } as FormValues;
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes: {
+        results: [
+          {
+            displayAIsToB: 'Madre',
+            displayBIsToA: 'Hijo',
+            uuid: 'mother',
+          },
+          {
+            displayAIsToB: 'Padre',
+            displayBIsToA: 'Hijo',
+            uuid: 'father',
+          },
+        ],
+      },
+    };
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={formValues} onSubmit={handleSubmit}>
+          {(formik) => (
+            <Form>
+              <PatientRegistrationContext.Provider
+                value={{
+                  ...initialContextValues,
+                  setFieldTouched: formik.setFieldTouched,
+                  setFieldValue: formik.setFieldValue,
+                  values: formik.values,
+                }}
+              >
+                <RelationshipsSection />
+              </PatientRegistrationContext.Provider>
+              <button type="submit">Submit</button>
+            </Form>
+          )}
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /relationship/i }), motherRelationshipType);
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() =>
+      expect(handleSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          relationships: [
+            expect.objectContaining({
+              action: 'UPDATE',
+              initialrelationshipTypeValue: fatherRelationshipType,
+              relation: 'Madre',
+              relationshipType: motherRelationshipType,
+              uuid: 'father-relationship-uuid',
+            }),
+          ],
+        }),
+        expect.anything(),
+      ),
+    );
+  });
+
   it('warns when a family link is incomplete and prevents adding another row', () => {
     mockResourcesContextValue = {
       ...mockResourcesContextValue,

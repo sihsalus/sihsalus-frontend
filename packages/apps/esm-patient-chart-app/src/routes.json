@@ -277,12 +277,14 @@
     {
       "name": "visit-companion-search-workspace",
       "component": "companionPersonSearchWorkspace",
-      "window": "start-visit-workspace-window"
+      "window": "start-visit-workspace-window",
+      "privileges": "Get People"
     },
     {
       "name": "visit-companion-registration-workspace",
       "component": "companionPersonRegistrationWorkspace",
-      "window": "start-visit-workspace-window"
+      "window": "start-visit-workspace-window",
+      "privileges": ["app:opciones.registrarAcompanante", "Add People"]
     },
     {
       "name": "mark-patient-deceased-workspace-form",

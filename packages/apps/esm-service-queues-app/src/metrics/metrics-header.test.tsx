@@ -3,8 +3,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { mockQueueEntries as mockQueueEntryData } from 'test-utils';
-import { useQueueEntries } from '../hooks/useQueueEntries';
 import { serviceQueuesBasePath } from '../constants';
+import { useQueueEntries } from '../hooks/useQueueEntries';
 import { useServiceQueuesStore } from '../store/store';
 import type { QueueEntry } from '../types';
 import MetricsHeader from './metrics-header.component';
@@ -19,6 +19,7 @@ vi.mock('../hooks/useQueueEntries', () => ({
 }));
 
 vi.mock('../permissions', () => ({
+  CanClearServiceQueueEntries: ({ children }: { children: ReactNode }) => children,
   CanEditServiceQueues: ({ children }: { children: ReactNode }) => children,
 }));
 

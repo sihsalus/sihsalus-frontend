@@ -852,7 +852,6 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
   const { setFieldValue } = registrationContext ?? {};
   const configuredConfig = useConfig() as RegistrationConfig;
   const config = configuredConfig?.sections ? getEffectiveRegistrationConfig(configuredConfig) : configuredConfig;
-  const [displayRelationshipTypes, setDisplayRelationshipTypes] = useState<RelationshipType[]>([]);
   const [hasSeededDefaultRelationship, setHasSeededDefaultRelationship] = useState(false);
   const previouslyRequiredResponsibleRelationship = useRef(false);
   const [, relationshipsMeta] = useField<Array<RelationshipValue>>('relationships');
@@ -861,6 +860,34 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
   const minorResponsibleRelationshipTypes = config?.relationshipOptions?.minorResponsibleRelationshipTypes ?? [];
   const companionRelationshipTypeUuid = config?.relationshipOptions?.companionRelationshipType?.split('/')[0];
   const hasRelationshipTypes = !!relationshipTypeResults?.length;
+  const displayRelationshipTypes = useMemo(() => {
+    if (!hasRelationshipTypes) {
+      return [];
+    }
+
+    const types: RelationshipType[] = [];
+    relationshipTypeResults.forEach((type) => {
+      const aIsToB = {
+        display: getLocalizedRelationshipLabel(type.displayAIsToB || type.displayBIsToA || '', t),
+        uuid: type.uuid,
+        direction: 'aIsToB',
+        weight: type.weight,
+      };
+      const bIsToA = {
+        display: getLocalizedRelationshipLabel(type.displayBIsToA || type.displayAIsToB || '', t),
+        uuid: type.uuid,
+        direction: 'bIsToA',
+        weight: type.weight,
+      };
+      aIsToB.display === bIsToA.display
+        ? types.push(aIsToB)
+        : bIsToA.display === 'Patient'
+          ? types.push(aIsToB, { display: `Patient (${aIsToB.display})`, uuid: type.uuid, direction: 'bIsToA' })
+          : types.push(aIsToB, bIsToA);
+    });
+
+    return types;
+  }, [hasRelationshipTypes, relationshipTypeResults, t]);
   const hasUnderageResponsible = hasUnderageResponsibleRelationship(
     values.relationships,
     minorResponsibleRelationshipTypes,
@@ -898,32 +925,6 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
       ),
     [companionRelationshipTypeUuid, displayRelationshipTypes, requiresResponsibleRelationship],
   );
-
-  useEffect(() => {
-    if (hasRelationshipTypes) {
-      const tmp: RelationshipType[] = [];
-      relationshipTypeResults.forEach((type) => {
-        const aIsToB = {
-          display: getLocalizedRelationshipLabel(type.displayAIsToB || type.displayBIsToA || '', t),
-          uuid: type.uuid,
-          direction: 'aIsToB',
-          weight: type.weight,
-        };
-        const bIsToA = {
-          display: getLocalizedRelationshipLabel(type.displayBIsToA || type.displayAIsToB || '', t),
-          uuid: type.uuid,
-          direction: 'bIsToA',
-          weight: type.weight,
-        };
-        aIsToB.display === bIsToA.display
-          ? tmp.push(aIsToB)
-          : bIsToA.display === 'Patient'
-            ? tmp.push(aIsToB, { display: `Patient (${aIsToB.display})`, uuid: type.uuid, direction: 'bIsToA' })
-            : tmp.push(aIsToB, bIsToA);
-      });
-      setDisplayRelationshipTypes(tmp);
-    }
-  }, [hasRelationshipTypes, relationshipTypeResults, t]);
 
   useEffect(() => {
     const wasRequired = previouslyRequiredResponsibleRelationship.current;

@@ -264,6 +264,59 @@ describe('RelationshipsSection', () => {
     expect(screen.queryByRole('textbox', { name: /first name/i })).not.toBeInTheDocument();
   });
 
+  it('shows the persisted relationship instead of falling back to the first option', () => {
+    const fatherRelationshipType = 'father/aIsToB';
+    const relationships = [
+      {
+        isCompanion: true,
+        relatedPersonName: 'Francisco PRUEBA Castillo Lima',
+        relatedPersonUuid: 'francisco-uuid',
+        relatedPersonAge: 40,
+        relation: 'Padre',
+        relationshipType: fatherRelationshipType,
+        initialrelationshipTypeValue: fatherRelationshipType,
+        uuid: 'father-relationship-uuid',
+      },
+    ] as FormValues['relationships'];
+    const formValues = {
+      birthdateEstimated: true,
+      yearsEstimated: 12,
+      relationships,
+    } as FormValues;
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes: {
+        results: [
+          {
+            displayAIsToB: 'Madre',
+            displayBIsToA: 'Hijo',
+            uuid: 'mother',
+          },
+          {
+            displayAIsToB: 'Padre',
+            displayBIsToA: 'Hijo',
+            uuid: 'father',
+          },
+        ],
+      },
+    };
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={formValues} onSubmit={null}>
+          <Form>
+            <PatientRegistrationContext.Provider value={{ ...initialContextValues, values: formValues }}>
+              <RelationshipsSection />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    expect(screen.getByRole('combobox', { name: /relationship/i })).toHaveValue(fatherRelationshipType);
+    expect(screen.getByRole('checkbox', { name: /Francisco PRUEBA Castillo Lima.*Padre/i })).toBeChecked();
+  });
+
   it('warns when a family link is incomplete and prevents adding another row', () => {
     mockResourcesContextValue = {
       ...mockResourcesContextValue,

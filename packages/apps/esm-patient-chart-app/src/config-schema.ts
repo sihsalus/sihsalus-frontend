@@ -205,7 +205,7 @@ export const esmPatientChartSchema = {
   visitTypeEligibilityRules: {
     _type: Type.Array,
     _description:
-      'Rules that relate visit locations, visit types and patient genders in the add-patient-to-queue workflow.',
+      'Rules that define selectable visit locations and their compatible visit types and patient genders across visit entry workflows. When configured, the manual visit selector only offers listed locations.',
     _elements: {
       locationUuid: {
         _type: Type.UUID,

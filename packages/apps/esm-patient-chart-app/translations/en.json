@@ -264,7 +264,7 @@
   "companionSaveError": "The companion could not be saved",
   "companionSaveErrorMessage": "Review the information and try again.",
   "estimatedAge": "Approximate age",
-  "estimatedAgeInvalid": "Enter a valid age",
+  "estimatedAgeInvalid": "Approximate age must be a number between 0 and 140",
   "estimatedAgeRequired": "Enter the approximate age",
   "familyName": "Family name",
   "familyName2Optional": "Second family name (optional)",

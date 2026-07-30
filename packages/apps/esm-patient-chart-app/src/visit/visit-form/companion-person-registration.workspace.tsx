@@ -73,7 +73,10 @@ const CompanionPersonRegistrationWorkspace: React.FC<Workspace2DefinitionProps<C
           .trim()
           .refine((value) => /^\d+$/.test(value), t('estimatedAgeRequired', 'Ingrese la edad aproximada'))
           .refine((value) => Number(value) <= MAX_PATIENT_AGE_YEARS, {
-            message: t('estimatedAgeInvalid', 'Ingrese una edad válida'),
+            message: t(
+              'estimatedAgeInvalid',
+              `La edad aproximada debe ser un número entre 0 y ${MAX_PATIENT_AGE_YEARS}`,
+            ),
           })
           .refine((value) => !workspaceProps.requireAdult || Number(value) >= 18, {
             message: t('adultCompanionRequired', 'El acompañante de un menor debe ser una persona adulta.'),
@@ -154,7 +157,7 @@ const CompanionPersonRegistrationWorkspace: React.FC<Workspace2DefinitionProps<C
       hasUnsavedChanges={isDirty || Boolean(createdPerson.current)}
       title={t('registerCompanion', 'Registrar acompañante')}
     >
-      <Form className={styles.registrationForm} onSubmit={handleSubmit(onSubmit)}>
+      <Form className={styles.registrationForm} noValidate onSubmit={handleSubmit(onSubmit)}>
         <Stack className={styles.workspaceContent} gap={5}>
           <TextInput
             id="companion-given-name"

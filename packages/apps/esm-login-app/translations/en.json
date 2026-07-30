@@ -20,6 +20,8 @@
   "learnMore": "Learn more",
   "locationPreferenceRemoved": "Login location preference removed",
   "locationPreferenceRemovedMessage": "You will need to select a location on each login",
+  "locationPreferenceSaveFailed": "Could not save the preferred UPSS",
+  "locationPreferenceSaveFailedMessage": "You can continue using this UPSS for the current session.",
   "locationSaveMessage": "Your preferred location has been saved for future logins",
   "locationSaved": "Location saved",
   "locationUpdateMessage": "Your preferred login location has been updated",

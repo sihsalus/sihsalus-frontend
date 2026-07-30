@@ -1,10 +1,19 @@
-import { type FetchResponse, openmrsFetch, setUserProperties, showSnackbar, useSession } from '@openmrs/esm-framework';
+import {
+  type FetchResponse,
+  openmrsFetch,
+  setUserProperties,
+  showSnackbar,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSwrImmutable from 'swr/immutable';
 
 import { useValidateLocationUuid } from '../login.resource';
 import { type LocationResponse } from '../types';
+
+const userPropertiesWritePrivileges = ['Edit Users', 'Manage Users', 'Edit User Properties'];
 
 export function useDefaultLocation(isUpdateFlow: boolean, requireLoginLocationTag = false) {
   const { t } = useTranslation();
@@ -17,6 +26,10 @@ export function useDefaultLocation(isUpdateFlow: boolean, requireLoginLocationTa
     [user],
   );
   const [savePreference, setSavePreference] = useState(false);
+  const canSavePreference = useMemo(
+    () => Boolean(user && userPropertiesWritePrivileges.some((privilege) => userHasAccess(privilege, user))),
+    [user],
+  );
 
   const defaultLocation = useMemo(() => userProperties?.defaultLocation, [userProperties?.defaultLocation]);
 
@@ -33,6 +46,10 @@ export function useDefaultLocation(isUpdateFlow: boolean, requireLoginLocationTa
 
   const updateUserPropsWithDefaultLocation = useCallback(
     async (locationUuid: string, saveDefaultLocation: boolean) => {
+      if (!canSavePreference || !userUuid) {
+        return false;
+      }
+
       if (saveDefaultLocation) {
         // If the user checks the checkbox for saving the preference
         const updatedUserProperties = {
@@ -40,15 +57,19 @@ export function useDefaultLocation(isUpdateFlow: boolean, requireLoginLocationTa
           defaultLocation: locationUuid,
         };
         await setUserProperties(userUuid, updatedUserProperties);
+        return true;
       } else if (userProperties?.defaultLocation) {
         // If the user doesn't want to save the preference,
         // the old preference should be deleted
         const updatedUserProperties = { ...userProperties };
         delete updatedUserProperties.defaultLocation;
         await setUserProperties(userUuid, updatedUserProperties);
+        return true;
       }
+
+      return false;
     },
-    [userProperties, userUuid],
+    [canSavePreference, userProperties, userUuid],
   );
 
   const updateDefaultLocation = useCallback(
@@ -57,22 +78,38 @@ export function useDefaultLocation(isUpdateFlow: boolean, requireLoginLocationTa
         return;
       }
 
-      await updateUserPropsWithDefaultLocation(locationUuid, saveDefaultLocation);
+      try {
+        const preferenceUpdated = await updateUserPropsWithDefaultLocation(locationUuid, saveDefaultLocation);
+        if (!preferenceUpdated) {
+          return;
+        }
 
-      if (saveDefaultLocation) {
+        if (saveDefaultLocation) {
+          showSnackbar({
+            title: !isUpdateFlow ? t('locationSaved', 'Location saved') : t('locationUpdated', 'Location updated'),
+            subtitle: !isUpdateFlow
+              ? t('locationSaveMessage', 'Your preferred location has been saved for future logins')
+              : t('locationUpdateMessage', 'Your preferred login location has been updated'),
+            kind: 'success',
+            isLowContrast: true,
+          });
+        } else if (defaultLocation) {
+          showSnackbar({
+            title: t('locationPreferenceRemoved', 'Location preference removed'),
+            subtitle: t('locationPreferenceRemovedMessage', 'You will need to select a location on each login'),
+            kind: 'success',
+            isLowContrast: true,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to update the preferred login location', error);
         showSnackbar({
-          title: !isUpdateFlow ? t('locationSaved', 'Location saved') : t('locationUpdated', 'Location updated'),
-          subtitle: !isUpdateFlow
-            ? t('locationSaveMessage', 'Your preferred location has been saved for future logins')
-            : t('locationUpdateMessage', 'Your preferred login location has been updated'),
-          kind: 'success',
-          isLowContrast: true,
-        });
-      } else if (defaultLocation) {
-        showSnackbar({
-          title: t('locationPreferenceRemoved', 'Location preference removed'),
-          subtitle: t('locationPreferenceRemovedMessage', 'You will need to select a location on each login'),
-          kind: 'success',
+          title: t('locationPreferenceSaveFailed', 'Could not save the preferred location'),
+          subtitle: t(
+            'locationPreferenceSaveFailedMessage',
+            'You can continue using this UPSS for the current session.',
+          ),
+          kind: 'warning',
           isLowContrast: true,
         });
       }
@@ -83,6 +120,7 @@ export function useDefaultLocation(isUpdateFlow: boolean, requireLoginLocationTa
   return {
     defaultLocationFhir,
     defaultLocation: isLocationValid ? defaultLocation : null,
+    canSavePreference,
     updateDefaultLocation,
     savePreference,
     setSavePreference,

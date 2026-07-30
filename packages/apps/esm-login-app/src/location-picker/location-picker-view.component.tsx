@@ -32,10 +32,8 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
   const [searchParams] = useSearchParams();
   const checkboxId = useId();
   const isUpdateFlow = useMemo(() => searchParams.get('update') === 'true', [searchParams]);
-  const { defaultLocation, updateDefaultLocation, savePreference, setSavePreference } = useDefaultLocation(
-    isUpdateFlow,
-    chooseLocation.useLoginLocationTag,
-  );
+  const { canSavePreference, defaultLocation, updateDefaultLocation, savePreference, setSavePreference } =
+    useDefaultLocation(isUpdateFlow, chooseLocation.useLoginLocationTag);
   const {
     isLoading: isLoadingLocationCount,
     locationCount,
@@ -73,7 +71,7 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
 
       const sessionDefined = setSessionLocation(locationUuid, new AbortController());
 
-      updateDefaultLocation(locationUuid, saveUserPreference);
+      void updateDefaultLocation(locationUuid, saveUserPreference);
       sessionDefined.then(() => {
         if (referrer && !['/', '/login', '/login/location'].includes(referrer)) {
           hardNavigate(buildSpaNavigationTarget(referrer));
@@ -99,12 +97,19 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
 
     if (locationCount === 1 || !chooseLocation.enabled) {
       if (firstLocationResourceId) {
-        changeLocation(firstLocationResourceId, true);
+        changeLocation(firstLocationResourceId, canSavePreference);
       } else {
         console.error('Expected location data is missing', { firstLocationResourceId, locationCount });
       }
     }
-  }, [changeLocation, chooseLocation.enabled, firstLocationResourceId, isLoadingLocationCount, locationCount]);
+  }, [
+    canSavePreference,
+    changeLocation,
+    chooseLocation.enabled,
+    firstLocationResourceId,
+    isLoadingLocationCount,
+    locationCount,
+  ]);
 
   // Handle cases where the login location is present in the userProperties.
   useEffect(() => {
@@ -113,9 +118,9 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
     }
     if (defaultLocation && !isSubmitting) {
       setActiveLocation(defaultLocation);
-      changeLocation(defaultLocation, true);
+      changeLocation(defaultLocation, canSavePreference);
     }
-  }, [changeLocation, isSubmitting, defaultLocation, isUpdateFlow, locationCount]);
+  }, [canSavePreference, changeLocation, isSubmitting, defaultLocation, isUpdateFlow, locationCount]);
 
   const handleSubmit = useCallback(
     (evt: React.FormEvent<HTMLFormElement>) => {
@@ -166,13 +171,15 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
             />
           )}
           <div className={styles.footerContainer}>
-            <Checkbox
-              className={styles.savePreferenceCheckbox}
-              checked={savePreference}
-              id={checkboxId}
-              labelText={t('rememberLocationForFutureLogins', 'Remember my location for future logins')}
-              onChange={(_, { checked }) => setSavePreference(checked)}
-            />
+            {canSavePreference ? (
+              <Checkbox
+                className={styles.savePreferenceCheckbox}
+                checked={savePreference}
+                id={checkboxId}
+                labelText={t('rememberLocationForFutureLogins', 'Remember my location for future logins')}
+                onChange={(_, { checked }) => setSavePreference(checked)}
+              />
+            ) : null}
             <Button
               className={styles.confirmButton}
               kind="primary"

@@ -98,6 +98,7 @@ describe('LocationPickerView', () => {
       const defaultLocationUuid = mockedValidatedDefaultLocation ?? undefined;
 
       return {
+        canSavePreference: true,
         defaultLocation: mockedValidatedDefaultLocation,
         defaultLocationFhir: mockedValidatedDefaultLocation
           ? [
@@ -173,6 +174,30 @@ describe('LocationPickerView', () => {
 
     expect(screen.getByRole('button', { name: /confirm/i })).toBeInTheDocument();
     expect(mockHardNavigate).not.toHaveBeenCalled();
+  });
+
+  it('uses a session-only location when the user cannot persist preferences', async () => {
+    const user = userEvent.setup();
+    const updateDefaultLocation = vi.fn().mockResolvedValue(undefined);
+    mockUseDefaultLocation.mockReturnValue({
+      canSavePreference: false,
+      defaultLocation: null,
+      defaultLocationFhir: [],
+      savePreference: false,
+      setSavePreference: vi.fn(),
+      updateDefaultLocation,
+    });
+
+    renderWithRouter(LocationPickerView, {});
+
+    expect(screen.queryByLabelText(/remember my location for future logins/i)).not.toBeInTheDocument();
+    await user.click(await screen.findByRole('radio', { name: firstLocation.name }));
+    await user.click(screen.getByRole('button', { name: /confirm/i }));
+
+    await waitFor(() => {
+      expect(mockSetSessionLocation).toHaveBeenCalledWith(firstLocation.uuid, expect.anything());
+    });
+    expect(updateDefaultLocation).toHaveBeenCalledWith(firstLocation.uuid, false);
   });
 
   it('disables the confirm button when no location is selected', () => {

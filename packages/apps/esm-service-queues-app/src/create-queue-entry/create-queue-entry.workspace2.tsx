@@ -19,6 +19,10 @@ import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+  serviceQueuesCompanionPersonRegistrationWorkspace,
+  serviceQueuesCompanionPersonSearchWorkspace,
+} from '../constants';
 import styles from './create-queue-entry.scss';
 import { AddPatientToQueueContext } from './create-queue-entry.workspace';
 import ExistingVisitFormComponent from './existing-visit-form/existing-visit-form.component';
@@ -28,6 +32,8 @@ interface CreateQueueEntryWorkspace2Props {
   selectedPatientUuid: string;
   currentServiceQueueUuid?: string;
   currentQueueLocationUuid?: string;
+  companionPersonSearchWorkspaceName?: string;
+  companionPersonRegistrationWorkspaceName?: string;
   activeVisit?: Visit;
   onBeforeQueueEntrySave?: (visit?: Visit) => boolean | Promise<boolean>;
   onQueueEntryAdded?: () => void | Promise<void>;
@@ -55,6 +61,8 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
     activeVisit: suppliedActiveVisit,
     currentServiceQueueUuid,
     currentQueueLocationUuid,
+    companionPersonSearchWorkspaceName = serviceQueuesCompanionPersonSearchWorkspace,
+    companionPersonRegistrationWorkspaceName = serviceQueuesCompanionPersonRegistrationWorkspace,
     onBeforeQueueEntrySave,
     onQueueEntryAdded,
     patient: searchedPatient,
@@ -104,6 +112,8 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
     void launchChildWorkspace(startVisitWorkspaceName, {
       currentServiceQueueUuid,
       currentQueueLocationUuid,
+      companionPersonSearchWorkspaceName,
+      companionPersonRegistrationWorkspaceName,
       openedFrom: visitFormOpenedFrom,
       onBeforeVisitSave: onBeforeQueueEntrySave,
       patient: searchedPatient ?? patient,
@@ -129,6 +139,8 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
     });
   }, [
     activeVisit,
+    companionPersonRegistrationWorkspaceName,
+    companionPersonSearchWorkspaceName,
     currentServiceQueueUuid,
     currentQueueLocationUuid,
     error,

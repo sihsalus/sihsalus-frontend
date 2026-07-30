@@ -31,6 +31,8 @@
   "companionConfigurationMissingMessage": "El atributo de acompañante por consulta no está configurado. Contacte a soporte.",
   "companionRequiredForMinor": "Seleccione o registre un acompañante adulto antes de iniciar la consulta del menor.",
   "companionRequiredForMinorTitle": "Acompañante obligatorio",
+  "companionWorkspaceOpenError": "No se pudo abrir el formulario de acompañante",
+  "companionWorkspaceOpenErrorMessage": "Cierre el formulario e intente nuevamente.",
   "completeRequiredVisitSummaryFields": "Complete '{{fields}}' en Resumen de consulta antes de finalizar",
   "configuredAppointmentVisitType": "Tipo asignado por el servicio de la cita",
   "confirm": "Confirmar",

@@ -63,19 +63,18 @@ import { canEditVisit, canStartVisit } from '../visit-access';
 import { invalidateUseVisits, useInfiniteVisits } from '../visits-widget/visit.resource';
 
 import BaseVisitType from './base-visit-type.component';
-import CompanionList from './companion-list.component';
 import {
+  type CompanionRecord,
   getCompanionPerson,
   getVisitCompanionPersonUuid,
-  type CompanionRecord,
   withVisitCompanionAttribute,
 } from './companion.resource';
+import CompanionList from './companion-list.component';
 import LocationSelector from './location-selector.component';
 import { getMinorCompanionRequirementState, isPatientMinor } from './minor-companion-validation';
 import { MemoizedRecommendedVisitType } from './recommended-visit-type.component';
 import VisitAttributeTypeFields from './visit-attribute-type.component';
 import VisitDateTimeField from './visit-date-time.component';
-import { filterVisitTypesByEligibility } from './visit-type-eligibility';
 import {
   createVisitAttribute,
   deleteVisitAttribute,
@@ -95,12 +94,13 @@ import {
   type VisitPersistenceCorrelation,
 } from './visit-form.resource';
 import styles from './visit-form.scss';
+import { filterVisitTypesByEligibility } from './visit-type-eligibility';
 
 dayjs.extend(isSameOrBefore);
 
 const VISIT_SAVE_OUTCOME_UNKNOWN = 'VISIT_SAVE_OUTCOME_UNKNOWN';
-const companionPersonSearchWorkspace = 'visit-companion-search-workspace';
-const companionPersonRegistrationWorkspace = 'visit-companion-registration-workspace';
+const defaultCompanionPersonSearchWorkspace = 'visit-companion-search-workspace';
+const defaultCompanionPersonRegistrationWorkspace = 'visit-companion-registration-workspace';
 const DETERMINISTIC_VISIT_CREATE_REJECTION_STATUSES = new Set([
   400, 401, 403, 404, 405, 406, 409, 410, 412, 413, 414, 415, 416, 417, 422,
 ]);
@@ -131,6 +131,8 @@ interface StartVisitFormWorkspaceProps {
   patientUuid?: string;
   currentServiceQueueUuid?: string;
   currentQueueLocationUuid?: string;
+  companionPersonSearchWorkspaceName?: string;
+  companionPersonRegistrationWorkspaceName?: string;
   requiredVisitLocation?: {
     uuid: string;
     display: string;
@@ -169,6 +171,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     visitPersistenceCorrelation,
     currentServiceQueueUuid,
     currentQueueLocationUuid,
+    companionPersonSearchWorkspaceName = defaultCompanionPersonSearchWorkspace,
+    companionPersonRegistrationWorkspaceName = defaultCompanionPersonRegistrationWorkspace,
     requiredVisitLocation,
     requiredVisitTypeUuid,
     requestedServiceName,
@@ -365,13 +369,27 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
         return;
       }
 
-      void props.launchChildWorkspace(workspaceName, {
-        patientUuid,
-        requireAdult: isMinorPatient,
-        onCompanionSelected: handleCompanionSelected,
-      });
+      void props
+        .launchChildWorkspace(workspaceName, {
+          patientUuid,
+          requireAdult: isMinorPatient,
+          onCompanionSelected: handleCompanionSelected,
+        })
+        .catch((error) => {
+          showSnackbar({
+            isLowContrast: false,
+            kind: 'error',
+            title: t('companionWorkspaceOpenError', 'No se pudo abrir el formulario de acompañante'),
+            subtitle: getCompatibleUserFacingErrorMessage(
+              error,
+              t('companionWorkspaceOpenErrorMessage', 'Cierre el formulario e intente nuevamente.'),
+              { logContext: 'Launch visit companion workspace' },
+              frameworkGetUserFacingErrorMessage,
+            ),
+          });
+        });
     },
-    [handleCompanionSelected, isMinorPatient, patientUuid, props],
+    [handleCompanionSelected, isMinorPatient, patientUuid, props, t],
   );
   const isLoadingCompanion =
     Boolean(persistedCompanionPersonUuid) &&
@@ -1440,10 +1458,10 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                 isLoading={isLoadingCompanion}
                 onClearCompanion={handleClearCompanion}
                 onRegisterPerson={
-                  isWorkspace2 ? () => launchCompanionWorkspace(companionPersonRegistrationWorkspace) : undefined
+                  isWorkspace2 ? () => launchCompanionWorkspace(companionPersonRegistrationWorkspaceName) : undefined
                 }
                 onSearchPerson={
-                  isWorkspace2 ? () => launchCompanionWorkspace(companionPersonSearchWorkspace) : undefined
+                  isWorkspace2 ? () => launchCompanionWorkspace(companionPersonSearchWorkspaceName) : undefined
                 }
                 required={companionRequired}
                 selectedCompanion={selectedCompanion}

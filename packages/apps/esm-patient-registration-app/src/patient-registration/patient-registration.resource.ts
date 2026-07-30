@@ -156,7 +156,7 @@ export function saveRelationship(relationship: Relationship, signal?: AbortSigna
 
 export function updateRelationship(
   relationshipUuid: string,
-  relationship: { relationshipType: string },
+  relationship: { relationshipType?: string; voided?: boolean },
   signal?: AbortSignal,
 ) {
   return openmrsFetch(`${restBaseUrl}/relationship/${relationshipUuid}`, {
@@ -164,7 +164,10 @@ export function updateRelationship(
       'Content-Type': 'application/json',
     },
     method: 'POST',
-    body: { relationshipType: relationship.relationshipType },
+    body: {
+      ...(relationship.relationshipType ? { relationshipType: relationship.relationshipType } : {}),
+      ...(typeof relationship.voided === 'boolean' ? { voided: relationship.voided } : {}),
+    },
     signal,
   });
 }

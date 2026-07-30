@@ -5,6 +5,7 @@ import {
   savePatient,
   savePatientPhoto,
   savePerson,
+  updateRelationship,
 } from './patient-registration.resource';
 
 const mockOpenmrsFetch = openmrsFetch as vi.Mock;
@@ -54,6 +55,23 @@ describe('savePerson', () => {
       },
       method: 'POST',
       body: person,
+      signal,
+    });
+  });
+});
+
+describe('updateRelationship', () => {
+  it('voids a relationship without sending immutable participants or an empty type', () => {
+    const signal = new AbortController().signal;
+
+    updateRelationship('father-relationship-uuid', { voided: true }, signal);
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(`${restBaseUrl}/relationship/father-relationship-uuid`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+      body: { voided: true },
       signal,
     });
   });

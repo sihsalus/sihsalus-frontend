@@ -1305,6 +1305,66 @@ describe('FormManager', () => {
       });
     });
 
+    it('replaces an existing relationship when its type changes from father to mother', async () => {
+      mockSaveRelationship.mockResolvedValueOnce({
+        ok: true,
+        data: { uuid: 'mother-relationship-uuid' },
+      } as never);
+
+      await FormManager.saveRelationships(
+        [
+          {
+            action: 'UPDATE',
+            initialrelationshipTypeValue: 'father-type-uuid/aIsToB',
+            relatedPersonUuid: 'related-person-uuid',
+            relationshipType: 'mother-type-uuid/aIsToB',
+            uuid: 'father-relationship-uuid',
+          },
+        ],
+        { data: { uuid: 'patient-uuid' } } as never,
+        {},
+      );
+
+      expect(mockSaveRelationship).toHaveBeenCalledWith({
+        personA: 'related-person-uuid',
+        personB: 'patient-uuid',
+        relationshipType: 'mother-type-uuid',
+      });
+      expect(mockUpdateRelationship).toHaveBeenCalledWith('father-relationship-uuid', { voided: true });
+      expect(mockDeleteRelationship).not.toHaveBeenCalled();
+      expect(mockSaveRelationship.mock.invocationCallOrder[0]).toBeLessThan(
+        mockUpdateRelationship.mock.invocationCallOrder[0],
+      );
+    });
+
+    it('does not recreate the replacement relationship when voiding the old one is retried', async () => {
+      const transaction = new SavePatientTransactionManager();
+      const relationship = {
+        action: 'UPDATE' as const,
+        initialrelationshipTypeValue: 'father-type-uuid/aIsToB',
+        relatedPersonUuid: 'related-person-uuid',
+        relationshipType: 'mother-type-uuid/aIsToB',
+        uuid: 'father-relationship-uuid',
+      };
+      mockSaveRelationship.mockResolvedValueOnce({
+        ok: true,
+        data: { uuid: 'mother-relationship-uuid' },
+      } as never);
+      mockUpdateRelationship
+        .mockRejectedValueOnce(new Error('void failed'))
+        .mockResolvedValueOnce({ ok: true } as never);
+
+      await expect(
+        FormManager.saveRelationships([relationship], { data: { uuid: 'patient-uuid' } } as never, {}, transaction),
+      ).rejects.toThrow('void failed');
+
+      await FormManager.saveRelationships([relationship], { data: { uuid: 'patient-uuid' } } as never, {}, transaction);
+
+      expect(mockSaveRelationship).toHaveBeenCalledTimes(1);
+      expect(mockUpdateRelationship).toHaveBeenCalledTimes(2);
+      expect(mockDeleteRelationship).not.toHaveBeenCalled();
+    });
+
     it('deletes the companion relationship when it is unmarked', async () => {
       await FormManager.saveRelationships(
         [

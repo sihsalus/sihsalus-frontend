@@ -317,6 +317,59 @@ describe('RelationshipsSection', () => {
     expect(screen.getByRole('checkbox', { name: /Francisco PRUEBA Castillo Lima.*Padre/i })).toBeChecked();
   });
 
+  it('marks an existing relationship for update when changing father to mother', async () => {
+    const user = userEvent.setup();
+    const setFieldValue = vi.fn();
+    const fatherRelationshipType = 'father/aIsToB';
+    const motherRelationshipType = 'mother/aIsToB';
+    const relationships = [
+      {
+        relatedPersonName: 'Francisco PRUEBA Castillo Lima',
+        relatedPersonUuid: 'francisco-uuid',
+        relation: 'Padre',
+        relationshipType: fatherRelationshipType,
+        initialrelationshipTypeValue: fatherRelationshipType,
+        uuid: 'father-relationship-uuid',
+      },
+    ] as FormValues['relationships'];
+    const formValues = { relationships } as FormValues;
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes: {
+        results: [
+          {
+            displayAIsToB: 'Madre',
+            displayBIsToA: 'Hijo',
+            uuid: 'mother',
+          },
+          {
+            displayAIsToB: 'Padre',
+            displayBIsToA: 'Hijo',
+            uuid: 'father',
+          },
+        ],
+      },
+    };
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={formValues} onSubmit={null}>
+          <Form>
+            <PatientRegistrationContext.Provider value={{ ...initialContextValues, setFieldValue, values: formValues }}>
+              <RelationshipsSection />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /relationship/i }), motherRelationshipType);
+
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relationshipType', motherRelationshipType);
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relation', 'Madre');
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].action', 'UPDATE');
+  });
+
   it('warns when a family link is incomplete and prevents adding another row', () => {
     mockResourcesContextValue = {
       ...mockResourcesContextValue,

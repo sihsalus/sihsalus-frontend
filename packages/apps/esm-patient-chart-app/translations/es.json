@@ -266,7 +266,7 @@
   "companionSaveError": "No se pudo guardar el acompañante",
   "companionSaveErrorMessage": "Revise los datos e intente nuevamente.",
   "estimatedAge": "Edad aproximada",
-  "estimatedAgeInvalid": "Ingrese una edad válida",
+  "estimatedAgeInvalid": "La edad aproximada debe ser un número entre 0 y 140",
   "estimatedAgeRequired": "Ingrese la edad aproximada",
   "familyName": "Apellido paterno",
   "familyName2Optional": "Apellido materno (opcional)",

@@ -1,9 +1,16 @@
 import { type LoggedInUser, userHasAccess, useSession } from '@openmrs/esm-framework';
 import type { ReactNode } from 'react';
-import { serviceQueuesEditPrivilege } from './constants';
+import { serviceQueuesClearPrivilege, serviceQueuesEditPrivilege } from './constants';
 
 const queueCatalogPrivileges = [serviceQueuesEditPrivilege, 'Get Queues', 'Manage Queues'];
 const queueRoomCatalogPrivileges = [serviceQueuesEditPrivilege, 'Get Queue Rooms', 'Get Queues', 'Manage Queue Rooms'];
+const queueClearPrivileges = [
+  serviceQueuesEditPrivilege,
+  serviceQueuesClearPrivilege,
+  'Get Queue Entries',
+  'Get Queues',
+  'Manage Queue Entries',
+];
 
 function userHasAllAccess(privileges: Array<string>, user?: LoggedInUser): boolean {
   return Boolean(user && privileges.every((privilege) => userHasAccess(privilege, user)));
@@ -21,6 +28,10 @@ export function canManageServiceQueueRoomCatalog(user?: LoggedInUser): boolean {
   return userHasAllAccess(queueRoomCatalogPrivileges, user);
 }
 
+export function canClearServiceQueueEntries(user?: LoggedInUser): boolean {
+  return userHasAllAccess(queueClearPrivileges, user);
+}
+
 export function CanEditServiceQueues({ children }: { children: ReactNode }) {
   const session = useSession();
   return canEditServiceQueues(session?.user) ? children : null;
@@ -34,4 +45,9 @@ export function CanManageServiceQueueCatalog({ children }: { children: ReactNode
 export function CanManageServiceQueueRoomCatalog({ children }: { children: ReactNode }) {
   const session = useSession();
   return canManageServiceQueueRoomCatalog(session?.user) ? children : null;
+}
+
+export function CanClearServiceQueueEntries({ children }: { children: ReactNode }) {
+  const session = useSession();
+  return canClearServiceQueueEntries(session?.user) ? children : null;
 }

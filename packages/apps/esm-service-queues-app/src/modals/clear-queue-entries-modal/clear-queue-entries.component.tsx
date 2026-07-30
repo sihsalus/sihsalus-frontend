@@ -3,7 +3,7 @@ import { TrashCan } from '@carbon/react/icons';
 import { isDesktop, showModal, useLayoutType } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CanEditServiceQueues } from '../../permissions';
+import { CanClearServiceQueueEntries } from '../../permissions';
 import { type QueueEntry } from '../../types';
 
 interface ClearQueueEntriesProps {
@@ -23,7 +23,7 @@ const ClearQueueEntries: React.FC<ClearQueueEntriesProps> = ({ queueEntries }) =
   }, [queueEntries]);
 
   return (
-    <CanEditServiceQueues>
+    <CanClearServiceQueueEntries>
       <Button
         disabled={queueEntries.length === 0}
         size={isDesktop(layout) ? 'sm' : 'lg'}
@@ -34,7 +34,7 @@ const ClearQueueEntries: React.FC<ClearQueueEntriesProps> = ({ queueEntries }) =
       >
         {t('clearQueueEntries', 'Clear queue entries')}
       </Button>
-    </CanEditServiceQueues>
+    </CanClearServiceQueueEntries>
   );
 };
 

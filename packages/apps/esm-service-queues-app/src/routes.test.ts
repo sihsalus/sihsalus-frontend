@@ -74,7 +74,26 @@ describe('service queue route privilege contract', () => {
     ).toEqual(expect.arrayContaining(['app:home.colasAtencion.editar', 'Get People']));
     expect(
       routes.workspaces2.find(({ name }) => name === 'queue-visit-companion-registration-workspace')?.privileges,
-    ).toEqual(expect.arrayContaining(['app:home.colasAtencion.editar', 'Add People']));
+    ).toEqual(
+      expect.arrayContaining(['app:home.colasAtencion.editar', 'app:opciones.registrarAcompanante', 'Add People']),
+    );
+  });
+
+  it('reserves bulk queue clearing for the dedicated capability', () => {
+    const clearExtension = routes.extensions.find(({ name }) => name === 'clear-all-queue-entries');
+    const clearModal = routes.modals.find(({ name }) => name === 'clear-all-queue-entries-modal');
+
+    [clearExtension, clearModal].forEach((surface) => {
+      expect(surface?.privileges).toEqual(
+        expect.arrayContaining([
+          'app:home.colasAtencion.editar',
+          'app:home.colasAtencion.limpiar',
+          'Get Queue Entries',
+          'Get Queues',
+          'Manage Queue Entries',
+        ]),
+      );
+    });
   });
 
   it('uses clinical privileges for clinical workspaces embedded in queues', () => {

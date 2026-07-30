@@ -504,6 +504,11 @@ describe('Visit form', () => {
   it('opens both companion flows configured by an embedding queue window', async () => {
     const user = userEvent.setup();
     const launchChildWorkspace = vi.fn().mockResolvedValue(undefined);
+    mockUserHasAccess.mockImplementation(
+      (privilege) =>
+        typeof privilege === 'string' &&
+        ['app:home.admision', 'Get People', 'Add People', 'app:opciones.registrarAcompanante'].includes(privilege),
+    );
     mockUsePatient.mockReturnValue({
       error: null,
       isLoading: false,
@@ -542,6 +547,31 @@ describe('Visit form', () => {
       patientUuid: mockPatient.id,
       requireAdult: true,
     });
+  });
+
+  it('does not expose companion registration without its dedicated frontend privilege', () => {
+    mockUserHasAccess.mockImplementation(
+      (privilege) =>
+        typeof privilege === 'string' && ['app:home.admision', 'Get People', 'Add People'].includes(privilege),
+    );
+
+    render(
+      React.createElement(StartVisitForm, {
+        groupProps: { patientUuid: mockPatient.id },
+        workspaceProps: {
+          openedFrom: 'service-queues-add-patient',
+          patientUuid: mockPatient.id,
+        },
+        closeWorkspace: mockCloseWorkspace,
+        launchChildWorkspace: vi.fn(),
+        promptBeforeClosing: mockPromptBeforeClosing,
+      } as never),
+    );
+
+    expect(screen.getByRole('button', { name: /Seleccionar persona existente|Select existing person/i })).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: /Registrar nueva persona|Register new person/i }),
+    ).not.toBeInTheDocument();
   });
 
   it('does not render the extra visit attributes slot by default', () => {

@@ -69,6 +69,7 @@ import {
   getVisitCompanionPersonUuid,
   withVisitCompanionAttribute,
 } from './companion.resource';
+import { canRegisterCompanionPerson, canSearchCompanionPerson } from './companion-access';
 import CompanionList from './companion-list.component';
 import LocationSelector from './location-selector.component';
 import { getMinorCompanionRequirementState, isPatientMinor } from './minor-companion-validation';
@@ -211,6 +212,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   const isOnline = useConnectivity();
   const config = useConfig<ChartConfig>();
   const sessionUser = useSession();
+  const canSearchCompanion = canSearchCompanionPerson(sessionUser?.user);
+  const canRegisterCompanion = canRegisterCompanionPerson(sessionUser?.user);
   const sessionLocation = sessionUser?.sessionLocation;
   const defaultVisitLocation = useDefaultVisitLocation(
     sessionLocation,
@@ -1458,10 +1461,14 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                 isLoading={isLoadingCompanion}
                 onClearCompanion={handleClearCompanion}
                 onRegisterPerson={
-                  isWorkspace2 ? () => launchCompanionWorkspace(companionPersonRegistrationWorkspaceName) : undefined
+                  isWorkspace2 && canRegisterCompanion
+                    ? () => launchCompanionWorkspace(companionPersonRegistrationWorkspaceName)
+                    : undefined
                 }
                 onSearchPerson={
-                  isWorkspace2 ? () => launchCompanionWorkspace(companionPersonSearchWorkspaceName) : undefined
+                  isWorkspace2 && canSearchCompanion
+                    ? () => launchCompanionWorkspace(companionPersonSearchWorkspaceName)
+                    : undefined
                 }
                 required={companionRequired}
                 selectedCompanion={selectedCompanion}

@@ -1,5 +1,10 @@
 import { type LoggedInUser } from '@openmrs/esm-framework';
-import { canEditServiceQueues, canManageServiceQueueCatalog, canManageServiceQueueRoomCatalog } from './permissions';
+import {
+  canClearServiceQueueEntries,
+  canEditServiceQueues,
+  canManageServiceQueueCatalog,
+  canManageServiceQueueRoomCatalog,
+} from './permissions';
 
 function userWithPrivileges(privileges: string[], roles: string[] = []) {
   return {
@@ -44,5 +49,42 @@ describe('canEditServiceQueues', () => {
         userWithPrivileges(['app:home.colasAtencion.editar', 'Get Queue Rooms', 'Get Queues', 'Manage Queue Rooms']),
       ),
     ).toBe(true);
+  });
+
+  it('does not infer bulk queue clearing from generic queue editing', () => {
+    expect(
+      canClearServiceQueueEntries(
+        userWithPrivileges([
+          'app:home.colasAtencion.editar',
+          'Get Queue Entries',
+          'Get Queues',
+          'Manage Queue Entries',
+        ]),
+      ),
+    ).toBe(false);
+  });
+
+  it('requires the dedicated UI capability and every native queue dependency', () => {
+    expect(
+      canClearServiceQueueEntries(
+        userWithPrivileges([
+          'app:home.colasAtencion.editar',
+          'app:home.colasAtencion.limpiar',
+          'Get Queue Entries',
+          'Get Queues',
+          'Manage Queue Entries',
+        ]),
+      ),
+    ).toBe(true);
+    expect(
+      canClearServiceQueueEntries(
+        userWithPrivileges([
+          'app:home.colasAtencion.editar',
+          'app:home.colasAtencion.limpiar',
+          'Get Queue Entries',
+          'Get Queues',
+        ]),
+      ),
+    ).toBe(false);
   });
 });

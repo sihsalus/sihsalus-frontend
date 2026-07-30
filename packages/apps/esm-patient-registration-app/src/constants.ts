@@ -14,6 +14,13 @@ export const patientImport = 'patient-import';
 // registration form. Disabled by default, so the lookups stay hidden until enabled.
 export const externalIdentityLookupsFlag = 'patient-registration-external-lookups';
 
+/**
+ * Width of the `person_attribute.value` column in OpenMRS. A value longer than
+ * this is rejected or silently truncated on save, so the form has to stop it
+ * before the user gets that far.
+ */
+export const personAttributeValueMaxLength = 50;
+
 export const cacheForOfflineHeaders: OmrsOfflineHttpHeaders = {
   [omrsOfflineCachingStrategyHttpHeaderName]: 'network-first',
 };

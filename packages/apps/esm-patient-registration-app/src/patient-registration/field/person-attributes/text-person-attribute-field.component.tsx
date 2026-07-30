@@ -2,15 +2,19 @@ import classNames from 'classnames';
 import { Field } from 'formik';
 import { type ChangeEvent, type ClipboardEvent, type KeyboardEvent, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { moduleName } from '../../../constants';
+import { moduleName, personAttributeValueMaxLength } from '../../../constants';
 import { Input } from '../../input/basic-input/input/input.component';
 import { type PersonAttributeTypeResponse } from '../../patient-registration.types';
 import styles from './../field.scss';
+
+/** Show the character counter only once the user is close to the ceiling. */
+const counterVisibilityRatio = 0.8;
 
 export interface TextPersonAttributeFieldProps {
   id: string;
   personAttributeType: PersonAttributeTypeResponse;
   validationRegex?: string;
+  maxLength?: number;
   label?: string;
   placeholder?: string;
   required?: boolean;
@@ -21,6 +25,7 @@ export function TextPersonAttributeField({
   id,
   personAttributeType,
   validationRegex,
+  maxLength,
   label,
   placeholder,
   required,
@@ -35,7 +40,23 @@ export function TextPersonAttributeField({
     return `${startsWithPlus ? '+' : ''}${digits}`.slice(0, 20);
   }, []);
 
+  // Phone numbers are already capped while typing, so they never reach this.
+  const effectiveMaxLength = isPhoneField
+    ? undefined
+    : Number.isFinite(maxLength) && maxLength > 0
+      ? maxLength
+      : personAttributeValueMaxLength;
+
   const validateInput = (value: string) => {
+    // Length is checked before the regex: an over-long value cannot be saved at
+    // all, so that is the more useful message even when the format is also off.
+    if (effectiveMaxLength && value && value.length > effectiveMaxLength) {
+      return t('personAttributeValueTooLong', 'Use {{max}} characters or fewer ({{count}} entered)', {
+        count: value.length,
+        max: effectiveMaxLength,
+      });
+    }
+
     if (!value || !validationRegex || validationRegex === '' || typeof validationRegex !== 'string' || value === '') {
       return;
     }
@@ -96,6 +117,17 @@ export function TextPersonAttributeField({
             }
           };
 
+          // The counter is rendered as helper text rather than through Carbon's
+          // `enableCounter`, which also applies a hard `maxLength` to the input.
+          // A hard cap would silently drop characters from a pasted value, and
+          // half an insurance number saved without warning is worse than an
+          // error the user can see and correct.
+          const currentLength = String(field.value ?? '').length;
+          const showCounter =
+            !!effectiveMaxLength && !readOnly && currentLength >= effectiveMaxLength * counterVisibilityRatio;
+          const counterText = showCounter ? `${currentLength}/${effectiveMaxLength}` : undefined;
+          const phoneHelperText = isPhoneField ? t('phoneHelperText', 'Use digits, spaces or hyphens') : undefined;
+
           return (
             <Input
               id={id}
@@ -109,7 +141,7 @@ export function TextPersonAttributeField({
               inputMode={isPhoneField ? 'tel' : undefined}
               placeholder={placeholder}
               maxLength={isPhoneField ? 20 : undefined}
-              helperText={isPhoneField ? t('phoneHelperText', 'Use digits, spaces or hyphens') : undefined}
+              helperText={[phoneHelperText, counterText].filter(Boolean).join(' · ') || undefined}
               required={required}
               readOnly={readOnly}
             />

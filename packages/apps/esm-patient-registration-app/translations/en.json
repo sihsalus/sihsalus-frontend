@@ -275,6 +275,7 @@
   "patientRegistrationLoadErrorTitle": "Could not load the patient record",
   "Pendiente": "Pending",
   "pendingResponsiblePersonNote": "Will be saved with the patient.",
+  "personAttributeValueTooLong": "Use {{max}} characters or fewer ({{count}} entered)",
   "phoneFieldLabel": "Phone number",
   "phoneHelperText": "Enter digits only. Use +51 when including the country code.",
   "phoneInvalid": "Enter a valid Peruvian phone number",

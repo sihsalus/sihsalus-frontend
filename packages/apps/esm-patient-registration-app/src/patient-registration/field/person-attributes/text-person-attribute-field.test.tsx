@@ -162,6 +162,75 @@ describe('TextPersonAttributeField', () => {
     expect(screen.getByText(/invalid validation configuration/i)).toBeInTheDocument();
   });
 
+  it('rejects a value longer than the person attribute column allows', async () => {
+    const user = userEvent.setup();
+    render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <TextPersonAttributeField id="attributeId" personAttributeType={mockPersonAttributeType} maxLength={10} />
+        </Form>
+      </Formik>,
+    );
+
+    const textbox = screen.getByRole('textbox', { name: /referred by \(optional\)/i });
+    await user.type(textbox, 'x'.repeat(11));
+    await user.tab();
+
+    expect(await screen.findByText(/10 characters or fewer \(11 entered\)/i)).toBeInTheDocument();
+  });
+
+  it('accepts a value exactly at the limit', async () => {
+    const user = userEvent.setup();
+    render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <TextPersonAttributeField id="attributeId" personAttributeType={mockPersonAttributeType} maxLength={10} />
+        </Form>
+      </Formik>,
+    );
+
+    const textbox = screen.getByRole('textbox', { name: /referred by \(optional\)/i });
+    await user.type(textbox, 'x'.repeat(10));
+    await user.tab();
+
+    expect(screen.queryByText(/characters or fewer/i)).not.toBeInTheDocument();
+  });
+
+  it('does not silently truncate an over-long value, so the user can see what was entered', async () => {
+    // This is the pasted-insurance-number case: dropping characters to fit the
+    // column would lose data without the user noticing.
+    const user = userEvent.setup();
+    render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <TextPersonAttributeField id="attributeId" personAttributeType={mockPersonAttributeType} maxLength={10} />
+        </Form>
+      </Formik>,
+    );
+
+    const textbox = screen.getByRole('textbox', { name: /referred by \(optional\)/i });
+    await user.type(textbox, '0'.repeat(25));
+
+    expect(textbox).toHaveValue('0'.repeat(25));
+  });
+
+  it('falls back to the OpenMRS column width when no maxLength is configured', async () => {
+    const user = userEvent.setup();
+    render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <TextPersonAttributeField id="attributeId" personAttributeType={mockPersonAttributeType} />
+        </Form>
+      </Formik>,
+    );
+
+    const textbox = screen.getByRole('textbox', { name: /referred by \(optional\)/i });
+    await user.type(textbox, 'x'.repeat(51));
+    await user.tab();
+
+    expect(await screen.findByText(/50 characters or fewer \(51 entered\)/i)).toBeInTheDocument();
+  });
+
   it('renders the input field as required when required prop is true', () => {
     render(
       <Formik initialValues={{}} onSubmit={() => {}}>

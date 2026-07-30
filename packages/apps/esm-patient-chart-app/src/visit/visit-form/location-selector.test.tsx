@@ -77,32 +77,27 @@ describe('tests location selector', () => {
     });
   });
 
-  it('only offers locations explicitly configured as care UPSS', async () => {
-    const user = userEvent.setup();
-    const careUpss = {
-      uuid: '35d2234e-129a-4c40-abb2-1ae0b2400002',
-      display: 'UPSS - HOSPITALIZACIÓN',
-    };
-    const physicalWard = {
-      uuid: 'f8775df7-2ff9-443e-93ee-0fde6184db72',
-      display: 'Sala Pediátrica',
-    };
+  it('loads selectable UPSS from the configured backend location tag', () => {
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(esmPatientChartSchema),
-      visitTypeEligibilityRules: [
-        {
-          locationUuid: careUpss.uuid,
-          visitTypeUuids: ['outpatient-visit-type-uuid'],
-        },
-      ],
+      visitLocationTag: 'Care UPSS',
     });
-    mockUseLocations.mockReturnValue([careUpss, physicalWard]);
 
     renderLocationSelector();
-    await user.click(screen.getByRole('combobox'));
 
-    expect(screen.getByRole('option', { name: careUpss.display })).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: physicalWard.display })).not.toBeInTheDocument();
+    expect(mockUseLocations).toHaveBeenLastCalledWith('Care UPSS', '');
+  });
+
+  it('keeps backend tag filtering when the EMR API hierarchy helper is unavailable', () => {
+    mockUseFeatureFlag.mockReturnValue(false);
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      visitLocationTag: 'Care UPSS',
+    });
+
+    renderLocationSelector();
+
+    expect(mockUseLocations).toHaveBeenLastCalledWith('Care UPSS', '');
   });
 
   it('should call use locations with Visit Location restriction when restrictByVisitLocationTag set true ', async () => {

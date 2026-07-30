@@ -101,6 +101,11 @@ export const esmPatientChartSchema = {
       'On the start visit form, whether to restrict the visit location to locations with the Visit Location tag',
     _default: true,
   },
+  visitLocationTag: {
+    _type: Type.String,
+    _description: 'Location tag used to load selectable locations in the start visit form.',
+    _default: 'Visit Location',
+  },
   showAllEncountersTab: {
     _type: Type.Boolean,
     _description: 'Shows the All Encounters Tab of Patient Visits section in Patient Chart',
@@ -205,7 +210,7 @@ export const esmPatientChartSchema = {
   visitTypeEligibilityRules: {
     _type: Type.Array,
     _description:
-      'Rules that define selectable visit locations and their compatible visit types and patient genders across visit entry workflows. When configured, the manual visit selector only offers listed locations.',
+      'Rules that relate visit locations, visit types and patient genders in the add-patient-to-queue workflow.',
     _elements: {
       locationUuid: {
         _type: Type.UUID,
@@ -342,6 +347,7 @@ export interface ChartConfig {
   companionVisitAttributeTypeUuid: string;
   visitPersistenceTokenAttributeTypeUuid: string;
   restrictByVisitLocationTag: boolean;
+  visitLocationTag: string;
   showAllEncountersTab: boolean;
   showExtraVisitAttributesSlot: boolean;
   showRecommendedVisitTypeTab: boolean;

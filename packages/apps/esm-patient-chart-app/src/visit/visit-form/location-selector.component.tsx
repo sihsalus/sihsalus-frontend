@@ -9,7 +9,7 @@ import {
 } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import isEmpty from 'lodash-es/isEmpty';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { type Control, Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
@@ -38,22 +38,12 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ control, lockedLoca
     sessionLocation,
     config.restrictByVisitLocationTag && isEmrApiModuleInstalled,
   );
-  const locations = useLocations(
-    config.restrictByVisitLocationTag && isEmrApiModuleInstalled ? 'Visit Location' : null,
-    searchTerm,
-  );
+  const visitLocationTag = config.visitLocationTag?.trim() || 'Visit Location';
+  const locations = useLocations(config.restrictByVisitLocationTag ? visitLocationTag : null, searchTerm);
   const { defaultFacility, isLoading: loadingDefaultFacility } = useDefaultFacilityLocation();
   const disableChangingVisitLocation = Boolean(lockedLocation) || config?.disableChangingVisitLocation;
-  const candidateLocations: Array<OpenmrsResource> =
+  const locationsToShow: Array<OpenmrsResource> =
     !loadingDefaultFacility && !isEmpty(defaultFacility) ? [defaultFacility] : locations ? locations : [];
-  const configuredVisitLocationUuids = useMemo(
-    () => new Set(config.visitTypeEligibilityRules?.map(({ locationUuid }) => locationUuid).filter(Boolean) ?? []),
-    [config.visitTypeEligibilityRules],
-  );
-  const locationsToShow =
-    configuredVisitLocationUuids.size > 0
-      ? candidateLocations.filter(({ uuid }) => configuredVisitLocationUuids.has(uuid))
-      : candidateLocations;
 
   const handleSearch = (searchString) => {
     setSearchTerm(searchString);
@@ -61,7 +51,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ control, lockedLoca
 
   useEffect(() => {
     if (config.restrictByVisitLocationTag && !isEmrApiModuleInstalled) {
-      console.warn('EMR API module is not installed. Visit location will not be restricted by location tag.');
+      console.warn('EMR API module is not installed. The default visit location cannot be resolved from its hierarchy.');
     }
   }, [config.restrictByVisitLocationTag, isEmrApiModuleInstalled]);
 

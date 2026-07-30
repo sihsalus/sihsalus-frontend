@@ -2,7 +2,12 @@ import { Button } from '@carbon/react';
 import { AddIcon, launchWorkspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { serviceQueuesPatientSearchWorkspace, serviceQueuesStartVisitWorkspace } from '../../constants';
+import {
+  serviceQueuesCompanionPersonRegistrationWorkspace,
+  serviceQueuesCompanionPersonSearchWorkspace,
+  serviceQueuesPatientSearchWorkspace,
+  serviceQueuesStartVisitWorkspace,
+} from '../../constants';
 import { isVisitLocation, useQueueLocations } from '../../create-queue-entry/hooks/useQueueLocations';
 import { useQueues } from '../../hooks/useQueues';
 import { CanEditServiceQueues } from '../../permissions';
@@ -73,6 +78,8 @@ const AddPatientToQueueButton: React.FC = () => {
                 _closeWorkspace: Workspace2DefinitionProps['closeWorkspace'],
               ) {
                 launchChildWorkspace(serviceQueuesPatientSearchWorkspace, {
+                  companionPersonRegistrationWorkspaceName: serviceQueuesCompanionPersonRegistrationWorkspace,
+                  companionPersonSearchWorkspaceName: serviceQueuesCompanionPersonSearchWorkspace,
                   currentQueueLocationUuid: selectedQueueLocationUuid,
                   currentServiceQueueUuid: selectedQueueUuid,
                   patient,
@@ -84,6 +91,8 @@ const AddPatientToQueueButton: React.FC = () => {
             {
               startVisitWorkspaceName: serviceQueuesStartVisitWorkspace,
               startVisitWorkspaceProps: {
+                companionPersonRegistrationWorkspaceName: serviceQueuesCompanionPersonRegistrationWorkspace,
+                companionPersonSearchWorkspaceName: serviceQueuesCompanionPersonSearchWorkspace,
                 currentQueueLocationUuid: selectedQueueLocationUuid,
                 currentServiceQueueUuid: selectedQueueUuid,
                 openedFrom: 'service-queues-add-patient',

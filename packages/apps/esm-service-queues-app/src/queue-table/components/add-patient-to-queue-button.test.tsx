@@ -2,7 +2,12 @@ import { launchWorkspace2, type Workspace2DefinitionProps } from '@openmrs/esm-f
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { PropsWithChildren } from 'react';
-import { serviceQueuesPatientSearchWorkspace, serviceQueuesStartVisitWorkspace } from '../../constants';
+import {
+  serviceQueuesCompanionPersonRegistrationWorkspace,
+  serviceQueuesCompanionPersonSearchWorkspace,
+  serviceQueuesPatientSearchWorkspace,
+  serviceQueuesStartVisitWorkspace,
+} from '../../constants';
 import { useQueueLocations } from '../../create-queue-entry/hooks/useQueueLocations';
 import { useQueues } from '../../hooks/useQueues';
 import { useServiceQueuesStore } from '../../store/store';
@@ -86,6 +91,8 @@ describe('AddPatientToQueueButton', () => {
       display: 'UPSS - CONSULTA EXTERNA',
     };
     expect(launchChildWorkspace).toHaveBeenCalledWith(serviceQueuesPatientSearchWorkspace, {
+      companionPersonRegistrationWorkspaceName: serviceQueuesCompanionPersonRegistrationWorkspace,
+      companionPersonSearchWorkspaceName: serviceQueuesCompanionPersonSearchWorkspace,
       currentQueueLocationUuid: 'queue-location-uuid',
       currentServiceQueueUuid: 'queue-uuid',
       patient: expect.objectContaining({ id: 'patient-uuid' }),
@@ -95,6 +102,8 @@ describe('AddPatientToQueueButton', () => {
     expect(launchOptions).toEqual({
       startVisitWorkspaceName: serviceQueuesStartVisitWorkspace,
       startVisitWorkspaceProps: expect.objectContaining({
+        companionPersonRegistrationWorkspaceName: serviceQueuesCompanionPersonRegistrationWorkspace,
+        companionPersonSearchWorkspaceName: serviceQueuesCompanionPersonSearchWorkspace,
         currentQueueLocationUuid: 'queue-location-uuid',
         currentServiceQueueUuid: 'queue-uuid',
         requiredVisitLocation,

@@ -318,6 +318,18 @@
       ]
     },
     {
+      "name": "queue-visit-companion-search-workspace",
+      "component": "@sihsalus/esm-patient-chart-app#companionPersonSearchWorkspace",
+      "window": "add-queue-entry",
+      "privileges": ["app:home.colasAtencion.editar", "Get People"]
+    },
+    {
+      "name": "queue-visit-companion-registration-workspace",
+      "component": "@sihsalus/esm-patient-chart-app#companionPersonRegistrationWorkspace",
+      "window": "add-queue-entry",
+      "privileges": ["app:home.colasAtencion.editar", "Add People"]
+    },
+    {
       "name": "service-queues-service-form",
       "component": "addNewQueueWorkspace",
       "window": "add-queue",

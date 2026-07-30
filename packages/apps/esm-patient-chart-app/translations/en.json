@@ -31,6 +31,8 @@
   "companionConfigurationMissingMessage": "The per-consultation companion attribute is not configured. Contact support.",
   "companionRequiredForMinor": "Select or register an adult companion before starting a consultation for a minor.",
   "companionRequiredForMinorTitle": "Companion required",
+  "companionWorkspaceOpenError": "The companion form could not be opened",
+  "companionWorkspaceOpenErrorMessage": "Close the form and try again.",
   "completeRequiredVisitSummaryFields": "Complete {{fields}} in Resumen de consulta before finalizing the visit.",
   "configuredAppointmentVisitType": "Type assigned by the appointment service",
   "confirm": "Confirm",

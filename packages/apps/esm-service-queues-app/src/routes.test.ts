@@ -33,6 +33,8 @@ describe('service queue route privilege contract', () => {
           'queue-patient-search-workspace',
           'queue-patient-search-add-to-queue-workspace',
           'queue-patient-search-start-visit-workspace',
+          'queue-visit-companion-search-workspace',
+          'queue-visit-companion-registration-workspace',
           'service-queues-service-form',
           'service-queues-room-workspace',
         ].includes(name),
@@ -43,6 +45,36 @@ describe('service queue route privilege contract', () => {
     editingSurfaces.forEach(({ privileges }) => {
       expect(Array.isArray(privileges) ? privileges : [privileges]).toContain('app:home.colasAtencion.editar');
     });
+  });
+
+  it('keeps both companion workspaces in the queue entry window', () => {
+    expect(
+      routes.workspaces2
+        .filter(({ name }) =>
+          ['queue-visit-companion-search-workspace', 'queue-visit-companion-registration-workspace'].includes(name),
+        )
+        .map(({ component, name, window }) => ({ component, name, window })),
+    ).toEqual([
+      {
+        component: '@sihsalus/esm-patient-chart-app#companionPersonSearchWorkspace',
+        name: 'queue-visit-companion-search-workspace',
+        window: 'add-queue-entry',
+      },
+      {
+        component: '@sihsalus/esm-patient-chart-app#companionPersonRegistrationWorkspace',
+        name: 'queue-visit-companion-registration-workspace',
+        window: 'add-queue-entry',
+      },
+    ]);
+  });
+
+  it('requires the native OpenMRS person privileges for companion workflows', () => {
+    expect(
+      routes.workspaces2.find(({ name }) => name === 'queue-visit-companion-search-workspace')?.privileges,
+    ).toEqual(expect.arrayContaining(['app:home.colasAtencion.editar', 'Get People']));
+    expect(
+      routes.workspaces2.find(({ name }) => name === 'queue-visit-companion-registration-workspace')?.privileges,
+    ).toEqual(expect.arrayContaining(['app:home.colasAtencion.editar', 'Add People']));
   });
 
   it('uses clinical privileges for clinical workspaces embedded in queues', () => {

@@ -501,6 +501,49 @@ describe('Visit form', () => {
     expect(showSnackbar).not.toHaveBeenCalledWith(expect.objectContaining({ title: 'Visit started' }));
   });
 
+  it('opens both companion flows configured by an embedding queue window', async () => {
+    const user = userEvent.setup();
+    const launchChildWorkspace = vi.fn().mockResolvedValue(undefined);
+    mockUsePatient.mockReturnValue({
+      error: null,
+      isLoading: false,
+      patient: {
+        ...mockFhirPatient,
+        birthDate: dayjs().subtract(1, 'year').format('YYYY-MM-DD'),
+      },
+      patientUuid: mockPatient.id,
+    });
+
+    render(
+      React.createElement(StartVisitForm, {
+        groupProps: { patientUuid: mockPatient.id },
+        workspaceProps: {
+          companionPersonRegistrationWorkspaceName: 'queue-companion-registration',
+          companionPersonSearchWorkspaceName: 'queue-companion-search',
+          openedFrom: 'service-queues-add-patient',
+          patientUuid: mockPatient.id,
+        },
+        closeWorkspace: mockCloseWorkspace,
+        launchChildWorkspace,
+        promptBeforeClosing: mockPromptBeforeClosing,
+      } as never),
+    );
+
+    await user.click(screen.getByRole('button', { name: /Seleccionar persona existente|Select existing person/i }));
+    await user.click(screen.getByRole('button', { name: /Registrar nueva persona|Register new person/i }));
+
+    expect(launchChildWorkspace).toHaveBeenNthCalledWith(1, 'queue-companion-search', {
+      onCompanionSelected: expect.any(Function),
+      patientUuid: mockPatient.id,
+      requireAdult: true,
+    });
+    expect(launchChildWorkspace).toHaveBeenNthCalledWith(2, 'queue-companion-registration', {
+      onCompanionSelected: expect.any(Function),
+      patientUuid: mockPatient.id,
+      requireAdult: true,
+    });
+  });
+
   it('does not render the extra visit attributes slot by default', () => {
     renderVisitForm();
 

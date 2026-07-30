@@ -29,6 +29,8 @@ export const time12HourFormatRegexPattern = '^(1[0-2]|0?[1-9]):[0-5][0-9]$';
 
 export const serviceQueuesPatientSearchWorkspace = 'queue-patient-search-add-to-queue-workspace';
 export const serviceQueuesStartVisitWorkspace = 'queue-patient-search-start-visit-workspace';
+export const serviceQueuesCompanionPersonSearchWorkspace = 'queue-visit-companion-search-workspace';
+export const serviceQueuesCompanionPersonRegistrationWorkspace = 'queue-visit-companion-registration-workspace';
 export const serviceQueuesVisitNotesWorkspace = 'service-queues-visit-notes-workspace';
 export const serviceQueuesPatientVitalsWorkspace = 'service-queues-patient-vitals-workspace';
 

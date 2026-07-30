@@ -1,5 +1,6 @@
 import { Type, validator, validators } from '@openmrs/esm-framework';
 
+import { personAttributeValueMaxLength } from './constants';
 import { peruSisProductConceptUuid } from './patient-registration/peru-registration-config';
 
 export interface SectionDefinition {
@@ -23,6 +24,7 @@ export interface FieldDefinition {
   validation?: {
     required: boolean;
     matches?: string;
+    maxLength?: number;
   };
   locationTag?: string;
   answerConceptSetUuid?: string;
@@ -238,6 +240,14 @@ export const esmPatientRegistrationSchema = {
           _type: Type.String,
           _default: null,
           _description: 'Optional RegEx for testing the validity of the input.',
+        },
+        maxLength: {
+          _type: Type.Number,
+          _default: personAttributeValueMaxLength,
+          _description:
+            'Maximum number of characters accepted by a text person attribute. Defaults to the width of the ' +
+            'person_attribute.value column in OpenMRS (varchar(50)). A longer value is rejected or silently ' +
+            'truncated when saved, so only raise this if that column has actually been widened.',
         },
       },
       locationTag: {

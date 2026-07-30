@@ -66,6 +66,7 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
           <TextPersonAttributeField
             personAttributeType={personAttributeType}
             validationRegex={fieldDefinition.validation?.matches ?? ''}
+            maxLength={fieldDefinition.validation?.maxLength}
             label={fieldDefinition.label}
             placeholder={fieldDefinition.placeholder}
             required={fieldDefinition.validation?.required ?? false}

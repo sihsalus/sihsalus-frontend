@@ -277,6 +277,7 @@
   "patientRegistrationLoadErrorTitle": "No se pudo cargar el registro del paciente",
   "Pendiente": "Pendiente",
   "pendingResponsiblePersonNote": "Se guardará junto con el paciente.",
+  "personAttributeValueTooLong": "Use {{max}} caracteres o menos ({{count}} ingresados)",
   "phoneFieldLabel": "Teléfono",
   "phoneHelperText": "Ingrese solo dígitos. Use +51 si incluye código de país.",
   "phoneInvalid": "Ingrese un teléfono peruano válido",

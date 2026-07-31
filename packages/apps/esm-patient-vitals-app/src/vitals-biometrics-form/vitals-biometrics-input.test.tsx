@@ -351,7 +351,7 @@ describe('VitalsAndBiometricsInput', () => {
     expect(abnormalValueFlag.querySelectorAll('svg')).toHaveLength(1);
   });
 
-  it('marks the complete input container as invalid when a range error is shown', () => {
+  it('distinguishes a configured reference-range warning from a hard input error', () => {
     renderVitalsBiometricsInput({
       fieldProperties: [
         {
@@ -371,7 +371,28 @@ describe('VitalsAndBiometricsInput', () => {
     const inputContainer = screen.getByText('C°').closest('section');
 
     expect(inputContainer).toHaveAttribute('aria-invalid', 'true');
-    expect(screen.getByText(/value must be between 25 and 47/i)).toBeInTheDocument();
+    expect(screen.getByText(/outside the configured reference range/i)).toBeInTheDocument();
+  });
+
+  it('shows the non-bypassable input limits for a hard validation error', () => {
+    renderVitalsBiometricsInput({
+      fieldProperties: [
+        {
+          id: 'oxygenSaturation',
+          invalid: true,
+          name: 'Oxygen saturation',
+          min: 0,
+          max: 100,
+          type: 'number',
+        },
+      ],
+      isValueWithinReferenceRange: false,
+      label: 'SpO2',
+      showErrorMessage: true,
+      unitSymbol: '%',
+    });
+
+    expect(screen.getByText(/value must be between 0 and 100/i)).toBeInTheDocument();
   });
 });
 

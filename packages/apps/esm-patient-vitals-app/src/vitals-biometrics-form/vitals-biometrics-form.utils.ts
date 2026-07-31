@@ -10,6 +10,33 @@ export type ConditionalFieldId = 'chestCircumference' | 'headCircumference' | 'g
 
 export type VitalsBiometricsWorkspaceProfile = 'default' | 'emergency-triage';
 
+/**
+ * Broad input-safety envelopes for vital signs.
+ *
+ * These are deliberately not normal, critical, or patient-specific reference
+ * ranges. Values inside these limits may still be clinically exceptional and
+ * require confirmation against the configured OpenMRS concept/reference range.
+ * Values outside them are treated as an entry/unit error and cannot be saved by
+ * the frontend. The bounds are intentionally wide so that profound hypothermia,
+ * cardiac arrest values, and other rare but recordable observations remain
+ * representable.
+ *
+ * SIHSALUS assumes the units used by its configured core concepts: degrees
+ * Celsius, mmHg, beats/min, breaths/min, and percentage saturation.
+ */
+export const VITAL_SIGN_INPUT_LIMITS = {
+  temperature: { min: 1, max: 60 },
+  systolicBloodPressure: { min: 0, max: 500 },
+  diastolicBloodPressure: { min: 0, max: 500 },
+  pulse: { min: 0, max: 500 },
+  respiratoryRate: { min: 0, max: 300 },
+  oxygenSaturation: { min: 0, max: 100 },
+} as const;
+
+export type VitalSignInputId = keyof typeof VITAL_SIGN_INPUT_LIMITS;
+
+export const vitalSignInputIds = Object.keys(VITAL_SIGN_INPUT_LIMITS) as Array<VitalSignInputId>;
+
 export interface ConditionalFieldOverrides {
   /** Force-show these fields regardless of age rules (e.g. CRED launching for a newborn) */
   showFields?: Array<ConditionalFieldId>;

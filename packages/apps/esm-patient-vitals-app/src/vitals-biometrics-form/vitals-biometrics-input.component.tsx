@@ -88,7 +88,7 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
   const { t } = useTranslation();
   const fieldId = useId();
   const isTablet = useLayoutType() === 'tablet';
-  const [invalid, setInvalid] = useState(false);
+  const [invalidFieldIds, setInvalidFieldIds] = useState<Set<fieldId>>(() => new Set());
   const [isFocused, setIsFocused] = useState(false);
 
   const abnormalValues: Array<AbnormalValue> = ['critically_low', 'critically_high', 'high', 'low'];
@@ -107,7 +107,15 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
       min: fieldProperty.min,
     });
 
-    setInvalid(isInvalid);
+    setInvalidFieldIds((currentInvalidFieldIds) => {
+      const nextInvalidFieldIds = new Set(currentInvalidFieldIds);
+      if (isInvalid) {
+        nextInvalidFieldIds.add(fieldProperty.id);
+      } else {
+        nextInvalidFieldIds.delete(fieldProperty.id);
+      }
+      return nextInvalidFieldIds;
+    });
 
     if (!isInvalidFormat) {
       onChange(parsedValue);
@@ -153,7 +161,11 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
     setIsFocused(isFocused);
   }
 
-  const isInvalidInput = !isValueWithinReferenceRange || invalid;
+  const invalidFieldProperty = fieldProperties.find(
+    (fieldProperty) => fieldProperty.invalid || invalidFieldIds.has(fieldProperty.id),
+  );
+  const hasInvalidInput = Boolean(invalidFieldProperty);
+  const isInvalidInput = !isValueWithinReferenceRange || hasInvalidInput;
   const showInvalidInputError = Boolean(showErrorMessage && isInvalidInput);
   const errorMessageClass = showInvalidInputError ? styles.invalidInput : '';
 
@@ -199,7 +211,11 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
                   : t('lowAbnormalValue', 'Low abnormal value')
               }
             >
-              {isHighAbnormalValue ? <ArrowUp aria-hidden="true" size={16} /> : <ArrowDown aria-hidden="true" size={16} />}
+              {isHighAbnormalValue ? (
+                <ArrowUp aria-hidden="true" size={16} />
+              ) : (
+                <ArrowDown aria-hidden="true" size={16} />
+              )}
               {isCriticalAbnormalValue &&
                 (isHighAbnormalValue ? (
                   <ArrowUp aria-hidden="true" size={16} />
@@ -344,10 +360,12 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
 
       {showInvalidInputError && (
         <FormLabel className={styles.invalidInputError}>
-          {t('validationInputError', `Value must be between {{min}} and {{max}}`, {
-            min: fieldProperties[0].min,
-            max: fieldProperties[0].max,
-          })}
+          {hasInvalidInput
+            ? t('validationInputError', `Value must be between {{min}} and {{max}}`, {
+                min: invalidFieldProperty?.min,
+                max: invalidFieldProperty?.max,
+              })
+            : t('validationReferenceRangeError', 'Value is outside the configured reference range')}
         </FormLabel>
       )}
     </>

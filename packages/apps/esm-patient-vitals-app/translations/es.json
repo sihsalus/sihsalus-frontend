@@ -106,6 +106,7 @@
   "unexpectedError": "Ocurrió un error inesperado. Por favor, inténtelo de nuevo.",
   "unknown": "Desconocido",
   "validationInputError": "Debe estar entre {{min}} y {{max}}",
+  "validationReferenceRangeError": "El valor está fuera del rango de referencia configurado",
   "valuesOutOfRangeConfirm": "Revise los siguientes valores: {{fields}}. Si son correctos, presione \"Guardar y cerrar\" nuevamente para registrarlos.",
   "valuesOutOfRangeTitle": "Valores fuera del rango esperado",
   "viewNormalRanges": "Ver rangos normales",
@@ -117,6 +118,7 @@
   "vitalsAndBiometricsNowAvailable": "Ahora son visibles en la página de Signos Vitales y Datos Biométricos",
   "vitalsAndBiometricsRecorded": "Signos Vitales y Datos Biométricos guardados",
   "vitalsAndBiometricsSaveError": "Error al guardar signos vitales y datos biométricos",
+  "vitalSignsOutsideInputLimits": "Uno o más signos vitales están fuera de los límites seguros de registro. Corrija los valores marcados; no se pueden guardar confirmándolos nuevamente",
   "vitalsChartFileName": "grafico-de-signos-vitales",
   "vitalsHistory": "Historial de signos vitales",
   "weight": "Peso"

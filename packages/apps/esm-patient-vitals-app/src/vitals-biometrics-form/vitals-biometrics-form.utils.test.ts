@@ -5,6 +5,7 @@ import {
   getMuacColorCode,
   isConditionalFieldVisible,
   validateClinicalNumberInput,
+  VITAL_SIGN_INPUT_LIMITS,
 } from './vitals-biometrics-form.utils';
 
 describe('vitals biometrics form utils', () => {
@@ -53,6 +54,15 @@ describe('validateClinicalNumberInput', () => {
   it('marks values outside configured clinical ranges', () => {
     expect(validateClinicalNumberInput('251', { min: 0, max: 250 }).isOutOfRange).toBe(true);
     expect(validateClinicalNumberInput('80', { min: 0, max: 250 }).isInvalid).toBe(false);
+  });
+
+  it('enforces the broad input-safety limits without treating their boundary values as invalid', () => {
+    expect(validateClinicalNumberInput('100', VITAL_SIGN_INPUT_LIMITS.oxygenSaturation).isInvalid).toBe(false);
+    expect(validateClinicalNumberInput('101', VITAL_SIGN_INPUT_LIMITS.oxygenSaturation).isOutOfRange).toBe(true);
+    expect(validateClinicalNumberInput('500', VITAL_SIGN_INPUT_LIMITS.systolicBloodPressure).isInvalid).toBe(false);
+    expect(validateClinicalNumberInput('501', VITAL_SIGN_INPUT_LIMITS.systolicBloodPressure).isOutOfRange).toBe(true);
+    expect(validateClinicalNumberInput('4.2', VITAL_SIGN_INPUT_LIMITS.temperature).isInvalid).toBe(false);
+    expect(validateClinicalNumberInput('0', VITAL_SIGN_INPUT_LIMITS.temperature).isOutOfRange).toBe(true);
   });
 });
 

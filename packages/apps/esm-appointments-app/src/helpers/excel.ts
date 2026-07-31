@@ -1,14 +1,12 @@
-import { fetchCurrentPatient, formatDate, getConfig } from '@openmrs/esm-framework';
+import { fetchCurrentPatient, formatDatetime, getConfig } from '@openmrs/esm-framework';
 import type { CellValue, Workbook } from 'exceljs';
+import type { TFunction } from 'i18next';
 
 import { type ConfigObject } from '../config-schema';
 import { moduleName } from '../constants';
-import { type Appointment } from '../types';
-
-type RowData = {
-  id: string; // Corresponds to the UUID of an appointment
-  identifier?: string; // Optional identifier property
-} & Record<string, unknown>; // Allow for other dynamic properties
+import { type Appointment, type Identifier } from '../types';
+import { getGender } from './functions';
+import { formatPatientIdentifiers } from './patient-identifiers';
 
 type UnscheduledAppointment = {
   name: string;
@@ -16,54 +14,77 @@ type UnscheduledAppointment = {
   age?: string | number;
   phoneNumber?: string | null;
   identifier?: string | null;
+  identifiers?: Array<Identifier>;
 };
 
-type SpreadsheetRow = {
-  'Patient name': string;
-  Gender: string;
-  Age: string | number | undefined;
-  'Phone Number'?: string;
-  Identifier: string;
-};
+function getPhoneNumbers(patientInfo?: fhir.Patient | null): string {
+  return (
+    patientInfo?.telecom
+      ?.filter((contact) => !contact.system || contact.system === 'phone')
+      .map((contact) => contact.value?.trim())
+      .filter((value): value is string => Boolean(value))
+      .join(', ') ?? ''
+  );
+}
+
+export function createAppointmentSpreadsheetRow(
+  appointment: Appointment,
+  patientInfo: fhir.Patient | null,
+  includePhoneNumbers: boolean,
+  t: TFunction,
+): Record<string, string | number> {
+  return {
+    [t('patientName', 'Patient name')]: appointment.patient.name,
+    [t('gender', 'Gender')]: getGender(appointment.patient.gender ?? '', t),
+    [t('age', 'Age')]: appointment.patient.age ?? '',
+    [t('patientIdentifiers', 'Patient identifiers')]: formatPatientIdentifiers(
+      appointment.patient.identifiers,
+      patientInfo?.identifier,
+      appointment.patient.identifier,
+    ),
+    [t('appointmentType', 'Appointment type')]: appointment.service?.name ?? '',
+    [t('appointmentDateTime', 'Appointment date and time')]: formatDatetime(new Date(appointment.startDateTime)),
+    ...(includePhoneNumbers ? { [t('phoneNumber', 'Phone number')]: getPhoneNumbers(patientInfo) } : {}),
+  };
+}
+
+export function createAppointmentsExportFileName(prefix: string, section: string, date: string): string {
+  const normalizedPrefix = prefix.trim();
+  const normalizedSection = section.trim();
+  const hasPrefix = normalizedSection.toLocaleLowerCase().includes(normalizedPrefix.toLocaleLowerCase());
+  const rawName = [hasPrefix ? '' : normalizedPrefix, normalizedSection, date].filter(Boolean).join('_');
+  const safeName = rawName
+    .split('')
+    .map((character) => (character.charCodeAt(0) < 32 ? '-' : character))
+    .join('')
+    .replace(/[<>:"/\\|?*]/g, '-')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_');
+
+  return `${safeName || 'citas'}.xlsx`;
+}
 
 /**
  * Exports the provided appointments as an Excel spreadsheet.
  * @param {Array<Appointment>} appointments - The list of appointments to export.
- * @param {Array} rowData - The current rows of the table as rendered in the UI.
  * @param {string} [fileName] - The name of the downloaded file
  */
 export async function exportAppointmentsToSpreadsheet(
   appointments: Array<Appointment>,
-  rowData: Array<RowData>,
-  fileName = 'Appointments',
+  t: TFunction,
+  fileName = `${t('appointmentsExportFilename', 'Appointments')}.xlsx`,
 ) {
   const config = await getConfig<ConfigObject>(moduleName);
   const includePhoneNumbers = config.includePhoneNumberInExcelSpreadsheet ?? false;
 
   const appointmentsJSON = await Promise.all(
     appointments.map(async (appointment: Appointment) => {
-      const matchingAppointment = rowData.find((row) => row.id === appointment.uuid);
-      const identifier = matchingAppointment?.identifier ?? appointment.patient.identifier;
-
-      const patientInfo = await fetchCurrentPatient(appointment.patient.uuid);
-      const phoneNumber =
-        includePhoneNumbers && patientInfo?.telecom
-          ? patientInfo.telecom.map((telecomObj) => telecomObj?.value).join(', ')
-          : '';
-
-      return {
-        'Patient name': appointment.patient.name,
-        Gender: appointment.patient.gender === 'F' ? 'Female' : 'Male',
-        Age: appointment.patient.age,
-        Identifier: identifier,
-        'Appointment type': appointment.service?.name,
-        Date: formatDate(new Date(appointment.startDateTime), { mode: 'wide' }),
-        ...(includePhoneNumbers ? { 'Telephone number': phoneNumber } : {}),
-      };
+      const patientInfo = await fetchCurrentPatient(appointment.patient.uuid).catch(() => null);
+      return createAppointmentSpreadsheetRow(appointment, patientInfo, includePhoneNumbers, t);
     }),
   );
 
-  await writeSpreadsheet(appointmentsJSON, 'Appointment list', `${fileName}.xlsx`);
+  await writeSpreadsheet(appointmentsJSON, t('appointmentList', 'Appointment list'), fileName);
 }
 
 /**
@@ -73,24 +94,29 @@ Exports unscheduled appointments as an Excel spreadsheet.
 */
 export function exportUnscheduledAppointmentsToSpreadsheet(
   unscheduledAppointments: Array<UnscheduledAppointment>,
-  fileName: string = `Unscheduled appointments ${formatDate(new Date(), { year: true, time: true })}`,
+  t: TFunction,
+  fileName = `${t('unscheduledAppointments', 'Unscheduled appointments')}.xlsx`,
 ): Promise<void> {
-  const appointmentsJSON = unscheduledAppointments?.map(
-    (appointment): SpreadsheetRow => ({
-      'Patient name': appointment.name,
-      Gender: appointment.gender === 'F' ? 'Female' : 'Male',
-      Age: appointment.age,
-      'Phone Number': appointment.phoneNumber ?? '--',
-      Identifier: appointment.identifier ?? '--',
-    }),
-  );
+  const appointmentsJSON = unscheduledAppointments?.map((appointment) => ({
+    [t('patientName', 'Patient name')]: appointment.name,
+    [t('gender', 'Gender')]: getGender(appointment.gender ?? '', t),
+    [t('age', 'Age')]: appointment.age ?? '',
+    [t('phoneNumber', 'Phone number')]: appointment.phoneNumber ?? '--',
+    [t('patientIdentifiers', 'Patient identifiers')]:
+      formatPatientIdentifiers(appointment.identifiers, [], appointment.identifier) || '--',
+  }));
 
-  return writeSpreadsheet(appointmentsJSON, 'Appointment list', `${fileName}.xlsx`);
+  return writeSpreadsheet(appointmentsJSON, t('appointmentList', 'Appointment list'), fileName);
 }
 
-function getFirstColumnWidth(data: Array<Record<string, unknown>>) {
-  const max_width = data.reduce((w, r) => Math.max(w, String(r['Patient name'] ?? '').length), 30);
-  return max_width;
+function getColumnWidth(data: Array<Record<string, unknown>>, columnName: string) {
+  return Math.min(
+    data.reduce(
+      (width, row) => Math.max(width, String(row[columnName] ?? '').length),
+      Math.max(columnName.length, 12),
+    ) + 2,
+    60,
+  );
 }
 
 function toSpreadsheetCell(value: unknown): CellValue {
@@ -116,13 +142,13 @@ async function writeSpreadsheet(
 ): Promise<void> {
   const { Workbook } = await import('exceljs');
   const workbook = new Workbook();
-  const worksheet = workbook.addWorksheet(sheetName);
+  const worksheet = workbook.addWorksheet(sheetName.slice(0, 31));
   const columnNames = getColumnNames(data);
 
-  worksheet.columns = columnNames.map((columnName, index) => ({
+  worksheet.columns = columnNames.map((columnName) => ({
     header: columnName,
     key: columnName,
-    ...(index === 0 ? { width: getFirstColumnWidth(data) } : {}),
+    width: getColumnWidth(data, columnName),
   }));
   worksheet.getRow(1).font = { bold: true };
 

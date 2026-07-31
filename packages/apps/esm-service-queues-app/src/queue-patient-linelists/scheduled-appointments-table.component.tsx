@@ -18,13 +18,12 @@ import {
   Tag,
   Tile,
 } from '@carbon/react';
-import { Filter, OverflowMenuVertical } from '@carbon/react/icons';
+import { OverflowMenuVertical } from '@carbon/react/icons';
 import {
   ConfigurableLink,
   ExtensionSlot,
   formatDate,
   formatDatetime,
-  launchWorkspace,
   useConfig,
   usePagination,
 } from '@openmrs/esm-framework';
@@ -199,18 +198,6 @@ const AppointmentsTable: React.FC = () => {
           <Tag size="md" type="blue">
             {t('today', 'Today')}
           </Tag>
-
-          <div className={styles.actionsBtn}>
-            <Button
-              kind="ghost"
-              renderIcon={(props) => <Filter size={16} {...props} />}
-              iconDescription={t('filter', 'Filter')}
-              onClick={() => launchWorkspace('service-queues-linelist-filter')}
-              size="sm"
-            >
-              {t('filter', 'Filter')}
-            </Button>
-          </div>
         </Tile>
       </Layer>
 

@@ -17,15 +17,8 @@ import {
   Tag,
   Tile,
 } from '@carbon/react';
-import { Filter, OverflowMenuVertical } from '@carbon/react/icons';
-import {
-  ConfigurableLink,
-  ExtensionSlot,
-  formatDatetime,
-  launchWorkspace,
-  parseDate,
-  usePagination,
-} from '@openmrs/esm-framework';
+import { OverflowMenuVertical } from '@carbon/react/icons';
+import { ConfigurableLink, ExtensionSlot, formatDatetime, parseDate, usePagination } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -100,7 +93,7 @@ const QueuePatientBaseTable: React.FC<QueuePatientTableProps> = ({
   };
 
   const pageSizes = useMemo(() => {
-    const numberOfPages = Math.ceil(patientData?.length / 100);
+    const numberOfPages = Math.ceil((patientData?.length ?? 0) / 100);
     return [...Array(numberOfPages).keys()].map((x) => {
       return (x + 1) * 100;
     });
@@ -157,18 +150,6 @@ const QueuePatientBaseTable: React.FC<QueuePatientTableProps> = ({
           <Tag size="md" type="blue">
             {t('today', 'Today')}
           </Tag>
-
-          <div className={styles.actionsBtn}>
-            <Button
-              kind="ghost"
-              renderIcon={(props) => <Filter size={16} {...props} />}
-              iconDescription={t('filter', 'Filter')}
-              onClick={() => launchWorkspace('service-queues-linelist-filter')}
-              size="sm"
-            >
-              {t('filter', 'Filter')}
-            </Button>
-          </div>
         </Tile>
       </Layer>
 

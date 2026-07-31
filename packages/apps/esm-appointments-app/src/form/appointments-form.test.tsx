@@ -23,7 +23,11 @@ import {
 } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../config-schema';
-import { appointmentNoteMaxLength, appointmentStartDateEditPrivilege } from '../constants';
+import {
+  appointmentIssueDateEditPrivilege,
+  appointmentNoteMaxLength,
+  appointmentStartDateEditPrivilege,
+} from '../constants';
 import { useProviders } from '../hooks/useProviders';
 import { changeAppointmentStatus, getAppointmentStatus } from '../patient-appointments/patient-appointments.resource';
 import { type Appointment, AppointmentKind, AppointmentStatus } from '../types';
@@ -1118,8 +1122,24 @@ describe('AppointmentForm', () => {
     expect(screen.getByTestId('dateAppointmentScheduledPickerInput')).toHaveAttribute('readonly');
   });
 
-  it('keeps the appointment issue date read-only even when the user has all privileges', async () => {
-    mockUserHasAccess.mockReturnValue(true);
+  it('allows editing the appointment issue date with the issue-date privilege', async () => {
+    // Backdating is what the privilege is for: an appointment issued on paper
+    // yesterday and registered today should record the day it was issued.
+    mockUserHasAccess.mockImplementation((privilege) => privilege === appointmentIssueDateEditPrivilege);
+    mockOpenmrsFetch.mockResolvedValue(mockUseAppointmentServiceData as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+
+    expect(mockUserHasAccess).toHaveBeenCalledWith(appointmentIssueDateEditPrivilege, mockSession.data.user);
+    expect(screen.getByTestId('dateAppointmentScheduledPickerInput')).not.toHaveAttribute('readonly');
+  });
+
+  it('does not let the start-date privilege unlock the issue date', async () => {
+    // The two dates are gated separately: moving an appointment is not the same
+    // as rewriting when it was issued.
+    mockUserHasAccess.mockImplementation((privilege) => privilege === appointmentStartDateEditPrivilege);
     mockOpenmrsFetch.mockResolvedValue(mockUseAppointmentServiceData as unknown as FetchResponse);
 
     renderWithSwr(<AppointmentForm {...defaultProps} />);
@@ -1127,6 +1147,7 @@ describe('AppointmentForm', () => {
     await waitForLoadingToFinish();
 
     expect(screen.getByTestId('dateAppointmentScheduledPickerInput')).toHaveAttribute('readonly');
+    expect(screen.getByTestId('datePickerInput')).not.toHaveAttribute('readonly');
   });
 
   it('keeps the appointment start date read-only without the start-date privilege', async () => {

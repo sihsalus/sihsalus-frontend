@@ -51,6 +51,7 @@ import { z } from 'zod';
 
 import { type ConfigObject } from '../config-schema';
 import {
+  appointmentIssueDateEditPrivilege,
   appointmentLocationTagName,
   appointmentNoteMaxLength,
   appointmentStartDateEditPrivilege,
@@ -333,6 +334,7 @@ const AppointmentsForm: React.FC<
     Boolean(session?.sessionLocation?.uuid) &&
     isExternalConsultationLocation(session?.sessionLocation);
   const canEditAppointmentStartDate = userHasAccess(appointmentStartDateEditPrivilege, session?.user);
+  const canEditAppointmentIssueDate = userHasAccess(appointmentIssueDateEditPrivilege, session?.user);
   const { selectedDate } = useContext(SelectedDateContext);
   const { data: services, isLoading } = useAppointmentService();
   const {
@@ -1478,7 +1480,7 @@ const AppointmentsForm: React.FC<
                       maxDate={new Date()}
                       id="dateAppointmentScheduledPickerInput"
                       data-testid="dateAppointmentScheduledPickerInput"
-                      isReadOnly
+                      isReadOnly={!canEditAppointmentIssueDate}
                       labelText={t('dateScheduledDetail', 'Date appointment issued')}
                       style={{ width: '100%' }}
                     />

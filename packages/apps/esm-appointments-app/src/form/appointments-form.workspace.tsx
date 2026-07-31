@@ -928,6 +928,7 @@ const AppointmentsForm: React.FC<
       location,
       provider,
       appointmentNote,
+      dateAppointmentScheduled,
     } = data;
 
     const selectedAppointmentService = availableServices?.find((service) => service.uuid === selectedServiceUuid);
@@ -950,7 +951,15 @@ const AppointmentsForm: React.FC<
       patientUuid: patientUuid,
       comments: appointmentNote,
       uuid: context === 'editing' ? appointment.uuid : undefined,
-      dateAppointmentScheduled: dayjs(defaultDateAppointmentScheduled).format(),
+      // Only trust the form value when the user is allowed to change it. A
+      // read-only field can still be tampered with in the DOM, so without the
+      // privilege the issue date always comes from the value the form was
+      // opened with.
+      dateAppointmentScheduled: dayjs(
+        canEditAppointmentIssueDate
+          ? (dateAppointmentScheduled ?? defaultDateAppointmentScheduled)
+          : defaultDateAppointmentScheduled,
+      ).format(),
     };
 
     if (context === 'creating') {

@@ -1,4 +1,7 @@
 import { render, waitFor } from '@testing-library/react';
+import { StrictMode } from 'react';
+
+const { mockAuditLog } = vi.hoisted(() => ({ mockAuditLog: vi.fn() }));
 
 import PatientChart from './patient-chart.component';
 
@@ -10,9 +13,10 @@ const mockStoreSetState = vi.fn();
 const mockMutateVisitContext = vi.fn();
 let mockIsLoadingPatient = false;
 let mockPatientUuid = 'patient-uuid';
-let mockPatient = {
+let mockPatient: { id: string } | null | undefined = {
   id: 'patient-uuid',
 };
+let mockView: string | undefined;
 let mockCurrentVisit: { uuid: string } | null = {
   uuid: 'active-visit-uuid',
 };
@@ -27,6 +31,10 @@ vi.mock('@openmrs/esm-framework', async () => ({
     isLoading: mockIsLoadingPatient,
     patient: mockPatient,
   }),
+}));
+
+vi.mock('@sihsalus/esm-audit-logger', () => ({
+  useAuditLogger: () => mockAuditLog,
 }));
 
 vi.mock('@openmrs/esm-styleguide', () => ({
@@ -52,7 +60,7 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => ({
 vi.mock('react-router-dom', () => ({
   useParams: () => ({
     patientUuid: mockPatientUuid,
-    view: undefined,
+    view: mockView,
   }),
 }));
 
@@ -63,14 +71,89 @@ describe('PatientChart', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockLaunchWorkspaceGroup2.mockResolvedValue(true);
+    mockAuditLog.mockResolvedValue(undefined);
     mockIsLoadingPatient = false;
     mockPatientUuid = 'patient-uuid';
     mockPatient = {
       id: 'patient-uuid',
     };
+    mockView = undefined;
     mockCurrentVisit = {
       uuid: 'active-visit-uuid',
     };
+  });
+
+  it('audits access to the patient chart without including patient demographics', async () => {
+    render(<PatientChart />);
+
+    await waitFor(() => {
+      expect(mockAuditLog).toHaveBeenCalledWith({
+        eventType: 'PATIENT_CHART_VIEW_SUCCEEDED',
+        patientUuid: 'patient-uuid',
+        resourceType: 'Patient',
+        metadata: {
+          moduleName: '@sihsalus/esm-patient-chart-app',
+          outcome: 'succeeded',
+        },
+      });
+    });
+    expect(mockAuditLog).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not copy a free-text chart segment into audit metadata', async () => {
+    mockPatientUuid = '4d7ae11d-076c-4d09-8f7b-8b25ad41c04b';
+    mockPatient = { id: mockPatientUuid };
+    mockView = encodeURIComponent('Juan Perez 00000002');
+    window.history.pushState({}, 'Patient chart', '/chart/Juan Perez 00000002');
+
+    render(<PatientChart />);
+
+    await waitFor(() => {
+      expect(mockAuditLog).toHaveBeenCalledWith({
+        eventType: 'PATIENT_CHART_VIEW_SUCCEEDED',
+        patientUuid: '4d7ae11d-076c-4d09-8f7b-8b25ad41c04b',
+        resourceType: 'Patient',
+        metadata: {
+          moduleName: '@sihsalus/esm-patient-chart-app',
+          outcome: 'succeeded',
+        },
+      });
+    });
+    expect(JSON.stringify(mockAuditLog.mock.calls)).not.toContain('Juan Perez');
+    expect(JSON.stringify(mockAuditLog.mock.calls)).not.toContain('00000002');
+  });
+
+  it.each([
+    ['undefined', undefined],
+    ['null', null],
+  ])('audits a patient response of %s without an error as one failed view', async (_label, patient) => {
+    mockPatientUuid = '4d7ae11d-076c-4d09-8f7b-8b25ad41c04b';
+    mockPatient = patient;
+
+    const { rerender } = render(
+      <StrictMode>
+        <PatientChart />
+      </StrictMode>,
+    );
+
+    await waitFor(() => {
+      expect(mockAuditLog).toHaveBeenCalledWith({
+        eventType: 'PATIENT_CHART_VIEW_FAILED',
+        patientUuid: '4d7ae11d-076c-4d09-8f7b-8b25ad41c04b',
+        resourceType: 'Patient',
+        metadata: {
+          moduleName: '@sihsalus/esm-patient-chart-app',
+          outcome: 'failed',
+        },
+      });
+    });
+
+    rerender(
+      <StrictMode>
+        <PatientChart />
+      </StrictMode>,
+    );
+    await waitFor(() => expect(mockAuditLog).toHaveBeenCalledTimes(1));
   });
 
   // Regression test: useVisit only promotes the active visit into the visit context

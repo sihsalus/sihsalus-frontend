@@ -56,8 +56,9 @@ const enforcedSectionsByApp = {
 const guardExemptions = {
   'esm-patient-chart-app/pages/root': {
     reason:
-      'The chart shell itself. It renders no clinical action; every widget inside it declares its own guard, ' +
-      'and access to a patient chart is governed by the patient-level privileges those widgets carry.',
+      'PageDefinition does not support runtime privileges. Root is guarded before chart content renders by ' +
+      'RequireClinicalChartAccess (src/root.component.tsx), using app:hoja.clinica; root.component.test.tsx ' +
+      'proves an unauthorized direct URL renders no patient chart and redirects to patient search.',
   },
   'esm-patient-chart-app/modals/start-visit-dialog': {
     reason:

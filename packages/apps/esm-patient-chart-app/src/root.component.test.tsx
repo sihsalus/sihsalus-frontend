@@ -1,10 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import { StrictMode, type ReactNode } from 'react';
+import { type ReactNode, StrictMode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockNavigate = vi.hoisted(() => vi.fn());
 const mockShowSnackbar = vi.hoisted(() => vi.fn());
 const mockUseSession = vi.hoisted(() => vi.fn());
+const mockAuditLog = vi.hoisted(() => vi.fn());
 const mockUserHasAccess = vi.hoisted(() =>
   vi.fn((requiredPrivilege: string, user?: { privileges?: Array<{ display?: string; name?: string }> }) =>
     user?.privileges?.some(
@@ -28,6 +29,10 @@ vi.mock('@sihsalus/esm-rbac', () => ({
   AppErrorBoundary: ({ children }: { children?: ReactNode }) => <>{children}</>,
 }));
 
+vi.mock('@sihsalus/esm-audit-logger', () => ({
+  useAuditLogger: () => mockAuditLog,
+}));
+
 vi.mock('./patient-chart/patient-chart.component', () => ({
   default: () => <div>Patient chart</div>,
 }));
@@ -44,9 +49,11 @@ describe('Patient chart root', () => {
         roles: [],
       },
     });
-    mockNavigate.mockClear();
+    mockNavigate.mockReset();
     mockShowSnackbar.mockClear();
     mockUserHasAccess.mockClear();
+    mockAuditLog.mockReset();
+    mockAuditLog.mockResolvedValue(undefined);
   });
 
   it('allows direct chart access with the clinical chart privilege', async () => {
@@ -57,9 +64,14 @@ describe('Patient chart root', () => {
     expect(screen.getByText('Patient chart')).toBeInTheDocument();
     expect(mockShowSnackbar).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
+    expect(mockAuditLog).not.toHaveBeenCalled();
   });
 
   it('shows one informational message before redirecting unauthorized users to patient search', async () => {
+    window.history.pushState({}, 'Patient chart', '/openmrs/spa/patient/4d7ae11d-076c-4d09-8f7b-8b25ad41c04b/chart');
+    mockNavigate.mockImplementation(({ to }: { to: string }) => {
+      window.history.pushState({}, 'Patient search', to);
+    });
     mockUseSession.mockReturnValue({
       authenticated: true,
       user: {
@@ -86,6 +98,17 @@ describe('Patient chart root', () => {
       });
       expect(mockNavigate).toHaveBeenCalledTimes(1);
       expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/spa/search' });
+      expect(window.location.pathname).toBe('/openmrs/spa/search');
+      expect(mockAuditLog).toHaveBeenCalledWith({
+        eventType: 'PATIENT_CHART_ACCESS_DENIED',
+        patientUuid: '4d7ae11d-076c-4d09-8f7b-8b25ad41c04b',
+        resourceType: 'Patient',
+        metadata: {
+          moduleName: '@sihsalus/esm-patient-chart-app',
+          outcome: 'denied',
+        },
+      });
+      expect(mockAuditLog).toHaveBeenCalledTimes(1);
     });
     expect(mockShowSnackbar.mock.invocationCallOrder[0]).toBeLessThan(mockNavigate.mock.invocationCallOrder[0]);
   });

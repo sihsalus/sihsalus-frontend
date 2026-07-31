@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { clearKeyCache } from './crypto';
 import { clearEntries, getEntriesForUser, queueEntry } from './db';
@@ -39,7 +39,7 @@ describe('queueEntry / getEntriesForUser', () => {
   });
 
   it('decrypts — the raw IDB row does not contain plaintext PHI', async () => {
-    const entry = makeEntry({ patientUuid: 'sensitive-patient' });
+    const entry = makeEntry({ locationUuid: 'sensitive-location', patientUuid: 'sensitive-patient' });
     await queueEntry(DB, entry, 10);
 
     // Read the raw encrypted row directly from IDB.
@@ -57,6 +57,7 @@ describe('queueEntry / getEntriesForUser', () => {
     expect(rawRow['userUuid']).toBe('user-1'); // plaintext index field
     expect(rawRow['payload']).toBeTypeOf('string'); // ciphertext blob
     expect(JSON.stringify(rawRow)).not.toContain('sensitive-patient');
+    expect(JSON.stringify(rawRow)).not.toContain('sensitive-location');
     expect(JSON.stringify(rawRow)).not.toContain('sess-1');
   });
 
@@ -79,9 +80,14 @@ describe('queueEntry / getEntriesForUser', () => {
     }
 
     // Add one more — should evict entry-0 (oldest).
-    await queueEntry(DB, makeEntry({ id: 'entry-new', timestamp: new Date(t0.getTime() + MAX).toISOString() }), MAX);
+    const evictedEntries = await queueEntry(
+      DB,
+      makeEntry({ id: 'entry-new', timestamp: new Date(t0.getTime() + MAX).toISOString() }),
+      MAX,
+    );
 
     const { entries: results } = await getEntriesForUser(DB, 'user-1');
+    expect(evictedEntries).toBe(1);
     expect(results).toHaveLength(MAX);
     expect(results.map((e) => e.id)).not.toContain('entry-0');
     expect(results.map((e) => e.id)).toContain('entry-new');
@@ -91,22 +97,19 @@ describe('queueEntry / getEntriesForUser', () => {
 describe('undecryptable entries', () => {
   it('reports them by id instead of dropping them from the result', async () => {
     // A record the trail cannot read is still a record it lost. Returning the
-    // ids is what lets the caller say so, and reclaim the slot it holds.
-    await queueEntry(DB, makeEntry({ id: 'readable' }), 10);
+    // ids is what lets the caller say so, and purge them.
     await queueEntry(DB, makeEntry({ id: 'corrupt' }), 10);
 
-    const crypto = await import('./crypto');
-    const realDecrypt = crypto.decryptPayload;
-    vi.spyOn(crypto, 'decryptPayload').mockImplementation(async (payload, user) => {
-      const entry = await realDecrypt<{ id: string }>(payload, user);
-      return entry?.id === 'corrupt' ? null : entry;
-    });
+    // Rotate/loss of the per-device salt makes earlier ciphertext genuinely
+    // undecryptable. A subsequent entry uses the replacement salt normally.
+    localStorage.removeItem('sihsalus-audit-salt-v2-user-1');
+    clearKeyCache();
+    await queueEntry(DB, makeEntry({ id: 'readable' }), 10);
 
     const { entries, undecryptableIds } = await getEntriesForUser(DB, 'user-1');
 
     expect(entries.map((e) => e.id)).toEqual(['readable']);
     expect(undecryptableIds).toEqual(['corrupt']);
-    vi.restoreAllMocks();
   });
 });
 

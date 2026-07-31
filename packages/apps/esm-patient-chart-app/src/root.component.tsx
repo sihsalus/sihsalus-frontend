@@ -1,8 +1,10 @@
 import { navigate, showSnackbar, useSession } from '@openmrs/esm-framework';
+import { useAuditLogger } from '@sihsalus/esm-audit-logger';
 import { AppErrorBoundary } from '@sihsalus/esm-rbac';
 import { type PropsWithChildren, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { validate as isUuid } from 'uuid';
 
 import { hasClinicalChartAccess } from './clinical-chart-access';
 import { basePath, dashboardPath, spaRoot } from './constants';
@@ -35,9 +37,31 @@ function RedirectToPatientSearch() {
 }
 
 function RequireClinicalChartAccess({ children }: PropsWithChildren) {
-  const { user } = useSession();
+  const session = useSession();
+  const logAuditEvent = useAuditLogger();
+  const denialAudited = useRef(false);
+  const hasAccess = hasClinicalChartAccess(session.user);
+  // Capture the chart target during render. The redirect is a child effect and may
+  // replace location.pathname before this component's effect records the denial.
+  const routePatientUuid = globalThis.location.pathname.match(/\/patient\/([^/]+)\/chart(?:\/|$)/)?.[1];
+  const auditedPatientUuid = routePatientUuid && isUuid(routePatientUuid) ? routePatientUuid : undefined;
 
-  return hasClinicalChartAccess(user) ? <>{children}</> : <RedirectToPatientSearch />;
+  useEffect(() => {
+    if (!session.authenticated || !session.user || hasAccess || denialAudited.current) return;
+
+    denialAudited.current = true;
+    void logAuditEvent({
+      eventType: 'PATIENT_CHART_ACCESS_DENIED',
+      patientUuid: auditedPatientUuid,
+      resourceType: 'Patient',
+      metadata: {
+        moduleName: '@sihsalus/esm-patient-chart-app',
+        outcome: 'denied',
+      },
+    });
+  }, [auditedPatientUuid, hasAccess, logAuditEvent, session.authenticated, session.user]);
+
+  return hasAccess ? <>{children}</> : <RedirectToPatientSearch />;
 }
 
 export default function Root() {

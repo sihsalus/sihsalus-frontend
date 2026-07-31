@@ -5,6 +5,8 @@
   "address1": "Línea de Dirección 1",
   "address2": "Línea de Dirección 2",
   "age": "Edad",
+  "ageDay": "día",
+  "ageDays": "días",
   "ageMonth": "mes",
   "ageMonths": "meses",
   "ageWeek": "semana",

@@ -112,14 +112,10 @@
 }
 
 .serviceName {
-  display: -webkit-box;
-  overflow: hidden;
   text-align: left;
   white-space: normal;
   overflow-wrap: anywhere;
   line-height: 1rem;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 
 .serviceArea:hover {
@@ -151,11 +147,13 @@
 }
 
 .smallDesktop {
-  height: 6.25rem;
+  min-height: 6.25rem;
+  height: auto;
 }
 
 .largeDesktop {
-  height: 9.375rem;
+  min-height: 9.375rem;
+  height: auto;
 }
 
 .red {

@@ -51,6 +51,7 @@ import { z } from 'zod';
 
 import { type ConfigObject } from '../config-schema';
 import {
+  appointmentIssueDateEditPrivilege,
   appointmentLocationTagName,
   appointmentNoteMaxLength,
   appointmentStartDateEditPrivilege,
@@ -333,6 +334,7 @@ const AppointmentsForm: React.FC<
     Boolean(session?.sessionLocation?.uuid) &&
     isExternalConsultationLocation(session?.sessionLocation);
   const canEditAppointmentStartDate = userHasAccess(appointmentStartDateEditPrivilege, session?.user);
+  const canEditAppointmentIssueDate = userHasAccess(appointmentIssueDateEditPrivilege, session?.user);
   const { selectedDate } = useContext(SelectedDateContext);
   const { data: services, isLoading } = useAppointmentService();
   const {
@@ -926,6 +928,7 @@ const AppointmentsForm: React.FC<
       location,
       provider,
       appointmentNote,
+      dateAppointmentScheduled,
     } = data;
 
     const selectedAppointmentService = availableServices?.find((service) => service.uuid === selectedServiceUuid);
@@ -948,7 +951,15 @@ const AppointmentsForm: React.FC<
       patientUuid: patientUuid,
       comments: appointmentNote,
       uuid: context === 'editing' ? appointment.uuid : undefined,
-      dateAppointmentScheduled: dayjs(defaultDateAppointmentScheduled).format(),
+      // Only trust the form value when the user is allowed to change it. A
+      // read-only field can still be tampered with in the DOM, so without the
+      // privilege the issue date always comes from the value the form was
+      // opened with.
+      dateAppointmentScheduled: dayjs(
+        canEditAppointmentIssueDate
+          ? (dateAppointmentScheduled ?? defaultDateAppointmentScheduled)
+          : defaultDateAppointmentScheduled,
+      ).format(),
     };
 
     if (context === 'creating') {
@@ -1478,7 +1489,7 @@ const AppointmentsForm: React.FC<
                       maxDate={new Date()}
                       id="dateAppointmentScheduledPickerInput"
                       data-testid="dateAppointmentScheduledPickerInput"
-                      isReadOnly
+                      isReadOnly={!canEditAppointmentIssueDate}
                       labelText={t('dateScheduledDetail', 'Date appointment issued')}
                       style={{ width: '100%' }}
                     />

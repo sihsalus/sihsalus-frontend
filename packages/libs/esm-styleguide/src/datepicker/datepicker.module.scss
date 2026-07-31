@@ -110,6 +110,27 @@
   @extend %readonlyPlaceholderDimming;
 }
 
+// A read-only date field still shows real data, so it must not read as
+// disabled, but it must not invite typing either: no caret, no blinking
+// segment, no focus highlight.
+.inputWrapperReadOnly {
+  background-color: theme.$field-02;
+  cursor: default;
+
+  & .inputSegment {
+    caret-color: transparent;
+    cursor: default;
+
+    &:focus {
+      background-color: transparent;
+    }
+
+    &[data-focused="true"] {
+      animation: none;
+    }
+  }
+}
+
 .inputWrapperMd {
   block-size: layout.$spacing-08;
 }

@@ -39,8 +39,7 @@ export function formatExactAge(
   const months = reference.diff(afterYears, 'month');
   const afterMonths = afterYears.add(months, 'month');
   const days = reference.diff(afterMonths, 'day');
-  const formatUnit = (value: number, singular: string, plural: string) =>
-    `${value} ${value === 1 ? singular : plural}`;
+  const formatUnit = (value: number, singular: string, plural: string) => `${value} ${value === 1 ? singular : plural}`;
 
   return [
     formatUnit(years, labels.year, labels.years),
@@ -64,6 +63,8 @@ const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({ appointment }) 
         years: t('ageYears', 'years'),
       })
     : '';
+  const telecom = patient?.telecom?.filter((contact) => contact.value?.trim()) ?? [];
+  const phoneContacts = telecom.filter((contact) => !contact.system || contact.system === 'phone');
 
   useEffect(() => {
     if (!isLoading) {
@@ -99,13 +100,25 @@ const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({ appointment }) 
           ) : (
             ''
           )}
-          {patient && patient?.telecom
-            ? patient.telecom.map((contact, i) => (
-                <div key={i} className={styles.labelContainer}>
-                  <p className={styles.labelBold}>{t('Contact', 'Contact {{index}}', { index: i + 1 })}: </p>
-                  <p className={styles.label}>{contact.value}</p>
-                </div>
-              ))
+          {telecom.length
+            ? telecom.map((contact, i) => {
+                const phoneIndex = phoneContacts.indexOf(contact);
+                const label =
+                  contact.system === 'email'
+                    ? t('emailAddress', 'Email address')
+                    : phoneIndex >= 0
+                      ? phoneContacts.length > 1
+                        ? t('phoneNumberIndexed', 'Phone number {{index}}', { index: phoneIndex + 1 })
+                        : t('phoneNumber', 'Phone number')
+                      : t('Contact', 'Contact {{index}}', { index: i + 1 });
+
+                return (
+                  <div key={`${contact.system ?? 'phone'}-${contact.value}`} className={styles.labelContainer}>
+                    <p className={styles.labelBold}>{label}: </p>
+                    <p className={styles.label}>{contact.value}</p>
+                  </div>
+                );
+              })
             : ''}
         </div>
         <div>

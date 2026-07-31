@@ -16,12 +16,14 @@ import {
 } from '@carbon/react';
 import { Download } from '@carbon/react/icons';
 import { ConfigurableLink, useConfig, usePagination } from '@openmrs/esm-framework';
+import dayjs from 'dayjs';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../config-schema';
 import { EmptyState } from '../../empty-state/empty-state.component';
-import { exportUnscheduledAppointmentsToSpreadsheet } from '../../helpers/excel';
+import { createAppointmentsExportFileName, exportUnscheduledAppointmentsToSpreadsheet } from '../../helpers/excel';
+import { getGender } from '../../helpers/functions';
 import { useUnscheduledAppointments } from '../../hooks/useUnscheduledAppointments';
 import { getPageSizes, useSearchResults } from '../utils';
 
@@ -36,19 +38,19 @@ const UnscheduledAppointments: React.FC = () => {
 
   const headerData = [
     {
-      header: 'Patient Name',
+      header: t('patientName', 'Patient name'),
       key: 'name',
     },
     {
-      header: 'Identifier',
+      header: t('patientIdentifiers', 'Patient identifiers'),
       key: 'identifier',
     },
     {
-      header: 'Gender',
+      header: t('gender', 'Gender'),
       key: 'gender',
     },
     {
-      header: 'Phone Number',
+      header: t('phoneNumber', 'Phone number'),
       key: 'phoneNumber',
     },
   ];
@@ -65,7 +67,7 @@ const UnscheduledAppointments: React.FC = () => {
         {visit.name}
       </ConfigurableLink>
     ),
-    gender: visit.gender === 'F' ? 'Female' : 'Male',
+    gender: getGender(visit.gender, t),
     phoneNumber: visit.phoneNumber === '' ? '--' : visit.phoneNumber,
     identifier: visit?.identifier,
   }));
@@ -102,7 +104,17 @@ const UnscheduledAppointments: React.FC = () => {
                   size="lg"
                   kind="tertiary"
                   renderIcon={Download}
-                  onClick={() => exportUnscheduledAppointmentsToSpreadsheet(unscheduledAppointments)}
+                  onClick={() =>
+                    exportUnscheduledAppointmentsToSpreadsheet(
+                      unscheduledAppointments,
+                      t,
+                      createAppointmentsExportFileName(
+                        t('appointmentsExportFilename', 'Appointments'),
+                        t('unscheduledAppointments', 'Unscheduled appointments'),
+                        dayjs().format('YYYY-MM-DD'),
+                      ),
+                    )
+                  }
                 >
                   {t('download', 'Download')}
                 </Button>
@@ -137,10 +149,10 @@ const UnscheduledAppointments: React.FC = () => {
       </DataTable>
 
       <Pagination
-        backwardText="Previous page"
-        forwardText="Next page"
+        backwardText={t('previousPage', 'Previous page')}
+        forwardText={t('nextPage', 'Next page')}
         page={currentPage}
-        pageNumberText="Page Number"
+        pageNumberText={t('pageNumber', 'Page number')}
         pageSize={pageSize}
         onChange={({ page, pageSize }) => {
           goTo(page);

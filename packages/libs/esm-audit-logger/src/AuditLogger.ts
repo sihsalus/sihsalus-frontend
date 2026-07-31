@@ -117,7 +117,21 @@ class AuditLogger {
 
     const { dbName } = this.config;
     const { userUuid } = this.sessionRef;
-    const entries = await getEntriesForUser(dbName, userUuid);
+    const { entries, undecryptableIds } = await getEntriesForUser(dbName, userUuid);
+
+    if (undecryptableIds.length > 0) {
+      // Surfaced the same way the queue reports eviction. These can never be
+      // sent, so leaving them in place would hold slots in the bounded queue
+      // until they evicted readable events.
+      console.error('[AuditLogger] Pending events could not be decrypted and were discarded:', undecryptableIds.length);
+      globalThis.dispatchEvent(
+        new CustomEvent('sihsalus:audit-entries-unreadable', {
+          detail: { discardedEntries: undecryptableIds.length },
+        }),
+      );
+      await clearEntries(dbName, undecryptableIds);
+    }
+
     if (!entries.length) return;
 
     for (let i = 0; i < entries.length; i += FLUSH_BATCH_SIZE) {

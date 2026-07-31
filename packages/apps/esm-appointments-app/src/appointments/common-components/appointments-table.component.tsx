@@ -43,7 +43,7 @@ import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import { appointmentsEditPrivilege, clinicalChartPrivilege } from '../../constants';
 import { EmptyState } from '../../empty-state/empty-state.component';
-import { canTransition, isAppointmentEditable } from '../../helpers';
+import { canTransition, getAppointmentProviderName, isAppointmentEditable } from '../../helpers';
 import { createAppointmentsExportFileName, exportAppointmentsToSpreadsheet } from '../../helpers/excel';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
 import { type Appointment, AppointmentStatus } from '../../types';
@@ -203,6 +203,10 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
       key: 'serviceType',
     },
     {
+      header: t('responsibleProvider', 'Responsible provider'),
+      key: 'provider',
+    },
+    {
       header: t('status', 'Status'),
       key: 'status',
     },
@@ -226,7 +230,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
     dateTime: formatDatetime(new Date(appointment.startDateTime)),
     serviceType: appointment.service.name,
     location: appointment.location?.name ?? appointment.service.location?.display ?? '—',
-    provider: appointment.provider,
+    provider: getAppointmentProviderName(appointment) ?? t('unassignedProvider', 'No provider assigned'),
     status: <AppointmentActions appointment={appointment} />,
   }));
 

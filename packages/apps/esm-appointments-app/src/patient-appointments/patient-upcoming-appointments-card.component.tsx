@@ -12,6 +12,8 @@ import dayjs from 'dayjs';
 import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { getAppointmentProviderName } from '../helpers';
+
 import { usePatientAppointments } from './patient-appointments.resource';
 import styles from './patient-upcoming-appointments-card.scss';
 
@@ -75,6 +77,7 @@ const PatientUpcomingAppointmentsCard: React.FC<PatientUpcomingAppointmentsProps
             <StructuredListRow head>
               <StructuredListCell head>{t('date', 'Date')}</StructuredListCell>
               <StructuredListCell head>{t('appointmentType', 'Appointment type')}</StructuredListCell>
+              <StructuredListCell head>{t('responsibleProvider', 'Responsible provider')}</StructuredListCell>
             </StructuredListRow>
           </StructuredListHead>
           <StructuredListBody>
@@ -86,6 +89,9 @@ const PatientUpcomingAppointmentsCard: React.FC<PatientUpcomingAppointmentsProps
                   })}
                 </StructuredListCell>
                 <StructuredListCell>{appointment.service ? appointment.service.name : '——'}</StructuredListCell>
+                <StructuredListCell>
+                  {getAppointmentProviderName(appointment) ?? t('unassignedProvider', 'No provider assigned')}
+                </StructuredListCell>
               </StructuredListRow>
             ))}
           </StructuredListBody>

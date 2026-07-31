@@ -291,6 +291,7 @@
   "unscheduledAppointments": "Citas no programadas",
   "unscheduledAppointmentsTab": "No programadas",
   "unscheduledAppointments_lower": "citas no programadas",
+  "unassignedProvider": "Sin personal de salud asignado",
   "upcoming": "Próximas",
   "upcomingAppointments": "Próximas citas",
   "updateError": "Error al actualizar la próxima cita",

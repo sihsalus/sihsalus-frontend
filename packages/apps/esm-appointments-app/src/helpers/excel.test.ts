@@ -12,6 +12,8 @@ const translations: Record<string, string> = {
   patientIdentifiers: 'Identificadores del paciente',
   patientName: 'Nombre del paciente',
   phoneNumber: 'Número de teléfono',
+  responsibleProvider: 'Personal de salud responsable',
+  unassignedProvider: 'Sin personal de salud asignado',
 };
 const t = ((key: string, defaultValue: string) => translations[key] ?? defaultValue) as TFunction;
 
@@ -53,6 +55,7 @@ describe('appointment spreadsheet localization', () => {
       Edad: '25',
       'Identificadores del paciente': 'HC: 100009C; DNI: 87654321',
       'Modalidad de cita': 'Medicina general',
+      'Personal de salud responsable': 'Sin personal de salud asignado',
       'Número de teléfono': '999888777',
     });
     expect(row['Fecha y hora de la cita']).toEqual(expect.any(String));

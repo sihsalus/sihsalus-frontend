@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { waitForLoadingToFinish } from 'test-utils';
 import { useBillableServices } from '../billable-service.resource';
 import BillableServicesDashboard from './dashboard.component';
@@ -18,6 +18,11 @@ test('renders an empty state when there are no services', async () => {
 
   renderBillingDashboard();
   await waitForLoadingToFinish();
+
+  // With no services the dashboard renders EmptyCard rather than the table.
+  // Nothing checked which of the two came back.
+  expect(screen.getAllByText(/billable service/i).length).toBeGreaterThan(0);
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
 });
 
 function renderBillingDashboard() {

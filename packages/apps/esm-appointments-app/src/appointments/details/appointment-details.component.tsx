@@ -1,6 +1,6 @@
 import { formatDate, formatDatetime, usePatient } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getAppointmentProviderName, getGender } from '../../helpers';
@@ -50,8 +50,7 @@ export function formatExactAge(
 
 const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({ appointment }) => {
   const { t } = useTranslation();
-  const [, setIsEnabledQuery] = useState(false);
-  const { appointmentsCount, isLoading } = usePatientAppointmentHistory(appointment.patient.uuid);
+  const { appointmentsCount } = usePatientAppointmentHistory(appointment.patient.uuid);
   const { patient } = usePatient(appointment.patient.uuid);
   const exactAge = patient?.birthDate
     ? formatExactAge(patient.birthDate, appointment.startDateTime, {
@@ -66,12 +65,6 @@ const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({ appointment }) 
   const telecom = patient?.telecom?.filter((contact) => contact.value?.trim()) ?? [];
   const phoneContacts = telecom.filter((contact) => !contact.system || contact.system === 'phone');
   const providerName = getAppointmentProviderName(appointment) ?? t('unassignedProvider', 'No provider assigned');
-
-  useEffect(() => {
-    if (!isLoading) {
-      setIsEnabledQuery(true);
-    }
-  }, [isLoading]);
 
   return (
     <div className={styles.appointmentDetailsContainer}>

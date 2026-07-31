@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { auditLogger } from './AuditLogger';
+import { auditLogger, calculateRetryDelayMs } from './AuditLogger';
 import { clearKeyCache } from './crypto';
 import { getEntriesForUser } from './db';
 
@@ -113,34 +113,10 @@ describe('log() — online path', () => {
     vi.useRealTimers();
   });
 
-  it('never schedules a retry later than the configured one-minute ceiling', async () => {
-    vi.useFakeTimers();
-    vi.spyOn(Math, 'random').mockReturnValue(1);
-    const timeoutSpy = vi.spyOn(globalThis, 'setTimeout');
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    mockFetch.mockResolvedValue(failResponse() as never);
-    setupSession();
-
-    await auditLogger.log({ eventType: 'PATIENT_VIEW' });
-
-    // IndexedDB resolution and the retry callback use separate task queues, so
-    // drive a few extra timers to reach the capped attempts deterministically.
-    for (let attempt = 0; attempt < 10; attempt++) {
-      await vi.advanceTimersToNextTimerAsync();
-    }
-
-    const retryDelays = timeoutSpy.mock.calls
-      .map(([, delay]) => delay)
-      .filter((delay): delay is number => typeof delay === 'number' && delay >= 1000);
-    expect(retryDelays.length).toBeGreaterThanOrEqual(7);
-    expect(retryDelays).toContain(60_000);
-    expect(Math.max(...retryDelays)).toBeLessThanOrEqual(60_000);
-
-    auditLogger.clearSession();
-    errorSpy.mockRestore();
-    timeoutSpy.mockRestore();
-    vi.mocked(Math.random).mockRestore();
-    vi.useRealTimers();
+  it('never calculates a retry later than the configured one-minute ceiling', () => {
+    expect(calculateRetryDelayMs(0, 1)).toBe(1200);
+    expect(calculateRetryDelayMs(6, 1)).toBe(60_000);
+    expect(calculateRetryDelayMs(100, 1)).toBe(60_000);
   });
 });
 

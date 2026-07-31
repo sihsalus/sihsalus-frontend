@@ -15,6 +15,11 @@ const RATE_LIMIT_PER_SECOND = 20;
 const RETRY_BASE_DELAY_MS = 1000;
 const RETRY_MAX_DELAY_MS = 60_000;
 
+export function calculateRetryDelayMs(retryAttempt: number, randomValue: number): number {
+  const exponentialDelay = Math.min(RETRY_BASE_DELAY_MS * 2 ** retryAttempt, RETRY_MAX_DELAY_MS);
+  return Math.min(Math.round(exponentialDelay * (0.8 + randomValue * 0.4)), RETRY_MAX_DELAY_MS);
+}
+
 class AuditLogger {
   private config: Required<AuditLoggerConfig> = { ...DEFAULTS };
   private sessionRef: { userUuid: string; sessionId: string; locationUuid?: string } | null = null;
@@ -326,11 +331,7 @@ class AuditLogger {
   private scheduleRetry(): void {
     if (this.retryTimer || !this.sessionRef) return;
 
-    const exponentialDelay = Math.min(RETRY_BASE_DELAY_MS * 2 ** this.retryAttempt, RETRY_MAX_DELAY_MS);
-    const jitteredDelay = Math.min(
-      Math.round(exponentialDelay * (0.8 + Math.random() * 0.4)),
-      RETRY_MAX_DELAY_MS,
-    );
+    const jitteredDelay = calculateRetryDelayMs(this.retryAttempt, Math.random());
     this.retryAttempt++;
     this.retryTimer = setTimeout(() => {
       this.retryTimer = null;

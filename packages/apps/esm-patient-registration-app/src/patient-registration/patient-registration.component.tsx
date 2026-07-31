@@ -18,6 +18,7 @@ import set from 'lodash-es/set';
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useParams } from 'react-router-dom';
+import { useSWRConfig } from 'swr';
 
 import { builtInSections, type RegistrationConfig, type SectionDefinition } from '../config-schema';
 import { moduleName } from '../constants';
@@ -47,6 +48,7 @@ import {
   registrationErrorCodes,
 } from './registration-errors';
 import { resolveRegistrationAfterUrl } from './registration-redirect';
+import { getPatientRelationshipsUrl } from './section/patient-relationships/relationships.resource';
 import { SectionWrapper } from './section/section-wrapper.component';
 import { getValidationSchema } from './validation/patient-registration-validation';
 
@@ -199,6 +201,7 @@ export interface PatientRegistrationProps {
 export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePatientForm, isOffline }) => {
   const { currentSession, identifierTypes, identifierTypesError, isLoadingIdentifierTypes } =
     useContext(ResourcesContext);
+  const { mutate: mutateSWR } = useSWRConfig();
   const { search } = useLocation();
   const configuredRegistrationConfig = useConfig() as RegistrationConfig;
   const config = useMemo(
@@ -416,6 +419,20 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
         savePatientTransactionManager.current,
         abortController,
       );
+      const savedOrExistingPatientUuid = savedPatientUuid ?? updatedFormValues.patientUuid;
+      const relationshipsChanged = updatedFormValues.relationships?.some((relationship) => !!relationship.action);
+
+      if (inEditMode && !isOffline && relationshipsChanged) {
+        const relationshipsUrl = getPatientRelationshipsUrl(savedOrExistingPatientUuid);
+        try {
+          await mutateSWR(relationshipsUrl);
+        } catch (cacheRefreshError) {
+          console.error('Could not refresh patient relationships after saving', cacheRefreshError);
+          await mutateSWR(relationshipsUrl, undefined, { revalidate: false }).catch((cacheClearError) =>
+            console.error('Could not clear stale patient relationships after saving', cacheClearError),
+          );
+        }
+      }
 
       showSnackbar({
         subtitle: inEditMode
@@ -432,7 +449,6 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       });
 
       const rawAfterUrl = new URLSearchParams(search).get('afterUrl');
-      const savedOrExistingPatientUuid = savedPatientUuid ?? updatedFormValues.patientUuid;
       const afterUrl = resolveRegistrationAfterUrl(rawAfterUrl, savedOrExistingPatientUuid);
       const redirectUrl =
         afterUrl ??

@@ -10,6 +10,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { isValidElement, type ReactNode } from 'react';
 import { BrowserRouter as Router, useParams } from 'react-router-dom';
+import { useSWRConfig } from 'swr';
 import { mockedAddressTemplate, mockIdentifierTypes, mockOpenmrsId, mockPatient } from 'test-utils';
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../config-schema';
@@ -29,6 +30,7 @@ import type { AddressTemplate, Encounter, FormValues } from './patient-registrat
 import { useInitialFormValues } from './patient-registration-hooks';
 import { peruDniPatientIdentifierTypeUuid, peruPassportPatientIdentifierTypeUuid } from './peru-registration-config';
 import { RegistrationDomainError, registrationErrorCodes } from './registration-errors';
+import { getPatientRelationshipsUrl } from './section/patient-relationships/relationships.resource';
 
 const mockSaveEncounter = vi.mocked(saveEncounter);
 const mockGenerateIdentifier = vi.mocked(generateIdentifier);
@@ -40,6 +42,8 @@ const mockUsePatient = vi.mocked(usePatient);
 const mockUseParams = useParams as vi.Mock;
 const mockUseInitialFormValues = vi.mocked(useInitialFormValues);
 const mockSearchLocalIdentityByDocument = vi.mocked(searchLocalIdentityByDocument);
+const mockUseSWRConfig = vi.mocked(useSWRConfig);
+const mockMutateSWR = vi.fn();
 
 vi.mock('./field/field.resource', async () => ({
   useConcept: vi.fn().mockImplementation((uuid: string) => {
@@ -106,6 +110,11 @@ vi.mock('react-router-dom', async () => ({
   }),
   useHistory: () => [],
   useParams: vi.fn().mockReturnValue({ patientUuid: undefined }),
+}));
+
+vi.mock('swr', async () => ({
+  ...(await vi.importActual('swr')),
+  useSWRConfig: vi.fn(),
 }));
 
 vi.mock('./patient-registration.resource', async () => ({
@@ -294,6 +303,9 @@ const getReactText = (node: ReactNode): string => {
 };
 
 beforeEach(() => {
+  mockMutateSWR.mockReset();
+  mockMutateSWR.mockResolvedValue(undefined);
+  mockUseSWRConfig.mockReturnValue({ mutate: mockMutateSWR } as unknown as ReturnType<typeof useSWRConfig>);
   mockResourcesContextValue.addressTemplate = mockedAddressTemplate as AddressTemplate;
   mockResourcesContextValue.addressTemplateError = undefined;
   mockResourcesContextValue.isLoadingAddressTemplate = false;
@@ -854,6 +866,89 @@ describe('Updating an existing patient record', () => {
     });
     mockSavePatient.mockReturnValue({ data: { uuid: 'new-pt-uuid' }, ok: true });
     mockUseParams.mockReturnValue({ patientUuid: mockPatient.uuid });
+  });
+
+  it('refreshes relationships after changing father to mother and before reporting success', async () => {
+    const user = userEvent.setup();
+    const mockSavePatientForm = vi.fn().mockResolvedValue(mockPatient.uuid);
+    mockUseInitialFormValues.mockReturnValue([
+      {
+        ...initialFormValues,
+        birthdate: new Date(1972, 3, 4),
+        familyName: 'Wilson',
+        familyName2: 'Materno',
+        gender: 'male',
+        givenName: 'John',
+        identifiers: mockOpenmrsId,
+        patientUuid: mockPatient.uuid,
+        relationships: [
+          {
+            action: 'UPDATE',
+            initialrelationshipTypeValue: 'father/aIsToB',
+            relatedPersonName: 'Francisco PRUEBA Castillo Lima',
+            relatedPersonUuid: 'francisco-uuid',
+            relation: 'Madre',
+            relationshipType: 'mother/aIsToB',
+            uuid: 'father-relationship-uuid',
+          },
+        ],
+      },
+      vi.fn(),
+      { isLoading: false },
+    ]);
+
+    render(<PatientRegistration isOffline={false} savePatientForm={mockSavePatientForm} />, { wrapper: Wrapper });
+
+    await user.click(await screen.findByRole('button', { name: /update patient/i }));
+
+    await waitFor(() => expect(mockMutateSWR).toHaveBeenCalledWith(getPatientRelationshipsUrl(mockPatient.uuid)));
+    expect(mockSavePatientForm.mock.invocationCallOrder[0]).toBeLessThan(mockMutateSWR.mock.invocationCallOrder[0]);
+    expect(mockMutateSWR.mock.invocationCallOrder[0]).toBeLessThan(mockShowSnackbar.mock.invocationCallOrder[0]);
+  });
+
+  it('clears stale relationships without failing the saved update when cache refresh fails', async () => {
+    const user = userEvent.setup();
+    const mockSavePatientForm = vi.fn().mockResolvedValue(mockPatient.uuid);
+    const cacheRefreshError = new Error('relationship refresh failed');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockMutateSWR.mockRejectedValueOnce(cacheRefreshError).mockResolvedValueOnce(undefined);
+    mockUseInitialFormValues.mockReturnValue([
+      {
+        ...initialFormValues,
+        birthdate: new Date(1972, 3, 4),
+        familyName: 'Wilson',
+        familyName2: 'Materno',
+        gender: 'male',
+        givenName: 'John',
+        identifiers: mockOpenmrsId,
+        patientUuid: mockPatient.uuid,
+        relationships: [
+          {
+            action: 'UPDATE',
+            initialrelationshipTypeValue: 'father/aIsToB',
+            relatedPersonName: 'Francisco PRUEBA Castillo Lima',
+            relatedPersonUuid: 'francisco-uuid',
+            relation: 'Madre',
+            relationshipType: 'mother/aIsToB',
+            uuid: 'father-relationship-uuid',
+          },
+        ],
+      },
+      vi.fn(),
+      { isLoading: false },
+    ]);
+
+    render(<PatientRegistration isOffline={false} savePatientForm={mockSavePatientForm} />, { wrapper: Wrapper });
+
+    await user.click(await screen.findByRole('button', { name: /update patient/i }));
+
+    const relationshipsUrl = getPatientRelationshipsUrl(mockPatient.uuid);
+    await waitFor(() => expect(mockMutateSWR).toHaveBeenCalledTimes(2));
+    expect(mockMutateSWR).toHaveBeenNthCalledWith(1, relationshipsUrl);
+    expect(mockMutateSWR).toHaveBeenNthCalledWith(2, relationshipsUrl, undefined, { revalidate: false });
+    expect(consoleError).toHaveBeenCalledWith('Could not refresh patient relationships after saving', cacheRefreshError);
+    expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
+    consoleError.mockRestore();
   });
 
   it('does not show the medical record section without the archivist role', async () => {

@@ -147,7 +147,6 @@ interface RelationshipTransactionState {
   companionRelationshipUuid?: string;
   companionSignature?: string;
   mainCompleted?: boolean;
-  mainReplacementCreated?: boolean;
   mainRelationshipUuid?: string;
   mainSignature?: string;
   relatedPersonUuid?: string;
@@ -689,10 +688,6 @@ export class FormManager {
 
     const [type, direction] = relationshipType.split('/');
     const isAToB = direction === 'aIsToB';
-    const relationshipTypeChanged =
-      action === 'UPDATE' &&
-      !!relationship.initialrelationshipTypeValue &&
-      relationship.initialrelationshipTypeValue !== relationshipType;
     const relationshipToSave = {
       personA: isAToB ? relatedPersonUuid : thisPatientUuid,
       personB: isAToB ? thisPatientUuid : relatedPersonUuid,
@@ -724,26 +719,7 @@ export class FormManager {
               'An existing relationship UUID is required for update.',
             );
           }
-
-          // OpenMRS relationships do not reliably support changing their type or
-          // direction in place. Replace the relationship so changes such as
-          // Padre -> Madre (or A-to-B -> B-to-A) are actually persisted.
-          if (relationshipTypeChanged) {
-            if (!state.mainReplacementCreated) {
-              const response = signal
-                ? await saveRelationship(relationshipToSave, signal)
-                : await saveRelationship(relationshipToSave);
-              state.mainRelationshipUuid = response?.data?.uuid;
-              state.mainReplacementCreated = true;
-            }
-
-            const relationshipToVoid = { voided: true };
-            if (signal) {
-              await updateRelationship(relationshipUuid, relationshipToVoid, signal);
-            } else {
-              await updateRelationship(relationshipUuid, relationshipToVoid);
-            }
-          } else if (signal) {
+          if (signal) {
             await updateRelationship(relationshipUuid, relationshipToSave, signal);
           } else {
             await updateRelationship(relationshipUuid, relationshipToSave);

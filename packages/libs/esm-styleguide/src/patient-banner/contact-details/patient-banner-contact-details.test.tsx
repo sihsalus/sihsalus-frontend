@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { usePatient } from '@openmrs/esm-react-utils';
 import { screen } from '@testing-library/react';
+import type { i18n } from 'i18next';
 import { renderWithSwr } from '../../test-utils';
 import { PatientBannerContactDetails } from './patient-banner-contact-details.component';
 import { usePatientAttributes, usePatientContactAttributes } from './usePatientAttributes';
@@ -13,6 +14,8 @@ const mockUsePatientAttributes = vi.mocked(usePatientAttributes);
 const mockUsePatientContactAttributes = vi.mocked(usePatientContactAttributes);
 const mockUsePatientListsForPatient = vi.mocked(usePatientListsForPatient);
 const mockUseRelationships = vi.mocked(useRelationships);
+
+window.i18next = { language: 'en' } as i18n;
 
 const mockRelationships = [
   {
@@ -88,6 +91,8 @@ vi.mock('./useRelationships', () => ({
 
 describe('ContactDetails', () => {
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-31T12:00:00Z'));
     mockUsePatient.mockReturnValue({
       isLoading: false,
       patient: {
@@ -124,6 +129,10 @@ describe('ContactDetails', () => {
       error: undefined,
       isValidating: false,
     });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("renders the patient's address, contact details, patient lists, and relationships when available", async () => {
@@ -226,6 +235,28 @@ describe('ContactDetails', () => {
 
     const relationship = screen.getByRole('link', { name: /Amanda Robinson/ });
     expect(relationship).toHaveAttribute('href', `/spa/patient/${mockRelationships[0].relativeUuid}/chart`);
+  });
+
+  it('renders a newborn relative age instead of hiding the zero-year value', () => {
+    mockUseRelationships.mockReturnValue({
+      isLoading: false,
+      data: [
+        {
+          display: 'Elena PRUEBA Torres Vargas',
+          relationshipType: 'Sibling',
+          relativeAge: 0,
+          relativeBirthdate: '2026-07-25',
+          relativeUuid: 'newborn-relative-uuid',
+          uuid: 'newborn-relationship-uuid',
+        },
+      ],
+      error: undefined,
+      isValidating: false,
+    });
+
+    renderWithSwr(<PatientBannerContactDetails patientId="some-uuid" deceased={false} />);
+
+    expect(screen.getByText('6 days')).toBeInTheDocument();
   });
 
   it('renders an empty state view when contact details, relations, patient lists and addresses are not available', async () => {

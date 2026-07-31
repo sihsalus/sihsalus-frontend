@@ -28,6 +28,13 @@ describe('VisitNoteActionButton', () => {
         groupProps={{ patientUuid: 'patient-uuid', mutateVisitContext: null, patient: null, visitContext: null }}
       />,
     );
+
+    // Mirrors the desktop case below: the button has to be reachable on a
+    // tablet too, and gated by the same privilege.
+    expect(screen.getByRole('button', { name: /Note/i })).toBeInTheDocument();
+    expect(mockUserHasAccess.mock.calls.at(-1)?.[0]).toMatchObject({
+      privilege: 'app:hoja.clinica.resumenConsulta.editar',
+    });
   });
 
   it('should display desktop view', async () => {

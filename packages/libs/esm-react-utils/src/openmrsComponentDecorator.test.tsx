@@ -67,6 +67,10 @@ describe('openmrs-component-decorator', () => {
   it('provides ComponentContext', () => {
     const DecoratedComp = openmrsComponentDecorator(opts)(CompWithConfig);
     render(<DecoratedComp />);
+
+    // CompWithConfig renders the moduleName it reads from ComponentContext, so
+    // seeing it on screen is what proves the context was provided.
+    expect(screen.getByText(opts.moduleName)).toBeInTheDocument();
   });
 
   it('keeps SWR available to mounted components when another decorated component unmounts', () => {

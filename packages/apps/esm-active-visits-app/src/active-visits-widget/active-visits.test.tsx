@@ -225,5 +225,29 @@ describe('ActiveVisitsTable', () => {
     });
 
     render(<ActiveVisitsTable />);
+
+    // Pagination only renders once there are more rows than the page size, so
+    // two visits could never show it: the test asserted nothing and the fixture
+    // could not have satisfied the name either.
+    expect(screen.queryByRole('button', { name: /next page/i })).not.toBeInTheDocument();
+  });
+
+  it('shows the pagination once there are more visits than fit on a page', () => {
+    const pageful = Array.from({ length: 12 }, (_, index) => ({
+      ...mockActiveVisits[0],
+      id: `visit-${index}`,
+      name: `Patient ${index}`,
+    }));
+    mockUseActiveVisits.mockReturnValue({
+      activeVisits: pageful,
+      isLoading: false,
+      isValidating: false,
+      error: undefined,
+      totalResults: pageful.length,
+    });
+
+    render(<ActiveVisitsTable />);
+
+    expect(screen.getByRole('button', { name: /next page/i })).toBeInTheDocument();
   });
 });

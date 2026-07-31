@@ -8,11 +8,20 @@ interface HtmlFormEntryWrapperProps {
 }
 
 const HtmlFormEntryWrapper: React.FC<HtmlFormEntryWrapperProps> = ({ closeWorkspaceWithSavedChanges, src }) => {
-  const iframeRef = useRef<HTMLIFrameElement>();
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // set up a listener to listen for a message from HFE-UI to close the workspace
   useEffect(() => {
-    const callback = (event) => event?.data === 'close-workspace' && closeWorkspaceWithSavedChanges();
+    const callback = (event: MessageEvent) => {
+      const iframeWindow = iframeRef.current?.contentWindow;
+      if (
+        event.data === 'close-workspace' &&
+        event.origin === globalThis.location.origin &&
+        event.source === iframeWindow
+      ) {
+        closeWorkspaceWithSavedChanges();
+      }
+    };
     globalThis.addEventListener('message', callback);
     return () => globalThis.removeEventListener('message', callback); // cleanup on unmount
   }, [closeWorkspaceWithSavedChanges]);
@@ -20,7 +29,9 @@ const HtmlFormEntryWrapper: React.FC<HtmlFormEntryWrapperProps> = ({ closeWorksp
   // hide the headers and breadcrumbs of the O2 page on load
   const onLoad = useCallback(() => {
     const iframe = iframeRef.current;
-    const dashboard = iframeRef.current.contentDocument;
+    const dashboard = iframe?.contentDocument;
+    if (!iframe || !dashboard?.body) return;
+
     dashboard.querySelector('header')?.remove();
     dashboard.querySelector('.patient-header')?.remove();
     dashboard.querySelector('#breadcrumbs')?.remove();
@@ -30,7 +41,14 @@ const HtmlFormEntryWrapper: React.FC<HtmlFormEntryWrapperProps> = ({ closeWorksp
 
   return (
     <div>
-      <iframe ref={iframeRef} src={src} className={styles.wrapper} onLoad={onLoad} title="HTML form entry"></iframe>
+      <iframe
+        ref={iframeRef}
+        src={src}
+        className={styles.wrapper}
+        onLoad={onLoad}
+        referrerPolicy="same-origin"
+        title="HTML form entry"
+      ></iframe>
     </div>
   );
 };

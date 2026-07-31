@@ -289,6 +289,7 @@
   "unscheduledAppointments": "Unscheduled appointments",
   "unscheduledAppointmentsTab": "Unscheduled",
   "unscheduledAppointments_lower": "unscheduled appointments",
+  "unassignedProvider": "No provider assigned",
   "upcoming": "Upcoming",
   "upcomingAppointments": "Upcoming appointments",
   "updateError": "Error updating upcoming appointment",

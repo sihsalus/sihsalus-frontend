@@ -159,6 +159,8 @@ describe('AppointmentsTable', () => {
     expect(screen.getByRole('search', { name: /filter table/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /download/i })).toBeInTheDocument();
     expect(screen.getByRole('row', { name: /john wilson - .* hiv clinic outpatient/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /responsible provider/i })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Dr James Cook' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /john wilson/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /john wilson/i })).toHaveAttribute('href', 'url-to-patient-chart');
   });

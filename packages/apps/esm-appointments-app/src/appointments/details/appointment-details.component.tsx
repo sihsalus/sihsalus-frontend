@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { getGender } from '../../helpers';
+import { getAppointmentProviderName, getGender } from '../../helpers';
 import { usePatientAppointmentHistory } from '../../hooks/usePatientAppointmentHistory';
 import { type Appointment } from '../../types';
 
@@ -65,6 +65,7 @@ const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({ appointment }) 
     : '';
   const telecom = patient?.telecom?.filter((contact) => contact.value?.trim()) ?? [];
   const phoneContacts = telecom.filter((contact) => !contact.system || contact.system === 'phone');
+  const providerName = getAppointmentProviderName(appointment) ?? t('unassignedProvider', 'No provider assigned');
 
   useEffect(() => {
     if (!isLoading) {
@@ -76,6 +77,10 @@ const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({ appointment }) 
     <div className={styles.appointmentDetailsContainer}>
       <p className={styles.title}>{appointment.service.name}</p>
       <p className={styles.subTitle}>{formatDatetime(new Date(appointment.startDateTime))}</p>
+      <div className={styles.providerSummary}>
+        <p className={styles.labelBold}>{t('responsibleProvider', 'Responsible provider')}: </p>
+        <p className={styles.label}>{providerName}</p>
+      </div>
 
       <div className={styles.patientInfoGrid}>
         <div>

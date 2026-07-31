@@ -19,6 +19,11 @@
   color: colors.$gray-70;
 }
 
+.providerSummary {
+  display: flex;
+  margin-top: layout.$spacing-02;
+}
+
 .tags {
   margin-top: layout.$spacing-05;
   display: flex;

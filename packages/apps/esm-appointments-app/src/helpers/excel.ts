@@ -5,6 +5,7 @@ import type { TFunction } from 'i18next';
 import { type ConfigObject } from '../config-schema';
 import { moduleName } from '../constants';
 import { type Appointment, type Identifier } from '../types';
+import { getAppointmentProviderName } from './appointment-provider';
 import { getGender } from './functions';
 import { formatPatientIdentifiers } from './patient-identifiers';
 
@@ -43,6 +44,8 @@ export function createAppointmentSpreadsheetRow(
       appointment.patient.identifier,
     ),
     [t('appointmentType', 'Appointment type')]: appointment.service?.name ?? '',
+    [t('responsibleProvider', 'Responsible provider')]:
+      getAppointmentProviderName(appointment) ?? t('unassignedProvider', 'No provider assigned'),
     [t('appointmentDateTime', 'Appointment date and time')]: formatDatetime(new Date(appointment.startDateTime)),
     ...(includePhoneNumbers ? { [t('phoneNumber', 'Phone number')]: getPhoneNumbers(patientInfo) } : {}),
   };

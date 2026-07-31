@@ -13,10 +13,12 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import { ComponentContext } from '@openmrs/esm-react-utils';
 import { launchWorkspaceGroup2, useWorkspaces, WorkspaceContainer } from '@openmrs/esm-styleguide';
+import { useAuditLogger } from '@sihsalus/esm-audit-logger';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
+import { validate as isUuid } from 'uuid';
 
 import { moduleName, spaBasePath } from '../constants';
 import Loader from '../loader/loader.component';
@@ -62,6 +64,7 @@ async function launchPatientChartWorkspaceGroup(
 
 const PatientChart: React.FC = () => {
   const { t } = useTranslation();
+  const logAuditEvent = useAuditLogger();
   const { patientUuid, view: encodedView } = useParams();
   const view = encodedView ? decodeURIComponent(encodedView) : undefined;
   const { isLoading: isLoadingPatient, patient } = usePatient(patientUuid);
@@ -70,6 +73,7 @@ const PatientChart: React.FC = () => {
   const { workspaceWindowState, active } = useWorkspaces();
   const [layoutMode, setLayoutMode] = useState<LayoutMode>();
   const launchedWorkspaceGroupKey = useRef<WorkspaceGroupLaunchKey | null>(null);
+  const lastAuditEventKey = useRef<string | null>(null);
   const latestWorkspaceGroupProps = useRef<PatientChartWorkspaceGroupProps | null>(null);
   const isWorkspaceGroupLaunchPending = useRef(false);
   const isMounted = useRef(false);
@@ -105,6 +109,28 @@ const PatientChart: React.FC = () => {
       setCurrentVisit(null, null);
     };
   }, [patientUuid]);
+
+  useEffect(() => {
+    if (isLoadingPatient) return;
+
+    const confirmedPatientUuid = patient?.id;
+    const eventType = confirmedPatientUuid ? 'PATIENT_CHART_VIEW_SUCCEEDED' : 'PATIENT_CHART_VIEW_FAILED';
+
+    const auditedPatientUuid = confirmedPatientUuid ?? (patientUuid && isUuid(patientUuid) ? patientUuid : undefined);
+    const eventKey = `${eventType}:${auditedPatientUuid ?? 'unknown'}`;
+    if (lastAuditEventKey.current === eventKey) return;
+    lastAuditEventKey.current = eventKey;
+
+    void logAuditEvent({
+      eventType,
+      patientUuid: auditedPatientUuid,
+      resourceType: 'Patient',
+      metadata: {
+        moduleName,
+        outcome: confirmedPatientUuid ? 'succeeded' : 'failed',
+      },
+    });
+  }, [isLoadingPatient, logAuditEvent, patient?.id, patientUuid]);
 
   useEffect(() => {
     getPatientChartStore().setState({

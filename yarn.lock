@@ -8787,6 +8787,7 @@ __metadata:
     "@openmrs/esm-styleguide": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
+    "@sihsalus/esm-audit-logger": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@types/uuid": "npm:^9.0.4"
     eslint: "npm:^10.2.0"

@@ -12,8 +12,8 @@ const DB_VERSION = 2;
 /**
  * What actually lives in IndexedDB. Only `id`, `userUuid`, and `timestamp`
  * are in plaintext (needed for index lookups and eviction). Everything else —
- * including `sessionId`, `patientUuid`, `encounterUuid`, `eventType`, and
- * `metadata` — is inside the AES-GCM encrypted `payload`.
+ * including `sessionId`, `locationUuid`, `patientUuid`, `encounterUuid`,
+ * `eventType`, and `metadata` — is inside the AES-GCM encrypted `payload`.
  */
 interface EncryptedEntry {
   id: string;
@@ -59,12 +59,13 @@ function openDb(dbName: string): Promise<IDBDatabase> {
  * All within a single IDB `readwrite` transaction, so concurrent tabs cannot
  * race between the count check and the write (TOCTOU eliminated).
  */
-function putEncryptedEntry(dbName: string, encEntry: EncryptedEntry, maxEntries: number): Promise<void> {
+function putEncryptedEntry(dbName: string, encEntry: EncryptedEntry, maxEntries: number): Promise<number> {
   return openDb(dbName).then(
     (db) =>
-      new Promise<void>((resolve, reject) => {
+      new Promise<number>((resolve, reject) => {
         const tx = db.transaction(STORE_NAME, 'readwrite');
         const store = tx.objectStore(STORE_NAME);
+        let evictedEntries = 0;
 
         const countReq = store.count();
         countReq.onsuccess = () => {
@@ -79,6 +80,7 @@ function putEncryptedEntry(dbName: string, encEntry: EncryptedEntry, maxEntries:
               if (cursor && deleted < toDelete) {
                 cursor.delete();
                 deleted++;
+                evictedEntries++;
                 cursor.continue();
               } else {
                 store.put(encEntry);
@@ -90,7 +92,7 @@ function putEncryptedEntry(dbName: string, encEntry: EncryptedEntry, maxEntries:
           }
         };
 
-        tx.oncomplete = () => resolve();
+        tx.oncomplete = () => resolve(evictedEntries);
         tx.onerror = () => reject(tx.error ?? new Error('Failed to put entry in IndexedDB'));
       }),
   );
@@ -100,14 +102,14 @@ function putEncryptedEntry(dbName: string, encEntry: EncryptedEntry, maxEntries:
  * Encrypt `entry` with the user's derived key and store it atomically,
  * evicting the oldest entry if the store is at capacity.
  */
-export async function queueEntry(dbName: string, entry: StoredAuditEntry, maxEntries: number): Promise<void> {
+export async function queueEntry(dbName: string, entry: StoredAuditEntry, maxEntries: number): Promise<number> {
   const encEntry: EncryptedEntry = {
     id: entry.id,
     userUuid: entry.userUuid,
     timestamp: entry.timestamp,
     payload: await encryptPayload(entry, entry.userUuid),
   };
-  await putEncryptedEntry(dbName, encEntry, maxEntries);
+  return putEncryptedEntry(dbName, encEntry, maxEntries);
 }
 
 /**
@@ -135,11 +137,11 @@ export async function getEntriesForUser(
       results.push(entry);
     } else {
       // Key rotated, storage corrupted, or written before the per-device salt.
-      // These are reported rather than dropped from the result: an audit trail
-      // that loses records without saying so is not one anyone can stand
-      // behind. The caller also purges them, because an entry that can never be
-      // decrypted can never be sent, and would otherwise hold a slot in the
-      // bounded queue until it evicted a readable event.
+      // Report these rather than dropping them from the result and moving on:
+      // an audit trail that loses records without saying so is not one you can
+      // stand behind. The caller also purges them, because an entry that can
+      // never be decrypted can never be sent, and would otherwise hold a slot
+      // in the bounded queue until it evicted a readable event.
       undecryptableIds.push(enc.id);
     }
   }

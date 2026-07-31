@@ -13,8 +13,8 @@ const mockUseSession = vi.mocked(useSession);
 
 describe('useAuditLogger', () => {
   beforeEach(() => {
-    vi.spyOn(auditLogger, 'init').mockImplementation(() => {});
-    vi.spyOn(auditLogger, 'destroy').mockImplementation(() => {});
+    vi.spyOn(auditLogger, 'acquire').mockImplementation(() => {});
+    vi.spyOn(auditLogger, 'release').mockImplementation(() => {});
     vi.spyOn(auditLogger, 'setSession').mockImplementation(() => {});
     vi.spyOn(auditLogger, 'clearSession').mockImplementation(() => {});
     vi.spyOn(auditLogger, 'log').mockResolvedValue();
@@ -29,17 +29,22 @@ describe('useAuditLogger', () => {
       authenticated: true,
       sessionId: 'session-1',
       user: { uuid: 'user-1' },
+      sessionLocation: { uuid: 'session-location-1' },
     } as ReturnType<typeof useSession>);
 
     const { unmount } = renderHook(() => useAuditLogger());
 
-    expect(auditLogger.init).toHaveBeenCalledOnce();
-    expect(auditLogger.setSession).toHaveBeenCalledWith('user-1', 'session-1');
+    expect(auditLogger.acquire).toHaveBeenCalledOnce();
+    expect(auditLogger.setSession).toHaveBeenCalledWith('user-1', 'session-1', 'session-location-1');
+    const setSessionOrder = vi.mocked(auditLogger.setSession).mock.invocationCallOrder[0];
+    const acquireOrder = vi.mocked(auditLogger.acquire).mock.invocationCallOrder[0];
+    expect(setSessionOrder).toBeTypeOf('number');
+    expect(acquireOrder).toBeTypeOf('number');
+    expect(setSessionOrder ?? Number.POSITIVE_INFINITY).toBeLessThan(acquireOrder ?? Number.NEGATIVE_INFINITY);
 
     unmount();
 
-    expect(auditLogger.clearSession).toHaveBeenCalled();
-    expect(auditLogger.destroy).toHaveBeenCalledOnce();
+    expect(auditLogger.release).toHaveBeenCalledOnce();
   });
 
   it('clears attribution as soon as the session becomes unauthenticated', () => {

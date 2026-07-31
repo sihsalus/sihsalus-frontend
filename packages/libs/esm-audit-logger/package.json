@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "license": "MPL-2.0",
-  "description": "Client-side audit trail logging for HIPAA compliance",
+  "description": "Client-side delivery buffer for sensitive SIHSALUS audit events",
   "main": "src/index.ts",
   "source": true,
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
-    "typescript": "tsc",
+    "typescript": "tsc --noEmit",
     "lint": "node ../../tooling/scripts/run-biome.js lint .",
     "test": "vitest run --passWithNoTests"
   },

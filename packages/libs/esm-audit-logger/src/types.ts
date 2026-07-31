@@ -2,6 +2,7 @@ export interface AuditEvent {
   eventType: string;
   patientUuid?: string;
   encounterUuid?: string;
+  locationUuid?: string;
   resourceType?: string;
   metadata?: Record<string, unknown>;
   timestamp: string;

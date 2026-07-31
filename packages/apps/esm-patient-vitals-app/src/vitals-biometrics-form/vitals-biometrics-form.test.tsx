@@ -17,6 +17,7 @@ import { mockConceptMetadata, mockConceptRanges, mockConceptUnits, mockPatient, 
 import { saveVitalsAndBiometrics } from '../common';
 import { type ConfigObject, configSchema } from '../config-schema';
 
+import { VITAL_SIGN_INPUT_LIMITS } from './vitals-biometrics-form.utils';
 import VitalsAndBiometricsForm from './vitals-biometrics-form.workspace';
 
 const heightValue = 180;
@@ -186,7 +187,7 @@ describe('VitalsBiometricsForm', () => {
     );
   });
 
-  it('uses the patient-specific absolute temperature range', async () => {
+  it('keeps the patient-specific temperature range as a confirmable warning inside the hard safety limits', async () => {
     const user = userEvent.setup();
     mockUseReferenceRanges.mockReturnValue({
       ranges: new Map([[mockVitalsConfig.concepts.temperatureUuid, { lowAbsolute: 35.5, hiAbsolute: 50 }]]),
@@ -200,8 +201,8 @@ describe('VitalsBiometricsForm', () => {
     const temperatureInput = screen.getByRole('spinbutton', {
       name: /temperature/i,
     });
-    expect(temperatureInput).toHaveAttribute('min', '35.5');
-    expect(temperatureInput).toHaveAttribute('max', '50');
+    expect(temperatureInput).toHaveAttribute('min', VITAL_SIGN_INPUT_LIMITS.temperature.min.toString());
+    expect(temperatureInput).toHaveAttribute('max', VITAL_SIGN_INPUT_LIMITS.temperature.max.toString());
 
     const saveButton = screen.getByRole('button', { name: /save and close/i });
 
@@ -619,7 +620,7 @@ describe('VitalsBiometricsForm', () => {
     });
   });
 
-  it('warns on out-of-range values and only saves them after explicit confirmation', async () => {
+  it('blocks impossible vital signs even after repeated submission', async () => {
     const user = userEvent.setup();
 
     mockSavePatientVitals.mockResolvedValue({
@@ -632,33 +633,55 @@ describe('VitalsBiometricsForm', () => {
 
     const systolic = screen.getByRole('spinbutton', { name: /systolic/i });
     const diastolic = screen.getByRole('spinbutton', { name: /diastolic/i });
-    const pulse = screen.getByRole('spinbutton', { name: /pulse/i });
     const oxygenSaturation = screen.getByRole('spinbutton', {
       name: /oxygen saturation/i,
-    });
-    const temperature = screen.getByRole('spinbutton', {
-      name: /temperature/i,
     });
 
     await user.type(systolic, '1000');
     await user.type(diastolic, diastolicBloodPressureValue.toString());
-    await user.type(pulse, pulseValue.toString());
     await user.type(oxygenSaturation, '200');
-    await user.type(temperature, temperatureValue.toString());
 
     const saveButton = screen.getByRole('button', { name: /save and close/i });
     await user.click(saveButton);
 
-    // the first submit warns instead of saving or discarding the values
+    expect(mockSavePatientVitals).not.toHaveBeenCalled();
+    expect(screen.getByText(/outside the safe recording limits/i)).toBeInTheDocument();
+    expect(screen.getByText(/between 0 and 500/i)).toBeInTheDocument();
+    expect(screen.getByText(/between 0 and 100/i)).toBeInTheDocument();
+
+    await user.click(saveButton);
+    expect(mockSavePatientVitals).not.toHaveBeenCalled();
+  });
+
+  it('warns about extreme but recordable values and saves them after explicit confirmation', async () => {
+    const user = userEvent.setup();
+
+    mockSavePatientVitals.mockResolvedValue({
+      statusText: 'created',
+      status: 201,
+      data: [],
+    } as FetchResponse<unknown>);
+
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    await user.type(screen.getByRole('spinbutton', { name: /systolic/i }), '300');
+    await user.type(screen.getByRole('spinbutton', { name: /diastolic/i }), '180');
+    await user.type(screen.getByRole('spinbutton', { name: /pulse/i }), '250');
+    await user.type(screen.getByRole('spinbutton', { name: /temperature/i }), '20');
+
+    const saveButton = screen.getByRole('button', { name: /save and close/i });
+    await user.click(saveButton);
+
     expect(mockSavePatientVitals).not.toHaveBeenCalled();
     expect(screen.getByText(/values outside the expected range/i)).toBeInTheDocument();
 
-    // a second submit with unchanged values records the pathological measurements
     await user.click(saveButton);
     await waitFor(() => expect(mockSavePatientVitals).toHaveBeenCalledTimes(1));
     expect(mockSavePatientVitals.mock.calls[0][3]).toMatchObject({
-      systolicBloodPressure: 1000,
-      oxygenSaturation: 200,
+      systolicBloodPressure: 300,
+      diastolicBloodPressure: 180,
+      pulse: 250,
+      temperature: 20,
     });
   });
 

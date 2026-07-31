@@ -102,6 +102,7 @@
   "unexpectedError": "An unexpected error occurred. Please try again.",
   "unknown": "Unknown",
   "validationInputError": "Value must be between {{min}} and {{max}}",
+  "validationReferenceRangeError": "Value is outside the configured reference range",
   "valuesOutOfRangeConfirm": "Review the following values: {{fields}}. If they are correct, press \"Save and close\" again to record them.",
   "valuesOutOfRangeTitle": "Values outside the expected range",
   "viewNormalRanges": "View normal ranges",
@@ -113,6 +114,7 @@
   "vitalsAndBiometricsNowAvailable": "They are now visible on the Vitals and Biometrics page",
   "vitalsAndBiometricsRecorded": "Vitals and Biometrics saved",
   "vitalsAndBiometricsSaveError": "Error saving vitals and biometrics",
+  "vitalSignsOutsideInputLimits": "One or more vital signs are outside the safe recording limits. Correct the marked values; they cannot be saved by confirming them again",
   "vitalsChartFileName": "vitals-chart",
   "vitalsHistory": "Vitals history",
   "weight": "Weight"

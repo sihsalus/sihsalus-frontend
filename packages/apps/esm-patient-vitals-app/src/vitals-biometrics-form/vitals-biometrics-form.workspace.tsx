@@ -52,6 +52,9 @@ import {
   getMuacColorCode,
   isConditionalFieldVisible,
   isValueWithinReferenceRange,
+  VITAL_SIGN_INPUT_LIMITS,
+  vitalSignInputIds,
+  type VitalSignInputId,
   type VitalsBiometricsWorkspaceProfile,
 } from './vitals-biometrics-form.utils';
 import VitalsAndBiometricsInput from './vitals-biometrics-input.component';
@@ -96,14 +99,22 @@ function buildGlasgowScoreByAnswerUuid(answerUuids: GlasgowComaScaleAnswerUuids)
   );
 }
 
+function vitalSignSchema(field: VitalSignInputId) {
+  const { min, max } = VITAL_SIGN_INPUT_LIMITS[field];
+  return z
+    .number()
+    .min(min, { message: 'Vital sign is below the input safety limit' })
+    .max(max, { message: 'Vital sign is above the input safety limit' });
+}
+
 const VitalsAndBiometricFormSchema = z
   .object({
-    systolicBloodPressure: z.number(),
-    diastolicBloodPressure: z.number(),
-    respiratoryRate: z.number(),
-    oxygenSaturation: z.number(),
-    pulse: z.number(),
-    temperature: z.number(),
+    systolicBloodPressure: vitalSignSchema('systolicBloodPressure'),
+    diastolicBloodPressure: vitalSignSchema('diastolicBloodPressure'),
+    respiratoryRate: vitalSignSchema('respiratoryRate'),
+    oxygenSaturation: vitalSignSchema('oxygenSaturation'),
+    pulse: vitalSignSchema('pulse'),
+    temperature: vitalSignSchema('temperature'),
     generalPatientNote: z.string(),
     weight: z.number(),
     height: z.number(),
@@ -246,7 +257,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
     handleSubmit,
     watch,
     setValue,
-    formState: { dirtyFields, isSubmitting },
+    formState: { dirtyFields, errors, isSubmitting },
   } = useForm<VitalsBiometricsFormData>({
     mode: 'all',
     resolver: zodResolver(VitalsAndBiometricFormSchema),
@@ -379,6 +390,21 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   }, [getGlasgowScore, glasgowEyeOpening, glasgowMotorResponse, glasgowVerbalResponse, setValue]);
 
   function onError(err: Record<string, { message?: string }>) {
+    const vitalSignsOutsideInputLimits = vitalSignInputIds.filter((field) => Boolean(err?.[field]));
+    if (vitalSignsOutsideInputLimits.length > 0) {
+      confirmedOutOfRangeTokenRef.current = null;
+      setOutOfRangeFieldKeys([]);
+      setShowErrorMessage(true);
+      setFormErrorMessage(
+        t(
+          'vitalSignsOutsideInputLimits',
+          'One or more vital signs are outside the safe recording limits. Correct the marked values; they cannot be saved by confirming them again',
+        ),
+      );
+      setShowErrorNotification(true);
+      return;
+    }
+
     if (err?.oneFieldRequired) {
       setShowErrorMessage(false);
       setFormErrorMessage(
@@ -414,19 +440,8 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       chestCircumferenceRange:
         patientReferenceRanges.get(config.concepts.chestCircumferenceUuid) ??
         getReferenceRangesForConcept(config.concepts.chestCircumferenceUuid, conceptMetadata),
-      diastolicBloodPressureRange: conceptRanges.get(config.concepts.diastolicBloodPressureUuid),
-      systolicBloodPressureRange: conceptRanges.get(config.concepts.systolicBloodPressureUuid),
-      oxygenSaturationRange: conceptRanges.get(config.concepts.oxygenSaturationUuid),
-      respiratoryRateRange: conceptRanges.get(config.concepts.respiratoryRateUuid),
-      temperatureRange: patientReferenceRanges.has(config.concepts.temperatureUuid)
-        ? {
-            lowAbsolute: patientReferenceRanges.get(config.concepts.temperatureUuid)?.lowAbsolute ?? null,
-            highAbsolute: patientReferenceRanges.get(config.concepts.temperatureUuid)?.hiAbsolute ?? null,
-          }
-        : conceptRanges.get(config.concepts.temperatureUuid),
       weightRange: conceptRanges.get(config.concepts.weightUuid),
       heightRange: conceptRanges.get(config.concepts.heightUuid),
-      pulseRange: conceptRanges.get(config.concepts.pulseUuid),
     }),
     [
       conceptRanges,
@@ -435,14 +450,8 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       config.concepts.abdominalCircumferenceUuid,
       config.concepts.chestCircumferenceUuid,
       config.concepts.headCircumferenceUuid,
-      config.concepts.diastolicBloodPressureUuid,
       config.concepts.heightUuid,
       config.concepts.midUpperArmCircumferenceUuid,
-      config.concepts.oxygenSaturationUuid,
-      config.concepts.pulseUuid,
-      config.concepts.respiratoryRateUuid,
-      config.concepts.systolicBloodPressureUuid,
-      config.concepts.temperatureUuid,
       config.concepts.weightUuid,
     ],
   );
@@ -788,8 +797,9 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                 fieldProperties={[
                   {
                     id: 'temperature',
-                    max: concepts.temperatureRange?.highAbsolute,
-                    min: concepts.temperatureRange?.lowAbsolute,
+                    invalid: Boolean(errors.temperature),
+                    max: VITAL_SIGN_INPUT_LIMITS.temperature.max,
+                    min: VITAL_SIGN_INPUT_LIMITS.temperature.min,
                     name: t('temperature', 'Temperature'),
                     type: 'number',
                   },
@@ -823,16 +833,18 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                     separator: '/',
                     type: 'number',
                     integer: true,
-                    min: concepts.systolicBloodPressureRange?.lowAbsolute,
-                    max: concepts.systolicBloodPressureRange?.highAbsolute,
+                    invalid: Boolean(errors.systolicBloodPressure),
+                    min: VITAL_SIGN_INPUT_LIMITS.systolicBloodPressure.min,
+                    max: VITAL_SIGN_INPUT_LIMITS.systolicBloodPressure.max,
                     id: 'systolicBloodPressure',
                   },
                   {
                     name: t('diastolic', 'diastolic'),
                     type: 'number',
                     integer: true,
-                    min: concepts.diastolicBloodPressureRange?.lowAbsolute,
-                    max: concepts.diastolicBloodPressureRange?.highAbsolute,
+                    invalid: Boolean(errors.diastolicBloodPressure),
+                    min: VITAL_SIGN_INPUT_LIMITS.diastolicBloodPressure.min,
+                    max: VITAL_SIGN_INPUT_LIMITS.diastolicBloodPressure.max,
                     id: 'diastolicBloodPressure',
                   },
                 ]}
@@ -884,8 +896,9 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                     name: t('pulse', 'Pulse'),
                     type: 'number',
                     integer: true,
-                    min: concepts.pulseRange?.lowAbsolute,
-                    max: concepts.pulseRange?.highAbsolute,
+                    invalid: Boolean(errors.pulse),
+                    min: VITAL_SIGN_INPUT_LIMITS.pulse.min,
+                    max: VITAL_SIGN_INPUT_LIMITS.pulse.max,
                     id: 'pulse',
                   },
                 ]}
@@ -915,8 +928,9 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                     name: t('respirationRate', 'Respiration rate'),
                     type: 'number',
                     integer: true,
-                    min: concepts.respiratoryRateRange?.lowAbsolute,
-                    max: concepts.respiratoryRateRange?.highAbsolute,
+                    invalid: Boolean(errors.respiratoryRate),
+                    min: VITAL_SIGN_INPUT_LIMITS.respiratoryRate.min,
+                    max: VITAL_SIGN_INPUT_LIMITS.respiratoryRate.max,
                     id: 'respiratoryRate',
                   },
                 ]}
@@ -947,8 +961,9 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                     name: t('oxygenSaturation', 'Oxygen saturation'),
                     type: 'number',
                     integer: true,
-                    min: concepts.oxygenSaturationRange?.lowAbsolute,
-                    max: concepts.oxygenSaturationRange?.highAbsolute,
+                    invalid: Boolean(errors.oxygenSaturation),
+                    min: VITAL_SIGN_INPUT_LIMITS.oxygenSaturation.min,
+                    max: VITAL_SIGN_INPUT_LIMITS.oxygenSaturation.max,
                     id: 'oxygenSaturation',
                   },
                 ]}

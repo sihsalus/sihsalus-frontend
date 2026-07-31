@@ -69,6 +69,7 @@ function extractRelationshipData(
         uuid: `${r.uuid}`,
         display: getRelativeName(r.personB.display),
         relativeAge: r.personB.age,
+        relativeBirthdate: r.personB.birthdate,
         relativeUuid: r.personB.uuid,
         relationshipType: r.relationshipType.bIsToA,
       });
@@ -77,6 +78,7 @@ function extractRelationshipData(
         uuid: `${r.uuid}`,
         display: getRelativeName(r.personA.display),
         relativeAge: r.personA.age,
+        relativeBirthdate: r.personA.birthdate,
         relativeUuid: r.personA.uuid,
         relationshipType: r.relationshipType.aIsToB,
       });
@@ -92,7 +94,8 @@ interface RelationshipsResponse {
 interface ExtractedRelationship {
   uuid: string;
   display: string;
-  relativeAge: number;
+  relativeAge?: number | null;
+  relativeBirthdate?: string;
   relativeUuid: string;
   relationshipType: string;
 }
@@ -102,12 +105,14 @@ export interface Relationship {
   uuid: number;
   personA: {
     uuid: string;
-    age: number;
+    age: number | null;
+    birthdate?: string;
     display: string;
   };
   personB: {
     uuid: string;
-    age: number;
+    age: number | null;
+    birthdate?: string;
     display: string;
   };
   relationshipType: {

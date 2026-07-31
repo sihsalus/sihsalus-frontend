@@ -75,6 +75,9 @@ describe('UiSelectExtended', () => {
 
     await waitFor(() => expect(fetchSingleItem).toHaveBeenCalledWith('current-location-uuid'));
 
-    expect(screen.getByRole('combobox')).toHaveValue('Consultorio actual');
+    // The resolved item is applied in a promise callback, so the skeleton is
+    // still mounted right after the fetch call. Query asynchronously to wait
+    // for the ComboBox to replace it.
+    expect(await screen.findByRole('combobox')).toHaveValue('Consultorio actual');
   });
 });

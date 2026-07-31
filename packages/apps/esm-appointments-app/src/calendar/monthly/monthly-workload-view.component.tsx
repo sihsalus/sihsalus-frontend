@@ -1,3 +1,4 @@
+import { Tooltip } from '@carbon/react';
 import { User } from '@carbon/react/icons';
 import { navigate, useLayoutType } from '@openmrs/esm-framework';
 import classNames from 'classnames';
@@ -28,6 +29,7 @@ const MonthlyWorkloadView: React.FC<MonthlyWorkloadViewProps> = ({
 }) => {
   const layout = useLayoutType();
   const { selectedDate } = useContext(SelectedDateContext);
+  const maxVisibleServices = layout === 'small-desktop' ? 2 : 3;
 
   const currentData = useMemo(
     () =>
@@ -40,18 +42,18 @@ const MonthlyWorkloadView: React.FC<MonthlyWorkloadViewProps> = ({
   const visibleServices = useMemo(() => {
     if (currentData?.services) {
       if (showAllServices) return currentData.services;
-      return currentData.services.slice(0, layout === 'small-desktop' ? 2 : 4);
+      return currentData.services.slice(0, maxVisibleServices);
     }
     return [];
-  }, [currentData, showAllServices, layout]);
+  }, [currentData, maxVisibleServices, showAllServices]);
 
   const hasHiddenServices = useMemo(() => {
     if (currentData?.services) {
       if (showAllServices) return false;
-      return layout === 'small-desktop' ? currentData.services.length > 2 : currentData.services.length > 4;
+      return currentData.services.length > maxVisibleServices;
     }
     return false;
-  }, [currentData?.services, layout, showAllServices]);
+  }, [currentData?.services, maxVisibleServices, showAllServices]);
 
   const navigateToAppointmentsByDate = (serviceUuid: string) => {
     const serviceTypes = serviceUuid ? [serviceUuid] : appointmentServiceTypes;
@@ -99,30 +101,31 @@ const MonthlyWorkloadView: React.FC<MonthlyWorkloadViewProps> = ({
           {currentData?.services && (
             <div className={styles.currentData}>
               {visibleServices.map(({ serviceName, serviceUuid, count }) => (
-                <div
-                  key={serviceUuid}
-                  role="button"
-                  tabIndex={0}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigateToAppointmentsByDate(serviceUuid);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
+                <Tooltip key={serviceUuid} align="bottom" label={`${serviceName} (${count})`}>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
                       e.stopPropagation();
                       navigateToAppointmentsByDate(serviceUuid);
-                    }
-                  }}
-                  className={styles.serviceArea}
-                >
-                  <span>{serviceName}</span>
-                  <span>{count}</span>
-                </div>
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        navigateToAppointmentsByDate(serviceUuid);
+                      }
+                    }}
+                    className={styles.serviceArea}
+                  >
+                    <span className={styles.serviceName}>{serviceName}</span>
+                    <span>{count}</span>
+                  </div>
+                </Tooltip>
               ))}
               {hasHiddenServices ? (
                 <MonthlyWorkloadViewExpanded
-                  count={currentData.services.length - (layout === 'small-desktop' ? 2 : 4)}
+                  count={currentData.services.length - maxVisibleServices}
                   events={events}
                   dateTime={dateTime}
                   appointmentServiceTypes={appointmentServiceTypes}

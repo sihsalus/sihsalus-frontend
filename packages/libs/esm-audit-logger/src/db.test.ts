@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { clearKeyCache } from './crypto';
 import { clearEntries, getEntriesForUser, queueEntry } from './db';

@@ -52,6 +52,7 @@ describe('QueuePatientBaseTable', () => {
     renderQueueBaseTable();
 
     expect(screen.getByText(/scheduled appointments/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^filter$/i })).not.toBeInTheDocument();
     const expectedColumnHeaders = [/name/, /return date/, /gender/, /age/, /visit type/, /phone number/];
     expectedColumnHeaders.forEach((header) => {
       expect(screen.getByRole('columnheader', { name: new RegExp(header, 'i') })).toBeInTheDocument();

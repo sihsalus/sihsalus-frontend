@@ -31,6 +31,7 @@ describe('AppointmentsTable', () => {
 
     const appointmentName = screen.getByText(/charles babbage/i);
     expect(appointmentName).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^filter$/i })).not.toBeInTheDocument();
   });
 
   it('filters appointments based on status selection', async () => {

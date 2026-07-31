@@ -67,8 +67,8 @@ export function useAdmitPatient() {
   return { admitPatient, isLoadingEmrConfiguration, errorFetchingEmrConfiguration };
 }
 
-export function assignPatientToBed(bedUuid: number, patientUuid: string, encounterUuid: string) {
-  return openmrsFetch(`${restBaseUrl}/beds/${bedUuid}`, {
+export function assignPatientToBed(bedId: number, patientUuid: string, encounterUuid: string) {
+  return openmrsFetch(`${restBaseUrl}/beds/${bedId}`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',

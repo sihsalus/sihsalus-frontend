@@ -141,7 +141,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
   const { visits } = useTodaysVisits();
   const layout = useLayoutType();
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
-  const translatedTableHeading = t(tableHeading);
+  const translatedTableHeading = t(tableHeading, tableHeading);
   const isTodayAppointmentsTable =
     tableHeading === 'today' ||
     tableHeading === 'todaysAppointments' ||

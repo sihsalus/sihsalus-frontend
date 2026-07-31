@@ -10,7 +10,11 @@ describe('Appointments', () => {
       </MemoryRouter>,
     );
 
-    await screen.findByRole('combobox');
+    // Awaiting the combobox only proved the dashboard finished rendering. It is
+    // the service filter, and that it opens on "All" is what callers depend on:
+    // a different default would silently scope the whole dashboard.
+    const serviceFilter = await screen.findByRole('combobox');
+    expect(serviceFilter).toHaveTextContent(/all/i);
 
     expect(screen.getByRole('button', { name: /appointments calendar/i })).toBeInTheDocument();
     expect(screen.getByDisplayValue(/\d{2}\/\d{2}\/\d{4}/)).toBeInTheDocument();

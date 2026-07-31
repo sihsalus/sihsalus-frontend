@@ -36,6 +36,8 @@
     "validate:react-router": "node packages/tooling/scripts/validate-react-router-contract.js",
     "validate:lint-coverage": "node packages/tooling/scripts/validate-lint-coverage.js",
     "validate:workspaces": "node packages/tooling/scripts/audit-workspaces.js",
+    "validate:test-floor": "node packages/tooling/scripts/validate-test-floor.js",
+    "test-floor:update": "node packages/tooling/scripts/validate-test-floor.js --update",
     "typecheck": "node node_modules/turbo/bin/turbo run typescript",
     "typecheck:e2e": "tsc -p e2e/tsconfig.json",
     "verify": "cross-env TZ=UTC node node_modules/turbo/bin/turbo run lint typescript && cross-env TZ=UTC node node_modules/turbo/bin/turbo run test --concurrency=2",

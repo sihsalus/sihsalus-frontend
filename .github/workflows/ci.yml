@@ -58,6 +58,12 @@ jobs:
       # Existing raw error rendering is migrated incrementally. This AST guard
       # compares the PR/push with its Git base and rejects new exposures while
       # allowing controlled React Hook Form validation messages.
+      # Eight apps have no tests at all and keep growing. Retrofitting them is a
+      # campaign; this freezes how many source files each package leaves
+      # untested so the number can only fall. A new package starts at zero.
+      - name: Validate Test Floor
+        run: yarn validate:test-floor
+
       - name: Test Tooling
         run: yarn test:tooling
 

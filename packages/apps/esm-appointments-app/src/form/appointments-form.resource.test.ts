@@ -67,6 +67,24 @@ describe('appointment writes', () => {
     );
   });
 
+  it('posts the backend-compatible canonical all-day interval', () => {
+    const allDayAppointment = {
+      ...validAppointment,
+      startDateTime: '2026-07-18T00:00:00.000-05:00',
+      endDateTime: '2026-07-18T23:59:59.999-05:00',
+    };
+
+    saveAppointment(allDayAppointment, new AbortController());
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      `${restBaseUrl}/appointment`,
+      expect.objectContaining({
+        method: 'POST',
+        body: allDayAppointment,
+      }),
+    );
+  });
+
   it('does not call any appointment API with a fractional-minute duration', async () => {
     const fractionalDuration = { ...validAppointment, endDateTime: '2026-07-18T09:30:30-05:00' };
 

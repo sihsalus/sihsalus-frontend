@@ -917,8 +917,31 @@ describe('AppointmentForm', () => {
     await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
     const payload = mockSaveAppointment.mock.calls[0][0];
     expect(payload.startDateTime).toMatch(/T00:00:00/);
-    expect(payload.endDateTime).toMatch(/T00:00:00/);
-    expect(dayjs(payload.endDateTime).diff(dayjs(payload.startDateTime), 'minute')).toBe(1440);
+    expect(payload.endDateTime).toMatch(/T23:59:59\.999/);
+    expect(dayjs(payload.endDateTime).valueOf() - dayjs(payload.startDateTime).valueOf()).toBe(86_400_000 - 1);
+  });
+
+  it('ignores an invalid hidden duration when scheduling an all-day appointment', async () => {
+    const user = userEvent.setup();
+
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      allowAllDayAppointments: true,
+      appointmentTypes: ['Scheduled', 'WalkIn'],
+    });
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+    await user.clear(screen.getByRole('spinbutton', { name: /duration/i }));
+    await user.click(screen.getByLabelText(/all day/i));
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    expect(mockSaveAppointment.mock.calls[0][0].endDateTime).toMatch(/T23:59:59\.999/);
   });
 
   it('shows an error and does not save if conflict validation fails', async () => {
@@ -1386,6 +1409,35 @@ describe('AppointmentForm', () => {
 
     expect(await screen.findAllByText(/Select at least one valid, non-repeated day/)).not.toHaveLength(0);
     expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'warning' }));
+    expect(mockCheckRecurringAppointmentConflict).not.toHaveBeenCalled();
+    expect(mockSaveRecurringAppointments).not.toHaveBeenCalled();
+  });
+
+  it('ignores stale recurrence values while recurrence is turned off', async () => {
+    const user = userEvent.setup();
+    const appointment = makeEditableAppointment();
+    const staleRecurringPattern: RecurringPattern = {
+      type: 'WEEK',
+      period: 357,
+      endDate: dayjs(appointment.startDateTime).add(2, 'week').endOf('day').format(),
+      daysOfWeek: ['FUNDAY'],
+    };
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 200 } as FetchResponse);
+
+    renderWithSwr(
+      <AppointmentForm
+        {...defaultProps}
+        appointment={appointment}
+        context="editing"
+        recurringPattern={staleRecurringPattern}
+      />,
+    );
+
+    await waitForLoadingToFinish();
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
     expect(mockCheckRecurringAppointmentConflict).not.toHaveBeenCalled();
     expect(mockSaveRecurringAppointments).not.toHaveBeenCalled();
   });

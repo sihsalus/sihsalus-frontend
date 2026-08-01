@@ -56,6 +56,7 @@ import {
   appointmentStartDateEditPrivilege,
   dateFormat,
   moduleName,
+  omrsDateFormat,
   recurringPatternPeriodRange,
   weekDays,
 } from '../constants';
@@ -409,10 +410,7 @@ const AppointmentsForm: React.FC<
       duration: z
         .number()
         .nullable()
-        .refine((duration) => duration === null || isAppointmentDurationAllowed(duration), {
-          message: durationRangeErrorMessage,
-        })
-        .refine((duration) => isAllDayAppointment || duration !== null, {
+        .refine((duration) => isAllDayAppointment || (duration !== null && isAppointmentDurationAllowed(duration)), {
           message: durationRangeErrorMessage,
         }),
       location: z.string().refine((value) => value !== '', {
@@ -434,9 +432,7 @@ const AppointmentsForm: React.FC<
         message: translateFrom(moduleName, 'serviceRequired', 'Service is required'),
       }),
       recurringPatternType: z.enum(['DAY', 'WEEK']),
-      recurringPatternPeriod: z.number().refine(isRecurringPatternPeriodAllowed, {
-        message: recurringPatternPeriodErrorMessage,
-      }),
+      recurringPatternPeriod: z.number(),
       recurringPatternDaysOfWeek: z.array(z.string()),
       selectedDaysOfWeekText: z.string().optional(),
       startTime: z.string().refine((value) => isValidTime(value), {
@@ -532,6 +528,17 @@ const AppointmentsForm: React.FC<
       },
     )
     .superRefine((formValues, context) => {
+      if (
+        formValues.formIsRecurringAppointment &&
+        !isRecurringPatternPeriodAllowed(formValues.recurringPatternPeriod)
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: recurringPatternPeriodErrorMessage,
+          path: ['recurringPatternPeriod'],
+        });
+      }
+
       if (
         formValues.formIsRecurringAppointment &&
         !areRecurringPatternWeekdaysAllowed(
@@ -1013,13 +1020,13 @@ const AppointmentsForm: React.FC<
       ? dayjs(effectiveStartDate).startOf('day')
       : dayjs(effectiveStartDate).hour(hours).minute(minuteValue).second(0).millisecond(0);
     const endDateTime = isAllDayAppointment
-      ? startDateTime.add(appointmentDurationMinutesRange.max, 'minutes')
+      ? startDateTime.endOf('day')
       : startDateTime.add(duration ?? 0, 'minutes');
     const payload: AppointmentPayload = {
       appointmentKind: normalizeAppointmentKind(selectedAppointmentType),
       serviceUuid: serviceUuid,
       startDateTime: startDateTime.format(),
-      endDateTime: endDateTime.format(),
+      endDateTime: isAllDayAppointment ? endDateTime.format(omrsDateFormat) : endDateTime.format(),
       locationUuid: location,
       providers: [{ uuid: provider }],
       patientUuid: patientUuid,

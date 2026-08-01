@@ -145,6 +145,32 @@ describe('appointment date validation', () => {
     ).not.toThrow();
   });
 
+  it('accepts only the canonical start-of-day through end-of-day fractional interval', () => {
+    const canonicalAllDayAppointment = {
+      ...validAppointment,
+      startDateTime: '2026-07-18T00:00:00.000-05:00',
+      endDateTime: '2026-07-18T23:59:59.999-05:00',
+    };
+
+    expect(() => assertAppointmentPayloadDates(canonicalAllDayAppointment, { today })).not.toThrow();
+    expect(() =>
+      assertAppointmentPayloadDates(
+        {
+          ...canonicalAllDayAppointment,
+          startDateTime: '2026-07-18T09:00:00.000-05:00',
+          endDateTime: '2026-07-19T08:59:59.999-05:00',
+        },
+        { today },
+      ),
+    ).toThrow('Appointment duration must be a whole number between 1 and 1440 minutes');
+    expect(() =>
+      assertAppointmentPayloadDates(
+        { ...canonicalAllDayAppointment, endDateTime: '2026-07-18T23:59:59-05:00' },
+        { today },
+      ),
+    ).toThrow('Appointment duration must be a whole number between 1 and 1440 minutes');
+  });
+
   it('only preserves an edited historical date when the original date is supplied and unchanged', () => {
     const historicalAppointment = {
       ...validAppointment,

@@ -4,6 +4,10 @@ import { appointmentDurationMinutesRange, recurringPatternPeriodRange, weekDays 
 export type AppointmentFormContext = 'creating' | 'editing';
 export const MAX_RECURRING_APPOINTMENT_HORIZON_DAYS = 365;
 const MILLISECONDS_PER_MINUTE = 60_000;
+const MILLISECONDS_PER_MAXIMUM_APPOINTMENT =
+  appointmentDurationMinutesRange.max * MILLISECONDS_PER_MINUTE;
+const LOCAL_ISO_DATETIME_PATTERN =
+  /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?(?:Z|[+-]\d{2}:?\d{2})$/;
 const validRecurringPatternTypes = new Set<RecurringPattern['type']>(['DAY', 'WEEK']);
 const validRecurringWeekdays = new Set(weekDays.map(({ id }) => id));
 
@@ -125,6 +129,43 @@ export function areRecurringPatternWeekdaysAllowed(
   );
 }
 
+/**
+ * Bahmni Appointment Scheduling 2.1.0 expects all-day appointments to stay
+ * within one calendar day. Accept that one fractional-minute interval only
+ * when both local wall-clock endpoints are the canonical start/end of the
+ * same ISO day and the absolute interval is exactly one millisecond short of
+ * the configured maximum.
+ */
+function isCanonicalAllDayAppointmentInterval(
+  startDateTime: string,
+  endDateTime: string,
+  startDate: Date,
+  endDate: Date,
+): boolean {
+  const startMatch = LOCAL_ISO_DATETIME_PATTERN.exec(startDateTime);
+  const endMatch = LOCAL_ISO_DATETIME_PATTERN.exec(endDateTime);
+  if (!startMatch || !endMatch) {
+    return false;
+  }
+
+  const [, startDay, startHour, startMinute, startSecond, startFraction = ''] = startMatch;
+  const [, endDay, endHour, endMinute, endSecond, endFraction = ''] = endMatch;
+  const normalizedStartFraction = startFraction.padEnd(3, '0');
+
+  return (
+    startDay === endDay &&
+    startHour === '00' &&
+    startMinute === '00' &&
+    startSecond === '00' &&
+    normalizedStartFraction === '000' &&
+    endHour === '23' &&
+    endMinute === '59' &&
+    endSecond === '59' &&
+    endFraction === '999' &&
+    endDate.valueOf() - startDate.valueOf() === MILLISECONDS_PER_MAXIMUM_APPOINTMENT - 1
+  );
+}
+
 export function assertAppointmentPayloadDates(
   appointment: AppointmentPayload,
   { originalStartDate, today = new Date() }: AppointmentDateValidationOptions = {},
@@ -147,7 +188,13 @@ export function assertAppointmentPayloadDates(
   }
 
   const durationMinutes = (endDate.valueOf() - startDate.valueOf()) / MILLISECONDS_PER_MINUTE;
-  if (!isAppointmentDurationAllowed(durationMinutes)) {
+  const isCanonicalAllDayAppointment = isCanonicalAllDayAppointmentInterval(
+    appointment.startDateTime,
+    appointment.endDateTime,
+    startDate,
+    endDate,
+  );
+  if (!isCanonicalAllDayAppointment && !isAppointmentDurationAllowed(durationMinutes)) {
     throw new Error(
       `Appointment duration must be a whole number between ${appointmentDurationMinutesRange.min} and ${appointmentDurationMinutesRange.max} minutes.`,
     );

@@ -157,7 +157,7 @@
   "daysOfWeek": "Days of the week",
   "discard": "Discard",
   "download": "Download",
-  "durationRangeErrorMessage": "Duration must be a whole number between {{min}} and {{max}} minutes",
+  "durationRangeErrorMessage": "For timed appointments, duration must be a whole number between {{min}} and {{max}} minutes",
   "durationInMinutes": "Duration (minutes)",
   "durationMins": "Duration min",
   "durationMinsRequired": "Duration is required",

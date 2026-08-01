@@ -3,11 +3,11 @@ import {
   areRecurringPatternWeekdaysAllowed,
   assertAppointmentPayloadDates,
   assertRecurringPatternDates,
-  isAppointmentDurationAllowed,
   isAppointmentIssuedDateAllowed,
   isAppointmentStartDateAllowed,
   isRecurringAppointmentRangeAllowed,
   isRecurringPatternPeriodAllowed,
+  isTimedAppointmentDurationAllowed,
   MAX_RECURRING_APPOINTMENT_HORIZON_DAYS,
   resolveEffectiveAppointmentStartDate,
 } from './appointment-date-validation';
@@ -116,12 +116,12 @@ describe('appointment date validation', () => {
     ).toThrow('Appointment end date must be after its start date');
   });
 
-  it('accepts only whole-minute appointment durations from 1 through 1440 minutes', () => {
-    expect(isAppointmentDurationAllowed(1)).toBe(true);
-    expect(isAppointmentDurationAllowed(1440)).toBe(true);
-    expect(isAppointmentDurationAllowed(0)).toBe(false);
-    expect(isAppointmentDurationAllowed(1.5)).toBe(false);
-    expect(isAppointmentDurationAllowed(1441)).toBe(false);
+  it('accepts only whole-minute timed appointment durations from 1 through 1439 minutes', () => {
+    expect(isTimedAppointmentDurationAllowed(1)).toBe(true);
+    expect(isTimedAppointmentDurationAllowed(1439)).toBe(true);
+    expect(isTimedAppointmentDurationAllowed(0)).toBe(false);
+    expect(isTimedAppointmentDurationAllowed(1.5)).toBe(false);
+    expect(isTimedAppointmentDurationAllowed(1440)).toBe(false);
   });
 
   it('rejects fractional and overlong durations again at the API payload boundary', () => {
@@ -130,16 +130,22 @@ describe('appointment date validation', () => {
         { ...validAppointment, endDateTime: '2026-07-18T09:00:30-05:00' },
         { today },
       ),
-    ).toThrow('Appointment duration must be a whole number between 1 and 1440 minutes');
+    ).toThrow('Timed appointment duration must be a whole number between 1 and 1439 minutes');
     expect(() =>
       assertAppointmentPayloadDates(
         { ...validAppointment, endDateTime: '2026-07-19T09:01:00-05:00' },
         { today },
       ),
-    ).toThrow('Appointment duration must be a whole number between 1 and 1440 minutes');
+    ).toThrow('Timed appointment duration must be a whole number between 1 and 1439 minutes');
     expect(() =>
       assertAppointmentPayloadDates(
         { ...validAppointment, endDateTime: '2026-07-19T09:00:00-05:00' },
+        { today },
+      ),
+    ).toThrow('Timed appointment duration must be a whole number between 1 and 1439 minutes');
+    expect(() =>
+      assertAppointmentPayloadDates(
+        { ...validAppointment, endDateTime: '2026-07-19T08:59:00-05:00' },
         { today },
       ),
     ).not.toThrow();
@@ -162,13 +168,13 @@ describe('appointment date validation', () => {
         },
         { today },
       ),
-    ).toThrow('Appointment duration must be a whole number between 1 and 1440 minutes');
+    ).toThrow('Timed appointment duration must be a whole number between 1 and 1439 minutes');
     expect(() =>
       assertAppointmentPayloadDates(
         { ...canonicalAllDayAppointment, endDateTime: '2026-07-18T23:59:59-05:00' },
         { today },
       ),
-    ).toThrow('Appointment duration must be a whole number between 1 and 1440 minutes');
+    ).toThrow('Timed appointment duration must be a whole number between 1 and 1439 minutes');
   });
 
   it('only preserves an edited historical date when the original date is supplied and unchanged', () => {

@@ -49,7 +49,6 @@ import { z } from 'zod';
 
 import { type ConfigObject } from '../config-schema';
 import {
-  appointmentDurationMinutesRange,
   appointmentIssueDateEditPrivilege,
   appointmentLocationTagName,
   appointmentNoteMaxLength,
@@ -58,6 +57,7 @@ import {
   moduleName,
   omrsDateFormat,
   recurringPatternPeriodRange,
+  timedAppointmentDurationMinutesRange,
   weekDays,
 } from '../constants';
 import {
@@ -80,11 +80,11 @@ import Workload from '../workload/workload.component';
 import { type AppointmentCareRoutingIssue, getAppointmentCareRoutingIssue } from './appointment-care-routing';
 import {
   areRecurringPatternWeekdaysAllowed,
-  isAppointmentDurationAllowed,
   isAppointmentIssuedDateAllowed,
   isAppointmentStartDateAllowed,
   isRecurringAppointmentRangeAllowed,
   isRecurringPatternPeriodAllowed,
+  isTimedAppointmentDurationAllowed,
   MAX_RECURRING_APPOINTMENT_HORIZON_DAYS,
   resolveEffectiveAppointmentStartDate,
 } from './appointment-date-validation';
@@ -396,8 +396,8 @@ const AppointmentsForm: React.FC<
 
   const durationRangeErrorMessage = t(
     'durationRangeErrorMessage',
-    'Duration must be a whole number between {{min}} and {{max}} minutes',
-    appointmentDurationMinutesRange,
+    'For timed appointments, duration must be a whole number between {{min}} and {{max}} minutes',
+    timedAppointmentDurationMinutesRange,
   );
   const recurringPatternPeriodErrorMessage = t(
     'recurringPatternPeriodErrorMessage',
@@ -410,9 +410,12 @@ const AppointmentsForm: React.FC<
       duration: z
         .number()
         .nullable()
-        .refine((duration) => isAllDayAppointment || (duration !== null && isAppointmentDurationAllowed(duration)), {
-          message: durationRangeErrorMessage,
-        }),
+        .refine(
+          (duration) => isAllDayAppointment || (duration !== null && isTimedAppointmentDurationAllowed(duration)),
+          {
+            message: durationRangeErrorMessage,
+          },
+        ),
       location: z.string().refine((value) => value !== '', {
         message: translateFrom(moduleName, 'locationRequired', 'UPSS is required'),
       }),
@@ -1683,17 +1686,17 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
               // error-exposure-guard-ignore -- controlled translated React Hook Form/Zod validation message.
               invalidText={errors?.duration?.message}
               label={<RequiredFieldLabel label={t('durationInMinutes', 'Duration (minutes)')} />}
-              max={appointmentDurationMinutesRange.max}
-              min={appointmentDurationMinutesRange.min}
+              max={timedAppointmentDurationMinutesRange.max}
+              min={timedAppointmentDurationMinutesRange.min}
               onBlur={onBlur}
               onKeyDown={preventInvalidIntegerKey({
                 integer: true,
-                ...appointmentDurationMinutesRange,
+                ...timedAppointmentDurationMinutesRange,
                 nonNegative: true,
               })}
               onPaste={preventInvalidIntegerPaste({
                 integer: true,
-                ...appointmentDurationMinutesRange,
+                ...timedAppointmentDurationMinutesRange,
                 nonNegative: true,
               })}
               onChange={(_event, { value: nextValue }) =>
@@ -1702,7 +1705,7 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
                     ? null
                     : getIntegerValue(nextValue, {
                         integer: true,
-                        ...appointmentDurationMinutesRange,
+                        ...timedAppointmentDurationMinutesRange,
                         nonNegative: true,
                       }),
                 )

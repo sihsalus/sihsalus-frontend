@@ -159,7 +159,7 @@
   "daysOfWeek": "Días de la semana",
   "discard": "Descartar",
   "download": "Descargar",
-  "durationRangeErrorMessage": "La duración debe ser un número entero entre {{min}} y {{max}} minutos",
+  "durationRangeErrorMessage": "Para citas con hora, la duración debe ser un número entero entre {{min}} y {{max}} minutos",
   "durationInMinutes": "Duración (minutos)",
   "durationMins": "Duración (min)",
   "durationMinsRequired": "La duración es obligatoria",

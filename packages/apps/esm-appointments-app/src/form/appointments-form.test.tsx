@@ -28,6 +28,7 @@ import {
   appointmentIssueDateEditPrivilege,
   appointmentNoteMaxLength,
   appointmentStartDateEditPrivilege,
+  canonicalAllDayAppointmentDurationMilliseconds,
   omrsDateFormat,
 } from '../constants';
 import SelectedDateContext from '../hooks/selectedDateContext';
@@ -661,7 +662,7 @@ describe('AppointmentForm', () => {
     ).toBe(false);
   });
 
-  it.each(['0', '1441'])('does not submit an out-of-range appointment duration of %s minutes', async (duration) => {
+  it.each(['0', '1440'])('does not submit an out-of-range appointment duration of %s minutes', async (duration) => {
     const user = userEvent.setup();
     mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
 
@@ -685,7 +686,7 @@ describe('AppointmentForm', () => {
     );
   });
 
-  it('submits an appointment at the 1440-minute duration boundary', async () => {
+  it('submits a timed appointment at the 1439-minute duration boundary', async () => {
     const user = userEvent.setup();
     mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
     mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
@@ -696,12 +697,12 @@ describe('AppointmentForm', () => {
     await fillRequiredAppointmentFields(user);
     const durationInput = screen.getByRole('spinbutton', { name: /duration/i });
     await user.clear(durationInput);
-    await user.type(durationInput, '1440');
+    await user.type(durationInput, '1439');
     await user.click(screen.getByRole('button', { name: /save and close/i }));
 
     await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
     const payload = mockSaveAppointment.mock.calls[0][0];
-    expect(dayjs(payload.endDateTime).diff(dayjs(payload.startDateTime), 'minute')).toBe(1440);
+    expect(dayjs(payload.endDateTime).diff(dayjs(payload.startDateTime), 'minute')).toBe(1439);
   });
 
   it('closes the workspace when the cancel button is clicked', async () => {
@@ -918,7 +919,9 @@ describe('AppointmentForm', () => {
     const payload = mockSaveAppointment.mock.calls[0][0];
     expect(payload.startDateTime).toMatch(/T00:00:00/);
     expect(payload.endDateTime).toMatch(/T23:59:59\.999/);
-    expect(dayjs(payload.endDateTime).valueOf() - dayjs(payload.startDateTime).valueOf()).toBe(86_400_000 - 1);
+    expect(dayjs(payload.endDateTime).valueOf() - dayjs(payload.startDateTime).valueOf()).toBe(
+      canonicalAllDayAppointmentDurationMilliseconds,
+    );
   });
 
   it('ignores an invalid hidden duration when scheduling an all-day appointment', async () => {

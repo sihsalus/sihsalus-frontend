@@ -98,7 +98,7 @@
   "daysOfWeek": "Dias da semana",
   "discard": "Descartar",
   "download": "Baixar",
-  "durationRangeErrorMessage": "A duração deve ser um número inteiro entre {{min}} e {{max}} minutos",
+  "durationRangeErrorMessage": "Para consultas com horário, a duração deve ser um número inteiro entre {{min}} e {{max}} minutos",
   "durationInMinutes": "Duração (minutos)",
   "durationMins": "Duração min",
   "durationMinsRequired": "A duração é obrigatória",

@@ -15,10 +15,11 @@ export const chartAppointmentsReadPrivilege = 'app:hoja.clinica.citas';
 export const chartAppointmentsEditPrivilege = 'app:hoja.clinica.citas.editar';
 // The appointments backend persists patient_appointment.comments as VARCHAR(255).
 export const appointmentNoteMaxLength = 255;
-// Keep the input controls, form schema, and resource guards on the same
-// clinical bounds. A full-day appointment is represented as exactly 1,440
-// minutes ([start of day, start of next day)).
-export const appointmentDurationMinutesRange = { min: 1, max: 1440 } as const;
+// Bahmni 2.1.0 compares service availability by wall-clock time. A timed
+// appointment cannot be 1,440 minutes because its end time would equal its
+// start time; all-day appointments use the separate canonical interval below.
+export const timedAppointmentDurationMinutesRange = { min: 1, max: 1439 } as const;
+export const canonicalAllDayAppointmentDurationMilliseconds = 86_400_000 - 1;
 export const recurringPatternPeriodRange = { min: 1, max: 356 } as const;
 
 export const moduleName = '@sihsalus/esm-appointments-app';

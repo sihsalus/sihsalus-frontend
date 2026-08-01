@@ -89,19 +89,22 @@ describe('appointment writes', () => {
     const fractionalDuration = { ...validAppointment, endDateTime: '2026-07-18T09:30:30-05:00' };
 
     expect(() => saveAppointment(fractionalDuration, new AbortController())).toThrow(
-      'Appointment duration must be a whole number between 1 and 1440 minutes',
+      'Timed appointment duration must be a whole number between 1 and 1439 minutes',
     );
     await expect(checkAppointmentConflict(fractionalDuration)).rejects.toThrow(
-      'Appointment duration must be a whole number between 1 and 1440 minutes',
+      'Timed appointment duration must be a whole number between 1 and 1439 minutes',
     );
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });
 
-  it('does not call the conflict API with a duration over 1440 minutes', async () => {
-    const overlongAppointment = { ...validAppointment, endDateTime: '2026-07-19T09:01:00-05:00' };
+  it('does not call any API with a timed duration of 1440 minutes', async () => {
+    const overlongAppointment = { ...validAppointment, endDateTime: '2026-07-19T09:00:00-05:00' };
 
+    expect(() => saveAppointment(overlongAppointment, new AbortController())).toThrow(
+      'Timed appointment duration must be a whole number between 1 and 1439 minutes',
+    );
     await expect(checkAppointmentConflict(overlongAppointment)).rejects.toThrow(
-      'Appointment duration must be a whole number between 1 and 1440 minutes',
+      'Timed appointment duration must be a whole number between 1 and 1439 minutes',
     );
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });

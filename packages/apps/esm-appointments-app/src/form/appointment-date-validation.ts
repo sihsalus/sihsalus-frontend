@@ -1,11 +1,14 @@
 import type { AppointmentPayload, RecurringPattern } from '../types';
-import { appointmentDurationMinutesRange, recurringPatternPeriodRange, weekDays } from '../constants';
+import {
+  canonicalAllDayAppointmentDurationMilliseconds,
+  recurringPatternPeriodRange,
+  timedAppointmentDurationMinutesRange,
+  weekDays,
+} from '../constants';
 
 export type AppointmentFormContext = 'creating' | 'editing';
 export const MAX_RECURRING_APPOINTMENT_HORIZON_DAYS = 365;
 const MILLISECONDS_PER_MINUTE = 60_000;
-const MILLISECONDS_PER_MAXIMUM_APPOINTMENT =
-  appointmentDurationMinutesRange.max * MILLISECONDS_PER_MINUTE;
 const LOCAL_ISO_DATETIME_PATTERN =
   /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?(?:Z|[+-]\d{2}:?\d{2})$/;
 const validRecurringPatternTypes = new Set<RecurringPattern['type']>(['DAY', 'WEEK']);
@@ -98,11 +101,11 @@ export function isRecurringAppointmentRangeAllowed(
   );
 }
 
-export function isAppointmentDurationAllowed(durationMinutes: number): boolean {
+export function isTimedAppointmentDurationAllowed(durationMinutes: number): boolean {
   return (
     Number.isInteger(durationMinutes) &&
-    durationMinutes >= appointmentDurationMinutesRange.min &&
-    durationMinutes <= appointmentDurationMinutesRange.max
+    durationMinutes >= timedAppointmentDurationMinutesRange.min &&
+    durationMinutes <= timedAppointmentDurationMinutesRange.max
   );
 }
 
@@ -162,7 +165,7 @@ function isCanonicalAllDayAppointmentInterval(
     endMinute === '59' &&
     endSecond === '59' &&
     endFraction === '999' &&
-    endDate.valueOf() - startDate.valueOf() === MILLISECONDS_PER_MAXIMUM_APPOINTMENT - 1
+    endDate.valueOf() - startDate.valueOf() === canonicalAllDayAppointmentDurationMilliseconds
   );
 }
 
@@ -194,9 +197,9 @@ export function assertAppointmentPayloadDates(
     startDate,
     endDate,
   );
-  if (!isCanonicalAllDayAppointment && !isAppointmentDurationAllowed(durationMinutes)) {
+  if (!isCanonicalAllDayAppointment && !isTimedAppointmentDurationAllowed(durationMinutes)) {
     throw new Error(
-      `Appointment duration must be a whole number between ${appointmentDurationMinutesRange.min} and ${appointmentDurationMinutesRange.max} minutes.`,
+      `Timed appointment duration must be a whole number between ${timedAppointmentDurationMinutesRange.min} and ${timedAppointmentDurationMinutesRange.max} minutes.`,
     );
   }
 }

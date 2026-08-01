@@ -98,7 +98,7 @@
   "daysOfWeek": "Jours de la semaine",
   "discard": "Abandonner",
   "download": "Télécharger",
-  "durationRangeErrorMessage": "La durée doit être un nombre entier compris entre {{min}} et {{max}} minutes",
+  "durationRangeErrorMessage": "Pour les rendez-vous avec horaire, la durée doit être un nombre entier compris entre {{min}} et {{max}} minutes",
   "durationInMinutes": "Durée (minutes)",
   "durationMins": "Durée min",
   "durationMinsRequired": "La durée est obligatoire",

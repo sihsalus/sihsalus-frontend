@@ -118,10 +118,11 @@ describe('ListDetails', () => {
     await userEvent.click(screen.getByText(/delete patient list/i));
 
     expect(screen.getByText(/Are you sure you want to delete this patient list/i)).toBeInTheDocument();
-    expect(screen.getByText('Delete')).toBeInTheDocument();
+    const confirmDeleteButton = screen.getByRole('button', { name: /delete patient list/i });
+    expect(confirmDeleteButton).toBeInTheDocument();
     expect(screen.getByText('Cancel')).toBeInTheDocument();
 
-    expect(screen.getByText('Delete').closest('button')).toBeEnabled();
+    expect(confirmDeleteButton).toBeEnabled();
 
     await userEvent.click(screen.getByText('Cancel'));
   });

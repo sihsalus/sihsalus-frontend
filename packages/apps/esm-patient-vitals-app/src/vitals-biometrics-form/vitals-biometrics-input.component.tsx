@@ -9,8 +9,8 @@ import { useTranslation } from 'react-i18next';
 
 import { generatePlaceholder } from '../common';
 
+import { type VitalsBiometricsFormData } from './vitals-biometrics-form.schema';
 import { validateClinicalNumberInput } from './vitals-biometrics-form.utils';
-import { type VitalsBiometricsFormData } from './vitals-biometrics-form.workspace';
 import styles from './vitals-biometrics-input.scss';
 
 type fieldId =

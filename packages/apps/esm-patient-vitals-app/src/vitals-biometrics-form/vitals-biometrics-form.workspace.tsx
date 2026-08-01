@@ -32,7 +32,6 @@ import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { z } from 'zod';
 
 import {
   assessValue,
@@ -46,6 +45,10 @@ import type { ConfigObject, GlasgowComaScaleAnswerUuids } from '../config-schema
 
 import styles from './vitals-biometrics-form.scss';
 import {
+  VitalsAndBiometricFormSchema,
+  type VitalsBiometricsFormData,
+} from './vitals-biometrics-form.schema';
+import {
   type ConditionalFieldOverrides,
   calculateBodyMassIndex,
   calculateGlasgowComaScaleTotal,
@@ -53,14 +56,11 @@ import {
   getMuacColorCode,
   isConditionalFieldVisible,
   isValueWithinReferenceRange,
+  numericMeasurementInputIds,
   VITAL_SIGN_INPUT_LIMITS,
-  vitalSignInputIds,
-  type VitalSignInputId,
   type VitalsBiometricsWorkspaceProfile,
 } from './vitals-biometrics-form.utils';
 import VitalsAndBiometricsInput from './vitals-biometrics-input.component';
-
-const glasgowFieldKeys = ['glasgowEyeOpening', 'glasgowVerbalResponse', 'glasgowMotorResponse'] as const;
 
 interface GlasgowComaScaleOption {
   label: string;
@@ -100,78 +100,7 @@ function buildGlasgowScoreByAnswerUuid(answerUuids: GlasgowComaScaleAnswerUuids)
   );
 }
 
-function vitalSignSchema(field: VitalSignInputId) {
-  const { min, max } = VITAL_SIGN_INPUT_LIMITS[field];
-  const schema = z.number().finite({ message: 'Vital sign must be finite' }).min(min, {
-    message: 'Vital sign cannot be negative',
-  });
-  return max === null ? schema : schema.max(max, { message: 'Vital sign exceeds its unit-defined maximum' });
-}
-
-const VitalsAndBiometricFormSchema = z
-  .object({
-    systolicBloodPressure: vitalSignSchema('systolicBloodPressure'),
-    diastolicBloodPressure: vitalSignSchema('diastolicBloodPressure'),
-    respiratoryRate: vitalSignSchema('respiratoryRate'),
-    oxygenSaturation: vitalSignSchema('oxygenSaturation'),
-    pulse: vitalSignSchema('pulse'),
-    temperature: vitalSignSchema('temperature'),
-    generalPatientNote: z.string(),
-    weight: z.number(),
-    height: z.number(),
-    midUpperArmCircumference: z.number(),
-    abdominalCircumference: z.number(),
-    headCircumference: z.number(),
-    chestCircumference: z.number(),
-    glasgowEyeOpening: z.string(),
-    glasgowVerbalResponse: z.string(),
-    glasgowMotorResponse: z.string(),
-    glasgowTotal: z.number(),
-    computedBodyMassIndex: z.number(),
-  })
-  .partial()
-  .refine(
-    (fields) => {
-      const completedGlasgowFields = glasgowFieldKeys.filter((field) => fields[field] != null);
-      return completedGlasgowFields.length === 0 || completedGlasgowFields.length === glasgowFieldKeys.length;
-    },
-    {
-      message: 'Please complete all Glasgow coma scale fields',
-      path: ['glasgowComaScale'],
-    },
-  )
-  .refine((fields) => (fields.systolicBloodPressure == null) === (fields.diastolicBloodPressure == null), {
-    message: 'Blood pressure requires both systolic and diastolic values',
-    path: ['bloodPressureIncomplete'],
-  })
-  .refine(
-    (fields) =>
-      fields.systolicBloodPressure == null ||
-      fields.diastolicBloodPressure == null ||
-      fields.systolicBloodPressure >= fields.diastolicBloodPressure,
-    {
-      message: 'Systolic blood pressure cannot be lower than diastolic blood pressure',
-      path: ['bloodPressureInverted'],
-    },
-  )
-  .refine(
-    (fields) => {
-      // A note alone must not create an encounter; require at least one measurement
-      const {
-        generalPatientNote: _note,
-        computedBodyMassIndex: _bmi,
-        glasgowTotal: _glasgowTotal,
-        ...measurements
-      } = fields;
-      return Object.values(measurements).some((value) => value != null && value !== '');
-    },
-    {
-      message: 'Please record at least one measurement',
-      path: ['oneFieldRequired'],
-    },
-  );
-
-export type VitalsBiometricsFormData = z.infer<typeof VitalsAndBiometricFormSchema>;
+export type { VitalsBiometricsFormData } from './vitals-biometrics-form.schema';
 
 interface OutOfRangeConfirmation {
   entries: Array<[string, unknown]>;
@@ -413,14 +342,14 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   }, [getGlasgowScore, glasgowEyeOpening, glasgowMotorResponse, glasgowVerbalResponse, setValue]);
 
   function onError(err: Record<string, { message?: string }>) {
-    const vitalSignsOutsideInputLimits = vitalSignInputIds.filter((field) => Boolean(err?.[field]));
-    if (vitalSignsOutsideInputLimits.length > 0) {
+    const measurementsOutsideInputLimits = numericMeasurementInputIds.filter((field) => Boolean(err?.[field]));
+    if (measurementsOutsideInputLimits.length > 0) {
       setPendingOutOfRangeConfirmation(null);
       setShowErrorMessage(true);
       setFormErrorMessage(
         t(
-          'vitalSignsOutsideInputLimits',
-          'One or more vital signs violates a unit-defined input constraint. Correct the marked values; they cannot be saved by confirmation',
+          'measurementsOutsideInputLimits',
+          'One or more measurements violates a hard input constraint. Correct the marked values; they cannot be saved by confirmation',
         ),
       );
       setShowErrorNotification(true);
@@ -1145,6 +1074,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   {
                     name: t('weight', 'Weight'),
                     type: 'number',
+                    invalid: Boolean(errors.weight),
                     min: concepts.weightRange?.lowAbsolute,
                     max: concepts.weightRange?.highAbsolute,
                     id: 'weight',
@@ -1175,6 +1105,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   {
                     name: t('height', 'Height'),
                     type: 'number',
+                    invalid: Boolean(errors.height),
                     min: concepts.heightRange?.lowAbsolute,
                     max: concepts.heightRange?.highAbsolute,
                     id: 'height',
@@ -1206,6 +1137,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                     {
                       name: t('headCircumference', 'Head circumference'),
                       type: 'number',
+                      invalid: Boolean(errors.headCircumference),
                       min: concepts.headCircumferenceRange?.lowAbsolute,
                       max: concepts.headCircumferenceRange?.hiAbsolute,
                       id: 'headCircumference',
@@ -1243,6 +1175,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                     {
                       name: t('chestCircumference', 'Chest circumference'),
                       type: 'number',
+                      invalid: Boolean(errors.chestCircumference),
                       min: concepts.chestCircumferenceRange?.lowAbsolute,
                       max: concepts.chestCircumferenceRange?.hiAbsolute,
                       id: 'chestCircumference',
@@ -1294,6 +1227,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   {
                     name: t('abdominalCircumference', 'Abdominal circumference'),
                     type: 'number',
+                    invalid: Boolean(errors.abdominalCircumference),
                     min: concepts.abdominalCircumferenceRange?.lowAbsolute,
                     max: concepts.abdominalCircumferenceRange?.hiAbsolute,
                     id: 'abdominalCircumference',
@@ -1332,6 +1266,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   {
                     name: t('muac', 'MUAC'),
                     type: 'number',
+                    invalid: Boolean(errors.midUpperArmCircumference),
                     min: concepts.midUpperArmCircumferenceRange?.lowAbsolute,
                     max: concepts.midUpperArmCircumferenceRange?.highAbsolute,
                     id: 'midUpperArmCircumference',

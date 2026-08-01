@@ -3,7 +3,10 @@ import { type ObsRecord, useMappedPatientObservations, useReferenceRanges } from
 import { useCallback, useEffect, useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';
 import { type ConfigObject } from '../config-schema';
-import { type VitalsBiometricsFormData } from '../vitals-biometrics-form/vitals-biometrics-form.workspace';
+import {
+  VitalsAndBiometricFormSchema,
+  type VitalsBiometricsFormData,
+} from '../vitals-biometrics-form/vitals-biometrics-form.schema';
 
 import { assessValue, calculateBodyMassIndex, getReferenceRangesForConcept, interpretBloodPressure } from './helpers';
 import type { ObsReferenceRanges, PatientVitalsAndBiometrics } from './types';
@@ -400,7 +403,17 @@ function createObsObject(
   vitals: VitalsBiometricsFormData,
   concepts: ConfigObject['concepts'],
 ): Array<Omit<ObsRecord, 'effectiveDateTime' | 'conceptClass' | 'encounter'>> {
-  return Object.entries(vitals)
+  // Types cannot protect the REST boundary from manipulated browser state or
+  // direct JavaScript callers. Parse again immediately before constructing the
+  // request so an invalid measurement can never reach openmrsFetch.
+  const validatedVitals = VitalsAndBiometricFormSchema.parse(vitals);
+  const validatedEntries = new Map(Object.entries(validatedVitals));
+
+  // Preserve the caller's stable observation order while dropping any unknown
+  // properties stripped by the schema.
+  return Object.keys(vitals)
+    .filter((name) => validatedEntries.has(name))
+    .map((name) => [name, validatedEntries.get(name)] as const)
     .filter(([_, result]) => result != null && result !== '')
     .map(([name, result]) => {
       return {

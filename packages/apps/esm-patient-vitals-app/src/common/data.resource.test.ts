@@ -81,4 +81,30 @@ describe('vitals and biometrics resources', () => {
       },
     });
   });
+
+  it.each([
+    ['weight', Number.NaN],
+    ['height', Number.POSITIVE_INFINITY],
+    ['midUpperArmCircumference', -1],
+    ['abdominalCircumference', -1],
+    ['headCircumference', -1],
+    ['chestCircumference', -1],
+    ['oxygenSaturation', 101],
+  ] as const)('rejects a programmatically manipulated %s before invoking the REST mutation', (field, value) => {
+    const abortController = new AbortController();
+
+    expect(() =>
+      saveVitalsAndBiometrics(
+        mockVitalsConfig.vitals.encounterTypeUuid,
+        concepts,
+        'patient-uuid',
+        { weight: 70, [field]: value },
+        abortController,
+        'location-uuid',
+        'visit-uuid',
+      ),
+    ).toThrow();
+
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+  });
 });

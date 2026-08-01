@@ -121,7 +121,7 @@
   "vitalsAndBiometricsNowAvailable": "They are now visible on the Vitals and Biometrics page",
   "vitalsAndBiometricsRecorded": "Vitals and Biometrics saved",
   "vitalsAndBiometricsSaveError": "Error saving vitals and biometrics",
-  "vitalSignsOutsideInputLimits": "One or more vital signs violates a unit-defined input constraint. Correct the marked values; they cannot be saved by confirmation",
+  "measurementsOutsideInputLimits": "One or more measurements violates a hard input constraint. Correct the marked values; they cannot be saved by confirmation",
   "vitalsChartFileName": "vitals-chart",
   "vitalsHistory": "Vitals history",
   "weight": "Weight"

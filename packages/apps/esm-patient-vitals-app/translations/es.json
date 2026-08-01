@@ -125,7 +125,7 @@
   "vitalsAndBiometricsNowAvailable": "Ahora son visibles en la página de Signos Vitales y Datos Biométricos",
   "vitalsAndBiometricsRecorded": "Signos Vitales y Datos Biométricos guardados",
   "vitalsAndBiometricsSaveError": "Error al guardar signos vitales y datos biométricos",
-  "vitalSignsOutsideInputLimits": "Uno o más signos vitales incumple una restricción definida por su unidad. Corrija los valores marcados; no se pueden guardar mediante confirmación",
+  "measurementsOutsideInputLimits": "Una o más mediciones incumplen una restricción obligatoria de entrada. Corrija los valores marcados; no se pueden guardar mediante confirmación",
   "vitalsChartFileName": "grafico-de-signos-vitales",
   "vitalsHistory": "Historial de signos vitales",
   "weight": "Peso"

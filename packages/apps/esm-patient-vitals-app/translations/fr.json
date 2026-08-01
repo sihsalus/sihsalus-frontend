@@ -67,7 +67,7 @@
   "vitalsAndBiometricsNowAvailable": "Ils sont désormais visibles sur la page Signes vitaux et biométrie",
   "vitalsAndBiometricsRecorded": "Signes vitaux et biométrie enregistrés",
   "vitalsAndBiometricsSaveError": "Erreur en sauvegardant les signes vitaux et la biométrie",
-  "vitalSignsOutsideInputLimits": "Un ou plusieurs signes vitaux enfreignent une contrainte de saisie définie par leur unité. Corrigez les valeurs signalées ; elles ne peuvent pas être enregistrées par confirmation",
+  "measurementsOutsideInputLimits": "Une ou plusieurs mesures enfreignent une contrainte de saisie obligatoire. Corrigez les valeurs signalées ; elles ne peuvent pas être enregistrées par confirmation",
   "vitalsHistory": "Historique des signes vitaux",
   "vitalSignDisplayed": "Signe vital affiché",
   "vitalSigns": "Signes vitaux",

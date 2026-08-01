@@ -642,7 +642,7 @@ describe('VitalsBiometricsForm', () => {
     await user.click(saveButton);
 
     expect(mockSavePatientVitals).not.toHaveBeenCalled();
-    expect(screen.getByText(/violates a unit-defined input constraint/i)).toBeInTheDocument();
+    expect(screen.getByText(/violates a hard input constraint/i)).toBeInTheDocument();
     expect(screen.getByText(/between 0 and 100/i)).toBeInTheDocument();
 
     await user.click(saveButton);

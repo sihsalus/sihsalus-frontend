@@ -67,7 +67,7 @@
   "vitalsAndBiometricsNowAvailable": "Estão agora visíveis na página Sinais vitais e Biométricos",
   "vitalsAndBiometricsRecorded": "Sinais vitais e biométricos gravados",
   "vitalsAndBiometricsSaveError": "Erro ao gravar sinais vitais e biométricos",
-  "vitalSignsOutsideInputLimits": "Um ou mais sinais vitais violam uma restrição de entrada definida pela unidade. Corrija os valores marcados; eles não podem ser salvos mediante confirmação",
+  "measurementsOutsideInputLimits": "Uma ou mais medições violam uma restrição obrigatória de entrada. Corrija os valores marcados; elas não podem ser salvas mediante confirmação",
   "vitalsHistory": "Histórico de sinais vitais",
   "vitalSignDisplayed": "Sinal vital visualizado",
   "vitalSigns": "Sinais vitais",

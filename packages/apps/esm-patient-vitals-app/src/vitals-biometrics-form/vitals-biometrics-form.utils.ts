@@ -25,9 +25,38 @@ export const VITAL_SIGN_INPUT_LIMITS = {
   oxygenSaturation: { min: 0, max: 100 },
 } as const;
 
-export type VitalSignInputId = keyof typeof VITAL_SIGN_INPUT_LIMITS;
+/**
+ * Biometrics share the same representation invariant as vital signs: a
+ * measurement must be finite and non-negative. Their configured OpenMRS
+ * absolute ranges are clinical reference ranges, not hard limits, so they are
+ * deliberately not copied into this contract.
+ */
+export const BIOMETRIC_INPUT_LIMITS = {
+  weight: { min: 0, max: null },
+  height: { min: 0, max: null },
+  midUpperArmCircumference: { min: 0, max: null },
+  abdominalCircumference: { min: 0, max: null },
+  headCircumference: { min: 0, max: null },
+  chestCircumference: { min: 0, max: null },
+} as const;
 
-export const vitalSignInputIds = Object.keys(VITAL_SIGN_INPUT_LIMITS) as Array<VitalSignInputId>;
+/** Derived values are never trusted from the UI, but remain constrained in the form schema. */
+export const DERIVED_MEASUREMENT_INPUT_LIMITS = {
+  computedBodyMassIndex: { min: 0, max: null },
+  glasgowTotal: { min: 3, max: 15 },
+} as const;
+
+export const NUMERIC_MEASUREMENT_INPUT_LIMITS = {
+  ...VITAL_SIGN_INPUT_LIMITS,
+  ...BIOMETRIC_INPUT_LIMITS,
+  ...DERIVED_MEASUREMENT_INPUT_LIMITS,
+} as const;
+
+export type NumericMeasurementInputId = keyof typeof NUMERIC_MEASUREMENT_INPUT_LIMITS;
+
+export const numericMeasurementInputIds = Object.keys(
+  NUMERIC_MEASUREMENT_INPUT_LIMITS,
+) as Array<NumericMeasurementInputId>;
 
 export interface ConditionalFieldOverrides {
   /** Force-show these fields regardless of age rules (e.g. CRED launching for a newborn) */

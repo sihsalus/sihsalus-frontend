@@ -19,9 +19,17 @@ clave del dispositivo), se purga porque nunca podria enviarse y se emite
 aleatorios afectados. La senal no incluye payload, usuario, paciente ni sesion;
 operaciones debe capturarla y alertar porque representa perdida de trazabilidad.
 
-Los fallos HTTP se reintentan con backoff exponencial y jitter, sin superar 60
-segundos de espera total entre intentos. Si una escritura nueva llega durante un
-`flush`, el logger vuelve a leer la cola antes de cancelar el retry pendiente.
+Los fallos de red, HTTP 5xx, 408, 425 y 429 se reintentan con backoff exponencial
+y jitter, sin superar 60 segundos de espera entre intentos. Otros HTTP 4xx abren
+el circuito de transporte: la cola cifrada se conserva, no se repiten solicitudes
+y se emite `sihsalus:audit-transport-unavailable` solo con el estado HTTP. Una
+reconfiguracion explicita del logger o la recarga de la aplicacion permite volver
+a intentar luego de que operaciones corrija el endpoint; 401 y 403 se vuelven a
+probar cuando cambia la sesion autenticada porque pueden depender del usuario. El
+transporte usa `fetch` same-origin directamente para que la redireccion de sesion
+de la SPA no deje una promesa pendiente ni descarte el evento. Si una escritura
+nueva llega durante un `flush`, el logger vuelve a leer la cola antes de cancelar
+el retry pendiente.
 
 ## Eventos instrumentados
 

@@ -1,4 +1,4 @@
-import { openmrsFetch } from '@openmrs/esm-framework';
+import { makeUrl } from '@openmrs/esm-framework';
 
 import { clearKeyCache } from './crypto';
 import { clearEntries, getEntriesForUser, queueEntry } from './db';
@@ -14,6 +14,15 @@ const FLUSH_BATCH_SIZE = 50;
 const RATE_LIMIT_PER_SECOND = 20;
 const RETRY_BASE_DELAY_MS = 1000;
 const RETRY_MAX_DELAY_MS = 60_000;
+const TRANSIENT_CLIENT_ERROR_STATUSES = new Set([408, 425, 429]);
+const SESSION_SCOPED_TERMINAL_STATUSES = new Set([401, 403]);
+
+class AuditTransportUnavailableError extends Error {
+  constructor(readonly status: number) {
+    super(`Audit transport unavailable (HTTP ${status})`);
+    this.name = 'AuditTransportUnavailableError';
+  }
+}
 
 export function calculateRetryDelayMs(retryAttempt: number, randomValue: number): number {
   const exponentialDelay = Math.min(RETRY_BASE_DELAY_MS * 2 ** retryAttempt, RETRY_MAX_DELAY_MS);
@@ -28,6 +37,7 @@ class AuditLogger {
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private flushPromise: Promise<void> | null = null;
   private retryAttempt = 0;
+  private terminalTransportStatus: number | null = null;
   private activeConsumers = 0;
   private queueRevision = 0;
   private sessionGeneration = 0;
@@ -51,6 +61,10 @@ class AuditLogger {
     this.rateLimitResetAt = 0;
     this.clearRateLimitFlushTimer();
     this.resetRetry();
+    // Reconfiguration is the explicit recovery path after operators make the
+    // configured transport available again. A missing/forbidden endpoint must
+    // otherwise remain open-circuit for the lifetime of this logger instance.
+    this.terminalTransportStatus = null;
   }
 
   setSession(userUuid: string, sessionId: string, locationUuid?: string): void {
@@ -58,11 +72,14 @@ class AuditLogger {
     if (sessionChanged) {
       this.sessionGeneration++;
       this.resetRetry();
+      if (this.terminalTransportStatus !== null && SESSION_SCOPED_TERMINAL_STATUSES.has(this.terminalTransportStatus)) {
+        this.terminalTransportStatus = null;
+      }
     }
     this.sessionRef = { userUuid, sessionId, locationUuid };
 
     if (this.initialized && navigator.onLine) {
-      this.flush().catch((err) => console.error('[AuditLogger] Session flush failed:', err));
+      this.flush().catch((err) => AuditLogger.reportOperationalFailure('Session flush failed.', err));
     }
   }
 
@@ -80,11 +97,11 @@ class AuditLogger {
     if (this.initialized) return;
     this.initialized = true;
     this.onlineHandler = () => {
-      this.flush().catch((err) => console.error('[AuditLogger] Online flush failed:', err));
+      this.flush().catch((err) => AuditLogger.reportOperationalFailure('Online flush failed.', err));
     };
     globalThis.addEventListener('online', this.onlineHandler);
     if (navigator.onLine) {
-      this.flush().catch((err) => console.error('[AuditLogger] Initial flush failed:', err));
+      this.flush().catch((err) => AuditLogger.reportOperationalFailure('Initial flush failed.', err));
     }
   }
 
@@ -132,6 +149,15 @@ class AuditLogger {
     };
 
     if (navigator.onLine) {
+      if (this.terminalTransportStatus !== null) {
+        try {
+          await this.storeOffline(entry);
+        } catch (err) {
+          AuditLogger.reportOperationalFailure('Queue failed; event lost.', err);
+        }
+        return;
+      }
+
       // Rate limiting only applies to the online path — its purpose is preventing
       // server flood attacks. The offline queue is bounded by maxOfflineEntries.
       if (this.isRateLimited()) {
@@ -140,19 +166,19 @@ class AuditLogger {
           await this.storeOffline(entry);
           this.scheduleRateLimitFlush();
         } catch (err) {
-          console.error('[AuditLogger] Queue failed, event lost:', err);
+          AuditLogger.reportOperationalFailure('Queue failed; event lost.', err);
         }
         return;
       }
       try {
         await this.sendEntries([entry]);
       } catch (err) {
-        console.error('[AuditLogger] Send failed, queuing offline:', err);
+        AuditLogger.reportOperationalFailure('Send failed; queuing event for retry.', err);
         try {
           await this.storeOffline(entry);
           this.scheduleRetry();
         } catch (qErr) {
-          console.error('[AuditLogger] Queue failed, event lost:', qErr);
+          AuditLogger.reportOperationalFailure('Queue failed; event lost.', qErr);
         }
       }
       return;
@@ -161,7 +187,7 @@ class AuditLogger {
     try {
       await this.storeOffline(entry);
     } catch (err) {
-      console.error('[AuditLogger] Queue failed, event lost:', err);
+      AuditLogger.reportOperationalFailure('Queue failed; event lost.', err);
     }
   }
 
@@ -184,6 +210,11 @@ class AuditLogger {
 
   private async runFlushLoop(): Promise<void> {
     while (this.sessionRef) {
+      if (this.terminalTransportStatus !== null) {
+        this.resetRetry();
+        return;
+      }
+
       // Capture attribution and storage before asynchronous work. If the user
       // changes, stop the old user's next batch and continue with the new one.
       const session = this.sessionRef;
@@ -262,7 +293,7 @@ class AuditLogger {
           batch.map((e) => e.id),
         );
       } catch (err) {
-        console.error('[AuditLogger] Flush batch failed, stopping:', err);
+        AuditLogger.reportOperationalFailure('Flush batch failed; stopping.', err);
         throw err;
       }
     }
@@ -290,14 +321,80 @@ class AuditLogger {
   }
 
   private async sendEntries(entries: StoredAuditEntry[]): Promise<void> {
-    const response = await openmrsFetch(this.config.endpoint, {
-      method: 'POST',
-      body: entries,
-      headers: { 'Content-Type': 'application/json' },
-    });
-    if (!response.ok) {
-      throw new Error(`Audit flush failed: ${response.status}`);
+    if (this.terminalTransportStatus !== null) {
+      throw new AuditTransportUnavailableError(this.terminalTransportStatus);
     }
+
+    try {
+      const response = await globalThis.fetch(makeUrl(this.config.endpoint), {
+        method: 'POST',
+        body: JSON.stringify(entries),
+        cache: 'no-store',
+        credentials: 'same-origin',
+        redirect: 'manual',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'Disable-WWW-Authenticate': 'true',
+        },
+      });
+      if (!response.ok) {
+        this.handleHttpFailure(response.status);
+      }
+    } catch (err) {
+      const status = AuditLogger.getHttpStatus(err);
+      if (status !== null && AuditLogger.isTerminalHttpStatus(status)) {
+        this.openTransportCircuit(status);
+        throw new AuditTransportUnavailableError(status);
+      }
+      throw err;
+    }
+  }
+
+  private handleHttpFailure(status: number): never {
+    if (AuditLogger.isTerminalHttpStatus(status)) {
+      this.openTransportCircuit(status);
+      throw new AuditTransportUnavailableError(status);
+    }
+    throw new Error(`Audit flush failed: ${status}`);
+  }
+
+  private openTransportCircuit(status: number): void {
+    if (this.terminalTransportStatus !== null) return;
+
+    this.terminalTransportStatus = status;
+    this.resetRetry();
+    // Status is transport metadata, not PHI. Do not include the rejected
+    // payload, user, patient, session, response body, or raw backend error.
+    console.error('[AuditLogger] Audit transport unavailable; queued events retained and retries suspended:', status);
+    globalThis.dispatchEvent(
+      new CustomEvent('sihsalus:audit-transport-unavailable', {
+        detail: { status },
+      }),
+    );
+  }
+
+  private static getHttpStatus(error: unknown): number | null {
+    if (!error || typeof error !== 'object') return null;
+
+    const response = 'response' in error ? error.response : null;
+    if (response && typeof response === 'object' && 'status' in response && typeof response.status === 'number') {
+      return response.status;
+    }
+
+    return 'status' in error && typeof error.status === 'number' ? error.status : null;
+  }
+
+  private static reportOperationalFailure(context: string, error: unknown): void {
+    const status = AuditLogger.getHttpStatus(error);
+    const errorType = error instanceof Error ? error.name : 'UnknownError';
+    // Never pass the raw OpenmrsFetchError to the console: it can retain a
+    // backend response body. Operational telemetry needs only non-PHI metadata.
+    console.error(`[AuditLogger] ${context}`, status === null ? { errorType } : { errorType, status });
+  }
+
+  private static isTerminalHttpStatus(status: number): boolean {
+    return status >= 400 && status < 500 && !TRANSIENT_CLIENT_ERROR_STATUSES.has(status);
   }
 
   private isRateLimited(): boolean {
@@ -317,7 +414,7 @@ class AuditLogger {
     this.rateLimitFlushTimer = setTimeout(() => {
       this.rateLimitFlushTimer = null;
       if (navigator.onLine) {
-        this.flush().catch((err) => console.error('[AuditLogger] Rate-limit flush failed:', err));
+        this.flush().catch((err) => AuditLogger.reportOperationalFailure('Rate-limit flush failed.', err));
       }
     }, delay);
   }
@@ -329,14 +426,14 @@ class AuditLogger {
   }
 
   private scheduleRetry(): void {
-    if (this.retryTimer || !this.sessionRef) return;
+    if (this.retryTimer || !this.sessionRef || this.terminalTransportStatus !== null) return;
 
     const jitteredDelay = calculateRetryDelayMs(this.retryAttempt, Math.random());
     this.retryAttempt++;
     this.retryTimer = setTimeout(() => {
       this.retryTimer = null;
       if (!navigator.onLine || !this.sessionRef) return;
-      this.flush().catch((err) => console.error('[AuditLogger] Scheduled retry failed:', err));
+      this.flush().catch((err) => AuditLogger.reportOperationalFailure('Scheduled retry failed.', err));
     }, jitteredDelay);
   }
 
@@ -348,14 +445,15 @@ class AuditLogger {
   }
 
   /**
-   * Only allow relative paths (same-origin) or absolute URLs on the current origin.
+   * Only allow relative paths or absolute URLs that resolve to the current origin.
    * Prevents config injection from redirecting audit logs to an external server.
    */
   private static isSafeEndpoint(endpoint: string): boolean {
-    if (endpoint.startsWith('/')) return true;
+    const currentOrigin = globalThis.location?.origin;
+    if (!currentOrigin) return false;
+
     try {
-      const url = new URL(endpoint);
-      return url.origin === globalThis.location?.origin;
+      return new URL(endpoint, `${currentOrigin}/`).origin === currentOrigin;
     } catch {
       return false;
     }

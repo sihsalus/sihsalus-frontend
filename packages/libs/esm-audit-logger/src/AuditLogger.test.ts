@@ -10,19 +10,30 @@ import { getEntriesForUser } from './db';
 // ---------------------------------------------------------------------------
 
 vi.mock('@openmrs/esm-framework', () => ({
-  openmrsFetch: vi.fn(),
+  makeUrl: vi.fn((path: string) => `/openmrs${path}`),
 }));
 
-import { openmrsFetch } from '@openmrs/esm-framework';
+const mockFetch = vi.fn();
 
-const mockFetch = vi.mocked(openmrsFetch);
-
-function okResponse(): Promise<{ ok: boolean; status: number }> {
-  return Promise.resolve({ ok: true, status: 200 });
+function okResponse(): { ok: boolean; status: number } {
+  return { ok: true, status: 200 };
 }
 
-function failResponse(status = 500): Promise<{ ok: boolean; status: number }> {
-  return Promise.resolve({ ok: false, status });
+function errorResponse(status: number): { ok: boolean; status: number } {
+  return { ok: false, status };
+}
+
+interface SentAuditEntry {
+  eventType: string;
+  userUuid: string;
+  sessionId: string;
+  locationUuid?: string;
+}
+
+function parseSentBody(callIndex = 0): Array<SentAuditEntry> {
+  const [, options] = mockFetch.mock.calls[callIndex] as [string, { body: string }];
+  expect(typeof options.body).toBe('string');
+  return JSON.parse(options.body) as Array<SentAuditEntry>;
 }
 
 // ---------------------------------------------------------------------------
@@ -39,6 +50,7 @@ let DB: string;
 beforeEach(() => {
   DB = `test-audit-logger-${crypto.randomUUID()}`;
   vi.clearAllMocks();
+  vi.stubGlobal('fetch', mockFetch);
   Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
 });
 
@@ -46,6 +58,7 @@ afterEach(() => {
   auditLogger.clearSession();
   auditLogger.destroy();
   clearKeyCache();
+  vi.unstubAllGlobals();
 });
 
 function setupSession(): void {
@@ -65,13 +78,20 @@ describe('log() — online path', () => {
     await auditLogger.log({ eventType: 'PATIENT_VIEW' });
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [url, opts] = mockFetch.mock.calls[0] as [
-      string,
-      { method: string; body: Array<{ eventType: string; userUuid: string; sessionId: string; locationUuid: string }> },
-    ];
-    expect(url).toBe('/ws/rest/v1/sihsalus/audit');
+    const [url, opts] = mockFetch.mock.calls[0] as [string, { method: string; body: string }];
+    expect(url).toBe('/openmrs/ws/rest/v1/sihsalus/audit');
     expect(opts.method).toBe('POST');
-    const body = opts.body;
+    expect(opts).toMatchObject({
+      cache: 'no-store',
+      credentials: 'same-origin',
+      redirect: 'manual',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'Disable-WWW-Authenticate': 'true',
+      },
+    });
+    const body = parseSentBody();
     expect(body[0]?.eventType).toBe('PATIENT_VIEW');
     expect(body[0]?.userUuid).toBe(USER);
     expect(body[0]?.sessionId).toBe(SESSION);
@@ -79,7 +99,7 @@ describe('log() — online path', () => {
   });
 
   it('queues offline when the HTTP call fails', async () => {
-    mockFetch.mockResolvedValue(failResponse() as never);
+    mockFetch.mockResolvedValueOnce(errorResponse(500));
     setupSession();
 
     await auditLogger.log({ eventType: 'PATIENT_VIEW' });
@@ -93,7 +113,7 @@ describe('log() — online path', () => {
   it('automatically retries a queued HTTP failure with bounded backoff', async () => {
     vi.useFakeTimers();
     vi.spyOn(Math, 'random').mockReturnValue(0.5);
-    mockFetch.mockResolvedValueOnce(failResponse() as never).mockResolvedValue(okResponse() as never);
+    mockFetch.mockResolvedValueOnce(errorResponse(500)).mockResolvedValue(okResponse() as never);
     setupSession();
 
     await auditLogger.log({ eventType: 'PATIENT_VIEW' });
@@ -105,8 +125,7 @@ describe('log() — online path', () => {
     await flushSpy.mock.results[0]?.value;
 
     expect(mockFetch).toHaveBeenCalledTimes(2);
-    const [, opts] = mockFetch.mock.calls[1] as [string, { body: Array<{ eventType: string }> }];
-    expect(opts.body[0]?.eventType).toBe('PATIENT_VIEW');
+    expect(parseSentBody(1)[0]?.eventType).toBe('PATIENT_VIEW');
 
     flushSpy.mockRestore();
     vi.mocked(Math.random).mockRestore();
@@ -117,6 +136,66 @@ describe('log() — online path', () => {
     expect(calculateRetryDelayMs(0, 1)).toBe(1200);
     expect(calculateRetryDelayMs(6, 1)).toBe(60_000);
     expect(calculateRetryDelayMs(100, 1)).toBe(60_000);
+  });
+
+  it('opens a circuit on a terminal 404, retains encrypted events, and stops hitting the missing endpoint', async () => {
+    const transportUnavailableHandler = vi.fn();
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    globalThis.addEventListener('sihsalus:audit-transport-unavailable', transportUnavailableHandler);
+    mockFetch.mockResolvedValueOnce(errorResponse(404));
+    setupSession();
+
+    await auditLogger.log({ eventType: 'PATIENT_VIEW', patientUuid: 'patient-must-not-leak' });
+    await auditLogger.log({ eventType: 'ENCOUNTER_VIEW', patientUuid: 'second-patient-must-not-leak' });
+    await auditLogger.flush();
+
+    expect(mockFetch).toHaveBeenCalledOnce();
+    expect(transportUnavailableHandler).toHaveBeenCalledOnce();
+    const detail = (transportUnavailableHandler.mock.calls[0]?.[0] as CustomEvent).detail;
+    expect(detail).toEqual({ status: 404 });
+    expect(JSON.stringify(detail)).not.toContain('patient-must-not-leak');
+    expect(JSON.stringify(errorSpy.mock.calls)).not.toContain('patient-must-not-leak');
+
+    const pending = await getEntriesForUser(DB, USER);
+    expect(pending.entries.map(({ eventType }) => eventType).sort()).toEqual(['ENCOUNTER_VIEW', 'PATIENT_VIEW']);
+    expect(pending.undecryptableIds).toEqual([]);
+
+    globalThis.removeEventListener('sihsalus:audit-transport-unavailable', transportUnavailableHandler);
+    errorSpy.mockRestore();
+  });
+
+  it.each([408, 425, 429, 500])('keeps HTTP %s on the retry path instead of opening the circuit', async (status) => {
+    const transportUnavailableHandler = vi.fn();
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    globalThis.addEventListener('sihsalus:audit-transport-unavailable', transportUnavailableHandler);
+    mockFetch.mockResolvedValueOnce(errorResponse(status)).mockResolvedValue(okResponse() as never);
+    setupSession();
+
+    await auditLogger.log({ eventType: 'PATIENT_VIEW' });
+    await auditLogger.flush();
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(parseSentBody(1)[0]?.eventType).toBe('PATIENT_VIEW');
+    expect(transportUnavailableHandler).not.toHaveBeenCalled();
+
+    globalThis.removeEventListener('sihsalus:audit-transport-unavailable', transportUnavailableHandler);
+    errorSpy.mockRestore();
+  });
+
+  it.each([401, 403])('allows a new authenticated session to retry after terminal HTTP %s', async (status) => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockFetch.mockResolvedValueOnce(errorResponse(status)).mockResolvedValue(okResponse() as never);
+    setupSession();
+
+    await auditLogger.log({ eventType: 'PATIENT_VIEW' });
+    expect(mockFetch).toHaveBeenCalledOnce();
+
+    auditLogger.setSession('user-uuid-2', 'session-id-2', 'session-location-uuid-2');
+    await auditLogger.log({ eventType: 'PATIENT_SEARCH' });
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(parseSentBody(1)[0]?.eventType).toBe('PATIENT_SEARCH');
+    errorSpy.mockRestore();
   });
 });
 
@@ -133,8 +212,7 @@ describe('log() — offline path', () => {
     await auditLogger.flush();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [, opts] = mockFetch.mock.calls[0] as [string, { body: Array<{ eventType: string }> }];
-    const body = opts.body;
+    const body = parseSentBody();
     expect(body[0]?.eventType).toBe('ENCOUNTER_VIEW');
   });
 
@@ -193,9 +271,9 @@ describe('log() — guards', () => {
     await auditLogger.flush();
 
     expect(mockFetch).toHaveBeenCalledTimes(21);
-    const [, opts] = mockFetch.mock.calls[20] as [string, { body: Array<{ eventType: string }> }];
-    expect(opts.body).toHaveLength(1);
-    expect(opts.body[0]?.eventType).toBe('PING');
+    const body = parseSentBody(20);
+    expect(body).toHaveLength(1);
+    expect(body[0]?.eventType).toBe('PING');
 
     const timerFlushSpy = vi.spyOn(auditLogger, 'flush').mockResolvedValue();
     await vi.advanceTimersByTimeAsync(1001);
@@ -244,7 +322,7 @@ describe('flush()', () => {
     }
 
     Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
-    mockFetch.mockResolvedValue(failResponse() as never);
+    mockFetch.mockResolvedValueOnce(errorResponse(500));
     await expect(auditLogger.flush()).rejects.toThrow('Audit flush failed: 500');
 
     // Entries must still be in the queue; retry should send them.
@@ -293,7 +371,7 @@ describe('flush()', () => {
             resolveFirstBatch = resolve;
           }) as never,
       )
-      .mockResolvedValueOnce(failResponse() as never)
+      .mockResolvedValueOnce(errorResponse(500))
       .mockResolvedValue(okResponse() as never);
 
     const flush = auditLogger.flush();
@@ -306,8 +384,7 @@ describe('flush()', () => {
     await flush;
 
     expect(mockFetch).toHaveBeenCalledTimes(3);
-    const [, opts] = mockFetch.mock.calls[2] as [string, { body: Array<{ eventType: string }> }];
-    expect(opts.body[0]?.eventType).toBe('QUEUED_DURING_FLUSH');
+    expect(parseSentBody(2)[0]?.eventType).toBe('QUEUED_DURING_FLUSH');
 
     await vi.advanceTimersByTimeAsync(1000);
     expect(mockFetch).toHaveBeenCalledTimes(3);
@@ -371,14 +448,10 @@ describe('flush()', () => {
     expect(detail).toEqual({ discardedEntries: 1, entryIds: [unreadableId] });
     expect(JSON.stringify(detail)).not.toContain('patient-must-not-leak');
     expect(JSON.stringify(detail)).not.toContain(USER);
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('could not be decrypted'),
-      1,
-    );
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('could not be decrypted'), 1);
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [, opts] = mockFetch.mock.calls[0] as [string, { body: Array<{ eventType: string }> }];
-    expect(opts.body.map((entry) => entry.eventType)).toEqual(['EVENT_ENCRYPTED_WITH_CURRENT_KEY']);
+    expect(parseSentBody().map((entry) => entry.eventType)).toEqual(['EVENT_ENCRYPTED_WITH_CURRENT_KEY']);
 
     const pending = await getEntriesForUser(DB, USER);
     expect(pending).toEqual({ entries: [], undecryptableIds: [] });
@@ -398,8 +471,7 @@ describe('clearSession()', () => {
     await auditLogger.log({ eventType: 'AFTER_LOGOUT' });
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
-    const [, opts] = mockFetch.mock.calls[0] as [string, { body: Array<{ eventType: string }> }];
-    const body = opts.body;
+    const body = parseSentBody();
     expect(body[0]?.eventType).toBe('BEFORE_LOGOUT');
   });
 });
@@ -419,6 +491,13 @@ describe('configure() — endpoint validation', () => {
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Rejected unsafe endpoint'), expect.any(String));
     errorSpy.mockRestore();
   });
+
+  it('rejects a protocol-relative external URL', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    auditLogger.configure({ endpoint: '//evil.example.com/exfil' });
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Rejected unsafe endpoint'), expect.any(String));
+    errorSpy.mockRestore();
+  });
 });
 
 describe('init() / destroy()', () => {
@@ -432,8 +511,7 @@ describe('init() / destroy()', () => {
     auditLogger.init();
 
     await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledOnce());
-    const [, opts] = mockFetch.mock.calls[0] as [string, { body: Array<{ eventType: string }> }];
-    expect(opts.body[0]?.eventType).toBe('QUEUED_BEFORE_RELOAD');
+    expect(parseSentBody()[0]?.eventType).toBe('QUEUED_BEFORE_RELOAD');
   });
 
   it('init() is idempotent — registers only one online listener', () => {

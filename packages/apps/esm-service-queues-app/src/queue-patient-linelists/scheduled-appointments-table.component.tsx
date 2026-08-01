@@ -27,7 +27,7 @@ import {
   useConfig,
   usePagination,
 } from '@openmrs/esm-framework';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../config-schema';
@@ -35,68 +35,29 @@ import { getGender } from '../helpers/functions';
 import { updateSelectedAppointmentStatus, useServiceQueuesStore } from '../store/store';
 import { useAppointments } from './queue-linelist.resource';
 import styles from './queue-linelist-base-table.scss';
+import { filterQueueTableRows } from './queue-table-filter';
 
-/**
- * FIXME Temporarily moved here
- */
-interface ScheduledAppointmentsDataTableHeader {
-  key: string;
-  header: React.ReactNode;
-}
-
-type FilterProps = {
-  rowIds: Array<string>;
-  headers: Array<ScheduledAppointmentsDataTableHeader>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cellsById: any;
-  inputValue: string;
-  getCellId: (row, key) => string;
-};
+const PAGE_SIZE = 20;
 
 const AppointmentsTable: React.FC = () => {
   const { t } = useTranslation();
   const { appointmentStatuses } = useConfig<ConfigObject>();
   const { selectedAppointmentStatus: currentAppointmentStatus } = useServiceQueuesStore();
   const { appointmentQueueEntries, isLoading } = useAppointments();
-  const [filteredRows, setFilteredRows] = useState(appointmentQueueEntries);
-  const { results, currentPage, goTo } = usePagination(filteredRows ?? [], 20);
+  const filteredRows = useMemo(() => {
+    if (currentAppointmentStatus !== t('all', 'All') && currentAppointmentStatus !== '') {
+      return appointmentQueueEntries?.filter((appointment) => appointment.status === currentAppointmentStatus) ?? [];
+    }
+    return appointmentQueueEntries ?? [];
+  }, [appointmentQueueEntries, currentAppointmentStatus, t]);
+  const { results, currentPage, goTo } = usePagination(filteredRows, PAGE_SIZE);
   const searchClassName = typeof styles.search === 'string' ? styles.search : undefined;
 
-  const handleFilter = ({ rowIds, headers, cellsById, inputValue, getCellId }: FilterProps): Array<string> => {
-    return rowIds.filter((rowId) =>
-      headers.some(({ key }) => {
-        const cellId = getCellId(rowId, key);
-        const filterableValue = cellsById[cellId].value;
-        const filterTerm = inputValue.toLowerCase();
-
-        if (typeof filterableValue === 'boolean') {
-          return false;
-        }
-        if (Object.hasOwn(filterableValue, 'content')) {
-          if (Array.isArray(filterableValue.content.props.children)) {
-            return ('' + filterableValue.content.props.children[1].props.children).toLowerCase().includes(filterTerm);
-          }
-          if (typeof filterableValue.content.props.children === 'object') {
-            return ('' + filterableValue.content.props.children.props.children.props.children)
-              .toLowerCase()
-              .includes(filterTerm);
-          }
-          return ('' + filterableValue.content.props.children).toLowerCase().includes(filterTerm);
-        }
-        return ('' + filterableValue).toLowerCase().includes(filterTerm);
-      }),
-    );
-  };
-
   useEffect(() => {
-    if (currentAppointmentStatus !== t('all', 'All') && currentAppointmentStatus !== '') {
-      setFilteredRows(
-        appointmentQueueEntries?.filter((appointment) => appointment.status === currentAppointmentStatus),
-      );
-    } else {
-      setFilteredRows(appointmentQueueEntries);
+    if (typeof currentAppointmentStatus === 'string') {
+      goTo(1);
     }
-  }, [t, currentAppointmentStatus, appointmentQueueEntries]);
+  }, [currentAppointmentStatus, goTo]);
 
   const tableHeaders = useMemo(
     () => [
@@ -164,13 +125,6 @@ const AppointmentsTable: React.FC = () => {
     updateSelectedAppointmentStatus(selectedItem);
   };
 
-  const pageSizes = useMemo(() => {
-    const numberOfPages = Math.ceil((appointmentQueueEntries?.length ?? 0) / 100);
-    return [...Array(numberOfPages).keys()].map((x) => {
-      return (x + 1) * 100;
-    });
-  }, [appointmentQueueEntries]);
-
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" />;
   }
@@ -203,7 +157,7 @@ const AppointmentsTable: React.FC = () => {
 
       <DataTable
         data-floating-menu-container
-        filterRows={handleFilter}
+        filterRows={filterQueueTableRows}
         headers={tableHeaders}
         overflowMenuOnHover={false}
         rows={tableRows}
@@ -303,11 +257,11 @@ const AppointmentsTable: React.FC = () => {
             ? t('pageRangeSingular', 'of {{total}} page', { total })
             : t('pageRangePlural', 'of {{total}} pages', { total })
         }
-        pageSize={100}
+        pageSize={PAGE_SIZE}
         pageText={(page) => t('pageText', 'page {{page}}', { page })}
         onChange={({ page }) => goTo(page)}
-        pageSizes={pageSizes?.length > 0 ? pageSizes : [100]}
-        totalItems={appointmentQueueEntries?.length ?? 0}
+        pageSizes={[PAGE_SIZE]}
+        totalItems={filteredRows.length}
       />
     </div>
   );

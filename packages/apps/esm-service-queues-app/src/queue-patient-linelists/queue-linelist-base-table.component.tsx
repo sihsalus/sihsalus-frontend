@@ -26,23 +26,7 @@ import { getGender } from '../helpers/functions';
 import { type FilterTypes } from '../types';
 
 import styles from './queue-linelist-base-table.scss';
-
-/**
- * FIXME Temporarily moved here
- */
-interface QueueLinelistDataTableHeader {
-  key: string;
-  header: React.ReactNode;
-}
-
-type FilterProps = {
-  rowIds: Array<string>;
-  headers: Array<QueueLinelistDataTableHeader>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cellsById: any;
-  inputValue: string;
-  getCellId: (row, key) => string;
-};
+import { filterQueueTableRows } from './queue-table-filter';
 
 interface QueuePatientTableProps {
   title: string;
@@ -65,32 +49,6 @@ const QueuePatientBaseTable: React.FC<QueuePatientTableProps> = ({
   const { t } = useTranslation();
   const { results, currentPage, goTo } = usePagination(patientData ?? [], 100);
   const searchClassName = typeof styles.search === 'string' ? styles.search : undefined;
-
-  const handleFilter = ({ rowIds, headers, cellsById, inputValue, getCellId }: FilterProps): Array<string> => {
-    return rowIds.filter((rowId) =>
-      headers.some(({ key }) => {
-        const cellId = getCellId(rowId, key);
-        const filterableValue = cellsById[cellId].value;
-        const filterTerm = inputValue.toLowerCase();
-
-        if (typeof filterableValue === 'boolean') {
-          return false;
-        }
-        if (Object.hasOwn(filterableValue, 'content')) {
-          if (Array.isArray(filterableValue.content.props.children)) {
-            return ('' + filterableValue.content.props.children[1].props.children).toLowerCase().includes(filterTerm);
-          }
-          if (typeof filterableValue.content.props.children === 'object') {
-            return ('' + filterableValue.content.props.children.props.children.props.children)
-              .toLowerCase()
-              .includes(filterTerm);
-          }
-          return ('' + filterableValue.content.props.children).toLowerCase().includes(filterTerm);
-        }
-        return ('' + filterableValue).toLowerCase().includes(filterTerm);
-      }),
-    );
-  };
 
   const pageSizes = useMemo(() => {
     const numberOfPages = Math.ceil((patientData?.length ?? 0) / 100);
@@ -155,7 +113,7 @@ const QueuePatientBaseTable: React.FC<QueuePatientTableProps> = ({
 
       <DataTable
         data-floating-menu-container
-        filterRows={handleFilter}
+        filterRows={filterQueueTableRows}
         headers={headers}
         overflowMenuOnHover={false}
         rows={tableRows}

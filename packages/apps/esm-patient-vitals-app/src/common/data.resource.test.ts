@@ -107,4 +107,46 @@ describe('vitals and biometrics resources', () => {
 
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });
+
+  it('never persists the caller-provided derived BMI or unknown fields', () => {
+    const abortController = new AbortController();
+
+    saveVitalsAndBiometrics(
+      mockVitalsConfig.vitals.encounterTypeUuid,
+      concepts,
+      'patient-uuid',
+      {
+        weight: 70,
+        computedBodyMassIndex: 22,
+        unexpectedMeasurement: 123,
+      } as Parameters<typeof saveVitalsAndBiometrics>[3],
+      abortController,
+      'location-uuid',
+      'visit-uuid',
+    );
+
+    const requestBody = mockOpenmrsFetch.mock.calls[0][1]?.body as {
+      obs: Array<{ concept: string; value: unknown }>;
+    };
+    expect(requestBody.obs).toEqual([{ concept: concepts.weightUuid, value: 70 }]);
+    expect(requestBody.obs.every(({ concept }) => Boolean(concept))).toBe(true);
+  });
+
+  it('rejects a persisted measurement when its configured concept UUID is missing', () => {
+    const abortController = new AbortController();
+
+    expect(() =>
+      saveVitalsAndBiometrics(
+        mockVitalsConfig.vitals.encounterTypeUuid,
+        { ...concepts, weightUuid: '' },
+        'patient-uuid',
+        { weight: 70 },
+        abortController,
+        'location-uuid',
+        'visit-uuid',
+      ),
+    ).toThrow('Missing concept UUID for vitals field: weight');
+
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+  });
 });

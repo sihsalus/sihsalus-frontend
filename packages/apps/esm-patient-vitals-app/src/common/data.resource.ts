@@ -13,6 +13,39 @@ import type { ObsReferenceRanges, PatientVitalsAndBiometrics } from './types';
 
 type VitalsAndBiometricsMode = 'vitals' | 'biometrics' | 'both';
 
+type PersistedVitalsField = Exclude<keyof VitalsBiometricsFormData, 'computedBodyMassIndex'>;
+
+/**
+ * Explicit persistence contract for the manual vitals form. Keep derived BMI
+ * out of this map: it is displayed in the form but has historically been
+ * excluded from the encounter payload. The `satisfies` constraint makes a
+ * schema field addition fail type-checking until its persistence semantics are
+ * decided deliberately.
+ */
+const conceptConfigKeyByVitalsField = {
+  systolicBloodPressure: 'systolicBloodPressureUuid',
+  diastolicBloodPressure: 'diastolicBloodPressureUuid',
+  respiratoryRate: 'respiratoryRateUuid',
+  oxygenSaturation: 'oxygenSaturationUuid',
+  pulse: 'pulseUuid',
+  temperature: 'temperatureUuid',
+  generalPatientNote: 'generalPatientNoteUuid',
+  weight: 'weightUuid',
+  height: 'heightUuid',
+  midUpperArmCircumference: 'midUpperArmCircumferenceUuid',
+  abdominalCircumference: 'abdominalCircumferenceUuid',
+  headCircumference: 'headCircumferenceUuid',
+  chestCircumference: 'chestCircumferenceUuid',
+  glasgowEyeOpening: 'glasgowEyeOpeningUuid',
+  glasgowVerbalResponse: 'glasgowVerbalResponseUuid',
+  glasgowMotorResponse: 'glasgowMotorResponseUuid',
+  glasgowTotal: 'glasgowTotalUuid',
+} as const satisfies Record<PersistedVitalsField, keyof ConfigObject['concepts']>;
+
+function isPersistedVitalsField(field: string): field is PersistedVitalsField {
+  return Object.hasOwn(conceptConfigKeyByVitalsField, field);
+}
+
 export interface ConceptMetadata {
   uuid: string;
   display: string;
@@ -407,18 +440,26 @@ function createObsObject(
   // direct JavaScript callers. Parse again immediately before constructing the
   // request so an invalid measurement can never reach openmrsFetch.
   const validatedVitals = VitalsAndBiometricFormSchema.parse(vitals);
-  const validatedEntries = new Map(Object.entries(validatedVitals));
-
-  // Preserve the caller's stable observation order while dropping any unknown
-  // properties stripped by the schema.
+  // Preserve the caller's stable observation order while dropping unknown and
+  // explicitly non-persisted derived fields.
   return Object.keys(vitals)
-    .filter((name) => validatedEntries.has(name))
-    .map((name) => [name, validatedEntries.get(name)] as const)
-    .filter(([_, result]) => result != null && result !== '')
-    .map(([name, result]) => {
+    .filter(isPersistedVitalsField)
+    .filter((field) => Object.hasOwn(validatedVitals, field))
+    .flatMap((field) => {
+      const value = validatedVitals[field];
+      if (value == null || value === '') {
+        return [];
+      }
+
+      const conceptConfigKey = conceptConfigKeyByVitalsField[field];
+      const concept = concepts[conceptConfigKey];
+      if (!concept?.trim()) {
+        throw new Error(`Missing concept UUID for vitals field: ${field}`);
+      }
+
       return {
-        concept: concepts[name + 'Uuid'],
-        value: result,
+        concept,
+        value,
       };
     });
 }

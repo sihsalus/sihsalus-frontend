@@ -361,10 +361,14 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
       {showInvalidInputError && (
         <FormLabel className={styles.invalidInputError}>
           {hasInvalidInput
-            ? t('validationInputError', `Value must be between {{min}} and {{max}}`, {
-                min: invalidFieldProperty?.min,
-                max: invalidFieldProperty?.max,
-              })
+            ? invalidFieldProperty?.max == null
+              ? t('validationInputMinimumError', 'Value must be {{min}} or greater', {
+                  min: invalidFieldProperty?.min,
+                })
+              : t('validationInputError', `Value must be between {{min}} and {{max}}`, {
+                  min: invalidFieldProperty?.min,
+                  max: invalidFieldProperty?.max,
+                })
             : t('validationReferenceRangeError', 'Value is outside the configured reference range')}
         </FormLabel>
       )}

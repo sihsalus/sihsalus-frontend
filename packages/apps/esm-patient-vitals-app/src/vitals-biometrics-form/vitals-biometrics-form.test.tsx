@@ -187,7 +187,7 @@ describe('VitalsBiometricsForm', () => {
     );
   });
 
-  it('keeps the patient-specific temperature range as a confirmable warning inside the hard safety limits', async () => {
+  it('requires a distinct confirmation for values outside a patient-specific reference range', async () => {
     const user = userEvent.setup();
     mockUseReferenceRanges.mockReturnValue({
       ranges: new Map([[mockVitalsConfig.concepts.temperatureUuid, { lowAbsolute: 35.5, hiAbsolute: 50 }]]),
@@ -202,7 +202,7 @@ describe('VitalsBiometricsForm', () => {
       name: /temperature/i,
     });
     expect(temperatureInput).toHaveAttribute('min', VITAL_SIGN_INPUT_LIMITS.temperature.min.toString());
-    expect(temperatureInput).toHaveAttribute('max', VITAL_SIGN_INPUT_LIMITS.temperature.max.toString());
+    expect(temperatureInput).not.toHaveAttribute('max');
 
     const saveButton = screen.getByRole('button', { name: /save and close/i });
 
@@ -210,15 +210,16 @@ describe('VitalsBiometricsForm', () => {
     await user.click(saveButton);
 
     expect(mockSavePatientVitals).not.toHaveBeenCalled();
-    expect(screen.getByText(/values outside the expected range/i)).toBeInTheDocument();
+    expect(screen.getByText(/confirm values outside the expected range/i)).toBeInTheDocument();
+    expect(screen.getByText(/configured range: 35.5–50/i)).toBeInTheDocument();
 
-    // confirming with a second save records the pathological value
     mockSavePatientVitals.mockResolvedValue({
       statusText: 'created',
       status: 201,
       data: [],
     } as FetchResponse<unknown>);
-    await user.click(saveButton);
+    expect(saveButton).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: /confirm and save/i }));
     await waitFor(() => expect(mockSavePatientVitals).toHaveBeenCalledTimes(1));
   });
 
@@ -620,7 +621,7 @@ describe('VitalsBiometricsForm', () => {
     });
   });
 
-  it('blocks impossible vital signs even after repeated submission', async () => {
+  it('blocks values that violate a unit-defined invariant even after repeated submission', async () => {
     const user = userEvent.setup();
 
     mockSavePatientVitals.mockResolvedValue({
@@ -631,22 +632,17 @@ describe('VitalsBiometricsForm', () => {
 
     render(<VitalsAndBiometricsForm {...testProps} />);
 
-    const systolic = screen.getByRole('spinbutton', { name: /systolic/i });
-    const diastolic = screen.getByRole('spinbutton', { name: /diastolic/i });
     const oxygenSaturation = screen.getByRole('spinbutton', {
       name: /oxygen saturation/i,
     });
 
-    await user.type(systolic, '1000');
-    await user.type(diastolic, diastolicBloodPressureValue.toString());
     await user.type(oxygenSaturation, '200');
 
     const saveButton = screen.getByRole('button', { name: /save and close/i });
     await user.click(saveButton);
 
     expect(mockSavePatientVitals).not.toHaveBeenCalled();
-    expect(screen.getByText(/outside the safe recording limits/i)).toBeInTheDocument();
-    expect(screen.getByText(/between 0 and 500/i)).toBeInTheDocument();
+    expect(screen.getByText(/violates a unit-defined input constraint/i)).toBeInTheDocument();
     expect(screen.getByText(/between 0 and 100/i)).toBeInTheDocument();
 
     await user.click(saveButton);
@@ -673,9 +669,10 @@ describe('VitalsBiometricsForm', () => {
     await user.click(saveButton);
 
     expect(mockSavePatientVitals).not.toHaveBeenCalled();
-    expect(screen.getByText(/values outside the expected range/i)).toBeInTheDocument();
+    expect(screen.getByText(/confirm values outside the expected range/i)).toBeInTheDocument();
+    expect(saveButton).toBeDisabled();
 
-    await user.click(saveButton);
+    await user.click(screen.getByRole('button', { name: /confirm and save/i }));
     await waitFor(() => expect(mockSavePatientVitals).toHaveBeenCalledTimes(1));
     expect(mockSavePatientVitals.mock.calls[0][3]).toMatchObject({
       systolicBloodPressure: 300,
@@ -683,6 +680,21 @@ describe('VitalsBiometricsForm', () => {
       pulse: 250,
       temperature: 20,
     });
+  });
+
+  it('rejects an inverted blood pressure pair', async () => {
+    const user = userEvent.setup();
+
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    await user.type(screen.getByRole('spinbutton', { name: /systolic/i }), '80');
+    await user.type(screen.getByRole('spinbutton', { name: /diastolic/i }), '120');
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(mockSavePatientVitals).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(/systolic blood pressure cannot be lower than diastolic blood pressure/i),
+    ).toBeInTheDocument();
   });
 
   it('requires both systolic and diastolic blood pressure values', async () => {

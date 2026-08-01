@@ -5,6 +5,7 @@ import {
   Column,
   Form,
   InlineNotification,
+  Modal,
   NumberInputSkeleton,
   Row,
   Stack,
@@ -28,7 +29,7 @@ import {
   useVisitOrOfflineVisit,
 } from '@openmrs/esm-patient-common-lib';
 import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -101,10 +102,10 @@ function buildGlasgowScoreByAnswerUuid(answerUuids: GlasgowComaScaleAnswerUuids)
 
 function vitalSignSchema(field: VitalSignInputId) {
   const { min, max } = VITAL_SIGN_INPUT_LIMITS[field];
-  return z
-    .number()
-    .min(min, { message: 'Vital sign is below the input safety limit' })
-    .max(max, { message: 'Vital sign is above the input safety limit' });
+  const schema = z.number().finite({ message: 'Vital sign must be finite' }).min(min, {
+    message: 'Vital sign cannot be negative',
+  });
+  return max === null ? schema : schema.max(max, { message: 'Vital sign exceeds its unit-defined maximum' });
 }
 
 const VitalsAndBiometricFormSchema = z
@@ -144,6 +145,16 @@ const VitalsAndBiometricFormSchema = z
     path: ['bloodPressureIncomplete'],
   })
   .refine(
+    (fields) =>
+      fields.systolicBloodPressure == null ||
+      fields.diastolicBloodPressure == null ||
+      fields.systolicBloodPressure >= fields.diastolicBloodPressure,
+    {
+      message: 'Systolic blood pressure cannot be lower than diastolic blood pressure',
+      path: ['bloodPressureInverted'],
+    },
+  )
+  .refine(
     (fields) => {
       // A note alone must not create an encounter; require at least one measurement
       const {
@@ -161,6 +172,16 @@ const VitalsAndBiometricFormSchema = z
   );
 
 export type VitalsBiometricsFormData = z.infer<typeof VitalsAndBiometricFormSchema>;
+
+interface OutOfRangeConfirmation {
+  entries: Array<[string, unknown]>;
+  formData: VitalsBiometricsFormData;
+  token: string;
+}
+
+interface SaveVitalsOptions {
+  confirmedOutOfRangeToken?: string;
+}
 
 export interface VitalsBiometricsSavedPayload {
   encounterTypeUuid: string;
@@ -245,8 +266,10 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
     patientUuid,
     referenceRangeConceptUuids,
   );
-  const [outOfRangeFieldKeys, setOutOfRangeFieldKeys] = useState<Array<string>>([]);
-  const confirmedOutOfRangeTokenRef = useRef<string | null>(null);
+  const [pendingOutOfRangeConfirmation, setPendingOutOfRangeConfirmation] = useState<OutOfRangeConfirmation | null>(
+    null,
+  );
+  const [isSavingConfirmedValues, setIsSavingConfirmedValues] = useState(false);
   const [muacColorCode, setMuacColorCode] = useState('');
   const [showErrorNotification, setShowErrorNotification] = useState(false);
   const [showErrorMessage, setShowErrorMessage] = useState(false);
@@ -392,13 +415,12 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   function onError(err: Record<string, { message?: string }>) {
     const vitalSignsOutsideInputLimits = vitalSignInputIds.filter((field) => Boolean(err?.[field]));
     if (vitalSignsOutsideInputLimits.length > 0) {
-      confirmedOutOfRangeTokenRef.current = null;
-      setOutOfRangeFieldKeys([]);
+      setPendingOutOfRangeConfirmation(null);
       setShowErrorMessage(true);
       setFormErrorMessage(
         t(
           'vitalSignsOutsideInputLimits',
-          'One or more vital signs are outside the safe recording limits. Correct the marked values; they cannot be saved by confirming them again',
+          'One or more vital signs violates a unit-defined input constraint. Correct the marked values; they cannot be saved by confirmation',
         ),
       );
       setShowErrorNotification(true);
@@ -417,6 +439,15 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
     if (err?.bloodPressureIncomplete) {
       setShowErrorMessage(false);
       setFormErrorMessage(t('bloodPressureIncomplete', 'Blood pressure requires both systolic and diastolic values'));
+      setShowErrorNotification(true);
+      return;
+    }
+
+    if (err?.bloodPressureInverted) {
+      setShowErrorMessage(false);
+      setFormErrorMessage(
+        t('bloodPressureInverted', 'Systolic blood pressure cannot be lower than diastolic blood pressure'),
+      );
       setShowErrorNotification(true);
       return;
     }
@@ -463,7 +494,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   );
 
   const savePatientVitalsAndBiometrics = useCallback(
-    async (data: VitalsBiometricsFormData) => {
+    async (data: VitalsBiometricsFormData, options: SaveVitalsOptions = {}) => {
       const { computedBodyMassIndex: _bmi, glasgowTotal: _glasgowTotal, ...rawFormData } = data;
       const computedGlasgowTotal = calculateGlasgowComaScaleTotal(
         getGlasgowScore(rawFormData.glasgowEyeOpening),
@@ -492,18 +523,19 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
           );
         });
 
-      // Pathological values must remain recordable: values outside the absolute range
-      // warn and require pressing save a second time instead of being rejected.
+      // Values beyond configured reference ranges can be clinically real. They
+      // remain recordable, but only through a distinct, explicit confirmation
+      // bound to the exact values and ranges that were shown to the user.
       const outOfRangeToken = JSON.stringify(outOfRangeEntries);
-      if (outOfRangeEntries.length > 0 && confirmedOutOfRangeTokenRef.current !== outOfRangeToken) {
-        confirmedOutOfRangeTokenRef.current = outOfRangeToken;
-        setOutOfRangeFieldKeys(outOfRangeEntries.map(([key]) => key));
+      if (outOfRangeEntries.length > 0 && options.confirmedOutOfRangeToken !== outOfRangeToken) {
+        setPendingOutOfRangeConfirmation({ entries: outOfRangeEntries, formData: data, token: outOfRangeToken });
         setShowErrorMessage(true);
         return;
       }
 
-      confirmedOutOfRangeTokenRef.current = null;
-      setOutOfRangeFieldKeys([]);
+      if (outOfRangeEntries.length === 0) {
+        setPendingOutOfRangeConfirmation(null);
+      }
       setShowErrorMessage(false);
 
       if (!currentVisit?.uuid || currentVisit.stopDatetime) {
@@ -546,6 +578,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
         );
 
         if (response.status === 201 || response.status === 200) {
+          setPendingOutOfRangeConfirmation(null);
           await workspaceOverrides.onVitalsSaved?.({
             encounterTypeUuid,
             formData,
@@ -593,6 +626,29 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       workspaceOverrides,
     ],
   );
+
+  const handleConfirmOutOfRangeValues = useCallback(async () => {
+    if (!pendingOutOfRangeConfirmation || isSavingConfirmedValues) {
+      return;
+    }
+
+    setIsSavingConfirmedValues(true);
+    try {
+      await savePatientVitalsAndBiometrics(pendingOutOfRangeConfirmation.formData, {
+        confirmedOutOfRangeToken: pendingOutOfRangeConfirmation.token,
+      });
+    } finally {
+      setIsSavingConfirmedValues(false);
+    }
+  }, [isSavingConfirmedValues, pendingOutOfRangeConfirmation, savePatientVitalsAndBiometrics]);
+
+  const handleCancelOutOfRangeValues = useCallback(() => {
+    if (isSavingConfirmedValues) {
+      return;
+    }
+    setPendingOutOfRangeConfirmation(null);
+    setShowErrorMessage(false);
+  }, [isSavingConfirmedValues]);
 
   const glasgowEyeOpeningOptions = useMemo<Array<GlasgowComaScaleOption>>(
     () => [
@@ -809,7 +865,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   assessValue(temperature, getPatientReferenceRange(config.concepts.temperatureUuid))
                 }
                 isValueWithinReferenceRange={
-                  temperature
+                  temperature != null
                     ? isValueWithinReferenceRange(
                         conceptMetadata,
                         config.concepts.temperatureUuid,
@@ -1312,24 +1368,44 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
         </Column>
       )}
 
-      {outOfRangeFieldKeys.length > 0 && (
-        <Column className={styles.errorContainer}>
-          <InlineNotification
-            className={styles.errorNotification}
-            kind="warning"
-            lowContrast={false}
-            onClose={() => setOutOfRangeFieldKeys([])}
-            title={t('valuesOutOfRangeTitle', 'Values outside the expected range')}
-            subtitle={t(
-              'valuesOutOfRangeConfirm',
-              'Review the following values: {{fields}}. If they are correct, press "Save and close" again to record them.',
-              {
-                fields: outOfRangeFieldKeys.map((key) => vitalsFieldLabels[key] ?? key).join(', '),
-              },
-            )}
-          />
-        </Column>
-      )}
+      <Modal
+        danger
+        open={Boolean(pendingOutOfRangeConfirmation)}
+        modalHeading={t('confirmAbnormalValuesTitle', 'Confirm values outside the expected range')}
+        primaryButtonText={t('confirmAndSave', 'Confirm and save')}
+        primaryButtonDisabled={isSavingConfirmedValues}
+        secondaryButtonText={t('cancel', 'Cancel')}
+        onRequestClose={handleCancelOutOfRangeValues}
+        onRequestSubmit={() => void handleConfirmOutOfRangeValues()}
+      >
+        <p>
+          {t(
+            'confirmAbnormalValuesDescription',
+            'Review each value, its unit and configured reference range before recording it.',
+          )}
+        </p>
+        <ul>
+          {pendingOutOfRangeConfirmation?.entries.map(([key, value]) => {
+            const conceptUuid = config.concepts[`${key}Uuid`];
+            const range = conceptUuid ? getPatientReferenceRange(conceptUuid) : undefined;
+            const unit = conceptUuid ? (conceptUnits.get(conceptUuid) ?? range?.units ?? '') : '';
+            const hasConfiguredRange = range?.lowAbsolute != null && range?.hiAbsolute != null;
+
+            return (
+              <li key={key}>
+                <strong>{vitalsFieldLabels[key] ?? key}</strong>: {String(value)} {unit}
+                {hasConfiguredRange
+                  ? ` — ${t('configuredReferenceRange', 'Configured range: {{low}}–{{high}} {{unit}}', {
+                      high: range.hiAbsolute,
+                      low: range.lowAbsolute,
+                      unit,
+                    })}`
+                  : null}
+              </li>
+            );
+          })}
+        </ul>
+      </Modal>
 
       <ButtonSet className={isTablet ? styles.tablet : styles.desktop}>
         <Button className={styles.button} kind="secondary" onClick={() => void closeCurrentWorkspace()}>
@@ -1338,8 +1414,8 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
         <Button
           className={styles.button}
           kind="primary"
-          onClick={handleSubmit(savePatientVitalsAndBiometrics, onError)}
-          disabled={isSubmitting}
+          onClick={handleSubmit((data) => savePatientVitalsAndBiometrics(data), onError)}
+          disabled={isSubmitting || isSavingConfirmedValues || Boolean(pendingOutOfRangeConfirmation)}
           type="submit"
         >
           {t('saveAndClose', 'Save and close')}

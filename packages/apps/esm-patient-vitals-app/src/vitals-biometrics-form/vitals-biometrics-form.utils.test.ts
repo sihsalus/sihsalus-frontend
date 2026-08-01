@@ -56,13 +56,13 @@ describe('validateClinicalNumberInput', () => {
     expect(validateClinicalNumberInput('80', { min: 0, max: 250 }).isInvalid).toBe(false);
   });
 
-  it('enforces the broad input-safety limits without treating their boundary values as invalid', () => {
+  it('enforces only unit and representation invariants for vital signs', () => {
     expect(validateClinicalNumberInput('100', VITAL_SIGN_INPUT_LIMITS.oxygenSaturation).isInvalid).toBe(false);
     expect(validateClinicalNumberInput('101', VITAL_SIGN_INPUT_LIMITS.oxygenSaturation).isOutOfRange).toBe(true);
-    expect(validateClinicalNumberInput('500', VITAL_SIGN_INPUT_LIMITS.systolicBloodPressure).isInvalid).toBe(false);
-    expect(validateClinicalNumberInput('501', VITAL_SIGN_INPUT_LIMITS.systolicBloodPressure).isOutOfRange).toBe(true);
-    expect(validateClinicalNumberInput('4.2', VITAL_SIGN_INPUT_LIMITS.temperature).isInvalid).toBe(false);
-    expect(validateClinicalNumberInput('0', VITAL_SIGN_INPUT_LIMITS.temperature).isOutOfRange).toBe(true);
+    expect(validateClinicalNumberInput('1000', VITAL_SIGN_INPUT_LIMITS.systolicBloodPressure).isInvalid).toBe(false);
+    expect(validateClinicalNumberInput('1000', VITAL_SIGN_INPUT_LIMITS.temperature).isInvalid).toBe(false);
+    expect(validateClinicalNumberInput('0', VITAL_SIGN_INPUT_LIMITS.temperature).isInvalid).toBe(false);
+    expect(validateClinicalNumberInput('-1', VITAL_SIGN_INPUT_LIMITS.pulse).isInvalid).toBe(true);
   });
 });
 

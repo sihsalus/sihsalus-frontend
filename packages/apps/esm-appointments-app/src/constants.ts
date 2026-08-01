@@ -15,6 +15,11 @@ export const chartAppointmentsReadPrivilege = 'app:hoja.clinica.citas';
 export const chartAppointmentsEditPrivilege = 'app:hoja.clinica.citas.editar';
 // The appointments backend persists patient_appointment.comments as VARCHAR(255).
 export const appointmentNoteMaxLength = 255;
+// Keep the input controls, form schema, and resource guards on the same
+// clinical bounds. A full-day appointment is represented as exactly 1,440
+// minutes ([start of day, start of next day)).
+export const appointmentDurationMinutesRange = { min: 1, max: 1440 } as const;
+export const recurringPatternPeriodRange = { min: 1, max: 356 } as const;
 
 export const moduleName = '@sihsalus/esm-appointments-app';
 

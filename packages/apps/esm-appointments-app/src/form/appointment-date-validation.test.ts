@@ -1,10 +1,13 @@
 import type { AppointmentPayload, RecurringPattern } from '../types';
 import {
+  areRecurringPatternWeekdaysAllowed,
   assertAppointmentPayloadDates,
   assertRecurringPatternDates,
+  isAppointmentDurationAllowed,
   isAppointmentIssuedDateAllowed,
   isAppointmentStartDateAllowed,
   isRecurringAppointmentRangeAllowed,
+  isRecurringPatternPeriodAllowed,
   MAX_RECURRING_APPOINTMENT_HORIZON_DAYS,
   resolveEffectiveAppointmentStartDate,
 } from './appointment-date-validation';
@@ -113,6 +116,35 @@ describe('appointment date validation', () => {
     ).toThrow('Appointment end date must be after its start date');
   });
 
+  it('accepts only whole-minute appointment durations from 1 through 1440 minutes', () => {
+    expect(isAppointmentDurationAllowed(1)).toBe(true);
+    expect(isAppointmentDurationAllowed(1440)).toBe(true);
+    expect(isAppointmentDurationAllowed(0)).toBe(false);
+    expect(isAppointmentDurationAllowed(1.5)).toBe(false);
+    expect(isAppointmentDurationAllowed(1441)).toBe(false);
+  });
+
+  it('rejects fractional and overlong durations again at the API payload boundary', () => {
+    expect(() =>
+      assertAppointmentPayloadDates(
+        { ...validAppointment, endDateTime: '2026-07-18T09:00:30-05:00' },
+        { today },
+      ),
+    ).toThrow('Appointment duration must be a whole number between 1 and 1440 minutes');
+    expect(() =>
+      assertAppointmentPayloadDates(
+        { ...validAppointment, endDateTime: '2026-07-19T09:01:00-05:00' },
+        { today },
+      ),
+    ).toThrow('Appointment duration must be a whole number between 1 and 1440 minutes');
+    expect(() =>
+      assertAppointmentPayloadDates(
+        { ...validAppointment, endDateTime: '2026-07-19T09:00:00-05:00' },
+        { today },
+      ),
+    ).not.toThrow();
+  });
+
   it('only preserves an edited historical date when the original date is supplied and unchanged', () => {
     const historicalAppointment = {
       ...validAppointment,
@@ -160,5 +192,62 @@ describe('appointment date validation', () => {
     expect(() => assertRecurringPatternDates(validAppointment, recurringPattern)).toThrow(
       'Recurring appointment end date must be between its start date and 365 days later',
     );
+  });
+
+  it('accepts recurring periods at both integer boundaries', () => {
+    expect(isRecurringPatternPeriodAllowed(1)).toBe(true);
+    expect(isRecurringPatternPeriodAllowed(356)).toBe(true);
+    expect(() =>
+      assertRecurringPatternDates(validAppointment, {
+        type: 'DAY',
+        period: 356,
+        endDate: '2026-07-20T23:59:00-05:00',
+      }),
+    ).not.toThrow();
+  });
+
+  it.each([0, 1.5, 357])('rejects manipulated recurring period %s', (period) => {
+    expect(() =>
+      assertRecurringPatternDates(validAppointment, {
+        type: 'DAY',
+        period,
+        endDate: '2026-07-20T23:59:00-05:00',
+      }),
+    ).toThrow('Recurring appointment period must be a whole number between 1 and 356');
+  });
+
+  it('requires at least one valid, unique weekday for weekly recurrence', () => {
+    expect(areRecurringPatternWeekdaysAllowed('WEEK', ['MONDAY'])).toBe(true);
+    expect(areRecurringPatternWeekdaysAllowed('WEEK', [])).toBe(false);
+    expect(areRecurringPatternWeekdaysAllowed('WEEK', ['FUNDAY'])).toBe(false);
+    expect(areRecurringPatternWeekdaysAllowed('WEEK', ['MONDAY', 'MONDAY'])).toBe(false);
+    expect(areRecurringPatternWeekdaysAllowed('WEEK', 'MONDAY')).toBe(false);
+    expect(areRecurringPatternWeekdaysAllowed('DAY', [])).toBe(true);
+    expect(areRecurringPatternWeekdaysAllowed('DAY', ['MONDAY'])).toBe(false);
+
+    expect(() =>
+      assertRecurringPatternDates(validAppointment, {
+        type: 'WEEK',
+        period: 1,
+        endDate: '2026-07-20T23:59:00-05:00',
+        daysOfWeek: [],
+      }),
+    ).toThrow('A weekly recurring appointment must include at least one day of the week');
+    expect(() =>
+      assertRecurringPatternDates(validAppointment, {
+        type: 'WEEK',
+        period: 1,
+        endDate: '2026-07-20T23:59:00-05:00',
+        daysOfWeek: ['FUNDAY'],
+      }),
+    ).toThrow('Recurring appointment weekdays must be unique, valid days of the week');
+    expect(() =>
+      assertRecurringPatternDates(validAppointment, {
+        type: 'DAY',
+        period: 1,
+        endDate: '2026-07-20T23:59:00-05:00',
+        daysOfWeek: ['MONDAY'],
+      }),
+    ).toThrow('Recurring appointment weekdays must be unique, valid days of the week');
   });
 });

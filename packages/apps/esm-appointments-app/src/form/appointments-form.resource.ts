@@ -200,7 +200,11 @@ export const cancelAppointment = async (toStatus: string, appointmentUuid: strin
   });
 };
 
-export const checkAppointmentConflict = async (appointmentPayload: AppointmentPayload) => {
+export const checkAppointmentConflict = async (
+  appointmentPayload: AppointmentPayload,
+  originalStartDate?: Date,
+) => {
+  assertAppointmentPayloadDates(appointmentPayload, { originalStartDate });
   return await openmrsFetch(`${restBaseUrl}/appointments/conflicts`, {
     method: 'POST',
     body: {

@@ -2,6 +2,7 @@ import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
 import type { AppointmentPayload, RecurringAppointmentsPayload } from '../types';
 import {
+  checkAppointmentConflict,
   checkRecurringAppointmentConflict,
   saveAppointment,
   saveRecurringAppointments,
@@ -66,6 +67,27 @@ describe('appointment writes', () => {
     );
   });
 
+  it('does not call any appointment API with a fractional-minute duration', async () => {
+    const fractionalDuration = { ...validAppointment, endDateTime: '2026-07-18T09:30:30-05:00' };
+
+    expect(() => saveAppointment(fractionalDuration, new AbortController())).toThrow(
+      'Appointment duration must be a whole number between 1 and 1440 minutes',
+    );
+    await expect(checkAppointmentConflict(fractionalDuration)).rejects.toThrow(
+      'Appointment duration must be a whole number between 1 and 1440 minutes',
+    );
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+  });
+
+  it('does not call the conflict API with a duration over 1440 minutes', async () => {
+    const overlongAppointment = { ...validAppointment, endDateTime: '2026-07-19T09:01:00-05:00' };
+
+    await expect(checkAppointmentConflict(overlongAppointment)).rejects.toThrow(
+      'Appointment duration must be a whole number between 1 and 1440 minutes',
+    );
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+  });
+
   it('only posts a historical edit when its original date is explicitly preserved', () => {
     const historicalAppointment = {
       ...validAppointment,
@@ -97,6 +119,60 @@ describe('appointment writes', () => {
 
     expect(() => saveRecurringAppointments(payload, new AbortController())).toThrow(
       'Recurring appointment end date must be between its start date and 365 days later',
+    );
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+  });
+
+  it('does not call the recurring API with a manipulated repeat interval', () => {
+    const payload: RecurringAppointmentsPayload = {
+      ...validRecurringAppointments,
+      recurringPattern: { ...validRecurringAppointments.recurringPattern, period: 1.5 },
+    };
+
+    expect(() => saveRecurringAppointments(payload, new AbortController())).toThrow(
+      'Recurring appointment period must be a whole number between 1 and 356',
+    );
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+  });
+
+  it('does not call the recurring conflict API when a weekly pattern has no weekday', () => {
+    const payload: RecurringAppointmentsPayload = {
+      ...validRecurringAppointments,
+      recurringPattern: {
+        ...validRecurringAppointments.recurringPattern,
+        type: 'WEEK',
+        daysOfWeek: [],
+      },
+    };
+
+    expect(() => checkRecurringAppointmentConflict(payload)).toThrow(
+      'A weekly recurring appointment must include at least one day of the week',
+    );
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+  });
+
+  it('rejects malformed or ambiguous weekday payloads before calling the API', () => {
+    const malformedWeekdays: RecurringAppointmentsPayload = {
+      ...validRecurringAppointments,
+      recurringPattern: {
+        ...validRecurringAppointments.recurringPattern,
+        type: 'WEEK',
+        daysOfWeek: 'MONDAY' as unknown as Array<string>,
+      },
+    };
+    const ambiguousDailyPattern: RecurringAppointmentsPayload = {
+      ...validRecurringAppointments,
+      recurringPattern: {
+        ...validRecurringAppointments.recurringPattern,
+        daysOfWeek: ['MONDAY'],
+      },
+    };
+
+    expect(() => checkRecurringAppointmentConflict(malformedWeekdays)).toThrow(
+      'Recurring appointment weekdays must be unique, valid days of the week',
+    );
+    expect(() => saveRecurringAppointments(ambiguousDailyPattern, new AbortController())).toThrow(
+      'Recurring appointment weekdays must be unique, valid days of the week',
     );
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });

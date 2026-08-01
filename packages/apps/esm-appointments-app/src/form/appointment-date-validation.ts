@@ -1,7 +1,11 @@
 import type { AppointmentPayload, RecurringPattern } from '../types';
+import { appointmentDurationMinutesRange, recurringPatternPeriodRange, weekDays } from '../constants';
 
 export type AppointmentFormContext = 'creating' | 'editing';
 export const MAX_RECURRING_APPOINTMENT_HORIZON_DAYS = 365;
+const MILLISECONDS_PER_MINUTE = 60_000;
+const validRecurringPatternTypes = new Set<RecurringPattern['type']>(['DAY', 'WEEK']);
+const validRecurringWeekdays = new Set(weekDays.map(({ id }) => id));
 
 interface EffectiveAppointmentStartDateOptions {
   canEditStartDate: boolean;
@@ -90,6 +94,37 @@ export function isRecurringAppointmentRangeAllowed(
   );
 }
 
+export function isAppointmentDurationAllowed(durationMinutes: number): boolean {
+  return (
+    Number.isInteger(durationMinutes) &&
+    durationMinutes >= appointmentDurationMinutesRange.min &&
+    durationMinutes <= appointmentDurationMinutesRange.max
+  );
+}
+
+export function isRecurringPatternPeriodAllowed(period: number): boolean {
+  return (
+    Number.isInteger(period) &&
+    period >= recurringPatternPeriodRange.min &&
+    period <= recurringPatternPeriodRange.max
+  );
+}
+
+export function areRecurringPatternWeekdaysAllowed(
+  type: RecurringPattern['type'],
+  daysOfWeek: unknown,
+): boolean {
+  if (!Array.isArray(daysOfWeek)) {
+    return false;
+  }
+
+  return (
+    daysOfWeek.every((day) => typeof day === 'string' && validRecurringWeekdays.has(day)) &&
+    new Set(daysOfWeek).size === daysOfWeek.length &&
+    (type === 'WEEK' ? daysOfWeek.length > 0 : daysOfWeek.length === 0)
+  );
+}
+
 export function assertAppointmentPayloadDates(
   appointment: AppointmentPayload,
   { originalStartDate, today = new Date() }: AppointmentDateValidationOptions = {},
@@ -110,9 +145,34 @@ export function assertAppointmentPayloadDates(
   if (Number.isNaN(startDate.valueOf()) || Number.isNaN(endDate.valueOf()) || endDate <= startDate) {
     throw new Error('Appointment end date must be after its start date.');
   }
+
+  const durationMinutes = (endDate.valueOf() - startDate.valueOf()) / MILLISECONDS_PER_MINUTE;
+  if (!isAppointmentDurationAllowed(durationMinutes)) {
+    throw new Error(
+      `Appointment duration must be a whole number between ${appointmentDurationMinutesRange.min} and ${appointmentDurationMinutesRange.max} minutes.`,
+    );
+  }
 }
 
 export function assertRecurringPatternDates(appointment: AppointmentPayload, recurringPattern: RecurringPattern): void {
+  if (
+    !validRecurringPatternTypes.has(recurringPattern.type) ||
+    !isRecurringPatternPeriodAllowed(recurringPattern.period)
+  ) {
+    throw new Error(
+      `Recurring appointment period must be a whole number between ${recurringPatternPeriodRange.min} and ${recurringPatternPeriodRange.max}.`,
+    );
+  }
+
+  const daysOfWeek: unknown = recurringPattern.daysOfWeek ?? [];
+  if (!areRecurringPatternWeekdaysAllowed(recurringPattern.type, daysOfWeek)) {
+    throw new Error(
+      recurringPattern.type === 'WEEK' && Array.isArray(daysOfWeek) && daysOfWeek.length === 0
+        ? 'A weekly recurring appointment must include at least one day of the week.'
+        : 'Recurring appointment weekdays must be unique, valid days of the week.',
+    );
+  }
+
   const startDate = new Date(appointment.startDateTime);
   const endDate = new Date(recurringPattern.endDate);
   if (

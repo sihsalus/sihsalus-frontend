@@ -661,6 +661,49 @@ describe('AppointmentForm', () => {
     ).toBe(false);
   });
 
+  it.each(['0', '1441'])('does not submit an out-of-range appointment duration of %s minutes', async (duration) => {
+    const user = userEvent.setup();
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+    const durationInput = screen.getByRole('spinbutton', { name: /duration/i });
+    await user.clear(durationInput);
+    await user.type(durationInput, duration);
+    // Bypass the browser's min/max constraint to exercise the Zod boundary as
+    // if the DOM had been manipulated before submission.
+    durationInput.closest('form')?.setAttribute('novalidate', '');
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalled());
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
+    expect(mockOpenmrsFetch).not.toHaveBeenCalledWith(
+      expect.stringContaining('/appointments/conflicts'),
+      expect.anything(),
+    );
+  });
+
+  it('submits an appointment at the 1440-minute duration boundary', async () => {
+    const user = userEvent.setup();
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+    const durationInput = screen.getByRole('spinbutton', { name: /duration/i });
+    await user.clear(durationInput);
+    await user.type(durationInput, '1440');
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    const payload = mockSaveAppointment.mock.calls[0][0];
+    expect(dayjs(payload.endDateTime).diff(dayjs(payload.startDateTime), 'minute')).toBe(1440);
+  });
+
   it('closes the workspace when the cancel button is clicked', async () => {
     const user = userEvent.setup();
 
@@ -874,7 +917,8 @@ describe('AppointmentForm', () => {
     await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
     const payload = mockSaveAppointment.mock.calls[0][0];
     expect(payload.startDateTime).toMatch(/T00:00:00/);
-    expect(payload.endDateTime).toMatch(/T23:59:59/);
+    expect(payload.endDateTime).toMatch(/T00:00:00/);
+    expect(dayjs(payload.endDateTime).diff(dayjs(payload.startDateTime), 'minute')).toBe(1440);
   });
 
   it('shows an error and does not save if conflict validation fails', async () => {
@@ -1301,7 +1345,7 @@ describe('AppointmentForm', () => {
     expect(mockCheckRecurringAppointmentConflict).toHaveBeenCalledWith(
       expect.objectContaining({
         appointmentRequest: expect.objectContaining({ uuid: appointment.uuid }),
-        recurringPattern: expect.objectContaining({ type: 'DAY', period: 1 }),
+        recurringPattern: expect.objectContaining({ type: 'DAY', period: 1, daysOfWeek: [] }),
       }),
       new Date(appointment.startDateTime),
     );
@@ -1313,6 +1357,37 @@ describe('AppointmentForm', () => {
       expect.stringContaining('/appointments/conflicts'),
       expect.anything(),
     );
+  });
+
+  it('does not submit a weekly recurrence until at least one weekday is selected', async () => {
+    const user = userEvent.setup();
+    const appointment = makeEditableAppointment();
+    const recurringPattern: RecurringPattern = {
+      type: 'WEEK',
+      period: 1,
+      endDate: dayjs(appointment.startDateTime).add(2, 'week').endOf('day').format(),
+      daysOfWeek: [],
+    };
+    mockUserHasAccess.mockImplementation((privilege) => privilege === appointmentStartDateEditPrivilege);
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+
+    renderWithSwr(
+      <AppointmentForm
+        {...defaultProps}
+        appointment={appointment}
+        context="editing"
+        recurringPattern={recurringPattern}
+      />,
+    );
+
+    await waitForLoadingToFinish();
+    await user.click(screen.getByLabelText(/is this a recurring appointment/i));
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(await screen.findAllByText(/Select at least one valid, non-repeated day/)).not.toHaveLength(0);
+    expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'warning' }));
+    expect(mockCheckRecurringAppointmentConflict).not.toHaveBeenCalled();
+    expect(mockSaveRecurringAppointments).not.toHaveBeenCalled();
   });
 
   it('allows editing the appointment start date with the start-date privilege', async () => {

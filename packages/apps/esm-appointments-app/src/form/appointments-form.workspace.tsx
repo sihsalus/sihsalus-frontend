@@ -49,12 +49,14 @@ import { z } from 'zod';
 
 import { type ConfigObject } from '../config-schema';
 import {
+  appointmentDurationMinutesRange,
   appointmentIssueDateEditPrivilege,
   appointmentLocationTagName,
   appointmentNoteMaxLength,
   appointmentStartDateEditPrivilege,
   dateFormat,
   moduleName,
+  recurringPatternPeriodRange,
   weekDays,
 } from '../constants';
 import {
@@ -76,9 +78,12 @@ import {
 import Workload from '../workload/workload.component';
 import { type AppointmentCareRoutingIssue, getAppointmentCareRoutingIssue } from './appointment-care-routing';
 import {
+  areRecurringPatternWeekdaysAllowed,
+  isAppointmentDurationAllowed,
   isAppointmentIssuedDateAllowed,
   isAppointmentStartDateAllowed,
   isRecurringAppointmentRangeAllowed,
+  isRecurringPatternPeriodAllowed,
   MAX_RECURRING_APPOINTMENT_HORIZON_DAYS,
   resolveEffectiveAppointmentStartDate,
 } from './appointment-date-validation';
@@ -388,14 +393,27 @@ const AppointmentsForm: React.FC<
     appointmentFormContext,
   );
 
-  // t('durationErrorMessage', 'Duration should be greater than zero')
+  const durationRangeErrorMessage = t(
+    'durationRangeErrorMessage',
+    'Duration must be a whole number between {{min}} and {{max}} minutes',
+    appointmentDurationMinutesRange,
+  );
+  const recurringPatternPeriodErrorMessage = t(
+    'recurringPatternPeriodErrorMessage',
+    'Repeat interval must be a whole number between {{min}} and {{max}}',
+    recurringPatternPeriodRange,
+  );
+
   const appointmentsFormSchema = z
     .object({
       duration: z
         .number()
         .nullable()
-        .refine((duration) => (isAllDayAppointment ? true : duration > 0), {
-          message: translateFrom(moduleName, 'durationErrorMessage', 'Duration should be greater than zero'),
+        .refine((duration) => duration === null || isAppointmentDurationAllowed(duration), {
+          message: durationRangeErrorMessage,
+        })
+        .refine((duration) => isAllDayAppointment || duration !== null, {
+          message: durationRangeErrorMessage,
         }),
       location: z.string().refine((value) => value !== '', {
         message: translateFrom(moduleName, 'locationRequired', 'UPSS is required'),
@@ -416,7 +434,9 @@ const AppointmentsForm: React.FC<
         message: translateFrom(moduleName, 'serviceRequired', 'Service is required'),
       }),
       recurringPatternType: z.enum(['DAY', 'WEEK']),
-      recurringPatternPeriod: z.number(),
+      recurringPatternPeriod: z.number().refine(isRecurringPatternPeriodAllowed, {
+        message: recurringPatternPeriodErrorMessage,
+      }),
       recurringPatternDaysOfWeek: z.array(z.string()),
       selectedDaysOfWeekText: z.string().optional(),
       startTime: z.string().refine((value) => isValidTime(value), {
@@ -512,6 +532,23 @@ const AppointmentsForm: React.FC<
       },
     )
     .superRefine((formValues, context) => {
+      if (
+        formValues.formIsRecurringAppointment &&
+        !areRecurringPatternWeekdaysAllowed(
+          formValues.recurringPatternType,
+          formValues.recurringPatternType === 'WEEK' ? formValues.recurringPatternDaysOfWeek : [],
+        )
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t(
+            'recurringPatternWeekdaysErrorMessage',
+            'Select at least one valid, non-repeated day for a weekly recurrence',
+          ),
+          path: ['recurringPatternDaysOfWeek'],
+        });
+      }
+
       const service = availableServices?.find(({ uuid }) => uuid === formValues.selectedServiceUuid);
 
       if (formValues.selectedServiceUuid && !service) {
@@ -819,7 +856,7 @@ const AppointmentsForm: React.FC<
     try {
       response = recurringAppointmentPayload
         ? await checkRecurringAppointmentConflict(recurringAppointmentPayload, originalStartDate)
-        : await checkAppointmentConflict(appointmentPayload);
+        : await checkAppointmentConflict(appointmentPayload, originalStartDate);
     } catch (error) {
       setIsSubmitting(false);
       showSnackbar({
@@ -976,7 +1013,7 @@ const AppointmentsForm: React.FC<
       ? dayjs(effectiveStartDate).startOf('day')
       : dayjs(effectiveStartDate).hour(hours).minute(minuteValue).second(0).millisecond(0);
     const endDateTime = isAllDayAppointment
-      ? dayjs(effectiveStartDate).endOf('day')
+      ? startDateTime.add(appointmentDurationMinutesRange.max, 'minutes')
       : startDateTime.add(duration ?? 0, 'minutes');
     const payload: AppointmentPayload = {
       appointmentKind: normalizeAppointmentKind(selectedAppointmentType),
@@ -1021,7 +1058,7 @@ const AppointmentsForm: React.FC<
       type: recurringPatternType,
       period: recurringPatternPeriod,
       endDate: endDate ? dayjs(endDate).format() : null,
-      daysOfWeek: recurringPatternDaysOfWeek,
+      daysOfWeek: recurringPatternType === 'WEEK' ? recurringPatternDaysOfWeek : [],
     };
   };
 
@@ -1322,22 +1359,22 @@ const AppointmentsForm: React.FC<
                         <NumberInput
                           hideSteppers
                           id="repeatNumber"
-                          min={1}
-                          max={356}
+                          invalid={Boolean(errors.recurringPatternPeriod)}
+                          // error-exposure-guard-ignore -- controlled translated React Hook Form/Zod validation message.
+                          invalidText={errors.recurringPatternPeriod?.message ?? t('invalidNumber', 'Number is not valid')}
+                          min={recurringPatternPeriodRange.min}
+                          max={recurringPatternPeriodRange.max}
                           label={t('repeatEvery', 'Repeat every')}
-                          invalidText={t('invalidNumber', 'Number is not valid')}
                           size="md"
                           value={value}
                           onKeyDown={preventInvalidIntegerKey({
                             integer: true,
-                            max: 356,
-                            min: 1,
+                            ...recurringPatternPeriodRange,
                             nonNegative: true,
                           })}
                           onPaste={preventInvalidIntegerPaste({
                             integer: true,
-                            max: 356,
-                            min: 1,
+                            ...recurringPatternPeriodRange,
                             nonNegative: true,
                           })}
                           onBlur={onBlur}
@@ -1345,8 +1382,7 @@ const AppointmentsForm: React.FC<
                             onChange(
                               getIntegerValue(nextValue, {
                                 integer: true,
-                                max: 356,
-                                min: 1,
+                                ...recurringPatternPeriodRange,
                                 nonNegative: true,
                               }),
                             );
@@ -1387,6 +1423,9 @@ const AppointmentsForm: React.FC<
                             initialSelectedItems={weekDays.filter((i) =>
                               getValues('recurringPatternDaysOfWeek').includes(i.id),
                             )}
+                            invalid={Boolean(errors.recurringPatternDaysOfWeek)}
+                            // error-exposure-guard-ignore -- controlled translated React Hook Form/Zod validation message.
+                            invalidText={errors.recurringPatternDaysOfWeek?.message}
                             items={weekDays}
                             itemToString={(item) => (item ? t(item.labelCode, item.label) : '')}
                             label={getValues('selectedDaysOfWeekText')}
@@ -1637,19 +1676,17 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
               // error-exposure-guard-ignore -- controlled translated React Hook Form/Zod validation message.
               invalidText={errors?.duration?.message}
               label={<RequiredFieldLabel label={t('durationInMinutes', 'Duration (minutes)')} />}
-              max={1440}
-              min={0}
+              max={appointmentDurationMinutesRange.max}
+              min={appointmentDurationMinutesRange.min}
               onBlur={onBlur}
               onKeyDown={preventInvalidIntegerKey({
                 integer: true,
-                max: 1440,
-                min: 0,
+                ...appointmentDurationMinutesRange,
                 nonNegative: true,
               })}
               onPaste={preventInvalidIntegerPaste({
                 integer: true,
-                max: 1440,
-                min: 0,
+                ...appointmentDurationMinutesRange,
                 nonNegative: true,
               })}
               onChange={(_event, { value: nextValue }) =>
@@ -1658,8 +1695,7 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
                     ? null
                     : getIntegerValue(nextValue, {
                         integer: true,
-                        max: 1440,
-                        min: 0,
+                        ...appointmentDurationMinutesRange,
                         nonNegative: true,
                       }),
                 )
@@ -1693,6 +1729,8 @@ function getAppointmentValidationMessages(
     provider: t('responsibleProvider', 'Personal de salud responsable'),
     startTime: t('time', 'Hora'),
     duration: t('duration', 'Duración'),
+    recurringPatternPeriod: t('repeatEvery', 'Repetir cada'),
+    recurringPatternDaysOfWeek: t('daysOfWeek', 'Días de la semana'),
     dateAppointmentScheduled: t('dateScheduled', 'Fecha de emisión de la cita'),
     'appointmentDateTime.startDate': t('date', 'Fecha'),
     'appointmentDateTime.recurringPatternEndDate': t('endDate', 'Fecha de finalización'),

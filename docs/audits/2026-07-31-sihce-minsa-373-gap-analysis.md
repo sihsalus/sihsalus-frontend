@@ -4,8 +4,9 @@
 
 **Sistema:** SIHSALUS — Hospital II-1 Santa Clotilde, Napo, Maynas, Loreto
 
-**Base técnica revisada:** `main` en `2aa7fcc9d234a46b92875a85e2c848b3dacef44e`
-**Rama de mitigaciones frontend:** `fix/audit-trail-integrity-20260731`
+**Base técnica inicial revisada:** `main` en `2aa7fcc9d234a46b92875a85e2c848b3dacef44e`
+**Base de integración de las mitigaciones:** `main` en `e33b8db1c`
+**Rama integrada de mitigaciones frontend:** `fix/main-production-blockers-20260801`
 
 **Alcance inspeccionado:** código y documentación del repositorio frontend, más
 comprobaciones HTTP puntuales documentadas de DEV/QLTY. No se auditó integralmente
@@ -97,7 +98,7 @@ encontró prueba suficiente en código, configuración o ambientes revisados.
 | `N0.GBL.012` | Terminología estándar | Parcial | Se usan CIE/conceptos OpenMRS en algunos módulos; otros guardan texto libre. Falta matriz por perfil. |
 | `N0.GBL.013` | Versionado histórico de terminologías | No evidenciado | No se demostró conservación de versión, código original, mapeo y traducción. |
 | `N0.GBL.014` | Integración basada en estándares | Parcial | FHIR está presente, pero no se demostró el contrato completo exigido para intercambio. |
-| `N0.GBL.015` | Reglas clínicas y administrativas | Parcial crítico | `main` aceptaba valores imposibles en signos vitales; esta rama añade límites frontend, pero faltan reglas server-side equivalentes. |
+| `N0.GBL.015` | Reglas clínicas y administrativas | Parcial crítico | El formulario propio ahora aplica invariantes de unidad/representación y confirmación explícita contra rangos OpenMRS; Form Engine, HTML Form Entry, importaciones y backend aún no comparten un contrato único. |
 | `N0.GBL.016` | Respaldo y recuperación total | No evidenciado — P0 | No se aportó prueba de restauración completa a un punto temporal ni ensayo documentado. RPO/RTO deben definirse como controles operativos internos. |
 | `N0.GBL.017` | Ayuda contextual configurable | Parcial | Hay ayuda puntual; falta cobertura trazable de todas las funciones acreditadas. |
 
@@ -115,7 +116,7 @@ documental que este repositorio por sí solo no puede demostrar.
 | Firma digital/no repudio | Las notas muestran datos del profesional, pero guardan encuentros sin evidencia criptográfica. | Documento inmutable, hash, certificado acreditado, sello de tiempo, validación, revocación y código/URL verificable. Cofirma solo cuando el perfil y rol aplicable la exijan. | Backend + PKI + frontend |
 | Enmiendas inmutables | La edición de notas actualiza el encuentro y elimina/recrea diagnósticos; no hay motivo ni comparación de versiones. | Nunca sobrescribir el original; guardar valor previo/nuevo, autor, motivo, tiempos, estado y firma; transacción y control de concurrencia. | Backend + frontend |
 | Autoría clínica | Emergencia y odontograma crean registros sin proveedor/rol/ubicación completos; odontograma puede cambiar la fecha original al editar. | Exigir y validar profesional, rol, UPSS, ubicación física, visita, fecha clínica y fecha de registro; preservar autor y origen. | Frontend + backend |
-| Valores clínicos imposibles | `main` aceptaba PA sistólica `1000` y SpO₂ `200`; esta rama lo bloquea solo en frontend. | Bloquear únicamente límites fisiológicamente imposibles también en backend; advertir, sin impedir, valores extremos plausibles; prueba por edad cuando corresponda. | Clínica + frontend + backend |
+| Validación clínica fragmentada | El formulario propio bloquea valores no finitos/negativos, SpO₂ fuera de 0–100 %, PA incompleta o invertida, y exige confirmar rangos OpenMRS; otros motores y el backend pueden eludir ese contrato. | Aprobar unidades y rangos con gobernanza clínica; aplicar el mismo contrato en backend, Form Engine, HTML Form Entry, importaciones y modo offline; no inventar topes fisiológicos en frontend. | Clínica + frontend + backend |
 | PHI offline | IndexedDB puede conservar formularios, observaciones, diagnósticos, órdenes y pacientes; logout no prueba purga integral. | Decisión formal de modo offline, cifrado gestionado, segregación por usuario, revalidación al sincronizar, retención mínima, purga y borrado remoto. | Arquitectura + seguridad |
 | Consentimiento y RENHICE | No se encontró modelo general versionado de consentimiento/autorización ni flujo RENHICE. | Documento firmado, alcance, finalidad, representante, vigencia/revocación, datos sensibles, respuesta RENHICE y evento de divulgación. | Backend + legal + frontend |
 | Continuidad | No hay evidencia reproducible de backup/restauración y conservación legal. | Política, objetivos internos RPO/RTO, copias protegidas, restauración ensayada, legal hold y evidencia firmada. | Infraestructura + seguridad |
@@ -160,26 +161,48 @@ Estas medidas reducen exposición, pero **no convierten el sistema en acreditado
    Usa el UUID confirmado/validado y descarta el texto libre de la ruta; el logger añade
    usuario, sesión, timestamp y UUID de ubicación de sesión. Esa ubicación no se
    presume UPSS. No se envían nombres ni datos demográficos en el evento.
-3. El limitador del logger encola en vez de descartar por tasa y los fallos HTTP se
-   reintentan con backoff exponencial, jitter y tope de un minuto. La cola local sigue
-   siendo acotada y no sustituye la bitácora server-side.
+3. El limitador del logger encola en vez de descartar por tasa. Los fallos transitorios
+   se reintentan con backoff exponencial, jitter y tope de un minuto; los HTTP 4xx
+   terminales, incluido el 404 observado, abren un circuito, conservan la cola cifrada
+   y suspenden solicitudes repetitivas. La cola local sigue siendo acotada y no
+   sustituye la bitácora server-side.
 4. El wrapper legacy de HTML Form Entry valida `origin` y `source` antes de aceptar
    el mensaje que cierra el workspace y limita el referrer a mismo origen.
-5. Signos vitales separa rangos clínicos confirmables de límites duros de entrada:
-   PA `1000` y SpO₂ `200` ya no pueden guardarse ni con doble confirmación, mientras
-   extremos plausibles permanecen registrables con advertencia.
+5. Signos vitales separa rangos clínicos confirmables de invariantes inequívocas:
+   valores no finitos/negativos, SpO₂ fuera de 0–100 %, PA incompleta o sistólica
+   menor que diastólica no se pueden guardar. Los valores fuera del rango configurado
+   permanecen registrables solo mediante un diálogo separado que muestra valor,
+   unidad y rango exactos; no se codifican máximos fisiológicos arbitrarios.
 6. Se oculta el filtro avanzado de las listas de colas porque su botón “Aplicar” era
    un no-op y mostraba límites de edad contradictorios. Debe reaparecer solo cuando
    filtre realmente con el contrato 0–140 y valide inicio menor o igual que fin.
-7. Las pruebas cubren guard de chart, evento mínimo, ubicación de sesión,
+7. Las tablas de colas filtran de forma segura valores nulos y nodos React, y la
+   paginación de citas programadas usa el total ya filtrado con páginas de 20 filas;
+   una respuesta todavía no disponible ya no puede construir `Array(NaN)`.
+8. Resumen de visita, React Form Entry, HTML Form Entry y lista de tareas separan
+   lectura de mutación y fallan cerrados. Los tipos de encuentro con privilegio
+   explícito lo respetan; los tipos legacy exigen una capacidad clínica genérica que
+   debe provisionarse coordinadamente desde `sihsalus-content`.
+9. Citas valida que el UUID del profesional exista en el catálogo completo: el hook
+   sigue todas las páginas `next` del REST clásico en vez de asumir la primera página
+   de 50. La comprobación de conflictos de una serie recurrente usa el endpoint de
+   series y la edición usa `PUT` con zona horaria y `applyForAll` explícitos.
+10. Las pruebas cubren guard de chart, evento mínimo, ubicación de sesión,
    cola/reintento, cambio de usuario, mensajes de iframe no confiables y límites de
-   signos vitales.
+   signos vitales, permisos de mutación, paginación de colas y citas recurrentes.
 
 Riesgo residual inmediato: hasta que exista el endpoint de auditoría server-side, los
 eventos se acumularán localmente y la cola acotada no constituye una bitácora legal.
 El desborde ya emite una señal operacional, pero todavía evacua eventos antiguos. La
 exclusión mutua funciona por pestaña; el backend debe deduplicar por `event.id` y
 validar usuario/sesión contra la petición autenticada para cubrir múltiples pestañas.
+
+La segmentación por tipo de encuentro tampoco está cerrada: en el contenido revisado,
+solo 2 de 62 tipos declaran `viewPrivilege` y `editPrivilege`; los otros 60 usan la
+capacidad genérica. Además, la interfaz todavía no obtiene de forma autónoma el patrón
+de una cita recurrente existente, por lo que debe definirse y probarse con usuarios
+reales si “editar una ocurrencia” o “editar toda la serie” es el comportamiento por
+defecto antes de habilitar esa operación en PROD.
 
 ## 7. Infraestructura de registros — Anexo 11
 
@@ -234,8 +257,8 @@ versionado, firmado, trazable y vinculado a la respuesta del RENHICE.
 ### Fase 0 — contención frontend
 
 - Integrar las mitigaciones de esta rama con CI verde.
-- Replicar en backend los límites de signos vitales y aprobar sus envolventes con
-  gobernanza clínica local.
+- Aprobar con gobernanza clínica las unidades y rangos de signos vitales, y replicar
+  en backend y demás motores las invariantes y el flujo de confirmación acordados.
 - Instrumentar de forma mínima las exportaciones e impresiones, sin incluir PHI en
   metadata de auditoría.
 - Definir privilegios separados para exportar, administrar formularios y ejecutar

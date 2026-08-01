@@ -21,7 +21,8 @@ export interface AppointmentArrivalRule {
 export const configSchema = {
   allowAllDayAppointments: {
     _type: Type.Boolean,
-    _description: 'Whether to allow scheduling of all-day appointments (vs appointments with start time and end time)',
+    _description:
+      'Legacy compatibility flag; all-day appointments are unsupported by the classic Bahmni backend and setting this to true has no effect.',
     _default: false,
   },
   appointmentStatuses: {
@@ -172,6 +173,7 @@ export const configSchema = {
 };
 
 export interface ConfigObject {
+  /** @deprecated All-day appointments are unsupported; this legacy flag is ignored. */
   allowAllDayAppointments: boolean;
   appointmentStatuses: Array<string>;
   appointmentTypes: Array<string>;

@@ -1,16 +1,9 @@
 import type { AppointmentPayload, RecurringPattern } from '../types';
-import {
-  canonicalAllDayAppointmentDurationMilliseconds,
-  recurringPatternPeriodRange,
-  timedAppointmentDurationMinutesRange,
-  weekDays,
-} from '../constants';
+import { recurringPatternPeriodRange, timedAppointmentDurationMinutesRange, weekDays } from '../constants';
 
 export type AppointmentFormContext = 'creating' | 'editing';
 export const MAX_RECURRING_APPOINTMENT_HORIZON_DAYS = 365;
 const MILLISECONDS_PER_MINUTE = 60_000;
-const LOCAL_ISO_DATETIME_PATTERN =
-  /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?(?:Z|[+-]\d{2}:?\d{2})$/;
 const validRecurringPatternTypes = new Set<RecurringPattern['type']>(['DAY', 'WEEK']);
 const validRecurringWeekdays = new Set(weekDays.map(({ id }) => id));
 
@@ -101,8 +94,9 @@ export function isRecurringAppointmentRangeAllowed(
   );
 }
 
-export function isTimedAppointmentDurationAllowed(durationMinutes: number): boolean {
+export function isTimedAppointmentDurationAllowed(durationMinutes: unknown): durationMinutes is number {
   return (
+    typeof durationMinutes === 'number' &&
     Number.isInteger(durationMinutes) &&
     durationMinutes >= timedAppointmentDurationMinutesRange.min &&
     durationMinutes <= timedAppointmentDurationMinutesRange.max
@@ -111,16 +105,11 @@ export function isTimedAppointmentDurationAllowed(durationMinutes: number): bool
 
 export function isRecurringPatternPeriodAllowed(period: number): boolean {
   return (
-    Number.isInteger(period) &&
-    period >= recurringPatternPeriodRange.min &&
-    period <= recurringPatternPeriodRange.max
+    Number.isInteger(period) && period >= recurringPatternPeriodRange.min && period <= recurringPatternPeriodRange.max
   );
 }
 
-export function areRecurringPatternWeekdaysAllowed(
-  type: RecurringPattern['type'],
-  daysOfWeek: unknown,
-): boolean {
+export function areRecurringPatternWeekdaysAllowed(type: RecurringPattern['type'], daysOfWeek: unknown): boolean {
   if (!Array.isArray(daysOfWeek)) {
     return false;
   }
@@ -132,41 +121,32 @@ export function areRecurringPatternWeekdaysAllowed(
   );
 }
 
+const getUtcTimeOfDayMilliseconds = (date: Date): number =>
+  date.getUTCHours() * 3_600_000 +
+  date.getUTCMinutes() * 60_000 +
+  date.getUTCSeconds() * 1_000 +
+  date.getUTCMilliseconds();
+
 /**
- * Bahmni Appointment Scheduling 2.1.0 expects all-day appointments to stay
- * within one calendar day. Accept that one fractional-minute interval only
- * when both local wall-clock endpoints are the canonical start/end of the
- * same ISO day and the absolute interval is exactly one millisecond short of
- * the configured maximum.
+ * Mirrors AppointmentServiceUnavailabilityConflict in Bahmni Appointment
+ * Scheduling 2.1.0, which compares DateUtil.getEpochTime values on a Tomcat
+ * configured with UTC. Revisit this guard if the backend JVM timezone changes.
+ * Rejecting a change of UTC day, as well as a non-increasing UTC wall-clock
+ * range, prevents SERVICE_UNAVAILABLE for an otherwise valid absolute interval.
  */
-function isCanonicalAllDayAppointmentInterval(
-  startDateTime: string,
-  endDateTime: string,
-  startDate: Date,
-  endDate: Date,
-): boolean {
-  const startMatch = LOCAL_ISO_DATETIME_PATTERN.exec(startDateTime);
-  const endMatch = LOCAL_ISO_DATETIME_PATTERN.exec(endDateTime);
-  if (!startMatch || !endMatch) {
+export function isBahmniUtcTimeRangeAllowed(startDateTime: Date | string, endDateTime: Date | string): boolean {
+  const startDate = startDateTime instanceof Date ? new Date(startDateTime.valueOf()) : new Date(startDateTime);
+  const endDate = endDateTime instanceof Date ? new Date(endDateTime.valueOf()) : new Date(endDateTime);
+  if (Number.isNaN(startDate.valueOf()) || Number.isNaN(endDate.valueOf())) {
     return false;
   }
 
-  const [, startDay, startHour, startMinute, startSecond, startFraction = ''] = startMatch;
-  const [, endDay, endHour, endMinute, endSecond, endFraction = ''] = endMatch;
-  const normalizedStartFraction = startFraction.padEnd(3, '0');
+  const isSameUtcDay =
+    endDate.getUTCFullYear() === startDate.getUTCFullYear() &&
+    endDate.getUTCMonth() === startDate.getUTCMonth() &&
+    endDate.getUTCDate() === startDate.getUTCDate();
 
-  return (
-    startDay === endDay &&
-    startHour === '00' &&
-    startMinute === '00' &&
-    startSecond === '00' &&
-    normalizedStartFraction === '000' &&
-    endHour === '23' &&
-    endMinute === '59' &&
-    endSecond === '59' &&
-    endFraction === '999' &&
-    endDate.valueOf() - startDate.valueOf() === canonicalAllDayAppointmentDurationMilliseconds
-  );
+  return isSameUtcDay && getUtcTimeOfDayMilliseconds(endDate) > getUtcTimeOfDayMilliseconds(startDate);
 }
 
 export function assertAppointmentPayloadDates(
@@ -191,16 +171,14 @@ export function assertAppointmentPayloadDates(
   }
 
   const durationMinutes = (endDate.valueOf() - startDate.valueOf()) / MILLISECONDS_PER_MINUTE;
-  const isCanonicalAllDayAppointment = isCanonicalAllDayAppointmentInterval(
-    appointment.startDateTime,
-    appointment.endDateTime,
-    startDate,
-    endDate,
-  );
-  if (!isCanonicalAllDayAppointment && !isTimedAppointmentDurationAllowed(durationMinutes)) {
+  if (!isTimedAppointmentDurationAllowed(durationMinutes)) {
     throw new Error(
       `Timed appointment duration must be a whole number between ${timedAppointmentDurationMinutesRange.min} and ${timedAppointmentDurationMinutesRange.max} minutes.`,
     );
+  }
+
+  if (!isBahmniUtcTimeRangeAllowed(startDate, endDate)) {
+    throw new Error('The appointment cannot span the backend daily scheduling boundary.');
   }
 }
 

@@ -28,7 +28,6 @@ import {
   appointmentIssueDateEditPrivilege,
   appointmentNoteMaxLength,
   appointmentStartDateEditPrivilege,
-  canonicalAllDayAppointmentDurationMilliseconds,
   omrsDateFormat,
 } from '../constants';
 import SelectedDateContext from '../hooks/selectedDateContext';
@@ -67,7 +66,7 @@ const mockUseProviders = vi.mocked(useProviders);
 const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 
-async function fillRequiredAppointmentFields(user: ReturnType<typeof userEvent.setup>, allDay = false) {
+async function fillRequiredAppointmentFields(user: ReturnType<typeof userEvent.setup>) {
   await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), [
     mockUseAppointmentServiceData[0].uuid,
   ]);
@@ -80,11 +79,6 @@ async function fillRequiredAppointmentFields(user: ReturnType<typeof userEvent.s
   await user.clear(providerComboBox);
   await user.type(providerComboBox, 'James Cook');
   await user.click(screen.getByRole('option', { name: 'doctor - James Cook' }));
-
-  if (allDay) {
-    await user.click(screen.getByLabelText(/all day/i));
-    return;
-  }
 
   const durationInput = screen.getByRole('spinbutton', { name: /duration/i });
   await user.clear(durationInput);
@@ -232,10 +226,10 @@ describe('AppointmentForm', () => {
     expect(screen.getByRole('button', { name: /save and close/i })).toBeInTheDocument();
   });
 
-  it('hides all-day scheduling while keeping time and duration', async () => {
+  it('ignores the legacy all-day flag and keeps time and duration required', async () => {
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
-      allowAllDayAppointments: false,
+      allowAllDayAppointments: true,
       appointmentTypes: ['Scheduled', 'WalkIn'],
     });
     mockOpenmrsFetch.mockResolvedValue(mockUseAppointmentServiceData as unknown as FetchResponse);
@@ -247,6 +241,88 @@ describe('AppointmentForm', () => {
     expect(screen.queryByLabelText(/all day/i)).not.toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /time/i })).toBeInTheDocument();
     expect(screen.getByRole('spinbutton', { name: /duration/i })).toBeInTheDocument();
+  });
+
+  it('blocks a Peru evening appointment that spans the daily boundary before any request', async () => {
+    const originalTimeZone = process.env.TZ;
+    process.env.TZ = 'America/Lima';
+
+    try {
+      const user = userEvent.setup();
+      mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+
+      renderWithSwr(<AppointmentForm {...defaultProps} />);
+      await waitForLoadingToFinish();
+      await fillRequiredAppointmentFields(user);
+
+      const durationInput = screen.getByRole('spinbutton', { name: /duration/i });
+      await user.clear(durationInput);
+      await user.type(durationInput, '60');
+      const timeInput = screen.getByRole('textbox', { name: /time/i });
+      await user.clear(timeInput);
+      await user.type(timeInput, '06:30');
+      await user.tab();
+      await user.selectOptions(screen.getByRole('combobox', { name: /time/i }), 'PM');
+      await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+      expect(await screen.findAllByText(/cannot span the daily scheduling boundary \(19:00 in Peru\)/i)).toHaveLength(
+        2,
+      );
+      expect(mockOpenmrsFetch).not.toHaveBeenCalledWith(
+        expect.stringContaining('/appointments/conflicts'),
+        expect.anything(),
+      );
+      expect(mockSaveAppointment).not.toHaveBeenCalled();
+    } finally {
+      if (originalTimeZone === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = originalTimeZone;
+      }
+    }
+  });
+
+  it.each([
+    ['before', '05:00', /T17:00:00-05:00$/, /T18:00:00-05:00$/],
+    ['after', '07:00', /T19:00:00-05:00$/, /T20:00:00-05:00$/],
+  ])('allows a Peru appointment wholly %s the daily boundary', async (_position, timeValue, expectedStart, expectedEnd) => {
+    const originalTimeZone = process.env.TZ;
+    process.env.TZ = 'America/Lima';
+
+    try {
+      const user = userEvent.setup();
+      mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+      mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+
+      renderWithSwr(<AppointmentForm {...defaultProps} />);
+      await waitForLoadingToFinish();
+      await fillRequiredAppointmentFields(user);
+
+      const durationInput = screen.getByRole('spinbutton', { name: /duration/i });
+      await user.clear(durationInput);
+      await user.type(durationInput, '60');
+      const timeInput = screen.getByRole('textbox', { name: /time/i });
+      await user.clear(timeInput);
+      await user.type(timeInput, timeValue);
+      await user.tab();
+      await user.selectOptions(screen.getByRole('combobox', { name: /time/i }), 'PM');
+      await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+      await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+      expect(mockSaveAppointment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          startDateTime: expect.stringMatching(expectedStart),
+          endDateTime: expect.stringMatching(expectedEnd),
+        }),
+        expect.anything(),
+      );
+    } finally {
+      if (originalTimeZone === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = originalTimeZone;
+      }
+    }
   });
 
   it('reports validation errors in a global notification like patient registration', async () => {
@@ -687,22 +763,38 @@ describe('AppointmentForm', () => {
   });
 
   it('submits a timed appointment at the 1439-minute duration boundary', async () => {
-    const user = userEvent.setup();
-    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
-    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+    const originalTimeZone = process.env.TZ;
+    process.env.TZ = 'UTC';
 
-    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    try {
+      const user = userEvent.setup();
+      mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+      mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
 
-    await waitForLoadingToFinish();
-    await fillRequiredAppointmentFields(user);
-    const durationInput = screen.getByRole('spinbutton', { name: /duration/i });
-    await user.clear(durationInput);
-    await user.type(durationInput, '1439');
-    await user.click(screen.getByRole('button', { name: /save and close/i }));
+      renderWithSwr(<AppointmentForm {...defaultProps} />);
 
-    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
-    const payload = mockSaveAppointment.mock.calls[0][0];
-    expect(dayjs(payload.endDateTime).diff(dayjs(payload.startDateTime), 'minute')).toBe(1439);
+      await waitForLoadingToFinish();
+      await fillRequiredAppointmentFields(user);
+      const timeInput = screen.getByRole('textbox', { name: /time/i });
+      await user.clear(timeInput);
+      await user.type(timeInput, '12:00');
+      await user.tab();
+      await user.selectOptions(screen.getByRole('combobox', { name: /time/i }), 'AM');
+      const durationInput = screen.getByRole('spinbutton', { name: /duration/i });
+      await user.clear(durationInput);
+      await user.type(durationInput, '1439');
+      await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+      await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+      const payload = mockSaveAppointment.mock.calls[0][0];
+      expect(dayjs(payload.endDateTime).diff(dayjs(payload.startDateTime), 'minute')).toBe(1439);
+    } finally {
+      if (originalTimeZone === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = originalTimeZone;
+      }
+    }
   });
 
   it('closes the workspace when the cancel button is clicked', async () => {
@@ -891,60 +983,6 @@ describe('AppointmentForm', () => {
       ),
     ).toBeInTheDocument();
     expect(mockSaveAppointment).not.toHaveBeenCalled();
-  });
-
-  it('schedules an all-day appointment using the full selected day', async () => {
-    const user = userEvent.setup();
-
-    mockUseConfig.mockReturnValue({
-      ...getDefaultsFromConfigSchema(configSchema),
-      allowAllDayAppointments: true,
-      appointmentTypes: ['Scheduled', 'WalkIn'],
-    });
-    mockOpenmrsFetch.mockResolvedValue({
-      data: mockUseAppointmentServiceData,
-    } as unknown as FetchResponse);
-    mockSaveAppointment.mockResolvedValue({
-      status: 201,
-      statusText: 'Created',
-    } as FetchResponse);
-
-    renderWithSwr(<AppointmentForm {...defaultProps} />);
-
-    await waitForLoadingToFinish();
-    await fillRequiredAppointmentFields(user, true);
-    await user.click(screen.getByRole('button', { name: /save and close/i }));
-
-    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
-    const payload = mockSaveAppointment.mock.calls[0][0];
-    expect(payload.startDateTime).toMatch(/T00:00:00/);
-    expect(payload.endDateTime).toMatch(/T23:59:59\.999/);
-    expect(dayjs(payload.endDateTime).valueOf() - dayjs(payload.startDateTime).valueOf()).toBe(
-      canonicalAllDayAppointmentDurationMilliseconds,
-    );
-  });
-
-  it('ignores an invalid hidden duration when scheduling an all-day appointment', async () => {
-    const user = userEvent.setup();
-
-    mockUseConfig.mockReturnValue({
-      ...getDefaultsFromConfigSchema(configSchema),
-      allowAllDayAppointments: true,
-      appointmentTypes: ['Scheduled', 'WalkIn'],
-    });
-    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
-    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
-
-    renderWithSwr(<AppointmentForm {...defaultProps} />);
-
-    await waitForLoadingToFinish();
-    await fillRequiredAppointmentFields(user);
-    await user.clear(screen.getByRole('spinbutton', { name: /duration/i }));
-    await user.click(screen.getByLabelText(/all day/i));
-    await user.click(screen.getByRole('button', { name: /save and close/i }));
-
-    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
-    expect(mockSaveAppointment.mock.calls[0][0].endDateTime).toMatch(/T23:59:59\.999/);
   });
 
   it('shows an error and does not save if conflict validation fails', async () => {

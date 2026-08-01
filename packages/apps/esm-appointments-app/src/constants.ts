@@ -17,9 +17,8 @@ export const chartAppointmentsEditPrivilege = 'app:hoja.clinica.citas.editar';
 export const appointmentNoteMaxLength = 255;
 // Bahmni 2.1.0 compares service availability by wall-clock time. A timed
 // appointment cannot be 1,440 minutes because its end time would equal its
-// start time; all-day appointments use the separate canonical interval below.
+// start time. All-day appointments are not supported by the classic backend.
 export const timedAppointmentDurationMinutesRange = { min: 1, max: 1439 } as const;
-export const canonicalAllDayAppointmentDurationMilliseconds = 86_400_000 - 1;
 export const recurringPatternPeriodRange = { min: 1, max: 356 } as const;
 
 export const moduleName = '@sihsalus/esm-appointments-app';

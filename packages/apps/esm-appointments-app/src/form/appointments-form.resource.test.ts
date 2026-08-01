@@ -67,21 +67,43 @@ describe('appointment writes', () => {
     );
   });
 
-  it('posts the backend-compatible canonical all-day interval', () => {
-    const allDayAppointment = {
+  it('blocks a Peru evening appointment that spans the daily boundary before any request', async () => {
+    const appointmentAcrossBoundary = {
       ...validAppointment,
-      startDateTime: '2026-07-18T00:00:00.000-05:00',
-      endDateTime: '2026-07-18T23:59:59.999-05:00',
+      startDateTime: '2026-07-18T18:30:00-05:00',
+      endDateTime: '2026-07-18T19:30:00-05:00',
     };
 
-    saveAppointment(allDayAppointment, new AbortController());
+    expect(() => saveAppointment(appointmentAcrossBoundary, new AbortController())).toThrow(
+      'The appointment cannot span the backend daily scheduling boundary',
+    );
+    await expect(checkAppointmentConflict(appointmentAcrossBoundary)).rejects.toThrow(
+      'The appointment cannot span the backend daily scheduling boundary',
+    );
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+  });
 
-    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+  it.each([
+    ['before', '2026-07-18T17:00:00-05:00', '2026-07-18T18:00:00-05:00'],
+    ['after', '2026-07-18T19:00:00-05:00', '2026-07-18T20:00:00-05:00'],
+  ])('allows a Peru appointment wholly %s the daily boundary', async (_position, startDateTime, endDateTime) => {
+    const appointmentWithinBoundary = { ...validAppointment, startDateTime, endDateTime };
+
+    saveAppointment(appointmentWithinBoundary, new AbortController());
+    await checkAppointmentConflict(appointmentWithinBoundary);
+
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+      1,
       `${restBaseUrl}/appointment`,
       expect.objectContaining({
         method: 'POST',
-        body: allDayAppointment,
+        body: appointmentWithinBoundary,
       }),
+    );
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+      2,
+      `${restBaseUrl}/appointments/conflicts`,
+      expect.objectContaining({ method: 'POST' }),
     );
   });
 
@@ -152,6 +174,25 @@ describe('appointment writes', () => {
 
     expect(() => saveRecurringAppointments(payload, new AbortController())).toThrow(
       'Recurring appointment period must be a whole number between 1 and 356',
+    );
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+  });
+
+  it('blocks a recurring series that spans the backend daily boundary before any request', () => {
+    const payload: RecurringAppointmentsPayload = {
+      ...validRecurringAppointments,
+      appointmentRequest: {
+        ...validAppointment,
+        startDateTime: '2026-07-18T18:30:00-05:00',
+        endDateTime: '2026-07-18T19:30:00-05:00',
+      },
+    };
+
+    expect(() => saveRecurringAppointments(payload, new AbortController())).toThrow(
+      'The appointment cannot span the backend daily scheduling boundary',
+    );
+    expect(() => checkRecurringAppointmentConflict(payload)).toThrow(
+      'The appointment cannot span the backend daily scheduling boundary',
     );
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });

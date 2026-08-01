@@ -55,7 +55,6 @@ import {
   appointmentStartDateEditPrivilege,
   dateFormat,
   moduleName,
-  omrsDateFormat,
   recurringPatternPeriodRange,
   timedAppointmentDurationMinutesRange,
   weekDays,
@@ -80,6 +79,7 @@ import Workload from '../workload/workload.component';
 import { type AppointmentCareRoutingIssue, getAppointmentCareRoutingIssue } from './appointment-care-routing';
 import {
   areRecurringPatternWeekdaysAllowed,
+  isBahmniUtcTimeRangeAllowed,
   isAppointmentIssuedDateAllowed,
   isAppointmentStartDateAllowed,
   isRecurringAppointmentRangeAllowed,
@@ -166,6 +166,22 @@ function RequiredFieldLabel({ label }: { label: string }) {
 }
 
 const isValidTime = (timeStr: string) => timeStr.match(new RegExp(time12HourFormatRegexPattern));
+
+function getTimedAppointmentDateRange(
+  startDate: Date,
+  startTime: string,
+  timeFormat: 'AM' | 'PM',
+  durationMinutes: number,
+) {
+  const [hourValue, minuteValue] = startTime.split(':').map((item) => parseInt(item, 10));
+  const hours = (hourValue % 12) + (timeFormat === 'PM' ? 12 : 0);
+  const startDateTime = dayjs(startDate).hour(hours).minute(minuteValue).second(0).millisecond(0);
+
+  return {
+    startDateTime,
+    endDateTime: startDateTime.add(durationMinutes, 'minutes'),
+  };
+}
 
 const isSuccessfulAppointmentResponse = (status?: number) => status >= 200 && status < 300 && status !== 204;
 
@@ -347,7 +363,6 @@ const AppointmentsForm: React.FC<
   const {
     appointmentArrivalRules,
     appointmentTypes,
-    allowAllDayAppointments,
     appointmentServiceGenderRules,
     careRoutingContractVersion,
     providerSchedulingCategoryValidation,
@@ -370,7 +385,6 @@ const AppointmentsForm: React.FC<
       : t('createNewAppointment', 'Create new appointment'));
 
   const [isRecurringAppointment, setIsRecurringAppointment] = useState(false);
-  const [isAllDayAppointment, setIsAllDayAppointment] = useState(false);
   const [isSuccessful, setIsSuccessful] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -404,18 +418,19 @@ const AppointmentsForm: React.FC<
     'Repeat interval must be a whole number between {{min}} and {{max}}',
     recurringPatternPeriodRange,
   );
+  const appointmentDailyBoundaryErrorMessage = t(
+    'appointmentDailyBoundaryErrorMessage',
+    'The appointment cannot span the daily scheduling boundary (19:00 in Peru). Choose a start time and duration wholly before or after that boundary',
+  );
 
   const appointmentsFormSchema = z
     .object({
       duration: z
         .number()
         .nullable()
-        .refine(
-          (duration) => isAllDayAppointment || (duration !== null && isTimedAppointmentDurationAllowed(duration)),
-          {
-            message: durationRangeErrorMessage,
-          },
-        ),
+        .refine((duration) => duration !== null && isTimedAppointmentDurationAllowed(duration), {
+          message: durationRangeErrorMessage,
+        }),
       location: z.string().refine((value) => value !== '', {
         message: translateFrom(moduleName, 'locationRequired', 'UPSS is required'),
       }),
@@ -489,6 +504,25 @@ const AppointmentsForm: React.FC<
       {
         path: ['dateAppointmentScheduled'],
         message: t('appointmentIssuedDateCannotBeInFuture', 'The appointment issue date cannot be in the future'),
+      },
+    )
+    .refine(
+      (formValues) => {
+        if (!isValidTime(formValues.startTime) || !isTimedAppointmentDurationAllowed(formValues.duration)) {
+          return true;
+        }
+
+        const { startDateTime, endDateTime } = getTimedAppointmentDateRange(
+          formValues.appointmentDateTime.startDate,
+          formValues.startTime,
+          formValues.timeFormat,
+          formValues.duration,
+        );
+        return isBahmniUtcTimeRangeAllowed(startDateTime.toDate(), endDateTime.toDate());
+      },
+      {
+        path: ['duration'],
+        message: appointmentDailyBoundaryErrorMessage,
       },
     )
     .refine(
@@ -1012,24 +1046,22 @@ const AppointmentsForm: React.FC<
 
     const selectedAppointmentService = availableServices?.find((service) => service.uuid === selectedServiceUuid);
     const serviceUuid = selectedAppointmentService?.uuid;
-    const [hourValue, minuteValue] = startTime.split(':').map((item) => parseInt(item, 10));
-    const hours = (hourValue % 12) + (timeFormat === 'PM' ? 12 : 0);
     const effectiveStartDate = resolveEffectiveAppointmentStartDate(startDate, {
       canEditStartDate: canEditAppointmentStartDate,
       context: appointmentFormContext,
       originalStartDate,
     });
-    const startDateTime = isAllDayAppointment
-      ? dayjs(effectiveStartDate).startOf('day')
-      : dayjs(effectiveStartDate).hour(hours).minute(minuteValue).second(0).millisecond(0);
-    const endDateTime = isAllDayAppointment
-      ? startDateTime.endOf('day')
-      : startDateTime.add(duration ?? 0, 'minutes');
+    const { startDateTime, endDateTime } = getTimedAppointmentDateRange(
+      effectiveStartDate,
+      startTime,
+      timeFormat,
+      duration ?? 0,
+    );
     const payload: AppointmentPayload = {
       appointmentKind: normalizeAppointmentKind(selectedAppointmentType),
       serviceUuid: serviceUuid,
       startDateTime: startDateTime.format(),
-      endDateTime: isAllDayAppointment ? endDateTime.format(omrsDateFormat) : endDateTime.format(),
+      endDateTime: endDateTime.format(),
       locationUuid: location,
       providers: [{ uuid: provider }],
       patientUuid: patientUuid,
@@ -1296,16 +1328,6 @@ const AppointmentsForm: React.FC<
             <div className={styles.dateTimeFields}>
               {canEditAppointmentStartDate && isRecurringAppointment && (
                 <div className={styles.inputContainer}>
-                  {allowAllDayAppointments && (
-                    <Toggle
-                      id="allDayToggle"
-                      labelB={t('yes', 'Yes')}
-                      labelA={t('no', 'No')}
-                      labelText={t('allDay', 'All day')}
-                      onClick={() => setIsAllDayAppointment(!isAllDayAppointment)}
-                      toggled={isAllDayAppointment}
-                    />
-                  )}
                   <ResponsiveWrapper>
                     <Controller
                       name="appointmentDateTime"
@@ -1357,9 +1379,7 @@ const AppointmentsForm: React.FC<
                     />
                   </ResponsiveWrapper>
 
-                  {!isAllDayAppointment && (
-                    <TimeAndDuration control={control} errors={errors} services={services} watch={watch} t={t} />
-                  )}
+                  <TimeAndDuration control={control} errors={errors} services={services} watch={watch} t={t} />
 
                   <ResponsiveWrapper>
                     <Controller
@@ -1371,7 +1391,9 @@ const AppointmentsForm: React.FC<
                           id="repeatNumber"
                           invalid={Boolean(errors.recurringPatternPeriod)}
                           // error-exposure-guard-ignore -- controlled translated React Hook Form/Zod validation message.
-                          invalidText={errors.recurringPatternPeriod?.message ?? t('invalidNumber', 'Number is not valid')}
+                          invalidText={
+                            errors.recurringPatternPeriod?.message ?? t('invalidNumber', 'Number is not valid')
+                          }
                           min={recurringPatternPeriodRange.min}
                           max={recurringPatternPeriodRange.max}
                           label={t('repeatEvery', 'Repeat every')}
@@ -1455,16 +1477,6 @@ const AppointmentsForm: React.FC<
 
               {!isRecurringAppointment && (
                 <div className={styles.inputContainer}>
-                  {allowAllDayAppointments && (
-                    <Toggle
-                      id="allDayToggle"
-                      labelB={t('yes', 'Yes')}
-                      labelA={t('no', 'No')}
-                      labelText={t('allDay', 'All day')}
-                      onClick={() => setIsAllDayAppointment(!isAllDayAppointment)}
-                      toggled={isAllDayAppointment}
-                    />
-                  )}
                   <ResponsiveWrapper>
                     <Controller
                       name="appointmentDateTime"
@@ -1492,9 +1504,7 @@ const AppointmentsForm: React.FC<
                     />
                   </ResponsiveWrapper>
 
-                  {!isAllDayAppointment && (
-                    <TimeAndDuration control={control} services={services} watch={watch} t={t} errors={errors} />
-                  )}
+                  <TimeAndDuration control={control} services={services} watch={watch} t={t} errors={errors} />
                 </div>
               )}
             </div>

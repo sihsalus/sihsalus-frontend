@@ -3,6 +3,7 @@ import {
   areRecurringPatternWeekdaysAllowed,
   assertAppointmentPayloadDates,
   assertRecurringPatternDates,
+  isBahmniUtcTimeRangeAllowed,
   isAppointmentIssuedDateAllowed,
   isAppointmentStartDateAllowed,
   isRecurringAppointmentRangeAllowed,
@@ -126,55 +127,71 @@ describe('appointment date validation', () => {
 
   it('rejects fractional and overlong durations again at the API payload boundary', () => {
     expect(() =>
-      assertAppointmentPayloadDates(
-        { ...validAppointment, endDateTime: '2026-07-18T09:00:30-05:00' },
-        { today },
-      ),
+      assertAppointmentPayloadDates({ ...validAppointment, endDateTime: '2026-07-18T09:00:30-05:00' }, { today }),
     ).toThrow('Timed appointment duration must be a whole number between 1 and 1439 minutes');
     expect(() =>
-      assertAppointmentPayloadDates(
-        { ...validAppointment, endDateTime: '2026-07-19T09:01:00-05:00' },
-        { today },
-      ),
+      assertAppointmentPayloadDates({ ...validAppointment, endDateTime: '2026-07-19T09:01:00-05:00' }, { today }),
     ).toThrow('Timed appointment duration must be a whole number between 1 and 1439 minutes');
     expect(() =>
-      assertAppointmentPayloadDates(
-        { ...validAppointment, endDateTime: '2026-07-19T09:00:00-05:00' },
-        { today },
-      ),
+      assertAppointmentPayloadDates({ ...validAppointment, endDateTime: '2026-07-19T09:00:00-05:00' }, { today }),
     ).toThrow('Timed appointment duration must be a whole number between 1 and 1439 minutes');
     expect(() =>
-      assertAppointmentPayloadDates(
-        { ...validAppointment, endDateTime: '2026-07-19T08:59:00-05:00' },
-        { today },
-      ),
-    ).not.toThrow();
+      assertAppointmentPayloadDates({ ...validAppointment, endDateTime: '2026-07-19T08:59:00-05:00' }, { today }),
+    ).toThrow('The appointment cannot span the backend daily scheduling boundary');
   });
 
-  it('accepts only the canonical start-of-day through end-of-day fractional interval', () => {
-    const canonicalAllDayAppointment = {
-      ...validAppointment,
-      startDateTime: '2026-07-18T00:00:00.000-05:00',
-      endDateTime: '2026-07-18T23:59:59.999-05:00',
-    };
+  it('mirrors the backend day boundary for Peru appointment strings', () => {
+    expect(isBahmniUtcTimeRangeAllowed('2026-07-18T18:30:00-05:00', '2026-07-18T19:30:00-05:00')).toBe(false);
+    expect(isBahmniUtcTimeRangeAllowed('2026-07-18T17:00:00-05:00', '2026-07-18T18:00:00-05:00')).toBe(true);
+    expect(isBahmniUtcTimeRangeAllowed('2026-07-18T19:00:00-05:00', '2026-07-18T20:00:00-05:00')).toBe(true);
+  });
 
-    expect(() => assertAppointmentPayloadDates(canonicalAllDayAppointment, { today })).not.toThrow();
+  it('rejects a former all-day payload at the API boundary', () => {
     expect(() =>
       assertAppointmentPayloadDates(
         {
-          ...canonicalAllDayAppointment,
-          startDateTime: '2026-07-18T09:00:00.000-05:00',
-          endDateTime: '2026-07-19T08:59:59.999-05:00',
+          ...validAppointment,
+          startDateTime: '2026-07-18T00:00:00.000-05:00',
+          endDateTime: '2026-07-18T23:59:59.999-05:00',
         },
         { today },
       ),
     ).toThrow('Timed appointment duration must be a whole number between 1 and 1439 minutes');
+  });
+
+  it('rejects a Peru evening appointment that spans the daily scheduling boundary', () => {
     expect(() =>
       assertAppointmentPayloadDates(
-        { ...canonicalAllDayAppointment, endDateTime: '2026-07-18T23:59:59-05:00' },
+        {
+          ...validAppointment,
+          startDateTime: '2026-07-18T18:30:00-05:00',
+          endDateTime: '2026-07-18T19:30:00-05:00',
+        },
         { today },
       ),
-    ).toThrow('Timed appointment duration must be a whole number between 1 and 1439 minutes');
+    ).toThrow('The appointment cannot span the backend daily scheduling boundary');
+
+    expect(() =>
+      assertAppointmentPayloadDates(
+        {
+          ...validAppointment,
+          startDateTime: '2026-07-18T17:00:00-05:00',
+          endDateTime: '2026-07-18T18:00:00-05:00',
+        },
+        { today },
+      ),
+    ).not.toThrow();
+
+    expect(() =>
+      assertAppointmentPayloadDates(
+        {
+          ...validAppointment,
+          startDateTime: '2026-07-18T19:00:00-05:00',
+          endDateTime: '2026-07-18T20:00:00-05:00',
+        },
+        { today },
+      ),
+    ).not.toThrow();
   });
 
   it('only preserves an edited historical date when the original date is supplied and unchanged', () => {

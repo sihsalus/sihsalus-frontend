@@ -28,9 +28,12 @@ const expectedSpanishWeekDays: Record<string, string> = {
 };
 
 describe('appointments Spanish localization', () => {
-  it('defines the unavailable-provider safety message in every supported locale', () => {
+  it.each([
+    'appointmentProviderUnavailable',
+    'appointmentDailyBoundaryErrorMessage',
+  ] as const)('defines the %s safety message in every supported locale', (translationKey) => {
     for (const translations of supportedTranslations) {
-      expect(translations.appointmentProviderUnavailable?.trim()).toBeTruthy();
+      expect(translations[translationKey]?.trim()).toBeTruthy();
     }
   });
 

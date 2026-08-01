@@ -9,8 +9,9 @@ const appointmentsConfig = frontendConfig['@sihsalus/esm-appointments-app'];
 const arrivalRules = appointmentsConfig.appointmentArrivalRules as Array<AppointmentArrivalRule>;
 
 describe('appointments configuration', () => {
-  it('requires timed appointments by default', () => {
+  it('keeps the unsupported legacy all-day flag disabled', () => {
     expect(configSchema.allowAllDayAppointments._default).toBe(false);
+    expect(configSchema.allowAllDayAppointments._description).toContain('setting this to true has no effect');
   });
 
   it('shows missed appointments for the current date', () => {

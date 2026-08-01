@@ -346,6 +346,47 @@ describe('FormEntryWorkspace', () => {
     );
   });
 
+  it('does not mount an existing encounter when its view privilege is denied', async () => {
+    render(
+      <FormEntryWorkspace
+        {...workspace2DefinitionProps}
+        closeWorkspace={vi.fn()}
+        groupProps={{
+          patientUuid: mockPatient.uuid,
+          patient: mockFhirPatient,
+          visitContext: mockCurrentVisit,
+          mutateVisitContext: vi.fn(),
+        }}
+        workspaceProps={
+          {
+            encounterUuid: 'restricted-encounter-uuid',
+            form: {
+              uuid: 'restricted-form',
+              name: 'Restricted form',
+              display: 'Restricted form',
+              version: '1',
+              published: true,
+              retired: false,
+              resources: [],
+              encounterType: {
+                uuid: 'restricted-encounter-type',
+                name: 'Restricted encounter',
+                viewPrivilege: { uuid: 'view-form', name: 'View Form', display: 'View Form' },
+                editPrivilege: { uuid: 'edit-form', name: 'Edit Form', display: 'Edit Form' },
+              },
+            },
+          } as never
+        }
+      />,
+    );
+
+    expect(await screen.findByText('Clinical form unavailable')).toBeInTheDocument();
+    expect(mockExtensionSlot).not.toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'form-widget-slot' }),
+      expect.anything(),
+    );
+  });
+
   it('fails closed when a legacy form UUID cannot be resolved', async () => {
     render(
       <FormEntryWorkspace

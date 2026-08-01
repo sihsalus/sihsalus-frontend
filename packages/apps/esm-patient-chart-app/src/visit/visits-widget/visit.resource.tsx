@@ -212,8 +212,8 @@ export interface Encounter {
   encounterType: {
     uuid: string;
     display: string;
-    viewPrivilege: Privilege;
-    editPrivilege: Privilege;
+    viewPrivilege?: Privilege | null;
+    editPrivilege?: Privilege | null;
   };
   obs: Array<Observation>;
   orders: Array<Order>;

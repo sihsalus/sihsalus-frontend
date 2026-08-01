@@ -23,9 +23,15 @@ vi.mock('./task-list.resource', () => ({
 
 // Mock child components to avoid heavy dependency chains
 vi.mock('./task-list-view.component', () => ({
-  default: function MockTaskListView({ onTaskClick }: { onTaskClick?: (task: Task) => void }) {
+  default: function MockTaskListView({
+    canEdit,
+    onTaskClick,
+  }: {
+    canEdit?: boolean;
+    onTaskClick?: (task: Task) => void;
+  }) {
     return (
-      <div data-testid="task-list-view">
+      <div data-testid="task-list-view" data-can-edit={String(Boolean(canEdit))}>
         <button type="button" onClick={() => onTaskClick?.(mockTask)}>
           Mock Task
         </button>
@@ -93,6 +99,7 @@ describe('TaskListWorkspace', () => {
     render(<TaskListWorkspace {...defaultProps} />);
 
     expect(screen.getByTestId('task-list-view')).toBeInTheDocument();
+    expect(screen.getByTestId('task-list-view')).toHaveAttribute('data-can-edit', 'true');
     expect(screen.getByRole('button', { name: /add task/i })).toBeInTheDocument();
   });
 
@@ -241,6 +248,7 @@ describe('TaskListWorkspace', () => {
     render(<TaskListWorkspace {...defaultProps} />);
 
     expect(screen.queryByRole('button', { name: /add task/i })).not.toBeInTheDocument();
+    expect(screen.getByTestId('task-list-view')).toHaveAttribute('data-can-edit', 'false');
     await user.click(screen.getByText('Mock Task'));
     expect(screen.getByTestId('task-details-view')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument();

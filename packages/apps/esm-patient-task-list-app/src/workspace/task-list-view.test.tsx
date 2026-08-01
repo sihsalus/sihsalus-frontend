@@ -207,7 +207,7 @@ describe('TaskListView', () => {
       mutate: mockMutate,
     });
 
-    render(<TaskListView patientUuid={patientUuid} />);
+    render(<TaskListView patientUuid={patientUuid} canEdit />);
 
     const checkbox = screen.getByRole('checkbox');
     await user.click(checkbox);
@@ -216,6 +216,23 @@ describe('TaskListView', () => {
       expect(mockSetTaskStatusCompleted).toHaveBeenCalledWith(patientUuid, baseTasks[0], true);
     });
     expect(mockMutate).toHaveBeenCalled();
+  });
+
+  it('keeps completion read-only and does not call the mutation without edit access', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    mockUseTaskList.mockReturnValue({
+      tasks: [baseTasks[0]],
+      isLoading: false,
+      error: null,
+      mutate: vi.fn(),
+    });
+
+    render(<TaskListView patientUuid={patientUuid} canEdit={false} />);
+
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).toBeDisabled();
+    await user.click(checkbox);
+    expect(mockSetTaskStatusCompleted).not.toHaveBeenCalled();
   });
 
   it('shows error snackbar when toggle fails', async () => {
@@ -229,7 +246,7 @@ describe('TaskListView', () => {
       mutate: vi.fn(),
     });
 
-    render(<TaskListView patientUuid={patientUuid} />);
+    render(<TaskListView patientUuid={patientUuid} canEdit />);
 
     const checkbox = screen.getByRole('checkbox');
     await user.click(checkbox);
@@ -311,7 +328,7 @@ describe('TaskListView', () => {
       mutate: vi.fn(),
     });
 
-    render(<TaskListView patientUuid={patientUuid} />);
+    render(<TaskListView patientUuid={patientUuid} canEdit />);
 
     await user.click(screen.getByRole('checkbox'));
 

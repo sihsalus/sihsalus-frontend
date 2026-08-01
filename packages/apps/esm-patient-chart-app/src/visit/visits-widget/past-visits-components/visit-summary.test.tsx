@@ -1,4 +1,4 @@
-import { ExtensionSlot, getConfig, getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
+import { ExtensionSlot, getConfig, getDefaultsFromConfigSchema, useConfig, useSession } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPatient, visitOverviewDetailMockData, visitOverviewDetailMockDataNotEmpty } from 'test-utils';
@@ -10,6 +10,7 @@ import VisitSummary from './visit-summary.component';
 const mockExtensionSlot = ExtensionSlot as vi.Mock;
 const mockGetConfig = vi.mocked(getConfig);
 const mockUseConfig = vi.mocked(useConfig<ChartConfig>);
+const mockUseSession = vi.mocked(useSession);
 const mockVisit = visitOverviewDetailMockData.data.results[0];
 
 describe('VisitSummary', () => {
@@ -20,6 +21,12 @@ describe('VisitSummary', () => {
       notesConceptUuids: ['162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'some-uuid2'],
       visitDiagnosisConceptUuid: '159947AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     });
+    mockUseSession.mockReturnValue({
+      user: {
+        privileges: [{ display: 'app:hoja.clinica' }],
+        roles: [],
+      },
+    } as ReturnType<typeof useSession>);
   });
 
   it('should display empty state for notes, test and medication summary', async () => {
@@ -112,5 +119,49 @@ describe('VisitSummary', () => {
     await user.click(testsTab);
 
     expect(screen.getByText(/test-results-filtered-overview/)).toBeInTheDocument();
+  });
+
+  it('excludes diagnoses from encounters whose view privilege the user does not have', async () => {
+    mockUseSession.mockReturnValue({
+      user: {
+        privileges: [{ display: 'app:encounter.allowed' }],
+        roles: [],
+      },
+    } as ReturnType<typeof useSession>);
+    const makeEncounter = (uuid: string, diagnosis: string, viewPrivilege: string) => ({
+      uuid,
+      diagnoses: [
+        {
+          uuid: `${uuid}-diagnosis`,
+          display: diagnosis,
+          certainty: 'CONFIRMED',
+          rank: 1,
+          diagnosis: { coded: { uuid: `${uuid}-concept`, display: diagnosis } },
+          voided: false,
+        },
+      ],
+      encounterDatetime: '2026-08-01T12:00:00.000Z',
+      encounterProviders: [],
+      encounterType: {
+        uuid: `${uuid}-type`,
+        display: `${diagnosis} type`,
+        viewPrivilege: { uuid: `${uuid}-privilege`, display: viewPrivilege, name: viewPrivilege },
+      },
+      obs: [],
+      orders: [],
+      form: null,
+    });
+    const visit = {
+      ...mockVisit,
+      encounters: [
+        makeEncounter('allowed', 'Allowed diagnosis', 'app:encounter.allowed'),
+        makeEncounter('restricted', 'Restricted diagnosis', 'app:encounter.restricted'),
+      ],
+    };
+
+    render(<VisitSummary patientUuid={mockPatient.id} visit={visit as typeof mockVisit} />);
+
+    await waitFor(() => expect(screen.getByText('Allowed diagnosis')).toBeInTheDocument());
+    expect(screen.queryByText('Restricted diagnosis')).not.toBeInTheDocument();
   });
 });

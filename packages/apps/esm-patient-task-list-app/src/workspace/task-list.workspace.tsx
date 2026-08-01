@@ -68,7 +68,9 @@ const TaskListWorkspace: React.FC<PatientWorkspace2DefinitionProps<{}, {}>> = ({
         {canEditTasks && view === 'form' && (
           <AddTaskForm patientUuid={patientUuid} activeVisit={visitContext} onClose={() => setView('list')} />
         )}
-        {view === 'list' && <TaskListView patientUuid={patientUuid} onTaskClick={handleTaskClick} />}
+        {view === 'list' && (
+          <TaskListView patientUuid={patientUuid} canEdit={canEditTasks} onTaskClick={handleTaskClick} />
+        )}
         {canEditTasks && view === 'list' && (
           <div className={styles.addTaskButtonContainer}>
             <Button

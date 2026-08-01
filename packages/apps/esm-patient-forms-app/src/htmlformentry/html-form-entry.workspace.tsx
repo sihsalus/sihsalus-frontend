@@ -39,7 +39,7 @@ const HtmlFormEntry: React.FC<HtmlFormEntryComponentProps> = (props) => {
   const { patient } = usePatient(patientUuid);
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
   const { encounterUuid, visitUuid, htmlForm } = formInfo || {};
-  const { canEdit, error: formAccessError, form, isLoading } = useFormAccess(htmlForm?.formUuid);
+  const { canEdit, canView, error: formAccessError, form, isLoading } = useFormAccess(htmlForm?.formUuid);
   const title = formInfo?.htmlForm?.formName ?? t('clinicalForm', 'Clinical form');
   const wrapContent = (content: React.ReactNode, hasUnsavedChanges = false) =>
     isWorkspace2 ? (
@@ -54,7 +54,7 @@ const HtmlFormEntry: React.FC<HtmlFormEntryComponentProps> = (props) => {
     return wrapContent(<InlineLoading description={t('loading', 'Loading')} />);
   }
 
-  if (formAccessError || !form || !canEdit || !htmlForm) {
+  if (formAccessError || !form || !canEdit || (encounterUuid && !canView) || !htmlForm) {
     return wrapContent(
       <InlineNotification
         hideCloseButton

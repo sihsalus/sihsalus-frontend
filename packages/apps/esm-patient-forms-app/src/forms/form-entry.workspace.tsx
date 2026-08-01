@@ -199,13 +199,19 @@ const NonWorkspace2FormEntryWorkspace: React.FC<LegacyWorkspaceProps> = (props) 
   const { patient } = usePatient(patientUuid);
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
   const requestedFormUuid = form?.uuid ?? props.formInfo?.formUuid;
-  const { canEdit, error: formAccessError, form: authorizedForm, isLoading } = useFormAccess(requestedFormUuid, form);
+  const {
+    canEdit,
+    canView,
+    error: formAccessError,
+    form: authorizedForm,
+    isLoading,
+  } = useFormAccess(requestedFormUuid, form);
 
   if (isLoading) {
     return <LoadingFormNotice />;
   }
 
-  if (formAccessError || !authorizedForm || !canEdit) {
+  if (formAccessError || !authorizedForm || !canEdit || (encounterUuid && !canView)) {
     return <UnavailableFormNotice />;
   }
 
@@ -288,13 +294,19 @@ const Workspace2FormEntryWorkspace: React.FC<Workspace2FormEntryProps> = (props)
     preFilledQuestions,
   } = workspaceProps;
   const requestedFormUuid = form?.uuid ?? workspaceProps?.formInfo?.formUuid;
-  const { canEdit, error: formAccessError, form: authorizedForm, isLoading } = useFormAccess(requestedFormUuid, form);
+  const {
+    canEdit,
+    canView,
+    error: formAccessError,
+    form: authorizedForm,
+    isLoading,
+  } = useFormAccess(requestedFormUuid, form);
 
   if (isLoading) {
     return <LoadingFormNotice />;
   }
 
-  if (formAccessError || !authorizedForm || !canEdit) {
+  if (formAccessError || !authorizedForm || !canEdit || (encounterUuid && !canView)) {
     return <UnavailableFormNotice />;
   }
 

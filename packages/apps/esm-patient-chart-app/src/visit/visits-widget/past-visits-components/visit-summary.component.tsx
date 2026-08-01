@@ -8,14 +8,16 @@ import {
   useAssignedExtensions,
   useConfig,
   useLayoutType,
+  userHasAccessToRequiredPrivilege,
+  useSession,
   type Visit,
 } from '@openmrs/esm-framework';
-import type { ExternalOverviewProps } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ChartConfig } from '../../../config-schema';
+import { clinicalChartPrivilege } from '../../../constants';
 import {
   type Diagnosis,
   type Encounter,
@@ -33,6 +35,7 @@ import styles from './visit-summary.scss';
 import VisitsTable from './visits-table/visits-table.component';
 
 interface DiagnosisItem {
+  id: string;
   diagnosis: string;
   diagnosisType?: DiagnosisType;
   rank: number;
@@ -142,9 +145,28 @@ function getDiagnosisTypeFromCertainty(certainty?: string): DiagnosisType | unde
 const VisitSummary: React.FC<VisitSummaryProps> = ({ visit, patientUuid }) => {
   const config = useConfig<ChartConfig>();
   const { t } = useTranslation();
+  const session = useSession();
   const extensions = useAssignedExtensions(visitSummaryPanelSlot);
   const layout = useLayoutType();
   const encounters = useMemo(() => (visit?.encounters ?? []) as unknown as Array<Encounter>, [visit?.encounters]);
+  const viewableEncounters = useMemo(() => {
+    if (!session?.user) {
+      return [];
+    }
+
+    return encounters.filter((encounter) => {
+      const configuredPrivilege = encounter.encounterType?.viewPrivilege;
+      const requiredPrivilege =
+        configuredPrivilege === null || configuredPrivilege === undefined
+          ? clinicalChartPrivilege
+          : (configuredPrivilege.display ?? configuredPrivilege.name);
+      return userHasAccessToRequiredPrivilege(requiredPrivilege, session.user);
+    });
+  }, [encounters, session?.user]);
+  const viewableVisit = useMemo(
+    () => ({ ...visit, encounters: viewableEncounters as unknown as Visit['encounters'] }),
+    [viewableEncounters, visit],
+  );
 
   const [diagnoses, notes, medications]: [Array<DiagnosisItem>, Array<Note>, Array<OrderItem>] = useMemo(() => {
     // Medication Tab
@@ -154,7 +176,7 @@ const VisitSummary: React.FC<VisitSummaryProps> = ({ visit, patientUuid }) => {
     // Notes Tab
     const notes: Array<Note> = [];
 
-    encounters.forEach((enc) => {
+    viewableEncounters.forEach((enc) => {
       if (Array.isArray(enc.orders)) {
         medications.push(
           ...enc.orders.map((order: Order) => ({
@@ -173,6 +195,7 @@ const VisitSummary: React.FC<VisitSummaryProps> = ({ visit, patientUuid }) => {
           const validDiagnoses = enc.diagnoses
             .filter((diagnosis: Diagnosis) => !diagnosis.voided)
             .map((diagnosis: Diagnosis) => ({
+              id: diagnosis.uuid,
               diagnosis: diagnosis.display,
               diagnosisType:
                 getDiagnosisTypeFromEncounterObs(enc, diagnosis, config.diagnosisTypeConceptMap) ??
@@ -208,21 +231,14 @@ const VisitSummary: React.FC<VisitSummaryProps> = ({ visit, patientUuid }) => {
     diagnoses.sort((a, b) => a.rank - b.rank);
 
     return [diagnoses, notes, medications];
-  }, [config.diagnosisTypeConceptMap, config.notesConceptUuids, encounters]);
-
-  const testsFilter = useMemo<ExternalOverviewProps['filter']>(() => {
-    const encounterIds = encounters.map((e) => `Encounter/${e.uuid}`);
-    return ([entry]) => {
-      return encounterIds.includes(entry.encounter?.reference);
-    };
-  }, [encounters]);
+  }, [config.diagnosisTypeConceptMap, config.notesConceptUuids, viewableEncounters]);
 
   return (
     <div className={styles.summaryContainer}>
       <p className={styles.diagnosisLabel}>{t('diagnoses', 'Diagnoses')}</p>
       <div className={styles.diagnosesList}>
         {diagnoses.length > 0 ? (
-          diagnoses.map((diagnosis, i) => {
+          diagnoses.map((diagnosis) => {
             const diagnosisTypeConfig = diagnosis.diagnosisType
               ? diagnosisTypeTranslation[diagnosis.diagnosisType]
               : null;
@@ -235,7 +251,7 @@ const VisitSummary: React.FC<VisitSummaryProps> = ({ visit, patientUuid }) => {
 
             return (
               <div
-                key={`${diagnosisTitle}-${i}`}
+                key={diagnosis.id}
                 className={classNames(styles.diagnosisPill, {
                   [styles.primaryDiagnosis]: diagnosis.type === 'red',
                   [styles.secondaryDiagnosis]: diagnosis.type !== 'red',
@@ -267,7 +283,11 @@ const VisitSummary: React.FC<VisitSummaryProps> = ({ visit, patientUuid }) => {
             >
               {t('notes', 'Notes')}
             </Tab>
-            <Tab className={styles.tab} id="tests-tab" disabled={testsFilter.length <= 0 && config.disableEmptyTabs}>
+            <Tab
+              className={styles.tab}
+              id="tests-tab"
+              disabled={viewableEncounters.length <= 0 && config.disableEmptyTabs}
+            >
               {t('tests', 'Tests')}
             </Tab>
             <Tab
@@ -280,7 +300,7 @@ const VisitSummary: React.FC<VisitSummaryProps> = ({ visit, patientUuid }) => {
             <Tab
               className={styles.tab}
               id="encounters-tab"
-              disabled={encounters.length <= 0 && config.disableEmptyTabs}
+              disabled={viewableEncounters.length <= 0 && config.disableEmptyTabs}
             >
               {t('encounters_title', 'Encounters')}
             </Tab>
@@ -302,19 +322,21 @@ const VisitSummary: React.FC<VisitSummaryProps> = ({ visit, patientUuid }) => {
               <NotesSummary notes={notes} />
             </TabPanel>
             <TabPanel>
-              <TestsSummary patientUuid={patientUuid} encounters={encounters} />
+              <TestsSummary patientUuid={patientUuid} encounters={viewableEncounters} />
             </TabPanel>
             <TabPanel>
               <MedicationSummary medications={medications} />
             </TabPanel>
             <TabPanel>
-              <VisitsTable visits={mapEncounters(visit)} showAllEncounters={false} patientUuid={patientUuid} />
+              <VisitsTable visits={mapEncounters(viewableVisit)} showAllEncounters={false} patientUuid={patientUuid} />
             </TabPanel>
             {extensions?.map((extension) => (
               <TabPanel key={extension.id}>
                 <ExtensionSlot name={visitSummaryPanelSlot}>
                   {(assignedExtension: AssignedExtension) =>
-                    assignedExtension.id === extension.id ? <Extension state={{ patientUuid, visit }} /> : null
+                    assignedExtension.id === extension.id ? (
+                      <Extension state={{ patientUuid, visit: viewableVisit }} />
+                    ) : null
                   }
                 </ExtensionSlot>
               </TabPanel>

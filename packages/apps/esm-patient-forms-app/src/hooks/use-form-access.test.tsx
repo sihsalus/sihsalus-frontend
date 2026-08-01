@@ -3,7 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import type { PropsWithChildren } from 'react';
 import { SWRConfig } from 'swr';
 
-import { clinicalFormsEditPrivilege } from '../constants';
+import { clinicalFormsEditPrivilege, clinicalFormsViewPrivilege } from '../constants';
 import type { Form } from '../types';
 import { useFormAccess } from './use-form-access';
 
@@ -77,11 +77,29 @@ describe('useFormAccess', () => {
     expect(result.current.canEdit).toBe(true);
   });
 
+  it('requires the explicit clinical-forms view privilege when view metadata is absent', () => {
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      user: {
+        uuid: 'user-uuid',
+        privileges: [
+          { uuid: 'generic-view-uuid', name: clinicalFormsViewPrivilege, display: clinicalFormsViewPrivilege },
+        ],
+        roles: [],
+      },
+    } as ReturnType<typeof useSession>);
+
+    const { result } = renderHook(() => useFormAccess('form-uuid', makeForm()), { wrapper });
+
+    expect(result.current.canView).toBe(true);
+  });
+
   it('fails closed when the form cannot be resolved', () => {
     const { result } = renderHook(() => useFormAccess(undefined), { wrapper });
 
     expect(result.current.form).toBeUndefined();
     expect(result.current.canEdit).toBe(false);
+    expect(result.current.canView).toBe(false);
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });
 });

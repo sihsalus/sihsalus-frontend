@@ -9,10 +9,11 @@ import styles from './task-list-view.scss';
 
 export interface TaskListViewProps {
   patientUuid: string;
+  canEdit?: boolean;
   onTaskClick?: (task: Task) => void;
 }
 
-const TaskListView: React.FC<TaskListViewProps> = ({ patientUuid, onTaskClick }) => {
+const TaskListView: React.FC<TaskListViewProps> = ({ patientUuid, canEdit = false, onTaskClick }) => {
   const { t } = useTranslation();
   const { tasks, isLoading, error, mutate } = useTaskList(patientUuid);
   const isTablet = useLayoutType() === 'tablet';
@@ -36,6 +37,10 @@ const TaskListView: React.FC<TaskListViewProps> = ({ patientUuid, onTaskClick })
 
   const handleToggle = useCallback(
     async (task: Task, checked: boolean) => {
+      if (!canEdit) {
+        return;
+      }
+
       addPendingUpdate(task.uuid);
       try {
         await setTaskStatusCompleted(patientUuid, task, checked);
@@ -49,7 +54,7 @@ const TaskListView: React.FC<TaskListViewProps> = ({ patientUuid, onTaskClick })
         removePendingUpdate(task.uuid);
       }
     },
-    [addPendingUpdate, mutate, patientUuid, removePendingUpdate, t],
+    [addPendingUpdate, canEdit, mutate, patientUuid, removePendingUpdate, t],
   );
 
   const isOverdue = useCallback((task: Task) => {
@@ -116,7 +121,7 @@ const TaskListView: React.FC<TaskListViewProps> = ({ patientUuid, onTaskClick })
                     id={`task-${task.uuid}`}
                     labelText=""
                     checked={task.completed}
-                    disabled={isUpdating}
+                    disabled={!canEdit || isUpdating}
                     onChange={(_, { checked }) => handleToggle(task, checked)}
                   />
                 </div>

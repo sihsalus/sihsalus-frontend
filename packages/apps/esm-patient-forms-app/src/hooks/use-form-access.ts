@@ -35,6 +35,7 @@ export function useFormAccess(formUuid?: string, suppliedForm?: Form) {
 
   return {
     canEdit: Boolean(form && userHasAccessToRequiredPrivilege(getRequiredFormEditPrivilege(form), session?.user)),
+    canView: Boolean(form && userHasAccessToRequiredPrivilege(getRequiredFormViewPrivilege(form), session?.user)),
     error,
     form,
     isLoading,

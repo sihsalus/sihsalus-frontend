@@ -48,6 +48,7 @@ describe('HtmlFormEntry workspace access', () => {
   it('does not mount the iframe when the form privilege is denied', () => {
     mockUseFormAccess.mockReturnValue({
       canEdit: false,
+      canView: false,
       error: undefined,
       form: undefined,
       isLoading: false,
@@ -63,6 +64,7 @@ describe('HtmlFormEntry workspace access', () => {
   it('mounts the iframe only after the form privilege is authorized', () => {
     mockUseFormAccess.mockReturnValue({
       canEdit: true,
+      canView: true,
       error: undefined,
       form: { uuid: 'form-uuid' } as never,
       isLoading: false,
@@ -74,5 +76,26 @@ describe('HtmlFormEntry workspace access', () => {
       'data-src',
       expect.stringContaining('patientId=patient-uuid'),
     );
+  });
+
+  it('does not mount an existing HTML encounter without its view privilege', () => {
+    mockUseFormAccess.mockReturnValue({
+      canEdit: true,
+      canView: false,
+      error: undefined,
+      form: { uuid: 'form-uuid' } as never,
+      isLoading: false,
+    });
+    const editProps = {
+      ...props,
+      workspaceProps: {
+        formInfo: { htmlForm, visitUuid: 'visit-uuid', encounterUuid: 'restricted-encounter-uuid' },
+      },
+    } as unknown as ComponentProps<typeof HtmlFormEntry>;
+
+    render(<HtmlFormEntry {...editProps} />);
+
+    expect(screen.getByText('Clinical form unavailable')).toBeInTheDocument();
+    expect(screen.queryByTestId('html-form-entry')).not.toBeInTheDocument();
   });
 });

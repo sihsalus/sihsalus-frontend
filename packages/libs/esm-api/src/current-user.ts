@@ -276,6 +276,34 @@ export function userHasAccess(
   return userHasPrivilege(requiredPrivilege, user) || isSuperUser(user);
 }
 
+function isValidRequiredPrivilege(
+  requiredPrivilege: string | Array<string> | null | undefined,
+): requiredPrivilege is string | Array<string> {
+  return typeof requiredPrivilege === 'string'
+    ? requiredPrivilege.trim().length > 0
+    : Array.isArray(requiredPrivilege) &&
+        requiredPrivilege.length > 0 &&
+        requiredPrivilege.every((privilege) => typeof privilege === 'string' && privilege.trim().length > 0);
+}
+
+/**
+ * Checks access when privilege metadata is mandatory.
+ *
+ * Unlike {@link userHasAccess}, this helper fails closed when the required
+ * privilege is absent or malformed. Use it for clinical write operations
+ * whose REST representation may omit an encounter type privilege.
+ */
+export function userHasAccessToRequiredPrivilege(
+  requiredPrivilege: string | Array<string> | null | undefined,
+  user?: { privileges: Array<Privilege>; roles: Array<Role> } | null,
+): boolean {
+  if (!isValidRequiredPrivilege(requiredPrivilege) || !user) {
+    return false;
+  }
+
+  return userHasAccess(requiredPrivilege, user);
+}
+
 /**
  * Returns a Promise that resolves with the currently logged-in user object.
  * If the user is already loaded in the session store, the Promise resolves immediately.

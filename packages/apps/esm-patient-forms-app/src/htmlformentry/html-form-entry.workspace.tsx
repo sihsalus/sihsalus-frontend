@@ -1,3 +1,4 @@
+import { InlineLoading, InlineNotification } from '@carbon/react';
 import { usePatient, Workspace2 } from '@openmrs/esm-framework';
 import {
   type DefaultPatientWorkspaceProps,
@@ -8,6 +9,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type LegacyFormEntryInfo } from '../forms/legacy-form-entry';
+import { useFormAccess } from '../hooks/use-form-access';
 
 import HtmlFormEntryWrapper from './html-form-entry-wrapper.component';
 
@@ -37,6 +39,35 @@ const HtmlFormEntry: React.FC<HtmlFormEntryComponentProps> = (props) => {
   const { patient } = usePatient(patientUuid);
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
   const { encounterUuid, visitUuid, htmlForm } = formInfo || {};
+  const { canEdit, error: formAccessError, form, isLoading } = useFormAccess(htmlForm?.formUuid);
+  const title = formInfo?.htmlForm?.formName ?? t('clinicalForm', 'Clinical form');
+  const wrapContent = (content: React.ReactNode, hasUnsavedChanges = false) =>
+    isWorkspace2 ? (
+      <Workspace2 title={title} hasUnsavedChanges={hasUnsavedChanges}>
+        {content}
+      </Workspace2>
+    ) : (
+      content
+    );
+
+  if (isLoading) {
+    return wrapContent(<InlineLoading description={t('loading', 'Loading')} />);
+  }
+
+  if (formAccessError || !form || !canEdit || !htmlForm) {
+    return wrapContent(
+      <InlineNotification
+        hideCloseButton
+        kind="warning"
+        lowContrast
+        title={t('formUnavailable', 'Clinical form unavailable')}
+        subtitle={t(
+          'formUnavailableDescription',
+          'The form has no valid edit privilege or you are not authorized to use it.',
+        )}
+      />,
+    );
+  }
 
   // we always want to prompt the user before closing/hiding the workspace because we can't guarantee maintaining the state of the form
   promptBeforeClosing?.(() => true);
@@ -68,15 +99,7 @@ const HtmlFormEntry: React.FC<HtmlFormEntryComponentProps> = (props) => {
     </div>
   );
 
-  if (isWorkspace2) {
-    return (
-      <Workspace2 title={formInfo?.htmlForm?.formName ?? t('clinicalForm', 'Clinical form')} hasUnsavedChanges>
-        {content}
-      </Workspace2>
-    );
-  }
-
-  return content;
+  return wrapContent(content, true);
 };
 
 export default HtmlFormEntry;

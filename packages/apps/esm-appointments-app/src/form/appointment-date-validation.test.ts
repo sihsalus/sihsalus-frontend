@@ -5,6 +5,8 @@ import {
   isAppointmentIssuedDateAllowed,
   isAppointmentStartDateAllowed,
   isRecurringAppointmentRangeAllowed,
+  MAX_RECURRING_APPOINTMENT_HORIZON_DAYS,
+  resolveEffectiveAppointmentStartDate,
 } from './appointment-date-validation';
 
 const today = new Date(2026, 6, 17, 12);
@@ -31,6 +33,43 @@ describe('appointment date validation', () => {
     expect(isAppointmentStartDateAllowed(new Date(2027, 0, 1), 'creating', undefined, today)).toBe(true);
   });
 
+  it('forces today for a new appointment when start-date editing is not authorized', () => {
+    const effectiveDate = resolveEffectiveAppointmentStartDate(new Date(2030, 0, 1), {
+      canEditStartDate: false,
+      context: 'creating',
+      today,
+    });
+
+    expect(effectiveDate.getFullYear()).toBe(2026);
+    expect(effectiveDate.getMonth()).toBe(6);
+    expect(effectiveDate.getDate()).toBe(17);
+  });
+
+  it('preserves the original day when an edit is not authorized to move the appointment', () => {
+    const originalStartDate = new Date(2026, 6, 18, 9);
+    const effectiveDate = resolveEffectiveAppointmentStartDate(new Date(2030, 0, 1), {
+      canEditStartDate: false,
+      context: 'editing',
+      originalStartDate,
+      today,
+    });
+
+    expect(effectiveDate).toEqual(originalStartDate);
+    expect(effectiveDate).not.toBe(originalStartDate);
+  });
+
+  it('keeps a future day selected by a user with the start-date privilege', () => {
+    const requestedDate = new Date(2030, 0, 1);
+
+    expect(
+      resolveEffectiveAppointmentStartDate(requestedDate, {
+        canEditStartDate: true,
+        context: 'creating',
+        today,
+      }),
+    ).toEqual(requestedDate);
+  });
+
   it('preserves an existing historical appointment without permitting another historical date', () => {
     const originalStartDate = new Date(2025, 5, 10);
 
@@ -46,6 +85,17 @@ describe('appointment date validation', () => {
   it('requires a recurring appointment to end on or after its start date', () => {
     expect(isRecurringAppointmentRangeAllowed(new Date(2026, 6, 17), new Date(2026, 6, 17))).toBe(true);
     expect(isRecurringAppointmentRangeAllowed(new Date(2026, 6, 17), new Date(2026, 6, 16))).toBe(false);
+  });
+
+  it('limits recurring appointment creation to a one-year horizon', () => {
+    const startDate = new Date(2026, 6, 17);
+
+    expect(
+      isRecurringAppointmentRangeAllowed(startDate, new Date(2027, 6, 17), MAX_RECURRING_APPOINTMENT_HORIZON_DAYS),
+    ).toBe(true);
+    expect(
+      isRecurringAppointmentRangeAllowed(startDate, new Date(2027, 6, 18), MAX_RECURRING_APPOINTMENT_HORIZON_DAYS),
+    ).toBe(false);
   });
 
   it('rejects invalid dates again at the API payload boundary', () => {
@@ -96,7 +146,19 @@ describe('appointment date validation', () => {
     };
 
     expect(() => assertRecurringPatternDates(validAppointment, recurringPattern)).toThrow(
-      'Recurring appointment end date cannot be before its start date',
+      'Recurring appointment end date must be between its start date and 365 days later',
+    );
+  });
+
+  it('rejects a recurring range beyond the API horizon', () => {
+    const recurringPattern: RecurringPattern = {
+      type: 'DAY',
+      period: 1,
+      endDate: '2027-07-19T23:59:00-05:00',
+    };
+
+    expect(() => assertRecurringPatternDates(validAppointment, recurringPattern)).toThrow(
+      'Recurring appointment end date must be between its start date and 365 days later',
     );
   });
 });

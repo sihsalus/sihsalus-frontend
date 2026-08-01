@@ -314,7 +314,15 @@ describe('TaskDetailsView', () => {
         mutate: vi.fn(),
       });
 
-      render(<TaskDetailsView patientUuid={patientUuid} taskUuid={taskUuid} onBack={mockOnBack} onEdit={mockOnEdit} />);
+      render(
+        <TaskDetailsView
+          canEdit
+          patientUuid={patientUuid}
+          taskUuid={taskUuid}
+          onBack={mockOnBack}
+          onEdit={mockOnEdit}
+        />,
+      );
 
       const editButton = screen.getByRole('button', { name: /edit/i });
       await user.click(editButton);
@@ -338,6 +346,21 @@ describe('TaskDetailsView', () => {
       render(<TaskDetailsView patientUuid={patientUuid} taskUuid={taskUuid} onBack={mockOnBack} />);
 
       expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument();
+    });
+
+    it('hides every mutation action in read-only mode', () => {
+      mockUseTask.mockReturnValue({
+        task: baseTask,
+        isLoading: false,
+        error: null,
+        mutate: vi.fn(),
+      });
+
+      render(<TaskDetailsView patientUuid={patientUuid} taskUuid={taskUuid} onBack={mockOnBack} onEdit={mockOnEdit} />);
+
+      expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /delete task/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /mark complete/i })).not.toBeInTheDocument();
     });
   });
 

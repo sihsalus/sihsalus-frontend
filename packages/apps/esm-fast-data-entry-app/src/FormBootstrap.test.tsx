@@ -2,12 +2,15 @@ import { detach, ExtensionSlot } from '@openmrs/esm-framework';
 import { act, render, screen } from '@testing-library/react';
 import GroupFormWorkflowContext from './context/GroupFormWorkflowContext';
 import FormBootstrap from './FormBootstrap';
+import useGetAllForms from './hooks/useGetAllForms';
 import useGetPatient from './hooks/useGetPatient';
 
+vi.mock('./hooks/useGetAllForms', () => ({ default: vi.fn() }));
 vi.mock('./hooks/useGetPatient', () => ({ default: vi.fn() }));
 
 const mockDetach = vi.mocked(detach);
 const mockExtensionSlot = vi.mocked(ExtensionSlot);
+const mockUseGetAllForms = vi.mocked(useGetAllForms);
 const mockUseGetPatient = useGetPatient as vi.MockedFunction<typeof useGetPatient>;
 
 const renderFormBootstrap = (props = {}) =>
@@ -47,6 +50,11 @@ describe('FormBootstrap', () => {
       id: 'patient-1',
       name: [{ given: ['Ada'], family: 'Lovelace' }],
     } as fhir.Patient);
+    mockUseGetAllForms.mockReturnValue({
+      forms: [{ uuid: 'triage-form' }],
+      isLoading: false,
+      error: undefined,
+    });
   });
 
   afterEach(() => {
@@ -108,5 +116,14 @@ describe('FormBootstrap', () => {
     unmount();
 
     expect(mockDetach).toHaveBeenCalledWith('form-widget-slot', 'form-widget-slot');
+  });
+
+  it('fails closed when the URL names a form the user is not authorized to edit', () => {
+    mockUseGetAllForms.mockReturnValue({ forms: [], isLoading: false, error: undefined });
+
+    renderFormBootstrap();
+
+    expect(screen.getByText('No Forms To Show')).toBeInTheDocument();
+    expect(screen.queryByTestId('form-widget-slot')).not.toBeInTheDocument();
   });
 });

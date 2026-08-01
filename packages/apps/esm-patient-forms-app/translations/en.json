@@ -7,6 +7,8 @@
   "formName": "Form Name (A-Z)",
   "forms": "Forms",
   "formSearchHint": "Try searching for the form using an alternative name or keyword",
+  "formUnavailable": "Clinical form unavailable",
+  "formUnavailableDescription": "The form has no valid edit privilege or you are not authorized to use it.",
   "homeOverviewCardView": "View",
   "lastCompleted": "Last completed",
   "never": "Never",

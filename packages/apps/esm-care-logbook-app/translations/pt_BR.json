@@ -17,8 +17,11 @@
   "appointmentsLoadError": "Nao foi possivel carregar o agendamento de consultas",
   "backToAdmissions": "Voltar para o livro de atendimentos",
   "birthdate": "Data de nascimento",
+  "cancelled": "Cancelada",
   "checkFilters": "Verifique os filtros acima e tente novamente",
+  "checkedIn": "Chegada registrada",
   "clinicalTag": "visit/encounter - dados clinicos",
+  "completed": "Concluída",
   "date": "Data",
   "exportCsv": "Exportar CSV",
   "filterByStatus": "Filtrar por status",
@@ -39,6 +42,7 @@
   "mergeDuplicatePatientRecordsSummary": "Use esta opcao quando dois prontuarios pertencem ao mesmo paciente e um deles deve ser mantido como preferido.",
   "mergeDuplicatePatients": "Mesclar registros duplicados",
   "minimumPatientIdentification": "Identificacao minima do paciente",
+  "missed": "Perdida",
   "noAdmissionsFound": "Não há atendimentos recentes para exibir",
   "noAdmissionsFoundHint": "Os atendimentos registrados aparecerão aqui",
   "noMatchingAdmissions": "Nenhum atendimento corresponde aos filtros",
@@ -52,7 +56,9 @@
   "provider": "Prestador",
   "reportedAdmissions": "Atendimentos registrados",
   "reportedVisitTypes": "Tipos de visita registrados",
+  "requested": "Solicitada",
   "scheduleAppointment": "Agendar consulta",
+  "scheduled": "Agendada",
   "searchAdmissions": "Buscar por paciente, MRN, tipo de visita ou UPSS",
   "searchAdmissionsPlaceholder": "Paciente, MRN, tipo de visita, UPSS...",
   "service": "Serviço",
@@ -62,5 +68,6 @@
   "time": "Hora",
   "visitHistoryError": "Nao foi possivel carregar o historico de atendimentos",
   "visitType": "Tipo de visita",
-  "visitTypes": "Tipos de visita"
+  "visitTypes": "Tipos de visita",
+  "walkIn": "Sem agendamento"
 }

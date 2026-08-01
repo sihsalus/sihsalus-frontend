@@ -1,12 +1,12 @@
 import { Tab, TabList, Tabs } from '@carbon/react';
-import { launchWorkspace2 } from '@openmrs/esm-framework';
-import { RequirePrivilege } from '@sihsalus/esm-rbac';
+import { launchWorkspace2, userHasAccess, useSession } from '@openmrs/esm-framework';
 import classnames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useAllPatientLists } from '../api/hooks';
 import { type PatientListFilter, PatientListType } from '../api/types';
+import { patientListsEditPrivilege } from '../constants';
 import Header from '../header/header.component';
 import ListsTable from '../lists-table/lists-table.component';
 import styles from './lists-dashboard.scss';
@@ -41,12 +41,18 @@ const ListsDashboard: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState<number>(TabIndices.STARRED_LISTS);
   const patientListFilter = usePatientListFilterForCurrentTab(selectedTab);
   const { patientLists, isLoading, error, mutate } = useAllPatientLists(patientListFilter);
+  const session = useSession();
+  const canEditPatientLists = userHasAccess(patientListsEditPrivilege, session?.user);
   const { search } = useLocation();
   const handleShowNewListOverlay = useCallback(() => {
+    if (!canEditPatientLists) {
+      return;
+    }
+
     launchWorkspace2('patient-list-form-workspace', {
       onSuccess: mutate,
     });
-  }, [mutate]);
+  }, [canEditPatientLists, mutate]);
 
   useEffect(() => {
     if (search) {
@@ -62,41 +68,39 @@ const ListsDashboard: React.FC = () => {
   ];
 
   return (
-    <RequirePrivilege privilege="Get Queue Entries">
-      <main className={classnames('omrs-main-content', styles.dashboardContainer)}>
-        <section className={styles.dashboard}>
-          <Header handleShowNewListOverlay={handleShowNewListOverlay} />
-          <div className={styles.tabsContainer}>
-            <div className={styles.tabs}>
-              <Tabs
-                onChange={({ selectedIndex }) => {
-                  setSelectedTab(selectedIndex);
-                }}
-                selectedIndex={selectedTab}
-              >
-                <TabList className={styles.tablist} aria-label="List tabs" contained>
-                  <Tab className={styles.tab}>{t('starredLists', 'Starred lists')}</Tab>
-                  <Tab className={styles.tab}>{t('systemLists', 'System lists')}</Tab>
-                  <Tab className={styles.tab}>{t('myLists', 'My lists')}</Tab>
-                  <Tab className={styles.tab}>{t('allLists', 'All lists')}</Tab>
-                </TabList>
-              </Tabs>
-            </div>
-            <div className={styles.listsTableContainer}>
-              <ListsTable
-                error={error}
-                headers={tableHeaders}
-                isLoading={isLoading}
-                key={patientListFilter.label}
-                listType={patientListFilter.label}
-                patientLists={patientLists}
-                refetch={mutate}
-              />
-            </div>
+    <main className={classnames('omrs-main-content', styles.dashboardContainer)}>
+      <section className={styles.dashboard}>
+        <Header canEdit={canEditPatientLists} handleShowNewListOverlay={handleShowNewListOverlay} />
+        <div className={styles.tabsContainer}>
+          <div className={styles.tabs}>
+            <Tabs
+              onChange={({ selectedIndex }) => {
+                setSelectedTab(selectedIndex);
+              }}
+              selectedIndex={selectedTab}
+            >
+              <TabList className={styles.tablist} aria-label="List tabs" contained>
+                <Tab className={styles.tab}>{t('starredLists', 'Starred lists')}</Tab>
+                <Tab className={styles.tab}>{t('systemLists', 'System lists')}</Tab>
+                <Tab className={styles.tab}>{t('myLists', 'My lists')}</Tab>
+                <Tab className={styles.tab}>{t('allLists', 'All lists')}</Tab>
+              </TabList>
+            </Tabs>
           </div>
-        </section>
-      </main>
-    </RequirePrivilege>
+          <div className={styles.listsTableContainer}>
+            <ListsTable
+              error={error}
+              headers={tableHeaders}
+              isLoading={isLoading}
+              key={patientListFilter.label}
+              listType={patientListFilter.label}
+              patientLists={patientLists}
+              refetch={mutate}
+            />
+          </div>
+        </div>
+      </section>
+    </main>
   );
 };
 

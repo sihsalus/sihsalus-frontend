@@ -1,3 +1,4 @@
+import { InlineLoading, InlineNotification } from '@carbon/react';
 import { type Encounter, ExtensionSlot, usePatient, type Visit, Workspace2 } from '@openmrs/esm-framework';
 import {
   clinicalFormsWorkspace,
@@ -9,6 +10,7 @@ import {
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useFormAccess } from '../hooks/use-form-access';
 import { type Form } from '../types';
 import FormEntry from './form-entry.component';
 import { type LegacyFormEntryInfo } from './legacy-form-entry';
@@ -41,6 +43,28 @@ type PatientFormEntryWorkspaceProps = Workspace2FormEntryProps | LegacyWorkspace
 
 function isWorkspace2Props(props: PatientFormEntryWorkspaceProps): props is Workspace2FormEntryProps {
   return 'groupProps' in props && 'workspaceProps' in props;
+}
+
+function UnavailableFormNotice() {
+  const { t } = useTranslation();
+
+  return (
+    <InlineNotification
+      hideCloseButton
+      kind="warning"
+      lowContrast
+      title={t('formUnavailable', 'Clinical form unavailable')}
+      subtitle={t(
+        'formUnavailableDescription',
+        'The form has no valid edit privilege or you are not authorized to use it.',
+      )}
+    />
+  );
+}
+
+function LoadingFormNotice() {
+  const { t } = useTranslation();
+  return <InlineLoading description={t('loading', 'Loading')} />;
 }
 
 function LegacyFormEntryWorkspace(props: FormEntryComponentProps) {
@@ -174,14 +198,24 @@ const NonWorkspace2FormEntryWorkspace: React.FC<LegacyWorkspaceProps> = (props) 
   } = props;
   const { patient } = usePatient(patientUuid);
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
+  const requestedFormUuid = form?.uuid ?? props.formInfo?.formUuid;
+  const { canEdit, error: formAccessError, form: authorizedForm, isLoading } = useFormAccess(requestedFormUuid, form);
+
+  if (isLoading) {
+    return <LoadingFormNotice />;
+  }
+
+  if (formAccessError || !authorizedForm || !canEdit) {
+    return <UnavailableFormNotice />;
+  }
 
   if (!form) {
-    return <LegacyFormEntryWorkspace {...props} />;
+    return <LegacyFormEntryWorkspace {...props} form={authorizedForm} />;
   }
 
   return (
     <FormEntry
-      form={form}
+      form={authorizedForm}
       encounterUuid={encounterUuid}
       additionalProps={additionalProps}
       handlePostResponse={handlePostResponse}
@@ -204,7 +238,8 @@ const NonWorkspace2FormEntryWorkspace: React.FC<LegacyWorkspaceProps> = (props) 
   );
 };
 
-const Workspace2LegacyFormEntryWorkspace: React.FC<Workspace2FormEntryProps> = ({
+const Workspace2LegacyFormEntryWorkspace: React.FC<Workspace2FormEntryProps & { authorizedForm: Form }> = ({
+  authorizedForm,
   closeWorkspace,
   groupProps,
   workspaceProps,
@@ -218,6 +253,7 @@ const Workspace2LegacyFormEntryWorkspace: React.FC<Workspace2FormEntryProps> = (
     <Workspace2 title={title} hasUnsavedChanges={hasUnsavedChanges}>
       <LegacyFormEntryWorkspace
         {...workspaceProps}
+        form={authorizedForm}
         patientUuid={patientUuid}
         closeWorkspace={() => {
           void closeWorkspace();
@@ -251,14 +287,24 @@ const Workspace2FormEntryWorkspace: React.FC<Workspace2FormEntryProps> = (props)
     hidePatientBanner,
     preFilledQuestions,
   } = workspaceProps;
+  const requestedFormUuid = form?.uuid ?? workspaceProps?.formInfo?.formUuid;
+  const { canEdit, error: formAccessError, form: authorizedForm, isLoading } = useFormAccess(requestedFormUuid, form);
+
+  if (isLoading) {
+    return <LoadingFormNotice />;
+  }
+
+  if (formAccessError || !authorizedForm || !canEdit) {
+    return <UnavailableFormNotice />;
+  }
 
   if (!form) {
-    return <Workspace2LegacyFormEntryWorkspace {...props} />;
+    return <Workspace2LegacyFormEntryWorkspace {...props} authorizedForm={authorizedForm} />;
   }
 
   return (
     <FormEntry
-      form={form}
+      form={authorizedForm}
       encounterUuid={encounterUuid}
       additionalProps={additionalProps}
       handlePostResponse={handlePostResponse}

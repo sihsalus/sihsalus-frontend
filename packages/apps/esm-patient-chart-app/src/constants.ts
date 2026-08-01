@@ -6,6 +6,7 @@ export const dashboardPath = `${basePath}/:view/*`;
 export const spaBasePath = `${globalThis.spaBase}${basePath}`;
 export const adtPrivilege = 'app:home.admision';
 export const clinicalChartPrivilege = 'app:hoja.clinica';
+export const clinicalFormsEditPrivilege = 'app:hoja.clinica.formulariosClinicos.editar';
 export const clinicalChartVisitsEditPrivilege = 'app:hoja.clinica.visitas.editar';
 export const moduleName = '@sihsalus/esm-patient-chart-app';
 export const patientChartWorkspaceSlot = 'patient-chart-workspace-slot';

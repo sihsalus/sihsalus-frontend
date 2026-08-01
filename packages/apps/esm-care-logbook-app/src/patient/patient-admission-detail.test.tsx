@@ -94,43 +94,54 @@ describe('PatientAdmissionDetail', () => {
   });
 
   it('renders filiation data separated from visit/admission history and appointment scheduling', () => {
-    renderPatientAdmissionDetail();
+    vi.useFakeTimers();
+    // Midnight in Lima on a fixed date keeps the rendered age deterministic both in
+    // the CI timezone (UTC) and in the deployment timezone (America/Lima).
+    vi.setSystemTime(new Date('2026-07-15T05:00:00.000Z'));
 
-    expect(screen.getByRole('link', { name: /volver a atenciones/i })).toHaveAttribute('href', '/');
-    expect(screen.getByRole('heading', { name: 'Ada Lovelace' })).toBeInTheDocument();
-    expect(screen.getByTestId('filiation-section')).toBeInTheDocument();
-    expect(screen.getByText(/person — separado de datos clínicos/i)).toBeInTheDocument();
-    expect(screen.getByText('Historia clinica: HC-99 · DNI: 12345678')).toBeInTheDocument();
-    expect(screen.getByText(/estimada/i)).toBeInTheDocument();
-    expect(screen.getByText(/\d+ años \d+ meses \d+ días?/)).toBeInTheDocument();
-    expect(screen.getByText('Femenino')).toBeInTheDocument();
-    expect(screen.getByText('Av. Peru 123, Lima, Lima')).toBeInTheDocument();
-    expect(screen.getByText('Grupo sanguineo')).toBeInTheDocument();
-    expect(screen.getByText('O')).toBeInTheDocument();
-    expect(screen.getByText('Factor Rh')).toBeInTheDocument();
-    expect(screen.getByText('Positivo')).toBeInTheDocument();
-    expect(screen.queryByText('Sin etiqueta')).not.toBeInTheDocument();
+    try {
+      renderPatientAdmissionDetail();
 
-    expect(screen.getByTestId('admission-history-section')).toBeInTheDocument();
-    expect(screen.getByText(/visit\/encounter — datos clínicos/i)).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Tipo de visita' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Servicio' })).toBeInTheDocument();
-    expect(screen.getAllByRole('columnheader', { name: 'UPSS' })).toHaveLength(2);
-    expect(screen.getByRole('cell', { name: 'Consulta externa' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'Admision Central' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'Activa' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /volver a atenciones/i })).toHaveAttribute('href', '/');
+      expect(screen.getByRole('heading', { name: 'Ada Lovelace' })).toBeInTheDocument();
+      expect(screen.getByTestId('filiation-section')).toBeInTheDocument();
+      expect(screen.getByText(/person — separado de datos clínicos/i)).toBeInTheDocument();
+      expect(screen.getByText('Historia clinica: HC-99 · DNI: 12345678')).toBeInTheDocument();
+      expect(screen.getByText(/estimada/i)).toBeInTheDocument();
+      expect(screen.getByText(/\d+ años \d+ meses \d+ días?/)).toBeInTheDocument();
+      expect(screen.getByText('Femenino')).toBeInTheDocument();
+      expect(screen.getByText('Av. Peru 123, Lima, Lima')).toBeInTheDocument();
+      expect(screen.getByText('Grupo sanguineo')).toBeInTheDocument();
+      expect(screen.getByText('O')).toBeInTheDocument();
+      expect(screen.getByText('Factor Rh')).toBeInTheDocument();
+      expect(screen.getByText('Positivo')).toBeInTheDocument();
+      expect(screen.queryByText('Sin etiqueta')).not.toBeInTheDocument();
 
-    expect(screen.getByTestId('appointment-scheduling-section')).toBeInTheDocument();
-    expect(screen.getByText(/solicitudes\/cupos\/prestadores/i)).toBeInTheDocument();
-    expect(screen.getByText(/consultar disponibilidad, seleccionar cupo y registrar citas/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /programar turno/i })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'Medicina general' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'Dra. Torres' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'Consultorio 1' })).toBeInTheDocument();
+      expect(screen.getByTestId('admission-history-section')).toBeInTheDocument();
+      expect(screen.getByText(/visit\/encounter — datos clínicos/i)).toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: 'Tipo de visita' })).toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: 'Servicio' })).toBeInTheDocument();
+      expect(screen.getAllByRole('columnheader', { name: 'UPSS' })).toHaveLength(2);
+      expect(screen.getByRole('cell', { name: 'Consulta externa' })).toBeInTheDocument();
+      expect(screen.getByRole('cell', { name: 'Admision Central' })).toBeInTheDocument();
+      expect(screen.getByRole('cell', { name: 'Activa' })).toBeInTheDocument();
 
-    expect(mockUsePatientDetail).toHaveBeenCalledWith('patient-uuid');
-    expect(mockUsePatientVisitHistory).toHaveBeenCalledWith('patient-uuid');
-    expect(mockUsePatientUpcomingAppointments).toHaveBeenCalledWith('patient-uuid');
+      expect(screen.getByTestId('appointment-scheduling-section')).toBeInTheDocument();
+      expect(screen.getByText(/solicitudes\/cupos\/prestadores/i)).toBeInTheDocument();
+      expect(screen.getByText(/consultar disponibilidad, seleccionar cupo y registrar citas/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /programar turno/i })).toBeInTheDocument();
+      expect(screen.getByRole('cell', { name: 'Medicina general' })).toBeInTheDocument();
+      expect(screen.getByRole('cell', { name: 'Dra. Torres' })).toBeInTheDocument();
+      expect(screen.getByRole('cell', { name: 'Consultorio 1' })).toBeInTheDocument();
+      expect(screen.getByRole('cell', { name: 'Programada' })).toBeInTheDocument();
+      expect(screen.queryByRole('cell', { name: 'Scheduled' })).not.toBeInTheDocument();
+
+      expect(mockUsePatientDetail).toHaveBeenCalledWith('patient-uuid');
+      expect(mockUsePatientVisitHistory).toHaveBeenCalledWith('patient-uuid');
+      expect(mockUsePatientUpcomingAppointments).toHaveBeenCalledWith('patient-uuid');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('launches the real appointments workspace with the selected patient', async () => {

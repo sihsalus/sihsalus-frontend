@@ -1,8 +1,9 @@
-import { type Visit } from '@openmrs/esm-framework';
+import { useSession, type Visit } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ComponentProps } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { taskListEditPrivilege } from '../constants';
 import { type Task } from './task-list.resource';
 import TaskListWorkspace from './task-list.workspace';
 
@@ -13,6 +14,7 @@ const mockTask: Task = {
   createdDate: new Date('2024-01-15T10:00:00Z'),
   completed: false,
 };
+const mockUseSession = vi.mocked(useSession);
 
 vi.mock('./task-list.resource', () => ({
   useTaskList: vi.fn(),
@@ -81,6 +83,12 @@ const defaultProps = {
 } satisfies ComponentProps<typeof TaskListWorkspace>;
 
 describe('TaskListWorkspace', () => {
+  beforeEach(() => {
+    mockUseSession.mockReturnValue({
+      user: { privileges: [{ display: taskListEditPrivilege }] },
+    } as ReturnType<typeof useSession>);
+  });
+
   it('renders the task list view by default', () => {
     render(<TaskListWorkspace {...defaultProps} />);
 
@@ -224,5 +232,17 @@ describe('TaskListWorkspace', () => {
 
     expect(screen.getByTestId('task-details-view')).toBeInTheDocument();
     expect(screen.queryByTestId('edit-task-form')).not.toBeInTheDocument();
+  });
+
+  it('keeps task details readable but hides mutations without the edit privilege', async () => {
+    const user = userEvent.setup();
+    mockUseSession.mockReturnValue({ user: { privileges: [] } } as ReturnType<typeof useSession>);
+
+    render(<TaskListWorkspace {...defaultProps} />);
+
+    expect(screen.queryByRole('button', { name: /add task/i })).not.toBeInTheDocument();
+    await user.click(screen.getByText('Mock Task'));
+    expect(screen.getByTestId('task-details-view')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument();
   });
 });

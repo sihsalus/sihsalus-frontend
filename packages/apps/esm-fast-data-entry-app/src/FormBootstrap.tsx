@@ -1,6 +1,9 @@
+import { InlineLoading, InlineNotification } from '@carbon/react';
 import { detach, ExtensionSlot } from '@openmrs/esm-framework';
 import { useContext, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import GroupFormWorkflowContext from './context/GroupFormWorkflowContext';
+import useGetAllForms from './hooks/useGetAllForms';
 import useGetPatient from './hooks/useGetPatient';
 
 export interface Order {
@@ -129,7 +132,9 @@ const FormBootstrap = ({
   handleOnValidate,
   hidePatientBanner,
 }: FormParams) => {
+  const { t } = useTranslation();
   const patient = useGetPatient(patientUuid);
+  const { forms, isLoading: areFormsLoading, error: formsError } = useGetAllForms();
   const isPatientMatch = patient?.id === patientUuid;
   const { activeSessionMeta } = useContext(GroupFormWorkflowContext);
 
@@ -146,6 +151,26 @@ const FormBootstrap = ({
       setShowForm(true);
     }, 1);
   };
+
+  if (areFormsLoading) {
+    return <InlineLoading description={t('loading', 'Loading')} />;
+  }
+
+  const canEditForm = forms?.some((form) => form.uuid === formUuid) ?? false;
+  if (formsError || !canEditForm) {
+    return (
+      <InlineNotification
+        hideCloseButton
+        kind="warning"
+        lowContrast
+        title={t('noFormsFound', 'No Forms To Show')}
+        subtitle={t(
+          'noFormsFoundMessage',
+          'No forms could be found for this category. Please double check the form concept uuids and access permissions.',
+        )}
+      />
+    );
+  }
 
   const isReady = showForm && formUuid && patientUuid && patient && isPatientMatch;
 

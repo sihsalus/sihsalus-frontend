@@ -3,3 +3,5 @@ import { type OmrsOfflineHttpHeaders, omrsOfflineCachingStrategyHttpHeaderName }
 export const cacheForOfflineHeaders: OmrsOfflineHttpHeaders = {
   [omrsOfflineCachingStrategyHttpHeaderName]: 'network-first',
 };
+
+export const patientListsEditPrivilege = 'app:home.listasPacientes.editar';

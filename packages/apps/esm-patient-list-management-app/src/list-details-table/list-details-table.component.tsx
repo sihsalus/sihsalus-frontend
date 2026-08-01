@@ -39,6 +39,7 @@ export interface PatientRow {
 
 interface ListDetailsTableProps {
   autoFocus?: boolean;
+  canEdit?: boolean;
   columns: Array<PatientTableColumn>;
   isFetching?: boolean;
   isLoading: boolean;
@@ -87,6 +88,7 @@ function renderCellValue(value: React.ReactNode) {
 }
 
 const ListDetailsTable: React.FC<ListDetailsTableProps> = ({
+  canEdit = false,
   columns,
   isFetching,
   isLoading,
@@ -161,6 +163,11 @@ const ListDetailsTable: React.FC<ListDetailsTableProps> = ({
   );
 
   const handleRemovePatientFromList = useCallback(async () => {
+    if (!canEdit || !membershipUuid) {
+      setShowConfirmationModal(false);
+      return;
+    }
+
     setIsDeleting(true);
 
     try {
@@ -184,7 +191,7 @@ const ListDetailsTable: React.FC<ListDetailsTableProps> = ({
 
     setIsDeleting(false);
     setShowConfirmationModal(false);
-  }, [membershipUuid, mutateListDetails, mutateListMembers, t]);
+  }, [canEdit, membershipUuid, mutateListDetails, mutateListMembers, t]);
 
   const BackButton = () => (
     <div className={styles.backButton}>
@@ -273,22 +280,24 @@ const ListDetailsTable: React.FC<ListDetailsTableProps> = ({
                           {row.cells.map((cell) => (
                             <TableCell key={cell.id}>{renderCellValue(cell.value)}</TableCell>
                           ))}
-                          <TableCell className="cds--table-column-menu">
-                            <Button
-                              kind="ghost"
-                              hasIconOnly
-                              renderIcon={TrashCan}
-                              iconDescription={t('removeFromList', 'Remove from list')}
-                              size={responsiveSize}
-                              tooltipPosition="left"
-                              onClick={() => {
-                                setMembershipUuid(currentPatient?.membershipUuid ?? '');
-                                setPatientName(currentPatient?.name ?? '');
-                                setShowConfirmationModal(true);
-                              }}
-                              disabled={!currentPatient?.membershipUuid}
-                            />
-                          </TableCell>
+                          {canEdit && (
+                            <TableCell className="cds--table-column-menu">
+                              <Button
+                                kind="ghost"
+                                hasIconOnly
+                                renderIcon={TrashCan}
+                                iconDescription={t('removeFromList', 'Remove from list')}
+                                size={responsiveSize}
+                                tooltipPosition="left"
+                                onClick={() => {
+                                  setMembershipUuid(currentPatient?.membershipUuid ?? '');
+                                  setPatientName(currentPatient?.name ?? '');
+                                  setShowConfirmationModal(true);
+                                }}
+                                disabled={!currentPatient?.membershipUuid}
+                              />
+                            </TableCell>
+                          )}
                         </TableRow>
                       );
                     })}
@@ -324,7 +333,7 @@ const ListDetailsTable: React.FC<ListDetailsTableProps> = ({
             />
           )}
         </div>
-        {showConfirmationModal && (
+        {canEdit && showConfirmationModal && (
           <Modal
             className={styles.modal}
             open

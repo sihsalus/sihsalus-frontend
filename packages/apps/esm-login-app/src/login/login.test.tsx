@@ -27,7 +27,11 @@ vi.mock('../navigation', async (importOriginal) => ({
   hardNavigate: vi.fn(),
 }));
 
-const mockBuildInfo = { version: '1.2.3', gitSha: 'abc1234', buildTime: '2026-06-04T00:00:00Z' };
+const mockBuildInfo = {
+  version: '1.2.3',
+  gitSha: '2aa7fcc9d234a46b92875a85e2c848b3dacef44e',
+  buildTime: '2026-06-04T00:00:00Z',
+};
 const openmrsSpaBasePlaceholder = '$' + '{openmrsSpaBase}';
 
 const LocationSelectPage = () => {
@@ -89,8 +93,11 @@ describe('Login', () => {
     expect(openmrsLogo).toHaveAttribute('src', '/openmrs/spa/logos/logo-openmrs.svg');
     expect(screen.getByText(/Sihsalus/i)).toBeInTheDocument();
     expect(screen.queryByAltText(/^logo$/i)).not.toBeInTheDocument();
-    // Version + short SHA are fetched asynchronously from build-info.json
-    expect(await screen.findByText(/v1\.2\.3 · abc1234/)).toBeInTheDocument();
+    // The short SHA is visible while the complete SHA remains available to assistive technology and support.
+    const commit = await screen.findByTitle(`Commit: ${mockBuildInfo.gitSha}`);
+    expect(commit).toHaveAttribute('title', `Commit: ${mockBuildInfo.gitSha}`);
+    expect(commit.querySelector('[aria-hidden="true"]')).toHaveTextContent('· 2aa7fcc9');
+    expect(screen.getByText(`· Commit: ${mockBuildInfo.gitSha}`)).toBeInTheDocument();
     screen.getByRole('textbox', { name: /Username/i });
     screen.getByRole('button', { name: /Continue/i });
   });

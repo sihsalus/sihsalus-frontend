@@ -56,4 +56,18 @@ describe('MonthlyCalendarView', () => {
     expect(onDateClick).toHaveBeenCalledWith(expect.any(Date));
     expect(onDateClick.mock.calls[0][0].getDate()).toBe(21);
   });
+
+  it('keeps workload days read-only when no date-selection handler is provided', () => {
+    render(
+      <MonthlyCalendarView
+        calendarWorkload={[]}
+        displayedMonth={new Date(2026, 6, 1)}
+        minDate={new Date(2026, 6, 20)}
+        onMonthChange={vi.fn()}
+        selectedDate={new Date(2026, 6, 20)}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /21.*0 scheduled appointments?/i })).toBeDisabled();
+  });
 });

@@ -9,6 +9,8 @@
   "continue": "Continuar",
   "errorChangingPassword": "Erro ao alterar a senha",
   "footerlogo": "Logo do Rodapé",
+  "frontendCommit": "Commit: {{sha}}",
+  "frontendVersion": "v{{version}}",
   "invalidCredentials": "Usuário ou senha inválidos",
   "language": "Idioma",
   "learnMore": "Aprender mais",

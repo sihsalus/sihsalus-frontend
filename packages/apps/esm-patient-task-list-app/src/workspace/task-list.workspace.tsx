@@ -1,9 +1,10 @@
 import { Button } from '@carbon/react';
 import { Add, ArrowLeft } from '@carbon/react/icons';
-import { type Visit, Workspace2 } from '@openmrs/esm-framework';
+import { userHasAccess, useSession, type Visit, Workspace2 } from '@openmrs/esm-framework';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { taskListEditPrivilege } from '../constants';
 import AddTaskForm from './add-task-form.component';
 import TaskDetailsView from './task-details-view.component';
 import { type Task } from './task-list.resource';
@@ -15,6 +16,8 @@ type View = 'list' | 'form' | 'details' | 'edit';
 const TaskListWorkspace: React.FC<PatientWorkspace2DefinitionProps<{}, {}>> = ({ groupProps }) => {
   const { patientUuid, visitContext } = groupProps ?? { patientUuid: '', visitContext: undefined as unknown as Visit };
   const { t } = useTranslation();
+  const session = useSession();
+  const canEditTasks = userHasAccess(taskListEditPrivilege, session?.user);
   const [view, setView] = useState<View>('list');
   const [selectedTaskUuid, setSelectedTaskUuid] = useState<string | null>(null);
 
@@ -24,6 +27,9 @@ const TaskListWorkspace: React.FC<PatientWorkspace2DefinitionProps<{}, {}>> = ({
   };
 
   const handleEdit = (task: Task) => {
+    if (!canEditTasks) {
+      return;
+    }
     setSelectedTaskUuid(task.uuid);
     setView('edit');
   };
@@ -59,11 +65,11 @@ const TaskListWorkspace: React.FC<PatientWorkspace2DefinitionProps<{}, {}>> = ({
             </Button>
           </div>
         )}
-        {view === 'form' && (
+        {canEditTasks && view === 'form' && (
           <AddTaskForm patientUuid={patientUuid} activeVisit={visitContext} onClose={() => setView('list')} />
         )}
         {view === 'list' && <TaskListView patientUuid={patientUuid} onTaskClick={handleTaskClick} />}
-        {view === 'list' && (
+        {canEditTasks && view === 'list' && (
           <div className={styles.addTaskButtonContainer}>
             <Button
               kind="ghost"
@@ -79,11 +85,12 @@ const TaskListWorkspace: React.FC<PatientWorkspace2DefinitionProps<{}, {}>> = ({
           <TaskDetailsView
             patientUuid={patientUuid}
             taskUuid={selectedTaskUuid}
+            canEdit={canEditTasks}
             onBack={handleBackClick}
-            onEdit={handleEdit}
+            onEdit={canEditTasks ? handleEdit : undefined}
           />
         )}
-        {view === 'edit' && selectedTaskUuid && (
+        {canEditTasks && view === 'edit' && selectedTaskUuid && (
           <AddTaskForm
             patientUuid={patientUuid}
             activeVisit={visitContext}

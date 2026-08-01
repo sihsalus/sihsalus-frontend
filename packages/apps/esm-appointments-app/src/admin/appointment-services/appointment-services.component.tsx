@@ -16,6 +16,7 @@ const isSuccessfulCreateResponse = (status?: number) => status >= 200 && status 
 const AppointmentServices: React.FC = () => {
   const { t } = useTranslation();
   const { appointmentServiceInitialValue, addNewAppointmentService } = useAppointmentServices();
+  const getValidationMessage = (error: unknown) => (typeof error === 'string' ? t(error) : undefined);
 
   const locations = useLocations(appointmentLocationTagName);
   const handleSubmit = async (values: AppointmentService, _helpers: FormikHelpers<AppointmentService>) => {
@@ -66,7 +67,7 @@ const AppointmentServices: React.FC = () => {
             <Layer>
               <TextInput
                 id="name"
-                invalidText={t(props.errors.name)}
+                invalidText={getValidationMessage(props.errors.name)}
                 labelText={t('appointmentServiceName', 'Appointment service name')}
                 placeholder={t('appointmentServiceName', 'Appointment service name')}
                 invalid={!!(props.touched && props.errors.name)}
@@ -80,6 +81,7 @@ const AppointmentServices: React.FC = () => {
               <TimePicker
                 className={styles.timePickerInput}
                 invalid={!!(props.touched && props.errors.startTime)}
+                invalidText={getValidationMessage(props.errors.startTime)}
                 pattern="([\d]+:[\d]{2})"
                 value={props.values.startTime}
                 onChange={props.handleChange}
@@ -102,6 +104,7 @@ const AppointmentServices: React.FC = () => {
             <Layer>
               <TimePicker
                 invalid={!!(props.touched && props.errors.endTime)}
+                invalidText={getValidationMessage(props.errors.endTime)}
                 className={styles.timePickerInput}
                 pattern="([\d]+:[\d]{2})"
                 value={props.values.endTime}
@@ -125,7 +128,7 @@ const AppointmentServices: React.FC = () => {
             <Layer>
               <TextInput
                 id="durationMins"
-                invalidText={props.errors.durationMins}
+                invalidText={getValidationMessage(props.errors.durationMins)}
                 labelText={t('durationMins', 'Duration min')}
                 placeholder={t('durationMins', 'Duration min')}
                 invalid={!!(props.touched && props.errors.durationMins)}
@@ -144,6 +147,7 @@ const AppointmentServices: React.FC = () => {
                 itemToString={(item) => (item ? item.display : '')}
                 selectedItem={props.values.location}
                 invalid={!!(props.touched && props.errors.location?.uuid)}
+                invalidText={getValidationMessage(props.errors.location?.uuid)}
                 onChange={({ selectedItem }) => props.setValues({ ...props.values, location: selectedItem })}
               />
             </Layer>
@@ -153,7 +157,7 @@ const AppointmentServices: React.FC = () => {
                 id="color"
                 invalid={!!(props.touched && props.errors.color)}
                 onChange={props.handleChange}
-                invalidText={props.errors.color}
+                invalidText={getValidationMessage(props.errors.color)}
                 labelText={t('appointmentColor', 'Appointment color')}
                 type="color"
                 name="color"

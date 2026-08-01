@@ -1,6 +1,14 @@
 import type { AppointmentPayload, RecurringPattern } from '../types';
 
-type AppointmentFormContext = 'creating' | 'editing';
+export type AppointmentFormContext = 'creating' | 'editing';
+export const MAX_RECURRING_APPOINTMENT_HORIZON_DAYS = 365;
+
+interface EffectiveAppointmentStartDateOptions {
+  canEditStartDate: boolean;
+  context: AppointmentFormContext;
+  originalStartDate?: Date;
+  today?: Date;
+}
 
 interface AppointmentDateValidationOptions {
   originalStartDate?: Date;
@@ -13,8 +21,27 @@ function getLocalDayTimestamp(value: Date): number | null {
     return null;
   }
 
-  date.setHours(0, 0, 0, 0);
-  return date.valueOf();
+  return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/**
+ * Resolves the only appointment day that may reach the payload. Date controls
+ * are not an authorization boundary: without the explicit privilege, a new
+ * appointment uses today and an edit keeps its original day.
+ */
+export function resolveEffectiveAppointmentStartDate(
+  candidateDate: Date,
+  { canEditStartDate, context, originalStartDate, today = new Date() }: EffectiveAppointmentStartDateOptions,
+): Date {
+  if (canEditStartDate) {
+    return new Date(candidateDate);
+  }
+
+  if (context === 'editing') {
+    return originalStartDate ? new Date(originalStartDate) : new Date(Number.NaN);
+  }
+
+  return new Date(today);
 }
 
 export function isAppointmentStartDateAllowed(
@@ -46,10 +73,21 @@ export function isAppointmentIssuedDateAllowed(issuedDate: Date, today: Date = n
   return issuedDay !== null && todayDay !== null && issuedDay <= todayDay;
 }
 
-export function isRecurringAppointmentRangeAllowed(startDate: Date, endDate: Date): boolean {
+export function isRecurringAppointmentRangeAllowed(
+  startDate: Date,
+  endDate: Date,
+  maxHorizonDays = MAX_RECURRING_APPOINTMENT_HORIZON_DAYS,
+): boolean {
   const startDay = getLocalDayTimestamp(startDate);
   const endDay = getLocalDayTimestamp(endDate);
-  return startDay !== null && endDay !== null && endDay >= startDay;
+  return (
+    startDay !== null &&
+    endDay !== null &&
+    Number.isInteger(maxHorizonDays) &&
+    maxHorizonDays >= 0 &&
+    endDay >= startDay &&
+    endDay - startDay <= maxHorizonDays * 86_400_000
+  );
 }
 
 export function assertAppointmentPayloadDates(
@@ -77,7 +115,14 @@ export function assertAppointmentPayloadDates(
 export function assertRecurringPatternDates(appointment: AppointmentPayload, recurringPattern: RecurringPattern): void {
   const startDate = new Date(appointment.startDateTime);
   const endDate = new Date(recurringPattern.endDate);
-  if (Number.isNaN(startDate.valueOf()) || Number.isNaN(endDate.valueOf()) || endDate < startDate) {
-    throw new Error('Recurring appointment end date cannot be before its start date.');
+  if (
+    Number.isNaN(startDate.valueOf()) ||
+    Number.isNaN(endDate.valueOf()) ||
+    endDate < startDate ||
+    !isRecurringAppointmentRangeAllowed(startDate, endDate)
+  ) {
+    throw new Error(
+      `Recurring appointment end date must be between its start date and ${MAX_RECURRING_APPOINTMENT_HORIZON_DAYS} days later.`,
+    );
   }
 }

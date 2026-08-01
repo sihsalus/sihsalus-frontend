@@ -17,8 +17,11 @@
   "appointmentsLoadError": "Impossible de charger la programmation des rendez-vous",
   "backToAdmissions": "Retour au journal des prises en charge",
   "birthdate": "Date de naissance",
+  "cancelled": "Annulé",
   "checkFilters": "Vérifiez les filtres ci-dessus et réessayez",
+  "checkedIn": "Arrivée enregistrée",
   "clinicalTag": "visit/encounter - donnees cliniques",
+  "completed": "Terminé",
   "date": "Date",
   "exportCsv": "Exporter CSV",
   "filterByStatus": "Filtrer par statut",
@@ -39,6 +42,7 @@
   "mergeDuplicatePatientRecordsSummary": "Utilisez cette option lorsque deux dossiers patients appartiennent au meme patient et qu'un dossier doit etre conserve comme dossier prefere.",
   "mergeDuplicatePatients": "Fusionner les dossiers en double",
   "minimumPatientIdentification": "Identification minimale du patient",
+  "missed": "Manqué",
   "noAdmissionsFound": "Aucune prise en charge récente à afficher",
   "noAdmissionsFoundHint": "Les prises en charge enregistrées apparaîtront ici",
   "noMatchingAdmissions": "Aucune prise en charge ne correspond aux filtres",
@@ -52,7 +56,9 @@
   "provider": "Prestataire",
   "reportedAdmissions": "Prises en charge enregistrees",
   "reportedVisitTypes": "Types de visite signalés",
+  "requested": "Demandé",
   "scheduleAppointment": "Programmer un rendez-vous",
+  "scheduled": "Planifié",
   "searchAdmissions": "Rechercher par patient, MRN, type de visite ou UPSS",
   "searchAdmissionsPlaceholder": "Patient, MRN, type de visite, UPSS...",
   "service": "Service",
@@ -62,5 +68,6 @@
   "time": "Heure",
   "visitHistoryError": "Impossible de charger l'historique des prises en charge",
   "visitType": "Type de visite",
-  "visitTypes": "Types de visite"
+  "visitTypes": "Types de visite",
+  "walkIn": "Sans rendez-vous"
 }

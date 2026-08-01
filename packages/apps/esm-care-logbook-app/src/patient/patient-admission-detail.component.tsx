@@ -15,6 +15,20 @@ import {
 } from '../resources/admissions.resource';
 import styles from './patient-admission-detail.scss';
 
+const appointmentStatusTranslations = {
+  Requested: { key: 'requested', fallback: 'Solicitada' },
+  Scheduled: { key: 'scheduled', fallback: 'Programada' },
+  CheckedIn: { key: 'checkedIn', fallback: 'Llegada registrada' },
+  Completed: { key: 'completed', fallback: 'Completada' },
+  Cancelled: { key: 'cancelled', fallback: 'Cancelada' },
+  Missed: { key: 'missed', fallback: 'Perdida' },
+  WalkIn: { key: 'walkIn', fallback: 'Sin cita' },
+} as const;
+
+function getAppointmentStatusTranslation(status?: string) {
+  return status ? appointmentStatusTranslations[status as keyof typeof appointmentStatusTranslations] : undefined;
+}
+
 function formatDate(value?: string) {
   if (!value) return '-';
   return new Intl.DateTimeFormat('es-PE', { dateStyle: 'short' }).format(new Date(value));
@@ -23,6 +37,21 @@ function formatDate(value?: string) {
 function formatTime(value?: string) {
   if (!value) return '-';
   return new Intl.DateTimeFormat('es-PE', { timeStyle: 'short' }).format(new Date(value));
+}
+
+function parseBirthdate(value: string): Date {
+  const calendarDate = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+
+  if (calendarDate) {
+    const [, year, month, day] = calendarDate;
+    return new Date(Number(year), Number(month) - 1, Number(day));
+  }
+
+  return new Date(value);
+}
+
+function formatBirthdate(value: string): string {
+  return new Intl.DateTimeFormat('es-PE', { dateStyle: 'short' }).format(parseBirthdate(value));
 }
 
 function formatGender(gender?: string) {
@@ -120,13 +149,13 @@ export default function PatientAdmissionDetail() {
                 <dt>{t('birthdate', 'Fecha de nacimiento')}</dt>
                 <dd>
                   {patient.person?.birthdate
-                    ? `${formatDate(patient.person.birthdate)}${patient.person.birthdateEstimated ? ' (estimada)' : ''}`
+                    ? `${formatBirthdate(patient.person.birthdate)}${patient.person.birthdateEstimated ? ' (estimada)' : ''}`
                     : '-'}
                 </dd>
               </div>
               <div>
                 <dt>{t('age', 'Edad')}</dt>
-                <dd>{patient.person?.birthdate ? (age(patient.person.birthdate) ?? '-') : '-'}</dd>
+                <dd>{patient.person?.birthdate ? (age(parseBirthdate(patient.person.birthdate)) ?? '-') : '-'}</dd>
               </div>
               <div>
                 <dt>{t('sex', 'Sexo')}</dt>
@@ -239,16 +268,24 @@ export default function PatientAdmissionDetail() {
                     </tr>
                   </thead>
                   <tbody>
-                    {appointments.map((appointment) => (
-                      <tr key={appointment.uuid}>
-                        <td>{formatDate(appointment.startDateTime)}</td>
-                        <td>{formatTime(appointment.startDateTime)}</td>
-                        <td>{appointment.service}</td>
-                        <td>{appointment.provider}</td>
-                        <td>{appointment.location}</td>
-                        <td>{appointment.status}</td>
-                      </tr>
-                    ))}
+                    {appointments.map((appointment) => {
+                      const statusTranslation = getAppointmentStatusTranslation(appointment.status);
+
+                      return (
+                        <tr key={appointment.uuid}>
+                          <td>{formatDate(appointment.startDateTime)}</td>
+                          <td>{formatTime(appointment.startDateTime)}</td>
+                          <td>{appointment.service}</td>
+                          <td>{appointment.provider}</td>
+                          <td>{appointment.location}</td>
+                          <td>
+                            {statusTranslation
+                              ? t(statusTranslation.key, statusTranslation.fallback)
+                              : (appointment.status ?? '-')}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

@@ -7,7 +7,8 @@
   "modals": [
     {
       "name": "delete-task-confirmation-modal",
-      "component": "deleteTaskConfirmationModal"
+      "component": "deleteTaskConfirmationModal",
+      "privileges": "app:hoja.clinica.listaTareas.editar"
     }
   ],
   "workspaces2": [

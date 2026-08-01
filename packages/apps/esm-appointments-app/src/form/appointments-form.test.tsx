@@ -28,7 +28,9 @@ import {
   appointmentIssueDateEditPrivilege,
   appointmentNoteMaxLength,
   appointmentStartDateEditPrivilege,
+  omrsDateFormat,
 } from '../constants';
+import SelectedDateContext from '../hooks/selectedDateContext';
 import { useProviders } from '../hooks/useProviders';
 import { changeAppointmentStatus, getAppointmentStatus } from '../patient-appointments/patient-appointments.resource';
 import { type Appointment, AppointmentKind, AppointmentStatus } from '../types';
@@ -973,7 +975,6 @@ describe('AppointmentForm', () => {
     renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
 
     await waitForLoadingToFinish();
-    expect(screen.getByLabelText(/is this a recurring appointment/i)).toBeInTheDocument();
     const statusSelect = screen.getByLabelText(/select status/i) as HTMLSelectElement;
     const statusOptions = Array.from(statusSelect.options, ({ value }) => value);
     expect(statusSelect).toHaveValue(AppointmentStatus.SCHEDULED);
@@ -1189,6 +1190,32 @@ describe('AppointmentForm', () => {
     expect(screen.getByTestId('datePickerInput')).toHaveAttribute('readonly');
   });
 
+  it('does not expose recurring scheduling without the start-date privilege', async () => {
+    const appointment = makeEditableAppointment();
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
+
+    await waitForLoadingToFinish();
+    expect(screen.queryByLabelText(/is this a recurring appointment/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/end date/i)).not.toBeInTheDocument();
+  });
+
+  it('allows recurring scheduling only with the start-date privilege', async () => {
+    const user = userEvent.setup();
+    const appointment = makeEditableAppointment();
+    mockUserHasAccess.mockImplementation((privilege) => privilege === appointmentStartDateEditPrivilege);
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
+
+    await waitForLoadingToFinish();
+    await user.click(screen.getByLabelText(/is this a recurring appointment/i));
+
+    expect(screen.getByLabelText(/start date/i)).not.toHaveAttribute('readonly');
+    expect(screen.getByLabelText(/end date/i)).not.toHaveAttribute('readonly');
+  });
+
   it('allows editing the appointment start date with the start-date privilege', async () => {
     mockUserHasAccess.mockImplementation((privilege) => privilege === appointmentStartDateEditPrivilege);
     mockOpenmrsFetch.mockResolvedValue(mockUseAppointmentServiceData as unknown as FetchResponse);
@@ -1198,6 +1225,92 @@ describe('AppointmentForm', () => {
     await waitForLoadingToFinish();
 
     expect(screen.getByTestId('datePickerInput')).not.toHaveAttribute('readonly');
+  });
+
+  it('does not inherit a future global-calendar date without the start-date privilege', async () => {
+    const futureDate = dayjs().add(30, 'day').startOf('day');
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+
+    renderWithSwr(
+      <SelectedDateContext.Provider
+        value={{ selectedDate: futureDate.format(omrsDateFormat), setSelectedDate: vi.fn() }}
+      >
+        <AppointmentForm {...defaultProps} />
+      </SelectedDateContext.Provider>,
+    );
+
+    await waitForLoadingToFinish();
+
+    expect(screen.getByTestId('datePickerInput')).toHaveValue(dayjs().format('DD/MM/YYYY'));
+  });
+
+  it('forces today in the payload when a read-only start date is tampered with', async () => {
+    const user = userEvent.setup();
+    const futureDate = dayjs().add(30, 'day');
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+    fireEvent.change(screen.getByTestId('datePickerInput'), {
+      target: { value: futureDate.format('MM/DD/YYYY') },
+    });
+    await fillRequiredAppointmentFields(user);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    expect(dayjs(mockSaveAppointment.mock.calls[0][0].startDateTime).format('YYYY-MM-DD')).toBe(
+      dayjs().format('YYYY-MM-DD'),
+    );
+  });
+
+  it('preserves the original start day when an unauthorized edit is tampered with', async () => {
+    const user = userEvent.setup();
+    const appointment = makeEditableAppointment();
+    const originalDate = dayjs().add(2, 'day').hour(9).minute(30).second(0).millisecond(0);
+    appointment.startDateTime = originalDate.toISOString();
+    appointment.endDateTime = originalDate.add(30, 'minute').toISOString();
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 200 } as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
+
+    await waitForLoadingToFinish();
+    fireEvent.change(screen.getByTestId('datePickerInput'), {
+      target: { value: originalDate.add(30, 'day').format('MM/DD/YYYY') },
+    });
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    expect(dayjs(mockSaveAppointment.mock.calls[0][0].startDateTime).format('YYYY-MM-DD')).toBe(
+      originalDate.format('YYYY-MM-DD'),
+    );
+  });
+
+  it('keeps a future global-calendar date for a user with the start-date privilege', async () => {
+    const user = userEvent.setup();
+    const futureDate = dayjs().add(30, 'day').startOf('day');
+    mockUserHasAccess.mockImplementation((privilege) => privilege === appointmentStartDateEditPrivilege);
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+
+    renderWithSwr(
+      <SelectedDateContext.Provider
+        value={{ selectedDate: futureDate.format(omrsDateFormat), setSelectedDate: vi.fn() }}
+      >
+        <AppointmentForm {...defaultProps} />
+      </SelectedDateContext.Provider>,
+    );
+
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    expect(dayjs(mockSaveAppointment.mock.calls[0][0].startDateTime).format('YYYY-MM-DD')).toBe(
+      futureDate.format('YYYY-MM-DD'),
+    );
   });
 
   it('rejects a historical appointment date even when the user can edit the field', async () => {

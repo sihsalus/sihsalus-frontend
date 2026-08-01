@@ -2,8 +2,6 @@ import {
   Button,
   ButtonSet,
   ComboBox,
-  DatePicker,
-  DatePickerInput,
   Form,
   InlineLoading,
   InlineNotification,
@@ -56,8 +54,6 @@ import {
   appointmentNoteMaxLength,
   appointmentStartDateEditPrivilege,
   dateFormat,
-  datePickerFormat,
-  datePickerPlaceHolder,
   moduleName,
   weekDays,
 } from '../constants';
@@ -83,6 +79,8 @@ import {
   isAppointmentIssuedDateAllowed,
   isAppointmentStartDateAllowed,
   isRecurringAppointmentRangeAllowed,
+  MAX_RECURRING_APPOINTMENT_HORIZON_DAYS,
+  resolveEffectiveAppointmentStartDate,
 } from './appointment-date-validation';
 //TO DO FIX THIS SHIT
 import {
@@ -271,24 +269,25 @@ function resolveAppointmentFormDefaults(
   appointment: Appointment | undefined,
   recurringPattern: RecurringPattern | undefined,
   selectedDate: string | Date | undefined,
+  canEditStartDate: boolean,
+  context: 'creating' | 'editing',
 ): AppointmentFormDefaults {
   const editedTimeFormat: 'AM' | 'PM' = new Date(appointment?.startDateTime).getHours() >= 12 ? 'PM' : 'AM';
   const currentTimeFormat: 'AM' | 'PM' = new Date().getHours() >= 12 ? 'PM' : 'AM';
+  const originalStartDate = appointment?.startDateTime ? new Date(appointment.startDateTime) : undefined;
+  const requestedStartDate = originalStartDate ?? (selectedDate ? new Date(selectedDate) : new Date());
+  const effectiveStartDate = resolveEffectiveAppointmentStartDate(requestedStartDate, {
+    canEditStartDate,
+    context,
+    originalStartDate,
+  });
 
   return {
     defaultTimeFormat: appointment?.startDateTime ? editedTimeFormat : currentTimeFormat,
-    defaultStartDate: appointment?.startDateTime
-      ? new Date(appointment.startDateTime)
-      : selectedDate
-        ? new Date(selectedDate)
-        : new Date(),
+    defaultStartDate: effectiveStartDate,
     defaultEndDate: recurringPattern?.endDate ? new Date(recurringPattern.endDate) : null,
     defaultEndDateText: recurringPattern?.endDate ? dayjs(new Date(recurringPattern.endDate)).format(dateFormat) : '',
-    defaultStartDateText: appointment?.startDateTime
-      ? dayjs(new Date(appointment.startDateTime)).format(dateFormat)
-      : selectedDate
-        ? dayjs(selectedDate).format(dateFormat)
-        : dayjs(new Date()).format(dateFormat),
+    defaultStartDateText: dayjs(effectiveStartDate).format(dateFormat),
     defaultAppointmentStartTime: appointment?.startDateTime
       ? dayjs(new Date(appointment.startDateTime)).format('hh:mm')
       : dayjs(new Date()).format('hh:mm'),
@@ -335,6 +334,8 @@ const AppointmentsForm: React.FC<
     isExternalConsultationLocation(session?.sessionLocation);
   const canEditAppointmentStartDate = userHasAccess(appointmentStartDateEditPrivilege, session?.user);
   const canEditAppointmentIssueDate = userHasAccess(appointmentIssueDateEditPrivilege, session?.user);
+  const appointmentFormContext = context === 'editing' ? 'editing' : 'creating';
+  const originalStartDate = appointment?.startDateTime ? new Date(appointment.startDateTime) : undefined;
   const { selectedDate } = useContext(SelectedDateContext);
   const { data: services, isLoading } = useAppointmentService();
   const {
@@ -379,7 +380,13 @@ const AppointmentsForm: React.FC<
     defaultRecurringPatternType,
     defaultRecurringPatternPeriod,
     defaultRecurringPatternDaysOfWeek,
-  } = resolveAppointmentFormDefaults(appointment, recurringPattern, selectedDate);
+  } = resolveAppointmentFormDefaults(
+    appointment,
+    recurringPattern,
+    selectedDate,
+    canEditAppointmentStartDate,
+    appointmentFormContext,
+  );
 
   // t('durationErrorMessage', 'Duration should be greater than zero')
   const appointmentsFormSchema = z
@@ -429,8 +436,8 @@ const AppointmentsForm: React.FC<
       (formValues) =>
         isAppointmentStartDateAllowed(
           formValues.appointmentDateTime.startDate,
-          context === 'editing' ? 'editing' : 'creating',
-          appointment?.startDateTime ? new Date(appointment.startDateTime) : undefined,
+          appointmentFormContext,
+          originalStartDate,
         ),
       {
         path: ['appointmentDateTime.startDate'],
@@ -451,8 +458,9 @@ const AppointmentsForm: React.FC<
       {
         path: ['appointmentDateTime.recurringPatternEndDate'],
         message: t(
-          'recurringAppointmentEndCannotBeBeforeStart',
-          'The recurring appointment end date cannot be before its start date',
+          'recurringAppointmentRangeInvalid',
+          'The recurring appointment must end between its start date and {{maxDays}} days later',
+          { maxDays: MAX_RECURRING_APPOINTMENT_HORIZON_DAYS },
         ),
       },
     )
@@ -646,6 +654,12 @@ const AppointmentsForm: React.FC<
 
   useEffect(() => setValue('formIsRecurringAppointment', isRecurringAppointment), [isRecurringAppointment, setValue]);
 
+  useEffect(() => {
+    if (!canEditAppointmentStartDate && isRecurringAppointment) {
+      setIsRecurringAppointment(false);
+    }
+  }, [canEditAppointmentStartDate, isRecurringAppointment]);
+
   // Retrive ref callback for appointmentDateTime (startDate & recurringPatternEndDate)
   const {
     field: { ref: startDateRef },
@@ -677,14 +691,23 @@ const AppointmentsForm: React.FC<
 
   const handleWorkloadDateChange = (date: Date) => {
     const appointmentDate = getValues('appointmentDateTime');
-    setValue('appointmentDateTime', { ...appointmentDate, startDate: date });
+    const effectiveStartDate = resolveEffectiveAppointmentStartDate(date, {
+      canEditStartDate: canEditAppointmentStartDate,
+      context: appointmentFormContext,
+      originalStartDate,
+    });
+    setValue('appointmentDateTime', {
+      ...appointmentDate,
+      startDate: effectiveStartDate,
+      startDateText: dayjs(effectiveStartDate).format(dateFormat),
+    });
   };
 
   const handleSelectChange = (e) => {
     const daysText =
       e?.selectedItems?.length < 1
         ? t('daysOfWeek', 'Days of the week')
-        : e.selectedItems.map((weekDay) => weekDay.label).join(', ');
+        : e.selectedItems.map((weekDay) => t(weekDay.labelCode, weekDay.label)).join(', ');
     setValue('selectedDaysOfWeekText', daysText);
     setValue(
       'recurringPatternDaysOfWeek',
@@ -698,7 +721,7 @@ const AppointmentsForm: React.FC<
       ? t('daysOfWeek', 'Days of the week')
       : weekDays
           .filter((weekDay) => selectedDays.includes(weekDay.id))
-          .map((weekDay) => weekDay.label)
+          .map((weekDay) => t(weekDay.labelCode, weekDay.label))
           .join(', ');
 
   const validateAppointmentIsStillEditable = async () => {
@@ -825,9 +848,8 @@ const AppointmentsForm: React.FC<
     };
 
     const abortController = new AbortController();
-    const originalStartDate = appointment?.startDateTime ? new Date(appointment.startDateTime) : undefined;
     const saveRequest = () => {
-      if (isRecurringAppointment) {
+      if (canEditAppointmentStartDate && isRecurringAppointment) {
         return originalStartDate
           ? saveRecurringAppointments(recurringAppointmentPayload, abortController, originalStartDate)
           : saveRecurringAppointments(recurringAppointmentPayload, abortController);
@@ -935,11 +957,16 @@ const AppointmentsForm: React.FC<
     const serviceUuid = selectedAppointmentService?.uuid;
     const [hourValue, minuteValue] = startTime.split(':').map((item) => parseInt(item, 10));
     const hours = (hourValue % 12) + (timeFormat === 'PM' ? 12 : 0);
+    const effectiveStartDate = resolveEffectiveAppointmentStartDate(startDate, {
+      canEditStartDate: canEditAppointmentStartDate,
+      context: appointmentFormContext,
+      originalStartDate,
+    });
     const startDateTime = isAllDayAppointment
-      ? dayjs(startDate).startOf('day')
-      : dayjs(startDate).hour(hours).minute(minuteValue).second(0).millisecond(0);
+      ? dayjs(effectiveStartDate).startOf('day')
+      : dayjs(effectiveStartDate).hour(hours).minute(minuteValue).second(0).millisecond(0);
     const endDateTime = isAllDayAppointment
-      ? dayjs(startDate).endOf('day')
+      ? dayjs(effectiveStartDate).endOf('day')
       : startDateTime.add(duration ?? 0, 'minutes');
     const payload: AppointmentPayload = {
       appointmentKind: normalizeAppointmentKind(selectedAppointmentType),
@@ -1194,7 +1221,7 @@ const AppointmentsForm: React.FC<
             </section>
           ) : null}
 
-          {context !== 'creating' ? (
+          {context !== 'creating' && canEditAppointmentStartDate ? (
             <section className={styles.formGroup}>
               <span className={styles.heading}>{t('recurringAppointment', 'Recurring Appointment')}</span>
               <Toggle
@@ -1210,7 +1237,7 @@ const AppointmentsForm: React.FC<
           <section className={styles.formGroup}>
             <span className={styles.heading}>{t('dateTime', 'Date & Time')}</span>
             <div className={styles.dateTimeFields}>
-              {isRecurringAppointment && (
+              {canEditAppointmentStartDate && isRecurringAppointment && (
                 <div className={styles.inputContainer}>
                   {allowAllDayAppointments && (
                     <Toggle
@@ -1227,37 +1254,48 @@ const AppointmentsForm: React.FC<
                       name="appointmentDateTime"
                       control={control}
                       render={({ field: { onChange, value } }) => (
-                        <ResponsiveWrapper>
-                          <DatePicker
-                            datePickerType="range"
-                            dateFormat={datePickerFormat}
-                            value={[value.startDate, value.recurringPatternEndDate]}
-                            onChange={([startDate, endDate]) => {
+                        <div className={styles.recurringDateRange}>
+                          <OpenmrsDatePicker
+                            value={value.startDate}
+                            onChange={(startDate) => {
+                              if (!startDate) {
+                                return;
+                              }
+                              const effectiveStartDate = resolveEffectiveAppointmentStartDate(startDate, {
+                                canEditStartDate: canEditAppointmentStartDate,
+                                context: appointmentFormContext,
+                                originalStartDate,
+                              });
                               onChange({
-                                startDate: new Date(startDate),
-                                recurringPatternEndDate: new Date(endDate),
-                                recurringPatternEndDateText: dayjs(new Date(endDate)).format(dateFormat),
-                                startDateText: dayjs(new Date(startDate)).format(dateFormat),
+                                ...value,
+                                startDate: effectiveStartDate,
+                                startDateText: dayjs(effectiveStartDate).format(dateFormat),
                               });
                             }}
-                          >
-                            <DatePickerInput
-                              id="startDatePickerInput"
-                              invalid={Boolean(errors.appointmentDateTime?.startDate?.message)}
-                              invalidText={errors.appointmentDateTime?.startDate?.message}
-                              labelText={t('startDate', 'Start date')}
-                              style={{ width: '100%' }}
-                            />
-                            <DatePickerInput
-                              id="endDatePickerInput"
-                              invalid={Boolean(errors.appointmentDateTime?.recurringPatternEndDate?.message)}
-                              invalidText={errors.appointmentDateTime?.recurringPatternEndDate?.message}
-                              labelText={t('endDate', 'End date')}
-                              style={{ width: '100%' }}
-                              placeholder={datePickerPlaceHolder}
-                            />
-                          </DatePicker>
-                        </ResponsiveWrapper>
+                            id="startDatePickerInput"
+                            isReadOnly={!canEditAppointmentStartDate}
+                            labelText={t('startDate', 'Start date')}
+                            minDate={context === 'creating' ? dayjs().startOf('day').toDate() : undefined}
+                            invalid={Boolean(errors.appointmentDateTime?.startDate?.message)}
+                            invalidText={errors.appointmentDateTime?.startDate?.message}
+                          />
+                          <OpenmrsDatePicker
+                            value={value.recurringPatternEndDate}
+                            onChange={(endDate) => {
+                              onChange({
+                                ...value,
+                                recurringPatternEndDate: endDate ?? null,
+                                recurringPatternEndDateText: endDate ? dayjs(endDate).format(dateFormat) : '',
+                              });
+                            }}
+                            id="endDatePickerInput"
+                            labelText={t('endDate', 'End date')}
+                            minDate={value.startDate}
+                            maxDate={dayjs(value.startDate).add(MAX_RECURRING_APPOINTMENT_HORIZON_DAYS, 'day').toDate()}
+                            invalid={Boolean(errors.appointmentDateTime?.recurringPatternEndDate?.message)}
+                            invalidText={errors.appointmentDateTime?.recurringPatternEndDate?.message}
+                          />
+                        </div>
                       )}
                     />
                   </ResponsiveWrapper>
@@ -1409,7 +1447,7 @@ const AppointmentsForm: React.FC<
                 <Workload
                   appointmentDate={watch('appointmentDateTime').startDate}
                   minDate={context === 'creating' ? dayjs().startOf('day').toDate() : undefined}
-                  onWorkloadDateChange={handleWorkloadDateChange}
+                  onWorkloadDateChange={canEditAppointmentStartDate ? handleWorkloadDateChange : undefined}
                   serviceUuid={selectedService.uuid}
                 />
               </ResponsiveWrapper>

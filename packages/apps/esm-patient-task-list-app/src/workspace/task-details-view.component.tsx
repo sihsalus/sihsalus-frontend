@@ -16,6 +16,7 @@ import {
 } from './task-list.resource';
 
 export interface TaskDetailsViewProps {
+  canEdit?: boolean;
   patientUuid: string;
   taskUuid: string;
   onBack: () => void;
@@ -28,14 +29,20 @@ export interface DueDateDisplay {
   schedulingInfo?: string;
 }
 
-const TaskDetailsView: React.FC<TaskDetailsViewProps> = ({ patientUuid, taskUuid, onBack, onEdit }) => {
+const TaskDetailsView: React.FC<TaskDetailsViewProps> = ({
+  canEdit = false,
+  patientUuid,
+  taskUuid,
+  onBack,
+  onEdit,
+}) => {
   const { t } = useTranslation();
   const { task, isLoading, error, mutate } = useTask(taskUuid);
   const { mutate: mutateList } = useSWRConfig();
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleDelete = useCallback(() => {
-    if (!task) {
+    if (!canEdit || !task) {
       return;
     }
 
@@ -45,11 +52,11 @@ const TaskDetailsView: React.FC<TaskDetailsViewProps> = ({ patientUuid, taskUuid
       patientUuid,
       onDeleted: onBack,
     });
-  }, [task, patientUuid, onBack]);
+  }, [canEdit, task, patientUuid, onBack]);
 
   const handleToggleCompletion = useCallback(
     async (completed: boolean) => {
-      if (!task) {
+      if (!canEdit || !task) {
         return;
       }
 
@@ -73,7 +80,7 @@ const TaskDetailsView: React.FC<TaskDetailsViewProps> = ({ patientUuid, taskUuid
         setIsUpdating(false);
       }
     },
-    [task, patientUuid, mutate, mutateList, t],
+    [canEdit, task, patientUuid, mutate, mutateList, t],
   );
 
   const dueDateDisplay: DueDateDisplay = useMemo(() => {
@@ -137,7 +144,7 @@ const TaskDetailsView: React.FC<TaskDetailsViewProps> = ({ patientUuid, taskUuid
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
             <h5 className={styles.sectionTitle}>{t('task', 'Task')}</h5>
-            {onEdit && (
+            {canEdit && onEdit && (
               <Button
                 kind="ghost"
                 size="sm"
@@ -191,20 +198,22 @@ const TaskDetailsView: React.FC<TaskDetailsViewProps> = ({ patientUuid, taskUuid
           </div>
         )}
       </Layer>
-      <ButtonSet className={styles.actionButtons}>
-        <Button kind="danger--tertiary" onClick={handleDelete}>
-          {t('deleteTask', 'Delete task')}
-        </Button>
-        {!task.completed ? (
-          <Button kind="secondary" onClick={() => handleToggleCompletion(true)} disabled={isUpdating}>
-            {t('markComplete', 'Mark complete')}
+      {canEdit && (
+        <ButtonSet className={styles.actionButtons}>
+          <Button kind="danger--tertiary" onClick={handleDelete}>
+            {t('deleteTask', 'Delete task')}
           </Button>
-        ) : (
-          <Button kind="tertiary" onClick={() => handleToggleCompletion(false)} disabled={isUpdating}>
-            {t('markIncomplete', 'Mark incomplete')}
-          </Button>
-        )}
-      </ButtonSet>
+          {!task.completed ? (
+            <Button kind="secondary" onClick={() => handleToggleCompletion(true)} disabled={isUpdating}>
+              {t('markComplete', 'Mark complete')}
+            </Button>
+          ) : (
+            <Button kind="tertiary" onClick={() => handleToggleCompletion(false)} disabled={isUpdating}>
+              {t('markIncomplete', 'Mark incomplete')}
+            </Button>
+          )}
+        </ButtonSet>
+      )}
     </div>
   );
 };

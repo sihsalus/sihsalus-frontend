@@ -8,7 +8,7 @@ import styles from './workload.scss';
 interface WorkloadProps {
   appointmentDate: Date;
   minDate?: Date;
-  onWorkloadDateChange: (pickedDate: Date) => void;
+  onWorkloadDateChange?: (pickedDate: Date) => void;
   serviceUuid: string;
 }
 
@@ -21,7 +21,7 @@ const Workload: React.FC<WorkloadProps> = ({ serviceUuid, appointmentDate, minDa
 
   const monthlyCalendarWorkload = useMonthlyCalendarDistribution(serviceUuid, 'month', displayedMonth);
 
-  const handleDateClick = (pickedDate: Date) => onWorkloadDateChange(pickedDate);
+  const handleDateClick = onWorkloadDateChange ? (pickedDate: Date) => onWorkloadDateChange(pickedDate) : undefined;
 
   return (
     <div className={styles.workLoadContainer}>

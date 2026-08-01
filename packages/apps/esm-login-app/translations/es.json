@@ -15,6 +15,7 @@
   "errorChangingPassword": "Error al cambiar la contraseña",
   "footerlogo": "Logo del pie de página",
   "forgotPassword": "¿Olvidaste tu contraseña?",
+  "frontendCommit": "Commit: {{sha}}",
   "frontendVersion": "v{{version}}",
   "invalidCredentials": "Nombre de usuario o contraseña inválidos",
   "learnMore": "Más información",

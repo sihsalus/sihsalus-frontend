@@ -1,17 +1,13 @@
-import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { type FetchResponse, openmrsFetch, restBaseUrl, useSession } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { useLocation } from 'react-router-dom';
-
+import { patientListsEditPrivilege } from '../constants';
 import ListsDashboard from './lists-dashboard.component';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockUseLocation = vi.mocked(useLocation);
-
-vi.mock('@sihsalus/esm-rbac', async () => ({
-  RequirePrivilege: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
+const mockUseSession = vi.mocked(useSession);
 
 vi.mock('react-router-dom', async () => ({
   ...(await vi.importActual('react-router-dom')),
@@ -20,6 +16,9 @@ vi.mock('react-router-dom', async () => ({
 
 describe('ListsDashboard', () => {
   beforeEach(() => {
+    mockUseSession.mockReturnValue({
+      user: { privileges: [{ display: patientListsEditPrivilege }] },
+    } as ReturnType<typeof useSession>);
     mockUseLocation.mockReturnValue({
       pathname: '/',
       search: '',
@@ -126,5 +125,14 @@ describe('ListsDashboard', () => {
     await user.click(systemListsTab);
 
     expect(systemListsTab).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('keeps lists readable but hides creation from users without the edit privilege', async () => {
+    mockUseSession.mockReturnValue({ user: { privileges: [] } } as ReturnType<typeof useSession>);
+
+    render(<ListsDashboard />);
+
+    expect(await screen.findByRole('tablist', { name: /list tabs/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /new list/i })).not.toBeInTheDocument();
   });
 });

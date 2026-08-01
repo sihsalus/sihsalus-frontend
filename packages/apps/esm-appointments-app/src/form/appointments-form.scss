@@ -99,6 +99,13 @@ $openmrs-background-grey: #ededed;
   max-width: 100%;
 }
 
+.recurringDateRange {
+  display: flex;
+  flex-flow: row wrap;
+  gap: layout.$spacing-05;
+  width: 100%;
+}
+
 :global(.omrs-breakpoint-gt-tablet) .dateTimeFields {
   max-width: 32.25rem;
 }

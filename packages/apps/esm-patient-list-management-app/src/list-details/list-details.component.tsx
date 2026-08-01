@@ -8,6 +8,8 @@ import {
   navigate,
   parseDate,
   showSnackbar,
+  userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { useCallback, useMemo, useState } from 'react';
@@ -16,6 +18,7 @@ import { useParams } from 'react-router-dom';
 
 import { deletePatientList } from '../api/api-remote';
 import { usePatientListDetails, usePatientListMembers } from '../api/hooks';
+import { patientListsEditPrivilege } from '../constants';
 import ListDetailsTable from '../list-details-table/list-details-table.component';
 
 import styles from './list-details.scss';
@@ -33,6 +36,8 @@ interface ListDetailsRow {
 const ListDetails = () => {
   const { t } = useTranslation();
   const params = useParams();
+  const session = useSession();
+  const canEditPatientLists = userHasAccess(patientListsEditPrivilege, session?.user);
   const patientListUuid = params.patientListUuid;
   const [currentPage, setPageCount] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(10);
@@ -98,18 +103,29 @@ const ListDetails = () => {
   );
 
   const handleDelete = useCallback(() => {
+    if (!canEditPatientLists) {
+      return;
+    }
     setShowDeleteConfirmationModal(true);
-  }, []);
+  }, [canEditPatientLists]);
 
   const handleEdit = useCallback(() => {
+    if (!canEditPatientLists) {
+      return;
+    }
     launchWorkspace2('patient-list-form-workspace', {
       isEditing: true,
       patientListDetails: listDetails,
       onSuccess: mutateListDetails,
     });
-  }, [listDetails, mutateListDetails]);
+  }, [canEditPatientLists, listDetails, mutateListDetails]);
 
   const confirmDeletePatientList = useCallback(() => {
+    if (!canEditPatientLists) {
+      setShowDeleteConfirmationModal(false);
+      return;
+    }
+
     deletePatientList(patientListUuid)
       .then(() => {
         showSnackbar({
@@ -129,7 +145,7 @@ const ListDetails = () => {
         }),
       )
       .finally(() => setShowDeleteConfirmationModal(false));
-  }, [patientListUuid, listDetails, t]);
+  }, [canEditPatientLists, patientListUuid, listDetails, t]);
 
   return (
     <main className={styles.container}>
@@ -143,32 +159,35 @@ const ListDetails = () => {
             {listDetails?.startDate ? formatDate(parseDate(listDetails.startDate)) : null}
           </div>
         </div>
-        <div className={styles.overflowMenu}>
-          <CustomOverflowMenu
-            menuTitle={
-              <>
-                <span className={styles.actionsButtonText}>{t('actions', 'Actions')}</span>{' '}
-                <OverflowMenuVertical size={16} style={{ marginLeft: '0.5rem' }} />
-              </>
-            }
-          >
-            <CustomOverflowMenuItem
-              className={styles.menuItem}
-              itemText={t('editNameDescription', 'Edit name or description')}
-              onClick={handleEdit}
-            />
-            <CustomOverflowMenuItem
-              className={styles.menuItem}
-              itemText={t('deletePatientList', 'Delete patient list')}
-              onClick={handleDelete}
-              isDelete
-            />
-          </CustomOverflowMenu>
-        </div>
+        {canEditPatientLists && (
+          <div className={styles.overflowMenu}>
+            <CustomOverflowMenu
+              menuTitle={
+                <>
+                  <span className={styles.actionsButtonText}>{t('actions', 'Actions')}</span>{' '}
+                  <OverflowMenuVertical size={16} style={{ marginLeft: '0.5rem' }} />
+                </>
+              }
+            >
+              <CustomOverflowMenuItem
+                className={styles.menuItem}
+                itemText={t('editNameDescription', 'Edit name or description')}
+                onClick={handleEdit}
+              />
+              <CustomOverflowMenuItem
+                className={styles.menuItem}
+                itemText={t('deletePatientList', 'Delete patient list')}
+                onClick={handleDelete}
+                isDelete
+              />
+            </CustomOverflowMenu>
+          </div>
+        )}
       </section>
       <section>
         <div className={styles.tableContainer}>
           <ListDetailsTable
+            canEdit={canEditPatientLists}
             patients={patients}
             columns={headers}
             isLoading={isLoadingListMembers}
@@ -189,14 +208,14 @@ const ListDetails = () => {
             }}
           />
         </div>
-        {showDeleteConfirmationModal && (
+        {canEditPatientLists && showDeleteConfirmationModal && (
           <Modal
             className={styles.modal}
             open
             danger
             modalHeading={t('confirmDeletePatientList', 'Are you sure you want to delete this patient list?')}
-            primaryButtonText="Delete"
-            secondaryButtonText="Cancel"
+            primaryButtonText={t('deletePatientList', 'Delete patient list')}
+            secondaryButtonText={t('cancel', 'Cancel')}
             onRequestClose={() => setShowDeleteConfirmationModal(false)}
             onRequestSubmit={confirmDeletePatientList}
             primaryButtonDisabled={false}

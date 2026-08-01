@@ -12,6 +12,7 @@ import {
   setUserLanguage,
   setUserProperties,
   userHasAccess,
+  userHasAccessToRequiredPrivilege,
 } from './current-user';
 import type * as openmrsFetchExport from './openmrs-fetch';
 import { openmrsFetch } from './openmrs-fetch';
@@ -205,6 +206,34 @@ describe('userHasAccess', () => {
     const userWithNoPrivileges = { privileges: [], roles: [] };
     const result = userHasAccess('View Patients', userWithNoPrivileges);
     expect(result).toBe(false);
+  });
+});
+
+describe('userHasAccessToRequiredPrivilege', () => {
+  const privilege = (display: string): Privilege => ({ uuid: `${display}-uuid`, display, name: display });
+  const user = {
+    privileges: [privilege('Edit Encounters')],
+    roles: [],
+  };
+
+  it.each([
+    undefined,
+    null,
+    '',
+    '   ',
+    [] as Array<string>,
+    [''],
+  ])('fails closed when required privilege metadata is absent or empty: %j', (requiredPrivilege) => {
+    expect(userHasAccessToRequiredPrivilege(requiredPrivilege, user)).toBe(false);
+  });
+
+  it('grants access when a valid required privilege is assigned', () => {
+    expect(userHasAccessToRequiredPrivilege('Edit Encounters', user)).toBe(true);
+  });
+
+  it('denies access when the user is unavailable or lacks the valid privilege', () => {
+    expect(userHasAccessToRequiredPrivilege('Edit Encounters', undefined)).toBe(false);
+    expect(userHasAccessToRequiredPrivilege('Delete Encounters', user)).toBe(false);
   });
 });
 

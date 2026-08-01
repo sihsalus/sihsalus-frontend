@@ -1,8 +1,16 @@
-import { formatDatetime, getConfig, parseDate, showModal, userHasAccess } from '@openmrs/esm-framework';
+import {
+  formatDatetime,
+  getConfig,
+  parseDate,
+  showModal,
+  userHasAccessToRequiredPrivilege,
+  useSession,
+} from '@openmrs/esm-framework';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockEncounters, mockPatient, renderWithSwr } from 'test-utils';
 
+import { clinicalChartPrivilege, clinicalFormsEditPrivilege } from '../../../../constants';
 import VisitsTable from './visits-table.component';
 
 const defaultProps = {
@@ -13,7 +21,8 @@ const defaultProps = {
 
 const mockShowModal = vi.mocked(showModal);
 const mockGetConfig = getConfig as vi.Mock;
-const mockUserHasAccess = userHasAccess as vi.Mock;
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasRequiredPrivilege = vi.mocked(userHasAccessToRequiredPrivilege);
 const getProviderName = (provider: unknown) =>
   typeof provider === 'string'
     ? provider
@@ -21,7 +30,20 @@ const getProviderName = (provider: unknown) =>
       ? String(provider.name ?? '--')
       : '--';
 
+beforeEach(() => {
+  mockUseSession.mockReturnValue({
+    authenticated: true,
+    user: { uuid: 'user-uuid', privileges: [], roles: [] },
+  } as ReturnType<typeof useSession>);
+});
+
 describe('EncounterList', () => {
+  beforeEach(() => {
+    mockUserHasRequiredPrivilege.mockImplementation((requiredPrivilege) =>
+      ['edit', 'view', clinicalChartPrivilege].includes(String(requiredPrivilege)),
+    );
+  });
+
   it('renders an empty state when no encounters are available', async () => {
     mockGetConfig.mockResolvedValue({ htmlFormEntryForms: [] });
 
@@ -29,6 +51,15 @@ describe('EncounterList', () => {
 
     await screen.findByTitle(/empty data illustration/i);
     expect(screen.getByText(/there are no encounters to display for this patient/i)).toBeInTheDocument();
+  });
+
+  it('does not render clinical history while the authenticated user is unavailable', async () => {
+    mockUseSession.mockReturnValue({ authenticated: true } as ReturnType<typeof useSession>);
+
+    renderVisitsTable({ visits: mockEncounters });
+
+    await screen.findByTitle(/empty data illustration/i);
+    expect(screen.queryByText('POC Consent Form')).not.toBeInTheDocument();
   });
 
   it("renders a tabular overview of the patient's clinical encounters", async () => {
@@ -79,20 +110,73 @@ describe('EncounterList', () => {
     expect(screen.getByText(/no encounters to display/i)).toBeInTheDocument();
     expect(screen.getByText(/check the filters above/i)).toBeInTheDocument();
   });
+
+  it('does not disclose an encounter when its configured view privilege is missing', async () => {
+    renderVisitsTable({
+      visits: [
+        { ...mockEncounters[0], id: 'restricted', viewPrivilege: 'View Restricted Encounter' },
+        mockEncounters[1],
+      ],
+    });
+
+    await screen.findByRole('table');
+
+    expect(screen.queryByText('POC Consent Form')).not.toBeInTheDocument();
+    expect(screen.getByText('Visit Note')).toBeInTheDocument();
+  });
+
+  it('displays an encounter when the configured view privilege is valid for the user', async () => {
+    renderVisitsTable({ visits: [{ ...mockEncounters[0], viewPrivilege: 'view' }] });
+
+    await screen.findByRole('table');
+
+    expect(screen.getByText('POC Consent Form')).toBeInTheDocument();
+  });
 });
 
 describe('Delete Encounter', () => {
-  it('Clicking the `Delete` button deletes an encounter', async () => {
+  beforeEach(() => {
+    mockUserHasRequiredPrivilege.mockImplementation((requiredPrivilege) =>
+      ['edit', clinicalChartPrivilege].includes(String(requiredPrivilege)),
+    );
+  });
+
+  it('does not offer edit or delete actions when edit privilege metadata is absent', async () => {
     const user = userEvent.setup();
 
-    mockUserHasAccess.mockReturnValue(true);
+    renderVisitsTable({ visits: [{ ...mockEncounters[0], editPrivilege: undefined }] });
+
+    const row = await screen.findByRole('row', { name: /POC Consent Form/i });
+    await user.click(within(row).getByRole('button', { name: /expand current row/i }));
+
+    expect(screen.queryByRole('button', { name: /edit this encounter/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /delete this encounter/i })).not.toBeInTheDocument();
+  });
+
+  it('uses the explicit generic edit capability for legacy encounter types without metadata', async () => {
+    const user = userEvent.setup();
+    mockUserHasRequiredPrivilege.mockImplementation((requiredPrivilege) =>
+      [clinicalChartPrivilege, clinicalFormsEditPrivilege].includes(String(requiredPrivilege)),
+    );
+
+    renderVisitsTable({ visits: [{ ...mockEncounters[0], editPrivilege: undefined }] });
+
+    const row = await screen.findByRole('row', { name: /POC Consent Form/i });
+    await user.click(within(row).getByRole('button', { name: /expand current row/i }));
+
+    expect(screen.getByRole('button', { name: /edit this encounter/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /delete this encounter/i })).toBeInTheDocument();
+  });
+
+  it('Clicking the `Delete` button deletes an encounter', async () => {
+    const user = userEvent.setup();
 
     renderVisitsTable({ visits: mockEncounters });
 
     await screen.findByRole('table');
     expect(screen.getByRole('table')).toBeInTheDocument();
 
-    const firstEncounter = mockEncounters[0];
+    const firstEncounter = mockEncounters[2];
     const row = screen.getByRole('row', {
       name: new RegExp(
         `${formatDatetime(parseDate(firstEncounter.datetime))} ${firstEncounter.visitType} ${
@@ -109,7 +193,7 @@ describe('Delete Encounter', () => {
     expect(mockShowModal).toHaveBeenCalledWith(
       'delete-encounter-modal',
       expect.objectContaining({
-        encounterTypeName: 'POC Consent Form',
+        encounterTypeName: 'Covid 19',
       }),
     );
   });

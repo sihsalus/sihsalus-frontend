@@ -2,8 +2,31 @@
 import dayjs from 'dayjs';
 import { parseDateInput } from './dates/date-util';
 import { getLocale } from './get-locale';
+import { type CalendarDateParts, compareCalendarDates, getDaysInCalendarMonth } from './patient-demographics';
 
 export type ExactAgeDuration = Required<Pick<Intl.DurationInput, 'years' | 'months' | 'days'>>;
+
+function toCalendarDate(value: dayjs.Dayjs): CalendarDateParts {
+  return { year: value.year(), month: value.month() + 1, day: value.date() };
+}
+
+function addCalendarMonths(date: CalendarDateParts, months: number): CalendarDateParts {
+  const monthIndex = date.year * 12 + date.month - 1 + months;
+  const year = Math.floor(monthIndex / 12);
+  const month = (((monthIndex % 12) + 12) % 12) + 1;
+
+  return {
+    year,
+    month,
+    day: Math.min(date.day, getDaysInCalendarMonth(year, month)),
+  };
+}
+
+function differenceInCalendarDays(from: CalendarDateParts, to: CalendarDateParts): number {
+  const fromDay = Date.UTC(from.year, from.month - 1, from.day);
+  const toDay = Date.UTC(to.year, to.month - 1, to.day);
+  return Math.floor((toDay - fromDay) / 86_400_000);
+}
 
 /**
  * Calculates a calendar age with years, months and days. All three units are
@@ -20,16 +43,27 @@ export function exactAgeAsDuration(
     return null;
   }
 
-  const from = parsedBirthDate.startOf('day');
-  if (from.isAfter(to)) {
+  const from = toCalendarDate(parsedBirthDate.startOf('day'));
+  const until = toCalendarDate(to);
+  if (compareCalendarDates(from, until) > 0) {
     return null;
   }
 
-  const years = to.diff(from, 'year');
-  const afterYears = from.add(years, 'year');
-  const months = to.diff(afterYears, 'month');
-  const afterMonths = afterYears.add(months, 'month');
-  const days = to.diff(afterMonths, 'day');
+  let years = until.year - from.year;
+  let afterYears = addCalendarMonths(from, years * 12);
+  if (compareCalendarDates(afterYears, until) > 0) {
+    years -= 1;
+    afterYears = addCalendarMonths(from, years * 12);
+  }
+
+  let months = (until.year - afterYears.year) * 12 + until.month - afterYears.month;
+  let afterMonths = addCalendarMonths(afterYears, months);
+  if (compareCalendarDates(afterMonths, until) > 0) {
+    months -= 1;
+    afterMonths = addCalendarMonths(afterYears, months);
+  }
+
+  const days = differenceInCalendarDays(afterMonths, until);
 
   return { years, months, days };
 }

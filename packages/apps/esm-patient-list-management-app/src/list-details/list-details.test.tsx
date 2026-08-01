@@ -1,15 +1,18 @@
+import { useSession } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { deletePatientList } from '../api/api-remote';
 import { usePatientListDetails, usePatientListMembers } from '../api/hooks';
 import type { OpenmrsCohort, OpenmrsCohortMember } from '../api/types';
+import { patientListsEditPrivilege } from '../constants';
 
 import ListDetails from './list-details.component';
 
 const mockUsePatientListDetails = vi.mocked(usePatientListDetails);
 const mockUsePatientListMembers = vi.mocked(usePatientListMembers);
 const mockDeletePatientList = vi.mocked(deletePatientList);
+const mockUseSession = vi.mocked(useSession);
 
 vi.mock('../api/hooks', () => ({
   usePatientListDetails: vi.fn(),
@@ -52,6 +55,9 @@ const mockPatientListMembers = [
 
 describe('ListDetails', () => {
   beforeEach(() => {
+    mockUseSession.mockReturnValue({
+      user: { privileges: [{ display: patientListsEditPrivilege }] },
+    } as ReturnType<typeof useSession>);
     mockUsePatientListDetails.mockReturnValue({
       listDetails: mockPatientListDetails,
       error: null,
@@ -118,5 +124,14 @@ describe('ListDetails', () => {
     expect(screen.getByText('Delete').closest('button')).toBeEnabled();
 
     await userEvent.click(screen.getByText('Cancel'));
+  });
+
+  it('hides all list mutation actions without the edit privilege', () => {
+    mockUseSession.mockReturnValue({ user: { privileges: [] } } as ReturnType<typeof useSession>);
+
+    render(<ListDetails />);
+
+    expect(screen.queryByRole('button', { name: /actions/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /remove from list/i })).not.toBeInTheDocument();
   });
 });

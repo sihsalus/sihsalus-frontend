@@ -17,13 +17,14 @@ import {
   syncDynamicOfflineData,
   useConnectivity,
   useLayoutType,
-  userHasAccess,
+  userHasAccessToRequiredPrivilege,
   useSession,
 } from '@openmrs/esm-framework';
 import { EmptyState } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { getRequiredFormEditPrivilege } from '../hooks/use-form-access';
 import { type Form } from '../types';
 
 import {
@@ -50,7 +51,7 @@ const OfflineForms: React.FC<OfflineFormsProps> = () => {
 
   const rows = useMemo(() => {
     const filteredForms = forms?.data?.filter((formInfo) =>
-      userHasAccess(formInfo?.encounterType?.editPrivilege?.display, session?.user),
+      userHasAccessToRequiredPrivilege(getRequiredFormEditPrivilege(formInfo), session?.user),
     );
 
     const sortedForms = filteredForms
@@ -113,21 +114,27 @@ const OfflineForms: React.FC<OfflineFormsProps> = () => {
               <Table {...getTableProps()} isSortable useZebraStyles>
                 <TableHead>
                   <TableRow>
-                    {headers.map((header) => (
-                      <TableHeader key={header.key} {...getHeaderProps({ header })} isSortable>
-                        {header.header}
-                      </TableHeader>
-                    ))}
+                    {headers.map((header) => {
+                      const { key, ...headerProps } = getHeaderProps({ header });
+                      return (
+                        <TableHeader key={key ?? header.key} {...headerProps} isSortable>
+                          {header.header}
+                        </TableHeader>
+                      );
+                    })}
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rows.map((row) => (
-                    <TableRow key={row.id} {...getRowProps({ row })}>
-                      {row.cells.map((cell) => (
-                        <TableCell key={cell.id}>{cell.value?.value ?? cell.value}</TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
+                  {rows.map((row) => {
+                    const { key, ...rowProps } = getRowProps({ row });
+                    return (
+                      <TableRow key={key ?? row.id} {...rowProps}>
+                        {row.cells.map((cell) => (
+                          <TableCell key={cell.id}>{cell.value?.value ?? cell.value}</TableCell>
+                        ))}
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>

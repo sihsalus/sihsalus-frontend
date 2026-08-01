@@ -1,4 +1,4 @@
-import { openmrsFetch, restBaseUrl, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, userHasAccessToRequiredPrivilege, useSession } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 
 const customFormRepresentation =
@@ -6,6 +6,7 @@ const customFormRepresentation =
 
 const formEncounterUrl = `${restBaseUrl}/form?v=custom:${customFormRepresentation}`;
 const formEncounterUrlPoc = `${restBaseUrl}/form?v=custom:${customFormRepresentation}&q=poc`;
+const clinicalFormsEditPrivilege = 'app:hoja.clinica.formulariosClinicos.editar';
 
 export function useGetAllForms(cachedOfflineFormsOnly = false) {
   const session = useSession();
@@ -28,7 +29,14 @@ export function useGetAllForms(cachedOfflineFormsOnly = false) {
   });
 
   return {
-    forms: data?.filter((form) => Boolean(userHasAccess(form.encounterType?.editPrivilege?.display, session?.user))),
+    forms: data?.filter((form) =>
+      userHasAccessToRequiredPrivilege(
+        form.encounterType?.editPrivilege?.display ??
+          form.encounterType?.editPrivilege?.name ??
+          clinicalFormsEditPrivilege,
+        session?.user,
+      ),
+    ),
     isLoading: !error && !data,
     error,
   };

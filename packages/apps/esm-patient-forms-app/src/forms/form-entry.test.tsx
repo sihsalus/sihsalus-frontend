@@ -1,6 +1,14 @@
-import { ExtensionSlot, useConfig, useConnectivity, usePatient, Workspace2 } from '@openmrs/esm-framework';
+import {
+  ExtensionSlot,
+  useConfig,
+  useConnectivity,
+  usePatient,
+  userHasAccessToRequiredPrivilege,
+  useSession,
+  Workspace2,
+} from '@openmrs/esm-framework';
 import { useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import { mockPatient } from 'test-utils';
@@ -16,6 +24,8 @@ const mockUsePatient = vi.mocked(usePatient);
 const mockWorkspace2 = vi.mocked(Workspace2);
 const mockUseConfig = vi.mocked(useConfig);
 const mockUseConnectivity = vi.mocked(useConnectivity);
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasRequiredPrivilege = vi.mocked(userHasAccessToRequiredPrivilege);
 const mockUseSWR = useSWR as vi.Mock;
 const mockUseSWRConfig = useSWRConfig as vi.Mock;
 type Workspace2MockProps = {
@@ -79,6 +89,7 @@ vi.mock('@openmrs/esm-framework', async () => ({
   usePatient: vi.fn(),
   useConfig: vi.fn(),
   useConnectivity: vi.fn(),
+  useSession: vi.fn(),
   openmrsFetch: vi.fn(),
 }));
 
@@ -95,11 +106,37 @@ describe('FormEntryWorkspace', () => {
     });
     mockUseConfig.mockReturnValue({ htmlFormEntryForms: [] });
     mockUseConnectivity.mockReturnValue(true);
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      user: { uuid: 'user-uuid', privileges: [], roles: [] },
+    } as ReturnType<typeof useSession>);
+    mockUserHasRequiredPrivilege.mockImplementation((requiredPrivilege) => requiredPrivilege === 'Edit Form');
     mockUseSWR.mockReturnValue({ data: undefined, isLoading: false });
     mockUseSWRConfig.mockReturnValue({ mutate: vi.fn() });
   });
 
   it('keeps the legacy formInfo path working for compatibility callers', async () => {
+    mockUseSWR.mockReturnValue({
+      data: {
+        data: {
+          uuid: 'some-form-uuid',
+          name: 'Legacy test form',
+          display: 'Legacy test form',
+          version: '1',
+          published: true,
+          retired: false,
+          resources: [],
+          encounterType: {
+            uuid: 'encounter-type-uuid',
+            name: 'Test encounter',
+            viewPrivilege: null,
+            editPrivilege: { uuid: 'edit-form', name: 'Edit Form', display: 'Edit Form' },
+          },
+        },
+      },
+      isLoading: false,
+    });
+
     render(
       <FormEntryWorkspace
         {...workspace2DefinitionProps}
@@ -170,6 +207,12 @@ describe('FormEntryWorkspace', () => {
               published: true,
               retired: false,
               resources: [],
+              encounterType: {
+                uuid: 'encounter-type-uuid',
+                name: 'Test encounter',
+                viewPrivilege: null,
+                editPrivilege: { uuid: 'edit-form', name: 'Edit Form', display: 'Edit Form' },
+              },
             },
             handleEncounterCreate,
           } as any
@@ -209,6 +252,12 @@ describe('FormEntryWorkspace', () => {
         published: true,
         retired: false,
         resources: [],
+        encounterType: {
+          uuid: 'encounter-type-uuid',
+          name: 'Test encounter',
+          viewPrivilege: null,
+          editPrivilege: { uuid: 'edit-form', name: 'Edit Form', display: 'Edit Form' },
+        },
       },
     } as any;
     const groupProps = {
@@ -261,5 +310,61 @@ describe('FormEntryWorkspace', () => {
     expect(nextState?.patientUuid).toBe(initialState?.patientUuid);
     expect(normalizeEncounterUuid(nextState?.encounterUuid)).toBe(normalizeEncounterUuid(initialState?.encounterUuid));
     expect(nextState?.additionalProps).toEqual(initialState?.additionalProps ?? {});
+  });
+
+  it('does not render a supplied form without valid edit privilege metadata', async () => {
+    render(
+      <FormEntryWorkspace
+        {...workspace2DefinitionProps}
+        closeWorkspace={vi.fn()}
+        groupProps={{
+          patientUuid: mockPatient.uuid,
+          patient: mockFhirPatient,
+          visitContext: mockCurrentVisit,
+          mutateVisitContext: vi.fn(),
+        }}
+        workspaceProps={
+          {
+            form: {
+              uuid: 'missing-privilege-form',
+              name: 'Missing privilege form',
+              display: 'Missing privilege form',
+              version: '1',
+              published: true,
+              retired: false,
+              resources: [],
+            },
+          } as never
+        }
+      />,
+    );
+
+    expect(await screen.findByText('Clinical form unavailable')).toBeInTheDocument();
+    expect(mockExtensionSlot).not.toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'form-widget-slot' }),
+      expect.anything(),
+    );
+  });
+
+  it('fails closed when a legacy form UUID cannot be resolved', async () => {
+    render(
+      <FormEntryWorkspace
+        {...workspace2DefinitionProps}
+        closeWorkspace={vi.fn()}
+        groupProps={{
+          patientUuid: mockPatient.uuid,
+          patient: mockFhirPatient,
+          visitContext: mockCurrentVisit,
+          mutateVisitContext: vi.fn(),
+        }}
+        workspaceProps={{ formInfo: { formUuid: 'unknown-form-uuid' } } as never}
+      />,
+    );
+
+    expect(await screen.findByText('Clinical form unavailable')).toBeInTheDocument();
+    expect(mockExtensionSlot).not.toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'form-widget-slot' }),
+      expect.anything(),
+    );
   });
 });

@@ -5,6 +5,8 @@
   "formName": "Nome do formulário (A-Z)",
   "forms": "Formulários",
   "formSearchHint": "Tente pesquisar o formulário usando um nome alternativo ou uma palavra-chave",
+  "formUnavailable": "Formulário clínico indisponível",
+  "formUnavailableDescription": "O formulário não possui um privilégio de edição válido ou você não tem autorização para usá-lo.",
   "homeOverviewCardView": "Exibir",
   "lastCompleted": "Último preenchimento",
   "never": "Nunca",

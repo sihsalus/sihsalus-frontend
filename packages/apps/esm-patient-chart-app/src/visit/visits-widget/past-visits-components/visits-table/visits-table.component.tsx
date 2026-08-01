@@ -34,7 +34,7 @@ import {
   TrashCanIcon,
   useLayoutType,
   usePagination,
-  userHasAccess,
+  userHasAccessToRequiredPrivilege,
   useSession,
 } from '@openmrs/esm-framework';
 import {
@@ -46,6 +46,7 @@ import {
 import React, { type ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { clinicalChartPrivilege, clinicalFormsEditPrivilege } from '../../../../constants';
 import EncounterObservations from '../../encounter-observations';
 import { type MappedEncounter } from '../../visit.resource';
 
@@ -87,7 +88,17 @@ const VisitTable: React.FC<VisitTableProps> = ({ showAllEncounters, visits, pati
     });
   }, []);
 
-  const encounterTypes = [...new Set(visits.map((encounter) => encounter.encounterType))].sort((a, b) =>
+  const viewableVisits = useMemo(() => {
+    if (!session?.user) {
+      return [];
+    }
+
+    return visits.filter((encounter) =>
+      userHasAccessToRequiredPrivilege(encounter.viewPrivilege ?? clinicalChartPrivilege, session.user),
+    );
+  }, [session?.user, visits]);
+
+  const encounterTypes = [...new Set(viewableVisits.map((encounter) => encounter.encounterType))].sort((a, b) =>
     a.localeCompare(b),
   );
 
@@ -95,11 +106,11 @@ const VisitTable: React.FC<VisitTableProps> = ({ showAllEncounters, visits, pati
 
   const filteredRows = useMemo(() => {
     if (!filter || filter === 'All') {
-      return visits;
+      return viewableVisits;
     }
 
-    return visits?.filter((encounter) => encounter.encounterType === filter);
-  }, [filter, visits]);
+    return viewableVisits.filter((encounter) => encounter.encounterType === filter);
+  }, [filter, viewableVisits]);
 
   const { results: paginatedVisits, goTo, currentPage } = usePagination(filteredRows ?? [], visitCount);
 
@@ -194,7 +205,7 @@ const VisitTable: React.FC<VisitTableProps> = ({ showAllEncounters, visits, pati
     [],
   );
 
-  if (!visits?.length) {
+  if (!viewableVisits.length) {
     return (
       <div className={styles.container}>
         <EmptyState headerTitle={t('encounters', 'Encounters')} displayText={t('encounters__lower', 'encounters')} />
@@ -263,7 +274,11 @@ const VisitTable: React.FC<VisitTableProps> = ({ showAllEncounters, visits, pati
                 </TableHead>
                 <TableBody>
                   {rows.map((row) => {
-                    const selectedVisit = visits.find((visit) => visit.id === row.id);
+                    const selectedVisit = viewableVisits.find((visit) => visit.id === row.id);
+                    const canEditSelectedVisit = userHasAccessToRequiredPrivilege(
+                      selectedVisit?.editPrivilege ?? clinicalFormsEditPrivilege,
+                      session?.user,
+                    );
 
                     return (
                       <React.Fragment key={row.id}>
@@ -288,27 +303,26 @@ const VisitTable: React.FC<VisitTableProps> = ({ showAllEncounters, visits, pati
                                         className={styles.menuItem}
                                         itemText={t('goToThisEncounter', 'Go to this encounter')}
                                       />
-                                      {userHasAccess(selectedVisit?.editPrivilege, session?.user) &&
-                                        selectedVisit?.form?.uuid && (
-                                          <OverflowMenuItem
-                                            className={styles.menuItem}
-                                            itemText={t('editThisEncounter', 'Edit this encounter')}
-                                            onClick={() => {
-                                              launchFormEntryOrHtmlForms(
-                                                htmlFormEntryFormsConfig,
-                                                patientUuid,
-                                                selectedVisit?.form?.uuid,
-                                                selectedVisit?.visitUuid,
-                                                selectedVisit?.id,
-                                                selectedVisit?.form?.display,
-                                                selectedVisit?.visitTypeUuid,
-                                                selectedVisit?.visitStartDatetime,
-                                                selectedVisit?.visitStopDatetime,
-                                              );
-                                            }}
-                                          />
-                                        )}
-                                      {userHasAccess(selectedVisit?.editPrivilege, session?.user) && (
+                                      {canEditSelectedVisit && selectedVisit?.form?.uuid && (
+                                        <OverflowMenuItem
+                                          className={styles.menuItem}
+                                          itemText={t('editThisEncounter', 'Edit this encounter')}
+                                          onClick={() => {
+                                            launchFormEntryOrHtmlForms(
+                                              htmlFormEntryFormsConfig,
+                                              patientUuid,
+                                              selectedVisit?.form?.uuid,
+                                              selectedVisit?.visitUuid,
+                                              selectedVisit?.id,
+                                              selectedVisit?.form?.display,
+                                              selectedVisit?.visitTypeUuid,
+                                              selectedVisit?.visitStartDatetime,
+                                              selectedVisit?.visitStopDatetime,
+                                            );
+                                          }}
+                                        />
+                                      )}
+                                      {canEditSelectedVisit && (
                                         <OverflowMenuItem
                                           className={styles.menuItem}
                                           itemText={t('deleteThisEncounter', 'Delete this encounter')}
@@ -330,7 +344,7 @@ const VisitTable: React.FC<VisitTableProps> = ({ showAllEncounters, visits, pati
                           <TableExpandedRow className={styles.expandedRow} colSpan={headers.length + 2}>
                             <>
                               <EncounterObservations observations={selectedVisit?.obs} />
-                              {userHasAccess(selectedVisit?.editPrivilege, session?.user) && (
+                              {canEditSelectedVisit && (
                                 <>
                                   {selectedVisit?.form?.uuid && (
                                     <Button

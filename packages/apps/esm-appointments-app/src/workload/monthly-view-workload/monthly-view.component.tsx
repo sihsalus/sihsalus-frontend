@@ -133,13 +133,11 @@ const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
           const isSelected = date.isSame(selectedDate, 'day');
           const isToday = date.isSame(dayjs(), 'day');
           const isBeforeMinimum = Boolean(minimumDate && date.isBefore(minimumDate, 'day'));
-          const isDisabled = !isInDisplayedMonth || isBeforeMinimum;
+          const isDisabled = !isInDisplayedMonth || isBeforeMinimum || !onDateClick;
           const formattedDate = fullDateFormatter.format(date.toDate());
-          const appointmentCountLabel = t(
-            'appointmentCountForDate',
-            '{{count}} scheduled appointment',
-            { count: appointmentCount },
-          );
+          const appointmentCountLabel = t('appointmentCountForDate', '{{count}} scheduled appointment', {
+            count: appointmentCount,
+          });
 
           return (
             <div className={styles.dayCell} key={dateKey} role="gridcell" aria-selected={isSelected}>
@@ -173,7 +171,9 @@ const MonthlyCalendarView: React.FC<MonthlyCalendarViewProps> = ({
       </div>
 
       <footer className={styles.calendarFooter}>
-        <span aria-hidden="true" className={styles.countExample}>0</span>
+        <span aria-hidden="true" className={styles.countExample}>
+          0
+        </span>
         <span>{t('calendarAppointmentCountLegend', 'Number of scheduled appointments')}</span>
       </footer>
     </section>

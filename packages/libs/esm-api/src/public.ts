@@ -12,6 +12,7 @@ export {
   setUserProperties,
   type UnloadedSessionStore,
   userHasAccess,
+  userHasAccessToRequiredPrivilege,
 } from './current-user';
 export * from './environment';
 export * from './openmrs-backend-dependencies';

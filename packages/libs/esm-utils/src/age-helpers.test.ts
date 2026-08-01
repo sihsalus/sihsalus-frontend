@@ -65,6 +65,10 @@ describe('Age Helper', () => {
     expect(exactAgeAsDuration('1951-08-24', now)).toEqual({ years: 72, months: 11, days: 6 });
   });
 
+  it('calculates calendar days independently of historical timezone offset changes', () => {
+    expect(exactAgeAsDuration('1990-01-01', '2026-07-15')).toEqual({ years: 36, months: 6, days: 14 });
+  });
+
   it('returns null when the birth date is after the reference date', () => {
     expect(age('2024-07-31', now)).toBeNull();
   });

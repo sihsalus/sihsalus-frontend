@@ -3,7 +3,7 @@ import {
   openmrsFetch,
   restBaseUrl,
   useConfig,
-  userHasAccess,
+  userHasAccessToRequiredPrivilege,
   useSession,
 } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
@@ -18,6 +18,7 @@ import {
 } from '../constants';
 import { getDynamicFormDataEntriesFor, isValidOfflineFormEncounter } from '../offline-forms/offline-form-helpers';
 import type { CompletedFormInfo, EncounterWithFormRef, Form, ListResponse } from '../types';
+import { getRequiredFormEditPrivilege, getRequiredFormViewPrivilege } from './use-form-access';
 
 function useCustomFormsUrl(patientUuid: string, visitUuid: string) {
   const { customFormsUrl, showHtmlFormEntryForms } = useConfig<ConfigObject>();
@@ -97,11 +98,24 @@ export function useForms(
     ? data?.filter((formInfo) => isValidOfflineFormEncounter(formInfo.form, htmlFormEntryForms))
     : data;
 
-  if (session?.user) {
-    formsToDisplay = formsToDisplay?.filter((formInfo) =>
-      userHasAccess(formInfo?.form?.encounterType?.editPrivilege?.display, session.user),
+  formsToDisplay = formsToDisplay?.filter((formInfo) =>
+    userHasAccessToRequiredPrivilege(getRequiredFormEditPrivilege(formInfo.form), session?.user),
+  );
+
+  formsToDisplay = formsToDisplay?.map((formInfo) => {
+    const canViewPreviousEncounters = userHasAccessToRequiredPrivilege(
+      getRequiredFormViewPrivilege(formInfo.form),
+      session?.user,
     );
-  }
+
+    return canViewPreviousEncounters
+      ? formInfo
+      : {
+          ...formInfo,
+          associatedEncounters: [],
+          lastCompletedDate: undefined,
+        };
+  });
 
   if (orderBy === 'name') {
     formsToDisplay?.sort((formInfo1, formInfo2) =>

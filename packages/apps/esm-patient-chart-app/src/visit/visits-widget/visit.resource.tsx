@@ -164,21 +164,27 @@ export function restoreVisit(visitUuid: string) {
 
 export function mapEncounters(visit: Visit): MappedEncounter[] {
   return (
-    visit?.encounters?.map((encounter) => ({
-      id: encounter?.uuid,
-      datetime: encounter?.encounterDatetime,
-      encounterType: encounter?.encounterType?.display,
-      editPrivilege: encounter?.encounterType?.editPrivilege?.display ?? '',
-      form: encounter?.form,
-      obs: (encounter?.obs as unknown as Array<Observation>) ?? [],
-      visitUuid: visit?.uuid,
-      visitType: visit?.visitType?.display,
-      visitTypeUuid: visit?.visitType?.uuid,
-      visitStartDatetime: visit?.startDatetime,
-      visitStopDatetime: visit?.stopDatetime,
-      provider:
-        encounter?.encounterProviders?.length > 0 ? encounter.encounterProviders[0].provider?.person?.display : '--',
-    })) ?? []
+    visit?.encounters?.map((encounter) => {
+      const viewPrivilege = encounter?.encounterType?.viewPrivilege;
+      const editPrivilege = encounter?.encounterType?.editPrivilege;
+
+      return {
+        id: encounter?.uuid,
+        datetime: encounter?.encounterDatetime,
+        encounterType: encounter?.encounterType?.display,
+        viewPrivilege: viewPrivilege ? (viewPrivilege.display ?? viewPrivilege.name ?? '') : undefined,
+        editPrivilege: editPrivilege ? (editPrivilege.display ?? editPrivilege.name ?? '') : undefined,
+        form: encounter?.form,
+        obs: (encounter?.obs as unknown as Array<Observation>) ?? [],
+        visitUuid: visit?.uuid,
+        visitType: visit?.visitType?.display,
+        visitTypeUuid: visit?.visitType?.uuid,
+        visitStartDatetime: visit?.startDatetime,
+        visitStopDatetime: visit?.stopDatetime,
+        provider:
+          encounter?.encounterProviders?.length > 0 ? encounter.encounterProviders[0].provider?.person?.display : '--',
+      };
+    }) ?? []
   );
 }
 
@@ -186,7 +192,8 @@ export interface MappedEncounter {
   id: string;
   datetime: string;
   encounterType: string;
-  editPrivilege: string;
+  viewPrivilege?: string;
+  editPrivilege?: string;
   form: OpenmrsResource;
   obs: Array<Observation>;
   provider: string;

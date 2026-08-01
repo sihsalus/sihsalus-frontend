@@ -7,6 +7,8 @@
   "formName": "Nombre de Formulario (A-Z)",
   "forms": "Formularios",
   "formSearchHint": "Intente buscar el formulario utilizando un nombre alternativo o palabra clave",
+  "formUnavailable": "Formulario clínico no disponible",
+  "formUnavailableDescription": "El formulario no tiene un privilegio de edición válido o usted no está autorizado para usarlo.",
   "homeOverviewCardView": "Ver",
   "lastCompleted": "Último completado",
   "never": "Nunca",

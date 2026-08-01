@@ -31,20 +31,23 @@
       "name": "add-patient-to-patient-list-button",
       "slot": "patient-actions-slot",
       "component": "addPatientToPatientListMenuItem",
+      "privileges": "app:home.listasPacientes.editar",
       "order": 5
     }
   ],
   "modals": [
     {
       "name": "add-patient-to-patient-list-modal",
-      "component": "addPatientToListModal"
+      "component": "addPatientToListModal",
+      "privileges": "app:home.listasPacientes.editar"
     }
   ],
   "workspaces2": [
     {
       "name": "patient-list-form-workspace",
       "component": "patientListFormWorkspace",
-      "window": "patient-list-form-window"
+      "window": "patient-list-form-window",
+      "privileges": "app:home.listasPacientes.editar"
     }
   ],
   "workspaceWindows2": [

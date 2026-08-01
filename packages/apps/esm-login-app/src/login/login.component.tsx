@@ -618,7 +618,14 @@ const Login: React.FC = () => {
               {buildInfo.version ? (
                 <p className={styles.frontendVersion}>
                   {t('frontendVersion', 'v{{version}}', { version: buildInfo.version })}
-                  {buildInfo.gitSha ? ` · ${buildInfo.gitSha}` : ''}
+                  {buildInfo.gitSha ? (
+                    <span title={t('frontendCommit', 'Commit: {{sha}}', { sha: buildInfo.gitSha })}>
+                      <span aria-hidden="true">{' · ' + buildInfo.gitSha.slice(0, 8)}</span>
+                      <span className={styles.srOnly}>
+                        {' · ' + t('frontendCommit', 'Commit: {{sha}}', { sha: buildInfo.gitSha })}
+                      </span>
+                    </span>
+                  ) : null}
                 </p>
               ) : null}
             </div>

@@ -33,3 +33,18 @@ export const userHasAccess = vi.fn(
     return required.every((privilege) => userPrivileges.includes(privilege));
   },
 );
+export const userHasAccessToRequiredPrivilege = vi.fn(
+  (
+    requiredPrivilege: string | Array<string> | null | undefined,
+    user?: { privileges?: Array<{ display?: string; name?: string }>; roles?: Array<{ display?: string }> } | null,
+  ) => {
+    const hasValidRequirement =
+      typeof requiredPrivilege === 'string'
+        ? requiredPrivilege.trim().length > 0
+        : Array.isArray(requiredPrivilege) &&
+          requiredPrivilege.length > 0 &&
+          requiredPrivilege.every((privilege) => typeof privilege === 'string' && privilege.trim().length > 0);
+
+    return hasValidRequirement && Boolean(user) && userHasAccess(requiredPrivilege, user);
+  },
+);

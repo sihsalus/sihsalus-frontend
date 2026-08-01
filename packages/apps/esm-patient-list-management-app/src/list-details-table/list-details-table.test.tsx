@@ -1,11 +1,22 @@
-import { render, screen } from '@testing-library/react';
+import { getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
+import { removePatientFromList } from '../api/api-remote';
 
 import ListDetailsTable from './list-details-table.component';
+
+const mockGetUserFacingErrorMessage = vi.mocked(getUserFacingErrorMessage);
+const mockRemovePatientFromList = vi.mocked(removePatientFromList);
+const mockShowSnackbar = vi.mocked(showSnackbar);
+
+vi.mock('../api/api-remote');
 
 describe('ListDetailsTable', () => {
   const patients = [
     {
       identifier: '123abced',
+      name: 'John Doe',
       firstName: 'John',
       lastName: 'Doe',
       age: 30,
@@ -15,6 +26,7 @@ describe('ListDetailsTable', () => {
     },
     {
       identifier: '123abcedfg',
+      name: 'Jane Smith',
       firstName: 'Jane',
       lastName: 'Smith',
       age: 25,
@@ -85,6 +97,40 @@ describe('ListDetailsTable', () => {
     );
 
     expect(screen.queryByRole('button', { name: /remove from list/i })).not.toBeInTheDocument();
+  });
+
+  it('does not expose backend details when removing a patient fails', async () => {
+    const backendError = new Error('org.hibernate.exception.ConstraintViolationException');
+    mockRemovePatientFromList.mockRejectedValueOnce(backendError);
+
+    render(
+      <ListDetailsTable
+        canEdit
+        patients={patients}
+        columns={columns}
+        pagination={pagination}
+        isLoading={false}
+        isFetching={false}
+        mutateListDetails={vi.fn()}
+        mutateListMembers={vi.fn()}
+      />,
+    );
+
+    await userEvent.click(screen.getAllByRole('button', { name: /remove from list/i })[0]);
+    const confirmationDialog = screen.getByRole('dialog');
+    await userEvent.click(within(confirmationDialog).getByRole('button', { name: /remove from list/i }));
+
+    await waitFor(() =>
+      expect(mockGetUserFacingErrorMessage).toHaveBeenCalledWith(
+        backendError,
+        'The patient could not be removed from the list. Please try again.',
+        { logContext: 'Remove patient from list' },
+      ),
+    );
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ subtitle: 'The patient could not be removed from the list. Please try again.' }),
+    );
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(expect.objectContaining({ subtitle: backendError.message }));
   });
 
   it('renders loading skeleton when loading', () => {

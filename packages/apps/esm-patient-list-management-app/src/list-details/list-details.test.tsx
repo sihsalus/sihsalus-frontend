@@ -1,5 +1,5 @@
-import { useSession } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { getUserFacingErrorMessage, showSnackbar, useSession } from '@openmrs/esm-framework';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { deletePatientList } from '../api/api-remote';
@@ -12,6 +12,8 @@ import ListDetails from './list-details.component';
 const mockUsePatientListDetails = vi.mocked(usePatientListDetails);
 const mockUsePatientListMembers = vi.mocked(usePatientListMembers);
 const mockDeletePatientList = vi.mocked(deletePatientList);
+const mockGetUserFacingErrorMessage = vi.mocked(getUserFacingErrorMessage);
+const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseSession = vi.mocked(useSession);
 
 vi.mock('../api/hooks', () => ({
@@ -125,6 +127,29 @@ describe('ListDetails', () => {
     expect(confirmDeleteButton).toBeEnabled();
 
     await userEvent.click(screen.getByText('Cancel'));
+  });
+
+  it('does not expose backend details when deleting a patient list fails', async () => {
+    const backendError = new Error('SQLSTATE 42P01: relation cohort does not exist');
+    mockDeletePatientList.mockRejectedValueOnce(backendError);
+
+    render(<ListDetails />);
+
+    await userEvent.click(screen.getByText('Actions'));
+    await userEvent.click(screen.getByText(/delete patient list/i));
+    await userEvent.click(screen.getByRole('button', { name: /delete patient list/i }));
+
+    await waitFor(() =>
+      expect(mockGetUserFacingErrorMessage).toHaveBeenCalledWith(
+        backendError,
+        'The patient list could not be deleted. Please try again.',
+        { logContext: 'Delete patient list' },
+      ),
+    );
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ subtitle: 'The patient list could not be deleted. Please try again.' }),
+    );
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(expect.objectContaining({ subtitle: backendError.message }));
   });
 
   it('hides all list mutation actions without the edit privilege', () => {

@@ -4,6 +4,7 @@ import {
   CustomOverflowMenu,
   CustomOverflowMenuItem,
   formatDate,
+  getUserFacingErrorMessage,
   launchWorkspace2,
   navigate,
   parseDate,
@@ -140,7 +141,11 @@ const ListDetails = () => {
       .catch((e) =>
         showSnackbar({
           title: t('errorDeletingList', 'Error deleting patient list'),
-          subtitle: e?.message,
+          subtitle: getUserFacingErrorMessage(
+            e,
+            t('errorDeletingListMessage', 'The patient list could not be deleted. Please try again.'),
+            { logContext: 'Delete patient list' },
+          ),
           kind: 'error',
         }),
       )

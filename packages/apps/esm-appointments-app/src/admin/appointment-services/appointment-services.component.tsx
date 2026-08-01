@@ -67,6 +67,7 @@ const AppointmentServices: React.FC = () => {
             <Layer>
               <TextInput
                 id="name"
+                // error-exposure-guard-ignore -- controlled translated Formik/Yup validation message.
                 invalidText={getValidationMessage(props.errors.name)}
                 labelText={t('appointmentServiceName', 'Appointment service name')}
                 placeholder={t('appointmentServiceName', 'Appointment service name')}

@@ -17,7 +17,14 @@ import {
   Tile,
 } from '@carbon/react';
 import { ArrowLeft, TrashCan } from '@carbon/react/icons';
-import { ConfigurableLink, isDesktop, showSnackbar, useDebounce, useLayoutType } from '@openmrs/esm-framework';
+import {
+  ConfigurableLink,
+  getUserFacingErrorMessage,
+  isDesktop,
+  showSnackbar,
+  useDebounce,
+  useLayoutType,
+} from '@openmrs/esm-framework';
 import fuzzy from 'fuzzy';
 import React, { type CSSProperties, useCallback, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -184,7 +191,11 @@ const ListDetailsTable: React.FC<ListDetailsTableProps> = ({
     } catch (error) {
       showSnackbar({
         kind: 'error',
-        subtitle: error?.message,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('errorRemovingPatientFromListMessage', 'The patient could not be removed from the list. Please try again.'),
+          { logContext: 'Remove patient from list' },
+        ),
         title: t('errorRemovingPatientFromList', 'Failed to remove patient from list'),
       });
     }

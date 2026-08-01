@@ -248,6 +248,7 @@
   "previousMonth": "Mes anterior",
   "previousPage": "Página anterior",
   "provider": "Personal de salud",
+  "appointmentProviderUnavailable": "El personal de salud seleccionado ya no está disponible. Seleccione nuevamente un personal de salud de la lista.",
   "providerRequired": "El personal de salud es obligatorio",
   "providerSchedulingCategoryConfigurationMissing": "No se pudo validar la categoría del personal porque falta configurar el atributo correspondiente.",
   "providerSchedulingCategoryMismatch": "El personal de salud no está habilitado para la categoría de agenda del servicio seleccionado.",

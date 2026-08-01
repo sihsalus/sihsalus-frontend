@@ -165,6 +165,7 @@
   "previousMonth": "Mês anterior",
   "previousPage": "Página anterior",
   "provider": "Profissional",
+  "appointmentProviderUnavailable": "O profissional selecionado não está mais disponível. Selecione novamente um profissional da lista.",
   "providers": "Profissionais",
   "providersBooked": "Profissionais reservados: {{time}}",
   "recurringAppointment": "Consulta recorrente",

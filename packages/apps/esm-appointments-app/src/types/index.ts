@@ -203,6 +203,8 @@ export interface RecurringPattern {
 export interface RecurringAppointmentsPayload {
   appointmentRequest: AppointmentPayload;
   recurringPattern: RecurringPattern;
+  applyForAll?: boolean;
+  timeZone?: string;
 }
 
 export interface PatientDetails {

@@ -165,6 +165,7 @@
   "previousMonth": "Mês anterior",
   "previousPage": "Página anterior",
   "provider": "Provedor",
+  "appointmentProviderUnavailable": "O prestador selecionado já não está disponível. Selecione novamente um prestador da lista.",
   "providers": "Provedores",
   "providersBooked": "Provedores reservados: {{time}}",
   "recurringAppointment": "Consulta recorrente",

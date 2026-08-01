@@ -126,13 +126,51 @@ export function saveRecurringAppointments(
 ) {
   assertAppointmentPayloadDates(recurringAppointments.appointmentRequest, { originalStartDate });
   assertRecurringPatternDates(recurringAppointments.appointmentRequest, recurringAppointments.recurringPattern);
-  return openmrsFetch(`${restBaseUrl}/recurring-appointments`, {
+  const appointmentUuid = recurringAppointments.appointmentRequest.uuid;
+  const requestBody = appointmentUuid ? withRecurringEditMetadata(recurringAppointments) : recurringAppointments;
+
+  return openmrsFetch(
+    appointmentUuid
+      ? `${restBaseUrl}/recurring-appointments/${appointmentUuid}`
+      : `${restBaseUrl}/recurring-appointments`,
+    {
+      method: appointmentUuid ? 'PUT' : 'POST',
+      signal: abortController.signal,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: requestBody,
+    },
+  );
+}
+
+function withRecurringEditMetadata(
+  recurringAppointments: RecurringAppointmentsPayload,
+): RecurringAppointmentsPayload & { applyForAll: boolean; timeZone: string } {
+  return {
+    ...recurringAppointments,
+    applyForAll: recurringAppointments.applyForAll ?? true,
+    timeZone: recurringAppointments.timeZone?.trim() || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+  };
+}
+
+export function checkRecurringAppointmentConflict(
+  recurringAppointments: RecurringAppointmentsPayload,
+  originalStartDate?: Date,
+) {
+  assertAppointmentPayloadDates(recurringAppointments.appointmentRequest, { originalStartDate });
+  assertRecurringPatternDates(recurringAppointments.appointmentRequest, recurringAppointments.recurringPattern);
+
+  const requestBody = recurringAppointments.appointmentRequest.uuid
+    ? withRecurringEditMetadata(recurringAppointments)
+    : recurringAppointments;
+
+  return openmrsFetch(`${restBaseUrl}/recurring-appointments/conflicts`, {
     method: 'POST',
-    signal: abortController.signal,
     headers: {
       'Content-Type': 'application/json',
     },
-    body: recurringAppointments,
+    body: requestBody,
   });
 }
 

@@ -246,6 +246,7 @@
   "previousMonth": "Previous month",
   "previousPage": "Previous page",
   "provider": "Provider",
+  "appointmentProviderUnavailable": "The selected provider is no longer available. Select a provider from the list again.",
   "providerRequired": "Provider is required",
   "providerSchedulingCategoryConfigurationMissing": "The provider category could not be validated because its attribute is not configured.",
   "providerSchedulingCategoryMismatch": "The provider is not enabled for the selected service scheduling category.",

@@ -33,9 +33,13 @@ import {
 import SelectedDateContext from '../hooks/selectedDateContext';
 import { useProviders } from '../hooks/useProviders';
 import { changeAppointmentStatus, getAppointmentStatus } from '../patient-appointments/patient-appointments.resource';
-import { type Appointment, AppointmentKind, AppointmentStatus } from '../types';
+import { type Appointment, AppointmentKind, AppointmentStatus, type RecurringPattern } from '../types';
 
-import { saveAppointment } from './appointments-form.resource';
+import {
+  checkRecurringAppointmentConflict,
+  saveAppointment,
+  saveRecurringAppointments,
+} from './appointments-form.resource';
 import AppointmentForm from './appointments-form.workspace';
 
 const defaultProps = {
@@ -51,7 +55,9 @@ const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockChangeAppointmentStatus = vi.mocked(changeAppointmentStatus);
 const mockGetAppointmentStatus = vi.mocked(getAppointmentStatus);
 const mockGetUserFacingErrorMessage = vi.mocked(getUserFacingErrorMessage);
+const mockCheckRecurringAppointmentConflict = vi.mocked(checkRecurringAppointmentConflict);
 const mockSaveAppointment = vi.mocked(saveAppointment);
+const mockSaveRecurringAppointments = vi.mocked(saveRecurringAppointments);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseLocations = vi.mocked(useLocations);
@@ -129,7 +135,9 @@ function makeEditableAppointment(): Appointment {
 
 vi.mock('./appointments-form.resource', async () => ({
   ...(await vi.importActual('./appointments-form.resource')),
+  checkRecurringAppointmentConflict: vi.fn(),
   saveAppointment: vi.fn(),
+  saveRecurringAppointments: vi.fn(),
 }));
 
 vi.mock('../hooks/useProviders', async () => ({
@@ -157,7 +165,9 @@ describe('AppointmentForm', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCheckRecurringAppointmentConflict.mockResolvedValue({ status: 204 } as FetchResponse<unknown>);
     mockSaveAppointment.mockResolvedValue({} as FetchResponse<unknown>);
+    mockSaveRecurringAppointments.mockResolvedValue({ status: 200 } as FetchResponse<unknown>);
     mockOpenmrsFetch.mockResolvedValue({ data: {} } as FetchResponse<unknown>);
     mockGetAppointmentStatus.mockResolvedValue(AppointmentStatus.SCHEDULED);
     mockChangeAppointmentStatus.mockResolvedValue({} as Awaited<ReturnType<typeof changeAppointmentStatus>>);
@@ -758,6 +768,53 @@ describe('AppointmentForm', () => {
     await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
   });
 
+  it.each([
+    'off',
+    'warn',
+    'strict',
+  ] as const)('blocks an unresolved provider UUID before persistence in %s mode', async (mode) => {
+    const user = userEvent.setup();
+    const appointment = {
+      ...makeEditableAppointment(),
+      provider: { uuid: 'provider-no-longer-available' },
+      providers: [{ uuid: 'provider-no-longer-available', response: 'ACCEPTED' }],
+    };
+    const defaultConfig = getDefaultsFromConfigSchema(configSchema) as ConfigObject;
+    mockUseConfig.mockReturnValue({
+      ...defaultConfig,
+      appointmentTypes: ['Scheduled', 'WalkIn'],
+      providerSchedulingCategoryValidation: {
+        ...defaultConfig.providerSchedulingCategoryValidation,
+        mode,
+      },
+    });
+    mockUseProviders.mockReturnValue({
+      providers: [],
+      isLoading: false,
+      error: null,
+      isValidating: false,
+    });
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
+    await waitForLoadingToFinish();
+
+    expect(screen.getByRole('combobox', { name: /select a provider/i })).toHaveValue('');
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(
+      await screen.findByText(
+        'El personal de salud seleccionado ya no está disponible. Seleccione nuevamente un personal de salud de la lista.',
+      ),
+    ).toBeInTheDocument();
+    expect(mockGetAppointmentStatus).not.toHaveBeenCalled();
+    expect(mockOpenmrsFetch).not.toHaveBeenCalledWith(
+      expect.stringContaining('/appointments/conflicts'),
+      expect.anything(),
+    );
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
+  });
+
   it('blocks saving with a field error when the provider category is not enabled in strict mode', async () => {
     const user = userEvent.setup();
     const categorizedService = {
@@ -1214,6 +1271,48 @@ describe('AppointmentForm', () => {
 
     expect(screen.getByLabelText(/start date/i)).not.toHaveAttribute('readonly');
     expect(screen.getByLabelText(/end date/i)).not.toHaveAttribute('readonly');
+  });
+
+  it('checks the full recurring series before updating it', async () => {
+    const user = userEvent.setup();
+    const appointment = makeEditableAppointment();
+    const recurringPattern: RecurringPattern = {
+      type: 'DAY',
+      period: 1,
+      endDate: dayjs(appointment.startDateTime).add(2, 'day').endOf('day').format(),
+    };
+    mockUserHasAccess.mockImplementation((privilege) => privilege === appointmentStartDateEditPrivilege);
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+
+    renderWithSwr(
+      <AppointmentForm
+        {...defaultProps}
+        appointment={appointment}
+        context="editing"
+        recurringPattern={recurringPattern}
+      />,
+    );
+
+    await waitForLoadingToFinish();
+    await user.click(screen.getByLabelText(/is this a recurring appointment/i));
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveRecurringAppointments).toHaveBeenCalledTimes(1));
+    expect(mockCheckRecurringAppointmentConflict).toHaveBeenCalledWith(
+      expect.objectContaining({
+        appointmentRequest: expect.objectContaining({ uuid: appointment.uuid }),
+        recurringPattern: expect.objectContaining({ type: 'DAY', period: 1 }),
+      }),
+      new Date(appointment.startDateTime),
+    );
+    expect(mockCheckRecurringAppointmentConflict.mock.invocationCallOrder[0]).toBeLessThan(
+      mockSaveRecurringAppointments.mock.invocationCallOrder[0],
+    );
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
+    expect(mockOpenmrsFetch).not.toHaveBeenCalledWith(
+      expect.stringContaining('/appointments/conflicts'),
+      expect.anything(),
+    );
   });
 
   it('allows editing the appointment start date with the start-date privilege', async () => {

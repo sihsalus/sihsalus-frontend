@@ -1,7 +1,11 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
 import type { AppointmentPayload, RecurringAppointmentsPayload } from '../types';
-import { saveAppointment, saveRecurringAppointments } from './appointments-form.resource';
+import {
+  checkRecurringAppointmentConflict,
+  saveAppointment,
+  saveRecurringAppointments,
+} from './appointments-form.resource';
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
@@ -20,6 +24,14 @@ const validAppointment: AppointmentPayload = {
   providers: [],
   serviceUuid: 'service-uuid',
   startDateTime: '2026-07-18T09:00:00-05:00',
+};
+const validRecurringAppointments: RecurringAppointmentsPayload = {
+  appointmentRequest: validAppointment,
+  recurringPattern: {
+    type: 'DAY',
+    period: 1,
+    endDate: '2026-07-20T23:59:00-05:00',
+  },
 };
 
 describe('appointment writes', () => {
@@ -84,8 +96,68 @@ describe('appointment writes', () => {
     };
 
     expect(() => saveRecurringAppointments(payload, new AbortController())).toThrow(
-      'Recurring appointment end date cannot be before its start date',
+      'Recurring appointment end date must be between its start date and 365 days later',
     );
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+  });
+
+  it('creates a recurring series with POST when the appointment has no UUID', () => {
+    saveRecurringAppointments(validRecurringAppointments, new AbortController());
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      `${restBaseUrl}/recurring-appointments`,
+      expect.objectContaining({
+        method: 'POST',
+        body: validRecurringAppointments,
+      }),
+    );
+  });
+
+  it('edits a recurring series with PUT and the metadata required by the classic backend', () => {
+    const recurringEdit: RecurringAppointmentsPayload = {
+      ...validRecurringAppointments,
+      appointmentRequest: { ...validAppointment, uuid: 'appointment-uuid' },
+    };
+
+    saveRecurringAppointments(recurringEdit, new AbortController());
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      `${restBaseUrl}/recurring-appointments/appointment-uuid`,
+      expect.objectContaining({
+        method: 'PUT',
+        body: {
+          ...recurringEdit,
+          applyForAll: true,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+        },
+      }),
+    );
+  });
+
+  it('checks every occurrence through the recurring conflicts endpoint', () => {
+    checkRecurringAppointmentConflict(validRecurringAppointments);
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(`${restBaseUrl}/recurring-appointments/conflicts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: validRecurringAppointments,
+    });
+  });
+
+  it('includes edit metadata when checking conflicts for an existing recurring series', () => {
+    const recurringEdit: RecurringAppointmentsPayload = {
+      ...validRecurringAppointments,
+      appointmentRequest: { ...validAppointment, uuid: 'appointment-uuid' },
+      applyForAll: false,
+      timeZone: 'America/Lima',
+    };
+
+    checkRecurringAppointmentConflict(recurringEdit);
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(`${restBaseUrl}/recurring-appointments/conflicts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: recurringEdit,
+    });
   });
 });

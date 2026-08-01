@@ -82,9 +82,9 @@ import {
   MAX_RECURRING_APPOINTMENT_HORIZON_DAYS,
   resolveEffectiveAppointmentStartDate,
 } from './appointment-date-validation';
-//TO DO FIX THIS SHIT
 import {
   checkAppointmentConflict,
+  checkRecurringAppointmentConflict,
   saveAppointment,
   saveRecurringAppointments,
   useAppointmentService,
@@ -542,6 +542,13 @@ const AppointmentsForm: React.FC<
         });
       }
     })
+    .refine(({ provider }) => !provider || providers.providers?.some(({ uuid }) => uuid === provider) === true, {
+      path: ['provider'],
+      message: t(
+        'appointmentProviderUnavailable',
+        'El personal de salud seleccionado ya no está disponible. Seleccione nuevamente un personal de salud de la lista.',
+      ),
+    })
     .refine(
       (formValues) => {
         const service = availableServices?.find(({ uuid }) => uuid === formValues.selectedServiceUuid);
@@ -794,6 +801,13 @@ const AppointmentsForm: React.FC<
     setIsSubmitting(true);
     // Construct appointment payload
     const appointmentPayload = constructAppointmentPayload(data);
+    const shouldSaveRecurringAppointment = canEditAppointmentStartDate && isRecurringAppointment;
+    const recurringAppointmentPayload = shouldSaveRecurringAppointment
+      ? {
+          appointmentRequest: appointmentPayload,
+          recurringPattern: constructRecurringPattern(data),
+        }
+      : null;
 
     if (!(await validateAppointmentIsStillEditable())) {
       setIsSubmitting(false);
@@ -803,7 +817,9 @@ const AppointmentsForm: React.FC<
     // check if Duplicate Response Occurs
     let response: FetchResponse;
     try {
-      response = await checkAppointmentConflict(appointmentPayload);
+      response = recurringAppointmentPayload
+        ? await checkRecurringAppointmentConflict(recurringAppointmentPayload, originalStartDate)
+        : await checkAppointmentConflict(appointmentPayload);
     } catch (error) {
       setIsSubmitting(false);
       showSnackbar({
@@ -841,15 +857,9 @@ const AppointmentsForm: React.FC<
       return;
     }
 
-    // Construct recurring pattern payload
-    const recurringAppointmentPayload = {
-      appointmentRequest: appointmentPayload,
-      recurringPattern: constructRecurringPattern(data),
-    };
-
     const abortController = new AbortController();
     const saveRequest = () => {
-      if (canEditAppointmentStartDate && isRecurringAppointment) {
+      if (recurringAppointmentPayload) {
         return originalStartDate
           ? saveRecurringAppointments(recurringAppointmentPayload, abortController, originalStartDate)
           : saveRecurringAppointments(recurringAppointmentPayload, abortController);
@@ -1586,6 +1596,7 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
               id="time-picker"
               pattern={time12HourFormatRegexPattern}
               invalid={!!errors?.startTime}
+              // error-exposure-guard-ignore -- controlled translated React Hook Form/Zod validation message.
               invalidText={errors?.startTime?.message}
               labelText={<RequiredFieldLabel label={t('time', 'Time')} />}
               onChange={(event) => {
@@ -1623,6 +1634,7 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
               hideSteppers
               id="duration"
               invalid={!!errors?.duration}
+              // error-exposure-guard-ignore -- controlled translated React Hook Form/Zod validation message.
               invalidText={errors?.duration?.message}
               label={<RequiredFieldLabel label={t('durationInMinutes', 'Duration (minutes)')} />}
               max={1440}

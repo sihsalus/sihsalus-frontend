@@ -3,26 +3,50 @@ import {
   getDefaultsFromConfigSchema,
   getLocale,
   openmrsFetch,
+  showSnackbar,
   useConfig,
   useSession,
+  userHasAccess,
 } from '@openmrs/esm-framework';
-import { useOrderTypes, usePatientOrders } from '@openmrs/esm-patient-common-lib';
-import { act, render, screen } from '@testing-library/react';
+import {
+  getDrugOrderByUuid,
+  getPatientUuidFromStore,
+  type Order,
+  useLaunchWorkspaceRequiringVisit,
+  useOrderBasket,
+  useOrderTypes,
+  usePatientOrders,
+} from '@openmrs/esm-patient-common-lib';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useReactToPrint } from 'react-to-print';
 import { mockOrders, mockSessionDataResponse } from 'test-utils';
 
 import { configSchema } from '../config-schema';
+import spanishTranslations from '../../translations/es.json';
 
 import OrderDetailsTable from './orders-details-table.component';
 
 const mockUsePatientOrders = usePatientOrders as vi.Mock;
 const mockUseOrderTypes = useOrderTypes as vi.Mock;
 const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockGetLocale = vi.mocked(getLocale);
 const mockSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseReactToPrint = vi.mocked(useReactToPrint);
+const mockGetDrugOrderByUuid = getDrugOrderByUuid as vi.Mock;
+const mockGetPatientUuidFromStore = getPatientUuidFromStore as vi.Mock;
+const mockUseLaunchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit as vi.Mock;
+const mockUseOrderBasket = useOrderBasket as vi.Mock;
+const mockSetOrders = vi.fn();
+const mockLaunchOrderBasket = vi.fn();
+const mockLaunchAddDrugOrder = vi.fn();
+const mockLaunchModifyLabOrder = vi.fn();
+const mockLaunchModifyGeneralOrder = vi.fn();
+const mockLaunchCancelOrder = vi.fn();
+let mockBasketOrders: Array<unknown> = [];
 const translationMock = vi.hoisted(() => {
   const values: Record<string, string> = {};
   const t = (key: string, defaultValue?: string) => values[key] ?? defaultValue ?? key;
@@ -57,6 +81,10 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => {
 
   return {
     ...originalModule,
+    getDrugOrderByUuid: vi.fn(),
+    getPatientUuidFromStore: vi.fn(),
+    useLaunchWorkspaceRequiringVisit: vi.fn(),
+    useOrderBasket: vi.fn(),
     usePatientOrders: vi.fn(),
     useOrderTypes: vi.fn(),
     usePatient: vi.fn(),
@@ -67,6 +95,126 @@ describe('OrderDetailsTable', () => {
   const user = userEvent.setup();
   const testOrderTypeUuid = '52a447d3-a64a-11e3-9aeb-50e549534c5e';
   const drugOrderTypeUuid = '131168f4-15f5-102d-96e4-000c29c2a5d7';
+  const medicationsEditPrivilege = 'app:hoja.clinica.medicamentos.editar';
+  const ordersEditPrivilege = 'app:hoja.clinica.ordenes.editar';
+  const drugOrder = mockOrders.find((order) => order.type === 'drugorder') as unknown as Order;
+  const testOrder = mockOrders.find((order) => order.type === 'testorder') as unknown as Order;
+  const hydratedDrugOrder = {
+    ...drugOrder,
+    encounter: {
+      ...drugOrder.encounter,
+      visit: undefined,
+    },
+  } as Order;
+  const secondDrugOrder = {
+    ...drugOrder,
+    uuid: 'second-drug-order-uuid',
+    orderNumber: 'ORD-SECOND',
+    display: 'Second medication order',
+  } as Order;
+  const hydratedSecondDrugOrder = {
+    ...hydratedDrugOrder,
+    ...secondDrugOrder,
+  } as Order;
+  const generalOrder = {
+    ...testOrder,
+    uuid: 'general-order-uuid',
+    display: 'General order',
+    type: 'order',
+    orderType: {
+      ...testOrder.orderType,
+      uuid: 'general-order-type-uuid',
+      display: 'General Order',
+      name: 'General Order',
+    },
+  } as unknown as Order;
+
+  beforeEach(() => {
+    mockBasketOrders = [];
+    mockSetOrders.mockReset();
+    mockLaunchOrderBasket.mockReset();
+    mockLaunchAddDrugOrder.mockReset();
+    mockLaunchModifyLabOrder.mockReset();
+    mockLaunchModifyGeneralOrder.mockReset();
+    mockLaunchCancelOrder.mockReset();
+    mockShowSnackbar.mockReset();
+    mockSession.mockReturnValue(mockSessionDataResponse.data);
+    mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
+    mockUserHasAccess.mockReturnValue(true);
+    mockGetDrugOrderByUuid.mockReset();
+    mockGetDrugOrderByUuid.mockResolvedValue({ data: hydratedDrugOrder });
+    mockGetPatientUuidFromStore.mockReset();
+    mockGetPatientUuidFromStore.mockReturnValue('mock-patient-uuid');
+    mockUseOrderBasket.mockReset();
+    mockUseOrderBasket.mockImplementation(() => ({
+      clearOrders: vi.fn(),
+      orders: mockBasketOrders,
+      setOrders: mockSetOrders,
+    }));
+    mockUseLaunchWorkspaceRequiringVisit.mockReset();
+    mockUseLaunchWorkspaceRequiringVisit.mockImplementation((workspaceName: string) => {
+      switch (workspaceName) {
+        case 'order-basket':
+          return mockLaunchOrderBasket;
+        case 'add-drug-order':
+          return mockLaunchAddDrugOrder;
+        case 'add-lab-order':
+          return mockLaunchModifyLabOrder;
+        case 'orderable-concept-workspace':
+          return mockLaunchModifyGeneralOrder;
+        case 'patient-orders-form-workspace':
+          return mockLaunchCancelOrder;
+        default:
+          return vi.fn();
+      }
+    });
+  });
+
+  function renderSingleOrder(order: Order, privileges: Array<string>, basketOrders: Array<unknown> = []) {
+    return renderOrders([order], privileges, basketOrders);
+  }
+
+  function renderOrders(orders: Array<Order>, privileges: Array<string>, basketOrders: Array<unknown> = []) {
+    mockBasketOrders = basketOrders;
+    mockGetPatientUuidFromStore.mockReturnValue(orders[0].patient?.uuid ?? 'mock-patient-uuid');
+    mockUserHasAccess.mockImplementation((privilege) =>
+      typeof privilege === 'string' ? privileges.includes(privilege) : false,
+    );
+    mockUseOrderTypes.mockReturnValue({
+      data: [orders[0].orderType],
+      error: null,
+      isLoading: false,
+      isValidating: false,
+    });
+    mockUsePatientOrders.mockReturnValue({
+      data: orders,
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+    });
+
+    return render(
+      <OrderDetailsTable
+        patientUuid={orders[0].patient?.uuid ?? 'mock-patient-uuid'}
+        showAddButton
+        showPrintButton
+        title="Patient Orders"
+      />,
+    );
+  }
+
+  async function openActionsMenu() {
+    await user.click(screen.getByRole('button', { name: /options/i }));
+  }
+
+  function expectNoPreSaveMutation() {
+    expect(mockSetOrders).toHaveBeenCalledTimes(0);
+    expect(
+      mockOpenmrsFetch.mock.calls.some(
+        ([, options]) => (options as { method?: string } | undefined)?.method?.toUpperCase() === 'POST',
+      ),
+    ).toBe(false);
+  }
 
   it('renders a loading state when fetching orders', async () => {
     mockUseOrderTypes.mockReturnValue({
@@ -285,6 +433,471 @@ describe('OrderDetailsTable', () => {
     expect(mockHandlePrint).toHaveBeenCalledTimes(1);
   });
 
+  it.each([
+    {
+      cancelVisible: false,
+      label: 'allows medication modification with the medication edit privilege',
+      modifyVisible: true,
+      order: drugOrder,
+      privileges: [medicationsEditPrivilege],
+    },
+    {
+      cancelVisible: true,
+      label: 'does not allow medication modification with only the orders edit privilege',
+      modifyVisible: false,
+      order: drugOrder,
+      privileges: [ordersEditPrivilege],
+    },
+    {
+      cancelVisible: true,
+      label: 'allows test-order modification with the orders edit privilege',
+      modifyVisible: true,
+      order: testOrder,
+      privileges: [ordersEditPrivilege],
+    },
+    {
+      cancelVisible: false,
+      label: 'does not allow test-order modification with only the medication edit privilege',
+      modifyVisible: false,
+      order: testOrder,
+      privileges: [medicationsEditPrivilege],
+    },
+    {
+      cancelVisible: true,
+      label: 'allows general-order modification with the orders edit privilege',
+      modifyVisible: true,
+      order: generalOrder,
+      privileges: [ordersEditPrivilege],
+    },
+    {
+      cancelVisible: false,
+      label: 'does not allow general-order modification with only the medication edit privilege',
+      modifyVisible: false,
+      order: generalOrder,
+      privileges: [medicationsEditPrivilege],
+    },
+  ])('$label', async ({ cancelVisible, modifyVisible, order, privileges }) => {
+    renderSingleOrder(order, privileges);
+
+    const actionsMenu = screen.queryByRole('button', { name: /options/i });
+    if (!modifyVisible && !cancelVisible) {
+      expect(actionsMenu).not.toBeInTheDocument();
+      return;
+    }
+
+    expect(actionsMenu).toBeInTheDocument();
+    if (!actionsMenu) {
+      throw new Error('Expected an actions menu for an authorized order action.');
+    }
+    await user.click(actionsMenu);
+
+    if (modifyVisible) {
+      expect(screen.getByText('Modify order')).toBeInTheDocument();
+    } else {
+      expect(screen.queryByText('Modify order')).not.toBeInTheDocument();
+    }
+    if (cancelVisible) {
+      expect(screen.getByText('Cancel order')).toBeInTheDocument();
+    } else {
+      expect(screen.queryByText('Cancel order')).not.toBeInTheDocument();
+    }
+  });
+
+  it('hydrates a drug order and opens its editor without changing persisted state or the basket', async () => {
+    renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
+
+    await openActionsMenu();
+    await user.click(screen.getByText('Modify order'));
+
+    await waitFor(() => expect(mockLaunchAddDrugOrder).toHaveBeenCalledTimes(1));
+    expect(mockGetDrugOrderByUuid).toHaveBeenCalledWith(drugOrder.uuid);
+    expect(mockLaunchAddDrugOrder).toHaveBeenCalledWith({
+      order: expect.objectContaining({
+        action: 'REVISE',
+        encounterUuid: drugOrder.encounter.uuid,
+        previousOrder: drugOrder.uuid,
+        uuid: drugOrder.uuid,
+        visit: drugOrder.encounter.visit,
+      }),
+      orderToEditOrdererUuid: drugOrder.orderer.uuid,
+    });
+    expect(mockLaunchOrderBasket).not.toHaveBeenCalled();
+    expectNoPreSaveMutation();
+  });
+
+  it.each([
+    {
+      label: 'test order',
+      launcher: mockLaunchModifyLabOrder,
+      order: testOrder,
+    },
+    {
+      label: 'general order',
+      launcher: mockLaunchModifyGeneralOrder,
+      order: generalOrder,
+    },
+  ])('opens the $label editor with revision props and no pre-save mutation', async ({ launcher, order }) => {
+    renderSingleOrder(order, [ordersEditPrivilege]);
+
+    await openActionsMenu();
+    await user.click(screen.getByText('Modify order'));
+
+    expect(launcher).toHaveBeenCalledWith({
+      order: expect.objectContaining({
+        action: 'REVISE',
+        previousOrder: order.uuid,
+      }),
+      orderTypeUuid: order.orderType.uuid,
+    });
+    expect(mockGetDrugOrderByUuid).not.toHaveBeenCalled();
+    expect(mockLaunchOrderBasket).not.toHaveBeenCalled();
+    expectNoPreSaveMutation();
+  });
+
+  it.each([
+    {
+      label: 'test order',
+      launcher: mockLaunchModifyLabOrder,
+      order: testOrder,
+    },
+    {
+      label: 'general order',
+      launcher: mockLaunchModifyGeneralOrder,
+      order: generalOrder,
+    },
+  ])('does not open the $label editor after the patient-chart store changes', async ({ launcher, order }) => {
+    renderSingleOrder(order, [ordersEditPrivilege]);
+
+    await openActionsMenu();
+    mockGetPatientUuidFromStore.mockReturnValue('another-patient-uuid');
+    await user.click(screen.getByText('Modify order'));
+
+    expect(launcher).not.toHaveBeenCalled();
+    expect(mockGetDrugOrderByUuid).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).not.toHaveBeenCalled();
+    expectNoPreSaveMutation();
+  });
+
+  it('shows a visible error and does not open an editor when drug-order hydration fails', async () => {
+    const hydrationError = new Error('Network unavailable');
+    mockGetDrugOrderByUuid.mockRejectedValue(hydrationError);
+    renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
+
+    await openActionsMenu();
+    await user.click(screen.getByText('Modify order'));
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'error',
+          subtitle: 'The medication order could not be loaded. Please try again.',
+          title: 'Error loading medication order',
+        }),
+      ),
+    );
+    expect(mockLaunchAddDrugOrder).not.toHaveBeenCalled();
+    expectNoPreSaveMutation();
+  });
+
+  it('provides Spanish copy for the drug-order hydration error', () => {
+    expect(spanishTranslations.errorLoadingDrugOrder).toBe('Error al cargar la orden de medicamento');
+    expect(spanishTranslations.errorLoadingDrugOrderMessage).toBe(
+      'No se pudo cargar la orden de medicamento. Intente nuevamente.',
+    );
+  });
+
+  it('discards a drug hydration result after the patient context changes', async () => {
+    const hydration = createDeferred<{ data: Order }>();
+    mockGetDrugOrderByUuid.mockReturnValue(hydration.promise);
+    const { rerender } = renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
+
+    await openActionsMenu();
+    await user.click(screen.getByText('Modify order'));
+    expect(mockGetDrugOrderByUuid).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <OrderDetailsTable patientUuid="another-patient-uuid" showAddButton showPrintButton title="Patient Orders" />,
+    );
+    await act(async () => {
+      hydration.resolve({ data: hydratedDrugOrder });
+      await hydration.promise;
+    });
+
+    expect(mockLaunchAddDrugOrder).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).not.toHaveBeenCalled();
+    expectNoPreSaveMutation();
+  });
+
+  it('discards a drug hydration error after unmount without showing stale feedback', async () => {
+    const hydration = createDeferred<{ data: Order }>();
+    const settledHydration = hydration.promise.catch(() => undefined);
+    mockGetDrugOrderByUuid.mockReturnValue(hydration.promise);
+    const { unmount } = renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
+
+    await openActionsMenu();
+    await user.click(screen.getByText('Modify order'));
+    expect(mockGetDrugOrderByUuid).toHaveBeenCalledTimes(1);
+
+    unmount();
+    await act(async () => {
+      hydration.reject(new Error('Late hydration failure'));
+      await settledHydration;
+    });
+
+    expect(mockLaunchAddDrugOrder).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).not.toHaveBeenCalled();
+    expectNoPreSaveMutation();
+  });
+
+  it('discards a drug hydration result after the authenticated session changes', async () => {
+    const hydration = createDeferred<{ data: Order }>();
+    mockGetDrugOrderByUuid.mockReturnValue(hydration.promise);
+    const { rerender } = renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
+
+    await openActionsMenu();
+    await user.click(screen.getByText('Modify order'));
+    expect(mockGetDrugOrderByUuid).toHaveBeenCalledTimes(1);
+
+    mockSession.mockReturnValue({
+      ...mockSessionDataResponse.data,
+      sessionId: 'another-session-id',
+    });
+    rerender(
+      <OrderDetailsTable
+        patientUuid={drugOrder.patient.uuid}
+        showAddButton
+        showPrintButton
+        title="Patient Orders"
+      />,
+    );
+    await act(async () => {
+      hydration.resolve({ data: hydratedDrugOrder });
+      await hydration.promise;
+    });
+
+    expect(mockLaunchAddDrugOrder).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).not.toHaveBeenCalled();
+    expectNoPreSaveMutation();
+  });
+
+  it('coalesces repeated Modify clicks while the same drug hydration is in flight', async () => {
+    const hydration = createDeferred<{ data: Order }>();
+    mockGetDrugOrderByUuid.mockReturnValue(hydration.promise);
+    renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
+
+    await openActionsMenu();
+    const modifyButton = screen.getByText('Modify order').closest('button');
+    if (!modifyButton) {
+      throw new Error('Expected the Modify action to be available.');
+    }
+    act(() => {
+      modifyButton.click();
+      modifyButton.click();
+    });
+
+    expect(mockGetDrugOrderByUuid).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      hydration.resolve({ data: hydratedDrugOrder });
+      await hydration.promise;
+    });
+
+    expect(mockLaunchAddDrugOrder).toHaveBeenCalledTimes(1);
+    expect(mockShowSnackbar).not.toHaveBeenCalled();
+    expectNoPreSaveMutation();
+  });
+
+  it('opens only the last-clicked drug order when two hydrations resolve in reverse order', async () => {
+    const firstHydration = createDeferred<{ data: Order }>();
+    const secondHydration = createDeferred<{ data: Order }>();
+    mockGetDrugOrderByUuid.mockImplementation((orderUuid: string) => {
+      if (orderUuid === drugOrder.uuid) {
+        return firstHydration.promise;
+      }
+      if (orderUuid === secondDrugOrder.uuid) {
+        return secondHydration.promise;
+      }
+      throw new Error(`Unexpected order UUID: ${orderUuid}`);
+    });
+    renderOrders([drugOrder, secondDrugOrder], [medicationsEditPrivilege]);
+
+    const actionMenus = screen.getAllByRole('button', { name: /options/i });
+    expect(actionMenus).toHaveLength(2);
+    await user.click(actionMenus[0]);
+    await user.click(screen.getByText('Modify order'));
+    await user.click(screen.getAllByRole('button', { name: /options/i })[1]);
+    await user.click(screen.getByText('Modify order'));
+
+    expect(mockGetDrugOrderByUuid.mock.calls).toEqual([[drugOrder.uuid], [secondDrugOrder.uuid]]);
+    await act(async () => {
+      secondHydration.resolve({ data: hydratedSecondDrugOrder });
+      await secondHydration.promise;
+    });
+    expect(mockLaunchAddDrugOrder).toHaveBeenCalledTimes(1);
+    expect(mockLaunchAddDrugOrder).toHaveBeenCalledWith({
+      order: expect.objectContaining({ previousOrder: secondDrugOrder.uuid }),
+      orderToEditOrdererUuid: secondDrugOrder.orderer.uuid,
+    });
+
+    await act(async () => {
+      firstHydration.resolve({ data: hydratedDrugOrder });
+      await firstHydration.promise;
+    });
+    expect(mockLaunchAddDrugOrder).toHaveBeenCalledTimes(1);
+    expect(mockShowSnackbar).not.toHaveBeenCalled();
+    expectNoPreSaveMutation();
+  });
+
+  it.each([
+    {
+      label: 'response UUID differs from the requested order',
+      response: { ...hydratedDrugOrder, uuid: 'unexpected-order-uuid' } as Order,
+    },
+    {
+      label: 'response patient differs from the current patient',
+      response: {
+        ...hydratedDrugOrder,
+        patient: { ...hydratedDrugOrder.patient, uuid: 'unexpected-patient-uuid' },
+      } as Order,
+    },
+  ])('fails closed when the hydrated drug-order $label', async ({ response }) => {
+    mockGetDrugOrderByUuid.mockResolvedValue({ data: response });
+    renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
+
+    await openActionsMenu();
+    await user.click(screen.getByText('Modify order'));
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'error',
+          title: 'Error loading medication order',
+        }),
+      ),
+    );
+    expect(mockLaunchAddDrugOrder).not.toHaveBeenCalled();
+    expectNoPreSaveMutation();
+  });
+
+  it('discards a drug hydration when medication edit access is revoked before it resolves', async () => {
+    const hydration = createDeferred<{ data: Order }>();
+    mockGetDrugOrderByUuid.mockReturnValue(hydration.promise);
+    const { rerender } = renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
+
+    await openActionsMenu();
+    await user.click(screen.getByText('Modify order'));
+    expect(mockGetDrugOrderByUuid).toHaveBeenCalledTimes(1);
+
+    mockUserHasAccess.mockReturnValue(false);
+    rerender(
+      <OrderDetailsTable
+        patientUuid={drugOrder.patient.uuid}
+        showAddButton
+        showPrintButton
+        title="Patient Orders"
+      />,
+    );
+    await act(async () => {
+      hydration.resolve({ data: hydratedDrugOrder });
+      await hydration.promise;
+    });
+
+    expect(mockLaunchAddDrugOrder).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).not.toHaveBeenCalled();
+    expectNoPreSaveMutation();
+  });
+
+  it('discards a drug hydration when only the patient-chart store changes', async () => {
+    const hydration = createDeferred<{ data: Order }>();
+    mockGetDrugOrderByUuid.mockReturnValue(hydration.promise);
+    renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
+
+    await openActionsMenu();
+    await user.click(screen.getByText('Modify order'));
+    expect(mockGetDrugOrderByUuid).toHaveBeenCalledTimes(1);
+
+    mockGetPatientUuidFromStore.mockReturnValue('another-patient-uuid');
+    await act(async () => {
+      hydration.resolve({ data: hydratedDrugOrder });
+      await hydration.promise;
+    });
+
+    expect(mockLaunchAddDrugOrder).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).not.toHaveBeenCalled();
+    expectNoPreSaveMutation();
+  });
+
+  it('disables only Modify when the same revision is already in the basket and preserves Cancel', async () => {
+    renderSingleOrder(
+      testOrder,
+      [ordersEditPrivilege],
+      [
+        {
+          action: 'REVISE',
+          previousOrder: testOrder.uuid,
+        },
+      ],
+    );
+
+    expect(mockUseOrderBasket.mock.calls.some((args) => args.length === 0)).toBe(true);
+    await openActionsMenu();
+
+    const modifyButton = screen.getByText('Modify order').closest('button');
+    const cancelButton = screen.getByText('Cancel order').closest('button');
+    expect(modifyButton).toBeDisabled();
+    expect(cancelButton).toBeEnabled();
+
+    if (!cancelButton) {
+      throw new Error('Expected the existing Cancel action to remain available.');
+    }
+    await user.click(cancelButton);
+    expect(mockLaunchCancelOrder).toHaveBeenCalledWith({ order: testOrder });
+    expectNoPreSaveMutation();
+  });
+
+  it.each([
+    {
+      basketOrder: {
+        action: 'NEW',
+        testType: { conceptUuid: testOrder.concept.uuid },
+      },
+      label: 'test order',
+      order: testOrder,
+    },
+    {
+      basketOrder: {
+        action: 'NEW',
+        concept: { uuid: generalOrder.concept.uuid },
+      },
+      label: 'general order',
+      order: generalOrder,
+    },
+  ])('disables only Modify when a $label with the same concept is already in its basket', async ({ basketOrder, order }) => {
+    renderSingleOrder(order, [ordersEditPrivilege], [basketOrder]);
+
+    await openActionsMenu();
+
+    expect(screen.getByText('Modify order').closest('button')).toBeDisabled();
+    expect(screen.getByText('Cancel order').closest('button')).toBeEnabled();
+    expectNoPreSaveMutation();
+  });
+
+  it('does not apply the lab/general concept collision rule to drug orders', async () => {
+    renderSingleOrder(
+      drugOrder,
+      [medicationsEditPrivilege],
+      [
+        {
+          action: 'NEW',
+          concept: { uuid: drugOrder.concept.uuid },
+        },
+      ],
+    );
+
+    await openActionsMenu();
+
+    expect(screen.getByText('Modify order').closest('button')).toBeEnabled();
+  });
+
   it('refreshes translated filter options when locale resources become available', async () => {
     mockUseOrderTypes.mockReturnValue({
       data: [],
@@ -324,4 +937,15 @@ function renderOrderDetailsTable() {
   return render(
     <OrderDetailsTable patientUuid="mock-patient-uuid" showAddButton showPrintButton title="Patient Orders" />,
   );
+}
+
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return { promise, reject, resolve };
 }

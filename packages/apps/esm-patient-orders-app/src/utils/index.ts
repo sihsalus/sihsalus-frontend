@@ -25,6 +25,7 @@ export function compare<T>(x?: T, y?: T) {
  */
 export function buildMedicationOrder(order: Order, action?: OrderAction) {
   return {
+    uuid: order.uuid,
     display: order.drug?.display,
     previousOrder: action !== 'NEW' ? order.uuid : null,
     action: action,
@@ -63,6 +64,8 @@ export function buildMedicationOrder(order: Order, action?: OrderAction) {
       value: order.quantityUnits?.display,
       valueCoded: order.quantityUnits?.uuid,
     },
+    encounterUuid: order.encounter?.uuid,
+    visit: order.encounter?.visit,
   };
 }
 

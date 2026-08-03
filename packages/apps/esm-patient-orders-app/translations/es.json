@@ -35,6 +35,8 @@
   "errorCancellingOrder": "Error al cancelar la orden",
   "errorCancellingOrderMessage": "No se pudo cancelar la orden. Intente nuevamente.",
   "errorFetchingTestTypes": "Error al obtener resultados para \"{{searchTerm}}\"",
+  "errorLoadingDrugOrder": "Error al cargar la orden de medicamento",
+  "errorLoadingDrugOrderMessage": "No se pudo cargar la orden de medicamento. Intente nuevamente.",
   "errorSavingLabResults": "Error al guardar los resultados de laboratorio",
   "errorSavingLabResultsMessage": "No se pudieron guardar los resultados. Intente nuevamente.",
   "expandOrders": "Expand orders",

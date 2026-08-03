@@ -11,8 +11,9 @@ const orderBasketStoreActions = {
     state: OrderBasketStore,
     grouping: string,
     value: Array<OrderBasketItem> | (() => Array<OrderBasketItem>),
+    explicitPatientUuid?: string,
   ) {
-    const patientUuid = getPatientUuidFromStore();
+    const patientUuid = explicitPatientUuid ?? getPatientUuidFromStore();
     if (!patientUuid) {
       return state;
     }
@@ -41,8 +42,12 @@ const orderBasketStoreActions = {
   },
 };
 
-function getOrderItems(items: OrderBasketStore['items'], grouping?: string | null): Array<OrderBasketItem> {
-  const patientUuid = getPatientUuidFromStore();
+function getOrderItems(
+  items: OrderBasketStore['items'],
+  grouping?: string | null,
+  explicitPatientUuid?: string,
+): Array<OrderBasketItem> {
+  const patientUuid = explicitPatientUuid ?? getPatientUuidFromStore();
   const patientItems = items?.[patientUuid] ?? {};
   return grouping ? (patientItems[grouping] ?? []) : Object.values(patientItems).flat();
 }
@@ -51,9 +56,12 @@ export interface ClearOrdersOptions {
   exceptThoseMatching: (order: OrderBasketItem) => boolean;
 }
 
-function clearOrders(options?: ClearOrdersOptions): void {
+function clearOrders(options?: ClearOrdersOptions, explicitPatientUuid?: string): void {
   const exceptThoseMatchingFcn = options?.exceptThoseMatching ?? ((): boolean => false);
-  const patientUuid = getPatientUuidFromStore();
+  const patientUuid = explicitPatientUuid ?? getPatientUuidFromStore();
+  if (!patientUuid) {
+    return;
+  }
   const items = orderBasketStore.getState().items;
   const patientItems = items[patientUuid] ?? {};
   const newPatientItems = Object.fromEntries(
@@ -105,6 +113,8 @@ export function useOrderBasket<T extends OrderBasketItem>(
   groupingOrPostDataPrepFunction?: string | PostDataPrepFunction,
   maybePostDataPrepFunction?: PostDataPrepFunction,
 ): UseOrderBasketReturn<T, string | undefined> {
+  const explicitPatientUuid =
+    typeof patientOrGrouping === 'object' && patientOrGrouping != null ? (patientOrGrouping.id ?? '') : undefined;
   const grouping =
     typeof patientOrGrouping === 'string' ? patientOrGrouping : (groupingOrPostDataPrepFunction as string | undefined);
   const postDataPrepFunction =
@@ -115,7 +125,7 @@ export function useOrderBasket<T extends OrderBasketItem>(
     orderBasketStore,
     orderBasketStoreActions,
   );
-  const orders = getOrderItems(items, grouping);
+  const orders = getOrderItems(items, grouping, explicitPatientUuid);
 
   useEffect(() => {
     if (postDataPrepFunction && grouping && !postDataPrepFunctions[grouping]) {
@@ -125,20 +135,20 @@ export function useOrderBasket<T extends OrderBasketItem>(
 
   if (typeof grouping === 'string') {
     const setOrders = (value: Array<T> | (() => Array<T>)): void => {
-      setOrderBasketItems(grouping, value);
+      setOrderBasketItems(grouping, value, explicitPatientUuid);
     };
     return {
       orders,
-      clearOrders,
+      clearOrders: (options) => clearOrders(options, explicitPatientUuid),
       setOrders,
     } as unknown as UseOrderBasketReturn<T, string>;
   } else {
     const setOrders = (groupingKey: string, value: Array<T> | (() => Array<T>)): void => {
-      setOrderBasketItems(groupingKey, value);
+      setOrderBasketItems(groupingKey, value, explicitPatientUuid);
     };
     return {
       orders,
-      clearOrders,
+      clearOrders: (options) => clearOrders(options, explicitPatientUuid),
       setOrders,
     } as unknown as UseOrderBasketReturn<T, undefined>;
   }

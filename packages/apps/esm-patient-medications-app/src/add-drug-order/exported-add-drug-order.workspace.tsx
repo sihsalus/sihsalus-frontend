@@ -21,12 +21,20 @@ export default function ExportedAddDrugOrderWorkspace({
 >) {
   return (
     <AddDrugOrder
+      key={JSON.stringify([
+        false,
+        patientUuid,
+        order?.previousOrder ?? order?.uuid ?? '',
+        orderToEditOrdererUuid ?? '',
+        visitContext?.uuid ?? '',
+      ])}
       initialOrder={order}
       orderToEditOrdererUuid={orderToEditOrdererUuid}
       patient={patient}
       patientUuid={patientUuid}
       visitContext={visitContext}
       closeWorkspace={closeWorkspace}
+      trackPatientChartContext={false}
     />
   );
 }

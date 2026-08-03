@@ -13,13 +13,14 @@ import {
 } from '@openmrs/esm-framework';
 import {
   type DrugOrderBasketItem,
+  getPatientUuidFromStore,
   type PostDataPrepFunction,
   postOrder,
   showOrderSuccessToast,
   useMutatePatientOrders,
   useOrderBasket,
 } from '@openmrs/esm-patient-common-lib';
-import { type ComponentProps, useCallback, useState } from 'react';
+import { type ComponentProps, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { prepMedicationOrderPostData } from '../api/api';
 import { type ConfigObject } from '../config-schema';
@@ -48,6 +49,7 @@ export interface AddDrugOrderProps {
   patientUuid: string;
   visitContext: Visit;
   closeWorkspace: Workspace2DefinitionProps['closeWorkspace'];
+  trackPatientChartContext?: boolean;
 }
 
 /**
@@ -63,6 +65,7 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
   patientUuid,
   visitContext,
   closeWorkspace,
+  trackPatientChartContext = false,
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -74,7 +77,7 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
       prepMedicationOrderPostData(order, patientUuid, encounterUuid, orderingProviderUuid, careSettingUuid),
     [careSettingUuid, orderingProviderUuid],
   );
-  const { orders, setOrders, clearOrders } = useOrderBasket<DrugOrderBasketItem>(
+  const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(
     patient,
     'medications',
     prepareMedicationOrderPostData as PostDataPrepFunction,
@@ -83,6 +86,27 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const isEditingExistingOrder = currentOrder?.action === 'REVISE' || initialOrder != null;
   const { mutate: mutateOrders } = useMutatePatientOrders(patientUuid);
+  const submissionContextKey = JSON.stringify([
+    trackPatientChartContext,
+    patientUuid,
+    initialOrder?.previousOrder ?? initialOrder?.uuid ?? '',
+    orderToEditOrdererUuid ?? '',
+    visitContext?.uuid ?? '',
+  ]);
+  const backendSubmissionRef = useRef<{ generation: number; promise: Promise<void> } | null>(null);
+  const backendSubmissionGenerationRef = useRef(0);
+  const backendSubmissionContextKeyRef = useRef(submissionContextKey);
+  const isMountedRef = useRef(false);
+
+  useLayoutEffect(() => {
+    isMountedRef.current = true;
+    backendSubmissionContextKeyRef.current = submissionContextKey;
+    backendSubmissionGenerationRef.current += 1;
+    return () => {
+      isMountedRef.current = false;
+      backendSubmissionGenerationRef.current += 1;
+    };
+  }, [submissionContextKey]);
 
   const {
     conceptSets,
@@ -107,7 +131,11 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
       finalizedOrder.action ??= 'NEW';
       finalizedOrder.orderer ??= orderingProviderUuid;
       const newOrders = [...orders];
-      const existingOrder = orders.find((order) => ordersEqual(order, finalizedOrder));
+      const existingOrder = orders.find((order) =>
+        finalizedOrder.action === 'REVISE' && finalizedOrder.previousOrder
+          ? order.action === 'REVISE' && order.previousOrder === finalizedOrder.previousOrder
+          : ordersEqual(order, finalizedOrder),
+      );
       if (existingOrder) {
         newOrders[orders.indexOf(existingOrder)] = {
           ...finalizedOrder,
@@ -123,56 +151,92 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
     [orders, setOrders, closeWorkspace, orderingProviderUuid],
   );
 
-  // If editing an existing order, on save, we directly submit the modified order to the server
-  // and do not save it to the order basket.
+  // Backend orders are identified by their original orderer. Draft REVISE orders do not have
+  // that prop and remain local to the order basket until the basket itself is submitted.
   const submitDrugOrderToServer = useCallback(
-    async (finalizedOrder: DrugOrderBasketItem) => {
-      postOrder(
-        prepMedicationOrderPostData(
-          finalizedOrder,
-          patientUuid,
-          finalizedOrder?.encounterUuid,
-          orderToEditOrdererUuid ?? orderingProviderUuid,
-          careSettingUuid,
-        ),
-      )
-        .then(() => {
-          clearOrders();
-          mutateOrders();
+    (finalizedOrder: DrugOrderBasketItem) => {
+      const submissionGeneration = backendSubmissionGenerationRef.current;
+      const isCurrentSubmission = () =>
+        isMountedRef.current &&
+        backendSubmissionGenerationRef.current === submissionGeneration &&
+        backendSubmissionContextKeyRef.current === submissionContextKey &&
+        (!trackPatientChartContext || getPatientUuidFromStore() === patientUuid);
+      if (!isCurrentSubmission()) {
+        return Promise.resolve();
+      }
+      if (backendSubmissionRef.current?.generation === submissionGeneration) {
+        return backendSubmissionRef.current.promise;
+      }
+      let submission: Promise<void>;
+      submission = Promise.resolve()
+        .then(async () => {
+          // React Hook Form performs async validation before invoking onSave. Recheck the
+          // workspace identity here so a patient/context switch in that gap cannot POST
+          // an order using stale form data.
+          if (!isCurrentSubmission()) {
+            return;
+          }
 
-          /* Translation keys used by showOrderSuccessToast:
-           * t('ordersCompleted', 'Orders completed')
-           * t('orderPlaced', 'Order placed')
-           * t('ordersPlaced', 'Orders placed')
-           * t('orderUpdated', 'Order updated')
-           * t('ordersUpdated', 'Orders updated')
-           * t('orderDiscontinued', 'Order discontinued')
-           * t('ordersDiscontinued', 'Orders discontinued')
-           * t('orderedFor', 'Placed order for')
-           * t('updated', 'Updated')
-           * t('discontinued', 'Discontinued')
-           */
-          showOrderSuccessToast('@sihsalus/esm-patient-medications-app', [finalizedOrder]);
-          closeWorkspace({ discardUnsavedChanges: true });
+          try {
+            await postOrder(
+              prepMedicationOrderPostData(
+                finalizedOrder,
+                patientUuid,
+                finalizedOrder?.encounterUuid,
+                orderToEditOrdererUuid ?? orderingProviderUuid,
+                careSettingUuid,
+              ),
+            );
+            mutateOrders();
+            if (!isCurrentSubmission()) {
+              return;
+            }
+
+            /* Translation keys used by showOrderSuccessToast:
+             * t('ordersCompleted', 'Orders completed')
+             * t('orderPlaced', 'Order placed')
+             * t('ordersPlaced', 'Orders placed')
+             * t('orderUpdated', 'Order updated')
+             * t('ordersUpdated', 'Orders updated')
+             * t('orderDiscontinued', 'Order discontinued')
+             * t('ordersDiscontinued', 'Orders discontinued')
+             * t('orderedFor', 'Placed order for')
+             * t('updated', 'Updated')
+             * t('discontinued', 'Discontinued')
+             */
+            showOrderSuccessToast('@sihsalus/esm-patient-medications-app', [finalizedOrder]);
+            closeWorkspace({ discardUnsavedChanges: true });
+          } catch (error) {
+            if (!isCurrentSubmission()) {
+              return;
+            }
+            showSnackbar({
+              isLowContrast: false,
+              kind: 'error',
+              title: t('errorSavingDrugOrder', 'Error saving drug order'),
+              subtitle: error.message,
+            });
+          }
         })
-        .catch((error) => {
-          showSnackbar({
-            isLowContrast: false,
-            kind: 'error',
-            title: t('errorSavingDrugOrder', 'Error saving drug order'),
-            subtitle: error.message,
-          });
+        .finally(() => {
+          if (backendSubmissionRef.current?.promise === submission) {
+            backendSubmissionRef.current = null;
+          }
         });
+
+      backendSubmissionRef.current = { generation: submissionGeneration, promise: submission };
+      return submission;
     },
     [
       careSettingUuid,
-      clearOrders,
       closeWorkspace,
       mutateOrders,
       orderingProviderUuid,
       patientUuid,
       t,
       orderToEditOrdererUuid,
+      submissionContextKey,
+      trackPatientChartContext,
     ],
   );
 
@@ -247,7 +311,11 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
     return (
       <DrugOrderForm
         initialOrderBasketItem={currentOrder}
-        onSave={currentOrder?.action === 'REVISE' ? submitDrugOrderToServer : saveDrugOrderToBasket}
+        onSave={
+          currentOrder?.action === 'REVISE' && Boolean(orderToEditOrdererUuid)
+            ? submitDrugOrderToServer
+            : saveDrugOrderToBasket
+        }
         onCancel={isEditingExistingOrder ? closeWorkspace : () => setCurrentOrder(undefined)}
         patient={patient}
         visitContext={visitContext}

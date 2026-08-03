@@ -35,12 +35,20 @@ export default function AddDrugOrderWorkspace({
 }: PatientWorkspace2DefinitionProps<AddDrugOrderWorkspaceProps, { encounterUuid?: string }>) {
   return (
     <AddDrugOrder
+      key={JSON.stringify([
+        true,
+        patientUuid,
+        order?.previousOrder ?? order?.uuid ?? '',
+        orderToEditOrdererUuid ?? '',
+        visitContext?.uuid ?? '',
+      ])}
       initialOrder={order}
       orderToEditOrdererUuid={orderToEditOrdererUuid}
       patient={patient}
       patientUuid={patientUuid}
       visitContext={visitContext}
       closeWorkspace={closeWorkspace}
+      trackPatientChartContext
     />
   );
 }

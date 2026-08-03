@@ -12867,21 +12867,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"brace-expansion@npm:5.0.8":
-  version: 5.0.8
-  resolution: "brace-expansion@npm:5.0.8"
+"brace-expansion@npm:5.0.9":
+  version: 5.0.9
+  resolution: "brace-expansion@npm:5.0.9"
   dependencies:
     balanced-match: "npm:^4.0.2"
-  checksum: 10c0/73304caafd00fdc5b0168e693ac15bf25b6357dec76d1195fcd628fe2cf99c46f9c889a7ecfa3cfe236dbd2d5ce3e27a6ccc4370b46d475d0d19081e11f86019
+  checksum: 10c0/3dea38884a1c3c8b1c9c44a7402a0c76fca460f70cffb3127242b0b4cbf4472019e022ade021eec44838ff19f1dac2625dfd11dd459d7e1e055b0698a8d52fec
   languageName: node
   linkType: hard
 
-"brace-expansion@patch:brace-expansion@npm%3A5.0.8#~/.yarn/patches/brace-expansion-npm-5.0.8-08bf144160.patch":
-  version: 5.0.8
-  resolution: "brace-expansion@patch:brace-expansion@npm%3A5.0.8#~/.yarn/patches/brace-expansion-npm-5.0.8-08bf144160.patch::version=5.0.8&hash=0b17c0"
+"brace-expansion@patch:brace-expansion@npm%3A5.0.9#~/.yarn/patches/brace-expansion-npm-5.0.9-2717df6b49.patch":
+  version: 5.0.9
+  resolution: "brace-expansion@patch:brace-expansion@npm%3A5.0.9#~/.yarn/patches/brace-expansion-npm-5.0.9-2717df6b49.patch::version=5.0.9&hash=19db93"
   dependencies:
     balanced-match: "npm:^4.0.2"
-  checksum: 10c0/f79e2f3f9fb6df1cb256424b7c6489c28e9fe48e7ebdfee0207c82e9a719c25effaff278bf5da87457d2d6d161a6df3fb96be8be5be8061f9c6d0fd62b852a44
+  checksum: 10c0/5c4181580e63428ee41cf104ea1bf11258d4df180c70272addaf1d52fafaabefc4e56a4eb871b8f8080df57cbda3d9b6294d790b494a5ff78771c169386a9a49
   languageName: node
   linkType: hard
 

@@ -110,6 +110,7 @@
     "picomatch": "^4.0.4",
     "cookie": "^0.7.2",
     "serialize-javascript": "^7.0.5",
+    "ip-address": "^10.3.1",
     "ip": "npm:ip@2.0.1",
     "qs": "^6.14.2",
     "socks": "^2.8.7",

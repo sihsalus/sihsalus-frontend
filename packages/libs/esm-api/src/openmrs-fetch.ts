@@ -197,6 +197,7 @@ export function openmrsFetch<T = any>(path: string, fetchInit: FetchConfig = {})
   const handleErrorResponse = (
     response: FetchResponse<T>,
     redirectAuthFailure: EsmApiConfigObject['redirectAuthFailure'],
+    rejectOnAuthFailure: boolean,
   ): Promise<FetchResponse<T>> => {
     /* HTTP response status is not in 200s. Usually this will mean
      * either HTTP 400s (bad request from browser) or HTTP 500s (server error)
@@ -224,9 +225,11 @@ export function openmrsFetch<T = any>(path: string, fetchInit: FetchConfig = {})
        * nor do we want it to reject because that would trigger error handling. We instead
        * want it to remain in pending status while the navigation occurs.
        */
-      return redirectAuthFailure.resolvePromise
-        ? (Promise.resolve() as unknown as Promise<FetchResponse<T>>)
-        : new Promise<FetchResponse<T>>(() => {});
+      if (!rejectOnAuthFailure) {
+        return redirectAuthFailure.resolvePromise
+          ? (Promise.resolve() as unknown as Promise<FetchResponse<T>>)
+          : new Promise<FetchResponse<T>>(() => {});
+      }
     }
     // Attempt to download a response body, if it has one
     return response
@@ -254,12 +257,18 @@ export function openmrsFetch<T = any>(path: string, fetchInit: FetchConfig = {})
       );
   };
 
-  return window.fetch(url, fetchInit as RequestInit).then(async (r) => {
+  const rejectOnAuthFailure = fetchInit.rejectOnAuthFailure ?? false;
+  const browserFetchInit =
+    'rejectOnAuthFailure' in fetchInit
+      ? Object.fromEntries(Object.entries(fetchInit).filter(([key]) => key !== 'rejectOnAuthFailure'))
+      : fetchInit;
+
+  return window.fetch(url, browserFetchInit as RequestInit).then(async (r) => {
     const response = r as FetchResponse<T>;
     const { redirectAuthFailure, followRedirects } = await getConfig<EsmApiConfigObject>('@openmrs/esm-api');
     return response.ok
       ? handleOkResponse(response, followRedirects)
-      : handleErrorResponse(response, redirectAuthFailure);
+      : handleErrorResponse(response, redirectAuthFailure, rejectOnAuthFailure);
   });
 }
 
@@ -340,6 +349,8 @@ export class OpenmrsFetchError extends Error implements FetchError {
 export interface FetchConfig extends Omit<RequestInit, 'body' | 'headers'> {
   headers?: FetchHeaders;
   body?: FetchBody | string;
+  /** Redirect on configured authentication failures, but reject instead of leaving the request pending. */
+  rejectOnAuthFailure?: boolean;
 }
 
 type ResponseBody = string | FetchResponseJson;

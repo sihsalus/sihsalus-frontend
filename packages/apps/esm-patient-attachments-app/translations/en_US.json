@@ -51,6 +51,8 @@
   "options": "Options",
   "successfullyDeleted": "successfully deleted",
   "supportedFiletypes": "Supported files are {{supportedFiles}}",
+  "staleAttachmentsWarning": "The latest attachments could not be loaded. This list may be out of date.",
+  "staleAttachmentsWarningTitle": "Showing saved attachments",
   "tableView": "Table view",
   "takePhoto": "Take photo",
   "type": "Type",

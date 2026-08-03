@@ -15,6 +15,7 @@ import { usePaginationInfo as realUsePaginationInfo } from './src/usePaginationI
 import { useVisitContextStore as realUseVisitContextStore } from './src/useVisitContextStore';
 
 export { ConfigurableLink } from './src/ConfigurableLink';
+export { getAttachmentErrorStatus } from './src/useAttachments';
 export { createUseStore, useStore, useStoreWithActions } from './src/useStore';
 
 import * as utils from '@openmrs/esm-utils';

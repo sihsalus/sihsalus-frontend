@@ -51,6 +51,8 @@
   "options": "Opções",
   "successfullyDeleted": "apagado com sucesso",
   "supportedFiletypes": "Arquivos suportados são {{supportedFiles}}",
+  "staleAttachmentsWarning": "Não foi possível carregar os anexos mais recentes. Esta lista pode estar desatualizada.",
+  "staleAttachmentsWarningTitle": "Exibindo anexos salvos",
   "tableView": "Visualização em Tabela",
   "takePhoto": "Tirar foto",
   "type": "Tipo",

@@ -51,6 +51,8 @@
   "options": "Options",
   "successfullyDeleted": "Supprimé",
   "supportedFiletypes": "Les fichiers compatibles sont {{supportedFiles}}",
+  "staleAttachmentsWarning": "Impossible de charger les pièces jointes les plus récentes. Cette liste peut être obsolète.",
+  "staleAttachmentsWarningTitle": "Affichage des pièces jointes enregistrées",
   "tableView": "Table",
   "takePhoto": "Prendre une photo",
   "type": "Type",

@@ -1,12 +1,8 @@
-import dayjs from 'dayjs';
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import classNames from 'classnames';
 import isEmpty from 'lodash-es/isEmpty';
-import React, { useContext, useMemo } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-dayjs.extend(isSameOrBefore);
-
-import SelectedDateContext from '../hooks/selectedDateContext';
 import { type Appointment } from '../types';
 
 import styles from './metrics-card.scss';
@@ -15,13 +11,12 @@ interface MetricsCardProps {
   label: string;
   value: number | string;
   headerLabel: string;
-  count?: { pendingAppointments: Array<Appointment>; arrivedAppointments: Array<Appointment> };
+  count?: { pendingAppointments: Array<Appointment>; arrivedAppointments: Array<Appointment>; missedCount?: number };
 }
 
 const MetricsCard: React.FC<MetricsCardProps> = ({ label, value, headerLabel, count }) => {
   const { t } = useTranslation();
-  const { selectedDate } = useContext(SelectedDateContext);
-  const isSelectedDateInPast = useMemo(() => dayjs(selectedDate).isBefore(dayjs(), 'date'), [selectedDate]);
+  const showMissedCount = count?.missedCount != null;
 
   return (
     <article className={styles.container}>
@@ -37,11 +32,13 @@ const MetricsCard: React.FC<MetricsCardProps> = ({ label, value, headerLabel, co
             <p className={styles.totalsValue}>{value}</p>
           </div>
           {!isEmpty(count) && (
-            <div className={styles.countGrid}>
+            <div className={classNames(styles.countGrid, { [styles.countGridThreeColumns]: showMissedCount })}>
               <span>{t('checkedIn', 'Checked in')}</span>
-              <span>{isSelectedDateInPast ? t('missed', 'Missed') : t('notArrived', 'Not arrived')}</span>
+              <span>{t('notArrived', 'Not arrived')}</span>
+              {showMissedCount && <span>{t('missed', 'Missed')}</span>}
               <p style={{ color: '#319227' }}>{count.arrivedAppointments?.length}</p>
               <p style={{ color: '#da1e28' }}>{count.pendingAppointments?.length}</p>
+              {showMissedCount && <p style={{ color: '#525252' }}>{count.missedCount}</p>}
             </div>
           )}
         </div>

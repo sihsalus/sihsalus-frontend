@@ -104,6 +104,11 @@ export const cancelAppointmentModal = getAsyncLifecycle(
   options,
 );
 
+export const missedAppointmentModal = getAsyncLifecycle(
+  () => import('./appointments/common-components/missed-appointment.modal'),
+  options,
+);
+
 // t('createNewAppointment', 'Create new appointment')
 export const appointmentsFormWorkspace = getAsyncLifecycle(() => import('./form/appointments-form.workspace'), options);
 

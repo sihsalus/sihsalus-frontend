@@ -1,5 +1,8 @@
 import { render, screen } from '@testing-library/react';
+import dayjs from 'dayjs';
 
+import { omrsDateFormat } from '../constants';
+import SelectedDateContext from '../hooks/selectedDateContext';
 import { useAppointmentList } from '../hooks/useAppointmentList';
 import { useAllAppointmentsByDate, useClinicalMetrics, useScheduledAppointments } from '../hooks/useClinicalMetrics';
 import { type Appointment, AppointmentStatus } from '../types';
@@ -18,6 +21,7 @@ vi.mock('../hooks/useClinicalMetrics', async () => ({
       serviceName: 'Outpatient',
       count: 4,
     },
+    missedAppointments: 5,
     isLoading: false,
     error: null,
   }),
@@ -57,9 +61,28 @@ describe('Appointment metrics', () => {
     expect(screen.getByText(/^appointments$/i)).toBeInTheDocument();
     expect(screen.getByText(/16/i)).toBeInTheDocument();
     expect(screen.getAllByText(/^4$/i)).toHaveLength(2);
+    expect(screen.getByText(/not arrived/i)).toBeInTheDocument();
+    expect(screen.getByText(/^missed$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^5$/)).toBeInTheDocument();
     expect(mockUseClinicalMetrics).toHaveBeenCalledWith(['consultation-service-uuid']);
     expect(mockUseAllAppointmentsByDate).toHaveBeenCalledWith(['consultation-service-uuid']);
     expect(mockUseScheduledAppointments).toHaveBeenCalledWith(['consultation-service-uuid']);
+  });
+
+  it('keeps the not-arrived label for past dates instead of relabeling still-scheduled appointments as missed', () => {
+    const pastDate = dayjs().subtract(2, 'day').startOf('day').format(omrsDateFormat);
+
+    render(
+      <SelectedDateContext.Provider value={{ selectedDate: pastDate, setSelectedDate: vi.fn() }}>
+        <AppointmentsMetrics appointmentServiceTypes={[]} />
+      </SelectedDateContext.Provider>,
+    );
+
+    // Regression: the scheduled count used to be relabeled "Missed" for past dates even though the
+    // appointments were still Scheduled in the backend. The missed column now carries the real count.
+    expect(screen.getByText(/not arrived/i)).toBeInTheDocument();
+    expect(screen.getByText(/^missed$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^5$/)).toBeInTheDocument();
   });
 
   it('does not treat the empty service selection as an active filter for the status breakdown', () => {

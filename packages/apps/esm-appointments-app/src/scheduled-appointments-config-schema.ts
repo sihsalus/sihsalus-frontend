@@ -15,7 +15,8 @@ export const expectedAppointmentsPanelConfigSchema = {
   showForPastDate: {
     _type: Type.Boolean,
     _description: 'Whether to display this panel when viewing scheduled appointments for a past date',
-    _default: false,
+    // Past dates must keep showing still-Scheduled appointments so staff can resolve them (e.g. mark as missed).
+    _default: true,
   },
   showForToday: {
     _type: Type.Boolean,

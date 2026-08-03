@@ -12,7 +12,7 @@ import userEvent from '@testing-library/user-event';
 import { getByTextWithMarkup } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../../config-schema';
-import { clinicalChartPrivilege } from '../../constants';
+import { appointmentsEditPrivilege, clinicalChartPrivilege } from '../../constants';
 import { exportAppointmentsToSpreadsheet } from '../../helpers/excel';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
 import { type Appointment, type AppointmentKind, AppointmentStatus } from '../../types';
@@ -364,6 +364,132 @@ describe('AppointmentsTable', () => {
 
     renderAppointmentsTable({ appointments: [nonEditableAppointment] });
 
+    expect(screen.queryByRole('button', { name: /actions/i })).not.toBeInTheDocument();
+  });
+
+  it('offers marking a past scheduled appointment as missed and opens the protected confirmation modal', async () => {
+    const user = userEvent.setup();
+    const dispose = vi.fn();
+    const pastAppointment = {
+      ...mockAppointments[0],
+      startDateTime: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+      status: AppointmentStatus.SCHEDULED,
+    };
+    mockShowModal.mockReturnValue(dispose);
+
+    renderAppointmentsTable({ appointments: [pastAppointment] });
+
+    await user.click(screen.getByRole('button', { name: /actions/i }));
+    const missedAction = document.getElementById(`markAsMissed-${pastAppointment.uuid}`);
+
+    expect(missedAction).toBeInTheDocument();
+    await user.click(missedAction);
+
+    expect(mockShowModal).toHaveBeenCalledWith('missed-appointment-modal', {
+      appointmentUuid: pastAppointment.uuid,
+      closeModal: expect.any(Function),
+    });
+
+    const modalProps = mockShowModal.mock.calls.at(-1)?.[1] as { closeModal: () => void };
+    modalProps.closeModal();
+    expect(dispose).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ['same-day', new Date().toISOString()],
+    ['future', new Date(Date.now() + 86_400_000).toISOString()],
+  ])('does not offer marking a %s scheduled appointment as missed', async (_label, startDateTime) => {
+    const user = userEvent.setup();
+    const appointment = {
+      ...mockAppointments[0],
+      startDateTime,
+      status: AppointmentStatus.SCHEDULED,
+    };
+
+    renderAppointmentsTable({ appointments: [appointment] });
+
+    await user.click(screen.getByRole('button', { name: /actions/i }));
+
+    expect(document.getElementById(`markAsMissed-${appointment.uuid}`)).not.toBeInTheDocument();
+  });
+
+  it('does not offer any action for a past checked-in appointment', () => {
+    const pastCheckedInAppointment = {
+      ...mockAppointments[0],
+      startDateTime: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+      status: AppointmentStatus.CHECKEDIN,
+    };
+
+    renderAppointmentsTable({ appointments: [pastCheckedInAppointment] });
+
+    expect(screen.queryByRole('button', { name: /actions/i })).not.toBeInTheDocument();
+  });
+
+  it('enables batch selection on the expected tab and launches the batch status modal', async () => {
+    const user = userEvent.setup();
+    const dispose = vi.fn();
+    const pastAppointment = {
+      ...mockAppointments[0],
+      startDateTime: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+      status: AppointmentStatus.SCHEDULED,
+    };
+    mockShowModal.mockReturnValue(dispose);
+
+    renderAppointmentsTable({
+      appointments: [pastAppointment],
+      appointmentStatus: AppointmentStatus.SCHEDULED,
+      tableHeading: 'expected',
+    });
+
+    // select-all in the header plus one row checkbox
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes).toHaveLength(2);
+    expect(screen.queryByRole('button', { name: /change appointments status/i })).not.toBeInTheDocument();
+
+    await user.click(checkboxes[1]);
+    await user.click(await screen.findByRole('button', { name: /change appointments status/i }));
+
+    expect(mockShowModal).toHaveBeenCalledWith('batch-change-appointment-statuses-modal', {
+      appointments: [pastAppointment],
+      closeModal: expect.any(Function),
+    });
+
+    const modalProps = mockShowModal.mock.calls.at(-1)?.[1] as { closeModal: () => void };
+    modalProps.closeModal();
+    expect(dispose).toHaveBeenCalledOnce();
+  });
+
+  it('does not offer batch selection outside the expected tab', () => {
+    const missedAppointment = {
+      ...mockAppointments[0],
+      startDateTime: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+      status: AppointmentStatus.MISSED,
+    };
+
+    renderAppointmentsTable({
+      appointments: [missedAppointment],
+      appointmentStatus: AppointmentStatus.MISSED,
+      tableHeading: 'missed',
+    });
+
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+  });
+
+  it('hides batch selection and row actions without the edit privilege', () => {
+    mockUserHasAccess.mockImplementation((privilege) => privilege !== appointmentsEditPrivilege);
+    const pastAppointment = {
+      ...mockAppointments[0],
+      startDateTime: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+      status: AppointmentStatus.SCHEDULED,
+    };
+
+    renderAppointmentsTable({
+      appointments: [pastAppointment],
+      appointmentStatus: AppointmentStatus.SCHEDULED,
+      tableHeading: 'expected',
+    });
+
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /actions/i })).not.toBeInTheDocument();
   });
 });

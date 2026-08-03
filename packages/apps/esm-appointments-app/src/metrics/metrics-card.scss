@@ -75,3 +75,7 @@
     margin: 0;
   }
 }
+
+.countGridThreeColumns {
+  grid-template-columns: repeat(3, 1fr);
+}

@@ -20,7 +20,7 @@ interface AppointmentMetricsProps {
 const AppointmentsMetrics: React.FC<AppointmentMetricsProps> = ({ appointmentServiceTypes }) => {
   const { t } = useTranslation();
 
-  const { highestServiceLoad, error: summaryError } = useClinicalMetrics(appointmentServiceTypes);
+  const { highestServiceLoad, missedAppointments, error: summaryError } = useClinicalMetrics(appointmentServiceTypes);
   const { totalProviders, error: providersError } = useAllAppointmentsByDate(appointmentServiceTypes);
   const { totalScheduledAppointments, error: appointmentsError } =
     useScheduledAppointments(appointmentServiceTypes);
@@ -60,7 +60,11 @@ const AppointmentsMetrics: React.FC<AppointmentMetricsProps> = ({ appointmentSer
       <MetricsHeader appointmentServiceTypes={appointmentServiceTypes} />
       <section className={styles.cardContainer}>
         <MetricsCard
-          count={{ pendingAppointments: filteredPendingAppointments, arrivedAppointments: filteredArrivedAppointments }}
+          count={{
+            pendingAppointments: filteredPendingAppointments,
+            arrivedAppointments: filteredArrivedAppointments,
+            missedCount: missedAppointments,
+          }}
           headerLabel={scheduledAppointmentsLabel}
           label={t('appointments', 'Appointments')}
           value={totalScheduledAppointments}

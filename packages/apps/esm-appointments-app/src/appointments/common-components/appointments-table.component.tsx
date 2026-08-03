@@ -17,6 +17,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableSelectAll,
+  TableSelectRow,
   Tile,
 } from '@carbon/react';
 import { Download } from '@carbon/react/icons';
@@ -138,6 +140,9 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
   const session = useSession();
   const canEdit = userHasAccess(appointmentsEditPrivilege, session?.user);
   const canAccessPatientChart = userHasAccess(clinicalChartPrivilege, session?.user);
+  // Batch status changes are only offered on the expected (Scheduled) tab; the batch modal itself
+  // restricts the reachable target statuses via canTransition.
+  const allowBatchStatusChange = canEdit && appointmentStatus === AppointmentStatus.SCHEDULED;
   const { visits } = useTodaysVisits();
   const layout = useLayoutType();
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
@@ -270,33 +275,6 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
           <h4>{appointmentSectionTitle}</h4>
         </div>
       </Tile>
-      <div className={styles.toolbar}>
-        <Search
-          className={styles.searchbar}
-          labelText=""
-          placeholder={t('filterTable', 'Filter table')}
-          onChange={(event) => setSearchString(event.target.value)}
-          size={responsiveSize}
-        />
-        <Button
-          size={responsiveSize}
-          kind="tertiary"
-          renderIcon={Download}
-          onClick={() => {
-            const date = appointments[0]?.startDateTime
-              ? dayjs(appointments[0].startDateTime).format('YYYY-MM-DD')
-              : dayjs().format('YYYY-MM-DD');
-            const fileName = createAppointmentsExportFileName(
-              t('appointmentsExportFilename', 'Appointments'),
-              appointmentSectionTitle,
-              date,
-            );
-            exportAppointmentsToSpreadsheet(appointments, t, fileName);
-          }}
-        >
-          {t('download', 'Download')}
-        </Button>
-      </div>
       <DataTable
         aria-label={t('appointmentsTable', 'Appointments table')}
         data-floating-menu-container
@@ -312,15 +290,63 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
           getExpandHeaderProps,
           getHeaderProps,
           getRowProps,
+          getSelectionProps,
           getTableProps,
           getTableContainerProps,
+          selectedRows,
         }) => (
           <>
+            <div className={styles.toolbar}>
+              <Search
+                className={styles.searchbar}
+                labelText=""
+                placeholder={t('filterTable', 'Filter table')}
+                onChange={(event) => setSearchString(event.target.value)}
+                size={responsiveSize}
+              />
+              {allowBatchStatusChange && selectedRows.length > 0 ? (
+                <Button
+                  size={responsiveSize}
+                  kind="primary"
+                  onClick={() => {
+                    const selectedIds = new Set(selectedRows.map((selectedRow) => selectedRow.id));
+                    const selectedAppointments = appointments.filter((appointment) =>
+                      selectedIds.has(appointment.uuid),
+                    );
+                    const dispose = showModal('batch-change-appointment-statuses-modal', {
+                      appointments: selectedAppointments,
+                      closeModal: () => dispose(),
+                    });
+                  }}
+                >
+                  {t('changeAppointmentsStatus', 'Change appointments status')}
+                </Button>
+              ) : null}
+              <Button
+                size={responsiveSize}
+                kind="tertiary"
+                renderIcon={Download}
+                onClick={() => {
+                  const date = appointments[0]?.startDateTime
+                    ? dayjs(appointments[0].startDateTime).format('YYYY-MM-DD')
+                    : dayjs().format('YYYY-MM-DD');
+                  const fileName = createAppointmentsExportFileName(
+                    t('appointmentsExportFilename', 'Appointments'),
+                    appointmentSectionTitle,
+                    date,
+                  );
+                  exportAppointmentsToSpreadsheet(appointments, t, fileName);
+                }}
+              >
+                {t('download', 'Download')}
+              </Button>
+            </div>
             <TableContainer {...getTableContainerProps()}>
               <Table {...getTableProps()}>
                 <TableHead>
                   <TableRow>
                     <TableExpandHeader enableToggle {...getExpandHeaderProps()} />
+                    {allowBatchStatusChange ? <TableSelectAll {...getSelectionProps()} /> : null}
                     {headers.map((header) => {
                       const { key, ...headerProps } = getHeaderProps({ header });
 
@@ -349,6 +375,12 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                       (isFutureAppointment || (isTodayAppointment && !hasActiveVisitToday));
                     const canCancelAppointment =
                       canEdit && canTransition(matchingAppointment.status, AppointmentStatus.CANCELLED);
+                    // Missed is a terminal status, so only offer it once the appointment day is over:
+                    // a same-day appointment whose time already passed may still be a late arrival.
+                    const canMarkMissed =
+                      canEdit &&
+                      canTransition(matchingAppointment.status, AppointmentStatus.MISSED) &&
+                      visitDate.isBefore(dayjs(), 'day');
 
                     return (
                       <React.Fragment key={row.id}>
@@ -364,6 +396,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                                 [styles.editingRow]: editingAppointmentUuid === matchingAppointment.uuid,
                               })}
                             >
+                              {allowBatchStatusChange ? <TableSelectRow {...getSelectionProps({ row })} /> : null}
                               {row.cells.map((cell) => (
                                 <TableCell key={cell.id}>
                                   {cell.info.header === 'identifier' ? (
@@ -374,7 +407,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                                 </TableCell>
                               ))}
                               <TableCell className={classNames('cds--table-column-menu', styles.actionsCell)}>
-                                {canEditAppointment || canCancelAppointment ? (
+                                {canEditAppointment || canMarkMissed || canCancelAppointment ? (
                                   <OverflowMenu
                                     align="left"
                                     aria-label={t('actions', 'Actions')}
@@ -408,10 +441,24 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                                         }}
                                       />
                                     ) : null}
-                                    {canCancelAppointment ? (
+                                    {canMarkMissed ? (
                                       <OverflowMenuItem
                                         className={styles.menuItem}
                                         hasDivider={canEditAppointment}
+                                        id={`markAsMissed-${matchingAppointment.uuid}`}
+                                        itemText={t('markAsMissed', 'Mark as missed')}
+                                        onClick={() => {
+                                          const dispose = showModal('missed-appointment-modal', {
+                                            appointmentUuid: matchingAppointment.uuid,
+                                            closeModal: () => dispose(),
+                                          });
+                                        }}
+                                      />
+                                    ) : null}
+                                    {canCancelAppointment ? (
+                                      <OverflowMenuItem
+                                        className={styles.menuItem}
+                                        hasDivider={canEditAppointment || canMarkMissed}
                                         id={`cancelAppointment-${matchingAppointment.uuid}`}
                                         isDelete
                                         itemText={t('cancelAppointment', 'Cancel appointment')}
@@ -430,11 +477,17 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                           );
                         })()}
                         {row.isExpanded ? (
-                          <TableExpandedRow className={styles.expandedRow} colSpan={headers.length + 2}>
+                          <TableExpandedRow
+                            className={styles.expandedRow}
+                            colSpan={headers.length + (allowBatchStatusChange ? 3 : 2)}
+                          >
                             <AppointmentDetails appointment={matchingAppointment} />
                           </TableExpandedRow>
                         ) : (
-                          <TableExpandedRow className={styles.hiddenRow} colSpan={headers.length + 2} />
+                          <TableExpandedRow
+                            className={styles.hiddenRow}
+                            colSpan={headers.length + (allowBatchStatusChange ? 3 : 2)}
+                          />
                         )}
                       </React.Fragment>
                     );

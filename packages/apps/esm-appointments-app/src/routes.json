@@ -167,6 +167,16 @@
       "privileges": "app:home.citas.editar"
     },
     {
+      "name": "missed-appointment-modal",
+      "component": "missedAppointmentModal",
+      "privileges": "app:home.citas.editar"
+    },
+    {
+      "name": "batch-change-appointment-statuses-modal",
+      "component": "batchChangeAppointmentStatusesModal",
+      "privileges": "app:home.citas.editar"
+    },
+    {
       "name": "patient-chart-cancel-appointment-modal",
       "component": "cancelAppointmentModal",
       "privileges": "app:hoja.clinica.citas.editar"

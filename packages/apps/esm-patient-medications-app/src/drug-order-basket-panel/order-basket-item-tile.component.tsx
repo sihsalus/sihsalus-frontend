@@ -1,4 +1,4 @@
-import { ClickableTile, IconButton, Tile } from '@carbon/react';
+import { ClickableTile, IconButton, Tag, Tile } from '@carbon/react';
 import { ExtensionSlot, TrashCanIcon, useLayoutType, WarningIcon } from '@openmrs/esm-framework';
 import { type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
@@ -34,17 +34,17 @@ export default function OrderBasketItemTile({ orderBasketItem, onItemClick, onRe
   const tileContent = (
     <div>
       <div className={styles.orderBasketItemTile}>
-        <div>
+        <div className={styles.orderContent}>
           <OrderActionLabel orderBasketItem={orderBasketItem} />
           {orderBasketItem.isFreeTextDosage ? (
-            <div>
+            <div className={styles.orderTitle}>
               <span className={styles.drugName}>{orderBasketItem.drug?.display}</span>
               {orderBasketItem.freeTextDosage && (
                 <span className={styles.dosageInfo}> &mdash; {orderBasketItem.freeTextDosage}</span>
               )}
             </div>
           ) : (
-            <div>
+            <div className={styles.orderTitle}>
               <span className={styles.drugName}>{orderBasketItem.drug?.display}</span>
               <span className={styles.dosageInfo}>
                 {' '}
@@ -54,7 +54,7 @@ export default function OrderBasketItemTile({ orderBasketItem, onItemClick, onRe
             </div>
           )}
           {orderBasketItem.dosage != null && (
-            <span className={styles.label01}>
+            <span className={styles.orderDetailLine}>
               <span className={styles.doseCaption}>{t('dose', 'Dose').toUpperCase()}</span>{' '}
               <span className={styles.dosageLabel}>
                 {orderBasketItem.dosage} {orderBasketItem.unit?.value ?? ''}
@@ -77,7 +77,7 @@ export default function OrderBasketItemTile({ orderBasketItem, onItemClick, onRe
               </span>
             </span>
           )}
-          <span className={styles.label01}>
+          <span className={styles.orderDetailLine}>
             {orderBasketItem.indication && (
               <>
                 <span className={styles.indicationLabel}>{t('indication', 'Indication').toUpperCase()}</span>{' '}
@@ -138,56 +138,70 @@ function OrderActionLabel({ orderBasketItem }: { orderBasketItem: DrugOrderBaske
 
   if (orderBasketItem.isOrderIncomplete) {
     return (
-      <span
-        className={styles.orderActionIncompleteLabel}
+      <Tag
+        className={styles.orderStatus}
+        size="sm"
+        type="red"
         role="status"
         aria-atomic
         aria-label={t('orderActionIncomplete', 'Incomplete')}
       >
         {t('orderActionIncomplete', 'Incomplete')}
-      </span>
+      </Tag>
     );
   }
 
   switch (orderBasketItem.action) {
     case 'NEW':
       return (
-        <span className={styles.orderActionNewLabel} role="status" aria-atomic aria-label={t('orderActionNew', 'New')}>
+        <Tag
+          className={styles.orderStatus}
+          size="sm"
+          type="green"
+          role="status"
+          aria-label={t('orderActionNew', 'New')}
+        >
           {t('orderActionNew', 'New')}
-        </span>
+        </Tag>
       );
     case 'RENEW':
       return (
-        <span
-          className={styles.orderActionRenewLabel}
+        <Tag
+          className={styles.orderStatus}
+          size="sm"
+          type="green"
           role="status"
           aria-atomic
           aria-label={t('orderActionRenew', 'Renew')}
         >
           {t('orderActionRenew', 'Renew')}
-        </span>
+        </Tag>
       );
     case 'REVISE':
       return (
-        <span
-          className={styles.orderActionReviseLabel}
+        <Tag
+          className={styles.orderStatus}
+          size="sm"
+          type="blue"
           role="status"
           aria-atomic
           aria-label={t('orderActionRevise', 'Modify')}
         >
           {t('orderActionRevise', 'Modify')}
-        </span>
+        </Tag>
       );
     case 'DISCONTINUE':
       return (
-        <span
-          className={styles.orderActionDiscontinueLabel}
+        <Tag
+          className={styles.orderStatus}
+          size="sm"
+          type="gray"
           role="status"
           aria-atomic
           aria-label={t('orderActionDiscontinue', 'Discontinue')}
         >
           {t('orderActionDiscontinue', 'Discontinue')}
-        </span>
+        </Tag>
       );
     default:
       return <></>;

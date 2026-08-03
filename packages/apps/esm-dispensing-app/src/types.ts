@@ -119,6 +119,7 @@ export interface CustomTab {
 
 export interface DosageInstruction {
   text?: string;
+  patientInstruction?: string;
   timing: {
     repeat?: {
       boundsDuration?: {

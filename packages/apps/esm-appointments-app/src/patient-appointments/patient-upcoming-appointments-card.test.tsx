@@ -7,7 +7,8 @@ import { usePatientAppointments } from './patient-appointments.resource';
 
 const mockUsePatientAppointments = vi.mocked(usePatientAppointments);
 
-vi.mock('./patient-appointments.resource', () => ({
+vi.mock('./patient-appointments.resource', async () => ({
+  ...(await vi.importActual('./patient-appointments.resource')),
   usePatientAppointments: vi.fn(),
 }));
 
@@ -64,5 +65,27 @@ describe('PatientUpcomingAppointmentsCard', () => {
 
     expect(screen.getByText('Responsible provider')).toBeInTheDocument();
     expect(screen.getByText('Dra. Ana Torres')).toBeInTheDocument();
+  });
+
+  it('renders a numeric appointment timestamp as the actual appointment date', () => {
+    const upcomingAppointment = {
+      uuid: 'appointment-uuid',
+      status: AppointmentStatus.SCHEDULED,
+      startDateTime: new Date('2026-08-10T09:00:00-05:00').getTime(),
+      service: { name: 'Medicina general' },
+      providers: [],
+    } as unknown as Appointment;
+    mockUsePatientAppointments.mockReturnValue({
+      data: { pastAppointments: [], upcomingAppointments: [upcomingAppointment], todaysAppointments: [] },
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+
+    render(<PatientUpcomingAppointmentsCard {...testProps} />);
+
+    expect(screen.getByText(/2026/)).toBeInTheDocument();
+    expect(screen.queryByText(/1785/)).not.toBeInTheDocument();
   });
 });

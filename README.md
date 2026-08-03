@@ -288,6 +288,8 @@ Crea un archivo `.env` en la raíz del repo (ver [.env.template](.env.template))
 | `SIHSALUS_BACKEND_URL`           | `https://gidis-hsc-dev.inf.pucp.edu.pe` | Backend OpenMRS al que se hace proxy en dev y se descarga el importmap |
 | `SIHSALUS_REQUIRE_BACKEND_URL`   | `false`                                | Si es `true`, `yarn start` falla cuando falta `SIHSALUS_BACKEND_URL`   |
 | `SIHSALUS_BACKEND_FETCH_TIMEOUT_MS` | `5000`                              | Timeout para descargar importmap/rutas del backend en `openmrs start`  |
+| `SIHSALUS_DEV_APPS`              | *(apps frontend principales)*          | Microfrontends que se recompilan con hot reload; los demás se sirven desde `dist/spa` |
+| `SIHSALUS_DEV_TYPECHECK`         | `true`                                 | Usa `false` para evitar un worker TypeScript residente por app; valida el paquete editado con su script `typescript` |
 | `SIHSALUS_AUTH_MODE`             | `openmrs`                              | Modo de auth: `openmrs` (básico) o `keycloak` (OIDC)                   |
 | `SIHSALUS_ALLOW_SELF_SIGNED_TLS` | `true` para DEV/QLTY internos; `false` para otros backends | Activa TLS "insecure" para backends internos con certificados auto-firmados en desarrollo. Usa `false` para forzar validación estricta |
 | `SIHSALUS_FHIR_BASE`             | *(derivado del backend)*               | URL base de FHIR R4                                                    |

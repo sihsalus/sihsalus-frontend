@@ -1,4 +1,4 @@
-import { Button, ClickableTile, Tile } from '@carbon/react';
+import { Button, ClickableTile, Tag, Tile } from '@carbon/react';
 import { TrashCanIcon, useLayoutType, WarningIcon } from '@openmrs/esm-framework';
 import { type OrderBasketItem } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
@@ -27,9 +27,8 @@ const OrderBasketItemTile: React.FC<OrderBasketItemTileProps> = ({ orderBasketIt
 
   const labTile = (
     <div className={styles.orderBasketItemTile}>
-      <div className={styles.clipTextWithEllipsis}>
+      <div className={styles.orderContent}>
         <OrderActionLabel orderBasketItem={orderBasketItem} />
-        <br />
         <span className={styles.name}>{orderBasketItem.concept?.display}</span>
         <span className={styles.label01}>
           {!!orderBasketItem.orderError && (
@@ -83,56 +82,70 @@ function OrderActionLabel({ orderBasketItem }: { orderBasketItem: OrderBasketIte
 
   if (orderBasketItem.isOrderIncomplete) {
     return (
-      <span
-        className={styles.orderActionIncompleteLabel}
+      <Tag
+        className={styles.orderStatus}
+        size="sm"
+        type="red"
         role="status"
         aria-atomic
         aria-label={t('orderActionIncomplete', 'Incomplete')}
       >
         {t('orderActionIncomplete', 'Incomplete')}
-      </span>
+      </Tag>
     );
   }
 
   switch (orderBasketItem.action) {
     case 'NEW':
       return (
-        <span className={styles.orderActionNewLabel} role="status" aria-atomic aria-label={t('orderActionNew', 'New')}>
+        <Tag
+          className={styles.orderStatus}
+          size="sm"
+          type="green"
+          role="status"
+          aria-label={t('orderActionNew', 'New')}
+        >
           {t('orderActionNew', 'New')}
-        </span>
+        </Tag>
       );
     case 'RENEW':
       return (
-        <span
-          className={styles.orderActionRenewLabel}
+        <Tag
+          className={styles.orderStatus}
+          size="sm"
+          type="green"
           role="status"
           aria-atomic
           aria-label={t('orderActionRenew', 'Renew')}
         >
           {t('orderActionRenew', 'Renew')}
-        </span>
+        </Tag>
       );
     case 'REVISE':
       return (
-        <span
-          className={styles.orderActionReviseLabel}
+        <Tag
+          className={styles.orderStatus}
+          size="sm"
+          type="blue"
           role="status"
           aria-atomic
           aria-label={t('orderActionRevise', 'Modify')}
         >
           {t('orderActionRevise', 'Modify')}
-        </span>
+        </Tag>
       );
     case 'DISCONTINUE':
       return (
-        <span
-          className={styles.orderActionDiscontinueLabel}
+        <Tag
+          className={styles.orderStatus}
+          size="sm"
+          type="gray"
           role="status"
           aria-atomic
           aria-label={t('orderActionDiscontinue', 'Discontinue')}
         >
           {t('orderActionDiscontinue', 'Discontinue')}
-        </span>
+        </Tag>
       );
     default:
       return <></>;

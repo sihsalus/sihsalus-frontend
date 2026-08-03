@@ -97,6 +97,8 @@
   "noPrescriptionsToDisplay": "No hay recetas para mostrar",
   "noRefills": "Sin repeticiones",
   "numberIsNotValid": "El número no es válido",
+  "off": "Desactivado",
+  "on": "Activado",
   "onsetDate": "Fecha de inicio",
   "ordered": "Ordenado",
   "orderedMedication": "medicamento prescrito",

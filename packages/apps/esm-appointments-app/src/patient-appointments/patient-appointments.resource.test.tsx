@@ -7,6 +7,7 @@ import {
   changeAppointmentStatus,
   ensureAppointmentVisitLink,
   getAppointmentStatus,
+  toAppointmentDate,
   usePatientAppointments,
 } from './patient-appointments.resource';
 
@@ -183,6 +184,31 @@ describe('usePatientAppointments', () => {
 
     await waitFor(() => expect(result.current.data?.upcomingAppointments).toHaveLength(1));
     expect(result.current.data?.todaysAppointments).toHaveLength(0);
+  });
+
+  it('excludes an admitted appointment from upcoming appointments', async () => {
+    const futureDate = new Date(new Date().setDate(new Date().getDate() + 2)).getTime();
+    mockOpenmrsFetch.mockResolvedValueOnce(
+      mockFetchResponse([{ uuid: 'admitted', status: 'CheckedIn', startDateTime: futureDate }]),
+    );
+
+    const { result } = renderHook(() => usePatientAppointments('patient-1', '2026-04-01', abortController), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.data).not.toBeNull());
+    expect(result.current.data?.upcomingAppointments).toHaveLength(0);
+    expect(result.current.data?.todaysAppointments).toHaveLength(0);
+  });
+
+  it('normalizes millisecond and second timestamps without interpreting them as a historical year', () => {
+    const expectedDate = new Date('2026-07-15T09:00:00-05:00');
+
+    expect(toAppointmentDate(expectedDate.getTime())?.toISOString()).toBe(expectedDate.toISOString());
+    expect(toAppointmentDate(Math.floor(expectedDate.getTime() / 1000))?.toISOString()).toBe(
+      expectedDate.toISOString(),
+    );
+    expect(toAppointmentDate(String(expectedDate.getTime()))?.toISOString()).toBe(expectedDate.toISOString());
   });
 
   it('does not fetch again when patientUuid and startDate are unchanged (cache hit)', async () => {

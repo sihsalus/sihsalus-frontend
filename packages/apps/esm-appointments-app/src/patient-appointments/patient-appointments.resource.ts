@@ -10,6 +10,31 @@ dayjs.extend(isToday);
 const appointmentsSearchUrl = `${restBaseUrl}/appointments/search`;
 export const APPOINTMENT_VISIT_LINK_CONFIGURATION_MISSING = 'APPOINTMENT_VISIT_LINK_CONFIGURATION_MISSING';
 
+const pendingAppointmentStatuses = new Set(['requested', 'scheduled', 'waitlist']);
+
+export function toAppointmentDate(value: Date | number | string): Date | null {
+  let normalizedValue: Date | number | string = value;
+
+  if (typeof value === 'string' && /^-?\d+$/.test(value.trim())) {
+    normalizedValue = Number(value);
+  }
+
+  if (typeof normalizedValue === 'number') {
+    // Appointment APIs may return Unix timestamps in either seconds or milliseconds.
+    normalizedValue = Math.abs(normalizedValue) < 100_000_000_000 ? normalizedValue * 1000 : normalizedValue;
+  }
+
+  const date = normalizedValue instanceof Date ? new Date(normalizedValue.valueOf()) : new Date(normalizedValue);
+  return Number.isNaN(date.valueOf()) ? null : date;
+}
+
+function isPendingAppointment(status: unknown) {
+  const normalizedStatus = String(status ?? '')
+    .replace(/[\s_-]/g, '')
+    .toLowerCase();
+  return pendingAppointmentStatuses.has(normalizedStatus);
+}
+
 interface VisitAttributeSummary {
   value?: unknown;
   attributeType?: { uuid?: string };
@@ -93,24 +118,40 @@ export function usePatientAppointments(patientUuid: string, startDate: string, a
 
   const pastAppointments = appointments
     .slice()
-    .sort((a, b) => (b.startDateTime > a.startDateTime ? 1 : -1))
+    .sort(
+      (a, b) =>
+        (toAppointmentDate(b.startDateTime)?.valueOf() ?? 0) - (toAppointmentDate(a.startDateTime)?.valueOf() ?? 0),
+    )
     ?.filter(({ status }) => status !== 'Cancelled')
-    ?.filter(({ startDateTime }) =>
-      dayjs(new Date(startDateTime).toISOString()).isBefore(new Date().setHours(0, 0, 0, 0)),
-    );
+    ?.filter(({ startDateTime }) => {
+      const appointmentDate = toAppointmentDate(startDateTime);
+      return appointmentDate && dayjs(appointmentDate).isBefore(new Date().setHours(0, 0, 0, 0));
+    });
 
   const upcomingAppointments = appointments
     .slice()
-    .sort((a, b) => (a.startDateTime > b.startDateTime ? 1 : -1))
-    ?.filter(({ status }) => status !== 'Cancelled')
+    .sort(
+      (a, b) =>
+        (toAppointmentDate(a.startDateTime)?.valueOf() ?? 0) - (toAppointmentDate(b.startDateTime)?.valueOf() ?? 0),
+    )
+    ?.filter(({ status }) => isPendingAppointment(status))
     // Upcoming means future days. Appointments later today belong only to todaysAppointments.
-    ?.filter(({ startDateTime }) => dayjs(new Date(startDateTime).toISOString()).isAfter(dayjs().endOf('day')));
+    ?.filter(({ startDateTime }) => {
+      const appointmentDate = toAppointmentDate(startDateTime);
+      return appointmentDate && dayjs(appointmentDate).isAfter(dayjs().endOf('day'));
+    });
 
   const todaysAppointments = appointments
     .slice()
-    .sort((a, b) => (a.startDateTime > b.startDateTime ? 1 : -1))
-    ?.filter(({ status }) => status !== 'Cancelled')
-    ?.filter(({ startDateTime }) => dayjs(new Date(startDateTime).toISOString()).isToday());
+    .sort(
+      (a, b) =>
+        (toAppointmentDate(a.startDateTime)?.valueOf() ?? 0) - (toAppointmentDate(b.startDateTime)?.valueOf() ?? 0),
+    )
+    ?.filter(({ status }) => isPendingAppointment(status))
+    ?.filter(({ startDateTime }) => {
+      const appointmentDate = toAppointmentDate(startDateTime);
+      return appointmentDate && dayjs(appointmentDate).isToday();
+    });
 
   return {
     data: data ? { pastAppointments, upcomingAppointments, todaysAppointments } : null,

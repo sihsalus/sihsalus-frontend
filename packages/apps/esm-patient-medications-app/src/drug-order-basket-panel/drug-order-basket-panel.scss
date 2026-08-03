@@ -1,5 +1,6 @@
 @use "@carbon/colors";
 @use "@carbon/layout";
+@use "@carbon/type";
 @use "@openmrs/esm-styleguide/src/vars" as *;
 
 .desktopContainer {
@@ -18,19 +19,11 @@
 .desktopTile {
   position: relative;
   border-left: layout.$spacing-02 solid colors.$cyan-70;
-  background-color: colors.$white-0;
-  border-right: none;
+  border-top: 1px solid $ui-03;
+  border-right: 1px solid $ui-03;
+  border-bottom: 1px solid $ui-03;
+  background-color: $ui-02;
   padding: 0;
-
-  &::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background-color: colors.$cyan-20;
-  }
 }
 
 .tabletTile {
@@ -53,17 +46,21 @@
 
 .heading {
   margin-left: layout.$spacing-03;
+  @include type.type-style("heading-compact-02");
+  color: $text-02;
 }
 
 .iconAndLabel {
   display: flex;
   align-items: center;
-  margin: layout.$spacing-03;
+  min-width: 0;
+  margin: layout.$spacing-04;
 }
 
 .buttonContainer {
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
 }
 
 .addButton {

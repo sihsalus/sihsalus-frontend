@@ -198,16 +198,18 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [selectedLabsetUuid, setSelectedLabsetUuid] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const allLabel = t('all', 'All');
+  const allOrdersLabel = t('allOrders', 'All orders');
 
   const statusFilterOptions = useMemo(() => {
     return [
-      { value: null, label: t('all', 'All') },
+      { value: null, label: allLabel },
       { value: 'PENDING', label: t('PENDING', 'Pending') },
       { value: 'COMPLETED', label: t('COMPLETED', 'Completado') },
       { value: 'DECLINED', label: t('DECLINED', 'Rechazado') },
       { value: 'IN_PROGRESS', label: t('IN_PROGRESS', 'En progreso') },
     ];
-  }, [t]);
+  }, [allLabel, t]);
 
   const fetchLabsets = useCallback((urls: Array<string>) => {
     return Promise.all(urls.map((url) => openmrsFetch<LabsetResponse>(url).then((res) => res.data)));
@@ -228,24 +230,24 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
   );
 
   const labsetOptions = useMemo(() => {
-    const options = [{ value: null, display: t('all', 'All') }];
+    const options = [{ value: null, display: allLabel }];
     if (fetchedLabsets) {
       fetchedLabsets.forEach((set) => {
         options.push({ value: set.uuid, display: set.display });
       });
     }
     return options;
-  }, [fetchedLabsets, t]);
+  }, [allLabel, fetchedLabsets]);
 
   const priorityFilterOptions = useMemo(() => {
     return [
-      { uuid: null, label: t('all', 'All') },
+      { uuid: null, label: allLabel },
       ...(priorityConfigs?.map((p) => ({
         uuid: p.conceptUuid,
         label: p.label,
       })) ?? []),
     ];
-  }, [priorityConfigs, t]);
+  }, [allLabel, priorityConfigs]);
 
   const selectedOrderName = orderTypes?.find((x) => x.uuid === selectedOrderTypeUuid)?.name;
   const extendedFromDate = useMemo(() => {
@@ -524,7 +526,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
   const orderTypesToDisplay = useMemo(
     () => [
       {
-        display: t('allOrders', 'All orders'),
+        display: allOrdersLabel,
         uuid: null,
       },
       ...(orderTypes?.map((orderType) => ({
@@ -532,7 +534,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
         uuid: orderType.uuid,
       })) ?? []),
     ],
-    [orderTypes, t],
+    [allOrdersLabel, orderTypes],
   );
 
   const handleDateFilterChange = (dates: Array<Date | undefined>) => {
@@ -569,7 +571,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
             id="orderTypeDropdown"
             items={orderTypesToDisplay}
             itemToString={(orderType: OrderType | null) => (orderType ? capitalize(orderType.display) : '')}
-            label={t('allOrders', 'All orders')}
+            label={allOrdersLabel}
             onChange={({ selectedItem }: { selectedItem: OrderType | null }) => {
               if (!selectedItem || selectedItem.display === 'All') {
                 setSelectedOrderTypeUuid(null);
@@ -587,7 +589,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
             id="priorityDropdown"
             items={priorityFilterOptions}
             itemToString={(option: { uuid: string | null; label: string }) => option?.label}
-            label={t('all', 'All')}
+            label={allLabel}
             onChange={({ selectedItem }) => {
               setPriorityFilter(selectedItem?.uuid || null);
             }}
@@ -601,7 +603,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
             id="labsetDropdown"
             items={labsetOptions}
             itemToString={(option: { value: string | null; display: string }) => option?.display}
-            label={t('all', 'All')}
+            label={allLabel}
             onChange={({ selectedItem }) => {
               setSelectedLabsetUuid(selectedItem?.value || null);
             }}
@@ -615,7 +617,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
             id="statusDropdown"
             items={statusFilterOptions}
             itemToString={(option: { value: string | null; label: string }) => option?.label}
-            label={t('all', 'All')}
+            label={allLabel}
             onChange={({ selectedItem }) => {
               setStatusFilter(selectedItem?.value || null);
             }}

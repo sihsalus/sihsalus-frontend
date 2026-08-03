@@ -419,6 +419,7 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
     ),
     plugins: [
       mode !== production &&
+        process.env.SIHSALUS_DEV_TYPECHECK !== 'false' &&
         new TsCheckerRspackPlugin({
           issue: {
             exclude: [(issue) => issue.file?.includes('node_modules') ?? false],

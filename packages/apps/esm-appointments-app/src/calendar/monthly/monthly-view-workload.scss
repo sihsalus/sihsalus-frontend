@@ -82,6 +82,12 @@
   align-items: start;
   margin: 0.1rem 0.1rem layout.$spacing-03 0.1rem;
 
+  & > :global(.cds--popover-container),
+  & > :global(.cds--popover-container) > :global(.cds--tooltip-trigger__wrapper) {
+    width: 100%;
+    min-width: 0;
+  }
+
   & > span {
     @include type.type-style('label-02');
   }
@@ -92,22 +98,24 @@
   padding: layout.$spacing-01;
   margin-right: layout.$spacing-03;
   display: grid;
-  grid-template-columns: 4fr 1fr;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: layout.$spacing-03;
+  align-items: start;
   justify-content: flex-start;
   color: #020f1b;
   cursor: pointer;
   @include type.type-style('label-01');
 
-  & > span:first-child {
-    text-align: left;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-  }
-
   & > span:nth-child(2) {
     text-align: right;
   }
+}
+
+.serviceName {
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1rem;
 }
 
 .serviceArea:hover {
@@ -139,11 +147,13 @@
 }
 
 .smallDesktop {
-  height: 6.25rem;
+  min-height: 6.25rem;
+  height: auto;
 }
 
 .largeDesktop {
-  height: 9.375rem;
+  min-height: 9.375rem;
+  height: auto;
 }
 
 .red {

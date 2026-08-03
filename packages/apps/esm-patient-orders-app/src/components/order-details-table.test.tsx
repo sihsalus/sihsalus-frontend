@@ -7,7 +7,7 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import { useOrderTypes, usePatientOrders } from '@openmrs/esm-patient-common-lib';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useReactToPrint } from 'react-to-print';
 import { mockOrders, mockSessionDataResponse } from 'test-utils';
@@ -23,6 +23,11 @@ const mockGetLocale = vi.mocked(getLocale);
 const mockSession = vi.mocked(useSession);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseReactToPrint = vi.mocked(useReactToPrint);
+const translationMock = vi.hoisted(() => {
+  const values: Record<string, string> = {};
+  const t = (key: string, defaultValue?: string) => values[key] ?? defaultValue ?? key;
+  return { t, values };
+});
 
 mockSession.mockReturnValue(mockSessionDataResponse.data);
 mockGetLocale.mockReturnValue('en');
@@ -31,6 +36,10 @@ mockOpenmrsFetch.mockImplementation(vi.fn());
 vi.mock('react-to-print', async () => ({
   ...(await vi.importActual('react-to-print')),
   useReactToPrint: vi.fn(),
+}));
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: translationMock.t }),
 }));
 
 vi.mock('@carbon/react', async () => {
@@ -275,8 +284,44 @@ describe('OrderDetailsTable', () => {
 
     expect(mockHandlePrint).toHaveBeenCalledTimes(1);
   });
+
+  it('refreshes translated filter options when locale resources become available', async () => {
+    mockUseOrderTypes.mockReturnValue({
+      data: [],
+      error: null,
+      isLoading: false,
+      isValidating: false,
+    });
+    mockUsePatientOrders.mockReturnValue({
+      data: [],
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+    });
+
+    const { rerender } = renderOrderDetailsTable();
+    expect(screen.getAllByText('All').length).toBeGreaterThan(0);
+
+    translationMock.values.all = 'Todos';
+    translationMock.values.allOrders = 'Todas las órdenes';
+    await act(async () => {
+      rerender(
+        <OrderDetailsTable
+          patientUuid="mock-patient-uuid"
+          showAddButton
+          showPrintButton
+          title="Patient Orders"
+        />,
+      );
+    });
+
+    expect(screen.getAllByText('Todos').length).toBeGreaterThan(0);
+    expect(screen.getByText('Todas las órdenes')).toBeInTheDocument();
+  });
 });
 
 function renderOrderDetailsTable() {
-  render(<OrderDetailsTable patientUuid="mock-patient-uuid" showAddButton showPrintButton title="Patient Orders" />);
+  return render(
+    <OrderDetailsTable patientUuid="mock-patient-uuid" showAddButton showPrintButton title="Patient Orders" />,
+  );
 }

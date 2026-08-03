@@ -15,6 +15,9 @@ const mockLabOrderBasketItem = {
   uuid: 'mock-lab-uuid',
 } as OrderBasketItem;
 
+const patientA = { id: 'patient-a' } as fhir.Patient;
+const patientB = { id: 'patient-b' } as fhir.Patient;
+
 describe('useOrderBasket', () => {
   beforeEach(() => {
     _resetOrderBasketStore();
@@ -54,5 +57,36 @@ describe('useOrderBasket', () => {
     });
     expect(drugResult.current.orders).toEqual([mockDrugOrderBasketItem]);
     expect(labResult.current.orders).toEqual([mockLabOrderBasketItem]);
+  });
+
+  it('keeps reads, writes, and clears scoped to an explicitly supplied patient', () => {
+    const preparePostData = ((x) => x) as unknown as PostDataPrepFunction;
+    const { result: patientAResult } = renderHook(() => useOrderBasket(patientA, 'medications', preparePostData));
+    const { result: patientBResult } = renderHook(() => useOrderBasket(patientB, 'medications', preparePostData));
+
+    act(() => {
+      patientAResult.current.setOrders([mockDrugOrderBasketItem]);
+      patientBResult.current.setOrders([mockLabOrderBasketItem]);
+    });
+
+    expect(patientAResult.current.orders).toEqual([mockDrugOrderBasketItem]);
+    expect(patientBResult.current.orders).toEqual([mockLabOrderBasketItem]);
+
+    act(() => {
+      getPatientChartStore().setState({ patientUuid: patientB.id });
+      patientAResult.current.setOrders([{ ...mockDrugOrderBasketItem, display: 'updated for patient A' }]);
+    });
+
+    expect(patientAResult.current.orders).toEqual([
+      expect.objectContaining({ display: 'updated for patient A', uuid: mockDrugOrderBasketItem.uuid }),
+    ]);
+    expect(patientBResult.current.orders).toEqual([mockLabOrderBasketItem]);
+
+    act(() => {
+      patientAResult.current.clearOrders();
+    });
+
+    expect(patientAResult.current.orders).toEqual([]);
+    expect(patientBResult.current.orders).toEqual([mockLabOrderBasketItem]);
   });
 });

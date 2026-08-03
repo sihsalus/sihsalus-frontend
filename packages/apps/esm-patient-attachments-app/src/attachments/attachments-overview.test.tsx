@@ -47,6 +47,29 @@ it('shows an error state instead of an empty state when attachments cannot be re
   expect(screen.queryByText(/There are no attachments to display for this patient/i)).not.toBeInTheDocument();
 });
 
+it('keeps cached attachments visible when a background refresh fails', () => {
+  mockUseAttachments.mockReturnValue({
+    data: [
+      {
+        bytesContentFamily: 'IMAGE',
+        bytesMimeType: 'image/png',
+        comment: 'Cached clinical image',
+        dateTime: '2026-08-03T12:00:00.000Z',
+        filename: 'cached-image.png',
+        uuid: 'cached-attachment-uuid',
+      },
+    ],
+    error: new Error('Background refresh failed'),
+    isLoading: false,
+    isValidating: false,
+    mutate: vi.fn(),
+  });
+
+  render(<AttachmentsOverview patientUuid="test-uuid" />);
+
+  expect(screen.getByText('cached-image')).toBeInTheDocument();
+});
+
 it('renders a loading skeleton when attachments are loading', () => {
   mockUseAttachments.mockReturnValue({
     data: [],

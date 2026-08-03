@@ -181,7 +181,7 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
     return <DataTableSkeleton role="progressbar" />;
   }
 
-  if (error) {
+  if (error && !attachments.length) {
     return <ErrorState error={error} headerTitle={headerTitle} />;
   }
 

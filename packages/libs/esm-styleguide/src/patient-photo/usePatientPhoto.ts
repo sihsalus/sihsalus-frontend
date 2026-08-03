@@ -87,6 +87,7 @@ export function usePatientPhoto(patientUuid: string): UsePatientPhotoResult {
       patientPhotoConceptUuid &&
       patientPhotoConceptUuid !== legacyAttachmentImageConceptUuid &&
       !primary.isLoading &&
+      !primary.error &&
       !primaryItem,
   );
   const legacyUrl = shouldLoadLegacyPhoto

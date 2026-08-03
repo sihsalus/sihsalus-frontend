@@ -155,6 +155,51 @@ describe('usePatientPhoto', () => {
     expect(mocks.useSWR).toHaveBeenNthCalledWith(2, null, openmrsFetch);
   });
 
+  it('does not hide a configured concept error by falling back to a legacy photo', () => {
+    const primaryError = new Error('Unable to load the configured patient photo concept');
+    mocks.useSWR.mockImplementation((url: string | null) => {
+      if (!url) {
+        return {
+          data: null,
+          error: undefined,
+          isLoading: false,
+        };
+      }
+
+      if (url?.includes('concept=patient-photo-concept-uuid')) {
+        return {
+          data: null,
+          error: primaryError,
+          isLoading: false,
+        };
+      }
+
+      return {
+        data: {
+          data: {
+            results: [
+              {
+                comment: 'Patient photo',
+                display: 'Legacy patient photo',
+                obsDatetime: '2026-05-29T05:00:00.000Z',
+                uuid: 'legacy-photo-uuid',
+                value: { display: 'raw file', links: { rel: 'value', uri: '/legacy-photo.png' } },
+              },
+            ],
+          },
+        },
+        error: undefined,
+        isLoading: false,
+      };
+    });
+
+    const { result } = renderHook(() => usePatientPhoto('patient-uuid'));
+
+    expect(result.current.data).toBeNull();
+    expect(result.current.error).toBe(primaryError);
+    expect(mocks.useSWR).toHaveBeenNthCalledWith(2, null, openmrsFetch);
+  });
+
   it('does not fetch when patient photos are not configured', () => {
     mocks.useConfig.mockReturnValue({ patientPhotoConceptUuid: null });
 

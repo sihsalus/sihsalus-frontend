@@ -440,6 +440,8 @@ const MedicationDispenseReview: React.FC<MedicationDispenseReviewProps> = ({
               id="isFreeTextToggled"
               size={'sm'}
               labelText={t('freeTextDosage', 'Texto libre de dosificación')}
+              labelA={t('off', 'Off')}
+              labelB={t('on', 'On')}
               onToggle={(value) => {
                 setIsFreeTextDosage(value);
                 // clear out the dose, route and frequency if changed to free text dosage

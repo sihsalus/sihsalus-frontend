@@ -96,6 +96,8 @@
   "noPrescriptionsToDisplay": "No prescriptions to display",
   "noRefills": "No refills",
   "numberIsNotValid": "Number is not valid",
+  "off": "Off",
+  "on": "On",
   "onsetDate": "Onset date",
   "ordered": "Ordered",
   "orderedMedication": "ordered medication",

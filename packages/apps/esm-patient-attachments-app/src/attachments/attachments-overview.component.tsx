@@ -1,10 +1,11 @@
-import { Button, ContentSwitcher, DataTableSkeleton, IconSwitch, Loading } from '@carbon/react';
+import { Button, ContentSwitcher, DataTableSkeleton, IconSwitch, InlineNotification, Loading } from '@carbon/react';
 import { List, Thumbnail_2 } from '@carbon/react/icons';
 import {
   AddIcon,
   type Attachment,
   createAttachment,
   deleteAttachmentPermanently,
+  getAttachmentErrorStatus,
   showModal,
   showSnackbar,
   type UploadedFile,
@@ -14,7 +15,7 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState, useAllowedFileExtensions } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../constants';
 import { createGalleryEntry } from '../utils';
@@ -36,13 +37,37 @@ interface SwitchEventHandlersParams {
 
 type ViewType = 'grid' | 'table';
 
+export function canDisplayCachedAttachments(error: unknown): boolean {
+  const status = getAttachmentErrorStatus(error);
+
+  if (status !== undefined) {
+    return status === 408 || status === 425 || status === 429 || status >= 500;
+  }
+
+  return (
+    error instanceof TypeError ||
+    (error instanceof Error &&
+      (['AbortError', 'NetworkError', 'TimeoutError'].includes(error.name) ||
+        /failed to fetch|load failed|network request failed/i.test(error.message)))
+  );
+}
+
 const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }) => {
   const isTablet = useLayoutType() === 'tablet';
   const { t } = useTranslation(moduleName);
   const session = useSession();
-  const canRead = userHasAccess('app:hoja.clinica.adjuntos', session?.user);
-  const canEdit = userHasAccess('app:hoja.clinica.adjuntos.editar', session?.user);
-  const { data, error, mutate, isValidating, isLoading } = useAttachments(patientUuid, true);
+  const attachmentCacheScope =
+    session?.authenticated && session.sessionId && session.user?.uuid
+      ? `${session.sessionId}:${session.user.uuid}`
+      : undefined;
+  const canRead = Boolean(attachmentCacheScope && userHasAccess('app:hoja.clinica.adjuntos', session?.user));
+  const canEdit = Boolean(attachmentCacheScope && userHasAccess('app:hoja.clinica.adjuntos.editar', session?.user));
+  const { data, error, mutate, isValidating, isLoading } = useAttachments(
+    patientUuid,
+    true,
+    canRead,
+    attachmentCacheScope,
+  );
   const {
     allowedFileExtensions,
     error: attachmentConfigurationError,
@@ -50,13 +75,34 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
     isLoading: isAttachmentConfigurationLoading,
   } = useAllowedFileExtensions();
 
-  const [attachmentToPreview, setAttachmentToPreview] = useState<Attachment | null>(null);
+  const [attachmentPreview, setAttachmentToPreview] = useState<{
+    attachment: Attachment;
+    cacheScope: string;
+    patientUuid: string;
+  } | null>(null);
   const [hasUploadError, setHasUploadError] = useState(false);
   const [view, setView] = useState<ViewType>('grid');
 
   const headerTitle = t('attachmentsInProperFormat', 'Attachments');
   const attachments = useMemo(() => data.map((item) => createGalleryEntry(item)), [data]);
+  const canDisplayCachedData = error ? canDisplayCachedAttachments(error) : true;
+  const attachmentToPreview =
+    attachmentPreview?.patientUuid === patientUuid && attachmentPreview.cacheScope === attachmentCacheScope
+      ? attachmentPreview.attachment
+      : null;
   const closeImageOrPdfPreview = useCallback(() => setAttachmentToPreview(null), []);
+
+  useEffect(() => {
+    if (
+      attachmentPreview &&
+      (!canRead ||
+        attachmentPreview.patientUuid !== patientUuid ||
+        attachmentPreview.cacheScope !== attachmentCacheScope ||
+        (error && !canDisplayCachedData))
+    ) {
+      setAttachmentToPreview(null);
+    }
+  }, [attachmentCacheScope, attachmentPreview, canDisplayCachedData, canRead, error, patientUuid]);
 
   if (hasUploadError) {
     showSnackbar({
@@ -93,16 +139,22 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
     [mutate, t],
   );
 
-  const openAttachment = useCallback((attachment: Attachment) => {
-    if (attachment.bytesContentFamily === 'IMAGE' || attachment.bytesContentFamily === 'PDF') {
-      setAttachmentToPreview(attachment);
-    } else {
-      const anchor = document.createElement('a');
-      anchor.setAttribute('href', attachment.src);
-      anchor.setAttribute('download', attachment.filename);
-      anchor.click();
-    }
-  }, []);
+  const openAttachment = useCallback(
+    (attachment: Attachment) => {
+      if (attachment.bytesContentFamily === 'IMAGE' || attachment.bytesContentFamily === 'PDF') {
+        if (!attachmentCacheScope) {
+          return;
+        }
+        setAttachmentToPreview({ attachment, cacheScope: attachmentCacheScope, patientUuid });
+      } else {
+        const anchor = document.createElement('a');
+        anchor.setAttribute('href', attachment.src);
+        anchor.setAttribute('download', attachment.filename);
+        anchor.click();
+      }
+    },
+    [attachmentCacheScope, patientUuid],
+  );
 
   const showAddAttachmentModal = useCallback(() => {
     if (!canEdit) {
@@ -181,7 +233,7 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
     return <DataTableSkeleton role="progressbar" />;
   }
 
-  if (error && !attachments.length) {
+  if (error && (!attachments.length || !canDisplayCachedData)) {
     return <ErrorState error={error} headerTitle={headerTitle} />;
   }
 
@@ -227,6 +279,19 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
               ) : null}
             </div>
           </CardHeader>
+          {error ? (
+            <InlineNotification
+              hideCloseButton
+              kind="warning"
+              lowContrast
+              style={{ margin: 0, minWidth: '100%' }}
+              subtitle={t(
+                'staleAttachmentsWarning',
+                'The latest attachments could not be loaded. This list may be out of date.',
+              )}
+              title={t('staleAttachmentsWarningTitle', 'Showing saved attachments')}
+            />
+          ) : null}
           {view === 'grid' ? (
             <AttachmentsGridOverview
               attachments={attachments}

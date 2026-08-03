@@ -17,6 +17,7 @@ import { useVisitContextStore as realUseVisitContextStore } from './src/useVisit
 
 export { ConfigurableLink } from './src/ConfigurableLink';
 export { RenderIfValueIsTruthy } from './src/RenderIfValueIsTruthy';
+export { getAttachmentErrorStatus } from './src/useAttachments';
 export { createUseStore, useStore, useStoreWithActions } from './src/useStore';
 
 import * as utils from '@openmrs/esm-utils';

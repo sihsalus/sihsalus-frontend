@@ -340,6 +340,46 @@ describe('openmrsFetch', () => {
       to: '/openmrs/spa/login',
     });
   });
+
+  it('can redirect and reject an authentication failure so callers can discard protected cached data', async () => {
+    mockGetConfig.mockResolvedValueOnce({
+      redirectAuthFailure: {
+        enabled: true,
+        url: '/openmrs/spa/login',
+        errors: [401],
+        resolvePromise: false,
+      },
+    });
+
+    // @ts-expect-error
+    window.fetch.mockReturnValue(
+      Promise.resolve({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        headers: {
+          get: (_name: string) => null,
+        },
+        clone: () => ({
+          text: () => Promise.resolve('Unauthorized'),
+        }),
+      }),
+    );
+
+    await expect(
+      openmrsFetch('/ws/rest/v1/attachment', {
+        rejectOnAuthFailure: true,
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ status: 401 }),
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/spa/login' });
+    expect(window.fetch).toHaveBeenCalledWith(
+      '/openmrs/ws/rest/v1/attachment',
+      expect.not.objectContaining({ rejectOnAuthFailure: expect.anything() }),
+    );
+  });
 });
 
 describe('openmrsObservableFetch', () => {

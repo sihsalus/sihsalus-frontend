@@ -193,7 +193,15 @@ describe('AppointmentActions', () => {
       'La cita tiene la llegada registrada pero no tiene una consulta activa vinculada. Revise y regularice su estado.',
     );
     expect(mockUserHasAccess).toHaveBeenCalledWith(
-      ['app:home.citas.editar', 'Get Visits', 'Edit Visits', 'Get Queue Entries', 'Get Queues', 'Manage Queue Entries'],
+      [
+        'app:home.citas.editar',
+        'Get Visits',
+        'Edit Visits',
+        'Assign Beds',
+        'Get Queue Entries',
+        'Get Queues',
+        'Manage Queue Entries',
+      ],
       expect.anything(),
     );
   });
@@ -394,6 +402,44 @@ describe('AppointmentActions', () => {
 
     render(<AppointmentActions {...defaultProps} />);
     expect(screen.getByText(/check out/i)).toBeInTheDocument();
+  });
+
+  it('does not offer checkout without the Assign Beds privilege the visit close requires', () => {
+    // The Bed Management module rejects every visit close without Assign Beds (even bed-less
+    // outpatient visits), so a user missing it must not see a checkout button that can only 403.
+    appointment.status = AppointmentStatus.CHECKEDIN;
+    mockUserHasAccess.mockImplementation((requiredPrivileges) =>
+      Array.isArray(requiredPrivileges) ? !requiredPrivileges.includes('Assign Beds') : true,
+    );
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
+      checkOutButton: { enabled: true, customUrl: '' },
+    });
+    mockUseTodaysVisits.mockReturnValue({
+      visits: [
+        {
+          patient: { uuid: appointment.patient.uuid },
+          startDatetime: new Date().toISOString(),
+          stopDatetime: null,
+          uuid: 'linked-active-visit-uuid',
+          attributes: [
+            {
+              attributeType: { uuid: '193508ab-20c6-5291-9f23-0257335eaabd' },
+              value: appointment.uuid,
+            },
+          ],
+        },
+      ],
+      error: null,
+      isLoading: false,
+      mutateVisit: vi.fn(),
+    });
+
+    render(<AppointmentActions {...defaultProps} />);
+
+    expect(screen.queryByRole('button', { name: /check out/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Regularizar cierre' })).not.toBeInTheDocument();
   });
 
   it.each([

@@ -36,6 +36,10 @@ const checkOutPrivileges = [
   appointmentsEditPrivilege,
   'Get Visits',
   'Edit Visits',
+  // The Bed Management module intercepts every visit close server-side and demands Assign Beds,
+  // even for outpatient visits with no bed. Gate the button on it so it only appears for users
+  // whose checkout can actually succeed.
+  'Assign Beds',
   'Get Queue Entries',
   'Get Queues',
   'Manage Queue Entries',

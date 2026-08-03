@@ -13,7 +13,7 @@ import {
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState, useAllowedFileExtensions } from '@openmrs/esm-patient-common-lib';
+import { CardHeader, EmptyState, ErrorState, useAllowedFileExtensions } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../constants';
@@ -42,7 +42,7 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
   const session = useSession();
   const canRead = userHasAccess('app:hoja.clinica.adjuntos', session?.user);
   const canEdit = userHasAccess('app:hoja.clinica.adjuntos.editar', session?.user);
-  const { data, mutate, isValidating, isLoading } = useAttachments(patientUuid, true);
+  const { data, error, mutate, isValidating, isLoading } = useAttachments(patientUuid, true);
   const {
     allowedFileExtensions,
     error: attachmentConfigurationError,
@@ -54,6 +54,7 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
   const [hasUploadError, setHasUploadError] = useState(false);
   const [view, setView] = useState<ViewType>('grid');
 
+  const headerTitle = t('attachmentsInProperFormat', 'Attachments');
   const attachments = useMemo(() => data.map((item) => createGalleryEntry(item)), [data]);
   const closeImageOrPdfPreview = useCallback(() => setAttachmentToPreview(null), []);
 
@@ -180,11 +181,15 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
     return <DataTableSkeleton role="progressbar" />;
   }
 
+  if (error && !attachments.length) {
+    return <ErrorState error={error} headerTitle={headerTitle} />;
+  }
+
   if (!attachments.length) {
     return (
       <EmptyState
         displayText={t('attachmentsInLowerCase', 'attachments')}
-        headerTitle={t('attachmentsInProperFormat', 'Attachments')}
+        headerTitle={headerTitle}
         launchForm={canEdit ? showAddAttachmentModal : undefined}
       />
     );
@@ -194,7 +199,7 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
     <>
       <div onDragOverCapture={canEdit ? showAddAttachmentModal : undefined} className={styles.overview}>
         <>
-          <CardHeader title={t('attachments', 'Attachments')}>
+          <CardHeader title={headerTitle}>
             <div className={styles.validatingDataIcon}>{isValidating && <Loading withOverlay={false} small />}</div>
             <div className={styles.attachmentHeaderActionItems}>
               <ContentSwitcher

@@ -2,7 +2,7 @@ import type { i18n } from 'i18next';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { useConfig } from '@openmrs/esm-react-utils/mock';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import styles from './datepicker.module.scss';
 import { DEFAULT_MIN_DATE_FLOOR } from './defaults';
@@ -102,6 +102,24 @@ describe('OpenmrsDatePicker', () => {
       render(<OpenmrsDatePicker aria-label="datepicker" defaultValue={new Date(2025, 5, 18)} />);
       const input = screen.getByLabelText('datepicker');
       expect(input).toHaveTextContent('18/06/2025');
+    });
+
+    it('should focus the first editable segment instead of opening the calendar when the input is clicked', () => {
+      const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(() => {});
+      render(<OpenmrsDatePicker aria-label="datepicker" />);
+      const input = screen.getByLabelText('datepicker');
+      const inputWrapper = input.querySelector('[role="presentation"]');
+      const daySegment = input.querySelector('[data-type="day"]');
+
+      if (!inputWrapper) {
+        throw new Error('Expected the editable date input wrapper to be rendered');
+      }
+      fireEvent.click(inputWrapper);
+
+      expect(focusSpy).toHaveBeenCalledWith();
+      expect(focusSpy.mock.instances).toContain(daySegment);
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      focusSpy.mockRestore();
     });
   });
 

@@ -1,12 +1,11 @@
 import { createCalendar } from '@internationalized/date';
 import { useDateField } from '@react-aria/datepicker';
 import { useDateFieldState } from '@react-stately/datepicker';
-import { cloneElement, forwardRef, useCallback, useContext, useRef } from 'react';
+import { cloneElement, forwardRef, type MouseEvent as ReactMouseEvent, useCallback, useRef } from 'react';
 import {
   DateFieldContext,
   DateFieldStateContext,
   type DateInputProps,
-  DatePickerStateContext,
   Group,
   GroupContext,
   Input,
@@ -21,12 +20,12 @@ interface OpenmrsDateInputProps {
 }
 
 /**
- * This is just the standard React Aria Components DatePickerInput with an added `onClick` handler to open
- * the calendar when the group is clicked. This is used to emulate Carbon's behaviour in the DatePicker.
+ * This is the standard React Aria Components DatePickerInput with Carbon-compatible focus behaviour.
+ * Clicking the input focuses its first editable segment so a date can be entered from the keyboard;
+ * the adjacent calendar button remains responsible for opening the calendar.
  */
 export const DatePickerInput = /*#__PURE__*/ forwardRef<HTMLDivElement, DateInputProps & OpenmrsDateInputProps>(
   function DatePickerInput(props, ref) {
-    const datePickerState = useContext(DatePickerStateContext)!;
     const [dateFieldProps, fieldRef] = useContextProps({ slot: props.slot }, ref, DateFieldContext);
     const { locale } = useLocale();
     const state = useDateFieldState({
@@ -38,11 +37,11 @@ export const DatePickerInput = /*#__PURE__*/ forwardRef<HTMLDivElement, DateInpu
     const inputRef = useRef<HTMLInputElement>(null);
     const { fieldProps, inputProps } = useDateField({ ...dateFieldProps, inputRef }, state, fieldRef);
 
-    const onClick = useCallback(() => {
+    const onClick = useCallback((event: ReactMouseEvent<HTMLDivElement>) => {
       if (!state.isDisabled) {
-        datePickerState.toggle();
+        event.currentTarget.querySelector<HTMLElement>('[data-type]:not([data-readonly])')?.focus();
       }
-    }, [state.isDisabled, datePickerState.toggle]);
+    }, [state.isDisabled]);
 
     return (
       <Provider

@@ -97,6 +97,7 @@ describe('OrderDetailsTable', () => {
   const drugOrderTypeUuid = '131168f4-15f5-102d-96e4-000c29c2a5d7';
   const medicationsEditPrivilege = 'app:hoja.clinica.medicamentos.editar';
   const ordersEditPrivilege = 'app:hoja.clinica.ordenes.editar';
+  const resultsEditPrivilege = 'app:hoja.clinica.resultados.editar';
   const drugOrder = mockOrders.find((order) => order.type === 'drugorder') as unknown as Order;
   const testOrder = mockOrders.find((order) => order.type === 'testorder') as unknown as Order;
   const hydratedDrugOrder = {
@@ -461,6 +462,13 @@ describe('OrderDetailsTable', () => {
       modifyVisible: false,
       order: testOrder,
       privileges: [medicationsEditPrivilege],
+    },
+    {
+      cancelVisible: false,
+      label: 'does not render an empty action menu with only the results edit privilege',
+      modifyVisible: false,
+      order: testOrder,
+      privileges: [resultsEditPrivilege],
     },
     {
       cancelVisible: true,

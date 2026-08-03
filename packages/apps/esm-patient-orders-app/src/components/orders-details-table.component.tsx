@@ -51,7 +51,6 @@ import {
   ErrorState,
   getDrugOrderByUuid,
   getPatientUuidFromStore,
-  launchPatientWorkspace,
   type Order,
   type OrderBasketItem,
   type OrderType,
@@ -152,8 +151,6 @@ interface OrderDetailsProps {
 interface OrderBasketItemActionsProps {
   canEditMedications: boolean;
   canEditOrders: boolean;
-  canEditResults: boolean;
-  openOrderBasket: () => void;
   openOrderForm: () => void;
   orderItem: Order;
   responsiveSize: 'sm' | 'md' | 'lg';
@@ -163,7 +160,6 @@ interface OrderHeaderProps {
   key: string;
   header: string;
   isSortable: boolean;
-  isVisible?: boolean;
 }
 
 interface DrugModificationRequest {
@@ -171,8 +167,6 @@ interface DrugModificationRequest {
   generation: number;
   intentToken: number;
 }
-
-type MutableOrderBasketItem = OrderBasketItem;
 
 function getCellContent(value: ReactNode) {
   if (value && typeof value === 'object' && 'content' in value) {
@@ -187,7 +181,6 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
   const session = useSession();
   const canEditMedications = userHasAccess('app:hoja.clinica.medicamentos.editar', session?.user);
   const canEditOrders = userHasAccess('app:hoja.clinica.ordenes.editar', session?.user);
-  const canEditResults = userHasAccess('app:hoja.clinica.resultados.editar', session?.user);
   const locale = getLocale() ?? 'en';
   const defaultPageSize = 10;
   const headerTitle = t('orders', 'Orders');
@@ -923,8 +916,6 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
                                               <OrderBasketItemActions
                                                 canEditMedications={canEditMedications}
                                                 canEditOrders={canEditOrders}
-                                                canEditResults={canEditResults}
-                                                openOrderBasket={launchOrderBasket}
                                                 openOrderForm={() => void openOrderForm(matchingOrder)}
                                                 orderItem={matchingOrder}
                                                 responsiveSize={responsiveSize}
@@ -1014,24 +1005,18 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
 function OrderBasketItemActions({
   canEditMedications,
   canEditOrders,
-  canEditResults,
   orderItem,
-  openOrderBasket: _openOrderBasket,
   openOrderForm,
   responsiveSize,
 }: OrderBasketItemActionsProps) {
   const { t } = useTranslation();
   const launchCancelOrder = useLaunchWorkspaceRequiringVisit('patient-orders-form-workspace');
-  const { orders: allOrdersInBasket } = useOrderBasket<MutableOrderBasketItem>();
-  const { orders: ordersForType } = useOrderBasket<MutableOrderBasketItem>(orderItem.orderType.uuid);
+  const { orders: allOrdersInBasket } = useOrderBasket<OrderBasketItem>();
+  const { orders: ordersForType } = useOrderBasket<OrderBasketItem>(orderItem.orderType.uuid);
 
   const handleModifyClick = useCallback(() => {
     openOrderForm();
   }, [openOrderForm]);
-
-  const handleAddResultsClick = useCallback(() => {
-    launchPatientWorkspace('test-results-form-workspace', { order: orderItem });
-  }, [orderItem]);
 
   const handleCancelClick = useCallback(() => {
     launchCancelOrder({ order: orderItem });
@@ -1056,7 +1041,7 @@ function OrderBasketItemActions({
   const orderAlreadyInBasket = ordersForType.some((order) => order.uuid === orderItem.uuid);
   const canModifyOrder = orderItem.type === 'drugorder' ? canEditMedications : canEditOrders;
 
-  if (!canModifyOrder && !canEditOrders && !(orderItem?.type === 'testorder' && canEditResults)) {
+  if (!canModifyOrder && !canEditOrders) {
     return null;
   }
 

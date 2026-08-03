@@ -105,6 +105,7 @@ describe('savePatientPhoto', () => {
       JSON.stringify({
         person: 'patient-uuid',
         concept: 'patient-photo-concept-uuid',
+        comment: 'Patient photo',
         groupMembers: [],
         obsDatetime,
       }),

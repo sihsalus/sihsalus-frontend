@@ -200,6 +200,7 @@ export async function savePatientPhoto(
     JSON.stringify({
       person: patientUuid,
       concept: conceptUuid,
+      comment: 'Patient photo',
       groupMembers: [],
       obsDatetime: date,
     }),

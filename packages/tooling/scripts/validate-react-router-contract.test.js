@@ -71,7 +71,7 @@ test('rejects vulnerable resolutions, missing sharing declarations, and removed 
   });
   const failures = validateReactRouterContract(root);
 
-  assert.ok(failures.some((failure) => failure.includes('resolutions.react-router must be "7.18.1"')));
+  assert.ok(failures.some((failure) => failure.includes('resolutions.react-router must be "7.18.2"')));
   assert.ok(failures.some((failure) => failure.includes('peer react-router-dom must be ">=6.30.4 <8"')));
   assert.ok(failures.some((failure) => failure.includes('contains a removed React Router v6 future flag')));
   assert.ok(failures.some((failure) => failure.includes('uses an unstable React Router RSC API')));

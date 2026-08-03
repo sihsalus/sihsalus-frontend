@@ -49,6 +49,10 @@ export interface Workspace2DefinitionProps<
   showActionMenu: boolean;
 }
 
+export function getWorkspaceHeaderCloseOptions(isRootWorkspace: boolean) {
+  return { closeWindow: isRootWorkspace };
+}
+
 /**
  * @experimental
  */
@@ -180,7 +184,7 @@ export const Workspace2: React.FC<Workspace2Props> = ({ title, children, hasUnsa
                   {!canCloseGroup && (
                     <HeaderGlobalAction
                       aria-label={getCoreTranslation('close')}
-                      onClick={() => closeWorkspace({ closeWindow: true })}
+                      onClick={() => closeWorkspace(getWorkspaceHeaderCloseOptions(isRootWorkspace))}
                     >
                       <CloseIcon />
                     </HeaderGlobalAction>
@@ -199,7 +203,7 @@ export const Workspace2: React.FC<Workspace2Props> = ({ title, children, hasUnsa
                       if (canCloseGroup) {
                         closeWorkspaceGroup2();
                       } else {
-                        closeWorkspace({ closeWindow: true });
+                        closeWorkspace(getWorkspaceHeaderCloseOptions(isRootWorkspace));
                       }
                     }}
                   >

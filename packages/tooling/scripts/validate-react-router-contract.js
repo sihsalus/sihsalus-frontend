@@ -5,13 +5,13 @@ const path = require('node:path');
 const yaml = require('js-yaml');
 
 const repoRoot = path.resolve(__dirname, '../../..');
-const targetVersion = '7.18.1';
+const targetVersion = '7.18.2';
 const peerRange = '>=6.30.4 <8';
 const trivyAdvisoryId = 'GHSA-qwww-vcr4-c8h2';
 const trivyExceptionExpiresAt = '2026-08-31';
 const trivyExceptionPurl = `pkg:npm/react-router@${targetVersion}`;
 const trivyExceptionStatement =
-  'RSC-only advisory is not applicable while SIHSALUS remains a declarative React 18 SPA; CI rejects React Router RSC APIs and react-server-dom dependencies before release.';
+  'React Router 7.18.2 contains the official v7 CSRF backport; GitHub/npm metadata still incorrectly reports it as affected below 8.3.0. CI rejects React Router RSC APIs and react-server-dom dependencies until the advisory database is corrected.';
 const runtimePackageRoots = ['packages/apps', 'packages/libs', 'packages/templates'];
 const dependencySections = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'];
 const routerPackages = ['react-router', 'react-router-dom'];
@@ -92,7 +92,7 @@ function validateManifest(root, manifestPath, failures, scanSource = false) {
     }
     if (unstableRscApi.test(source)) {
       failures.push(
-        `${path.relative(root, sourceFile)}: uses an unstable React Router RSC API; advisory 1124282 cannot be waived.`,
+        `${path.relative(root, sourceFile)}: uses an unstable React Router RSC API outside the supported SPA contract.`,
       );
     }
   }

@@ -6,8 +6,9 @@
 .desktopTile {
   border-left: layout.$spacing-02 solid colors.$purple-70;
   background-color: $ui-02;
-  border-top: 1px solid colors.$purple-20;
-  border-right: none;
+  border-top: 1px solid $ui-03;
+  border-right: 1px solid $ui-03;
+  border-bottom: 1px solid $ui-03;
   padding: 0;
 }
 
@@ -60,7 +61,8 @@
 .iconAndLabel {
   display: flex;
   align-items: center;
-  margin: layout.$spacing-03;
+  min-width: 0;
+  margin: layout.$spacing-04;
 }
 
 .orderTypeIcon {
@@ -71,6 +73,7 @@
 .buttonContainer {
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
 }
 
 .addButton {

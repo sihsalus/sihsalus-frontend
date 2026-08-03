@@ -1,4 +1,4 @@
-import { ClickableTile, IconButton, Tile } from '@carbon/react';
+import { ClickableTile, IconButton, Tag, Tile } from '@carbon/react';
 import {
   formatDate,
   parseDate,
@@ -62,10 +62,11 @@ export function LabOrderBasketItemTile({ orderBasketItem, onItemClick, onRemoveC
   const labTile = (
     <div>
       <div className={styles.orderBasketItemTile}>
-        <div className={styles.clipTextWithEllipsis}>
-          <OrderActionLabel orderBasketItem={orderBasketItem} />
-          <OrderPriorityLabel orderBasketItem={orderBasketItem} />
-          <br />
+        <div className={styles.orderContent}>
+          <div className={styles.statusRow}>
+            <OrderActionLabel orderBasketItem={orderBasketItem} />
+            <OrderPriorityLabel orderBasketItem={orderBasketItem} />
+          </div>
           <span className={styles.name}>{orderBasketItem.testType?.label}</span>
           {hasRecentOrder && (
             <>
@@ -132,56 +133,70 @@ function OrderActionLabel({ orderBasketItem }: { orderBasketItem: TestOrderBaske
 
   if (orderBasketItem.isOrderIncomplete) {
     return (
-      <span
-        className={styles.orderActionIncompleteLabel}
+      <Tag
+        className={styles.orderStatus}
+        size="sm"
+        type="red"
         role="status"
         aria-atomic
         aria-label={t('orderActionIncomplete', 'Incomplete')}
       >
         {t('orderActionIncomplete', 'Incomplete')}
-      </span>
+      </Tag>
     );
   }
 
   switch (orderBasketItem.action) {
     case 'NEW':
       return (
-        <span className={styles.orderActionNewLabel} role="status" aria-atomic aria-label={t('orderActionNew', 'New')}>
+        <Tag
+          className={styles.orderStatus}
+          size="sm"
+          type="green"
+          role="status"
+          aria-label={t('orderActionNew', 'New')}
+        >
           {t('orderActionNew', 'New')}
-        </span>
+        </Tag>
       );
     case 'RENEW':
       return (
-        <span
-          className={styles.orderActionRenewLabel}
+        <Tag
+          className={styles.orderStatus}
+          size="sm"
+          type="green"
           role="status"
           aria-atomic
           aria-label={t('orderActionRenew', 'Renew')}
         >
           {t('orderActionRenew', 'Renew')}
-        </span>
+        </Tag>
       );
     case 'REVISE':
       return (
-        <span
-          className={styles.orderActionReviseLabel}
+        <Tag
+          className={styles.orderStatus}
+          size="sm"
+          type="blue"
           role="status"
           aria-atomic
           aria-label={t('orderActionRevise', 'Modify')}
         >
           {t('orderActionRevise', 'Modify')}
-        </span>
+        </Tag>
       );
     case 'DISCONTINUE':
       return (
-        <span
-          className={styles.orderActionDiscontinueLabel}
+        <Tag
+          className={styles.orderStatus}
+          size="sm"
+          type="gray"
           role="status"
           aria-atomic
           aria-label={t('orderActionDiscontinue', 'Discontinue')}
         >
           {t('orderActionDiscontinue', 'Discontinue')}
-        </span>
+        </Tag>
       );
     default:
       return <></>;
@@ -211,9 +226,9 @@ function OrderPriorityLabel({ orderBasketItem }: { orderBasketItem: TestOrderBas
     : '';
 
   return (
-    <span className={styles.priorityLabel} role="status">
+    <Tag className={styles.orderStatus} size="sm" type="blue" role="status">
       {priorityLabel}
       {dateStr}
-    </span>
+    </Tag>
   );
 }

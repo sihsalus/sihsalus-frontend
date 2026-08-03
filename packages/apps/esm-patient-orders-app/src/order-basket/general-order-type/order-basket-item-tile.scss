@@ -4,7 +4,8 @@
 @use '@openmrs/esm-styleguide/src/vars' as *;
 
 .clickableTileDesktop {
-  padding: layout.$spacing-03 layout.$spacing-04;
+  padding: layout.$spacing-04;
+  background-color: colors.$white-0;
   border-bottom: 1px solid $ui-03;
 }
 
@@ -17,38 +18,21 @@
 .orderBasketItemTile {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: flex-start;
+  gap: layout.$spacing-03;
+  width: 100%;
 }
 
-.label {
-  display: inline-block;
-  @include type.type-style('label-01');
+.orderContent {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.orderStatus {
+  display: flex;
+  width: fit-content;
   margin-bottom: layout.$spacing-03;
-}
-
-.orderActionNewLabel {
-  @extend .label;
-  background-color: colors.$green-10-hover;
-  padding: 0 layout.$spacing-02;
-}
-
-.orderActionIncompleteLabel {
-  @extend .orderActionNewLabel;
-  background-color: colors.$red-60;
-  color: white;
-}
-
-.orderActionRenewLabel {
-  @extend .orderActionNewLabel;
-}
-
-.orderActionReviseLabel {
-  @extend .orderActionNewLabel;
-}
-
-.orderActionDiscontinueLabel {
-  @extend .orderActionNewLabel;
-  background-color: colors.$gray-20;
 }
 
 .orderErrorText {
@@ -60,6 +44,9 @@
 .name {
   @include type.type-style('heading-compact-01');
   color: black;
+  display: block;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .removeButton {
@@ -72,10 +59,6 @@
   @include type.type-style('label-01');
 }
 
-.clipTextWithEllipsis {
-  font-size: layout.$spacing-05;
-  line-height: 1.5;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
+.orderBasketItemTile > button {
+  flex: 0 0 auto;
 }

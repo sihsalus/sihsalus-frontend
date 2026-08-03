@@ -32,6 +32,9 @@
   "discard": "Descartar",
   "error": "Error",
   "errorFetchingWeight": "Error al cargar peso",
+  "exitFullscreen": "Salir de pantalla completa",
+  "exportAsCSV": "Exportar a CSV",
+  "exportAsPNG": "Exportar a PNG",
   "female": "Femenino",
   "glasgowComaScale": "Escala de Glasgow",
   "glasgowEyeOpening": "Apertura ocular",
@@ -65,6 +68,7 @@
   "hoursOldVitals_other": "<0>Estos signos vitales tienen <1>{{count}} horas de antigüedad</1></0>",
   "loading": "Cargando",
   "lowAbnormalValue": "Valor anormal inferior",
+  "makeFullscreen": "Ver en pantalla completa",
   "male": "Masculino",
   "muac": "MUAC",
   "noActiveVisit": "Una consulta activa es obligatoria para registrar signos vitales.",
@@ -113,6 +117,7 @@
   "vitalsAndBiometricsNowAvailable": "Ahora son visibles en la página de Signos Vitales y Datos Biométricos",
   "vitalsAndBiometricsRecorded": "Signos Vitales y Datos Biométricos guardados",
   "vitalsAndBiometricsSaveError": "Error al guardar signos vitales y datos biométricos",
+  "vitalsChartFileName": "grafico-de-signos-vitales",
   "vitalsHistory": "Historial de signos vitales",
   "weight": "Peso"
 }

@@ -100,6 +100,16 @@ const VitalsChart: React.FC<VitalsChartProps> = ({ patientVitals, conceptUnits, 
 
   const chartOptions = {
     title: selectedVitalSign.title,
+    locale: {
+      translations: {
+        toolbar: {
+          exportAsCSV: t('exportAsCSV', 'Export to CSV'),
+          exportAsPNG: t('exportAsPNG', 'Export to PNG'),
+          makeFullScreen: t('makeFullscreen', 'Make fullscreen'),
+          exitFullScreen: t('exitFullscreen', 'Exit fullscreen'),
+        },
+      },
+    },
     axes: {
       bottom: {
         title: t('date', 'Date'),
@@ -127,6 +137,9 @@ const VitalsChart: React.FC<VitalsChartProps> = ({ patientVitals, conceptUnits, 
           group,
         ).toUpperCase()}
         <span style="color: #c6c6c6; font-size: 1rem; font-weight:600">${key}</span></div>`,
+    },
+    fileDownload: {
+      fileName: t('vitalsChartFileName', 'vitals-chart'),
     },
     toolbar: {
       enabled: true,

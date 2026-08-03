@@ -1,3 +1,4 @@
+import { LineChart } from '@carbon/charts-react';
 import { getDefaultsFromConfigSchema, useConfig, userHasAccess } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -191,6 +192,31 @@ describe('VitalsOverview', () => {
     expect(screen.getByRole('tab', { name: /spo2/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /temp/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /r\. rate/i })).toBeInTheDocument();
+
+    const chartOptions = vi.mocked(LineChart).mock.calls.at(-1)?.[0].options;
+
+    expect(chartOptions).toMatchObject({
+      locale: {
+        translations: {
+          toolbar: {
+            exitFullScreen: 'Exit fullscreen',
+            exportAsCSV: 'Export to CSV',
+            exportAsPNG: 'Export to PNG',
+            makeFullScreen: 'Make fullscreen',
+          },
+        },
+      },
+      fileDownload: {
+        fileName: 'vitals-chart',
+      },
+      toolbar: {
+        controls: expect.arrayContaining([
+          { type: 'Export as CSV' },
+          { type: 'Export as PNG' },
+          { type: 'Make fullscreen' },
+        ]),
+      },
+    });
   });
 
   it('expands a vitals row to show an associated note', async () => {

@@ -29,6 +29,9 @@
   "discard": "Discard",
   "error": "Error",
   "errorFetchingWeight": "Error loading weight",
+  "exitFullscreen": "Exit fullscreen",
+  "exportAsCSV": "Export to CSV",
+  "exportAsPNG": "Export to PNG",
   "female": "Female",
   "glasgowComaScale": "Glasgow coma scale",
   "glasgowEyeOpening": "Eye opening",
@@ -61,6 +64,7 @@
   "hoursOldVitals_other": "<0>These vitals are <1>{{count}} hour old</1></0>",
   "loading": "Loading",
   "lowAbnormalValue": "Low abnormal value",
+  "makeFullscreen": "Make fullscreen",
   "male": "Male",
   "muac": "MUAC",
   "noActiveVisit": "An active visit is required to record vitals and biometrics.",
@@ -109,6 +113,7 @@
   "vitalsAndBiometricsNowAvailable": "They are now visible on the Vitals and Biometrics page",
   "vitalsAndBiometricsRecorded": "Vitals and Biometrics saved",
   "vitalsAndBiometricsSaveError": "Error saving vitals and biometrics",
+  "vitalsChartFileName": "vitals-chart",
   "vitalsHistory": "Vitals history",
   "weight": "Weight"
 }

@@ -4,6 +4,7 @@ import {
   canTransition,
   getAppointmentKindLabel,
   getAppointmentStatusLabel,
+  getGender,
   isAppointmentEditable,
   isAppointmentServiceAvailableForGender,
 } from './functions';
@@ -72,11 +73,30 @@ describe('appointment labels', () => {
     expect(esTranslations.appointmentsInProgress).toBe('Citas en progreso');
     expect(esTranslations.completedAppointments).toBe('Citas completadas');
     expect(esTranslations.cancelledAppointments).toBe('Citas canceladas');
+    expect(esTranslations.appointmentList).toBe('Lista de citas');
+    expect(esTranslations.patientIdentifiers).toBe('Identificadores del paciente');
+    expect(esTranslations.phoneNumber).toBe('Número de teléfono');
   });
 
   it('does not expose unknown backend values directly', () => {
     expect(getAppointmentStatusLabel('UnexpectedStatus', t)).toBe('Estado no reconocido');
     expect(getAppointmentKindLabel('UnexpectedKind', t)).toBe('Tipo no reconocido');
+  });
+});
+
+describe('gender labels', () => {
+  const t = (key: string, defaultValue: string) =>
+    ({ male: 'Masculino', female: 'Femenino', other: 'Otro', unknown: 'Desconocido' })[key] ?? defaultValue;
+
+  it.each([
+    ['M', 'Masculino'],
+    ['Male', 'Masculino'],
+    ['F', 'Femenino'],
+    ['female', 'Femenino'],
+    ['O', 'Otro'],
+    ['Unknown', 'Desconocido'],
+  ])('translates %s as %s', (value, expected) => {
+    expect(getGender(value, t)).toBe(expected);
   });
 });
 

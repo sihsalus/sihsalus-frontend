@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { clearKeyCache } from './crypto';
 import { clearEntries, getEntriesForUser, queueEntry } from './db';
@@ -33,7 +33,7 @@ describe('queueEntry / getEntriesForUser', () => {
   it('stores and retrieves an entry', async () => {
     const entry = makeEntry();
     await queueEntry(DB, entry, 10);
-    const results = await getEntriesForUser(DB, 'user-1');
+    const { entries: results } = await getEntriesForUser(DB, 'user-1');
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({ id: entry.id, eventType: 'VIEW', sessionId: 'sess-1' });
   });
@@ -63,8 +63,8 @@ describe('queueEntry / getEntriesForUser', () => {
   it('only returns entries for the requesting user', async () => {
     await queueEntry(DB, makeEntry({ id: 'a', userUuid: 'user-1' }), 10);
     await queueEntry(DB, makeEntry({ id: 'b', userUuid: 'user-2' }), 10);
-    const forUser1 = await getEntriesForUser(DB, 'user-1');
-    const forUser2 = await getEntriesForUser(DB, 'user-2');
+    const { entries: forUser1 } = await getEntriesForUser(DB, 'user-1');
+    const { entries: forUser2 } = await getEntriesForUser(DB, 'user-2');
     expect(forUser1.map((e) => e.id)).toEqual(['a']);
     expect(forUser2.map((e) => e.id)).toEqual(['b']);
   });
@@ -81,10 +81,32 @@ describe('queueEntry / getEntriesForUser', () => {
     // Add one more — should evict entry-0 (oldest).
     await queueEntry(DB, makeEntry({ id: 'entry-new', timestamp: new Date(t0.getTime() + MAX).toISOString() }), MAX);
 
-    const results = await getEntriesForUser(DB, 'user-1');
+    const { entries: results } = await getEntriesForUser(DB, 'user-1');
     expect(results).toHaveLength(MAX);
     expect(results.map((e) => e.id)).not.toContain('entry-0');
     expect(results.map((e) => e.id)).toContain('entry-new');
+  });
+});
+
+describe('undecryptable entries', () => {
+  it('reports them by id instead of dropping them from the result', async () => {
+    // A record the trail cannot read is still a record it lost. Returning the
+    // ids is what lets the caller say so, and reclaim the slot it holds.
+    await queueEntry(DB, makeEntry({ id: 'readable' }), 10);
+    await queueEntry(DB, makeEntry({ id: 'corrupt' }), 10);
+
+    const crypto = await import('./crypto');
+    const realDecrypt = crypto.decryptPayload;
+    vi.spyOn(crypto, 'decryptPayload').mockImplementation(async (payload, user) => {
+      const entry = await realDecrypt<{ id: string }>(payload, user);
+      return entry?.id === 'corrupt' ? null : entry;
+    });
+
+    const { entries, undecryptableIds } = await getEntriesForUser(DB, 'user-1');
+
+    expect(entries.map((e) => e.id)).toEqual(['readable']);
+    expect(undecryptableIds).toEqual(['corrupt']);
+    vi.restoreAllMocks();
   });
 });
 
@@ -93,14 +115,14 @@ describe('clearEntries', () => {
     await queueEntry(DB, makeEntry({ id: 'keep' }), 10);
     await queueEntry(DB, makeEntry({ id: 'remove' }), 10);
     await clearEntries(DB, ['remove']);
-    const results = await getEntriesForUser(DB, 'user-1');
+    const { entries: results } = await getEntriesForUser(DB, 'user-1');
     expect(results.map((e) => e.id)).toEqual(['keep']);
   });
 
   it('is a no-op for non-existent ids', async () => {
     await queueEntry(DB, makeEntry({ id: 'a' }), 10);
     await clearEntries(DB, ['does-not-exist']);
-    const results = await getEntriesForUser(DB, 'user-1');
+    const { entries: results } = await getEntriesForUser(DB, 'user-1');
     expect(results).toHaveLength(1);
   });
 });

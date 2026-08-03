@@ -2,7 +2,7 @@ import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { useContext } from 'react';
 import useSWR from 'swr';
 
-import { configSchema } from '../config-schema';
+import { formatPatientIdentifiers } from '../helpers/patient-identifiers';
 import { type Identifier } from '../types';
 
 import SelectedDateContext from './selectedDateContext';
@@ -11,7 +11,7 @@ export interface Response {
   age: number;
   dob: number;
   gender: string;
-  identifiers: Array<Identifier>;
+  identifiers?: Array<Identifier>;
   name: string;
   uuid: string;
   phoneNumber: string;
@@ -35,9 +35,8 @@ export function useUnscheduledAppointments() {
 function toAppointmentObject(appointment: Response) {
   return {
     name: appointment.name,
-    identifier: appointment?.identifiers?.find(
-      (identifier) => identifier.identifierName === configSchema.patientIdentifierType._default,
-    ).identifier,
+    identifier: formatPatientIdentifiers(appointment.identifiers),
+    identifiers: appointment.identifiers,
     dateTime: appointment?.visit.startDateTime,
     gender: appointment.gender,
     phoneNumber: appointment.phoneNumber,

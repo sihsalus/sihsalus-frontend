@@ -130,16 +130,13 @@ describe('AppointmentsTable', () => {
     [AppointmentStatus.CHECKEDIN, 'checkedIn', 'Appointments in progress'],
     [AppointmentStatus.COMPLETED, 'completed', 'Completed appointments'],
     [AppointmentStatus.CANCELLED, 'cancelled', 'Cancelled appointments'],
-  ])(
-    'uses a grammatical collection heading for %s appointments',
-    async (appointmentStatus, tableHeading, heading) => {
-      renderAppointmentsTable({ appointmentStatus, tableHeading });
+  ])('uses a grammatical collection heading for %s appointments', async (appointmentStatus, tableHeading, heading) => {
+    renderAppointmentsTable({ appointmentStatus, tableHeading });
 
-      await screen.findByRole('heading', { name: heading });
+    await screen.findByRole('heading', { name: heading });
 
-      expect(getByTextWithMarkup(`There are no ${heading.toLocaleLowerCase()} to display`)).toBeInTheDocument();
-    },
-  );
+    expect(getByTextWithMarkup(`There are no ${heading.toLocaleLowerCase()} to display`)).toBeInTheDocument();
+  });
 
   it('labels the current-day collection as appointments scheduled today', async () => {
     renderAppointmentsTable({ tableHeading: 'todaysAppointments' });
@@ -162,6 +159,8 @@ describe('AppointmentsTable', () => {
     expect(screen.getByRole('search', { name: /filter table/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /download/i })).toBeInTheDocument();
     expect(screen.getByRole('row', { name: /john wilson - .* hiv clinic outpatient/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /responsible provider/i })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Dr James Cook' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /john wilson/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /john wilson/i })).toHaveAttribute('href', 'url-to-patient-chart');
   });
@@ -272,14 +271,8 @@ describe('AppointmentsTable', () => {
     expect(downloadButton).toBeInTheDocument();
     expect(mockExportAppointmentsToSpreadsheet).toHaveBeenCalledWith(
       mockAppointments,
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: '7cd38a6d-377e-491b-8284-b04cf8b8c6d8',
-          patientName: expect.anything(),
-          identifier: '-',
-        }),
-      ]),
-      expect.stringContaining('scheduled_appointments'),
+      expect.any(Function),
+      expect.stringMatching(/^scheduled_Appointments_\d{4}-\d{2}-\d{2}\.xlsx$/),
     );
   });
 

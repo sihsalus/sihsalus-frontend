@@ -307,6 +307,28 @@ describe('PatientBannerContactDetails', () => {
     }
   });
 
+  it('renders a newborn relative age instead of hiding the zero-year value', () => {
+    mockUseRelationships.mockReturnValue({
+      data: [
+        {
+          display: 'Elena PRUEBA Torres Vargas',
+          relationshipType: 'Sibling',
+          relativeAge: 0,
+          relativeBirthdate: '2026-06-12',
+          relativeUuid: 'newborn-relative-uuid',
+          uuid: 'newborn-relationship-uuid',
+        },
+      ],
+      isLoading: false,
+    } as ReturnType<typeof useRelationships>);
+
+    render(<PatientBannerContactDetails patientId={patientId} deceased={false} />);
+
+    expect(screen.getByText('Elena PRUEBA Torres Vargas').closest('li')).toHaveTextContent(
+      /Relationship:\s*Sibling.*Age:\s*6 days/i,
+    );
+  });
+
   it('does not render active status or an empty patient lists section', () => {
     render(<PatientBannerContactDetails patientId={patientId} deceased={false} />);
 

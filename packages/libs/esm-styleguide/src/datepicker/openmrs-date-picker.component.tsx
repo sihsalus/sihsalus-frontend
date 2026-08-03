@@ -47,6 +47,7 @@ export const OpenmrsDatePicker = /*#__PURE__*/ forwardRef<HTMLDivElement, Openmr
       className,
       defaultValue: rawDefaultValue,
       isDisabled,
+      isReadOnly,
       invalid,
       invalidText,
       isInvalid: isInvalidRaw,
@@ -118,6 +119,7 @@ export const OpenmrsDatePicker = /*#__PURE__*/ forwardRef<HTMLDivElement, Openmr
               })}
               defaultValue={defaultValue}
               isDisabled={isDisabled}
+              isReadOnly={isReadOnly}
               isInvalid={isInvalid}
               maxValue={maxDate}
               minValue={minDate}
@@ -140,6 +142,10 @@ export const OpenmrsDatePicker = /*#__PURE__*/ forwardRef<HTMLDivElement, Openmr
                       [styles.inputWrapperSm]: size === 'sm',
                       [styles.inputWrapperMd]: size === 'md' || !size || size.length === 0,
                       [styles.inputWrapperLg]: size === 'lg',
+                      // Read-only is otherwise indistinguishable from editable:
+                      // the field takes focus and highlights segments, but
+                      // silently ignores every keystroke.
+                      [styles.inputWrapperReadOnly]: isReadOnly && !isDisabled,
                     })}
                   >
                     {(segment) => {

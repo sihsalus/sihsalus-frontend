@@ -7,6 +7,10 @@ export const appointmentsPrivilege = 'app:home.citas';
 export const appointmentsEditPrivilege = 'app:home.citas.editar';
 export const clinicalChartPrivilege = 'app:hoja.clinica';
 export const appointmentStartDateEditPrivilege = 'app:appointments.startDate.edit';
+// Backdating when an appointment was issued rewrites the administrative record
+// of who scheduled what and when, so it is gated separately from moving the
+// appointment itself. Without this privilege the field stays at today's date.
+export const appointmentIssueDateEditPrivilege = 'app:appointments.issueDate.edit';
 export const chartAppointmentsReadPrivilege = 'app:hoja.clinica.citas';
 export const chartAppointmentsEditPrivilege = 'app:hoja.clinica.citas.editar';
 // The appointments backend persists patient_appointment.comments as VARCHAR(255).

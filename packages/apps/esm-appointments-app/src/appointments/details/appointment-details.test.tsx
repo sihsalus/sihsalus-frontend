@@ -89,10 +89,12 @@ test('renders appointment details correctly', async () => {
   expect(screen.getByText(/Date of birth/i)).toBeInTheDocument();
   expect(screen.getByText(/Date of birth/i)).toBeInTheDocument();
   expect(screen.getByText(/22-Mar-2020/i)).toBeInTheDocument();
-  expect(screen.getByText(/Contact 1/i)).toBeInTheDocument();
+  expect(screen.getByText(/Phone number/i)).toBeInTheDocument();
   expect(screen.getByText(/0899129989932/i)).toBeInTheDocument();
   expect(screen.getByText(/Appointment Notes/i)).toBeInTheDocument();
   expect(screen.getByText(/Some comments/i)).toBeInTheDocument();
+  expect(screen.getByText(/Responsible provider/i)).toBeInTheDocument();
+  expect(screen.getByText(/Dr James Cook/i)).toBeInTheDocument();
   expect(screen.getByText(/Appointment History/i)).toBeInTheDocument();
   expect(screen.getByText(/Completed/i)).toBeInTheDocument();
   expect(screen.getByText('1', { exact: true })).toBeInTheDocument();

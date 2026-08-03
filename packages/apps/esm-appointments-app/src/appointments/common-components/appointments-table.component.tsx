@@ -22,7 +22,6 @@ import {
 import { Download } from '@carbon/react/icons';
 import {
   ConfigurableLink,
-  formatDate,
   formatDatetime,
   isDesktop,
   launchWorkspace2,
@@ -44,8 +43,8 @@ import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import { appointmentsEditPrivilege, clinicalChartPrivilege } from '../../constants';
 import { EmptyState } from '../../empty-state/empty-state.component';
-import { canTransition, isAppointmentEditable } from '../../helpers';
-import { exportAppointmentsToSpreadsheet } from '../../helpers/excel';
+import { canTransition, getAppointmentProviderName, isAppointmentEditable } from '../../helpers';
+import { createAppointmentsExportFileName, exportAppointmentsToSpreadsheet } from '../../helpers/excel';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
 import { type Appointment, AppointmentStatus } from '../../types';
 import AppointmentDetails from '../details/appointment-details.component';
@@ -142,7 +141,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
   const { visits } = useTodaysVisits();
   const layout = useLayoutType();
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
-  const translatedTableHeading = t(tableHeading);
+  const translatedTableHeading = t(tableHeading, tableHeading);
   const isTodayAppointmentsTable =
     tableHeading === 'today' ||
     tableHeading === 'todaysAppointments' ||
@@ -204,6 +203,10 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
       key: 'serviceType',
     },
     {
+      header: t('responsibleProvider', 'Responsible provider'),
+      key: 'provider',
+    },
+    {
       header: t('status', 'Status'),
       key: 'status',
     },
@@ -227,7 +230,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
     dateTime: formatDatetime(new Date(appointment.startDateTime)),
     serviceType: appointment.service.name,
     location: appointment.location?.name ?? appointment.service.location?.display ?? '—',
-    provider: appointment.provider,
+    provider: getAppointmentProviderName(appointment) ?? t('unassignedProvider', 'No provider assigned'),
     status: <AppointmentActions appointment={appointment} />,
   }));
 
@@ -281,12 +284,14 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
           renderIcon={Download}
           onClick={() => {
             const date = appointments[0]?.startDateTime
-              ? formatDate(new Date(appointments[0].startDateTime), {
-                  time: false,
-                  noToday: true,
-                })
-              : null;
-            exportAppointmentsToSpreadsheet(appointments, rowData, `${tableHeading}_appointments_${date}`);
+              ? dayjs(appointments[0].startDateTime).format('YYYY-MM-DD')
+              : dayjs().format('YYYY-MM-DD');
+            const fileName = createAppointmentsExportFileName(
+              t('appointmentsExportFilename', 'Appointments'),
+              appointmentSectionTitle,
+              date,
+            );
+            exportAppointmentsToSpreadsheet(appointments, t, fileName);
           }}
         >
           {t('download', 'Download')}
@@ -354,9 +359,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                             <TableExpandRow
                               key={key}
                               {...rowProps}
-                              aria-current={
-                                editingAppointmentUuid === matchingAppointment.uuid ? 'true' : undefined
-                              }
+                              aria-current={editingAppointmentUuid === matchingAppointment.uuid ? 'true' : undefined}
                               className={classNames(rowProps.className, {
                                 [styles.editingRow]: editingAppointmentUuid === matchingAppointment.uuid,
                               })}

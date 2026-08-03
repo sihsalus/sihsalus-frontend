@@ -8,7 +8,7 @@ import {
   useConfig,
   usePatient,
 } from '@openmrs/esm-framework';
-import { age } from '@openmrs/esm-utils';
+import { age, exactAgeAsDuration } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -97,6 +97,30 @@ function formatAgeWithUnit(
   }
 
   return ageInYears !== undefined ? formatAgeUnit(ageInYears, 'ageYear', 'year', 'ageYears', 'years', t) : '';
+}
+
+function formatRelationshipAge(
+  birthdate: string | undefined,
+  ageInYears: number | null | undefined,
+  t: ReturnType<typeof useTranslation>['t'],
+) {
+  if (ageInYears === 0 && birthdate) {
+    const exactAge = exactAgeAsDuration(birthdate);
+
+    if (exactAge) {
+      return exactAge.months > 0
+        ? formatAgeUnit(exactAge.months, 'ageMonth', 'month', 'ageMonths', 'months', t)
+        : formatAgeUnit(exactAge.days, 'ageDay', 'day', 'ageDays', 'days', t);
+    }
+  }
+
+  if (ageInYears === null || ageInYears === undefined) {
+    return '';
+  }
+
+  return `${ageInYears} ${
+    ageInYears === 1 ? t('yearAbbreviation', 'yr') : t('yearsAbbreviation', 'yrs')
+  }`;
 }
 
 function getAttributeByTypeUuid(attributes: Array<Attribute>, uuid?: string) {
@@ -411,13 +435,11 @@ const Relationships: React.FC<{ patientId: string }> = ({ patientId }) => {
                   />
                   <RelationshipMetaItem
                     label={t('age', 'Age')}
-                    value={
-                      relationship.relativeAge
-                        ? `${relationship.relativeAge} ${
-                            relationship.relativeAge === 1 ? t('yearAbbreviation', 'yr') : t('yearsAbbreviation', 'yrs')
-                          }`
-                        : ''
-                    }
+                    value={formatRelationshipAge(
+                      relationship.relativeBirthdate,
+                      relationship.relativeAge,
+                      t,
+                    )}
                   />
                 </span>
               </span>

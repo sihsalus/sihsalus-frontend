@@ -71,14 +71,18 @@ export const monthDays = (currentDate: Dayjs) => {
 };
 
 export const getGender = (gender: string, t: (key: string, defaultValue: string) => string) => {
-  switch (gender) {
+  switch (gender?.trim().toLocaleUpperCase()) {
     case 'M':
+    case 'MALE':
       return t('male', 'Male');
     case 'F':
+    case 'FEMALE':
       return t('female', 'Female');
     case 'O':
+    case 'OTHER':
       return t('other', 'Other');
     case 'U':
+    case 'UNKNOWN':
       return t('unknown', 'Unknown');
     default:
       return gender;

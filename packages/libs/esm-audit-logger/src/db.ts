@@ -112,9 +112,13 @@ export async function queueEntry(dbName: string, entry: StoredAuditEntry, maxEnt
 
 /**
  * Fetch and decrypt all entries belonging to `userUuid`.
- * Entries that cannot be decrypted (wrong key, corrupted) are silently skipped.
+ * Entries that cannot be decrypted are returned separately by id rather than
+ * dropped, so the caller can report the loss and purge them.
  */
-export async function getEntriesForUser(dbName: string, userUuid: string): Promise<StoredAuditEntry[]> {
+export async function getEntriesForUser(
+  dbName: string,
+  userUuid: string,
+): Promise<{ entries: StoredAuditEntry[]; undecryptableIds: string[] }> {
   const db = await openDb(dbName);
   const encEntries = await new Promise<EncryptedEntry[]>((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
@@ -124,11 +128,22 @@ export async function getEntriesForUser(dbName: string, userUuid: string): Promi
   });
 
   const results: StoredAuditEntry[] = [];
+  const undecryptableIds: string[] = [];
   for (const enc of encEntries) {
     const entry = await decryptPayload<StoredAuditEntry>(enc.payload, userUuid);
-    if (entry) results.push(entry);
+    if (entry) {
+      results.push(entry);
+    } else {
+      // Key rotated, storage corrupted, or written before the per-device salt.
+      // These are reported rather than dropped from the result: an audit trail
+      // that loses records without saying so is not one anyone can stand
+      // behind. The caller also purges them, because an entry that can never be
+      // decrypted can never be sent, and would otherwise hold a slot in the
+      // bounded queue until it evicted a readable event.
+      undecryptableIds.push(enc.id);
+    }
   }
-  return results;
+  return { entries: results, undecryptableIds };
 }
 
 export async function clearEntries(dbName: string, ids: string[]): Promise<void> {

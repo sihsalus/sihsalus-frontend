@@ -5,6 +5,8 @@
   "address1": "Address line 1",
   "address2": "Address line 2",
   "age": "Age",
+  "ageDay": "day",
+  "ageDays": "days",
   "ageMonth": "month",
   "ageMonths": "months",
   "ageWeek": "week",

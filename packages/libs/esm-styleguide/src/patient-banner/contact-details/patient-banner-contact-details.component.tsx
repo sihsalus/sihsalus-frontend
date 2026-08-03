@@ -3,7 +3,7 @@
 import { InlineLoading } from '@carbon/react';
 import { ConfigurableLink, usePatient } from '@openmrs/esm-react-utils';
 import { type CoreTranslationKey, getCoreTranslation } from '@openmrs/esm-translations';
-import { parseDate } from '@openmrs/esm-utils';
+import { exactAgeAsDuration, getLocale, parseDate } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import styles from './patient-banner-contact-details.module.scss';
@@ -36,6 +36,30 @@ const peruAddressFieldLabels: Record<string, { defaultValue: string; translation
 
 function getAddressExtensionField(url?: string) {
   return url?.split('#')[1];
+}
+
+function formatLocalizedAgeUnit(value: number, unit: 'day' | 'month') {
+  return new Intl.NumberFormat(getLocale(), { style: 'unit', unit, unitDisplay: 'long' }).format(value);
+}
+
+function formatRelationshipAge(birthdate: string | undefined, ageInYears: number | null | undefined) {
+  if (ageInYears === 0 && birthdate) {
+    const exactAge = exactAgeAsDuration(birthdate);
+
+    if (exactAge) {
+      return exactAge.months > 0
+        ? formatLocalizedAgeUnit(exactAge.months, 'month')
+        : formatLocalizedAgeUnit(exactAge.days, 'day');
+    }
+  }
+
+  if (ageInYears === null || ageInYears === undefined) {
+    return '--';
+  }
+
+  return `${ageInYears} ${
+    ageInYears === 1 ? getCoreTranslation('year', 'year') : getCoreTranslation('years', 'years')
+  }`;
 }
 
 function getAddressExtensions(address?: fhir.Address) {
@@ -272,15 +296,7 @@ const Relationships: React.FC<{ patientId: string }> = ({ patientId }) => {
                     </ConfigurableLink>
                   </div>
                   <div>{r.relationshipType}</div>
-                  <div>
-                    {`${r.relativeAge ? r.relativeAge : '--'} ${
-                      r.relativeAge
-                        ? r.relativeAge === 1
-                          ? getCoreTranslation('year', 'year')
-                          : getCoreTranslation('years', 'years')
-                        : ''
-                    }`}
-                  </div>
+                  <div>{formatRelationshipAge(r.relativeBirthdate, r.relativeAge)}</div>
                 </li>
               ))}
             </>

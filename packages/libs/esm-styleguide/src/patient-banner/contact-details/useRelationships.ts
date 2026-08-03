@@ -66,17 +66,19 @@ function extractRelationshipData(
   for (const r of relationships) {
     if (patientIdentifier === r.personA.uuid) {
       relationshipsData.push({
-        uuid: `${r.uuid}`,
+        uuid: r.uuid,
         display: getRelativeName(r.personB.display),
         relativeAge: r.personB.age,
+        relativeBirthdate: r.personB.birthdate,
         relativeUuid: r.personB.uuid,
         relationshipType: r.relationshipType.bIsToA,
       });
     } else {
       relationshipsData.push({
-        uuid: `${r.uuid}`,
+        uuid: r.uuid,
         display: getRelativeName(r.personA.display),
         relativeAge: r.personA.age,
+        relativeBirthdate: r.personA.birthdate,
         relativeUuid: r.personA.uuid,
         relationshipType: r.relationshipType.aIsToB,
       });
@@ -92,22 +94,25 @@ interface RelationshipsResponse {
 interface ExtractedRelationship {
   uuid: string;
   display: string;
-  relativeAge: number;
+  relativeAge?: number | null;
+  relativeBirthdate?: string;
   relativeUuid: string;
   relationshipType: string;
 }
 
 export interface Relationship {
   display: string;
-  uuid: number;
+  uuid: string;
   personA: {
     uuid: string;
-    age: number;
+    age: number | null;
+    birthdate?: string;
     display: string;
   };
   personB: {
     uuid: string;
-    age: number;
+    age: number | null;
+    birthdate?: string;
     display: string;
   };
   relationshipType: {

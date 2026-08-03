@@ -1,9 +1,9 @@
 import { formatDate, formatDatetime, usePatient } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { getGender } from '../../helpers';
+import { getAppointmentProviderName, getGender } from '../../helpers';
 import { usePatientAppointmentHistory } from '../../hooks/usePatientAppointmentHistory';
 import { type Appointment } from '../../types';
 
@@ -39,8 +39,7 @@ export function formatExactAge(
   const months = reference.diff(afterYears, 'month');
   const afterMonths = afterYears.add(months, 'month');
   const days = reference.diff(afterMonths, 'day');
-  const formatUnit = (value: number, singular: string, plural: string) =>
-    `${value} ${value === 1 ? singular : plural}`;
+  const formatUnit = (value: number, singular: string, plural: string) => `${value} ${value === 1 ? singular : plural}`;
 
   return [
     formatUnit(years, labels.year, labels.years),
@@ -51,8 +50,7 @@ export function formatExactAge(
 
 const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({ appointment }) => {
   const { t } = useTranslation();
-  const [, setIsEnabledQuery] = useState(false);
-  const { appointmentsCount, isLoading } = usePatientAppointmentHistory(appointment.patient.uuid);
+  const { appointmentsCount } = usePatientAppointmentHistory(appointment.patient.uuid);
   const { patient } = usePatient(appointment.patient.uuid);
   const exactAge = patient?.birthDate
     ? formatExactAge(patient.birthDate, appointment.startDateTime, {
@@ -64,17 +62,18 @@ const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({ appointment }) 
         years: t('ageYears', 'years'),
       })
     : '';
-
-  useEffect(() => {
-    if (!isLoading) {
-      setIsEnabledQuery(true);
-    }
-  }, [isLoading]);
+  const telecom = patient?.telecom?.filter((contact) => contact.value?.trim()) ?? [];
+  const phoneContacts = telecom.filter((contact) => !contact.system || contact.system === 'phone');
+  const providerName = getAppointmentProviderName(appointment) ?? t('unassignedProvider', 'No provider assigned');
 
   return (
     <div className={styles.appointmentDetailsContainer}>
       <p className={styles.title}>{appointment.service.name}</p>
       <p className={styles.subTitle}>{formatDatetime(new Date(appointment.startDateTime))}</p>
+      <div className={styles.providerSummary}>
+        <p className={styles.labelBold}>{t('responsibleProvider', 'Responsible provider')}: </p>
+        <p className={styles.label}>{providerName}</p>
+      </div>
 
       <div className={styles.patientInfoGrid}>
         <div>
@@ -99,13 +98,25 @@ const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({ appointment }) 
           ) : (
             ''
           )}
-          {patient && patient?.telecom
-            ? patient.telecom.map((contact, i) => (
-                <div key={i} className={styles.labelContainer}>
-                  <p className={styles.labelBold}>{t('Contact', 'Contact {{index}}', { index: i + 1 })}: </p>
-                  <p className={styles.label}>{contact.value}</p>
-                </div>
-              ))
+          {telecom.length
+            ? telecom.map((contact, i) => {
+                const phoneIndex = phoneContacts.indexOf(contact);
+                const label =
+                  contact.system === 'email'
+                    ? t('emailAddress', 'Email address')
+                    : phoneIndex >= 0
+                      ? phoneContacts.length > 1
+                        ? t('phoneNumberIndexed', 'Phone number {{index}}', { index: phoneIndex + 1 })
+                        : t('phoneNumber', 'Phone number')
+                      : t('Contact', 'Contact {{index}}', { index: i + 1 });
+
+                return (
+                  <div key={`${contact.system ?? 'phone'}-${contact.value}`} className={styles.labelContainer}>
+                    <p className={styles.labelBold}>{label}: </p>
+                    <p className={styles.label}>{contact.value}</p>
+                  </div>
+                );
+              })
             : ''}
         </div>
         <div>

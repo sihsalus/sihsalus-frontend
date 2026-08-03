@@ -34,6 +34,7 @@ const mockUnscheduledAppointments = [
     dateTime: new Date(),
     gender: 'M',
     identifier: '1234-56-78',
+    identifiers: [{ identifier: '1234-56-78', identifierName: 'DNI' }],
     name: 'Test Patient',
     phoneNumber: '123-456-7890',
     uuid: '1234',
@@ -44,6 +45,7 @@ const mockUnscheduledAppointments = [
     dateTime: new Date(),
     gender: 'F',
     identifier: '2345-67-89',
+    identifiers: [{ identifier: '2345-67-89', identifierName: 'DNI' }],
     name: 'Another Patient',
     phoneNumber: '',
     uuid: '5678',
@@ -129,7 +131,11 @@ describe('UnscheduledAppointments', () => {
     const downloadButton = await screen.findByText('Download');
     expect(downloadButton).toBeInTheDocument();
     await user.click(downloadButton);
-    expect(mockExportUnscheduledAppointmentsToSpreadsheet).toHaveBeenCalledWith(mockUnscheduledAppointments);
+    expect(mockExportUnscheduledAppointmentsToSpreadsheet).toHaveBeenCalledWith(
+      mockUnscheduledAppointments,
+      expect.any(Function),
+      expect.stringMatching(/^Unscheduled_appointments_\d{4}-\d{2}-\d{2}\.xlsx$/),
+    );
   });
 
   it('renders a message if there are no unscheduled appointments', async () => {

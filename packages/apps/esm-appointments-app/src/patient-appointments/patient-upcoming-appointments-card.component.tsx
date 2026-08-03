@@ -6,7 +6,7 @@ import {
   StructuredListRow,
   StructuredListWrapper,
 } from '@carbon/react';
-import { formatDate, parseDate } from '@openmrs/esm-framework';
+import { formatDate } from '@openmrs/esm-framework';
 import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo } from 'react';
@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 
 import { getAppointmentProviderName } from '../helpers';
 
-import { usePatientAppointments } from './patient-appointments.resource';
+import { toAppointmentDate, usePatientAppointments } from './patient-appointments.resource';
 import styles from './patient-upcoming-appointments-card.scss';
 
 // See VisitFormExtensionState in esm-patient-chart-app
@@ -81,19 +81,20 @@ const PatientUpcomingAppointmentsCard: React.FC<PatientUpcomingAppointmentsProps
             </StructuredListRow>
           </StructuredListHead>
           <StructuredListBody>
-            {appointments.map((appointment) => (
-              <StructuredListRow key={appointment.uuid} className={styles.structuredList}>
-                <StructuredListCell>
-                  {formatDate(parseDate(String(appointment.startDateTime)), {
-                    mode: 'wide',
-                  })}
-                </StructuredListCell>
-                <StructuredListCell>{appointment.service ? appointment.service.name : '——'}</StructuredListCell>
-                <StructuredListCell>
-                  {getAppointmentProviderName(appointment) ?? t('unassignedProvider', 'No provider assigned')}
-                </StructuredListCell>
-              </StructuredListRow>
-            ))}
+            {appointments.map((appointment) => {
+              const appointmentDate = toAppointmentDate(appointment.startDateTime);
+              return (
+                <StructuredListRow key={appointment.uuid} className={styles.structuredList}>
+                  <StructuredListCell>
+                    {appointmentDate ? formatDate(appointmentDate, { mode: 'wide' }) : '——'}
+                  </StructuredListCell>
+                  <StructuredListCell>{appointment.service ? appointment.service.name : '——'}</StructuredListCell>
+                  <StructuredListCell>
+                    {getAppointmentProviderName(appointment) ?? t('unassignedProvider', 'No provider assigned')}
+                  </StructuredListCell>
+                </StructuredListRow>
+              );
+            })}
           </StructuredListBody>
         </StructuredListWrapper>
       </div>

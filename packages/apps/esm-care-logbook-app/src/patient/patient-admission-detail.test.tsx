@@ -39,6 +39,9 @@ function renderPatientAdmissionDetail(route = '/patient/patient-uuid') {
 describe('PatientAdmissionDetail', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Pin the clock so the rendered age of the mocked birthdate stays deterministic.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date('2026-07-15T12:00:00Z'));
     window.i18next.language = 'es';
     mockUsePatientDetail.mockReturnValue({
       patient: {
@@ -91,6 +94,10 @@ describe('PatientAdmissionDetail', () => {
       error: undefined,
       isLoading: false,
     });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('renders filiation data separated from visit/admission history and appointment scheduling', () => {

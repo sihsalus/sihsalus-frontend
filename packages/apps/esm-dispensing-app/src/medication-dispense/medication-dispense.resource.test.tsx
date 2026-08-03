@@ -148,6 +148,7 @@ describe('Medication Dispense Resource tests', () => {
       dosageInstruction: [
         {
           text: 'Take with food',
+          patientInstruction: 'Take after meals and drink plenty of water',
           timing: {
             repeat: {
               duration: 30.0,
@@ -231,7 +232,7 @@ describe('Medication Dispense Resource tests', () => {
     expect(medicationDispense.quantity.code).toBe('123456789');
     expect(dayjs(medicationDispense.whenPrepared).isToday()).toBeTruthy();
     expect(dayjs(medicationDispense.whenHandedOver).isToday()).toBeTruthy();
-    expect(medicationDispense.dosageInstruction[0].text).toBe('Take with food');
+    expect(medicationDispense.dosageInstruction[0].text).toBe('Take after meals and drink plenty of water');
     expect(medicationDispense.dosageInstruction[0].timing.repeat.duration).toBe(30.0);
     expect(medicationDispense.dosageInstruction[0].timing.repeat.durationUnit).toBe('d');
     expect(medicationDispense.dosageInstruction[0].asNeededBoolean).toBe(false);

@@ -4,6 +4,7 @@ import {
   DataTableSkeleton,
   Dropdown,
   Layer,
+  type OnChangeData,
   Pagination,
   Table,
   TableBody,
@@ -28,12 +29,12 @@ import {
   useConfig,
   usePagination,
 } from '@openmrs/esm-framework';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../config-schema';
 import { getGender } from '../helpers/functions';
-import { updateSelectedAppointmentStatus, useServiceQueuesStore } from '../store/store';
+import { ALL_APPOINTMENT_STATUSES, updateSelectedAppointmentStatus, useServiceQueuesStore } from '../store/store';
 import { useAppointments } from './queue-linelist.resource';
 import styles from './queue-linelist-base-table.scss';
 
@@ -43,6 +44,11 @@ import styles from './queue-linelist-base-table.scss';
 interface ScheduledAppointmentsDataTableHeader {
   key: string;
   header: React.ReactNode;
+}
+
+interface AppointmentStatusOption {
+  id: string;
+  label: string;
 }
 
 type FilterProps = {
@@ -59,7 +65,22 @@ const AppointmentsTable: React.FC = () => {
   const { appointmentStatuses } = useConfig<ConfigObject>();
   const { selectedAppointmentStatus: currentAppointmentStatus } = useServiceQueuesStore();
   const { appointmentQueueEntries, isLoading } = useAppointments();
-  const [filteredRows, setFilteredRows] = useState(appointmentQueueEntries);
+  const appointmentStatusOptions = useMemo(
+    () => [
+      { id: ALL_APPOINTMENT_STATUSES, label: t('all', 'All') },
+      ...appointmentStatuses.map((status) => ({ id: status, label: status })),
+    ],
+    [appointmentStatuses, t],
+  );
+  const selectedAppointmentStatus =
+    appointmentStatusOptions.find((option) => option.id === currentAppointmentStatus) ?? appointmentStatusOptions[0];
+  const filteredRows = useMemo(
+    () =>
+      selectedAppointmentStatus.id === ALL_APPOINTMENT_STATUSES
+        ? appointmentQueueEntries
+        : appointmentQueueEntries?.filter((appointment) => appointment.status === selectedAppointmentStatus.id),
+    [appointmentQueueEntries, selectedAppointmentStatus.id],
+  );
   const { results, currentPage, goTo } = usePagination(filteredRows ?? [], 20);
   const searchClassName = typeof styles.search === 'string' ? styles.search : undefined;
 
@@ -88,16 +109,6 @@ const AppointmentsTable: React.FC = () => {
       }),
     );
   };
-
-  useEffect(() => {
-    if (currentAppointmentStatus !== t('all', 'All') && currentAppointmentStatus !== '') {
-      setFilteredRows(
-        appointmentQueueEntries?.filter((appointment) => appointment.status === currentAppointmentStatus),
-      );
-    } else {
-      setFilteredRows(appointmentQueueEntries);
-    }
-  }, [t, currentAppointmentStatus, appointmentQueueEntries]);
 
   const tableHeaders = useMemo(
     () => [
@@ -161,8 +172,10 @@ const AppointmentsTable: React.FC = () => {
     }));
   }, [results, t]);
 
-  const handleStatusChange = ({ selectedItem }) => {
-    updateSelectedAppointmentStatus(selectedItem);
+  const handleStatusChange = ({ selectedItem }: OnChangeData<AppointmentStatusOption>) => {
+    if (selectedItem) {
+      updateSelectedAppointmentStatus(selectedItem.id);
+    }
   };
 
   const pageSizes = useMemo(() => {
@@ -237,12 +250,13 @@ const AppointmentsTable: React.FC = () => {
                 <div className={styles.filterContainer}>
                   <Dropdown
                     id="serviceFilter"
-                    initialSelectedItem={'All'}
-                    label={currentAppointmentStatus}
+                    itemToString={(item) => item?.label ?? ''}
+                    label={t('all', 'All')}
                     titleText={t('status', 'Status') + ':'}
                     type="inline"
-                    items={['All', ...appointmentStatuses]}
+                    items={appointmentStatusOptions}
                     onChange={handleStatusChange}
+                    selectedItem={selectedAppointmentStatus}
                     size="sm"
                   />
                 </div>

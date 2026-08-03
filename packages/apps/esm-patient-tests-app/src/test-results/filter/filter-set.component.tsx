@@ -117,7 +117,7 @@ const FilterNodeParent = ({ root, itemNumber }: filterNodeParentProps): React.JS
             size={tablet ? 'md' : 'sm'}
             onClick={() => setExpandAll((prevValue) => !prevValue)}
           >
-            <span>{t(!expandAll ? `Expand all` : `Collapse all`)}</span>
+            <span>{expandAll ? t('collapseAll', 'Collapse all') : t('expandAll', 'Expand all')}</span>
           </Button>
         </div>
       </div>

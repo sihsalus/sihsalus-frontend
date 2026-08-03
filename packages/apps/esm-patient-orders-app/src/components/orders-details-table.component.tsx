@@ -879,7 +879,7 @@ function OrderBasketItemActions({
   canEditOrders,
   canEditResults,
   orderItem,
-  openOrderBasket: _openOrderBasket,
+  openOrderBasket,
   openOrderForm,
   responsiveSize,
 }: OrderBasketItemActionsProps) {
@@ -913,7 +913,7 @@ function OrderBasketItemActions({
           const medicationOrder = res.data;
           const medicationItem = buildMedicationOrder(medicationOrder, 'REVISE');
           setOrders([...orders, medicationItem]);
-          openOrderForm();
+          openOrderBasket();
         })
         .catch((e) => {
           console.error('Error modifying drug order: ', e);
@@ -921,13 +921,13 @@ function OrderBasketItemActions({
     } else if (orderItem.type === 'testorder') {
       const labItem = buildLabOrder(orderItem, 'REVISE');
       setOrders([...orders, labItem]);
-      openOrderForm();
+      openOrderBasket();
     } else if (orderItem.type === 'order') {
       const order = buildGeneralOrder(orderItem, 'REVISE');
       setOrders([...orders, order]);
-      openOrderForm();
+      openOrderBasket();
     }
-  }, [orderItem, openOrderForm, orders, setOrders, mutateOrders]);
+  }, [orderItem, openOrderBasket, orders, setOrders, mutateOrders]);
 
   const handleAddResultsClick = useCallback(() => {
     launchPatientWorkspace('test-results-form-workspace', { order: orderItem });

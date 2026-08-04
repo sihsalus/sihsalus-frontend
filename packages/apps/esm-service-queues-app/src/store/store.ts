@@ -1,5 +1,7 @@
 import { createGlobalStore, useStore } from '@openmrs/esm-framework';
 
+export const ALL_APPOINTMENT_STATUSES = '';
+
 export function updateValueInSessionStorage(key: string, value: string | null | undefined) {
   if (value === undefined || value === null) {
     sessionStorage.removeItem(key);
@@ -33,7 +35,7 @@ const initialServiceQueuesState: ServiceQueuesState = {
   selectedServiceDisplay: getValueFromSessionStorage('queueServiceDisplay'),
   selectedQueueStatusUuid: getValueFromSessionStorage('queueStatusUuid'),
   selectedQueueStatusDisplay: getValueFromSessionStorage('queueStatusDisplay'),
-  selectedAppointmentStatus: '',
+  selectedAppointmentStatus: ALL_APPOINTMENT_STATUSES,
   selectedQueueRoomTimestamp: new Date(),
   isPermanentProviderQueueRoom: getValueFromSessionStorage('isPermanentProviderQueueRoom') === 'true',
   emergencyUiActive: false,

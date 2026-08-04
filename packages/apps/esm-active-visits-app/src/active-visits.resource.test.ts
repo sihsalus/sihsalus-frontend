@@ -28,9 +28,11 @@ describe('active visits facility hierarchy', () => {
     await getActiveVisitsForLocation('upss-uuid');
 
     const requestUrl = String(mockOpenmrsFetch.mock.calls[0]?.[0]);
+    const representation = new URL(requestUrl, 'https://example.invalid').searchParams.get('v');
     expect(requestUrl).toContain('/visit?');
     expect(requestUrl).toContain('location=upss-uuid');
     expect(requestUrl).not.toContain('includeParentLocations');
+    expect(representation).toContain('person:(age,birthdate,display,gender,uuid');
   });
 
   it('never requests patient visits outside the login facility hierarchy', async () => {

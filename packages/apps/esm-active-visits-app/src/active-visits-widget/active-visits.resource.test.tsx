@@ -1,4 +1,4 @@
-import { useConfig, type Visit } from '@openmrs/esm-framework';
+import { age, useConfig, type Visit } from '@openmrs/esm-framework';
 import { renderHook } from '@testing-library/react';
 
 import { useFacilityActiveVisits } from '../active-visits.resource';
@@ -6,6 +6,7 @@ import { useActiveVisits } from './active-visits.resource';
 
 const mockUseConfig = vi.mocked(useConfig);
 const mockUseFacilityActiveVisits = vi.mocked(useFacilityActiveVisits);
+const mockAge = vi.mocked(age);
 
 vi.mock('../active-visits.resource', () => ({
   useFacilityActiveVisits: vi.fn(),
@@ -56,9 +57,47 @@ describe('useActiveVisits', () => {
 
     expect(result.current.activeVisits).toHaveLength(1);
     expect(result.current.activeVisits[0]).toMatchObject({
+      age: '30',
       observations: {},
       patientUuid: 'patient-uuid',
       visitUuid: 'visit-uuid',
     });
+  });
+
+  it('calculates the complete age from the requested patient birthdate', () => {
+    const visitWithBirthdate = {
+      uuid: 'visit-uuid',
+      patient: {
+        uuid: 'patient-uuid',
+        identifiers: [],
+        person: {
+          age: 30,
+          attributes: [],
+          birthdate: '1996-07-22',
+          display: 'Test Patient',
+          gender: 'F',
+        },
+      },
+      visitType: {
+        display: 'Outpatient',
+      },
+      location: {
+        uuid: 'location-uuid',
+      },
+      startDatetime: '2026-08-04T08:00:00.000-0500',
+    } as unknown as Visit;
+    mockAge.mockReturnValueOnce('30 years 0 months 13 days');
+    mockUseFacilityActiveVisits.mockReturnValue({
+      visits: [visitWithBirthdate],
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+      totalResults: 1,
+    });
+
+    const { result } = renderHook(() => useActiveVisits());
+
+    expect(mockAge).toHaveBeenCalledWith('1996-07-22');
+    expect(result.current.activeVisits[0]?.age).toBe('30 years 0 months 13 days');
   });
 });

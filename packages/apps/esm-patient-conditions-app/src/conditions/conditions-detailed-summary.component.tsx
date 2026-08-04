@@ -29,8 +29,10 @@ import { type ConditionTableHeader, useConditions, useConditionsSorting } from '
 import { ConditionsActionMenu } from './conditions-action-menu.component';
 import {
   type ConditionSection,
+  type ConditionStatusFilter,
   defaultAntecedentTypeBySection,
   defaultClinicalStatusBySection,
+  defaultStatusFilterBySection,
   filterConditionsBySection,
   workspaceNamesBySection,
 } from './conditions-categories';
@@ -82,7 +84,8 @@ function ConditionsDetailedTable({ patient, section = 'antecedents' }: Condition
   const sectionCopy = getSectionCopy(section, t);
   const displayText = sectionCopy.displayText;
   const headerTitle = sectionCopy.headerTitle;
-  const [filter, setFilter] = useState<'All' | 'Active' | 'Inactive'>('Active');
+  const defaultFilter = defaultStatusFilterBySection[section];
+  const [filter, setFilter] = useState<ConditionStatusFilter>(defaultFilter);
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
   const isDesktop = layout === 'small-desktop' || layout === 'large-desktop';
@@ -183,7 +186,10 @@ function ConditionsDetailedTable({ patient, section = 'antecedents' }: Condition
             <div className={styles.filterContainer}>
               <Dropdown
                 id="conditionStatusFilter"
-                initialSelectedItem={{ id: 'Active', label: t('active', 'Active') }}
+                initialSelectedItem={{
+                  id: defaultFilter,
+                  label: t(defaultFilter.toLowerCase(), defaultFilter),
+                }}
                 label=""
                 titleText={t('show', 'Show') + ':'}
                 type="inline"

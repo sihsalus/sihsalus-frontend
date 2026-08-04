@@ -6,7 +6,7 @@
   "all": "Tout",
   "antecedent": "Antécédent",
   "antecedentDeleted": "Antécédent supprimé",
-  "antecedentNowVisible": "Actuellement visible sur la page des antécédents",
+  "antecedentNowVisible": "Il est maintenant visible dans {{section}}",
   "antecedentRequired": "Un antécédent est requis",
   "antecedents": "Antécédents",
   "Antecedentes": "Antécédents",

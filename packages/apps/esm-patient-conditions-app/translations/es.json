@@ -15,7 +15,7 @@
   "antecedentDeleted": "Antecedente eliminado",
   "Antecedentes": "Antecedentes",
   "Antecedentes y problemas": "Antecedentes y problemas",
-  "antecedentNowVisible": "Ahora es visible en la página de Antecedentes",
+  "antecedentNowVisible": "Ahora es visible en {{section}}",
   "antecedentRequired": "Se requiere un antecedente",
   "antecedents": "Antecedentes",
   "antecedents_lower": "antecedentes",

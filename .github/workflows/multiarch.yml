@@ -18,6 +18,7 @@ env:
 jobs:
   build-multiarch:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     permissions:
       contents: read
       packages: write
@@ -27,10 +28,34 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Validate multiarch source
+        run: |
+          set -euo pipefail
+          CHECKED_OUT_SHA="$(git rev-parse HEAD)"
+          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
+            echo "::error::The mutable multiarch tag may only be published from main."
+            exit 1
+          fi
+          if [[ "${CHECKED_OUT_SHA}" != "${GITHUB_SHA}" ]]; then
+            echo "::error::Checked-out commit does not match the workflow source."
+            exit 1
+          fi
+
       - uses: ./.github/actions/setup-node-env
 
       - name: Verify app build before multiarch image build
         run: yarn build:apps
+
+      - name: Compute build provenance
+        id: provenance
+        run: |
+          set -euo pipefail
+          PACKAGE_VERSION="$(node -p 'require("./package.json").version')"
+          {
+            echo "version=${PACKAGE_VERSION}"
+            echo "git_sha=$(git rev-parse HEAD)"
+            echo "build_time=$(git show -s --format=%cI HEAD)"
+          } >> "${GITHUB_OUTPUT}"
 
       - uses: docker/setup-buildx-action@v4
 
@@ -45,19 +70,25 @@ jobs:
         with:
           images: ghcr.io/sihsalus/sihsalus-frontend
           tags: |
-            type=sha,prefix=sha-,format=long
+            type=sha,prefix=multiarch-sha-,format=long
             type=raw,value=multiarch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
 
-      - uses: docker/build-push-action@v7
+      # Keep the release workflow's single-platform sha-* namespace separate.
+      # Only the commit-addressed multiarch image is visible before Trivy passes.
+      - name: Build and publish commit-addressed multiarch image
+        id: build
+        uses: docker/build-push-action@v7
         with:
           context: .
           target: secure-init
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ghcr.io/sihsalus/sihsalus-frontend:multiarch-sha-${{ github.sha }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            APP_VERSION=${{ steps.provenance.outputs.version }}
+            GIT_SHA=${{ steps.provenance.outputs.git_sha }}
+            BUILD_TIME=${{ steps.provenance.outputs.build_time }}
           cache-from: |
             type=gha,scope=release-amd64
             type=gha,scope=multiarch-arm64
@@ -67,18 +98,88 @@ jobs:
           # only cache-export failures to be non-fatal.
           cache-to: type=gha,scope=multiarch-arm64,mode=max,ignore-error=true
 
-      - name: Scan published image
+      - name: Scan immutable image (linux/amd64)
+        id: scan_amd64
+        continue-on-error: true
         uses: aquasecurity/trivy-action@v0.36.0
+        env:
+          TRIVY_PLATFORM: linux/amd64
         with:
-          image-ref: ghcr.io/sihsalus/sihsalus-frontend:multiarch
+          image-ref: ghcr.io/sihsalus/sihsalus-frontend@${{ steps.build.outputs.digest }}
           format: sarif
-          output: trivy-multiarch-results.sarif
+          output: trivy-multiarch-amd64-results.sarif
           severity: HIGH,CRITICAL
+          exit-code: '1'
           ignore-unfixed: true
           vuln-type: os,library
+          trivyignores: .trivyignore.yaml
+          limit-severities-for-sarif: true
 
-      - name: Upload Trivy scan
-        uses: github/codeql-action/upload-sarif@v4
-        if: ${{ always() && hashFiles('trivy-multiarch-results.sarif') != '' }}
+      - name: Scan immutable image (linux/arm64)
+        id: scan_arm64
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@v0.36.0
+        env:
+          TRIVY_PLATFORM: linux/arm64
         with:
-          sarif_file: trivy-multiarch-results.sarif
+          image-ref: ghcr.io/sihsalus/sihsalus-frontend@${{ steps.build.outputs.digest }}
+          format: sarif
+          output: trivy-multiarch-arm64-results.sarif
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: os,library
+          trivyignores: .trivyignore.yaml
+          limit-severities-for-sarif: true
+
+      - name: Upload Trivy scan (linux/amd64)
+        uses: github/codeql-action/upload-sarif@v4
+        if: ${{ always() && hashFiles('trivy-multiarch-amd64-results.sarif') != '' }}
+        with:
+          sarif_file: trivy-multiarch-amd64-results.sarif
+          # Preserve the workflow/job default category so this clean analysis
+          # supersedes alerts emitted by the previous single-platform scan.
+
+      - name: Upload Trivy scan (linux/arm64)
+        uses: github/codeql-action/upload-sarif@v4
+        if: ${{ always() && hashFiles('trivy-multiarch-arm64-results.sarif') != '' }}
+        with:
+          sarif_file: trivy-multiarch-arm64-results.sarif
+          category: trivy-multiarch-linux-arm64
+
+      - name: Enforce multiarch scan results
+        if: ${{ always() }}
+        env:
+          AMD64_SCAN_OUTCOME: ${{ steps.scan_amd64.outcome }}
+          ARM64_SCAN_OUTCOME: ${{ steps.scan_arm64.outcome }}
+        run: |
+          set -euo pipefail
+          if [[ "${AMD64_SCAN_OUTCOME}" != "success" || "${ARM64_SCAN_OUTCOME}" != "success" ]]; then
+            echo "::error::Trivy must pass for both linux/amd64 and linux/arm64."
+            exit 1
+          fi
+          test -s trivy-multiarch-amd64-results.sarif
+          test -s trivy-multiarch-arm64-results.sarif
+
+      - name: Revalidate main before promotion
+        run: |
+          set -euo pipefail
+          CURRENT_SHA="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          if [[ -z "${CURRENT_SHA}" || "${CURRENT_SHA}" != "${GITHUB_SHA}" ]]; then
+            echo "::error::main advanced while the image was built; refusing to promote a stale image."
+            exit 1
+          fi
+
+      - name: Promote verified multiarch image
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          MUTABLE_IMAGE: ghcr.io/sihsalus/sihsalus-frontend:multiarch
+          SOURCE_IMAGE: ghcr.io/sihsalus/sihsalus-frontend@${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create --tag "${MUTABLE_IMAGE}" "${SOURCE_IMAGE}"
+          PROMOTED_DIGEST="$(docker buildx imagetools inspect "${MUTABLE_IMAGE}" --format '{{.Manifest.Digest}}')"
+          if [[ "${PROMOTED_DIGEST}" != "${IMAGE_DIGEST}" ]]; then
+            echo "::error::The mutable multiarch tag does not resolve to the scanned digest."
+            exit 1
+          fi

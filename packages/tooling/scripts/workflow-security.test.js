@@ -5,6 +5,7 @@ const test = require('node:test');
 
 const repositoryRoot = path.resolve(__dirname, '../../..');
 const ciWorkflow = readFileSync(path.join(repositoryRoot, '.github/workflows/ci.yml'), 'utf8');
+const multiarchWorkflow = readFileSync(path.join(repositoryRoot, '.github/workflows/multiarch.yml'), 'utf8');
 const releaseWorkflow = readFileSync(path.join(repositoryRoot, '.github/workflows/release.yml'), 'utf8');
 const rootManifest = JSON.parse(readFileSync(path.join(repositoryRoot, 'package.json'), 'utf8'));
 
@@ -48,5 +49,37 @@ test('release scans the immutable digest before promoting mutable aliases', () =
 
   const promotionStep = releaseWorkflow.slice(promotionIndex);
   assert.match(promotionStep, /imagetools create --prefer-index=false/);
+  assert.match(promotionStep, /PROMOTED_DIGEST.*IMAGE_DIGEST/s);
+});
+
+test('multiarch scans both immutable platforms before promoting its mutable alias', () => {
+  const buildIndex = multiarchWorkflow.indexOf('- name: Build and publish commit-addressed multiarch image');
+  const amd64ScanIndex = multiarchWorkflow.indexOf('- name: Scan immutable image (linux/amd64)');
+  const arm64ScanIndex = multiarchWorkflow.indexOf('- name: Scan immutable image (linux/arm64)');
+  const enforcementIndex = multiarchWorkflow.indexOf('- name: Enforce multiarch scan results');
+  const revalidationIndex = multiarchWorkflow.indexOf('- name: Revalidate main before promotion');
+  const promotionIndex = multiarchWorkflow.indexOf('- name: Promote verified multiarch image');
+
+  assert.ok(buildIndex >= 0, 'commit-addressed multiarch build step is missing');
+  assert.ok(amd64ScanIndex > buildIndex, 'amd64 must be scanned after the image is built');
+  assert.ok(arm64ScanIndex > amd64ScanIndex, 'arm64 must also be scanned');
+  assert.ok(enforcementIndex > arm64ScanIndex, 'both scan outcomes must be enforced');
+  assert.ok(revalidationIndex > enforcementIndex, 'main must be revalidated after the scans');
+  assert.ok(promotionIndex > revalidationIndex, 'the mutable tag must be promoted last');
+
+  const buildStep = multiarchWorkflow.slice(buildIndex, amd64ScanIndex);
+  assert.match(buildStep, /tags: ghcr\.io\/sihsalus\/sihsalus-frontend:multiarch-sha-\$\{\{ github\.sha \}\}/);
+  assert.doesNotMatch(buildStep, /steps\.meta\.outputs\.tags/);
+
+  const scanSteps = multiarchWorkflow.slice(amd64ScanIndex, enforcementIndex);
+  assert.equal((scanSteps.match(/image-ref: .*@\$\{\{ steps\.build\.outputs\.digest \}\}/g) ?? []).length, 2);
+  assert.match(scanSteps, /TRIVY_PLATFORM: linux\/amd64/);
+  assert.match(scanSteps, /TRIVY_PLATFORM: linux\/arm64/);
+  assert.equal((scanSteps.match(/exit-code: '1'/g) ?? []).length, 2);
+  assert.equal((scanSteps.match(/trivyignores: \.trivyignore\.yaml/g) ?? []).length, 2);
+  assert.equal((scanSteps.match(/limit-severities-for-sarif: true/g) ?? []).length, 2);
+
+  const promotionStep = multiarchWorkflow.slice(promotionIndex);
+  assert.match(promotionStep, /imagetools create --tag/);
   assert.match(promotionStep, /PROMOTED_DIGEST.*IMAGE_DIGEST/s);
 });

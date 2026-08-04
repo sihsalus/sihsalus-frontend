@@ -60,6 +60,16 @@ const BiometricsChart: React.FC<BiometricsChartProps> = ({ patientBiometrics, co
   const chartOptions = useMemo(() => {
     return {
       title: selectedBiometrics.title,
+      locale: {
+        translations: {
+          toolbar: {
+            exportAsCSV: t('exportAsCSV', 'Export to CSV'),
+            exportAsPNG: t('exportAsPNG', 'Export to PNG'),
+            makeFullScreen: t('makeFullscreen', 'Make fullscreen'),
+            exitFullScreen: t('exitFullscreen', 'Exit fullscreen'),
+          },
+        },
+      },
       axes: {
         bottom: {
           title: t('date', 'Date'),
@@ -86,6 +96,9 @@ const BiometricsChart: React.FC<BiometricsChartProps> = ({ patientBiometrics, co
             { year: true },
           )} -
           <span style="color: #c6c6c6; font-size: 1rem; font-weight:400">${value}</span></div>`,
+      },
+      fileDownload: {
+        fileName: t('biometricsChartFileName', 'biometrics-chart'),
       },
       toolbar: {
         enabled: true,

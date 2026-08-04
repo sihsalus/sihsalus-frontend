@@ -13,6 +13,7 @@
   "additionalNoteText": "Escriba aquí cualquier nota adicional",
   "atLeastOneMeasurementRequired": "Registre al menos una medición. Una nota sola no puede guardarse",
   "biometricDisplayed": "Datos biométricos mostrados",
+  "biometricsChartFileName": "grafico-de-datos-biometricos",
   "biometrics": "Datos biométricos",
   "biometrics_lower": "datos biométricos",
   "bloodPressure": "Presión Arterial",

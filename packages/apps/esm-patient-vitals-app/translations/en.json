@@ -11,6 +11,7 @@
   "additionalNoteText": "Type any additional notes here",
   "atLeastOneMeasurementRequired": "Please record at least one measurement. A note alone cannot be saved",
   "biometricDisplayed": "Biometric displayed",
+  "biometricsChartFileName": "biometrics-chart",
   "biometrics": "Biometrics",
   "biometrics_lower": "biometrics",
   "bloodPressure": "Blood Pressure",

@@ -1,3 +1,4 @@
+import { LineChart } from '@carbon/charts-react';
 import { getDefaultsFromConfigSchema, useConfig, userHasAccess } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -167,6 +168,31 @@ describe('BiometricsOverview', () => {
     expect(screen.getByRole('tab', { name: /height/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /bmi/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /abdominal circumference/i })).toBeInTheDocument();
+
+    const chartOptions = vi.mocked(LineChart).mock.calls.at(-1)?.[0].options;
+
+    expect(chartOptions).toMatchObject({
+      locale: {
+        translations: {
+          toolbar: {
+            exitFullScreen: 'Exit fullscreen',
+            exportAsCSV: 'Export to CSV',
+            exportAsPNG: 'Export to PNG',
+            makeFullScreen: 'Make fullscreen',
+          },
+        },
+      },
+      fileDownload: {
+        fileName: 'biometrics-chart',
+      },
+      toolbar: {
+        controls: expect.arrayContaining([
+          { type: 'Export as CSV' },
+          { type: 'Export as PNG' },
+          { type: 'Make fullscreen' },
+        ]),
+      },
+    });
   });
 
   it('hides BMI column when bmiMinimumAge is set and patient is under the minimum age', async () => {

@@ -7,7 +7,7 @@ import {
   useConnectivity,
   useSession,
 } from '@openmrs/esm-framework';
-import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type Location, useLocation, useSearchParams } from 'react-router-dom';
 
@@ -57,6 +57,7 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submissionInFlightRef = useRef(false);
 
   const { state } = useLocation() as unknown as Omit<Location, 'state'> & {
     state: LoginReferrer;
@@ -64,6 +65,11 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
 
   const changeLocation = useCallback(
     (locationUuid: string, saveUserPreference?: boolean) => {
+      if (submissionInFlightRef.current) {
+        return;
+      }
+
+      submissionInFlightRef.current = true;
       setIsSubmitting(true);
 
       const referrer = state?.referrer;
@@ -72,17 +78,23 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
       const sessionDefined = setSessionLocation(locationUuid, new AbortController());
 
       void updateDefaultLocation(locationUuid, saveUserPreference);
-      sessionDefined.then(() => {
-        if (referrer && !['/', '/login', '/login/location'].includes(referrer)) {
-          hardNavigate(buildSpaNavigationTarget(referrer));
-          return;
-        }
-        if (returnToUrl && returnToUrl !== '/') {
-          hardNavigate(returnToUrl.startsWith('/') ? buildSpaNavigationTarget(returnToUrl) : returnToUrl);
-        } else {
-          hardNavigate(config.links.loginSuccess);
-        }
-      });
+      sessionDefined
+        .then(() => {
+          if (referrer && !['/', '/login', '/login/location'].includes(referrer)) {
+            hardNavigate(buildSpaNavigationTarget(referrer));
+            return;
+          }
+          if (returnToUrl && returnToUrl !== '/') {
+            hardNavigate(returnToUrl.startsWith('/') ? buildSpaNavigationTarget(returnToUrl) : returnToUrl);
+          } else {
+            hardNavigate(config.links.loginSuccess);
+          }
+        })
+        .catch((error) => {
+          submissionInFlightRef.current = false;
+          setIsSubmitting(false);
+          console.error('Failed to set the session location', error);
+        });
     },
     [state?.referrer, config.links.loginSuccess, updateDefaultLocation, searchParams],
   );

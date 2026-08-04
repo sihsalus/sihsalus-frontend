@@ -319,6 +319,41 @@ describe('LocationPickerView', () => {
       expect(mockSetUserProperties).not.toHaveBeenCalled();
     });
 
+    it('submits the session location once when the only login location is also the saved preference', async () => {
+      mockUseSession.mockReturnValue({
+        user: {
+          display: 'Testy McTesterface',
+          uuid: userUuid,
+          userProperties: {
+            defaultLocation: firstLocation.uuid,
+          },
+        } as LoggedInUser,
+      } as Session);
+      mockedStoredDefaultLocation = firstLocation.uuid;
+      mockedValidatedDefaultLocation = firstLocation.uuid;
+      mockUseLocationCount.mockReturnValue({
+        isLoading: false,
+        locationCount: 1,
+        firstLocation: {
+          resource: {
+            id: firstLocation.uuid,
+            name: firstLocation.name,
+            resourceType: 'Location',
+            status: 'active',
+          },
+        },
+        error: null,
+      } as ReturnType<typeof useLocationCount>);
+
+      renderWithRouter(LocationPickerView, {});
+
+      await waitFor(() => {
+        expect(mockSetSessionLocation).toHaveBeenCalledWith(firstLocation.uuid, expect.anything());
+      });
+      expect(mockSetSessionLocation).toHaveBeenCalledTimes(1);
+      expect(mockHardNavigate).toHaveBeenCalledTimes(1);
+    });
+
     it('shows location picker when saved location preference is invalid', async () => {
       mockUseSession.mockReturnValue({
         user: {

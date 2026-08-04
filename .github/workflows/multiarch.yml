@@ -137,7 +137,8 @@ jobs:
         if: ${{ always() && hashFiles('trivy-multiarch-amd64-results.sarif') != '' }}
         with:
           sarif_file: trivy-multiarch-amd64-results.sarif
-          category: trivy-multiarch-linux-amd64
+          # Preserve the workflow/job default category so this clean analysis
+          # supersedes alerts emitted by the previous single-platform scan.
 
       - name: Upload Trivy scan (linux/arm64)
         uses: github/codeql-action/upload-sarif@v4

@@ -38,6 +38,16 @@ export function mapVisitObservations(encounters: Visit['encounters'] | undefined
   }, {});
 }
 
+export function formatActiveVisitAge(person: Visit['patient']['person'] | undefined): string {
+  const calculatedAge = person?.birthdate ? age(person.birthdate) : null;
+
+  if (calculatedAge) {
+    return calculatedAge;
+  }
+
+  return person?.age != null ? String(person.age) : '--';
+}
+
 export function useActiveVisits() {
   const config = useConfig();
   const { visits, error, isLoading, isValidating, totalResults } = useFacilityActiveVisits();
@@ -45,7 +55,7 @@ export function useActiveVisits() {
   const mapVisitProperties = (visit: Visit): ActiveVisit => {
     // create base object
     const activeVisits: ActiveVisit = {
-      age: visit?.patient?.person?.birthdate ? (age(visit.patient.person.birthdate) ?? '--') : '--',
+      age: formatActiveVisitAge(visit?.patient?.person),
       id: visit.uuid,
       idNumber: null,
       gender: visit?.patient?.person?.gender,

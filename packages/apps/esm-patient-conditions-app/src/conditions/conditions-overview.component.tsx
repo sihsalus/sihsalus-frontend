@@ -40,8 +40,10 @@ import { type Condition, useConditions, useConditionsSorting } from './condition
 import { ConditionsActionMenu } from './conditions-action-menu.component';
 import {
   type ConditionSection,
+  type ConditionStatusFilter,
   defaultAntecedentTypeBySection,
   defaultClinicalStatusBySection,
+  defaultStatusFilterBySection,
   filterConditionsBySection,
   workspaceNamesBySection,
 } from './conditions-categories';
@@ -117,7 +119,8 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid, se
   const isTablet = !isDesktop;
 
   const { conditions, error, isLoading, isValidating } = useConditions(patientUuid);
-  const [filter, setFilter] = useState<'All' | 'Active' | 'Inactive'>('Active');
+  const defaultFilter = defaultStatusFilterBySection[section];
+  const [filter, setFilter] = useState<ConditionStatusFilter>(defaultFilter);
   const launchConditionsForm = useCallback(() => {
     const defaultAntecedentType = defaultAntecedentTypeBySection[section];
     const defaultClinicalStatus = defaultClinicalStatusBySection[section];
@@ -214,7 +217,10 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid, se
             <div className={styles.filterContainer}>
               <Dropdown
                 id="conditionStatusFilter"
-                initialSelectedItem={{ id: 'Active', label: t('active', 'Active') }}
+                initialSelectedItem={{
+                  id: defaultFilter,
+                  label: t(defaultFilter.toLowerCase(), defaultFilter),
+                }}
                 label=""
                 titleText={t('show', 'Show') + ':'}
                 type="inline"

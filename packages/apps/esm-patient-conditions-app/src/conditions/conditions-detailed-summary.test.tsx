@@ -183,6 +183,47 @@ it("renders a detailed summary of the patient's antecedents when present", async
   expect(screen.getAllByRole('row').length).toEqual(10);
 });
 
+it('shows inactive past diagnoses and antecedents without requiring a filter change', () => {
+  mockUseConditions.mockReturnValue({
+    conditions: [
+      {
+        clinicalStatus: 'Active',
+        antecedentType: 'pathological',
+        conceptId: 'active-problem-concept',
+        display: 'Hypertension',
+        id: 'active-problem-id',
+        recordedDate: '2026-08-04T12:00:00.000Z',
+      },
+      {
+        clinicalStatus: 'Inactive',
+        antecedentType: 'definitive-diagnosis',
+        conceptId: 'past-diagnosis-concept',
+        display: 'Resolved pneumonia',
+        id: 'past-diagnosis-id',
+        recordedDate: '2026-08-04T12:00:00.000Z',
+      },
+      {
+        clinicalStatus: 'Inactive',
+        antecedentType: 'family',
+        conceptId: 'family-history-concept',
+        display: 'Family history of diabetes',
+        id: 'family-history-id',
+        recordedDate: '2026-08-04T12:00:00.000Z',
+      },
+    ],
+    error: null,
+    isLoading: false,
+    isValidating: false,
+    mutate: vi.fn(),
+  });
+
+  render(<ConditionsDetailedSummary patient={fhirMockPatient} />);
+
+  expect(screen.getByRole('row', { name: /hypertension/i })).toBeInTheDocument();
+  expect(screen.getByRole('row', { name: /resolved pneumonia/i })).toBeInTheDocument();
+  expect(screen.getByRole('row', { name: /family history of diabetes/i })).toBeInTheDocument();
+});
+
 it('clicking the Add button or Record Antecedents link launches the antecedents form', async () => {
   const user = userEvent.setup();
 

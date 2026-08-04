@@ -2,6 +2,8 @@ import type { AntecedentTypeCode } from '@openmrs/esm-patient-common-lib';
 import type { Condition } from './conditions.resource';
 
 export type ConditionSection = 'antecedents' | 'other-antecedents' | 'active-problems' | 'past-diagnoses';
+export type ConditionDestination = Exclude<ConditionSection, 'antecedents'> | 'procedures';
+export type ConditionStatusFilter = 'All' | 'Active' | 'Inactive';
 
 export const workspaceNamesBySection: Record<ConditionSection, string> = {
   antecedents: 'conditions-form-workspace',
@@ -20,20 +22,43 @@ export const defaultClinicalStatusBySection: Partial<Record<ConditionSection, 'a
   'past-diagnoses': 'inactive',
 };
 
+export const defaultStatusFilterBySection: Record<ConditionSection, ConditionStatusFilter> = {
+  antecedents: 'All',
+  'active-problems': 'Active',
+  'other-antecedents': 'All',
+  'past-diagnoses': 'All',
+};
+
+export function getConditionDestination(antecedentType?: string, clinicalStatus?: string): ConditionDestination {
+  if (antecedentType === 'surgical') {
+    return 'procedures';
+  }
+
+  if (antecedentType === 'definitive-diagnosis') {
+    return 'past-diagnoses';
+  }
+
+  if (clinicalStatus?.toLowerCase() === 'active') {
+    return 'active-problems';
+  }
+
+  return 'other-antecedents';
+}
+
 export function isProcedureOrSurgery(condition: Condition) {
-  return condition.antecedentType === 'surgical';
+  return getConditionDestination(condition.antecedentType, condition.clinicalStatus) === 'procedures';
 }
 
 export function isPastDiagnosis(condition: Condition) {
-  return condition.antecedentType === 'definitive-diagnosis';
+  return getConditionDestination(condition.antecedentType, condition.clinicalStatus) === 'past-diagnoses';
 }
 
 export function isActiveProblem(condition: Condition) {
-  return condition.clinicalStatus === 'Active' && !isPastDiagnosis(condition) && !isProcedureOrSurgery(condition);
+  return getConditionDestination(condition.antecedentType, condition.clinicalStatus) === 'active-problems';
 }
 
 export function isGeneralAntecedent(condition: Condition) {
-  return !isActiveProblem(condition) && !isPastDiagnosis(condition) && !isProcedureOrSurgery(condition);
+  return getConditionDestination(condition.antecedentType, condition.clinicalStatus) === 'other-antecedents';
 }
 
 export function filterConditionsBySection(conditions: Array<Condition>, section: ConditionSection) {

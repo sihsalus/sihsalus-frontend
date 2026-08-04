@@ -1,6 +1,13 @@
 import { type FetchResponse, openmrsFetch } from '@openmrs/esm-framework';
 
-import { createCondition, type FormFields, updateCondition } from './conditions.resource';
+import {
+  createCondition,
+  type FHIRCondition,
+  type FHIRConditionResponse,
+  type FormFields,
+  syncConditionCache,
+  updateCondition,
+} from './conditions.resource';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
@@ -68,5 +75,75 @@ describe('conditions FHIR resource', () => {
       'A clinical provider is required',
     );
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+  });
+
+  it('adds the authoritative mutation response to the existing SWR bundle without another request', async () => {
+    const existingCondition = {
+      id: 'existing-condition',
+      resourceType: 'Condition',
+    } as FHIRCondition;
+    const createdCondition = {
+      id: 'created-condition',
+      resourceType: 'Condition',
+    } as FHIRCondition;
+    const cachedResponse = {
+      data: {
+        entry: [{ resource: existingCondition }],
+        total: 1,
+      } as FHIRConditionResponse,
+    } as FetchResponse<FHIRConditionResponse>;
+    const mutate = vi.fn(async (updater) => updater(cachedResponse));
+
+    await syncConditionCache(mutate, createdCondition);
+
+    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(mutate).toHaveBeenCalledWith(expect.any(Function), { revalidate: false });
+    expect(await mutate.mock.results[0].value).toEqual(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          entry: [{ resource: createdCondition }, { resource: existingCondition }],
+          total: 2,
+        }),
+      }),
+    );
+  });
+
+  it('replaces an updated condition in cache without duplicating the bundle entry', async () => {
+    const existingCondition = {
+      id: 'condition-id',
+      resourceType: 'Condition',
+      recordedDate: '2026-08-04T12:00:00.000Z',
+    } as FHIRCondition;
+    const updatedCondition = {
+      ...existingCondition,
+      recordedDate: '2026-08-04T13:00:00.000Z',
+    };
+    const cachedResponse = {
+      data: {
+        entry: [{ resource: existingCondition }],
+        total: 1,
+      } as FHIRConditionResponse,
+    } as FetchResponse<FHIRConditionResponse>;
+    const mutate = vi.fn(async (updater) => updater(cachedResponse));
+
+    await syncConditionCache(mutate, updatedCondition);
+
+    expect(await mutate.mock.results[0].value).toEqual(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          entry: [{ resource: updatedCondition }],
+          total: 1,
+        }),
+      }),
+    );
+  });
+
+  it('falls back to a revalidation when no condition resource can be merged into cache', async () => {
+    const mutate = vi.fn().mockResolvedValue(undefined);
+
+    await syncConditionCache(mutate, undefined);
+
+    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(mutate).toHaveBeenCalledWith();
   });
 });

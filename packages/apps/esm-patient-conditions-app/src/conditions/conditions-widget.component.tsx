@@ -26,10 +26,12 @@ import {
   type Condition,
   createCondition,
   type FormFields,
+  syncConditionCache,
   updateCondition,
   useConditions,
   useConditionsSearch,
 } from './conditions.resource';
+import { getConditionDestination } from './conditions-categories';
 import styles from './conditions-form.scss';
 import { type ConditionsFormSchema } from './conditions-form.workspace';
 
@@ -50,6 +52,20 @@ interface ConditionsWidgetProps {
 interface RequiredFieldLabelProps {
   label: string;
   t: TFunction;
+}
+
+function getConditionDestinationLabel(antecedentType: string | undefined, clinicalStatus: string, t: TFunction) {
+  switch (getConditionDestination(antecedentType, clinicalStatus)) {
+    case 'active-problems':
+      return t('activeProblems', 'Active problems');
+    case 'past-diagnoses':
+      return t('pastDiagnoses', 'Past diagnoses');
+    case 'procedures':
+      return t('proceduresAndSurgeries', 'Procedures and surgeries');
+    case 'other-antecedents':
+    default:
+      return t('antecedents', 'Antecedents');
+  }
 }
 
 const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
@@ -135,12 +151,14 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
     };
 
     try {
-      await createCondition(payload);
-      await mutate();
+      const response = await createCondition(payload);
+      await syncConditionCache(mutate, response.data);
 
       showSnackbar({
         kind: 'success',
-        subtitle: t('antecedentNowVisible', 'It is now visible on the Antecedents page'),
+        subtitle: t('antecedentNowVisible', 'It is now visible in {{section}}', {
+          section: getConditionDestinationLabel(payload.antecedentType, payload.clinicalStatus, t),
+        }),
         title: t('antecedentSaved', 'Antecedent saved'),
       });
 
@@ -200,12 +218,14 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
     };
 
     try {
-      await updateCondition(editableConditionId, payload);
-      await mutate();
+      const response = await updateCondition(editableConditionId, payload);
+      await syncConditionCache(mutate, response.data);
 
       showSnackbar({
         kind: 'success',
-        subtitle: t('antecedentNowVisible', 'It is now visible on the Antecedents page'),
+        subtitle: t('antecedentNowVisible', 'It is now visible in {{section}}', {
+          section: getConditionDestinationLabel(payload.antecedentType, payload.clinicalStatus, t),
+        }),
         title: t('antecedentUpdated', 'Antecedent updated'),
       });
 

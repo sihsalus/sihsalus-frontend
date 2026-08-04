@@ -179,6 +179,40 @@ describe('ConditionsOverview', () => {
     expect(screen.getAllByRole('row').length).toEqual(3);
   });
 
+  it('shows inactive records initially in antecedent and past-diagnosis widgets', () => {
+    mockUseConditions.mockReturnValue({
+      conditions: [
+        {
+          clinicalStatus: 'Inactive',
+          antecedentType: 'family',
+          conceptId: 'family-history-concept',
+          display: 'Family history of diabetes',
+          id: 'family-history-id',
+          recordedDate: '2026-08-04T12:00:00.000Z',
+        },
+        {
+          clinicalStatus: 'Inactive',
+          antecedentType: 'definitive-diagnosis',
+          conceptId: 'past-diagnosis-concept',
+          display: 'Resolved pneumonia',
+          id: 'past-diagnosis-id',
+          recordedDate: '2026-08-04T12:00:00.000Z',
+        },
+      ],
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+
+    const { unmount } = render(<ConditionsOverview patientUuid={mockPatient.id} />);
+    expect(screen.getByRole('row', { name: /family history of diabetes/i })).toBeInTheDocument();
+
+    unmount();
+    render(<ConditionsOverview patientUuid={mockPatient.id} section="past-diagnoses" />);
+    expect(screen.getByRole('row', { name: /resolved pneumonia/i })).toBeInTheDocument();
+  });
+
   it('clicking the Add button or Record Antecedents link launches the antecedents form', async () => {
     const user = userEvent.setup();
 

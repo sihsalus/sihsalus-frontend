@@ -1,5 +1,5 @@
 import { type DataTableSortState } from '@carbon/react';
-import { fhirBaseUrl, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { type FetchResponse, fhirBaseUrl, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import {
   type AntecedentTypeCode,
   buildAntecedentTypeCategory,
@@ -11,7 +11,7 @@ import {
   getConditionNoteText,
 } from '@openmrs/esm-patient-common-lib';
 import { useMemo, useState } from 'react';
-import useSWR from 'swr';
+import useSWR, { type KeyedMutator } from 'swr';
 
 export interface FHIRConditionResponse {
   entry: Array<{
@@ -56,6 +56,8 @@ export interface FHIRCondition {
   category?: Array<FhirConditionCategory>;
   note?: Array<FhirConditionNote>;
 }
+
+export type ConditionsFetchResponse = { data: FHIRConditionResponse };
 
 interface CodingData {
   code: string;
@@ -148,7 +150,7 @@ export type FormFields = {
 export function useConditions(patientUuid: string) {
   const conditionsCategory = 'http://terminology.hl7.org/CodeSystem/condition-category|problem-list-item';
   const conditionsUrl = `${fhirBaseUrl}/Condition?patient=${patientUuid}&category=${conditionsCategory}&_count=100`;
-  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: FHIRConditionResponse }, Error>(
+  const { data, error, isLoading, isValidating, mutate } = useSWR<ConditionsFetchResponse, Error>(
     patientUuid ? conditionsUrl : null,
     openmrsFetch,
   );
@@ -206,13 +208,13 @@ function mapConditionProperties(condition: FHIRCondition): Condition {
   };
 }
 
-export async function createCondition(payload: FormFields) {
+export async function createCondition(payload: FormFields): Promise<FetchResponse<FHIRCondition>> {
   const controller = new AbortController();
   const url = `${fhirBaseUrl}/Condition`;
 
   const completePayload = buildConditionPayload(payload);
 
-  const res = await openmrsFetch(url, {
+  const res = await openmrsFetch<FHIRCondition>(url, {
     headers: {
       'Content-Type': 'application/json',
     },
@@ -261,7 +263,7 @@ function buildConditionPayload(payload: FormFields): CreatePayload {
   };
 }
 
-export async function updateCondition(conditionId, payload: FormFields) {
+export async function updateCondition(conditionId, payload: FormFields): Promise<FetchResponse<FHIRCondition>> {
   const controller = new AbortController();
   const url = `${fhirBaseUrl}/Condition/${conditionId}`;
 
@@ -270,7 +272,7 @@ export async function updateCondition(conditionId, payload: FormFields) {
     id: conditionId,
   };
 
-  const res = await openmrsFetch(url, {
+  const res = await openmrsFetch<FHIRCondition>(url, {
     headers: {
       'Content-Type': 'application/json',
     },
@@ -280,6 +282,58 @@ export async function updateCondition(conditionId, payload: FormFields) {
   });
 
   return res;
+}
+
+function isFHIRCondition(resource: FHIRCondition | null | undefined): resource is FHIRCondition {
+  return resource?.resourceType === 'Condition' && Boolean(resource.id);
+}
+
+function upsertConditionInBundle(
+  response: ConditionsFetchResponse,
+  condition: FHIRCondition,
+): ConditionsFetchResponse {
+  const entries = response.data.entry ?? [];
+  const matchingEntryIndex = entries.findIndex((entry) => entry.resource?.id === condition.id);
+  const nextEntry =
+    matchingEntryIndex >= 0
+      ? { ...entries[matchingEntryIndex], resource: condition }
+      : {
+          resource: condition,
+        };
+  const nextEntries =
+    matchingEntryIndex >= 0
+      ? entries.map((entry, index) => (index === matchingEntryIndex ? nextEntry : entry))
+      : [nextEntry, ...entries];
+  const previousTotal = Number.isFinite(response.data.total) ? response.data.total : entries.length;
+
+  return {
+    ...response,
+    data: {
+      ...response.data,
+      entry: nextEntries,
+      total: previousTotal + (matchingEntryIndex >= 0 ? 0 : 1),
+    },
+  };
+}
+
+export async function syncConditionCache(
+  mutate: KeyedMutator<ConditionsFetchResponse>,
+  condition: FHIRCondition | null | undefined,
+) {
+  if (!isFHIRCondition(condition)) {
+    await mutate();
+    return;
+  }
+
+  const cachedResponse = await mutate(
+    (currentResponse) =>
+      currentResponse?.data ? upsertConditionInBundle(currentResponse, condition) : currentResponse,
+    { revalidate: false },
+  );
+
+  if (!cachedResponse?.data) {
+    await mutate();
+  }
 }
 
 export async function deleteCondition(conditionId: string) {

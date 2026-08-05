@@ -1,5 +1,5 @@
 import { type NewVisitPayload, type QueueItemDescriptor, useVisit, type Visit } from '@openmrs/esm-framework';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
 /**
@@ -51,20 +51,38 @@ export function useOfflineVisit(patientUuid: string): ReturnType<typeof useVisit
     error: Error | null;
     isLoading: boolean;
   }>({ data: null, error: null, isLoading: true });
+  const [refreshCounter, setRefreshCounter] = useState(0);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshCounter intentionally re-runs the read when mutate() is called
   useEffect(() => {
+    // IndexedDB reads have variable latency; without this guard a slow read for a
+    // previous patient could overwrite the current patient's visit state.
+    let ignore = false;
+
+    setOfflineVisitState({ data: null, error: null, isLoading: true });
     getOfflineVisitForPatient(patientUuid)
       .then((offlineVisit) => {
-        setOfflineVisitState({
-          error: null,
-          data: offlineVisit ? offlineVisitToVisit(offlineVisit) : null,
-          isLoading: false,
-        });
+        if (!ignore) {
+          setOfflineVisitState({
+            error: null,
+            data: offlineVisit ? offlineVisitToVisit(offlineVisit) : null,
+            isLoading: false,
+          });
+        }
       })
       .catch((err) => {
-        const error = err instanceof Error ? err : new Error(String(err));
-        setOfflineVisitState({ error, data: null, isLoading: false });
+        if (!ignore) {
+          const error = err instanceof Error ? err : new Error(String(err));
+          setOfflineVisitState({ error, data: null, isLoading: false });
+        }
       });
-  }, [patientUuid]);
+
+    return () => {
+      ignore = true;
+    };
+  }, [patientUuid, refreshCounter]);
+
+  const mutate = useCallback((): void => setRefreshCounter((counter) => counter + 1), []);
 
   return {
     activeVisit: offlineVisitState.data,
@@ -73,7 +91,7 @@ export function useOfflineVisit(patientUuid: string): ReturnType<typeof useVisit
     isValidating: false,
     currentVisitIsRetrospective: false,
     error: offlineVisitState.error,
-    mutate: (): void => {},
+    mutate,
   };
 }
 
@@ -91,17 +109,29 @@ export function useAutoCreatedOfflineVisit(
   operationalLocationUuid: string,
 ): void {
   const isOnline = useOnlineStatus();
-  const { currentVisit, isValidating, error, mutate } = useOfflineVisit(patientUuid);
+  const { currentVisit, isLoading, isValidating, error, mutate } = useOfflineVisit(patientUuid);
 
   useEffect(() => {
-    if (!isOnline && operationalLocationUuid && !isValidating && !currentVisit && !error) {
+    // Waiting for isLoading avoids queueing a duplicate offline visit while the
+    // IndexedDB read for an existing one is still in flight.
+    if (!isOnline && operationalLocationUuid && !isLoading && !isValidating && !currentVisit && !error) {
       void createOfflineVisitForPatient(patientUuid, operationalLocationUuid, offlineVisitTypeUuid, new Date()).finally(
         () => {
           void mutate();
         },
       );
     }
-  }, [isOnline, currentVisit, isValidating, error, mutate, offlineVisitTypeUuid, operationalLocationUuid, patientUuid]);
+  }, [
+    isOnline,
+    currentVisit,
+    isLoading,
+    isValidating,
+    error,
+    mutate,
+    offlineVisitTypeUuid,
+    operationalLocationUuid,
+    patientUuid,
+  ]);
 }
 
 export async function getOfflineVisitForPatient(patientUuid: string): Promise<OfflineVisit | undefined> {

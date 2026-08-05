@@ -34,6 +34,18 @@ export function usePatient(patientUuid?: string) {
   );
 
   useEffect(() => {
+    if (patientUuid && patientUuid !== currentPatientUuid) {
+      setCurrentPatientUuid(patientUuid);
+    }
+  }, [patientUuid, currentPatientUuid]);
+
+  useEffect(() => {
+    // An explicitly provided UUID pins the hook to that patient; only track the
+    // route when the caller left it to the URL.
+    if (patientUuid) {
+      return;
+    }
+
     const handleRouteUpdate = () => {
       const newPatientUuid = getPatientUuidFromUrl();
       if (newPatientUuid !== currentPatientUuid) {
@@ -43,7 +55,7 @@ export function usePatient(patientUuid?: string) {
 
     window.addEventListener('single-spa:routing-event', handleRouteUpdate);
     return () => window.removeEventListener('single-spa:routing-event', handleRouteUpdate);
-  }, [currentPatientUuid]);
+  }, [patientUuid, currentPatientUuid]);
 
   return useMemo(
     () => ({

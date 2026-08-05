@@ -14,7 +14,7 @@ import {
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { DefaultWorkspaceProps } from '@openmrs/esm-framework';
-import { useConfig, useSession, Workspace2 } from '@openmrs/esm-framework';
+import { showSnackbar, useConfig, useSession, Workspace2 } from '@openmrs/esm-framework';
 import React, { useEffect, useMemo } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -81,8 +81,13 @@ const ContactListForm: React.FC<ContactListFormProps> = ({
     try {
       await saveContact(values, config, session);
       closeWorkspace();
-    } catch {
-      /* empty */
+    } catch (error) {
+      console.error('Failed to save contact:', error);
+      showSnackbar({
+        title: t('errorSavingContact', 'Error al guardar el contacto'),
+        kind: 'error',
+        subtitle: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 

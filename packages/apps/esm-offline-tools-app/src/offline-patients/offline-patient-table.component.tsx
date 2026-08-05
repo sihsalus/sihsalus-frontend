@@ -29,6 +29,7 @@ import {
   isDesktop,
   removeDynamicOfflineData,
   showModal,
+  showSnackbar,
   syncDynamicOfflineData,
   useLayoutType,
 } from '@openmrs/esm-framework';
@@ -80,7 +81,30 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
   const handleUpdateSelectedPatientsClick = async (selectedRows: Array<OfflinePatientDataTableRow>) => {
     const selectedPatientUuids = selectedRows.map((row) => row.id);
     setSyncingPatientUuids(selectedPatientUuids);
-    await syncSelectedOfflinePatients(selectedPatientUuids).finally(() => setSyncingPatientUuids([]));
+
+    try {
+      const failedCount = await syncSelectedOfflinePatients(selectedPatientUuids);
+
+      if (failedCount > 0) {
+        showSnackbar({
+          kind: 'error',
+          title: t('offlinePatientsSyncFailed', 'Some patients could not be synchronized'),
+          subtitle: t(
+            'offlinePatientsSyncFailedSubtitle',
+            '{{count}} patient(s) failed to download and will not be available offline. Please try again.',
+            { count: failedCount },
+          ),
+        });
+      }
+    } catch (error) {
+      showSnackbar({
+        kind: 'error',
+        title: t('offlinePatientsSyncFailed', 'Some patients could not be synchronized'),
+        subtitle: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      setSyncingPatientUuids([]);
+    }
 
     offlinePatientsSwr.mutate();
     offlineRegisteredPatientsSwr.mutate();
@@ -304,14 +328,21 @@ function useOfflinePatientTableRows(syncingPatientUuids: Array<string>): Array<O
   }, [syncingPatientUuids, offlinePatientsSwr.data, offlineRegisteredPatientsSwr.data]);
 }
 
-async function syncSelectedOfflinePatients(selectedPatientUuids: Array<string>) {
+/**
+ * Synchronizes the selected patients, tolerating individual failures so one failed
+ * patient doesn't abort (or silently hide) the rest of the batch.
+ * @returns The number of patients that failed to synchronize.
+ */
+async function syncSelectedOfflinePatients(selectedPatientUuids: Array<string>): Promise<number> {
   const offlinePatientEntries = await getDynamicOfflineDataEntries('patient-registration');
   const syncablePatientUuids = offlinePatientEntries.map((entry) => entry.identifier);
   const offlinePatientUuidsToSync = selectedPatientUuids.filter((id) => syncablePatientUuids.includes(id));
 
-  return await Promise.all(
+  const results = await Promise.allSettled(
     offlinePatientUuidsToSync.map((patientUuid) => syncDynamicOfflineData('patient', patientUuid)),
   );
+
+  return results.filter((result) => result.status === 'rejected').length;
 }
 
 async function removeSelectedOfflinePatients(selectedPatientUuids: Array<string>) {

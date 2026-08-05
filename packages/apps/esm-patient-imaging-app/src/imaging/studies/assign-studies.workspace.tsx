@@ -29,7 +29,7 @@ const AssignStudiesWorkspace: React.FC<AssignStudiesWorkspaceProps> = ({
     isLoading: isLoadingStudies,
   } = useStudiesByConfig(configuration, patientUuid);
 
-  async function assignStudyFunction(study: DicomStudy, isAssign: boolean) {
+  async function assignStudyFunction(study: DicomStudy, isAssign: boolean): Promise<boolean> {
     const abortController = new AbortController();
     try {
       await assignStudy(study.id, patientUuid, isAssign, abortController);
@@ -40,6 +40,7 @@ const AssignStudiesWorkspace: React.FC<AssignStudiesWorkspaceProps> = ({
           ? t('studyAssigned', 'The study has been successfully assigned')
           : t('removeAssign', 'Assignment of the study is removed'),
       });
+      return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       showSnackbar({
@@ -50,6 +51,7 @@ const AssignStudiesWorkspace: React.FC<AssignStudiesWorkspaceProps> = ({
         subtitle: message,
         isLowContrast: false,
       });
+      return false;
     }
   }
 
@@ -78,9 +80,7 @@ const AssignStudiesWorkspace: React.FC<AssignStudiesWorkspaceProps> = ({
                       <AssignStudiesTable
                         data={studiesData}
                         patientUuid={patientUuid}
-                        assignStudyFunction={(study: DicomStudy, isAssign: boolean) =>
-                          assignStudyFunction(study, isAssign)
-                        }
+                        assignStudyFunction={assignStudyFunction}
                       />
                     </div>
                   </ResponsiveWrapper>

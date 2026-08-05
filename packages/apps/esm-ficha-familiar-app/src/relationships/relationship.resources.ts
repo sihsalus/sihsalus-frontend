@@ -184,11 +184,7 @@ export const saveRelationship = async (
         }),
       });
       patient = response.data?.uuid;
-      showSnackbar({
-        title: t('success', 'Éxito'),
-        kind: 'success',
-        subtitle: t('patientCreatedSuccessfully', 'Paciente creado exitosamente'),
-      });
+      // No success toast yet: the flow isn't done until the relationship is saved.
     } catch (error) {
       showSnackbar({
         title: t('errorCreatingPatient', 'Error al crear el paciente'),
@@ -245,11 +241,6 @@ export const saveRelationship = async (
           obs: [{ concept: config.maritalStatusUuid, value: data.personBInfo.maritalStatus }],
         }),
       });
-      showSnackbar({
-        title: t('success', 'Éxito'),
-        kind: 'success',
-        subtitle: t('patientDemographicsSavedSuccessfully', 'Datos demográficos guardados exitosamente'),
-      });
     } catch (error) {
       showSnackbar({
         title: t('errorSavingPatientDemographics', 'Error al guardar los datos demográficos'),
@@ -283,14 +274,23 @@ export const saveRelationship = async (
     showSnackbar({
       title: t('success', 'Éxito'),
       kind: 'success',
-      subtitle: t('relationshipSavedSuccessfully', 'La relación familiar se guardó exitosamente'),
+      subtitle:
+        data.mode === 'create'
+          ? t('patientAndRelationshipSaved', 'Paciente creado y relación familiar guardada exitosamente')
+          : t('relationshipSavedSuccessfully', 'La relación familiar se guardó exitosamente'),
     });
     mutate((key) => typeof key === 'string' && key.startsWith('/ws/rest/v1/relationship'));
   } catch (error) {
     showSnackbar({
       title: t('errorSavingRelationship', 'Error al guardar la relación'),
       kind: 'error',
-      subtitle: error?.message,
+      subtitle:
+        data.mode === 'create'
+          ? t(
+              'relationshipFailedPatientCreated',
+              'El paciente fue creado pero la relación no se pudo guardar. Búsquelo e intente registrar la relación nuevamente.',
+            )
+          : error?.message,
     });
     throw error;
   }

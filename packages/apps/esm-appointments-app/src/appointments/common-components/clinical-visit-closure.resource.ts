@@ -1,4 +1,4 @@
-import { type FetchResponse, openmrsFetch, restBaseUrl, type Visit } from '@openmrs/esm-framework';
+import { type FetchResponse, openmrsFetch, restBaseUrl, toOmrsIsoString, type Visit } from '@openmrs/esm-framework';
 
 interface ClinicalVisitClosurePayload {
   stopDatetime: Date | string;
@@ -15,7 +15,7 @@ export function closeClinicalVisit(
     headers: { 'Content-Type': 'application/json' },
     body: {
       visitUuid,
-      stopDatetime: payload.stopDatetime,
+      stopDatetime: toOmrsIsoString(payload.stopDatetime),
     },
   });
 }

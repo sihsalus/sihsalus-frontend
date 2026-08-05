@@ -34,10 +34,17 @@ const visitNotesConceptUuids = {
   legacyProceduresUuid: '1651AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   legacyProceduresTextUuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   soapPlanUuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  // Consulta Externa stored therapeutic indications in the generic encounter-note
+  // concept before the forms moved to a dedicated one. Encounters recorded then
+  // still carry it, so both concepts stay readable.
+  legacyTherapeuticIndicationsUuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   prescriptionsUuid: '1e9c5e02-b09f-41c6-83aa-dfed81bd0df5',
   referralUuid: '3f573194-bade-46bc-b5fd-59c36f5f697a',
   nextAppointmentUuid: '47ce3ee6-ee9f-4037-901b-2a6381c4b340',
 } as const;
+
+/** The form engine records each obs under `rfe-forms-<question id>`. */
+const LEGACY_THERAPEUTIC_INDICATIONS_FIELD_PATH = 'rfe-forms-indicacionesTerapeuticas';
 
 function uniqueConceptUuids(values: Array<string | undefined>) {
   return [...new Set(values.filter((value): value is string => Boolean(value)))];
@@ -91,7 +98,15 @@ export function useTreatmentPlan(patientUuid: string, encounterTypeUuid: string,
       ]),
       therapeuticIndications:
         getObsValue(encounter.obs, [visitNotesConceptUuids.soapPlanUuid], 'soap-plan') ??
-        getObsValue(encounter.obs, [concepts?.therapeuticIndicationsUuid], null),
+        getObsValue(encounter.obs, [concepts?.therapeuticIndicationsUuid]) ??
+        // The legacy concept also backs the free-text diagnosis, so it is only read
+        // through the field that recorded indications — never by concept alone.
+        getObsValue(
+          encounter.obs,
+          [visitNotesConceptUuids.legacyTherapeuticIndicationsUuid],
+          LEGACY_THERAPEUTIC_INDICATIONS_FIELD_PATH,
+        ) ??
+        getObsValue(encounter.obs, [visitNotesConceptUuids.legacyTherapeuticIndicationsUuid], null),
       referral: getObsValue(encounter.obs, [concepts?.referralUuid, visitNotesConceptUuids.referralUuid]),
       nextAppointment: getObsValue(encounter.obs, [
         concepts?.nextAppointmentUuid,

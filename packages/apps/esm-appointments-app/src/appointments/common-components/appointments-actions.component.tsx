@@ -8,7 +8,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../config-schema';
-import { appointmentsEditPrivilege } from '../../constants';
+import { appointmentsEditPrivilege, clinicalCheckoutPrivileges } from '../../constants';
 import { canTransition } from '../../helpers';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
 import { type Appointment, AppointmentStatus } from '../../types';
@@ -32,19 +32,6 @@ const checkInPrivileges = [
   'Get Queues',
   'Manage Queue Entries',
 ];
-const checkOutPrivileges = [
-  appointmentsEditPrivilege,
-  'Get Visits',
-  'Edit Visits',
-  // The Bed Management module intercepts every visit close server-side and demands Assign Beds,
-  // even for outpatient visits with no bed. Gate the button on it so it only appears for users
-  // whose checkout can actually succeed.
-  'Assign Beds',
-  'Get Queue Entries',
-  'Get Queues',
-  'Manage Queue Entries',
-];
-
 interface AppointmentsActionsProps {
   appointment: Appointment;
 }
@@ -54,7 +41,7 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
   const { appointmentVisitAttributeTypeUuid, checkInButton, checkOutButton } = useConfig<ConfigObject>();
   const session = useSession();
   const canCheckIn = userHasAccess(checkInPrivileges, session?.user);
-  const canCheckOut = userHasAccess(checkOutPrivileges, session?.user);
+  const canCheckOut = userHasAccess(clinicalCheckoutPrivileges, session?.user);
   const { visits, isLoading: areVisitsLoading, error: visitsError, mutateVisit } = useTodaysVisits();
 
   const patientUuid = appointment.patient.uuid;
@@ -144,7 +131,7 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
           >
             {needsAdmissionReconciliation
               ? t('reconcileAdmission', 'Regularizar admisión')
-              : t('checkOut', 'Check out')}
+              : t('finishCare', 'Finish care')}
           </Button>
         );
 

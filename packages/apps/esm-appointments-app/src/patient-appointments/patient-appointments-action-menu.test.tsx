@@ -33,7 +33,7 @@ function renderMenu(context: PatientAppointmentContextTypes, status = Appointmen
   );
 }
 
-async function chooseMenuItem(id: 'editAppointment' | 'cancelAppointment') {
+async function chooseMenuItem(id: 'editAppointment' | 'cancelAppointment' | 'finalizeCare') {
   await userEvent.click(screen.getByRole('button', { name: /actions/i }));
   const menuItem = document.getElementById(id);
   expect(menuItem).toBeInTheDocument();
@@ -95,6 +95,40 @@ describe('PatientAppointmentsActionMenu', () => {
     AppointmentStatus.MISSED,
   ])('does not expose edit or cancellation actions for %s appointments', (status) => {
     renderMenu(PatientAppointmentContextTypes.APPOINTMENTS_APP, status);
+
+    expect(screen.queryByRole('button', { name: /actions/i })).not.toBeInTheDocument();
+  });
+
+  it('allows clinical staff to finish a checked-in appointment from the patient chart', async () => {
+    renderMenu(PatientAppointmentContextTypes.PATIENT_CHART, AppointmentStatus.CHECKEDIN);
+
+    await chooseMenuItem('finalizeCare');
+
+    expect(mockShowModal).toHaveBeenCalledWith(
+      'end-appointment-modal',
+      expect.objectContaining({
+        appointmentUuid: appointment.uuid,
+        patientUuid,
+        closeModal: expect.any(Function),
+      }),
+    );
+    expect(mockUserHasAccess).toHaveBeenCalledWith(
+      [
+        'app:hoja.clinica.citas.editar',
+        'Get Visits',
+        'Edit Visits',
+        'Get Encounters',
+        'Get Visit Attribute Types',
+        'Get Queue Entries',
+        'Get Queues',
+        'Manage Queue Entries',
+      ],
+      expect.anything(),
+    );
+  });
+
+  it('does not expose clinical finalization in the administrative appointment context', () => {
+    renderMenu(PatientAppointmentContextTypes.APPOINTMENTS_APP, AppointmentStatus.CHECKEDIN);
 
     expect(screen.queryByRole('button', { name: /actions/i })).not.toBeInTheDocument();
   });

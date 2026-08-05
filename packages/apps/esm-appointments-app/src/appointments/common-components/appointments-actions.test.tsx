@@ -169,7 +169,7 @@ describe('AppointmentActions', () => {
     expect(screen.queryByRole('button', { name: /check in/i })).not.toBeInTheDocument();
   });
 
-  it('authorizes admission reconciliation separately without requiring Add Visits', () => {
+  it('authorizes clinical checkout separately without requiring Add Visits', () => {
     appointment.status = AppointmentStatus.CHECKEDIN;
     mockUserHasAccess.mockImplementation((requiredPrivileges) =>
       Array.isArray(requiredPrivileges) ? !requiredPrivileges.includes('Add Visits') : true,
@@ -194,10 +194,11 @@ describe('AppointmentActions', () => {
     );
     expect(mockUserHasAccess).toHaveBeenCalledWith(
       [
-        'app:home.citas.editar',
+        'app:hoja.clinica.citas.editar',
         'Get Visits',
         'Edit Visits',
-        'Assign Beds',
+        'Get Encounters',
+        'Get Visit Attribute Types',
         'Get Queue Entries',
         'Get Queues',
         'Manage Queue Entries',
@@ -371,7 +372,7 @@ describe('AppointmentActions', () => {
     expect(screen.getByText('Checked out')).toBeInTheDocument();
   });
 
-  it('renders check out button when active visit exists', () => {
+  it('renders finish care button when active visit exists', () => {
     appointment.status = AppointmentStatus.CHECKEDIN;
 
     mockUseConfig.mockReturnValue({
@@ -401,15 +402,13 @@ describe('AppointmentActions', () => {
     });
 
     render(<AppointmentActions {...defaultProps} />);
-    expect(screen.getByText(/check out/i)).toBeInTheDocument();
+    expect(screen.getByText(/finish care/i)).toBeInTheDocument();
   });
 
-  it('does not offer checkout without the Assign Beds privilege the visit close requires', () => {
-    // The Bed Management module rejects every visit close without Assign Beds (even bed-less
-    // outpatient visits), so a user missing it must not see a checkout button that can only 403.
+  it('does not offer checkout without the clinical appointment privilege', () => {
     appointment.status = AppointmentStatus.CHECKEDIN;
     mockUserHasAccess.mockImplementation((requiredPrivileges) =>
-      Array.isArray(requiredPrivileges) ? !requiredPrivileges.includes('Assign Beds') : true,
+      Array.isArray(requiredPrivileges) ? !requiredPrivileges.includes('app:hoja.clinica.citas.editar') : true,
     );
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
@@ -438,7 +437,7 @@ describe('AppointmentActions', () => {
 
     render(<AppointmentActions {...defaultProps} />);
 
-    expect(screen.queryByRole('button', { name: /check out/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /finish care/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Regularizar cierre' })).not.toBeInTheDocument();
   });
 
@@ -461,7 +460,7 @@ describe('AppointmentActions', () => {
 
     render(<AppointmentActions {...defaultProps} />);
 
-    expect(screen.getByRole('button', { name: /check out/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /finish care/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /regularizar admisión/i })).not.toBeInTheDocument();
   });
 

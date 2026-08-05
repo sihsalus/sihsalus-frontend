@@ -11,7 +11,18 @@ import type { OmrsOfflineCachingStrategy } from './service-worker-http-headers';
 export async function messageOmrsServiceWorker(
   message: KnownOmrsServiceWorkerMessages,
 ): Promise<MessageServiceWorkerResult<any>> {
-  const sw = await getOmrsServiceWorker();
+  let sw: Awaited<ReturnType<typeof getOmrsServiceWorker>>;
+
+  try {
+    sw = await getOmrsServiceWorker();
+  } catch (error) {
+    return {
+      success: false,
+      result: undefined,
+      error: error instanceof Error ? error.message : 'The service worker is unavailable.',
+    };
+  }
+
   return sw
     ? await sw.messageSW(message)
     : {

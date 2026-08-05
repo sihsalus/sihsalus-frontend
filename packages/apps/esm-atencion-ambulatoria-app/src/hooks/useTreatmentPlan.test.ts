@@ -94,9 +94,19 @@ describe('useTreatmentPlan therapeutic indications', () => {
   });
 
   it('keeps a legacy procedure-only encounter in the treatment history', () => {
-    const { result } = renderWithObs([obs(LEGACY_ENCOUNTER_NOTE_UUID, 'Curación de herida', 'procedures')]);
+    const procedureObs = obs(LEGACY_ENCOUNTER_NOTE_UUID, 'Curación de herida', 'procedures');
+    const { result } = renderWithObs([procedureObs]);
+    const isRelevant = mockUseClinicalHistoryPagination.mock.calls.at(-1)?.[1];
 
     expect(result.current.treatmentPlans[0].procedures).toBe('Curación de herida');
+    expect(
+      isRelevant?.({
+        uuid: 'procedure-only',
+        encounterDatetime: '2026-08-05T10:00:00.000Z',
+        encounterProviders: [],
+        obs: [procedureObs],
+      }),
+    ).toBe(true);
   });
 
   it('never reports the free-text diagnosis as therapeutic indications', () => {
@@ -118,8 +128,18 @@ describe('useTreatmentPlan therapeutic indications', () => {
       visitNoteFormUuid,
       [{ encounterTypeUuid: 'visit-note', formUuid: visitNoteFormUuid }],
     );
+    const isRelevant = mockUseClinicalHistoryPagination.mock.calls.at(-1)?.[1];
 
     expect(result.current.treatmentPlans).toHaveLength(0);
+    expect(
+      isRelevant?.({
+        uuid: 'visit-note-clinical-note',
+        encounterDatetime: '2026-08-05T10:00:00.000Z',
+        form: { uuid: visitNoteFormUuid },
+        encounterProviders: [],
+        obs: [obs(LEGACY_ENCOUNTER_NOTE_UUID, 'Nota clínica narrativa')],
+      }),
+    ).toBe(false);
   });
 
   it('prefers the dedicated concept over a legacy value in the same encounter', () => {

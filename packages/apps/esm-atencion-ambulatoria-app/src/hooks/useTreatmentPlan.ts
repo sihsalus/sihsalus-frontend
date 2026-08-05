@@ -1,5 +1,10 @@
 import { restBaseUrl } from '@openmrs/esm-framework';
-import { useClinicalHistoryPagination } from './useClinicalHistoryPagination';
+import { useCallback } from 'react';
+import {
+  type EncounterTypeSourceInput,
+  toEncounterTypeSources,
+  useMergedClinicalHistoryPagination,
+} from './useClinicalHistoryPagination';
 
 interface TreatmentPlanEntry {
   encounterUuid: string;
@@ -24,6 +29,7 @@ interface Obs {
 interface Encounter {
   uuid: string;
   encounterDatetime: string;
+  form?: string | { uuid?: string } | null;
   encounterProviders: Array<{ display: string }>;
   obs: Obs[];
 }
@@ -45,18 +51,94 @@ const visitNotesConceptUuids = {
 
 /** The form engine records each obs under `rfe-forms-<question id>`. */
 const LEGACY_THERAPEUTIC_INDICATIONS_FIELD_PATH = 'rfe-forms-indicacionesTerapeuticas';
+const FORM_ENGINE_FIELD_PATH_PREFIX = 'rfe-forms-';
+
+/**
+ * Question ids of the published CE-001 form whose answers the legacy concept
+ * compatibility map still funnels into the generic encounter-note concept
+ * (162169…). They are only distinguishable by formFieldPath, so each one must
+ * be declared explicitly (via config) to become readable here.
+ */
+export interface LegacyCe001FieldPaths {
+  labOrders?: string;
+  prescriptions?: string;
+  referral?: string;
+  nextAppointment?: string;
+}
 
 function uniqueConceptUuids(values: Array<string | undefined>) {
   return [...new Set(values.filter((value): value is string => Boolean(value)))];
 }
 
-export function useTreatmentPlan(patientUuid: string, encounterTypeUuid: string, concepts: Record<string, string>) {
-  const url =
-    patientUuid && encounterTypeUuid
-      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&order=desc&v=custom:(uuid,encounterDatetime,encounterProviders:(display),obs:(uuid,concept:(uuid,display),value,display,formFieldPath))`
-      : null;
+export function useTreatmentPlan(
+  patientUuid: string,
+  encounterType: EncounterTypeSourceInput | Array<EncounterTypeSourceInput>,
+  concepts: Record<string, string>,
+  legacyCe001FieldPaths: LegacyCe001FieldPaths = {},
+) {
+  const encounterTypes = toEncounterTypeSources(encounterType);
+  const restrictedFormUuidKey = uniqueConceptUuids(encounterTypes.map(({ formUuid }) => formUuid))
+    .sort()
+    .join('|');
+  const isEncounterFromRestrictedForm = useCallback(
+    (encounter: Encounter) => {
+      const formUuid = typeof encounter.form === 'string' ? encounter.form : encounter.form?.uuid;
+      return Boolean(formUuid && restrictedFormUuidKey.split('|').includes(formUuid));
+    },
+    [restrictedFormUuidKey],
+  );
+  const sources = patientUuid
+    ? encounterTypes.map(({ encounterTypeUuid, formUuid, visitTypeUuid }) => ({
+        url: `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&order=desc&v=custom:(uuid,encounterDatetime,form:(uuid),visit:(uuid,visitType:(uuid)),encounterProviders:(display),obs:(uuid,concept:(uuid,display),value,display,formFieldPath))`,
+        expectedFormUuid: formUuid,
+        expectedVisitTypeUuid: visitTypeUuid,
+      }))
+    : null;
 
-  const { data, error, isLoading, isValidating, mutate, pagination } = useClinicalHistoryPagination<Encounter>(url);
+  const isRelevant = useCallback(
+    (encounter: Encounter) => {
+      const directConceptUuids = uniqueConceptUuids([
+        concepts?.labOrdersUuid,
+        concepts?.proceduresUuid,
+        concepts?.prescriptionsUuid,
+        concepts?.therapeuticIndicationsUuid,
+        concepts?.referralUuid,
+        concepts?.nextAppointmentUuid,
+        visitNotesConceptUuids.labOrdersUuid,
+        visitNotesConceptUuids.proceduresUuid,
+        visitNotesConceptUuids.legacyProceduresUuid,
+        visitNotesConceptUuids.prescriptionsUuid,
+        visitNotesConceptUuids.referralUuid,
+        visitNotesConceptUuids.nextAppointmentUuid,
+      ]);
+      const legacyPaths = new Set(
+        [
+          legacyCe001FieldPaths.labOrders,
+          legacyCe001FieldPaths.prescriptions,
+          legacyCe001FieldPaths.referral,
+          legacyCe001FieldPaths.nextAppointment,
+        ]
+          .filter((path): path is string => Boolean(path))
+          .map((path) => `${FORM_ENGINE_FIELD_PATH_PREFIX}${path}`),
+      );
+      return encounter.obs?.some((obs) => {
+        if (directConceptUuids.includes(obs.concept?.uuid)) return true;
+        if (obs.concept?.uuid !== visitNotesConceptUuids.legacyTherapeuticIndicationsUuid) return false;
+        if (!obs.formFieldPath) return !isEncounterFromRestrictedForm(encounter);
+        return (
+          obs.formFieldPath === LEGACY_THERAPEUTIC_INDICATIONS_FIELD_PATH ||
+          obs.formFieldPath === 'soap-plan' ||
+          obs.formFieldPath === 'procedures' ||
+          legacyPaths.has(obs.formFieldPath)
+        );
+      });
+    },
+    [concepts, isEncounterFromRestrictedForm, legacyCe001FieldPaths],
+  );
+  const { data, error, isLoading, isValidating, mutate, pagination } = useMergedClinicalHistoryPagination<Encounter>(
+    sources,
+    isRelevant,
+  );
 
   const getObsValue = (
     obs: Obs[] | undefined,
@@ -78,24 +160,37 @@ export function useTreatmentPlan(patientUuid: string, encounterTypeUuid: string,
     return typeof match.value === 'string' ? match.value : (match.value?.display ?? match.display ?? null);
   };
 
+  // CE-001 answers rerouted into the generic note concept are only readable
+  // through their question's formFieldPath; without it, nothing is read (the
+  // concept alone also backs the free-text diagnosis).
+  const getLegacyCe001Value = (obs: Obs[] | undefined, questionId: string | undefined) => {
+    if (!questionId) return null;
+    return getObsValue(
+      obs,
+      [visitNotesConceptUuids.legacyTherapeuticIndicationsUuid],
+      `${FORM_ENGINE_FIELD_PATH_PREFIX}${questionId}`,
+    );
+  };
+
   const treatmentPlans: TreatmentPlanEntry[] = data
     .map((encounter) => ({
       encounterUuid: encounter.uuid,
       encounterDatetime: encounter.encounterDatetime,
       provider: encounter.encounterProviders?.[0]?.display?.split(' - ')?.[0] ?? null,
-      labOrders: getObsValue(encounter.obs, [concepts?.labOrdersUuid, visitNotesConceptUuids.labOrdersUuid]),
+      labOrders:
+        getObsValue(encounter.obs, [concepts?.labOrdersUuid, visitNotesConceptUuids.labOrdersUuid]) ??
+        getLegacyCe001Value(encounter.obs, legacyCe001FieldPaths.labOrders),
       procedures:
-        getObsValue(encounter.obs, [concepts?.proceduresUuid, visitNotesConceptUuids.proceduresUuid], 'procedures') ??
+        getObsValue(encounter.obs, [concepts?.proceduresUuid, visitNotesConceptUuids.proceduresUuid]) ??
         getObsValue(
           encounter.obs,
           [visitNotesConceptUuids.legacyProceduresTextUuid, visitNotesConceptUuids.legacyProceduresUuid],
           'procedures',
         ) ??
         getObsValue(encounter.obs, [concepts?.proceduresUuid, visitNotesConceptUuids.legacyProceduresUuid], null),
-      prescriptions: getObsValue(encounter.obs, [
-        concepts?.prescriptionsUuid,
-        visitNotesConceptUuids.prescriptionsUuid,
-      ]),
+      prescriptions:
+        getObsValue(encounter.obs, [concepts?.prescriptionsUuid, visitNotesConceptUuids.prescriptionsUuid]) ??
+        getLegacyCe001Value(encounter.obs, legacyCe001FieldPaths.prescriptions),
       therapeuticIndications:
         getObsValue(encounter.obs, [visitNotesConceptUuids.soapPlanUuid], 'soap-plan') ??
         getObsValue(encounter.obs, [concepts?.therapeuticIndicationsUuid]) ??
@@ -106,12 +201,15 @@ export function useTreatmentPlan(patientUuid: string, encounterTypeUuid: string,
           [visitNotesConceptUuids.legacyTherapeuticIndicationsUuid],
           LEGACY_THERAPEUTIC_INDICATIONS_FIELD_PATH,
         ) ??
-        getObsValue(encounter.obs, [visitNotesConceptUuids.legacyTherapeuticIndicationsUuid], null),
-      referral: getObsValue(encounter.obs, [concepts?.referralUuid, visitNotesConceptUuids.referralUuid]),
-      nextAppointment: getObsValue(encounter.obs, [
-        concepts?.nextAppointmentUuid,
-        visitNotesConceptUuids.nextAppointmentUuid,
-      ]),
+        (isEncounterFromRestrictedForm(encounter)
+          ? null
+          : getObsValue(encounter.obs, [visitNotesConceptUuids.legacyTherapeuticIndicationsUuid], null)),
+      referral:
+        getObsValue(encounter.obs, [concepts?.referralUuid, visitNotesConceptUuids.referralUuid]) ??
+        getLegacyCe001Value(encounter.obs, legacyCe001FieldPaths.referral),
+      nextAppointment:
+        getObsValue(encounter.obs, [concepts?.nextAppointmentUuid, visitNotesConceptUuids.nextAppointmentUuid]) ??
+        getLegacyCe001Value(encounter.obs, legacyCe001FieldPaths.nextAppointment),
     }))
     .filter(
       (entry) =>

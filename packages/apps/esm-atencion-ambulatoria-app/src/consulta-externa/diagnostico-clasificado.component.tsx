@@ -26,10 +26,14 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const isTablet = useLayoutType() === 'tablet';
-  const { diagnoses, isLoading, isValidating, error, mutate, pagination } = useDiagnosisHistory(
-    patientUuid,
+  const { diagnoses, isLoading, isValidating, error, mutate, pagination } = useDiagnosisHistory(patientUuid, [
     config.encounterTypes?.externalConsultation,
-  );
+    {
+      encounterTypeUuid: config.encounterTypes?.visitNote,
+      formUuid: config.formsList?.visitNoteFormUuid,
+      visitTypeUuid: config.visitTypes?.ambulatory,
+    },
+  ]);
 
   const headers = [
     { key: 'date', header: t('dateAndTime', 'Fecha y hora') },

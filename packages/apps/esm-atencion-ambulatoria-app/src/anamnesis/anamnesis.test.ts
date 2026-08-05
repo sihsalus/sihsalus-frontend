@@ -50,4 +50,18 @@ describe('anamnesis domain helpers', () => {
     expect(entry.chiefComplaint).toBe('Dolor de cabeza');
     expect(hasAnamnesisData(entry)).toBe(true);
   });
+
+  it('reads the biological-functions summary written by Visit Note', () => {
+    const entry = mapEncounterToAnamnesisEntry(
+      {
+        uuid: 'visit-note',
+        encounterDatetime: '2026-07-09T10:00:00.000Z',
+        obs: [{ concept: { uuid: 'biological-summary' }, value: 'Apetito conservado; sueño alterado' }],
+      },
+      { biologicalFunctionsSummaryUuid: 'biological-summary' },
+    );
+
+    expect(entry.biologicalFunctionsSummary).toBe('Apetito conservado; sueño alterado');
+    expect(hasAnamnesisData(entry)).toBe(true);
+  });
 });

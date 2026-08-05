@@ -26,8 +26,16 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
   const config = useConfig<ConfigObject>();
   const { treatmentPlans, isLoading, isValidating, error, mutate, pagination } = useTreatmentPlan(
     patientUuid,
-    config.encounterTypes?.externalConsultation,
+    [
+      config.encounterTypes?.externalConsultation,
+      {
+        encounterTypeUuid: config.encounterTypes?.visitNote,
+        formUuid: config.formsList?.visitNoteFormUuid,
+        visitTypeUuid: config.visitTypes?.ambulatory,
+      },
+    ],
     config.concepts,
+    config.legacyCe001FieldPaths,
   );
 
   const handleLaunchForm = () => {

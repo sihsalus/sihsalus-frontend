@@ -1,5 +1,10 @@
 import { restBaseUrl } from '@openmrs/esm-framework';
-import { useClinicalHistoryPagination } from './useClinicalHistoryPagination';
+import { useCallback } from 'react';
+import {
+  type EncounterTypeSourceInput,
+  toEncounterTypeSources,
+  useMergedClinicalHistoryPagination,
+} from './useClinicalHistoryPagination';
 
 export interface ReferralEntry {
   uuid: string;
@@ -18,17 +23,31 @@ interface Obs {
   concept: { uuid: string };
   value: string | { display?: string; uuid?: string } | null;
   display?: string;
+  formFieldPath?: string;
 }
 
 interface Encounter {
   uuid: string;
   encounterDatetime: string;
+  encounterType?: string | { uuid?: string };
   encounterProviders: Array<{ display: string }>;
   obs: Obs[];
 }
 
+interface ReferralConcepts {
+  referralUuid?: string;
+  referralConceptUuid?: string;
+  referralTypeUuid?: string;
+  referralReasonUuid?: string;
+  referralDestinationUuid?: string;
+  counterReferralResponseUuid?: string;
+}
+
 const visitNotesReferralConceptUuid = '3f573194-bade-46bc-b5fd-59c36f5f697a';
 const legacyReferralConceptUuid = '1272AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+const ce001ReferralConceptUuid = 'f0000205-0000-4000-8000-000000000205';
+const legacyEncounterNoteConceptUuid = '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+const ce001ReferralFieldPath = 'rfe-forms-referencia';
 
 function uniqueConceptUuids(values: Array<string | undefined>) {
   return [...new Set(values.filter((value): value is string => Boolean(value)))];
@@ -37,6 +56,12 @@ function uniqueConceptUuids(values: Array<string | undefined>) {
 function getObsValue(obs: Obs[], conceptUuid: string | undefined): string | null {
   if (!obs || !conceptUuid) return null;
   const match = obs.find((o) => o.concept?.uuid === conceptUuid);
+  if (!match) return null;
+  return typeof match.value === 'string' ? match.value : (match.value?.display ?? match.display ?? null);
+}
+
+function getObsValueByFieldPath(obs: Obs[], conceptUuid: string, formFieldPath: string): string | null {
+  const match = obs?.find((item) => item.concept?.uuid === conceptUuid && item.formFieldPath === formFieldPath);
   if (!match) return null;
   return typeof match.value === 'string' ? match.value : (match.value?.display ?? match.display ?? null);
 }
@@ -52,118 +77,101 @@ function getFirstObsValue(obs: Obs[], conceptUuids: Array<string | undefined>): 
   return null;
 }
 
+function getEncounterTypeUuid(encounter: Encounter): string | undefined {
+  return typeof encounter.encounterType === 'string' ? encounter.encounterType : encounter.encounterType?.uuid;
+}
+
+function getInterconsultationOrder(encounter: Encounter, concepts: ReferralConcepts): string | null {
+  return (
+    getFirstObsValue(encounter.obs, [
+      concepts.referralUuid,
+      concepts.referralConceptUuid,
+      visitNotesReferralConceptUuid,
+      ce001ReferralConceptUuid,
+      legacyReferralConceptUuid,
+    ]) ?? getObsValueByFieldPath(encounter.obs, legacyEncounterNoteConceptUuid, ce001ReferralFieldPath)
+  );
+}
+
 export function useReferralCounterReferral(
   patientUuid: string,
   referralCounterReferralEncounterTypeUuid: string,
-  externalConsultationEncounterTypeUuid: string,
-  concepts: {
-    referralUuid?: string;
-    referralConceptUuid?: string;
-    referralTypeUuid?: string;
-    referralReasonUuid?: string;
-    referralDestinationUuid?: string;
-    counterReferralResponseUuid?: string;
-  },
+  externalConsultationEncounterType: EncounterTypeSourceInput | Array<EncounterTypeSourceInput>,
+  concepts: ReferralConcepts,
 ) {
-  const referralCounterReferralUrl =
-    patientUuid && referralCounterReferralEncounterTypeUuid
-      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${referralCounterReferralEncounterTypeUuid}` +
-        `&v=custom:(uuid,encounterDatetime,encounterProviders:(display),obs:(concept:(uuid),value))&order=desc`
-      : null;
-  const interconsultationOrdersUrl =
-    patientUuid && externalConsultationEncounterTypeUuid
-      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${externalConsultationEncounterTypeUuid}` +
-        `&v=custom:(uuid,encounterDatetime,encounterProviders:(display),obs:(concept:(uuid),value,display))&order=desc`
-      : null;
+  const interconsultationEncounterTypes = toEncounterTypeSources(externalConsultationEncounterType);
+  const sources = patientUuid
+    ? [
+        ...(referralCounterReferralEncounterTypeUuid
+          ? [
+              {
+                url:
+                  `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${referralCounterReferralEncounterTypeUuid}` +
+                  `&v=custom:(uuid,encounterDatetime,form:(uuid),encounterType:(uuid),encounterProviders:(display),obs:(concept:(uuid),value,display,formFieldPath))&order=desc`,
+              },
+            ]
+          : []),
+        ...interconsultationEncounterTypes.map(({ encounterTypeUuid, formUuid, visitTypeUuid }) => ({
+          url:
+            `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}` +
+            `&v=custom:(uuid,encounterDatetime,form:(uuid),visit:(uuid,visitType:(uuid)),encounterType:(uuid),encounterProviders:(display),obs:(concept:(uuid),value,display,formFieldPath))&order=desc`,
+          expectedFormUuid: formUuid,
+          expectedVisitTypeUuid: visitTypeUuid,
+        })),
+      ]
+    : null;
 
-  const {
-    data: referralEncounters,
-    error: referralError,
-    isLoading: isLoadingReferrals,
-    isValidating: isValidatingReferrals,
-    mutate: mutateReferrals,
-    pagination: referralPagination,
-  } = useClinicalHistoryPagination<Encounter>(referralCounterReferralUrl);
-  const {
-    data: orderEncounters,
-    error: orderError,
-    isLoading: isLoadingOrders,
-    isValidating: isValidatingOrders,
-    mutate: mutateOrders,
-    pagination: orderPagination,
-  } = useClinicalHistoryPagination<Encounter>(interconsultationOrdersUrl);
+  const isRelevant = useCallback(
+    (encounter: Encounter) =>
+      getEncounterTypeUuid(encounter) === referralCounterReferralEncounterTypeUuid ||
+      Boolean(getInterconsultationOrder(encounter, concepts)),
+    [concepts, referralCounterReferralEncounterTypeUuid],
+  );
+  const { data, error, isLoading, isValidating, mutate, pagination } = useMergedClinicalHistoryPagination<Encounter>(
+    sources,
+    isRelevant,
+  );
 
-  const referralTotalPages = Number.isFinite(referralPagination.totalPages) ? referralPagination.totalPages : 0;
-  const orderTotalPages = Number.isFinite(orderPagination.totalPages) ? orderPagination.totalPages : 0;
-  const currentPage = Math.max(referralPagination.currentPage, orderPagination.currentPage);
-  const totalPages = Math.max(referralTotalPages, orderTotalPages);
-
-  const visibleReferralEncounters =
-    referralPagination.currentPage === currentPage ? referralEncounters : ([] as Encounter[]);
-  const visibleOrderEncounters = orderPagination.currentPage === currentPage ? orderEncounters : ([] as Encounter[]);
-
-  const structuredReferrals: ReferralEntry[] = visibleReferralEncounters.map((enc) => ({
-    uuid: enc.uuid,
-    encounterDatetime: enc.encounterDatetime,
-    provider: enc.encounterProviders?.[0]?.display?.split(' - ')?.[0] ?? null,
-    source: 'referralCounterReferral',
-    referralType: getObsValue(enc.obs, concepts.referralTypeUuid),
-    referralReason: getObsValue(enc.obs, concepts.referralReasonUuid),
-    referralDestination: getObsValue(enc.obs, concepts.referralDestinationUuid),
-    counterReferralResponse: getObsValue(enc.obs, concepts.counterReferralResponseUuid),
-    interconsultationOrder: null,
-  }));
-
-  const interconsultationOrders: ReferralEntry[] = visibleOrderEncounters
-    .map((enc): ReferralEntry | null => {
-      const order = getFirstObsValue(enc.obs, [
-        concepts.referralUuid,
-        concepts.referralConceptUuid,
-        visitNotesReferralConceptUuid,
-        legacyReferralConceptUuid,
-      ]);
-      if (!order) {
-        return null;
+  const entries = data
+    .map((encounter): ReferralEntry | null => {
+      const provider = encounter.encounterProviders?.[0]?.display?.split(' - ')?.[0] ?? null;
+      if (getEncounterTypeUuid(encounter) === referralCounterReferralEncounterTypeUuid) {
+        return {
+          uuid: encounter.uuid,
+          encounterDatetime: encounter.encounterDatetime,
+          provider,
+          source: 'referralCounterReferral',
+          referralType: getObsValue(encounter.obs, concepts.referralTypeUuid),
+          referralReason: getObsValue(encounter.obs, concepts.referralReasonUuid),
+          referralDestination: getObsValue(encounter.obs, concepts.referralDestinationUuid),
+          counterReferralResponse: getObsValue(encounter.obs, concepts.counterReferralResponseUuid),
+          interconsultationOrder: null,
+        };
       }
 
-      return {
-        uuid: `${enc.uuid}-interconsultation-order`,
-        encounterDatetime: enc.encounterDatetime,
-        provider: enc.encounterProviders?.[0]?.display?.split(' - ')?.[0] ?? null,
-        source: 'interconsultationOrder',
-        referralType: null,
-        referralReason: null,
-        referralDestination: null,
-        counterReferralResponse: null,
-        interconsultationOrder: order,
-      } satisfies ReferralEntry;
+      const order = getInterconsultationOrder(encounter, concepts);
+      return order
+        ? {
+            uuid: `${encounter.uuid}-interconsultation-order`,
+            encounterDatetime: encounter.encounterDatetime,
+            provider,
+            source: 'interconsultationOrder',
+            referralType: null,
+            referralReason: null,
+            referralDestination: null,
+            counterReferralResponse: null,
+            interconsultationOrder: order,
+          }
+        : null;
     })
     .filter((entry): entry is ReferralEntry => Boolean(entry));
 
-  const entries = [...structuredReferrals, ...interconsultationOrders].sort(
-    (a, b) => new Date(b.encounterDatetime).getTime() - new Date(a.encounterDatetime).getTime(),
-  );
-
   return {
     entries,
-    isLoading: isLoadingReferrals || isLoadingOrders,
-    isValidating: isValidatingReferrals || isValidatingOrders,
-    error: referralError || orderError,
-    mutate: () => {
-      void mutateReferrals();
-      void mutateOrders();
-    },
-    pagination: {
-      currentPage,
-      totalPages,
-      onPageChange: (page: number) => {
-        if (page <= referralTotalPages) {
-          referralPagination.onPageChange(page);
-        }
-        if (page <= orderTotalPages) {
-          orderPagination.onPageChange(page);
-        }
-      },
-    },
+    isLoading,
+    isValidating,
+    error,
+    mutate,
+    pagination,
   };
 }

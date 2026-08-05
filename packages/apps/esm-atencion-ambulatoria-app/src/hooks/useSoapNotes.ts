@@ -1,5 +1,10 @@
 import { restBaseUrl } from '@openmrs/esm-framework';
-import { useClinicalHistoryPagination } from './useClinicalHistoryPagination';
+import { useCallback } from 'react';
+import {
+  type EncounterTypeSourceInput,
+  toEncounterTypeSources,
+  useMergedClinicalHistoryPagination,
+} from './useClinicalHistoryPagination';
 
 interface SoapEntry {
   encounterUuid: string;
@@ -25,18 +30,35 @@ interface Encounter {
   obs: Obs[];
 }
 
-export function useSoapNotes(patientUuid: string, encounterTypeUuid: string, concepts: Record<string, string>) {
-  const url =
-    patientUuid && encounterTypeUuid
-      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&order=desc&v=custom:(uuid,encounterDatetime,encounterProviders:(display),obs:(uuid,concept:(uuid,display),value,display))`
-      : null;
-
-  const { data, error, isLoading, isValidating, mutate, pagination } = useClinicalHistoryPagination<Encounter>(url);
-
+export function useSoapNotes(
+  patientUuid: string,
+  encounterType: EncounterTypeSourceInput | Array<EncounterTypeSourceInput>,
+  concepts: Record<string, string>,
+) {
   const subjectiveUuid = concepts?.soapSubjectiveUuid;
   const objectiveUuid = concepts?.soapObjectiveUuid;
   const assessmentUuid = concepts?.soapAssessmentUuid;
   const planUuid = concepts?.soapPlanUuid;
+  const encounterTypes = toEncounterTypeSources(encounterType);
+  const sources = patientUuid
+    ? encounterTypes.map(({ encounterTypeUuid, formUuid, visitTypeUuid }) => ({
+        url: `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&order=desc&v=custom:(uuid,encounterDatetime,form:(uuid),visit:(uuid,visitType:(uuid)),encounterProviders:(display),obs:(uuid,concept:(uuid,display),value,display))`,
+        expectedFormUuid: formUuid,
+        expectedVisitTypeUuid: visitTypeUuid,
+      }))
+    : null;
+
+  const isRelevant = useCallback(
+    (encounter: Encounter) =>
+      encounter.obs?.some((obs) =>
+        [subjectiveUuid, objectiveUuid, assessmentUuid, planUuid].filter(Boolean).includes(obs.concept?.uuid),
+      ),
+    [assessmentUuid, objectiveUuid, planUuid, subjectiveUuid],
+  );
+  const { data, error, isLoading, isValidating, mutate, pagination } = useMergedClinicalHistoryPagination<Encounter>(
+    sources,
+    isRelevant,
+  );
 
   const getObsValue = (obs: Obs[] | undefined, conceptUuid: string | undefined): string | null => {
     if (!obs || !conceptUuid) return null;

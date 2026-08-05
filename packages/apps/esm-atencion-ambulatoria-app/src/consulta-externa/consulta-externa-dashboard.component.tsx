@@ -1,7 +1,7 @@
 import { Layer, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import { ExtensionSlot } from '@openmrs/esm-framework';
 import { Activity, ArrowRight, Catalog, DocumentMultiple_01, ListChecked } from '@carbon/react/icons';
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Anamnesis from './anamnesis.component';
 import styles from './consulta-externa-dashboard.scss';
@@ -16,11 +16,12 @@ interface ConsultaExternaDashboardProps {
 
 const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const [selectedTab, setSelectedTab] = useState(0);
 
   return (
     <div>
       <Layer className={styles.tabsContainer}>
-        <Tabs>
+        <Tabs selectedIndex={selectedTab} onChange={({ selectedIndex }) => setSelectedTab(selectedIndex)}>
           <TabList contained activation="manual" aria-label={t('consultaExternaTabs', 'Consulta Externa tabs')}>
             <Tab renderIcon={Activity}>{t('triageAndChiefComplaint', 'Triajes previos')}</Tab>
             <Tab renderIcon={DocumentMultiple_01}>{t('anamnesis', 'Anamnesis')}</Tab>
@@ -32,25 +33,17 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
 
           <TabPanels>
             <TabPanel>
-              <div className={styles.combinedPanel}>
-                <ExtensionSlot name="consulta-externa-vitals-summary-slot" state={{ patientUuid }} />
-              </div>
+              {selectedTab === 0 ? (
+                <div className={styles.combinedPanel}>
+                  <ExtensionSlot name="consulta-externa-vitals-summary-slot" state={{ patientUuid }} />
+                </div>
+              ) : null}
             </TabPanel>
-            <TabPanel>
-              <Anamnesis patientUuid={patientUuid} />
-            </TabPanel>
-            <TabPanel>
-              <DiagnosticoClasificado patientUuid={patientUuid} />
-            </TabPanel>
-            <TabPanel>
-              <NotasSoap patientUuid={patientUuid} />
-            </TabPanel>
-            <TabPanel>
-              <PlanTratamiento patientUuid={patientUuid} />
-            </TabPanel>
-            <TabPanel>
-              <ReferenciaContraReferencia patientUuid={patientUuid} />
-            </TabPanel>
+            <TabPanel>{selectedTab === 1 ? <Anamnesis patientUuid={patientUuid} /> : null}</TabPanel>
+            <TabPanel>{selectedTab === 2 ? <DiagnosticoClasificado patientUuid={patientUuid} /> : null}</TabPanel>
+            <TabPanel>{selectedTab === 3 ? <NotasSoap patientUuid={patientUuid} /> : null}</TabPanel>
+            <TabPanel>{selectedTab === 4 ? <PlanTratamiento patientUuid={patientUuid} /> : null}</TabPanel>
+            <TabPanel>{selectedTab === 5 ? <ReferenciaContraReferencia patientUuid={patientUuid} /> : null}</TabPanel>
           </TabPanels>
         </Tabs>
       </Layer>

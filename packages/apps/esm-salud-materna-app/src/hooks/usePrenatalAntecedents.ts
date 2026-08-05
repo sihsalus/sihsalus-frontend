@@ -287,10 +287,15 @@ export function usePrenatalAntecedents(patientUuid: string, options: PrenatalHoo
     [madreGestante],
   );
 
-  // Procesamiento optimizado de observaciones
-  const formattedObs: PatientPrenatalAntecedents[] = useMemo(() => {
+  // Procesamiento optimizado de observaciones. Un fallo de mapeo debe llegar al
+  // `error` del hook: devolver [] con error null mostraría "sin registros" para
+  // una paciente que sí tiene registros.
+  const { data: formattedObs, processingError } = useMemo<{
+    data: PatientPrenatalAntecedents[];
+    processingError: Error | null;
+  }>(() => {
     if (!data?.[0]?.data?.entry || !conceptMetadata) {
-      return [];
+      return { data: [], processingError: null };
     }
 
     try {
@@ -316,18 +321,24 @@ export function usePrenatalAntecedents(patientUuid: string, options: PrenatalHoo
           return hashTable;
         }, new Map<string, Partial<PatientPrenatalAntecedents>>());
 
-      return Array.from(prenatalHashTable.entries())
-        .map(([date, vitalSigns], index) => ({
-          id: `${patientUuid}-${index}`,
-          date,
-          madreGestante,
-          conceptMetadata,
-          ...vitalSigns,
-        }))
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    } catch (processingError) {
-      console.error('Error processing prenatal observations:', processingError);
-      return [];
+      return {
+        data: Array.from(prenatalHashTable.entries())
+          .map(([date, vitalSigns], index) => ({
+            id: `${patientUuid}-${index}`,
+            date,
+            madreGestante,
+            conceptMetadata,
+            ...vitalSigns,
+          }))
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+        processingError: null,
+      };
+    } catch (caughtError) {
+      console.error('Error processing prenatal observations:', caughtError);
+      return {
+        data: [],
+        processingError: caughtError instanceof Error ? caughtError : new Error(String(caughtError)),
+      };
     }
   }, [data, conceptMetadata, getPrenatalMapKey, madreGestante, patientUuid]);
 
@@ -342,7 +353,9 @@ export function usePrenatalAntecedents(patientUuid: string, options: PrenatalHoo
     isLoading: isLoading && isValidInput,
     error: error
       ? new PrenatalHookError('Failed to fetch prenatal antecedents', 'ANTECEDENTS_FETCH_ERROR', error)
-      : null,
+      : processingError
+        ? new PrenatalHookError('Failed to process prenatal antecedents', 'ANTECEDENTS_PROCESSING_ERROR', processingError)
+        : null,
     hasMore,
     isValidating,
     loadingNewData: isValidating,
@@ -350,7 +363,7 @@ export function usePrenatalAntecedents(patientUuid: string, options: PrenatalHoo
     currentPage: size,
     totalResults: data?.[0]?.data?.total ?? 0,
     mutate,
-    isEmpty: formattedObs.length === 0 && !isLoading,
+    isEmpty: formattedObs.length === 0 && !isLoading && !processingError,
     isReady: isValidInput && !isLoading,
   };
 }

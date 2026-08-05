@@ -1,18 +1,4 @@
-import { usePatient } from '@openmrs/esm-framework/src/internal';
-
-function calculateAge(birthDate: Date): number {
-  const today = new Date();
-  const yearsDiff = today.getFullYear() - birthDate.getFullYear();
-  if (
-    today.getMonth() < birthDate.getMonth() ||
-    (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())
-  ) {
-    // subtract one year if the current date is before the birth date this year
-    return yearsDiff - 1;
-  } else {
-    return yearsDiff;
-  }
-}
+import { exactAgeAsDuration, usePatient } from '@openmrs/esm-framework/src/internal';
 
 const patientGenderMap = {
   female: 'F',
@@ -49,7 +35,10 @@ export const usePatientData = (
     patient && !isLoadingPatient && typeof patient.birthDate === 'string'
       ? {
           ...patient,
-          age: calculateAge(new Date(patient.birthDate)),
+          // birthDate may be date-only ('YYYY-MM-DD') and must be interpreted in local time;
+          // new Date() would parse it as UTC midnight, shifting the birthday (and the age
+          // for a whole day) in timezones west of UTC. exactAgeAsDuration parses it locally.
+          age: exactAgeAsDuration(patient.birthDate)?.years,
           sex: patient.gender ? (patientGenderMap[patient.gender] ?? 'U') : 'U',
         }
       : patient;

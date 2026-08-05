@@ -31,7 +31,15 @@ function getFeatureFlagsFromLocalStorage() {
   for (const key of Object.keys(localStorage)) {
     if (key.startsWith('openmrs:feature-flag:')) {
       const flagName = key.replace('openmrs:feature-flag:', '');
-      const meta = JSON.parse(localStorage.getItem(`openmrs:feature-flag-meta:${flagName}`) || '{}');
+      // This runs during module initialization: one corrupted meta key must not
+      // take down feature-flag registration for the whole SPA.
+      let meta: Pick<FeatureFlag, 'label' | 'description'> = { label: flagName, description: '' };
+      try {
+        meta = JSON.parse(localStorage.getItem(`openmrs:feature-flag-meta:${flagName}`) || '{}');
+      } catch (error) {
+        console.warn(`Discarding corrupted metadata for feature flag '${flagName}'.`, error);
+        localStorage.removeItem(`openmrs:feature-flag-meta:${flagName}`);
+      }
       flags[flagName] = {
         enabled: localStorage.getItem(key) === 'true',
         ...meta,

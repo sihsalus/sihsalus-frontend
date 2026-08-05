@@ -25,6 +25,8 @@ export function Autosuggest<TSuggestion = unknown>({
   const [suggestions, setSuggestions] = useState<Array<TSuggestion>>([]);
   const searchBox = useRef<HTMLInputElement>(null);
   const wrapper = useRef<HTMLDivElement>(null);
+  // Search responses can arrive out of order; only the latest request may set suggestions
+  const searchRequestIdRef = useRef(0);
   const { id: name, labelText } = searchProps;
 
   const handleClickOutsideComponent = useCallback((event: MouseEvent) => {
@@ -45,9 +47,12 @@ export function Autosuggest<TSuggestion = unknown>({
     const query = e.target.value;
     onSuggestionSelected(name ?? '', undefined);
 
+    const requestId = ++searchRequestIdRef.current;
     if (query) {
       getSearchResults(query).then((suggestions) => {
-        setSuggestions(suggestions);
+        if (requestId === searchRequestIdRef.current) {
+          setSuggestions(suggestions);
+        }
       });
     } else {
       setSuggestions([]);

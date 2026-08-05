@@ -15,8 +15,9 @@ export function useEnrollments(patientUuid: string) {
   );
 
   const formattedEnrollments =
-    data?.data?.results.length > 0
-      ? data?.data.results.sort((a, b) => (b.dateEnrolled > a.dateEnrolled ? 1 : -1))
+    data?.data?.results?.length > 0
+      ? // copy before sorting: the SWR cache array must not be mutated
+        [...data.data.results].sort((a, b) => (b.dateEnrolled > a.dateEnrolled ? 1 : -1))
       : null;
 
   const activeEnrollments = formattedEnrollments?.filter((enrollment) => !enrollment.dateCompleted);

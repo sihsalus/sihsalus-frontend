@@ -3,6 +3,7 @@ import {
   getCoreTranslation,
   LocationPicker,
   setSessionLocation,
+  showSnackbar,
   useConfig,
   useConnectivity,
   useSession,
@@ -94,9 +95,15 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
           submissionInFlightRef.current = false;
           setIsSubmitting(false);
           console.error('Failed to set the session location', error);
+          showSnackbar({
+            kind: 'error',
+            isLowContrast: false,
+            title: t('setLocationFailed', 'No se pudo seleccionar la sede'),
+            subtitle: t('setLocationFailedSubtitle', 'Vuelva a intentarlo para completar el inicio de sesión.'),
+          });
         });
     },
-    [state?.referrer, config.links.loginSuccess, updateDefaultLocation, searchParams],
+    [state?.referrer, config.links.loginSuccess, updateDefaultLocation, searchParams, t],
   );
 
   // Handle cases where the location picker is disabled, there is only one location, or there are no locations.

@@ -56,7 +56,16 @@ const SavedQueriesOptions: React.FC<SavedQueriesOptionsProps> = ({ query, onView
   };
 
   const handleDeleteQuery = async () => {
-    await deleteQuery(query.id);
+    try {
+      await deleteQuery(query.id);
+    } catch (error) {
+      showSnackbar({
+        title: t('QueryDeleteError', 'Something went wrong'),
+        kind: 'error',
+        isLowContrast: true,
+        subtitle: error?.message,
+      });
+    }
   };
 
   return (

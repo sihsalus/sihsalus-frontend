@@ -54,7 +54,16 @@ const SavedCohortsOptions: React.FC<SavedCohortsOptionsProps> = ({ cohort, onVie
   };
 
   const handleDeleteCohort = async () => {
-    await onDeleteCohort(cohort.id);
+    try {
+      await onDeleteCohort(cohort.id);
+    } catch (error) {
+      showSnackbar({
+        title: t('cohortDeleteError', 'Error deleting the cohort'),
+        kind: 'error',
+        isLowContrast: true,
+        subtitle: error?.message,
+      });
+    }
   };
 
   return (

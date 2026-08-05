@@ -3,6 +3,7 @@ import {
   deleteSynchronizationItem,
   getOfflineSynchronizationStore,
   showModal,
+  showSnackbar,
   useStore,
 } from '@openmrs/esm-framework/src/internal';
 import React from 'react';
@@ -43,7 +44,21 @@ const OfflineActions: React.FC<OfflineActionsProps> = ({ patientUuid }) => {
       cancelText: t('offlineActionsDeleteConfirmationModalCancel', 'Cancel'),
       closeModal: () => closeModal(),
       onConfirm: async () => {
-        await Promise.allSettled(ids.map((id) => deleteSynchronizationItem(id)));
+        const results = await Promise.allSettled(ids.map((id) => deleteSynchronizationItem(id)));
+        const failedCount = results.filter((result) => result.status === 'rejected').length;
+
+        if (failedCount > 0) {
+          showSnackbar({
+            kind: 'error',
+            title: t('offlineActionsDeleteFailed', 'Some offline actions could not be deleted'),
+            subtitle: t(
+              'offlineActionsDeleteFailedSubtitle',
+              '{{count}} action(s) failed to delete and are still listed.',
+              { count: failedCount },
+            ),
+          });
+        }
+
         mutate();
       },
     });

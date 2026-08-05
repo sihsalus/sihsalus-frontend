@@ -227,7 +227,7 @@ export const configSchema = {
       _type: Type.ConceptUuid,
       _description:
         'Probable cause of death for a given patient determined from interviewing a family member or other non-medical personnel',
-      _default: '1599AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _default: 'e71d57a1-435b-5cd6-a24f-7cc77e0f65a0',
     },
     problemListConceptUuid: {
       _type: Type.ConceptUuid,
@@ -275,8 +275,8 @@ export const configSchema = {
     // Chief Complaint (CE-3)
     chiefComplaintUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Chief complaint / reason for visit (CIEL 5219)',
-      _default: '5219AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _description: 'Chief complaint / reason for visit',
+      _default: '71b58cff-879b-4358-98d5-2165434d4324',
     },
 
     // Anamnesis (CE-3.1) — NTS 139 / NTS 229
@@ -334,8 +334,8 @@ export const configSchema = {
     // SOAP Notes (CE-5)
     soapSubjectiveUuid: {
       _type: Type.ConceptUuid,
-      _description: 'SOAP Subjective concept (CIEL 160531)',
-      _default: '160531AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _description: 'SOAP Subjective concept',
+      _default: 'f0000202-0000-4000-8000-000000000202',
     },
     soapObjectiveUuid: {
       _type: Type.ConceptUuid,
@@ -349,8 +349,8 @@ export const configSchema = {
     },
     soapPlanUuid: {
       _type: Type.ConceptUuid,
-      _description: 'SOAP Plan concept (CIEL 159615)',
-      _default: '159615AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _description: 'SOAP Plan concept',
+      _default: 'f0000201-0000-4000-8000-000000000201',
     },
 
     // Insurance Provider (CE-6)
@@ -364,7 +364,7 @@ export const configSchema = {
     diagnosisOccurrenceUuid: {
       _type: Type.ConceptUuid,
       _description: 'Diagnosis occurrence: New vs Repeat',
-      _default: '159946AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _default: 'f0000207-0000-4000-8000-000000000207',
     },
     diagnosisTypeConceptUuid: {
       _type: Type.ConceptUuid,
@@ -401,7 +401,7 @@ export const configSchema = {
     therapeuticIndicationsUuid: {
       _type: Type.ConceptUuid,
       _description: 'Therapeutic indications free-text concept',
-      _default: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _default: 'b762afd0-dfc6-430d-8963-0be05f77a12a',
     },
     referralUuid: {
       _type: Type.ConceptUuid,
@@ -500,8 +500,8 @@ export const configSchema = {
     },
     referralReasonUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Motivo de referencia (CIEL 160481 — Referral reason)',
-      _default: '160481AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _description: 'Motivo de referencia',
+      _default: 'f0000203-0000-4000-8000-000000000203',
     },
     referralDestinationUuid: {
       _type: Type.ConceptUuid,

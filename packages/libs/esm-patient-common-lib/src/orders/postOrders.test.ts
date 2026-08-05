@@ -150,4 +150,23 @@ describe('postOrdersOnNewEncounter', () => {
       signal: expect.any(AbortSignal),
     });
   });
+
+  it('uses the server clock when the provided visit has no valid start date', async () => {
+    const invalidVisit = {
+      uuid: 'visit-uuid',
+      startDatetime: 'invalid-date',
+      stopDatetime: null,
+    } as Visit;
+
+    await postOrdersOnNewEncounter(
+      'patient-uuid',
+      'encounter-type-uuid',
+      invalidVisit,
+      'location-uuid',
+      new AbortController(),
+    );
+
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('not currently active'));
+    expect(mockOpenmrsFetch.mock.calls[0][1].body).not.toHaveProperty('encounterDatetime');
+  });
 });

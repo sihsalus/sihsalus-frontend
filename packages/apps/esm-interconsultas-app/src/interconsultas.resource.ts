@@ -236,7 +236,6 @@ export async function createInterconsulta(payload: CreateInterconsultaPayload, a
     signal: abortController?.signal,
     body: {
       patient: payload.patientUuid,
-      encounterDatetime: toOmrsIsoString(new Date()),
       encounterType: config.requestEncounterTypeUuid,
       location: payload.locationUuid,
       ...(payload.visitUuid ? { visit: payload.visitUuid } : {}),

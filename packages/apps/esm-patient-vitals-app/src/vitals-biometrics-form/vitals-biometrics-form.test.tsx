@@ -314,10 +314,10 @@ describe('VitalsBiometricsForm', () => {
       'test-visit-location',
       'test-visit-uuid',
       expect.objectContaining({
-        encounterDatetime: expect.any(Date),
         encounterRoleUuid: mockVitalsConfig.vitals.encounterRoleUuid,
       }),
     );
+    expect(mockSavePatientVitals.mock.calls[0]?.[7]).not.toHaveProperty('encounterDatetime');
 
     expect(onVitalsSaved).toHaveBeenCalledWith({
       encounterTypeUuid: mockVitalsConfig.vitals.encounterTypeUuid,
@@ -380,7 +380,6 @@ describe('VitalsBiometricsForm', () => {
       triageLocationUuid,
       'test-visit-uuid',
       expect.objectContaining({
-        encounterDatetime: expect.any(Date),
         encounterRoleUuid: mockVitalsConfig.vitals.encounterRoleUuid,
       }),
     );
@@ -435,7 +434,6 @@ describe('VitalsBiometricsForm', () => {
       'test-visit-location',
       'test-visit-uuid',
       expect.objectContaining({
-        encounterDatetime: expect.any(Date),
         encounterRoleUuid: mockVitalsConfig.vitals.encounterRoleUuid,
       }),
     );

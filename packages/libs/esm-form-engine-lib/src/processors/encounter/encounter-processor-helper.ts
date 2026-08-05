@@ -306,13 +306,26 @@ export function getMutableSessionProps(context: FormContextProps): {
     : isStringValue(formJson.defaultEncounterDatetime) && dayjs(formJson.defaultEncounterDatetime).isValid()
       ? dayjs(formJson.defaultEncounterDatetime).toDate()
       : undefined;
-  const defaultEncounterDate = visit?.stopDatetime ? sessionDate : undefined;
+  // An encounterDatetime field is initialized from sessionDate so users see "now".
+  // If that auto-populated value is merely touched, do not send the workstation
+  // clock to OpenMRS: the server is the authoritative clock for current encounters.
+  // Explicit defaults, backdated values and existing encounter dates are preserved.
+  const isAutoPopulatedCurrentDate =
+    !encounter &&
+    !defaultEncounterDatetime &&
+    isDateValue(encounterDateValue) &&
+    dayjs(encounterDateValue).isSame(sessionDate, 'minute');
+  const submittedEncounterDate =
+    isDateValue(encounterDateValue) && !isAutoPopulatedCurrentDate ? encounterDateValue : undefined;
+  const stoppedVisitDate = isDateValue(visit?.stopDatetime)
+    ? visit.stopDatetime
+    : isStringValue(visit?.stopDatetime) && dayjs(visit.stopDatetime).isValid()
+      ? dayjs(visit.stopDatetime).toDate()
+      : undefined;
   return {
     encounterRole: isStringValue(encounterRoleValue) ? encounterRoleValue : getResourceUuid(defaultEncounterRole),
     encounterProvider: isStringValue(encounterProviderValue) ? encounterProviderValue : currentProvider.uuid,
-    encounterDate: isDateValue(encounterDateValue)
-      ? encounterDateValue
-      : (existingEncounterDatetime ?? defaultEncounterDatetime ?? defaultEncounterDate),
+    encounterDate: submittedEncounterDate ?? existingEncounterDatetime ?? defaultEncounterDatetime ?? stoppedVisitDate,
     encounterLocation: isStringValue(encounterLocationValue)
       ? encounterLocationValue
       : (getResourceUuid(encounter?.location) ?? location.uuid),

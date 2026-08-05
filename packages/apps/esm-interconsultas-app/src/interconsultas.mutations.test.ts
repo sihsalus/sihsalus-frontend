@@ -97,6 +97,8 @@ describe('interconsultation mutation contract', () => {
         }),
       }),
     );
+    const encounterBody = mockOpenmrsFetch.mock.calls[0]?.[1]?.body;
+    expect(encounterBody).not.toHaveProperty('encounterDatetime');
   });
 
   it('creates the order with the configured order type, destination and clinical reason', async () => {

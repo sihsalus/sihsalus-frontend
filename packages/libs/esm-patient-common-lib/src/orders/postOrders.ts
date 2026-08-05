@@ -36,9 +36,9 @@ export async function postOrdersOnNewEncounter(
     encounterDate = null;
   } else {
     console.warn(
-      'postOrdersOnNewEncounter received an active visit that is not currently active. This is a programming error. Attempting to place the order using the visit start date.',
+      'postOrdersOnNewEncounter received an active visit that is not currently active. This is a programming error. Attempting to place the order using the visit start date when available.',
     );
-    encounterDate = isValidDate(visitStartDate) ? visitStartDate : now;
+    encounterDate = isValidDate(visitStartDate) ? visitStartDate : null;
   }
 
   const { items, postDataPrepFunctions }: OrderBasketStore = orderBasketStore.getState();

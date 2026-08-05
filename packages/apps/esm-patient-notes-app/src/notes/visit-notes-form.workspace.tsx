@@ -243,6 +243,10 @@ const createSchema = (_t: TFunction) => {
   });
 };
 
+export function getSubmittedEncounterDatetime(noteDate: Date, wasExplicitlyChanged: boolean): string | undefined {
+  return wasExplicitlyChanged ? dayjs(noteDate).format() : undefined;
+}
+
 export type EditableVisitNoteEncounter = Encounter & {
   id: string;
   rawDatetime: string;
@@ -762,11 +766,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
         return;
       }
 
-      let finalNoteDate = dayjs(noteDate);
-      const now = new Date();
-      if (finalNoteDate.diff(now, 'minute') <= 30) {
-        finalNoteDate = null;
-      }
+      const encounterDatetime = getSubmittedEncounterDatetime(noteDate, Boolean(dirtyFields.noteDate));
 
       const buildTextObs = (conceptUuid: string, value?: string, formFieldPath?: string) => {
         const trimmedValue = value?.trim();
@@ -826,7 +826,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
       ];
 
       const visitNotePayload: VisitNotePayload = {
-        encounterDatetime: finalNoteDate?.format(),
+        ...(encounterDatetime ? { encounterDatetime } : {}),
         form: formConceptUuid,
         patient: patientUuid,
         location: locationUuid,
@@ -941,6 +941,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
       diagnosisTypeConceptUuid,
       diagnosisTypeDefinitivoUuid,
       diagnosisTypePresuntivoUuid,
+      dirtyFields.noteDate,
       encounter?.diagnoses,
       encounter?.id,
       encounterNoteTextConceptUuid,

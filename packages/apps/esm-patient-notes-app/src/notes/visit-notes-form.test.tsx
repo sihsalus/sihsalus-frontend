@@ -31,6 +31,7 @@ import {
 } from './visit-notes.resource';
 import VisitNotesForm, {
   type EditableVisitNoteEncounter,
+  getSubmittedEncounterDatetime,
   type VisitNotesFormProps,
 } from './visit-notes-form.workspace';
 
@@ -151,6 +152,13 @@ beforeEach(() => {
     isLoading: false,
     isValidating: false,
   });
+});
+
+test('delegates the default current encounter time to the server and preserves an explicitly selected date', () => {
+  const selectedDate = new Date('2026-07-01T09:15:00.000-05:00');
+
+  expect(getSubmittedEncounterDatetime(selectedDate, false)).toBeUndefined();
+  expect(getSubmittedEncounterDatetime(selectedDate, true)).toContain('2026-07-01');
 });
 
 test('closes the visit summary workspace when its edit privilege is denied', async () => {
@@ -355,7 +363,6 @@ test('renders a success snackbar upon successfully recording a visit note', asyn
       },
     ]),
     patient: mockPatient.id,
-    encounterDatetime: undefined,
     visit: 'active-visit-uuid',
   };
 
@@ -535,7 +542,6 @@ test('updates existing visit note when in edit mode', async () => {
       }),
     ]),
     patient: mockPatient.id,
-    encounterDatetime: undefined,
   };
 
   mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
@@ -642,7 +648,6 @@ test('allows saving visit note without primary diagnosis when isPrimaryDiagnosis
       },
     ]),
     patient: mockPatient.id,
-    encounterDatetime: undefined,
   };
 
   mockSaveVisitNote.mockResolvedValueOnce({

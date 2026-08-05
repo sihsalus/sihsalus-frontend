@@ -3,11 +3,11 @@ import { launchWorkspace2, showModal, useLayoutType, userHasAccess, useSession }
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { appointmentsEditPrivilege, chartAppointmentsEditPrivilege } from '../constants';
+import { appointmentsEditPrivilege, chartAppointmentsEditPrivilege, clinicalCheckoutPrivileges } from '../constants';
 import { isAppointmentEditable } from '../helpers';
 import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patientAppointmentContext';
 
-import { type Appointment } from '../types';
+import { type Appointment, AppointmentStatus } from '../types';
 
 import styles from './patient-appointments-action-menu.scss';
 
@@ -26,8 +26,13 @@ export const PatientAppointmentsActionMenu = ({ appointment, patientUuid }: appo
     isPatientChart ? chartAppointmentsEditPrivilege : appointmentsEditPrivilege,
     session?.user,
   );
+  const canFinalizeCare =
+    isPatientChart &&
+    appointment.status === AppointmentStatus.CHECKEDIN &&
+    userHasAccess(clinicalCheckoutPrivileges, session?.user);
+  const canEditAppointment = canEdit && isAppointmentEditable(appointment.status);
 
-  if (!canEdit || !isAppointmentEditable(appointment.status)) {
+  if (!canEditAppointment && !canFinalizeCare) {
     return null;
   }
 
@@ -53,6 +58,14 @@ export const PatientAppointmentsActionMenu = ({ appointment, patientUuid }: appo
     });
   };
 
+  const handleFinalizeCare = () => {
+    const dispose = showModal('end-appointment-modal', {
+      closeModal: () => dispose(),
+      patientUuid,
+      appointmentUuid: appointment.uuid,
+    });
+  };
+
   return (
     <Layer className={styles.layer}>
       <OverflowMenu
@@ -62,20 +75,33 @@ export const PatientAppointmentsActionMenu = ({ appointment, patientUuid }: appo
         flipped
         align="left"
       >
-        <OverflowMenuItem
-          className={styles.menuItem}
-          id="editAppointment"
-          itemText={t('edit', 'Edit')}
-          onClick={handleLaunchEditAppointmentForm}
-        />
-        <OverflowMenuItem
-          className={styles.menuItem}
-          hasDivider
-          id="cancelAppointment"
-          isDelete={true}
-          itemText={t('cancel', 'Cancel')}
-          onClick={handleLaunchCancelAppointmentModal}
-        />
+        {canEditAppointment ? (
+          <>
+            <OverflowMenuItem
+              className={styles.menuItem}
+              id="editAppointment"
+              itemText={t('edit', 'Edit')}
+              onClick={handleLaunchEditAppointmentForm}
+            />
+            <OverflowMenuItem
+              className={styles.menuItem}
+              hasDivider
+              id="cancelAppointment"
+              isDelete={true}
+              itemText={t('cancel', 'Cancel')}
+              onClick={handleLaunchCancelAppointmentModal}
+            />
+          </>
+        ) : null}
+        {canFinalizeCare ? (
+          <OverflowMenuItem
+            className={styles.menuItem}
+            id="finalizeCare"
+            isDelete
+            itemText={t('finishCare', 'Finish care')}
+            onClick={handleFinalizeCare}
+          />
+        ) : null}
       </OverflowMenu>
     </Layer>
   );

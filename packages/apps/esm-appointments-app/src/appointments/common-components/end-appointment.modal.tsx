@@ -1,12 +1,5 @@
 import { Button, InlineLoading, InlineNotification, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import {
-  getUserFacingErrorMessage,
-  showSnackbar,
-  updateVisit,
-  useConfig,
-  useVisit,
-  type Visit,
-} from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar, useConfig, useVisit, type Visit } from '@openmrs/esm-framework';
 import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
@@ -24,6 +17,7 @@ import {
   getActiveQueueEntriesForVisit,
   getActiveVisitsForPatient,
 } from './batch-change-appointment-statuses.resources';
+import { closeClinicalVisit } from './clinical-visit-closure.resource';
 
 import styles from './end-appointment.scss';
 
@@ -132,7 +126,7 @@ const EndAppointmentModal: React.FC<EndAppointmentModalProps> = ({ patientUuid, 
       const activeQueueEntries = (queueEntriesResponse.data?.results ?? []).filter((entry) => !entry.endedAt);
 
       try {
-        await updateVisit(
+        await closeClinicalVisit(
           visitToClose.uuid,
           { stopDatetime: getSafeStopDate(visitsResponse, visitToClose, activeQueueEntries) },
           abortController,
@@ -367,16 +361,16 @@ const EndAppointmentModal: React.FC<EndAppointmentModalProps> = ({ patientUuid, 
       <ModalHeader
         className={styles.modalHeader}
         closeModal={closeModal}
-        title={t('endAppointmentConfirmation', 'Are you sure you want to check the patient out for this appointment?')}
+        title={t('endAppointmentConfirmation', 'Are you sure you want to finish care for this appointment?')}
       />
       <ModalBody>
         <p>
           {activeVisit
             ? t(
                 'endAppointmentAndVisitConfirmationMessage',
-                'Checking the patient out will mark the appointment as complete and close out the active visit for this patient.',
+                "Finishing care will mark the appointment as completed and close the patient's active visit.",
               )
-            : t('endAppointmentConfirmationMessage', 'Checking the patient out will mark the appointment as complete.')}
+            : t('endAppointmentConfirmationMessage', 'Finishing care will mark the appointment as completed.')}
         </p>
         {userFacingFailureMessage ? (
           <InlineNotification
@@ -399,7 +393,7 @@ const EndAppointmentModal: React.FC<EndAppointmentModalProps> = ({ patientUuid, 
           ) : userFacingFailureMessage ? (
             t('retryCheckout', 'Reintentar')
           ) : (
-            t('checkOut', 'Check out')
+            t('finishCare', 'Finish care')
           )}
         </Button>
       </ModalFooter>

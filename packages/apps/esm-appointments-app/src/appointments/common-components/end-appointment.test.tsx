@@ -2,7 +2,6 @@ import {
   type FetchResponse,
   getUserFacingErrorMessage,
   showSnackbar,
-  updateVisit,
   useConfig,
   useVisit,
   type Visit,
@@ -24,6 +23,7 @@ import {
   getActiveQueueEntriesForVisit,
   getActiveVisitsForPatient,
 } from './batch-change-appointment-statuses.resources';
+import { closeClinicalVisit } from './clinical-visit-closure.resource';
 import EndAppointmentModal from './end-appointment.modal';
 
 vi.mock('../../patient-appointments/patient-appointments.resource', () => ({
@@ -42,6 +42,10 @@ vi.mock('./batch-change-appointment-statuses.resources', () => ({
   getActiveVisitsForPatient: vi.fn(),
 }));
 
+vi.mock('./clinical-visit-closure.resource', () => ({
+  closeClinicalVisit: vi.fn(),
+}));
+
 const appointmentUuid = 'appointment-uuid';
 const appointmentVisitAttributeTypeUuid = 'appointment-visit-attribute-type-uuid';
 const patientUuid = 'patient-uuid';
@@ -49,12 +53,12 @@ const closeModal = vi.fn();
 const mutateAppointments = vi.fn();
 const mutateVisits = vi.fn();
 const mockChangeAppointmentStatus = vi.mocked(changeAppointmentStatus);
+const mockCloseClinicalVisit = vi.mocked(closeClinicalVisit);
 const mockEndActiveQueueEntries = vi.mocked(endActiveQueueEntries);
 const mockGetActiveQueueEntriesForVisit = vi.mocked(getActiveQueueEntriesForVisit);
 const mockGetActiveVisitsForPatient = vi.mocked(getActiveVisitsForPatient);
 const mockGetAppointmentStatus = vi.mocked(getAppointmentStatus);
 const mockGetUserFacingErrorMessage = vi.mocked(getUserFacingErrorMessage);
-const mockUpdateVisit = vi.mocked(updateVisit);
 const mockUseConfig = vi.mocked(useConfig);
 const mockUseMutateAppointments = vi.mocked(useMutateAppointments);
 const mockUseVisit = vi.mocked(useVisit);
@@ -113,7 +117,7 @@ describe('EndAppointmentModal', () => {
     mockGetActiveVisitsForPatient.mockResolvedValue(visitResponse([]));
     mockGetActiveQueueEntriesForVisit.mockResolvedValue(queueResponse([]));
     mockEndActiveQueueEntries.mockImplementation(async (entries) => entries);
-    mockUpdateVisit.mockResolvedValue({} as FetchResponse<Visit>);
+    mockCloseClinicalVisit.mockResolvedValue({} as FetchResponse<Visit>);
     mockChangeAppointmentStatus.mockResolvedValue({} as Awaited<ReturnType<typeof changeAppointmentStatus>>);
   });
 
@@ -124,14 +128,14 @@ describe('EndAppointmentModal', () => {
 
     expect(closeModal).toHaveBeenCalledTimes(1);
     expect(mockGetAppointmentStatus).not.toHaveBeenCalled();
-    expect(mockUpdateVisit).not.toHaveBeenCalled();
+    expect(mockCloseClinicalVisit).not.toHaveBeenCalled();
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
   });
 
   it('re-reads state and completes the appointment when no active visit exists', async () => {
     renderModal();
 
-    await userEvent.click(screen.getByRole('button', { name: /check out/i }));
+    await userEvent.click(screen.getByRole('button', { name: /finish care/i }));
 
     await waitFor(() => expect(closeModal).toHaveBeenCalledTimes(1));
     expect(mockGetAppointmentStatus).toHaveBeenCalledTimes(2);
@@ -141,7 +145,7 @@ describe('EndAppointmentModal', () => {
       'custom:(uuid,startDatetime,stopDatetime,encounters:(encounterDatetime),attributes:(uuid,value,attributeType:(uuid)))',
       '100',
     );
-    expect(mockUpdateVisit).not.toHaveBeenCalled();
+    expect(mockCloseClinicalVisit).not.toHaveBeenCalled();
     expect(mockChangeAppointmentStatus).toHaveBeenCalledWith(AppointmentStatus.COMPLETED, appointmentUuid);
     expect(mutateAppointments).toHaveBeenCalled();
     expect(showSnackbar).toHaveBeenCalledWith({
@@ -157,17 +161,17 @@ describe('EndAppointmentModal', () => {
     mockGetActiveVisitsForPatient.mockResolvedValue(visitResponse([activeVisit]));
     renderModal();
 
-    await userEvent.click(screen.getByRole('button', { name: /check out/i }));
+    await userEvent.click(screen.getByRole('button', { name: /finish care/i }));
 
     await waitFor(() => expect(closeModal).toHaveBeenCalledTimes(1));
-    expect(mockUpdateVisit).toHaveBeenCalledWith(
+    expect(mockCloseClinicalVisit).toHaveBeenCalledWith(
       activeVisit.uuid,
       { stopDatetime: new Date('2026-07-14T15:30:00.999Z') },
       expect.any(AbortController),
     );
     expect(mockGetActiveQueueEntriesForVisit).toHaveBeenCalledWith(activeVisit.uuid);
     expect(mockEndActiveQueueEntries).not.toHaveBeenCalled();
-    expect(mockUpdateVisit.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(mockCloseClinicalVisit.mock.invocationCallOrder[0]).toBeLessThan(
       mockChangeAppointmentStatus.mock.invocationCallOrder[0],
     );
     expect(mutateVisits).toHaveBeenCalled();
@@ -177,10 +181,10 @@ describe('EndAppointmentModal', () => {
   it('keeps the modal open and does not complete the appointment when closing the visit fails', async () => {
     mockUseVisit.mockReturnValue({ activeVisit, mutate: mutateVisits } as unknown as VisitReturnType);
     mockGetActiveVisitsForPatient.mockResolvedValue(visitResponse([activeVisit]));
-    mockUpdateVisit.mockRejectedValueOnce(new Error('SQL connection refused at db.internal'));
+    mockCloseClinicalVisit.mockRejectedValueOnce(new Error('SQL connection refused at db.internal'));
     renderModal();
 
-    await userEvent.click(screen.getByRole('button', { name: /check out/i }));
+    await userEvent.click(screen.getByRole('button', { name: /finish care/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'No se pudo finalizar la atención. La cita no fue completada.',
@@ -210,10 +214,10 @@ describe('EndAppointmentModal', () => {
       .mockResolvedValueOnce(visitResponse([unrelatedActiveVisit]));
     mockGetActiveQueueEntriesForVisit.mockResolvedValue(queueResponse([activeQueueEntry]));
     mockEndActiveQueueEntries.mockResolvedValue([{ ...activeQueueEntry, endedAt: '2026-07-14T15:30:00.000Z' }]);
-    mockUpdateVisit.mockRejectedValueOnce(new Error('connection closed before response'));
+    mockCloseClinicalVisit.mockRejectedValueOnce(new Error('connection closed before response'));
     renderModal();
 
-    await userEvent.click(screen.getByRole('button', { name: /check out/i }));
+    await userEvent.click(screen.getByRole('button', { name: /finish care/i }));
 
     await waitFor(() => expect(closeModal).toHaveBeenCalledTimes(1));
     expect(mockEndActiveQueueEntries).toHaveBeenCalledWith(
@@ -231,7 +235,7 @@ describe('EndAppointmentModal', () => {
       .mockResolvedValueOnce({} as Awaited<ReturnType<typeof changeAppointmentStatus>>);
     renderModal();
 
-    await userEvent.click(screen.getByRole('button', { name: /check out/i }));
+    await userEvent.click(screen.getByRole('button', { name: /finish care/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('La consulta ya fue cerrada');
     expect(closeModal).not.toHaveBeenCalled();
@@ -240,7 +244,7 @@ describe('EndAppointmentModal', () => {
 
     await waitFor(() => expect(closeModal).toHaveBeenCalledTimes(1));
     expect(mockGetActiveVisitsForPatient).toHaveBeenCalledTimes(2);
-    expect(mockUpdateVisit).toHaveBeenCalledTimes(1);
+    expect(mockCloseClinicalVisit).toHaveBeenCalledTimes(1);
     expect(mockChangeAppointmentStatus).toHaveBeenCalledTimes(2);
   });
 
@@ -254,13 +258,13 @@ describe('EndAppointmentModal', () => {
     mockChangeAppointmentStatus.mockRejectedValueOnce(new Error('connection closed before the response arrived'));
     renderModal();
 
-    await userEvent.click(screen.getByRole('button', { name: /check out/i }));
+    await userEvent.click(screen.getByRole('button', { name: /finish care/i }));
     expect(await screen.findByRole('alert')).toHaveTextContent('La consulta ya fue cerrada');
 
     await userEvent.click(screen.getByRole('button', { name: /reintentar/i }));
 
     await waitFor(() => expect(closeModal).toHaveBeenCalledTimes(1));
-    expect(mockUpdateVisit).toHaveBeenCalledTimes(1);
+    expect(mockCloseClinicalVisit).toHaveBeenCalledTimes(1);
     expect(mockChangeAppointmentStatus).toHaveBeenCalledTimes(1);
   });
 
@@ -273,14 +277,14 @@ describe('EndAppointmentModal', () => {
       .mockResolvedValueOnce({} as Awaited<ReturnType<typeof changeAppointmentStatus>>);
     renderModal();
 
-    await userEvent.click(screen.getByRole('button', { name: /check out/i }));
+    await userEvent.click(screen.getByRole('button', { name: /finish care/i }));
     expect(await screen.findByRole('alert')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: /reintentar/i }));
 
     await waitFor(() => expect(closeModal).toHaveBeenCalledTimes(1));
     expect(mockGetActiveVisitsForPatient).toHaveBeenCalledTimes(2);
-    expect(mockUpdateVisit).toHaveBeenCalledTimes(1);
+    expect(mockCloseClinicalVisit).toHaveBeenCalledTimes(1);
     expect(mockChangeAppointmentStatus).toHaveBeenCalledTimes(2);
   });
 
@@ -288,7 +292,7 @@ describe('EndAppointmentModal', () => {
     mockGetAppointmentStatus.mockResolvedValue(AppointmentStatus.COMPLETED);
     renderModal();
 
-    await userEvent.click(screen.getByRole('button', { name: /check out/i }));
+    await userEvent.click(screen.getByRole('button', { name: /finish care/i }));
 
     await waitFor(() => expect(closeModal).toHaveBeenCalledTimes(1));
     expect(mockGetActiveVisitsForPatient).toHaveBeenCalledTimes(1);
@@ -299,11 +303,11 @@ describe('EndAppointmentModal', () => {
     mockGetAppointmentStatus.mockResolvedValue(AppointmentStatus.CANCELLED);
     renderModal();
 
-    await userEvent.click(screen.getByRole('button', { name: /check out/i }));
+    await userEvent.click(screen.getByRole('button', { name: /finish care/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('El estado de la cita cambió');
     expect(mockGetActiveVisitsForPatient).not.toHaveBeenCalled();
-    expect(mockUpdateVisit).not.toHaveBeenCalled();
+    expect(mockCloseClinicalVisit).not.toHaveBeenCalled();
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
     expect(closeModal).not.toHaveBeenCalled();
   });
@@ -325,11 +329,11 @@ describe('EndAppointmentModal', () => {
     );
     renderModal();
 
-    await userEvent.click(screen.getByRole('button', { name: /check out/i }));
+    await userEvent.click(screen.getByRole('button', { name: /finish care/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('no está vinculada a esta cita');
     expect(mockGetActiveQueueEntriesForVisit).not.toHaveBeenCalled();
-    expect(mockUpdateVisit).not.toHaveBeenCalled();
+    expect(mockCloseClinicalVisit).not.toHaveBeenCalled();
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
   });
 
@@ -352,11 +356,11 @@ describe('EndAppointmentModal', () => {
     );
     renderModal();
 
-    await userEvent.click(screen.getByRole('button', { name: /check out/i }));
+    await userEvent.click(screen.getByRole('button', { name: /finish care/i }));
 
     await waitFor(() => expect(closeModal).toHaveBeenCalledTimes(1));
     expect(mockGetActiveQueueEntriesForVisit).not.toHaveBeenCalled();
-    expect(mockUpdateVisit).not.toHaveBeenCalled();
+    expect(mockCloseClinicalVisit).not.toHaveBeenCalled();
     expect(mockChangeAppointmentStatus).toHaveBeenCalledWith(AppointmentStatus.COMPLETED, appointmentUuid);
     expect(showSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -388,10 +392,10 @@ describe('EndAppointmentModal', () => {
     );
     renderModal();
 
-    await userEvent.click(screen.getByRole('button', { name: /check out/i }));
+    await userEvent.click(screen.getByRole('button', { name: /finish care/i }));
 
     await waitFor(() => expect(closeModal).toHaveBeenCalledTimes(1));
-    expect(mockUpdateVisit).toHaveBeenCalledTimes(1);
+    expect(mockCloseClinicalVisit).toHaveBeenCalledTimes(1);
     expect(mockChangeAppointmentStatus).toHaveBeenCalledWith(AppointmentStatus.COMPLETED, appointmentUuid);
   });
 
@@ -432,19 +436,19 @@ describe('EndAppointmentModal', () => {
     });
     renderModal();
 
-    await userEvent.click(screen.getByRole('button', { name: /check out/i }));
+    await userEvent.click(screen.getByRole('button', { name: /finish care/i }));
 
     await waitFor(() => expect(closeModal).toHaveBeenCalledTimes(1));
     expect(mockChangeAppointmentStatus).toHaveBeenCalledWith(AppointmentStatus.COMPLETED, appointmentUuid);
     expect(mockGetActiveVisitsForPatient).toHaveBeenCalledTimes(2);
     expect(mockEndActiveQueueEntries).not.toHaveBeenCalled();
-    expect(mockUpdateVisit).toHaveBeenCalledWith(
+    expect(mockCloseClinicalVisit).toHaveBeenCalledWith(
       sharedVisit.uuid,
       { stopDatetime: new Date('2026-07-14T15:30:00.999Z') },
       expect.any(AbortController),
     );
     expect(mockChangeAppointmentStatus.mock.invocationCallOrder[0]).toBeLessThan(
-      mockUpdateVisit.mock.invocationCallOrder[0],
+      mockCloseClinicalVisit.mock.invocationCallOrder[0],
     );
   });
 
@@ -455,10 +459,10 @@ describe('EndAppointmentModal', () => {
     );
     renderModal();
 
-    await userEvent.click(screen.getByRole('button', { name: /check out/i }));
+    await userEvent.click(screen.getByRole('button', { name: /finish care/i }));
 
     await waitFor(() => expect(closeModal).toHaveBeenCalledTimes(1));
-    expect(mockUpdateVisit).toHaveBeenCalledWith(
+    expect(mockCloseClinicalVisit).toHaveBeenCalledWith(
       activeVisit.uuid,
       { stopDatetime: new Date('2026-07-14T15:30:00.999Z') },
       expect.any(AbortController),
@@ -471,10 +475,10 @@ describe('EndAppointmentModal', () => {
     );
     renderModal();
 
-    await userEvent.click(screen.getByRole('button', { name: /check out/i }));
+    await userEvent.click(screen.getByRole('button', { name: /finish care/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('más de una consulta activa');
-    expect(mockUpdateVisit).not.toHaveBeenCalled();
+    expect(mockCloseClinicalVisit).not.toHaveBeenCalled();
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
     expect(closeModal).not.toHaveBeenCalled();
   });

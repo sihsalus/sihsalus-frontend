@@ -13,6 +13,16 @@ export const appointmentStartDateEditPrivilege = 'app:appointments.startDate.edi
 export const appointmentIssueDateEditPrivilege = 'app:appointments.issueDate.edit';
 export const chartAppointmentsReadPrivilege = 'app:hoja.clinica.citas';
 export const chartAppointmentsEditPrivilege = 'app:hoja.clinica.citas.editar';
+export const clinicalCheckoutPrivileges = [
+  chartAppointmentsEditPrivilege,
+  'Get Visits',
+  'Edit Visits',
+  'Get Encounters',
+  'Get Visit Attribute Types',
+  'Get Queue Entries',
+  'Get Queues',
+  'Manage Queue Entries',
+];
 // The appointments backend persists patient_appointment.comments as VARCHAR(255).
 export const appointmentNoteMaxLength = 255;
 

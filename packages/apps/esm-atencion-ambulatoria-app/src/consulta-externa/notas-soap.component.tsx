@@ -18,7 +18,14 @@ const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
   const config = useConfig<ConfigObject>();
   const { soapEntries, isLoading, isValidating, error, mutate, pagination } = useSoapNotes(
     patientUuid,
-    config.encounterTypes?.externalConsultation,
+    [
+      config.encounterTypes?.externalConsultation,
+      {
+        encounterTypeUuid: config.encounterTypes?.visitNote,
+        formUuid: config.formsList?.visitNoteFormUuid,
+        visitTypeUuid: config.visitTypes?.ambulatory,
+      },
+    ],
     config.concepts,
   );
 

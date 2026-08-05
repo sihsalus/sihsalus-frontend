@@ -1,6 +1,11 @@
 import { restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { useCallback } from 'react';
 import type { ConfigObject } from '../config-schema';
-import { useClinicalHistoryPagination } from './useClinicalHistoryPagination';
+import {
+  type EncounterTypeSourceInput,
+  toEncounterTypeSources,
+  useMergedClinicalHistoryPagination,
+} from './useClinicalHistoryPagination';
 
 export interface DiagnosisEntry {
   uuid: string;
@@ -87,17 +92,29 @@ function getTipoNtsFromCertainty(certainty?: string): TipoNts | undefined {
   return undefined;
 }
 
-export function useDiagnosisHistory(patientUuid: string, encounterTypeUuid: string) {
+export function useDiagnosisHistory(
+  patientUuid: string,
+  encounterType: EncounterTypeSourceInput | Array<EncounterTypeSourceInput>,
+) {
   const { concepts } = useConfig<ConfigObject>();
-  const url =
-    patientUuid && encounterTypeUuid
-      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}` +
-        `&v=custom:(uuid,encounterDatetime,` +
-        `diagnoses:(uuid,display,diagnosis:(coded:(uuid,display,mappings:(display))),certainty,rank),` +
-        `obs:(concept:(uuid),value:(uuid,display),formFieldNamespace,formFieldPath))&order=desc`
-      : null;
+  const encounterTypes = toEncounterTypeSources(encounterType);
+  const sources = patientUuid
+    ? encounterTypes.map(({ encounterTypeUuid, formUuid, visitTypeUuid }) => ({
+        url:
+          `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}` +
+          `&v=custom:(uuid,encounterDatetime,form:(uuid),visit:(uuid,visitType:(uuid)),` +
+          `diagnoses:(uuid,display,diagnosis:(coded:(uuid,display,mappings:(display))),certainty,rank),` +
+          `obs:(concept:(uuid),value:(uuid,display),formFieldNamespace,formFieldPath))&order=desc`,
+        expectedFormUuid: formUuid,
+        expectedVisitTypeUuid: visitTypeUuid,
+      }))
+    : null;
 
-  const { data, error, isLoading, isValidating, mutate, pagination } = useClinicalHistoryPagination<Encounter>(url);
+  const isRelevant = useCallback((encounter: Encounter) => Boolean(encounter.diagnoses?.length), []);
+  const { data, error, isLoading, isValidating, mutate, pagination } = useMergedClinicalHistoryPagination<Encounter>(
+    sources,
+    isRelevant,
+  );
 
   const diagnoses: DiagnosisEntry[] = data.flatMap((encounter) => {
     // Mirrors patient-notes: one obs links the MINSA P/D/R type to each coded diagnosis.

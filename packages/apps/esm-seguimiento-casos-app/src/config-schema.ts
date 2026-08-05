@@ -231,80 +231,10 @@ export const configSchema = {
       _default: '5090AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
 
-    // Chief Complaint (CE-3)
-    chiefComplaintUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Chief complaint / reason for visit',
-      _default: '71b58cff-879b-4358-98d5-2165434d4324',
-    },
-
-    // SOAP Notes (CE-5)
-    soapSubjectiveUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'SOAP Subjective concept',
-      _default: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    },
-    soapObjectiveUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'SOAP Objective concept (CIEL 160532)',
-      _default: '160532AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    },
-    soapAssessmentUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'SOAP Assessment concept (CIEL 160533)',
-      _default: '160533AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    },
-    soapPlanUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'SOAP Plan concept',
-      _default: 'c4010006-0000-4000-8000-000000000006',
-    },
-
-    // Insurance Provider (CE-6)
-    insuranceProviderUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Insurance/payer type concept (SIS, EsSalud, Privado, Particular)',
-      _default: '161631AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    },
-
-    // Diagnosis Occurrence (CE-2)
-    diagnosisOccurrenceUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Diagnosis occurrence: New vs Repeat',
-      _default: '159946AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    },
-
-    // Treatment Plan (CE-4)
-    labOrdersUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Lab orders / auxiliary exams concept',
-      _default: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    },
-    proceduresUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Procedures performed concept (CPMS)',
-      _default: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    },
-    prescriptionsUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Prescriptions / medication orders concept',
-      _default: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    },
-    therapeuticIndicationsUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Therapeutic indications free-text concept',
-      _default: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    },
-    referralUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Referral / interconsultation concept',
-      _default: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    },
-    nextAppointmentUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Next appointment date concept',
-      _default: '5096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    },
+    // Consulta Externa concepts intentionally live only in
+    // esm-atencion-ambulatoria-app/src/config-schema.ts: this app carried a
+    // stale copy (everything pointed at the generic note concept 162169…) that
+    // no code consumed and that drifted from the fixed values.
 
     // Patient tracing / missed follow-up
     missedAppointmentDateUuid: {

@@ -86,6 +86,7 @@ describe('Anamnesis', () => {
           onsetType: 'Insidioso',
           course: 'Progresivo',
           narrative: 'Dolor posterior a ingesta de alimentos.',
+          biologicalFunctionsSummary: null,
           biologicalFunctions: {
             appetite: 'Disminuido',
             thirst: 'Conservada',

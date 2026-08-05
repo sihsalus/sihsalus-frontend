@@ -5,6 +5,7 @@ const anamnesisConceptDefaults = {
   illnessDurationUuid: '577876b1-0b6e-4c57-b4c3-7af969a1d501',
   onsetTypeUuid: '34e03399-cb72-484b-85b8-616ef19919c1',
   courseUuid: 'e7d98188-16ba-4ef3-aed9-e891680bacf9',
+  biologicalFunctionsSummaryUuid: '9011adf4-2b9f-4ecb-a44c-cb5642e4e015',
   appetiteUuid: 'f0000182-0000-4000-8000-000000000182',
   thirstUuid: 'f0000183-0000-4000-8000-000000000183',
   sleepUuid: 'f0000184-0000-4000-8000-000000000184',
@@ -87,6 +88,33 @@ export const configSchema = {
       healthEducationCounseling: '54e3e45d-b7d7-4259-b64a-334e17b98c40', // Educación y Consejería — NTS 050
       clinicalFileUpload: '319dcd44-19c5-432c-9733-d1f3798fffd6', // Carga de Archivos Clínicos — RM 546-2011
       order: '39da3525-afe4-45ff-8977-c53b7b359158', // Órdenes Médicas
+      // The manual visit-note workspace (esm-patient-notes-app) records the same
+      // clinical subdomains (diagnoses P/D/R, SOAP, plan, referral) under this
+      // encounter type; the CE readers merge it with externalConsultation.
+      visitNote: 'd7151f82-c1f3-4152-a605-2f9ea7414a79', // Visit Note (O3 core)
+    },
+  },
+
+  visitTypes: {
+    _type: Type.Object,
+    _description: 'Visit types used to scope clinical history from generic encounter forms',
+    _default: {
+      ambulatory: 'b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09', // Atención Ambulatoria
+    },
+  },
+
+  legacyCe001FieldPaths: {
+    _type: Type.Object,
+    _description:
+      'Question ids (without the rfe-forms- prefix) of the published CE-001 form whose answers the ' +
+      'legacyConceptCompatibilityMap still stores in the generic encounter-note concept (162169…). ' +
+      'Those obs are only distinguishable by formFieldPath, so the Plan de Tratamiento tab cannot read ' +
+      'them until each question id is declared here. Leave a key empty to skip that field.',
+    _default: {
+      labOrders: 'ordenesLaboratorio',
+      prescriptions: 'prescripciones',
+      referral: 'referencia',
+      nextAppointment: 'proximaCita',
     },
   },
 
@@ -114,6 +142,7 @@ export const configSchema = {
       anamnesisForm: 'CE-ANAM-001-ANAMNESIS',
       soapNoteForm: 'CE-SOAP-001-NOTA SOAP',
       referralForm: 'CE-REF-001-REFERENCIA-CONTRARREFERENCIA',
+      visitNoteFormUuid: 'c75f120a-04ec-11e3-8780-2b40bef9a44b',
 
       // Hospital Forms
       medicalProgress: 'HOSP-004-EVOLUCIÓN MÉDICA',
@@ -300,6 +329,11 @@ export const configSchema = {
       _description: 'Curso de la enfermedad actual',
       _default: anamnesisConceptDefaults.courseUuid,
     },
+    biologicalFunctionsSummaryUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Resumen narrativo de funciones biológicas registrado por Visit Note',
+      _default: anamnesisConceptDefaults.biologicalFunctionsSummaryUuid,
+    },
     appetiteUuid: {
       _type: Type.ConceptUuid,
       _description: 'Función biológica: apetito',
@@ -386,7 +420,7 @@ export const configSchema = {
     labOrdersUuid: {
       _type: Type.ConceptUuid,
       _description: 'Lab orders / auxiliary exams concept',
-      _default: '1271AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _default: 'f0000204-0000-4000-8000-000000000204',
     },
     proceduresUuid: {
       _type: Type.ConceptUuid,
@@ -396,7 +430,7 @@ export const configSchema = {
     prescriptionsUuid: {
       _type: Type.ConceptUuid,
       _description: 'Prescriptions / medication orders concept',
-      _default: '1282AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _default: 'f0000215-0000-4000-8000-000000000215',
     },
     therapeuticIndicationsUuid: {
       _type: Type.ConceptUuid,
@@ -406,12 +440,12 @@ export const configSchema = {
     referralUuid: {
       _type: Type.ConceptUuid,
       _description: 'Referral / interconsultation concept',
-      _default: '1272AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _default: 'f0000205-0000-4000-8000-000000000205',
     },
     nextAppointmentUuid: {
       _type: Type.ConceptUuid,
       _description: 'Next appointment date concept',
-      _default: '5096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _default: 'f0000004-0000-4000-8000-000000000004',
     },
 
     // Admission / hospitalization details
@@ -708,6 +742,16 @@ export interface ConfigObject {
     healthEducationCounseling: string;
     clinicalFileUpload: string;
     order: string;
+    visitNote: string;
+  };
+  visitTypes: {
+    ambulatory: string;
+  };
+  legacyCe001FieldPaths: {
+    labOrders: string;
+    prescriptions: string;
+    referral: string;
+    nextAppointment: string;
   };
   vitals: {
     useFormEngine: boolean;
@@ -736,6 +780,7 @@ export interface ConfigObject {
     anamnesisForm: string;
     soapNoteForm: string;
     referralForm: string;
+    visitNoteFormUuid: string;
     // HIV/HTS Forms
     defaulterTracingFormUuid: string;
     htsScreening: string;

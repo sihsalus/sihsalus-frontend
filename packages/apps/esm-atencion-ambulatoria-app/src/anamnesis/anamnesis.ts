@@ -3,6 +3,7 @@ export interface AnamnesisConceptMap {
   illnessDurationUuid?: string;
   onsetTypeUuid?: string;
   courseUuid?: string;
+  biologicalFunctionsSummaryUuid?: string;
   anamnesisUuid?: string;
   appetiteUuid?: string;
   thirstUuid?: string;
@@ -35,6 +36,7 @@ export interface AnamnesisEntry {
   onsetType: string | null;
   course: string | null;
   narrative: string | null;
+  biologicalFunctionsSummary: string | null;
   biologicalFunctions: {
     appetite: string | null;
     thirst: string | null;
@@ -74,6 +76,7 @@ export const mapEncounterToAnamnesisEntry = (
   onsetType: getAnamnesisObsValue(encounter.obs, concepts.onsetTypeUuid),
   course: getAnamnesisObsValue(encounter.obs, concepts.courseUuid),
   narrative: getAnamnesisObsValue(encounter.obs, concepts.anamnesisUuid),
+  biologicalFunctionsSummary: getAnamnesisObsValue(encounter.obs, concepts.biologicalFunctionsSummaryUuid),
   biologicalFunctions: {
     appetite: getAnamnesisObsValue(encounter.obs, concepts.appetiteUuid),
     thirst: getAnamnesisObsValue(encounter.obs, concepts.thirstUuid),
@@ -91,5 +94,6 @@ export const hasAnamnesisData = (entry: AnamnesisEntry) =>
       entry.onsetType ||
       entry.course ||
       entry.narrative ||
+      entry.biologicalFunctionsSummary ||
       Object.values(entry.biologicalFunctions).some(Boolean),
   );

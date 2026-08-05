@@ -18,7 +18,14 @@ const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
   const config = useConfig<ConfigObject>();
   const { anamnesisEntries, isLoading, isValidating, error, mutate, pagination } = useAnamnesis(
     patientUuid,
-    config.encounterTypes?.externalConsultation,
+    [
+      config.encounterTypes?.externalConsultation,
+      {
+        encounterTypeUuid: config.encounterTypes?.visitNote,
+        formUuid: config.formsList?.visitNoteFormUuid,
+        visitTypeUuid: config.visitTypes?.ambulatory,
+      },
+    ],
     config.concepts,
   );
 
@@ -79,6 +86,7 @@ const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
             </div>
             <div className={styles.soapSection}>
               <h5>{t('biologicalFunctions', 'Funciones biológicas')}</h5>
+              {entry.biologicalFunctionsSummary ? <p>{entry.biologicalFunctionsSummary}</p> : null}
               <p>
                 <strong>{t('appetite', 'Apetito')}:</strong>{' '}
                 {entry.biologicalFunctions.appetite || t('noData', 'Sin datos')}

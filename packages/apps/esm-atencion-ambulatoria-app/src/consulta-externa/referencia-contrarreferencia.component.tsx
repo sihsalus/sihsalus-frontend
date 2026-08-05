@@ -28,7 +28,14 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
   const { entries, isLoading, isValidating, error, mutate, pagination } = useReferralCounterReferral(
     patientUuid,
     config.encounterTypes?.referralCounterReferral,
-    config.encounterTypes?.externalConsultation,
+    [
+      config.encounterTypes?.externalConsultation,
+      {
+        encounterTypeUuid: config.encounterTypes?.visitNote,
+        formUuid: config.formsList?.visitNoteFormUuid,
+        visitTypeUuid: config.visitTypes?.ambulatory,
+      },
+    ],
     {
       referralUuid: config.concepts?.referralUuid,
       referralTypeUuid: config.concepts?.referralTypeUuid,

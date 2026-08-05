@@ -31,6 +31,7 @@
     "test:error-exposure-guard": "node --test packages/tooling/scripts/validate-error-exposure.test.js",
     "test:tooling": "node --test \"packages/tooling/scripts/*.test.js\"",
     "security:audit": "yarn validate:react-router && yarn npm audit --all --recursive --severity high --ignore 1124282",
+    "validate:concepts": "node packages/tooling/scripts/validate-concept-existence.js",
     "validate:error-exposure": "node packages/tooling/scripts/validate-error-exposure.js",
     "validate:critical-route-privileges": "node packages/tooling/scripts/validate-critical-route-privileges.js",
     "validate:react-router": "node packages/tooling/scripts/validate-react-router-contract.js",

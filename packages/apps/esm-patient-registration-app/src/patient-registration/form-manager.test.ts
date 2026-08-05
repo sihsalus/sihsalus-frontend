@@ -712,6 +712,7 @@ describe('FormManager', () => {
       );
 
       expect(mockSaveEncounter).toHaveBeenCalledTimes(1);
+      expect(mockSaveEncounter.mock.calls[0]?.[0]).not.toHaveProperty('encounterDatetime');
     });
   });
 

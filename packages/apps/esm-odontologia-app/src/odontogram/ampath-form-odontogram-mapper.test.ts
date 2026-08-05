@@ -36,6 +36,7 @@ describe('AMPATH odontogram form mapper', () => {
       encounterType: config.baseEncounterTypeUuid,
       form: config.ampathFormPersistence.baseFormUuid,
     });
+    expect(payload).not.toHaveProperty('encounterDatetime');
     expect(payload.obs).toEqual(
       expect.arrayContaining([
         { concept: config.ampathFormPersistence.concepts.recordType, value: 'base' },

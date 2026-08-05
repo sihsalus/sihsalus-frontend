@@ -200,7 +200,7 @@ export interface DiagnosisPayload {
 }
 
 export interface VisitNotePayload {
-  encounterDatetime: string; // date and time the encounter was created (ISO8601 Long) (REQUIRED)
+  encounterDatetime?: string; // explicit clinical datetime; omit for the server's current time
   encounterType: string; // uuid of the encounter type - initial visit, return visit etc. (REQUIRED)
   patient: string; // the patient to whom the encounter applies
   location: string; // the location at which the encounter occurred (REQUIRED)

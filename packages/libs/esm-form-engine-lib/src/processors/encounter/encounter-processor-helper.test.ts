@@ -103,14 +103,26 @@ describe('getMutableSessionProps', () => {
     expect(getMutableSessionProps(context).encounterDate).toBeUndefined();
   });
 
-  it('uses the session date for stopped visits when no encounter datetime was submitted', () => {
-    const sessionDate = new Date('2024-02-03T10:30:00.000Z');
+  it('uses the server-originated visit stop date for stopped visits when no encounter datetime was submitted', () => {
+    const visitStopDatetime = '2024-02-03T12:00:00.000Z';
     const context = createFormContext({
-      sessionDate,
-      visit: { uuid: 'stopped-visit-uuid', stopDatetime: '2024-02-03T12:00:00.000Z' } as never,
+      sessionDate: new Date('2024-02-03T10:30:00.000Z'),
+      visit: { uuid: 'stopped-visit-uuid', stopDatetime: visitStopDatetime } as never,
     });
 
-    expect(getMutableSessionProps(context).encounterDate).toBe(sessionDate);
+    expect(getMutableSessionProps(context).encounterDate).toEqual(new Date(visitStopDatetime));
+  });
+
+  it('omits an auto-populated current datetime when its field is merely touched', () => {
+    const sessionDate = new Date('2024-02-03T10:30:45.000Z');
+    const roundedFieldValue = new Date('2024-02-03T10:30:00.000Z');
+    const context = createFormContext({
+      sessionDate,
+      formFields: [createSubmissionField('encounterDatetime', roundedFieldValue)],
+      visit: { uuid: 'active-visit-uuid' } as never,
+    });
+
+    expect(getMutableSessionProps(context).encounterDate).toBeUndefined();
   });
 
   it('uses an explicitly submitted encounter datetime before visit defaults', () => {

@@ -39,7 +39,7 @@ export interface OdontogramEncounterPayload {
   patient: string;
   encounterType: string;
   form: string;
-  encounterDatetime: string;
+  encounterDatetime?: string;
   obs: Array<{
     /** Existing obs uuid — present only on updates so OpenMRS edits in place. */
     uuid?: string;
@@ -98,7 +98,6 @@ export function mapToAmpathOdontogramEncounterPayload({
     patient: patientUuid,
     encounterType: encounterTypeUuid,
     form: getAmpathOdontogramFormUuid(config, recordType),
-    encounterDatetime: new Date().toISOString(),
     obs,
   };
 }

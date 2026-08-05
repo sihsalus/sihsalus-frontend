@@ -530,7 +530,6 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
           locationUuid,
           currentVisit.uuid,
           {
-            encounterDatetime: new Date(),
             providerUuid: session?.currentProvider?.uuid,
             encounterRoleUuid: config.vitals.encounterRoleUuid,
           },

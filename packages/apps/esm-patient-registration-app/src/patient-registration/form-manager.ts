@@ -838,7 +838,6 @@ export class FormManager {
 
     FormManager.assertObservationConfiguration(obss, currentLocation, currentUser, config);
     const encounterToSave: Encounter = {
-      encounterDatetime: new Date(),
       patient: savePatientResponse.data.uuid,
       encounterType: config.registrationObs.encounterTypeUuid,
       location: currentLocation,

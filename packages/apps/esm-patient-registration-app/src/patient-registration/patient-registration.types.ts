@@ -136,7 +136,7 @@ export type PatientAddress = Partial<Record<AddressProperties, string>> & {
 };
 
 export interface Encounter {
-  encounterDatetime: Date;
+  encounterDatetime?: Date;
   patient: string;
   encounterType: string;
   location: string;

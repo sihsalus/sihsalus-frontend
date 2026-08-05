@@ -494,7 +494,6 @@ export async function savePrenatalAntecedents(
         location,
         encounterType: encounterTypeUuid,
         form: formUuid,
-        encounterDatetime: toEncounterDateTime(new Date()),
         obs: obsData,
       },
     });

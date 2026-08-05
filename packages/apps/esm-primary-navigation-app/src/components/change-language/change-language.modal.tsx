@@ -8,7 +8,7 @@ import {
   RadioButton,
   RadioButtonGroup,
 } from '@carbon/react';
-import { showSnackbar, useAbortController, useSession } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar, useAbortController, useSession } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { capitalize } from 'lodash-es';
 import { useCallback, useMemo, useState } from 'react';
@@ -50,12 +50,15 @@ export default function ChangeLanguageModal({ close }: ChangeLanguageModalProps)
         : updateSessionLocale(formattedLocale, ac);
 
       update.catch((error) => {
-        console.error('Failed to change language:', error);
         setIsChangingLanguage(false);
         showSnackbar({
           kind: 'error',
           title: t('changeLanguageFailed', 'Could not change language'),
-          subtitle: error instanceof Error ? error.message : String(error),
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('changeLanguageFailedMessage', 'The language could not be changed. Please try again.'),
+            { logContext: 'Change language' },
+          ),
         });
       });
     }

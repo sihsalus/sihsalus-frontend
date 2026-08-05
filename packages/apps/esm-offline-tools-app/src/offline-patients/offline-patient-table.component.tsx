@@ -26,6 +26,7 @@ import {
   deleteSynchronizationItem,
   getDynamicOfflineDataEntries,
   getFullSynchronizationItems,
+  getUserFacingErrorMessage,
   isDesktop,
   removeDynamicOfflineData,
   showModal,
@@ -100,7 +101,14 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
       showSnackbar({
         kind: 'error',
         title: t('offlinePatientsSyncFailed', 'Some patients could not be synchronized'),
-        subtitle: error instanceof Error ? error.message : String(error),
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t(
+            'offlinePatientsSyncFailedGenericSubtitle',
+            'The selected patients could not be downloaded for offline use. Please try again.',
+          ),
+          { logContext: 'Sync offline patients' },
+        ),
       });
     } finally {
       setSyncingPatientUuids([]);

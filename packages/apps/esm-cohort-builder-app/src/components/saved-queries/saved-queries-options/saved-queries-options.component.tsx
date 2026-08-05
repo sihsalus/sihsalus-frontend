@@ -1,5 +1,5 @@
 import { OverflowMenu, OverflowMenuItem } from '@carbon/react';
-import { showModal, showSnackbar } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showModal, showSnackbar } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { type DefinitionDataRow } from '../../../types';
@@ -63,7 +63,11 @@ const SavedQueriesOptions: React.FC<SavedQueriesOptionsProps> = ({ query, onView
         title: t('QueryDeleteError', 'Something went wrong'),
         kind: 'error',
         isLowContrast: true,
-        subtitle: error?.message,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('queryDeleteErrorMessage', 'The query could not be deleted. Please try again.'),
+          { logContext: 'Delete saved query' },
+        ),
       });
     }
   };

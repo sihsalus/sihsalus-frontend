@@ -1,5 +1,5 @@
 import { OverflowMenu, OverflowMenuItem } from '@carbon/react';
-import { showModal, showSnackbar } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showModal, showSnackbar } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { DefinitionDataRow } from '../../../types';
@@ -54,7 +54,20 @@ const SavedCohortsOptions: React.FC<SavedCohortsOptionsProps> = ({ cohort, onVie
   };
 
   const handleDeleteCohort = async () => {
-    await onDeleteCohort(cohort.id);
+    try {
+      await onDeleteCohort(cohort.id);
+    } catch (error) {
+      showSnackbar({
+        title: t('cohortDeleteError', 'Error deleting the cohort'),
+        kind: 'error',
+        isLowContrast: true,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('cohortDeleteErrorMessage', 'The cohort could not be deleted. Please try again.'),
+          { logContext: 'Delete cohort' },
+        ),
+      });
+    }
   };
 
   return (

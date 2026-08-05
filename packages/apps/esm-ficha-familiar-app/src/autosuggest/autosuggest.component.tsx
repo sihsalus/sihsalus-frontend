@@ -31,6 +31,8 @@ export const Autosuggest: React.FC<AutosuggestProps> = ({
   const [showEmptyState, setShowEmptyState] = useState(false);
   const searchBox = useRef<HTMLInputElement>(null);
   const wrapper = useRef<HTMLDivElement>(null);
+  // Search responses can arrive out of order; only the latest request may set suggestions
+  const searchRequestIdRef = useRef(0);
   const { id: name, labelText } = searchProps;
 
   const handleClickOutsideComponent = useCallback((e: MouseEvent) => {
@@ -52,10 +54,13 @@ export const Autosuggest: React.FC<AutosuggestProps> = ({
     const query = e.target.value;
     onSuggestionSelected(name, undefined);
 
+    const requestId = ++searchRequestIdRef.current;
     if (query) {
       getSearchResults(query).then((suggestions) => {
-        setShowEmptyState(suggestions.length < 1);
-        setSuggestions(suggestions);
+        if (requestId === searchRequestIdRef.current) {
+          setShowEmptyState(suggestions.length < 1);
+          setSuggestions(suggestions);
+        }
       });
     } else {
       setSuggestions([]);

@@ -92,7 +92,21 @@ const Payments: React.FC<PaymentProps> = ({ bill, mutate }) => {
         kind: 'success',
       });
       if (currentVisit) {
-        updateBillVisitAttribute(currentVisit, patientCategory.formPayloadPending);
+        // The payment itself succeeded: a failure updating the visit's pending-payment
+        // flag must be surfaced on its own, not swallowed as an unhandled rejection.
+        try {
+          await updateBillVisitAttribute(currentVisit, patientCategory.formPayloadPending);
+        } catch (visitAttributeError) {
+          console.error('Failed to update the visit payment attribute:', visitAttributeError);
+          showSnackbar({
+            title: t('billPayment', 'Bill payment'),
+            subtitle: t(
+              'visitAttributeUpdateFailed',
+              'The payment was recorded, but the visit payment status could not be updated.',
+            ),
+            kind: 'warning',
+          });
+        }
       }
       methods.reset(defaultPaymentValues);
       mutate();

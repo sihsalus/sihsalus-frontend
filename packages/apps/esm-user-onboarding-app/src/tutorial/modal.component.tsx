@@ -32,9 +32,15 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose }) => {
     } else {
       navigate({ to: homePath });
 
+      // The poll must outlive this modal (it waits for the navigation to land),
+      // but it needs an upper bound: if the user never reaches home (redirect,
+      // route guard, manual navigation) it would otherwise run forever.
+      let remainingTicks = 100;
       const intervalId = setInterval(() => {
         if (globalThis.location.pathname.startsWith(homePath)) {
           setTutorialSteps();
+          clearInterval(intervalId);
+        } else if (--remainingTicks <= 0) {
           clearInterval(intervalId);
         }
       }, 100);

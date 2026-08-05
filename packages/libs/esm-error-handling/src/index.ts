@@ -103,7 +103,7 @@ export function createErrorHandler() {
   return (incomingErr: unknown) => {
     const finalErr = ensureErrorObject(incomingErr);
     finalErr.stack += `\nAsync stacktrace:\n${outgoingErr.stack}`;
-    reportError(incomingErr);
+    reportError(finalErr);
   };
 }
 

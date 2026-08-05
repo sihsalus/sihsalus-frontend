@@ -22,6 +22,11 @@ export function ExtensionOverlay({ extensionName, slotModuleName, slotName, domE
       const newOverlayDomElement = document.createElement('div');
       domElement.parentElement?.appendChild(newOverlayDomElement);
       setOverlayDomElement(newOverlayDomElement);
+
+      return () => {
+        newOverlayDomElement.remove();
+        setOverlayDomElement(undefined);
+      };
     }
   }, [domElement]);
 

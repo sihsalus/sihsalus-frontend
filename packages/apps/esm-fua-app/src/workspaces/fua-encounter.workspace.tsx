@@ -67,8 +67,10 @@ const FuaEncounterWorkspaceContent: React.FC<FuaEncounterWorkspaceProps> = (prop
   const [isInitializing, setIsInitializing] = useState(true);
   const [fuaId, setFuaId] = useState<string | undefined>(undefined);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [_retrySeed, setRetrySeed] = useState(0);
+  // retrySeed is only ever advanced by the retry buttons, never inside the load effect
+  const [retrySeed, setRetrySeed] = useState(0);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: retrySeed intentionally re-runs the load when the user clicks "Reintentar"
   useEffect(() => {
     if (isLoadingVisit) {
       return;
@@ -133,6 +135,7 @@ const FuaEncounterWorkspaceContent: React.FC<FuaEncounterWorkspaceProps> = (prop
     currentVisit?.uuid,
     isLoadingVisit,
     patientUuid,
+    retrySeed,
     t,
     visitUuid,
   ]);

@@ -1,5 +1,5 @@
 import { Layer, Loading, Tile } from '@carbon/react';
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type GroupType } from '../../context/GroupFormWorkflowContext';
 import { EmptyDataIllustration } from '../../empty-state/EmptyDataIllustration';
@@ -56,6 +56,10 @@ const GroupSearch: React.FC<GroupSearchProps> = ({ query = '', selectGroupAction
     },
     [loadingNewData, hasMore, setPage],
   );
+
+  useEffect(() => {
+    return () => observer.current?.disconnect();
+  }, []);
 
   if (error) {
     return (

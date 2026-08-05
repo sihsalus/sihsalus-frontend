@@ -1,6 +1,7 @@
-import { setUserLanguage, useConfig, useConnectivity, useSession } from '@openmrs/esm-framework';
+import { setUserLanguage, showSnackbar, useConfig, useConnectivity, useSession } from '@openmrs/esm-framework';
 import { clearHistory } from '@openmrs/esm-framework/src/internal';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { type ConfigSchema } from '../config-schema';
 import { hardNavigate } from '../navigation';
@@ -15,6 +16,7 @@ function redirectAfterLogout(config: ConfigSchema) {
 }
 
 const RedirectLogout: React.FC = () => {
+  const { t } = useTranslation();
   const config = useConfig<ConfigSchema>();
   const isLoginEnabled = useConnectivity();
   const session = useSession();
@@ -41,9 +43,20 @@ const RedirectLogout: React.FC = () => {
         })
         .catch((error) => {
           console.error('Logout failed:', error);
+          // The session is still authenticated at this point: the user must know
+          // the logout did NOT happen, especially on shared workstations.
+          showSnackbar({
+            kind: 'error',
+            isLowContrast: false,
+            title: t('logoutFailed', 'No se pudo cerrar la sesión'),
+            subtitle: t(
+              'logoutFailedSubtitle',
+              'Su sesión sigue activa. Vuelva a intentarlo o cierre el navegador para proteger su cuenta.',
+            ),
+          });
         });
     }
-  }, [config, isLoginEnabled, session]);
+  }, [config, isLoginEnabled, session, t]);
 
   return null;
 };

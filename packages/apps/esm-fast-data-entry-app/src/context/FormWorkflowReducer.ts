@@ -25,7 +25,17 @@ const reducer = (state, action) => {
       // scoped to the current browser session.
       removeLegacyPersistentWorkflow(fdeWorkflowStorageName, action.userUuid);
       const savedData = sessionStorage.getItem(storageKey);
-      const savedDataObject = savedData ? JSON.parse(savedData) : {};
+      // A corrupted blob must not throw inside the reducer (it would white-screen
+      // the app); discard it and start from a clean workflow state instead.
+      let savedDataObject: Record<string, any> = {};
+      if (savedData) {
+        try {
+          savedDataObject = JSON.parse(savedData);
+        } catch (error) {
+          console.warn('Discarding corrupted workflow state from sessionStorage.', error);
+          sessionStorage.removeItem(storageKey);
+        }
+      }
       let newState: { [key: string]: unknown } = {};
       const newPatient = action.newPatientUuid
         ? {

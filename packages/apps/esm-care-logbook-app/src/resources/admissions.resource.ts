@@ -340,6 +340,7 @@ function getRelationshipSearchText(patientUuid: string, relationships: VisitRela
 
 async function fetchRelationshipsForPatients(patientUuids: string[]) {
   const relationshipsByPatient: Record<string, VisitRelationship[]> = {};
+  const failedPatientUuids: string[] = [];
 
   await Promise.all(
     patientUuids.map(async (patientUuid) => {
@@ -348,11 +349,21 @@ async function fetchRelationshipsForPatients(patientUuids: string[]) {
           `${restBaseUrl}/relationship?person=${patientUuid}&v=${relationshipRepresentation}`,
         );
         relationshipsByPatient[patientUuid] = data.results ?? [];
-      } catch {
+      } catch (error) {
+        // A single patient's failure shouldn't blank the whole logbook, but it
+        // must not masquerade as "patient has no relationships" either.
+        console.warn(`Failed to load relationships for patient ${patientUuid}.`, error);
+        failedPatientUuids.push(patientUuid);
         relationshipsByPatient[patientUuid] = [];
       }
     }),
   );
+
+  if (patientUuids.length > 0 && failedPatientUuids.length === patientUuids.length) {
+    // Every request failed: this is a systemic error (network/backend), so report
+    // it instead of rendering an all-blank "responsible person" column.
+    throw new Error('Failed to load patient relationships for the admissions logbook.');
+  }
 
   return relationshipsByPatient;
 }

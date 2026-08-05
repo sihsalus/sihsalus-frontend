@@ -57,6 +57,16 @@ export function useVisitDateValidation(visitUuid: string, visitStartDatetime: st
         }
       } catch (error) {
         console.error('Failed to validate/adjust visit dates:', error);
+        // The encounter was already saved: the clinician must know it may now sit
+        // outside the visit window, or reporting/billing will silently disagree.
+        showSnackbar({
+          title: t('visitDateAdjustmentFailed', 'Visit dates could not be adjusted'),
+          subtitle: t(
+            'visitDateAdjustmentFailedDescription',
+            'The encounter was saved, but its date may fall outside the visit period. Please review the visit dates.',
+          ),
+          kind: 'warning',
+        });
       }
     },
     [visitUuid, visitStartDatetime, visitStopDatetime, t],

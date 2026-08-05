@@ -41,10 +41,14 @@ export function getAgeInDays(birthDate: string | undefined, asOf: Date = new Dat
   if (!birthDate) {
     return null;
   }
-  const birth = new Date(birthDate);
-  if (Number.isNaN(birth.getTime())) {
+  const parsed = new Date(birthDate);
+  if (Number.isNaN(parsed.getTime())) {
     return null;
   }
+  // Date-only strings parse as UTC midnight but `asOf` is local time, so day boundaries
+  // would shift (5h early in UTC-5); rebuild those dates from their UTC parts as local dates
+  const isDateOnly = /^\d{4}(-\d{2}){0,2}$/.test(birthDate.trim());
+  const birth = isDateOnly ? new Date(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate()) : parsed;
   return Math.floor((asOf.getTime() - birth.getTime()) / (1000 * 60 * 60 * 24));
 }
 

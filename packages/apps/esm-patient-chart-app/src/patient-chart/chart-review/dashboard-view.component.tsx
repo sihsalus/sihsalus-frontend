@@ -53,13 +53,22 @@ export function DashboardView({ dashboard, patientUuid, patient }: DashboardView
   const [resolvedTitle, setResolvedTitle] = useState<string | undefined>();
 
   useEffect(() => {
+    // A slow title promise from a previous dashboard must not overwrite the current title
+    let ignore = false;
     if (typeof dashboard?.title === 'function') {
-      Promise.resolve(dashboard.title()).then(setResolvedTitle);
+      Promise.resolve(dashboard.title()).then((title) => {
+        if (!ignore) {
+          setResolvedTitle(title);
+        }
+      });
     } else if (typeof dashboard?.title === 'string') {
       setResolvedTitle(dashboard.title);
     } else {
       setResolvedTitle(undefined);
     }
+    return () => {
+      ignore = true;
+    };
   }, [dashboard]);
 
   return (

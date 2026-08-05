@@ -83,16 +83,14 @@ describe('hasDuplicatePatientIdentifiers', () => {
     ).resolves.toBe(false);
   });
 
-  it('returns false when the duplicate lookup fails', async () => {
-    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('propagates the error when the duplicate lookup fails', async () => {
+    // A failed lookup must NOT be reported as "no duplicate": that would let a
+    // transient network error silently skip a blocking identity validation.
     mockFindPatientsByIdentifier.mockRejectedValue(new Error('lookup failed'));
 
     await expect(
       hasDuplicatePatientIdentifiers(patient, [{ identifier: 'ABC123', identifierType: 'type-1' }]),
-    ).resolves.toBe(false);
-
-    expect(consoleWarnSpy).toHaveBeenCalled();
-    consoleWarnSpy.mockRestore();
+    ).rejects.toThrow('lookup failed');
   });
 });
 

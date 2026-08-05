@@ -55,10 +55,20 @@ export const Snackbar: React.FC<SnackbarProps> = ({ snackbar, closeSnackbar: rem
     removeSnackBarFromDomRef.current = removeSnackBarFromDom;
   }, [removeSnackBarFromDom]);
 
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const closeSnackbar = useCallback(() => {
     // This is to add a slide out animation before closing the snackbar
     // The animation lasts for 250ms, thus the timeout
-    setTimeout(() => removeSnackBarFromDomRef.current(), 250);
+    closeTimeoutRef.current = setTimeout(() => removeSnackBarFromDomRef.current(), 250);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current !== null) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
   }, []);
 
   const onCloseSnackbar = useCallback(() => {

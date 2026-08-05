@@ -4,12 +4,14 @@ import {
   queueSynchronizationItem,
   restBaseUrl,
   type Session,
+  showSnackbar,
   type StyleguideConfigObject,
   toOmrsIsoString,
+  translateFrom,
 } from '@openmrs/esm-framework';
 
 import { type RegistrationConfig } from '../config-schema';
-import { patientRegistration } from '../constants';
+import { moduleName, patientRegistration } from '../constants';
 import {
   identityVerificationSourceConceptUuids,
   identityVerificationStatusConceptUuids,
@@ -504,6 +506,20 @@ export class FormManager {
           }
         } else {
           await savePhotoAsAttachment();
+        }
+
+        // Registration itself succeeded, but silently discarding the captured photo
+        // would leave the user believing it was stored.
+        if (!savePatientTransactionManager.photoSaved) {
+          showSnackbar({
+            kind: 'warning',
+            title: translateFrom(moduleName, 'photoNotSaved', 'Patient photo not saved'),
+            subtitle: translateFrom(
+              moduleName,
+              'photoNotSavedSubtitle',
+              'The patient was registered, but the photo could not be stored. You can retry from the patient record.',
+            ),
+          });
         }
       }
     }

@@ -170,7 +170,21 @@ export class EncounterFormProcessor extends FormProcessor {
     const t = (key: string, defaultValue: string, options?: Omit<TOptions, 'ns' | 'defaultValue'>): string =>
       translateFrom(formEngineAppName, key, defaultValue, options);
     const patientIdentifiers = preparePatientIdentifiers(context.formFields, encounterLocation);
-    const hasDuplicateIdentifiers = await hasDuplicatePatientIdentifiers(context.patient, patientIdentifiers);
+    let hasDuplicateIdentifiers: boolean;
+    try {
+      hasDuplicateIdentifiers = await hasDuplicatePatientIdentifiers(context.patient, patientIdentifiers);
+    } catch (error) {
+      console.error('Failed to check duplicate patient identifiers before submission.', error);
+      throw new FormSubmissionError({
+        title: t('patientIdentifierValidationFailed', 'Could not validate patient identifiers'),
+        subtitle: t(
+          'patientIdentifierValidationFailedDescription',
+          'The duplicate identifier check could not be completed. Please check your connection and try again.',
+        ),
+        kind: 'error',
+        isLowContrast: false,
+      });
+    }
     if (hasDuplicateIdentifiers) {
       throw new FormSubmissionError({
         title: t('patientIdentifierDuplication', 'Patient identifier duplication'),

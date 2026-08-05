@@ -339,13 +339,19 @@ const FormEditorContent: React.FC<TranslationFnProps> = ({ t }) => {
     reader.readAsText(file);
   };
 
-  const downloadableSchema = useMemo(
+  const downloadableSchemaUrl = useMemo(
     () =>
-      new Blob([JSON.stringify(schema, null, 2)], {
-        type: 'application/json',
-      }),
+      globalThis.URL.createObjectURL(
+        new Blob([JSON.stringify(schema, null, 2)], {
+          type: 'application/json',
+        }),
+      ),
     [schema],
   );
+
+  useEffect(() => {
+    return () => globalThis.URL.revokeObjectURL(downloadableSchemaUrl);
+  }, [downloadableSchemaUrl]);
 
   const handleCopySchema = useCallback(async () => {
     await navigator.clipboard.writeText(stringifiedSchema);
@@ -449,7 +455,7 @@ const FormEditorContent: React.FC<TranslationFnProps> = ({ t }) => {
                       void handleCopySchema();
                     }}
                   />
-                  <a download={`${form?.name}.json`} href={globalThis.URL.createObjectURL(downloadableSchema)}>
+                  <a download={`${form?.name}.json`} href={downloadableSchemaUrl}>
                     <IconButton
                       enterDelayMs={defaultEnterDelayInMs}
                       kind="ghost"

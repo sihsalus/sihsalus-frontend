@@ -13,7 +13,7 @@ import {
   TableRow,
 } from '@carbon/react';
 import { showSnackbar, useLayoutType } from '@openmrs/esm-framework';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { updateStudyLinkStatus, useStudiesByPatient } from '../../api';
 import styles from './details-table.scss';
@@ -38,7 +38,19 @@ const LinkingStudyModal: React.FC<LinkStudyModalProps> = ({
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
 
-  const parsedComparisonResult = comparisonResult ? JSON.parse(comparisonResult) : { score: 0, differences: [] };
+  // comparisonResult is caller-supplied: a malformed string must not throw during
+  // render, or the confirmation modal never appears.
+  const parsedComparisonResult = useMemo(() => {
+    if (!comparisonResult) {
+      return { score: 0, differences: [] };
+    }
+    try {
+      return JSON.parse(comparisonResult);
+    } catch (error) {
+      console.warn('Failed to parse the study comparison result.', error);
+      return { score: 0, differences: [] };
+    }
+  }, [comparisonResult]);
 
   const handleConfirmLinkingStudy = useCallback(async () => {
     try {

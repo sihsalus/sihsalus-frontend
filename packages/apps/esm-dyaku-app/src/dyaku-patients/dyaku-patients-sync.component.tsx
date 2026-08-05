@@ -1,5 +1,5 @@
 import { Button, InlineLoading, InlineNotification, Modal, ProgressBar } from '@carbon/react';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type SyncResult, useDyakuSync } from './dyaku-patients.resource';
 import styles from './dyaku-patients-sync.scss';
@@ -16,6 +16,15 @@ const DyakuPatientsSync: React.FC<DyakuPatientsSyncProps> = ({ onSyncComplete })
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
   const [processed, setProcessed] = useState(0);
   const [total, setTotal] = useState(0);
+  const closeModalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (closeModalTimerRef.current !== null) {
+        clearTimeout(closeModalTimerRef.current);
+      }
+    };
+  }, []);
 
   const progress = total > 0 ? Math.round((processed / total) * 100) : 0;
 
@@ -38,7 +47,10 @@ const DyakuPatientsSync: React.FC<DyakuPatientsSyncProps> = ({ onSyncComplete })
         onSyncComplete?.(result);
 
         if (result.success) {
-          setTimeout(() => {
+          if (closeModalTimerRef.current !== null) {
+            clearTimeout(closeModalTimerRef.current);
+          }
+          closeModalTimerRef.current = setTimeout(() => {
             setIsModalOpen(false);
             setIsSyncing(false);
             setProcessed(0);

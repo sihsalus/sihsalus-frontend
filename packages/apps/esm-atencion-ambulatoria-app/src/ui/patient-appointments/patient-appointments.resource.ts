@@ -28,7 +28,7 @@ export function usePatientAppointments(patientUuid: string, startDate: string, a
     });
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<AppointmentsFetchResponse, Error>(
-    appointmentsSearchUrl,
+    [appointmentsSearchUrl, patientUuid, startDate],
     fetcher,
   );
 

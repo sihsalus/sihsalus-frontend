@@ -8,7 +8,7 @@ import {
   RadioButton,
   RadioButtonGroup,
 } from '@carbon/react';
-import { useAbortController, useSession } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar, useAbortController, useSession } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { capitalize } from 'lodash-es';
 import { useCallback, useMemo, useState } from 'react';
@@ -36,20 +36,33 @@ export default function ChangeLanguageModal({ close }: ChangeLanguageModalProps)
 
     if (selectedLocale && selectedLocale !== session?.locale) {
       const formattedLocale = selectedLocale.replace(/-/gi, '_');
-      if (shouldChangeDefaultLocale) {
-        updateUserProperties(
-          user.uuid,
-          {
-            ...(user.userProperties ?? {}),
-            defaultLocale: formattedLocale,
-          },
-          ac,
-        );
-      } else {
-        updateSessionLocale(formattedLocale, ac);
-      }
+      // On success these reload the page; the failure path must reset the button
+      // and tell the user, or the modal stays stuck in "Changing language".
+      const update = shouldChangeDefaultLocale
+        ? updateUserProperties(
+            user.uuid,
+            {
+              ...(user.userProperties ?? {}),
+              defaultLocale: formattedLocale,
+            },
+            ac,
+          )
+        : updateSessionLocale(formattedLocale, ac);
+
+      update.catch((error) => {
+        setIsChangingLanguage(false);
+        showSnackbar({
+          kind: 'error',
+          title: t('changeLanguageFailed', 'Could not change language'),
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('changeLanguageFailedMessage', 'The language could not be changed. Please try again.'),
+            { logContext: 'Change language' },
+          ),
+        });
+      });
     }
-  }, [ac, selectedLocale, session?.locale, shouldChangeDefaultLocale, user.userProperties, user.uuid]);
+  }, [ac, selectedLocale, session?.locale, shouldChangeDefaultLocale, t, user.userProperties, user.uuid]);
 
   const languageNames = useMemo(
     () =>

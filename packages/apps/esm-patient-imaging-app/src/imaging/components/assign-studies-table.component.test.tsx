@@ -112,7 +112,7 @@ describe('AssignStudiesTable', () => {
   });
 
   it('calls assignStudyFunction when checkbox is toggled', () => {
-    const assignMock = vi.fn();
+    const assignMock = vi.fn().mockResolvedValue(true);
     render(<AssignStudiesTable {...defaultProps} assignStudyFunction={assignMock} />);
 
     const checkbox = screen.getAllByRole('checkbox')[0] as HTMLInputElement;
@@ -122,7 +122,9 @@ describe('AssignStudiesTable', () => {
       fireEvent.click(checkbox);
     });
 
-    expect(assignMock).toHaveBeenCalledWith(defaultProps.data!.studies[0], 'true');
+    // isAssign must be a real boolean: the string 'false' is truthy and used to
+    // flip the success toast to "assigned" even when un-assigning.
+    expect(assignMock).toHaveBeenCalledWith(defaultProps.data!.studies[0], true);
   });
 
   it('sorts studies when sortable headers are clicked', () => {

@@ -26,7 +26,7 @@ export interface AssignStudiesTableProps {
   data?: StudiesWithScores | null;
   patientUuid: string;
 
-  assignStudyFunction: Function;
+  assignStudyFunction: (study: DicomStudy, isAssign: boolean) => Promise<boolean>;
 }
 
 const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
@@ -58,12 +58,24 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
     return !!study.mrsPatientUuid && study.mrsPatientUuid === patientUuid;
   };
 
-  const handleAssignChange = (study, checked) => {
-    assignStudyFunction(study, checked.toString());
+  const handleAssignChange = async (study: DicomStudy, checked: boolean) => {
+    const previousMrsPatientUuid = study.mrsPatientUuid;
+
+    // Optimistic update so the checkbox responds immediately; reverted below if the save fails.
+    study.mrsPatientUuid = checked ? patientUuid : null;
     setAssignedStudy((prev) => ({
       ...prev,
       [study.id]: checked,
     }));
+
+    const succeeded = await assignStudyFunction(study, checked);
+    if (!succeeded) {
+      study.mrsPatientUuid = previousMrsPatientUuid;
+      setAssignedStudy((prev) => ({
+        ...prev,
+        [study.id]: !checked,
+      }));
+    }
   };
 
   const tableHeaders = [
@@ -85,9 +97,7 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
         value={study.id}
         checked={studyAssignStatus({ study })}
         onChange={(e) => {
-          const checked = e.target.checked;
-          handleAssignChange(study, checked);
-          study.mrsPatientUuid = checked ? patientUuid : null;
+          void handleAssignChange(study, e.target.checked);
         }}
       />
     ),

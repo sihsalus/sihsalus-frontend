@@ -2,6 +2,10 @@ import type { Patient, Query, SearchHistoryItem } from './types';
 
 type StoredSearchHistoryItem = Pick<SearchHistoryItem, 'description' | 'memberIds' | 'parameters'>;
 
+// Each entry's memberIds can hold thousands of patient ids, so the history
+// must stay bounded for the lifetime of the session.
+const MAX_SEARCH_HISTORY_ITEMS = 20;
+
 const searchHistory: StoredSearchHistoryItem[] = [];
 
 export function getStoredSearchHistory() {
@@ -23,6 +27,11 @@ export function addStoredSearchHistory(description: string, patients: Patient[],
     memberIds: patients.map((patient) => parseInt(patient.id, 10)),
     parameters,
   });
+  // Consumers address entries by their position from the start, so the oldest
+  // entries are the ones dropped when the cap is exceeded.
+  if (searchHistory.length > MAX_SEARCH_HISTORY_ITEMS) {
+    searchHistory.splice(0, searchHistory.length - MAX_SEARCH_HISTORY_ITEMS);
+  }
 }
 
 export function replaceStoredSearchHistory(updatedSearchHistory: Array<StoredSearchHistoryItem>) {

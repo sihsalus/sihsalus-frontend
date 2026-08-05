@@ -26,6 +26,11 @@ const PatientInfo: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
     return <span>{t('errorLoadingPatient', 'Error loading patient information')}</span>;
   }
 
+  // usePatient can resolve with no patient and no error (e.g. unknown uuid)
+  if (!patient) {
+    return null;
+  }
+
   const identifiers =
     patient?.identifier?.map((id) => ({
       text: id.type?.text,

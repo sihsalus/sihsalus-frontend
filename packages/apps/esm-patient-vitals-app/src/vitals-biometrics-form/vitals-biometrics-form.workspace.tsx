@@ -349,12 +349,12 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   );
 
   useEffect(() => {
-    const patientBirthDate = patient?.patient?.birthDate;
-    if (patientBirthDate && midUpperArmCircumference != null) {
-      const patientAge = Math.floor(getAgeInDays(patientBirthDate) / 365.2425);
+    // A null age (missing/unparseable birth date) must not be treated as age 0
+    if (ageInDays != null && midUpperArmCircumference != null) {
+      const patientAge = Math.floor(ageInDays / 365.2425);
       getMuacColorCode(patientAge, midUpperArmCircumference, setMuacColorCode);
     }
-  }, [patient.patient?.birthDate, midUpperArmCircumference]);
+  }, [ageInDays, midUpperArmCircumference]);
 
   useEffect(() => {
     if (height != null && weight != null) {

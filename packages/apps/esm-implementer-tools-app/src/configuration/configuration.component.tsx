@@ -13,7 +13,7 @@ import {
   useStoreWithActions,
 } from '@openmrs/esm-framework/src/internal';
 import { cloneDeep, isEmpty } from 'lodash-es';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ImplementerToolsStore, implementerToolsStore } from '../store';
@@ -77,9 +77,19 @@ export const Configuration: React.FC = () => {
   const tempConfigStore = useStore(temporaryConfigStore);
   const [filterText, setFilterText] = useState('');
   const tempConfig = tempConfigStore.config;
-  const tempConfigObjUrl = new Blob([JSON.stringify(tempConfig, undefined, 2)], {
-    type: 'application/json',
-  });
+  const tempConfigObjUrl = useMemo(
+    () =>
+      globalThis.URL.createObjectURL(
+        new Blob([JSON.stringify(tempConfig, undefined, 2)], {
+          type: 'application/json',
+        }),
+      ),
+    [tempConfig],
+  );
+
+  useEffect(() => {
+    return () => globalThis.URL.revokeObjectURL(tempConfigObjUrl);
+  }, [tempConfigObjUrl]);
 
   const combinedConfig = useMemo(() => {
     const result = cloneDeep(config);
@@ -175,7 +185,7 @@ export const Configuration: React.FC = () => {
                     id="downloadConfigBtn"
                     className={styles.downloadLink}
                     download="temporary_config.json"
-                    href={globalThis.URL.createObjectURL(tempConfigObjUrl)}
+                    href={tempConfigObjUrl}
                   >
                     {t('downloadConfig', 'Download config')}
                   </a>

@@ -332,8 +332,9 @@ describe('usePatient', () => {
       // Patient UUID should be from the parameter, not the URL
       expect(result.current.patientUuid).toBe('explicit-patient-888');
 
-      // Event listener should still be registered for consistency
-      expect(mockAddEventListener).toHaveBeenCalled();
+      // An explicitly provided UUID pins the hook to that patient, so no route
+      // listener may be registered (it would clobber the UUID with the URL's).
+      expect(mockAddEventListener).not.toHaveBeenCalledWith('single-spa:routing-event', expect.any(Function));
     });
   });
 

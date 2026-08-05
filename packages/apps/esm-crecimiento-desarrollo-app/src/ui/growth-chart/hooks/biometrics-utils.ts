@@ -58,7 +58,11 @@ export function buildBiometricMeasurements(
       return;
     }
 
-    const dateKey = parsedDate.toISOString().slice(0, 10);
+    // Group by local calendar day: toISOString would group by UTC day, splitting
+    // same-visit measurements recorded after 19:00 in UTC-5
+    const dateKey = `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}-${String(
+      parsedDate.getDate(),
+    ).padStart(2, '0')}`;
     const groupKey = resource.encounter?.reference ? `${resource.encounter.reference}:${dateKey}` : dateKey;
 
     if (!measurementsMap.has(groupKey)) {

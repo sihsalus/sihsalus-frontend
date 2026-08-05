@@ -1,5 +1,5 @@
 import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { getCoreTranslation } from '@openmrs/esm-framework';
+import { getCoreTranslation, getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -16,8 +16,22 @@ const DeleteQueryModal: React.FC<DeleteQueryModalProps> = ({ closeModal, queryNa
 
   const handleDeleteQuery = async () => {
     setIsDeletingQuery(true);
-    await onDelete(queryId);
-    setIsDeletingQuery(false);
+    try {
+      await onDelete(queryId);
+    } catch (error) {
+      showSnackbar({
+        title: t('QueryDeleteError', 'Something went wrong'),
+        kind: 'error',
+        isLowContrast: true,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('queryDeleteErrorMessage', 'The query could not be deleted. Please try again.'),
+          { logContext: 'Delete saved query' },
+        ),
+      });
+    } finally {
+      setIsDeletingQuery(false);
+    }
   };
 
   return (

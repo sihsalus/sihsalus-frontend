@@ -281,11 +281,16 @@ const OverviewComponent: React.FC = () => {
     }
     const url = globalThis.URL.createObjectURL(new Blob([byteArray]));
     const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', file.fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    try {
+      link.href = url;
+      link.setAttribute('download', file.fileName);
+      document.body.appendChild(link);
+      link.click();
+    } finally {
+      link.remove();
+      globalThis.URL.revokeObjectURL(url);
+    }
   }
 
   const clearReportCheckboxes = () => {

@@ -108,21 +108,31 @@ function defaultSchedulingData(): StaffSchedulingData {
   };
 }
 
-function parseSchedulingData(value?: string): StaffSchedulingData {
+function parseSchedulingData(value?: string): { data: StaffSchedulingData; parseError: Error | null } {
   if (!value) {
-    return defaultSchedulingData();
+    return { data: defaultSchedulingData(), parseError: null };
   }
 
   try {
     const parsed = JSON.parse(value) as Partial<StaffSchedulingData>;
     return {
-      version: parsed.version ?? 1,
-      updatedAt: parsed.updatedAt ?? new Date().toISOString(),
-      resourceAvailabilities: parsed.resourceAvailabilities ?? [],
-      shifts: parsed.shifts ?? [],
+      data: {
+        version: parsed.version ?? 1,
+        updatedAt: parsed.updatedAt ?? new Date().toISOString(),
+        resourceAvailabilities: parsed.resourceAvailabilities ?? [],
+        shifts: parsed.shifts ?? [],
+      },
+      parseError: null,
     };
   } catch {
-    return defaultSchedulingData();
+    // Corrupted stored data must never be silently replaced by an empty roster:
+    // a subsequent save would wipe every stored shift. Surface it as an error.
+    return {
+      data: defaultSchedulingData(),
+      parseError: new Error(
+        'La programación de turnos guardada está dañada y no se puede leer. No se permitirán cambios hasta corregirla.',
+      ),
+    };
   }
 }
 
@@ -134,12 +144,13 @@ export function useStaffSchedulingData() {
   const url = `/ws/rest/v1/systemsetting?q=${SETTING_PROPERTY}&v=default`;
   const { data, error, isLoading, mutate } = useSWR<FetchResponse<SystemSettingResults>, Error>(url, openmrsFetch);
   const setting = data?.data?.results?.find((item) => item.property === SETTING_PROPERTY);
+  const { data: schedulingData, parseError } = parseSchedulingData(setting?.value);
 
   return {
-    schedulingData: parseSchedulingData(setting?.value),
+    schedulingData,
     settingUuid: setting?.uuid ?? null,
     isLoading,
-    error,
+    error: error ?? parseError,
     mutate,
   };
 }

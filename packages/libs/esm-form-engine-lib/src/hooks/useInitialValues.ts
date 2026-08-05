@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { type FormProcessor } from '../processors/form-processor';
 import { type FormProcessorContextProps } from '../types';
 
@@ -14,6 +14,9 @@ const useInitialValues = (
   const [isLoadingInitialValues, setIsLoadingInitialValues] = useState(true);
   const [initialValues, setInitialValues] = useState<Record<string, unknown>>({});
   const [error, setError] = useState<Error | null>(null);
+  // Values must be fetched exactly once per mount; keying off the emptiness of
+  // `initialValues` would refetch forever when the resolved values are `{}`.
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     if (
@@ -21,21 +24,23 @@ const useInitialValues = (
       !isLoadingContextDependencies &&
       context.formFields?.length &&
       Object.keys(context.formFieldAdapters).length &&
-      !Object.keys(initialValues).length
+      !hasLoadedRef.current
     ) {
+      hasLoadedRef.current = true;
       formProcessor
         .getInitialValues(context)
         .then((values: Record<string, unknown>) => {
           setInitialValues(values);
-          setIsLoadingInitialValues(false);
         })
         .catch((error: unknown) => {
           console.error(error);
           setError(error instanceof Error ? error : new Error('Unknown error'));
+        })
+        .finally(() => {
           setIsLoadingInitialValues(false);
         });
     }
-  }, [formProcessor, isLoadingContextDependencies, context, initialValues]);
+  }, [formProcessor, isLoadingContextDependencies, context]);
 
   return { isLoadingInitialValues, initialValues, error };
 };

@@ -36,7 +36,7 @@ import {
 import { deleteForm, unretireForm } from '@resources/forms.resource';
 import type { Form as TypedForm } from '@types';
 import { type TFunction } from 'i18next';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type KeyedMutator, preload } from 'swr';
 import type { ConfigObject } from '../../config-schema';
@@ -91,13 +91,19 @@ function ActionButtons({ form, mutate, responsiveSize, t }: ActionButtonsProps) 
   const formResources = form?.resources;
   const [isDeletingForm, setIsDeletingForm] = useState(false);
 
-  const downloadableSchema = useMemo(
+  const downloadableSchemaUrl = useMemo(
     () =>
-      new Blob([JSON.stringify(clobdata, null, 2)], {
-        type: 'application/json',
-      }),
+      globalThis.URL.createObjectURL(
+        new Blob([JSON.stringify(clobdata, null, 2)], {
+          type: 'application/json',
+        }),
+      ),
     [clobdata],
   );
+
+  useEffect(() => {
+    return () => globalThis.URL.revokeObjectURL(downloadableSchemaUrl);
+  }, [downloadableSchemaUrl]);
 
   const handleDeleteForm = useCallback(
     async (formUuid: string) => {
@@ -196,7 +202,7 @@ function ActionButtons({ form, mutate, responsiveSize, t }: ActionButtonsProps) 
 
   const DownloadSchemaButton = () => {
     return (
-      <a download={`${form?.name}.json`} href={globalThis.URL.createObjectURL(downloadableSchema)}>
+      <a download={`${form?.name}.json`} href={downloadableSchemaUrl}>
         <IconButton
           enterDelayMs={defaultEnterDelayInMs}
           kind="ghost"

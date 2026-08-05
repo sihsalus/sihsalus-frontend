@@ -79,18 +79,12 @@ export async function fetchAddressTemplate() {
 }
 
 export async function fetchAllRelationshipTypes(): Promise<RelationshipTypesResponse> {
-  try {
-    const { data } = await cacheAndFetch<RelationshipTypesResponse>(
-      `${restBaseUrl}/relationshiptype?v=custom:(uuid,displayAIsToB,displayBIsToA,weight)`,
-    );
-    return data;
-  } catch (error) {
-    console.warn(
-      'Failed to load patient relationship types. Rendering registration without relationship options.',
-      error,
-    );
-    return { results: [] };
-  }
+  // Let failures propagate so SWR populates `relationshipTypesError` and the
+  // relationships section can render an error instead of silently omitting options.
+  const { data } = await cacheAndFetch<RelationshipTypesResponse>(
+    `${restBaseUrl}/relationshiptype?v=custom:(uuid,displayAIsToB,displayBIsToA,weight)`,
+  );
+  return data;
 }
 
 export async function fetchAllFieldDefinitionTypes() {
@@ -175,45 +169,44 @@ export async function fetchPatientIdentifierTypesWithSources(): Promise<Array<Pa
 }
 
 async function fetchPatientIdentifierTypes(): Promise<Array<FetchedPatientIdentifierType>> {
-  try {
-    const patientIdentifierTypesResponse = await cacheAndFetch<{
-      results: Array<PatientIdentifierTypeResponse>;
-    }>(
-      `${restBaseUrl}/patientidentifiertype?v=custom:(display,uuid,name,description,format,required,uniquenessBehavior,locationBehavior)`,
-    );
-    const primaryIdentifierTypeResponse = await cacheAndFetch<{
-      results: Array<{ metadataUuid?: string }>;
-    }>(`${restBaseUrl}/metadatamapping/termmapping?v=full&code=emr.primaryIdentifierType`, {
-      required: false,
-    }).catch((error) => {
-      console.warn('Failed to load primary identifier mapping. Falling back to required identifier types.', error);
-      return null;
-    });
+  // A failure here must propagate so SWR populates `identifierTypesError`:
+  // swallowing it would render the registration form without identifier fields
+  // and allow registering patients without their primary identifier.
+  const patientIdentifierTypesResponse = await cacheAndFetch<{
+    results: Array<PatientIdentifierTypeResponse>;
+  }>(
+    `${restBaseUrl}/patientidentifiertype?v=custom:(display,uuid,name,description,format,required,uniquenessBehavior,locationBehavior)`,
+  );
+  const primaryIdentifierTypeResponse = await cacheAndFetch<{
+    results: Array<{ metadataUuid?: string }>;
+  }>(`${restBaseUrl}/metadatamapping/termmapping?v=full&code=emr.primaryIdentifierType`, {
+    required: false,
+  }).catch((error) => {
+    console.warn('Failed to load primary identifier mapping. Falling back to required identifier types.', error);
+    return null;
+  });
 
-    if (patientIdentifierTypesResponse.ok) {
-      // Primary identifier type is to be kept at the top of the list.
-      const patientIdentifierTypes = patientIdentifierTypesResponse?.data?.results;
-
-      const primaryIdentifierTypeUuid = primaryIdentifierTypeResponse?.data?.results?.[0]?.metadataUuid;
-      const primaryIdentifierType = patientIdentifierTypes?.find((type) => type.uuid === primaryIdentifierTypeUuid);
-
-      const identifierTypes =
-        primaryIdentifierTypeResponse?.ok && primaryIdentifierType
-          ? [mapPatientIdentifierType(primaryIdentifierType, true)]
-          : [];
-
-      patientIdentifierTypes.forEach((type) => {
-        if (type.uuid !== primaryIdentifierTypeUuid) {
-          identifierTypes.push(mapPatientIdentifierType(type, false));
-        }
-      });
-      return identifierTypes;
-    }
-  } catch (error) {
-    console.warn('Failed to load patient identifier types.', error);
+  if (!patientIdentifierTypesResponse.ok) {
+    throw new Error(`Failed to load patient identifier types (HTTP ${patientIdentifierTypesResponse.status}).`);
   }
 
-  return [];
+  // Primary identifier type is to be kept at the top of the list.
+  const patientIdentifierTypes = patientIdentifierTypesResponse?.data?.results;
+
+  const primaryIdentifierTypeUuid = primaryIdentifierTypeResponse?.data?.results?.[0]?.metadataUuid;
+  const primaryIdentifierType = patientIdentifierTypes?.find((type) => type.uuid === primaryIdentifierTypeUuid);
+
+  const identifierTypes =
+    primaryIdentifierTypeResponse?.ok && primaryIdentifierType
+      ? [mapPatientIdentifierType(primaryIdentifierType, true)]
+      : [];
+
+  patientIdentifierTypes.forEach((type) => {
+    if (type.uuid !== primaryIdentifierTypeUuid) {
+      identifierTypes.push(mapPatientIdentifierType(type, false));
+    }
+  });
+  return identifierTypes;
 }
 
 async function fetchIdentifierSources() {

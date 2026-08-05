@@ -15,13 +15,20 @@ export function useBackendDependencies(): UseBackendDependenciesResult {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let ignore = false;
     // loading missing modules
     checkModules().then((modules) => {
+      if (ignore) {
+        return;
+      }
       setModulesWithMissingBackendModules(modules);
       // Check if there was a connection error
       const errorMessage = getBackendConnectionErrorMessage();
       setError(errorMessage);
     });
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   return { modules: modulesWithMissingBackendModules, error };

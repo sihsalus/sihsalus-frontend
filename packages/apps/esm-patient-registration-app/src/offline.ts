@@ -31,7 +31,11 @@ export function setupOffline() {
     },
   });
 
-  precacheStaticAssets();
+  // Precaching is best-effort: a failure here must not become an unhandled
+  // rejection at startup. The interactive form surfaces fetch errors itself.
+  precacheStaticAssets().catch((error) => {
+    console.warn('Failed to precache patient registration assets for offline use.', error);
+  });
 
   setupDynamicOfflineDataHandler({
     id: 'esm-patient-registration-app:patient',

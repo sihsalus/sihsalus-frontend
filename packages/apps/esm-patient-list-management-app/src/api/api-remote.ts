@@ -225,6 +225,7 @@ export async function getPatientListName(patientListUuid: string) {
     return data?.name;
   } catch (error) {
     console.error('Error resolving patient list name: ', error);
+    throw error;
   }
 }
 

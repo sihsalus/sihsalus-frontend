@@ -104,15 +104,17 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
     }
   }, [attachmentCacheScope, attachmentPreview, canDisplayCachedData, canRead, error, patientUuid]);
 
-  if (hasUploadError) {
-    showSnackbar({
-      isLowContrast: true,
-      kind: 'error',
-      subtitle: t('unsupportedFileType', 'Unsupported file type'),
-      title: t('uploadError', 'Error uploading file'),
-    });
-    setHasUploadError(false);
-  }
+  useEffect(() => {
+    if (hasUploadError) {
+      showSnackbar({
+        isLowContrast: true,
+        kind: 'error',
+        subtitle: t('unsupportedFileType', 'Unsupported file type'),
+        title: t('uploadError', 'Error uploading file'),
+      });
+      setHasUploadError(false);
+    }
+  }, [hasUploadError, t]);
 
   const deleteAttachment = useCallback(
     (attachment: Attachment) => {

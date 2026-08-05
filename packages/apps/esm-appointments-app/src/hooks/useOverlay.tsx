@@ -31,8 +31,9 @@ export const useOverlay = () => {
   }, []);
 
   useEffect(() => {
-    update(getOverlayStore().getState());
-    getOverlayStore().subscribe(update);
+    const store = getOverlayStore();
+    update(store.getState());
+    return store.subscribe(update);
   }, [update]);
 
   const { isOverlayOpen, component, header } = overlay ?? {};

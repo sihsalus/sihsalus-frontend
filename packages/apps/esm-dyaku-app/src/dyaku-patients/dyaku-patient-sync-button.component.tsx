@@ -1,6 +1,6 @@
 import { Button, InlineLoading, InlineNotification } from '@carbon/react';
 import { CheckmarkOutline, CloudUpload } from '@carbon/react/icons';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import styles from './dyaku-patient-sync-button.scss';
@@ -18,6 +18,25 @@ const DyakuPatientSyncButton: React.FC<DyakuPatientSyncButtonProps> = ({ patient
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
   const [showResult, setShowResult] = useState(false);
+  const hideResultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (hideResultTimerRef.current !== null) {
+        clearTimeout(hideResultTimerRef.current);
+      }
+    };
+  }, []);
+
+  const scheduleHideResult = (delayMs: number) => {
+    if (hideResultTimerRef.current !== null) {
+      clearTimeout(hideResultTimerRef.current);
+    }
+    hideResultTimerRef.current = setTimeout(() => {
+      setShowResult(false);
+      setSyncResult(null);
+    }, delayMs);
+  };
 
   const handleSync = () => {
     if (!isEnabled || isSyncing) return;
@@ -37,10 +56,7 @@ const DyakuPatientSyncButton: React.FC<DyakuPatientSyncButtonProps> = ({ patient
         }
 
         // Auto-hide result after 3 seconds
-        setTimeout(() => {
-          setShowResult(false);
-          setSyncResult(null);
-        }, 3000);
+        scheduleHideResult(3000);
       } catch (error) {
         setSyncResult({
           success: false,
@@ -50,10 +66,7 @@ const DyakuPatientSyncButton: React.FC<DyakuPatientSyncButtonProps> = ({ patient
         });
         setShowResult(true);
 
-        setTimeout(() => {
-          setShowResult(false);
-          setSyncResult(null);
-        }, 5000);
+        scheduleHideResult(5000);
       } finally {
         setIsSyncing(false);
       }

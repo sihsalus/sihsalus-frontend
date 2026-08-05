@@ -3,8 +3,24 @@ import { navigate } from '../navigation/navigate';
 
 const historyKey = 'openmrs:history';
 
+/**
+ * Corrupted sessionStorage must not break navigation for the rest of the
+ * session: this runs inside the `single-spa:routing-event` listener, so a
+ * throwing parse would take down history/back-button handling app-wide.
+ */
+function readHistory(): Array<string> {
+  try {
+    const history = JSON.parse(sessionStorage.getItem(historyKey) ?? '[]');
+    return Array.isArray(history) ? history : [];
+  } catch (error) {
+    console.warn('Discarding corrupted navigation history from sessionStorage.', error);
+    sessionStorage.removeItem(historyKey);
+    return [];
+  }
+}
+
 function addToHistory(newLocation: string) {
-  let history = JSON.parse(sessionStorage.getItem(historyKey) ?? '[]') || [];
+  let history = readHistory();
   history.push(newLocation);
   const maxSize = 50;
   if (history.length > maxSize) {
@@ -20,7 +36,7 @@ function addToHistory(newLocation: string) {
  * @internal
  */
 export function setupHistory() {
-  const history = JSON.parse(sessionStorage.getItem(historyKey) ?? '[]');
+  const history = readHistory();
   if (history.length === 0 && document.referrer) {
     addToHistory(document.referrer);
   }
@@ -48,7 +64,7 @@ export function setupHistory() {
  * Returns a list of URLs representing the history of the current window session.
  */
 export function getHistory(): Array<string> {
-  return JSON.parse(sessionStorage.getItem(historyKey) ?? '[]');
+  return readHistory();
 }
 
 /**

@@ -1,6 +1,6 @@
 /** @module @category Extension */
 
-import { getExtensionStore } from '@openmrs/esm-extensions';
+import { type ExtensionStore, getExtensionStore } from '@openmrs/esm-extensions';
 import { isEqual } from 'lodash-es';
 import { useEffect, useState } from 'react';
 
@@ -15,13 +15,15 @@ export function useAssignedExtensionIds(slotName: string) {
   const [ids, setIds] = useState<Array<string>>([]);
 
   useEffect(() => {
-    return getExtensionStore().subscribe((state) => {
+    const store = getExtensionStore();
+    const update = (state: ExtensionStore) => {
       const newIds = state.slots[slotName]?.assignedExtensions.map((e) => e.id) ?? [];
-      if (!isEqual(newIds, ids)) {
-        setIds(newIds);
-      }
-    });
-  }, [slotName, ids]);
+      setIds((prev) => (isEqual(newIds, prev) ? prev : newIds));
+    };
+    // subscribe only fires on changes, so the current state must be applied up front
+    update(store.getState());
+    return store.subscribe(update);
+  }, [slotName]);
 
   return ids;
 }

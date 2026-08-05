@@ -172,29 +172,26 @@ export async function hasDuplicatePatientIdentifiers(
     seenIdentifiers.add(entryKey);
   }
 
-  try {
-    const matchedPatients = await Promise.all(
-      identifierEntries.map(async (identifierEntry) => {
-        const candidates = await findPatientsByIdentifier(identifierEntry.identifier);
+  // If the lookup fails, let the error propagate: reporting "no duplicate" on a
+  // failed request would silently skip a blocking patient-identity validation.
+  const matchedPatients = await Promise.all(
+    identifierEntries.map(async (identifierEntry) => {
+      const candidates = await findPatientsByIdentifier(identifierEntry.identifier);
 
-        return candidates.some(
-          (candidate) =>
-            candidate.uuid !== patientUuid &&
-            candidate.identifiers?.some(
-              (candidateIdentifier) =>
-                candidateIdentifier.identifier === identifierEntry.identifier &&
-                (!identifierEntry.identifierType ||
-                  candidateIdentifier.identifierType?.uuid === identifierEntry.identifierType),
-            ),
-        );
-      }),
-    );
+      return candidates.some(
+        (candidate) =>
+          candidate.uuid !== patientUuid &&
+          candidate.identifiers?.some(
+            (candidateIdentifier) =>
+              candidateIdentifier.identifier === identifierEntry.identifier &&
+              (!identifierEntry.identifierType ||
+                candidateIdentifier.identifierType?.uuid === identifierEntry.identifierType),
+          ),
+      );
+    }),
+  );
 
-    return matchedPatients.some(Boolean);
-  } catch (error) {
-    console.warn('Failed to check duplicate patient identifiers before submission.', error);
-    return false;
-  }
+  return matchedPatients.some(Boolean);
 }
 
 function isPersonAttributeValue(value: unknown): value is PersonAttribute {

@@ -82,9 +82,15 @@ const VisitTable: React.FC<VisitTableProps> = ({ showAllEncounters, visits, pati
   const [htmlFormEntryFormsConfig, setHtmlFormEntryFormsConfig] = useState<Array<HtmlFormEntryForm> | undefined>();
 
   useEffect(() => {
+    let ignore = false;
     getConfig('@sihsalus/esm-patient-forms-app').then((config) => {
-      setHtmlFormEntryFormsConfig(config.htmlFormEntryForms as HtmlFormEntryForm[]);
+      if (!ignore) {
+        setHtmlFormEntryFormsConfig(config.htmlFormEntryForms as HtmlFormEntryForm[]);
+      }
     });
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const encounterTypes = [...new Set(visits.map((encounter) => encounter.encounterType))].sort((a, b) =>

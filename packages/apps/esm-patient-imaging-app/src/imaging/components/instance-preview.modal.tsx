@@ -22,12 +22,26 @@ const InstancePreviewModal: React.FC<InstancePreviewModalProps> = ({
   const [imageData, setImageData] = useState<string | null>(null);
 
   useEffect(() => {
+    // DICOM preview blobs are large: abort the request on unmount and revoke the
+    // object URL so each (re-)run doesn't permanently pin a blob in memory.
+    const abortController = new AbortController();
+    let objectUrl: string | null = null;
+    let cancelled = false;
+
     setIsLoading(true);
-    previewInstance(orthancInstanceUID, studyId, new AbortController())
+    previewInstance(orthancInstanceUID, studyId, abortController)
       .then(async (response) => {
-        setImageData(URL.createObjectURL(await response.blob()));
+        const blob = await response.blob();
+        if (cancelled) {
+          return;
+        }
+        objectUrl = URL.createObjectURL(blob);
+        setImageData(objectUrl);
       })
       .catch((error: unknown) => {
+        if (cancelled) {
+          return;
+        }
         const message = error instanceof Error ? error.message : String(error);
         showSnackbar({
           isLowContrast: false,
@@ -38,8 +52,19 @@ const InstancePreviewModal: React.FC<InstancePreviewModalProps> = ({
         closeInstancePreviewModal();
       })
       .finally(() => {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       });
+
+    return () => {
+      cancelled = true;
+      abortController.abort();
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+      setImageData(null);
+    };
   }, [closeInstancePreviewModal, studyId, orthancInstanceUID, t]);
 
   return (

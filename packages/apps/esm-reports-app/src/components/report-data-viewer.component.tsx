@@ -132,12 +132,18 @@ const ReportDataViewer: React.FC<ReportDataViewerProps> = ({ reportData }) => {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    const definition = reportDataRecord?.definition as Record<string, unknown>;
-    link.setAttribute('download', `${(definition?.name as string) || 'report'}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    try {
+      link.setAttribute('href', url);
+      const definition = reportDataRecord?.definition as Record<string, unknown>;
+      link.setAttribute('download', `${(definition?.name as string) || 'report'}.csv`);
+      document.body.appendChild(link);
+      link.click();
+    } finally {
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
     setShowExportModal(false);
   };
 

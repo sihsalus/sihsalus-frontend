@@ -1,7 +1,7 @@
 import { Button, ButtonSet, Form, Select, SelectItem } from '@carbon/react';
 import { showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { take } from 'rxjs/operators';
 
@@ -24,6 +24,14 @@ const RunReportForm: React.FC<RunReportFormProps> = ({ closePanel }) => {
   const [isFormValid, setIsFormValid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isTablet = useLayoutType() === 'tablet';
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const { reportDesigns, mutateReportDesigns } = useReportDesigns(reportUuid);
 
@@ -115,8 +123,11 @@ const RunReportForm: React.FC<RunReportFormProps> = ({ closePanel }) => {
                 kind: 'success',
                 title: t('reportRanSuccessfully', 'Report ran successfully'),
               });
-              closePanel();
-              setIsSubmitting(false);
+              // The panel may already be gone if the user closed it during the delay.
+              if (isMountedRef.current) {
+                closePanel();
+                setIsSubmitting(false);
+              }
             }, 500);
           },
           (error) => {

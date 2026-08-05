@@ -6,6 +6,9 @@ export const useStickerPdfPrinter = () => {
   const { t } = useTranslation();
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [isPrinting, setIsPrinting] = useState(false);
+  const isMountedRef = useRef(true);
+  const timerIdsRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
+  const intervalIdsRef = useRef<Array<ReturnType<typeof setInterval>>>([]);
 
   const printPdf = useCallback(
     (url: string) => {
@@ -34,16 +37,31 @@ export const useStickerPdfPrinter = () => {
 
         const iframe = iframeRef.current;
         let hasClosed = false;
+        let loadHandled = false;
 
         const handleLoad = () => {
+          // load can fire more than once for the same src; a second run would
+          // create a duplicate poll interval that nothing ever clears.
+          if (loadHandled) {
+            return;
+          }
+          loadHandled = true;
+
           try {
             const contentWindow = iframe.contentWindow;
             if (!contentWindow) throw new Error('No content window');
 
+            let pollInterval: ReturnType<typeof setInterval> | null = null;
+
             const cleanup = () => {
               if (hasClosed) return;
               hasClosed = true;
-              setIsPrinting(false);
+              if (pollInterval !== null) {
+                clearInterval(pollInterval);
+              }
+              if (isMountedRef.current) {
+                setIsPrinting(false);
+              }
               resolve();
             };
 
@@ -57,23 +75,27 @@ export const useStickerPdfPrinter = () => {
             contentWindow.print();
 
             let wasFocused = false;
-            const pollInterval = setInterval(() => {
+            pollInterval = setInterval(() => {
               const hasFocus = document.hasFocus();
               if (hasFocus && wasFocused) cleanup();
               if (!hasFocus) wasFocused = true;
             }, 250);
+            intervalIdsRef.current.push(pollInterval);
 
-            setTimeout(cleanup, 30000);
-            setTimeout(() => clearInterval(pollInterval), 30000);
+            timerIdsRef.current.push(setTimeout(cleanup, 30000));
           } catch (error) {
-            setIsPrinting(false);
+            if (isMountedRef.current) {
+              setIsPrinting(false);
+            }
             resolve();
           }
         };
 
         iframe.onload = handleLoad;
         iframe.onerror = () => {
-          setIsPrinting(false);
+          if (isMountedRef.current) {
+            setIsPrinting(false);
+          }
           resolve();
         };
         iframe.src = url;
@@ -83,7 +105,17 @@ export const useStickerPdfPrinter = () => {
   );
 
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
+      isMountedRef.current = false;
+      timerIdsRef.current.forEach((id) => {
+        clearTimeout(id);
+      });
+      timerIdsRef.current = [];
+      intervalIdsRef.current.forEach((id) => {
+        clearInterval(id);
+      });
+      intervalIdsRef.current = [];
       if (iframeRef.current?.parentNode) {
         iframeRef.current.parentNode.removeChild(iframeRef.current);
       }

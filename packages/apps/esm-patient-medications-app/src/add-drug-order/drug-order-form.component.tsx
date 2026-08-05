@@ -355,6 +355,11 @@ export function DrugOrderForm({
       observer.current.observe(node);
     }
   }, []);
+
+  useEffect(() => {
+    return () => observer.current?.disconnect();
+  }, []);
+
   useController<MedicationOrderFormData>({ name: 'drug', control });
 
   // TODO: use the backend instead of this to determine whether the drug formulation can be ordered

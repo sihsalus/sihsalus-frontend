@@ -52,6 +52,8 @@ describe('useReferralCounterReferral', () => {
       isValidating: false,
       mutate,
       pagination: { currentPage: 2, totalPages: 3, onPageChange },
+      sourceErrors: [],
+      truncated: false,
     });
 
     const { result } = renderHook(() =>
@@ -111,6 +113,8 @@ describe('useReferralCounterReferral', () => {
       isValidating: false,
       mutate: vi.fn(),
       pagination: { currentPage: 1, totalPages: 1, onPageChange: vi.fn() },
+      sourceErrors: [],
+      truncated: false,
     });
 
     const { result } = renderHook(() =>

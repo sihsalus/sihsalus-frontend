@@ -61,6 +61,8 @@ function renderWithObs(
     isValidating: false,
     mutate: vi.fn(),
     pagination: { currentPage: 1, totalPages: 1, onPageChange: vi.fn() },
+    sourceErrors: [],
+    truncated: false,
   });
 
   return renderHook(() => useTreatmentPlan('patient-uuid', encounterType, concepts, legacyFieldPaths));

@@ -55,7 +55,7 @@ export function useSoapNotes(
       ),
     [assessmentUuid, objectiveUuid, planUuid, subjectiveUuid],
   );
-  const { data, error, isLoading, isValidating, mutate, pagination } = useMergedClinicalHistoryPagination<Encounter>(
+  const { data, error, isLoading, isValidating, mutate, pagination, sourceErrors } = useMergedClinicalHistoryPagination<Encounter>(
     sources,
     isRelevant,
   );
@@ -86,5 +86,6 @@ export function useSoapNotes(
     error,
     mutate,
     pagination,
+    sourceErrors,
   };
 }

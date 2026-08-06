@@ -15,7 +15,7 @@ import { type Location, useLocation, useSearchParams } from 'react-router-dom';
 import type { ConfigSchema } from '../config-schema';
 import type { LoginReferrer } from '../login/login.component';
 import { LoginArtwork } from '../login-artwork.component';
-import { buildSpaNavigationTarget, hardNavigate } from '../navigation';
+import { buildSpaNavigationTarget, hardNavigate, isSafeInternalTarget } from '../navigation';
 
 import { useDefaultLocation, useLocationCount } from './location-picker.resource';
 import styles from './location-picker.scss';
@@ -81,12 +81,14 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
       void updateDefaultLocation(locationUuid, saveUserPreference);
       sessionDefined
         .then(() => {
-          if (referrer && !['/', '/login', '/login/location'].includes(referrer)) {
+          if (isSafeInternalTarget(referrer) && !['/', '/login', '/login/location'].includes(referrer)) {
             hardNavigate(buildSpaNavigationTarget(referrer));
             return;
           }
-          if (returnToUrl && returnToUrl !== '/') {
-            hardNavigate(returnToUrl.startsWith('/') ? buildSpaNavigationTarget(returnToUrl) : returnToUrl);
+          // returnToUrl comes from the query string, so only same-origin paths
+          // are honoured; anything else falls back to the configured landing page.
+          if (returnToUrl && returnToUrl !== '/' && isSafeInternalTarget(returnToUrl)) {
+            hardNavigate(buildSpaNavigationTarget(returnToUrl));
           } else {
             hardNavigate(config.links.loginSuccess);
           }

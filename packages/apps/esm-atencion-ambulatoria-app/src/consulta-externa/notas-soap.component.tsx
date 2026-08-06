@@ -16,7 +16,7 @@ interface NotasSoapProps {
 const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { soapEntries, isLoading, isValidating, error, mutate, pagination } = useSoapNotes(
+  const { soapEntries, isLoading, isValidating, error, mutate, pagination, sourceErrors } = useSoapNotes(
     patientUuid,
     [
       config.encounterTypes?.externalConsultation,
@@ -51,6 +51,7 @@ const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
       loadingVariant="accordion"
       onAction={handleLaunchForm}
       pagination={pagination}
+      sourceErrors={sourceErrors}
     >
       <Accordion>
         {soapEntries.map((entry) => (

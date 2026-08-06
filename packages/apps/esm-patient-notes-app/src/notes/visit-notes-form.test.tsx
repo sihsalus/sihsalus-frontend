@@ -5,6 +5,7 @@ import {
   useConfig,
   useSession,
 } from '@openmrs/esm-framework';
+import dayjs from 'dayjs';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -159,6 +160,28 @@ test('delegates the default current encounter time to the server and preserves a
 
   expect(getSubmittedEncounterDatetime(selectedDate, false)).toBeUndefined();
   expect(getSubmittedEncounterDatetime(selectedDate, true)).toContain('2026-07-01');
+});
+
+test('keeps the time of day when the date-only picker resolves to midnight', () => {
+  // OpenmrsDatePicker is date-only: picking a day yields local midnight.
+  const pickedToday = new Date(2026, 6, 1, 0, 0, 0, 0);
+  const now = new Date(2026, 6, 1, 14, 32, 5, 0);
+
+  const submitted = getSubmittedEncounterDatetime(pickedToday, true, now);
+
+  expect(submitted).toContain('2026-07-01');
+  expect(dayjs(submitted).hour()).toBe(14);
+  expect(dayjs(submitted).minute()).toBe(32);
+});
+
+test('submits an encounter datetime inside a visit that started earlier the same day', () => {
+  const visitStart = new Date(2026, 6, 1, 8, 30, 0, 0);
+  const pickedToday = new Date(2026, 6, 1, 0, 0, 0, 0);
+  const now = new Date(2026, 6, 1, 10, 0, 0, 0);
+
+  const submitted = getSubmittedEncounterDatetime(pickedToday, true, now);
+
+  expect(dayjs(submitted).isAfter(visitStart)).toBe(true);
 });
 
 test('closes the visit summary workspace when its edit privilege is denied', async () => {

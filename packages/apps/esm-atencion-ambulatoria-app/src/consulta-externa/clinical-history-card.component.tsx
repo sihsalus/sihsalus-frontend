@@ -4,6 +4,7 @@ import {
   DataTableSkeleton,
   type DataTableSkeletonProps,
   InlineLoading,
+  InlineNotification,
   PaginationNav,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
@@ -35,6 +36,8 @@ interface ClinicalHistoryCardProps {
   secondaryActionIcon?: React.ComponentType;
   secondaryActionLabel?: string;
   skeletonHeaders?: DataTableSkeletonProps['headers'];
+  /** Sources that failed while others succeeded; the history shown is partial. */
+  sourceErrors?: Array<Error>;
 }
 
 const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
@@ -53,6 +56,7 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
   secondaryActionIcon,
   secondaryActionLabel,
   skeletonHeaders,
+  sourceErrors,
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -113,6 +117,18 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
           ) : null}
         </div>
       </CardHeader>
+      {sourceErrors?.length ? (
+        <InlineNotification
+          hideCloseButton
+          kind="warning"
+          lowContrast
+          title={t('partialClinicalHistory', 'Historial incompleto')}
+          subtitle={t(
+            'partialClinicalHistorySubtitle',
+            'No se pudo consultar una de las fuentes de este historial. Puede faltar información.',
+          )}
+        />
+      ) : null}
       <div className={styles.cardBody}>
         {empty ? (
           <p className={styles.emptyPage} role="status">

@@ -66,7 +66,7 @@ describe('useMergedClinicalHistoryPagination', () => {
   it('sorts merged encounters, paginates them and resets to page one when the source changes', () => {
     const mutate = vi.fn();
     mockUseSWR.mockReturnValue({
-      data: datedEntries('patient-a', 12),
+      data: { encounters: datedEntries('patient-a', 12), sourceErrors: [], truncated: false },
       error: undefined,
       isLoading: false,
       isValidating: false,
@@ -88,7 +88,7 @@ describe('useMergedClinicalHistoryPagination', () => {
     expect(result.current.data.map((entry) => entry.uuid)).toEqual(['patient-a-1', 'patient-a-0']);
 
     mockUseSWR.mockReturnValue({
-      data: datedEntries('patient-b', 25),
+      data: { encounters: datedEntries('patient-b', 25), sourceErrors: [], truncated: false },
       error: undefined,
       isLoading: false,
       isValidating: false,
@@ -100,7 +100,7 @@ describe('useMergedClinicalHistoryPagination', () => {
     expect(result.current.data[0]?.uuid).toBe('patient-b-24');
 
     mockUseSWR.mockReturnValue({
-      data: datedEntries('patient-a', 12),
+      data: { encounters: datedEntries('patient-a', 12), sourceErrors: [], truncated: false },
       error: undefined,
       isLoading: false,
       isValidating: false,
@@ -127,33 +127,64 @@ describe('useMergedClinicalHistoryPagination', () => {
       .mockResolvedValueOnce({ data: { results: firstPage, totalCount: 105 } } as never)
       .mockResolvedValueOnce({ data: { results: lastPage, totalCount: 105 } } as never);
 
-    const encounters = await fetchClinicalHistorySource<DatedTestEntry>({
+    const { encounters, truncated } = await fetchClinicalHistorySource<DatedTestEntry>({
       url: '/encounter?patient=patient-a',
       expectedFormUuid: 'visit-note-form',
       expectedVisitTypeUuid: 'ambulatory',
     });
 
     expect(encounters).toHaveLength(103);
+    expect(truncated).toBe(false);
     expect(encounters.some((encounter) => encounter.uuid === 'visit-note-0')).toBe(false);
     expect(encounters.some((encounter) => encounter.uuid === 'visit-note-1')).toBe(false);
     expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
       2,
       expect.stringContaining('limit=100&startIndex=100&totalCount=true'),
+      expect.anything(),
     );
   });
 
-  it('fails visibly instead of presenting a partial clinical history as complete', async () => {
+  it('keeps the history that loaded when a secondary source is unavailable', async () => {
     mockOpenmrsFetch.mockImplementation((url) =>
       String(url).includes('unavailable')
         ? Promise.reject(new Error('HTTP 403'))
         : Promise.resolve({ data: { results: datedEntries('available', 2), totalCount: 2 } } as never),
     );
 
+    const { encounters, sourceErrors } = await fetchClinicalHistorySources<DatedTestEntry>([
+      { url: '/encounter?source=available' },
+      { url: '/encounter?source=unavailable' },
+    ]);
+
+    expect(encounters).toHaveLength(2);
+    expect(sourceErrors.map((error) => error.message)).toEqual(['HTTP 403']);
+  });
+
+  it('fails when no source could be read at all', async () => {
+    mockOpenmrsFetch.mockRejectedValue(new Error('HTTP 500') as never);
+
     await expect(
-      fetchClinicalHistorySources<DatedTestEntry>([
-        { url: '/encounter?source=available' },
-        { url: '/encounter?source=unavailable' },
-      ]),
-    ).rejects.toThrow('HTTP 403');
+      fetchClinicalHistorySources<DatedTestEntry>([{ url: '/encounter?source=a' }, { url: '/encounter?source=b' }]),
+    ).rejects.toThrow('HTTP 500');
+  });
+
+  it('stops at the page cap instead of looping when the server ignores startIndex', async () => {
+    // A server or proxy that drops startIndex returns a full page forever.
+    mockOpenmrsFetch.mockResolvedValue({ data: { results: datedEntries('looping', 100) } } as never);
+
+    const { truncated } = await fetchClinicalHistorySource<DatedTestEntry>({ url: '/encounter?patient=patient-a' });
+
+    expect(truncated).toBe(true);
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(20);
+  });
+
+  it('does not treat a null totalCount as "no more results"', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: datedEntries('first', 100), totalCount: null } } as never)
+      .mockResolvedValueOnce({ data: { results: datedEntries('second', 3), totalCount: null } } as never);
+
+    const { encounters } = await fetchClinicalHistorySource<DatedTestEntry>({ url: '/encounter?patient=patient-a' });
+
+    expect(encounters).toHaveLength(103);
   });
 });

@@ -12,6 +12,17 @@ function isAbsoluteUrl(url: string) {
   return /^[a-z][a-z0-9+.-]*:/i.test(url);
 }
 
+/**
+ * Guards navigation targets that originate from user-controlled input (query
+ * params, router state). Only same-origin paths are allowed: an absolute URL
+ * would let a crafted login link redirect the clinician to an attacker's site
+ * right after they authenticate, and a `javascript:` target would execute in
+ * the authenticated origin.
+ */
+export function isSafeInternalTarget(target: string | null | undefined): target is string {
+  return typeof target === 'string' && target.startsWith('/') && !target.startsWith('//');
+}
+
 export function buildSpaNavigationTarget(path: string) {
   if (isAbsoluteUrl(path)) {
     return path;

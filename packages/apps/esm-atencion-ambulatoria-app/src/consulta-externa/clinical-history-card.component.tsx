@@ -30,7 +30,10 @@ interface ClinicalHistoryCardProps {
   isValidating?: boolean;
   loadingVariant?: 'accordion' | 'table';
   onAction?: () => void;
+  onSecondaryAction?: () => void;
   pagination?: ClinicalHistoryPagination;
+  secondaryActionIcon?: React.ComponentType;
+  secondaryActionLabel?: string;
   skeletonHeaders?: DataTableSkeletonProps['headers'];
 }
 
@@ -45,12 +48,16 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
   isValidating,
   loadingVariant = 'table',
   onAction,
+  onSecondaryAction,
   pagination,
+  secondaryActionIcon,
+  secondaryActionLabel,
   skeletonHeaders,
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const hasPagination = pagination && pagination.totalPages > 1;
+  const hasSecondaryAction = Boolean(onSecondaryAction && secondaryActionLabel);
 
   if (isLoading) {
     return (
@@ -83,7 +90,9 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
     return <ErrorState error={error} headerTitle={title} />;
   }
 
-  if (empty && !hasPagination) {
+  // With a secondary action the full card renders even when empty, so the
+  // action stays reachable (e.g. prescribing for a patient with no history yet).
+  if (empty && !hasPagination && !hasSecondaryAction) {
     return <EmptyState displayText={emptyDisplayText} headerTitle={title} launchForm={onAction} />;
   }
 
@@ -92,6 +101,11 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
       <CardHeader title={title}>
         <div className={styles.historyHeaderActionItems}>
           {isValidating ? <InlineLoading /> : null}
+          {hasSecondaryAction ? (
+            <Button kind="ghost" size={isTablet ? 'lg' : 'sm'} renderIcon={secondaryActionIcon} onClick={onSecondaryAction}>
+              {secondaryActionLabel}
+            </Button>
+          ) : null}
           {onAction && actionLabel ? (
             <Button kind="ghost" size={isTablet ? 'lg' : 'sm'} renderIcon={Add} onClick={onAction}>
               {actionLabel}

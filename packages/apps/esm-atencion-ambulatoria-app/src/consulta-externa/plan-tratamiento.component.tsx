@@ -8,8 +8,9 @@ import {
   StructuredListWrapper,
   Tag,
 } from '@carbon/react';
+import { ShoppingCart } from '@carbon/react/icons';
 import { formatDate, useConfig } from '@openmrs/esm-framework';
-import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
+import { launchPatientWorkspace, useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
@@ -37,6 +38,8 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
     config.concepts,
     config.legacyCe001FieldPaths,
   );
+
+  const launchOrderBasket = useLaunchWorkspaceRequiringVisit(patientUuid, 'order-basket');
 
   const handleLaunchForm = () => {
     launchPatientWorkspace(patientFormEntryWorkspace, {
@@ -72,7 +75,10 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
       isValidating={isValidating}
       loadingVariant="accordion"
       onAction={handleLaunchForm}
+      onSecondaryAction={() => launchOrderBasket()}
       pagination={pagination}
+      secondaryActionIcon={ShoppingCart}
+      secondaryActionLabel={t('prescribeInOrderBasket', 'Prescribir medicamentos')}
     >
       <Accordion>
         {treatmentPlans.map((plan) => (

@@ -362,6 +362,64 @@ describe('copyFinanciadorToVisit', () => {
     expect(writes).toHaveLength(1);
     expect((writes[0][1] as { body: unknown }).body).toEqual({ attributeType: customVisitType, value: 'concept-x' });
   });
+
+  describe('onlyFillMissing', () => {
+    const personSaysEsSalud = [
+      {
+        uuid: 'attr-1',
+        value: { uuid: essaludConceptUuid, display: 'EsSalud' },
+        attributeType: { uuid: INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID },
+      },
+    ];
+
+    it('never overwrites a payer already on the visit', async () => {
+      // The start-visit form lets the user correct the payer for this encounter.
+      // Backfilling from the (stale) affiliation must not revert that choice.
+      mockFetchSequence({
+        personAttributes: personSaysEsSalud,
+        visitAttributes: [
+          {
+            uuid: 'visit-attr-1',
+            value: { uuid: 'particular-concept-uuid', display: 'Particular' },
+            attributeType: { uuid: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID },
+          },
+        ],
+      });
+
+      await expect(copyFinanciadorToVisit({ patientUuid, visitUuid, onlyFillMissing: true })).resolves.toMatchObject({
+        ok: true,
+        created: 0,
+        updated: 0,
+      });
+      expect(getWriteCalls()).toHaveLength(0);
+    });
+
+    it('still fills a payer the visit does not have yet', async () => {
+      mockFetchSequence({ personAttributes: personSaysEsSalud, visitAttributes: [] });
+
+      await expect(copyFinanciadorToVisit({ patientUuid, visitUuid, onlyFillMissing: true })).resolves.toMatchObject({
+        ok: true,
+        created: 1,
+        updated: 0,
+      });
+      expect(getWriteCalls()).toHaveLength(1);
+    });
+
+    it('overwrites by default so the emergency sync keeps its behaviour', async () => {
+      mockFetchSequence({
+        personAttributes: personSaysEsSalud,
+        visitAttributes: [
+          {
+            uuid: 'visit-attr-1',
+            value: { uuid: 'particular-concept-uuid', display: 'Particular' },
+            attributeType: { uuid: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID },
+          },
+        ],
+      });
+
+      await expect(copyFinanciadorToVisit({ patientUuid, visitUuid })).resolves.toMatchObject({ updated: 1 });
+    });
+  });
 });
 
 describe('safeCopyFinanciadorToVisit', () => {

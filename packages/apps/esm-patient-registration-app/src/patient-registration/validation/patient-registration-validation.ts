@@ -21,6 +21,7 @@ import {
   type RelationshipValue,
 } from '../patient-registration.types';
 import { getPeruIdentifierRule } from '../peru-identifier-validation';
+import { peruInsuranceSisConceptUuid } from '../peru-registration-config';
 import { validateRequiredField } from './required-field-validation';
 
 const t = (key: string, _value: string) => key;
@@ -40,9 +41,15 @@ const nameTooShortMessage = t('nameTooShort', 'Name must be at least 2 character
 const givenNameTooLongMessage = t('givenNameTooLong', 'Name must be 150 characters or fewer');
 const familyNameTooLongMessage = t('familyNameTooLong', 'Family name must be 100 characters or fewer');
 const insuranceAccreditationCheckedAtFieldId = 'insuranceAccreditationCheckedAt';
+const insuranceTypeFieldId = 'insuranceType';
+const insuranceCodeFieldId = 'insuranceCode';
 const insuranceAccreditationDateBeforeBirthdateMessage = t(
   'insuranceAccreditationDateBeforeBirthdate',
   'Insurance accreditation date cannot be before date of birth',
+);
+const insuranceCodeRequiredForSisMessage = t(
+  'insuranceCodeRequiredForSis',
+  'El código de afiliación es obligatorio para pacientes del SIS',
 );
 
 function parseDateOnly(value: unknown) {
@@ -404,6 +411,8 @@ export function getValidationSchema(
     config,
     insuranceAccreditationCheckedAtFieldId,
   );
+  const insuranceTypeAttributeUuid = getPersonAttributeFieldUuid(config, insuranceTypeFieldId);
+  const insuranceCodeAttributeUuid = getPersonAttributeFieldUuid(config, insuranceCodeFieldId);
 
   return Yup.object({
     ...buildCustomAddressValidationSchema(config),
@@ -736,5 +745,28 @@ export function getValidationSchema(
         message: insuranceAccreditationDateBeforeBirthdateMessage,
       });
     },
-  );
+  ).test('sis-requires-insurance-code', insuranceCodeRequiredForSisMessage, function (values) {
+    // NTS 139: la filiación de la HC debe incluir los datos del seguro, y el FUA
+    // es declaración jurada — un afiliado SIS sin código se rechaza al facturar.
+    const formValues = values as unknown as FormValues | undefined;
+
+    if (!insuranceTypeAttributeUuid || !insuranceCodeAttributeUuid) {
+      return true;
+    }
+
+    const insuranceType = getAttributeValue(formValues, insuranceTypeAttributeUuid);
+    if (insuranceType !== peruInsuranceSisConceptUuid) {
+      return true;
+    }
+
+    const insuranceCode = getAttributeValue(formValues, insuranceCodeAttributeUuid);
+    if (typeof insuranceCode === 'string' && insuranceCode.trim()) {
+      return true;
+    }
+
+    return this.createError({
+      path: `attributes.${insuranceCodeAttributeUuid}`,
+      message: insuranceCodeRequiredForSisMessage,
+    });
+  });
 }

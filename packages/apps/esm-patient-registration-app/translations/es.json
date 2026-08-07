@@ -236,6 +236,7 @@
   "insuranceAccreditationDateBeforeBirthdate": "La fecha de acreditación del seguro no puede ser anterior a la fecha de nacimiento",
   "insuranceAccreditationStatusFieldLabel": "Estado de acreditación del financiador",
   "insuranceCodeFieldLabel": "Código del financiador",
+  "insuranceCodeRequiredForSis": "El código de afiliación es obligatorio para pacientes del SIS",
   "insuranceSection": "Financiador",
   "insuranceTypeFieldLabel": "Financiador",
   "invalidConfiguration": "Configuración inválida",

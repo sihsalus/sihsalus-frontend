@@ -11,6 +11,9 @@ const phoneAttributeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
 const mobilePhoneAttributeUuid = 'fee4e8ef-aef8-4bb9-8ed0-7ded6055c61f';
 const emailAttributeUuid = '4bdf3a33-2f63-11f0-8ab4-1a7535b1b3e8';
 const insuranceAccreditationCheckedAtAttributeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1006';
+const insuranceTypeAttributeUuid = '56188294-b42c-481d-a987-4b495116c580';
+const insuranceCodeAttributeUuid = '374b130f-7457-476f-87b1-f182aa77c434';
+const sisConceptUuid = '97c6e901-7570-4ab8-a9c0-9cf2b0f5bc0c';
 const nationalityAttributeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1007';
 
 describe('Patient registration validation', () => {
@@ -84,6 +87,18 @@ describe('Patient registration validation', () => {
           uuid: insuranceAccreditationCheckedAtAttributeUuid,
           inputType: 'date',
           allowFutureDates: false,
+          showHeading: false,
+        },
+        {
+          id: 'insuranceType',
+          type: 'person attribute',
+          uuid: insuranceTypeAttributeUuid,
+          showHeading: false,
+        },
+        {
+          id: 'insuranceCode',
+          type: 'person attribute',
+          uuid: insuranceCodeAttributeUuid,
           showHeading: false,
         },
         {
@@ -557,6 +572,42 @@ describe('Patient registration validation', () => {
     };
     const validationError = await validateFormValues(validFormValuesWithInsuranceAccreditation);
     expect(validationError).toBeFalsy();
+  });
+
+  it('should require the affiliation code when the payer is SIS', async () => {
+    // NTS 139 + FUA as declaración jurada: a SIS patient with no affiliation code
+    // produces a claim that is rejected at reimbursement time.
+    const invalidFormValues = {
+      ...validFormValues,
+      attributes: {
+        [insuranceTypeAttributeUuid]: sisConceptUuid,
+        [insuranceCodeAttributeUuid]: '   ',
+      },
+    };
+    const validationError = await validateFormValues(invalidFormValues);
+    expect(validationError.errors).toContain('insuranceCodeRequiredForSis');
+  });
+
+  it('should accept a SIS patient that has an affiliation code', async () => {
+    const formValues = {
+      ...validFormValues,
+      attributes: {
+        [insuranceTypeAttributeUuid]: sisConceptUuid,
+        [insuranceCodeAttributeUuid]: '70123456',
+      },
+    };
+    expect(await validateFormValues(formValues)).toBeFalsy();
+  });
+
+  it('should not require an affiliation code for other payers', async () => {
+    const formValues = {
+      ...validFormValues,
+      attributes: {
+        [insuranceTypeAttributeUuid]: 'f38b048f-0000-0000-0000-000000000000',
+        [insuranceCodeAttributeUuid]: '',
+      },
+    };
+    expect(await validateFormValues(formValues)).toBeFalsy();
   });
 
   it('should throw an error when insurance accreditation date is in the future', async () => {

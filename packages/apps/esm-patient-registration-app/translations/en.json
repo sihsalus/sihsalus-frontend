@@ -234,6 +234,7 @@
   "insuranceAccreditationDateBeforeBirthdate": "Insurance accreditation date cannot be before date of birth",
   "insuranceAccreditationStatusFieldLabel": "Funder accreditation status",
   "insuranceCodeFieldLabel": "Funder code",
+  "insuranceCodeRequiredForSis": "The affiliation code is required for SIS patients",
   "insuranceSection": "Funder",
   "insuranceTypeFieldLabel": "Funder",
   "invalidConfiguration": "Invalid configuration",

@@ -16,7 +16,7 @@ interface AnamnesisProps {
 const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { anamnesisEntries, isLoading, isValidating, error, mutate, pagination } = useAnamnesis(
+  const { anamnesisEntries, isLoading, isValidating, error, mutate, pagination, sourceErrors } = useAnamnesis(
     patientUuid,
     [
       config.encounterTypes?.externalConsultation,
@@ -51,6 +51,7 @@ const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
       loadingVariant="accordion"
       onAction={handleLaunchForm}
       pagination={pagination}
+      sourceErrors={sourceErrors}
     >
       <Accordion>
         {anamnesisEntries.map((entry) => (

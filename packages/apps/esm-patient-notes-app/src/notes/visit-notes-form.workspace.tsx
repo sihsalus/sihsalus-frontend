@@ -243,8 +243,25 @@ const createSchema = (_t: TFunction) => {
   });
 };
 
-export function getSubmittedEncounterDatetime(noteDate: Date, wasExplicitlyChanged: boolean): string | undefined {
-  return wasExplicitlyChanged ? dayjs(noteDate).format() : undefined;
+export function getSubmittedEncounterDatetime(
+  noteDate: Date,
+  wasExplicitlyChanged: boolean,
+  now: Date = new Date(),
+): string | undefined {
+  if (!wasExplicitlyChanged) {
+    return undefined;
+  }
+
+  // The visit date field is date-only, so it resolves to local midnight. Submitting
+  // that verbatim backdates the encounter to 00:00 — wrong clinically, and rejected
+  // outright when the visit started later the same day. Keep the chosen calendar day
+  // and take the time of day from the clock.
+  return dayjs(noteDate)
+    .hour(now.getHours())
+    .minute(now.getMinutes())
+    .second(now.getSeconds())
+    .millisecond(now.getMilliseconds())
+    .format();
 }
 
 export type EditableVisitNoteEncounter = Encounter & {

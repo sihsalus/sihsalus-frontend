@@ -124,7 +124,7 @@
     "flatted": "3.4.2",
     "http-proxy-middleware": "3.0.7",
     "immutable": "5.1.8",
-    "js-yaml": "4.3.0",
+    "js-yaml": "4.3.1",
     "linkify-it": "5.0.2",
     "piscina": "4.9.3",
     "react-router": "7.18.2",

@@ -30,7 +30,7 @@ export function useAnamnesis(
     (encounter: AnamnesisEncounter) => hasAnamnesisData(mapEncounterToAnamnesisEntry(encounter, concepts)),
     [concepts],
   );
-  const { data, error, isLoading, isValidating, mutate, pagination } =
+  const { data, error, isLoading, isValidating, mutate, pagination, sourceErrors } =
     useMergedClinicalHistoryPagination<AnamnesisEncounter>(sources, isRelevant);
 
   // Anamnesis is a clinical subdomain of the encounter. We derive it from
@@ -46,5 +46,6 @@ export function useAnamnesis(
     error,
     mutate,
     pagination,
+    sourceErrors,
   };
 }

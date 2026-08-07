@@ -135,7 +135,7 @@ export function useTreatmentPlan(
     },
     [concepts, isEncounterFromRestrictedForm, legacyCe001FieldPaths],
   );
-  const { data, error, isLoading, isValidating, mutate, pagination } = useMergedClinicalHistoryPagination<Encounter>(
+  const { data, error, isLoading, isValidating, mutate, pagination, sourceErrors } = useMergedClinicalHistoryPagination<Encounter>(
     sources,
     isRelevant,
   );
@@ -228,5 +228,6 @@ export function useTreatmentPlan(
     error,
     mutate,
     pagination,
+    sourceErrors,
   };
 }

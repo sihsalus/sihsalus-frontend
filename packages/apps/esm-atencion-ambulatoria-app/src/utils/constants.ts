@@ -13,3 +13,7 @@ export const moduleName = '@sihsalus/esm-atencion-ambulatoria-app';
 
 // ── Workspace names ──
 export const patientFormEntryWorkspace = 'patient-form-entry-workspace';
+
+// ── Privileges ──
+/** Declared by the order-basket workspace in esm-patient-orders-app/src/routes.json. */
+export const orderBasketEditPrivilege = 'app:hoja.clinica.ordenes.editar';

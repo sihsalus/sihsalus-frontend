@@ -26,7 +26,7 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const isTablet = useLayoutType() === 'tablet';
-  const { diagnoses, isLoading, isValidating, error, mutate, pagination } = useDiagnosisHistory(patientUuid, [
+  const { diagnoses, isLoading, isValidating, error, mutate, pagination, sourceErrors } = useDiagnosisHistory(patientUuid, [
     config.encounterTypes?.externalConsultation,
     {
       encounterTypeUuid: config.encounterTypes?.visitNote,
@@ -95,6 +95,7 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
       isValidating={isValidating}
       onAction={handleLaunchForm}
       pagination={pagination}
+      sourceErrors={sourceErrors}
       skeletonHeaders={headers}
     >
       <DataTable rows={rows} headers={headers} size={isTablet ? 'lg' : 'sm'}>

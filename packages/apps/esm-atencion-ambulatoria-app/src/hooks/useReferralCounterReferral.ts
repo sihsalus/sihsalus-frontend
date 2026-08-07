@@ -127,10 +127,8 @@ export function useReferralCounterReferral(
       Boolean(getInterconsultationOrder(encounter, concepts)),
     [concepts, referralCounterReferralEncounterTypeUuid],
   );
-  const { data, error, isLoading, isValidating, mutate, pagination } = useMergedClinicalHistoryPagination<Encounter>(
-    sources,
-    isRelevant,
-  );
+  const { data, error, isLoading, isValidating, mutate, pagination, sourceErrors } =
+    useMergedClinicalHistoryPagination<Encounter>(sources, isRelevant);
 
   const entries = data
     .map((encounter): ReferralEntry | null => {
@@ -173,5 +171,6 @@ export function useReferralCounterReferral(
     error,
     mutate,
     pagination,
+    sourceErrors,
   };
 }

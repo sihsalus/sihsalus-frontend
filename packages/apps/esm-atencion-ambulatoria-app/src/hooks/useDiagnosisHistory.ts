@@ -111,7 +111,7 @@ export function useDiagnosisHistory(
     : null;
 
   const isRelevant = useCallback((encounter: Encounter) => Boolean(encounter.diagnoses?.length), []);
-  const { data, error, isLoading, isValidating, mutate, pagination } = useMergedClinicalHistoryPagination<Encounter>(
+  const { data, error, isLoading, isValidating, mutate, pagination, sourceErrors } = useMergedClinicalHistoryPagination<Encounter>(
     sources,
     isRelevant,
   );
@@ -157,5 +157,6 @@ export function useDiagnosisHistory(
     error,
     mutate,
     pagination,
+    sourceErrors,
   };
 }

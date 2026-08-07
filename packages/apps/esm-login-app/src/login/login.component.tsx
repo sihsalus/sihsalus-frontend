@@ -16,7 +16,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { type ConfigSchema } from '../config-schema';
 import { LoginArtwork } from '../login-artwork.component';
 import Logo from '../logo.component';
-import { buildSpaNavigationTarget, hardNavigate } from '../navigation';
+import { buildSpaNavigationTarget, hardNavigate, isSafeInternalTarget } from '../navigation';
 
 import { LanguageSwitcher } from './language-switcher.component';
 import styles from './login.module.scss';
@@ -309,12 +309,10 @@ const Login: React.FC = () => {
           failedAttemptsRef.current = 0;
           if (session.sessionLocation) {
             let to = loginLinks?.loginSuccess || '/home';
-            if (location?.state?.referrer) {
-              if (location.state.referrer.startsWith('/')) {
-                to = buildSpaNavigationTarget(location.state.referrer);
-              } else {
-                to = location.state.referrer;
-              }
+            // The referrer travels in router state; only same-origin paths may
+            // steer the post-login navigation.
+            if (isSafeInternalTarget(location?.state?.referrer)) {
+              to = buildSpaNavigationTarget(location.state.referrer);
             }
 
             hardNavigate(to);

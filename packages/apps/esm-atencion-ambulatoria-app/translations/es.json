@@ -215,6 +215,8 @@
   "othersSpecify": "Otros (especificar)",
   "overweight": "Sobrepeso",
   "oxygenSaturation": "SpO2",
+  "partialClinicalHistory": "Historial incompleto",
+  "partialClinicalHistorySubtitle": "No se pudo consultar una de las fuentes de este historial. Puede faltar información.",
   "past": "Pasado",
   "pathological": "Patológicos",
   "patientAppointments": "Citas del paciente",

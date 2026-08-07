@@ -25,7 +25,7 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
 
-  const { entries, isLoading, isValidating, error, mutate, pagination } = useReferralCounterReferral(
+  const { entries, isLoading, isValidating, error, mutate, pagination, sourceErrors } = useReferralCounterReferral(
     patientUuid,
     config.encounterTypes?.referralCounterReferral,
     [
@@ -67,6 +67,7 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
       loadingVariant="accordion"
       onAction={handleLaunchForm}
       pagination={pagination}
+      sourceErrors={sourceErrors}
     >
       <Accordion>
         {entries.map((entry) => {

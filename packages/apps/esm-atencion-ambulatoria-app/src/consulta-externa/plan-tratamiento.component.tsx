@@ -9,13 +9,13 @@ import {
   Tag,
 } from '@carbon/react';
 import { ShoppingCart } from '@carbon/react/icons';
-import { formatDate, useConfig } from '@openmrs/esm-framework';
+import { formatDate, useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { launchPatientWorkspace, useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { useTreatmentPlan } from '../hooks/useTreatmentPlan';
-import { patientFormEntryWorkspace } from '../utils/constants';
+import { orderBasketEditPrivilege, patientFormEntryWorkspace } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface PlanTratamientoProps {
@@ -25,7 +25,7 @@ interface PlanTratamientoProps {
 const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { treatmentPlans, isLoading, isValidating, error, mutate, pagination } = useTreatmentPlan(
+  const { treatmentPlans, isLoading, isValidating, error, mutate, pagination, sourceErrors } = useTreatmentPlan(
     patientUuid,
     [
       config.encounterTypes?.externalConsultation,
@@ -39,6 +39,10 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
     config.legacyCe001FieldPaths,
   );
 
+  const session = useSession();
+  // Without this check the button would start a real visit and then silently fail
+  // to open the (privilege-gated) order basket, leaving a spurious visit behind.
+  const canPrescribe = userHasAccess(orderBasketEditPrivilege, session?.user);
   const launchOrderBasket = useLaunchWorkspaceRequiringVisit(patientUuid, 'order-basket');
 
   const handleLaunchForm = () => {
@@ -75,10 +79,11 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
       isValidating={isValidating}
       loadingVariant="accordion"
       onAction={handleLaunchForm}
-      onSecondaryAction={() => launchOrderBasket()}
+      onSecondaryAction={canPrescribe ? () => launchOrderBasket() : undefined}
       pagination={pagination}
+      sourceErrors={sourceErrors}
       secondaryActionIcon={ShoppingCart}
-      secondaryActionLabel={t('prescribeInOrderBasket', 'Prescribir medicamentos')}
+      secondaryActionLabel={canPrescribe ? t('prescribeInOrderBasket', 'Prescribir medicamentos') : undefined}
     >
       <Accordion>
         {treatmentPlans.map((plan) => (

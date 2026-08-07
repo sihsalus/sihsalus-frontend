@@ -178,6 +178,11 @@ export interface CopyFinanciadorToVisitParams extends NormalizeFinanciadorOption
   visitUuid: string;
   personAttributeTypeUuids?: PersonInsuranceAttributeTypeUuids;
   visitAttributeTypeUuids?: FinanciadorVisitAttributeTypeUuids;
+  /**
+   * Solo rellena los atributos ausentes; deja intacto todo valor ya presente en
+   * la visita. Necesario cuando el usuario pudo fijar el financiador a mano.
+   */
+  onlyFillMissing?: boolean;
 }
 
 export interface CopyFinanciadorToVisitResult {
@@ -211,6 +216,9 @@ function attributeValueEquals(persisted: RestAttributeValue, desired: string): b
  * - Se salta silenciosamente cuando la persona no tiene datos de seguro.
  * - Normaliza los productos SIS legacy al concepto SIS canónico para el
  *   atributo Financiador.
+ * - Con `onlyFillMissing`, nunca pisa un valor ya presente en la visita: se usa
+ *   desde flujos donde el usuario pudo elegir el financiador a mano (formulario
+ *   de inicio de visita), porque esa elección corrige a la afiliación y debe ganar.
  *
  * Lanza en caso de error de red/servidor; los flujos de UI deben usar
  * {@link safeCopyFinanciadorToVisit}, que nunca lanza.
@@ -222,6 +230,7 @@ export async function copyFinanciadorToVisit({
   visitAttributeTypeUuids,
   sisConceptUuid,
   legacySisProductConceptUuids,
+  onlyFillMissing = false,
 }: CopyFinanciadorToVisitParams): Promise<CopyFinanciadorToVisitResult> {
   const {
     financiadorVisitAttributeTypeUuid = FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
@@ -271,6 +280,10 @@ export async function copyFinanciadorToVisit({
         body: { attributeType: attributeTypeUuid, value },
       });
       created += 1;
+    } else if (onlyFillMissing) {
+      // El valor ya está en la visita: puede venir de una corrección manual, y
+      // la afiliación de la persona no debe revertirla en silencio.
+      continue;
     } else if (!attributeValueEquals(existing.value, value)) {
       await openmrsFetch(`${restBaseUrl}/visit/${visitUuid}/attribute/${existing.uuid}`, {
         method: 'POST',

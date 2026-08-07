@@ -1191,13 +1191,14 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             }
           }
 
-          // Copy the person's affiliation onto the visit so billing, the banner and
-          // the FUA worklist can read the payer. Without it a SIS visit is invisible
-          // to FUA generation. Never blocks the visit: a failure is reported and left
-          // for Admisión, matching the emergency flow.
+          // Backfill the payer from the person's affiliation so billing, the banner
+          // and the FUA worklist can read it — a visit with no payer is invisible to
+          // FUA generation. `onlyFillMissing` keeps a payer the user picked in this
+          // form (which corrects the affiliation) from being reverted. Never blocks
+          // the visit: a failure is reported and left for Admisión.
           if (!visitToEdit && !completedPostSubmitActions.current.has('financiador')) {
             completedPostSubmitActions.current.add('financiador');
-            void safeCopyFinanciadorToVisit({ patientUuid, visitUuid: visit.uuid }).then((result) => {
+            void safeCopyFinanciadorToVisit({ patientUuid, visitUuid: visit.uuid, onlyFillMissing: true }).then((result) => {
               if (!result.ok) {
                 showSnackbar({
                   isLowContrast: true,

@@ -31,6 +31,7 @@ describe('MetricsHeader', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseServiceQueuesStore.mockReturnValue({
+      queueLocationSelectionInitialized: true,
       selectedServiceUuid: 'service-uuid',
       selectedQueueLocationUuid: 'location-uuid',
       selectedQueueStatusUuid: null,

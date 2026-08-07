@@ -43,6 +43,7 @@ vi.mock('./patient-queue-header.scss', () => ({
 }));
 
 const defaultStoreState = {
+  queueLocationSelectionInitialized: false,
   selectedQueueLocationName: null,
   selectedQueueLocationUuid: null,
   selectedServiceDisplay: null,
@@ -174,6 +175,7 @@ describe('PatientQueueHeader service filter', () => {
     });
     mockUseServiceQueuesStore.mockReturnValue({
       ...defaultStoreState,
+      queueLocationSelectionInitialized: true,
       selectedQueueLocationUuid: 'other-location',
       selectedQueueLocationName: 'Other location',
       selectedServiceUuid: mockServiceTriage.uuid,
@@ -187,6 +189,91 @@ describe('PatientQueueHeader service filter', () => {
     expect(mockUseQueues).toHaveBeenCalledWith('other-location');
     expect(mockUpdateSelectedQueueLocationUuid).not.toHaveBeenCalled();
     expect(mockUpdateSelectedQueueLocationName).not.toHaveBeenCalled();
+  });
+
+  it('keeps an explicit All UPSS selection instead of restoring the session location', () => {
+    const sessionQueueLocation = {
+      resourceType: 'Location' as const,
+      id: 'hospital-location',
+      name: 'Hospital Santa Clotilde',
+    };
+    mockSession('Super User', { uuid: sessionQueueLocation.id, display: sessionQueueLocation.name });
+    mockUseQueueLocations.mockReturnValue({
+      queueLocations: [
+        sessionQueueLocation,
+        { resourceType: 'Location', id: 'outpatient-location', name: 'UPSS - CONSULTA EXTERNA' },
+      ],
+      isLoading: false,
+      error: undefined,
+    });
+    mockUseServiceQueuesStore.mockReturnValue({
+      ...defaultStoreState,
+      queueLocationSelectionInitialized: true,
+      selectedQueueLocationName: null,
+      selectedQueueLocationUuid: null,
+    });
+
+    render(<PatientQueueHeader showFilters />);
+
+    expect(screen.getByRole('combobox', { name: /select a queue UPSS/i })).toHaveTextContent('All');
+    expect(mockUseQueues).toHaveBeenCalledWith(null);
+    expect(mockUpdateSelectedQueueLocationUuid).not.toHaveBeenCalled();
+    expect(mockUpdateSelectedQueueLocationName).not.toHaveBeenCalled();
+  });
+
+  it('stores All as an explicit UPSS selection', async () => {
+    const user = userEvent.setup();
+    const hospitalLocation = {
+      resourceType: 'Location' as const,
+      id: 'hospital-location',
+      name: 'Hospital Santa Clotilde',
+    };
+    mockUseQueueLocations.mockReturnValue({
+      queueLocations: [
+        hospitalLocation,
+        { resourceType: 'Location', id: 'outpatient-location', name: 'UPSS - CONSULTA EXTERNA' },
+      ],
+      isLoading: false,
+      error: undefined,
+    });
+    mockUseServiceQueuesStore.mockReturnValue({
+      ...defaultStoreState,
+      queueLocationSelectionInitialized: true,
+      selectedQueueLocationName: hospitalLocation.name,
+      selectedQueueLocationUuid: hospitalLocation.id,
+    });
+
+    render(<PatientQueueHeader showFilters />);
+
+    await user.click(screen.getByRole('combobox', { name: /select a queue UPSS/i }));
+    await user.click(screen.getByRole('option', { name: 'All' }));
+
+    expect(mockUpdateSelectedQueueLocationUuid).toHaveBeenCalledWith(null);
+    expect(mockUpdateSelectedQueueLocationName).toHaveBeenCalledWith(null);
+  });
+
+  it('defaults an uninitialized selection to the matching session Queue Location once', () => {
+    const sessionQueueLocation = {
+      resourceType: 'Location' as const,
+      id: 'hospital-location',
+      name: 'Hospital Santa Clotilde',
+    };
+    mockSession('Super User', { uuid: sessionQueueLocation.id, display: sessionQueueLocation.name });
+    mockUseQueueLocations.mockReturnValue({
+      queueLocations: [
+        sessionQueueLocation,
+        { resourceType: 'Location', id: 'outpatient-location', name: 'UPSS - CONSULTA EXTERNA' },
+      ],
+      isLoading: false,
+      error: undefined,
+    });
+
+    render(<PatientQueueHeader showFilters />);
+
+    expect(mockUpdateSelectedQueueLocationUuid).toHaveBeenCalledOnce();
+    expect(mockUpdateSelectedQueueLocationUuid).toHaveBeenCalledWith(sessionQueueLocation.id);
+    expect(mockUpdateSelectedQueueLocationName).toHaveBeenCalledOnce();
+    expect(mockUpdateSelectedQueueLocationName).toHaveBeenCalledWith(sessionQueueLocation.name);
   });
 
   it('clears a stale persisted Queue Location after metadata loads successfully', async () => {

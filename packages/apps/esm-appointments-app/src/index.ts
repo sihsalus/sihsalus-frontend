@@ -78,6 +78,11 @@ export const earlyAppointments = getAsyncLifecycle(
 
 export const searchPatient = getAsyncLifecycle(() => import('./patient-search/patient-search.component'), options);
 
+export const scheduleAppointmentPatientSearchAction = getAsyncLifecycle(
+  () => import('./patient-search/schedule-appointment-action.component'),
+  options,
+);
+
 // t('Appointments', 'Appointments')
 export const patientAppointmentsSummaryDashboardLink = getAsyncLifecycle(async () => {
   const commonLib = await import('@openmrs/esm-patient-common-lib');

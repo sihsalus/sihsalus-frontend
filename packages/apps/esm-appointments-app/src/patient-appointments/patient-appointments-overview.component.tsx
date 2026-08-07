@@ -1,8 +1,17 @@
 import { DataTableSkeleton } from '@carbon/react';
-import { isDesktop, useLayoutType, usePatient, WorkspaceContainer } from '@openmrs/esm-framework';
-import React from 'react';
-import { useParams } from 'react-router-dom';
+import {
+  isDesktop,
+  launchWorkspace2,
+  useLayoutType,
+  usePatient,
+  userHasAccess,
+  useSession,
+  WorkspaceContainer,
+} from '@openmrs/esm-framework';
+import React, { useEffect, useRef } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 
+import { appointmentsEditPrivilege } from '../constants';
 import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patientAppointmentContext';
 
 import PatientAppointmentsBase from './patient-appointments-base.component';
@@ -20,6 +29,39 @@ const PatientAppointmentsOverview: React.FC = () => {
   const params = useParams();
   const response = usePatient(params.patientUuid);
   const layout = useLayoutType();
+  const session = useSession();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const createRequestHandled = useRef(false);
+  const createAppointmentRequested = searchParams.get('action') === 'create';
+  const canCreateAppointment = userHasAccess(appointmentsEditPrivilege, session?.user);
+
+  useEffect(() => {
+    if (
+      createRequestHandled.current ||
+      !createAppointmentRequested ||
+      !canCreateAppointment ||
+      response.isLoading ||
+      !response.patient?.id
+    ) {
+      return;
+    }
+
+    createRequestHandled.current = true;
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.delete('action');
+    setSearchParams(nextSearchParams, { replace: true });
+    void launchWorkspace2('appointments-form-workspace', {
+      context: 'creating',
+      patientUuid: response.patient.id,
+    });
+  }, [
+    canCreateAppointment,
+    createAppointmentRequested,
+    response.isLoading,
+    response.patient?.id,
+    searchParams,
+    setSearchParams,
+  ]);
 
   return response.isLoading ? (
     <DataTableSkeleton role="progressbar" size={isDesktop(layout) ? 'sm' : 'lg'} zebra />

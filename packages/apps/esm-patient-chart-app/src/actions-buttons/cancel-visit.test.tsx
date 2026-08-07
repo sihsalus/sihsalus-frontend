@@ -17,7 +17,7 @@ vi.mock('@carbon/react', async () => {
   };
 });
 
-import { useVisit } from '@openmrs/esm-framework';
+import { userHasAccess, useSession, useVisit } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
@@ -26,8 +26,17 @@ import { mockCurrentVisit } from 'test-utils';
 import CancelVisitOverflowMenuItem from './cancel-visit.component';
 
 const mockUseVisit = vi.mocked(useVisit);
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 
 describe('CancelVisitOverflowMenuItem', () => {
+  beforeEach(() => {
+    mockUseSession.mockReturnValue({ user: { uuid: 'clinical-user' } } as ReturnType<typeof useSession>);
+    mockUserHasAccess.mockImplementation((privilege) =>
+      ['app:hoja.clinica', 'app:hoja.clinica.visitas.editar'].includes(privilege as string),
+    );
+  });
+
   it('should launch cancel visit dialog box', async () => {
     const user = userEvent.setup();
 
@@ -47,5 +56,18 @@ describe('CancelVisitOverflowMenuItem', () => {
     expect(cancelVisitButton).toBeInTheDocument();
 
     await user.click(cancelVisitButton);
+  });
+
+  it('does not expose clinical cancellation to admission staff', () => {
+    mockUseVisit.mockReturnValueOnce({
+      currentVisit: mockCurrentVisit,
+    } as ReturnType<typeof useVisit>);
+    mockUserHasAccess.mockImplementation((privilege) =>
+      ['app:home.admision', 'Edit Visits'].includes(privilege as string),
+    );
+
+    render(<CancelVisitOverflowMenuItem patientUuid="some-uuid" />);
+
+    expect(screen.queryByRole('menuitem', { name: /cancel visit/i })).not.toBeInTheDocument();
   });
 });

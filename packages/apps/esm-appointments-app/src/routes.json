@@ -124,6 +124,15 @@
       "privileges": "app:home.citas"
     },
     {
+      "name": "schedule-appointment-patient-search-action",
+      "component": "scheduleAppointmentPatientSearchAction",
+      "slot": "patient-search-actions-slot",
+      "privileges": "app:home.citas.editar",
+      "order": 0,
+      "online": true,
+      "offline": false
+    },
+    {
       "name": "home-appointments-tile",
       "slot": "home-metrics-tiles-slot",
       "component": "homeAppointmentsTile",

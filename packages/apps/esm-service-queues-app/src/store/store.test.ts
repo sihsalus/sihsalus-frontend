@@ -1,5 +1,10 @@
+import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { updateValueInSessionStorage } from './store';
+import {
+  updateSelectedQueueLocationUuid,
+  updateValueInSessionStorage,
+  useServiceQueuesStore,
+} from './store';
 
 describe('Testing updateValueInSessionStorage', () => {
   beforeEach(() => {
@@ -21,5 +26,27 @@ describe('Testing updateValueInSessionStorage', () => {
     expect(sessionStorage.getItem('key2')).toBe('v2');
     updateValueInSessionStorage('key2', undefined);
     expect(sessionStorage.getItem('key2')).toBe(null);
+  });
+
+  it('distinguishes an explicit All Queue Location from an uninitialized selection', () => {
+    const { result } = renderHook(() => useServiceQueuesStore());
+
+    act(() => updateSelectedQueueLocationUuid(null));
+
+    expect(result.current.selectedQueueLocationUuid).toBeNull();
+    expect(result.current.queueLocationSelectionInitialized).toBe(true);
+    expect(sessionStorage.getItem('queueLocationUuid')).toBeNull();
+    expect(sessionStorage.getItem('queueLocationSelection')).toBe('all');
+  });
+
+  it('persists a concrete Queue Location without the All sentinel', () => {
+    const { result } = renderHook(() => useServiceQueuesStore());
+
+    act(() => updateSelectedQueueLocationUuid('outpatient-location'));
+
+    expect(result.current.selectedQueueLocationUuid).toBe('outpatient-location');
+    expect(result.current.queueLocationSelectionInitialized).toBe(true);
+    expect(sessionStorage.getItem('queueLocationUuid')).toBe('outpatient-location');
+    expect(sessionStorage.getItem('queueLocationSelection')).toBeNull();
   });
 });

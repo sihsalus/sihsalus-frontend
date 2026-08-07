@@ -2,6 +2,9 @@ import { createGlobalStore, useStore } from '@openmrs/esm-framework';
 
 export const ALL_APPOINTMENT_STATUSES = '';
 
+const ALL_QUEUE_LOCATIONS = 'all';
+const queueLocationSelectionKey = 'queueLocationSelection';
+
 export function updateValueInSessionStorage(key: string, value: string | null | undefined) {
   if (value === undefined || value === null) {
     sessionStorage.removeItem(key);
@@ -17,6 +20,7 @@ export function getValueFromSessionStorage(key: string): string | null {
 export interface ServiceQueuesState {
   selectedQueueLocationName?: string | null;
   selectedQueueLocationUuid?: string | null;
+  queueLocationSelectionInitialized: boolean;
   selectedServiceUuid?: string | null;
   selectedServiceDisplay?: string | null;
   selectedQueueStatusUuid?: string | null;
@@ -28,9 +32,14 @@ export interface ServiceQueuesState {
   emergencyUiActive?: boolean;
 }
 
+const persistedQueueLocationUuid = getValueFromSessionStorage('queueLocationUuid');
+const persistedQueueLocationSelection = getValueFromSessionStorage(queueLocationSelectionKey);
+
 const initialServiceQueuesState: ServiceQueuesState = {
   selectedQueueLocationName: getValueFromSessionStorage('queueLocationName'),
-  selectedQueueLocationUuid: getValueFromSessionStorage('queueLocationUuid'),
+  selectedQueueLocationUuid: persistedQueueLocationUuid,
+  queueLocationSelectionInitialized:
+    Boolean(persistedQueueLocationUuid) || persistedQueueLocationSelection === ALL_QUEUE_LOCATIONS,
   selectedServiceUuid: getValueFromSessionStorage('queueServiceUuid'),
   selectedServiceDisplay: getValueFromSessionStorage('queueServiceDisplay'),
   selectedQueueStatusUuid: getValueFromSessionStorage('queueStatusUuid'),
@@ -59,7 +68,14 @@ export const updateSelectedQueueLocationName = (currentLocationName: string | nu
 
 export const updateSelectedQueueLocationUuid = (currentLocationUuid: string | null | undefined) => {
   updateValueInSessionStorage('queueLocationUuid', currentLocationUuid);
-  serviceQueuesStore.setState({ selectedQueueLocationUuid: currentLocationUuid });
+  updateValueInSessionStorage(
+    queueLocationSelectionKey,
+    currentLocationUuid ? null : ALL_QUEUE_LOCATIONS,
+  );
+  serviceQueuesStore.setState({
+    selectedQueueLocationUuid: currentLocationUuid,
+    queueLocationSelectionInitialized: true,
+  });
 };
 
 export const updateSelectedQueueStatus = (

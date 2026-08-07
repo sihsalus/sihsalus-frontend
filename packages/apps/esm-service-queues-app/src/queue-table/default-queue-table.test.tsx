@@ -73,6 +73,7 @@ describe('DefaultQueueTable', () => {
       queueStatusesError: undefined,
     });
     mockUseServiceQueuesStore.mockReturnValue({
+      queueLocationSelectionInitialized: true,
       selectedServiceUuid: null,
       selectedQueueLocationUuid: null,
       selectedQueueStatusUuid: null,
@@ -106,6 +107,28 @@ describe('DefaultQueueTable', () => {
     expect(queueTableCard).toHaveClass('container');
     expect(within(queueTableCard).getByRole('table')).toBeInTheDocument();
     expect(within(queueTableCard).getByTestId('queue-empty-state')).toBeInTheDocument();
+  });
+
+  it('omits UPSS, service and status constraints when every queue filter is All', () => {
+    mockQueueLocations.mockReturnValue({ queueLocations: [], isLoading: false, error: null });
+    mockUseQueueRooms.mockReturnValue({ rooms: [], isLoading: false, error: undefined });
+    mockUseQueueEntries.mockReturnValue({
+      queueEntries: [],
+      isLoading: false,
+      error: undefined,
+      totalCount: 0,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+
+    rendeDefaultQueueTable();
+
+    expect(mockUseQueueEntries).toHaveBeenCalledWith({
+      service: null,
+      location: null,
+      isEnded: false,
+      status: null,
+    });
   });
 
   it('renders queue statuses above the card and updates the selected status', async () => {
@@ -143,6 +166,7 @@ describe('DefaultQueueTable', () => {
 
   it('restores a persisted status selection and applies it to the queue request', async () => {
     mockUseServiceQueuesStore.mockReturnValue({
+      queueLocationSelectionInitialized: true,
       selectedServiceUuid: 'service-uuid',
       selectedQueueLocationUuid: 'location-uuid',
       selectedQueueStatusUuid: mockStatusWaiting.uuid,
@@ -176,6 +200,7 @@ describe('DefaultQueueTable', () => {
 
   it('clears a persisted status only after the available statuses finish loading', async () => {
     mockUseServiceQueuesStore.mockReturnValue({
+      queueLocationSelectionInitialized: true,
       selectedServiceUuid: null,
       selectedQueueLocationUuid: null,
       selectedQueueStatusUuid: 'removed-status-uuid',

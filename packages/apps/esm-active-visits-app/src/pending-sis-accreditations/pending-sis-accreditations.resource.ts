@@ -15,9 +15,16 @@ import { type PendingSisAccreditationsConfig } from '../config-schema';
 /** La lista se refresca sola para reflejar verificaciones hechas en paralelo. */
 const refreshIntervalMs = 60_000;
 
+/**
+ * Without an explicit limit the REST default silently truncates the worklist,
+ * which reads as "nothing pending" in a hospital with many active visits.
+ */
+const pendingSisVisitsLimit = 500;
+
 const pendingSisVisitsUrl =
-  `${restBaseUrl}/visit?includeInactive=false&v=custom:(uuid,startDatetime,location:(display),` +
-  'patient:(uuid,display,identifiers:(identifier,identifierType:(uuid,display))),' +
+  `${restBaseUrl}/visit?includeInactive=false&limit=${pendingSisVisitsLimit}&v=custom:(uuid,startDatetime,location:(display),` +
+  'patient:(uuid,display,identifiers:(identifier,identifierType:(uuid,display)),' +
+  'person:(attributes:(value,attributeType:(uuid)))),' +
   'attributes:(uuid,value,attributeType:(uuid)))';
 
 /** Los valores coded pueden venir hidratados como objeto o como uuid plano. */
@@ -49,6 +56,9 @@ export interface RestActiveVisit {
     uuid?: string;
     display?: string;
     identifiers?: Array<RestVisitIdentifier>;
+    person?: {
+      attributes?: Array<RestVisitAttribute>;
+    };
   };
   attributes?: Array<RestVisitAttribute>;
 }
@@ -57,7 +67,7 @@ interface VisitsResponse {
   results?: Array<RestActiveVisit>;
 }
 
-export type PendingAccreditationStatus = 'pending' | 'notConsulted' | 'missing';
+export type PendingAccreditationStatus = 'pending' | 'notConsulted' | 'missing' | 'financiadorNotCopied';
 
 export interface PendingSisVisit {
   visitUuid: string;
@@ -106,23 +116,36 @@ export function filterPendingSisVisits(
   for (const visit of visits) {
     const attributes = visit.attributes ?? [];
     const financiadorUuid = findAttributeValueUuid(attributes, config.financiadorVisitAttributeTypeUuid);
-
-    if (!financiadorUuid || !config.sisConceptUuids.includes(financiadorUuid)) {
-      continue;
-    }
-
-    const statusUuid = findAttributeValueUuid(attributes, config.accreditationStatusVisitAttributeTypeUuid);
+    const personInsuranceUuid = findAttributeValueUuid(
+      visit.patient?.person?.attributes ?? [],
+      config.insuranceTypePersonAttributeTypeUuid,
+    );
 
     let accreditationStatus: PendingAccreditationStatus;
-    if (statusUuid === config.pendingStatusConceptUuid) {
-      accreditationStatus = 'pending';
-    } else if (statusUuid === config.notConsultedStatusConceptUuid) {
-      accreditationStatus = 'notConsulted';
-    } else if (!statusUuid) {
-      accreditationStatus = 'missing';
-    } else {
-      // Vigente o no vigente: ya fue verificada, no es trabajo pendiente.
+
+    if (!financiadorUuid) {
+      // The visit never received the payer copy. Nothing downstream (billing,
+      // banner, FUA) can see it as SIS, so it is the most urgent kind of pending
+      // work — but only the person's affiliation can tell us it should be SIS.
+      if (!personInsuranceUuid || !config.sisConceptUuids.includes(personInsuranceUuid)) {
+        continue;
+      }
+      accreditationStatus = 'financiadorNotCopied';
+    } else if (!config.sisConceptUuids.includes(financiadorUuid)) {
       continue;
+    } else {
+      const statusUuid = findAttributeValueUuid(attributes, config.accreditationStatusVisitAttributeTypeUuid);
+
+      if (statusUuid === config.pendingStatusConceptUuid) {
+        accreditationStatus = 'pending';
+      } else if (statusUuid === config.notConsultedStatusConceptUuid) {
+        accreditationStatus = 'notConsulted';
+      } else if (!statusUuid) {
+        accreditationStatus = 'missing';
+      } else {
+        // Vigente o no vigente: ya fue verificada, no es trabajo pendiente.
+        continue;
+      }
     }
 
     pendingVisits.push({

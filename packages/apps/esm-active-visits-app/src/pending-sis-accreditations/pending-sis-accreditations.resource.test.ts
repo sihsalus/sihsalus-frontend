@@ -25,6 +25,7 @@ let visitCounter = 0;
 function buildVisit({
   financiador,
   status,
+  personInsurance,
   startDatetime = '2026-07-17T08:00:00.000-0500',
   identifiers = [
     {
@@ -35,6 +36,7 @@ function buildVisit({
 }: {
   financiador?: string | { uuid?: string };
   status?: string | { uuid?: string };
+  personInsurance?: string | { uuid?: string };
   startDatetime?: string;
   identifiers?: NonNullable<RestActiveVisit['patient']>['identifiers'];
 }): RestActiveVisit {
@@ -64,6 +66,17 @@ function buildVisit({
       uuid: `patient-${visitCounter}`,
       display: `Paciente ${visitCounter}`,
       identifiers,
+      person: personInsurance
+        ? {
+            attributes: [
+              {
+                uuid: `person-insurance-attr-${visitCounter}`,
+                value: personInsurance,
+                attributeType: { uuid: config.insuranceTypePersonAttributeTypeUuid },
+              },
+            ],
+          }
+        : undefined,
     },
     attributes,
   };
@@ -158,6 +171,39 @@ describe('filterPendingSisVisits', () => {
     const result = filterPendingSisVisits([newest, oldest], config);
 
     expect(result.map((visit) => visit.visitUuid)).toEqual([oldest.uuid, newest.uuid]);
+  });
+
+  it('flags a SIS patient whose visit never received the financiador copy', () => {
+    // This is the outpatient failure mode: no payer on the visit at all, so the
+    // FUA worklist filters it out and nobody is told the reimbursement is at risk.
+    const visit = buildVisit({ personInsurance: { uuid: sisConceptUuid } });
+
+    const result = filterPendingSisVisits([visit], config);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.accreditationStatus).toBe('financiadorNotCopied');
+  });
+
+  it('accepts a legacy SIS product on the person when the visit has no financiador', () => {
+    const visit = buildVisit({ personInsurance: { uuid: legacySisGratuitoConceptUuid } });
+
+    expect(filterPendingSisVisits([visit], config)[0]?.accreditationStatus).toBe('financiadorNotCopied');
+  });
+
+  it('ignores a visit with no financiador when the person is not SIS', () => {
+    expect(filterPendingSisVisits([buildVisit({ personInsurance: { uuid: essaludConceptUuid } })], config)).toEqual([]);
+    expect(filterPendingSisVisits([buildVisit({})], config)).toEqual([]);
+  });
+
+  it('still prefers the visit financiador over the person affiliation when both exist', () => {
+    // A visit explicitly set to EsSalud is not pending SIS work, even if the
+    // person record still says SIS.
+    const visit = buildVisit({
+      financiador: { uuid: essaludConceptUuid },
+      personInsurance: { uuid: sisConceptUuid },
+    });
+
+    expect(filterPendingSisVisits([visit], config)).toEqual([]);
   });
 });
 

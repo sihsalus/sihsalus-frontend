@@ -45,10 +45,12 @@ import {
  */
 export const pendingSisAccreditationsPrivilege = 'app:home.admision';
 
-const statusTagTypes: Record<PendingAccreditationStatus, 'blue' | 'gray' | 'red'> = {
+const statusTagTypes: Record<PendingAccreditationStatus, 'blue' | 'gray' | 'red' | 'magenta'> = {
   pending: 'blue',
   notConsulted: 'gray',
   missing: 'red',
+  // Highest urgency: without the payer on the visit no FUA can be generated at all.
+  financiadorNotCopied: 'magenta',
 };
 
 const pendingSisContainerClassName = `${styles.activeVisitsContainer} ${styles.pendingSisAccreditationsContainer}`;
@@ -60,6 +62,7 @@ function AccreditationStatusTag({ status }: { status: PendingAccreditationStatus
     pending: t('sisAccreditationPending', 'Pendiente'),
     notConsulted: t('sisAccreditationNotConsulted', 'No consultada'),
     missing: t('sisAccreditationMissing', 'Sin registrar'),
+    financiadorNotCopied: t('sisFinanciadorNotCopied', 'Sin financiador en la visita'),
   };
 
   return (

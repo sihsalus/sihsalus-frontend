@@ -40,6 +40,7 @@ import {
   createOfflineVisitForPatient,
   type DefaultPatientWorkspaceProps,
   type PatientWorkspace2DefinitionProps,
+  safeCopyFinanciadorToVisit,
   time12HourFormatRegex,
   useActivePatientEnrollment,
 } from '@openmrs/esm-patient-common-lib';
@@ -1188,6 +1189,27 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                 ),
               });
             }
+          }
+
+          // Copy the person's affiliation onto the visit so billing, the banner and
+          // the FUA worklist can read the payer. Without it a SIS visit is invisible
+          // to FUA generation. Never blocks the visit: a failure is reported and left
+          // for Admisión, matching the emergency flow.
+          if (!visitToEdit && !completedPostSubmitActions.current.has('financiador')) {
+            completedPostSubmitActions.current.add('financiador');
+            void safeCopyFinanciadorToVisit({ patientUuid, visitUuid: visit.uuid }).then((result) => {
+              if (!result.ok) {
+                showSnackbar({
+                  isLowContrast: true,
+                  kind: 'warning',
+                  title: t('financiadorCopyFailed', 'No se pudo registrar el seguro en la visita'),
+                  subtitle: t(
+                    'financiadorCopyFailedSubtitle',
+                    'Admisión puede completarlo más tarde. La atención continúa.',
+                  ),
+                });
+              }
+            });
           }
 
           for (const [extensionId, callbacks] of visitFormCallbacks) {

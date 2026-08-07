@@ -18,6 +18,7 @@ export interface PendingSisAccreditationsConfig {
   pendingStatusConceptUuid: string;
   notConsultedStatusConceptUuid: string;
   dniIdentifierTypeUuid: string;
+  insuranceTypePersonAttributeTypeUuid: string;
 }
 
 export interface IdentifiersDefinition {
@@ -155,6 +156,13 @@ export const configSchema = {
       _type: Type.UUID,
       _description: 'Identifier type DNI, mostrado con prioridad en la lista de acreditaciones pendientes.',
       _default: '550e8400-e29b-41d4-a716-446655440001',
+    },
+    insuranceTypePersonAttributeTypeUuid: {
+      _type: Type.UUID,
+      _description:
+        'Person attribute «Tipo de seguro» (afiliación). Permite detectar visitas de pacientes SIS a las que ' +
+        'nunca se les copió el financiador, que de otro modo quedarían fuera de esta lista y sin FUA.',
+      _default: '56188294-b42c-481d-a987-4b495116c580',
     },
   },
 };

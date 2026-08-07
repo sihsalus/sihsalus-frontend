@@ -116,9 +116,13 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
       <div className={styles.cardBody}>
         {empty ? (
           <p className={styles.emptyPage} role="status">
-            {t('noClinicalHistoryOnThisPage', 'No hay {{displayText}} en esta página.', {
-              displayText: emptyDisplayText,
-            })}
+            {hasPagination
+              ? t('noClinicalHistoryOnThisPage', 'No hay {{displayText}} en esta página.', {
+                  displayText: emptyDisplayText,
+                })
+              : t('noClinicalHistoryRecorded', 'Este paciente no tiene {{displayText}} registrados.', {
+                  displayText: emptyDisplayText,
+                })}
           </p>
         ) : (
           children

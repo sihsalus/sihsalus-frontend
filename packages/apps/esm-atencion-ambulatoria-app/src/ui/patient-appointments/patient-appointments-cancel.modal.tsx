@@ -34,19 +34,34 @@ const PatientCancelAppointmentModal: React.FC<PatientCancelAppointmentModalProps
           showSnackbar({
             isLowContrast: true,
             kind: 'success',
-            subtitle: t('appointmentCancelledSuccessfully', 'Appointment cancelled successfully'),
-            title: t('appointmentCancelled', 'Appointment cancelled'),
+            subtitle: t('appointmentCancelledSuccessfully', 'La cita se canceló correctamente'),
+            title: t('appointmentCancelled', 'Cita cancelada'),
           });
+          return;
         }
+
+        // Anything other than 200 leaves the appointment as it was; say so instead
+        // of leaving the modal open with no feedback.
+        showSnackbar({
+          title: t('appointmentCancelError', 'Error al cancelar la cita'),
+          kind: 'error',
+          isLowContrast: true,
+          subtitle: t('appointmentCancelUnexpectedStatus', 'El servidor respondió con el estado {{status}}.', {
+            status,
+          }),
+        });
       })
       .catch((err) => {
         showSnackbar({
-          title: t('appointmentCancelError', 'Error cancelling appointment'),
+          title: t('appointmentCancelError', 'Error al cancelar la cita'),
           kind: 'error',
           isLowContrast: true,
           subtitle: err?.message,
         });
-      });
+      })
+      // Re-enable the button on every failure path; otherwise the clinician has to
+      // close and reopen the modal to retry.
+      .finally(() => setIsSubmitting(false));
   };
 
   return (

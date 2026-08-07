@@ -70,9 +70,14 @@ const CaseManagementListActive: React.FC<CaseManagementListActiveProps> = ({ set
     [activeCasesData, searchTerm],
   );
 
+  // Filtering shrinks the list, so the current page can fall past its end and
+  // render an empty table over matching results. Clamp instead of stranding the user.
+  const totalPages = Math.max(1, Math.ceil(filteredCases.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
   const paginatedCases = useMemo(
-    () => filteredCases.slice((currentPage - 1) * pageSize, currentPage * pageSize),
-    [filteredCases, currentPage, pageSize],
+    () => filteredCases.slice((safeCurrentPage - 1) * pageSize, safeCurrentPage * pageSize),
+    [filteredCases, safeCurrentPage, pageSize],
   );
 
   const tableRows = paginatedCases.map((caseData) => ({
@@ -139,7 +144,10 @@ const CaseManagementListActive: React.FC<CaseManagementListActiveProps> = ({ set
         labelText=""
         placeholder={t('filterTable', 'Filter table')}
         size={responsiveSize}
-        onChange={(e) => setSearchTerm(e.target.value)}
+        onChange={(e) => {
+          setSearchTerm(e.target.value);
+          setCurrentPage(1);
+        }}
       />
       <DataTable
         useZebraStyles
@@ -172,7 +180,7 @@ const CaseManagementListActive: React.FC<CaseManagementListActiveProps> = ({ set
         )}
       />
       <Pagination
-        page={currentPage}
+        page={safeCurrentPage}
         pageSize={pageSize}
         pageSizes={[5, 10, 15]}
         totalItems={filteredCases.length}

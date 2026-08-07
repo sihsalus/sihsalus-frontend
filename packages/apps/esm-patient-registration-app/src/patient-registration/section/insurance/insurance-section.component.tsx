@@ -7,6 +7,7 @@ import {
   peruInsuranceAccreditationActiveConceptUuid,
   peruInsuranceAccreditationCheckedAtAttributeTypeUuid,
   peruInsuranceAccreditationInactiveConceptUuid,
+  peruInsuranceAccreditationPendingConceptUuid,
   peruInsuranceAccreditationStatusAttributeTypeUuid,
 } from '../../peru-registration-config';
 import styles from '../section.scss';
@@ -16,9 +17,16 @@ export interface InsuranceSectionProps {
 }
 
 const insuranceAccreditationCheckedAtField = 'insuranceAccreditationCheckedAt';
+/**
+ * Estados en los que la fecha de verificación tiene sentido. «Pendiente» también
+ * la conserva: es el valor que toma la verificación sin conexión, y saber *cuándo*
+ * Admisión lo intentó es justamente lo que permite retomarlo después. Solo «No
+ * consultada» (nunca se intentó) la descarta.
+ */
 const insuranceAccreditationDateVisibleStatuses = new Set([
   peruInsuranceAccreditationActiveConceptUuid,
   peruInsuranceAccreditationInactiveConceptUuid,
+  peruInsuranceAccreditationPendingConceptUuid,
 ]);
 
 export const InsuranceSection = ({ sectionDefinition }: InsuranceSectionProps) => {

@@ -12,7 +12,7 @@ import styles from './styles.scss';
 const CostStructureSearch: React.FC = () => {
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(10);
-  const [query] = useState('');
+  const [query, setQuery] = useState('');
   const { costStructure, total, isLoading, isError } = useGetCostStructure(page - 1, size, query);
   const { t } = useTranslation();
 
@@ -33,7 +33,15 @@ const CostStructureSearch: React.FC = () => {
         </div>
         <div>
           <div className={styles.search}>
-            <Search labelText="" placeholder={t('searchPlaceholder', 'E.g.: 00906 or Anesthesia for vulvectomy')} />
+            <Search
+              labelText={t('searchCostStructures', 'Buscar estructuras de costo')}
+              placeholder={t('searchPlaceholder', 'E.g.: 00906 or Anesthesia for vulvectomy')}
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setPage(1);
+              }}
+            />
             <Button hasIconOnly kind="ghost" renderIcon={Filter} iconDescription={t('filter', 'Filter')} />
           </div>
           <HomeTable data={costStructure} />

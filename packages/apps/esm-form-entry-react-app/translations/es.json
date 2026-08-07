@@ -9,8 +9,8 @@
   "clearFile": "Borrar archivo",
   "close": "Cerrar",
   "closeCamera": "Cerrar cámara",
-  "closesNotification": "Cerrar notificación",
   "closeThisPanel": "Cerrar este panel",
+  "closesNotification": "Cerrar notificación",
   "collapseAll": "Colapsar todo",
   "deleteQuestion": "Eliminar pregunta",
   "deleteQuestionConfirmation": "¿Está seguro de que desea eliminar esta pregunta?",
@@ -46,9 +46,11 @@
   "tryAgainMessage": "Intente abrir otro formulario de",
   "unspecified": "No especificado",
   "upload": "Subir",
-  "uploadedPhoto": "Foto subida",
   "uploadImage": "Subir imagen",
+  "uploadedPhoto": "Foto subida",
   "valuesOutOfBound": "Algunos de los valores están fuera de los límites permitidos.",
   "visitDateAdjusted": "Fecha de consulta ajustada",
-  "visitDateAdjustedDescription": "Las fechas de la consulta se ajustaron automáticamente para incluir la fecha de atención."
+  "visitDateAdjustedDescription": "Las fechas de la consulta se ajustaron automáticamente para incluir la fecha de atención.",
+  "visitDateAdjustmentFailed": "No se pudieron ajustar las fechas de la visita",
+  "visitDateAdjustmentFailedDescription": "El encuentro se guardó, pero su fecha puede estar fuera del período de la visita. Revise las fechas de la visita."
 }

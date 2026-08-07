@@ -5,6 +5,8 @@
   "changeDefaultLocale": "Update your default locale",
   "changeDefaultLocaleExplanation": "Leave this unchecked to change language for this session only",
   "changeLanguage": "Change language",
+  "changeLanguageFailed": "Could not change language",
+  "changeLanguageFailedMessage": "The language could not be changed. Please try again.",
   "changingLanguage": "Changing language",
   "clear": "Borrar",
   "logout": "Logout",

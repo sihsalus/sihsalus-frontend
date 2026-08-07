@@ -5,6 +5,8 @@
   "changeDefaultLocale": "Actualice su configuración regional predeterminada",
   "changeDefaultLocaleExplanation": "Deje esta opción sin marcar para cambiar el idioma únicamente de esta sesión",
   "changeLanguage": "Cambiar idioma",
+  "changeLanguageFailed": "No se pudo cambiar el idioma",
+  "changeLanguageFailedMessage": "No se pudo cambiar el idioma. Intente nuevamente.",
   "changingLanguage": "Cambiando idioma",
   "clear": "Borrar",
   "logout": "Cerrar sesión",

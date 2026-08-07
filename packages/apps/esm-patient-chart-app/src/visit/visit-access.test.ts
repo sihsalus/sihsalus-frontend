@@ -1,6 +1,6 @@
 import { userHasAccess } from '@openmrs/esm-framework';
 
-import { canEditVisit, canStartVisit } from './visit-access';
+import { canCloseClinicalVisit, canEditVisit, canStartVisit } from './visit-access';
 
 const mockUserHasAccess = vi.mocked(userHasAccess);
 
@@ -46,5 +46,33 @@ describe('canEditVisit', () => {
     mockUserHasAccess.mockImplementation((privilege) => privilege === 'Add Visits');
 
     expect(canEditVisit({} as Parameters<typeof userHasAccess>[1])).toBe(false);
+  });
+});
+
+describe('canCloseClinicalVisit', () => {
+  beforeEach(() => {
+    mockUserHasAccess.mockReset();
+  });
+
+  it('requires both clinical chart access and clinical visit editing', () => {
+    mockUserHasAccess.mockImplementation((privilege) =>
+      ['app:hoja.clinica', 'app:hoja.clinica.visitas.editar'].includes(privilege as string),
+    );
+
+    expect(canCloseClinicalVisit({} as Parameters<typeof userHasAccess>[1])).toBe(true);
+  });
+
+  it('does not let admission close a clinical visit through its native visit capabilities', () => {
+    mockUserHasAccess.mockImplementation((privilege) =>
+      ['app:home.admision', 'Add Visits', 'Edit Visits'].includes(privilege as string),
+    );
+
+    expect(canCloseClinicalVisit({} as Parameters<typeof userHasAccess>[1])).toBe(false);
+  });
+
+  it('rejects a stale clinical edit privilege without access to the clinical chart', () => {
+    mockUserHasAccess.mockImplementation((privilege) => privilege === 'app:hoja.clinica.visitas.editar');
+
+    expect(canCloseClinicalVisit({} as Parameters<typeof userHasAccess>[1])).toBe(false);
   });
 });

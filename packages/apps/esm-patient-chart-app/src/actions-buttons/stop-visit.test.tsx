@@ -17,7 +17,7 @@ vi.mock('@carbon/react', async () => {
   };
 });
 
-import { showModal, useVisit } from '@openmrs/esm-framework';
+import { showModal, userHasAccess, useSession, useVisit } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
@@ -26,6 +26,8 @@ import { mockCurrentVisit, mockPatient } from 'test-utils';
 import StopVisitOverflowMenuItem from './stop-visit.component';
 
 const mockUseVisit = vi.mocked(useVisit);
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockShowModal = vi.mocked(showModal);
 
 vi.mock('@openmrs/esm-framework', async () => ({
@@ -36,6 +38,13 @@ vi.mock('@openmrs/esm-framework', async () => ({
 }));
 
 describe('StopVisitOverflowMenuItem', () => {
+  beforeEach(() => {
+    mockUseSession.mockReturnValue({ user: { uuid: 'clinical-user' } } as ReturnType<typeof useSession>);
+    mockUserHasAccess.mockImplementation((privilege) =>
+      ['app:hoja.clinica', 'app:hoja.clinica.visitas.editar'].includes(privilege as string),
+    );
+  });
+
   it('should be able to stop current visit', async () => {
     const user = userEvent.setup();
 
@@ -73,5 +82,18 @@ describe('StopVisitOverflowMenuItem', () => {
 
     await user.click(endVisitButton);
     expect(mockShowModal).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not expose clinical closure to admission staff', () => {
+    mockUseVisit.mockReturnValue({
+      currentVisit: mockCurrentVisit,
+    } as ReturnType<typeof useVisit>);
+    mockUserHasAccess.mockImplementation((privilege) =>
+      ['app:home.admision', 'Edit Visits'].includes(privilege as string),
+    );
+
+    render(<StopVisitOverflowMenuItem patientUuid={mockPatient.id} />);
+
+    expect(screen.queryByRole('menuitem', { name: /End Visit/i })).not.toBeInTheDocument();
   });
 });

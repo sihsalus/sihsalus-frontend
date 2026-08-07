@@ -12,4 +12,18 @@ describe('patient chart route privilege contract', () => {
       expect.arrayContaining(['app:opciones.registrarAcompanante', 'Add People']),
     );
   });
+
+  it('requires clinical scope as well as visit editing for visit closure actions', () => {
+    const closurePrivileges = ['app:hoja.clinica', 'app:hoja.clinica.visitas.editar'];
+    const closureExtensions = routes.extensions.filter(({ name }) =>
+      ['stop-visit-button', 'stop-visit-button-patient-search', 'cancel-visit-button'].includes(name),
+    );
+
+    expect(closureExtensions).toHaveLength(4);
+    closureExtensions.forEach((extension) => {
+      expect(extension.privileges).toEqual(closurePrivileges);
+    });
+    expect(routes.modals.find(({ name }) => name === 'end-visit-dialog')?.privileges).toEqual(closurePrivileges);
+    expect(routes.modals.find(({ name }) => name === 'cancel-visit-dialog')?.privileges).toEqual(closurePrivileges);
+  });
 });

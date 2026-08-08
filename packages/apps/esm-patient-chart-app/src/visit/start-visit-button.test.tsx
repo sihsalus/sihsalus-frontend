@@ -22,7 +22,9 @@ describe('StartVisitButton', () => {
         privileges: [{ display: 'app:hoja.clinica' }, { display: 'Add Visits' }],
       },
     } as ReturnType<typeof useSession>);
-    mockUserHasAccess.mockImplementation((privilege) => ['app:hoja.clinica', 'Add Visits'].includes(privilege));
+    mockUserHasAccess.mockImplementation(
+      (privilege) => typeof privilege === 'string' && ['app:hoja.clinica', 'Add Visits'].includes(privilege),
+    );
   });
 
   it('renders the start visit button', () => {
@@ -55,7 +57,9 @@ describe('StartVisitButton', () => {
   });
 
   it('does not render the manual start action for admission', () => {
-    mockUserHasAccess.mockImplementation((privilege) => ['app:home.admision', 'Add Visits'].includes(privilege));
+    mockUserHasAccess.mockImplementation(
+      (privilege) => typeof privilege === 'string' && ['app:home.admision', 'Add Visits'].includes(privilege),
+    );
 
     render(<StartVisitButton patientUuid={mockPatient.id} />);
 

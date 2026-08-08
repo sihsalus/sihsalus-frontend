@@ -11,6 +11,7 @@ const yarnLock = readFileSync(path.join(repositoryRoot, 'yarn.lock'), 'utf8');
 
 const protectedDependencies = [
   { name: 'flatted', minimumSafeVersion: '3.4.2' },
+  { name: 'nanoid', minimumSafeVersion: '3.3.17' },
   { name: 'shell-quote', minimumSafeVersion: '1.8.4' },
   { name: 'sigstore', minimumSafeVersion: '4.1.1' },
 ];

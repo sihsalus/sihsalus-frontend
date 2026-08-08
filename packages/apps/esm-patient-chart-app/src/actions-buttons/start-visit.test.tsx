@@ -65,7 +65,9 @@ describe('StartVisitOverflowMenuItem', () => {
         privileges: [{ display: 'app:hoja.clinica' }, { display: 'Add Visits' }],
       },
     } as ReturnType<typeof useSession>);
-    mockUserHasAccess.mockImplementation((privilege) => ['app:hoja.clinica', 'Add Visits'].includes(privilege));
+    mockUserHasAccess.mockImplementation(
+      (privilege) => typeof privilege === 'string' && ['app:hoja.clinica', 'Add Visits'].includes(privilege),
+    );
   });
 
   it('should launch the start visit form', async () => {
@@ -118,7 +120,9 @@ describe('StartVisitOverflowMenuItem', () => {
   });
 
   it('should not let admission start a consultation outside appointment arrival', () => {
-    mockUserHasAccess.mockImplementation((privilege) => ['app:home.admision', 'Add Visits'].includes(privilege));
+    mockUserHasAccess.mockImplementation(
+      (privilege) => typeof privilege === 'string' && ['app:home.admision', 'Add Visits'].includes(privilege),
+    );
 
     render(
       React.createElement(StartVisitOverflowMenuItem, {

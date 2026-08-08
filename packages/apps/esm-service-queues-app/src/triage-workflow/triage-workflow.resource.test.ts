@@ -1,4 +1,4 @@
-import { getConfig, openmrsFetch } from '@openmrs/esm-framework';
+import { type FetchResponse, getConfig, openmrsFetch } from '@openmrs/esm-framework';
 import {
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
@@ -24,6 +24,10 @@ const triageEncounterTypeUuid = 'triage-encounter-type-uuid';
 const triageQueueUuid = 'triage-queue-uuid';
 const destinationQueueUuid = 'destination-queue-uuid';
 const waitingStatusUuid = 'waiting-status-uuid';
+
+function mockFetchResponse<T>(data: T): FetchResponse<T> {
+  return { data } as unknown as FetchResponse<T>;
+}
 
 const appointmentConfig: AppointmentTriageConfig = {
   appointmentVisitAttributeTypeUuid: appointmentAttributeTypeUuid,
@@ -67,7 +71,7 @@ function makeQueueEntry({ triaged = false, sis = true } = {}): QueueEntry {
         ? [{ uuid: 'triage-encounter-uuid', encounterType: { uuid: triageEncounterTypeUuid }, voided: false }]
         : [],
     },
-  } as QueueEntry;
+  } as unknown as QueueEntry;
 }
 
 describe('outpatient triage workflow', () => {
@@ -93,14 +97,14 @@ describe('outpatient triage workflow', () => {
   });
 
   it('transitions a triaged patient to the exact queue configured for the appointment', async () => {
-    vi.mocked(openmrsFetch).mockResolvedValue({
-      data: {
+    vi.mocked(openmrsFetch).mockResolvedValue(
+      mockFetchResponse({
         uuid: 'appointment-uuid',
         location: { uuid: 'appointment-location-uuid' },
         service: { uuid: 'appointment-service-uuid' },
-      },
-    });
-    vi.mocked(transitionQueueEntry).mockResolvedValue({ data: makeQueueEntry({ triaged: true }) });
+      }),
+    );
+    vi.mocked(transitionQueueEntry).mockResolvedValue(mockFetchResponse(makeQueueEntry({ triaged: true })));
 
     await transitionTriagedPatient(makeQueueEntry({ triaged: true }));
 

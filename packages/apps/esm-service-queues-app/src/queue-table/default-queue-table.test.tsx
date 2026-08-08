@@ -89,7 +89,14 @@ describe('DefaultQueueTable', () => {
     });
     mockUseQueueWorkflowMetadata.mockImplementation((entries) => ({
       appointmentConfig: undefined,
-      entries,
+      entries: entries.map((entry) => ({
+        ...entry,
+        workflow: {
+          isTriageQueue: false,
+          sisState: 'notApplicable',
+          triageState: 'notRequired',
+        },
+      })),
       error: undefined,
       isLoading: false,
     }));

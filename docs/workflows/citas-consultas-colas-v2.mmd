@@ -1,0 +1,62 @@
+flowchart LR
+  subgraph Paciente
+    P1[Llega al hospital, requiere atención médica]
+    P2[Espera en la cola del servicio seleccionado]
+    P3[Espera en la cola de consulta externa]
+  end
+
+  subgraph Admision
+    A1[Pregunta si el paciente tiene cita programada]
+    A2{Tiene cita programada?}
+    A3[Registra la llegada del paciente]
+    A4[Crea una cita seleccionando UPSS, servicio y modalidad Walk-in]
+    A5[Agrega al paciente a la cola del servicio seleccionado]
+  end
+
+  subgraph Sistema
+    S1[Crea la consulta]
+    S2[Registra la llegada del paciente]
+    S3[Cambia el estado de la cita de Esperando a En Progreso]
+    S4[Coloca la entrada del paciente en la cola en estado Esperando]
+    S5[Mueve el estado del paciente en la cola a Servicio finalizado]
+    S6[Cambia el estado de la cita a Servicio Terminado]
+  end
+
+  subgraph Triaje
+    T1[Llama al paciente]
+    T2[Toma signos vitales y datos biometricos]
+    T3[Mueve al paciente a la cola del servicio seleccionado]
+  end
+
+  subgraph Doctor_Consulta_Externa
+    D1[Llama al paciente]
+    D5[Cambia el estado del paciente en la cola de Esperando a Atendiendose]
+    D2[Registra el diagnostico]
+    D3[Registra ordenes de farmacia o laboratorio]
+    D4[Registra el tratamiento]
+    D6[Finaliza la consulta]
+  end
+
+  P1 --> A1
+  A1 --> A2
+  A2 -- Si --> A3
+  A3 --> S3
+  A2 -- No --> A4
+  A4 --> S2
+  S2 --> S3
+  S3 --> S1
+  S1 --> A5
+  A5 --> S4
+  S4 --> P2
+  P2 --> T1
+  T1 --> T2
+  T2 --> T3
+  T3 --> P3
+  P3 --> D1
+  D1 --> D5
+  D5 --> D2
+  D2 --> D3
+  D3 --> D4
+  D4 --> D6
+  D6 --> S5
+  S5 --> S6

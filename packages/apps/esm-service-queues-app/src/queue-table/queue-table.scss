@@ -104,6 +104,26 @@
     display: flex;
     width: 100%;
     align-items: center;
+    gap: layout.$spacing-05;
+    padding: 0 layout.$spacing-05 layout.$spacing-04 0;
+  }
+}
+
+.triageFilter {
+  flex: 0 0 16rem;
+  min-width: 0;
+}
+
+@media (max-width: 672px) {
+  .tableContainer .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding-right: 0;
+  }
+
+  .triageFilter {
+    flex-basis: auto;
+    width: 100%;
   }
 }
 

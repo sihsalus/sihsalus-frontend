@@ -19,10 +19,12 @@ describe('StartVisitButton', () => {
   beforeEach(() => {
     mockUseSession.mockReturnValue({
       user: {
-        privileges: [{ display: 'app:home.admision' }],
+        privileges: [{ display: 'app:hoja.clinica' }, { display: 'Add Visits' }],
       },
     } as ReturnType<typeof useSession>);
-    mockUserHasAccess.mockImplementation((privilege) => privilege === 'app:home.admision');
+    mockUserHasAccess.mockImplementation(
+      (privilege) => typeof privilege === 'string' && ['app:hoja.clinica', 'Add Visits'].includes(privilege),
+    );
   });
 
   it('renders the start visit button', () => {
@@ -48,6 +50,16 @@ describe('StartVisitButton', () => {
 
   it('does not render the start visit button without ADT or visit edit privileges', () => {
     mockUserHasAccess.mockReturnValue(false);
+
+    render(<StartVisitButton patientUuid={mockPatient.id} />);
+
+    expect(screen.queryByRole('button', { name: /start visit/i })).not.toBeInTheDocument();
+  });
+
+  it('does not render the manual start action for admission', () => {
+    mockUserHasAccess.mockImplementation(
+      (privilege) => typeof privilege === 'string' && ['app:home.admision', 'Add Visits'].includes(privilege),
+    );
 
     render(<StartVisitButton patientUuid={mockPatient.id} />);
 

@@ -343,6 +343,34 @@ describe('AppointmentArrivalModal', () => {
     expect(mockChangeAppointmentStatus).toHaveBeenCalledWith(AppointmentStatus.CHECKEDIN, appointment.uuid);
   });
 
+  it('routes an appointment arrival through the configured triage queue', async () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentArrivalRules: [{ ...appointmentArrivalRule, requiresTriage: true }],
+      triageRouting: {
+        enabled: true,
+        encounterTypeUuid: 'triage-encounter-type-uuid',
+        queueLocationUuid: 'triage-location-uuid',
+        queueUuid: 'triage-queue-uuid',
+      },
+      checkInButton: { enabled: true, showIfActiveVisit: true, customUrl: '' },
+    });
+
+    renderModal();
+    await userEvent.click(getQueueButton());
+
+    expect(mockLaunchWorkspace2).toHaveBeenCalledWith(
+      'appointments-start-visit-workspace',
+      expect.objectContaining({
+        currentQueueLocationUuid: 'triage-location-uuid',
+        currentServiceQueueUuid: 'triage-queue-uuid',
+        workspaceTitle: 'Registrar llegada y enviar a triaje',
+        workspaceDescription:
+          'Revise los datos de la atención. Al confirmar, se registrará la llegada y el paciente pasará primero a la cola de triaje.',
+      }),
+    );
+  });
+
   it('blocks enqueuing with an active visit from another location', async () => {
     mockGetActiveVisitsForPatient.mockResolvedValue(
       visitsResponse([

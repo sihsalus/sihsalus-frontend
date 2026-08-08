@@ -20,6 +20,7 @@ import { useQueueEntries } from '../hooks/useQueueEntries';
 import useQueueStatuses from '../hooks/useQueueStatuses';
 import DefaultQueueTable from '../queue-table/default-queue-table.component';
 import { updateSelectedQueueStatus, useServiceQueuesStore } from '../store/store';
+import { useQueueWorkflowMetadata } from '../triage-workflow/triage-workflow.resource';
 
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseQueueEntries = vi.mocked(useQueueEntries);
@@ -29,6 +30,7 @@ const mockUseSession = vi.mocked(useSession);
 const mockUseQueueStatuses = vi.mocked(useQueueStatuses);
 const mockUpdateSelectedQueueStatus = vi.mocked(updateSelectedQueueStatus);
 const mockUseServiceQueuesStore = vi.mocked(useServiceQueuesStore);
+const mockUseQueueWorkflowMetadata = vi.mocked(useQueueWorkflowMetadata);
 
 vi.mock('../create-queue-entry/hooks/useQueueLocations', async () => ({
   ...(await vi.importActual('../create-queue-entry/hooks/useQueueLocations')),
@@ -52,6 +54,10 @@ vi.mock('../hooks/useQueueStatuses', () => ({
 vi.mock('../store/store', () => ({
   updateSelectedQueueStatus: vi.fn(),
   useServiceQueuesStore: vi.fn(),
+}));
+
+vi.mock('../triage-workflow/triage-workflow.resource', () => ({
+  useQueueWorkflowMetadata: vi.fn(),
 }));
 
 vi.mock('./queue-table.scss', () => ({
@@ -81,6 +87,12 @@ describe('DefaultQueueTable', () => {
       selectedQueueRoomTimestamp: new Date(),
       isPermanentProviderQueueRoom: false,
     });
+    mockUseQueueWorkflowMetadata.mockImplementation((entries) => ({
+      appointmentConfig: undefined,
+      entries,
+      error: undefined,
+      isLoading: false,
+    }));
   });
 
   it('renders an empty state view if data is unavailable', async () => {
@@ -162,6 +174,34 @@ describe('DefaultQueueTable', () => {
     await user.click(within(statusSwitcher).getByRole('tab', { name: /all/i }));
 
     expect(mockUpdateSelectedQueueStatus).toHaveBeenLastCalledWith(null, 'All');
+  });
+
+  it('renders rows safely after selecting a status tab and omits the redundant status column', async () => {
+    mockUseServiceQueuesStore.mockReturnValue({
+      queueLocationSelectionInitialized: true,
+      selectedServiceUuid: null,
+      selectedQueueLocationUuid: null,
+      selectedQueueStatusUuid: mockStatusWaiting.uuid,
+      selectedQueueStatusDisplay: mockStatusWaiting.display,
+      selectedAppointmentStatus: '',
+      selectedQueueRoomTimestamp: new Date(),
+      isPermanentProviderQueueRoom: false,
+    });
+    mockQueueLocations.mockReturnValue({ queueLocations: [], isLoading: false, error: null });
+    mockUseQueueRooms.mockReturnValue({ rooms: [], isLoading: false, error: undefined });
+    mockUseQueueEntries.mockReturnValue({
+      queueEntries: mockQueueEntries,
+      isLoading: false,
+      error: undefined,
+      totalCount: mockQueueEntries.length,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+
+    rendeDefaultQueueTable();
+
+    expect(await screen.findByRole('link', { name: /Alice Johnson/i })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: /^(status|estado)$/i })).not.toBeInTheDocument();
   });
 
   it('restores a persisted status selection and applies it to the queue request', async () => {
@@ -279,8 +319,10 @@ describe('DefaultQueueTable', () => {
 
     const expectedColumnHeaders = [
       /name/i,
+      /hora de cita|appointment time/i,
+      /triaje|triage/i,
+      /sis/i,
       /priority/i,
-      /coming from/i,
       /status/i,
       /^queue$/i,
       /wait time/i,

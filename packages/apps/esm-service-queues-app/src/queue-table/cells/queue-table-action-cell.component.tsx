@@ -1,8 +1,24 @@
 import { Button, OverflowMenu, OverflowMenuItem } from '@carbon/react';
-import { isDesktop, showModal, useLayoutType, useSession } from '@openmrs/esm-framework';
+import {
+  getUserFacingErrorMessage,
+  isDesktop,
+  launchWorkspace2,
+  showModal,
+  showSnackbar,
+  userHasAccess,
+  useLayoutType,
+  useSession,
+} from '@openmrs/esm-framework';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { serviceQueuesPatientVitalsWorkspace, vitalsEditPrivilege } from '../../constants';
+import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
 import { canEditServiceQueues } from '../../permissions';
+import {
+  getAppointmentTriageConfig,
+  transitionTriagedPatient,
+} from '../../triage-workflow/triage-workflow.resource';
 import { type QueueTableCellComponentProps, type QueueTableColumnFunction } from '../../types';
 
 import styles from './queue-table-action-cell.scss';
@@ -12,6 +28,78 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
   const layout = useLayoutType();
   const session = useSession();
   const canEdit = canEditServiceQueues(session?.user);
+  const canPerformTriage =
+    Boolean(queueEntry.workflow?.isTriageQueue) &&
+    canEdit &&
+    userHasAccess(vitalsEditPrivilege, session?.user) &&
+    Boolean(queueEntry.visit?.uuid);
+  const [isSubmittingTriage, setIsSubmittingTriage] = useState(false);
+  const { mutateQueueEntries } = useMutateQueueEntries();
+
+  const transitionAfterTriage = async () => {
+    try {
+      await transitionTriagedPatient(queueEntry);
+      await mutateQueueEntries();
+      showSnackbar({
+        isLowContrast: true,
+        kind: 'success',
+        title: t('triageCompleted', 'Triaje realizado'),
+        subtitle: t(
+          'patientSentToClinicalQueue',
+          'El paciente fue enviado a la cola correspondiente a su cita.',
+        ),
+      });
+    } catch (error) {
+      showSnackbar({
+        isLowContrast: false,
+        kind: 'error',
+        title: t('triageRoutingFailed', 'El triaje se guardó, pero no se pudo derivar al paciente'),
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t(
+            'triageRoutingFailedDescription',
+            'Use “Enviar a atención” para reintentar o revise la ruta de la cita.',
+          ),
+          { logContext: `Route triaged queue entry ${queueEntry.uuid}` },
+        ),
+      });
+    }
+  };
+
+  const handleTriage = async () => {
+    setIsSubmittingTriage(true);
+    try {
+      if (queueEntry.workflow?.triageState === 'completed') {
+        await transitionAfterTriage();
+        return;
+      }
+      const config = await getAppointmentTriageConfig();
+      await launchWorkspace2(
+        serviceQueuesPatientVitalsWorkspace,
+        {
+          encounterTypeUuid: config.triageRouting.encounterTypeUuid,
+          locationUuid: config.triageRouting.queueLocationUuid,
+          onVitalsSaved: transitionAfterTriage,
+          profile: 'default',
+        },
+        null,
+        { patientUuid: queueEntry.patient.uuid },
+      );
+    } catch (error) {
+      showSnackbar({
+        isLowContrast: false,
+        kind: 'error',
+        title: t('couldNotStartTriage', 'No se pudo iniciar el triaje'),
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('couldNotStartTriageDescription', 'Revise la consulta y la configuración de colas.'),
+          { logContext: `Start triage for queue entry ${queueEntry.uuid}` },
+        ),
+      });
+    } finally {
+      setIsSubmittingTriage(false);
+    }
+  };
 
   if (!canEdit) {
     return null;
@@ -19,19 +107,32 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
 
   return (
     <div className={styles.actionsCell}>
-      <Button
-        kind="ghost"
-        aria-label={t('transition', 'Transition')}
-        onClick={() => {
-          const dispose = showModal('transition-queue-entry-modal', {
-            closeModal: () => dispose(),
-            queueEntry,
-          });
-        }}
-        size={isDesktop(layout) ? 'sm' : 'lg'}
-      >
-        {t('transition', 'Transition')}
-      </Button>
+      {queueEntry.workflow?.isTriageQueue && canPerformTriage ? (
+        <Button
+          disabled={isSubmittingTriage}
+          kind="primary"
+          onClick={handleTriage}
+          size={isDesktop(layout) ? 'sm' : 'lg'}
+        >
+          {queueEntry.workflow.triageState === 'completed'
+            ? t('sendToCare', 'Enviar a atención')
+            : t('performTriage', 'Realizar triaje')}
+        </Button>
+      ) : (
+        <Button
+          kind="ghost"
+          aria-label={t('transition', 'Transition')}
+          onClick={() => {
+            const dispose = showModal('transition-queue-entry-modal', {
+              closeModal: () => dispose(),
+              queueEntry,
+            });
+          }}
+          size={isDesktop(layout) ? 'sm' : 'lg'}
+        >
+          {t('transition', 'Transition')}
+        </Button>
+      )}
       <OverflowMenu
         aria-label={t('actions', 'Actions')}
         iconDescription={t('actions', 'Actions')}

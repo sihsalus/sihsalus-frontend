@@ -13,6 +13,7 @@ import {
 import { type QueueTableColumn } from '../../types';
 
 import { queueTableActionColumn } from './queue-table-action-cell.component';
+import { queueTableAppointmentTimeColumn } from './queue-table-appointment-time-cell.component';
 import { queueTableComingFromColumn } from './queue-table-coming-from-cell.component';
 import { queueTableExtensionColumn } from './queue-table-extension-cell.component';
 import { queueTableNameColumn } from './queue-table-name-cell.component';
@@ -20,7 +21,9 @@ import { queueTablePatientAgeColumn } from './queue-table-patient-age-cell.compo
 import { queueTablePatientIdentifierColumn } from './queue-table-patient-identifier-cell.component';
 import { queueTablePriorityColumn } from './queue-table-priority-cell.component';
 import { queueTableQueueNameColumn } from './queue-table-queue-name-cell.component';
+import { queueTableSisStatusColumn } from './queue-table-sis-status-cell.component';
 import { queueTableStatusColumn } from './queue-table-status-cell.component';
+import { queueTableTriageStatusColumn } from './queue-table-triage-status-cell.component';
 import { queueTableVisitAttributeQueueNumberColumn } from './queue-table-visit-attribute-queue-number-cell.component';
 import { queueTableVisitStartTimeColumn } from './queue-table-visit-start-time-cell.component';
 import { queueTableWaitTimeColumn } from './queue-table-wait-time-cell.component';
@@ -100,6 +103,9 @@ function getColumnFromDefinition(t: TFunction, columnDef: ColumnDefinition): Que
   const translatedHeader = header ? t(header) : null;
 
   switch (columnType ?? id) {
+    case 'appointment-time': {
+      return queueTableAppointmentTimeColumn(id, translatedHeader ?? t('appointmentTime', 'Hora de cita'));
+    }
     case 'patient-name': {
       return queueTableNameColumn(id, translatedHeader ?? t('name', 'Name'));
     }
@@ -121,6 +127,12 @@ function getColumnFromDefinition(t: TFunction, columnDef: ColumnDefinition): Que
     }
     case 'status': {
       return queueTableStatusColumn(id, translatedHeader ?? t('status', 'Status'), columnDef.config);
+    }
+    case 'triage-status': {
+      return queueTableTriageStatusColumn(id, translatedHeader ?? t('triageStatus', 'Triaje'));
+    }
+    case 'sis-status': {
+      return queueTableSisStatusColumn(id, translatedHeader ?? t('sisStatus', 'Estado SIS'));
     }
     case 'coming-from': {
       return queueTableComingFromColumn(id, translatedHeader ?? t('comingFrom', 'Coming from'));

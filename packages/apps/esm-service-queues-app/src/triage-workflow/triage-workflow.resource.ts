@@ -1,0 +1,220 @@
+import {
+  getConfig,
+  openmrsFetch,
+  restBaseUrl,
+  type FetchResponse,
+} from '@openmrs/esm-framework';
+import {
+  FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  LEGACY_SIS_PRODUCT_CONCEPT_UUIDS,
+  SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_CONCEPT_UUID,
+  getCodedValueUuid,
+} from '@openmrs/esm-patient-common-lib';
+import useSWR from 'swr';
+
+import { transitionQueueEntry } from '../modals/queue-entry-actions.resource';
+import { type QueueEntry } from '../types';
+
+const appointmentsModuleName = '@sihsalus/esm-appointments-app';
+const serviceQueuesModuleName = '@sihsalus/esm-service-queues-app';
+const accreditationActiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2051';
+const accreditationInactiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2052';
+const accreditationPendingConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2053';
+const accreditationNotConsultedConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2054';
+
+type AttributeValue = string | { uuid?: string; display?: string } | null | undefined;
+
+interface AppointmentRoutingRule {
+  appointmentLocationUuid: string;
+  appointmentServiceUuid: string;
+  queueLocationUuid?: string;
+  queueUuid?: string;
+  requiresTriage?: boolean;
+}
+
+export interface AppointmentTriageConfig {
+  appointmentArrivalRules: Array<AppointmentRoutingRule>;
+  appointmentVisitAttributeTypeUuid: string;
+  triageRouting: {
+    enabled: boolean;
+    encounterTypeUuid: string;
+    queueLocationUuid: string;
+    queueUuid: string;
+  };
+}
+
+interface ServiceQueuesRoutingConfig {
+  concepts: {
+    defaultStatusConceptUuid: string;
+  };
+}
+
+interface AppointmentSummary {
+  uuid: string;
+  startDateTime?: string;
+  location?: { uuid?: string; name?: string };
+  service?: { uuid?: string; name?: string };
+}
+
+export type TriageState = 'pending' | 'completed' | 'notRequired';
+export type SisState = 'active' | 'inactive' | 'pending' | 'notConsulted' | 'missing' | 'notApplicable';
+
+export interface QueueWorkflowMetadata {
+  appointmentStartDateTime?: string;
+  appointmentUuid?: string;
+  destinationQueueUuid?: string;
+  isTriageQueue: boolean;
+  sisState: SisState;
+  triageState: TriageState;
+}
+
+function getAttributeValue(queueEntry: QueueEntry, attributeTypeUuid: string): AttributeValue {
+  const attributes = (queueEntry.visit?.attributes ?? []) as Array<{
+    attributeType?: { uuid?: string };
+    value?: AttributeValue;
+  }>;
+  return attributes.find((attribute) => attribute.attributeType?.uuid === attributeTypeUuid)?.value;
+}
+
+export function getLinkedAppointmentUuid(queueEntry: QueueEntry, config?: AppointmentTriageConfig): string | null {
+  if (!config?.appointmentVisitAttributeTypeUuid) {
+    return null;
+  }
+  return getCodedValueUuid(getAttributeValue(queueEntry, config.appointmentVisitAttributeTypeUuid));
+}
+
+export function getSisState(queueEntry: QueueEntry): SisState {
+  const funderUuid = getCodedValueUuid(getAttributeValue(queueEntry, FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID));
+  const isSis = funderUuid === SIS_CONCEPT_UUID || LEGACY_SIS_PRODUCT_CONCEPT_UUIDS.includes(funderUuid ?? '');
+  if (!isSis) {
+    return 'notApplicable';
+  }
+
+  const statusUuid = getCodedValueUuid(
+    getAttributeValue(queueEntry, SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID),
+  );
+  switch (statusUuid) {
+    case accreditationActiveConceptUuid:
+      return 'active';
+    case accreditationInactiveConceptUuid:
+      return 'inactive';
+    case accreditationPendingConceptUuid:
+      return 'pending';
+    case accreditationNotConsultedConceptUuid:
+      return 'notConsulted';
+    default:
+      return 'missing';
+  }
+}
+
+export function getTriageState(
+  queueEntry: QueueEntry,
+  config?: AppointmentTriageConfig,
+  appointment?: AppointmentSummary,
+): TriageState {
+  if (!config?.triageRouting?.enabled || !getLinkedAppointmentUuid(queueEntry, config)) {
+    return 'notRequired';
+  }
+  const requiresTriage =
+    queueEntry.queue?.uuid === config.triageRouting.queueUuid ||
+    Boolean(getDestinationQueueUuid(appointment, config));
+  if (!requiresTriage) {
+    return 'notRequired';
+  }
+  const completed = queueEntry.visit?.encounters?.some(
+    (encounter) =>
+      !encounter.voided && encounter.encounterType?.uuid === config.triageRouting.encounterTypeUuid,
+  );
+  return completed ? 'completed' : 'pending';
+}
+
+export async function getAppointmentTriageConfig(): Promise<AppointmentTriageConfig> {
+  return (await getConfig(appointmentsModuleName)) as unknown as AppointmentTriageConfig;
+}
+
+async function fetchAppointment(appointmentUuid: string): Promise<AppointmentSummary> {
+  const response = await openmrsFetch<AppointmentSummary>(`${restBaseUrl}/appointments/${appointmentUuid}`);
+  return response.data;
+}
+
+function getDestinationQueueUuid(
+  appointment: AppointmentSummary | undefined,
+  config: AppointmentTriageConfig | undefined,
+): string | undefined {
+  if (!appointment?.service?.uuid || !appointment.location?.uuid || !config) {
+    return undefined;
+  }
+  const matchingRules = config.appointmentArrivalRules.filter(
+    (rule) =>
+      rule.requiresTriage &&
+      rule.appointmentServiceUuid === appointment.service?.uuid &&
+      rule.appointmentLocationUuid === appointment.location?.uuid,
+  );
+  return matchingRules.length === 1 ? matchingRules[0].queueUuid : undefined;
+}
+
+export function useQueueWorkflowMetadata(queueEntries: Array<QueueEntry>) {
+  const appointmentConfig = useSWR<AppointmentTriageConfig, Error>(
+    'sihsalus-appointment-triage-config',
+    getAppointmentTriageConfig,
+  );
+  const appointmentUuids = Array.from(
+    new Set(
+      queueEntries
+        .map((entry) => getLinkedAppointmentUuid(entry, appointmentConfig.data))
+        .filter((uuid): uuid is string => Boolean(uuid)),
+    ),
+  ).sort();
+  const appointments = useSWR<Map<string, AppointmentSummary>, Error>(
+    appointmentConfig.data && appointmentUuids.length > 0
+      ? ['sihsalus-queue-appointments', appointmentUuids.join(',')]
+      : null,
+    async () => {
+      const results = await Promise.all(appointmentUuids.map((uuid) => fetchAppointment(uuid)));
+      return new Map(results.map((appointment) => [appointment.uuid, appointment]));
+    },
+  );
+
+  const entries = queueEntries.map((entry) => {
+    const appointmentUuid = getLinkedAppointmentUuid(entry, appointmentConfig.data) ?? undefined;
+    const appointment = appointmentUuid ? appointments.data?.get(appointmentUuid) : undefined;
+    const workflow: QueueWorkflowMetadata = {
+      appointmentStartDateTime: appointment?.startDateTime,
+      appointmentUuid,
+      destinationQueueUuid: getDestinationQueueUuid(appointment, appointmentConfig.data),
+      isTriageQueue: entry.queue?.uuid === appointmentConfig.data?.triageRouting?.queueUuid,
+      sisState: getSisState(entry),
+      triageState: getTriageState(entry, appointmentConfig.data, appointment),
+    };
+    return { ...entry, workflow };
+  });
+
+  return {
+    appointmentConfig: appointmentConfig.data,
+    entries,
+    error: appointmentConfig.error ?? appointments.error,
+    isLoading: appointmentConfig.isLoading || (appointmentUuids.length > 0 && appointments.isLoading),
+  };
+}
+
+export async function transitionTriagedPatient(queueEntry: QueueEntry): Promise<FetchResponse<QueueEntry>> {
+  const config = await getAppointmentTriageConfig();
+  const appointmentUuid = getLinkedAppointmentUuid(queueEntry, config);
+  if (!appointmentUuid) {
+    throw new Error('La consulta no conserva el vínculo con la cita que originó el triaje.');
+  }
+  const appointment = await fetchAppointment(appointmentUuid);
+  const destinationQueueUuid = getDestinationQueueUuid(appointment, config);
+  if (!destinationQueueUuid || destinationQueueUuid === config.triageRouting.queueUuid) {
+    throw new Error('No existe una cola clínica de destino única para el servicio de esta cita.');
+  }
+  const serviceQueuesConfig = (await getConfig(serviceQueuesModuleName)) as unknown as ServiceQueuesRoutingConfig;
+
+  return transitionQueueEntry({
+    queueEntryToTransition: queueEntry.uuid,
+    newQueue: destinationQueueUuid,
+    newPriority: queueEntry.priority?.uuid,
+    newStatus: serviceQueuesConfig.concepts.defaultStatusConceptUuid,
+  });
+}

@@ -307,5 +307,10 @@
   "waitList": "Wait list",
   "walkIn": "Walk-in",
   "week": "Week",
-  "yes": "Yes"
+  "yes": "Yes",
+  "addAppointment": "Add appointment",
+  "appointmentCheckedInAfterTriageVisitStarted": "Arrival was recorded and the patient was added to the triage queue.",
+  "appointmentCheckedInToTriageWithExistingVisit": "Arrival was recorded using the active visit and the patient was added to the triage queue.",
+  "startAppointmentTriageDescription": "Review the care details. When confirmed, arrival will be recorded and the patient will first enter the triage queue.",
+  "startAppointmentTriageTitle": "Record arrival and send to triage"
 }

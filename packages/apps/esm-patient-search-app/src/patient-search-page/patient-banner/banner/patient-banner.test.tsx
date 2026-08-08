@@ -83,6 +83,19 @@ describe('PatientBanner', () => {
     expect(mockExtensionSlot).toHaveBeenCalled();
   });
 
+  it('keeps appointment scheduling available in standalone search even during an active visit', () => {
+    mockUseVisit.mockReturnValue(mockVisitReturn({ activeVisit }));
+
+    render(<PatientBanner patient={patient} patientUuid={patient.uuid} />);
+
+    expect(
+      mockExtensionSlot.mock.calls.some(
+        ([props]) =>
+          props.name === 'patient-search-primary-actions-slot' && props.state?.patientUuid === patient.uuid,
+      ),
+    ).toBe(true);
+  });
+
   it.each([
     ['visit data is still loading', { isLoading: true }],
     ['visit data is validating', { isValidating: true }],

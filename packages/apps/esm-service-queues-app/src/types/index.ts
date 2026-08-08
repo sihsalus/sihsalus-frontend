@@ -480,6 +480,15 @@ export interface QueueEntry {
   sortWeight: number;
   queueComingFrom: Queue;
   previousQueueEntry: QueueEntry;
+  /** Client-side operational metadata used by the outpatient triage worklist. */
+  workflow?: {
+    appointmentStartDateTime?: string;
+    appointmentUuid?: string;
+    destinationQueueUuid?: string;
+    isTriageQueue: boolean;
+    sisState: 'active' | 'inactive' | 'pending' | 'notConsulted' | 'missing' | 'notApplicable';
+    triageState: 'pending' | 'completed' | 'notRequired';
+  };
 }
 
 export interface QueueEntrySearchCriteria {

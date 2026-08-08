@@ -41,10 +41,23 @@ describe('appointments configuration', () => {
       appointmentServiceUuid: 'b3c2d4e5-f6a7-48d9-93e1-8f7a6b5c4d02',
       appointmentLocationUuid: '35d2234e-129a-4c40-abb2-1ae0b2400001',
       arrivalPolicy: 'queue-optional',
+      requiresTriage: true,
       queueUuid: 'd4e5f6a7-b8c9-40d1-e2f3-a4b5c6d7e8f9',
       queueLocationUuid: '35d2234e-129a-4c40-abb2-1ae0b2400001',
       requiredVisitTypeUuid: 'b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09',
     });
+  });
+
+  it('configures one explicit outpatient triage stage for queue-based appointments', () => {
+    expect(appointmentsConfig.triageRouting).toEqual({
+      enabled: true,
+      queueUuid: 'c3d4e5f6-a7b8-49c0-d1e2-f3a4b5c6d7e8',
+      queueLocationUuid: '35d2234e-129a-4c40-abb2-1ae0b72c1602',
+      encounterTypeUuid: '67a71486-1a54-468f-ac3e-7091a9a79584',
+    });
+    expect(
+      arrivalRules.filter(({ arrivalPolicy }) => arrivalPolicy !== 'direct').every(({ requiresTriage }) => requiresTriage),
+    ).toBe(true);
   });
 
   it.each([

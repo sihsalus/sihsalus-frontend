@@ -143,7 +143,7 @@ function QueueTable({
                               <TableCell
                                 key={cell.id}
                                 className={classNames({
-                                  'cds--table-column-menu': columns[i].key.includes('actions'),
+                                  'cds--table-column-menu': cell.info.header.includes('actions'),
                                 })}
                               >
                                 {cell.value}

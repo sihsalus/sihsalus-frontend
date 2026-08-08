@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { canEditServiceQueues } from '../permissions';
 import { useQueueEntries } from '../hooks/useQueueEntries';
+import { useQueueWorkflowMetadata } from '../triage-workflow/triage-workflow.resource';
 
 import styles from './patient-banner-queue-entry-status.scss';
 
@@ -20,8 +21,9 @@ interface PatientBannerQueueEntryStatusProps {
  */
 const PatientBannerQueueEntryStatus: React.FC<PatientBannerQueueEntryStatusProps> = ({ patientUuid, renderedFrom }) => {
   const { queueEntries } = useQueueEntries({ patient: patientUuid, isEnded: false });
+  const { entries: operationalQueueEntries } = useQueueWorkflowMetadata(queueEntries ?? []);
   const layout = useLayoutType();
-  const queueEntry = queueEntries?.[0];
+  const queueEntry = operationalQueueEntries[0];
   const { t } = useTranslation();
   const isPatientChart = renderedFrom === 'patient-chart';
   const session = useSession();
@@ -42,6 +44,13 @@ const PatientBannerQueueEntryStatus: React.FC<PatientBannerQueueEntryStatusProps
       >
         {mappedPriority}
       </Tag>
+      {queueEntry.workflow?.triageState !== 'notRequired' ? (
+        <Tag type={queueEntry.workflow?.triageState === 'completed' ? 'green' : 'blue'}>
+          {queueEntry.workflow?.triageState === 'completed'
+            ? t('triageCompleted', 'Triaje realizado')
+            : t('triagePending', 'Triaje pendiente')}
+        </Tag>
+      ) : null}
       {canEdit ? (
         <Button
           kind="ghost"

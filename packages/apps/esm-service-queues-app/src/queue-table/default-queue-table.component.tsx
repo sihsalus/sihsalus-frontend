@@ -1,4 +1,4 @@
-import { ContentSwitcher, DataTableSkeleton, Layer, Search, Switch } from '@carbon/react';
+import { ContentSwitcher, DataTableSkeleton, Dropdown, Layer, Search, Switch } from '@carbon/react';
 import { getUserFacingErrorMessage, isDesktop, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { useEffect, useMemo, useState } from 'react';
@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useQueueEntries } from '../hooks/useQueueEntries';
 import useQueueStatuses from '../hooks/useQueueStatuses';
 import { updateSelectedQueueStatus, useServiceQueuesStore } from '../store/store';
+import { useQueueWorkflowMetadata } from '../triage-workflow/triage-workflow.resource';
 import { useColumns } from './cells/columns.resource';
 import QueueTable from './queue-table.component';
 import styles from './queue-table.scss';
@@ -40,6 +41,15 @@ function QueueTableSection() {
   const layout = useLayoutType();
   const { selectedServiceUuid, selectedQueueLocationUuid, selectedQueueStatusUuid } = useServiceQueuesStore();
   const [searchTerm, setSearchTerm] = useState('');
+  const [triageFilter, setTriageFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const triageFilterOptions = useMemo(
+    () => [
+      { id: 'all' as const, label: t('allTriageStates', 'Todo el triaje') },
+      { id: 'pending' as const, label: t('triagePending', 'Pendiente') },
+      { id: 'completed' as const, label: t('triageCompleted', 'Realizado') },
+    ],
+    [t],
+  );
 
   const searchCriteria = useMemo(() => {
     return {
@@ -51,6 +61,11 @@ function QueueTableSection() {
   }, [selectedServiceUuid, selectedQueueLocationUuid, selectedQueueStatusUuid]);
 
   const { queueEntries, isLoading, error, isValidating } = useQueueEntries(searchCriteria);
+  const {
+    entries: operationalQueueEntries,
+    error: workflowError,
+    isLoading: isLoadingWorkflow,
+  } = useQueueWorkflowMetadata(queueEntries ?? []);
 
   useEffect(() => {
     if (error) {
@@ -66,7 +81,28 @@ function QueueTableSection() {
     }
   }, [error, t]);
 
-  const columns = useColumns(null, null);
+  useEffect(() => {
+    if (workflowError) {
+      showSnackbar({
+        title: t('errorLoadingQueueWorkflow', 'No se pudo cargar el estado operativo de la cola'),
+        kind: 'error',
+        subtitle: getUserFacingErrorMessage(
+          workflowError,
+          t('queueWorkflowLoadErrorMessage', 'No se pudieron cargar la cita, el triaje o el estado SIS.'),
+          { logContext: 'Load queue workflow metadata' },
+        ),
+      });
+    }
+  }, [t, workflowError]);
+
+  const configuredColumns = useColumns(null, selectedQueueStatusUuid);
+  const columns = useMemo(
+    () =>
+      selectedQueueStatusUuid
+        ? configuredColumns?.filter((column) => column.key !== 'status')
+        : configuredColumns,
+    [configuredColumns, selectedQueueStatusUuid],
+  );
   useEffect(() => {
     if (!columns) {
       showSnackbar({
@@ -79,13 +115,30 @@ function QueueTableSection() {
 
   const filteredQueueEntries = useMemo(() => {
     const searchTermLowercase = searchTerm.toLowerCase();
-    return queueEntries?.filter((queueEntry) => {
-      return columns?.some((column) => {
-        const columnSearchTerm = column.getFilterableValue?.(queueEntry)?.toLocaleLowerCase();
-        return columnSearchTerm?.includes(searchTermLowercase);
+    return operationalQueueEntries
+      .filter(
+        (queueEntry) =>
+          triageFilter === 'all' || queueEntry.workflow?.triageState === triageFilter,
+      )
+      .filter((queueEntry) => {
+        return columns?.some((column) => {
+          const columnSearchTerm = column.getFilterableValue?.(queueEntry)?.toLocaleLowerCase();
+          return columnSearchTerm?.includes(searchTermLowercase);
+        });
+      })
+      .sort((left, right) => {
+        const leftTime = left.workflow?.appointmentStartDateTime
+          ? new Date(left.workflow.appointmentStartDateTime).valueOf()
+          : Number.POSITIVE_INFINITY;
+        const rightTime = right.workflow?.appointmentStartDateTime
+          ? new Date(right.workflow.appointmentStartDateTime).valueOf()
+          : Number.POSITIVE_INFINITY;
+        if (leftTime !== rightTime) {
+          return leftTime - rightTime;
+        }
+        return new Date(left.startedAt).valueOf() - new Date(right.startedAt).valueOf();
       });
-    });
-  }, [columns, queueEntries, searchTerm]);
+  }, [columns, operationalQueueEntries, searchTerm, triageFilter]);
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" />;
@@ -94,21 +147,38 @@ function QueueTableSection() {
   return (
     <QueueTable
       ExpandedRow={QueueTableExpandedRow}
-      isValidating={isValidating}
+      isValidating={isValidating || isLoadingWorkflow}
       queueEntries={filteredQueueEntries ?? []}
       queueUuid={null}
       statusUuid={null}
+      queueTableColumnsOverride={columns}
       tableFilters={
-        <Search
-          className={styles.searchbar}
-          labelText={t('filterTable', 'Filter table')}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-          }}
-          placeholder={t('filterTable', 'Filter table')}
-          size={isDesktop(layout) ? 'sm' : 'lg'}
-          value={searchTerm}
-        />
+        <>
+          <Search
+            className={styles.searchbar}
+            labelText={t('filterTable', 'Filter table')}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+            }}
+            placeholder={t('filterTable', 'Filter table')}
+            size={isDesktop(layout) ? 'sm' : 'lg'}
+            value={searchTerm}
+          />
+          <div className={styles.triageFilter}>
+            <Dropdown
+              aria-label={t('filterByTriageStatus', 'Filtrar por estado de triaje')}
+              id="triage-status-filter"
+              items={triageFilterOptions}
+              itemToString={(item) => item?.label ?? ''}
+              label={t('allTriageStates', 'Todo el triaje')}
+              selectedItem={triageFilterOptions.find((item) => item.id === triageFilter)}
+              size={isDesktop(layout) ? 'sm' : 'lg'}
+              titleText={t('triageStatus', 'Triaje')}
+              hideLabel
+              onChange={({ selectedItem }) => selectedItem && setTriageFilter(selectedItem.id)}
+            />
+          </div>
+        </>
       }
     />
   );

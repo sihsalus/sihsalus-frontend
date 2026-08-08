@@ -65,8 +65,13 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
   closeModal,
   mutateVisits,
 }) => {
-  const { appointmentArrivalRules, appointmentVisitAttributeTypeUuid, checkInButton, customPatientChartUrl } =
-    useConfig<ConfigObject>();
+  const {
+    appointmentArrivalRules,
+    appointmentVisitAttributeTypeUuid,
+    checkInButton,
+    customPatientChartUrl,
+    triageRouting,
+  } = useConfig<ConfigObject>();
   const { t } = useTranslation();
   const { mutateAppointments } = useMutateAppointments();
   const [pendingAction, setPendingAction] = useState<ArrivalAction | null>(null);
@@ -157,8 +162,19 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     const isQueuePolicy =
       arrivalRule.arrivalPolicy === 'queue-optional' || arrivalRule.arrivalPolicy === 'queue-required';
     const hasCompleteQueue = Boolean(arrivalRule.queueUuid && arrivalRule.queueLocationUuid);
+    const hasCompleteTriageRoute = Boolean(
+      triageRouting?.enabled &&
+        triageRouting.queueUuid &&
+        triageRouting.queueLocationUuid &&
+        triageRouting.encounterTypeUuid,
+    );
     if ((isQueuePolicy && !hasCompleteQueue) || (arrivalRule.arrivalPolicy === 'direct' && hasCompleteQueue)) {
       return Object.assign(new Error('The arrival rule has inconsistent queue fields.'), {
+        code: APPOINTMENT_ARRIVAL_RULE_INVALID,
+      });
+    }
+    if (arrivalRule.requiresTriage && (!isQueuePolicy || !hasCompleteTriageRoute)) {
+      return Object.assign(new Error('The triage route is incomplete.'), {
         code: APPOINTMENT_ARRIVAL_RULE_INVALID,
       });
     }
@@ -349,7 +365,8 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           code: APPOINTMENT_ARRIVAL_RULE_INVALID,
         });
       }
-      const requiredQueueLocationUuid = rule.queueLocationUuid;
+      const arrivalQueueUuid = rule.requiresTriage ? triageRouting.queueUuid : rule.queueUuid;
+      const requiredQueueLocationUuid = rule.requiresTriage ? triageRouting.queueLocationUuid : rule.queueLocationUuid;
 
       const activeVisits = await fetchActiveVisits();
 
@@ -364,7 +381,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         await launchWorkspace2(addActiveVisitToQueueWorkspace, {
           activeVisit: activeVisits[0],
           currentQueueLocationUuid: requiredQueueLocationUuid,
-          currentServiceQueueUuid: rule.queueUuid,
+          currentServiceQueueUuid: arrivalQueueUuid,
           requestedServiceName: appointment.service.name,
           requiredVisitLocation: {
             uuid: requiredAppointmentLocationUuid,
@@ -378,8 +395,12 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           onQueueEntryAdded: () =>
             checkInFromWorkspaceCallback(
               t(
-                'appointmentCheckedInWithExistingVisit',
-                'Se registró la llegada usando la consulta activa y el paciente fue agregado a la cola.',
+                rule.requiresTriage
+                  ? 'appointmentCheckedInToTriageWithExistingVisit'
+                  : 'appointmentCheckedInWithExistingVisit',
+                rule.requiresTriage
+                  ? 'Se registró la llegada usando la consulta activa y el paciente fue agregado a la cola de triaje.'
+                  : 'Se registró la llegada usando la consulta activa y el paciente fue agregado a la cola.',
               ),
             ),
         });
@@ -400,7 +421,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           value: appointment.uuid,
         },
         currentQueueLocationUuid: requiredQueueLocationUuid,
-        currentServiceQueueUuid: rule.queueUuid,
+        currentServiceQueueUuid: arrivalQueueUuid,
         requestedServiceName: appointment.service.name,
         requiredVisitLocation: {
           uuid: requiredAppointmentLocationUuid,
@@ -409,18 +430,26 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         requiredVisitTypeUuid: rule.requiredVisitTypeUuid,
         showPatientHeader: true,
         openedFrom: 'appointments-check-in',
-        workspaceTitle: t('startAppointmentCareTitle', 'Iniciar atención de la cita'),
+        workspaceTitle: rule.requiresTriage
+          ? t('startAppointmentTriageTitle', 'Registrar llegada y enviar a triaje')
+          : t('startAppointmentCareTitle', 'Iniciar atención de la cita'),
         workspaceDescription: t(
-          'startAppointmentCareWithQueueDescription',
-          'Revise los datos de la atención. Al confirmar, se registrará la llegada y el paciente será agregado a la cola seleccionada.',
+          rule.requiresTriage ? 'startAppointmentTriageDescription' : 'startAppointmentCareWithQueueDescription',
+          rule.requiresTriage
+            ? 'Revise los datos de la atención. Al confirmar, se registrará la llegada y el paciente pasará primero a la cola de triaje.'
+            : 'Revise los datos de la atención. Al confirmar, se registrará la llegada y el paciente será agregado a la cola seleccionada.',
         ),
         onBeforeVisitSave: (visit?: Visit) => validateBeforePersistence(visit),
         onVisitStarted: async () => {
           mutateVisits?.();
           await checkInFromWorkspaceCallback(
             t(
-              'appointmentCheckedInAfterVisitStarted',
-              'La consulta fue iniciada, el paciente fue agregado a la cola y se registró la llegada a la cita.',
+              rule.requiresTriage
+                ? 'appointmentCheckedInAfterTriageVisitStarted'
+                : 'appointmentCheckedInAfterVisitStarted',
+              rule.requiresTriage
+                ? 'La llegada fue registrada y el paciente fue agregado a la cola de triaje.'
+                : 'La consulta fue iniciada, el paciente fue agregado a la cola y se registró la llegada a la cita.',
             ),
           );
         },

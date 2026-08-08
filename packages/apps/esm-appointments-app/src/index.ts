@@ -83,6 +83,13 @@ export const scheduleAppointmentPatientSearchAction = getAsyncLifecycle(
   options,
 );
 
+export const scheduleAppointmentPatientSearchPrimaryAction = getAsyncLifecycle(
+  async () => ({
+    default: (await import('./patient-search/schedule-appointment-action.component')).ScheduleAppointmentPrimaryAction,
+  }),
+  options,
+);
+
 // t('Appointments', 'Appointments')
 export const patientAppointmentsSummaryDashboardLink = getAsyncLifecycle(async () => {
   const commonLib = await import('@openmrs/esm-patient-common-lib');

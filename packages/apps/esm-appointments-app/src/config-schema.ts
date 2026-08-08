@@ -16,6 +16,15 @@ export interface AppointmentArrivalRule {
   requiredVisitTypeUuid: string;
   queueUuid?: string;
   queueLocationUuid?: string;
+  /** Send the patient through the configured triage queue before the destination queue. */
+  requiresTriage?: boolean;
+}
+
+export interface AppointmentTriageRouting {
+  enabled: boolean;
+  queueUuid: string;
+  queueLocationUuid: string;
+  encounterTypeUuid: string;
 }
 
 export const configSchema = {
@@ -99,6 +108,32 @@ export const configSchema = {
       requiredVisitTypeUuid: { _type: Type.UUID },
       queueUuid: { _type: Type.UUID },
       queueLocationUuid: { _type: Type.UUID },
+      requiresTriage: {
+        _type: Type.Boolean,
+        _default: false,
+      },
+    },
+  },
+  triageRouting: {
+    enabled: {
+      _type: Type.Boolean,
+      _description: 'Whether queue-based appointment arrivals support the outpatient triage stage.',
+      _default: false,
+    },
+    queueUuid: {
+      _type: Type.UUID,
+      _description: 'Queue that receives appointment arrivals requiring triage.',
+      _default: '',
+    },
+    queueLocationUuid: {
+      _type: Type.UUID,
+      _description: 'Location of the outpatient triage queue.',
+      _default: '',
+    },
+    encounterTypeUuid: {
+      _type: Type.UUID,
+      _description: 'Encounter type used to record outpatient triage.',
+      _default: '',
     },
   },
   providerSchedulingCategoryValidation: {
@@ -182,6 +217,7 @@ export interface ConfigObject {
   appointmentVisitAttributeTypeUuid: string;
   careRoutingContractVersion: string;
   appointmentArrivalRules: Array<AppointmentArrivalRule>;
+  triageRouting: AppointmentTriageRouting;
   providerSchedulingCategoryValidation: {
     mode: ProviderSchedulingCategoryValidationMode;
     providerAttributeTypeUuid: string;

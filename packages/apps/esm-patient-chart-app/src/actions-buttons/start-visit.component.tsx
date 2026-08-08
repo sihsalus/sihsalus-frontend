@@ -4,7 +4,7 @@ import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { canStartVisit } from '../visit/visit-access';
+import { canManuallyStartVisit } from '../visit/visit-access';
 import styles from './action-button.scss';
 
 interface StartVisitOverflowMenuItemProps {
@@ -17,7 +17,7 @@ const StartVisitOverflowMenuItem: React.FC<StartVisitOverflowMenuItemProps> = ({
   const { activeVisit, currentVisit } = useVisit(patient?.id);
   const effectiveVisit = currentVisit ?? activeVisit;
   const isDeceased = Boolean(patient?.deceasedDateTime);
-  const canStart = canStartVisit(user);
+  const canStart = canManuallyStartVisit(user);
 
   const handleLaunchModal = useCallback(
     () =>

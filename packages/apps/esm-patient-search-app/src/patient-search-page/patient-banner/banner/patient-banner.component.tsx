@@ -139,6 +139,9 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
                 patientUuid={patientUuid}
               />
             ) : null}
+            {!patientSearchContext2?.onPatientSelected && !isDeceased ? (
+              <ExtensionSlot name="patient-search-primary-actions-slot" state={{ patientUuid }} />
+            ) : null}
             {canStartVisit ? <ExtensionSlot name={startVisitButtonSlotName} state={startVisitButtonSlotState} /> : null}
           </div>
         </div>

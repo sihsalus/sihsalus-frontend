@@ -133,6 +133,15 @@
       "offline": false
     },
     {
+      "name": "schedule-appointment-patient-search-primary-action",
+      "component": "scheduleAppointmentPatientSearchPrimaryAction",
+      "slot": "patient-search-primary-actions-slot",
+      "privileges": "app:home.citas.editar",
+      "order": 0,
+      "online": true,
+      "offline": false
+    },
+    {
       "name": "home-appointments-tile",
       "slot": "home-metrics-tiles-slot",
       "component": "homeAppointmentsTile",
@@ -197,6 +206,10 @@
     {
       "name": "appointments-group",
       "scopePattern": "/home/appointments"
+    },
+    {
+      "name": "patient-search-appointments-group",
+      "scopePattern": "/search"
     }
   ],
   "workspaceWindows2": [
@@ -208,6 +221,11 @@
     {
       "name": "patient-chart-appointments-window",
       "group": "patient-chart",
+      "width": "wider"
+    },
+    {
+      "name": "patient-search-appointments-window",
+      "group": "patient-search-appointments-group",
       "width": "wider"
     }
   ],
@@ -223,6 +241,12 @@
       "component": "appointmentsFormWorkspace",
       "window": "patient-chart-appointments-window",
       "privileges": "app:hoja.clinica.citas.editar"
+    },
+    {
+      "name": "patient-search-appointments-form-workspace",
+      "component": "appointmentsFormWorkspace",
+      "window": "patient-search-appointments-window",
+      "privileges": "app:home.citas.editar"
     },
     {
       "name": "appointments-patient-search-workspace",

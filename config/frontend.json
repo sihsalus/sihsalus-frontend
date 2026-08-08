@@ -8,6 +8,12 @@
     ],
     "careRoutingContractVersion": "2026-07-18",
     "appointmentVisitAttributeTypeUuid": "193508ab-20c6-5291-9f23-0257335eaabd",
+    "triageRouting": {
+      "enabled": true,
+      "queueUuid": "c3d4e5f6-a7b8-49c0-d1e2-f3a4b5c6d7e8",
+      "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b72c1602",
+      "encounterTypeUuid": "67a71486-1a54-468f-ac3e-7091a9a79584"
+    },
     "providerSchedulingCategoryValidation": {
       "mode": "warn",
       "providerAttributeTypeUuid": "3961cbdd-3240-4b70-99ca-5f63af488b15"
@@ -17,6 +23,7 @@
         "appointmentServiceUuid": "7ba3aa21-cc56-47ca-bb4d-a60549f666c0",
         "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400001",
         "arrivalPolicy": "queue-optional",
+        "requiresTriage": true,
         "queueUuid": "d4e5f6a7-b8c9-40d1-e2f3-a4b5c6d7e8f9",
         "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400001",
         "requiredVisitTypeUuid": "b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09"
@@ -31,6 +38,7 @@
         "appointmentServiceUuid": "4ec5c4fe-cfe0-48ff-9e4d-2f201078feae",
         "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400001",
         "arrivalPolicy": "queue-optional",
+        "requiresTriage": true,
         "queueUuid": "d4e5f6a7-b8c9-40d1-e2f3-a4b5c6d7e8f9",
         "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400001",
         "requiredVisitTypeUuid": "b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09"
@@ -39,6 +47,7 @@
         "appointmentServiceUuid": "c8d4f6e2-5b7a-41d9-93e4-7f6a8b3c2d01",
         "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400001",
         "arrivalPolicy": "queue-optional",
+        "requiresTriage": true,
         "queueUuid": "d4e5f6a7-b8c9-40d1-e2f3-a4b5c6d7e8f9",
         "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400001",
         "requiredVisitTypeUuid": "b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09"
@@ -47,6 +56,7 @@
         "appointmentServiceUuid": "a6d7f9b3-2c5e-48d1-93e4-7f8a6b5c2d02",
         "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400001",
         "arrivalPolicy": "queue-optional",
+        "requiresTriage": true,
         "queueUuid": "d4e5f6a7-b8c9-40d1-e2f3-a4b5c6d7e8f9",
         "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400001",
         "requiredVisitTypeUuid": "b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09"
@@ -55,6 +65,7 @@
         "appointmentServiceUuid": "b3c2d4e5-f6a7-48d9-93e1-8f7a6b5c4d02",
         "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400001",
         "arrivalPolicy": "queue-optional",
+        "requiresTriage": true,
         "queueUuid": "d4e5f6a7-b8c9-40d1-e2f3-a4b5c6d7e8f9",
         "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400001",
         "requiredVisitTypeUuid": "b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09"
@@ -69,6 +80,7 @@
         "appointmentServiceUuid": "e6a43c30-71ac-4ec6-9757-c78a50ee8e8b",
         "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400006",
         "arrivalPolicy": "queue-optional",
+        "requiresTriage": true,
         "queueUuid": "f6a7b8c9-d0e1-42f3-a4b5-c6d7e8f9a0b1",
         "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400006",
         "requiredVisitTypeUuid": "b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09"
@@ -77,6 +89,7 @@
         "appointmentServiceUuid": "70b7402d-fdfe-4707-94d8-5eb5780ffde5",
         "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400013",
         "arrivalPolicy": "queue-optional",
+        "requiresTriage": true,
         "queueUuid": "e1f2a3b4-c5d6-47e8-f9a0-b1c2d3e4f5a6",
         "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400013",
         "requiredVisitTypeUuid": "b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09"
@@ -85,6 +98,7 @@
         "appointmentServiceUuid": "74156b5c-b1b0-4432-b073-a8af65ebcb11",
         "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400007",
         "arrivalPolicy": "queue-optional",
+        "requiresTriage": true,
         "queueUuid": "e5f6a7b8-c9d0-41e2-f3a4-b5c6d7e8f9a0",
         "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400007",
         "requiredVisitTypeUuid": "b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09"
@@ -93,6 +107,7 @@
         "appointmentServiceUuid": "dcaa59d1-64f2-45f5-a930-2ccc0ef37e61",
         "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400010",
         "arrivalPolicy": "queue-optional",
+        "requiresTriage": true,
         "queueUuid": "b4c5d6e7-f8a9-40b1-c2d3-e4f5a6b7c8d9",
         "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400010",
         "requiredVisitTypeUuid": "b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09"
@@ -101,6 +116,7 @@
         "appointmentServiceUuid": "89bde58b-2161-4095-8e52-0d8b5003012b",
         "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400011",
         "arrivalPolicy": "queue-optional",
+        "requiresTriage": true,
         "queueUuid": "c5d6e7f8-a9b0-41c2-d3e4-f5a6b7c8d9e0",
         "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400011",
         "requiredVisitTypeUuid": "b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09"
@@ -109,6 +125,7 @@
         "appointmentServiceUuid": "3663f478-80fb-4585-b92f-7f82873198ee",
         "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400001",
         "arrivalPolicy": "queue-optional",
+        "requiresTriage": true,
         "queueUuid": "d6e7f8a9-b0c1-42d3-e4f5-a6b7c8d9e0f1",
         "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400001",
         "requiredVisitTypeUuid": "b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09"

@@ -62,10 +62,10 @@ describe('StartVisitOverflowMenuItem', () => {
   beforeEach(() => {
     mockUseSession.mockReturnValue({
       user: {
-        privileges: [{ display: 'app:home.admision' }],
+        privileges: [{ display: 'app:hoja.clinica' }, { display: 'Add Visits' }],
       },
     } as ReturnType<typeof useSession>);
-    mockUserHasAccess.mockImplementation((privilege) => privilege === 'app:home.admision');
+    mockUserHasAccess.mockImplementation((privilege) => ['app:hoja.clinica', 'Add Visits'].includes(privilege));
   });
 
   it('should launch the start visit form', async () => {
@@ -107,6 +107,18 @@ describe('StartVisitOverflowMenuItem', () => {
 
   it('should not show start visit button without ADT or visit edit privileges', () => {
     mockUserHasAccess.mockReturnValue(false);
+
+    render(
+      React.createElement(StartVisitOverflowMenuItem, {
+        patient: mockFhirPatient,
+      }),
+    );
+
+    expect(screen.queryByRole('menuitem', { name: /start visit/i })).not.toBeInTheDocument();
+  });
+
+  it('should not let admission start a consultation outside appointment arrival', () => {
+    mockUserHasAccess.mockImplementation((privilege) => ['app:home.admision', 'Add Visits'].includes(privilege));
 
     render(
       React.createElement(StartVisitOverflowMenuItem, {

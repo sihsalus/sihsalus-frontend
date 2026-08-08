@@ -4,7 +4,7 @@ import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { canStartVisit } from './visit-access';
+import { canManuallyStartVisit } from './visit-access';
 
 interface StartVisitButtonProps {
   patientUuid: string;
@@ -14,7 +14,7 @@ const StartVisitButton = ({ patientUuid }: StartVisitButtonProps) => {
   const { t } = useTranslation();
   const { user } = useSession();
   const startVisitWorkspaceForm = 'start-visit-workspace-form';
-  const canStart = canStartVisit(user);
+  const canStart = canManuallyStartVisit(user);
 
   const handleStartVisit = useCallback(() => {
     try {

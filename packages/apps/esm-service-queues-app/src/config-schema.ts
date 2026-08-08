@@ -7,6 +7,7 @@ import vitalsConfigSchema, { type VitalsConfigObject } from './current-visit/vis
 
 const columnTypes = [
   'actions',
+  'appointment-time',
   'coming-from',
   'extension',
   'patient-age',
@@ -15,7 +16,9 @@ const columnTypes = [
   'priority',
   'queue-number',
   'queue',
+  'sis-status',
   'status',
+  'triage-status',
   'visit-start-time',
   'wait-time',
 ] as const;
@@ -99,7 +102,17 @@ export const defaultColumnConfig: ColumnConfig = {
 };
 
 export const defaultQueueTable: TableDefinitions = {
-  columns: ['patient-name', 'coming-from', 'priority', 'status', 'queue', 'wait-time', 'actions'],
+  columns: [
+    'patient-name',
+    'appointment-time',
+    'triage-status',
+    'sis-status',
+    'priority',
+    'status',
+    'queue',
+    'wait-time',
+    'actions',
+  ],
   appliedTo: [{ queue: null, status: null }],
 };
 

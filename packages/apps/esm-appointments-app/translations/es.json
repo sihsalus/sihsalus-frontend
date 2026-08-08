@@ -309,5 +309,10 @@
   "waitList": "Lista de espera",
   "walkIn": "Sin cita",
   "week": "Semana",
-  "yes": "Sí"
+  "yes": "Sí",
+  "addAppointment": "Agregar cita",
+  "appointmentCheckedInAfterTriageVisitStarted": "La llegada fue registrada y el paciente fue agregado a la cola de triaje.",
+  "appointmentCheckedInToTriageWithExistingVisit": "Se registró la llegada usando la consulta activa y el paciente fue agregado a la cola de triaje.",
+  "startAppointmentTriageDescription": "Revise los datos de la atención. Al confirmar, se registrará la llegada y el paciente pasará primero a la cola de triaje.",
+  "startAppointmentTriageTitle": "Registrar llegada y enviar a triaje"
 }

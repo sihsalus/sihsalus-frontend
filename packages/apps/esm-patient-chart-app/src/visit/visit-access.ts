@@ -27,7 +27,20 @@ export function canEditVisit(user: User) {
  * not grant access to clinical closure actions.
  */
 export function canCloseClinicalVisit(user: User) {
-  return userHasAccess(clinicalChartPrivilege, user) && userHasAccess(clinicalChartVisitsEditPrivilege, user);
+  return (
+    !userHasAccess(adtPrivilege, user) &&
+    userHasAccess(clinicalChartPrivilege, user) &&
+    userHasAccess(clinicalChartVisitsEditPrivilege, user)
+  );
+}
+
+/**
+ * Manual consultation start is a clinical action. Admission keeps native
+ * `Add Visits` for appointment check-in, but must schedule an appointment
+ * instead of bypassing arrival and queue routing from patient search/chart.
+ */
+export function canManuallyStartVisit(user: User) {
+  return !userHasAccess(adtPrivilege, user) && userHasAccess(clinicalChartPrivilege, user) && canCreateVisit(user);
 }
 
 export const canStartVisit = canCreateVisit;

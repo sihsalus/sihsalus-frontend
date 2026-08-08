@@ -1,6 +1,6 @@
 import { userHasAccess } from '@openmrs/esm-framework';
 
-import { canCloseClinicalVisit, canEditVisit, canStartVisit } from './visit-access';
+import { canCloseClinicalVisit, canEditVisit, canManuallyStartVisit, canStartVisit } from './visit-access';
 
 const mockUserHasAccess = vi.mocked(userHasAccess);
 
@@ -70,9 +70,47 @@ describe('canCloseClinicalVisit', () => {
     expect(canCloseClinicalVisit({} as Parameters<typeof userHasAccess>[1])).toBe(false);
   });
 
+  it('keeps clinical closure hidden when an admission role has accumulated clinical privileges', () => {
+    mockUserHasAccess.mockImplementation((privilege) =>
+      ['app:home.admision', 'app:hoja.clinica', 'app:hoja.clinica.visitas.editar'].includes(privilege as string),
+    );
+
+    expect(canCloseClinicalVisit({} as Parameters<typeof userHasAccess>[1])).toBe(false);
+  });
+
   it('rejects a stale clinical edit privilege without access to the clinical chart', () => {
     mockUserHasAccess.mockImplementation((privilege) => privilege === 'app:hoja.clinica.visitas.editar');
 
     expect(canCloseClinicalVisit({} as Parameters<typeof userHasAccess>[1])).toBe(false);
+  });
+});
+
+describe('canManuallyStartVisit', () => {
+  beforeEach(() => {
+    mockUserHasAccess.mockReset();
+  });
+
+  it('allows a clinical user who can create visits', () => {
+    mockUserHasAccess.mockImplementation((privilege) =>
+      ['app:hoja.clinica', 'Add Visits'].includes(privilege as string),
+    );
+
+    expect(canManuallyStartVisit({} as Parameters<typeof userHasAccess>[1])).toBe(true);
+  });
+
+  it('does not let admission bypass appointment arrival and queue routing', () => {
+    mockUserHasAccess.mockImplementation((privilege) =>
+      ['app:home.admision', 'Add Visits'].includes(privilege as string),
+    );
+
+    expect(canManuallyStartVisit({} as Parameters<typeof userHasAccess>[1])).toBe(false);
+  });
+
+  it('keeps manual start hidden when an admission role has accumulated clinical privileges', () => {
+    mockUserHasAccess.mockImplementation((privilege) =>
+      ['app:home.admision', 'app:hoja.clinica', 'Add Visits'].includes(privilege as string),
+    );
+
+    expect(canManuallyStartVisit({} as Parameters<typeof userHasAccess>[1])).toBe(false);
   });
 });

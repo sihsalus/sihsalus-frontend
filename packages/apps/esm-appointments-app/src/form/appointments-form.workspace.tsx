@@ -63,6 +63,7 @@ import {
 } from '../constants';
 import {
   canTransition,
+  getAppointmentKindLabel,
   getAppointmentStatusLabel,
   isAppointmentEditable,
   isAppointmentServiceAvailableForGender,
@@ -1158,8 +1159,12 @@ const AppointmentsForm: React.FC<
                     <SelectItem text={t('chooseAppointmentType', 'Choose appointment type')} value="" />
                     {mappedAppointmentTypes?.length > 0 &&
                       mappedAppointmentTypes.map((appointmentType) => (
-                        <SelectItem key={appointmentType} text={appointmentType} value={appointmentType}>
-                          {appointmentType}
+                        <SelectItem
+                          key={appointmentType}
+                          text={getAppointmentKindLabel(normalizeAppointmentKind(appointmentType), t)}
+                          value={appointmentType}
+                        >
+                          {getAppointmentKindLabel(normalizeAppointmentKind(appointmentType), t)}
                         </SelectItem>
                       ))}
                   </Select>

@@ -209,8 +209,8 @@ describe('AppointmentForm', () => {
     expect(screen.getByRole('option', { name: /^am$/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /^pm$/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /choose appointment type/i })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /scheduled/i })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /walkin/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /programada/i })).toHaveValue('Scheduled');
+    expect(screen.getByRole('option', { name: /sin cita/i })).toHaveValue('WalkIn');
     expect(screen.getByLabelText(/date appointment issued/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/is this a recurring appointment/i)).not.toBeInTheDocument();
 

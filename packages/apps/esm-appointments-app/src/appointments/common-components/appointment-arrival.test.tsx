@@ -10,6 +10,10 @@ import userEvent from '@testing-library/user-event';
 
 import { type AppointmentArrivalRule, type ConfigObject, configSchema } from '../../config-schema';
 import {
+  appointmentsCompanionPersonRegistrationWorkspace,
+  appointmentsCompanionPersonSearchWorkspace,
+} from '../../constants';
+import {
   changeAppointmentStatus,
   ensureAppointmentVisitLink,
   getAppointmentStatus,
@@ -308,6 +312,8 @@ describe('AppointmentArrivalModal', () => {
       'appointments-start-visit-workspace',
       expect.objectContaining({
         patientUuid: appointment.patient.uuid,
+        companionPersonRegistrationWorkspaceName: appointmentsCompanionPersonRegistrationWorkspace,
+        companionPersonSearchWorkspaceName: appointmentsCompanionPersonSearchWorkspace,
         additionalVisitAttributes: [
           {
             attributeType: appointmentVisitAttributeTypeUuid,
@@ -489,6 +495,8 @@ describe('AppointmentArrivalModal', () => {
         'appointments-start-visit-workspace',
         expect.objectContaining({
           patientUuid: appointment.patient.uuid,
+          companionPersonRegistrationWorkspaceName: appointmentsCompanionPersonRegistrationWorkspace,
+          companionPersonSearchWorkspaceName: appointmentsCompanionPersonSearchWorkspace,
           additionalVisitAttributes: [
             {
               attributeType: appointmentVisitAttributeTypeUuid,

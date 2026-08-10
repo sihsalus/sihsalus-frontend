@@ -13,6 +13,10 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../config-schema';
+import {
+  appointmentsCompanionPersonRegistrationWorkspace,
+  appointmentsCompanionPersonSearchWorkspace,
+} from '../../constants';
 import { useMutateAppointments } from '../../form/appointments-form.resource';
 import { canTransition } from '../../helpers';
 import {
@@ -410,6 +414,8 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
 
       await launchWorkspace2(appointmentsStartVisitWorkspace, {
         patientUuid: patientUuid,
+        companionPersonRegistrationWorkspaceName: appointmentsCompanionPersonRegistrationWorkspace,
+        companionPersonSearchWorkspaceName: appointmentsCompanionPersonSearchWorkspace,
         additionalVisitAttributes: [
           {
             attributeType: appointmentVisitAttributeTypeUuid,
@@ -497,6 +503,8 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       // ni crea queue entries (misma vía que 'patient-chart-start-visit').
       await launchWorkspace2(appointmentsStartVisitWorkspace, {
         patientUuid: patientUuid,
+        companionPersonRegistrationWorkspaceName: appointmentsCompanionPersonRegistrationWorkspace,
+        companionPersonSearchWorkspaceName: appointmentsCompanionPersonSearchWorkspace,
         additionalVisitAttributes: [
           {
             attributeType: appointmentVisitAttributeTypeUuid,

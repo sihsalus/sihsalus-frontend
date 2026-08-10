@@ -273,6 +273,18 @@
       ]
     },
     {
+      "name": "appointments-visit-companion-search-workspace",
+      "component": "@sihsalus/esm-patient-chart-app#companionPersonSearchWorkspace",
+      "window": "appointments-window",
+      "privileges": ["app:home.citas.editar", "Get People"]
+    },
+    {
+      "name": "appointments-visit-companion-registration-workspace",
+      "component": "@sihsalus/esm-patient-chart-app#companionPersonRegistrationWorkspace",
+      "window": "appointments-window",
+      "privileges": ["app:home.citas.editar", "app:opciones.registrarAcompanante", "Add People"]
+    },
+    {
       "name": "appointments-add-active-visit-to-queue-workspace",
       "component": "@sihsalus/esm-service-queues-app#createQueueEntryWorkspace2",
       "window": "appointments-window",

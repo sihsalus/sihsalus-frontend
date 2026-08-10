@@ -55,7 +55,12 @@ const translationMock = vi.hoisted(() => {
 
 mockSession.mockReturnValue(mockSessionDataResponse.data);
 mockGetLocale.mockReturnValue('en');
-mockOpenmrsFetch.mockImplementation(vi.fn());
+mockOpenmrsFetch.mockImplementation((url: string) => {
+  if (url && url.includes('/fulfillerdetails')) {
+    return Promise.resolve({ status: 200 });
+  }
+  return Promise.resolve({ data: { uuid: 'mock-uuid', display: 'Mock' } });
+});
 
 vi.mock('react-to-print', async () => ({
   ...(await vi.importActual('react-to-print')),
@@ -511,82 +516,96 @@ describe('OrderDetailsTable', () => {
     }
   });
 
-  it('hydrates a drug order and opens its editor without changing persisted state or the basket', async () => {
+  it('hydrates a drug order, declines the original order, and adds the revision to the basket opening the basket', async () => {
     renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
 
     await openActionsMenu();
     await user.click(screen.getByText('Modify order'));
 
-    await waitFor(() => expect(mockLaunchAddDrugOrder).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockSetOrders).toHaveBeenCalledTimes(1));
     expect(mockGetDrugOrderByUuid).toHaveBeenCalledWith(drugOrder.uuid);
-    expect(mockLaunchAddDrugOrder).toHaveBeenCalledWith({
-      order: expect.objectContaining({
-        action: 'REVISE',
-        encounterUuid: drugOrder.encounter.uuid,
-        previousOrder: drugOrder.uuid,
-        uuid: drugOrder.uuid,
-        visit: drugOrder.encounter.visit,
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      expect.stringContaining(`/order/${drugOrder.uuid}/fulfillerdetails/`),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          fulfillerStatus: 'DECLINED',
+          fulfillerComment: 'Modificado por el médico',
+        }),
       }),
-      orderToEditOrdererUuid: drugOrder.orderer.uuid,
-    });
-    expect(mockLaunchOrderBasket).not.toHaveBeenCalled();
-    expectNoPreSaveMutation();
+    );
+    expect(mockSetOrders).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: 'REVISE',
+          previousOrder: drugOrder.uuid,
+        }),
+      ]),
+    );
+    expect(mockLaunchOrderBasket).toHaveBeenCalledTimes(1);
   });
 
   it.each([
     {
       label: 'test order',
-      launcher: mockLaunchModifyLabOrder,
       order: testOrder,
     },
     {
       label: 'general order',
-      launcher: mockLaunchModifyGeneralOrder,
       order: generalOrder,
     },
-  ])('opens the $label editor with revision props and no pre-save mutation', async ({ launcher, order }) => {
+  ])('declines the original $label, adds the revision to the basket, and opens the basket', async ({ order }) => {
     renderSingleOrder(order, [ordersEditPrivilege]);
 
     await openActionsMenu();
     await user.click(screen.getByText('Modify order'));
 
-    expect(launcher).toHaveBeenCalledWith({
-      order: expect.objectContaining({
-        action: 'REVISE',
-        previousOrder: order.uuid,
+    await waitFor(() => expect(mockSetOrders).toHaveBeenCalledTimes(1));
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      expect.stringContaining(`/order/${order.uuid}/fulfillerdetails/`),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          fulfillerStatus: 'DECLINED',
+          fulfillerComment: 'Modificado por el médico',
+        }),
       }),
-      orderTypeUuid: order.orderType.uuid,
-    });
-    expect(mockGetDrugOrderByUuid).not.toHaveBeenCalled();
-    expect(mockLaunchOrderBasket).not.toHaveBeenCalled();
-    expectNoPreSaveMutation();
+    );
+    expect(mockSetOrders).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: 'REVISE',
+          previousOrder: order.uuid,
+        }),
+      ]),
+    );
+    expect(mockLaunchOrderBasket).toHaveBeenCalledTimes(1);
   });
 
   it.each([
     {
       label: 'test order',
-      launcher: mockLaunchModifyLabOrder,
       order: testOrder,
     },
     {
       label: 'general order',
-      launcher: mockLaunchModifyGeneralOrder,
       order: generalOrder,
     },
-  ])('does not open the $label editor after the patient-chart store changes', async ({ launcher, order }) => {
+  ])('does not modify the $label after the patient-chart store changes', async ({ order }) => {
     renderSingleOrder(order, [ordersEditPrivilege]);
 
     await openActionsMenu();
     mockGetPatientUuidFromStore.mockReturnValue('another-patient-uuid');
     await user.click(screen.getByText('Modify order'));
 
-    expect(launcher).not.toHaveBeenCalled();
+    expect(mockSetOrders).not.toHaveBeenCalled();
+    expect(mockLaunchOrderBasket).not.toHaveBeenCalled();
     expect(mockGetDrugOrderByUuid).not.toHaveBeenCalled();
     expect(mockShowSnackbar).not.toHaveBeenCalled();
     expectNoPreSaveMutation();
   });
 
-  it('shows a visible error and does not open an editor when drug-order hydration fails', async () => {
+  it('shows a visible error and does not modify the drug order when drug-order hydration fails', async () => {
     const hydrationError = new Error('Network unavailable');
     mockGetDrugOrderByUuid.mockRejectedValue(hydrationError);
     renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
@@ -603,7 +622,8 @@ describe('OrderDetailsTable', () => {
         }),
       ),
     );
-    expect(mockLaunchAddDrugOrder).not.toHaveBeenCalled();
+    expect(mockSetOrders).not.toHaveBeenCalled();
+    expect(mockLaunchOrderBasket).not.toHaveBeenCalled();
     expectNoPreSaveMutation();
   });
 
@@ -631,8 +651,8 @@ describe('OrderDetailsTable', () => {
       await hydration.promise;
     });
 
-    expect(mockLaunchAddDrugOrder).not.toHaveBeenCalled();
-    expect(mockShowSnackbar).not.toHaveBeenCalled();
+    expect(mockSetOrders).not.toHaveBeenCalled();
+    expect(mockLaunchOrderBasket).not.toHaveBeenCalled();
     expectNoPreSaveMutation();
   });
 
@@ -652,8 +672,8 @@ describe('OrderDetailsTable', () => {
       await settledHydration;
     });
 
-    expect(mockLaunchAddDrugOrder).not.toHaveBeenCalled();
-    expect(mockShowSnackbar).not.toHaveBeenCalled();
+    expect(mockSetOrders).not.toHaveBeenCalled();
+    expect(mockLaunchOrderBasket).not.toHaveBeenCalled();
     expectNoPreSaveMutation();
   });
 
@@ -683,8 +703,8 @@ describe('OrderDetailsTable', () => {
       await hydration.promise;
     });
 
-    expect(mockLaunchAddDrugOrder).not.toHaveBeenCalled();
-    expect(mockShowSnackbar).not.toHaveBeenCalled();
+    expect(mockSetOrders).not.toHaveBeenCalled();
+    expect(mockLaunchOrderBasket).not.toHaveBeenCalled();
     expectNoPreSaveMutation();
   });
 
@@ -709,12 +729,11 @@ describe('OrderDetailsTable', () => {
       await hydration.promise;
     });
 
-    expect(mockLaunchAddDrugOrder).toHaveBeenCalledTimes(1);
-    expect(mockShowSnackbar).not.toHaveBeenCalled();
-    expectNoPreSaveMutation();
+    expect(mockSetOrders).toHaveBeenCalledTimes(1);
+    expect(mockLaunchOrderBasket).toHaveBeenCalledTimes(1);
   });
 
-  it('opens only the last-clicked drug order when two hydrations resolve in reverse order', async () => {
+  it('modifies only the last-clicked drug order when two hydrations resolve in reverse order', async () => {
     const firstHydration = createDeferred<{ data: Order }>();
     const secondHydration = createDeferred<{ data: Order }>();
     mockGetDrugOrderByUuid.mockImplementation((orderUuid: string) => {
@@ -740,19 +759,19 @@ describe('OrderDetailsTable', () => {
       secondHydration.resolve({ data: hydratedSecondDrugOrder });
       await secondHydration.promise;
     });
-    expect(mockLaunchAddDrugOrder).toHaveBeenCalledTimes(1);
-    expect(mockLaunchAddDrugOrder).toHaveBeenCalledWith({
-      order: expect.objectContaining({ previousOrder: secondDrugOrder.uuid }),
-      orderToEditOrdererUuid: secondDrugOrder.orderer.uuid,
-    });
+    expect(mockSetOrders).toHaveBeenCalledTimes(1);
+    expect(mockSetOrders).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ previousOrder: secondDrugOrder.uuid }),
+      ]),
+    );
 
     await act(async () => {
       firstHydration.resolve({ data: hydratedDrugOrder });
       await firstHydration.promise;
     });
-    expect(mockLaunchAddDrugOrder).toHaveBeenCalledTimes(1);
+    expect(mockSetOrders).toHaveBeenCalledTimes(1);
     expect(mockShowSnackbar).not.toHaveBeenCalled();
-    expectNoPreSaveMutation();
   });
 
   it.each([
@@ -782,7 +801,8 @@ describe('OrderDetailsTable', () => {
         }),
       ),
     );
-    expect(mockLaunchAddDrugOrder).not.toHaveBeenCalled();
+    expect(mockSetOrders).not.toHaveBeenCalled();
+    expect(mockLaunchOrderBasket).not.toHaveBeenCalled();
     expectNoPreSaveMutation();
   });
 
@@ -809,8 +829,8 @@ describe('OrderDetailsTable', () => {
       await hydration.promise;
     });
 
-    expect(mockLaunchAddDrugOrder).not.toHaveBeenCalled();
-    expect(mockShowSnackbar).not.toHaveBeenCalled();
+    expect(mockSetOrders).not.toHaveBeenCalled();
+    expect(mockLaunchOrderBasket).not.toHaveBeenCalled();
     expectNoPreSaveMutation();
   });
 
@@ -829,8 +849,8 @@ describe('OrderDetailsTable', () => {
       await hydration.promise;
     });
 
-    expect(mockLaunchAddDrugOrder).not.toHaveBeenCalled();
-    expect(mockShowSnackbar).not.toHaveBeenCalled();
+    expect(mockSetOrders).not.toHaveBeenCalled();
+    expect(mockLaunchOrderBasket).not.toHaveBeenCalled();
     expectNoPreSaveMutation();
   });
 

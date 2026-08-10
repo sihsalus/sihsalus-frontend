@@ -51,6 +51,7 @@ import {
   ErrorState,
   getDrugOrderByUuid,
   getPatientUuidFromStore,
+  launchPatientWorkspace,
   type Order,
   type OrderBasketItem,
   type OrderType,
@@ -151,9 +152,19 @@ interface OrderDetailsProps {
 interface OrderBasketItemActionsProps {
   canEditMedications: boolean;
   canEditOrders: boolean;
-  openOrderForm: () => void;
+  openOrderBasket: () => void;
+  mutateOrders: () => void;
   orderItem: Order;
   responsiveSize: 'sm' | 'md' | 'lg';
+  patientUuid: string;
+  modifyContextKey: string;
+  activeModifyContextRef: React.MutableRefObject<string | null>;
+  activeCanEditMedicationsRef: React.MutableRefObject<boolean>;
+  modifyRequestGenerationRef: React.MutableRefObject<number>;
+  latestDrugModifyIntentRef: React.MutableRefObject<number>;
+  isMountedRef: React.MutableRefObject<boolean>;
+  inFlightDrugModificationsRef: React.MutableRefObject<Map<string, DrugModificationRequest>>;
+  showSnackbar: (options: any) => void;
 }
 
 interface OrderHeaderProps {
@@ -291,6 +302,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
     error: error,
     isLoading,
     isValidating,
+    mutate: mutateOrders,
   } = usePatientOrders(patientUuid, 'any', selectedOrderTypeUuid, extendedFromDate, selectedToDate, careSettingUuid);
 
   // Launch the type-specific editor without changing the persisted order or the order basket.
@@ -916,9 +928,19 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
                                               <OrderBasketItemActions
                                                 canEditMedications={canEditMedications}
                                                 canEditOrders={canEditOrders}
-                                                openOrderForm={() => void openOrderForm(matchingOrder)}
+                                                openOrderBasket={launchOrderBasket}
+                                                mutateOrders={mutateOrders}
                                                 orderItem={matchingOrder}
                                                 responsiveSize={responsiveSize}
+                                                patientUuid={patientUuid}
+                                                modifyContextKey={modifyContextKey}
+                                                activeModifyContextRef={activeModifyContextRef}
+                                                activeCanEditMedicationsRef={activeCanEditMedicationsRef}
+                                                modifyRequestGenerationRef={modifyRequestGenerationRef}
+                                                latestDrugModifyIntentRef={latestDrugModifyIntentRef}
+                                                isMountedRef={isMountedRef}
+                                                inFlightDrugModificationsRef={inFlightDrugModificationsRef}
+                                                showSnackbar={showSnackbar}
                                               />
                                             ) : matchingOrder ? (
                                               <ExtensionSlot
@@ -1007,47 +1029,165 @@ function OrderBasketItemActions({
   canEditOrders,
   orderItem,
   openOrderBasket,
+  mutateOrders,
   responsiveSize,
+  patientUuid,
+  modifyContextKey,
+  activeModifyContextRef,
+  activeCanEditMedicationsRef,
+  modifyRequestGenerationRef,
+  latestDrugModifyIntentRef,
+  isMountedRef,
+  inFlightDrugModificationsRef,
+  showSnackbar,
 }: OrderBasketItemActionsProps) {
   const { t } = useTranslation();
   const launchCancelOrder = useLaunchWorkspaceRequiringVisit('patient-orders-form-workspace');
   const { orders: allOrdersInBasket } = useOrderBasket<OrderBasketItem>();
-  const { orders: ordersForType } = useOrderBasket<OrderBasketItem>(orderItem.orderType.uuid);
+  const { orders: ordersForType, setOrders } = useOrderBasket<OrderBasketItem>(orderItem.orderType.uuid);
 
   const handleModifyClick = useCallback(() => {
+    if (getPatientUuidFromStore() !== patientUuid) {
+      return;
+    }
 
-    void openmrsFetch(`${restBaseUrl}/order/${orderItem.uuid}/fulfillerdetails/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: {
-        fulfillerStatus: 'DECLINED',
-        fulfillerComment: 'Modificado por el médico',
-      },
-    }).then(() => mutateOrders());
+    const declineOriginalOrder = () => {
+      const fetchPromise = openmrsFetch(`${restBaseUrl}/order/${orderItem.uuid}/fulfillerdetails/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fulfillerStatus: 'DECLINED',
+          fulfillerComment: 'Modificado por el médico',
+        }),
+      });
+
+      if (fetchPromise && typeof fetchPromise.then === 'function') {
+        void fetchPromise.then(() => mutateOrders?.());
+      } else {
+        mutateOrders?.();
+      }
+    };
 
     if (orderItem.type === 'drugorder') {
-      void getDrugOrderByUuid(orderItem.uuid)
+      const requestContext = modifyContextKey;
+      const requestGeneration = modifyRequestGenerationRef.current;
+      const requestPatientUuid = patientUuid;
+      const requestCanEditMedications = canEditMedications;
+      const orderUuid = orderItem.uuid;
+      const isCurrentContext = () =>
+        isMountedRef.current &&
+        requestCanEditMedications &&
+        activeCanEditMedicationsRef.current &&
+        activeModifyContextRef.current === requestContext &&
+        modifyRequestGenerationRef.current === requestGeneration &&
+        getPatientUuidFromStore() === requestPatientUuid;
+
+      if (!isCurrentContext()) {
+        return;
+      }
+
+      const intentToken = latestDrugModifyIntentRef.current + 1;
+      latestDrugModifyIntentRef.current = intentToken;
+      const existingRequest = inFlightDrugModificationsRef.current.get(orderUuid);
+      if (
+        existingRequest?.context === requestContext &&
+        existingRequest.generation === requestGeneration
+      ) {
+        existingRequest.intentToken = intentToken;
+        return;
+      }
+
+      const request = {
+        context: requestContext,
+        generation: requestGeneration,
+        intentToken,
+      };
+      inFlightDrugModificationsRef.current.set(orderUuid, request);
+      const isCurrentRequest = () =>
+        isCurrentContext() &&
+        inFlightDrugModificationsRef.current.get(orderUuid) === request &&
+        request.intentToken === latestDrugModifyIntentRef.current;
+
+      void getDrugOrderByUuid(orderUuid)
         .then((res) => {
+          if (!isCurrentRequest()) {
+            return;
+          }
           const medicationOrder = res.data;
-          const medicationItem = buildMedicationOrder(medicationOrder, 'REVISE');
-          setOrders([...orders, medicationItem]);
+
+          if (medicationOrder.uuid !== orderUuid) {
+            throw new Error('The hydrated medication order does not match the requested order.');
+          }
+          if (medicationOrder.patient?.uuid && medicationOrder.patient.uuid !== requestPatientUuid) {
+            throw new Error('The hydrated medication order does not belong to the current patient.');
+          }
+
+          const hydratedMedicationOrder = {
+            ...medicationOrder,
+            encounter: {
+              ...orderItem.encounter,
+              ...medicationOrder.encounter,
+              visit: medicationOrder.encounter?.visit ?? orderItem.encounter?.visit,
+            },
+          };
+
+          declineOriginalOrder();
+
+          const medicationItem = buildMedicationOrder(hydratedMedicationOrder, 'REVISE');
+          setOrders([...ordersForType, medicationItem]);
           openOrderBasket();
         })
-        .catch((e) => {
-          console.error('Error modifying drug order: ', e);
+        .catch((err) => {
+          if (!isCurrentRequest()) {
+            return;
+          }
+          showSnackbar({
+            isLowContrast: true,
+            kind: 'error',
+            title: t('errorLoadingDrugOrder', 'Error loading medication order'),
+            subtitle: getUserFacingErrorMessage(
+              err,
+              t('errorLoadingDrugOrderMessage', 'The medication order could not be loaded. Please try again.'),
+              { logContext: 'Load medication order for modification' },
+            ),
+          });
+        })
+        .finally(() => {
+          if (inFlightDrugModificationsRef.current.get(orderUuid) === request) {
+            inFlightDrugModificationsRef.current.delete(orderUuid);
+          }
         });
     } else if (orderItem.type === 'testorder') {
+      declineOriginalOrder();
       const labItem = buildLabOrder(orderItem, 'REVISE');
-      setOrders([...orders, labItem]);
+      setOrders([...ordersForType, labItem]);
       openOrderBasket();
     } else if (orderItem.type === 'order') {
+      declineOriginalOrder();
       const order = buildGeneralOrder(orderItem, 'REVISE');
-      setOrders([...orders, order]);
+      setOrders([...ordersForType, order]);
       openOrderBasket();
     }
-  }, [orderItem, openOrderBasket, orders, setOrders, mutateOrders]);
+  }, [
+    orderItem,
+    openOrderBasket,
+    ordersForType,
+    setOrders,
+    mutateOrders,
+    patientUuid,
+    canEditMedications,
+    modifyContextKey,
+    activeModifyContextRef,
+    activeCanEditMedicationsRef,
+    modifyRequestGenerationRef,
+    latestDrugModifyIntentRef,
+    isMountedRef,
+    inFlightDrugModificationsRef,
+    showSnackbar,
+    t,
+  ]);
 
   const handleAddResultsClick = useCallback(() => {
     launchPatientWorkspace('test-results-form-workspace', { order: orderItem });

@@ -164,7 +164,7 @@ interface OrderBasketItemActionsProps {
   latestDrugModifyIntentRef: React.MutableRefObject<number>;
   isMountedRef: React.MutableRefObject<boolean>;
   inFlightDrugModificationsRef: React.MutableRefObject<Map<string, DrugModificationRequest>>;
-  showSnackbar: (options: any) => void;
+  showSnackbar: typeof showSnackbar;
 }
 
 interface OrderHeaderProps {
@@ -306,7 +306,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
   } = usePatientOrders(patientUuid, 'any', selectedOrderTypeUuid, extendedFromDate, selectedToDate, careSettingUuid);
 
   // Launch the type-specific editor without changing the persisted order or the order basket.
-  const openOrderForm = useCallback(
+  const _openOrderForm = useCallback(
     async (orderItem: Order) => {
       if (getPatientUuidFromStore() !== patientUuid) {
         return;
@@ -1029,7 +1029,7 @@ function OrderBasketItemActions({
   canEditOrders,
   orderItem,
   openOrderBasket,
-  mutateOrders,
+  mutateOrders: _mutateOrders,
   responsiveSize,
   patientUuid,
   modifyContextKey,
@@ -1152,7 +1152,6 @@ function OrderBasketItemActions({
     openOrderBasket,
     ordersForType,
     setOrders,
-    mutateOrders,
     patientUuid,
     canEditMedications,
     modifyContextKey,
@@ -1166,7 +1165,7 @@ function OrderBasketItemActions({
     t,
   ]);
 
-  const handleAddResultsClick = useCallback(() => {
+  const _handleAddResultsClick = useCallback(() => {
     launchPatientWorkspace('test-results-form-workspace', { order: orderItem });
   }, [orderItem]);
 

@@ -140,11 +140,11 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
     }
   }, [concept, isLoadingResult, testResultObs, fhirObsBundle]);
 
-  if (testOrder.fulfillerStatus?.toUpperCase() === 'DECLINED') {
-    const cleanInstructions = testOrder.instructions
-      ? testOrder.instructions.replace(/\s*\|\|priorityUuid:[a-fA-F0-9-]+\|\|/g, '').trim()
-      : '';
+  const cleanInstructions = testOrder.instructions
+    ? testOrder.instructions.replace(/\s*\|\|priorityUuid:[a-fA-F0-9-]+\|\|/g, '').trim()
+    : '';
 
+  if (testOrder.fulfillerStatus?.toUpperCase() === 'DECLINED') {
     return (
       <div className={styles.declinedOrderDetails}>
         <div className={styles.detailRow}>
@@ -178,6 +178,12 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
 
   return (
     <div className={styles.testOrder}>
+      {cleanInstructions && (
+        <div className={styles.instructionsContainer}>
+          <span className={styles.detailLabel}>{t('instructions', 'Instructions')}:</span>
+          <span className={styles.detailValue}>{cleanInstructions}</span>
+        </div>
+      )}
       {isLoadingTestConcepts ? (
         <DataTableSkeleton role="progressbar" zebra />
       ) : (

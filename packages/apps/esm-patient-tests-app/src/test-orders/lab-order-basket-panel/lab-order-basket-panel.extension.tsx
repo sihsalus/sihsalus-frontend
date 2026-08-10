@@ -240,6 +240,18 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
   };
 
   useEffect(() => {
+    if (orders.length > 0) {
+      const firstOrderUrgency = orders[0].urgency;
+      if (firstOrderUrgency && firstOrderUrgency !== selectedPriorityUuid) {
+        const isValidPriority = sortedPriorityConfigs.some((p) => p.conceptUuid === firstOrderUrgency);
+        if (isValidPriority) {
+          setSelectedPriorityUuid(firstOrderUrgency);
+        }
+      }
+    }
+  }, [orders, sortedPriorityConfigs, selectedPriorityUuid]);
+
+  useEffect(() => {
     if (!sortedPriorityConfigs.length) {
       return;
     }

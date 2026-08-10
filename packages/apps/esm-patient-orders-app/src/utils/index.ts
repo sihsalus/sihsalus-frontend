@@ -1,4 +1,5 @@
 import { type Order, type OrderAction, type OrderBasketItem } from '@openmrs/esm-patient-common-lib';
+import { configSchema } from '../config-schema';
 
 /**
  * Enables a comparison of arbitrary values with support for undefined/null.
@@ -78,6 +79,13 @@ export function buildLabOrder(order: Order, action?: OrderAction) {
     ? order.instructions.replace(/\s*\|\|priorityUuid:[a-fA-F0-9-]+\|\|/g, '').trim()
     : '';
 
+  const priorityUuid = priorityMatch ? priorityMatch[1].toLowerCase() : null;
+  const matchedPriority = configSchema.priorityConfigs._default.find(
+    (p) => p.conceptUuid.toLowerCase() === priorityUuid || p.conceptUuid.toLowerCase() === order.urgency?.toLowerCase()
+  );
+  const urgency = priorityMatch ? priorityMatch[1] : order.urgency;
+  const urgencyCode = matchedPriority ? matchedPriority.urgency : (order.urgency as string);
+
   return {
     action: action,
     display: order.display,
@@ -85,7 +93,8 @@ export function buildLabOrder(order: Order, action?: OrderAction) {
     orderer: order.orderer.uuid,
     careSetting: order.careSetting.uuid,
     instructions: cleanInstructions,
-    urgency: priorityMatch ? priorityMatch[1] : order.urgency,
+    urgency: urgency,
+    urgencyCode: urgencyCode,
     accessionNumber: order.accessionNumber,
     testType: {
       label: order.concept.display,
@@ -108,6 +117,13 @@ export function buildGeneralOrder(order: Order, action?: OrderAction): OrderBask
     ? order.instructions.replace(/\s*\|\|priorityUuid:[a-fA-F0-9-]+\|\|/g, '').trim()
     : '';
 
+  const priorityUuid = priorityMatch ? priorityMatch[1].toLowerCase() : null;
+  const matchedPriority = configSchema.priorityConfigs._default.find(
+    (p) => p.conceptUuid.toLowerCase() === priorityUuid || p.conceptUuid.toLowerCase() === order.urgency?.toLowerCase()
+  );
+  const urgency = priorityMatch ? priorityMatch[1] : order.urgency;
+  const urgencyCode = matchedPriority ? matchedPriority.urgency : (order.urgency as string);
+
   return {
     action: action,
     display: order.display,
@@ -115,7 +131,8 @@ export function buildGeneralOrder(order: Order, action?: OrderAction): OrderBask
     orderer: order.orderer.uuid,
     careSetting: order.careSetting.uuid,
     instructions: cleanInstructions,
-    urgency: priorityMatch ? priorityMatch[1] : order.urgency,
+    urgency: urgency,
+    urgencyCode: urgencyCode,
     accessionNumber: order.accessionNumber,
     concept: order.concept,
     orderNumber: order.orderNumber,

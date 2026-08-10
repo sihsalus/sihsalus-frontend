@@ -4,6 +4,8 @@ import {
   ExtensionSlot,
   getUserFacingErrorMessage,
   logError,
+  openmrsFetch,
+  restBaseUrl,
   showModal,
   useConfig,
   Workspace2,
@@ -149,6 +151,26 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
     }
   }, [orders.length, props]);
 
+  const declinePreviousOrders = useCallback(async (basketItems: Array<OrderBasketItem>) => {
+    const reviseOrders = basketItems.filter((item) => item.action === 'REVISE' && item.previousOrder);
+    await Promise.all(
+      reviseOrders.map((order) =>
+        openmrsFetch(`${restBaseUrl}/order/${order.previousOrder}/fulfillerdetails/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fulfillerStatus: 'DECLINED',
+            fulfillerComment: 'Modificado por el médico',
+          }),
+        }).catch((err) => {
+          console.error(`Failed to decline previous order ${order.previousOrder}:`, err);
+        })
+      )
+    );
+  }, []);
+
   const handleSave = useCallback(async () => {
     if (!activeVisit) {
       setCreatingEncounterError(t('activeVisitRequired', 'An active visit is required to make orders'));
@@ -178,6 +200,7 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
           locationUuid,
           abortController,
         );
+        await declinePreviousOrders(orders);
         mutateEncounterUuid();
         clearOrders();
         await mutateOrders();
@@ -194,6 +217,8 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
       }
     } else {
       const erroredItems = await postOrders(orderEncounterUuid, abortController);
+      const succeededItems = orders.filter((o) => !erroredItems.some((e) => e.display === o.display));
+      await declinePreviousOrders(succeededItems);
       clearOrders({ exceptThoseMatching: (item) => erroredItems.map((e) => e.display).includes(item.display) });
       await mutateOrders();
       if (erroredItems.length === 0) {
@@ -213,6 +238,7 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
     clearOrders,
     closeWorkspaceWithSavedChanges,
     config,
+    declinePreviousOrders,
     encounterUuid,
     mutateEncounterUuid,
     mutateOrders,

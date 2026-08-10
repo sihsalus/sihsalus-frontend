@@ -69,7 +69,9 @@ describe('PatientUpcomingAppointmentsCard', () => {
 
   it('renders a numeric appointment timestamp as the actual appointment date', () => {
     const appointmentDate = new Date();
-    appointmentDate.setFullYear(appointmentDate.getFullYear() + 1);
+    appointmentDate.setFullYear(appointmentDate.getFullYear() + 1, 5, 15);
+    appointmentDate.setHours(9, 0, 0, 0);
+    const expectedYear = appointmentDate.getFullYear().toString();
     const upcomingAppointment = {
       uuid: 'appointment-uuid',
       status: AppointmentStatus.SCHEDULED,
@@ -87,7 +89,7 @@ describe('PatientUpcomingAppointmentsCard', () => {
 
     render(<PatientUpcomingAppointmentsCard {...testProps} />);
 
-    expect(screen.getByText(new RegExp(String(appointmentDate.getFullYear())))).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(expectedYear))).toBeInTheDocument();
     expect(screen.queryByText(/1785/)).not.toBeInTheDocument();
   });
 });

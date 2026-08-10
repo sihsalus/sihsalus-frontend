@@ -5,7 +5,7 @@ describe('visit note route privilege contract', () => {
     const workspace = routes.workspaces2.find(({ name }) => name === 'visit-notes-form-workspace');
     const window = routes.workspaceWindows2.find(({ name }) => name === 'visit-note');
 
-    expect(workspace?.privileges).toBe('app:hoja.clinica.resumenConsulta.editar');
-    expect(window?.privileges).toBe('app:hoja.clinica.resumenConsulta.editar');
+    expect(workspace?.privileges).toBe('app:hoja.clinica.resumenConsulta');
+    expect(window?.privileges).toBe('app:hoja.clinica.resumenConsulta');
   });
 });

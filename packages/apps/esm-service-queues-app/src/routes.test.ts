@@ -101,7 +101,7 @@ describe('service queue route privilege contract', () => {
     const visitNotesWorkspace = routes.workspaces2.find(({ name }) => name === 'service-queues-visit-notes-workspace');
 
     expect(vitalsWorkspace?.privileges).toContain('app:hoja.clinica.signosVitales.editar');
-    expect(visitNotesWorkspace?.privileges).toContain('app:hoja.clinica.resumenConsulta.editar');
+    expect(visitNotesWorkspace?.privileges).toContain('app:hoja.clinica.resumenConsulta');
   });
 
   it('requires native catalog permissions on queue and room administration workspaces', () => {

@@ -192,7 +192,7 @@ test('closes the visit summary workspace when its edit privilege is denied', asy
 
   expect(screen.queryByText(/visit note/i)).not.toBeInTheDocument();
   await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ closeWindow: true, discardUnsavedChanges: true }));
-  expect(mockUserHasAccess).toHaveBeenCalledWith('app:hoja.clinica.resumenConsulta.editar', expect.anything());
+  expect(mockUserHasAccess).toHaveBeenCalledWith('app:hoja.clinica.resumenConsulta', expect.anything());
 });
 
 test('renders the visit notes form with all the relevant fields and values', () => {

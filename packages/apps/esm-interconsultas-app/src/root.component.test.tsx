@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import Root from './root.component';
-import { expectKnownGap } from './test-utils/expect-known-gap';
 
 const { mockRequirePrivilege } = vi.hoisted(() => ({
   mockRequirePrivilege: vi.fn(({ children }: { children: React.ReactNode }) => <>{children}</>),
@@ -36,14 +35,11 @@ describe('Interconsultas root authorization', () => {
     expect(screen.getByText('Interconsultas dashboard')).toBeInTheDocument();
   });
 
-  it('[AC-02][brecha] protects direct URL access with the home view privilege', async () => {
-    await expectKnownGap(() => {
-      render(<Root />);
+  it('[AC-02] protects direct URL access with the home view privilege', () => {
+    render(<Root />);
 
-      expect(mockRequirePrivilege).toHaveBeenCalledWith(
-        expect.objectContaining({ privilege: 'app:home.interconsultas' }),
-        undefined,
-      );
-    });
+    expect(mockRequirePrivilege.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ privilege: 'app:home.interconsultas' }),
+    );
   });
 });

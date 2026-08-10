@@ -16,4 +16,9 @@ export const patientFormEntryWorkspace = 'patient-form-entry-workspace';
 
 // ── Privileges ──
 /** Declared by the order-basket workspace in esm-patient-orders-app/src/routes.json. */
+export const consultaExternaPrivilege = 'app:hoja.clinica.consultaExterna';
+export const consultaExternaEditPrivilege = 'app:hoja.clinica.consultaExterna.editar';
+export const socialHistoryPrivilege = 'app:hoja.clinica.historiaSocial';
+export const socialHistoryEditPrivilege = 'app:hoja.clinica.historiaSocial.editar';
+
 export const orderBasketEditPrivilege = 'app:hoja.clinica.ordenes.editar';

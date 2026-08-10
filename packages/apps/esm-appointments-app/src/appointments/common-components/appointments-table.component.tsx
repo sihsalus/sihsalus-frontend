@@ -43,7 +43,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../config-schema';
-import { appointmentsEditPrivilege, clinicalChartPrivilege } from '../../constants';
+import { appointmentsEditPrivileges, clinicalChartPrivilege } from '../../constants';
 import { EmptyState } from '../../empty-state/empty-state.component';
 import { canTransition, getAppointmentProviderName, isAppointmentEditable } from '../../helpers';
 import { createAppointmentsExportFileName, exportAppointmentsToSpreadsheet } from '../../helpers/excel';
@@ -138,7 +138,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
   const { results, goTo, currentPage } = usePagination(searchResults, pageSize);
   const { customPatientChartUrl } = useConfig<ConfigObject>();
   const session = useSession();
-  const canEdit = userHasAccess(appointmentsEditPrivilege, session?.user);
+  const canEdit = userHasAccess(appointmentsEditPrivileges, session?.user);
   const canAccessPatientChart = userHasAccess(clinicalChartPrivilege, session?.user);
   // Batch status changes are only offered on the expected (Scheduled) tab; the batch modal itself
   // restricts the reachable target statuses via canTransition.
@@ -184,6 +184,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
   const resolvedDniIdentifiers = new Map(
     results?.map((appointment) => [appointment.uuid, resolveDniIdentifier(appointment)]),
   );
+  const appointmentsByUuid = new Map(appointments.map((appointment) => [appointment.uuid, appointment]));
   const headerData = [
     {
       header: t('patientName', 'Patient name'),
@@ -276,6 +277,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
         </div>
       </Tile>
       <DataTable
+        key={appointmentStatus ?? tableHeading}
         aria-label={t('appointmentsTable', 'Appointments table')}
         data-floating-menu-container
         rows={rowData}
@@ -361,7 +363,10 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                 </TableHead>
                 <TableBody>
                   {rows.map((row) => {
-                    const matchingAppointment = appointments.find((appointment) => appointment.uuid === row.id);
+                    const matchingAppointment = appointmentsByUuid.get(row.id);
+                    if (!matchingAppointment) {
+                      return null;
+                    }
                     const patientUuid = matchingAppointment.patient?.uuid;
                     const visitDate = dayjs(matchingAppointment.startDateTime);
                     const isFutureAppointment = visitDate.isAfter(dayjs());

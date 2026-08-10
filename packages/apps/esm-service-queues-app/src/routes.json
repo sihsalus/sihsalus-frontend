@@ -275,7 +275,7 @@
       "name": "service-queues-visit-notes-workspace",
       "component": "@sihsalus/esm-patient-notes-app#visitNotesFormWorkspace",
       "window": "service-queues-visit-note",
-      "privileges": ["app:home.colasAtencion", "app:hoja.clinica.resumenConsulta.editar"]
+      "privileges": ["app:home.colasAtencion", "app:hoja.clinica.resumenConsulta"]
     },
     {
       "name": "queue-patient-search-workspace",

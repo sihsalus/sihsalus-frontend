@@ -50,7 +50,7 @@ import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
 import { z } from 'zod';
 import type { ConfigObject } from '../config-schema';
-import { visitNotesEditPrivilege } from '../constants';
+import { visitNotesPrivilege } from '../constants';
 import type { Concept, Diagnosis, DiagnosisPayload, VisitNotePayload } from '../types';
 import { defaultVisitNoteClinicalConceptUuids } from './visit-note-config-schema';
 import {
@@ -1710,7 +1710,7 @@ function Loader() {
 
 const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}>> = (props) => {
   const session = useSession();
-  const canEditVisitNotes = userHasAccess(visitNotesEditPrivilege, session?.user);
+  const canEditVisitNotes = userHasAccess(visitNotesPrivilege, session?.user);
 
   useEffect(() => {
     if (!canEditVisitNotes) {

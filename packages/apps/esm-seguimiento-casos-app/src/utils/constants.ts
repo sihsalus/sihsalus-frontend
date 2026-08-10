@@ -11,7 +11,6 @@ export const omrsDateFormat = 'YYYY-MM-DDTHH:mm:ss.SSSZZ';
 // ── App info ──
 export const moduleName = '@sihsalus/esm-seguimiento-casos-app';
 export const caseMonitoringEditPrivilege = 'app:home.seguimientoCasos.editar';
-export const chartCaseMonitoringEditPrivilege = 'app:hoja.clinica.seguimientoCasos.editar';
 export const missedFollowUpEditPrivilege = 'app:hoja.clinica.perdidaSeguimiento.editar';
 
 // ── Workspace names ──

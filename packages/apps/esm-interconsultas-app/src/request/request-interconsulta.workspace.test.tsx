@@ -1,7 +1,7 @@
-import { useConfig, useSession, useVisit } from '@openmrs/esm-framework';
+import { UserHasAccess, useConfig, useSession, useVisit } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
+import React, { type ReactNode } from 'react';
 import type { ConfigObject } from '../config-schema';
 import {
   createInterconsulta,
@@ -137,6 +137,7 @@ function configureActiveVisit() {
 describe('RequestInterconsultaWorkspace acceptance contract', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(UserHasAccess).mockImplementation(({ children }: { children?: ReactNode }) => children);
     mockUseConfig.mockReturnValue(config);
     configureSessionWithProvider();
     configureActiveVisit();
@@ -256,5 +257,14 @@ describe('RequestInterconsultaWorkspace acceptance contract', () => {
 
     expect(screen.getByRole('button', { name: 'Solicitar interconsulta' })).toBeDisabled();
     expect(mockCreateInterconsulta).not.toHaveBeenCalled();
+  });
+
+  it('blocks direct workspace rendering without interconsultas.editar', () => {
+    vi.mocked(UserHasAccess).mockImplementation(({ fallback }: { fallback?: ReactNode }) => fallback);
+
+    render(<RequestInterconsultaWorkspace patientUuid="patient-uuid" closeWorkspace={vi.fn()} />);
+
+    expect(screen.getByText('Acceso denegado')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Solicitar interconsulta' })).not.toBeInTheDocument();
   });
 });

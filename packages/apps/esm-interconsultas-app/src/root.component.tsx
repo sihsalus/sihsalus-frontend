@@ -1,16 +1,19 @@
-import { AppErrorBoundary } from '@sihsalus/esm-rbac';
+import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import InterconsultasDashboard from './dashboard/interconsultas-dashboard.component';
+import { interconsultasHomePrivilege } from './constants';
 
 const Root: React.FC = () => {
   return (
     <AppErrorBoundary appName="esm-interconsultas-app">
-      <BrowserRouter basename={`${globalThis.spaBase}/home/interconsultas`}>
-        <Routes>
-          <Route path="/" element={<InterconsultasDashboard />} />
-        </Routes>
-      </BrowserRouter>
+      <RequirePrivilege privilege={interconsultasHomePrivilege}>
+        <BrowserRouter basename={`${globalThis.spaBase}/home/interconsultas`}>
+          <Routes>
+            <Route path="/" element={<InterconsultasDashboard />} />
+          </Routes>
+        </BrowserRouter>
+      </RequirePrivilege>
     </AppErrorBoundary>
   );
 };

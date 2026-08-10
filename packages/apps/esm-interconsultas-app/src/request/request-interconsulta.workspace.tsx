@@ -22,9 +22,11 @@ import {
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
+import { interconsultasChartEditPrivilege } from '../constants';
 import {
   createInterconsulta,
   useAvailableProviders,
@@ -49,7 +51,7 @@ type Urgency = 'ROUTINE' | 'STAT' | 'ON_SCHEDULED_DATE';
  * prioridad, motivo, fecha programada); paciente, visita, profesional y
  * location sale de la visita activa y el profesional de la sesión.
  */
-const RequestInterconsultaWorkspace: React.FC<RequestInterconsultaWorkspaceComponentProps> = (props) => {
+const RequestInterconsultaWorkspaceForm: React.FC<RequestInterconsultaWorkspaceComponentProps> = (props) => {
   const { t } = useTranslation();
   const workspaceProps = props.workspaceProps ?? {};
   const patientUuid = props.patientUuid ?? workspaceProps.patientUuid;
@@ -217,5 +219,11 @@ const RequestInterconsultaWorkspace: React.FC<RequestInterconsultaWorkspaceCompo
     </Workspace2>
   );
 };
+
+const RequestInterconsultaWorkspace: React.FC<RequestInterconsultaWorkspaceComponentProps> = (props) => (
+  <RequirePrivilege privilege={interconsultasChartEditPrivilege}>
+    <RequestInterconsultaWorkspaceForm {...props} />
+  </RequirePrivilege>
+);
 
 export default RequestInterconsultaWorkspace;

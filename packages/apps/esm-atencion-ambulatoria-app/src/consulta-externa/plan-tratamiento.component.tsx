@@ -15,7 +15,11 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { useTreatmentPlan } from '../hooks/useTreatmentPlan';
-import { orderBasketEditPrivilege, patientFormEntryWorkspace } from '../utils/constants';
+import {
+  consultaExternaEditPrivilege,
+  orderBasketEditPrivilege,
+  patientFormEntryWorkspace,
+} from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface PlanTratamientoProps {
@@ -74,6 +78,7 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
       actionLabel={t('addTreatmentPlan', 'Registrar Plan')}
       empty={treatmentPlans.length === 0}
       emptyDisplayText={t('treatmentPlans', 'planes de tratamiento')}
+      editPrivilege={consultaExternaEditPrivilege}
       error={error}
       isLoading={isLoading}
       isValidating={isValidating}

@@ -109,11 +109,13 @@ describe('AppointmentActions', () => {
     expect(screen.getByText(/check in/i)).toBeInTheDocument();
   });
 
-  it('does not offer check-in unless the user has every native visit and queue privilege', () => {
+  it('offers check-in with exactly the home base and edit privileges', () => {
     appointment.status = AppointmentStatus.SCHEDULED;
-    mockUserHasAccess.mockImplementation((requiredPrivileges) =>
-      Array.isArray(requiredPrivileges) ? !requiredPrivileges.includes('Add Visits') : true,
-    );
+    const grantedPrivileges = new Set(['app:home.citas', 'app:home.citas.editar']);
+    mockUserHasAccess.mockImplementation((requiredPrivileges) => {
+      const privileges = Array.isArray(requiredPrivileges) ? requiredPrivileges : [requiredPrivileges];
+      return privileges.every((privilege) => grantedPrivileges.has(privilege));
+    });
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
       checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
@@ -128,30 +130,19 @@ describe('AppointmentActions', () => {
 
     render(<AppointmentActions {...defaultProps} />);
 
-    expect(screen.queryByRole('button', { name: /check in/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /check in/i })).toBeInTheDocument();
     expect(mockUserHasAccess).toHaveBeenCalledWith(
-      [
-        'app:home.citas.editar',
-        'Get Patients',
-        'Get Locations',
-        'Get Visits',
-        'Add Visits',
-        'Edit Visits',
-        'Get Visit Types',
-        'Get Visit Attribute Types',
-        'Get Queue Entries',
-        'Get Queues',
-        'Manage Queue Entries',
-      ],
+      ['app:home.citas', 'app:home.citas.editar'],
       expect.anything(),
     );
   });
 
-  it('does not offer check-in without permission to write the appointment visit link', () => {
+  it.each(['app:home.citas', 'app:home.citas.editar'])('does not offer check-in without %s', (missingPrivilege) => {
     appointment.status = AppointmentStatus.SCHEDULED;
-    mockUserHasAccess.mockImplementation((requiredPrivileges) =>
-      Array.isArray(requiredPrivileges) ? !requiredPrivileges.includes('Edit Visits') : true,
-    );
+    mockUserHasAccess.mockImplementation((requiredPrivileges) => {
+      const privileges = Array.isArray(requiredPrivileges) ? requiredPrivileges : [requiredPrivileges];
+      return !privileges.includes(missingPrivilege);
+    });
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
       checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
@@ -169,10 +160,12 @@ describe('AppointmentActions', () => {
     expect(screen.queryByRole('button', { name: /check in/i })).not.toBeInTheDocument();
   });
 
-  it('authorizes clinical checkout separately without requiring Add Visits', () => {
+  it('authorizes finalization with the base and finalize privileges without requiring general edit or Add Visits', () => {
     appointment.status = AppointmentStatus.CHECKEDIN;
     mockUserHasAccess.mockImplementation((requiredPrivileges) =>
-      Array.isArray(requiredPrivileges) ? !requiredPrivileges.includes('Add Visits') : true,
+      Array.isArray(requiredPrivileges)
+        ? !requiredPrivileges.includes('Add Visits') && !requiredPrivileges.includes('app:home.citas.editar')
+        : true,
     );
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
@@ -193,16 +186,7 @@ describe('AppointmentActions', () => {
       'La cita tiene la llegada registrada pero no tiene una consulta activa vinculada. Revise y regularice su estado.',
     );
     expect(mockUserHasAccess).toHaveBeenCalledWith(
-      [
-        'app:hoja.clinica.citas.editar',
-        'Get Visits',
-        'Edit Visits',
-        'Get Encounters',
-        'Get Visit Attribute Types',
-        'Get Queue Entries',
-        'Get Queues',
-        'Manage Queue Entries',
-      ],
+      ['app:home.citas', 'app:home.citas.editar.finalizarAtencion'],
       expect.anything(),
     );
   });
@@ -405,41 +389,44 @@ describe('AppointmentActions', () => {
     expect(screen.getByText(/finish care/i)).toBeInTheDocument();
   });
 
-  it('does not offer checkout without the clinical appointment privilege', () => {
-    appointment.status = AppointmentStatus.CHECKEDIN;
-    mockUserHasAccess.mockImplementation((requiredPrivileges) =>
-      Array.isArray(requiredPrivileges) ? !requiredPrivileges.includes('app:hoja.clinica.citas.editar') : true,
-    );
-    mockUseConfig.mockReturnValue({
-      ...getDefaultsFromConfigSchema(configSchema),
-      checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
-      checkOutButton: { enabled: true, customUrl: '' },
-    });
-    mockUseTodaysVisits.mockReturnValue({
-      visits: [
-        {
-          patient: { uuid: appointment.patient.uuid },
-          startDatetime: new Date().toISOString(),
-          stopDatetime: null,
-          uuid: 'linked-active-visit-uuid',
-          attributes: [
-            {
-              attributeType: { uuid: '193508ab-20c6-5291-9f23-0257335eaabd' },
-              value: appointment.uuid,
-            },
-          ],
-        },
-      ],
-      error: null,
-      isLoading: false,
-      mutateVisit: vi.fn(),
-    });
+  it.each(['app:home.citas', 'app:home.citas.editar.finalizarAtencion'])(
+    'does not offer checkout without %s',
+    (missingPrivilege) => {
+      appointment.status = AppointmentStatus.CHECKEDIN;
+      mockUserHasAccess.mockImplementation((requiredPrivileges) =>
+        Array.isArray(requiredPrivileges) ? !requiredPrivileges.includes(missingPrivilege) : true,
+      );
+      mockUseConfig.mockReturnValue({
+        ...getDefaultsFromConfigSchema(configSchema),
+        checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
+        checkOutButton: { enabled: true, customUrl: '' },
+      });
+      mockUseTodaysVisits.mockReturnValue({
+        visits: [
+          {
+            patient: { uuid: appointment.patient.uuid },
+            startDatetime: new Date().toISOString(),
+            stopDatetime: null,
+            uuid: 'linked-active-visit-uuid',
+            attributes: [
+              {
+                attributeType: { uuid: '193508ab-20c6-5291-9f23-0257335eaabd' },
+                value: appointment.uuid,
+              },
+            ],
+          },
+        ],
+        error: null,
+        isLoading: false,
+        mutateVisit: vi.fn(),
+      });
 
-    render(<AppointmentActions {...defaultProps} />);
+      render(<AppointmentActions {...defaultProps} />);
 
-    expect(screen.queryByRole('button', { name: /finish care/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Regularizar cierre' })).not.toBeInTheDocument();
-  });
+      expect(screen.queryByRole('button', { name: /finish care/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Regularizar cierre' })).not.toBeInTheDocument();
+    },
+  );
 
   it.each([
     { case: 'active visits are still loading', error: null, isLoading: true },

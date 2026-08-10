@@ -3,7 +3,11 @@ import { launchWorkspace2, showModal, useLayoutType, userHasAccess, useSession }
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { appointmentsEditPrivilege, chartAppointmentsEditPrivilege, clinicalCheckoutPrivileges } from '../constants';
+import {
+  appointmentsEditPrivileges,
+  chartAppointmentsCheckoutPrivileges,
+  chartAppointmentsEditPrivileges,
+} from '../constants';
 import { isAppointmentEditable } from '../helpers';
 import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patientAppointmentContext';
 
@@ -23,13 +27,13 @@ export const PatientAppointmentsActionMenu = ({ appointment, patientUuid }: appo
   const patientAppointmentContext = React.useContext(PatientAppointmentContext);
   const isPatientChart = patientAppointmentContext === PatientAppointmentContextTypes.PATIENT_CHART;
   const canEdit = userHasAccess(
-    isPatientChart ? chartAppointmentsEditPrivilege : appointmentsEditPrivilege,
+    isPatientChart ? chartAppointmentsEditPrivileges : appointmentsEditPrivileges,
     session?.user,
   );
   const canFinalizeCare =
     isPatientChart &&
     appointment.status === AppointmentStatus.CHECKEDIN &&
-    userHasAccess(clinicalCheckoutPrivileges, session?.user);
+    userHasAccess(chartAppointmentsCheckoutPrivileges, session?.user);
   const canEditAppointment = canEdit && isAppointmentEditable(appointment.status);
 
   if (!canEditAppointment && !canFinalizeCare) {
@@ -59,7 +63,7 @@ export const PatientAppointmentsActionMenu = ({ appointment, patientUuid }: appo
   };
 
   const handleFinalizeCare = () => {
-    const dispose = showModal('end-appointment-modal', {
+    const dispose = showModal('patient-chart-end-appointment-modal', {
       closeModal: () => dispose(),
       patientUuid,
       appointmentUuid: appointment.uuid,

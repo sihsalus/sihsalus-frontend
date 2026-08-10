@@ -35,7 +35,7 @@
       "name": "visit-notes-form-workspace",
       "component": "visitNotesFormWorkspace",
       "window": "visit-note",
-      "privileges": "app:hoja.clinica.resumenConsulta.editar"
+      "privileges": "app:hoja.clinica.resumenConsulta"
     }
   ],
   "workspaceWindows2": [
@@ -43,7 +43,7 @@
       "name": "visit-note",
       "icon": "visitNotesActionButton",
       "group": "patient-chart",
-      "privileges": "app:hoja.clinica.resumenConsulta.editar",
+      "privileges": "app:hoja.clinica.resumenConsulta",
       "order": 1
     }
   ]

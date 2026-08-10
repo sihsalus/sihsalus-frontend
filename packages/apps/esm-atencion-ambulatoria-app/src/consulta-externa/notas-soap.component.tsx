@@ -5,7 +5,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { useSoapNotes } from '../hooks/useSoapNotes';
-import { patientFormEntryWorkspace } from '../utils/constants';
+import { consultaExternaEditPrivilege, patientFormEntryWorkspace } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 import styles from './consulta-externa-dashboard.scss';
 
@@ -45,6 +45,7 @@ const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
       actionLabel={t('addSoapNote', 'Registrar examen físico / SOAP')}
       empty={soapEntries.length === 0}
       emptyDisplayText={t('physicalExamAndSoapNotes', 'registros de examen físico / SOAP')}
+      editPrivilege={consultaExternaEditPrivilege}
       error={error}
       isLoading={isLoading}
       isValidating={isValidating}

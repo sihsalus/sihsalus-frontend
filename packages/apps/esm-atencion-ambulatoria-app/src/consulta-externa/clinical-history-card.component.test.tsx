@@ -1,5 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { UserHasAccess } from '@openmrs/esm-framework';
+import type { ReactNode } from 'react';
 import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface EmptyStateMockProps {
@@ -15,9 +17,11 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => {
     ...actual,
     EmptyState: ({ displayText, headerTitle, launchForm }: EmptyStateMockProps) => (
       <section data-testid="empty-state" data-display-text={displayText} aria-label={headerTitle}>
-        <button type="button" onClick={launchForm}>
-          Registrar
-        </button>
+        {launchForm ? (
+          <button type="button" onClick={launchForm}>
+            Registrar
+          </button>
+        ) : null}
       </section>
     ),
     ErrorState: ({ headerTitle }: { headerTitle: string }) => <div role="alert">{headerTitle}</div>,
@@ -30,6 +34,10 @@ const defaultProps = {
 };
 
 describe('ClinicalHistoryCard', () => {
+  beforeEach(() => {
+    vi.mocked(UserHasAccess).mockImplementation(({ children }: { children?: ReactNode }) => children);
+  });
+
   it('renders a table skeleton with the configured columns', () => {
     const skeletonHeaders = [
       { key: 'date', header: 'Fecha' },
@@ -92,6 +100,40 @@ describe('ClinicalHistoryCard', () => {
     expect(card.querySelector('.cds--inline-loading')).toBeInTheDocument();
     await user.click(within(card).getByRole('button', { name: 'Registrar dato' }));
     expect(onAction).toHaveBeenCalledOnce();
+  });
+
+  it('keeps the clinical list visible but hides modification actions without the edit privilege', () => {
+    vi.mocked(UserHasAccess).mockImplementation(({ fallback }: { fallback?: ReactNode }) => fallback);
+
+    render(
+      <ClinicalHistoryCard
+        {...defaultProps}
+        actionLabel="Registrar dato"
+        editPrivilege="app:hoja.clinica.consultaExterna.editar"
+        onAction={vi.fn()}
+      >
+        Contenido clínico
+      </ClinicalHistoryCard>,
+    );
+
+    expect(screen.getByText('Contenido clínico')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Registrar dato' })).not.toBeInTheDocument();
+  });
+
+  it('shows an empty read-only state without a registration button when edit access is missing', () => {
+    vi.mocked(UserHasAccess).mockImplementation(({ fallback }: { fallback?: ReactNode }) => fallback);
+
+    render(
+      <ClinicalHistoryCard
+        {...defaultProps}
+        editPrivilege="app:hoja.clinica.consultaExterna.editar"
+        empty
+        onAction={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('empty-state')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Registrar' })).not.toBeInTheDocument();
   });
 
   it('keeps pagination available when the current page has no section data', async () => {

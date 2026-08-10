@@ -30,6 +30,7 @@ import {
 } from '@openmrs/esm-framework';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { interconsultasEditPrivileges } from '../constants';
 import { deriveStatus, useInterconsultas } from '../interconsultas.resource';
 import type { InterconsultaOrder, InterconsultaTrayFilter } from '../types';
 import { getStatusDisplay, getStatusTagType, getUrgencyDisplay } from '../utils/status';
@@ -37,8 +38,6 @@ import InterconsultasEmptyState from './interconsultas-empty-state.component';
 import styles from './interconsultas-table.scss';
 
 const pageSizes = [10, 20, 30, 40, 50];
-const editPrivileges = ['app:hoja.clinica.interconsultas.editar', 'app:home.interconsultas.editar'];
-
 interface FilterOption {
   uuid: string;
   display: string;
@@ -53,7 +52,7 @@ interface InterconsultasTableProps {
 const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = editPrivileges.some((privilege) => userHasAccess(privilege, session?.user));
+  const canEdit = interconsultasEditPrivileges.some((privilege) => userHasAccess(privilege, session?.user));
   const { interconsultas, isLoading, error } = useInterconsultas(filter);
   const [searchString, setSearchString] = useState('');
   const [serviceFilter, setServiceFilter] = useState<string>('');

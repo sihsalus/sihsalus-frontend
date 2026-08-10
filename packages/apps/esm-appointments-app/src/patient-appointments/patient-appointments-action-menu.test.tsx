@@ -3,7 +3,12 @@ import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { appointmentsEditPrivilege, chartAppointmentsEditPrivilege } from '../constants';
+import {
+  appointmentsEditPrivileges,
+  chartAppointmentsEditPrivileges,
+  chartAppointmentsFinalizeCarePrivilege,
+  chartAppointmentsReadPrivilege,
+} from '../constants';
 import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patientAppointmentContext';
 import { type Appointment, AppointmentStatus } from '../types';
 import { PatientAppointmentsActionMenu } from './patient-appointments-action-menu.component';
@@ -53,7 +58,7 @@ describe('PatientAppointmentsActionMenu', () => {
     expect(screen.queryByRole('button', { name: /options/i })).not.toBeInTheDocument();
     await chooseMenuItem('editAppointment');
 
-    expect(mockUserHasAccess).toHaveBeenCalledWith(appointmentsEditPrivilege, expect.anything());
+    expect(mockUserHasAccess).toHaveBeenCalledWith(appointmentsEditPrivileges, expect.anything());
     expect(mockLaunchWorkspace2).toHaveBeenCalledWith(
       'appointments-form-workspace',
       expect.objectContaining({ appointment: expect.objectContaining({ uuid: appointment.uuid }), patientUuid }),
@@ -66,7 +71,7 @@ describe('PatientAppointmentsActionMenu', () => {
 
     await chooseMenuItem('editAppointment');
 
-    expect(mockUserHasAccess).toHaveBeenCalledWith(chartAppointmentsEditPrivilege, expect.anything());
+    expect(mockUserHasAccess).toHaveBeenCalledWith(chartAppointmentsEditPrivileges, expect.anything());
     expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith(
       'patient-chart-appointments-form-workspace',
       expect.objectContaining({ appointment: expect.objectContaining({ uuid: appointment.uuid }), patientUuid }),
@@ -105,7 +110,7 @@ describe('PatientAppointmentsActionMenu', () => {
     await chooseMenuItem('finalizeCare');
 
     expect(mockShowModal).toHaveBeenCalledWith(
-      'end-appointment-modal',
+      'patient-chart-end-appointment-modal',
       expect.objectContaining({
         appointmentUuid: appointment.uuid,
         patientUuid,
@@ -113,18 +118,37 @@ describe('PatientAppointmentsActionMenu', () => {
       }),
     );
     expect(mockUserHasAccess).toHaveBeenCalledWith(
-      [
-        'app:hoja.clinica.citas.editar',
-        'Get Visits',
-        'Edit Visits',
-        'Get Encounters',
-        'Get Visit Attribute Types',
-        'Get Queue Entries',
-        'Get Queues',
-        'Manage Queue Entries',
-      ],
+      ['app:hoja.clinica.citas', 'app:hoja.clinica.citas.editar.finalizarAtencion'],
       expect.anything(),
     );
+  });
+
+  it('shows only finalization with the chart base and finalize privileges', async () => {
+    const grantedUiPrivileges = new Set([chartAppointmentsReadPrivilege, chartAppointmentsFinalizeCarePrivilege]);
+    mockUserHasAccess.mockImplementation((requiredPrivileges) => {
+      const privileges = Array.isArray(requiredPrivileges) ? requiredPrivileges : [requiredPrivileges];
+      return privileges.every((privilege) => !privilege.startsWith('app:') || grantedUiPrivileges.has(privilege));
+    });
+
+    renderMenu(PatientAppointmentContextTypes.PATIENT_CHART, AppointmentStatus.CHECKEDIN);
+    await userEvent.click(screen.getByRole('button', { name: /actions/i }));
+
+    expect(document.getElementById('finalizeCare')).toBeInTheDocument();
+    expect(document.getElementById('editAppointment')).not.toBeInTheDocument();
+    expect(document.getElementById('cancelAppointment')).not.toBeInTheDocument();
+  });
+
+  it('does not show finalization when the chart base privilege is missing', () => {
+    mockUserHasAccess.mockImplementation((requiredPrivileges) => {
+      const privileges = Array.isArray(requiredPrivileges) ? requiredPrivileges : [requiredPrivileges];
+      return privileges.every(
+        (privilege) => !privilege.startsWith('app:') || privilege === chartAppointmentsFinalizeCarePrivilege,
+      );
+    });
+
+    renderMenu(PatientAppointmentContextTypes.PATIENT_CHART, AppointmentStatus.CHECKEDIN);
+
+    expect(screen.queryByRole('button', { name: /actions/i })).not.toBeInTheDocument();
   });
 
   it('does not expose clinical finalization in the administrative appointment context', () => {

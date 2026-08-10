@@ -15,7 +15,7 @@ import isToday from 'dayjs/plugin/isToday';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { appointmentsEditPrivilege, spaHomePage } from '../constants';
+import { appointmentsEditPrivileges, spaHomePage } from '../constants';
 import SelectedDateContext from '../hooks/selectedDateContext';
 import { getAppointmentServiceFilterSearch } from '../hooks/useAppointmentServiceFilter';
 
@@ -32,7 +32,7 @@ const MetricsHeader: React.FC<MetricsHeaderProps> = ({ appointmentServiceTypes }
   const { selectedDate } = useContext(SelectedDateContext);
   const layout = useLayoutType();
   const session = useSession();
-  const canEdit = userHasAccess(appointmentsEditPrivilege, session?.user);
+  const canEdit = userHasAccess(appointmentsEditPrivileges, session?.user);
   const responsiveSize = isDesktop(layout) ? 'sm' : 'md';
 
   const launchCreateAppointmentForm = (patientUuid) => {

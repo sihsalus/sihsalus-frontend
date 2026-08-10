@@ -1006,7 +1006,7 @@ function OrderBasketItemActions({
   canEditMedications,
   canEditOrders,
   orderItem,
-  openOrderForm,
+  openOrderBasket,
   responsiveSize,
 }: OrderBasketItemActionsProps) {
   const { t } = useTranslation();
@@ -1015,8 +1015,44 @@ function OrderBasketItemActions({
   const { orders: ordersForType } = useOrderBasket<OrderBasketItem>(orderItem.orderType.uuid);
 
   const handleModifyClick = useCallback(() => {
-    openOrderForm();
-  }, [openOrderForm]);
+
+    void openmrsFetch(`${restBaseUrl}/order/${orderItem.uuid}/fulfillerdetails/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: {
+        fulfillerStatus: 'DECLINED',
+        fulfillerComment: 'Modificado por el médico',
+      },
+    }).then(() => mutateOrders());
+
+    if (orderItem.type === 'drugorder') {
+      void getDrugOrderByUuid(orderItem.uuid)
+        .then((res) => {
+          const medicationOrder = res.data;
+          const medicationItem = buildMedicationOrder(medicationOrder, 'REVISE');
+          setOrders([...orders, medicationItem]);
+          openOrderBasket();
+        })
+        .catch((e) => {
+          console.error('Error modifying drug order: ', e);
+        });
+    } else if (orderItem.type === 'testorder') {
+      const labItem = buildLabOrder(orderItem, 'REVISE');
+      setOrders([...orders, labItem]);
+      openOrderBasket();
+    } else if (orderItem.type === 'order') {
+      const order = buildGeneralOrder(orderItem, 'REVISE');
+      setOrders([...orders, order]);
+      openOrderBasket();
+    }
+  }, [orderItem, openOrderBasket, orders, setOrders, mutateOrders]);
+
+  const handleAddResultsClick = useCallback(() => {
+    launchPatientWorkspace('test-results-form-workspace', { order: orderItem });
+  }, [orderItem]);
+
 
   const handleCancelClick = useCallback(() => {
     launchCancelOrder({ order: orderItem });

@@ -1051,25 +1051,6 @@ function OrderBasketItemActions({
       return;
     }
 
-    const declineOriginalOrder = () => {
-      const fetchPromise = openmrsFetch(`${restBaseUrl}/order/${orderItem.uuid}/fulfillerdetails/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fulfillerStatus: 'DECLINED',
-          fulfillerComment: 'Modificado por el médico',
-        }),
-      });
-
-      if (fetchPromise && typeof fetchPromise.then === 'function') {
-        void fetchPromise.then(() => mutateOrders?.());
-      } else {
-        mutateOrders?.();
-      }
-    };
-
     if (orderItem.type === 'drugorder') {
       const requestContext = modifyContextKey;
       const requestGeneration = modifyRequestGenerationRef.current;
@@ -1133,8 +1114,6 @@ function OrderBasketItemActions({
             },
           };
 
-          declineOriginalOrder();
-
           const medicationItem = buildMedicationOrder(hydratedMedicationOrder, 'REVISE');
           setOrders([...ordersForType, medicationItem]);
           openOrderBasket();
@@ -1160,12 +1139,10 @@ function OrderBasketItemActions({
           }
         });
     } else if (orderItem.type === 'testorder') {
-      declineOriginalOrder();
       const labItem = buildLabOrder(orderItem, 'REVISE');
       setOrders([...ordersForType, labItem]);
       openOrderBasket();
     } else if (orderItem.type === 'order') {
-      declineOriginalOrder();
       const order = buildGeneralOrder(orderItem, 'REVISE');
       setOrders([...ordersForType, order]);
       openOrderBasket();

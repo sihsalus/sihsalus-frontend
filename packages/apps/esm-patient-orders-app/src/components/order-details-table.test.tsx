@@ -516,7 +516,7 @@ describe('OrderDetailsTable', () => {
     }
   });
 
-  it('hydrates a drug order, declines the original order, and adds the revision to the basket opening the basket', async () => {
+  it('hydrates a drug order and adds the revision to the basket opening the basket', async () => {
     renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
 
     await openActionsMenu();
@@ -524,16 +524,6 @@ describe('OrderDetailsTable', () => {
 
     await waitFor(() => expect(mockSetOrders).toHaveBeenCalledTimes(1));
     expect(mockGetDrugOrderByUuid).toHaveBeenCalledWith(drugOrder.uuid);
-    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
-      expect.stringContaining(`/order/${drugOrder.uuid}/fulfillerdetails/`),
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({
-          fulfillerStatus: 'DECLINED',
-          fulfillerComment: 'Modificado por el médico',
-        }),
-      }),
-    );
     expect(mockSetOrders).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({
@@ -554,23 +544,13 @@ describe('OrderDetailsTable', () => {
       label: 'general order',
       order: generalOrder,
     },
-  ])('declines the original $label, adds the revision to the basket, and opens the basket', async ({ order }) => {
+  ])('adds the $label revision to the basket, and opens the basket', async ({ order }) => {
     renderSingleOrder(order, [ordersEditPrivilege]);
 
     await openActionsMenu();
     await user.click(screen.getByText('Modify order'));
 
     await waitFor(() => expect(mockSetOrders).toHaveBeenCalledTimes(1));
-    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
-      expect.stringContaining(`/order/${order.uuid}/fulfillerdetails/`),
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({
-          fulfillerStatus: 'DECLINED',
-          fulfillerComment: 'Modificado por el médico',
-        }),
-      }),
-    );
     expect(mockSetOrders).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({

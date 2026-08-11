@@ -20,7 +20,44 @@ function isAbsoluteUrl(url: string) {
  * the authenticated origin.
  */
 export function isSafeInternalTarget(target: string | null | undefined): target is string {
-  return typeof target === 'string' && target.startsWith('/') && !target.startsWith('//');
+  if (typeof target !== 'string' || !target.startsWith('/') || target.startsWith('//')) {
+    return false;
+  }
+
+  try {
+    return new URL(target, globalThis.location.origin).origin === globalThis.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Guards the route restored after authentication. Login and logout routes are
+ * valid same-origin URLs, but restoring either of them would send an already
+ * authenticated user back into the authentication flow.
+ */
+export function isSafePostLoginTarget(target: string | null | undefined): target is string {
+  if (!isSafeInternalTarget(target)) {
+    return false;
+  }
+
+  const spaBase = getSpaBase();
+  const normalizedBase = spaBase.endsWith('/') ? spaBase.slice(0, -1) : spaBase;
+  const pathname = new URL(target, globalThis.location.origin).pathname.replace(/\/+$/, '') || '/';
+  const spaRelativePath =
+    pathname === normalizedBase
+      ? '/'
+      : pathname.startsWith(`${normalizedBase}/`)
+        ? pathname.slice(normalizedBase.length)
+        : pathname;
+
+  return (
+    spaRelativePath !== '/' &&
+    spaRelativePath !== '/login' &&
+    !spaRelativePath.startsWith('/login/') &&
+    spaRelativePath !== '/logout' &&
+    !spaRelativePath.startsWith('/logout/')
+  );
 }
 
 export function buildSpaNavigationTarget(path: string) {

@@ -16,7 +16,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { type ConfigSchema } from '../config-schema';
 import { LoginArtwork } from '../login-artwork.component';
 import Logo from '../logo.component';
-import { buildSpaNavigationTarget, hardNavigate, isSafeInternalTarget } from '../navigation';
+import { buildSpaNavigationTarget, hardNavigate, isSafePostLoginTarget } from '../navigation';
 
 import { LanguageSwitcher } from './language-switcher.component';
 import styles from './login.module.scss';
@@ -113,7 +113,7 @@ const Login: React.FC = () => {
   } = useConfig<ConfigSchema>();
   const isLoginEnabled = useConnectivity();
   const { t } = useTranslation();
-  const { user } = useSession();
+  const { authenticated, sessionLocation, user } = useSession();
   const buildInfo = useBuildInfo();
   const location = useLocation() as unknown as Omit<Location, 'state'> & {
     state: LoginReferrer;
@@ -141,19 +141,55 @@ const Login: React.FC = () => {
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const recoveryInputRef = useRef<HTMLInputElement>(null);
   const usernameInputRef = useRef<HTMLInputElement>(null);
+  const authenticatedNavigationStartedRef = useRef(false);
   const openmrsLogoSrc = `${globalThis.getOpenmrsSpaBase()}logos/logo-openmrs.svg`;
   const pucpLogoSrc = `${globalThis.getOpenmrsSpaBase()}logos/logo-pucp.svg`;
   const santaClotildeLogoSrc = `${globalThis.getOpenmrsSpaBase()}logos/logo-santa-clotilde.png`;
 
-  useEffect(() => {
-    if (!user) {
-      if (loginProvider.type === 'oauth2' || loginProvider.type === 'custom') {
-        openmrsNavigate({ to: loginProvider.loginUrl });
-      } else if (!username && location.pathname === '/login/confirm') {
-        navigate('/login');
+  const redirectAuthenticatedSession = useCallback(
+    (hasSessionLocation: boolean) => {
+      if (authenticatedNavigationStartedRef.current) {
+        return;
       }
+
+      authenticatedNavigationStartedRef.current = true;
+      if (hasSessionLocation) {
+        const referrer = location.state?.referrer;
+        const target = isSafePostLoginTarget(referrer)
+          ? buildSpaNavigationTarget(referrer)
+          : loginLinks?.loginSuccess || '/home';
+        hardNavigate(target);
+      } else {
+        navigate('/login/location', { replace: true, state: location.state });
+      }
+    },
+    [location.state, loginLinks?.loginSuccess, navigate],
+  );
+
+  useEffect(() => {
+    if (authenticated && user) {
+      if (!isLoggingIn) {
+        redirectAuthenticatedSession(Boolean(sessionLocation));
+      }
+      return;
     }
-  }, [username, navigate, location, user, loginProvider]);
+
+    if (loginProvider.type === 'oauth2' || loginProvider.type === 'custom') {
+      openmrsNavigate({ to: loginProvider.loginUrl });
+    } else if (!username && location.pathname === '/login/confirm') {
+      navigate('/login');
+    }
+  }, [
+    authenticated,
+    isLoggingIn,
+    location.pathname,
+    loginProvider,
+    navigate,
+    redirectAuthenticatedSession,
+    sessionLocation,
+    user,
+    username,
+  ]);
 
   useEffect(() => {
     if (showPasswordOnSeparateScreen) {
@@ -307,18 +343,7 @@ const Login: React.FC = () => {
 
         if (authenticated) {
           failedAttemptsRef.current = 0;
-          if (session.sessionLocation) {
-            let to = loginLinks?.loginSuccess || '/home';
-            // The referrer travels in router state; only same-origin paths may
-            // steer the post-login navigation.
-            if (isSafeInternalTarget(location?.state?.referrer)) {
-              to = buildSpaNavigationTarget(location.state.referrer);
-            }
-
-            hardNavigate(to);
-          } else {
-            navigate('/login/location', { state: location.state });
-          }
+          redirectAuthenticatedSession(Boolean(session.sessionLocation));
         } else {
           setErrorMessage(resolveFailureKey(getLoginErrorKey({ session })));
           clearInputsAfterFailure();
@@ -335,13 +360,11 @@ const Login: React.FC = () => {
     [
       username,
       password,
-      navigate,
       showPasswordOnSeparateScreen,
       showPasswordField,
-      loginLinks,
-      location,
       continueLogin,
       accountLockout.failedAttemptsBeforeLockout,
+      redirectAuthenticatedSession,
     ],
   );
 

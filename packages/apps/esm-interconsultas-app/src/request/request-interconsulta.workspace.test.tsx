@@ -264,7 +264,7 @@ describe('RequestInterconsultaWorkspace acceptance contract', () => {
 
     render(<RequestInterconsultaWorkspace patientUuid="patient-uuid" closeWorkspace={vi.fn()} />);
 
-    expect(screen.getByText('Acceso denegado')).toBeInTheDocument();
+    expect(screen.getByText('Sección no disponible para su usuario')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Solicitar interconsulta' })).not.toBeInTheDocument();
   });
 });

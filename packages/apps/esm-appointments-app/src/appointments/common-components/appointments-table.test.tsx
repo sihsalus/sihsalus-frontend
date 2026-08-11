@@ -332,7 +332,7 @@ describe('AppointmentsTable', () => {
 
     renderAppointmentsTable({ appointments: [editableAppointment] });
 
-    expect(screen.getByRole('button', { name: /actions/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /acciones para/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /options/i })).not.toBeInTheDocument();
   });
 
@@ -348,7 +348,7 @@ describe('AppointmentsTable', () => {
     renderAppointmentsTable({ appointments: [editableAppointment] });
 
     const appointmentRow = screen.getByRole('row', { name: /john wilson - .* hiv clinic outpatient/i });
-    await user.click(screen.getByRole('button', { name: /actions/i }));
+    await user.click(screen.getByRole('button', { name: /acciones para/i }));
     await user.click(screen.getByText(/edit appointment/i));
 
     expect(appointmentRow).toHaveAttribute('aria-current', 'true');
@@ -379,7 +379,7 @@ describe('AppointmentsTable', () => {
 
     renderAppointmentsTable({ appointments: [cancellableAppointment] });
 
-    await user.click(screen.getByRole('button', { name: /actions/i }));
+    await user.click(screen.getByRole('button', { name: /acciones para/i }));
     const cancelAction = document.getElementById(`cancelAppointment-${cancellableAppointment.uuid}`);
 
     expect(cancelAction).toBeInTheDocument();
@@ -412,7 +412,7 @@ describe('AppointmentsTable', () => {
 
     renderAppointmentsTable({ appointments: [nonEditableAppointment] });
 
-    expect(screen.queryByRole('button', { name: /actions/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /acciones para/i })).not.toBeInTheDocument();
   });
 
   it('offers marking a past scheduled appointment as missed and opens the protected confirmation modal', async () => {
@@ -427,7 +427,7 @@ describe('AppointmentsTable', () => {
 
     renderAppointmentsTable({ appointments: [pastAppointment] });
 
-    await user.click(screen.getByRole('button', { name: /actions/i }));
+    await user.click(screen.getByRole('button', { name: /acciones para/i }));
     const missedAction = document.getElementById(`markAsMissed-${pastAppointment.uuid}`);
 
     expect(missedAction).toBeInTheDocument();
@@ -456,7 +456,7 @@ describe('AppointmentsTable', () => {
 
     renderAppointmentsTable({ appointments: [appointment] });
 
-    await user.click(screen.getByRole('button', { name: /actions/i }));
+    await user.click(screen.getByRole('button', { name: /acciones para/i }));
 
     expect(document.getElementById(`markAsMissed-${appointment.uuid}`)).not.toBeInTheDocument();
   });
@@ -470,7 +470,7 @@ describe('AppointmentsTable', () => {
 
     renderAppointmentsTable({ appointments: [pastCheckedInAppointment] });
 
-    expect(screen.queryByRole('button', { name: /actions/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /acciones para/i })).not.toBeInTheDocument();
   });
 
   it('enables batch selection on the expected tab and launches the batch status modal', async () => {
@@ -538,7 +538,7 @@ describe('AppointmentsTable', () => {
     });
 
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /actions/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /acciones para/i })).not.toBeInTheDocument();
   });
 });
 

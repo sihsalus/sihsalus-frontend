@@ -1,11 +1,10 @@
 import { LineChart } from '@carbon/charts-react';
-import { Tab, TabList, Tabs } from '@carbon/react';
+import { Tab, TabListVertical, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import { formatDate, parseDate } from '@openmrs/esm-framework';
-import classNames from 'classnames';
-import React, { useMemo, useState } from 'react';
+import React, { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { type PatientVitalsAndBiometrics } from '../common';
+import { type PatientVitalsAndBiometrics, useIsMobileChartLayout } from '../common';
 import { type ConfigObject } from '../config-schema';
 
 import styles from './biometrics-chart.scss';
@@ -22,21 +21,61 @@ interface BiometricsChartProps {
 }
 
 interface BiometricChartData {
+  id: string;
   title: string;
-  value: number | string;
+  value: string;
   groupName: 'Weight' | 'Height' | 'Body mass index' | string;
 }
 
-const chartColors = { weight: '#6929c4', height: '#6929c4', bmi: '#6929c4', abdominalCircumference: '#6929c4' };
+const chartColors = {
+  weight: '#6929c4',
+  height: '#6929c4',
+  bmi: '#6929c4',
+  muac: '#6929c4',
+  abdominalCircumference: '#6929c4',
+};
 
 const BiometricsChart: React.FC<BiometricsChartProps> = ({ patientBiometrics, conceptUnits, config }) => {
   const { t } = useTranslation();
+  const biometricLabelId = useId();
+  const isMobileChartLayout = useIsMobileChartLayout();
   const { abdominalCircumferenceUnit, bmiUnit } = config.biometrics;
-  const [selectedBiometrics, setSelectedBiometrics] = useState<BiometricChartData>({
-    title: `${t('weight', 'Weight')} (${conceptUnits.get(config.concepts.weightUuid) ?? ''})`,
-    value: 'weight',
-    groupName: 'weight',
-  });
+  const biometricOptions: Array<BiometricChartData> = [
+    {
+      id: 'weight',
+      title: `${t('weight', 'Weight')} (${conceptUnits.get(config.concepts.weightUuid) ?? ''})`,
+      value: 'weight',
+      groupName: 'weight',
+    },
+    {
+      id: 'height',
+      title: `${t('height', 'Height')} (${conceptUnits.get(config.concepts.heightUuid) ?? ''})`,
+      value: 'height',
+      groupName: 'height',
+    },
+    { id: 'bmi', title: `${t('bmi', 'BMI')} (${bmiUnit})`, value: 'bmi', groupName: 'bmi' },
+    {
+      id: 'muac',
+      title: `${t('muac', 'MUAC')} (${conceptUnits.get(config.concepts.midUpperArmCircumferenceUuid) ?? ''})`,
+      value: 'muac',
+      groupName: 'muac',
+    },
+    {
+      id: 'abdominalCircumference',
+      title: `${t('abdominalCircumference', 'Abdominal circumference')} (${
+        conceptUnits.get(config.concepts.abdominalCircumferenceUuid) ?? abdominalCircumferenceUnit
+      })`,
+      value: 'abdominalCircumference',
+      groupName: 'abdominalCircumference',
+    },
+  ];
+  const [selectedBiometricId, setSelectedBiometricId] = useState('weight');
+  const selectedBiometrics =
+    biometricOptions.find((biometric) => biometric.id === selectedBiometricId) ?? biometricOptions[0];
+  const selectedBiometricIndex = Math.max(
+    0,
+    biometricOptions.findIndex((biometric) => biometric.id === selectedBiometricId),
+  );
 
   const chartData = useMemo(
     () =>
@@ -133,55 +172,41 @@ const BiometricsChart: React.FC<BiometricsChartProps> = ({ patientBiometrics, co
     };
   }, [selectedBiometrics, t]);
 
-  const verticalTabsProps = { className: styles.verticalTabs } as unknown as React.ComponentProps<typeof Tabs>;
-
   return (
     <div className={styles.biometricChartContainer}>
-      <div className={styles.biometricsArea}>
-        <label className={styles.biometricLabel} htmlFor="biometrics-chart-radio-group">
-          {t('biometricDisplayed', 'Biometric displayed')}
-        </label>
-        <Tabs {...verticalTabsProps}>
-          <TabList className={styles.tablist} aria-label="Biometrics tabs">
-            {[
-              {
-                id: 'weight',
-                label: `${t('weight', 'Weight')} (${conceptUnits.get(config.concepts.weightUuid) ?? ''})`,
-              },
-              {
-                id: 'height',
-                label: `${t('height', 'Height')} (${conceptUnits.get(config.concepts.heightUuid) ?? ''})`,
-              },
-              { id: 'bmi', label: `${t('bmi', 'BMI')} (${bmiUnit})` },
-              {
-                id: 'abdominalCircumference',
-                label: `${t('abdominalCircumference', 'Abdominal circumference')} (${
-                  conceptUnits.get(config.concepts.abdominalCircumferenceUuid) ?? abdominalCircumferenceUnit
-                })`,
-              },
-            ].map(({ id, label }) => (
-              <Tab
-                className={classNames(styles.tab, styles.bodyLong01, {
-                  [styles.selectedTab]: selectedBiometrics.title === label,
-                })}
-                key={id}
-                onClick={() =>
-                  setSelectedBiometrics({
-                    title: label,
-                    value: id,
-                    groupName: id,
-                  })
-                }
-              >
-                {label}
-              </Tab>
-            ))}
-          </TabList>
-        </Tabs>
-      </div>
-      <div className={styles.biometricsChartArea}>
-        <LineChart data={chartData} options={chartOptions} />
-      </div>
+      <Tabs
+        selectedIndex={selectedBiometricIndex}
+        onChange={({ selectedIndex }) => {
+          const selectedBiometric = biometricOptions[selectedIndex];
+          if (selectedBiometric) {
+            setSelectedBiometricId(selectedBiometric.id);
+          }
+        }}
+      >
+        <div className={styles.biometricsArea}>
+          <span className={styles.biometricLabel} id={biometricLabelId}>
+            {t('biometricDisplayed', 'Biometric displayed')}
+          </span>
+          <div className={styles.tablistWrapper} data-chart-tablist-wrapper="">
+            <TabListVertical
+              className={styles.tablist}
+              aria-labelledby={biometricLabelId}
+              aria-orientation={isMobileChartLayout ? 'horizontal' : 'vertical'}
+            >
+              {biometricOptions.map(({ id, title }) => (
+                <Tab key={id}>{title}</Tab>
+              ))}
+            </TabListVertical>
+          </div>
+        </div>
+        <TabPanels>
+          {biometricOptions.map(({ id }, index) => (
+            <TabPanel className={styles.biometricsChartArea} key={id}>
+              {selectedBiometricIndex === index ? <LineChart data={chartData} options={chartOptions} /> : null}
+            </TabPanel>
+          ))}
+        </TabPanels>
+      </Tabs>
     </div>
   );
 };

@@ -55,7 +55,7 @@
   },
   "devDependencies": {
     "@rspack/cli": "1.7.11",
-    "i18next": "^25.0.0",
+    "i18next": "^26.3.6",
     "openmrs": "*",
     "typescript": "6.0.3",
     "vitest": "^4.1.7"

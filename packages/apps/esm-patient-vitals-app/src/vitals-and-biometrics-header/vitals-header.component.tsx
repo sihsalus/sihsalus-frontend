@@ -169,7 +169,7 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
                 <span className={styles.overdueIndicator}>{overdueVitalsTagContent}</span>
               </Tag>
             ) : null}
-            {!hideLinks && (
+            {!hideLinks && !globalThis.location?.pathname?.includes('/chart/vitals-and-biometrics') && (
               <ConfigurableLink
                 className={styles.link}
                 to={`${globalThis.spaBase}/patient/${patientUuid}/chart/vitals-and-biometrics`}

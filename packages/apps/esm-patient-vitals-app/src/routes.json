@@ -49,7 +49,7 @@
       "slot": "patient-chart-summary-dashboard-slot",
       "privileges": "app:hoja.clinica.signosVitales",
       "meta": {
-        "fullWidth": false
+        "fullWidth": true
       },
       "order": 2
     },

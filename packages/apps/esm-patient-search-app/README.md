@@ -10,6 +10,7 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 ## Límites funcionales
 - Proporciona búsqueda compacta, overlay y página de resultados.
 - Facilita la selección de paciente para otros módulos del portal.
+- En selección contextual, los resultados ocultan las acciones clínicas ajenas al flujo; solo muestran acciones adicionales habilitadas explícitamente por la integración.
 - No crea ni modifica el registro del paciente.
 - No reemplaza módulos de admisión, listas o atención clínica.
 - No debe depender de DNI, teléfono o código postal como pivotes principales para encontrar pacientes.

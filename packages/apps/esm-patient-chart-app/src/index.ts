@@ -20,6 +20,7 @@ import { moduleName } from './constants';
 import { encountersDashboardMeta, summaryDashboardMeta } from './dashboard.meta';
 import { setupCacheableRoutes, setupOfflineVisitsSync } from './offline';
 import visitAttributeTagsComponent from './patient-banner-tags/visit-attribute-tags.component';
+import financiadorStatusTagComponent from './patient-banner-tags/financiador-status-tag.extension';
 import patientDetailsTileComponent from './patient-details-tile/patient-details-tile.component';
 import patientChartPageComponent from './root.component';
 import genericDashboardComponent, { genericDashboardConfigSchema } from './side-nav/generic-dashboard.component';
@@ -163,6 +164,11 @@ export const patientDetailsTile = getSyncLifecycle(patientDetailsTileComponent, 
 
 export const visitAttributeTags = getSyncLifecycle(visitAttributeTagsComponent, {
   featureName: 'visit-attribute-tags',
+  moduleName,
+});
+
+export const financiadorStatusTag = getSyncLifecycle(financiadorStatusTagComponent, {
+  featureName: 'sis-financiador-status-tag',
   moduleName,
 });
 

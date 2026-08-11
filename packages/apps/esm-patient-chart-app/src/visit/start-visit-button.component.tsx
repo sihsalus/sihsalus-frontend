@@ -21,6 +21,7 @@ const StartVisitButton = ({ patientUuid }: StartVisitButtonProps) => {
       launchPatientWorkspace(startVisitWorkspaceForm, {
         patientUuid,
         openedFrom: 'patient-chart-start-visit',
+        showPatientHeader: true,
       });
     } catch (error) {
       showSnackbar({

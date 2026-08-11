@@ -1,4 +1,5 @@
 import {
+  ActionableNotification,
   DataTable,
   DataTableSkeleton,
   Dropdown,
@@ -53,7 +54,7 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
   const { t } = useTranslation();
   const session = useSession();
   const canEdit = userHasAccess(interconsultasHomeEditPrivilege, session?.user);
-  const { interconsultas, isLoading, error } = useInterconsultas(filter);
+  const { interconsultas, isLoading, error, mutate } = useInterconsultas(filter);
   const [searchString, setSearchString] = useState('');
   const [serviceFilter, setServiceFilter] = useState<string>('');
   const [locationFilter, setLocationFilter] = useState<string>('');
@@ -131,8 +132,10 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
       const status = deriveStatus(order);
       return (
         <OverflowMenu
-          aria-label={t('actions', 'Acciones')}
-          iconDescription={t('actions', 'Acciones')}
+          aria-label={t('actionsForPatient', 'Acciones para {{patient}}', { patient: order.patient?.display ?? '' })}
+          iconDescription={t('actionsForPatient', 'Acciones para {{patient}}', {
+            patient: order.patient?.display ?? '',
+          })}
           flipped
           size="sm"
         >
@@ -207,11 +210,15 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
 
   if (error) {
     return (
-      <InlineNotification
+      <ActionableNotification
+        actionButtonLabel={t('retry', 'Reintentar')}
+        inline
         kind="error"
         lowContrast
-        title={t('error', 'Error')}
+        onActionButtonClick={() => mutate()}
+        role="alert"
         subtitle={t('errorLoadingInterconsultas', 'No se pudieron cargar las interconsultas.')}
+        title={t('error', 'Error')}
       />
     );
   }

@@ -38,28 +38,71 @@ interface BackendModule {
   version: string;
 }
 
-let cachedFrontendModules: Array<ResolvedDependenciesModule>;
+let cachedFrontendModules: Array<ResolvedDependenciesModule> | undefined;
+let pendingFrontendModules: Promise<Array<ResolvedDependenciesModule>> | undefined;
 let backendConnectionError: Error | null = null;
+let frontendModulesGeneration = 0;
 
 const MAX_PAGES = 50;
+const TRANSIENT_GATEWAY_STATUSES = new Set([502, 503, 504]);
+const TRANSIENT_RETRY_DELAYS_MS = [250, 750] as const;
 
 function clearBackendConnectionError() {
   backendConnectionError = null;
 }
 
-async function initInstalledBackendModules(): Promise<Array<BackendModule>> {
-  try {
-    clearBackendConnectionError();
-    const modules = await fetchInstalledBackendModules();
-    return modules;
-  } catch (err) {
-    const errorMessage =
-      err instanceof Error ? err.message : typeof err === 'string' ? err : 'Unknown error fetching backend modules';
-    console.error(`Error initializing installed backend modules: ${errorMessage}`, err);
-    // Store the error so UI can display it
-    backendConnectionError = err instanceof Error ? err : new Error(errorMessage);
-    // Return empty array to allow frontend to continue, but log so implementers can debug
-    return [];
+function getHttpStatus(error: unknown, visited = new Set<unknown>()): number | null {
+  if (!error || (typeof error !== 'object' && typeof error !== 'string') || visited.has(error)) {
+    return null;
+  }
+
+  visited.add(error);
+
+  if (typeof error === 'object') {
+    const errorRecord = error as {
+      cause?: unknown;
+      response?: { status?: unknown };
+      status?: unknown;
+      statusCode?: unknown;
+    };
+    const statusCandidates = [errorRecord.response?.status, errorRecord.status, errorRecord.statusCode];
+
+    for (const candidate of statusCandidates) {
+      const status = typeof candidate === 'number' ? candidate : Number(candidate);
+      if (Number.isInteger(status) && status >= 100 && status <= 599) {
+        return status;
+      }
+    }
+
+    const causeStatus = getHttpStatus(errorRecord.cause, visited);
+    if (causeStatus) {
+      return causeStatus;
+    }
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
+  const statusMatch = message.match(/\b(?:responded with|status(?:\s+code)?\s*[:=]?)\s*(\d{3})\b/i);
+  return statusMatch ? Number(statusMatch[1]) : null;
+}
+
+function wait(delayMs: number) {
+  return new Promise<void>((resolve) => globalThis.setTimeout(resolve, delayMs));
+}
+
+async function fetchBackendModulesPage(url: string) {
+  for (let retryIndex = 0; ; retryIndex += 1) {
+    try {
+      return await openmrsFetch(url, { method: 'GET', rejectOnAuthFailure: true });
+    } catch (error) {
+      const status = getHttpStatus(error);
+      const retryDelay = TRANSIENT_RETRY_DELAYS_MS[retryIndex];
+
+      if (!status || !TRANSIENT_GATEWAY_STATUSES.has(status) || retryDelay === undefined) {
+        throw error;
+      }
+
+      await wait(retryDelay);
+    }
   }
 }
 
@@ -121,7 +164,7 @@ async function fetchInstalledBackendModules(): Promise<Array<BackendModule>> {
 
   while (nextUrl && safetyCounter < MAX_PAGES) {
     try {
-      const response = await openmrsFetch(nextUrl, { method: 'GET' });
+      const response = await fetchBackendModulesPage(nextUrl);
       const { data } = response;
 
       // Handle error responses (e.g., authentication failures)
@@ -142,7 +185,11 @@ async function fetchInstalledBackendModules(): Promise<Array<BackendModule>> {
       nextUrl = resolveNext(nextLink?.uri ?? null);
       safetyCounter += 1;
     } catch (e) {
-      console.error(`Failed to fetch backend modules on request ${safetyCounter + 1} (URL: ${nextUrl})`, e);
+      console.error('Failed to fetch backend modules', {
+        error: e,
+        page: safetyCounter + 1,
+        url: nextUrl,
+      });
       throw new Error(`Failed to fetch backend modules: ${e instanceof Error ? e.message : 'Unknown error'}`, {
         cause: e,
       });
@@ -213,34 +260,82 @@ function getResolvedModuleType(requiredVersion: string, installedVersion: string
   return 'okay';
 }
 
-export async function checkModules(): Promise<Array<ResolvedDependenciesModule>> {
-  if (!cachedFrontendModules) {
-    const modules = (globalThis.installedModules ?? [])
-      .filter((module) => Boolean(module[1]?.backendDependencies || module[1]?.optionalBackendDependencies))
-      .map((module) => ({
-        backendDependencies: module[1].backendDependencies,
-        optionalBackendDependencies: Object.fromEntries(
-          Object.entries(module[1].optionalBackendDependencies ?? {}).map(([key, value]) => {
-            if (typeof value === 'string' || typeof value === 'undefined' || value === null) {
-              return [key, value];
-            }
+async function resolveFrontendModules(): Promise<Array<ResolvedDependenciesModule>> {
+  const modules = (globalThis.installedModules ?? [])
+    .filter((module) => Boolean(module[1]?.backendDependencies || module[1]?.optionalBackendDependencies))
+    .map((module) => ({
+      backendDependencies: module[1].backendDependencies,
+      optionalBackendDependencies: Object.fromEntries(
+        Object.entries(module[1].optionalBackendDependencies ?? {}).map(([key, value]) => {
+          if (typeof value === 'string' || typeof value === 'undefined' || value === null) {
+            return [key, value];
+          }
 
-            const resolvedValue =
-              typeof value === 'object' && 'version' in value && typeof value.version === 'string'
-                ? value.version
-                : undefined;
+          const resolvedValue =
+            typeof value === 'object' && 'version' in value && typeof value.version === 'string'
+              ? value.version
+              : undefined;
 
-            return [key, resolvedValue];
-          }),
-        ),
-        moduleName: module[0],
-      }));
+          return [key, resolvedValue];
+        }),
+      ),
+      moduleName: module[0],
+    }));
 
-    const installedBackendModules = await initInstalledBackendModules();
-    cachedFrontendModules = modules.map((m) => checkIfModulesAreInstalled(m, installedBackendModules));
+  const installedBackendModules = await fetchInstalledBackendModules();
+  const resolvedFrontendModules = modules.map((module) =>
+    checkIfModulesAreInstalled(module, installedBackendModules),
+  );
+  return resolvedFrontendModules;
+}
+
+export function checkModules({ forceRefresh = false }: { forceRefresh?: boolean } = {}): Promise<
+  Array<ResolvedDependenciesModule>
+> {
+  if (forceRefresh) {
+    frontendModulesGeneration += 1;
+    cachedFrontendModules = undefined;
+    pendingFrontendModules = undefined;
   }
 
-  return cachedFrontendModules;
+  if (cachedFrontendModules) {
+    return Promise.resolve(cachedFrontendModules);
+  }
+
+  if (!pendingFrontendModules) {
+    const requestGeneration = frontendModulesGeneration;
+    const request = resolveFrontendModules().then(
+      (resolvedFrontendModules) => {
+        if (requestGeneration === frontendModulesGeneration) {
+          cachedFrontendModules = resolvedFrontendModules;
+          clearBackendConnectionError();
+        }
+        return resolvedFrontendModules;
+      },
+      (error) => {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : typeof error === 'string'
+              ? error
+              : 'Unknown error fetching backend modules';
+        const backendError = error instanceof Error ? error : new Error(errorMessage);
+        console.error('Error initializing installed backend modules', error);
+        if (requestGeneration === frontendModulesGeneration) {
+          backendConnectionError = backendError;
+        }
+        throw backendError;
+      },
+    );
+    const trackedRequest = request.finally(() => {
+      if (pendingFrontendModules === trackedRequest) {
+        pendingFrontendModules = undefined;
+      }
+    });
+    pendingFrontendModules = trackedRequest;
+  }
+
+  return pendingFrontendModules;
 }
 
 export function hasInvalidDependencies(frontendModules: Array<ResolvedDependenciesModule>) {
@@ -251,8 +346,14 @@ export function getBackendConnectionErrorMessage(): string | null {
   return backendConnectionError ? backendConnectionError.message : null;
 }
 
+export function getBackendConnectionErrorStatus(): number | null {
+  return getHttpStatus(backendConnectionError);
+}
+
 // For use in tests
 export function clearCache() {
-  cachedFrontendModules = undefined as any;
+  frontendModulesGeneration += 1;
+  cachedFrontendModules = undefined;
+  pendingFrontendModules = undefined;
   clearBackendConnectionError();
 }

@@ -1,4 +1,5 @@
 import {
+  Button,
   DataTable,
   InlineNotification,
   Table,
@@ -18,9 +19,18 @@ import type { ResolvedDependenciesModule } from './openmrs-backend-dependencies'
 export interface BackendDependenciesProps {
   backendDependencies: Array<ResolvedDependenciesModule>;
   error?: string | null;
+  errorStatus?: number | null;
+  isRetrying?: boolean;
+  onRetry?(): void;
 }
 
-export const BackendDependencies: React.FC<BackendDependenciesProps> = ({ backendDependencies, error }) => {
+export const BackendDependencies: React.FC<BackendDependenciesProps> = ({
+  backendDependencies,
+  error,
+  errorStatus,
+  isRetrying = false,
+  onRetry,
+}) => {
   const { t } = useTranslation();
 
   const headers = useMemo(
@@ -42,25 +52,63 @@ export const BackendDependencies: React.FC<BackendDependenciesProps> = ({ backen
   );
 
   if (error) {
+    const isAuthenticationError = errorStatus === 401;
+    const isAuthorizationError = errorStatus === 403;
+    const isTemporaryBackendError = errorStatus === 502 || errorStatus === 503 || errorStatus === 504;
+    const notificationTitle = isAuthenticationError
+      ? t('backendAuthenticationProblem', 'Authentication required')
+      : isAuthorizationError
+        ? t('backendAuthorizationProblem', 'Insufficient permissions')
+        : isTemporaryBackendError
+          ? t('backendTemporarilyUnavailable', 'Backend temporarily unavailable')
+          : t('backendConnectionProblem', 'Backend Connection Problem');
+    const errorHint = isAuthenticationError
+      ? t('backendAuthenticationHint', 'Your session expired or is not authenticated. Sign in again and retry.')
+      : isAuthorizationError
+        ? t(
+            'backendAuthorizationHint',
+            'Your account is not allowed to view the installed backend modules. Contact an administrator.',
+          )
+        : isTemporaryBackendError
+          ? t(
+              'backendTemporaryHint',
+              'The backend returned a temporary gateway error. The automatic retries were exhausted.',
+            )
+          : t(
+              'backendConnectionHint',
+              'The frontend was unable to connect to the backend to fetch installed modules. This could mean:',
+            );
+    const showGenericHints = !isAuthenticationError && !isAuthorizationError && !isTemporaryBackendError;
+
     return (
       <div className={styles.container}>
         <InlineNotification
           kind="error"
-          title={t('backendConnectionProblem', 'Backend Connection Problem')}
+          title={notificationTitle}
           subtitle={error}
           className={styles.errorNotification}
         />
-        <p className={styles.errorHint}>
-          {t(
-            'backendConnectionHint',
-            'The frontend was unable to connect to the backend to fetch installed modules. This could mean:',
-          )}
-        </p>
-        <ul className={styles.errorHintList}>
-          <li>{t('hint1', 'The backend server is not running or not reachable')}</li>
-          <li>{t('hint2', 'Authentication failed or session expired')}</li>
-          <li>{t('hint3', 'Network connectivity issues between frontend and backend')}</li>
-        </ul>
+        {/* error-exposure-guard-ignore -- implementer-only diagnostics panel with controlled translated text */}
+        <p className={styles.errorHint}>{errorHint}</p>
+        {showGenericHints ? (
+          <ul className={styles.errorHintList}>
+            <li>{t('hint1', 'The backend server is not running or not reachable')}</li>
+            <li>{t('hint2', 'Authentication failed or session expired')}</li>
+            <li>{t('hint3', 'Network connectivity issues between frontend and backend')}</li>
+          </ul>
+        ) : null}
+        {onRetry ? (
+          <Button
+            className={styles.retryButton}
+            disabled={isRetrying}
+            kind="tertiary"
+            onClick={onRetry}
+            size="sm"
+            type="button"
+          >
+            {isRetrying ? t('retrying', 'Retrying…') : t('retry', 'Retry')}
+          </Button>
+        ) : null}
       </div>
     );
   }

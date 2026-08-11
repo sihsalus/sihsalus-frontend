@@ -1,8 +1,8 @@
-import { ExtensionSlot, useVisit } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { ExtensionSlot, PatientBannerActionsMenu, useVisit } from '@openmrs/esm-framework';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { mockAdvancedSearchResults } from 'test-utils';
 
-import { PatientSearchContext2 } from '../../../patient-search-context';
+import { PatientSearchContext, PatientSearchContext2 } from '../../../patient-search-context';
 import { type SearchedPatient } from '../../../types';
 
 import PatientBanner from './patient-banner.component';
@@ -13,12 +13,15 @@ vi.mock('../../../sihsalus-patient-info/sihsalus-patient-info.component', () => 
 
 const mockUseVisit = vi.mocked(useVisit);
 const mockExtensionSlot = vi.mocked(ExtensionSlot);
+const mockPatientBannerActionsMenu = vi.mocked(PatientBannerActionsMenu);
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
   ConfigurableLink: ({ children }) => <a href="/patient">{children}</a>,
-  ExtensionSlot: vi.fn(() => <button type="button">Start visit</button>),
-  PatientBannerActionsMenu: () => null,
+  ExtensionSlot: vi.fn(({ name }) => (
+    <button type="button">{name.includes('start-visit') ? 'Start visit' : 'Primary patient action'}</button>
+  )),
+  PatientBannerActionsMenu: vi.fn(() => <button type="button">More patient actions</button>),
   PatientBannerContactDetails: () => null,
   PatientBannerPatientInfo: ({ patient }) => <span>{patient.name[0].text}</span>,
   PatientBannerToggleContactDetailsButton: () => null,
@@ -44,14 +47,18 @@ function mockVisitReturn(overrides: Partial<ReturnType<typeof useVisit>>) {
   } as unknown as ReturnType<typeof useVisit>;
 }
 
-function renderPatientBanner(patientToRender = patient) {
+function renderPatientBannerWithContext2(
+  patientToRender = patient,
+  onPatientSelected = vi.fn(),
+  startVisitWorkspaceName?: string,
+) {
   return render(
     <PatientSearchContext2.Provider
       value={{
         closeWorkspace: vi.fn(),
         launchChildWorkspace: vi.fn(),
-        onPatientSelected: vi.fn(),
-        startVisitWorkspaceName: 'start-visit-workspace',
+        onPatientSelected,
+        startVisitWorkspaceName,
       }}
     >
       <PatientBanner patient={patientToRender} patientUuid={patientToRender.uuid} />
@@ -59,41 +66,78 @@ function renderPatientBanner(patientToRender = patient) {
   );
 }
 
+function renderPatientBannerWithLegacySelection(patientToRender = patient, nonNavigationSelectPatientAction = vi.fn()) {
+  return render(
+    <PatientSearchContext.Provider value={{ nonNavigationSelectPatientAction }}>
+      <PatientBanner patient={patientToRender} patientUuid={patientToRender.uuid} />
+    </PatientSearchContext.Provider>,
+  );
+}
+
+function getRenderedSlotNames() {
+  return mockExtensionSlot.mock.calls.map(([props]) => props.name);
+}
+
 describe('PatientBanner', () => {
   beforeEach(() => {
     mockExtensionSlot.mockClear();
+    mockPatientBannerActionsMenu.mockClear();
   });
 
   it('does not show the start visit action when the patient has an active visit', () => {
     mockUseVisit.mockReturnValue(mockVisitReturn({ activeVisit }));
 
-    renderPatientBanner();
+    render(<PatientBanner patient={patient} patientUuid={patient.uuid} />);
 
     expect(screen.getByText('Joshua Johnson')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /start visit/i })).not.toBeInTheDocument();
-    expect(mockExtensionSlot).not.toHaveBeenCalled();
+    expect(getRenderedSlotNames()).toEqual(['patient-search-primary-actions-slot']);
   });
 
-  it('shows the start visit action when the patient has no active or current visit', () => {
+  it('keeps standalone patient actions available when the patient has no active or current visit', () => {
     mockUseVisit.mockReturnValue(mockVisitReturn({}));
-
-    renderPatientBanner();
-
-    expect(screen.getByRole('button', { name: /start visit/i })).toBeInTheDocument();
-    expect(mockExtensionSlot).toHaveBeenCalled();
-  });
-
-  it('keeps appointment scheduling available in standalone search even during an active visit', () => {
-    mockUseVisit.mockReturnValue(mockVisitReturn({ activeVisit }));
 
     render(<PatientBanner patient={patient} patientUuid={patient.uuid} />);
 
-    expect(
-      mockExtensionSlot.mock.calls.some(
-        ([props]) =>
-          props.name === 'patient-search-primary-actions-slot' && props.state?.patientUuid === patient.uuid,
-      ),
-    ).toBe(true);
+    expect(screen.getByRole('button', { name: /start visit/i })).toBeInTheDocument();
+    expect(getRenderedSlotNames()).toEqual(['patient-search-primary-actions-slot', 'start-visit-button-slot']);
+    expect(mockPatientBannerActionsMenu).toHaveBeenCalledOnce();
+  });
+
+  it('hides unrelated patient actions in legacy embedded selection mode', () => {
+    mockUseVisit.mockReturnValue(mockVisitReturn({}));
+    const nonNavigationSelectPatientAction = vi.fn();
+
+    renderPatientBannerWithLegacySelection(patient, nonNavigationSelectPatientAction);
+
+    expect(getRenderedSlotNames()).toEqual([]);
+    expect(mockPatientBannerActionsMenu).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /Joshua Johnson/i }));
+    expect(nonNavigationSelectPatientAction).toHaveBeenCalledWith(patient.uuid);
+  });
+
+  it('hides unrelated patient actions in Context2 embedded selection mode', () => {
+    mockUseVisit.mockReturnValue(mockVisitReturn({}));
+    const onPatientSelected = vi.fn();
+
+    renderPatientBannerWithContext2(patient, onPatientSelected);
+
+    expect(getRenderedSlotNames()).toEqual([]);
+    expect(mockPatientBannerActionsMenu).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /Joshua Johnson/i }));
+    expect(onPatientSelected).toHaveBeenCalledOnce();
+    expect(onPatientSelected.mock.calls[0][0]).toBe(patient.uuid);
+  });
+
+  it('keeps an explicitly enabled Context2 start visit action available', () => {
+    mockUseVisit.mockReturnValue(mockVisitReturn({}));
+
+    renderPatientBannerWithContext2(patient, vi.fn(), 'start-visit-workspace');
+
+    expect(getRenderedSlotNames()).toEqual(['start-visit-button-slot2']);
+    expect(mockPatientBannerActionsMenu).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -103,23 +147,25 @@ describe('PatientBanner', () => {
   ])('does not show the start visit action when %s', (_description, visitState) => {
     mockUseVisit.mockReturnValue(mockVisitReturn(visitState));
 
-    renderPatientBanner();
+    render(<PatientBanner patient={patient} patientUuid={patient.uuid} />);
 
     expect(screen.queryByRole('button', { name: /start visit/i })).not.toBeInTheDocument();
-    expect(mockExtensionSlot).not.toHaveBeenCalled();
+    expect(getRenderedSlotNames()).not.toContain('start-visit-button-slot');
   });
 
   it('treats dead=true without a death date as deceased and hides start visit', () => {
     mockUseVisit.mockReturnValue(mockVisitReturn({}));
 
-    renderPatientBanner({
+    const deceasedPatient = {
       ...patient,
       person: {
         ...patient.person,
         dead: true,
         deathDate: null,
       },
-    });
+    };
+
+    render(<PatientBanner patient={deceasedPatient} patientUuid={deceasedPatient.uuid} />);
 
     expect(screen.queryByRole('button', { name: /start visit/i })).not.toBeInTheDocument();
     expect(mockExtensionSlot).not.toHaveBeenCalled();
@@ -128,7 +174,7 @@ describe('PatientBanner', () => {
   it('renders without failing when optional patient metadata is incomplete', () => {
     mockUseVisit.mockReturnValue(mockVisitReturn({}));
 
-    renderPatientBanner({
+    const incompletePatient = {
       ...patient,
       attributes: [{ attributeType: null, value: null }],
       identifiers: [
@@ -142,7 +188,9 @@ describe('PatientBanner', () => {
         ...patient.person,
         addresses: [null],
       },
-    } as unknown as SearchedPatient);
+    } as unknown as SearchedPatient;
+
+    render(<PatientBanner patient={incompletePatient} patientUuid={incompletePatient.uuid} />);
 
     expect(screen.getByText('Joshua Johnson')).toBeInTheDocument();
   });

@@ -45,6 +45,7 @@ describe('StartVisitButton', () => {
     expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith('start-visit-workspace-form', {
       patientUuid: mockPatient.id,
       openedFrom: 'patient-chart-start-visit',
+      showPatientHeader: true,
     });
   });
 

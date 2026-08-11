@@ -11,7 +11,7 @@ import {
 import React, { useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 
-import { appointmentsEditPrivilege } from '../constants';
+import { appointmentsEditPrivileges } from '../constants';
 import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patientAppointmentContext';
 
 import PatientAppointmentsBase from './patient-appointments-base.component';
@@ -33,7 +33,7 @@ const PatientAppointmentsOverview: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const createRequestHandled = useRef(false);
   const createAppointmentRequested = searchParams.get('action') === 'create';
-  const canCreateAppointment = userHasAccess(appointmentsEditPrivilege, session?.user);
+  const canCreateAppointment = userHasAccess(appointmentsEditPrivileges, session?.user);
 
   useEffect(() => {
     if (

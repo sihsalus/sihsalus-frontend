@@ -10,6 +10,7 @@ import {
 import { Add } from '@carbon/react/icons';
 import { useLayoutType } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styles from './consulta-externa-dashboard.scss';
@@ -26,6 +27,7 @@ interface ClinicalHistoryCardProps {
   children?: React.ReactNode;
   empty?: boolean;
   emptyDisplayText: string;
+  editPrivilege?: string;
   error?: unknown;
   isLoading?: boolean;
   isValidating?: boolean;
@@ -46,6 +48,7 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
   children,
   empty,
   emptyDisplayText,
+  editPrivilege,
   error,
   isLoading,
   isValidating,
@@ -97,7 +100,21 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
   // With a secondary action the full card renders even when empty, so the
   // action stays reachable (e.g. prescribing for a patient with no history yet).
   if (empty && !hasPagination && !hasSecondaryAction) {
-    return <EmptyState displayText={emptyDisplayText} headerTitle={title} launchForm={onAction} />;
+    const readOnlyEmptyState = <EmptyState displayText={emptyDisplayText} headerTitle={title} />;
+
+    if (!editPrivilege || !onAction) {
+      return editPrivilege ? (
+        readOnlyEmptyState
+      ) : (
+        <EmptyState displayText={emptyDisplayText} headerTitle={title} launchForm={onAction} />
+      );
+    }
+
+    return (
+      <RequirePrivilege privilege={editPrivilege} fallback={readOnlyEmptyState}>
+        <EmptyState displayText={emptyDisplayText} headerTitle={title} launchForm={onAction} />
+      </RequirePrivilege>
+    );
   }
 
   return (
@@ -106,14 +123,40 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
         <div className={styles.historyHeaderActionItems}>
           {isValidating ? <InlineLoading /> : null}
           {hasSecondaryAction ? (
-            <Button kind="ghost" size={isTablet ? 'lg' : 'sm'} renderIcon={secondaryActionIcon} onClick={onSecondaryAction}>
-              {secondaryActionLabel}
-            </Button>
+            editPrivilege ? (
+              <RequirePrivilege privilege={editPrivilege} hideUnauthorized>
+                <Button
+                  kind="ghost"
+                  size={isTablet ? 'lg' : 'sm'}
+                  renderIcon={secondaryActionIcon}
+                  onClick={onSecondaryAction}
+                >
+                  {secondaryActionLabel}
+                </Button>
+              </RequirePrivilege>
+            ) : (
+              <Button
+                kind="ghost"
+                size={isTablet ? 'lg' : 'sm'}
+                renderIcon={secondaryActionIcon}
+                onClick={onSecondaryAction}
+              >
+                {secondaryActionLabel}
+              </Button>
+            )
           ) : null}
           {onAction && actionLabel ? (
-            <Button kind="ghost" size={isTablet ? 'lg' : 'sm'} renderIcon={Add} onClick={onAction}>
-              {actionLabel}
-            </Button>
+            editPrivilege ? (
+              <RequirePrivilege privilege={editPrivilege} hideUnauthorized>
+                <Button kind="ghost" size={isTablet ? 'lg' : 'sm'} renderIcon={Add} onClick={onAction}>
+                  {actionLabel}
+                </Button>
+              </RequirePrivilege>
+            ) : (
+              <Button kind="ghost" size={isTablet ? 'lg' : 'sm'} renderIcon={Add} onClick={onAction}>
+                {actionLabel}
+              </Button>
+            )
           ) : null}
         </div>
       </CardHeader>

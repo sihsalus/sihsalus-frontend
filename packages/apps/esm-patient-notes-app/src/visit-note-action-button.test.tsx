@@ -33,7 +33,7 @@ describe('VisitNoteActionButton', () => {
     // tablet too, and gated by the same privilege.
     expect(screen.getByRole('button', { name: /Note/i })).toBeInTheDocument();
     expect(mockUserHasAccess.mock.calls.at(-1)?.[0]).toMatchObject({
-      privilege: 'app:hoja.clinica.resumenConsulta.editar',
+      privilege: 'app:hoja.clinica.resumenConsulta',
     });
   });
 
@@ -54,7 +54,7 @@ describe('VisitNoteActionButton', () => {
     const visitNoteButton = screen.getByRole('button', { name: /Note/i });
     expect(visitNoteButton).toBeInTheDocument();
     expect(mockUserHasAccess.mock.calls.at(-1)?.[0]).toMatchObject({
-      privilege: 'app:hoja.clinica.resumenConsulta.editar',
+      privilege: 'app:hoja.clinica.resumenConsulta',
     });
   });
 

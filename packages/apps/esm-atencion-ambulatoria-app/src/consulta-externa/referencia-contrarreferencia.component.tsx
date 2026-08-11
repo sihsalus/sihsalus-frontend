@@ -14,7 +14,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { useReferralCounterReferral } from '../hooks/useReferralCounterReferral';
-import { patientFormEntryWorkspace } from '../utils/constants';
+import { consultaExternaEditPrivilege, patientFormEntryWorkspace } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface ReferenciaContraReferenciaProps {
@@ -61,6 +61,7 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
       actionLabel={t('addReferral', 'Registrar Referencia')}
       empty={entries.length === 0}
       emptyDisplayText={t('referralsAndCounterReferrals', 'referencias y contrarreferencias')}
+      editPrivilege={consultaExternaEditPrivilege}
       error={error}
       isLoading={isLoading}
       isValidating={isValidating}

@@ -15,7 +15,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { useDiagnosisHistory } from '../hooks/useDiagnosisHistory';
-import { patientFormEntryWorkspace } from '../utils/constants';
+import { consultaExternaEditPrivilege, patientFormEntryWorkspace } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface DiagnosticoClasificadoProps {
@@ -90,6 +90,7 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
       actionLabel={t('addDiagnosis', 'Registrar Diagnóstico')}
       empty={rows.length === 0}
       emptyDisplayText={t('diagnoses', 'diagnósticos')}
+      editPrivilege={consultaExternaEditPrivilege}
       error={error}
       isLoading={isLoading}
       isValidating={isValidating}

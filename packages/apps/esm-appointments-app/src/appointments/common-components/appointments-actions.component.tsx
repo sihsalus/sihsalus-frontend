@@ -8,7 +8,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../config-schema';
-import { appointmentsEditPrivilege, clinicalCheckoutPrivileges } from '../../constants';
+import { appointmentsCheckoutPrivileges, appointmentsEditPrivileges } from '../../constants';
 import { canTransition } from '../../helpers';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
 import { type Appointment, AppointmentStatus } from '../../types';
@@ -19,19 +19,6 @@ import CheckInButton from './checkin-button.component';
 dayjs.extend(utc);
 dayjs.extend(isToday);
 
-const checkInPrivileges = [
-  appointmentsEditPrivilege,
-  'Get Patients',
-  'Get Locations',
-  'Get Visits',
-  'Add Visits',
-  'Edit Visits',
-  'Get Visit Types',
-  'Get Visit Attribute Types',
-  'Get Queue Entries',
-  'Get Queues',
-  'Manage Queue Entries',
-];
 interface AppointmentsActionsProps {
   appointment: Appointment;
 }
@@ -40,8 +27,8 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
   const { t } = useTranslation();
   const { appointmentVisitAttributeTypeUuid, checkInButton, checkOutButton } = useConfig<ConfigObject>();
   const session = useSession();
-  const canCheckIn = userHasAccess(checkInPrivileges, session?.user);
-  const canCheckOut = userHasAccess(clinicalCheckoutPrivileges, session?.user);
+  const canCheckIn = userHasAccess(appointmentsEditPrivileges, session?.user);
+  const canCheckOut = userHasAccess(appointmentsCheckoutPrivileges, session?.user);
   const { visits, isLoading: areVisitsLoading, error: visitsError, mutateVisit } = useTodaysVisits();
 
   const patientUuid = appointment.patient.uuid;

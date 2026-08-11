@@ -1,1 +1,1 @@
-export const visitNotesEditPrivilege = 'app:hoja.clinica.resumenConsulta.editar';
+export const visitNotesPrivilege = 'app:hoja.clinica.resumenConsulta';

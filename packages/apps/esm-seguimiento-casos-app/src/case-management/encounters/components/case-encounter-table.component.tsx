@@ -18,7 +18,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Observation } from '../../../types';
-import { chartCaseMonitoringEditPrivilege } from '../../../utils/constants';
+import { caseMonitoringEditPrivilege } from '../../../utils/constants';
 import EncounterObservations from './encounter-observations/encounter-observations.component';
 
 interface CaseEncounterTableEncounter {
@@ -45,7 +45,7 @@ type CaseEncounterTableProps = {
 const CaseEncounterTable: React.FC<CaseEncounterTableProps> = ({ encounters, onEdit, onDelete, headers, rows }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = userHasAccess(chartCaseMonitoringEditPrivilege, session?.user);
+  const canEdit = userHasAccess(caseMonitoringEditPrivilege, session?.user);
 
   function formatProviderName(display?: string) {
     return display ? display.split('-')[0].trim() : '--';

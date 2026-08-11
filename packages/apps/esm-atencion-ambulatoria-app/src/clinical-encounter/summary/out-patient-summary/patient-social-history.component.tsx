@@ -20,13 +20,14 @@ import {
   getObsFromEncounter,
   launchPatientWorkspace,
 } from '@openmrs/esm-patient-common-lib';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { KeyedMutator } from 'swr';
 import { mutate } from 'swr';
 import type { ConfigObject } from '../../../config-schema';
 import type { OpenmrsEncounter } from '../../../types';
-import { patientFormEntryWorkspace } from '../../../utils/constants';
+import { patientFormEntryWorkspace, socialHistoryEditPrivilege } from '../../../utils/constants';
 import styles from './patient-history.scss';
 
 interface OutPatientSocialHistoryProps {
@@ -132,11 +133,16 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
   }
   if (tableRows.length === 0) {
     return (
-      <EmptyState
-        displayText={t('socialHistory', 'Social History')}
-        headerTitle={headerTitle}
-        launchForm={handleOpenOrEditClinicalEncounterForm}
-      />
+      <RequirePrivilege
+        privilege={socialHistoryEditPrivilege}
+        fallback={<EmptyState displayText={t('socialHistory', 'Social History')} headerTitle={headerTitle} />}
+      >
+        <EmptyState
+          displayText={t('socialHistory', 'Social History')}
+          headerTitle={headerTitle}
+          launchForm={handleOpenOrEditClinicalEncounterForm}
+        />
+      </RequirePrivilege>
     );
   }
   return (
@@ -145,14 +151,16 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
         <div className={styles.backgroundDataFetchingIndicator}>
           <span>{isValidating ? <InlineLoading /> : null}</span>
         </div>
-        <Button
-          kind="ghost"
-          onClick={() => handleOpenOrEditClinicalEncounterForm()}
-          renderIcon={Add}
-          iconDescription={t('add', 'Add')}
-        >
-          {t('add', 'Add')}
-        </Button>
+        <RequirePrivilege privilege={socialHistoryEditPrivilege} hideUnauthorized>
+          <Button
+            kind="ghost"
+            onClick={() => handleOpenOrEditClinicalEncounterForm()}
+            renderIcon={Add}
+            iconDescription={t('add', 'Add')}
+          >
+            {t('add', 'Add')}
+          </Button>
+        </RequirePrivilege>
       </CardHeader>
       <DataTable
         size="sm"

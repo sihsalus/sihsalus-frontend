@@ -37,7 +37,12 @@ describe('PatientAppointmentsOverview appointment creation handoff', () => {
       error: null,
     } as unknown as ReturnType<typeof usePatient>);
     mockUseSession.mockReturnValue({ user: { uuid: 'admission-user' } } as ReturnType<typeof useSession>);
-    mockUserHasAccess.mockImplementation((privilege) => privilege === 'app:home.citas.editar');
+    mockUserHasAccess.mockImplementation(
+      (privileges) =>
+        Array.isArray(privileges) &&
+        privileges.includes('app:home.citas') &&
+        privileges.includes('app:home.citas.editar'),
+    );
   });
 
   it('opens a new appointment workspace for the selected patient', async () => {

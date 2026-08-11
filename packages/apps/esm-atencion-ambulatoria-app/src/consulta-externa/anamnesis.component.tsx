@@ -5,7 +5,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { useAnamnesis } from '../hooks/useAnamnesis';
-import { patientFormEntryWorkspace } from '../utils/constants';
+import { consultaExternaEditPrivilege, patientFormEntryWorkspace } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 import styles from './consulta-externa-dashboard.scss';
 
@@ -45,6 +45,7 @@ const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
       actionLabel={t('addAnamnesis', 'Registrar Anamnesis')}
       empty={anamnesisEntries.length === 0}
       emptyDisplayText={t('anamnesis', 'anamnesis')}
+      editPrivilege={consultaExternaEditPrivilege}
       error={error}
       isLoading={isLoading}
       isValidating={isValidating}

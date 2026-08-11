@@ -5,7 +5,7 @@ import { CardHeader, EmptyDataIllustration, ErrorState, launchPatientWorkspace }
 import dayjs from 'dayjs';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { appointmentsEditPrivilege, chartAppointmentsEditPrivilege } from '../constants';
+import { appointmentsEditPrivileges, chartAppointmentsEditPrivileges } from '../constants';
 import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patientAppointmentContext';
 import { usePatientAppointments } from './patient-appointments.resource';
 import styles from './patient-appointments-base.scss';
@@ -29,8 +29,8 @@ const PatientAppointmentsBase: React.FC<PatientAppointmentsBaseProps> = ({ patie
   const patientAppointmentContext = useContext(PatientAppointmentContext);
   const canEdit = userHasAccess(
     patientAppointmentContext === PatientAppointmentContextTypes.PATIENT_CHART
-      ? chartAppointmentsEditPrivilege
-      : appointmentsEditPrivilege,
+      ? chartAppointmentsEditPrivileges
+      : appointmentsEditPrivileges,
     session?.user,
   );
   const [switchedView, setSwitchedView] = useState(false);

@@ -12,7 +12,7 @@ import userEvent from '@testing-library/user-event';
 import { getByTextWithMarkup } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../../config-schema';
-import { appointmentsEditPrivilege, clinicalChartPrivilege } from '../../constants';
+import { appointmentsEditPrivileges, clinicalChartPrivilege } from '../../constants';
 import { exportAppointmentsToSpreadsheet } from '../../helpers/excel';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
 import { type Appointment, type AppointmentKind, AppointmentStatus } from '../../types';
@@ -163,6 +163,40 @@ describe('AppointmentsTable', () => {
     expect(screen.getByRole('cell', { name: 'Dr James Cook' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /john wilson/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /john wilson/i })).toHaveAttribute('href', 'url-to-patient-chart');
+  });
+
+  it('changes appointment collections without dereferencing a stale table row', () => {
+    const inProgressAppointment = {
+      ...mockAppointments[0],
+      uuid: 'checked-in-appointment',
+      status: AppointmentStatus.CHECKEDIN,
+      patient: {
+        ...mockAppointments[0].patient,
+        uuid: 'checked-in-patient',
+        name: 'Jane Doe',
+      },
+    };
+    const { rerender } = render(
+      <AppointmentsTable
+        {...defaultProps}
+        appointments={mockAppointments}
+        appointmentStatus={AppointmentStatus.SCHEDULED}
+        tableHeading="expected"
+      />,
+    );
+
+    rerender(
+      <AppointmentsTable
+        {...defaultProps}
+        appointments={[inProgressAppointment]}
+        appointmentStatus={AppointmentStatus.CHECKEDIN}
+        tableHeading="checkedIn"
+      />,
+    );
+
+    expect(screen.getByRole('heading', { name: /appointments in progress/i })).toBeInTheDocument();
+    expect(screen.getByText('Jane Doe')).toBeInTheDocument();
+    expect(screen.queryByText('John Wilson')).not.toBeInTheDocument();
   });
 
   it('renders the patient name without a clinical-chart link when the user cannot access the chart', () => {
@@ -476,7 +510,7 @@ describe('AppointmentsTable', () => {
   });
 
   it('hides batch selection and row actions without the edit privilege', () => {
-    mockUserHasAccess.mockImplementation((privilege) => privilege !== appointmentsEditPrivilege);
+    mockUserHasAccess.mockImplementation((privilege) => privilege !== appointmentsEditPrivileges);
     const pastAppointment = {
       ...mockAppointments[0],
       startDateTime: new Date(Date.now() - 2 * 86_400_000).toISOString(),

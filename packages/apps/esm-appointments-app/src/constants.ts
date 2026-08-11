@@ -5,6 +5,7 @@ export const omrsDateFormat = 'YYYY-MM-DDTHH:mm:ss.SSSZZ';
 export const appointmentLocationTagName = 'Appointment Location';
 export const appointmentsPrivilege = 'app:home.citas';
 export const appointmentsEditPrivilege = 'app:home.citas.editar';
+export const appointmentsFinalizeCarePrivilege = 'app:home.citas.editar.finalizarAtencion';
 export const clinicalChartPrivilege = 'app:hoja.clinica';
 export const appointmentStartDateEditPrivilege = 'app:appointments.startDate.edit';
 // Backdating when an appointment was issued rewrites the administrative record
@@ -13,18 +14,16 @@ export const appointmentStartDateEditPrivilege = 'app:appointments.startDate.edi
 export const appointmentIssueDateEditPrivilege = 'app:appointments.issueDate.edit';
 export const chartAppointmentsReadPrivilege = 'app:hoja.clinica.citas';
 export const chartAppointmentsEditPrivilege = 'app:hoja.clinica.citas.editar';
+export const chartAppointmentsFinalizeCarePrivilege = 'app:hoja.clinica.citas.editar.finalizarAtencion';
+export const appointmentsEditPrivileges = [appointmentsPrivilege, appointmentsEditPrivilege];
+export const chartAppointmentsEditPrivileges = [chartAppointmentsReadPrivilege, chartAppointmentsEditPrivilege];
+export const appointmentsCheckoutPrivileges = [appointmentsPrivilege, appointmentsFinalizeCarePrivilege];
+export const chartAppointmentsCheckoutPrivileges = [
+  chartAppointmentsReadPrivilege,
+  chartAppointmentsFinalizeCarePrivilege,
+];
 export const appointmentsCompanionPersonSearchWorkspace = 'appointments-visit-companion-search-workspace';
 export const appointmentsCompanionPersonRegistrationWorkspace = 'appointments-visit-companion-registration-workspace';
-export const clinicalCheckoutPrivileges = [
-  chartAppointmentsEditPrivilege,
-  'Get Visits',
-  'Edit Visits',
-  'Get Encounters',
-  'Get Visit Attribute Types',
-  'Get Queue Entries',
-  'Get Queues',
-  'Manage Queue Entries',
-];
 // The appointments backend persists patient_appointment.comments as VARCHAR(255).
 export const appointmentNoteMaxLength = 255;
 

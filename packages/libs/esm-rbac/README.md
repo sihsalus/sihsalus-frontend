@@ -4,6 +4,14 @@ Libreria compartida para UI de autorizacion en los microfrontends SIHSalus.
 
 La evaluacion real de privilegios debe delegarse al framework de OpenMRS (`UserHasAccess`/`userHasAccess`). Este paquete solo agrega wrappers y estados visuales comunes, como `RequirePrivilege` y `UnauthorizedState`.
 
+## Semántica de autorización
+
+- Un arreglo de privilegios significa AND: deben cumplirse todos sus elementos.
+- Un OR entre capacidades debe expresarse de forma explícita; no se obtiene pasando un arreglo.
+- Los nombres no forman una jerarquía. Un privilegio `.editar` no concede automáticamente el privilegio base.
+- La compatibilidad entre nombres actuales y heredados usa únicamente los pares exactos documentados por [`@openmrs/esm-api`](../esm-api/README.md#evaluación-de-privilegios).
+- Un guard de UI oculta o bloquea una superficie, pero el backend sigue siendo la autoridad para cada lectura o mutación.
+
 ## TODO RBAC/permisos
 
 - Definir una matriz oficial de permisos por modulo y por flujo clinico/administrativo.

@@ -2,8 +2,10 @@ import { Accordion, AccordionItem, Button, DataTableSkeleton, InlineLoading, Tag
 import { Add } from '@carbon/react/icons';
 import { formatDate, formatDatetime, parseDate } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState, useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { interconsultasChartEditPrivilege } from '../constants';
 import { deriveStatus, useInterconsultaResponse, usePatientInterconsultas } from '../interconsultas.resource';
 import type { InterconsultaOrder } from '../types';
 import { getStatusDisplay, getStatusTagType, getUrgencyDisplay } from '../utils/status';
@@ -34,20 +36,29 @@ const InterconsultasChartWidget: React.FC<InterconsultasChartWidgetProps> = ({ p
   }
 
   if (!interconsultas.length) {
-    return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchRequestWorkspace} />;
+    return (
+      <RequirePrivilege
+        privilege={interconsultasChartEditPrivilege}
+        fallback={<EmptyState displayText={displayText} headerTitle={headerTitle} />}
+      >
+        <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchRequestWorkspace} />
+      </RequirePrivilege>
+    );
   }
 
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        <Button
-          kind="ghost"
-          renderIcon={Add}
-          iconDescription={t('requestInterconsulta', 'Solicitar interconsulta')}
-          onClick={() => launchRequestWorkspace()}
-        >
-          {t('requestInterconsulta', 'Solicitar interconsulta')}
-        </Button>
+        <RequirePrivilege privilege={interconsultasChartEditPrivilege} hideUnauthorized>
+          <Button
+            kind="ghost"
+            renderIcon={Add}
+            iconDescription={t('requestInterconsulta', 'Solicitar interconsulta')}
+            onClick={() => launchRequestWorkspace()}
+          >
+            {t('requestInterconsulta', 'Solicitar interconsulta')}
+          </Button>
+        </RequirePrivilege>
       </CardHeader>
       <Accordion>
         {interconsultas.map((order) => (

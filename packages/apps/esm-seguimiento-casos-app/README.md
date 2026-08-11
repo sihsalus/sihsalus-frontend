@@ -29,6 +29,18 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 - Permisos para ver, crear, cerrar o modificar seguimientos.
 - Integraciones con laboratorio, farmacia o citas sólo si el backend/content correspondiente está instalado.
 
+## Contrato RBAC actual
+
+| Superficie | Lectura | Modificación |
+| --- | --- | --- |
+| Gestión de casos desde Home | `app:home.seguimientoCasos` | `app:home.seguimientoCasos.editar` |
+| Atenciones de seguimiento en la hoja clínica | `app:hoja.clinica.seguimientoCasos` | `app:home.seguimientoCasos.editar` |
+| Pérdida de seguimiento en la hoja clínica | `app:hoja.clinica.perdidaSeguimiento` | `app:hoja.clinica.perdidaSeguimiento.editar` |
+
+Crear/cerrar relaciones y crear, editar o eliminar atenciones de seguimiento comparten actualmente `app:home.seguimientoCasos.editar`, incluso cuando la acción nace en la hoja clínica. El privilegio anterior `app:hoja.clinica.seguimientoCasos.editar` ya no forma parte del contrato implementado. Si se necesita separar Home y chart, debe reintroducirse como una política nueva con guards y pruebas, no asumirse por la estructura del nombre.
+
+Los permisos frontend no sustituyen la autorización backend sobre relaciones, encounters y observaciones.
+
 ## Límites y riesgos
 - No es un módulo genérico de gestión de casos para todo el hospital; su alcance actual es seguimiento especializado.
 - No debe duplicar órdenes, resultados, farmacia ni citas. Debe enlazar o consumir esos módulos.

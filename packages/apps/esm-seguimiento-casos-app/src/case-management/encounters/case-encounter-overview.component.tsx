@@ -19,7 +19,7 @@ import { useTranslation } from 'react-i18next';
 import type { KeyedMutator } from 'swr';
 
 import type { ConfigObject } from '../../config-schema';
-import { chartCaseMonitoringEditPrivilege, patientFormEntryWorkspace } from '../../utils/constants';
+import { caseMonitoringEditPrivilege, patientFormEntryWorkspace } from '../../utils/constants';
 
 import styles from './case-encounter-header.scss';
 import { deleteEncounter, useInfiniteVisits } from './case-encounter-table.resource';
@@ -40,7 +40,7 @@ const CaseEncounterHeader = ({ patientUuid, mutate, onFilterChange }: CaseEncoun
   const title = t('caseEncounter', 'Seguimiento clínico del caso');
   const { caseManagementForms } = useConfig<ConfigObject>();
   const session = useSession();
-  const canEdit = userHasAccess(chartCaseMonitoringEditPrivilege, session?.user);
+  const canEdit = userHasAccess(caseMonitoringEditPrivilege, session?.user);
 
   const handleOpenOrEditClinicalEncounterForm = (formUuid: string, encounterUUID = '') => {
     launchPatientWorkspace(patientFormEntryWorkspace, {

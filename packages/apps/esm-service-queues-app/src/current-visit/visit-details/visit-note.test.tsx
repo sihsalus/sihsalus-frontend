@@ -2,7 +2,7 @@ import { launchWorkspace2, usePatient, useSession } from '@openmrs/esm-framework
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPatient, mockSession } from 'test-utils';
-import { serviceQueuesVisitNotesWorkspace, visitNotesEditPrivilege, visitNotesPrivilege } from '../../constants';
+import { serviceQueuesVisitNotesWorkspace, visitNotesPrivilege } from '../../constants';
 import VisitNote from './visit-note.component';
 
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
@@ -30,20 +30,20 @@ describe('VisitNote', () => {
     } as ReturnType<typeof useSession>);
   });
 
-  it('allows read-only users to see an existing note without exposing creation', () => {
+  it('shows an existing note without exposing duplicate creation', () => {
     render(<VisitNote diagnoses={[]} notes={[note]} patientUuid={mockPatient.id} />);
 
     expect(screen.getByText('Clinical summary')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Visit note form' })).not.toBeInTheDocument();
   });
 
-  it('opens the note workspace only with the edit privilege', async () => {
+  it('opens the note workspace with the section privilege', async () => {
     const user = userEvent.setup();
     mockUseSession.mockReturnValue({
       ...mockSession.data,
       user: {
         ...mockSession.data.user,
-        privileges: [privilege(visitNotesPrivilege), privilege(visitNotesEditPrivilege)],
+        privileges: [privilege(visitNotesPrivilege)],
       },
     } as ReturnType<typeof useSession>);
 

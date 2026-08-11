@@ -147,8 +147,7 @@
   "modals": [
     {
       "name": "offline-tools-confirmation-modal",
-      "component": "offlineToolsConfirmationModal",
-      "privileges": "app:hoja.clinica.accionesSinConexion.editar"
+      "component": "offlineToolsConfirmationModal"
     }
   ]
 }

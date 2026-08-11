@@ -34,6 +34,24 @@ You should now be able to leverage the service queues module 🎉
 - Visitas activas para pacientes en cola.
 - Providers/usuarios asociados cuando se usa asignacion por prestador o room.
 
+## Contrato RBAC actual
+
+| Capacidad | Privilegios frontend acumulativos |
+| --- | --- |
+| Ver Colas de atención | `app:home.colasAtencion` |
+| Modificar una entrada de cola | `app:home.colasAtencion.editar` + `Get Queue Entries` + `Get Queues` + `Manage Queue Entries` |
+| Limpiar todas las entradas | Los anteriores + `app:home.colasAtencion.limpiar` |
+| Administrar servicios de cola | `app:home.colasAtencion.editar` + `Get Queues` + `Manage Queues` |
+| Administrar ambientes/rooms | `app:home.colasAtencion.editar` + `Get Queue Rooms` + `Get Queues` + `Manage Queue Rooms` |
+| Registrar signos vitales desde Colas | `app:home.colasAtencion` + `app:hoja.clinica.signosVitales.editar` |
+| Crear el resumen de consulta desde Colas | `app:home.colasAtencion` + `app:hoja.clinica.resumenConsulta` |
+
+Los arreglos anteriores tienen semántica AND. El resumen de consulta usa actualmente el mismo privilegio `app:hoja.clinica.resumenConsulta` para mostrar la sección y abrir el workspace de creación; no existe una separación frontend de escritura para esta acción. Si la política exige distinguir lectura y edición, debe implementarse y probarse un privilegio específico en Patient Notes y en esta integración.
+
+Los privilegios nativos de Queue/Visit siguen siendo obligatorios donde aparecen en `src/routes.json`; el RBAC de la UI no reemplaza las validaciones del backend.
+
+Excepción actual: la extensión `visit-form-queue-fields` declara únicamente privilegios nativos de Queue y no exige `app:home.colasAtencion.editar`. Debe conservarse solo si iniciar una consulta está autorizado para crear su entrada de cola; de lo contrario, hay que alinear ese registro y sus pruebas con la política general de edición.
+
 ## Contratos de UI
 
 - La pantalla de colas no debe quedar en blanco si faltan rooms o servicios; debe mostrar una configuracion pendiente accionable.

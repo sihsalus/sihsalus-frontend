@@ -127,7 +127,7 @@
       "name": "schedule-appointment-patient-search-action",
       "component": "scheduleAppointmentPatientSearchAction",
       "slot": "patient-search-actions-slot",
-      "privileges": "app:home.citas.editar",
+      "privileges": ["app:home.citas", "app:home.citas.editar"],
       "order": 0,
       "online": true,
       "offline": false
@@ -136,7 +136,7 @@
       "name": "schedule-appointment-patient-search-primary-action",
       "component": "scheduleAppointmentPatientSearchPrimaryAction",
       "slot": "patient-search-primary-actions-slot",
-      "privileges": "app:home.citas.editar",
+      "privileges": ["app:home.citas", "app:home.citas.editar"],
       "order": 0,
       "online": true,
       "offline": false
@@ -153,53 +153,43 @@
     {
       "name": "appointment-arrival-modal",
       "component": "appointmentArrivalModal",
-      "privileges": [
-        "app:home.citas.editar",
-        "Get Patients",
-        "Get Locations",
-        "Get Visits",
-        "Add Visits",
-        "Edit Visits",
-        "Get Visit Types",
-        "Get Visit Attribute Types",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.citas", "app:home.citas.editar"]
     },
     {
       "name": "end-appointment-modal",
       "component": "endAppointmentModal",
       "privileges": [
-        "app:hoja.clinica.citas.editar",
-        "Get Visits",
-        "Edit Visits",
-        "Get Encounters",
-        "Get Visit Attribute Types",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
+        "app:home.citas",
+        "app:home.citas.editar.finalizarAtencion"
+      ]
+    },
+    {
+      "name": "patient-chart-end-appointment-modal",
+      "component": "endAppointmentModal",
+      "privileges": [
+        "app:hoja.clinica.citas",
+        "app:hoja.clinica.citas.editar.finalizarAtencion"
       ]
     },
     {
       "name": "cancel-appointment-modal",
       "component": "cancelAppointmentModal",
-      "privileges": "app:home.citas.editar"
+      "privileges": ["app:home.citas", "app:home.citas.editar"]
     },
     {
       "name": "missed-appointment-modal",
       "component": "missedAppointmentModal",
-      "privileges": "app:home.citas.editar"
+      "privileges": ["app:home.citas", "app:home.citas.editar"]
     },
     {
       "name": "batch-change-appointment-statuses-modal",
       "component": "batchChangeAppointmentStatusesModal",
-      "privileges": "app:home.citas.editar"
+      "privileges": ["app:home.citas", "app:home.citas.editar"]
     },
     {
       "name": "patient-chart-cancel-appointment-modal",
       "component": "cancelAppointmentModal",
-      "privileges": "app:hoja.clinica.citas.editar"
+      "privileges": ["app:hoja.clinica.citas", "app:hoja.clinica.citas.editar"]
     }
   ],
   "workspaceGroups2": [
@@ -234,72 +224,49 @@
       "name": "appointments-form-workspace",
       "component": "appointmentsFormWorkspace",
       "window": "appointments-window",
-      "privileges": "app:home.citas.editar"
+      "privileges": ["app:home.citas", "app:home.citas.editar"]
     },
     {
       "name": "patient-chart-appointments-form-workspace",
       "component": "appointmentsFormWorkspace",
       "window": "patient-chart-appointments-window",
-      "privileges": "app:hoja.clinica.citas.editar"
+      "privileges": ["app:hoja.clinica.citas", "app:hoja.clinica.citas.editar"]
     },
     {
       "name": "patient-search-appointments-form-workspace",
       "component": "appointmentsFormWorkspace",
       "window": "patient-search-appointments-window",
-      "privileges": "app:home.citas.editar"
+      "privileges": ["app:home.citas", "app:home.citas.editar"]
     },
     {
       "name": "appointments-patient-search-workspace",
       "component": "searchPatient",
       "window": "appointments-window",
-      "privileges": "app:home.citas.editar"
+      "privileges": ["app:home.citas", "app:home.citas.editar"]
     },
     {
       "name": "appointments-start-visit-workspace",
       "component": "@sihsalus/esm-patient-chart-app#startVisitWorkspace",
       "window": "appointments-window",
-      "privileges": [
-        "app:home.citas.editar",
-        "Get Patients",
-        "Get Locations",
-        "Get Visits",
-        "Add Visits",
-        "Edit Visits",
-        "Get Visit Types",
-        "Get Visit Attribute Types",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.citas", "app:home.citas.editar"]
     },
     {
       "name": "appointments-visit-companion-search-workspace",
       "component": "@sihsalus/esm-patient-chart-app#companionPersonSearchWorkspace",
       "window": "appointments-window",
-      "privileges": ["app:home.citas.editar", "Get People"]
+      "privileges": ["app:home.citas", "app:home.citas.editar", "Get People"]
     },
     {
       "name": "appointments-visit-companion-registration-workspace",
       "component": "@sihsalus/esm-patient-chart-app#companionPersonRegistrationWorkspace",
       "window": "appointments-window",
-      "privileges": ["app:home.citas.editar", "app:opciones.registrarAcompanante", "Add People"]
+      "privileges": ["app:home.citas", "app:home.citas.editar", "app:opciones.registrarAcompanante", "Add People"]
     },
     {
       "name": "appointments-add-active-visit-to-queue-workspace",
       "component": "@sihsalus/esm-service-queues-app#createQueueEntryWorkspace2",
       "window": "appointments-window",
-      "privileges": [
-        "app:home.citas.editar",
-        "Get Patients",
-        "Get Locations",
-        "Get Visits",
-        "Edit Visits",
-        "Get Visit Types",
-        "Get Visit Attribute Types",
-        "Get Queue Entries",
-        "Get Queues",
-        "Manage Queue Entries"
-      ]
+      "privileges": ["app:home.citas", "app:home.citas.editar"]
     }
   ]
 }

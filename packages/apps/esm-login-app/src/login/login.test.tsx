@@ -107,6 +107,103 @@ describe('Login', () => {
     expect(container.querySelector('picture')).toBeInTheDocument();
   });
 
+  it('redirects an authenticated session with a location away from the login page', async () => {
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionId: 'active-session',
+      sessionLocation: { uuid: 'location-uuid' },
+      user: { uuid: 'user-uuid', username: 'admin' },
+    } as never);
+
+    renderWithRouter(Login, {}, { route: '/login' });
+
+    await waitFor(() => expect(mockHardNavigate).toHaveBeenCalledTimes(1));
+    expect(mockHardNavigate).toHaveBeenCalledWith(mockConfig.links.loginSuccess);
+    expect(mockLogin).not.toHaveBeenCalled();
+  });
+
+  it('restores a safe referrer for an authenticated session with a location', async () => {
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionId: 'active-session',
+      sessionLocation: { uuid: 'location-uuid' },
+      user: { uuid: 'user-uuid', username: 'admin' },
+    } as never);
+
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { referrer: '/patient/abc/chart' } }]}>
+        <LoginRoutes />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => expect(mockHardNavigate).toHaveBeenCalledTimes(1));
+    expect(mockHardNavigate).toHaveBeenCalledWith('/openmrs/spa/patient/abc/chart');
+    expect(mockLogin).not.toHaveBeenCalled();
+  });
+
+  it('sends an authenticated session without a location to the location picker', async () => {
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionId: 'active-session',
+      sessionLocation: null,
+      user: { uuid: 'user-uuid', username: 'admin' },
+    } as never);
+
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { referrer: '/patient-registration' } }]}>
+        <LoginRoutes />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Location select page')).toBeInTheDocument();
+    expect(screen.getByTestId('location-referrer')).toHaveTextContent('/patient-registration');
+    expect(mockHardNavigate).not.toHaveBeenCalled();
+    expect(mockLogin).not.toHaveBeenCalled();
+  });
+
+  it('does not restore login routes as post-login referrers', async () => {
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionId: 'active-session',
+      sessionLocation: { uuid: 'location-uuid' },
+      user: { uuid: 'user-uuid', username: 'admin' },
+    } as never);
+
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { referrer: '/login/confirm' } }]}>
+        <LoginRoutes />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => expect(mockHardNavigate).toHaveBeenCalledTimes(1));
+    expect(mockHardNavigate).toHaveBeenCalledWith(mockConfig.links.loginSuccess);
+  });
+
+  it('navigates exactly once when a successful submit updates the session store', async () => {
+    let currentSession = { authenticated: false, sessionId: 'anonymous-session' };
+    mockUseSession.mockImplementation(() => currentSession as never);
+    mockLogin.mockImplementation(async () => {
+      currentSession = {
+        authenticated: true,
+        sessionId: 'active-session',
+        sessionLocation: { uuid: 'location-uuid' },
+        user: { uuid: 'user-uuid', username: 'admin' },
+      } as never;
+      return { session: currentSession } as never;
+    });
+
+    renderWithRouter(Login, {}, { route: '/login' });
+    const user = userEvent.setup();
+
+    await user.type(screen.getByRole('textbox', { name: /username/i }), 'admin');
+    await user.click(screen.getByRole('button', { name: /continue/i }));
+    await user.type(await screen.findByLabelText(/^password$/i), 'secret');
+    await user.click(screen.getByRole('button', { name: /log in/i }));
+
+    await waitFor(() => expect(mockHardNavigate).toHaveBeenCalledTimes(1));
+    expect(mockHardNavigate).toHaveBeenCalledWith(mockConfig.links.loginSuccess);
+  });
+
   it('renders a configurable logo', () => {
     const customLogoConfig = {
       src: 'https://some-image-host.com/foo.png',

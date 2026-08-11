@@ -85,6 +85,9 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     triageRouting,
   } = useConfig<ConfigObject>();
   const { t } = useTranslation();
+  const session = useSession();
+  const { patient: fhirPatient } = usePatient(patientUuid);
+  const canOpenPatientChart = userHasAccess(clinicalChartPrivilege, session?.user);
   const { mutateAppointments } = useMutateAppointments();
   const [pendingAction, setPendingAction] = useState<ArrivalAction | null>(null);
   const [inlineError, setInlineError] = useState<unknown>(null);
@@ -101,7 +104,9 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
   const arrivalRule = exactArrivalRules.length === 1 ? exactArrivalRules[0] : undefined;
   const canSendToQueue =
     arrivalRule?.arrivalPolicy === 'queue-optional' || arrivalRule?.arrivalPolicy === 'queue-required';
-  const canStartDirectly = arrivalRule?.arrivalPolicy === 'queue-optional' || arrivalRule?.arrivalPolicy === 'direct';
+  const canStartDirectly =
+    canOpenPatientChart &&
+    (arrivalRule?.arrivalPolicy === 'queue-optional' || arrivalRule?.arrivalPolicy === 'direct');
 
   const getCheckInErrorMessageOptions = () =>
     ({
@@ -361,9 +366,6 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     }
   };
 
-  const session = useSession();
-  const { patient: fhirPatient } = usePatient(patientUuid);
-  const canOpenPatientChart = userHasAccess(clinicalChartPrivilege, session?.user);
   const canSearchCompanionPerson = userHasAccess(
     [appointmentsPrivilege, appointmentsEditPrivilege, 'Get People'],
     session?.user,

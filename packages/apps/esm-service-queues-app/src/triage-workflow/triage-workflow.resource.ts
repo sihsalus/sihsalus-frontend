@@ -6,10 +6,9 @@ import {
 } from '@openmrs/esm-framework';
 import {
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
-  LEGACY_SIS_PRODUCT_CONCEPT_UUIDS,
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
-  SIS_CONCEPT_UUID,
   getCodedValueUuid,
+  getSisFinancingState,
 } from '@openmrs/esm-patient-common-lib';
 import useSWR from 'swr';
 
@@ -18,10 +17,6 @@ import { type QueueEntry } from '../types';
 
 const appointmentsModuleName = '@sihsalus/esm-appointments-app';
 const serviceQueuesModuleName = '@sihsalus/esm-service-queues-app';
-const accreditationActiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2051';
-const accreditationInactiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2052';
-const accreditationPendingConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2053';
-const accreditationNotConsultedConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2054';
 
 type AttributeValue = string | { uuid?: string; display?: string } | null | undefined;
 
@@ -86,26 +81,10 @@ export function getLinkedAppointmentUuid(queueEntry: QueueEntry, config?: Appoin
 
 export function getSisState(queueEntry: QueueEntry): SisState {
   const funderUuid = getCodedValueUuid(getAttributeValue(queueEntry, FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID));
-  const isSis = funderUuid === SIS_CONCEPT_UUID || LEGACY_SIS_PRODUCT_CONCEPT_UUIDS.includes(funderUuid ?? '');
-  if (!isSis) {
-    return 'notApplicable';
-  }
-
   const statusUuid = getCodedValueUuid(
     getAttributeValue(queueEntry, SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID),
   );
-  switch (statusUuid) {
-    case accreditationActiveConceptUuid:
-      return 'active';
-    case accreditationInactiveConceptUuid:
-      return 'inactive';
-    case accreditationPendingConceptUuid:
-      return 'pending';
-    case accreditationNotConsultedConceptUuid:
-      return 'notConsulted';
-    default:
-      return 'missing';
-  }
+  return getSisFinancingState({ financiadorUuid: funderUuid, accreditationStatusUuid: statusUuid });
 }
 
 export function getTriageState(

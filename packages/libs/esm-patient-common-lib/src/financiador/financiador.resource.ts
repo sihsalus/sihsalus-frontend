@@ -25,6 +25,10 @@ export const SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID = '5e13e902-2030
 // ── Catálogo canónico «Tipo de seguro» ───────────────────────────────────────
 export const INSURANCE_TYPE_CONCEPT_SET_UUID = '6b932638-242e-49ef-8ba7-0ae87199835c';
 export const SIS_CONCEPT_UUID = '97c6e901-7570-4ab8-a9c0-9cf2b0f5bc0c';
+export const SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID = '9b3df0a1-0c58-4f55-9868-9c38f1db2051';
+export const SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID = '9b3df0a1-0c58-4f55-9868-9c38f1db2052';
+export const SIS_ACCREDITATION_PENDING_CONCEPT_UUID = '9b3df0a1-0c58-4f55-9868-9c38f1db2053';
+export const SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID = '9b3df0a1-0c58-4f55-9868-9c38f1db2054';
 
 /**
  * Conceptos legacy de productos SIS que pueden aparecer como valor de
@@ -56,6 +60,20 @@ interface PersonAttributesResponse {
 
 interface VisitAttributesResponse {
   attributes?: Array<RestAttribute>;
+}
+
+export type SisFinancingState =
+  | 'active'
+  | 'inactive'
+  | 'pending'
+  | 'notConsulted'
+  | 'missing'
+  | 'notApplicable';
+
+export interface VisitInsurance {
+  financiadorUuid: string | null;
+  insuranceNumber: string | null;
+  accreditationStatusUuid: string | null;
 }
 
 // ── Helpers de mapeo/normalización ───────────────────────────────────────────
@@ -102,6 +120,33 @@ export function normalizeFinanciadorConceptUuid(
     return null;
   }
   return legacySisProductConceptUuids.includes(conceptUuid) ? sisConceptUuid : conceptUuid;
+}
+
+/**
+ * Interpreta si una atención cuenta con cobertura SIS vigente. Los productos
+ * SIS antiguos se normalizan al financiador SIS canónico antes de evaluar la
+ * acreditación.
+ */
+export function getSisFinancingState({
+  financiadorUuid,
+  accreditationStatusUuid,
+}: Pick<VisitInsurance, 'financiadorUuid' | 'accreditationStatusUuid'>): SisFinancingState {
+  if (normalizeFinanciadorConceptUuid(financiadorUuid) !== SIS_CONCEPT_UUID) {
+    return 'notApplicable';
+  }
+
+  switch (accreditationStatusUuid) {
+    case SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID:
+      return 'active';
+    case SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID:
+      return 'inactive';
+    case SIS_ACCREDITATION_PENDING_CONCEPT_UUID:
+      return 'pending';
+    case SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID:
+      return 'notConsulted';
+    default:
+      return 'missing';
+  }
 }
 
 // ── Lectura de la afiliación de la persona ───────────────────────────────────
@@ -162,6 +207,29 @@ export async function fetchPersonInsurance(
     insuranceCode: getTextValue(findAttribute(attributes, insuranceCodeAttributeTypeUuid)?.value),
     accreditationStatusUuid: getCodedValueUuid(findAttribute(attributes, accreditationStatusAttributeTypeUuid)?.value),
     accreditationCheckedAt: getTextValue(findAttribute(attributes, accreditationCheckedAtAttributeTypeUuid)?.value),
+  };
+}
+
+/** Lee el financiador y la acreditación persistidos para una atención. */
+export async function fetchVisitInsurance(
+  visitUuid: string,
+  {
+    financiadorVisitAttributeTypeUuid = FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+    insuranceNumberVisitAttributeTypeUuid = INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+    accreditationStatusVisitAttributeTypeUuid = SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+  }: FinanciadorVisitAttributeTypeUuids = {},
+): Promise<VisitInsurance> {
+  const { data } = await openmrsFetch<VisitAttributesResponse>(
+    `${restBaseUrl}/visit/${visitUuid}?v=custom:(attributes:(uuid,value,attributeType:(uuid)))`,
+  );
+  const attributes = data?.attributes ?? [];
+
+  return {
+    financiadorUuid: getCodedValueUuid(findAttribute(attributes, financiadorVisitAttributeTypeUuid)?.value),
+    insuranceNumber: getTextValue(findAttribute(attributes, insuranceNumberVisitAttributeTypeUuid)?.value),
+    accreditationStatusUuid: getCodedValueUuid(
+      findAttribute(attributes, accreditationStatusVisitAttributeTypeUuid)?.value,
+    ),
   };
 }
 

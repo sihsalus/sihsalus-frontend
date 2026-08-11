@@ -12,10 +12,14 @@ interface PastVisitProps {
 
 const PastVisit: React.FC<PastVisitProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const { visits, isLoading } = usePastVisits(patientUuid);
+  const { visits, error, isLoading } = usePastVisits(patientUuid);
 
   if (isLoading) {
     return <StructuredListSkeleton />;
+  }
+
+  if (error) {
+    return <p role="alert">{t('unableToLoadPreviousVisit', 'No se pudo cargar la consulta anterior.')}</p>;
   }
 
   if (visits) {
@@ -24,9 +28,14 @@ const PastVisit: React.FC<PastVisitProps> = ({ patientUuid }) => {
         <div className={styles.container}>
           <div className={styles.header}>
             <h4 className={styles.visitType}>{visits?.visitType?.display}</h4>
-            <p className={styles.date}>{formatDatetime(parseDate(visits?.startDatetime))}</p>
+            <p className={styles.date}>
+              {visits?.startDatetime ? formatDatetime(parseDate(visits.startDatetime)) : '--'}
+            </p>
           </div>
-          <PastVisitSummary encounters={visits.encounters} patientUuid={patientUuid} />
+          <PastVisitSummary
+            encounters={Array.isArray(visits.encounters) ? visits.encounters : []}
+            patientUuid={patientUuid}
+          />
         </div>
       </div>
     );

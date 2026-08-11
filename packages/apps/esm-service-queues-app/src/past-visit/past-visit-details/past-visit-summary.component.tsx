@@ -1,5 +1,5 @@
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
-import { formatDatetime, formatTime, parseDate, useLayoutType } from '@openmrs/esm-framework';
+import { formatTime, parseDate, useLayoutType } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,7 +21,7 @@ import Medications from './medications-list.component';
 import Notes from './notes-list.component';
 
 interface PastVisitSummaryProps {
-  encounters: Array<any>;
+  encounters: unknown[];
   patientUuid: string;
 }
 
@@ -30,106 +30,93 @@ enum visitTypes {
   PAST = 'pastVisit',
 }
 
+const formatEncounterTime = (date?: string) => {
+  if (!date) {
+    return '';
+  }
+  try {
+    return formatTime(parseDate(date));
+  } catch {
+    return '';
+  }
+};
+
 const PastVisitSummary: React.FC<PastVisitSummaryProps> = ({ encounters, patientUuid }) => {
   const { t } = useTranslation();
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const isTablet = useLayoutType() === 'tablet';
+  const safeEncounters = (Array.isArray(encounters) ? encounters : []) as Array<Partial<Encounter>>;
 
   const encountersToDisplay = useMemo(
     () =>
-      encounters
-        ? encounters?.map((encounter: Encounter) => ({
-            id: encounter?.uuid,
-            datetime: formatDatetime(parseDate(encounter?.encounterDatetime)),
-            encounterType: encounter?.encounterType?.display,
-            form: encounter?.form,
-            obs: encounter?.obs,
-            provider:
-              encounter?.encounterProviders?.length > 0
-                ? encounter.encounterProviders[0].provider?.person?.display
-                : '--',
-          }))
-        : [],
-    [encounters],
+      safeEncounters.map((encounter) => ({
+        id: encounter?.uuid ?? '',
+        datetime: encounter?.encounterDatetime ?? '',
+        encounterType: encounter?.encounterType?.display ?? '--',
+        form: encounter?.form,
+        obs: encounter?.obs ?? [],
+        provider:
+          encounter?.encounterProviders?.length > 0 ? encounter.encounterProviders[0].provider?.person?.display : '--',
+      })),
+    [safeEncounters],
   );
 
   const [medications, notes, diagnoses, vitalsToRetrieve]: [
     Array<OrderItem>,
     Array<Note>,
     Array<DiagnosisItem>,
-    Array<Encounter>,
+    Array<Partial<Encounter>>,
   ] = useMemo(() => {
     // Medication Tab
     const medications: Array<OrderItem> = [];
     const notes: Array<Note> = [];
     const diagnoses: Array<DiagnosisItem> = [];
-    const vitalsToRetrieve: Array<Encounter> = [];
+    const vitalsToRetrieve: Array<Partial<Encounter>> = [];
 
     // Iterating through every Encounter
-    encounters?.forEach((encounter) => {
-      if (encounter.orders !== undefined) {
+    safeEncounters.forEach((encounter) => {
+      const encounterProvider = encounter?.encounterProviders?.[0];
+      const observations = Array.isArray(encounter?.obs) ? encounter.obs : [];
+
+      if (Array.isArray(encounter?.orders)) {
         medications.push(
           ...encounter.orders.map((order: Order) => ({
             order,
             provider: {
-              name: encounter.encounterProviders.length ? encounter.encounterProviders[0].provider.person.display : '',
-              role: encounter.encounterProviders.length ? encounter.encounterProviders[0].encounterRole.display : '',
+              name: encounterProvider?.provider?.person?.display ?? '',
+              role: encounterProvider?.encounterRole?.display ?? '',
             },
-            time: encounter.encounterDatetime ? formatTime(parseDate(encounter.encounterDatetime)) : '',
+            time: formatEncounterTime(encounter.encounterDatetime),
           })),
         );
       }
 
       // Check for Visit Diagnoses and Notes
-      encounter?.obs?.forEach((obs: Observation) => {
+      observations.forEach((obs: Observation) => {
         if (obs?.concept?.display === 'Visit Diagnoses') {
-          // Putting all the diagnoses in a single array.
-          diagnoses.push({
-            diagnosis: obs.groupMembers.find((mem) => mem.concept.display === 'PROBLEM LIST')?.value.display,
-          });
+          const diagnosis = obs.groupMembers?.find((member) => member?.concept?.display === 'PROBLEM LIST')?.value
+            ?.display;
+          if (diagnosis) {
+            diagnoses.push({ diagnosis });
+          }
         } else if (obs?.concept?.display === 'General patient note') {
           // Putting all notes in a single array.
           notes.push({
             note: obs.value,
             provider: {
-              name: encounter.encounterProviders.length ? encounter.encounterProviders[0].provider.person.display : '',
-              role: encounter.encounterProviders.length ? encounter.encounterProviders[0].encounterRole.display : '',
+              name: encounterProvider?.provider?.person?.display ?? '',
+              role: encounterProvider?.encounterRole?.display ?? '',
             },
-            time: encounter.encounterDatetime ? formatTime(parseDate(encounter.encounterDatetime)) : '',
+            time: formatEncounterTime(encounter.encounterDatetime),
             concept: obs.concept,
           });
         }
       });
 
       vitalsToRetrieve.push(encounter);
-
-      // Check for Visit Diagnoses and Notes
-      if (encounter.encounterType?.display === 'Visit Note') {
-        encounter.obs.forEach((obs: Observation) => {
-          if (obs.concept && obs.concept.display === 'Visit Diagnoses') {
-            // // Putting all the diagnoses in a single array.
-            diagnoses.push({
-              diagnosis: obs.groupMembers.find((mem) => mem.concept.display === 'PROBLEM LIST').value.display,
-            });
-          } else if (obs.concept && obs.concept.display === 'General patient note') {
-            // Putting all notes in a single array.
-            notes.push({
-              note: obs.value,
-              provider: {
-                name: encounter.encounterProviders.length
-                  ? encounter.encounterProviders[0].provider.person.display
-                  : '',
-                role: encounter.encounterProviders.length ? encounter.encounterProviders[0].encounterRole.display : '',
-              },
-              time: formatTime(parseDate(obs.obsDatetime)),
-              concept: obs.concept,
-            });
-          }
-        });
-      }
     });
     return [medications, notes, diagnoses, vitalsToRetrieve];
-  }, [encounters]);
+  }, [safeEncounters]);
 
   const tabsClasses = classNames(styles.verticalTabs, {
     [styles.tabletTabs]: isTablet,

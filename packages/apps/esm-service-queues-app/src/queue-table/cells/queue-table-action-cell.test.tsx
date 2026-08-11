@@ -1,9 +1,17 @@
-import { launchWorkspace2, showModal, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
+import {
+  launchWorkspace2,
+  navigate,
+  showModal,
+  showSnackbar,
+  useLayoutType,
+  useSession,
+  userHasAccess,
+} from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockQueueEntryAlice, mockSession } from 'test-utils';
 
-import { serviceQueuesEditPrivilege } from '../../constants';
+import { serviceQueuesEditPrivilege, vitalsEditPrivilege } from '../../constants';
 import { getAppointmentTriageConfig } from '../../triage-workflow/triage-workflow.resource';
 
 import { QueueTableActionCell } from './queue-table-action-cell.component';
@@ -14,6 +22,8 @@ const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
 const mockGetAppointmentTriageConfig = vi.mocked(getAppointmentTriageConfig);
+const mockNavigate = vi.mocked(navigate);
+const mockShowSnackbar = vi.mocked(showSnackbar);
 
 vi.mock('../../triage-workflow/triage-workflow.resource', () => ({
   getAppointmentTriageConfig: vi.fn(),
@@ -94,5 +104,59 @@ describe('QueueTableActionCell', () => {
       null,
       { patientUuid: mockQueueEntryAlice.patient.uuid },
     );
+  });
+
+  it('allows a nurse to perform triage without exposing administrative queue actions', async () => {
+    const user = userEvent.setup();
+    const triageQueueEntry = {
+      ...mockQueueEntryAlice,
+      visit: { ...mockQueueEntryAlice.visit, uuid: 'visit-uuid' },
+      workflow: {
+        isTriageQueue: true,
+        sisState: 'active' as const,
+        triageState: 'pending' as const,
+      },
+    };
+    mockUserHasAccess.mockImplementation((privilege) => privilege !== serviceQueuesEditPrivilege);
+    mockGetAppointmentTriageConfig.mockResolvedValue({
+      appointmentArrivalRules: [],
+      appointmentVisitAttributeTypeUuid: 'appointment-attribute-type-uuid',
+      triageRouting: {
+        enabled: true,
+        encounterTypeUuid: 'triage-encounter-type-uuid',
+        queueLocationUuid: 'triage-location-uuid',
+        queueUuid: 'triage-queue-uuid',
+      },
+    });
+
+    render(<QueueTableActionCell queueEntry={triageQueueEntry} />);
+
+    expect(mockUserHasAccess).toHaveBeenCalledWith(vitalsEditPrivilege, mockSession.data.user);
+    expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Realizar triaje' }));
+    expect(mockLaunchWorkspace2).toHaveBeenCalled();
+  });
+
+  it('blocks triage and directs a patient without active SIS financing to the cashier', async () => {
+    const user = userEvent.setup();
+    const triageQueueEntry = {
+      ...mockQueueEntryAlice,
+      visit: { ...mockQueueEntryAlice.visit, uuid: 'visit-uuid' },
+      workflow: {
+        isTriageQueue: true,
+        sisState: 'inactive' as const,
+        triageState: 'pending' as const,
+      },
+    };
+
+    render(<QueueTableActionCell queueEntry={triageQueueEntry} />);
+    expect(screen.queryByRole('button', { name: 'Realizar triaje' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Derivar a Caja/ }));
+
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Triaje bloqueado por financiamiento', kind: 'warning' }),
+    );
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/spa/home/billing' });
   });
 });

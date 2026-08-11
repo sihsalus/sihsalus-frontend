@@ -1,5 +1,5 @@
 import { Dropdown, DropdownSkeleton, InlineNotification, type OnChangeData } from '@carbon/react';
-import { PageHeader, PageHeaderContent, ServiceQueuesPictogram, useConfig, useSession } from '@openmrs/esm-framework';
+import { PageHeader, PageHeaderContent, ServiceQueuesPictogram, useConfig } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
@@ -23,6 +23,20 @@ interface PatientQueueHeaderProps {
 type QueueLocationOption = { id?: string; name?: string };
 type ServiceOption = { id: string; name: string };
 
+/**
+ * The backend uses the generic Location resource for facilities and UPSS.
+ * This header is specifically an UPSS filter, so physical facilities must not
+ * be exposed as if they were clinical service units.
+ */
+export function isUpssQueueLocation(location: fhir.Location): boolean {
+  const normalizedName = location.name?.trim().toLocaleLowerCase() ?? '';
+  const hasUpssTag = location.meta?.tag?.some((tag) =>
+    [tag.code, tag.display].some((value) => value?.trim().toLocaleLowerCase() === 'upss'),
+  );
+
+  return Boolean(hasUpssTag || /^upss(?:\s*[-–—:]|\s)/u.test(normalizedName));
+}
+
 const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
   title,
   showFilters,
@@ -32,7 +46,6 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
   const { t } = useTranslation();
   const { queueLocations, isLoading, error } = useQueueLocations();
   const { dashboardTitle } = useConfig<ConfigObject>();
-  const userSession = useSession();
   const {
     queueLocationSelectionInitialized,
     selectedQueueLocationName,
@@ -40,10 +53,15 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
     selectedServiceDisplay,
     selectedServiceUuid,
   } = useServiceQueuesStore();
-  const { queues, isLoading: isLoadingQueues, error: queuesError } = useQueues(selectedQueueLocationUuid);
+  const upssLocations = useMemo(() => queueLocations.filter(isUpssQueueLocation), [queueLocations]);
+  const selectedQueueLocationIsAvailable = Boolean(
+    selectedQueueLocationUuid && upssLocations.some((location) => location.id === selectedQueueLocationUuid),
+  );
+  const effectiveQueueLocationUuid = selectedQueueLocationIsAvailable ? selectedQueueLocationUuid : null;
+  const { queues, isLoading: isLoadingQueues, error: queuesError } = useQueues(effectiveQueueLocationUuid);
   const availableQueues = queues ?? [];
   const shouldShowFilters = showFilters ?? showLocationDropdown ?? false;
-  const shouldShowLocationDropdown = shouldShowFilters && queueLocations.length > 1;
+  const shouldShowLocationDropdown = shouldShowFilters && upssLocations.length > 1;
   const showServiceDropdown = shouldShowFilters;
 
   const availableServiceOptions = useMemo(() => {
@@ -123,41 +141,23 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
       return;
     }
 
-    if (queueLocations.length === 1) {
-      handleQueueLocationChange({ selectedItem: queueLocations[0] });
-      return;
-    }
-
-    const sessionQueueLocation = queueLocations.find((location) => location.id === userSession?.sessionLocation?.uuid);
-    if (sessionQueueLocation) {
-      handleQueueLocationChange({ selectedItem: sessionQueueLocation });
-      return;
-    }
-
-    // Preserve a valid persisted service when the initial scope is every UPSS.
-    // Explicit UPSS changes still clear the dependent service in the handler.
+    // Colas opens with the complete cross-UPSS scope. The login/session
+    // location is a physical location and must never masquerade as this filter.
     updateSelectedQueueLocationUuid(null);
     updateSelectedQueueLocationName(null);
-  }, [
-    error,
-    handleQueueLocationChange,
-    isLoading,
-    queueLocationSelectionInitialized,
-    queueLocations,
-    userSession?.sessionLocation?.uuid,
-  ]);
+  }, [error, isLoading, queueLocationSelectionInitialized]);
 
   useEffect(() => {
     if (isLoading || error || !selectedQueueLocationUuid) {
       return;
     }
 
-    if (!queueLocations.some((location) => location.id === selectedQueueLocationUuid)) {
+    if (!upssLocations.some((location) => location.id === selectedQueueLocationUuid)) {
       updateSelectedQueueLocationUuid(null);
       updateSelectedQueueLocationName(null);
       updateSelectedService(null, t('all', 'All'));
     }
-  }, [error, isLoading, queueLocations, selectedQueueLocationUuid, t]);
+  }, [error, isLoading, selectedQueueLocationUuid, t, upssLocations]);
 
   return (
     <PageHeader className={styles.header} data-testid="patient-queue-header">
@@ -184,9 +184,9 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
               aria-label={t('selectQueueLocation', 'Select a queue UPSS')}
               className={styles.dropdown}
               id="queueLocationDropdown"
-              label={selectedQueueLocationName ?? t('all', 'All')}
+              label={selectedQueueLocationIsAvailable ? (selectedQueueLocationName ?? t('all', 'All')) : t('all', 'All')}
               items={
-                queueLocations.length !== 1 ? [{ id: 'all', name: t('all', 'All') }, ...queueLocations] : queueLocations
+                upssLocations.length !== 1 ? [{ id: 'all', name: t('all', 'All') }, ...upssLocations] : upssLocations
               }
               itemToString={(item: QueueLocationOption | null) => item?.name ?? ''}
               titleText={t('location', 'UPSS')}

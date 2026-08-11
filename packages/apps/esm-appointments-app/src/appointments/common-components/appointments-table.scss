@@ -114,6 +114,11 @@
   }
 }
 
+.cancelledStatus {
+  @include type.type-style('body-compact-01');
+  color: colors.$red-60;
+}
+
 .content {
   @include type.type-style('heading-compact-02');
   color: $text-02;

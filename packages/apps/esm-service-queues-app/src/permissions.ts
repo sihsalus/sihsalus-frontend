@@ -1,6 +1,6 @@
 import { type LoggedInUser, userHasAccess, useSession } from '@openmrs/esm-framework';
 import type { ReactNode } from 'react';
-import { serviceQueuesClearPrivilege, serviceQueuesEditPrivilege } from './constants';
+import { serviceQueuesClearPrivilege, serviceQueuesEditPrivilege, vitalsEditPrivilege } from './constants';
 
 /**
  * Each capability lists everything its route destinations demand, so an action
@@ -9,6 +9,12 @@ import { serviceQueuesClearPrivilege, serviceQueuesEditPrivilege } from './const
  */
 const queueEntryActionPrivileges = [
   serviceQueuesEditPrivilege,
+  'Get Queue Entries',
+  'Get Queues',
+  'Manage Queue Entries',
+];
+const triageActionPrivileges = [
+  vitalsEditPrivilege,
   'Get Queue Entries',
   'Get Queues',
   'Manage Queue Entries',
@@ -41,6 +47,15 @@ function userHasAllAccess(privileges: Array<string>, user?: LoggedInUser): boole
 
 export function canEditServiceQueues(user?: LoggedInUser): boolean {
   return userHasAllAccess(queueEntryActionPrivileges, user);
+}
+
+/**
+ * Triage staff only need to record vitals and move the patient to the
+ * configured clinical queue. They must not need the broader queue-editing
+ * privilege that also exposes edit, remove and void actions.
+ */
+export function canTriageQueuePatients(user?: LoggedInUser): boolean {
+  return userHasAllAccess(triageActionPrivileges, user);
 }
 
 export function canCreateQueueEntries(user?: LoggedInUser): boolean {

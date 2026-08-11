@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPastVisit, mockPatient, renderWithSwr } from 'test-utils';
+import type { Encounter } from '../types';
 import { usePastVisits } from './past-visit.resource';
 import PastVisitSummary from './past-visit-details/past-visit-summary.component';
 
@@ -30,5 +31,31 @@ describe('PastVisit', () => {
     expect(screen.getByRole('tab', { name: /medications/i })).toBeInTheDocument();
     await user.click(vitalsTab);
     expect(vitalsTab).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('handles incomplete legacy encounters without crashing', () => {
+    renderWithSwr(
+      <PastVisitSummary
+        patientUuid={mockPatient.id}
+        encounters={[
+          {
+            uuid: 'legacy-encounter',
+            encounterDatetime: null,
+            encounterProviders: null,
+            encounterType: { display: 'Visit Note' },
+            obs: [
+              { concept: { display: 'Visit Diagnoses' }, groupMembers: null },
+              {
+                concept: { display: 'General patient note' },
+                value: 'Nota anterior',
+              },
+            ],
+            orders: null,
+          } as unknown as Partial<Encounter>,
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole('tab', { name: /vitals/i })).toBeInTheDocument();
   });
 });

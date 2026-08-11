@@ -3,6 +3,7 @@ import {
   getUserFacingErrorMessage,
   isDesktop,
   launchWorkspace2,
+  navigate,
   showModal,
   showSnackbar,
   userHasAccess,
@@ -12,9 +13,9 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { serviceQueuesPatientVitalsWorkspace, vitalsEditPrivilege } from '../../constants';
+import { serviceQueuesPatientVitalsWorkspace } from '../../constants';
 import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
-import { canEditServiceQueues } from '../../permissions';
+import { canEditServiceQueues, canTriageQueuePatients } from '../../permissions';
 import {
   getAppointmentTriageConfig,
   transitionTriagedPatient,
@@ -28,10 +29,14 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
   const layout = useLayoutType();
   const session = useSession();
   const canEdit = canEditServiceQueues(session?.user);
+  const canTriage = canTriageQueuePatients(session?.user);
+  const isTriageQueue = Boolean(queueEntry.workflow?.isTriageQueue);
+  const requiresCashier = isTriageQueue && queueEntry.workflow?.sisState !== 'active';
+  const canOpenBilling = userHasAccess('app:home.facturacion', session?.user);
   const canPerformTriage =
-    Boolean(queueEntry.workflow?.isTriageQueue) &&
-    canEdit &&
-    userHasAccess(vitalsEditPrivilege, session?.user) &&
+    isTriageQueue &&
+    !requiresCashier &&
+    canTriage &&
     Boolean(queueEntry.visit?.uuid);
   const [isSubmittingTriage, setIsSubmittingTriage] = useState(false);
   const { mutateQueueEntries } = useMutateQueueEntries();
@@ -101,13 +106,36 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
     }
   };
 
-  if (!canEdit) {
+  const handleSendToCashier = () => {
+    showSnackbar({
+      isLowContrast: true,
+      kind: 'warning',
+      title: t('triageBlockedByFinancing', 'Triaje bloqueado por financiamiento'),
+      subtitle: t(
+        'sendPatientToCashierDescription',
+        'El paciente no tiene SIS vigente. Debe regularizar el pago o la cobertura en Caja antes de continuar con el triaje.',
+      ),
+    });
+    if (canOpenBilling) {
+      navigate({ to: `${globalThis.getOpenmrsSpaBase()}home/billing` });
+    }
+  };
+
+  if (!canEdit && !canPerformTriage) {
     return null;
   }
 
   return (
     <div className={styles.actionsCell}>
-      {queueEntry.workflow?.isTriageQueue && canPerformTriage ? (
+      {isTriageQueue && requiresCashier ? (
+        <Button
+          kind="danger--tertiary"
+          onClick={handleSendToCashier}
+          size={isDesktop(layout) ? 'sm' : 'lg'}
+        >
+          {canOpenBilling ? t('sendToCashier', 'Derivar a Caja') : t('requiresCashier', 'Requiere Caja')}
+        </Button>
+      ) : isTriageQueue && canPerformTriage ? (
         <Button
           disabled={isSubmittingTriage}
           kind="primary"
@@ -118,7 +146,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
             ? t('sendToCare', 'Enviar a atención')
             : t('performTriage', 'Realizar triaje')}
         </Button>
-      ) : (
+      ) : canEdit ? (
         <Button
           kind="ghost"
           aria-label={t('transition', 'Transition')}
@@ -132,71 +160,73 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
         >
           {t('transition', 'Transition')}
         </Button>
+      ) : null}
+      {canEdit && (
+        <OverflowMenu
+          aria-label={t('actions', 'Actions')}
+          iconDescription={t('actions', 'Actions')}
+          size={isDesktop(layout) ? 'sm' : 'lg'}
+          align="left"
+          flipped
+        >
+          <OverflowMenuItem
+            className={styles.menuItem}
+            aria-label={t('edit', 'Edit')}
+            hasDivider
+            onClick={() => {
+              const dispose = showModal('edit-queue-entry-modal', {
+                closeModal: () => dispose(),
+                queueEntry,
+              });
+            }}
+            itemText={t('edit', 'Edit')}
+          />
+          <OverflowMenuItem
+            className={styles.menuItem}
+            aria-label={t('removePatient', 'Remove patient')}
+            hasDivider
+            onClick={() => {
+              const dispose = showModal('end-queue-entry-modal', {
+                closeModal: () => dispose(),
+                queueEntry,
+                size: 'sm',
+              });
+            }}
+            itemText={t('removePatient', 'Remove patient')}
+          />
+          {queueEntry.previousQueueEntry == null ? (
+            <OverflowMenuItem
+              className={styles.menuItem}
+              aria-label={t('delete', 'Delete')}
+              hasDivider
+              isDelete
+              onClick={() => {
+                const dispose = showModal('void-queue-entry-modal', {
+                  closeModal: () => dispose(),
+                  queueEntry,
+                  size: 'sm',
+                });
+              }}
+              itemText={t('delete', 'Delete')}
+            />
+          ) : (
+            <OverflowMenuItem
+              className={styles.menuItem}
+              aria-label={t('undoTransition', 'Undo transition')}
+              hasDivider
+              isDelete
+              onClick={() => {
+                const dispose = showModal('undo-transition-queue-entry-modal', {
+                  closeModal: () => dispose(),
+                  queueEntry,
+                  size: 'sm',
+                });
+              }}
+              itemText={t('undoTransition', 'Undo transition')}
+            />
+          )}
+        </OverflowMenu>
       )}
-      <OverflowMenu
-        aria-label={t('actions', 'Actions')}
-        iconDescription={t('actions', 'Actions')}
-        size={isDesktop(layout) ? 'sm' : 'lg'}
-        align="left"
-        flipped
-      >
-        <OverflowMenuItem
-          className={styles.menuItem}
-          aria-label={t('edit', 'Edit')}
-          hasDivider
-          onClick={() => {
-            const dispose = showModal('edit-queue-entry-modal', {
-              closeModal: () => dispose(),
-              queueEntry,
-            });
-          }}
-          itemText={t('edit', 'Edit')}
-        />
-        <OverflowMenuItem
-          className={styles.menuItem}
-          aria-label={t('removePatient', 'Remove patient')}
-          hasDivider
-          onClick={() => {
-            const dispose = showModal('end-queue-entry-modal', {
-              closeModal: () => dispose(),
-              queueEntry,
-              size: 'sm',
-            });
-          }}
-          itemText={t('removePatient', 'Remove patient')}
-        />
-        {queueEntry.previousQueueEntry == null ? (
-          <OverflowMenuItem
-            className={styles.menuItem}
-            aria-label={t('delete', 'Delete')}
-            hasDivider
-            isDelete
-            onClick={() => {
-              const dispose = showModal('void-queue-entry-modal', {
-                closeModal: () => dispose(),
-                queueEntry,
-                size: 'sm',
-              });
-            }}
-            itemText={t('delete', 'Delete')}
-          />
-        ) : (
-          <OverflowMenuItem
-            className={styles.menuItem}
-            aria-label={t('undoTransition', 'Undo transition')}
-            hasDivider
-            isDelete
-            onClick={() => {
-              const dispose = showModal('undo-transition-queue-entry-modal', {
-                closeModal: () => dispose(),
-                queueEntry,
-                size: 'sm',
-              });
-            }}
-            itemText={t('undoTransition', 'Undo transition')}
-          />
-        )}
-      </OverflowMenu>
     </div>
   );
 }

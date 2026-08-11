@@ -7,6 +7,11 @@ import {
   usePatient,
   userHasAccess,
 } from '@openmrs/esm-framework';
+import {
+  fetchVisitInsurance,
+  getSisFinancingState,
+  safeCopyFinanciadorToVisit,
+} from '@openmrs/esm-patient-common-lib';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
@@ -41,6 +46,13 @@ vi.mock('./batch-change-appointment-statuses.resources', () => ({
   getActiveVisitsForPatient: vi.fn(),
 }));
 
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  fetchVisitInsurance: vi.fn(),
+  getSisFinancingState: vi.fn(),
+  safeCopyFinanciadorToVisit: vi.fn(),
+}));
+
 const mockUsePatient = vi.mocked(usePatient);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockChangeAppointmentStatus = vi.mocked(changeAppointmentStatus);
@@ -51,6 +63,9 @@ const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
 const mockNavigate = vi.mocked(navigate);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockFetchVisitInsurance = vi.mocked(fetchVisitInsurance);
+const mockGetSisFinancingState = vi.mocked(getSisFinancingState);
+const mockSafeCopyFinanciadorToVisit = vi.mocked(safeCopyFinanciadorToVisit);
 
 const appointmentVisitAttributeTypeUuid = '193508ab-20c6-5291-9f23-0257335eaabd';
 const requiredVisitTypeUuid = 'required-visit-type-uuid';
@@ -170,6 +185,8 @@ describe('AppointmentArrivalModal', () => {
     mockEnsureAppointmentVisitLink.mockResolvedValue({ created: false });
     mockChangeAppointmentStatus.mockResolvedValue({ data: {} } as Awaited<ReturnType<typeof changeAppointmentStatus>>);
     mockGetActiveVisitsForPatient.mockResolvedValue(visitsResponse([]));
+    mockGetSisFinancingState.mockReturnValue('active');
+    mockSafeCopyFinanciadorToVisit.mockResolvedValue({ ok: true, skipped: true, created: 0, updated: 0 });
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
       appointmentArrivalRules: [appointmentArrivalRule],
@@ -383,6 +400,7 @@ describe('AppointmentArrivalModal', () => {
       expect.objectContaining({
         currentQueueLocationUuid: 'triage-location-uuid',
         currentServiceQueueUuid: 'triage-queue-uuid',
+        requireActiveSisFinancing: true,
         workspaceTitle: 'Registrar llegada y enviar a triaje',
         workspaceDescription:
           'Revise los datos de la atención. Al confirmar, se registrará la llegada y el paciente pasará primero a la cola de triaje.',
@@ -585,6 +603,44 @@ describe('AppointmentArrivalModal', () => {
     expect(screen.queryByRole('button', { name: /iniciar atención directamente/i })).not.toBeInTheDocument();
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('rejects triage queue persistence when the active visit does not have current SIS financing', async () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentArrivalRules: [{ ...appointmentArrivalRule, requiresTriage: true }],
+      triageRouting: {
+        enabled: true,
+        encounterTypeUuid: 'triage-encounter-type-uuid',
+        queueLocationUuid: 'triage-location-uuid',
+        queueUuid: 'triage-queue-uuid',
+      },
+      checkInButton: { enabled: true, showIfActiveVisit: true, customUrl: '' },
+    });
+    mockGetActiveVisitsForPatient.mockResolvedValue(visitsResponse([activeVisit]));
+    mockFetchVisitInsurance.mockResolvedValue({
+      financiadorUuid: 'sis-uuid',
+      insuranceNumber: 'SIS-123',
+      accreditationStatusUuid: 'inactive-status-uuid',
+    });
+    mockGetSisFinancingState.mockReturnValue('inactive');
+
+    renderModal();
+    await userEvent.click(getQueueButton());
+
+    const launchOptions = mockLaunchWorkspace2.mock.calls[0][1] as {
+      onBeforeQueueEntrySave: (visit: typeof activeVisit) => Promise<boolean>;
+    };
+    await expect(launchOptions.onBeforeQueueEntrySave(activeVisit)).resolves.toBe(false);
+    expect(mockFetchVisitInsurance).toHaveBeenCalledWith(activeVisit.uuid);
+    expect(mockEnsureAppointmentVisitLink).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'No se pudo registrar la llegada',
+        subtitle:
+          'No se puede continuar con el triaje porque esta atención no tiene SIS vigente. Derive al paciente a Caja para regularizar el pago o la cobertura.',
+      }),
+    );
   });
 
   it('explains the companion block before opening the visit form for a minor without people search access', async () => {

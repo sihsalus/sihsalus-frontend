@@ -12,6 +12,11 @@ import {
   type Visit,
 } from '@openmrs/esm-framework';
 import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
+import {
+  fetchVisitInsurance,
+  getSisFinancingState,
+  safeCopyFinanciadorToVisit,
+} from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -49,6 +54,7 @@ const APPOINTMENT_ARRIVAL_RULE_INVALID = 'APPOINTMENT_ARRIVAL_RULE_INVALID';
 const APPOINTMENT_ARRIVAL_RULE_MISSING = 'APPOINTMENT_ARRIVAL_RULE_MISSING';
 const APPOINTMENT_ARRIVAL_ACTION_NOT_ALLOWED = 'APPOINTMENT_ARRIVAL_ACTION_NOT_ALLOWED';
 const MULTIPLE_ACTIVE_VISITS = 'MULTIPLE_ACTIVE_VISITS';
+const TRIAGE_SIS_FINANCING_REQUIRED = 'TRIAGE_SIS_FINANCING_REQUIRED';
 
 type ArrivalAction = 'queue' | 'direct';
 
@@ -158,6 +164,10 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         [APPOINTMENT_VISIT_LINK_CONFIGURATION_MISSING]: t(
           'appointmentVisitLinkNotConfigured',
           'No está configurado el vínculo entre cita y consulta. Contacte al administrador antes de continuar.',
+        ),
+        [TRIAGE_SIS_FINANCING_REQUIRED]: t(
+          'triageSisFinancingRequired',
+          'No se puede continuar con el triaje porque esta atención no tiene SIS vigente. Derive al paciente a Caja para regularizar el pago o la cobertura.',
         ),
       },
       logContext: 'Check in appointment',
@@ -331,6 +341,21 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       if (expectedVisit && activeVisit) {
         assertVisitMatchesAppointmentLocation(activeVisit);
         assertVisitTypeIsCompatible(activeVisit);
+        if (arrivalRule?.requiresTriage) {
+          // Older active visits may not yet contain the financing attributes
+          // copied from registration. Fill only missing values before deciding.
+          await safeCopyFinanciadorToVisit({
+            patientUuid: appointment.patient.uuid,
+            visitUuid: activeVisit.uuid,
+            onlyFillMissing: true,
+          });
+          const visitInsurance = await fetchVisitInsurance(activeVisit.uuid);
+          if (getSisFinancingState(visitInsurance) !== 'active') {
+            throw Object.assign(new Error('The visit does not have active SIS financing.'), {
+              code: TRIAGE_SIS_FINANCING_REQUIRED,
+            });
+          }
+        }
         await ensureAppointmentVisitLink(activeVisit.uuid, appointment.uuid, appointmentVisitAttributeTypeUuid);
       }
       return true;
@@ -473,6 +498,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         currentQueueLocationUuid: requiredQueueLocationUuid,
         currentServiceQueueUuid: arrivalQueueUuid,
         requestedServiceName: appointment.service.name,
+        requireActiveSisFinancing: rule.requiresTriage,
         requiredVisitLocation: {
           uuid: requiredAppointmentLocationUuid,
           display: appointment.location?.name ?? '',

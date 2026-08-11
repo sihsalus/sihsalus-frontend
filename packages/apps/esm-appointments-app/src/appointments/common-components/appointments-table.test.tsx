@@ -165,6 +165,19 @@ describe('AppointmentsTable', () => {
     expect(screen.getByRole('link', { name: /john wilson/i })).toHaveAttribute('href', 'url-to-patient-chart');
   });
 
+  it('renders a cancelled appointment as non-interactive red text', () => {
+    const cancelledAppointment = {
+      ...mockAppointments[0],
+      status: AppointmentStatus.CANCELLED,
+    };
+
+    renderAppointmentsTable({ appointments: [cancelledAppointment] });
+
+    const cancelledStatus = screen.getByText('Cancelada');
+    expect(cancelledStatus.closest('.cds--tag')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancelada' })).not.toBeInTheDocument();
+  });
+
   it('changes appointment collections without dereferencing a stale table row', () => {
     const inProgressAppointment = {
       ...mockAppointments[0],

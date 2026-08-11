@@ -12,7 +12,7 @@ import {
   updateSelectedService,
   useServiceQueuesStore,
 } from '../store/store';
-import PatientQueueHeader from './patient-queue-header.component';
+import PatientQueueHeader, { isUpssQueueLocation } from './patient-queue-header.component';
 
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseSession = vi.mocked(useSession);
@@ -162,13 +162,13 @@ describe('PatientQueueHeader service filter', () => {
     const sessionQueueLocation = {
       resourceType: 'Location' as const,
       id: 'admission-location',
-      name: 'Admission desk',
+      name: 'UPSS - ADMISIÓN',
     };
     mockSession('SIHSALUS Admision', { uuid: sessionQueueLocation.id, display: 'Stale session display' });
     mockUseQueueLocations.mockReturnValue({
       queueLocations: [
         sessionQueueLocation,
-        { resourceType: 'Location', id: 'other-location', name: 'Other location' },
+        { resourceType: 'Location', id: 'other-location', name: 'UPSS - CONSULTA EXTERNA' },
       ],
       isLoading: false,
       error: undefined,
@@ -177,7 +177,7 @@ describe('PatientQueueHeader service filter', () => {
       ...defaultStoreState,
       queueLocationSelectionInitialized: true,
       selectedQueueLocationUuid: 'other-location',
-      selectedQueueLocationName: 'Other location',
+      selectedQueueLocationName: 'UPSS - CONSULTA EXTERNA',
       selectedServiceUuid: mockServiceTriage.uuid,
       selectedServiceDisplay: mockServiceTriage.display,
     });
@@ -202,6 +202,7 @@ describe('PatientQueueHeader service filter', () => {
       queueLocations: [
         sessionQueueLocation,
         { resourceType: 'Location', id: 'outpatient-location', name: 'UPSS - CONSULTA EXTERNA' },
+        { resourceType: 'Location', id: 'obstetric-location', name: 'UPSS - CENTRO OBSTÉTRICO' },
       ],
       isLoading: false,
       error: undefined,
@@ -223,15 +224,15 @@ describe('PatientQueueHeader service filter', () => {
 
   it('stores All as an explicit UPSS selection', async () => {
     const user = userEvent.setup();
-    const hospitalLocation = {
+    const outpatientLocation = {
       resourceType: 'Location' as const,
-      id: 'hospital-location',
-      name: 'Hospital Santa Clotilde',
+      id: 'outpatient-location',
+      name: 'UPSS - CONSULTA EXTERNA',
     };
     mockUseQueueLocations.mockReturnValue({
       queueLocations: [
-        hospitalLocation,
-        { resourceType: 'Location', id: 'outpatient-location', name: 'UPSS - CONSULTA EXTERNA' },
+        outpatientLocation,
+        { resourceType: 'Location', id: 'obstetric-location', name: 'UPSS - CENTRO OBSTÉTRICO' },
       ],
       isLoading: false,
       error: undefined,
@@ -239,8 +240,8 @@ describe('PatientQueueHeader service filter', () => {
     mockUseServiceQueuesStore.mockReturnValue({
       ...defaultStoreState,
       queueLocationSelectionInitialized: true,
-      selectedQueueLocationName: hospitalLocation.name,
-      selectedQueueLocationUuid: hospitalLocation.id,
+      selectedQueueLocationName: outpatientLocation.name,
+      selectedQueueLocationUuid: outpatientLocation.id,
     });
 
     render(<PatientQueueHeader showFilters />);
@@ -253,7 +254,7 @@ describe('PatientQueueHeader service filter', () => {
     expect(mockUpdateSelectedService).toHaveBeenCalledWith(null, 'All');
   });
 
-  it('defaults an uninitialized selection to the matching session Queue Location once', () => {
+  it('defaults an uninitialized UPSS selection to All instead of the physical session location', () => {
     const sessionQueueLocation = {
       resourceType: 'Location' as const,
       id: 'hospital-location',
@@ -271,16 +272,17 @@ describe('PatientQueueHeader service filter', () => {
 
     render(<PatientQueueHeader showFilters />);
 
+    expect(mockUseQueues).toHaveBeenCalledWith(null);
     expect(mockUpdateSelectedQueueLocationUuid).toHaveBeenCalledOnce();
-    expect(mockUpdateSelectedQueueLocationUuid).toHaveBeenCalledWith(sessionQueueLocation.id);
+    expect(mockUpdateSelectedQueueLocationUuid).toHaveBeenCalledWith(null);
     expect(mockUpdateSelectedQueueLocationName).toHaveBeenCalledOnce();
-    expect(mockUpdateSelectedQueueLocationName).toHaveBeenCalledWith(sessionQueueLocation.name);
+    expect(mockUpdateSelectedQueueLocationName).toHaveBeenCalledWith(null);
   });
 
   it('clears a stale persisted Queue Location after metadata loads successfully', async () => {
     mockSession('Any role', { uuid: 'non-queue-location', display: 'Unconfigured location' });
     mockUseQueueLocations.mockReturnValue({
-      queueLocations: [{ resourceType: 'Location', id: 'queue-location', name: 'Configured queue location' }],
+      queueLocations: [{ resourceType: 'Location', id: 'queue-location', name: 'UPSS - CONSULTA EXTERNA' }],
       isLoading: false,
       error: undefined,
     });
@@ -324,8 +326,8 @@ describe('PatientQueueHeader service filter', () => {
     mockSession('SIHSALUS Admision', { uuid: 'queue-location-1', display: 'Queue location 1' });
     mockUseQueueLocations.mockReturnValue({
       queueLocations: [
-        { resourceType: 'Location', id: 'queue-location-1', name: 'Queue location 1' },
-        { resourceType: 'Location', id: 'queue-location-2', name: 'Queue location 2' },
+        { resourceType: 'Location', id: 'queue-location-1', name: 'UPSS - CONSULTA EXTERNA' },
+        { resourceType: 'Location', id: 'queue-location-2', name: 'UPSS - CENTRO OBSTÉTRICO' },
       ],
       isLoading: false,
       error: undefined,
@@ -334,6 +336,47 @@ describe('PatientQueueHeader service filter', () => {
     render(<PatientQueueHeader showFilters />);
 
     expect(screen.getByRole('combobox', { name: /select a queue UPSS/i })).toBeEnabled();
+  });
+
+  it('shows only UPSS options and excludes physical facilities from the filter', async () => {
+    const user = userEvent.setup();
+    mockUseQueueLocations.mockReturnValue({
+      queueLocations: [
+        { resourceType: 'Location', id: 'hospital-location', name: 'Hospital Santa Clotilde' },
+        { resourceType: 'Location', id: 'casita-location', name: 'Casita Azul' },
+        { resourceType: 'Location', id: 'outpatient-location', name: 'UPSS - CONSULTA EXTERNA' },
+        { resourceType: 'Location', id: 'obstetric-location', name: 'UPSS - CENTRO OBSTÉTRICO' },
+      ],
+      isLoading: false,
+      error: undefined,
+    });
+
+    render(<PatientQueueHeader showFilters />);
+
+    const upssDropdown = screen.getByRole('combobox', { name: /select a queue UPSS/i });
+    expect(upssDropdown).toHaveTextContent('All');
+    await user.click(upssDropdown);
+    expect(screen.getByRole('option', { name: 'All' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'UPSS - CONSULTA EXTERNA' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'UPSS - CENTRO OBSTÉTRICO' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Hospital Santa Clotilde' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Casita Azul' })).not.toBeInTheDocument();
+  });
+});
+
+describe('isUpssQueueLocation', () => {
+  it.each([
+    { resourceType: 'Location', name: 'UPSS - CONSULTA EXTERNA' },
+    { resourceType: 'Location', name: 'Consulta externa', meta: { tag: [{ code: 'UPSS' }] } },
+  ] as Array<fhir.Location>)('recognizes an UPSS by its canonical name or metadata', (location) => {
+    expect(isUpssQueueLocation(location)).toBe(true);
+  });
+
+  it.each([
+    { resourceType: 'Location', name: 'Hospital Santa Clotilde' },
+    { resourceType: 'Location', name: 'Casita Azul' },
+  ] as Array<fhir.Location>)('does not classify a physical facility as an UPSS', (location) => {
+    expect(isUpssQueueLocation(location)).toBe(false);
   });
 });
 

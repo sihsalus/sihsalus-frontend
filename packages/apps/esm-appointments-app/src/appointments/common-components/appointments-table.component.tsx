@@ -138,7 +138,6 @@ const appointmentStatusTagTypes: Partial<Record<AppointmentStatus, CarbonTagType
   [AppointmentStatus.ARRIVED]: 'teal',
   [AppointmentStatus.CHECKEDIN]: 'cyan',
   [AppointmentStatus.COMPLETED]: 'green',
-  [AppointmentStatus.CANCELLED]: 'cool-gray',
   [AppointmentStatus.MISSED]: 'red',
 };
 
@@ -147,6 +146,9 @@ function AppointmentStatusTag({ status }: { status: AppointmentStatus | string |
   const label = getAppointmentStatusLabel(status, t);
   if (!label) {
     return null;
+  }
+  if (status === AppointmentStatus.CANCELLED) {
+    return <span className={styles.cancelledStatus}>{label}</span>;
   }
   return <Tag type={appointmentStatusTagTypes[status as AppointmentStatus] ?? 'gray'}>{label}</Tag>;
 }

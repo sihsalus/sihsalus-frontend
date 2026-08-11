@@ -16,7 +16,7 @@ import {
   useVisitTypes,
   type Visit,
 } from '@openmrs/esm-framework';
-import { createOfflineVisitForPatient } from '@openmrs/esm-patient-common-lib';
+import { createOfflineVisitForPatient, safeCopyFinanciadorToVisit } from '@openmrs/esm-patient-common-lib';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
@@ -214,12 +214,14 @@ const mockDeleteVisitAttribute = vi.mocked(deleteVisitAttribute).mockResolvedVal
 const mockGetVisitAttributes = vi.mocked(getVisitAttributes);
 const mockReconcileVisitCreation = vi.mocked(reconcileVisitCreation);
 const mockCreateOfflineVisitForPatient = vi.mocked(createOfflineVisitForPatient);
+const mockSafeCopyFinanciadorToVisit = vi.mocked(safeCopyFinanciadorToVisit);
 const mockUsePersonAttributesForVisitDefaults = vi.mocked(usePersonAttributesForVisitDefaults);
 const mockUseVisitProvenanceAddressOptions = vi.mocked(useVisitProvenanceAddressOptions);
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
   createOfflineVisitForPatient: vi.fn(),
+  safeCopyFinanciadorToVisit: vi.fn(),
   useActivePatientEnrollment: vi.fn().mockReturnValue({
     activePatientEnrollment: [],
     isLoading: false,
@@ -358,6 +360,7 @@ describe('Visit form', () => {
     mockDeleteVisitAttribute.mockResolvedValue({} as unknown as FetchResponse);
     mockGetVisitAttributes.mockResolvedValue([]);
     mockReconcileVisitCreation.mockResolvedValue(null);
+    mockSafeCopyFinanciadorToVisit.mockResolvedValue({ ok: true, skipped: true, created: 0, updated: 0 });
     mockUseConnectivity.mockReturnValue(true);
     mockOnVisitCreatedOrUpdatedCallback.mockResolvedValue(undefined);
     mockUseSession.mockReturnValue({

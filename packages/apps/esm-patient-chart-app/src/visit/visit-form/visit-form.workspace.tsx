@@ -142,6 +142,7 @@ interface StartVisitFormWorkspaceProps {
   };
   requiredVisitTypeUuid?: string;
   requestedServiceName?: string;
+  requireActiveSisFinancing?: boolean;
   visitToEdit?: Visit;
   workspaceTitle?: string;
   workspaceDescription?: string;
@@ -179,6 +180,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     requiredVisitLocation,
     requiredVisitTypeUuid,
     requestedServiceName,
+    requireActiveSisFinancing,
     visitToEdit,
     openedFrom,
     workspaceTitle,
@@ -1186,19 +1188,25 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           // the visit: a failure is reported and left for Admisión.
           if (!visitToEdit && !completedPostSubmitActions.current.has('financiador')) {
             completedPostSubmitActions.current.add('financiador');
-            void safeCopyFinanciadorToVisit({ patientUuid, visitUuid: visit.uuid, onlyFillMissing: true }).then((result) => {
-              if (!result.ok) {
-                showSnackbar({
-                  isLowContrast: true,
-                  kind: 'warning',
-                  title: t('financiadorCopyFailed', 'No se pudo registrar el seguro en la visita'),
-                  subtitle: t(
-                    'financiadorCopyFailedSubtitle',
-                    'Admisión puede completarlo más tarde. La atención continúa.',
-                  ),
-                });
-              }
+            const financingCopyResult = await safeCopyFinanciadorToVisit({
+              patientUuid,
+              visitUuid: visit.uuid,
+              onlyFillMissing: true,
             });
+            // Some host implementations and test doubles predate the structured
+            // result returned by this helper. In that case the copy is still
+            // considered best-effort and must not interrupt the visit workflow.
+            if (financingCopyResult && !financingCopyResult.ok) {
+              showSnackbar({
+                isLowContrast: true,
+                kind: 'warning',
+                title: t('financiadorCopyFailed', 'No se pudo registrar el seguro en la visita'),
+                subtitle: t(
+                  'financiadorCopyFailedSubtitle',
+                  'Admisión puede completarlo más tarde. La atención continúa.',
+                ),
+              });
+            }
           }
 
           for (const [extensionId, callbacks] of visitFormCallbacks) {
@@ -1456,6 +1464,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                       currentServiceQueueUuid={currentServiceQueueUuid}
                       currentQueueLocationUuid={currentQueueLocationUuid}
                       requestedServiceName={requestedServiceName}
+                      requireActiveSisFinancing={requireActiveSisFinancing}
                       onQueueEntryAdded={onQueueEntryAdded}
                       visitFormOpenedFrom={openedFrom}
                       setVisitFormCallbacks={setVisitFormCallbacks}
@@ -1606,6 +1615,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                   currentServiceQueueUuid={currentServiceQueueUuid}
                   currentQueueLocationUuid={currentQueueLocationUuid}
                   requestedServiceName={requestedServiceName}
+                  requireActiveSisFinancing={requireActiveSisFinancing}
                   onQueueEntryAdded={onQueueEntryAdded}
                   visitFormOpenedFrom={openedFrom}
                   setVisitFormCallbacks={setVisitFormCallbacks}
@@ -1688,6 +1698,7 @@ interface VisitFormExtensionSlotProps {
   currentServiceQueueUuid?: string;
   currentQueueLocationUuid?: string;
   requestedServiceName?: string;
+  requireActiveSisFinancing?: boolean;
   onQueueEntryAdded?: () => void | Promise<void>;
   visitFormOpenedFrom: string;
   setVisitFormCallbacks: React.Dispatch<React.SetStateAction<Map<string, VisitFormCallbacks>>>;
@@ -1710,6 +1721,7 @@ type VisitFormExtensionState = {
   currentServiceQueueUuid?: string;
   currentQueueLocationUuid?: string;
   requestedServiceName?: string;
+  requireActiveSisFinancing?: boolean;
   onQueueEntryAdded?: () => void | Promise<void>;
 };
 
@@ -1720,6 +1732,7 @@ const VisitFormExtensionSlot: React.FC<VisitFormExtensionSlotProps> = React.memo
     currentServiceQueueUuid,
     currentQueueLocationUuid,
     requestedServiceName,
+    requireActiveSisFinancing,
     onQueueEntryAdded,
     visitFormOpenedFrom,
     setVisitFormCallbacks,
@@ -1741,6 +1754,7 @@ const VisitFormExtensionSlot: React.FC<VisitFormExtensionSlotProps> = React.memo
             currentServiceQueueUuid,
             currentQueueLocationUuid,
             requestedServiceName,
+            requireActiveSisFinancing,
             onQueueEntryAdded,
           };
           return <Extension state={state} />;

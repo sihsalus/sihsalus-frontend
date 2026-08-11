@@ -307,6 +307,7 @@
   "status": "Estado",
   "time": "Hora",
   "today": "Hoy",
+  "triageSisFinancingRequired": "No se puede continuar con el triaje porque esta atención no tiene SIS vigente. Derive al paciente a Caja para regularizar el pago o la cobertura.",
   "todaysAppointments": "Citas de hoy",
   "type": "Tipo",
   "unassignedProvider": "Sin personal de salud asignado",

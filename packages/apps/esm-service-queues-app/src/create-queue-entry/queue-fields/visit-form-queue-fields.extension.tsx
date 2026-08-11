@@ -21,6 +21,7 @@ export interface VisitFormQueueFieldsProps {
   currentServiceQueueUuid?: string;
   currentQueueLocationUuid?: string;
   requestedServiceName?: string;
+  requireActiveSisFinancing?: boolean;
   onQueueEntryAdded?: () => void | Promise<void>;
 }
 
@@ -73,6 +74,7 @@ const VisitFormQueueFields: React.FC<VisitFormQueueFieldsProps> = (props) => {
     currentQueueLocationUuid,
     patientUuid,
     requestedServiceName,
+    requireActiveSisFinancing,
     onQueueEntryAdded,
   } = props;
   const { patient } = usePatient(patientUuid);
@@ -94,6 +96,7 @@ const VisitFormQueueFields: React.FC<VisitFormQueueFieldsProps> = (props) => {
           currentQueueLocationUuid={currentQueueLocationUuid}
           patientGender={patient?.gender}
           requestedServiceName={requestedServiceName}
+          requireActiveSisFinancing={requireActiveSisFinancing}
           onQueueEntryAdded={onQueueEntryAdded}
           setCallbacks={(callbacks) => setVisitFormCallbacks({ ...callbacks, kind: 'queue-entry' })}
         />

@@ -188,22 +188,22 @@ export const esmPatientChartSchema = {
       {
         uuid: '3a988e33-a6c0-4b76-b924-01abb998944b',
         required: false,
-        displayInThePatientBanner: true,
+        displayInThePatientBanner: false,
       },
       {
         uuid: 'aac48226-d143-4274-80e0-264db4e368ee',
         required: false,
-        displayInThePatientBanner: true,
+        displayInThePatientBanner: false,
       },
       {
         uuid: '5e13e902-2030-4f65-b9d5-9a4810c9a603',
         required: false,
-        displayInThePatientBanner: true,
+        displayInThePatientBanner: false,
       },
       {
         uuid: '9b640334-69e7-49a8-bc8d-1a379742f2f1',
         required: false,
-        displayInThePatientBanner: true,
+        displayInThePatientBanner: false,
       },
     ],
   },

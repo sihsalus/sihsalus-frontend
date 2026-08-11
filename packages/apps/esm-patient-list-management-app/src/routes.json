@@ -31,13 +31,15 @@
       "name": "add-patient-to-patient-list-button",
       "slot": "patient-actions-slot",
       "component": "addPatientToPatientListMenuItem",
-      "order": 5
+      "order": 5,
+      "privileges": "app:home.listasPacientes.editar"
     }
   ],
   "modals": [
     {
       "name": "add-patient-to-patient-list-modal",
-      "component": "addPatientToListModal"
+      "component": "addPatientToListModal",
+      "privileges": "app:home.listasPacientes.editar"
     }
   ],
   "workspaces2": [

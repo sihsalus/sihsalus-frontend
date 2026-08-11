@@ -1,5 +1,4 @@
-import { Button } from '@carbon/react';
-import { TaskComplete } from '@carbon/react/icons';
+import { Button, InlineLoading } from '@carbon/react';
 import { navigate, showModal, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
@@ -79,13 +78,13 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
   };
 
   const renderVisitStatus = () => {
+    if (areVisitsLoading && !isCancelled) {
+      return <InlineLoading description={t('verifyingVisit', 'Verificando consulta…')} />;
+    }
+
     switch (true) {
       case isCancelled:
-        return (
-          <Button kind="danger--ghost" iconDescription={t('cancelled', 'Cancelled')} size="sm">
-            {t('cancelled', 'Cancelled')}
-          </Button>
-        );
+        return null;
 
       case isCompleted:
         if (canCheckOut && hasLinkedActiveVisit) {
@@ -95,11 +94,7 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
             </Button>
           );
         }
-        return (
-          <Button kind="ghost" renderIcon={TaskComplete} iconDescription={t('checkedOut', 'Checked out')} size="sm">
-            {t('checkedOut', 'Checked out')}
-          </Button>
-        );
+        return null;
 
       case canCheckOut && checkOutButton.enabled && isCheckedIn:
         return (

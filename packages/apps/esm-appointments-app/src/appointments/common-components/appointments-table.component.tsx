@@ -19,6 +19,7 @@ import {
   TableRow,
   TableSelectAll,
   TableSelectRow,
+  Tag,
   Tile,
 } from '@carbon/react';
 import { Download } from '@carbon/react/icons';
@@ -45,7 +46,12 @@ import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import { appointmentsEditPrivileges, clinicalChartPrivilege } from '../../constants';
 import { EmptyState } from '../../empty-state/empty-state.component';
-import { canTransition, getAppointmentProviderName, isAppointmentEditable } from '../../helpers';
+import {
+  canTransition,
+  getAppointmentProviderName,
+  getAppointmentStatusLabel,
+  isAppointmentEditable,
+} from '../../helpers';
 import { createAppointmentsExportFileName, exportAppointmentsToSpreadsheet } from '../../helpers/excel';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
 import { type Appointment, AppointmentStatus } from '../../types';
@@ -121,6 +127,28 @@ function PatientDniCell({ appointment }: { appointment: Appointment }) {
   const appointmentDni = resolveDniIdentifier(appointment);
 
   return appointmentDni ?? <PatientDniFromPatientResource patientUuid={appointment.patient.uuid} />;
+}
+
+type CarbonTagType = 'blue' | 'cool-gray' | 'cyan' | 'gray' | 'green' | 'purple' | 'red' | 'teal';
+
+const appointmentStatusTagTypes: Partial<Record<AppointmentStatus, CarbonTagType>> = {
+  [AppointmentStatus.REQUESTED]: 'purple',
+  [AppointmentStatus.WAITLIST]: 'gray',
+  [AppointmentStatus.SCHEDULED]: 'blue',
+  [AppointmentStatus.ARRIVED]: 'teal',
+  [AppointmentStatus.CHECKEDIN]: 'cyan',
+  [AppointmentStatus.COMPLETED]: 'green',
+  [AppointmentStatus.CANCELLED]: 'cool-gray',
+  [AppointmentStatus.MISSED]: 'red',
+};
+
+function AppointmentStatusTag({ status }: { status: AppointmentStatus | string | null | undefined }) {
+  const { t } = useTranslation();
+  const label = getAppointmentStatusLabel(status, t);
+  if (!label) {
+    return null;
+  }
+  return <Tag type={appointmentStatusTagTypes[status as AppointmentStatus] ?? 'gray'}>{label}</Tag>;
 }
 
 const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
@@ -216,6 +244,10 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
       header: t('status', 'Status'),
       key: 'status',
     },
+    {
+      header: t('care', 'Atención'),
+      key: 'care',
+    },
   ];
 
   const rowData = results?.map((appointment) => ({
@@ -237,7 +269,8 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
     serviceType: appointment.service.name,
     location: appointment.location?.name ?? appointment.service.location?.display ?? '—',
     provider: getAppointmentProviderName(appointment) ?? t('unassignedProvider', 'No provider assigned'),
-    status: <AppointmentActions appointment={appointment} />,
+    status: <AppointmentStatusTag status={appointment.status} />,
+    care: <AppointmentActions appointment={appointment} />,
   }));
 
   if (isLoading) {
@@ -303,8 +336,12 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                 className={styles.searchbar}
                 labelText=""
                 placeholder={t('filterTable', 'Filter table')}
-                onChange={(event) => setSearchString(event.target.value)}
+                onChange={(event) => {
+                  setSearchString(event.target.value);
+                  goTo(1);
+                }}
                 size={responsiveSize}
+                value={searchString}
               />
               {allowBatchStatusChange && selectedRows.length > 0 ? (
                 <Button
@@ -372,7 +409,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                     const isFutureAppointment = visitDate.isAfter(dayjs());
                     const isTodayAppointment = visitDate.isToday();
                     const hasActiveVisitToday = visits?.some(
-                      (visit) => visit?.patient?.uuid === patientUuid && visit?.startDatetime,
+                      (visit) => visit?.patient?.uuid === patientUuid && visit?.startDatetime && !visit?.stopDatetime,
                     );
                     const canEditAppointment =
                       canEdit &&
@@ -523,12 +560,12 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
         page={currentPage}
         pageNumberText={t('pageNumber', 'Page number')}
         pageSize={pageSize}
-        pageSizes={getPageSizes(appointments, pageSize) ?? []}
+        pageSizes={getPageSizes(searchResults, pageSize) ?? []}
         onChange={({ page, pageSize }) => {
           goTo(page);
           setPageSize(pageSize);
         }}
-        totalItems={appointments.length ?? 0}
+        totalItems={searchResults.length ?? 0}
       />
     </Layer>
   );

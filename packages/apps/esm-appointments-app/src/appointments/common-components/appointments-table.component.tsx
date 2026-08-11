@@ -469,6 +469,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                                         itemText={t('cancelAppointment', 'Cancel appointment')}
                                         onClick={() => {
                                           const dispose = showModal('cancel-appointment-modal', {
+                                            appointment: matchingAppointment,
                                             appointmentUuid: matchingAppointment.uuid,
                                             closeCancelModal: () => dispose(),
                                           });

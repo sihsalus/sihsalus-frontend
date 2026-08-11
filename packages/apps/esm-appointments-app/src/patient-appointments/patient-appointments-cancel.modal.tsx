@@ -1,10 +1,10 @@
 import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
+import { formatDatetime, getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutateAppointments } from '../form/appointments-form.resource';
 import { canTransition } from '../helpers';
-import { AppointmentStatus } from '../types';
+import { type Appointment, AppointmentStatus } from '../types';
 import { changeAppointmentStatus, getAppointmentStatus } from './patient-appointments.resource';
 import styles from './patient-appointments-cancel.scss';
 
@@ -13,9 +13,14 @@ const APPOINTMENT_CANCELLATION_STATUS_CONFLICT = 'APPOINTMENT_CANCELLATION_STATU
 interface CancelAppointmentModalProps {
   closeCancelModal: () => void;
   appointmentUuid: string;
+  appointment?: Appointment;
 }
 
-const CancelAppointmentModal: React.FC<CancelAppointmentModalProps> = ({ closeCancelModal, appointmentUuid }) => {
+const CancelAppointmentModal: React.FC<CancelAppointmentModalProps> = ({
+  closeCancelModal,
+  appointmentUuid,
+  appointment,
+}) => {
   const { t } = useTranslation();
   const { mutateAppointments } = useMutateAppointments();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,10 +81,30 @@ const CancelAppointmentModal: React.FC<CancelAppointmentModalProps> = ({ closeCa
       />
       <ModalBody>
         <p>{t('cancelAppointmentModalConfirmationText', 'Are you sure you want to cancel this appointment?')}</p>
+        {appointment ? (
+          <dl className={styles.appointmentSummary}>
+            <div>
+              <dt>{t('patient', 'Paciente')}</dt>
+              <dd>{appointment.patient?.name}</dd>
+            </div>
+            <div>
+              <dt>{t('service', 'Servicio')}</dt>
+              <dd>{appointment.service?.name}</dd>
+            </div>
+            <div>
+              <dt>{t('dateAndTime', 'Fecha y hora')}</dt>
+              <dd>{appointment.startDateTime ? formatDatetime(new Date(appointment.startDateTime)) : '—'}</dd>
+            </div>
+            <div>
+              <dt>{t('upss', 'UPSS')}</dt>
+              <dd>{appointment.location?.name ?? '—'}</dd>
+            </div>
+          </dl>
+        ) : null}
       </ModalBody>
       <ModalFooter>
         <Button kind="secondary" onClick={closeCancelModal}>
-          {t('discard', 'Discard')}
+          {t('keepAppointment', 'Conservar cita')}
         </Button>
         <Button kind="danger" onClick={handleCancelAppointment} disabled={isSubmitting}>
           {t('cancelAppointment', 'Cancel appointment')}

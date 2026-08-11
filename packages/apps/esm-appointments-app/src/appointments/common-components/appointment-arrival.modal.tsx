@@ -6,9 +6,13 @@ import {
   navigate,
   showSnackbar,
   useConfig,
+  usePatient,
+  userHasAccess,
+  useSession,
   type Visit,
 } from '@openmrs/esm-framework';
 import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
+import dayjs from 'dayjs';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -16,6 +20,9 @@ import { type ConfigObject } from '../../config-schema';
 import {
   appointmentsCompanionPersonRegistrationWorkspace,
   appointmentsCompanionPersonSearchWorkspace,
+  appointmentsPrivilege,
+  appointmentsEditPrivilege,
+  clinicalChartPrivilege,
 } from '../../constants';
 import { useMutateAppointments } from '../../form/appointments-form.resource';
 import { canTransition } from '../../helpers';
@@ -32,6 +39,7 @@ import { getActiveVisitsForPatient } from './batch-change-appointment-statuses.r
 const appointmentsStartVisitWorkspace = 'appointments-start-visit-workspace';
 const addActiveVisitToQueueWorkspace = 'appointments-add-active-visit-to-queue-workspace';
 const APPOINTMENT_STATUS_CONFLICT = 'APPOINTMENT_STATUS_CONFLICT';
+const COMPANION_CAPABILITY_MISSING = 'COMPANION_CAPABILITY_MISSING';
 const ACTIVE_VISIT_CHANGED = 'ACTIVE_VISIT_CHANGED';
 const ACTIVE_VISIT_LOCATION_MISMATCH = 'ACTIVE_VISIT_LOCATION_MISMATCH';
 const ACTIVE_VISIT_TYPE_MISMATCH = 'ACTIVE_VISIT_TYPE_MISMATCH';
@@ -101,6 +109,10 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         [APPOINTMENT_STATUS_CONFLICT]: t(
           'appointmentStatusChanged',
           'El estado de la cita cambió. Actualice la lista antes de continuar.',
+        ),
+        [COMPANION_CAPABILITY_MISSING]: t(
+          'companionCapabilityMissing',
+          'El paciente es menor de edad y requiere un acompañante, pero su usuario no tiene permisos para buscar personas. Solicite el registro de la llegada a un usuario con ese acceso.',
         ),
         [MULTIPLE_ACTIVE_VISITS]: t(
           'multipleActiveVisits',
@@ -349,7 +361,36 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     }
   };
 
+  const session = useSession();
+  const { patient: fhirPatient } = usePatient(patientUuid);
+  const canOpenPatientChart = userHasAccess(clinicalChartPrivilege, session?.user);
+  const canSearchCompanionPerson = userHasAccess(
+    [appointmentsPrivilege, appointmentsEditPrivilege, 'Get People'],
+    session?.user,
+  );
+
+  // Both start-visit paths demand an adult companion for minors; without the
+  // search capability the operator cannot satisfy that inside the form, so the
+  // block is explained here instead of after opening it. Runs only when no
+  // reusable active visit exists, and fails open when the birth date is unknown
+  // because the form still enforces the requirement.
+  const assertCompanionCapabilityForMinor = () => {
+    const birthDate = fhirPatient?.birthDate;
+    if (!birthDate) {
+      return;
+    }
+    const isMinor = dayjs().startOf('day').diff(dayjs(birthDate).startOf('day'), 'year') < 18;
+    if (isMinor && !canSearchCompanionPerson) {
+      throw Object.assign(new Error('The operator cannot search for a companion person.'), {
+        code: COMPANION_CAPABILITY_MISSING,
+      });
+    }
+  };
+
   const navigateToPatientChart = () => {
+    if (!canOpenPatientChart) {
+      return;
+    }
     navigate({ to: customPatientChartUrl, templateParams: { patientUuid } });
   };
 
@@ -412,6 +453,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         return;
       }
 
+      assertCompanionCapabilityForMinor();
       await launchWorkspace2(appointmentsStartVisitWorkspace, {
         patientUuid: patientUuid,
         companionPersonRegistrationWorkspaceName: appointmentsCompanionPersonRegistrationWorkspace,
@@ -487,10 +529,15 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         assertVisitTypeIsCompatible(activeVisits[0]);
         await ensureAppointmentVisitLink(activeVisits[0].uuid, appointment.uuid, appointmentVisitAttributeTypeUuid);
         await checkIn(
-          t(
-            'appointmentCheckedInDirectly',
-            'Se registró la llegada usando la consulta activa. Puede continuar la atención en la historia del paciente.',
-          ),
+          canOpenPatientChart
+            ? t(
+                'appointmentCheckedInDirectly',
+                'Se registró la llegada usando la consulta activa. Puede continuar la atención en la historia del paciente.',
+              )
+            : t(
+                'appointmentCheckedInDirectlyStay',
+                'Se registró la llegada usando la consulta activa. La atención continuará desde la historia clínica.',
+              ),
         );
         mutateVisits?.();
         closeModal();
@@ -501,6 +548,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       // Sin parámetros de cola y con un `openedFrom` distinto de
       // 'appointments-check-in', el formulario de inicio de consulta no exige
       // ni crea queue entries (misma vía que 'patient-chart-start-visit').
+      assertCompanionCapabilityForMinor();
       await launchWorkspace2(appointmentsStartVisitWorkspace, {
         patientUuid: patientUuid,
         companionPersonRegistrationWorkspaceName: appointmentsCompanionPersonRegistrationWorkspace,

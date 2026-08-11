@@ -57,8 +57,9 @@ export const PatientAppointmentsActionMenu = ({ appointment, patientUuid }: appo
 
   const handleLaunchCancelAppointmentModal = () => {
     const dispose = showModal(isPatientChart ? 'patient-chart-cancel-appointment-modal' : 'cancel-appointment-modal', {
-      closeCancelModal: () => dispose(),
+      appointment,
       appointmentUuid: appointment.uuid,
+      closeCancelModal: () => dispose(),
     });
   };
 

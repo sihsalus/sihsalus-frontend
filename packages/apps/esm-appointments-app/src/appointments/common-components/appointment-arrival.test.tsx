@@ -4,9 +4,12 @@ import {
   navigate,
   showSnackbar,
   useConfig,
+  usePatient,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import dayjs from 'dayjs';
 
 import { type AppointmentArrivalRule, type ConfigObject, configSchema } from '../../config-schema';
 import {
@@ -37,6 +40,8 @@ vi.mock('./batch-change-appointment-statuses.resources', () => ({
   getActiveVisitsForPatient: vi.fn(),
 }));
 
+const mockUsePatient = vi.mocked(usePatient);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockChangeAppointmentStatus = vi.mocked(changeAppointmentStatus);
 const mockEnsureAppointmentVisitLink = vi.mocked(ensureAppointmentVisitLink);
 const mockGetActiveVisitsForPatient = vi.mocked(getActiveVisitsForPatient);
@@ -152,6 +157,13 @@ function getDirectButton() {
 
 describe('AppointmentArrivalModal', () => {
   beforeEach(() => {
+    mockUserHasAccess.mockReturnValue(true);
+    mockUsePatient.mockReturnValue({
+      patient: { birthDate: '1990-01-01' },
+      isLoading: false,
+      error: null,
+      patientUuid: 'patient-uuid',
+    } as unknown as ReturnType<typeof usePatient>);
     vi.clearAllMocks();
     mockGetAppointmentStatus.mockResolvedValue(AppointmentStatus.SCHEDULED);
     mockEnsureAppointmentVisitLink.mockResolvedValue({ created: false });
@@ -561,6 +573,41 @@ describe('AppointmentArrivalModal', () => {
       to: expectedPatientChartUrl,
       templateParams: { patientUuid: appointment.patient.uuid },
     });
+  });
+
+  it('registers the arrival without navigating when the operator cannot open the patient chart', async () => {
+    mockUserHasAccess.mockImplementation((privilege) => privilege !== 'app:hoja.clinica');
+    mockGetActiveVisitsForPatient.mockResolvedValue(visitsResponse([activeVisit]));
+
+    renderModal();
+    await userEvent.click(getDirectButton());
+
+    await waitFor(() => expect(mockChangeAppointmentStatus).toHaveBeenCalledWith('CheckedIn', appointment.uuid));
+    expect(closeModal).toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('explains the companion block before opening the visit form for a minor without people search access', async () => {
+    mockUserHasAccess.mockImplementation((privilege) => {
+      const privileges = Array.isArray(privilege) ? privilege : [privilege];
+      return !privileges.includes('Get People');
+    });
+    mockUsePatient.mockReturnValue({
+      patient: { birthDate: dayjs().subtract(10, 'year').format('YYYY-MM-DD') },
+      isLoading: false,
+      error: null,
+      patientUuid: 'patient-uuid',
+    } as unknown as ReturnType<typeof usePatient>);
+    mockGetActiveVisitsForPatient.mockResolvedValue(visitsResponse([]));
+
+    renderModal();
+    await userEvent.click(getDirectButton());
+
+    expect(
+      await screen.findByText(/menor de edad y requiere un acompañante/i),
+    ).toBeInTheDocument();
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
   });
 
   it('reuses an active visit for a direct-only arrival rule', async () => {

@@ -3,6 +3,8 @@ import { isVersionSatisfied, openmrsFetch } from '@openmrs/esm-framework';
 import {
   checkModules,
   clearCache,
+  getBackendConnectionErrorMessage,
+  getBackendConnectionErrorStatus,
   hasInvalidDependencies,
   type ResolvedBackendModuleType,
 } from './openmrs-backend-dependencies';
@@ -17,11 +19,20 @@ vi.mock('@openmrs/esm-framework', async () => ({
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockIsVersionSatisfied = vi.mocked(isVersionSatisfied);
 
+function createHttpError(status: number) {
+  return Object.assign(new Error(`Server responded with ${status}`), { response: { status } });
+}
+
 describe('openmrs-backend-dependencies', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     clearCache();
     window.installedModules = [];
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   describe('checkModules', () => {
@@ -241,6 +252,54 @@ describe('openmrs-backend-dependencies', () => {
       expect(result1).toBe(result2); // Same reference
     });
 
+    it('shares an in-flight inventory request between concurrent callers', async () => {
+      mockOpenmrsFetch.mockResolvedValue({
+        data: {
+          results: [{ uuid: 'webservices.rest', version: '2.24.0' }],
+          links: [],
+        },
+      } as unknown as Awaited<ReturnType<typeof openmrsFetch>>);
+      mockIsVersionSatisfied.mockReturnValue(true);
+      window.installedModules = [['@openmrs/esm-test-app', { backendDependencies: { 'webservices.rest': '^2.0.0' } }]];
+
+      const [firstResult, secondResult] = await Promise.all([checkModules(), checkModules()]);
+
+      expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+      expect(firstResult).toBe(secondResult);
+    });
+
+    it('does not let a superseded refresh overwrite the latest inventory', async () => {
+      let resolveFirstRequest: (response: Awaited<ReturnType<typeof openmrsFetch>>) => void = () => {
+        throw new Error('The first backend module request was not started');
+      };
+      const firstResponse = new Promise<Awaited<ReturnType<typeof openmrsFetch>>>((resolve) => {
+        resolveFirstRequest = resolve;
+      });
+      mockOpenmrsFetch.mockReturnValueOnce(firstResponse).mockResolvedValueOnce({
+        data: {
+          results: [{ uuid: 'webservices.rest', version: '3.0.0' }],
+          links: [],
+        },
+      } as unknown as Awaited<ReturnType<typeof openmrsFetch>>);
+      mockIsVersionSatisfied.mockReturnValue(true);
+      window.installedModules = [['@openmrs/esm-test-app', { backendDependencies: { 'webservices.rest': '^2.0.0' } }]];
+
+      const supersededRequest = checkModules();
+      const refreshedResult = await checkModules({ forceRefresh: true });
+      resolveFirstRequest({
+        data: {
+          results: [{ uuid: 'webservices.rest', version: '1.0.0' }],
+          links: [],
+        },
+      } as unknown as Awaited<ReturnType<typeof openmrsFetch>>);
+      await supersededRequest;
+      const cachedResult = await checkModules();
+
+      expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
+      expect(refreshedResult[0].dependencies[0].installedVersion).toBe('3.0.0');
+      expect(cachedResult).toBe(refreshedResult);
+    });
+
     it('should handle paginated backend module responses', async () => {
       const page1Modules = Array.from({ length: 50 }, (_, i) => ({
         uuid: `module-${i}`,
@@ -276,24 +335,83 @@ describe('openmrs-backend-dependencies', () => {
       expect(result[0].dependencies.every((d) => d.type === 'okay')).toBe(true);
     });
 
-    it('should handle fetch errors gracefully by returning empty backend modules', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    it('retries a temporary 503 and resolves against the recovered inventory', async () => {
+      vi.useFakeTimers();
 
-      mockOpenmrsFetch.mockRejectedValue(new Error('Network error'));
-
+      mockOpenmrsFetch.mockRejectedValueOnce(createHttpError(503)).mockResolvedValueOnce({
+        data: {
+          results: [{ uuid: 'webservices.rest', version: '2.24.0' }],
+          links: [],
+        },
+      } as unknown as Awaited<ReturnType<typeof openmrsFetch>>);
+      mockIsVersionSatisfied.mockReturnValue(true);
       window.installedModules = [['@openmrs/esm-test-app', { backendDependencies: { 'webservices.rest': '2.0.0' } }]];
 
-      const result = await checkModules();
+      const resultPromise = checkModules();
+      await vi.runAllTimersAsync();
+      const result = await resultPromise;
 
-      // Error should be logged
+      expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
+      expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+        '/ws/rest/v1/module?v=custom:(uuid,version)',
+        expect.objectContaining({ rejectOnAuthFailure: true }),
+      );
+      expect(result[0].dependencies[0]).toMatchObject({
+        name: 'webservices.rest',
+        type: 'okay',
+      });
+      expect(getBackendConnectionErrorMessage()).toBeNull();
+    });
+
+    it('does not cache a failed fetch as an empty inventory or report false missing modules', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      mockOpenmrsFetch.mockRejectedValueOnce(new Error('Network error')).mockResolvedValueOnce({
+        data: {
+          results: [{ uuid: 'webservices.rest', version: '2.24.0' }],
+          links: [],
+        },
+      } as unknown as Awaited<ReturnType<typeof openmrsFetch>>);
+      mockIsVersionSatisfied.mockReturnValue(true);
+      window.installedModules = [['@openmrs/esm-test-app', { backendDependencies: { 'webservices.rest': '2.0.0' } }]];
+
+      await expect(checkModules()).rejects.toThrow('Network error');
+
+      expect(getBackendConnectionErrorMessage()).toContain('Network error');
+      expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+
+      const recoveredResult = await checkModules();
+
+      expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
+      expect(recoveredResult[0].dependencies[0].type).toBe('okay');
+      expect(getBackendConnectionErrorMessage()).toBeNull();
       expect(consoleErrorSpy).toHaveBeenCalled();
+    });
 
-      // Should treat all dependencies as missing when fetch fails
-      expect(result).toHaveLength(1);
-      expect(result[0].dependencies).toHaveLength(1);
-      expect(result[0].dependencies[0].type).toBe('missing');
+    it('bounds temporary gateway retries', async () => {
+      vi.useFakeTimers();
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      mockOpenmrsFetch.mockRejectedValue(createHttpError(503));
+      window.installedModules = [['@openmrs/esm-test-app', { backendDependencies: { 'webservices.rest': '2.0.0' } }]];
 
-      consoleErrorSpy.mockRestore();
+      const resultPromise = checkModules();
+      const rejection = expect(resultPromise).rejects.toThrow('Server responded with 503');
+      await vi.runAllTimersAsync();
+      await rejection;
+
+      expect(mockOpenmrsFetch).toHaveBeenCalledTimes(3);
+      expect(getBackendConnectionErrorStatus()).toBe(503);
+    });
+
+    it.each([401, 403, 500])('does not retry HTTP %s and preserves its status for feedback', async (status) => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      mockOpenmrsFetch.mockRejectedValue(createHttpError(status));
+      window.installedModules = [['@openmrs/esm-test-app', { backendDependencies: { 'webservices.rest': '2.0.0' } }]];
+
+      await expect(checkModules()).rejects.toThrow(`Server responded with ${status}`);
+
+      expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+      expect(getBackendConnectionErrorStatus()).toBe(status);
     });
 
     it('should warn when reaching pagination limit', async () => {

@@ -9352,6 +9352,7 @@ __metadata:
     "@openmrs/esm-framework": "workspace:*"
     "@sihsalus/esm-audit-logger": "*"
     react: ">=18.0.0"
+    react-i18next: 16.x
   languageName: unknown
   linkType: soft
 

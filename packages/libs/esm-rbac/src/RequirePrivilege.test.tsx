@@ -46,8 +46,12 @@ describe('RequirePrivilege', () => {
     );
 
     expect(screen.queryByText('Protected content')).toBeNull();
-    expect(screen.getByText('Acceso denegado')).toBeTruthy();
-    expect(screen.getByText('Necesita el privilegio "Read Fua" para acceder a esta sección.')).toBeTruthy();
+    expect(screen.getByText('Sección no disponible para su usuario')).toBeTruthy();
+    // The operator-facing copy stays task-oriented: the privilege identifier is
+    // only exposed to support through the data attribute.
+    expect(screen.queryByText(/Read Fua/)).toBeNull();
+    expect(screen.getByText(/solicite el acceso al administrador/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /volver/i })).toBeTruthy();
   });
 
   it('can hide unauthorized content completely', () => {

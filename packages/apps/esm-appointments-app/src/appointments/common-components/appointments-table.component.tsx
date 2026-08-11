@@ -334,7 +334,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
             <div className={styles.toolbar}>
               <Search
                 className={styles.searchbar}
-                labelText=""
+                labelText={t('filterTable', 'Filter table')}
                 placeholder={t('filterTable', 'Filter table')}
                 onChange={(event) => {
                   setSearchString(event.target.value);
@@ -452,9 +452,13 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                                 {canEditAppointment || canMarkMissed || canCancelAppointment ? (
                                   <OverflowMenu
                                     align="left"
-                                    aria-label={t('actions', 'Actions')}
+                                    aria-label={t('actionsForPatient', 'Acciones para {{patient}}', {
+                                      patient: matchingAppointment.patient.name,
+                                    })}
                                     flipped
-                                    iconDescription={t('actions', 'Actions')}
+                                    iconDescription={t('actionsForPatient', 'Acciones para {{patient}}', {
+                                      patient: matchingAppointment.patient.name,
+                                    })}
                                     size={responsiveSize}
                                   >
                                     {canEditAppointment ? (

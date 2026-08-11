@@ -177,9 +177,11 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
             {hasPagination
               ? t('noClinicalHistoryOnThisPage', 'No hay {{displayText}} en esta página.', {
                   displayText: emptyDisplayText,
+                  interpolation: { escapeValue: false },
                 })
               : t('noClinicalHistoryRecorded', 'Este paciente no tiene {{displayText}} registrados.', {
                   displayText: emptyDisplayText,
+                  interpolation: { escapeValue: false },
                 })}
           </p>
         ) : (

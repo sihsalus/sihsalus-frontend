@@ -26,6 +26,10 @@ export const EmptyState: React.FC<EmptyStateProps> = (props) => {
         <p className={styles.content}>
           {t('emptyStateText', 'There are no {{displayText}} to display for this patient', {
             displayText: props.displayText.toLowerCase(),
+            // React escapes interpolated text when rendering it. Disabling the
+            // i18next HTML escaping here prevents safe characters such as "/"
+            // from being displayed as literal entities (for example &#x2F;).
+            interpolation: { escapeValue: false },
           })}
         </p>
         <p className={styles.action}>

@@ -1,5 +1,4 @@
 import routes from './routes.json';
-import { expectKnownGap } from './test-utils/expect-known-gap';
 
 const privileges = {
   homeView: 'app:home.interconsultas',
@@ -49,22 +48,24 @@ describe('interconsultation route and privilege contract', () => {
     expect(modal('interconsulta-detail-modal')).toMatchObject({ privileges: privileges.chartView });
   });
 
-  it('[AC-02][brecha] lets a home-only operator launch dashboard management modals', async () => {
-    await expectKnownGap(() => {
-      for (const name of [
-        'receive-interconsulta-modal',
-        'pickup-interconsulta-modal',
-        'reject-interconsulta-modal',
-        'respond-interconsulta-modal',
-      ]) {
-        expect(modal(name)?.privileges).toContain(privileges.homeEdit);
-      }
-    });
+  it('[AC-02] lets a home-only operator launch dashboard management modals through home destinations', () => {
+    for (const name of [
+      'receive-interconsulta-modal',
+      'pickup-interconsulta-modal',
+      'reject-interconsulta-modal',
+      'respond-interconsulta-modal',
+    ]) {
+      expect(modal(`home-${name}`)).toMatchObject({
+        component: modal(name)?.component,
+        privileges: privileges.homeEdit,
+      });
+    }
   });
 
-  it('[AC-02][brecha] lets a home-only reader open the detail modal', async () => {
-    await expectKnownGap(() => {
-      expect(modal('interconsulta-detail-modal')?.privileges).toContain(privileges.homeView);
+  it('[AC-02] lets a home-only reader open the detail modal through its home destination', () => {
+    expect(modal('home-interconsulta-detail-modal')).toMatchObject({
+      component: modal('interconsulta-detail-modal')?.component,
+      privileges: privileges.homeView,
     });
   });
 });

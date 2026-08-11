@@ -10,7 +10,7 @@ import userEvent from '@testing-library/user-event';
 import { mockSession, mockVisitAlice } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../../config-schema';
-import { serviceQueuesEditPrivilege } from '../../constants';
+import { admissionPrivilege, serviceQueuesEditPrivilege } from '../../constants';
 import { useQueues } from '../../hooks/useQueues';
 import { AddPatientToQueueContext } from '../create-queue-entry.workspace';
 import { useQueueLocations } from '../hooks/useQueueLocations';
@@ -115,6 +115,29 @@ describe('QueueFields', () => {
       'queue-number-attribute-uuid',
       mockVisitAlice.startDatetime,
     );
+  });
+
+  it('shows the default priority as read-only for admission users', async () => {
+    const user = userEvent.setup();
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      user: {
+        ...mockSession.data.user,
+        privileges: [
+          ...mockSession.data.user.privileges,
+          { uuid: 'admission', display: admissionPrivilege, name: admissionPrivilege, links: [] },
+          { uuid: 'queue-edit', display: serviceQueuesEditPrivilege, name: serviceQueuesEditPrivilege, links: [] },
+        ],
+      },
+    });
+
+    render(<QueueFields setCallbacks={vi.fn()} />);
+    await user.selectOptions(screen.getByLabelText('Select a service'), queues[0].uuid);
+
+    const assignedPriority = await screen.findByDisplayValue('High');
+    expect(assignedPriority).toHaveAttribute('readonly');
+    expect(screen.queryByRole('radio', { name: 'High' })).not.toBeInTheDocument();
+    expect(screen.getByText(/prioridad clínica.*triaje/i)).toBeInTheDocument();
   });
 
   it('blocks submission until a service is selected', async () => {

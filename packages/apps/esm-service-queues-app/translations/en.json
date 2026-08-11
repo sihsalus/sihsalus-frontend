@@ -189,6 +189,8 @@
   "previousPage": "Previous page",
   "previousVisit": "Previous visit",
   "priority": "Priority",
+  "assignedPriority": "Assigned priority",
+  "priorityManagedByTriage": "Clinical priority can be updated during triage.",
   "priorityConceptSet": "Priority concept set",
   "priorityConceptSetRequired": "Priority concept set is required",
   "priorityComment": "Priority comment",

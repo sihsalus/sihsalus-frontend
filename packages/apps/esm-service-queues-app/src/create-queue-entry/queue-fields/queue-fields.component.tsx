@@ -22,7 +22,7 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from 're
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../config-schema';
-import { serviceQueuesEditPrivilege } from '../../constants';
+import { admissionPrivilege, serviceQueuesEditPrivilege, vitalsEditPrivilege } from '../../constants';
 import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
 import { useQueues } from '../../hooks/useQueues';
 import { AddPatientToQueueContext } from '../create-queue-entry.workspace';
@@ -78,6 +78,8 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   const { sessionLocation, user } = useSession();
   const sessionLocationUuid = sessionLocation?.uuid;
   const canSelectQueueLocation = userHasAccess(serviceQueuesEditPrivilege, user);
+  const isAdmissionOnly =
+    userHasAccess(admissionPrivilege, user) && !userHasAccess(vitalsEditPrivilege, user);
   const {
     visitQueueNumberAttributeUuid,
     concepts: { defaultStatusConceptUuid, defaultPriorityConceptUuid, emergencyPriorityConceptUuid },
@@ -131,6 +133,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   const priorities = selectedQueue?.allowedPriorities ?? [];
   const statuses = selectedQueue?.allowedStatuses ?? [];
   const [priority, setPriority] = useState('');
+  const selectedPriorityName = priorities.find((allowedPriority) => allowedPriority.uuid === priority)?.display ?? '';
   const [status, setStatus] = useState('');
   const [showValidationErrors, setShowValidationErrors] = useState(false);
   const { mutateQueueEntries } = useMutateQueueEntries();
@@ -507,6 +510,18 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
                 'The selected service does not have any allowed priorities. This is an error in configuration. Please contact your system administrator.',
               )}
             </InlineNotification>
+          ) : isAdmissionOnly ? (
+            <TextInput
+              helperText={t(
+                'priorityManagedByTriage',
+                'La prioridad clínica puede actualizarse durante el triaje.',
+              )}
+              id="priority"
+              labelText={t('assignedPriority', 'Prioridad asignada')}
+              name="priority"
+              readOnly
+              value={selectedPriorityName}
+            />
           ) : priorities.length ? (
             <RadioButtonGroup
               aria-label={t('priority', 'Priority')}

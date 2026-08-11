@@ -18,6 +18,7 @@ export const getStartOfDay = () => dayjs().tz(timeZone).startOf('day').toISOStri
 export const serviceQueuesPrivilege = 'app:home.colasAtencion';
 export const serviceQueuesEditPrivilege = 'app:home.colasAtencion.editar';
 export const serviceQueuesClearPrivilege = 'app:home.colasAtencion.limpiar';
+export const admissionPrivilege = 'app:home.admision';
 export const visitNotesPrivilege = 'app:hoja.clinica.resumenConsulta';
 export const vitalsPrivilege = 'app:hoja.clinica.signosVitales';
 export const vitalsEditPrivilege = 'app:hoja.clinica.signosVitales.editar';

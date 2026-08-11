@@ -189,6 +189,8 @@
   "previousPage": "Página anterior",
   "previousVisit": "Consulta anterior",
   "priority": "Prioridad",
+  "assignedPriority": "Prioridad asignada",
+  "priorityManagedByTriage": "La prioridad clínica puede actualizarse durante el triaje.",
   "priorityConceptSet": "Conjunto de prioridades",
   "priorityConceptSetRequired": "El conjunto de prioridades es obligatorio",
   "priorityComment": "Comentario de prioridad",

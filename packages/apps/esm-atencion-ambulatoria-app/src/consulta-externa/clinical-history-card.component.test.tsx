@@ -98,7 +98,8 @@ describe('ClinicalHistoryCard', () => {
     const card = screen.getByRole('region', { name: defaultProps.title });
     expect(within(card).getByText('Contenido clínico')).toBeInTheDocument();
     expect(card.querySelector('.cds--inline-loading')).toBeInTheDocument();
-    await user.click(within(card).getByRole('button', { name: 'Registrar dato' }));
+    const editingToolbar = within(card).getByRole('toolbar', { name: 'Clinical entry actions' });
+    await user.click(within(editingToolbar).getByRole('button', { name: 'Registrar dato' }));
     expect(onAction).toHaveBeenCalledOnce();
   });
 
@@ -117,6 +118,7 @@ describe('ClinicalHistoryCard', () => {
     );
 
     expect(screen.getByText('Contenido clínico')).toBeInTheDocument();
+    expect(screen.queryByRole('toolbar', { name: 'Clinical entry actions' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Registrar dato' })).not.toBeInTheDocument();
   });
 

@@ -38,9 +38,44 @@
 .historyHeaderActionItems {
   align-items: center;
   display: flex;
-  flex: 1 1 0%;
+  flex-wrap: wrap;
   gap: layout.$spacing-03;
   justify-content: flex-end;
+}
+
+.clinicalEntryToolbar {
+  align-items: center;
+  background-color: $ui-01;
+  border-bottom: 1px solid $ui-03;
+  border-top: 1px solid $ui-03;
+  display: flex;
+  gap: layout.$spacing-05;
+  justify-content: space-between;
+  min-height: 3rem;
+  padding-left: layout.$spacing-05;
+}
+
+.clinicalEntryToolbarLabel {
+  @include type.type-style("label-01");
+  color: $text-02;
+}
+
+@media (max-width: 41.99rem) {
+  .clinicalEntryToolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: layout.$spacing-03;
+    padding: layout.$spacing-04;
+  }
+
+  .historyHeaderActionItems {
+    justify-content: stretch;
+
+    > button {
+      flex: 1 1 auto;
+      max-width: none;
+    }
+  }
 }
 
 .cardBody {

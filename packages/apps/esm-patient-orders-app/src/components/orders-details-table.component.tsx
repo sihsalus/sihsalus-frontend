@@ -724,7 +724,6 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
             }}
             selectedItem={orderTypesToDisplay.find((x) => x.uuid === selectedOrderTypeUuid) ?? orderTypesToDisplay[0]}
             titleText={t('selectOrderType', 'Select order type') + ':'}
-            type="inline"
           />
         </div>
         <div className={styles.dropdownContainer}>
@@ -738,7 +737,6 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
             }}
             selectedItem={priorityFilterOptions.find((x) => x.uuid === priorityFilter) ?? priorityFilterOptions[0]}
             titleText={t('filterOrdersByPriority', 'Filtrar órdenes por prioridad:')}
-            type="inline"
           />
         </div>
         <div className={styles.dropdownContainer}>
@@ -752,7 +750,6 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
             }}
             selectedItem={labsetOptions.find((x) => x.value === selectedLabsetUuid) ?? labsetOptions[0]}
             titleText={t('filterByTestGroup', 'Filtrar por grupo de pruebas:')}
-            type="inline"
           />
         </div>
         <div className={styles.dropdownContainer}>
@@ -766,32 +763,33 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
             }}
             selectedItem={statusFilterOptions.find((x) => x.value === statusFilter) ?? statusFilterOptions[0]}
             titleText={t('filterOrdersByStatus', 'Filtrar órdenes por estado:')}
-            type="inline"
           />
         </div>
-        <span className={styles.rangeLabel}>{t('dateRange', 'Date range')}:</span>
-        <DatePicker
-          datePickerType="range"
-          dateFormat={'d/m/Y'}
-          locale={locale}
-          value={''}
-          onChange={(dates) => {
-            handleDateFilterChange(dates);
-          }}
-        >
-          <DatePickerInput
-            id="startDatePickerInput"
-            data-testid="startDatePickerInput"
-            labelText=""
-            placeholder="dd/mm/yyyy"
-          />
-          <DatePickerInput
-            id="endDatePickerInput"
-            data-testid="endDatePickerInput"
-            labelText=""
-            placeholder="dd/mm/yyyy"
-          />
-        </DatePicker>
+        <div className={styles.dateRangeContainer}>
+          <span className={styles.rangeLabel}>{t('dateRange', 'Date range')}:</span>
+          <DatePicker
+            datePickerType="range"
+            dateFormat={'d/m/Y'}
+            locale={locale}
+            value={''}
+            onChange={(dates) => {
+              handleDateFilterChange(dates);
+            }}
+          >
+            <DatePickerInput
+              id="startDatePickerInput"
+              data-testid="startDatePickerInput"
+              labelText=""
+              placeholder="dd/mm/yyyy"
+            />
+            <DatePickerInput
+              id="endDatePickerInput"
+              data-testid="endDatePickerInput"
+              labelText=""
+              placeholder="dd/mm/yyyy"
+            />
+          </DatePicker>
+        </div>
       </div>
 
       {(() => {

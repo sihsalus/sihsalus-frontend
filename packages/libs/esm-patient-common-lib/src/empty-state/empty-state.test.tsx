@@ -18,6 +18,13 @@ describe('EmptyState', () => {
     expect(screen.getByText(/There are no appointments to display for this patient/i)).toBeInTheDocument();
   });
 
+  it('renders punctuation in the display text without exposing HTML entities', () => {
+    render(<EmptyState headerTitle="SOAP" displayText="physical exam / SOAP records" />);
+
+    expect(screen.getByText(/There are no physical exam \/ SOAP records to display for this patient/i)).toBeInTheDocument();
+    expect(screen.queryByText(/&#x2F;/i)).not.toBeInTheDocument();
+  });
+
   it('renders a link that launches a form in the workspace when the launchForm prop is provided', async () => {
     const user = userEvent.setup();
     const launchForm = vi.fn();

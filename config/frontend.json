@@ -15,7 +15,7 @@
       "encounterTypeUuid": "67a71486-1a54-468f-ac3e-7091a9a79584"
     },
     "providerSchedulingCategoryValidation": {
-      "mode": "warn",
+      "mode": "strict",
       "providerAttributeTypeUuid": "3961cbdd-3240-4b70-99ca-5f63af488b15"
     },
     "appointmentArrivalRules": [

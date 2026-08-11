@@ -79,7 +79,11 @@ import {
   type RecurringPattern,
 } from '../types';
 import Workload from '../workload/workload.component';
-import { type AppointmentCareRoutingIssue, getAppointmentCareRoutingIssue } from './appointment-care-routing';
+import {
+  type AppointmentCareRoutingIssue,
+  filterAppointmentServicesByLocation,
+  getAppointmentCareRoutingIssue,
+} from './appointment-care-routing';
 import {
   isAppointmentIssuedDateAllowed,
   isAppointmentStartDateAllowed,
@@ -94,7 +98,7 @@ import {
   useMutateAppointments,
 } from './appointments-form.resource';
 import styles from './appointments-form.scss';
-import { assessProviderSchedulingCategory } from './provider-scheduling-category';
+import { assessProviderSchedulingCategory, filterProvidersBySchedulingCategory } from './provider-scheduling-category';
 
 const preventInvalidIntegerKey =
   (constraints: PlainNumberInputConstraints) => (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -510,7 +514,11 @@ const AppointmentsForm: React.FC<
       },
     )
     .superRefine((formValues, context) => {
-      const service = availableServices?.find(({ uuid }) => uuid === formValues.selectedServiceUuid);
+      const service = filterAppointmentServicesByLocation({
+        enforceArrivalRouting: enforceAppointmentRouting,
+        selectedLocationUuid: formValues.location,
+        services: availableServices ?? [],
+      }).find(({ uuid }) => uuid === formValues.selectedServiceUuid);
 
       if (formValues.selectedServiceUuid && !service) {
         context.addIssue({
@@ -542,7 +550,11 @@ const AppointmentsForm: React.FC<
     })
     .refine(
       (formValues) => {
-        const service = availableServices?.find(({ uuid }) => uuid === formValues.selectedServiceUuid);
+        const service = filterAppointmentServicesByLocation({
+          enforceArrivalRouting: enforceAppointmentRouting,
+          selectedLocationUuid: formValues.location,
+          services: availableServices ?? [],
+        }).find(({ uuid }) => uuid === formValues.selectedServiceUuid);
         const provider = providers.providers?.find(({ uuid }) => uuid === formValues.provider);
         return !assessProviderSchedulingCategory({
           mode: providerSchedulingCategoryValidation.mode,
@@ -609,28 +621,26 @@ const AppointmentsForm: React.FC<
     },
   });
 
-  const selectedServiceUuid = watch('selectedServiceUuid');
-  const selectedService = availableServices?.find(({ uuid }) => uuid === selectedServiceUuid);
   const selectedLocationUuid = watch('location');
-  const configuredServiceLocationUuid = selectedService?.location?.uuid;
-  const configuredServiceLocation = configuredServiceLocationUuid
-    ? locations.find(({ uuid }) => uuid === configuredServiceLocationUuid)
-    : undefined;
-  const appointmentLocations =
-    selectedService && configuredServiceLocationUuid
-      ? configuredServiceLocation
-        ? [configuredServiceLocation]
-        : []
-      : enforceAppointmentRouting
-        ? []
-        : locations;
-  const isAppointmentLocationLocked =
-    isExternalConsultationProviderCreating ||
-    (enforceAppointmentRouting && !selectedService) ||
-    (Boolean(configuredServiceLocationUuid) && selectedLocationUuid === configuredServiceLocationUuid) ||
-    (enforceAppointmentRouting && Boolean(selectedService) && !configuredServiceLocationUuid);
+  const servicesForSelectedLocation = filterAppointmentServicesByLocation({
+    enforceArrivalRouting: enforceAppointmentRouting,
+    selectedLocationUuid,
+    services: availableServices ?? [],
+  });
+  const selectedServiceUuid = watch('selectedServiceUuid');
+  const selectedService = servicesForSelectedLocation.find(({ uuid }) => uuid === selectedServiceUuid);
+  const appointmentLocations = isExternalConsultationProviderCreating
+    ? locations.filter(({ uuid }) => uuid === session?.sessionLocation?.uuid)
+    : locations;
+  const isAppointmentLocationLocked = isExternalConsultationProviderCreating;
   const selectedProviderUuid = watch('provider');
   const selectedProvider = providers.providers?.find(({ uuid }) => uuid === selectedProviderUuid);
+  const eligibleProviders = filterProvidersBySchedulingCategory({
+    mode: providerSchedulingCategoryValidation.mode,
+    providerAttributeTypeUuid: providerSchedulingCategoryValidation.providerAttributeTypeUuid,
+    providers: providers.providers ?? [],
+    service: selectedService,
+  });
   const isDifferentProviderSelected = Boolean(
     session?.currentProvider?.uuid &&
       selectedProviderUuid &&
@@ -1049,69 +1059,6 @@ const AppointmentsForm: React.FC<
             />
           )}
           <section className={styles.formGroup}>
-            <span className={styles.heading}>{t('service', 'Service')}</span>
-            <ResponsiveWrapper>
-              <Controller
-                name="selectedServiceUuid"
-                control={control}
-                render={({ field: { onBlur, onChange, value, ref } }) => (
-                  <Select
-                    id="service"
-                    invalid={!!errors?.selectedServiceUuid}
-                    invalidText={errors?.selectedServiceUuid?.message}
-                    labelText={<RequiredFieldLabel label={t('selectService', 'Select a service')} />}
-                    onBlur={onBlur}
-                    onChange={(event) => {
-                      const previousServiceUuid = getValues('selectedServiceUuid');
-                      const selectedService = availableServices?.find((service) => service.uuid === event.target.value);
-                      onChange(event);
-
-                      if (context === 'creating') {
-                        const selectedServiceDuration = selectedService?.durationMins;
-                        setValue('duration', selectedServiceDuration ?? DEFAULT_APPOINTMENT_DURATION_MINUTES);
-                      } else if (context === 'editing') {
-                        const previousServiceDuration = availableServices?.find(
-                          (service) => service.uuid === previousServiceUuid,
-                        )?.durationMins;
-                        const selectedServiceDuration = availableServices?.find(
-                          (service) => service.uuid === event.target.value,
-                        )?.durationMins;
-                        if (selectedServiceDuration && previousServiceDuration === getValues('duration')) {
-                          setValue('duration', selectedServiceDuration);
-                        }
-                      }
-
-                      if (!isExternalConsultationProviderCreating && selectedService?.location?.uuid) {
-                        const serviceLocationIsSelectable = locations.some(
-                          ({ uuid }) => uuid === selectedService.location?.uuid,
-                        );
-                        setValue('location', serviceLocationIsSelectable ? selectedService.location.uuid : '', {
-                          shouldDirty: true,
-                          shouldValidate: true,
-                        });
-                      } else if (enforceAppointmentRouting && !isExternalConsultationProviderCreating) {
-                        setValue('location', '', {
-                          shouldDirty: true,
-                          shouldValidate: true,
-                        });
-                      }
-                    }}
-                    ref={ref}
-                    value={value}
-                  >
-                    <SelectItem text={t('chooseService', 'Select service')} value="" />
-                    {availableServices?.length > 0 &&
-                      availableServices.map((service) => (
-                        <SelectItem key={service.uuid} text={service.name} value={service.uuid}>
-                          {service.name}
-                        </SelectItem>
-                      ))}
-                  </Select>
-                )}
-              />
-            </ResponsiveWrapper>
-          </section>
-          <section className={styles.formGroup}>
             <span className={styles.heading}>{t('location', 'UPSS')}</span>
             <ResponsiveWrapper>
               <Controller
@@ -1124,7 +1071,16 @@ const AppointmentsForm: React.FC<
                     invalid={!!errors?.location}
                     invalidText={errors?.location?.message}
                     labelText={<RequiredFieldLabel label={t('selectALocation', 'Select a UPSS')} />}
-                    onChange={onChange}
+                    onChange={(event) => {
+                      const nextLocationUuid = event.target.value;
+                      const locationChanged = nextLocationUuid !== getValues('location');
+                      onChange(event);
+
+                      if (locationChanged) {
+                        setValue('selectedServiceUuid', '', { shouldDirty: true, shouldValidate: true });
+                        setValue('provider', '', { shouldDirty: true, shouldValidate: true });
+                      }
+                    }}
                     onBlur={onBlur}
                     ref={ref}
                     value={value}
@@ -1136,6 +1092,84 @@ const AppointmentsForm: React.FC<
                           {location.display}
                         </SelectItem>
                       ))}
+                  </Select>
+                )}
+              />
+            </ResponsiveWrapper>
+          </section>
+          <section className={styles.formGroup}>
+            <span className={styles.heading}>{t('service', 'Service')}</span>
+            <ResponsiveWrapper>
+              <Controller
+                name="selectedServiceUuid"
+                control={control}
+                render={({ field: { onBlur, onChange, value, ref } }) => (
+                  <Select
+                    disabled={!selectedLocationUuid}
+                    id="service"
+                    invalid={!!errors?.selectedServiceUuid}
+                    invalidText={errors?.selectedServiceUuid?.message}
+                    labelText={<RequiredFieldLabel label={t('selectService', 'Select a service')} />}
+                    onBlur={onBlur}
+                    onChange={(event) => {
+                      const previousServiceUuid = getValues('selectedServiceUuid');
+                      const nextService = servicesForSelectedLocation.find(
+                        (service) => service.uuid === event.target.value,
+                      );
+                      onChange(event);
+
+                      if (context === 'creating') {
+                        setValue(
+                          'duration',
+                          nextService?.durationMins ?? DEFAULT_APPOINTMENT_DURATION_MINUTES,
+                        );
+                      } else if (context === 'editing') {
+                        const previousServiceDuration = availableServices?.find(
+                          (service) => service.uuid === previousServiceUuid,
+                        )?.durationMins;
+                        const selectedServiceDuration = nextService?.durationMins;
+                        if (selectedServiceDuration && previousServiceDuration === getValues('duration')) {
+                          setValue('duration', selectedServiceDuration);
+                        }
+                      }
+
+                      const providersEligibleForNextService = filterProvidersBySchedulingCategory({
+                        mode: providerSchedulingCategoryValidation.mode,
+                        providerAttributeTypeUuid: providerSchedulingCategoryValidation.providerAttributeTypeUuid,
+                        providers: providers.providers ?? [],
+                        service: nextService,
+                      });
+                      const providerIsStillEligible = providersEligibleForNextService.some(
+                        ({ uuid }) => uuid === getValues('provider'),
+                      );
+                      const currentProviderIsEligible = providersEligibleForNextService.some(
+                        ({ uuid }) => uuid === session?.currentProvider?.uuid,
+                      );
+                      if (!providerIsStillEligible && context === 'creating' && currentProviderIsEligible) {
+                        setValue('provider', session.currentProvider.uuid, {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
+                      } else if (!providerIsStillEligible) {
+                        setValue('provider', '', { shouldDirty: true, shouldValidate: true });
+                      }
+                    }}
+                    ref={ref}
+                    value={value}
+                  >
+                    <SelectItem
+                      text={
+                        selectedLocationUuid
+                          ? t('chooseService', 'Select service')
+                          : t('chooseLocationFirst', 'Select a UPSS first')
+                      }
+                      value=""
+                    />
+                    {servicesForSelectedLocation.map((service) => (
+                      <SelectItem key={service.uuid} text={service.name} value={service.uuid}>
+                        {service.name}
+                      </SelectItem>
+                    ))}
                   </Select>
                 )}
               />
@@ -1434,15 +1468,22 @@ const AppointmentsForm: React.FC<
                 control={control}
                 render={({ field: { onChange, value, onBlur } }) => (
                   <ComboBox
+                    disabled={!selectedService}
                     id="provider"
                     invalid={!!errors?.provider}
                     invalidText={errors?.provider?.message}
-                    items={providers?.providers ?? []}
+                    items={eligibleProviders}
                     itemToString={(provider) => provider?.display ?? ''}
                     onChange={({ selectedItem }) => onChange(selectedItem?.uuid ?? '')}
                     onBlur={onBlur}
-                    placeholder={t('chooseProvider', 'Choose a provider')}
-                    selectedItem={providers?.providers?.find((provider) => provider.uuid === value) ?? null}
+                    placeholder={
+                      !selectedService
+                        ? t('chooseServiceFirst', 'Select a service first')
+                        : eligibleProviders.length === 0
+                          ? t('noProvidersForService', 'No providers are enabled for this service')
+                          : t('chooseProvider', 'Choose a provider')
+                    }
+                    selectedItem={eligibleProviders.find((provider) => provider.uuid === value) ?? null}
                     shouldFilterItem={({ inputValue, item }) =>
                       item.display.toLocaleLowerCase().includes((inputValue ?? '').toLocaleLowerCase())
                     }
@@ -1451,6 +1492,18 @@ const AppointmentsForm: React.FC<
                 )}
               />
             </ResponsiveWrapper>
+            {selectedService && !providers.isLoading && eligibleProviders.length === 0 ? (
+              <InlineNotification
+                hideCloseButton
+                kind="warning"
+                lowContrast
+                title={t('noProvidersForServiceTitle', 'No compatible providers')}
+                subtitle={t(
+                  'noProvidersForServiceMessage',
+                  'No healthcare providers are enabled for the selected service. Verify the service or contact an administrator.',
+                )}
+              />
+            ) : null}
             {isDifferentProviderSelected ? (
               <InlineNotification
                 hideCloseButton

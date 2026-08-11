@@ -265,6 +265,7 @@ describe('CodedPersonAttributeField', () => {
       data: [
         { uuid: 'self-funded-concept', display: 'Particular / Sin seguro' },
         { uuid: 'public-concept', display: 'ESSALUD' },
+        { uuid: 'b76a9a24-4905-4132-a215-8a567281852a', display: 'Plan de atención SIS' },
       ],
       isLoading: false,
       error: undefined,
@@ -287,6 +288,7 @@ describe('CodedPersonAttributeField', () => {
 
     expect(screen.getByRole('option', { name: 'Self-financing' })).toHaveValue('self-funded-concept');
     expect(screen.queryByText('Particular / Sin seguro')).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Plan de atención SIS' })).not.toBeInTheDocument();
   });
 
   it('renders customConceptAnswers as select options when they are provided', () => {

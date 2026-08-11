@@ -17,6 +17,9 @@ export const peruInsuranceAccreditationInactiveConceptUuid = '9b3df0a1-0c58-4f55
 export const peruInsuranceAccreditationPendingConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2053';
 // Concepto "SIS" (respuesta del set canónico "Tipo de seguro" 6b932638-…) en sihsalus-content.
 export const peruInsuranceSisConceptUuid = '97c6e901-7570-4ab8-a9c0-9cf2b0f5bc0c';
+// Legacy concept incorrectly exposed as a top-level financer. It represents
+// the SIS plan/product question, not an IAFAS.
+export const peruLegacySisPlanConceptUuid = 'b76a9a24-4905-4132-a215-8a567281852a';
 // Concepto "Producto SIS" (pregunta coded con los planes SIS como respuestas) en sihsalus-content.
 // Sobrescribible vía config `sisVerification.productConceptUuid`.
 export const peruSisProductConceptUuid = '72b9edbf-1ec8-4b1a-8957-b1597aab8757';
@@ -55,8 +58,8 @@ const peruSections = ['filiation', 'bloodData', 'insurance', 'responsiblePerson'
 const peruResponsiblePersonSection = 'responsiblePerson';
 const peruIdentityLookupFieldOrder = ['id', 'reniecLookup'];
 const peruInsuranceFieldOrder = [
-  'sisLookup',
   'insuranceType',
+  'sisLookup',
   'insuranceCode',
   'insuranceAccreditationStatus',
   'insuranceAccreditationCheckedAt',
@@ -217,7 +220,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     id: 'insuranceCode',
     type: 'person attribute',
     uuid: peruInsuranceCodeAttributeTypeUuid,
-    label: 'Código del financiador',
+    label: 'Código de seguro o afiliación',
     showHeading: false,
   },
   {
@@ -389,11 +392,15 @@ function normalizePeruLookupSection(sectionDefinitions: Array<SectionDefinition>
     }
 
     if (section.id === 'insurance') {
+      const fields = ['sisLookup', ...section.fields.filter((field) => !identityLookupFields.has(field))].filter(
+        (field, index, insuranceFields) => insuranceFields.indexOf(field) === index,
+      );
+
       return {
         ...section,
         fields: [
-          'sisLookup',
-          ...section.fields.filter((field) => field !== 'sisLookup' && !identityLookupFields.has(field)),
+          ...peruInsuranceFieldOrder.filter((field) => fields.includes(field)),
+          ...fields.filter((field) => !peruInsuranceFieldOrder.includes(field)),
         ],
       };
     }

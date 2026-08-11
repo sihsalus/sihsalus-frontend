@@ -123,7 +123,7 @@ await choose('religion', 'Católico');
 await page.getByRole('radio', { name: /^O$/ }).check({ force: true });
 await page.getByRole('radio', { name: /^Rh positivo$/i }).check({ force: true });
 
-await choose('insuranceType', 'Plan de atención SIS');
+await choose('insuranceType', 'Seguro Integral de Salud (SIS)');
 await fill('attributes.374b130f-7457-476f-87b1-f182aa77c434', `SIS-${runId}`);
 await choose('insuranceAccreditationStatus', 'Vigente');
 

@@ -250,6 +250,7 @@ describe('PatientQueueHeader service filter', () => {
 
     expect(mockUpdateSelectedQueueLocationUuid).toHaveBeenCalledWith(null);
     expect(mockUpdateSelectedQueueLocationName).toHaveBeenCalledWith(null);
+    expect(mockUpdateSelectedService).toHaveBeenCalledWith(null, 'All');
   });
 
   it('defaults an uninitialized selection to the matching session Queue Location once', () => {

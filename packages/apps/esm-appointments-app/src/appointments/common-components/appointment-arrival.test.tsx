@@ -15,6 +15,7 @@ import { type AppointmentArrivalRule, type ConfigObject, configSchema } from '..
 import {
   appointmentsCompanionPersonRegistrationWorkspace,
   appointmentsCompanionPersonSearchWorkspace,
+  clinicalChartPrivilege,
 } from '../../constants';
 import {
   changeAppointmentStatus,
@@ -575,15 +576,14 @@ describe('AppointmentArrivalModal', () => {
     });
   });
 
-  it('registers the arrival without navigating when the operator cannot open the patient chart', async () => {
-    mockUserHasAccess.mockImplementation((privilege) => privilege !== 'app:hoja.clinica');
-    mockGetActiveVisitsForPatient.mockResolvedValue(visitsResponse([activeVisit]));
+  it('hides direct clinical care from admission users without patient chart access', () => {
+    mockUserHasAccess.mockImplementation((privilege) => privilege !== clinicalChartPrivilege);
 
     renderModal();
-    await userEvent.click(getDirectButton());
 
-    await waitFor(() => expect(mockChangeAppointmentStatus).toHaveBeenCalledWith('CheckedIn', appointment.uuid));
-    expect(closeModal).toHaveBeenCalled();
+    expect(getQueueButton()).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /iniciar atención directamente/i })).not.toBeInTheDocument();
+    expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 

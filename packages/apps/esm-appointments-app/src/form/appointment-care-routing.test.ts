@@ -1,6 +1,6 @@
 import { type AppointmentArrivalRule } from '../config-schema';
 import { type AppointmentService } from '../types';
-import { getAppointmentCareRoutingIssue } from './appointment-care-routing';
+import { filterAppointmentServicesByLocation, getAppointmentCareRoutingIssue } from './appointment-care-routing';
 
 const service = {
   uuid: 'service-uuid',
@@ -23,6 +23,32 @@ const baseInput = {
 };
 
 describe('appointment care routing', () => {
+  it('filters services by the UPSS selected first', () => {
+    const otherService = {
+      ...service,
+      uuid: 'other-service-uuid',
+      location: { uuid: 'other-upss-uuid' },
+    } as AppointmentService;
+
+    expect(
+      filterAppointmentServicesByLocation({
+        enforceArrivalRouting: true,
+        selectedLocationUuid: 'upss-uuid',
+        services: [otherService, service],
+      }),
+    ).toEqual([service]);
+  });
+
+  it('does not expose services before a UPSS is selected', () => {
+    expect(
+      filterAppointmentServicesByLocation({
+        enforceArrivalRouting: true,
+        selectedLocationUuid: '',
+        services: [service],
+      }),
+    ).toEqual([]);
+  });
+
   it('accepts one exact service-UPSS route', () => {
     expect(getAppointmentCareRoutingIssue(baseInput)).toBeNull();
   });

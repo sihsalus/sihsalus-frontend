@@ -7,11 +7,16 @@ import {
   useVisitTypes,
   type Visit,
 } from '@openmrs/esm-framework';
-import { type amPm } from '@openmrs/esm-patient-common-lib';
+import {
+  type amPm,
+  INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+} from '@openmrs/esm-patient-common-lib';
 import { useMemo, useState } from 'react';
 import useSWR from 'swr';
 
 import { useOfflineVisitType } from '../hooks/useOfflineVisitType';
+import { normalizeVisitProvenance } from './visit-provenance.resource';
 
 const addressExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/address';
 const birthAddressMarkerField = 'address15';
@@ -200,7 +205,7 @@ export interface VisitFormCallbacks {
   onVisitCreatedOrUpdated: (visit: Visit) => Promise<unknown>;
 }
 
-interface PersonAttributeResponse {
+export interface PersonAttributeResponse {
   uuid: string;
   value:
     | string
@@ -213,6 +218,11 @@ interface PersonAttributeResponse {
     format: 'org.openmrs.Concept' | string;
   };
 }
+
+export type PersonAttributeVisitAttributeDefault = {
+  personAttributeTypeUuid: string;
+  visitAttributeTypeUuid: string;
+};
 
 export function useVisitFormCallbacks() {
   return useState<Map<string, VisitFormCallbacks>>(new Map());
@@ -250,6 +260,50 @@ export function usePersonAttributesForVisitDefaults(patientUuid?: string) {
       isLoading,
     }),
     [data?.data?.results, error, isLoading],
+  );
+}
+
+function normalizeIdentifierValue(value: string) {
+  return value.trim().toLocaleUpperCase().replace(/[^\p{L}\p{N}]/gu, '');
+}
+
+export function getDefaultVisitAttributesFromPersonAttributes(
+  patient: fhir.Patient | undefined,
+  attributes: Array<PersonAttributeResponse> = [],
+  mappings: Array<PersonAttributeVisitAttributeDefault> = [],
+  configuredVisitAttributeUuids = new Set<string>(),
+) {
+  const identifiers = Array.isArray(patient?.identifier) ? patient.identifier : [];
+  const patientIdentifiers = new Set(
+    identifiers
+      .map(({ value }) => (value ? normalizeIdentifierValue(value) : ''))
+      .filter(Boolean),
+  );
+
+  return mappings.reduce<Record<string, string>>(
+    (defaults, { personAttributeTypeUuid, visitAttributeTypeUuid }) => {
+      if (!configuredVisitAttributeUuids.has(visitAttributeTypeUuid)) {
+        return defaults;
+      }
+
+      const personAttribute = attributes.find(
+        (attribute) => attribute.attributeType.uuid === personAttributeTypeUuid,
+      );
+      const value = personAttribute?.value;
+      const normalizedValue = typeof value === 'object' ? value?.uuid : value?.trim();
+      const isInsuranceNumberMapping =
+        personAttributeTypeUuid === INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID &&
+        visitAttributeTypeUuid === INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID;
+      const duplicatesPatientIdentifier =
+        typeof normalizedValue === 'string' && patientIdentifiers.has(normalizeIdentifierValue(normalizedValue));
+
+      if (normalizedValue && !(isInsuranceNumberMapping && duplicatesPatientIdentifier)) {
+        defaults[visitAttributeTypeUuid] = normalizedValue;
+      }
+
+      return defaults;
+    },
+    {},
   );
 }
 
@@ -308,11 +362,11 @@ export function getDefaultVisitAttributesFromPatientAddress(
     const fields = mapping.addressFields?.length ? mapping.addressFields : defaultAddressFieldsForVisitAttribute;
     const separator = mapping.separator ?? ', ';
     const values = fields
-      .map((field) => getAddressFieldValue(address, field)?.trim())
+      .map((field) => normalizeVisitProvenance(getAddressFieldValue(address, field) ?? ''))
       .filter((value, index, values) => !!value && values.indexOf(value) === index);
 
     if (values.length) {
-      defaults[mapping.visitAttributeTypeUuid] = values.join(separator);
+      defaults[mapping.visitAttributeTypeUuid] = normalizeVisitProvenance(values.join(separator));
     }
 
     return defaults;

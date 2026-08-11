@@ -4,6 +4,7 @@ import { type FetchResponse, openmrsFetch, type Visit } from '@openmrs/esm-frame
 
 import {
   getDefaultVisitAttributesFromPatientAddress,
+  getDefaultVisitAttributesFromPersonAttributes,
   normalizeVisitTimeFormatInput,
   normalizeVisitTimeInput,
   reconcileVisitCreation,
@@ -13,6 +14,8 @@ import {
 } from './visit-form.resource';
 
 const provenanceVisitAttributeTypeUuid = '9b640334-69e7-49a8-bc8d-1a379742f2f1';
+const insuranceCodePersonAttributeTypeUuid = '374b130f-7457-476f-87b1-f182aa77c434';
+const insuranceNumberVisitAttributeTypeUuid = 'aac48226-d143-4274-80e0-264db4e368ee';
 const addressExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/address';
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
@@ -166,7 +169,78 @@ function openmrsAddressExtensions(...extensions: Array<ReturnType<typeof openmrs
   };
 }
 
+describe('getDefaultVisitAttributesFromPersonAttributes', () => {
+  const mapping = [
+    {
+      personAttributeTypeUuid: insuranceCodePersonAttributeTypeUuid,
+      visitAttributeTypeUuid: insuranceNumberVisitAttributeTypeUuid,
+    },
+  ];
+  const configuredAttributeUuids = new Set([insuranceNumberVisitAttributeTypeUuid]);
+
+  it('prefills the insurance number when it is distinct from the patient identifiers', () => {
+    const defaults = getDefaultVisitAttributesFromPersonAttributes(
+      { identifier: [{ value: '99990030' }] } as fhir.Patient,
+      [
+        {
+          uuid: 'insurance-code-attribute',
+          attributeType: { uuid: insuranceCodePersonAttributeTypeUuid, format: 'java.lang.String' },
+          value: 'SIS-452781',
+        },
+      ],
+      mapping,
+      configuredAttributeUuids,
+    );
+
+    expect(defaults).toEqual({ [insuranceNumberVisitAttributeTypeUuid]: 'SIS-452781' });
+  });
+
+  it('does not use a patient identifier as the insurance number', () => {
+    const defaults = getDefaultVisitAttributesFromPersonAttributes(
+      { identifier: [{ value: '99990030' }, { value: '10000KM' }] } as fhir.Patient,
+      [
+        {
+          uuid: 'contaminated-insurance-code-attribute',
+          attributeType: { uuid: insuranceCodePersonAttributeTypeUuid, format: 'java.lang.String' },
+          value: '99-990-030',
+        },
+      ],
+      mapping,
+      configuredAttributeUuids,
+    );
+
+    expect(defaults).toEqual({});
+  });
+});
+
 describe('getDefaultVisitAttributesFromPatientAddress', () => {
+  it('removes document-like values from the prefilled provenance', () => {
+    const patient = {
+      address: [
+        {
+          use: 'home',
+          city: '2-99990030',
+          district: 'MAYNAS',
+          country: 'PERU',
+        },
+      ],
+    } as fhir.Patient;
+
+    const defaults = getDefaultVisitAttributesFromPatientAddress(
+      patient,
+      [
+        {
+          visitAttributeTypeUuid: provenanceVisitAttributeTypeUuid,
+          addressKind: 'residence',
+          addressFields: ['cityVillage', 'countyDistrict', 'country'],
+        },
+      ],
+      new Set([provenanceVisitAttributeTypeUuid]),
+    );
+
+    expect(defaults).toEqual({ [provenanceVisitAttributeTypeUuid]: 'MAYNAS, PERU' });
+  });
+
   it('prefills a visit attribute from the patient residence address', () => {
     const patient = {
       address: [

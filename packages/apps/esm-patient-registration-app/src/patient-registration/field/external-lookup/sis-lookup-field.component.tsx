@@ -279,7 +279,7 @@ export const SisLookupField = () => {
       {
         status: accreditation,
         method: verificationMethod,
-        insuranceCode: affiliateCode.trim() || undefined,
+        insuranceCode: verificationMethod === 'setisis' ? affiliateCode.trim() || undefined : undefined,
         productDisplay: product?.display,
         eessName: eessName.trim() || undefined,
         checkedAt: new Date().toISOString(),
@@ -388,12 +388,6 @@ export const SisLookupField = () => {
               <SelectItem key={answer.uuid} value={answer.uuid} text={answer.display} />
             ))}
           </Select>
-          <TextInput
-            id="sis-manual-affiliate-code"
-            labelText={t('sisManualAffiliateCode', 'Código de afiliado (opcional)')}
-            value={affiliateCode}
-            onChange={(event) => setAffiliateCode(event.target.value)}
-          />
           <TextInput
             id="sis-manual-eess"
             labelText={t('sisManualEess', 'EESS de adscripción (opcional)')}

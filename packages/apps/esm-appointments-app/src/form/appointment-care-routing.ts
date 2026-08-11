@@ -17,6 +17,35 @@ interface AppointmentCareRoutingInput {
   service?: Pick<AppointmentService, 'location' | 'uuid'>;
 }
 
+interface FilterAppointmentServicesByLocationInput {
+  enforceArrivalRouting: boolean;
+  selectedLocationUuid: string;
+  services: ReadonlyArray<AppointmentService>;
+}
+
+/**
+ * Keeps UPSS as the parent selection in the appointment form. Services with a
+ * configured location are only exposed under that location. Legacy services
+ * without one remain available only when the canonical routing contract is
+ * not enabled.
+ */
+export function filterAppointmentServicesByLocation({
+  enforceArrivalRouting,
+  selectedLocationUuid,
+  services,
+}: FilterAppointmentServicesByLocationInput): Array<AppointmentService> {
+  if (!selectedLocationUuid) {
+    return [];
+  }
+
+  return services.filter((service) => {
+    const serviceLocationUuid = service.location?.uuid;
+    return serviceLocationUuid
+      ? serviceLocationUuid === selectedLocationUuid
+      : !enforceArrivalRouting;
+  });
+}
+
 /**
  * Validates the frontend's complete appointment-to-care route.
  *

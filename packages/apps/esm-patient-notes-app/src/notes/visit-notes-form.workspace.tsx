@@ -148,6 +148,7 @@ interface VisitNoteTextAreaRowProps {
 
 interface PrestacionalSearchProps {
   error?: Error;
+  requiredError?: string;
   isLoading: boolean;
   onAddPrestacional: (concept: Concept) => void;
   onSearch: (value: string) => void;
@@ -411,22 +412,35 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
     async (data, context, options) => {
       const zodResult = await zodResolver(visitNoteFormSchema)(data, context, options);
 
+      const requiredErrors: Record<string, { type: string; message: string }> = {};
       if (isPrimaryDiagnosisRequired && selectedPrimaryDiagnoses.length === 0) {
+        requiredErrors.primaryDiagnosisSearch = {
+          type: 'custom',
+          message: t('primaryDiagnosisRequired', 'Choose at least one primary diagnosis'),
+        };
+      }
+      // The benefit code feeds FUA/HIS reporting, so free text without a catalog
+      // selection is not a valid value.
+      if (!selectedCodigoPrestacional) {
+        requiredErrors.codigoPrestacional = {
+          type: 'custom',
+          message: t('codigoPrestacionalRequired', 'Seleccione un código prestacional del catálogo'),
+        };
+      }
+
+      if (Object.keys(requiredErrors).length > 0) {
         return {
           ...zodResult,
           errors: {
             ...zodResult.errors,
-            primaryDiagnosisSearch: {
-              type: 'custom',
-              message: t('primaryDiagnosisRequired', 'Choose at least one primary diagnosis'),
-            },
+            ...requiredErrors,
           },
         };
       }
 
       return zodResult;
     },
-    [visitNoteFormSchema, isPrimaryDiagnosisRequired, selectedPrimaryDiagnoses, t],
+    [visitNoteFormSchema, isPrimaryDiagnosisRequired, selectedPrimaryDiagnoses, selectedCodigoPrestacional, t],
   );
 
   const {
@@ -483,6 +497,11 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
 
   useEffect(() => {
     prefillTextField('codigoPrestacional', clinicalContext?.codigoPrestacional);
+    // Legacy notes carry the code as text only; seeding the search box lets the
+    // operator confirm the catalog concept the mandatory validation now demands.
+    if (clinicalContext?.codigoPrestacional && !selectedCodigoPrestacional) {
+      setCodigoPrestacionalSearchValue((current) => current || clinicalContext.codigoPrestacional);
+    }
     prefillTextField('chiefComplaint', clinicalContext?.chiefComplaint);
     prefillTextField('illnessDuration', clinicalContext?.illnessDuration);
     prefillTextField('biologicalFunctions', clinicalContext?.biologicalFunctions);
@@ -495,7 +514,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
     prefillTextField('prescriptions', clinicalContext?.prescriptions);
     prefillTextField('referral', clinicalContext?.referral);
     prefillTextField('nextAppointment', clinicalContext?.nextAppointment);
-  }, [clinicalContext, prefillTextField]);
+  }, [clinicalContext, prefillTextField, selectedCodigoPrestacional]);
 
   useEffect(() => {
     if (encounter?.diagnoses?.length) {
@@ -632,8 +651,9 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
       setCodigoPrestacionalSearchValue('');
       setSearchPrestacionalResults([]);
       setValue('codigoPrestacional', concept.display, { shouldDirty: true });
+      clearErrors('codigoPrestacional');
     },
-    [setValue],
+    [clearErrors, setValue],
   );
 
   const handleRemovePrestacional = useCallback(() => {
@@ -1243,6 +1263,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
               <Column sm={3}>
                 <PrestacionalSearch
                   error={error}
+                  requiredError={errors?.codigoPrestacional?.message as string | undefined}
                   isLoading={isLoadingPrestacionales}
                   onAddPrestacional={handleAddPrestacional}
                   onSearch={handlePrestacionalSearch}
@@ -1573,6 +1594,7 @@ function DiagnosisSearch({
 
 function PrestacionalSearch({
   error,
+  requiredError,
   isLoading,
   onAddPrestacional,
   onSearch,
@@ -1597,6 +1619,11 @@ function PrestacionalSearch({
           value={value}
         />
       </ResponsiveWrapper>
+      {requiredError ? (
+        <div className={styles.errorMessage} role="alert">
+          {requiredError}
+        </div>
+      ) : null}
       {isLoading ? <Loader /> : null}
       {!isLoading && value && searchResults?.length > 0 ? (
         <ul className={styles.diagnosisList}>

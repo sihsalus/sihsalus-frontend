@@ -12,17 +12,34 @@ describe('resolveAppointmentFormDefaults', () => {
     vi.setSystemTime(new Date(isoLocal));
   }
 
-  it('suggests the next full hour instead of the current time for a new appointment', () => {
+  it('suggests the next half-hour mark instead of the current time for a new appointment', () => {
     atSystemTime('2026-08-11T10:20:00');
+
+    const defaults = resolveAppointmentFormDefaults(undefined, undefined, undefined);
+
+    expect(defaults.defaultAppointmentStartTime).toBe('10:30');
+    expect(defaults.defaultTimeFormat).toBe('AM');
+    expect(dayjs(defaults.defaultStartDate).format('YYYY-MM-DD')).toBe('2026-08-11');
+  });
+
+  it('rolls to the next hour when past the half-hour mark', () => {
+    atSystemTime('2026-08-11T10:35:00');
 
     const defaults = resolveAppointmentFormDefaults(undefined, undefined, undefined);
 
     expect(defaults.defaultAppointmentStartTime).toBe('11:00');
     expect(defaults.defaultTimeFormat).toBe('AM');
-    expect(dayjs(defaults.defaultStartDate).format('YYYY-MM-DD')).toBe('2026-08-11');
   });
 
-  it('suggests noon as PM when the next full hour is 12:00', () => {
+  it('always suggests a strictly later time, even on an exact boundary', () => {
+    atSystemTime('2026-08-11T10:00:00');
+
+    const defaults = resolveAppointmentFormDefaults(undefined, undefined, undefined);
+
+    expect(defaults.defaultAppointmentStartTime).toBe('10:30');
+  });
+
+  it('suggests noon as PM when the next half-hour mark is 12:00', () => {
     atSystemTime('2026-08-11T11:35:00');
 
     const defaults = resolveAppointmentFormDefaults(undefined, undefined, undefined);
@@ -31,8 +48,8 @@ describe('resolveAppointmentFormDefaults', () => {
     expect(defaults.defaultTimeFormat).toBe('PM');
   });
 
-  it('moves the suggested date to tomorrow when the next full hour crosses midnight', () => {
-    atSystemTime('2026-08-11T23:30:00');
+  it('moves the suggested date to tomorrow when the next half-hour mark crosses midnight', () => {
+    atSystemTime('2026-08-11T23:45:00');
 
     const defaults = resolveAppointmentFormDefaults(undefined, undefined, undefined);
 
@@ -42,13 +59,13 @@ describe('resolveAppointmentFormDefaults', () => {
     expect(defaults.defaultStartDateText).toBe(dayjs('2026-08-12').format('DD/MM/YYYY'));
   });
 
-  it('keeps the calendar-selected date while still suggesting the next full hour', () => {
+  it('keeps the calendar-selected date while still suggesting the next half-hour mark', () => {
     atSystemTime('2026-08-11T10:20:00');
 
     const defaults = resolveAppointmentFormDefaults(undefined, undefined, '2026-08-20T00:00:00');
 
     expect(dayjs(defaults.defaultStartDate).format('YYYY-MM-DD')).toBe('2026-08-20');
-    expect(defaults.defaultAppointmentStartTime).toBe('11:00');
+    expect(defaults.defaultAppointmentStartTime).toBe('10:30');
   });
 
   it('preserves the stored time when editing an existing appointment', () => {

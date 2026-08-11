@@ -275,10 +275,11 @@ export function resolveAppointmentFormDefaults(
 ): AppointmentFormDefaults {
   const editedTimeFormat: 'AM' | 'PM' = new Date(appointment?.startDateTime).getHours() >= 12 ? 'PM' : 'AM';
   // A new appointment defaulting to the current time is already in the past by the
-  // time the operator saves, so suggest the next full hour instead. Crossing
-  // midnight moves the suggested date forward with it.
-  const nextFullHour = dayjs().add(1, 'hour').startOf('hour');
-  const suggestedTimeFormat: 'AM' | 'PM' = nextFullHour.hour() >= 12 ? 'PM' : 'AM';
+  // time the operator saves, so suggest the next half-hour mark (:00 or :30)
+  // instead. Crossing midnight moves the suggested date forward with it.
+  const now = dayjs();
+  const suggestedStart = now.startOf('minute').add(30 - (now.minute() % 30), 'minute');
+  const suggestedTimeFormat: 'AM' | 'PM' = suggestedStart.hour() >= 12 ? 'PM' : 'AM';
 
   return {
     defaultTimeFormat: appointment?.startDateTime ? editedTimeFormat : suggestedTimeFormat,
@@ -286,17 +287,17 @@ export function resolveAppointmentFormDefaults(
       ? new Date(appointment.startDateTime)
       : selectedDate
         ? new Date(selectedDate)
-        : nextFullHour.toDate(),
+        : suggestedStart.toDate(),
     defaultEndDate: recurringPattern?.endDate ? new Date(recurringPattern.endDate) : null,
     defaultEndDateText: recurringPattern?.endDate ? dayjs(new Date(recurringPattern.endDate)).format(dateFormat) : '',
     defaultStartDateText: appointment?.startDateTime
       ? dayjs(new Date(appointment.startDateTime)).format(dateFormat)
       : selectedDate
         ? dayjs(selectedDate).format(dateFormat)
-        : nextFullHour.format(dateFormat),
+        : suggestedStart.format(dateFormat),
     defaultAppointmentStartTime: appointment?.startDateTime
       ? dayjs(new Date(appointment.startDateTime)).format('hh:mm')
-      : nextFullHour.format('hh:mm'),
+      : suggestedStart.format('hh:mm'),
     defaultDuration:
       appointment?.startDateTime && appointment?.endDateTime
         ? dayjs(appointment.endDateTime).diff(dayjs(appointment.startDateTime), 'minutes')

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueueEntries } from '../hooks/useQueueEntries';
 import useQueueStatuses from '../hooks/useQueueStatuses';
-import { updateSelectedQueueStatus, useServiceQueuesStore } from '../store/store';
+import { updateSelectedQueueStatus, updateSelectedService, useServiceQueuesStore } from '../store/store';
 import { useQueueWorkflowMetadata } from '../triage-workflow/triage-workflow.resource';
 import { useColumns } from './cells/columns.resource';
 import QueueTable from './queue-table.component';
@@ -175,7 +175,20 @@ function QueueTableSection() {
               size={isDesktop(layout) ? 'sm' : 'lg'}
               titleText={t('triageStatus', 'Triaje')}
               hideLabel
-              onChange={({ selectedItem }) => selectedItem && setTriageFilter(selectedItem.id)}
+              onChange={({ selectedItem }) => {
+                if (!selectedItem) {
+                  return;
+                }
+
+                setTriageFilter(selectedItem.id);
+                if (selectedItem.id === 'completed' && selectedServiceUuid) {
+                  // Once triage is completed, the patient is transferred from the
+                  // triage service to the clinical queue for their appointment.
+                  // Keeping the previous service constraint would exclude that
+                  // active destination entry before this client-side filter runs.
+                  updateSelectedService(null, t('all', 'All'));
+                }
+              }}
             />
           </div>
         </>

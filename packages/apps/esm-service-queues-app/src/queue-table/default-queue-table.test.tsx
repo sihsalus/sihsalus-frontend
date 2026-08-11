@@ -19,7 +19,7 @@ import { useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations
 import { useQueueEntries } from '../hooks/useQueueEntries';
 import useQueueStatuses from '../hooks/useQueueStatuses';
 import DefaultQueueTable from '../queue-table/default-queue-table.component';
-import { updateSelectedQueueStatus, useServiceQueuesStore } from '../store/store';
+import { updateSelectedQueueStatus, updateSelectedService, useServiceQueuesStore } from '../store/store';
 import { useQueueWorkflowMetadata } from '../triage-workflow/triage-workflow.resource';
 
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
@@ -29,6 +29,7 @@ const mockUseQueueRooms = vi.mocked(useQueueRooms);
 const mockUseSession = vi.mocked(useSession);
 const mockUseQueueStatuses = vi.mocked(useQueueStatuses);
 const mockUpdateSelectedQueueStatus = vi.mocked(updateSelectedQueueStatus);
+const mockUpdateSelectedService = vi.mocked(updateSelectedService);
 const mockUseServiceQueuesStore = vi.mocked(useServiceQueuesStore);
 const mockUseQueueWorkflowMetadata = vi.mocked(useQueueWorkflowMetadata);
 
@@ -53,6 +54,7 @@ vi.mock('../hooks/useQueueStatuses', () => ({
 
 vi.mock('../store/store', () => ({
   updateSelectedQueueStatus: vi.fn(),
+  updateSelectedService: vi.fn(),
   useServiceQueuesStore: vi.fn(),
 }));
 
@@ -366,6 +368,35 @@ describe('DefaultQueueTable', () => {
 
     expect(screen.getByRole('link', { name: /Alice Johnson/i })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Brian Johnson/i })).not.toBeInTheDocument();
+  });
+
+  it('clears the stale service constraint when showing completed triage patients', async () => {
+    const user = userEvent.setup();
+    mockUseServiceQueuesStore.mockReturnValue({
+      queueLocationSelectionInitialized: true,
+      selectedServiceUuid: 'triage-service-uuid',
+      selectedServiceDisplay: 'Triaje',
+      selectedQueueLocationUuid: null,
+      selectedQueueStatusUuid: null,
+      selectedAppointmentStatus: '',
+      selectedQueueRoomTimestamp: new Date(),
+      isPermanentProviderQueueRoom: false,
+    });
+    mockUseQueueEntries.mockReturnValue({
+      queueEntries: [],
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+      totalCount: 0,
+    });
+
+    rendeDefaultQueueTable();
+
+    await user.click(screen.getByRole('combobox', { name: /triaje|triage/i }));
+    await user.click(screen.getByRole('option', { name: /realizado|completed/i }));
+
+    expect(mockUpdateSelectedService).toHaveBeenCalledWith(null, 'All');
   });
 });
 

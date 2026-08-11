@@ -15,7 +15,7 @@ import { isVisitLocation, useQueueLocations } from '../create-queue-entry/hooks/
 import { useQueueEntries } from '../hooks/useQueueEntries';
 import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
 import PatientQueueHeader from '../patient-queue-header/patient-queue-header.component';
-import { canEditServiceQueues } from '../permissions';
+import { canCreateQueueEntries } from '../permissions';
 import { useColumns } from '../queue-table/cells/columns.resource';
 import QueueTable from '../queue-table/queue-table.component';
 import styles from '../queue-table/queue-table.scss';
@@ -44,7 +44,7 @@ const QueueTablesForAllStatuses: React.FC<QueueTablesForAllStatusesProps> = ({
     'Load selected queue',
   );
   const session = useSession();
-  const canEdit = canEditServiceQueues(session?.user);
+  const canEdit = canCreateQueueEntries(session?.user);
   const { queueLocations, isLoading: isLoadingQueueLocations, error: queueLocationsError } = useQueueLocations();
   const selectedQueueLocationUuid = selectedQueue?.location?.uuid;
   const selectedQueueLocation = selectedQueueLocationUuid

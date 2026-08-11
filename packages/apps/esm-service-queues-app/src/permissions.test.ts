@@ -1,6 +1,8 @@
 import { type LoggedInUser } from '@openmrs/esm-framework';
 import {
+  canAssignProviderToQueueRoom,
   canClearServiceQueueEntries,
+  canCreateQueueEntries,
   canEditServiceQueues,
   canManageServiceQueueCatalog,
   canManageServiceQueueRoomCatalog,
@@ -22,8 +24,48 @@ describe('canEditServiceQueues', () => {
     expect(canEditServiceQueues(userWithPrivileges(['app:home.colasAtencion'], ['Consulta Externa']))).toBe(false);
   });
 
-  it('allows users who have the dedicated queue edit privilege', () => {
-    expect(canEditServiceQueues(userWithPrivileges(['app:home.colasAtencion.editar']))).toBe(true);
+  it('does not offer entry actions on the app privilege alone: their modals also demand the native queue privileges', () => {
+    expect(canEditServiceQueues(userWithPrivileges(['app:home.colasAtencion.editar']))).toBe(false);
+  });
+
+  it('allows entry actions with the edit privilege plus every native dependency of their modals', () => {
+    expect(
+      canEditServiceQueues(
+        userWithPrivileges(['app:home.colasAtencion.editar', 'Get Queue Entries', 'Get Queues', 'Manage Queue Entries']),
+      ),
+    ).toBe(true);
+  });
+
+  it('requires the full patient-and-visit set before offering to add someone to a queue', () => {
+    expect(
+      canCreateQueueEntries(
+        userWithPrivileges(['app:home.colasAtencion.editar', 'Get Queue Entries', 'Get Queues', 'Manage Queue Entries']),
+      ),
+    ).toBe(false);
+    expect(
+      canCreateQueueEntries(
+        userWithPrivileges([
+          'app:home.colasAtencion.editar',
+          'Get Patients',
+          'Get Locations',
+          'Get Visits',
+          'Edit Visits',
+          'Get Visit Attribute Types',
+          'Get Queue Entries',
+          'Get Queues',
+          'Manage Queue Entries',
+        ]),
+      ),
+    ).toBe(true);
+  });
+
+  it('scopes provider room assignment to the room privileges its modal demands', () => {
+    expect(canAssignProviderToQueueRoom(userWithPrivileges(['app:home.colasAtencion.editar']))).toBe(false);
+    expect(
+      canAssignProviderToQueueRoom(
+        userWithPrivileges(['app:home.colasAtencion.editar', 'Get Queue Rooms', 'Manage Queue Rooms']),
+      ),
+    ).toBe(true);
   });
 
   it('does not infer queue catalog management from the generic edit privilege', () => {

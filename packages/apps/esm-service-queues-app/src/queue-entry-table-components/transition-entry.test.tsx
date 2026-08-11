@@ -25,6 +25,9 @@ describe('TransitionMenu', () => {
         privileges: [
           ...mockSession.data.user.privileges,
           { display: 'app:home.colasAtencion.editar', name: 'app:home.colasAtencion.editar' },
+          { display: 'Get Queue Entries', name: 'Get Queue Entries' },
+          { display: 'Get Queues', name: 'Get Queues' },
+          { display: 'Manage Queue Entries', name: 'Manage Queue Entries' },
         ],
       },
     } as ReturnType<typeof useSession>);

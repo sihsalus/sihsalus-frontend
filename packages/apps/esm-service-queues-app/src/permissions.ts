@@ -2,8 +2,31 @@ import { type LoggedInUser, userHasAccess, useSession } from '@openmrs/esm-frame
 import type { ReactNode } from 'react';
 import { serviceQueuesClearPrivilege, serviceQueuesEditPrivilege } from './constants';
 
+/**
+ * Each capability lists everything its route destinations demand, so an action
+ * is only offered when the modal or workspace behind it will actually open.
+ * Checking less than that lets the operator click into a dead end.
+ */
+const queueEntryActionPrivileges = [
+  serviceQueuesEditPrivilege,
+  'Get Queue Entries',
+  'Get Queues',
+  'Manage Queue Entries',
+];
+const queueEntryCreationPrivileges = [
+  serviceQueuesEditPrivilege,
+  'Get Patients',
+  'Get Locations',
+  'Get Visits',
+  'Edit Visits',
+  'Get Visit Attribute Types',
+  'Get Queue Entries',
+  'Get Queues',
+  'Manage Queue Entries',
+];
 const queueCatalogPrivileges = [serviceQueuesEditPrivilege, 'Get Queues', 'Manage Queues'];
 const queueRoomCatalogPrivileges = [serviceQueuesEditPrivilege, 'Get Queue Rooms', 'Get Queues', 'Manage Queue Rooms'];
+const queueProviderRoomPrivileges = [serviceQueuesEditPrivilege, 'Get Queue Rooms', 'Manage Queue Rooms'];
 const queueClearPrivileges = [
   serviceQueuesEditPrivilege,
   serviceQueuesClearPrivilege,
@@ -17,7 +40,11 @@ function userHasAllAccess(privileges: Array<string>, user?: LoggedInUser): boole
 }
 
 export function canEditServiceQueues(user?: LoggedInUser): boolean {
-  return Boolean(user && userHasAccess(serviceQueuesEditPrivilege, user));
+  return userHasAllAccess(queueEntryActionPrivileges, user);
+}
+
+export function canCreateQueueEntries(user?: LoggedInUser): boolean {
+  return userHasAllAccess(queueEntryCreationPrivileges, user);
 }
 
 export function canManageServiceQueueCatalog(user?: LoggedInUser): boolean {
@@ -28,6 +55,10 @@ export function canManageServiceQueueRoomCatalog(user?: LoggedInUser): boolean {
   return userHasAllAccess(queueRoomCatalogPrivileges, user);
 }
 
+export function canAssignProviderToQueueRoom(user?: LoggedInUser): boolean {
+  return userHasAllAccess(queueProviderRoomPrivileges, user);
+}
+
 export function canClearServiceQueueEntries(user?: LoggedInUser): boolean {
   return userHasAllAccess(queueClearPrivileges, user);
 }
@@ -35,6 +66,11 @@ export function canClearServiceQueueEntries(user?: LoggedInUser): boolean {
 export function CanEditServiceQueues({ children }: { children: ReactNode }) {
   const session = useSession();
   return canEditServiceQueues(session?.user) ? children : null;
+}
+
+export function CanCreateQueueEntries({ children }: { children: ReactNode }) {
+  const session = useSession();
+  return canCreateQueueEntries(session?.user) ? children : null;
 }
 
 export function CanManageServiceQueueCatalog({ children }: { children: ReactNode }) {

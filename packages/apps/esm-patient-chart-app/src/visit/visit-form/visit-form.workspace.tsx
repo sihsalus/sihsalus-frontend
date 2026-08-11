@@ -81,6 +81,7 @@ import {
   createVisitAttribute,
   deleteVisitAttribute,
   getDefaultVisitAttributesFromPatientAddress,
+  getDefaultVisitAttributesFromPersonAttributes,
   getVisitAttributes,
   normalizeVisitTimeFormatInput,
   normalizeVisitTimeInput,
@@ -544,25 +545,12 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
     function getDefaultVisitAttributes() {
       const configuredVisitAttributeUuids = new Set(config.visitAttributeTypes?.map(({ uuid }) => uuid));
-      const personAttributeDefaults = (config.defaultVisitAttributesFromPersonAttributes ?? []).reduce<
-        Record<string, string>
-      >((defaults, { personAttributeTypeUuid, visitAttributeTypeUuid }) => {
-        if (!configuredVisitAttributeUuids.has(visitAttributeTypeUuid)) {
-          return defaults;
-        }
-
-        const personAttribute = personAttributesForVisitDefaults.find(
-          (attribute) => attribute.attributeType.uuid === personAttributeTypeUuid,
-        );
-        const value = personAttribute?.value;
-        const normalizedValue = typeof value === 'object' ? value?.uuid : value;
-
-        if (normalizedValue) {
-          defaults[visitAttributeTypeUuid] = normalizedValue;
-        }
-
-        return defaults;
-      }, {});
+      const personAttributeDefaults = getDefaultVisitAttributesFromPersonAttributes(
+        patient,
+        personAttributesForVisitDefaults,
+        config.defaultVisitAttributesFromPersonAttributes,
+        configuredVisitAttributeUuids,
+      );
       const addressDefaults = getDefaultVisitAttributesFromPatientAddress(
         patient,
         config.defaultVisitAttributesFromPatientAddress,

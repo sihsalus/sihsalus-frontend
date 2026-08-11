@@ -492,7 +492,6 @@ describe('SisLookupField', () => {
     await user.click(screen.getByRole('radio', { name: 'Vigente' }));
     await screen.findByRole('option', { name: 'SIS Para Todos' });
     await user.selectOptions(screen.getByLabelText(/producto sis/i), 'sis-para-todos-uuid');
-    await user.type(screen.getByLabelText(/código de afiliado/i), 'SIS-11112222');
     await user.type(screen.getByLabelText(/eess de adscripción/i), 'C.S. San Juan');
     await user.click(screen.getByRole('button', { name: /aplicar al formulario/i }));
 
@@ -511,9 +510,9 @@ describe('SisLookupField', () => {
       expect.stringMatching(checkedAtIsoPattern),
       false,
     );
-    expect(setFieldValue).toHaveBeenCalledWith(
+    expect(setFieldValue).not.toHaveBeenCalledWith(
       `attributes.${peruInsuranceCodeAttributeTypeUuid}`,
-      'SIS-11112222',
+      expect.anything(),
       false,
     );
     expect(setFieldValue).toHaveBeenCalledWith(
@@ -573,7 +572,7 @@ describe('SisLookupField', () => {
     await user.click(screen.getByRole('button', { name: /consultar sis/i }));
 
     expect(await screen.findByRole('radio', { name: 'Vigente' })).toBeChecked();
-    expect(screen.getByLabelText(/código de afiliado/i)).toHaveValue('SIS-12345678');
+    expect(screen.queryByLabelText(/código de afiliado/i)).not.toBeInTheDocument();
     expect(setFieldValue).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole('button', { name: /aplicar al formulario/i }));

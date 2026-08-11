@@ -27,8 +27,8 @@ describe('getEffectiveRegistrationConfig', () => {
 
     expect(identityLookup?.fields).toEqual(['id', 'reniecLookup']);
     expect(insurance?.fields).toEqual([
-      'sisLookup',
       'insuranceType',
+      'sisLookup',
       'insuranceCode',
       'insuranceAccreditationStatus',
       'insuranceAccreditationCheckedAt',
@@ -154,6 +154,7 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(fieldsById.insuranceType.answerConceptSetUuid).toBe('6b932638-242e-49ef-8ba7-0ae87199835c');
     expect(fieldsById.insuranceType.customConceptAnswers).toBeUndefined();
     expect(fieldsById.insuranceType.label).toBe('Financiador');
+    expect(fieldsById.insuranceCode.label).toBe('Código de seguro o afiliación');
     expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.name).toBe('Financiador');
     expect(fieldsById.rhFactor.customConceptAnswers).toEqual([
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2021', label: 'Rh positivo' },
@@ -164,7 +165,7 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(config.sectionDefinitions.find((section) => section.id === 'identityLookup')?.fields).not.toContain(
       'sisLookup',
     );
-    expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.fields[0]).toBe('sisLookup');
+    expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.fields[0]).toBe('insuranceType');
     expect(config.fieldConfigurations.phone.personAttributeUuid).toBe(peruPhoneAttributeTypeUuid);
     expect(config.fieldConfigurations.phone.placeholder).toBe('012345678');
     expect(config.fieldConfigurations.phone.validation?.matches).toBe('^(?:(?:\\+51)?[1-8][0-9]{7}|0[1-8][0-9]{7})$');

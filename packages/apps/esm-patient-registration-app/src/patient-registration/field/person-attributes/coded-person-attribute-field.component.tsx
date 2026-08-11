@@ -6,6 +6,7 @@ import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../../../constants';
 import { type PersonAttributeTypeResponse } from '../../patient-registration.types';
+import { peruLegacySisPlanConceptUuid } from '../../peru-registration-config';
 import { isMissingConceptError, useConceptAnswers } from '../field.resource';
 import styles from './../field.scss';
 
@@ -60,13 +61,15 @@ export function CodedPersonAttributeField({
           .map((answer) => ({ ...answer, label: answer.display }))
           .sort((a, b) => a.label.localeCompare(b.label));
 
-    return availableAnswers.map((answer) => ({
-      ...answer,
-      label:
-        id === 'insuranceType' && /^particular\s*\/\s*sin seguro$/i.test(answer.label ?? '')
-          ? t('selfFinancing', 'Self-financing')
-          : answer.label,
-    }));
+    return availableAnswers
+      .filter((answer) => id !== 'insuranceType' || answer.uuid !== peruLegacySisPlanConceptUuid)
+      .map((answer) => ({
+        ...answer,
+        label:
+          id === 'insuranceType' && /^particular\s*\/\s*sin seguro$/i.test(answer.label ?? '')
+            ? t('selfFinancing', 'Self-financing')
+            : answer.label,
+      }));
   }, [conceptAnswers, customConceptAnswers, hasCustomConceptAnswers, id, t]);
 
   const fieldName = `attributes.${personAttributeType.uuid}`;

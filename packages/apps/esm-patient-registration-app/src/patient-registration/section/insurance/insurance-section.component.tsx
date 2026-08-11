@@ -9,6 +9,9 @@ import {
   peruInsuranceAccreditationInactiveConceptUuid,
   peruInsuranceAccreditationPendingConceptUuid,
   peruInsuranceAccreditationStatusAttributeTypeUuid,
+  peruInsuranceSisConceptUuid,
+  peruInsuranceTypeAttributeTypeUuid,
+  peruLegacySisPlanConceptUuid,
 } from '../../peru-registration-config';
 import styles from '../section.scss';
 
@@ -17,6 +20,9 @@ export interface InsuranceSectionProps {
 }
 
 const insuranceAccreditationCheckedAtField = 'insuranceAccreditationCheckedAt';
+const insuranceAccreditationStatusField = 'insuranceAccreditationStatus';
+const insuranceCodeField = 'insuranceCode';
+const sisLookupField = 'sisLookup';
 /**
  * Estados en los que la fecha de verificación tiene sentido. «Pendiente» también
  * la conserva: es el valor que toma la verificación sin conexión, y saber *cuándo*
@@ -31,9 +37,12 @@ const insuranceAccreditationDateVisibleStatuses = new Set([
 
 export const InsuranceSection = ({ sectionDefinition }: InsuranceSectionProps) => {
   const registrationContext = useContext(PatientRegistrationContext);
+  const insuranceType = registrationContext?.values?.attributes?.[peruInsuranceTypeAttributeTypeUuid];
+  const isSisFinancer = insuranceType === peruInsuranceSisConceptUuid || insuranceType === peruLegacySisPlanConceptUuid;
   const accreditationStatus =
     registrationContext?.values?.attributes?.[peruInsuranceAccreditationStatusAttributeTypeUuid];
-  const shouldShowAccreditationDate = insuranceAccreditationDateVisibleStatuses.has(accreditationStatus ?? '');
+  const shouldShowAccreditationDate =
+    isSisFinancer && insuranceAccreditationDateVisibleStatuses.has(accreditationStatus ?? '');
   const accreditationCheckedAt =
     registrationContext?.values?.attributes?.[peruInsuranceAccreditationCheckedAtAttributeTypeUuid];
 
@@ -47,12 +56,31 @@ export const InsuranceSection = ({ sectionDefinition }: InsuranceSectionProps) =
     }
   }, [accreditationCheckedAt, registrationContext, shouldShowAccreditationDate]);
 
+  useEffect(() => {
+    if (insuranceType === peruLegacySisPlanConceptUuid) {
+      registrationContext?.setFieldValue(
+        `attributes.${peruInsuranceTypeAttributeTypeUuid}`,
+        peruInsuranceSisConceptUuid,
+        false,
+      );
+    }
+  }, [insuranceType, registrationContext]);
+
   const visibleFields = useMemo(
     () =>
-      sectionDefinition.fields.filter(
-        (name) => name !== insuranceAccreditationCheckedAtField || shouldShowAccreditationDate,
-      ),
-    [sectionDefinition.fields, shouldShowAccreditationDate],
+      sectionDefinition.fields.filter((name) => {
+        if (name === sisLookupField || name === insuranceAccreditationStatusField) {
+          return isSisFinancer;
+        }
+        if (name === insuranceCodeField) {
+          return Boolean(insuranceType);
+        }
+        if (name === insuranceAccreditationCheckedAtField) {
+          return shouldShowAccreditationDate;
+        }
+        return true;
+      }),
+    [insuranceType, isSisFinancer, sectionDefinition.fields, shouldShowAccreditationDate],
   );
 
   return (

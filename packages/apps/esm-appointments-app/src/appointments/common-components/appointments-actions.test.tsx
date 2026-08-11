@@ -264,7 +264,7 @@ describe('AppointmentActions', () => {
     expect(mockShowModal).not.toHaveBeenCalled();
   });
 
-  it('renders checked out button when completed', () => {
+  it('renders nothing when completed without a reconcilable visit', () => {
     appointment.status = AppointmentStatus.COMPLETED;
 
     mockUseConfig.mockReturnValue({
@@ -287,8 +287,9 @@ describe('AppointmentActions', () => {
       mutateVisit: vi.fn(),
     });
 
-    render(<AppointmentActions {...defaultProps} />);
-    expect(screen.getByText('Checked out')).toBeInTheDocument();
+    const { container } = render(<AppointmentActions {...defaultProps} />);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(container.firstChild?.firstChild).toBeNull();
   });
 
   it('offers checkout reconciliation when a completed appointment still has an active visit', () => {
@@ -353,7 +354,7 @@ describe('AppointmentActions', () => {
     render(<AppointmentActions {...defaultProps} />);
 
     expect(screen.queryByRole('button', { name: 'Regularizar cierre' })).not.toBeInTheDocument();
-    expect(screen.getByText('Checked out')).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
   it('renders finish care button when active visit exists', () => {
@@ -428,8 +429,28 @@ describe('AppointmentActions', () => {
     },
   );
 
+  it('shows a verifying indicator instead of definitive actions while visits load', () => {
+    appointment.status = AppointmentStatus.CHECKEDIN;
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
+      checkOutButton: { enabled: true, customUrl: '' },
+    });
+    mockUseTodaysVisits.mockReturnValue({
+      visits: [],
+      error: null,
+      isLoading: true,
+      mutateVisit: vi.fn(),
+    });
+
+    render(<AppointmentActions {...defaultProps} />);
+
+    expect(screen.getByText(/verificando consulta/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /finish care/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /regularizar admisión/i })).not.toBeInTheDocument();
+  });
+
   it.each([
-    { case: 'active visits are still loading', error: null, isLoading: true },
     { case: 'active visits failed to load', error: new Error('visit lookup failed'), isLoading: false },
   ])('does not report an orphan admission when $case', ({ error, isLoading }) => {
     appointment.status = AppointmentStatus.CHECKEDIN;

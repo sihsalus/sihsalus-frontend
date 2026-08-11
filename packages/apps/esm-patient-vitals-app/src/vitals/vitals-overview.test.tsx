@@ -1,6 +1,6 @@
 import { LineChart } from '@carbon/charts-react';
 import { getDefaultsFromConfigSchema, useConfig, userHasAccess } from '@openmrs/esm-framework';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -34,12 +34,6 @@ const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseVitalsAndBiometrics = vi.mocked(useVitalsAndBiometrics);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 mockUserHasAccess.mockReturnValue(true);
-
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => {
   const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');
@@ -193,9 +187,28 @@ describe('VitalsOverview', () => {
     expect(screen.getByRole('tab', { name: /temp/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /r\. rate/i })).toBeInTheDocument();
 
+    const vitalSignsSelector = screen.getByRole('tablist', { name: /vital sign displayed/i });
+    const vitalSignTabs = within(vitalSignsSelector).getAllByRole('tab');
+    expect(vitalSignTabs).toHaveLength(5);
+    expect(vitalSignsSelector).toHaveAttribute('aria-orientation', 'vertical');
+    expect(vitalSignsSelector.closest('.cds--tabs--vertical')).not.toBeNull();
+    vitalSignTabs.forEach((tab) => {
+      expect(document.getElementById(tab.getAttribute('aria-controls') ?? '')).toHaveAttribute('role', 'tabpanel');
+    });
+
+    const bloodPressureTab = within(vitalSignsSelector).getByRole('tab', { name: /bp/i });
+    const oxygenSaturationTab = within(vitalSignsSelector).getByRole('tab', { name: /spo2/i });
+    bloodPressureTab.focus();
+    await user.keyboard('{ArrowDown}');
+    expect(oxygenSaturationTab).toHaveAttribute('aria-selected', 'true');
+    expect(document.getElementById(oxygenSaturationTab.getAttribute('aria-controls') ?? '')).not.toHaveAttribute(
+      'hidden',
+    );
+
     const chartOptions = vi.mocked(LineChart).mock.calls.at(-1)?.[0].options;
 
     expect(chartOptions).toMatchObject({
+      title: expect.stringMatching(/spo2/i),
       locale: {
         translations: {
           toolbar: {
@@ -217,6 +230,44 @@ describe('VitalsOverview', () => {
         ]),
       },
     });
+  });
+
+  it('shows every vital-sign selector without horizontal scrolling on small screens', async () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query === '(max-width: 42rem)',
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    try {
+      const user = userEvent.setup();
+      mockUseVitalsAndBiometrics.mockReturnValue({
+        data: formattedVitals,
+      } as ReturnType<typeof useVitalsAndBiometrics>);
+
+      renderWithSwr(<VitalsOverview {...testProps} />);
+      await waitForLoadingToFinish();
+      await user.click(screen.getByRole('tab', { name: /chart view/i }));
+
+      const vitalSignsSelector = screen.getByRole('tablist', { name: /vital sign displayed/i });
+      expect(within(vitalSignsSelector).getAllByRole('tab')).toHaveLength(5);
+      expect(vitalSignsSelector).toHaveAttribute('aria-orientation', 'horizontal');
+      expect(vitalSignsSelector.closest('.cds--tabs--vertical')).toBeNull();
+      expect(vitalSignsSelector.closest('[data-chart-tablist-wrapper]')).not.toBeNull();
+
+      const [bloodPressureTab, oxygenSaturationTab] = within(vitalSignsSelector).getAllByRole('tab');
+      bloodPressureTab.focus();
+      await user.keyboard('{ArrowRight}');
+      expect(oxygenSaturationTab).toHaveAttribute('aria-selected', 'true');
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
   });
 
   it('expands a vitals row to show an associated note', async () => {

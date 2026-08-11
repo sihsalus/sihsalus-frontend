@@ -1,6 +1,6 @@
 import { LineChart } from '@carbon/charts-react';
 import { getDefaultsFromConfigSchema, useConfig, userHasAccess } from '@openmrs/esm-framework';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   formattedBiometrics,
@@ -167,11 +167,29 @@ describe('BiometricsOverview', () => {
     expect(screen.getByRole('tab', { name: /weight/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /height/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /bmi/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /muac/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /abdominal circumference/i })).toBeInTheDocument();
+
+    const biometricSelector = screen.getByRole('tablist', { name: /biometric displayed/i });
+    const biometricTabs = within(biometricSelector).getAllByRole('tab');
+    expect(biometricTabs).toHaveLength(5);
+    expect(biometricSelector).toHaveAttribute('aria-orientation', 'vertical');
+    expect(biometricSelector.closest('.cds--tabs--vertical')).not.toBeNull();
+    biometricTabs.forEach((tab) => {
+      expect(document.getElementById(tab.getAttribute('aria-controls') ?? '')).toHaveAttribute('role', 'tabpanel');
+    });
+
+    const weightTab = within(biometricSelector).getByRole('tab', { name: /weight/i });
+    const heightTab = within(biometricSelector).getByRole('tab', { name: /height/i });
+    weightTab.focus();
+    await user.keyboard('{ArrowDown}');
+    expect(heightTab).toHaveAttribute('aria-selected', 'true');
+    expect(document.getElementById(heightTab.getAttribute('aria-controls') ?? '')).not.toHaveAttribute('hidden');
 
     const chartOptions = vi.mocked(LineChart).mock.calls.at(-1)?.[0].options;
 
     expect(chartOptions).toMatchObject({
+      title: expect.stringMatching(/height/i),
       locale: {
         translations: {
           toolbar: {
@@ -193,6 +211,44 @@ describe('BiometricsOverview', () => {
         ]),
       },
     });
+  });
+
+  it('shows every biometric selector without horizontal scrolling on small screens', async () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query === '(max-width: 42rem)',
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    try {
+      const user = userEvent.setup();
+      mockUseVitalsAndBiometrics.mockReturnValue({
+        data: formattedBiometrics.slice(0, 2),
+      } as ReturnType<typeof useVitalsAndBiometrics>);
+
+      renderWithSwr(<BiometricsOverview {...testProps} />);
+      await waitForLoadingToFinish();
+      await user.click(screen.getByRole('tab', { name: /chart view/i }));
+
+      const biometricSelector = screen.getByRole('tablist', { name: /biometric displayed/i });
+      expect(within(biometricSelector).getAllByRole('tab')).toHaveLength(5);
+      expect(biometricSelector).toHaveAttribute('aria-orientation', 'horizontal');
+      expect(biometricSelector.closest('.cds--tabs--vertical')).toBeNull();
+      expect(biometricSelector.closest('[data-chart-tablist-wrapper]')).not.toBeNull();
+
+      const [weightTab, heightTab] = within(biometricSelector).getAllByRole('tab');
+      weightTab.focus();
+      await user.keyboard('{ArrowRight}');
+      expect(heightTab).toHaveAttribute('aria-selected', 'true');
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
   });
 
   it('hides BMI column when bmiMinimumAge is set and patient is under the minimum age', async () => {

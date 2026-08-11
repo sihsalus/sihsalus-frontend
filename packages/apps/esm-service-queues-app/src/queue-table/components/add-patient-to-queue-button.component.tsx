@@ -10,7 +10,7 @@ import {
 } from '../../constants';
 import { isVisitLocation, useQueueLocations } from '../../create-queue-entry/hooks/useQueueLocations';
 import { useQueues } from '../../hooks/useQueues';
-import { CanEditServiceQueues } from '../../permissions';
+import { CanCreateQueueEntries } from '../../permissions';
 import { useServiceQueuesStore } from '../../store/store';
 
 const AddPatientToQueueButton: React.FC = () => {
@@ -56,7 +56,7 @@ const AddPatientToQueueButton: React.FC = () => {
   const buttonLabel = disabledReason ?? t('addPatientToQueue', 'Add patient to queue');
 
   return (
-    <CanEditServiceQueues>
+    <CanCreateQueueEntries>
       <Button
         aria-busy={isResolvingQueueContext}
         aria-label={buttonLabel}
@@ -105,7 +105,7 @@ const AddPatientToQueueButton: React.FC = () => {
       >
         {buttonLabel}
       </Button>
-    </CanEditServiceQueues>
+    </CanCreateQueueEntries>
   );
 };
 

@@ -20,7 +20,7 @@ const mockUseQueues = vi.mocked(useQueues);
 const mockUseServiceQueuesStore = vi.mocked(useServiceQueuesStore);
 
 vi.mock('../../permissions', () => ({
-  CanEditServiceQueues: ({ children }: PropsWithChildren) => children,
+  CanCreateQueueEntries: ({ children }: PropsWithChildren) => children,
 }));
 
 vi.mock('../../store/store', () => ({

@@ -12,7 +12,7 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { serviceQueuesBasePath } from '../constants';
-import { canEditServiceQueues } from '../permissions';
+import { canAssignProviderToQueueRoom, canManageServiceQueueCatalog, canManageServiceQueueRoomCatalog } from '../permissions';
 
 import styles from './metrics-header.scss';
 
@@ -24,7 +24,9 @@ const MetricsHeader = () => {
   const metricsTitle = t('clinicMetrics', 'Clinic metrics');
   const queueScreenText = t('queueScreen', 'Call display');
   const providerUuid = currentUserSession?.currentProvider?.uuid;
-  const canEdit = canEditServiceQueues(currentUserSession?.user);
+  const canAddService = canManageServiceQueueCatalog(currentUserSession?.user);
+  const canAddServiceRoom = canManageServiceQueueRoomCatalog(currentUserSession?.user);
+  const canAssignProviderRoom = canAssignProviderToQueueRoom(currentUserSession?.user);
 
   const launchAddProviderToRoomModal = useCallback(() => {
     const dispose = showModal('add-provider-to-room-modal', {
@@ -48,19 +50,23 @@ const MetricsHeader = () => {
         size={isDesktop(layout) ? 'sm' : 'lg'}
         tooltipAlignment="left"
       >
-        {canEdit ? (
+        {canAddService || canAddServiceRoom ? (
           <UserHasAccess privilege="Emr: View Legacy Interface">
-            <MenuItem
-              label={t('addNewService', 'Add new service')}
-              onClick={() => launchWorkspace('service-queues-service-form')}
-            />
-            <MenuItem
-              label={t('addNewServiceRoom', 'Add new service room')}
-              onClick={() => launchWorkspace('service-queues-room-workspace')}
-            />
+            {canAddService ? (
+              <MenuItem
+                label={t('addNewService', 'Add new service')}
+                onClick={() => launchWorkspace('service-queues-service-form')}
+              />
+            ) : null}
+            {canAddServiceRoom ? (
+              <MenuItem
+                label={t('addNewServiceRoom', 'Add new service room')}
+                onClick={() => launchWorkspace('service-queues-room-workspace')}
+              />
+            ) : null}
           </UserHasAccess>
         ) : null}
-        {canEdit ? (
+        {canAssignProviderRoom ? (
           <MenuItem
             label={t('addProviderQueueRoom', 'Add provider queue room')}
             onClick={launchAddProviderToRoomModal}

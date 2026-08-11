@@ -17,7 +17,7 @@ vi.mock('../create-queue-entry/hooks/useQueueLocations', async (importOriginal) 
 }));
 
 vi.mock('../permissions', () => ({
-  canEditServiceQueues: vi.fn(() => true),
+  canCreateQueueEntries: vi.fn(() => true),
 }));
 
 vi.mock('../hooks/useQueueEntries', () => ({

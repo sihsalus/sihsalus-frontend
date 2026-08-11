@@ -21,6 +21,10 @@ vi.mock('../hooks/useQueueEntries', () => ({
 vi.mock('../permissions', () => ({
   CanClearServiceQueueEntries: ({ children }: { children: ReactNode }) => children,
   CanEditServiceQueues: ({ children }: { children: ReactNode }) => children,
+  CanCreateQueueEntries: ({ children }: { children: ReactNode }) => children,
+  canAssignProviderToQueueRoom: vi.fn(() => true),
+  canManageServiceQueueCatalog: vi.fn(() => true),
+  canManageServiceQueueRoomCatalog: vi.fn(() => true),
 }));
 
 vi.mock('../store/store', () => ({

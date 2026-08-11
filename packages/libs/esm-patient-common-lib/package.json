@@ -50,6 +50,6 @@
     "@sihsalus/esm-form-engine-lib": "workspace:*",
     "react-router-dom": "7.18.2",
     "typescript": "6.0.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.10"
   }
 }

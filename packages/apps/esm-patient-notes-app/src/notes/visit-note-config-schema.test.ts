@@ -3,7 +3,9 @@ import visitNoteConfigSchema, { defaultVisitNoteClinicalConceptUuids } from './v
 describe('visit note clinical concept defaults', () => {
   it('uses distinct SIHSALUS concepts for independently persisted note sections', () => {
     expect(defaultVisitNoteClinicalConceptUuids).toMatchObject({
-      codigoPrestacionalConceptUuid: 'e82d45de-8696-42f8-99bc-337a750a7102',
+      // The coded question, NOT the "Codigos Prestacionales" ConvSet (e82d45de…):
+      // the set's N/A datatype rejects every value and aborts the encounter POST.
+      codigoPrestacionalConceptUuid: '34630b86-5106-4aea-8382-f55c02e4ba2c',
       anamnesisConceptUuid: '6d99603e-ae9d-4838-8a09-ba75e27ff1e9',
       biologicalFunctionsConceptUuid: '9011adf4-2b9f-4ecb-a44c-cb5642e4e015',
       soapSubjectiveConceptUuid: 'f0000202-0000-4000-8000-000000000202',

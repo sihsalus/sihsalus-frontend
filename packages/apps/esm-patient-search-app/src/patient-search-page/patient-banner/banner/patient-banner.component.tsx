@@ -53,7 +53,11 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
   const effectiveVisit = currentVisit ?? activeVisit;
   const { nonNavigationSelectPatientAction } = useContext(PatientSearchContext);
   const patientSearchContext2 = usePatientSearchContext2();
-  const hideActionsOverflow = hideActionsOverflowProp ?? Boolean(patientSearchContext2?.onPatientSelected);
+  const isEmbeddedSelection = Boolean(nonNavigationSelectPatientAction || patientSearchContext2?.onPatientSelected);
+  const allowsEmbeddedStartVisit = Boolean(
+    patientSearchContext2?.onPatientSelected && patientSearchContext2.startVisitWorkspaceName,
+  );
+  const hideActionsOverflow = hideActionsOverflowProp ?? isEmbeddedSelection;
 
   const patientName = getSearchedPatientDisplayName(patient);
   const isDeceased = Boolean(patient.person.dead || patient.person.deathDate);
@@ -128,7 +132,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
             toggleContactDetails={handleToggleContactDetails}
           />
           <div className={styles.rightActions}>
-            {!hideActionsOverflow ? (
+            {!isEmbeddedSelection && !hideActionsOverflow ? (
               <PatientBannerActionsMenu
                 actionsSlotName="patient-search-actions-slot"
                 additionalActionsSlotState={{
@@ -139,10 +143,12 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
                 patientUuid={patientUuid}
               />
             ) : null}
-            {!patientSearchContext2?.onPatientSelected && !isDeceased ? (
+            {!isEmbeddedSelection && !isDeceased ? (
               <ExtensionSlot name="patient-search-primary-actions-slot" state={{ patientUuid }} />
             ) : null}
-            {canStartVisit ? <ExtensionSlot name={startVisitButtonSlotName} state={startVisitButtonSlotState} /> : null}
+            {canStartVisit && (!isEmbeddedSelection || allowsEmbeddedStartVisit) ? (
+              <ExtensionSlot name={startVisitButtonSlotName} state={startVisitButtonSlotState} />
+            ) : null}
           </div>
         </div>
         <div>

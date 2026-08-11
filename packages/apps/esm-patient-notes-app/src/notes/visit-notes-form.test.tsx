@@ -343,11 +343,41 @@ test('searches and saves one selected codigo prestacional concept', async () => 
           concept: { display: '', uuid: defaultVisitNoteClinicalConceptUuids.codigoPrestacionalConceptUuid },
           formFieldNamespace: 'visit-notes',
           formFieldPath: 'codigo-prestacional',
-          value: '001 - Consulta externa',
+          // The selected catalog concept goes out as valueCoded. Sending its display
+          // text instead would require a Text question, and the previous target (the
+          // catalog ConvSet, datatype N/A) rejected every value with "Don't know how
+          // to handle ZZ", aborting the whole encounter.
+          value: 'prestacional-001',
         }),
       ]),
     }),
   );
+});
+
+test('omits the codigo prestacional obs when no catalog concept was selected', async () => {
+  const user = userEvent.setup();
+
+  mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
+  mockSaveVisitNote.mockResolvedValueOnce({
+    status: 201,
+    data: { uuid: 'new-visit-note-encounter-uuid' },
+  } as Awaited<ReturnType<typeof saveVisitNote>>);
+
+  renderVisitNotesForm();
+
+  const diagnosisSearchBox = screen.getByPlaceholderText('Choose a primary diagnosis');
+  await user.type(diagnosisSearchBox, 'Diabetes Mellitus');
+  await user.click(await screen.findByRole('button', { name: 'Diabetes Mellitus' }));
+
+  await user.click(screen.getByRole('button', { name: /Save and close/i }));
+
+  await waitFor(() => expect(mockSaveVisitNote).toHaveBeenCalledTimes(1));
+  const savedObs = mockSaveVisitNote.mock.calls[0][1].obs ?? [];
+  expect(
+    savedObs.some(
+      (obs) => obs.concept?.uuid === defaultVisitNoteClinicalConceptUuids.codigoPrestacionalConceptUuid,
+    ),
+  ).toBe(false);
 });
 
 test('closes the form and the workspace when the cancel button is clicked', async () => {

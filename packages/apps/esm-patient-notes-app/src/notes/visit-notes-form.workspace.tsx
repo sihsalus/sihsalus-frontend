@@ -752,7 +752,6 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
     (data: VisitNotesFormData) => {
       const {
         noteDate,
-        codigoPrestacional,
         chiefComplaint,
         illnessDuration,
         biologicalFunctions,
@@ -799,8 +798,25 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
         };
       };
 
+      // The código prestacional is a concept picked from the MINSA catalog, so it is
+      // persisted as valueCoded. A text obs would need a Text question concept, and
+      // sending any value against the catalog ConvSet (datatype N/A) makes the
+      // backend reject the whole encounter with "Don't know how to handle ZZ".
+      const buildCodedObs = (conceptUuid: string, valueConceptUuid?: string, formFieldPath?: string) => {
+        if (!valueConceptUuid) {
+          return null;
+        }
+        const existingObs = getEncounterObs(conceptUuid, formFieldPath);
+        return {
+          concept: { uuid: conceptUuid, display: '' },
+          value: valueConceptUuid,
+          ...(formFieldPath && { formFieldNamespace: 'visit-notes', formFieldPath }),
+          ...(existingObs && { uuid: existingObs.uuid }),
+        };
+      };
+
       const structuredObsList = [
-        buildTextObs(codigoPrestacionalConceptUuid, codigoPrestacional, 'codigo-prestacional'),
+        buildCodedObs(codigoPrestacionalConceptUuid, selectedCodigoPrestacional?.uuid, 'codigo-prestacional'),
         buildTextObs(chiefComplaintConceptUuid, chiefComplaint),
         buildTextObs(illnessDurationConceptUuid, illnessDuration),
         buildTextObs(biologicalFunctionsConceptUuid, biologicalFunctions, 'biological-functions'),
@@ -979,6 +995,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
       proceduresConceptUuid,
       providerUuid,
       referralConceptUuid,
+      selectedCodigoPrestacional?.uuid,
       selectedPrimaryDiagnoses.length,
       soapAssessmentConceptUuid,
       soapObjectiveConceptUuid,

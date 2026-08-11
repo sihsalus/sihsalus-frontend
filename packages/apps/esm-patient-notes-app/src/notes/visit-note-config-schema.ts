@@ -1,7 +1,7 @@
 import { Type } from '@openmrs/esm-framework';
 
 export const defaultVisitNoteClinicalConceptUuids = {
-  codigoPrestacionalConceptUuid: 'e82d45de-8696-42f8-99bc-337a750a7102',
+  codigoPrestacionalConceptUuid: '34630b86-5106-4aea-8382-f55c02e4ba2c',
   chiefComplaintConceptUuid: '71b58cff-879b-4358-98d5-2165434d4324',
   illnessDurationConceptUuid: '577876b1-0b6e-4c57-b4c3-7af969a1d501',
   anamnesisConceptUuid: '6d99603e-ae9d-4838-8a09-ba75e27ff1e9',
@@ -42,7 +42,8 @@ export default {
   codigoPrestacionalConceptUuid: {
     _type: Type.ConceptUuid,
     _default: defaultVisitNoteClinicalConceptUuids.codigoPrestacionalConceptUuid,
-    _description: 'Codigo Prestacional saved by visit notes with formFieldPath codigo-prestacional',
+    _description:
+      'Coded question that stores the selected código prestacional as valueCoded, with formFieldPath codigo-prestacional. Must NOT be the "Codigos Prestacionales" ConvSet: its N/A datatype rejects any value and aborts the whole encounter POST.',
   },
   chiefComplaintConceptUuid: {
     _type: Type.ConceptUuid,

@@ -22,6 +22,8 @@ export const chartAppointmentsCheckoutPrivileges = [
   chartAppointmentsReadPrivilege,
   chartAppointmentsFinalizeCarePrivilege,
 ];
+export const appointmentsCompanionPersonSearchWorkspace = 'appointments-visit-companion-search-workspace';
+export const appointmentsCompanionPersonRegistrationWorkspace = 'appointments-visit-companion-registration-workspace';
 // The appointments backend persists patient_appointment.comments as VARCHAR(255).
 export const appointmentNoteMaxLength = 255;
 

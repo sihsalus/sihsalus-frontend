@@ -102,6 +102,7 @@ describe('OrderDetailsTable', () => {
   const drugOrderTypeUuid = '131168f4-15f5-102d-96e4-000c29c2a5d7';
   const medicationsEditPrivilege = 'app:hoja.clinica.medicamentos.editar';
   const ordersEditPrivilege = 'app:hoja.clinica.ordenes.editar';
+  const basketWindowPrivilege = 'app:hoja.clinica.canastaOrdenes';
   const drugOrder = mockOrders.find((order) => order.type === 'drugorder') as unknown as Order;
   const testOrder = mockOrders.find((order) => order.type === 'testorder') as unknown as Order;
   const hydratedDrugOrder = {
@@ -183,7 +184,9 @@ describe('OrderDetailsTable', () => {
     mockBasketOrders = basketOrders;
     mockGetPatientUuidFromStore.mockReturnValue(orders[0].patient?.uuid ?? 'mock-patient-uuid');
     mockUserHasAccess.mockImplementation((privilege) =>
-      typeof privilege === 'string' ? privileges.includes(privilege) : false,
+      Array.isArray(privilege)
+        ? privilege.every((entry) => privileges.includes(entry))
+        : privileges.includes(privilege),
     );
     mockUseOrderTypes.mockReturnValue({
       data: [orders[0].orderType],
@@ -440,25 +443,39 @@ describe('OrderDetailsTable', () => {
 
   it.each([
     {
-      cancelVisible: false,
-      label: 'allows medication modification with the medication edit privilege',
+      cancelVisible: true,
+      label: 'allows medication modification with the medication edit privilege and basket access',
       modifyVisible: true,
       order: drugOrder,
-      privileges: [medicationsEditPrivilege],
+      privileges: [medicationsEditPrivilege, ordersEditPrivilege, basketWindowPrivilege],
+    },
+    {
+      cancelVisible: false,
+      label: 'offers no action without the basket window privilege, even with both edit privileges',
+      modifyVisible: false,
+      order: drugOrder,
+      privileges: [medicationsEditPrivilege, ordersEditPrivilege],
+    },
+    {
+      cancelVisible: false,
+      label: 'offers no action without the orders edit privilege, even with the basket window',
+      modifyVisible: false,
+      order: drugOrder,
+      privileges: [medicationsEditPrivilege, basketWindowPrivilege],
     },
     {
       cancelVisible: true,
       label: 'does not allow medication modification with only the orders edit privilege',
       modifyVisible: false,
       order: drugOrder,
-      privileges: [ordersEditPrivilege],
+      privileges: [ordersEditPrivilege, basketWindowPrivilege],
     },
     {
       cancelVisible: true,
       label: 'allows test-order modification with the orders edit privilege',
       modifyVisible: true,
       order: testOrder,
-      privileges: [ordersEditPrivilege],
+      privileges: [ordersEditPrivilege, basketWindowPrivilege],
     },
     {
       cancelVisible: false,
@@ -472,7 +489,7 @@ describe('OrderDetailsTable', () => {
       label: 'allows general-order modification with the orders edit privilege',
       modifyVisible: true,
       order: generalOrder,
-      privileges: [ordersEditPrivilege],
+      privileges: [ordersEditPrivilege, basketWindowPrivilege],
     },
     {
       cancelVisible: false,
@@ -509,7 +526,7 @@ describe('OrderDetailsTable', () => {
   });
 
   it('hydrates a drug order and adds the revision to the basket opening the basket', async () => {
-    renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
+    renderSingleOrder(drugOrder, [medicationsEditPrivilege, ordersEditPrivilege, basketWindowPrivilege]);
 
     await openActionsMenu();
     await user.click(screen.getByText('Modify order'));
@@ -537,7 +554,7 @@ describe('OrderDetailsTable', () => {
       order: generalOrder,
     },
   ])('adds the $label revision to the basket, and opens the basket', async ({ order }) => {
-    renderSingleOrder(order, [ordersEditPrivilege]);
+    renderSingleOrder(order, [ordersEditPrivilege, basketWindowPrivilege]);
 
     await openActionsMenu();
     await user.click(screen.getByText('Modify order'));
@@ -564,7 +581,7 @@ describe('OrderDetailsTable', () => {
       order: generalOrder,
     },
   ])('does not modify the $label after the patient-chart store changes', async ({ order }) => {
-    renderSingleOrder(order, [ordersEditPrivilege]);
+    renderSingleOrder(order, [ordersEditPrivilege, basketWindowPrivilege]);
 
     await openActionsMenu();
     mockGetPatientUuidFromStore.mockReturnValue('another-patient-uuid');
@@ -580,7 +597,7 @@ describe('OrderDetailsTable', () => {
   it('shows a visible error and does not modify the drug order when drug-order hydration fails', async () => {
     const hydrationError = new Error('Network unavailable');
     mockGetDrugOrderByUuid.mockRejectedValue(hydrationError);
-    renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
+    renderSingleOrder(drugOrder, [medicationsEditPrivilege, ordersEditPrivilege, basketWindowPrivilege]);
 
     await openActionsMenu();
     await user.click(screen.getByText('Modify order'));
@@ -609,7 +626,7 @@ describe('OrderDetailsTable', () => {
   it('discards a drug hydration result after the patient context changes', async () => {
     const hydration = createDeferred<{ data: Order }>();
     mockGetDrugOrderByUuid.mockReturnValue(hydration.promise);
-    const { rerender } = renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
+    const { rerender } = renderSingleOrder(drugOrder, [medicationsEditPrivilege, ordersEditPrivilege, basketWindowPrivilege]);
 
     await openActionsMenu();
     await user.click(screen.getByText('Modify order'));
@@ -632,7 +649,7 @@ describe('OrderDetailsTable', () => {
     const hydration = createDeferred<{ data: Order }>();
     const settledHydration = hydration.promise.catch(() => undefined);
     mockGetDrugOrderByUuid.mockReturnValue(hydration.promise);
-    const { unmount } = renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
+    const { unmount } = renderSingleOrder(drugOrder, [medicationsEditPrivilege, ordersEditPrivilege, basketWindowPrivilege]);
 
     await openActionsMenu();
     await user.click(screen.getByText('Modify order'));
@@ -652,7 +669,7 @@ describe('OrderDetailsTable', () => {
   it('discards a drug hydration result after the authenticated session changes', async () => {
     const hydration = createDeferred<{ data: Order }>();
     mockGetDrugOrderByUuid.mockReturnValue(hydration.promise);
-    const { rerender } = renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
+    const { rerender } = renderSingleOrder(drugOrder, [medicationsEditPrivilege, ordersEditPrivilege, basketWindowPrivilege]);
 
     await openActionsMenu();
     await user.click(screen.getByText('Modify order'));
@@ -683,7 +700,7 @@ describe('OrderDetailsTable', () => {
   it('coalesces repeated Modify clicks while the same drug hydration is in flight', async () => {
     const hydration = createDeferred<{ data: Order }>();
     mockGetDrugOrderByUuid.mockReturnValue(hydration.promise);
-    renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
+    renderSingleOrder(drugOrder, [medicationsEditPrivilege, ordersEditPrivilege, basketWindowPrivilege]);
 
     await openActionsMenu();
     const modifyButton = screen.getByText('Modify order').closest('button');
@@ -717,7 +734,7 @@ describe('OrderDetailsTable', () => {
       }
       throw new Error(`Unexpected order UUID: ${orderUuid}`);
     });
-    renderOrders([drugOrder, secondDrugOrder], [medicationsEditPrivilege]);
+    renderOrders([drugOrder, secondDrugOrder], [medicationsEditPrivilege, ordersEditPrivilege, basketWindowPrivilege]);
 
     const actionMenus = screen.getAllByRole('button', { name: /options/i });
     expect(actionMenus).toHaveLength(2);
@@ -760,7 +777,7 @@ describe('OrderDetailsTable', () => {
     },
   ])('fails closed when the hydrated drug-order $label', async ({ response }) => {
     mockGetDrugOrderByUuid.mockResolvedValue({ data: response });
-    renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
+    renderSingleOrder(drugOrder, [medicationsEditPrivilege, ordersEditPrivilege, basketWindowPrivilege]);
 
     await openActionsMenu();
     await user.click(screen.getByText('Modify order'));
@@ -781,7 +798,7 @@ describe('OrderDetailsTable', () => {
   it('discards a drug hydration when medication edit access is revoked before it resolves', async () => {
     const hydration = createDeferred<{ data: Order }>();
     mockGetDrugOrderByUuid.mockReturnValue(hydration.promise);
-    const { rerender } = renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
+    const { rerender } = renderSingleOrder(drugOrder, [medicationsEditPrivilege, ordersEditPrivilege, basketWindowPrivilege]);
 
     await openActionsMenu();
     await user.click(screen.getByText('Modify order'));
@@ -809,7 +826,7 @@ describe('OrderDetailsTable', () => {
   it('discards a drug hydration when only the patient-chart store changes', async () => {
     const hydration = createDeferred<{ data: Order }>();
     mockGetDrugOrderByUuid.mockReturnValue(hydration.promise);
-    renderSingleOrder(drugOrder, [medicationsEditPrivilege]);
+    renderSingleOrder(drugOrder, [medicationsEditPrivilege, ordersEditPrivilege, basketWindowPrivilege]);
 
     await openActionsMenu();
     await user.click(screen.getByText('Modify order'));
@@ -829,7 +846,7 @@ describe('OrderDetailsTable', () => {
   it('disables only Modify when the same revision is already in the basket and preserves Cancel', async () => {
     renderSingleOrder(
       testOrder,
-      [ordersEditPrivilege],
+      [ordersEditPrivilege, basketWindowPrivilege],
       [
         {
           action: 'REVISE',
@@ -872,7 +889,7 @@ describe('OrderDetailsTable', () => {
       order: generalOrder,
     },
   ])('disables only Modify when a $label with the same concept is already in its basket', async ({ basketOrder, order }) => {
-    renderSingleOrder(order, [ordersEditPrivilege], [basketOrder]);
+    renderSingleOrder(order, [ordersEditPrivilege, basketWindowPrivilege], [basketOrder]);
 
     await openActionsMenu();
 
@@ -884,7 +901,7 @@ describe('OrderDetailsTable', () => {
   it('does not apply the lab/general concept collision rule to drug orders', async () => {
     renderSingleOrder(
       drugOrder,
-      [medicationsEditPrivilege],
+      [medicationsEditPrivilege, ordersEditPrivilege, basketWindowPrivilege],
       [
         {
           action: 'NEW',

@@ -18,12 +18,14 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => {
   };
 });
 
-it('requires the order basket visualization privilege', () => {
+it('requires the basket window and orders edit privileges before offering the launcher', () => {
   render(<OrderBasketActionButton groupProps={null} />);
 
   expect(screen.getByRole('button', { name: /order basket/i })).toBeInTheDocument();
+  // Launching starts a visit before the workspace privilege check runs, so the
+  // button itself must demand everything the workspace will demand.
   expect(mockUserHasAccess.mock.calls.at(-1)?.[0]).toMatchObject({
-    privilege: 'app:hoja.clinica.canastaOrdenes',
+    privilege: ['app:hoja.clinica.canastaOrdenes', 'app:hoja.clinica.ordenes.editar'],
   });
 });
 

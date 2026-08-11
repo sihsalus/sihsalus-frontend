@@ -75,6 +75,7 @@ import { buildGeneralOrder, buildLabOrder, buildMedicationOrder } from '../utils
 
 import GeneralOrderTable from './general-order-table.component';
 import MedicationRecord from './medication-record.component';
+import { orderBasketPrivileges } from '../order-basket-access';
 import styles from './order-details-table.scss';
 import TestOrder from './test-order.component';
 
@@ -152,6 +153,7 @@ interface OrderDetailsProps {
 interface OrderBasketItemActionsProps {
   canEditMedications: boolean;
   canEditOrders: boolean;
+  canUseOrderBasket: boolean;
   openOrderBasket: () => void;
   mutateOrders: () => void;
   orderItem: Order;
@@ -192,6 +194,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
   const session = useSession();
   const canEditMedications = userHasAccess('app:hoja.clinica.medicamentos.editar', session?.user);
   const canEditOrders = userHasAccess('app:hoja.clinica.ordenes.editar', session?.user);
+  const canUseOrderBasket = userHasAccess(orderBasketPrivileges, session?.user);
   const locale = getLocale() ?? 'en';
   const defaultPageSize = 10;
   const headerTitle = t('orders', 'Orders');
@@ -816,7 +819,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
                           default: selectedOrderName,
                         })
                   }
-                  launchForm={canEditOrders ? launchOrderBasket : undefined}
+                  launchForm={canEditOrders && canUseOrderBasket ? launchOrderBasket : undefined}
                 />
               ) : (
                 <div className={styles.widgetCard}>
@@ -838,7 +841,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
                           {t('print', 'Print')}
                         </Button>
                       )}
-                      {showAddButton && canEditOrders && (
+                      {showAddButton && canEditOrders && canUseOrderBasket && (
                         <Button
                           className={styles.addButton}
                           kind="ghost"
@@ -928,6 +931,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
                                               <OrderBasketItemActions
                                                 canEditMedications={canEditMedications}
                                                 canEditOrders={canEditOrders}
+                                                canUseOrderBasket={canUseOrderBasket}
                                                 openOrderBasket={launchOrderBasket}
                                                 mutateOrders={mutateOrders}
                                                 orderItem={matchingOrder}
@@ -1027,6 +1031,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
 function OrderBasketItemActions({
   canEditMedications,
   canEditOrders,
+  canUseOrderBasket,
   orderItem,
   openOrderBasket,
   mutateOrders: _mutateOrders,
@@ -1047,7 +1052,7 @@ function OrderBasketItemActions({
   const { orders: ordersForType, setOrders } = useOrderBasket<OrderBasketItem>(orderItem.orderType.uuid);
 
   const handleModifyClick = useCallback(() => {
-    if (getPatientUuidFromStore() !== patientUuid) {
+    if (!canUseOrderBasket || getPatientUuidFromStore() !== patientUuid) {
       return;
     }
 
@@ -1154,6 +1159,7 @@ function OrderBasketItemActions({
     setOrders,
     patientUuid,
     canEditMedications,
+    canUseOrderBasket,
     modifyContextKey,
     activeModifyContextRef,
     activeCanEditMedicationsRef,
@@ -1171,8 +1177,11 @@ function OrderBasketItemActions({
 
 
   const handleCancelClick = useCallback(() => {
+    if (!canUseOrderBasket) {
+      return;
+    }
     launchCancelOrder({ order: orderItem });
-  }, [orderItem, launchCancelOrder]);
+  }, [canUseOrderBasket, orderItem, launchCancelOrder]);
 
   const isPending = !orderItem.fulfillerStatus || orderItem.fulfillerStatus.toUpperCase() === 'PENDING';
   if (!isPending) {
@@ -1191,9 +1200,11 @@ function OrderBasketItemActions({
       )) ||
       (orderItem.type === 'order' && ordersForType.some((order) => order.concept?.uuid === orderConceptUuid)));
   const orderAlreadyInBasket = ordersForType.some((order) => order.uuid === orderItem.uuid);
-  const canModifyOrder = orderItem.type === 'drugorder' ? canEditMedications : canEditOrders;
+  const canModifyOrder =
+    (orderItem.type === 'drugorder' ? canEditMedications : canEditOrders) && canUseOrderBasket;
+  const canCancelOrder = canEditOrders && canUseOrderBasket;
 
-  if (!canModifyOrder && !canEditOrders) {
+  if (!canModifyOrder && !canCancelOrder) {
     return null;
   }
 
@@ -1215,7 +1226,7 @@ function OrderBasketItemActions({
             onClick={handleModifyClick}
           />
         )}
-        {canEditOrders && (
+        {canCancelOrder && (
           <OverflowMenuItem
             className={styles.menuItem}
             disabled={orderAlreadyInBasket || orderItem?.action === 'DISCONTINUE'}

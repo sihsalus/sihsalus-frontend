@@ -83,6 +83,31 @@
       "name": "interconsulta-detail-modal",
       "component": "interconsultaDetailModal",
       "privileges": "app:hoja.clinica.interconsultas"
+    },
+    {
+      "name": "home-receive-interconsulta-modal",
+      "component": "receiveInterconsultaModal",
+      "privileges": "app:home.interconsultas.editar"
+    },
+    {
+      "name": "home-pickup-interconsulta-modal",
+      "component": "pickupInterconsultaModal",
+      "privileges": "app:home.interconsultas.editar"
+    },
+    {
+      "name": "home-reject-interconsulta-modal",
+      "component": "rejectInterconsultaModal",
+      "privileges": "app:home.interconsultas.editar"
+    },
+    {
+      "name": "home-respond-interconsulta-modal",
+      "component": "respondInterconsultaModal",
+      "privileges": "app:home.interconsultas.editar"
+    },
+    {
+      "name": "home-interconsulta-detail-modal",
+      "component": "interconsultaDetailModal",
+      "privileges": "app:home.interconsultas"
     }
   ],
   "workspaces2": [

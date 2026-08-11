@@ -30,7 +30,7 @@ import {
 } from '@openmrs/esm-framework';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { interconsultasEditPrivileges } from '../constants';
+import { interconsultasHomeEditPrivilege } from '../constants';
 import { deriveStatus, useInterconsultas } from '../interconsultas.resource';
 import type { InterconsultaOrder, InterconsultaTrayFilter } from '../types';
 import { getStatusDisplay, getStatusTagType, getUrgencyDisplay } from '../utils/status';
@@ -52,7 +52,7 @@ interface InterconsultasTableProps {
 const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = interconsultasEditPrivileges.some((privilege) => userHasAccess(privilege, session?.user));
+  const canEdit = userHasAccess(interconsultasHomeEditPrivilege, session?.user);
   const { interconsultas, isLoading, error } = useInterconsultas(filter);
   const [searchString, setSearchString] = useState('');
   const [serviceFilter, setServiceFilter] = useState<string>('');
@@ -138,25 +138,25 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
         >
           <OverflowMenuItem
             itemText={t('viewDetail', 'Ver detalle')}
-            onClick={() => openModal('interconsulta-detail-modal', order)}
+            onClick={() => openModal('home-interconsulta-detail-modal', order)}
           />
           {canEdit && status === 'REQUESTED' && (
             <OverflowMenuItem
               itemText={t('receiveInterconsulta', 'Recibir')}
-              onClick={() => openModal('receive-interconsulta-modal', order)}
+              onClick={() => openModal('home-receive-interconsulta-modal', order)}
             />
           )}
           {canEdit &&
             (status === 'REQUESTED' || status === 'RECEIVED' || status === 'ON_HOLD' || status === 'EXCEPTION') && (
               <OverflowMenuItem
                 itemText={t('pickupInterconsulta', 'Atender (recoger)')}
-                onClick={() => openModal('pickup-interconsulta-modal', order)}
+                onClick={() => openModal('home-pickup-interconsulta-modal', order)}
               />
             )}
           {canEdit && status === 'IN_PROGRESS' && (
             <OverflowMenuItem
               itemText={t('respondInterconsulta', 'Responder')}
-              onClick={() => openModal('respond-interconsulta-modal', order)}
+              onClick={() => openModal('home-respond-interconsulta-modal', order)}
             />
           )}
           {canEdit && status !== 'COMPLETED' && status !== 'DECLINED' && status !== 'CANCELLED' && (
@@ -164,7 +164,7 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
               hasDivider
               isDelete
               itemText={t('rejectInterconsulta', 'Rechazar')}
-              onClick={() => openModal('reject-interconsulta-modal', order)}
+              onClick={() => openModal('home-reject-interconsulta-modal', order)}
             />
           )}
         </OverflowMenu>

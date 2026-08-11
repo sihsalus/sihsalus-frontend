@@ -1,39 +1,39 @@
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@carbon/type";
 
 .label01 {
-  @include type.type-style('label-01');
-}
-
-.bodyShort01 {
-  @include type.type-style('body-compact-01');
+  @include type.type-style("label-01");
 }
 
 .vitalsChartContainer {
-  display: flex;
+  display: grid;
+  gap: layout.$spacing-05;
+  grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
   margin: 0 layout.$spacing-05;
-  flex-direction: row;
-  justify-content: space-between;
 }
 
 .vitalSignsArea {
-  flex-grow: 1;
   margin: layout.$spacing-03 0;
-  padding-right: layout.$spacing-05;
-
-  :global(.cds--chart-holder .cds--cc--toolbar .cds--overflow-menu-options .cds--overflow-menu-options__option .cds--overflow-menu-options__btn) {
-    max-width: none !important;
-  }
-
-  :global(.cds--tabs--scrollable ~ .cds--tab-content) {
-    overflow-y: visible;
-  }
+  min-width: 0;
 }
 
 .vitalsChartArea {
-  flex-grow: 4;
+  min-width: 0;
   padding: 0 layout.$spacing-05 layout.$spacing-09;
+
+  :global(.cds--chart-holder) {
+    min-width: 0;
+  }
+
+  :global(
+    .cds--chart-holder
+      .cds--cc--toolbar
+      .cds--overflow-menu-options
+      .cds--overflow-menu-options__option
+      .cds--overflow-menu-options__btn
+  ) {
+    max-width: none !important;
+  }
 
   :global(.cds--cc--layout-row) {
     height: 0;
@@ -50,57 +50,59 @@
   display: inline-block;
 }
 
-.verticalTabs {
+.tablistWrapper {
   margin: layout.$spacing-05 0;
-  scroll-behavior: smooth;
+  min-width: 0;
 
-  > ul {
-    flex-direction: column !important;
-  }
-
-  :global(.cds--tabs--scrollable .cds--tabs--scrollable__nav-item + .cds--tabs--scrollable__nav-item) {
-    margin-left: 0;
-  }
-
-  :global(.cds--tabs--scrollable .cds--tabs--scrollable__nav-link) {
-    border-bottom: 0 !important;
-    border-left: layout.$spacing-01 solid $color-gray-30;
-  }
-}
-
-.tab {
-  outline: 0;
-  outline-offset: 0;
-  min-height: layout.$spacing-07 !important;
-  block-size: layout.$spacing-05 !important;
-
-  &:active,
-  &:focus {
-    outline: layout.$spacing-01 solid var(--brand-03) !important;
-  }
-
-  &[aria-selected='true'] {
-    box-shadow: inset 4px 0 0 0 var(--brand-03) !important;
-    border-bottom: none;
-    font-weight: 600;
-    margin-left: 0 !important;
-  }
-
-  &[aria-selected='false'] {
-    border-bottom: none;
-    border-left: layout.$spacing-01 solid $ui-03;
-    margin-left: 0 !important;
+  :global(.cds--tabs.cds--tabs--vertical .cds--tab--list) {
+    overflow: visible;
   }
 }
 
 .tablist {
+  inline-size: 100%;
+  max-block-size: none;
+
   :global(.cds--tab--list) {
-    flex-direction: column;
-    max-height: fit-content;
-    overflow-x: visible;
+    block-size: auto;
+    max-block-size: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 42rem) {
+  .vitalsChartContainer {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  > button :global(.cds--tabs .cds--tabs__nav-link) {
-    border-bottom: none;
+  .vitalsChartArea {
+    padding-left: 0;
+  }
+
+  .tablistWrapper {
+    :global(.cds--tabs) {
+      max-block-size: none;
+      overflow: visible;
+    }
+
+    :global(.cds--tab--list) {
+      flex-wrap: wrap;
+      overflow: visible;
+    }
+
+    :global(.cds--tabs .cds--tabs__nav-item) {
+      block-size: auto;
+      flex: 1 1 10rem;
+      max-inline-size: none;
+      min-block-size: layout.$spacing-09;
+      overflow: visible;
+      padding-block: layout.$spacing-03;
+      text-overflow: clip;
+      white-space: normal;
+    }
+
+    :global(.cds--tab--overflow-nav-button) {
+      display: none;
+    }
   }
 }

@@ -19,3 +19,4 @@ export {
   shouldShowBmi,
 } from './helpers';
 export type { FHIRInterpretation, ObservationInterpretation, PatientVitalsAndBiometrics } from './types';
+export { useIsMobileChartLayout } from './use-is-mobile-chart-layout';

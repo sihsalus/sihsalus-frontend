@@ -1,11 +1,10 @@
 import { LineChart } from '@carbon/charts-react';
-import { Tab, TabList, Tabs } from '@carbon/react';
+import { Tab, TabListVertical, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import { formatDate, parseDate } from '@openmrs/esm-framework';
-import classNames from 'classnames';
 import React, { useId, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { type PatientVitalsAndBiometrics, withUnit } from '../common';
+import { type PatientVitalsAndBiometrics, useIsMobileChartLayout, withUnit } from '../common';
 import { type ConfigObject } from '../config-schema';
 
 import styles from './vitals-chart.scss';
@@ -22,19 +21,18 @@ interface VitalsChartProps {
 }
 
 interface VitalsChartData {
+  id: string;
   title: string;
   value: string;
 }
 
 const VitalsChart: React.FC<VitalsChartProps> = ({ patientVitals, conceptUnits, config }) => {
   const { t } = useTranslation();
-  const id = useId();
-  const [selectedVitalSign, setSelectedVitalsSign] = React.useState<VitalsChartData>({
-    title: `${t('bp', 'BP')} (${conceptUnits.get(config.concepts.systolicBloodPressureUuid)})`,
-    value: 'systolic',
-  });
+  const vitalSignsLabelId = useId();
+  const isMobileChartLayout = useIsMobileChartLayout();
+  const [selectedVitalSignId, setSelectedVitalSignId] = React.useState('bloodPressure');
 
-  const vitalSigns = [
+  const vitalSigns: Array<VitalsChartData> = [
     {
       id: 'bloodPressure',
       title: withUnit(t('bp', 'BP'), conceptUnits.get(config.concepts.systolicBloodPressureUuid) ?? '-'),
@@ -61,6 +59,11 @@ const VitalsChart: React.FC<VitalsChartProps> = ({ patientVitals, conceptUnits, 
       value: 'pulse',
     },
   ];
+  const selectedVitalSign = vitalSigns.find((vitalSign) => vitalSign.id === selectedVitalSignId) ?? vitalSigns[0];
+  const selectedVitalSignIndex = Math.max(
+    0,
+    vitalSigns.findIndex((vitalSign) => vitalSign.id === selectedVitalSignId),
+  );
 
   const chartData = useMemo(() => {
     return patientVitals
@@ -173,39 +176,41 @@ const VitalsChart: React.FC<VitalsChartProps> = ({ patientVitals, conceptUnits, 
     height: '400px',
   };
 
-  const verticalTabsProps = { className: styles.verticalTabs } as unknown as React.ComponentProps<typeof Tabs>;
-
   return (
     <div className={styles.vitalsChartContainer}>
-      <div className={styles.vitalSignsArea}>
-        <label className={styles.vitalsSignLabel} htmlFor={`${id}-tab`}>
-          {t('vitalSignDisplayed', 'Vital sign displayed')}
-        </label>
-        <Tabs {...verticalTabsProps}>
-          <TabList className={styles.tablist} aria-label="Vitals tabs">
-            {vitalSigns.map(({ id, title, value }) => {
-              return (
-                <Tab
-                  className={classNames(styles.tab, { [styles.selectedTab]: selectedVitalSign.title === title })}
-                  id={`${id}-tab`}
-                  key={id}
-                  onClick={() =>
-                    setSelectedVitalsSign({
-                      title: title,
-                      value: value,
-                    })
-                  }
-                >
-                  {title}
-                </Tab>
-              );
-            })}
-          </TabList>
-        </Tabs>
-      </div>
-      <div className={styles.vitalsChartArea}>
-        <LineChart data={chartData} options={chartOptions} />
-      </div>
+      <Tabs
+        selectedIndex={selectedVitalSignIndex}
+        onChange={({ selectedIndex }) => {
+          const selectedVitalSign = vitalSigns[selectedIndex];
+          if (selectedVitalSign) {
+            setSelectedVitalSignId(selectedVitalSign.id);
+          }
+        }}
+      >
+        <div className={styles.vitalSignsArea}>
+          <span className={styles.vitalsSignLabel} id={vitalSignsLabelId}>
+            {t('vitalSignDisplayed', 'Vital sign displayed')}
+          </span>
+          <div className={styles.tablistWrapper} data-chart-tablist-wrapper="">
+            <TabListVertical
+              className={styles.tablist}
+              aria-labelledby={vitalSignsLabelId}
+              aria-orientation={isMobileChartLayout ? 'horizontal' : 'vertical'}
+            >
+              {vitalSigns.map(({ id, title }) => (
+                <Tab key={id}>{title}</Tab>
+              ))}
+            </TabListVertical>
+          </div>
+        </div>
+        <TabPanels>
+          {vitalSigns.map(({ id }, index) => (
+            <TabPanel className={styles.vitalsChartArea} key={id}>
+              {selectedVitalSignIndex === index ? <LineChart data={chartData} options={chartOptions} /> : null}
+            </TabPanel>
+          ))}
+        </TabPanels>
+      </Tabs>
     </div>
   );
 };

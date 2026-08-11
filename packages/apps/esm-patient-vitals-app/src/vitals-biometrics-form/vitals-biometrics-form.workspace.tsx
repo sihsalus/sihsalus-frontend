@@ -11,7 +11,6 @@ import {
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  createErrorHandler,
   ExtensionSlot,
   getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
   showSnackbar,
@@ -132,6 +131,16 @@ const VitalsAndBiometricFormSchema = z
     message: 'Blood pressure requires both systolic and diastolic values',
     path: ['bloodPressureIncomplete'],
   })
+  .refine(
+    (fields) =>
+      fields.systolicBloodPressure == null ||
+      fields.diastolicBloodPressure == null ||
+      fields.systolicBloodPressure > fields.diastolicBloodPressure,
+    {
+      message: 'Systolic blood pressure must be greater than diastolic blood pressure',
+      path: ['bloodPressureOrder'],
+    },
+  )
   .refine(
     (fields) => {
       // A note alone must not create an encounter; require at least one measurement
@@ -395,6 +404,18 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       return;
     }
 
+    if (err?.bloodPressureOrder) {
+      setShowErrorMessage(false);
+      setFormErrorMessage(
+        t(
+          'bloodPressureOrder',
+          'Systolic blood pressure must be greater than diastolic blood pressure',
+        ),
+      );
+      setShowErrorNotification(true);
+      return;
+    }
+
     if (err?.glasgowComaScale) {
       setShowErrorMessage(false);
       setFormErrorMessage(t('completeGlasgowComaScale', 'Please complete all Glasgow coma scale fields'));
@@ -552,7 +573,6 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
           });
         }
       } catch (error) {
-        createErrorHandler()(error);
         showSnackbar({
           title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
           kind: 'error',

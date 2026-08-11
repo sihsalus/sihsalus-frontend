@@ -19,6 +19,7 @@
   "bloodPressure": "Presión Arterial",
   "bloodPressureAbbreviated": "PA",
   "bloodPressureIncomplete": "La presión arterial requiere valores sistólico y diastólico",
+  "bloodPressureOrder": "La presión sistólica debe ser mayor que la presión diastólica",
   "bmi": "IMC",
   "bp": "PA",
   "calculatedBmi": "IMC (calc.)",

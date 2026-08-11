@@ -17,6 +17,7 @@
   "bloodPressure": "Blood Pressure",
   "bloodPressureAbbreviated": "BP",
   "bloodPressureIncomplete": "Blood pressure requires both systolic and diastolic values",
+  "bloodPressureOrder": "Systolic blood pressure must be greater than diastolic blood pressure",
   "bmi": "BMI",
   "bp": "BP",
   "calculatedBmi": "BMI (calc.)",

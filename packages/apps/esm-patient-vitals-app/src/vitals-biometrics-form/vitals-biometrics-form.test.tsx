@@ -672,6 +672,21 @@ describe('VitalsBiometricsForm', () => {
     expect(screen.getByText(/blood pressure requires both systolic and diastolic values/i)).toBeInTheDocument();
   });
 
+  it('requires systolic blood pressure to be greater than diastolic blood pressure', async () => {
+    const user = userEvent.setup();
+
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    await user.type(screen.getByRole('spinbutton', { name: /systolic/i }), '60');
+    await user.type(screen.getByRole('spinbutton', { name: /diastolic/i }), '110');
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(mockSavePatientVitals).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(/systolic blood pressure must be greater than diastolic blood pressure/i),
+    ).toBeInTheDocument();
+  });
+
   it('does not create an encounter from a note alone', async () => {
     const user = userEvent.setup();
 

@@ -13,6 +13,8 @@ export const appointmentStartDateEditPrivilege = 'app:appointments.startDate.edi
 export const appointmentIssueDateEditPrivilege = 'app:appointments.issueDate.edit';
 export const chartAppointmentsReadPrivilege = 'app:hoja.clinica.citas';
 export const chartAppointmentsEditPrivilege = 'app:hoja.clinica.citas.editar';
+export const appointmentsCompanionPersonSearchWorkspace = 'appointments-visit-companion-search-workspace';
+export const appointmentsCompanionPersonRegistrationWorkspace = 'appointments-visit-companion-registration-workspace';
 export const clinicalCheckoutPrivileges = [
   chartAppointmentsEditPrivilege,
   'Get Visits',

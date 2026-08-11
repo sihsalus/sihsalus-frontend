@@ -30,11 +30,13 @@
 }
 
 .dropdownContainer {
-  min-width: max-content;
-  margin-right: layout.$spacing-05;
+  margin: 0;
+  min-width: 0;
 
-  :global(.cds--dropdown__wrapper--inline) {
-    grid-gap: 0 0.5rem;
+  :global(.cds--dropdown__wrapper),
+  :global(.cds--list-box) {
+    max-width: 100%;
+    width: 100%;
   }
 }
 
@@ -212,11 +214,48 @@
 }
 
 .filterContainer {
+  align-items: end;
+  background-color: colors.$gray-10;
+  box-sizing: border-box;
+  display: grid;
+  gap: layout.$spacing-05;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  padding: layout.$spacing-05;
+  width: 100%;
+}
+
+.dateRangeContainer {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+  grid-column: span 2;
+  min-width: 0;
+
+  :global(.cds--date-picker.cds--date-picker--range) {
+    display: grid;
+    gap: layout.$spacing-03;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  :global(.cds--date-picker-container),
+  :global(.cds--date-picker__input) {
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 .rangeLabel {
   @extend .helperText;
-  margin-right: layout.$spacing-02;
+  color: colors.$gray-70;
+}
+
+@media (max-width: 41.99rem) {
+  .dateRangeContainer {
+    grid-column: span 1;
+
+    :global(.cds--date-picker.cds--date-picker--range) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
 }

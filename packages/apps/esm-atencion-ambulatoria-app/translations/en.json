@@ -68,6 +68,7 @@
   "chiefComplaintHistory": "Chief Complaint History",
   "cie10Code": "ICD-10",
   "clinicalEncounter": "Clinical Encounter",
+  "clinicalEntryActions": "Clinical entry actions",
   "clinicalHistoryPagination": "{{title}} pages",
   "clinicalStatus": "Clinical status",
   "clinicalStatusRequired": "A clinical status is required",

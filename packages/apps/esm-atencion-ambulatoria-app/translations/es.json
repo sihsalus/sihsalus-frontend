@@ -68,6 +68,7 @@
   "chiefComplaintHistory": "Historial de Motivos de Consulta",
   "cie10Code": "CIE-10",
   "clinicalEncounter": "Atención clínica",
+  "clinicalEntryActions": "Acciones de registro clínico",
   "clinicalHistoryPagination": "Páginas de {{title}}",
   "clinicalStatus": "Estado clínico",
   "clinicalStatusRequired": "Se requiere un estado clínico",

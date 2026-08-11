@@ -65,6 +65,7 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
   const isTablet = useLayoutType() === 'tablet';
   const hasPagination = pagination && pagination.totalPages > 1;
   const hasSecondaryAction = Boolean(onSecondaryAction && secondaryActionLabel);
+  const hasEditingActions = Boolean(hasSecondaryAction || (onAction && actionLabel));
 
   if (isLoading) {
     return (
@@ -117,49 +118,47 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
     );
   }
 
+  const editingToolbar = hasEditingActions ? (
+    <div
+      className={styles.clinicalEntryToolbar}
+      role="toolbar"
+      aria-label={t('clinicalEntryActions', 'Clinical entry actions')}
+    >
+      <span className={styles.clinicalEntryToolbarLabel}>
+        {t('clinicalEntryActions', 'Clinical entry actions')}
+      </span>
+      <div className={styles.historyHeaderActionItems}>
+        {hasSecondaryAction ? (
+          <Button
+            kind="ghost"
+            size={isTablet ? 'lg' : 'sm'}
+            renderIcon={secondaryActionIcon}
+            onClick={onSecondaryAction}
+          >
+            {secondaryActionLabel}
+          </Button>
+        ) : null}
+        {onAction && actionLabel ? (
+          <Button kind="tertiary" size={isTablet ? 'lg' : 'sm'} renderIcon={Add} onClick={onAction}>
+            {actionLabel}
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  ) : null;
+  const visibleEditingToolbar =
+    editingToolbar && editPrivilege ? (
+      <RequirePrivilege privilege={editPrivilege} hideUnauthorized>
+        {editingToolbar}
+      </RequirePrivilege>
+    ) : (
+      editingToolbar
+    );
+
   return (
     <div className={styles.widgetCard} role="region" aria-label={title}>
-      <CardHeader title={title}>
-        <div className={styles.historyHeaderActionItems}>
-          {isValidating ? <InlineLoading /> : null}
-          {hasSecondaryAction ? (
-            editPrivilege ? (
-              <RequirePrivilege privilege={editPrivilege} hideUnauthorized>
-                <Button
-                  kind="ghost"
-                  size={isTablet ? 'lg' : 'sm'}
-                  renderIcon={secondaryActionIcon}
-                  onClick={onSecondaryAction}
-                >
-                  {secondaryActionLabel}
-                </Button>
-              </RequirePrivilege>
-            ) : (
-              <Button
-                kind="ghost"
-                size={isTablet ? 'lg' : 'sm'}
-                renderIcon={secondaryActionIcon}
-                onClick={onSecondaryAction}
-              >
-                {secondaryActionLabel}
-              </Button>
-            )
-          ) : null}
-          {onAction && actionLabel ? (
-            editPrivilege ? (
-              <RequirePrivilege privilege={editPrivilege} hideUnauthorized>
-                <Button kind="ghost" size={isTablet ? 'lg' : 'sm'} renderIcon={Add} onClick={onAction}>
-                  {actionLabel}
-                </Button>
-              </RequirePrivilege>
-            ) : (
-              <Button kind="ghost" size={isTablet ? 'lg' : 'sm'} renderIcon={Add} onClick={onAction}>
-                {actionLabel}
-              </Button>
-            )
-          ) : null}
-        </div>
-      </CardHeader>
+      <CardHeader title={title}>{isValidating ? <InlineLoading /> : null}</CardHeader>
+      {visibleEditingToolbar}
       {sourceErrors?.length ? (
         <InlineNotification
           hideCloseButton

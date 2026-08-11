@@ -23,6 +23,11 @@ interface AssessProviderSchedulingCategoryOptions {
   service?: AppointmentService;
 }
 
+interface FilterProvidersBySchedulingCategoryOptions
+  extends Omit<AssessProviderSchedulingCategoryOptions, 'provider'> {
+  providers: ReadonlyArray<Provider>;
+}
+
 function getSchedulingCategoryUuid(service?: AppointmentService) {
   const category = service?.speciality;
   return category && 'uuid' in category && typeof category.uuid === 'string' && category.uuid.trim()
@@ -92,4 +97,31 @@ export function assessProviderSchedulingCategory({
     shouldBlock: mode === 'strict',
     shouldWarn: mode === 'warn',
   };
+}
+
+/**
+ * Returns only providers that can be scheduled for the selected service.
+ * Validation modes remain backwards compatible: strict mode filters
+ * mismatches, while warn/off keep them visible and rely on the existing
+ * validation feedback.
+ */
+export function filterProvidersBySchedulingCategory({
+  mode,
+  providerAttributeTypeUuid,
+  providers,
+  service,
+}: FilterProvidersBySchedulingCategoryOptions): Array<Provider> {
+  if (!service) {
+    return [];
+  }
+
+  return providers.filter(
+    (provider) =>
+      !assessProviderSchedulingCategory({
+        mode,
+        provider,
+        providerAttributeTypeUuid,
+        service,
+      }).shouldBlock,
+  );
 }

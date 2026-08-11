@@ -1,5 +1,5 @@
 import { type AppointmentService, type Provider } from '../types';
-import { assessProviderSchedulingCategory } from './provider-scheduling-category';
+import { assessProviderSchedulingCategory, filterProvidersBySchedulingCategory } from './provider-scheduling-category';
 
 const attributeTypeUuid = '3961cbdd-3240-4b70-99ca-5f63af488b15';
 const categoryUuid = 'a0d4e64e-eb63-4271-bdf1-ffa10392c282';
@@ -115,5 +115,32 @@ describe('assessProviderSchedulingCategory', () => {
       shouldBlock: true,
       shouldWarn: false,
     });
+  });
+
+  it('filters providers by the exact active scheduling category in strict mode', () => {
+    const incompatibleProvider = {
+      ...provider,
+      uuid: 'incompatible-provider-uuid',
+      attributes: [],
+    };
+
+    expect(
+      filterProvidersBySchedulingCategory({
+        mode: 'strict',
+        providerAttributeTypeUuid: attributeTypeUuid,
+        providers: [incompatibleProvider, provider],
+        service,
+      }),
+    ).toEqual([provider]);
+  });
+
+  it('does not expose providers until a service has been selected', () => {
+    expect(
+      filterProvidersBySchedulingCategory({
+        mode: 'strict',
+        providerAttributeTypeUuid: attributeTypeUuid,
+        providers: [provider],
+      }),
+    ).toEqual([]);
   });
 });

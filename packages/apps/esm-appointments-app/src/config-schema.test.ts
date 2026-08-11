@@ -26,6 +26,13 @@ describe('appointments configuration', () => {
     expect(configSchema.appointmentServiceGenderRules._default).toEqual([]);
   });
 
+  it('filters responsible providers by the selected service category', () => {
+    expect(appointmentsConfig.providerSchedulingCategoryValidation).toEqual({
+      mode: 'strict',
+      providerAttributeTypeUuid: '3961cbdd-3240-4b70-99ca-5f63af488b15',
+    });
+  });
+
   it('publishes the canonical contract with one exact rule per active service and location', () => {
     expect(appointmentsConfig.careRoutingContractVersion).toBe('2026-07-18');
     expect(arrivalRules).toHaveLength(13);

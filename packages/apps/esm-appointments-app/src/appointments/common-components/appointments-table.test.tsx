@@ -375,6 +375,7 @@ describe('AppointmentsTable', () => {
     await user.click(cancelAction);
 
     expect(mockShowModal).toHaveBeenCalledWith('cancel-appointment-modal', {
+      appointment: expect.objectContaining({ uuid: cancellableAppointment.uuid }),
       appointmentUuid: cancellableAppointment.uuid,
       closeCancelModal: expect.any(Function),
     });

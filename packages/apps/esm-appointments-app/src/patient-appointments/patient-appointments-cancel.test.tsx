@@ -41,10 +41,10 @@ describe('CancelAppointmentModal', () => {
     });
   });
 
-  it('closes without changing state when the operator discards', async () => {
+  it('closes without changing state when the operator keeps the appointment', async () => {
     renderModal();
 
-    await userEvent.click(screen.getByRole('button', { name: /discard/i }));
+    await userEvent.click(screen.getByRole('button', { name: /conservar cita/i }));
 
     expect(closeCancelModal).toHaveBeenCalledTimes(1);
     expect(mockGetAppointmentStatus).not.toHaveBeenCalled();

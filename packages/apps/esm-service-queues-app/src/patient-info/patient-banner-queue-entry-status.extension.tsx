@@ -72,14 +72,19 @@ const PatientBannerQueueEntryStatus: React.FC<PatientBannerQueueEntryStatusProps
 // The color of the priority tag should not be hard coded, see:
 // https://openmrs.atlassian.net/browse/O3-4469
 const getTagType = (priority: string) => {
-  switch (priority) {
-    case 'emergency':
-      return 'red';
-    case 'not urgent':
-      return 'green';
-    default:
-      return 'gray';
+  const normalized = priority
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLocaleLowerCase();
+  // Priority displays arrive localized, so both the English and Spanish catalog
+  // values must map to their semantic color instead of falling through to gray.
+  if (normalized === 'emergency' || normalized === 'emergencia' || normalized === 'urgent' || normalized === 'urgente') {
+    return 'red';
   }
+  if (normalized === 'not urgent' || normalized === 'no urgente') {
+    return 'green';
+  }
+  return 'gray';
 };
 
 export default PatientBannerQueueEntryStatus;

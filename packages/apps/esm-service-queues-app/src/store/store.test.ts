@@ -1,10 +1,22 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  normalizeQueueFilterValue,
   updateSelectedQueueLocationUuid,
+  updateSelectedService,
   updateValueInSessionStorage,
   useServiceQueuesStore,
 } from './store';
+
+describe('normalizeQueueFilterValue', () => {
+  it.each([null, undefined, '', '  ', 'all', 'ALL'])('normalizes the All sentinel %s to no filter', (value) => {
+    expect(normalizeQueueFilterValue(value)).toBeNull();
+  });
+
+  it('keeps a concrete UUID and trims accidental whitespace', () => {
+    expect(normalizeQueueFilterValue(' queue-location-uuid ')).toBe('queue-location-uuid');
+  });
+});
 
 describe('Testing updateValueInSessionStorage', () => {
   beforeEach(() => {
@@ -48,5 +60,20 @@ describe('Testing updateValueInSessionStorage', () => {
     expect(result.current.queueLocationSelectionInitialized).toBe(true);
     expect(sessionStorage.getItem('queueLocationUuid')).toBe('outpatient-location');
     expect(sessionStorage.getItem('queueLocationSelection')).toBeNull();
+  });
+
+  it('does not send legacy All sentinels as UPSS or service UUIDs', () => {
+    const { result } = renderHook(() => useServiceQueuesStore());
+
+    act(() => {
+      updateSelectedQueueLocationUuid('all');
+      updateSelectedService('all', 'All');
+    });
+
+    expect(result.current.selectedQueueLocationUuid).toBeNull();
+    expect(result.current.selectedServiceUuid).toBeNull();
+    expect(sessionStorage.getItem('queueLocationUuid')).toBeNull();
+    expect(sessionStorage.getItem('queueServiceUuid')).toBeNull();
+    expect(sessionStorage.getItem('queueLocationSelection')).toBe('all');
   });
 });

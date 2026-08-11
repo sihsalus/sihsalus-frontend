@@ -96,8 +96,10 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
       } else {
         updateSelectedQueueLocationUuid(selectedItem.id);
         updateSelectedQueueLocationName(selectedItem.name);
-        updateSelectedService(null, t('all', 'All'));
       }
+      // A service belongs to the selected UPSS. Clear it for every UPSS
+      // transition (including "All") so no hidden stale service filters remain.
+      updateSelectedService(null, t('all', 'All'));
     },
     [t],
   );
@@ -132,14 +134,16 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
       return;
     }
 
-    handleQueueLocationChange({ selectedItem: { id: 'all', name: t('all', 'All') } });
+    // Preserve a valid persisted service when the initial scope is every UPSS.
+    // Explicit UPSS changes still clear the dependent service in the handler.
+    updateSelectedQueueLocationUuid(null);
+    updateSelectedQueueLocationName(null);
   }, [
     error,
     handleQueueLocationChange,
     isLoading,
     queueLocationSelectionInitialized,
     queueLocations,
-    t,
     userSession?.sessionLocation?.uuid,
   ]);
 

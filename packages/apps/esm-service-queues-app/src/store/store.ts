@@ -5,6 +5,11 @@ export const ALL_APPOINTMENT_STATUSES = '';
 const ALL_QUEUE_LOCATIONS = 'all';
 const queueLocationSelectionKey = 'queueLocationSelection';
 
+export function normalizeQueueFilterValue(value: string | null | undefined): string | null {
+  const normalizedValue = value?.trim();
+  return normalizedValue && normalizedValue.toLowerCase() !== 'all' ? normalizedValue : null;
+}
+
 export function updateValueInSessionStorage(key: string, value: string | null | undefined) {
   if (value === undefined || value === null) {
     sessionStorage.removeItem(key);
@@ -32,15 +37,18 @@ export interface ServiceQueuesState {
   emergencyUiActive?: boolean;
 }
 
-const persistedQueueLocationUuid = getValueFromSessionStorage('queueLocationUuid');
+const rawPersistedQueueLocationUuid = getValueFromSessionStorage('queueLocationUuid');
+const persistedQueueLocationUuid = normalizeQueueFilterValue(rawPersistedQueueLocationUuid);
 const persistedQueueLocationSelection = getValueFromSessionStorage(queueLocationSelectionKey);
 
 const initialServiceQueuesState: ServiceQueuesState = {
   selectedQueueLocationName: getValueFromSessionStorage('queueLocationName'),
   selectedQueueLocationUuid: persistedQueueLocationUuid,
   queueLocationSelectionInitialized:
-    Boolean(persistedQueueLocationUuid) || persistedQueueLocationSelection === ALL_QUEUE_LOCATIONS,
-  selectedServiceUuid: getValueFromSessionStorage('queueServiceUuid'),
+    Boolean(persistedQueueLocationUuid) ||
+    rawPersistedQueueLocationUuid?.toLowerCase() === ALL_QUEUE_LOCATIONS ||
+    persistedQueueLocationSelection === ALL_QUEUE_LOCATIONS,
+  selectedServiceUuid: normalizeQueueFilterValue(getValueFromSessionStorage('queueServiceUuid')),
   selectedServiceDisplay: getValueFromSessionStorage('queueServiceDisplay'),
   selectedQueueStatusUuid: getValueFromSessionStorage('queueStatusUuid'),
   selectedQueueStatusDisplay: getValueFromSessionStorage('queueStatusDisplay'),
@@ -53,10 +61,11 @@ const initialServiceQueuesState: ServiceQueuesState = {
 const serviceQueuesStore = createGlobalStore<ServiceQueuesState>('serviceQueues', initialServiceQueuesState);
 
 export const updateSelectedService = (currentServiceUuid: string | null | undefined, currentServiceDisplay: string) => {
-  updateValueInSessionStorage('queueServiceUuid', currentServiceUuid);
+  const normalizedServiceUuid = normalizeQueueFilterValue(currentServiceUuid);
+  updateValueInSessionStorage('queueServiceUuid', normalizedServiceUuid);
   updateValueInSessionStorage('queueServiceDisplay', currentServiceDisplay);
   serviceQueuesStore.setState({
-    selectedServiceUuid: currentServiceUuid,
+    selectedServiceUuid: normalizedServiceUuid,
     selectedServiceDisplay: currentServiceDisplay,
   });
 };
@@ -67,13 +76,14 @@ export const updateSelectedQueueLocationName = (currentLocationName: string | nu
 };
 
 export const updateSelectedQueueLocationUuid = (currentLocationUuid: string | null | undefined) => {
-  updateValueInSessionStorage('queueLocationUuid', currentLocationUuid);
+  const normalizedLocationUuid = normalizeQueueFilterValue(currentLocationUuid);
+  updateValueInSessionStorage('queueLocationUuid', normalizedLocationUuid);
   updateValueInSessionStorage(
     queueLocationSelectionKey,
-    currentLocationUuid ? null : ALL_QUEUE_LOCATIONS,
+    normalizedLocationUuid ? null : ALL_QUEUE_LOCATIONS,
   );
   serviceQueuesStore.setState({
-    selectedQueueLocationUuid: currentLocationUuid,
+    selectedQueueLocationUuid: normalizedLocationUuid,
     queueLocationSelectionInitialized: true,
   });
 };

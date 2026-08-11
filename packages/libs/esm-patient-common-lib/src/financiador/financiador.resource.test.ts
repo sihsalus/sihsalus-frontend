@@ -5,7 +5,9 @@ import {
   copyFinanciadorToVisit,
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
   fetchPersonInsurance,
+  fetchVisitInsurance,
   getCodedValueUuid,
+  getSisFinancingState,
   getTextValue,
   INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID,
   INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
@@ -13,6 +15,8 @@ import {
   LEGACY_SIS_PRODUCT_CONCEPT_UUIDS,
   normalizeFinanciadorConceptUuid,
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+  SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID,
   SIS_CONCEPT_UUID,
   safeCopyFinanciadorToVisit,
 } from './financiador.resource';
@@ -100,6 +104,54 @@ describe('normalizeFinanciadorConceptUuid', () => {
         legacySisProductConceptUuids: ['legacy-x'],
       }),
     ).toBe('sis-x');
+  });
+});
+
+describe('SIS financing eligibility', () => {
+  it('requires both the SIS financiador and an active accreditation', () => {
+    expect(
+      getSisFinancingState({
+        financiadorUuid: SIS_CONCEPT_UUID,
+        accreditationStatusUuid: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+      }),
+    ).toBe('active');
+    expect(
+      getSisFinancingState({
+        financiadorUuid: SIS_CONCEPT_UUID,
+        accreditationStatusUuid: SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID,
+      }),
+    ).toBe('inactive');
+    expect(
+      getSisFinancingState({ financiadorUuid: essaludConceptUuid, accreditationStatusUuid: null }),
+    ).toBe('notApplicable');
+  });
+
+  it('reads the visit-level financing attributes used by triage', async () => {
+    mockFetchSequence({
+      visitAttributes: [
+        {
+          uuid: 'visit-financiador',
+          value: { uuid: SIS_CONCEPT_UUID },
+          attributeType: { uuid: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID },
+        },
+        {
+          uuid: 'visit-number',
+          value: 'SIS-123',
+          attributeType: { uuid: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID },
+        },
+        {
+          uuid: 'visit-status',
+          value: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+          attributeType: { uuid: SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID },
+        },
+      ],
+    });
+
+    await expect(fetchVisitInsurance(visitUuid)).resolves.toEqual({
+      financiadorUuid: SIS_CONCEPT_UUID,
+      insuranceNumber: 'SIS-123',
+      accreditationStatusUuid: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+    });
   });
 });
 

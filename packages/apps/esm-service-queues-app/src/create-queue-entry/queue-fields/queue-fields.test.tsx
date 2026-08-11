@@ -5,6 +5,12 @@ import {
   useLayoutType,
   useSession,
 } from '@openmrs/esm-framework';
+import {
+  fetchVisitInsurance,
+  getSisFinancingState,
+  SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+  SIS_CONCEPT_UUID,
+} from '@openmrs/esm-patient-common-lib';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockSession, mockVisitAlice } from 'test-utils';
@@ -26,8 +32,16 @@ vi.mock('../hooks/useQueueLocations', () => ({ useQueueLocations: vi.fn() }));
 
 vi.mock('../../hooks/useQueues', () => ({ useQueues: vi.fn() }));
 
-vi.mock('./queue-fields.resource', () => {
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  fetchVisitInsurance: vi.fn(),
+  getSisFinancingState: vi.fn(),
+}));
+
+vi.mock('./queue-fields.resource', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./queue-fields.resource')>();
   return {
+    ...actual,
     postQueueEntry: vi.fn(),
     postQueueEntryWithoutVisit: vi.fn(),
   };
@@ -43,6 +57,8 @@ const mockPostQueueEntryWithoutVisit = vi.mocked(postQueueEntryWithoutVisit).moc
 } as Awaited<ReturnType<typeof postQueueEntryWithoutVisit>>);
 const mockUseQueueLocations = vi.mocked(useQueueLocations);
 const mockUseQueues = vi.mocked(useQueues);
+const mockFetchVisitInsurance = vi.mocked(fetchVisitInsurance);
+const mockGetSisFinancingState = vi.mocked(getSisFinancingState);
 
 const queueLocations = [
   { id: '1', name: 'Location 1' },
@@ -79,6 +95,12 @@ describe('QueueFields', () => {
     });
     mockUseQueueLocations.mockReturnValue({ queueLocations, isLoading: false, error: undefined });
     mockUseQueues.mockReturnValue({ queues, isLoading: false, error: undefined } as ReturnType<typeof useQueues>);
+    mockFetchVisitInsurance.mockResolvedValue({
+      financiadorUuid: SIS_CONCEPT_UUID,
+      insuranceNumber: 'SIS-123',
+      accreditationStatusUuid: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+    });
+    mockGetSisFinancingState.mockReturnValue('active');
   });
 
   it('renders the form fields and returns the set values', async () => {
@@ -146,6 +168,26 @@ describe('QueueFields', () => {
 
     expect(callbacks).toBeDefined();
     await act(async () => expect(callbacks?.onBeforeVisitSave()).toBe(false));
+    expect(mockPostQueueEntry).not.toHaveBeenCalled();
+  });
+
+  it('does not enqueue a triage visit without active SIS financing', async () => {
+    const user = userEvent.setup();
+    let callbacks: QueueFieldsCallbacks | undefined;
+    mockGetSisFinancingState.mockReturnValue('inactive');
+
+    render(
+      <QueueFields
+        requireActiveSisFinancing
+        setCallbacks={(value) => (callbacks = value)}
+      />,
+    );
+    await user.selectOptions(screen.getByLabelText('Select a service'), queues[0].uuid);
+
+    await expect(callbacks?.onVisitCreatedOrUpdated(mockVisitAlice)).rejects.toMatchObject({
+      code: 'TRIAGE_SIS_FINANCING_REQUIRED',
+    });
+    expect(mockFetchVisitInsurance).toHaveBeenCalledWith(mockVisitAlice.uuid);
     expect(mockPostQueueEntry).not.toHaveBeenCalled();
   });
 

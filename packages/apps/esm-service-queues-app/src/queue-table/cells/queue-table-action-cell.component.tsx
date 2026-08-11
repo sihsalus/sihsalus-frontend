@@ -3,6 +3,7 @@ import {
   getUserFacingErrorMessage,
   isDesktop,
   launchWorkspace2,
+  navigate,
   showModal,
   showSnackbar,
   userHasAccess,
@@ -28,8 +29,12 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
   const layout = useLayoutType();
   const session = useSession();
   const canEdit = canEditServiceQueues(session?.user);
+  const isTriageQueue = Boolean(queueEntry.workflow?.isTriageQueue);
+  const requiresCashier = isTriageQueue && queueEntry.workflow?.sisState !== 'active';
+  const canOpenBilling = userHasAccess('app:home.facturacion', session?.user);
   const canPerformTriage =
-    Boolean(queueEntry.workflow?.isTriageQueue) &&
+    isTriageQueue &&
+    !requiresCashier &&
     canEdit &&
     userHasAccess(vitalsEditPrivilege, session?.user) &&
     Boolean(queueEntry.visit?.uuid);
@@ -101,13 +106,36 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
     }
   };
 
+  const handleSendToCashier = () => {
+    showSnackbar({
+      isLowContrast: true,
+      kind: 'warning',
+      title: t('triageBlockedByFinancing', 'Triaje bloqueado por financiamiento'),
+      subtitle: t(
+        'sendPatientToCashierDescription',
+        'El paciente no tiene SIS vigente. Debe regularizar el pago o la cobertura en Caja antes de continuar con el triaje.',
+      ),
+    });
+    if (canOpenBilling) {
+      navigate({ to: `${globalThis.getOpenmrsSpaBase()}home/billing` });
+    }
+  };
+
   if (!canEdit) {
     return null;
   }
 
   return (
     <div className={styles.actionsCell}>
-      {queueEntry.workflow?.isTriageQueue && canPerformTriage ? (
+      {isTriageQueue && requiresCashier ? (
+        <Button
+          kind="danger--tertiary"
+          onClick={handleSendToCashier}
+          size={isDesktop(layout) ? 'sm' : 'lg'}
+        >
+          {canOpenBilling ? t('sendToCashier', 'Derivar a Caja') : t('requiresCashier', 'Requiere Caja')}
+        </Button>
+      ) : isTriageQueue && canPerformTriage ? (
         <Button
           disabled={isSubmittingTriage}
           kind="primary"

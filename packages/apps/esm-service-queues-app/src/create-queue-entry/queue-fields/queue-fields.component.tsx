@@ -17,6 +17,7 @@ import {
   useSession,
   type Visit,
 } from '@openmrs/esm-framework';
+import { fetchVisitInsurance, getSisFinancingState } from '@openmrs/esm-patient-common-lib';
 import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -39,6 +40,8 @@ import {
 } from './queue-fields.resource';
 import styles from './queue-fields.scss';
 
+export const TRIAGE_SIS_FINANCING_REQUIRED = 'TRIAGE_SIS_FINANCING_REQUIRED';
+
 // Same visual convention as patient registration and the appointments form.
 function RequiredFieldLabel({ label }: { label: string }) {
   return <span className={styles.requiredLabel}>{label}</span>;
@@ -51,6 +54,7 @@ export interface QueueFieldsProps {
   requestedServiceName?: string;
   patientUuid?: string;
   visitRequired?: boolean;
+  requireActiveSisFinancing?: boolean;
   onQueueEntryAdded?: () => void | Promise<void>;
   setCallbacks(callbacks: QueueFieldsCallbacks): void;
 }
@@ -70,6 +74,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   patientUuid,
   requestedServiceName,
   visitRequired = true,
+  requireActiveSisFinancing = false,
   onQueueEntryAdded,
   setCallbacks,
 }) => {
@@ -160,29 +165,52 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   }, [isValid]);
 
   const onSubmit = useCallback(
-    (visit?: Visit) => {
+    async (visit?: Visit) => {
       if (!onBeforeVisitSave()) {
-        return Promise.reject(new Error('Queue fields are incomplete.'));
+        throw new Error('Queue fields are incomplete.');
       }
 
       const resolvedPatientUuid = visit?.patient?.uuid ?? patientUuid;
       if (selectedQueueLocation && selectedService && priority && status && resolvedPatientUuid) {
-        const createQueueEntry = visit
-          ? postQueueEntry(
-              visit.uuid,
-              selectedService,
-              resolvedPatientUuid,
-              priority,
-              status,
-              sortWeight,
-              selectedQueueLocation,
-              visitQueueNumberAttributeUuid,
-              visit.startDatetime,
-            )
-          : postQueueEntryWithoutVisit(selectedService, resolvedPatientUuid, priority, status, sortWeight);
+        try {
+          if (requireActiveSisFinancing) {
+            if (!visit?.uuid) {
+              throw Object.assign(new Error('A persisted visit is required to validate SIS financing.'), {
+                code: TRIAGE_SIS_FINANCING_REQUIRED,
+              });
+            }
+            const visitInsurance = await fetchVisitInsurance(visit.uuid);
+            if (getSisFinancingState(visitInsurance) !== 'active') {
+              throw Object.assign(new Error('The visit does not have active SIS financing.'), {
+                code: TRIAGE_SIS_FINANCING_REQUIRED,
+              });
+            }
+          }
 
-        return createQueueEntry
-          .catch((error) => {
+          const createQueueEntry = visit
+            ? postQueueEntry(
+                visit.uuid,
+                selectedService,
+                resolvedPatientUuid,
+                priority,
+                status,
+                sortWeight,
+                selectedQueueLocation,
+                visitQueueNumberAttributeUuid,
+                visit.startDatetime,
+              )
+            : postQueueEntryWithoutVisit(selectedService, resolvedPatientUuid, priority, status, sortWeight);
+
+          await createQueueEntry;
+          showSnackbar({
+            kind: 'success',
+            isLowContrast: true,
+            title: t('addedPatientToQueue', 'Added patient to queue'),
+            subtitle: t('queueEntryAddedSuccessfully', 'Queue entry added successfully'),
+          });
+          memoMutateQueueEntries();
+          return await onQueueEntryAdded?.();
+        } catch (error) {
             showSnackbar({
               title: t('queueEntryError', 'No se pudo agregar el paciente a la cola'),
               kind: 'error',
@@ -212,6 +240,10 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
                       'queueTicketGenerationFailed',
                       'No se pudo generar el número de turno. Verifique la configuración antes de reintentar.',
                     ),
+                    [TRIAGE_SIS_FINANCING_REQUIRED]: t(
+                      'triageSisFinancingRequired',
+                      'No se puede continuar con el triaje porque esta atención no tiene SIS vigente. Derive al paciente a Caja para regularizar el pago o la cobertura.',
+                    ),
                   },
                   logContext: 'Add patient to queue',
                 },
@@ -219,19 +251,9 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
               ),
             });
             throw error;
-          })
-          .then(() => {
-            showSnackbar({
-              kind: 'success',
-              isLowContrast: true,
-              title: t('addedPatientToQueue', 'Added patient to queue'),
-              subtitle: t('queueEntryAddedSuccessfully', 'Queue entry added successfully'),
-            });
-            memoMutateQueueEntries();
-            return onQueueEntryAdded?.();
-          });
+        }
       } else {
-        return Promise.resolve();
+        return;
       }
     },
     [
@@ -245,6 +267,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
       memoMutateQueueEntries,
       onQueueEntryAdded,
       onBeforeVisitSave,
+      requireActiveSisFinancing,
       t,
     ],
   );

@@ -354,14 +354,10 @@ test('searches and saves one selected codigo prestacional concept', async () => 
   );
 });
 
-test('omits the codigo prestacional obs when no catalog concept was selected', async () => {
+test('blocks saving until a catalog concept backs the mandatory codigo prestacional', async () => {
   const user = userEvent.setup();
 
   mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
-  mockSaveVisitNote.mockResolvedValueOnce({
-    status: 201,
-    data: { uuid: 'new-visit-note-encounter-uuid' },
-  } as Awaited<ReturnType<typeof saveVisitNote>>);
 
   renderVisitNotesForm();
 
@@ -371,13 +367,10 @@ test('omits the codigo prestacional obs when no catalog concept was selected', a
 
   await user.click(screen.getByRole('button', { name: /Save and close/i }));
 
-  await waitFor(() => expect(mockSaveVisitNote).toHaveBeenCalledTimes(1));
-  const savedObs = mockSaveVisitNote.mock.calls[0][1].obs ?? [];
-  expect(
-    savedObs.some(
-      (obs) => obs.concept?.uuid === defaultVisitNoteClinicalConceptUuids.codigoPrestacionalConceptUuid,
-    ),
-  ).toBe(false);
+  // The label says "Obligatorio", so free text without a catalog selection must
+  // not produce an encounter at all.
+  expect(await screen.findByText('Seleccione un código prestacional del catálogo')).toBeInTheDocument();
+  expect(mockSaveVisitNote).not.toHaveBeenCalled();
 });
 
 test('closes the form and the workspace when the cancel button is clicked', async () => {
@@ -390,6 +383,16 @@ test('closes the form and the workspace when the cancel button is clicked', asyn
 
   expect(defaultProps.closeWorkspace).toHaveBeenCalledTimes(1);
 });
+
+
+async function selectCodigoPrestacional(user: ReturnType<typeof userEvent.setup>) {
+  mockFetchPrestacionalConceptsByName.mockResolvedValue([
+    { uuid: 'prestacional-001', display: '001 - Consulta externa' },
+  ]);
+  const searchBox = screen.getByRole('searchbox', { name: /indique el código prestacional/i });
+  await user.type(searchBox, 'consulta');
+  await user.click(await screen.findByRole('button', { name: '001 - Consulta externa' }));
+}
 
 test('renders a success snackbar upon successfully recording a visit note', async () => {
   const user = userEvent.setup();
@@ -450,6 +453,7 @@ test('renders a success snackbar upon successfully recording a visit note', asyn
   expect(clinicalNote).toHaveValue('Sample clinical note');
 
   const submitButton = screen.getByRole('button', { name: /Save and close/i });
+  await selectCodigoPrestacional(user);
   await user.click(submitButton);
 
   await waitFor(() => expect(mockSaveVisitNote).toHaveBeenCalledTimes(1));
@@ -494,6 +498,8 @@ test('renders an error snackbar if there was a problem recording a condition', a
   await user.clear(clinicalNote);
   await user.type(clinicalNote, 'Sample clinical note');
   expect(clinicalNote).toHaveValue('Sample clinical note');
+
+  await selectCodigoPrestacional(user);
 
   await user.click(submitButton);
 
@@ -622,6 +628,7 @@ test('updates existing visit note when in edit mode', async () => {
 
   // Submit form
   const submitButton = screen.getByRole('button', { name: /Save and close/i });
+  await selectCodigoPrestacional(user);
   await user.click(submitButton);
 
   expect(mockUpdateVisitNote).toHaveBeenCalledWith(
@@ -717,6 +724,7 @@ test('allows saving visit note without primary diagnosis when isPrimaryDiagnosis
   expect(clinicalNote).toHaveValue('Clinical note without diagnosis');
 
   const submitButton = screen.getByRole('button', { name: /Save and close/i });
+  await selectCodigoPrestacional(user);
   await user.click(submitButton);
 
   // Should not show validation error for missing primary diagnosis

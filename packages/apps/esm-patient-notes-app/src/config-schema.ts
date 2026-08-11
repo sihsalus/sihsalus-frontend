@@ -15,7 +15,8 @@ export const configSchema = {
   prestacionalConceptSourceName: {
     _type: Type.String,
     _default: 'Codigos Prestacionales,Códigos Prestacionales',
-    _description: 'Comma-separated OpenMRS concept source names for SIHSALUS prestacional codes imported from OCL',
+    _description:
+      'Comma-separated display names of the ConvSet whose members are SIHSALUS prestacional codes imported from OCL',
   },
   stickyNoteConceptUuid: {
     _type: Type.ConceptUuid,

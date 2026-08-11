@@ -1,8 +1,20 @@
-![Node.js CI](https://github.com/sihsalus/openmrs-esm-sihsalus-modules/workflows/Node.js%20CI/badge.svg)
+# esm-atencion-ambulatoria-app
 
-# SIH SALUS ESM Modules
+Microfrontend de atención ambulatoria y consulta externa para SIH Salus, una distribución de OpenMRS 3.x adaptada al ecosistema de salud peruano y las directrices del MINSA.
 
-Colección de módulos microfrontend para SIH SALUS, una distribución especializada de OpenMRS 3.x adaptada al ecosistema de salud peruano y las directrices del MINSA.
+## Contrato RBAC actual
+
+Los permisos de lectura protegen los puntos de entrada y mantienen visibles los datos clínicos. Los permisos de edición ocultan las acciones de registro o modificación cuando el usuario solo puede consultar.
+
+| Superficie | Lectura / entrada | Modificación |
+| --- | --- | --- |
+| Consulta externa e historia médica | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar` |
+| Historia social | `app:hoja.clinica.historiaSocial` | `app:hoja.clinica.historiaSocial.editar` |
+| Prescripción desde el plan de tratamiento | Entrada por Consulta Externa | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.ordenes.editar` |
+
+En la navegación normal, los guards se acumulan: primero se entra al dashboard con lectura y después se habilita la acción con edición. Los workspaces y modales registrados declaran directamente el privilegio de edición, sin inferir el permiso base; OpenMRS no implementa herencia padre/hijo por el nombre del privilegio.
+
+Las listas y estados vacíos siguen visibles en modo de solo lectura, pero sin botones de registro. Los controles heredados de antecedentes todavía delegan el bloqueo final al workspace o modal registrado. Estos guards frontend no sustituyen los permisos del backend para leer o guardar encounters, condiciones, observaciones u órdenes.
 
 ## TODO content/backend
 
@@ -21,7 +33,7 @@ Los valores de `formsList` para consulta externa usan los nombres estables publi
 - Validar que el dashboard lea correctamente datos de triaje, motivo de consulta, financiador, pertenencia étnica y plan de tratamiento.
 - Probar creación y edición de diagnósticos clasificados con CIE/conceptos, incluyendo eliminación o reemplazo si aplica.
 - Probar referencia/contrarreferencia con datos completos y confirmar que el encounter se consulta después de recargar.
-- Validar permisos de usuario para abrir workspaces, guardar formularios clínicos y consultar encounters previos.
+- Probar la matriz anterior con perfiles de solo lectura y edición, incluyendo apertura directa de workspaces y autorización backend al guardar.
 - Mantener pacientes de prueba para consulta sin datos, consulta con triaje, consulta completa y consulta con referencia.
 
 ## TODO i18n/UI
@@ -31,7 +43,3 @@ Los valores de `formsList` para consulta externa usan los nombres estables publi
 - Revisar componentes que usan `useTranslation()` sin namespace explícito cuando se renderizan desde slots compartidos.
 - Validar que los labels largos de diagnóstico, referencia/contrarreferencia y pertenencia étnica no se corten en desktop/tablet.
 - Revisar `en.json` y traducciones heredadas para evitar mezcla de español/inglés en pantallas clínicas.
-
-## 🏥 Características Principales
-
-- **SIH SALUS Library**: Componentes UI y servicios comunes optimizados para el flujo de trabajo peruano

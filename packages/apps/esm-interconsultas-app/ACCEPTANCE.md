@@ -106,7 +106,7 @@ Este documento define el contrato funcional que debe cumplir el flujo de interco
 | Caso | Unitarias/componentes | E2E con backend | Estado inicial |
 | --- | --- | --- | --- |
 | AC-01 | Payload, validacion, errores y atomicidad | Crear desde el workspace | Parcial |
-| AC-02 | Privilegios y catalogo visible | Solicitante y receptor con roles distintos | Pendiente |
+| AC-02 | Privilegios y catalogo visible | Solicitante y receptor con roles distintos | Parcial |
 | AC-03 | Maquina de estados y concurrencia | Recibir y recoger con receptor | Parcial |
 | AC-04 | Payload, orden de operaciones e idempotencia | Responder y validar procedencia | Parcial |
 | AC-05 | Clasificacion y acciones permitidas | Rechazar y cancelar | Parcial |
@@ -127,6 +127,13 @@ Este documento define el contrato funcional que debe cumplir el flujo de interco
 - Brecha reproducida: la busqueda de destinos no normaliza tildes ni excluye miembros retirados.
 
 Las pruebas unitarias marcadas con `[brecha]` usan `expectKnownGap`: pasan solamente mientras el defecto siga siendo reproducible. Cuando una correccion haga pasar la asercion clinica, el helper falla y obliga a convertir el escenario en una prueba regular.
+
+## Estado RBAC actual - 2026-08-10
+
+- Resuelto respecto del baseline: la URL directa de la bandeja ya tiene un guard `app:home.interconsultas` en el componente raiz.
+- Pendiente: Home read/Home edit no bastan para abrir detalle ni modales de gestion, porque esos registros exigen privilegios del chart.
+- Pendiente: las acciones no se filtran todavía por pertenencia del usuario al servicio destino.
+- Pendiente: validar los cuatro privilegios con roles reales del backend; un superusuario no sustituye esta prueba.
 
 ## Criterio de cierre
 

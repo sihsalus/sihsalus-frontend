@@ -12,6 +12,24 @@ Microfrontend independiente para el flujo de **Interconsultas** (NTS 030-MINSA, 
 
 Los escenarios funcionales y sus criterios verificables están definidos en [ACCEPTANCE.md](./ACCEPTANCE.md). Esa matriz es el contrato para las pruebas unitarias, de componentes y E2E; el flujo no se considera cerrado mientras conserve casos marcados como parciales o pendientes.
 
+## Contrato RBAC actual
+
+| Superficie | Lectura | Edición / acción |
+| --- | --- | --- |
+| Bandeja de Home y URL directa | `app:home.interconsultas` | `app:home.interconsultas.editar` |
+| Widget e historial en la hoja clínica | `app:hoja.clinica.interconsultas` | `app:hoja.clinica.interconsultas.editar` |
+| Solicitar una interconsulta desde la hoja clínica | Entrada por la hoja clínica y visita activa | `app:hoja.clinica.interconsultas.editar` |
+
+La URL directa de la bandeja está protegida dentro del componente raíz con `app:home.interconsultas`, además de los guards del manifest. En la tabla, los comandos de mutación se muestran si el usuario tiene **Home edit OR Chart edit**; este OR es explícito y no debe reemplazarse por un arreglo de `userHasAccess`, porque los arreglos se evalúan como AND.
+
+### Brechas RBAC conocidas
+
+- Los modales de recibir, atender, rechazar y responder están registrados solo con `app:hoja.clinica.interconsultas.editar`. Por ello, `app:home.interconsultas.editar` puede hacer visibles los comandos, pero no basta para completar el flujo desde Home.
+- El detalle se ofrece desde una bandeja protegida por Home read, pero el modal de detalle exige `app:hoja.clinica.interconsultas`.
+- La UI todavía no limita las acciones por el servicio destino del usuario. La pertenencia al servicio descrita en AC-02 sigue siendo un criterio pendiente, no un control implementado.
+
+Hasta alinear esos registros, un rol operativo de la bandeja necesita también los privilegios de la hoja clínica correspondientes. Los guards frontend no sustituyen la autorización de Orders/Encounter del backend.
+
 ## Principio de no duplicación
 
 La interconsulta **solo referencia** recursos existentes:

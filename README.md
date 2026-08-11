@@ -27,8 +27,8 @@ yarn install
 # 2. Configurar entorno (recomendado)
 cp .env.template .env    # editar si se necesita apuntar a otro backend
 
-# 3. Levantar el dev server
-yarn clean && yarn build && yarn assemble
+# 3. Construir el SPA inicial y levantar el dev server
+yarn package:spa
 SIHSALUS_DEV_APPS=esm-login-app,esm-home-app yarn start
 # → http://localhost:8080/openmrs/spa/
 
@@ -37,36 +37,35 @@ yarn start --port 3000
 # → http://localhost:3000/openmrs/spa/
 ```
 
-El dev server hace proxy de las peticiones de API al backend definido en `SIHSALUS_BACKEND_URL` (ver [.env.template](.env.template)). Si no se define, usa el backend dev por defecto y lo advierte al arrancar.
+`yarn start` necesita primero un SPA válido en `dist/spa`; `yarn package:spa` compila las apps, ensambla ese artefacto y lo valida. El dev server hace proxy de las peticiones de API al backend definido en `SIHSALUS_BACKEND_URL` (ver [.env.template](.env.template)). Si no se define, usa `http://gidis-hsc-dev.inf.pucp.edu.pe` y lo advierte al arrancar.
 
 ## Repository Structure
 
 ```
 packages/
   declarations.d.ts                     # Global declarations for TS
-  vitest.config.js                      # Root Vitest configuration
   tsconfig.json                         # Root TypeScript configuration
   test-utils/                           # Shared fixtures, test wrappers and stubs
   tooling/
-    configs/                            # Shared Jest/Vitest/TS config helpers
+    configs/                            # Shared Jest/Vitest/TS config helpers (including vitest-config.ts)
     openmrs/                            # CLI (openmrs develop, build, assemble)
     rspack-config/                      # Shared Rspack configuration
-  apps/                                 # 57 frontend modules (esm-*-app)
+  apps/                                 # 66 frontend modules (esm-*-app)
   libs/
     esm-rbac/                           # @sihsalus/esm-rbac — HIPAA role-based access control
     esm-audit-logger/                   # @sihsalus/esm-audit-logger — Client-side PHI audit logging
-    esm-sihsalus-shared/                # @sihsalus/esm-sihsalus-shared — Shared UI components and hooks
+    esm-api/                            # @openmrs/esm-api — Local API/session utilities and privilege aliases
     esm-framework/                      # @openmrs/esm-framework — local workspace fork
     esm-patient-common-lib/             # @openmrs/esm-patient-common-lib — Shared patient utilities
     esm-styleguide/                     # @openmrs/esm-styleguide — Carbon-based component library
-packages/tooling/
+packages/tooling/scripts/
   assemble-importmap.js                 # Import map assembly for SPA build
   start-dev.js                          # Local dev server entrypoint
-  i18next-parser.config.js               # i18n extraction config
+  i18next-parser.config.js              # i18n extraction config
 e2e/                                    # Playwright E2E tests
 ```
 
-> **Note:** OpenMRS core packages are mixed: `@openmrs/esm-framework` is provided by the local workspace at `packages/libs/esm-framework`, while `@openmrs/esm-app-shell` is resolved from npm and patched through Yarn (`.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-form-stack-sharing.patch`).
+> **Note:** OpenMRS core packages are mixed: `@openmrs/esm-framework` is provided by the local workspace at `packages/libs/esm-framework`, while `@openmrs/esm-app-shell` is resolved from npm and patched through Yarn (`.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch`).
 
 ## Commands
 
@@ -74,20 +73,24 @@ e2e/                                    # Playwright E2E tests
 
 ```bash
 yarn install                                # Instalar dependencias
+yarn package:spa                            # Primera ejecución: compilar, ensamblar y validar dist/spa
 yarn start                                  # Dev server → proxy a SIHSALUS_BACKEND_URL
 SIHSALUS_BACKEND_URL=http://... yarn start  # Apuntar a otro backend en esta sesión
 ```
 
+Después del ensamble inicial, `yarn start` recompila con hot reload las apps de `SIHSALUS_DEV_APPS`. Vuelve a ejecutar `yarn assemble` cuando cambien rutas, el import map o la configuración ensamblada; usa `yarn package:spa` cuando también necesites reconstruir todas las apps.
+
 ### Qué comando usar (`start` vs `serve` vs `serve:prod`)
 
-- `yarn start` (**recomendado para desarrollo diario**) usa [packages/tooling/scripts/start-dev.js](packages/tooling/scripts/start-dev.js), que lanza `openmrs develop` con `--importmap` y `--routes`, y además sirve assets/chunks desde `dist/spa` mediante proxy.
-- `yarn serve` ejecuta `openmrs start` directo (ver [package.json](package.json)) después de compilar apps. En esta base, `openmrs start` hace descubrimiento local de módulos compilados (`packages/apps/*/dist`) y genera importmap/rutas en memoria (ver [packages/tooling/openmrs/src/commands/start.ts](packages/tooling/openmrs/src/commands/start.ts)).
-- `yarn serve:prod` compila todo + ejecuta `assemble-importmap.js` y luego `openmrs start`. El `dist/spa` generado queda como fallback estático durante el servido (también en [packages/tooling/openmrs/src/commands/start.ts](packages/tooling/openmrs/src/commands/start.ts)).
+- `yarn start` (**recomendado para desarrollo diario**) usa [packages/tooling/scripts/start-dev.js](packages/tooling/scripts/start-dev.js), que exige un `dist/spa` ensamblado, lanza `openmrs develop` con `--importmap` y `--routes`, y sirve los demás assets/chunks desde ese artefacto mediante proxy.
+- `yarn serve` ejecuta `openmrs start` directamente y no compila antes. Descubre los módulos que ya existan en `packages/apps/*/dist`, genera import map/rutas en memoria y usa `https://dev3.openmrs.org/` como backend salvo que se pase `--backend` (ver [packages/tooling/openmrs/src/commands/start.ts](packages/tooling/openmrs/src/commands/start.ts)).
+- `yarn serve:prod` ejecuta `build:apps`, ensambla `dist/spa` y después lanza `openmrs start`. No ejecuta el build repo-wide de todas las librerías y herramientas por separado.
 
 Resumen práctico:
 
 - Para desarrollo local con hot-reload/control de módulos: `yarn start`.
-- Para validar comportamiento de `openmrs start` con artefactos compilados: `yarn serve` / `yarn serve:prod`.
+- Para validar `openmrs start` con artefactos ya compilados: `yarn serve --backend http://...`.
+- Para compilar las apps, ensamblar y validar antes de servir: `yarn serve:prod --backend http://...`.
 
 ### Building
 
@@ -95,6 +98,7 @@ Resumen práctico:
 yarn build                                  # Build all packages
 yarn build:apps                             # Build only app packages
 yarn assemble                               # Assemble import map
+yarn package:spa                            # Build apps + assemble + validate dist/spa
 yarn turbo run build --filter=<package>     # Build single package
 ```
 
@@ -109,7 +113,7 @@ yarn test:e2e                               # Run Playwright E2E tests
 ### Quality
 
 ```bash
-yarn lint                                   # ESLint all packages
+yarn lint                                   # Biome lint in all packages
 yarn typecheck                              # TypeScript check all packages
 yarn verify                                 # lint + typecheck + test
 yarn verify:changed --base origin/main      # Verify changed workspaces plus workspace dependents
@@ -150,46 +154,49 @@ Estado QLTY actualizado el 2026-07-04: ver [QLTY frontend hardening audit](docs/
 
 ```bash
 yarn clean                                  # Remove generated monorepo artifacts
-yarn clean:dry-run                          # Preview what would be removed
+yarn clean --dry-run                        # Preview what would be removed
 ```
 
 `yarn clean` is a repo-wide clean for generated artifacts only. It removes workspace outputs such as `dist/`, `coverage/`, `.turbo/`, `storybook-static/`, Playwright reports, and TypeScript build info files without touching `node_modules/` or source directories.
 
-Use `yarn clean:dry-run` first when you want to inspect what will be deleted.
+Use `yarn clean --dry-run` first when you want to inspect what will be deleted.
 
 ### Concurrency
 
-This monorepo has 50+ packages. Avoid high concurrency on resource-constrained machines:
+This monorepo has 90 workspace packages. Avoid high concurrency on resource-constrained machines:
 
 ```bash
 yarn turbo run build --concurrency=4
-yarn turbo run test --filter=@openmrs/esm-login-app   # Single package
+yarn turbo run test --filter=@sihsalus/esm-login-app   # Single package
 ```
 
 ### Docker
 
-```bash
-docker build -t ghcr.io/sihsalus/sihsalus-frontend:dev .
-```
+La imagen publicada en GHCR usa el target `secure-init`: ensambla el SPA en `/spa` y termina. No contiene un servidor HTTP. El despliegue de `sihsalus-distro-referenceapplication` la ejecuta como init container con un volumen compartido que luego sirve Nginx.
 
-Nginx / reverse proxy configuration is managed in the infra repo (`sihsalus-distro-referenceapplication`).
-
-Para levantar la imagen publicada (branch `main`) en un servidor:
+Para fijar un despliegue a la imagen publicada por `main`, resuelve primero su digest y úsalo en la configuración del repositorio de infraestructura:
 
 ```bash
 # 1) Traer la etiqueta latest y resolver el digest exacto
 docker pull ghcr.io/sihsalus/sihsalus-frontend:latest
-DIGEST=$(docker inspect --format '{{ index .RepoDigests 0 }}' ghcr.io/sihsalus/sihsalus-frontend:latest)
-echo "$DIGEST"
+IMAGE_REF=$(docker inspect --format '{{ index .RepoDigests 0 }}' ghcr.io/sihsalus/sihsalus-frontend:latest)
+echo "$IMAGE_REF"
 
-# 2) Redeploy con ese digest (recomendado para reproducibilidad)
-docker rm -f sihsalus-frontend || true
-docker run -d --name sihsalus-frontend -p 8080:8080 "$DIGEST"
+# Configurar IMAGE_REF en la distribución; ya incluye @sha256:...
 ```
+
+Para una imagen local que sí sirva el SPA con Nginx:
+
+```bash
+docker build --target spa-nginx -t sihsalus-frontend:local .
+docker run --rm --name sihsalus-frontend --network sihsalus-network -p 8080:80 sihsalus-frontend:local
+```
+
+La red usada en el ejemplo debe contener o resolver un servicio `backend` en el puerto `8080`; es el upstream configurado en [nginx.spa.conf](nginx.spa.conf). Nginx / reverse proxy y el volumen de producción se administran en el repositorio de infraestructura.
 
 ## Architecture
 
-- **Turborepo** orchestrates builds across ~50 packages with caching
+- **Turborepo** orchestrates builds across 90 workspace packages with caching
 - **Yarn 4 (Berry)** manages dependencies with `node-modules` linker
 - **single-spa** orchestrates microfrontend modules at runtime via import maps
 - **Rspack** (Webpack-compatible) is the bundler; Module Federation enables shared deps
@@ -266,7 +273,7 @@ Si una app falla con `501`, `workspace not registered`, `modal not registered`, 
 | `esm-billing-app`                | `@openmrs/esm-billing-app`               |
 | `esm-patient-immunizations-app`  | `@openmrs/esm-patient-immunizations-app` |
 
-Custom modules with no upstream equivalent: `esm-atencion-ambulatoria-app`, `esm-care-logbook-app`, `esm-coststructure-app`, `esm-cred-app` (`packages/apps/esm-crecimiento-desarrollo-app`), `esm-dyaku-app`, `esm-emergency-app`, `esm-ficha-familiar-app`, `esm-fua-app`, `esm-indicadores-app`, `esm-odontologia-app` (`packages/apps/esm-odontologia-app`), `esm-reports-app`, `esm-salud-materna-app`, `esm-seguimiento-casos-app`.
+Selected custom modules with no upstream equivalent: `esm-atencion-ambulatoria-app`, `esm-care-logbook-app`, `esm-coststructure-app`, `esm-cred-app` (`packages/apps/esm-crecimiento-desarrollo-app`), `esm-dyaku-app`, `esm-emergency-app`, `esm-ficha-familiar-app`, `esm-fua-app`, `esm-indicadores-app`, `esm-interconsultas-app`, `esm-odontologia-app`, `esm-psicologia-app`, `esm-reports-app`, `esm-salud-materna-app`, `esm-seguimiento-casos-app`, `esm-tamizajes-app` and `esm-terapia-fisica-app`.
 
 ## Calidad esperada antes de agregar features
 
@@ -281,23 +288,23 @@ Antes de sumar funcionalidad clinica nueva, revisar:
 
 ## Environment Variables
 
-Crea un archivo `.env` en la raíz del repo (ver [.env.template](.env.template)):
+Crea un archivo `.env` en la raíz del repo (ver [.env.template](.env.template)). `yarn start` carga ese archivo directamente. Los comandos de ensamble leen `SPA_PATH`, `API_URL` y `SIHSALUS_PUBLIC_SPA_URL` del entorno del proceso; expórtalas en la shell o defínelas en `.env.yarn` cuando deban afectar `yarn assemble`.
 
-| Variable                         | Default                                | Descripción                                                            |
-| -------------------------------- | -------------------------------------- | ---------------------------------------------------------------------- |
-| `SIHSALUS_BACKEND_URL`           | `https://gidis-hsc-dev.inf.pucp.edu.pe` | Backend OpenMRS al que se hace proxy en dev y se descarga el importmap |
-| `SIHSALUS_REQUIRE_BACKEND_URL`   | `false`                                | Si es `true`, `yarn start` falla cuando falta `SIHSALUS_BACKEND_URL`   |
-| `SIHSALUS_BACKEND_FETCH_TIMEOUT_MS` | `5000`                              | Timeout para descargar importmap/rutas del backend en `openmrs start`  |
-| `SIHSALUS_DEV_APPS`              | *(apps frontend principales)*          | Microfrontends que se recompilan con hot reload; los demás se sirven desde `dist/spa` |
-| `SIHSALUS_DEV_TYPECHECK`         | `true`                                 | Usa `false` para evitar un worker TypeScript residente por app; valida el paquete editado con su script `typescript` |
-| `SIHSALUS_AUTH_MODE`             | `openmrs`                              | Modo de auth: `openmrs` (básico) o `keycloak` (OIDC)                   |
-| `SIHSALUS_ALLOW_SELF_SIGNED_TLS` | `true` para DEV/QLTY internos; `false` para otros backends | Activa TLS "insecure" para backends internos con certificados auto-firmados en desarrollo. Usa `false` para forzar validación estricta |
-| `SIHSALUS_FHIR_BASE`             | *(derivado del backend)*               | URL base de FHIR R4                                                    |
-| `SIHSALUS_PUBLIC_SPA_URL`        | *(opcional)*                           | URL pública absoluta del SPA para Open Graph/Twitter previews          |
-| `SIHSALUS_DEV_LOCAL_CONFIG_RATE_LIMIT_WINDOW_MS` | `60000`                  | Ventana del límite por IP para leer configuración local en desarrollo  |
-| `SIHSALUS_DEV_LOCAL_CONFIG_RATE_LIMIT_MAX` | `300`                             | Máximo de lecturas por IP y ventana; cero no desactiva la protección   |
-| `SPA_PATH`                       | `/openmrs/spa`                         | Base path para los assets del SPA                                      |
-| `API_URL`                        | `/openmrs`                             | Base path de la API de OpenMRS                                         |
+| Variable | Ámbito y valor por defecto | Descripción |
+| --- | --- | --- |
+| `SIHSALUS_BACKEND_URL` | Dev server; la plantilla usa HTTPS y el fallback interno es `http://gidis-hsc-dev.inf.pucp.edu.pe` | Backend OpenMRS al que `yarn start` redirige API y sesión |
+| `SIHSALUS_REQUIRE_BACKEND_URL` | Dev server; `false` | Si es `true`, `yarn start` falla en vez de usar el fallback |
+| `SIHSALUS_BACKEND_FETCH_TIMEOUT_MS` | `openmrs start`; `5000` | Timeout para intentar descargar import map/rutas del backend al usar `yarn serve` |
+| `SIHSALUS_DEV_APPS` | Dev server; lista principal integrada | Apps con hot reload; usa una lista separada por comas o `none` para servir solo el SPA ensamblado |
+| `SIHSALUS_DEV_TYPECHECK` | Build dev; `true` | Usa `false` para evitar un worker TypeScript residente por app y valida el paquete editado con su script `typescript` |
+| `SIHSALUS_AUTH_MODE` | Dev server; `openmrs` | Modo de autenticación: `openmrs` o `keycloak` |
+| `SIHSALUS_ALLOW_SELF_SIGNED_TLS` | Dev/E2E; la plantilla usa `true`; si se omite, es automático solo para los hosts DEV/QLTY conocidos | `true` desactiva la verificación TLS para el backend configurado; usa un override explícito solo en entornos controlados |
+| `SIHSALUS_FHIR_BASE` | Dev server; derivado de `SIHSALUS_BACKEND_URL` | URL base de FHIR R4 mostrada y propagada al proceso de desarrollo |
+| `SIHSALUS_PUBLIC_SPA_URL` | Ensamble; vacío | URL pública absoluta usada para metatags Open Graph/Twitter |
+| `SIHSALUS_DEV_LOCAL_CONFIG_RATE_LIMIT_WINDOW_MS` | `openmrs develop`; `60000` | Ventana del límite por IP para leer configuración local |
+| `SIHSALUS_DEV_LOCAL_CONFIG_RATE_LIMIT_MAX` | `openmrs develop`; `300` | Máximo de lecturas por IP y ventana; cero no desactiva esta protección |
+| `SPA_PATH` | Ensamble/contenedor; `/openmrs/spa` | Ruta base de los assets del SPA |
+| `API_URL` | Ensamble/contenedor; `/openmrs` | Ruta base de la API OpenMRS |
 
 ## Security and compliance direction
 

@@ -1,4 +1,5 @@
 import { ActionMenuButton2, ShoppingCartIcon, UserHasAccess } from '@openmrs/esm-framework';
+import { orderBasketPrivileges } from '../order-basket-access';
 import {
   type PatientChartWorkspaceActionButtonProps,
   useOrderBasket,
@@ -26,7 +27,7 @@ const OrderBasketActionButton: React.FC<PatientChartWorkspaceActionButtonProps> 
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid ?? undefined);
 
   return (
-    <UserHasAccess privilege="app:hoja.clinica.canastaOrdenes">
+    <UserHasAccess privilege={orderBasketPrivileges}>
       <ActionMenuButton2
         icon={(props: ComponentProps<typeof ShoppingCartIcon>) => <ShoppingCartIcon {...props} />}
         label={t('orderBasket', 'Order basket')}

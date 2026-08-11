@@ -2,7 +2,7 @@ import { formatTime, openmrsFetch, parseDate, restBaseUrl, useConfig } from '@op
 import useSWRImmutable from 'swr/immutable';
 
 import { type ConfigObject } from '../../config-schema';
-import { type Observation, type PatientVitals } from '../../types';
+import { type Encounter, type Observation, type PatientVitals } from '../../types';
 
 export function useVitalsConceptMetadata() {
   const customRepresentation =
@@ -50,19 +50,24 @@ interface VitalsConceptMetadataResponse {
   }>;
 }
 
-export const useVitalsFromObs = (encounter) => {
+export const useVitalsFromObs = (encounters: Array<Partial<Pick<Encounter, 'obs' | 'encounterProviders'>>> = []) => {
   const config = useConfig<ConfigObject>();
 
   const vitals: Array<PatientVitals> = [];
 
-  encounter.forEach((enc) => {
+  if (!config?.concepts || !Array.isArray(encounters)) {
+    return vitals;
+  }
+
+  encounters.forEach((enc) => {
+    const encounterProvider = enc.encounterProviders?.[0];
     enc.obs?.forEach((obs: Observation) => {
       if (obs.concept?.uuid === config.concepts.pulseUuid) {
         vitals.push({
           pulse: obs.value,
           provider: {
-            name: encounter.encounterProviders?.length ? encounter.encounterProviders[0].provider.person.display : '',
-            role: encounter.encounterProviders?.length ? encounter.encounterProviders[0].encounterRole.display : '',
+            name: encounterProvider?.provider?.person?.display ?? '',
+            role: encounterProvider?.encounterRole?.display ?? '',
           },
           time: formatTime(parseDate(obs.obsDatetime)),
         });

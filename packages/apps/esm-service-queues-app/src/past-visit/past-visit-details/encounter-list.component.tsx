@@ -20,10 +20,21 @@ interface EncounterListProps {
 const EncounterList: React.FC<EncounterListProps> = ({ encounters }) => {
   const { t } = useTranslation();
 
+  const formatEncounterDatetime = (datetime?: string) => {
+    if (!datetime) {
+      return '--';
+    }
+    try {
+      return formatDatetime(parseDate(datetime), { mode: 'wide' });
+    } catch {
+      return '--';
+    }
+  };
+
   const structuredListBodyRowGenerator = () => {
-    return encounters.map((encounter, i) => (
-      <StructuredListRow label key={`row-${i}`}>
-        <StructuredListCell>{formatDatetime(parseDate(encounter.datetime), { mode: 'wide' })}</StructuredListCell>
+    return encounters.map((encounter) => (
+      <StructuredListRow key={encounter.id || `${encounter.datetime}-${encounter.encounterType}`}>
+        <StructuredListCell>{formatEncounterDatetime(encounter.datetime)}</StructuredListCell>
         <StructuredListCell className={styles.textColor}>{encounter.encounterType}</StructuredListCell>
         <StructuredListCell>{encounter.provider}</StructuredListCell>
       </StructuredListRow>

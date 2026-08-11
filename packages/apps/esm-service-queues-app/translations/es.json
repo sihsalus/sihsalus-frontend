@@ -397,5 +397,8 @@
   "triageRoutingFailed": "El triaje se guardó, pero no se pudo derivar al paciente",
   "triageRoutingFailedDescription": "Use “Enviar a atención” para reintentar o revise la ruta de la cita.",
   "triageStatus": "Estado de triaje",
-  "requiresCashier": "Requiere Caja"
+  "requiresCashier": "Requiere Caja",
+  "queueEntryWithoutPatient": "Esta entrada no tiene un paciente asociado.",
+  "unableToDisplayVisitDetails": "No se pudo mostrar el detalle de esta consulta. Seleccione otra pestaña o cierre y vuelva a abrir la fila.",
+  "unableToLoadPreviousVisit": "No se pudo cargar la consulta anterior."
 }

@@ -130,8 +130,9 @@ function QueueTable({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row, i) => {
+                {rows.map((row) => {
                   const Row = ExpandedRow ? TableExpandRow : TableRow;
+                  const queueEntry = paginatedQueueEntries.find((entry) => entry.uuid === row.id);
 
                   return (
                     <React.Fragment key={row.id}>
@@ -139,7 +140,7 @@ function QueueTable({
                         const { key, ...rowProps } = getRowProps({ row });
                         return (
                           <Row key={key} {...rowProps}>
-                            {row.cells.map((cell, i) => (
+                            {row.cells.map((cell) => (
                               <TableCell
                                 key={cell.id}
                                 className={classNames({
@@ -152,13 +153,9 @@ function QueueTable({
                           </Row>
                         );
                       })()}
-                      {ExpandedRow && row.isExpanded ? (
-                        <TableExpandedRow
-                          className={styles.expandedActiveVisitRow}
-                          colSpan={headers.length + 2}
-                          key={i}
-                        >
-                          <ExpandedRow queueEntry={paginatedQueueEntries[i]} />
+                      {ExpandedRow && row.isExpanded && queueEntry ? (
+                        <TableExpandedRow className={styles.expandedActiveVisitRow} colSpan={headers.length + 2}>
+                          <ExpandedRow queueEntry={queueEntry} />
                         </TableExpandedRow>
                       ) : (
                         <TableExpandedRow className={styles.hiddenRow} colSpan={headers.length + 2} />
@@ -183,7 +180,11 @@ function QueueTable({
               forwardText={t('nextPage', 'Next page')}
               backwardText={t('previousPage', 'Previous page')}
               itemRangeText={(min, max, total) =>
-                t('itemRange', '{{min}}-{{max}} of {{total}} items', { min, max, total })
+                t('itemRange', '{{min}}-{{max}} of {{total}} items', {
+                  min,
+                  max,
+                  total,
+                })
               }
               itemsPerPageText={t('itemsPerPage', 'Items per page:')}
               page={currentPage}

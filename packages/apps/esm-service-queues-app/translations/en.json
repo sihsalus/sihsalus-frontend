@@ -397,5 +397,8 @@
   "triageRoutingFailed": "Triage was saved, but the patient could not be routed",
   "triageRoutingFailedDescription": "Use “Send to care” to retry or review the appointment route.",
   "triageStatus": "Triage status",
-  "requiresCashier": "Cashier required"
+  "requiresCashier": "Cashier required",
+  "queueEntryWithoutPatient": "This queue entry does not have an associated patient.",
+  "unableToDisplayVisitDetails": "The visit details could not be displayed. Select another tab or close and reopen the row.",
+  "unableToLoadPreviousVisit": "The previous visit could not be loaded."
 }

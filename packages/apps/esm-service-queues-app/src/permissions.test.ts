@@ -6,6 +6,7 @@ import {
   canEditServiceQueues,
   canManageServiceQueueCatalog,
   canManageServiceQueueRoomCatalog,
+  canTriageQueuePatients,
 } from './permissions';
 
 function userWithPrivileges(privileges: string[], roles: string[] = []) {
@@ -34,6 +35,29 @@ describe('canEditServiceQueues', () => {
         userWithPrivileges(['app:home.colasAtencion.editar', 'Get Queue Entries', 'Get Queues', 'Manage Queue Entries']),
       ),
     ).toBe(true);
+  });
+
+  it('allows clinical triage without granting administrative queue editing', () => {
+    const nurse = userWithPrivileges([
+      'app:hoja.clinica.signosVitales.editar',
+      'Get Queue Entries',
+      'Get Queues',
+      'Manage Queue Entries',
+    ]);
+
+    expect(canTriageQueuePatients(nurse)).toBe(true);
+    expect(canEditServiceQueues(nurse)).toBe(false);
+  });
+
+  it('does not allow triage without both vitals and queue transition privileges', () => {
+    expect(
+      canTriageQueuePatients(
+        userWithPrivileges(['app:hoja.clinica.signosVitales.editar', 'Get Queue Entries', 'Get Queues']),
+      ),
+    ).toBe(false);
+    expect(
+      canTriageQueuePatients(userWithPrivileges(['Get Queue Entries', 'Get Queues', 'Manage Queue Entries'])),
+    ).toBe(false);
   });
 
   it('requires the full patient-and-visit set before offering to add someone to a queue', () => {

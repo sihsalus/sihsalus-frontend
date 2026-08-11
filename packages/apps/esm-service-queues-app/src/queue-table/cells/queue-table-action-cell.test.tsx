@@ -11,7 +11,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockQueueEntryAlice, mockSession } from 'test-utils';
 
-import { serviceQueuesEditPrivilege } from '../../constants';
+import { serviceQueuesEditPrivilege, vitalsEditPrivilege } from '../../constants';
 import { getAppointmentTriageConfig } from '../../triage-workflow/triage-workflow.resource';
 
 import { QueueTableActionCell } from './queue-table-action-cell.component';
@@ -104,6 +104,37 @@ describe('QueueTableActionCell', () => {
       null,
       { patientUuid: mockQueueEntryAlice.patient.uuid },
     );
+  });
+
+  it('allows a nurse to perform triage without exposing administrative queue actions', async () => {
+    const user = userEvent.setup();
+    const triageQueueEntry = {
+      ...mockQueueEntryAlice,
+      visit: { ...mockQueueEntryAlice.visit, uuid: 'visit-uuid' },
+      workflow: {
+        isTriageQueue: true,
+        sisState: 'active' as const,
+        triageState: 'pending' as const,
+      },
+    };
+    mockUserHasAccess.mockImplementation((privilege) => privilege !== serviceQueuesEditPrivilege);
+    mockGetAppointmentTriageConfig.mockResolvedValue({
+      appointmentArrivalRules: [],
+      appointmentVisitAttributeTypeUuid: 'appointment-attribute-type-uuid',
+      triageRouting: {
+        enabled: true,
+        encounterTypeUuid: 'triage-encounter-type-uuid',
+        queueLocationUuid: 'triage-location-uuid',
+        queueUuid: 'triage-queue-uuid',
+      },
+    });
+
+    render(<QueueTableActionCell queueEntry={triageQueueEntry} />);
+
+    expect(mockUserHasAccess).toHaveBeenCalledWith(vitalsEditPrivilege, mockSession.data.user);
+    expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Realizar triaje' }));
+    expect(mockLaunchWorkspace2).toHaveBeenCalled();
   });
 
   it('blocks triage and directs a patient without active SIS financing to the cashier', async () => {

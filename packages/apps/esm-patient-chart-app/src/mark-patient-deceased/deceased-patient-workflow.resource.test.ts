@@ -112,10 +112,13 @@ function handleAppointmentRequest(
 describe('reconcileDeceasedPatientWorkflow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFetchFreshPatientVitalStatus.mockReset();
     mockMarkPatientDeceased.mockResolvedValue({} as Awaited<ReturnType<typeof markPatientDeceased>>);
     mockDrainActiveQueueEntriesForPatient.mockResolvedValue(0);
     mockDrainActiveQueueEntriesForVisit.mockResolvedValue(0);
-    mockFetchFreshPatientVitalStatus.mockResolvedValue({ dead: false, deathDate: null, isDeceased: false });
+    mockFetchFreshPatientVitalStatus
+      .mockResolvedValueOnce({ dead: false, deathDate: null, isDeceased: false })
+      .mockResolvedValue({ dead: true, deathDate: '2026-08-12T15:41:28.000Z', isDeceased: true });
     mockGetQueueEntriesForVisit.mockResolvedValue(response({ results: [] }));
     vi.mocked(toOmrsIsoString).mockImplementation((value) => new Date(value).toISOString());
   });
@@ -239,7 +242,7 @@ describe('reconcileDeceasedPatientWorkflow', () => {
   });
 
   it('skips the person mutation on retry when the authoritative patient is already deceased', async () => {
-    mockFetchFreshPatientVitalStatus.mockResolvedValue({
+    mockFetchFreshPatientVitalStatus.mockReset().mockResolvedValue({
       dead: true,
       deathDate: '2026-08-12T15:41:28.000Z',
       isDeceased: true,
@@ -263,6 +266,54 @@ describe('reconcileDeceasedPatientWorkflow', () => {
 
     expect(mockMarkPatientDeceased).not.toHaveBeenCalled();
     expect(mockDrainActiveQueueEntriesForPatient).toHaveBeenCalledWith('patient-uuid');
+  });
+
+  it('does not reconcile operational state when a successful death response was not persisted', async () => {
+    mockFetchFreshPatientVitalStatus.mockReset();
+    mockFetchFreshPatientVitalStatus.mockResolvedValue({ dead: false, deathDate: null, isDeceased: false });
+
+    await expect(
+      reconcileDeceasedPatientWorkflow({
+        careContext: 'during-care',
+        deathDate: new Date('2026-08-12T15:41:28.000Z'),
+        patientUuid: 'patient-uuid',
+      }),
+    ).rejects.toMatchObject({ code: 'DECEASED_PATIENT_MARK_UNVERIFIED' });
+
+    expect(mockMarkPatientDeceased).toHaveBeenCalledOnce();
+    expect(mockFetchFreshPatientVitalStatus).toHaveBeenCalledTimes(2);
+    expect(mockDrainActiveQueueEntriesForPatient).not.toHaveBeenCalled();
+    expect(mockDrainActiveQueueEntriesForVisit).not.toHaveBeenCalled();
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+  });
+
+  it('continues after a lost death response when a fresh read confirms it was persisted', async () => {
+    mockMarkPatientDeceased.mockRejectedValue(new Error('connection closed before response'));
+    mockOpenmrsFetch.mockImplementation(async (url) => {
+      const requestUrl = String(url);
+      if (requestUrl.includes('/visit?')) return response({ results: [] });
+      if (requestUrl.endsWith('/appointments/search') || requestUrl.endsWith('/appointment/search')) {
+        return response([]);
+      }
+      throw new Error(`Unexpected request: ${requestUrl}`);
+    });
+
+    await expect(
+      reconcileDeceasedPatientWorkflow({
+        careContext: 'during-care',
+        deathDate: new Date('2026-08-12T15:41:28.000Z'),
+        patientUuid: 'patient-uuid',
+      }),
+    ).resolves.toEqual({
+      cancelledAppointments: 0,
+      closedQueueEntries: 0,
+      closedVisits: 0,
+      completedAppointments: 0,
+    });
+
+    expect(mockMarkPatientDeceased).toHaveBeenCalledOnce();
+    expect(mockFetchFreshPatientVitalStatus).toHaveBeenCalledTimes(2);
+    expect(mockDrainActiveQueueEntriesForPatient).toHaveBeenCalledTimes(2);
   });
 
   it('drains every capped page of dated and undated non-terminal appointments', async () => {

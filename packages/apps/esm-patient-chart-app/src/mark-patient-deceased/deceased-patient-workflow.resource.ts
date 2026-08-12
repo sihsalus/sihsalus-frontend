@@ -374,7 +374,34 @@ export async function reconcileDeceasedPatientWorkflow({
 }: DeceasedPatientWorkflowInput): Promise<DeceasedPatientWorkflowResult> {
   const vitalStatus = await fetchFreshPatientVitalStatus(patientUuid);
   if (!vitalStatus.isDeceased) {
-    await markPatientDeceased(deathDate, patientUuid, causeOfDeath, nonCodedCauseOfDeath);
+    let markError: unknown;
+    try {
+      await markPatientDeceased(deathDate, patientUuid, causeOfDeath, nonCodedCauseOfDeath);
+    } catch (error) {
+      markError = error;
+    }
+
+    let confirmedVitalStatus: Awaited<ReturnType<typeof fetchFreshPatientVitalStatus>>;
+    try {
+      confirmedVitalStatus = await fetchFreshPatientVitalStatus(patientUuid);
+    } catch (verificationError) {
+      if (markError) {
+        throw markError;
+      }
+      throw Object.assign(new Error('The patient death could not be verified.'), {
+        cause: verificationError,
+        code: 'DECEASED_PATIENT_MARK_UNVERIFIED',
+      });
+    }
+
+    if (!confirmedVitalStatus.isDeceased) {
+      if (markError) {
+        throw markError;
+      }
+      throw Object.assign(new Error('The patient death was not persisted.'), {
+        code: 'DECEASED_PATIENT_MARK_UNVERIFIED',
+      });
+    }
   }
 
   // Attach the rejection handler immediately so a fast appointment failure is

@@ -1,10 +1,18 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl, toOmrsIsoString } from '@openmrs/esm-framework';
+import {
+  drainActiveQueueEntriesForPatient,
+  drainActiveQueueEntriesForVisit,
+  fetchFreshPatientVitalStatus,
+  getQueueEntriesForVisit,
+  type ActiveQueueEntrySummary,
+} from '@openmrs/esm-patient-common-lib';
 
 import { markPatientDeceased } from '../data.resource';
 
 export type DeathCareContext = 'during-care' | 'outside-care';
 
 interface ActiveVisitSummary {
+  encounters?: Array<{ encounterDatetime?: string | null }>;
   startDatetime?: string | null;
   stopDatetime?: string | null;
   uuid: string;
@@ -25,6 +33,7 @@ export interface DeceasedPatientWorkflowInput {
 
 export interface DeceasedPatientWorkflowResult {
   cancelledAppointments: number;
+  closedQueueEntries: number;
   closedVisits: number;
   completedAppointments: number;
 }
@@ -48,9 +57,22 @@ function getResponseDate(response: Pick<FetchResponse<unknown>, 'headers'>) {
   return date && !Number.isNaN(date.valueOf()) ? date : new Date();
 }
 
-function getVisitStopDate(visit: ActiveVisitSummary, serverDate: Date) {
-  const startDate = visit.startDatetime ? new Date(visit.startDatetime) : null;
-  return startDate && !Number.isNaN(startDate.valueOf()) && startDate > serverDate ? startDate : serverDate;
+function getVisitStopDate(
+  visit: ActiveVisitSummary,
+  serverDate: Date,
+  queueEntries: Array<ActiveQueueEntrySummary>,
+) {
+  const safeServerDate = new Date(serverDate.valueOf() + 999);
+  const relevantDatetimes = [
+    visit.startDatetime,
+    ...(visit.encounters ?? []).map(({ encounterDatetime }) => encounterDatetime),
+    ...queueEntries.flatMap(({ startedAt, endedAt }) => [startedAt, endedAt]),
+  ];
+
+  return relevantDatetimes.reduce((latest, value) => {
+    const date = value ? new Date(value) : null;
+    return date && !Number.isNaN(date.valueOf()) && date > latest ? date : latest;
+  }, safeServerDate);
 }
 
 async function getActiveVisits(patientUuid: string) {
@@ -58,25 +80,38 @@ async function getActiveVisits(patientUuid: string) {
     patient: patientUuid,
     includeInactive: 'false',
     limit: '100',
-    v: 'custom:(uuid,startDatetime,stopDatetime)',
+    v: 'custom:(uuid,startDatetime,stopDatetime,encounters:(encounterDatetime))',
   });
 
   return openmrsFetch<{ results?: Array<ActiveVisitSummary> }>(`${restBaseUrl}/visit?${searchParams.toString()}`);
 }
 
 async function getVisit(visitUuid: string) {
-  const searchParams = new URLSearchParams({ v: 'custom:(uuid,startDatetime,stopDatetime)' });
+  const searchParams = new URLSearchParams({
+    v: 'custom:(uuid,startDatetime,stopDatetime,encounters:(encounterDatetime))',
+  });
   return openmrsFetch<ActiveVisitSummary>(`${restBaseUrl}/visit/${visitUuid}?${searchParams.toString()}`);
 }
 
 async function closeVisit(visit: ActiveVisitSummary, serverDate: Date) {
+  const closedQueueEntries = await drainActiveQueueEntriesForVisit(visit.uuid);
+  const queueEntriesResponse = await getQueueEntriesForVisit(visit.uuid);
+  const queueEntries = queueEntriesResponse.data?.results ?? [];
+  const freshVisitResponse = await getVisit(visit.uuid);
+  if (freshVisitResponse.data?.stopDatetime) {
+    return { closedQueueEntries, transitioned: false };
+  }
+  const freshVisit = freshVisitResponse.data;
+  const authoritativeDate = getResponseDate(freshVisitResponse);
+  const latestServerDate = authoritativeDate > serverDate ? authoritativeDate : serverDate;
+
   try {
     await openmrsFetch(`${restBaseUrl}/clinicalvisitclosure`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: {
         visitUuid: visit.uuid,
-        stopDatetime: toOmrsIsoString(getVisitStopDate(visit, serverDate)),
+        stopDatetime: toOmrsIsoString(getVisitStopDate(freshVisit, latestServerDate, queueEntries)),
       },
     });
   } catch (error) {
@@ -86,25 +121,65 @@ async function closeVisit(visit: ActiveVisitSummary, serverDate: Date) {
     if (!latestVisit?.data?.stopDatetime) {
       throw error;
     }
+    return { closedQueueEntries, transitioned: true };
   }
+
+  const latestVisit = await getVisit(visit.uuid);
+  if (!latestVisit.data?.stopDatetime) {
+    throw Object.assign(new Error('The clinical visit closure could not be verified.'), {
+      code: 'DECEASED_PATIENT_VISIT_CLOSE_UNVERIFIED',
+    });
+  }
+  return { closedQueueEntries, transitioned: true };
 }
 
 async function closeActiveVisits(patientUuid: string) {
-  const response = await getActiveVisits(patientUuid);
-  const visits = Array.from(
-    new Map(
-      (response.data?.results ?? []).filter((visit) => !visit.stopDatetime).map((visit) => [visit.uuid, visit]),
-    ).values(),
-  );
-  const serverDate = getResponseDate(response);
-  const results = await Promise.allSettled(visits.map((visit) => closeVisit(visit, serverDate)));
-  const failure = results.find((result) => result.status === 'rejected');
+  let closedQueueEntries = 0;
+  let closedVisits = 0;
+  const terminalVisitsSeenInSearch = new Set<string>();
 
-  if (failure?.status === 'rejected') {
-    throw failure.reason;
+  // The visit search is capped. Close the current active bucket and re-query it
+  // until empty instead of assuming that one page represents the full patient.
+  while (true) {
+    const response = await getActiveVisits(patientUuid);
+    const visits = Array.from(
+      new Map(
+        (response.data?.results ?? []).filter((visit) => !visit.stopDatetime).map((visit) => [visit.uuid, visit]),
+      ).values(),
+    );
+    if (!visits.length) {
+      return { closedQueueEntries, closedVisits };
+    }
+
+    const serverDate = getResponseDate(response);
+    const results = await Promise.allSettled(visits.map((visit) => closeVisit(visit, serverDate)));
+    const failure = results.find((result) => result.status === 'rejected');
+    if (failure?.status === 'rejected') {
+      throw failure.reason;
+    }
+
+    let madeProgress = false;
+    let observedNewTerminalVisit = false;
+    results.forEach((result, index) => {
+      const outcome = (
+        result as PromiseFulfilledResult<{ closedQueueEntries: number; transitioned: boolean }>
+      ).value;
+      closedQueueEntries += outcome.closedQueueEntries;
+      if (outcome.transitioned) {
+        closedVisits += 1;
+        madeProgress = true;
+      } else if (!terminalVisitsSeenInSearch.has(visits[index].uuid)) {
+        terminalVisitsSeenInSearch.add(visits[index].uuid);
+        observedNewTerminalVisit = true;
+      }
+    });
+
+    if (!madeProgress && !observedNewTerminalVisit) {
+      throw Object.assign(new Error('Active visit search did not advance.'), {
+        code: 'DECEASED_PATIENT_VISIT_SEARCH_STALLED',
+      });
+    }
   }
-
-  return visits.length;
 }
 
 async function searchPatientAppointments(
@@ -170,6 +245,7 @@ async function transitionAppointment(appointmentUuid: string, careContext: Death
   }
 
   const onDate = getResponseDate(currentResponse).toISOString();
+  let writeError: unknown;
   try {
     await openmrsFetch(`${restBaseUrl}/appointments/${appointmentUuid}/status-change`, {
       method: 'POST',
@@ -177,12 +253,29 @@ async function transitionAppointment(appointmentUuid: string, careContext: Death
       body: { toStatus: targetStatus, onDate },
     });
   } catch (error) {
-    const latestStatus = await getAppointment(appointmentUuid)
-      .then(({ data }) => normalizeAppointmentStatus(data?.status))
-      .catch(() => '');
-    if (latestStatus !== normalizeAppointmentStatus(targetStatus)) {
-      throw error;
+    writeError = error;
+  }
+
+  let latestStatus: string;
+  try {
+    latestStatus = normalizeAppointmentStatus((await getAppointment(appointmentUuid)).data?.status);
+  } catch (verificationError) {
+    if (writeError) {
+      throw writeError;
     }
+    throw Object.assign(new Error('The appointment status change could not be verified.'), {
+      cause: verificationError,
+      code: 'DECEASED_PATIENT_APPOINTMENT_STATUS_CHANGE_UNVERIFIED',
+    });
+  }
+
+  if (latestStatus !== normalizeAppointmentStatus(targetStatus)) {
+    if (writeError) {
+      throw writeError;
+    }
+    throw Object.assign(new Error('The appointment status change was not persisted.'), {
+      code: 'DECEASED_PATIENT_APPOINTMENT_STATUS_CHANGE_UNVERIFIED',
+    });
   }
 
   return targetStatus;
@@ -279,14 +372,28 @@ export async function reconcileDeceasedPatientWorkflow({
   nonCodedCauseOfDeath,
   patientUuid,
 }: DeceasedPatientWorkflowInput): Promise<DeceasedPatientWorkflowResult> {
-  await markPatientDeceased(deathDate, patientUuid, causeOfDeath, nonCodedCauseOfDeath);
+  const vitalStatus = await fetchFreshPatientVitalStatus(patientUuid);
+  if (!vitalStatus.isDeceased) {
+    await markPatientDeceased(deathDate, patientUuid, causeOfDeath, nonCodedCauseOfDeath);
+  }
 
-  const [visitsResult, appointmentsResult] = await Promise.allSettled([
-    closeActiveVisits(patientUuid),
-    reconcileAppointments(patientUuid, careContext),
-  ]);
-  const failures = [visitsResult, appointmentsResult].filter(
-    (result): result is PromiseRejectedResult => result.status === 'rejected',
+  // Attach the rejection handler immediately so a fast appointment failure is
+  // not reported as unhandled while queue reconciliation is still in flight.
+  const appointmentsResultPromise = Promise.allSettled([reconcileAppointments(patientUuid, careContext)]);
+  const [queueEntriesResult] = await Promise.allSettled([drainActiveQueueEntriesForPatient(patientUuid)]);
+
+  let visitsResult: PromiseSettledResult<{ closedQueueEntries: number; closedVisits: number }> | null = null;
+  let finalQueueEntriesResult: PromiseSettledResult<number> | null = null;
+  if (queueEntriesResult.status === 'fulfilled') {
+    [visitsResult] = await Promise.allSettled([closeActiveVisits(patientUuid)]);
+    // Verify/drain the patient bucket once more after visit work. This catches
+    // visitless entries or successors created during visit reconciliation.
+    [finalQueueEntriesResult] = await Promise.allSettled([drainActiveQueueEntriesForPatient(patientUuid)]);
+  }
+
+  const [appointmentsResult] = await appointmentsResultPromise;
+  const failures = [queueEntriesResult, visitsResult, finalQueueEntriesResult, appointmentsResult].filter(
+    (result): result is PromiseRejectedResult => result?.status === 'rejected',
   );
 
   if (failures.length) {
@@ -301,12 +408,19 @@ export async function reconcileDeceasedPatientWorkflow({
     );
   }
 
-  if (visitsResult.status !== 'fulfilled' || appointmentsResult.status !== 'fulfilled') {
+  if (
+    queueEntriesResult.status !== 'fulfilled' ||
+    visitsResult?.status !== 'fulfilled' ||
+    finalQueueEntriesResult?.status !== 'fulfilled' ||
+    appointmentsResult.status !== 'fulfilled'
+  ) {
     throw new Error('Death workflow reconciliation did not return a result');
   }
 
   return {
-    closedVisits: visitsResult.value,
+    closedQueueEntries:
+      queueEntriesResult.value + visitsResult.value.closedQueueEntries + finalQueueEntriesResult.value,
+    closedVisits: visitsResult.value.closedVisits,
     ...appointmentsResult.value,
   };
 }

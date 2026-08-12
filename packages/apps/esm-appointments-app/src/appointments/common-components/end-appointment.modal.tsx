@@ -1,5 +1,10 @@
 import { Button, InlineLoading, InlineNotification, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
 import { getUserFacingErrorMessage, showSnackbar, useConfig, useVisit, type Visit } from '@openmrs/esm-framework';
+import {
+  type ActiveQueueEntrySummary,
+  drainActiveQueueEntriesForVisit,
+  getActiveQueueEntriesForVisit,
+} from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
@@ -11,12 +16,7 @@ import {
 } from '../../patient-appointments/patient-appointments.resource';
 import { AppointmentStatus } from '../../types';
 
-import {
-  type ActiveQueueEntrySummary,
-  endActiveQueueEntries,
-  getActiveQueueEntriesForVisit,
-  getActiveVisitsForPatient,
-} from './batch-change-appointment-statuses.resources';
+import { getActiveVisitsForPatient } from './batch-change-appointment-statuses.resources';
 import { closeClinicalVisit } from './clinical-visit-closure.resource';
 
 import styles from './end-appointment.scss';
@@ -114,9 +114,7 @@ const EndAppointmentModal: React.FC<EndAppointmentModalProps> = ({ patientUuid, 
   );
 
   const reconcileQueuesForClosedVisit = useCallback(async (visitUuid: string) => {
-    const queueEntriesResponse = await getActiveQueueEntriesForVisit(visitUuid);
-    const activeQueueEntries = (queueEntriesResponse.data?.results ?? []).filter((entry) => !entry.endedAt);
-    await endActiveQueueEntries(activeQueueEntries, new AbortController());
+    await drainActiveQueueEntriesForVisit(visitUuid);
   }, []);
 
   const closeVisitAndQueues = useCallback(
@@ -146,11 +144,11 @@ const EndAppointmentModal: React.FC<EndAppointmentModalProps> = ({ patientUuid, 
           throw error;
         }
 
-        closedVisitPendingQueueReconciliationUuid.current = visitToClose.uuid;
-        await reconcileQueuesForClosedVisit(visitToClose.uuid);
-        closedVisitPendingQueueReconciliationUuid.current = null;
       }
 
+      closedVisitPendingQueueReconciliationUuid.current = visitToClose.uuid;
+      await reconcileQueuesForClosedVisit(visitToClose.uuid);
+      closedVisitPendingQueueReconciliationUuid.current = null;
       didCloseVisit.current = true;
       visitClosureCompleted.current = true;
       keptSharedVisitOpen.current = false;

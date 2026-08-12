@@ -86,6 +86,7 @@ vi.mock('../data.resource.ts', async () => ({
 vi.mock('./deceased-patient-workflow.resource', async () => ({
   reconcileDeceasedPatientWorkflow: vi.fn().mockResolvedValue({
     cancelledAppointments: 0,
+    closedQueueEntries: 0,
     closedVisits: 0,
     completedAppointments: 0,
   }),

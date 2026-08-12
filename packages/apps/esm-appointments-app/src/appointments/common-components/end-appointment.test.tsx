@@ -7,6 +7,11 @@ import {
   type Visit,
   type VisitReturnType,
 } from '@openmrs/esm-framework';
+import {
+  type ActiveQueueEntrySummary,
+  drainActiveQueueEntriesForVisit,
+  getActiveQueueEntriesForVisit,
+} from '@openmrs/esm-patient-common-lib';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -17,12 +22,7 @@ import {
 } from '../../patient-appointments/patient-appointments.resource';
 import { AppointmentStatus } from '../../types';
 
-import {
-  type ActiveQueueEntrySummary,
-  endActiveQueueEntries,
-  getActiveQueueEntriesForVisit,
-  getActiveVisitsForPatient,
-} from './batch-change-appointment-statuses.resources';
+import { getActiveVisitsForPatient } from './batch-change-appointment-statuses.resources';
 import { closeClinicalVisit } from './clinical-visit-closure.resource';
 import EndAppointmentModal from './end-appointment.modal';
 
@@ -37,9 +37,13 @@ vi.mock('../../form/appointments-form.resource', () => ({
 }));
 
 vi.mock('./batch-change-appointment-statuses.resources', () => ({
-  endActiveQueueEntries: vi.fn(),
-  getActiveQueueEntriesForVisit: vi.fn(),
   getActiveVisitsForPatient: vi.fn(),
+}));
+
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  drainActiveQueueEntriesForVisit: vi.fn(),
+  getActiveQueueEntriesForVisit: vi.fn(),
 }));
 
 vi.mock('./clinical-visit-closure.resource', () => ({
@@ -54,7 +58,7 @@ const mutateAppointments = vi.fn();
 const mutateVisits = vi.fn();
 const mockChangeAppointmentStatus = vi.mocked(changeAppointmentStatus);
 const mockCloseClinicalVisit = vi.mocked(closeClinicalVisit);
-const mockEndActiveQueueEntries = vi.mocked(endActiveQueueEntries);
+const mockDrainActiveQueueEntriesForVisit = vi.mocked(drainActiveQueueEntriesForVisit);
 const mockGetActiveQueueEntriesForVisit = vi.mocked(getActiveQueueEntriesForVisit);
 const mockGetActiveVisitsForPatient = vi.mocked(getActiveVisitsForPatient);
 const mockGetAppointmentStatus = vi.mocked(getAppointmentStatus);
@@ -116,7 +120,7 @@ describe('EndAppointmentModal', () => {
     mockGetAppointmentStatus.mockResolvedValue(AppointmentStatus.CHECKEDIN);
     mockGetActiveVisitsForPatient.mockResolvedValue(visitResponse([]));
     mockGetActiveQueueEntriesForVisit.mockResolvedValue(queueResponse([]));
-    mockEndActiveQueueEntries.mockImplementation(async (entries) => entries);
+    mockDrainActiveQueueEntriesForVisit.mockResolvedValue(0);
     mockCloseClinicalVisit.mockResolvedValue({} as FetchResponse<Visit>);
     mockChangeAppointmentStatus.mockResolvedValue({} as Awaited<ReturnType<typeof changeAppointmentStatus>>);
   });
@@ -170,7 +174,7 @@ describe('EndAppointmentModal', () => {
       expect.any(AbortController),
     );
     expect(mockGetActiveQueueEntriesForVisit).toHaveBeenCalledWith(activeVisit.uuid);
-    expect(mockEndActiveQueueEntries).not.toHaveBeenCalled();
+    expect(mockDrainActiveQueueEntriesForVisit).toHaveBeenCalledWith(activeVisit.uuid);
     expect(mockCloseClinicalVisit.mock.invocationCallOrder[0]).toBeLessThan(
       mockChangeAppointmentStatus.mock.invocationCallOrder[0],
     );
@@ -213,17 +217,14 @@ describe('EndAppointmentModal', () => {
       .mockResolvedValueOnce(visitResponse([activeVisit]))
       .mockResolvedValueOnce(visitResponse([unrelatedActiveVisit]));
     mockGetActiveQueueEntriesForVisit.mockResolvedValue(queueResponse([activeQueueEntry]));
-    mockEndActiveQueueEntries.mockResolvedValue([{ ...activeQueueEntry, endedAt: '2026-07-14T15:30:00.000Z' }]);
+    mockDrainActiveQueueEntriesForVisit.mockResolvedValue(1);
     mockCloseClinicalVisit.mockRejectedValueOnce(new Error('connection closed before response'));
     renderModal();
 
     await userEvent.click(screen.getByRole('button', { name: /finish care/i }));
 
     await waitFor(() => expect(closeModal).toHaveBeenCalledTimes(1));
-    expect(mockEndActiveQueueEntries).toHaveBeenCalledWith(
-      [expect.objectContaining({ uuid: activeQueueEntry.uuid })],
-      expect.any(AbortController),
-    );
+    expect(mockDrainActiveQueueEntriesForVisit).toHaveBeenCalledWith(activeVisit.uuid);
     expect(mockChangeAppointmentStatus).toHaveBeenCalledWith(AppointmentStatus.COMPLETED, appointmentUuid);
   });
 
@@ -418,13 +419,7 @@ describe('EndAppointmentModal', () => {
     mockGetActiveQueueEntriesForVisit.mockResolvedValue(
       queueResponse([{ uuid: 'shared-queue-entry', startedAt: '2026-07-14T15:00:00.000Z' }]),
     );
-    mockEndActiveQueueEntries.mockResolvedValue([
-      {
-        uuid: 'shared-queue-entry',
-        startedAt: '2026-07-14T15:00:00.000Z',
-        endedAt: '2026-07-14T15:30:00.500Z',
-      },
-    ]);
+    mockDrainActiveQueueEntriesForVisit.mockResolvedValue(1);
     mockGetAppointmentStatus.mockImplementation(async (uuid) => {
       if (uuid === otherAppointmentUuid) {
         otherAppointmentReads += 1;
@@ -441,7 +436,7 @@ describe('EndAppointmentModal', () => {
     await waitFor(() => expect(closeModal).toHaveBeenCalledTimes(1));
     expect(mockChangeAppointmentStatus).toHaveBeenCalledWith(AppointmentStatus.COMPLETED, appointmentUuid);
     expect(mockGetActiveVisitsForPatient).toHaveBeenCalledTimes(2);
-    expect(mockEndActiveQueueEntries).not.toHaveBeenCalled();
+    expect(mockDrainActiveQueueEntriesForVisit).toHaveBeenCalledWith(sharedVisit.uuid);
     expect(mockCloseClinicalVisit).toHaveBeenCalledWith(
       sharedVisit.uuid,
       { stopDatetime: new Date('2026-07-14T15:30:00.999Z') },

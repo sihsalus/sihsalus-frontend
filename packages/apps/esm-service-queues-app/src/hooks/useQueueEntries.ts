@@ -26,7 +26,7 @@ type QueueEntryResponse = FetchResponse<{
 const queueEntryBaseUrl = `${restBaseUrl}/queue-entry`;
 
 const repString =
-  'custom:(uuid,display,queue:(uuid,display,name,location:(uuid,display),service:(uuid,display)),status,patient:(uuid,display,person:(uuid,dead,deathDate),identifiers:(uuid,display,identifier,identifierType)),visit:(uuid,display,startDatetime,location:(uuid,display),encounters:(uuid,display,diagnoses,encounterDatetime,encounterType,obs,encounterProviders,voided),attributes:(uuid,display,value,attributeType)),priority,priorityComment,sortWeight,startedAt,endedAt,locationWaitingFor,queueComingFrom,providerWaitingFor,previousQueueEntry)';
+  'custom:(uuid,display,queue:(uuid,display,name,location:(uuid,display),service:(uuid,display)),status,patient:(uuid,display,person,identifiers:(uuid,display,identifier,identifierType)),visit:(uuid,display,startDatetime,location:(uuid,display),encounters:(uuid,display,diagnoses,encounterDatetime,encounterType,obs,encounterProviders,voided),attributes:(uuid,display,value,attributeType)),priority,priorityComment,sortWeight,startedAt,endedAt,locationWaitingFor,queueComingFrom,providerWaitingFor,previousQueueEntry)';
 
 function getInitialUrl(rep: string, searchCriteria?: QueueEntrySearchCriteria) {
   const searchParam = new URLSearchParams();

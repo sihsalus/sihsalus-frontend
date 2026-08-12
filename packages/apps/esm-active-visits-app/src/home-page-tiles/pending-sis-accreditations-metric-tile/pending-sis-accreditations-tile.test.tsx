@@ -12,6 +12,7 @@ vi.mock('../../pending-sis-accreditations/pending-sis-accreditations.resource', 
 
 const mockUseConfig = vi.mocked(useConfig<ActiveVisitsConfigSchema>);
 const mockUsePendingSisAccreditations = vi.mocked(usePendingSisAccreditations);
+const mockRefreshPendingVisits = vi.fn();
 
 describe('PendingSisAccreditationsTile', () => {
   beforeEach(() => {
@@ -28,6 +29,7 @@ describe('PendingSisAccreditationsTile', () => {
       error: undefined,
       isLoading: false,
       isValidating: false,
+      mutate: mockRefreshPendingVisits,
     });
 
     render(<PendingSisAccreditationsTile />);
@@ -42,6 +44,7 @@ describe('PendingSisAccreditationsTile', () => {
       error: new Error('request failed'),
       isLoading: false,
       isValidating: false,
+      mutate: mockRefreshPendingVisits,
     });
 
     render(<PendingSisAccreditationsTile />);

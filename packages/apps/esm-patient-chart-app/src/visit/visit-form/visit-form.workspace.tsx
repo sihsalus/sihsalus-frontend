@@ -19,6 +19,7 @@ import {
   ExtensionSlot,
   formatDatetime,
   getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
+  navigate,
   type NewVisitPayload,
   saveVisit,
   showSnackbar,
@@ -31,16 +32,27 @@ import {
   useLayoutType,
   usePatient,
   useSession,
+  userHasAccess,
   useVisit,
   type Visit,
   Workspace2,
 } from '@openmrs/esm-framework';
 import {
+  canCopyFinanciadorToVisit,
   convertTime12to24,
   createOfflineVisitForPatient,
   type DefaultPatientWorkspaceProps,
+  FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+  isFinanciadorCopyAuthorizationError,
+  normalizeFinanciadorConceptUuid,
   type PatientWorkspace2DefinitionProps,
   safeCopyFinanciadorToVisit,
+  SELF_FINANCED_CONCEPT_UUID,
+  SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_CONCEPT_UUID,
+  type SafeCopyFinanciadorToVisitResult,
   time12HourFormatRegex,
   useActivePatientEnrollment,
 } from '@openmrs/esm-patient-common-lib';
@@ -56,7 +68,11 @@ import useSWR from 'swr';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
-import { type ChartConfig } from '../../config-schema';
+import {
+  type ChartConfig,
+  resolveCanonicalCoveragePersonAttributeMappings,
+  resolveCanonicalCoverageVisitAttributeTypes,
+} from '../../config-schema';
 import { useDefaultVisitLocation } from '../hooks/useDefaultVisitLocation';
 import { useEmrConfiguration } from '../hooks/useEmrConfiguration';
 import { useVisitAttributeTypes } from '../hooks/useVisitAttributeType';
@@ -86,6 +102,7 @@ import {
   normalizeVisitTimeFormatInput,
   normalizeVisitTimeInput,
   reconcileVisitCreation,
+  sanitizeVisitCoverageAttributes,
   updateVisitAttribute,
   useConditionalVisitTypes,
   usePersonAttributesForVisitDefaults,
@@ -115,6 +132,35 @@ function isDefinitiveClientRejection(error: unknown) {
   };
   const status = Number(candidate?.status ?? candidate?.response?.status);
   return Number.isInteger(status) && DETERMINISTIC_VISIT_CREATE_REJECTION_STATUSES.has(status);
+}
+
+function hasCompleteVisitCoverage(attributes: NewVisitPayload['attributes']): boolean {
+  const values = new Map((attributes ?? []).map(({ attributeType, value }) => [attributeType, value]));
+  const financiador = normalizeFinanciadorConceptUuid(
+    typeof values.get(FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID) === 'string'
+      ? (values.get(FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID) as string)
+      : null,
+  );
+
+  if (!financiador) {
+    return false;
+  }
+  if (financiador === SELF_FINANCED_CONCEPT_UUID) {
+    return true;
+  }
+
+  const hasInsuranceNumber = Boolean(String(values.get(INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID) ?? '').trim());
+  if (!hasInsuranceNumber) {
+    return false;
+  }
+  if (financiador !== SIS_CONCEPT_UUID) {
+    return true;
+  }
+
+  return Boolean(
+    String(values.get(SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID) ?? '').trim() &&
+      String(values.get(SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID) ?? '').trim(),
+  );
 }
 
 interface StartVisitFormWorkspaceProps {
@@ -215,6 +261,14 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   const isEmrApiModuleInstalled = useFeatureFlag('emrapi-module');
   const isOnline = useConnectivity();
   const config = useConfig<ChartConfig>();
+  const configuredVisitAttributeTypes = useMemo(
+    () => resolveCanonicalCoverageVisitAttributeTypes(config.visitAttributeTypes),
+    [config.visitAttributeTypes],
+  );
+  const configuredPersonAttributeMappings = useMemo(
+    () => resolveCanonicalCoveragePersonAttributeMappings(config.defaultVisitAttributesFromPersonAttributes),
+    [config.defaultVisitAttributesFromPersonAttributes],
+  );
   const sessionUser = useSession();
   const canSearchCompanion = canSearchCompanionPerson(sessionUser?.user);
   const canRegisterCompanion = canRegisterCompanionPerson(sessionUser?.user);
@@ -225,6 +279,14 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   );
   const { emrConfiguration } = useEmrConfiguration(isEmrApiModuleInstalled);
   const { patientUuid, patient, isLoading: isLoadingPatient } = usePatient(initialPatientUuid);
+  const canReviewPatientCoverage = userHasAccess('app:opciones.registrarPaciente', sessionUser?.user);
+  const canCopyPatientCoverage = canCopyFinanciadorToVisit(sessionUser?.user);
+  const openPatientCoverageReview = useCallback(() => {
+    const afterUrl = encodeURIComponent(`${globalThis.spaBase}/home`);
+    navigate({
+      to: `${globalThis.spaBase}/patient/${patientUuid}/edit?focusSection=insurance&afterUrl=${afterUrl}`,
+    });
+  }, [patientUuid]);
   const persistedCompanionPersonUuid = getVisitCompanionPersonUuid(
     visitToEdit?.attributes,
     config.companionVisitAttributeTypeUuid,
@@ -256,11 +318,19 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   const { mutateVisits: mutateInfiniteVisits } = useInfiniteVisits(patientUuid);
   const allVisitTypes = useConditionalVisitTypes();
   const { attributes: personAttributesForVisitDefaults } = usePersonAttributesForVisitDefaults(patientUuid);
+  const patientIdentifierValues = useMemo(
+    () =>
+      Array.isArray(patient?.identifier)
+        ? patient.identifier.map(({ value }) => value?.trim() ?? '').filter(Boolean)
+        : undefined,
+    [patient?.identifier],
+  );
   const [isVisitSaved, setIsVisitSaved] = useState(false);
   const [persistedVisitPendingPostSubmit, setPersistedVisitPendingPostSubmit] = useState<Visit | null>(null);
   const [visitCreationRequiresReconciliation, setVisitCreationRequiresReconciliation] = useState(false);
   const [queueEntryPersistenceCompleted, setQueueEntryPersistenceCompleted] = useState(false);
   const completedPostSubmitActions = useRef(new Set<string>());
+  const financiadorCopyInFlight = useRef<Promise<SafeCopyFinanciadorToVisitResult> | null>(null);
   const visitPersistenceToken = useRef(uuidv4());
   const pendingVisitCreationPayload = useRef<NewVisitPayload | null>(null);
   const pendingVisitCreationError = useRef<unknown>(null);
@@ -303,6 +373,137 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   const { visitAttributeTypes } = useVisitAttributeTypes();
   const [visitFormCallbacks, setVisitFormCallbacks] = useVisitFormCallbacks();
   const [extraVisitInfo, setExtraVisitInfo] = useState<ExtraVisitInfoState | null>(null);
+
+  const showCoveragePermissionHandoff = useCallback(() => {
+    const reviewAction = canReviewPatientCoverage
+      ? {
+          actionButtonLabel: t('reviewCoverage', 'Revisar cobertura'),
+          onActionButtonClick: openPatientCoverageReview,
+        }
+      : {};
+    showSnackbar({
+      isLowContrast: true,
+      kind: 'warning',
+      title: t('financiadorCopyNotAuthorized', 'Consulta iniciada; cobertura requiere apoyo'),
+      subtitle: t(
+        'financiadorCopyNotAuthorizedSubtitle',
+        'Su rol no puede sincronizar la cobertura de la consulta. Solicite a Admisión que la revise antes del FUA.',
+      ),
+      ...reviewAction,
+    });
+  }, [canReviewPatientCoverage, openPatientCoverageReview, t]);
+
+  const copyFinanciadorWithVisibleRecovery = useCallback(
+    async (visitUuid: string) => {
+      const attemptCopy = async (showSuccess: boolean): Promise<SafeCopyFinanciadorToVisitResult> => {
+        let copyPromise = financiadorCopyInFlight.current;
+        const reportsResult = !copyPromise;
+        if (!copyPromise) {
+          copyPromise = safeCopyFinanciadorToVisit({
+            patientUuid,
+            visitUuid,
+            onlyFillMissing: true,
+            patientIdentifierValues,
+          });
+          financiadorCopyInFlight.current = copyPromise;
+        }
+
+        let result: SafeCopyFinanciadorToVisitResult;
+        try {
+          result = await copyPromise;
+        } finally {
+          if (financiadorCopyInFlight.current === copyPromise) {
+            financiadorCopyInFlight.current = null;
+          }
+        }
+
+        // A main-form retry can race the snackbar retry. Both reuse the same
+        // request, but only its owner reports the outcome to avoid duplicate
+        // warnings or success messages.
+        if (!reportsResult) {
+          return result;
+        }
+
+        if (result.ok === true) {
+          if (result.skipped || result.reviewReason) {
+            const hasAccreditationConflict = result.reviewReason === 'sis-accreditation-conflict';
+            const hasIncompleteCoverage = result.reviewReason === 'incomplete-coverage';
+            const reviewAction = canReviewPatientCoverage
+              ? {
+                  actionButtonLabel: t('reviewCoverage', 'Revisar cobertura'),
+                  onActionButtonClick: openPatientCoverageReview,
+                }
+              : {};
+            showSnackbar({
+              isLowContrast: true,
+              kind: 'warning',
+              title: hasAccreditationConflict
+                ? t('financiadorAccreditationConflict', 'La acreditación SIS requiere revisión')
+                : hasIncompleteCoverage
+                  ? t('financiadorIncomplete', 'Cobertura incompleta en la consulta')
+                  : t('financiadorMissing', 'Consulta iniciada sin financiador'),
+              subtitle: hasAccreditationConflict
+                ? t(
+                    'financiadorAccreditationConflictSubtitle',
+                    'El estado de la consulta no coincide con la afiliación. Revíselo antes de generar el FUA.',
+                  )
+                : hasIncompleteCoverage
+                  ? t(
+                      'financiadorIncompleteSubtitle',
+                      'Complete el número de afiliación y, para SIS, el estado y la fecha de acreditación antes del FUA.',
+                    )
+                  : t(
+                      'financiadorMissingSubtitle',
+                      'Registre la cobertura del paciente para completar los datos de esta consulta.',
+                    ),
+              ...reviewAction,
+            });
+            return result;
+          }
+
+          if (showSuccess) {
+            showSnackbar({
+              isLowContrast: true,
+              kind: 'success',
+              title: t('financiadorCopyRecovered', 'Cobertura registrada en la consulta'),
+              subtitle: t('financiadorCopyRecoveredSubtitle', 'La reparación se completó sin crear otra consulta.'),
+            });
+          }
+          return result;
+        }
+
+        if (isFinanciadorCopyAuthorizationError(result.error)) {
+          showCoveragePermissionHandoff();
+          return result;
+        }
+
+        showSnackbar({
+          isLowContrast: true,
+          kind: 'warning',
+          title: showSuccess
+            ? t('financiadorCopyRetryFailed', 'La cobertura sigue pendiente')
+            : t('financiadorCopyFailed', 'Consulta iniciada; cobertura pendiente'),
+          subtitle: t(
+            'financiadorCopyFailedSubtitle',
+            'La atención puede continuar. Reintente la cobertura; no inicie otra consulta.',
+          ),
+          actionButtonLabel: t('retryFinanciadorCopy', 'Reintentar cobertura'),
+          onActionButtonClick: () => void attemptCopy(true),
+        });
+        return result;
+      };
+
+      return attemptCopy(false);
+    },
+    [
+      canReviewPatientCoverage,
+      openPatientCoverageReview,
+      patientIdentifierValues,
+      patientUuid,
+      showCoveragePermissionHandoff,
+      t,
+    ],
+  );
 
   const displayVisitStopDateTimeFields = useMemo(
     () => Boolean(visitToEdit?.uuid || showVisitEndDateTimeFields),
@@ -420,7 +621,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           })
         : z.string().optional();
 
-    const visitAttributes = (config.visitAttributeTypes ?? [])?.reduce<
+    const visitAttributes = configuredVisitAttributeTypes.reduce<
       Record<string, ReturnType<typeof createVisitAttributeSchema>>
     >((acc, { uuid, required }) => {
       acc[uuid] = createVisitAttributeSchema(required);
@@ -516,7 +717,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           path: ['visitStopTimeFormat'],
         },
       );
-  }, [config.visitAttributeTypes, patientBirthDate, visitToEdit?.stopDatetime, t, displayVisitStopDateTimeFields]);
+  }, [configuredVisitAttributeTypes, patientBirthDate, visitToEdit?.stopDatetime, t, displayVisitStopDateTimeFields]);
 
   const defaultValues = useMemo(() => {
     const visitStartDate = visitToEdit?.startDatetime ? new Date(visitToEdit?.startDatetime) : new Date();
@@ -546,11 +747,11 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     }
 
     function getDefaultVisitAttributes() {
-      const configuredVisitAttributeUuids = new Set(config.visitAttributeTypes?.map(({ uuid }) => uuid));
+      const configuredVisitAttributeUuids = new Set(configuredVisitAttributeTypes.map(({ uuid }) => uuid));
       const personAttributeDefaults = getDefaultVisitAttributesFromPersonAttributes(
         patient,
         personAttributesForVisitDefaults,
-        config.defaultVisitAttributesFromPersonAttributes,
+        configuredPersonAttributeMappings,
         configuredVisitAttributeUuids,
       );
       const addressDefaults = getDefaultVisitAttributesFromPatientAddress(
@@ -573,8 +774,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     requiredVisitTypeUuid,
     emrConfiguration,
     patient,
-    config.visitAttributeTypes,
-    config.defaultVisitAttributesFromPersonAttributes,
+    configuredVisitAttributeTypes,
+    configuredPersonAttributeMappings,
     config.defaultVisitAttributesFromPatientAddress,
     personAttributesForVisitDefaults,
   ]);
@@ -727,69 +928,86 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
   const handleVisitAttributes = useCallback(
     async (visitAttributes: { [p: string]: string }, visitUuid: string) => {
-      const existingVisitAttributeTypes =
-        visitToEdit?.attributes?.map((attribute) => attribute.attributeType.uuid) || [];
       const responses = [];
-
-      for (const [attributeType, value] of Object.entries(visitAttributes)) {
-        const actionId = `visit-attribute:${attributeType}`;
-        if (completedPostSubmitActions.current.has(actionId)) {
-          continue;
+      const getPersistedValue = (persistedValue: unknown) => {
+        if (persistedValue && typeof persistedValue === 'object' && 'uuid' in persistedValue) {
+          return String(persistedValue.uuid ?? '');
         }
 
-        const attributeToEdit =
-          attributeType && existingVisitAttributeTypes.includes(attributeType)
-            ? visitToEdit?.attributes?.find((attribute) => attribute.attributeType.uuid === attributeType)
-            : undefined;
+        return String(persistedValue ?? '');
+      };
+      let persistedAttributes = await getVisitAttributes(visitUuid);
+      const findPersistedAttribute = (attributeType: string) =>
+        persistedAttributes.find((attribute) => attribute.attributeType?.uuid === attributeType);
+      const replacePersistedAttribute = (
+        attributeType: string,
+        attribute: (typeof persistedAttributes)[number] | undefined,
+      ) => {
+        persistedAttributes = persistedAttributes.filter(
+          (persistedAttribute) => persistedAttribute.attributeType?.uuid !== attributeType,
+        );
+        if (attribute) {
+          persistedAttributes.push(attribute);
+        }
+      };
+
+      const persistVisitAttribute = async (
+        attributeType: string,
+        value: string,
+        { completeAction = true }: { completeAction?: boolean } = {},
+      ) => {
+        const actionId = `visit-attribute:${attributeType}`;
+        if (completeAction && completedPostSubmitActions.current.has(actionId)) {
+          return;
+        }
+
+        const attributeToEdit = findPersistedAttribute(attributeType);
+        const originalAttribute = visitToEdit?.attributes?.find(
+          (attribute) => attribute.attributeType.uuid === attributeType,
+        );
         const attributeName =
-          attributeToEdit?.attributeType.display ??
+          originalAttribute?.attributeType.display ??
           visitAttributeTypes?.find((type) => type.uuid === attributeType)?.display ??
           t('visitAttribute', 'atributo de consulta');
 
         try {
           if (attributeToEdit) {
-            const isSameValue =
-              typeof attributeToEdit.value === 'object'
-                ? attributeToEdit.value.uuid === value
-                : attributeToEdit.value === value;
+            const isSameValue = getPersistedValue(attributeToEdit.value) === value;
 
             if (!isSameValue) {
               const response = value
                 ? await updateVisitAttribute(visitUuid, attributeToEdit.uuid, value)
                 : await deleteVisitAttribute(visitUuid, attributeToEdit.uuid);
               responses.push(response);
+              replacePersistedAttribute(attributeType, value ? { ...attributeToEdit, value } : undefined);
             }
           } else if (value) {
-            responses.push(await createVisitAttribute(visitUuid, attributeType, value));
+            const response = await createVisitAttribute(visitUuid, attributeType, value);
+            responses.push(response);
+            replacePersistedAttribute(attributeType, {
+              uuid: response?.data?.uuid ?? `pending-${attributeType}`,
+              attributeType: { uuid: attributeType },
+              value,
+            });
           }
 
-          completedPostSubmitActions.current.add(actionId);
+          if (completeAction) {
+            completedPostSubmitActions.current.add(actionId);
+          }
         } catch (error) {
           try {
-            const persistedAttributes = await getVisitAttributes(visitUuid);
-            const getPersistedValue = (persistedValue: unknown) => {
-              if (persistedValue && typeof persistedValue === 'object' && 'uuid' in persistedValue) {
-                return String(persistedValue.uuid ?? '');
-              }
-
-              return String(persistedValue ?? '');
-            };
-            const attributeWasReconciled = attributeToEdit
-              ? value
-                ? persistedAttributes.some(
-                    (attribute) =>
-                      attribute.uuid === attributeToEdit.uuid && getPersistedValue(attribute.value) === value,
-                  )
-                : persistedAttributes.every((attribute) => attribute.uuid !== attributeToEdit.uuid)
-              : persistedAttributes.some(
-                  (attribute) =>
-                    attribute.attributeType?.uuid === attributeType && getPersistedValue(attribute.value) === value,
-                );
+            persistedAttributes = await getVisitAttributes(visitUuid);
+            const reconciledAttribute = findPersistedAttribute(attributeType);
+            const attributeWasReconciled = value
+              ? getPersistedValue(reconciledAttribute?.value) === value
+              : !reconciledAttribute;
 
             if (attributeWasReconciled) {
               console.error('Visit attribute write returned an error but server state confirms success.', error);
-              completedPostSubmitActions.current.add(actionId);
-              continue;
+              if (completeAction) {
+                completedPostSubmitActions.current.add(actionId);
+              }
+              return;
             }
           } catch (reconciliationError) {
             console.error('Could not reconcile the visit attribute after a write failure.', reconciliationError);
@@ -819,11 +1037,94 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           });
           throw error;
         }
+      };
+
+      const coverageAttributeTypes = new Set([
+        FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+        INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+        SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+        SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
+      ]);
+      const semanticCoverageIsConfigured = configuredVisitAttributeTypes.some(
+        ({ uuid }) => uuid === FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+      );
+
+      // Unrelated attributes are independent of the coverage transaction and
+      // can be completed before its commit-marker protocol begins.
+      for (const [attributeType, value] of Object.entries(visitAttributes)) {
+        if (semanticCoverageIsConfigured && coverageAttributeTypes.has(attributeType)) {
+          continue;
+        }
+        await persistVisitAttribute(attributeType, value);
+      }
+
+      if (semanticCoverageIsConfigured) {
+        const desiredCoverage = new Map(
+          [...coverageAttributeTypes].map((attributeType) => [attributeType, visitAttributes[attributeType] ?? '']),
+        );
+        const coverageWillChange = [...desiredCoverage].some(
+          ([attributeType, value]) => getPersistedValue(findPersistedAttribute(attributeType)?.value) !== value,
+        );
+
+        if (coverageWillChange) {
+          const desiredStatus = desiredCoverage.get(SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID) ?? '';
+          const persistedPayer = normalizeFinanciadorConceptUuid(
+            getPersistedValue(findPersistedAttribute(FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID)?.value) || null,
+          );
+          const desiredPayer = normalizeFinanciadorConceptUuid(
+            desiredCoverage.get(FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID) || null,
+          );
+          const payerBecomesSis = desiredPayer === SIS_CONCEPT_UUID && persistedPayer !== SIS_CONCEPT_UUID;
+
+          // The SIS status is the commit marker for the number/date bundle.
+          // Invalidate it before any coverage mutation and recreate it only
+          // after the complements and payer have converged.
+          await persistVisitAttribute(SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID, '', {
+            completeAction: !desiredStatus,
+          });
+
+          // A transition into SIS commits its payer first so any later failure
+          // remains discoverable as SIS + missing status. A transition away
+          // from SIS keeps the old SIS payer until its complements are cleaned,
+          // preserving the same durable worklist marker.
+          if (payerBecomesSis) {
+            await persistVisitAttribute(
+              FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+              desiredCoverage.get(FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID) ?? '',
+            );
+          }
+          await persistVisitAttribute(
+            INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+            desiredCoverage.get(INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID) ?? '',
+          );
+          await persistVisitAttribute(
+            SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
+            desiredCoverage.get(SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID) ?? '',
+          );
+          if (!payerBecomesSis) {
+            await persistVisitAttribute(
+              FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+              desiredCoverage.get(FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID) ?? '',
+            );
+          }
+          const hasCompleteSisComplements = Boolean(
+            (desiredCoverage.get(INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID) ?? '').trim() &&
+              (desiredCoverage.get(SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID) ?? '').trim(),
+          );
+          await persistVisitAttribute(
+            SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+            desiredPayer === SIS_CONCEPT_UUID && hasCompleteSisComplements ? desiredStatus : '',
+          );
+        } else {
+          for (const attributeType of coverageAttributeTypes) {
+            completedPostSubmitActions.current.add(`visit-attribute:${attributeType}`);
+          }
+        }
       }
 
       return responses;
     },
-    [visitToEdit, t, visitAttributeTypes],
+    [configuredVisitAttributeTypes, visitToEdit, t, visitAttributeTypes],
   );
 
   const onSubmit = useCallback(
@@ -1017,8 +1318,13 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             minutes,
             currentSeconds,
           );
-      const visitAttributesWithCompanion = withVisitCompanionAttribute(
+      const sanitizedVisitAttributes = sanitizeVisitCoverageAttributes(
         visitAttributes,
+        patientIdentifierValues ?? [],
+        configuredVisitAttributeTypes.some(({ uuid }) => uuid === FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID),
+      );
+      const visitAttributesWithCompanion = withVisitCompanionAttribute(
+        sanitizedVisitAttributes,
         config.companionVisitAttributeTypeUuid,
         selectedCompanion?.personUuid,
       );
@@ -1084,6 +1390,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           payload.attributes.push(...extraAttributes);
         }
       }
+
+      const coverageCapturedInVisitPayload = hasCompleteVisitCoverage(payload.attributes);
 
       if (isOnline) {
         let visit: Visit | null = recoveredVisit;
@@ -1181,31 +1489,33 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             }
           }
 
-          // Backfill the payer from the person's affiliation so billing, the banner
-          // and the FUA worklist can read it — a visit with no payer is invisible to
-          // FUA generation. `onlyFillMissing` keeps a payer the user picked in this
-          // form (which corrects the affiliation) from being reverted. Never blocks
-          // the visit: a failure is reported and left for Admisión.
+          // Backfill coverage only when the create payload did not already carry
+          // a complete canonical bundle. Normal clinical flows keep this
+          // non-blocking; triage waits for it before running the queue callback,
+          // without rolling back or recreating the already persisted visit.
+          // Users without the REST capability receive a deterministic handoff to
+          // Admisión instead of a retry action that cannot succeed for their role.
           if (!visitToEdit && !completedPostSubmitActions.current.has('financiador')) {
-            completedPostSubmitActions.current.add('financiador');
-            const financingCopyResult = await safeCopyFinanciadorToVisit({
-              patientUuid,
-              visitUuid: visit.uuid,
-              onlyFillMissing: true,
-            });
-            // Some host implementations and test doubles predate the structured
-            // result returned by this helper. In that case the copy is still
-            // considered best-effort and must not interrupt the visit workflow.
-            if (financingCopyResult && !financingCopyResult.ok) {
-              showSnackbar({
-                isLowContrast: true,
-                kind: 'warning',
-                title: t('financiadorCopyFailed', 'No se pudo registrar el seguro en la visita'),
-                subtitle: t(
-                  'financiadorCopyFailedSubtitle',
-                  'Admisión puede completarlo más tarde. La atención continúa.',
-                ),
-              });
+            if (coverageCapturedInVisitPayload) {
+              completedPostSubmitActions.current.add('financiador');
+            } else if (!canCopyPatientCoverage) {
+              completedPostSubmitActions.current.add('financiador');
+              showCoveragePermissionHandoff();
+            } else {
+              const recordCoverageResult = (coverageResult: SafeCopyFinanciadorToVisitResult) => {
+                if (
+                  (coverageResult.ok === true && !coverageResult.skipped && !coverageResult.reviewReason) ||
+                  (coverageResult.ok === false && isFinanciadorCopyAuthorizationError(coverageResult.error))
+                ) {
+                  completedPostSubmitActions.current.add('financiador');
+                }
+              };
+              const coverageCopy = copyFinanciadorWithVisibleRecovery(visit.uuid);
+              if (requireActiveSisFinancing) {
+                recordCoverageResult(await coverageCopy);
+              } else {
+                void coverageCopy.then(recordCoverageResult);
+              }
             }
           }
 
@@ -1335,6 +1645,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       config.offlineVisitTypeUuid,
       config.companionVisitAttributeTypeUuid,
       config.showExtraVisitAttributesSlot,
+      configuredVisitAttributeTypes,
       displayVisitStopDateTimeFields,
       extraVisitInfo,
       handleVisitAttributes,
@@ -1356,6 +1667,11 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       visitToEdit,
       companionRequirementState,
       companionAttributeTypeExists,
+      canCopyPatientCoverage,
+      copyFinanciadorWithVisibleRecovery,
+      requireActiveSisFinancing,
+      showCoveragePermissionHandoff,
+      patientIdentifierValues,
       selectedCompanion,
     ],
   );
@@ -1597,7 +1913,10 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
               <section>
                 <h1 className={styles.sectionTitle}>{isTablet && t('visitAttributes', 'Visit attributes')}</h1>
                 <div className={styles.sectionField}>
-                  <VisitAttributeTypeFields setErrorFetchingResources={setErrorFetchingResources} />
+                  <VisitAttributeTypeFields
+                    setErrorFetchingResources={setErrorFetchingResources}
+                    visitAttributeTypes={configuredVisitAttributeTypes}
+                  />
                 </div>
               </section>
             </Stack>

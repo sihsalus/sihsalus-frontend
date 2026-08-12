@@ -21,6 +21,7 @@ export const ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID = '9b3df0a1-0c5
 export const FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID = '3a988e33-a6c0-4b76-b924-01abb998944b';
 export const INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID = 'aac48226-d143-4274-80e0-264db4e368ee';
 export const SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID = '5e13e902-2030-4f65-b9d5-9a4810c9a603';
+export const SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID = 'e3a66f60-4abe-4948-b323-7c4935d8eb8a';
 
 // ── Catálogo canónico «Tipo de seguro» ───────────────────────────────────────
 export const INSURANCE_TYPE_CONCEPT_SET_UUID = '6b932638-242e-49ef-8ba7-0ae87199835c';
@@ -29,6 +30,7 @@ export const SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID = '9b3df0a1-0c58-4f55-9868-9c
 export const SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID = '9b3df0a1-0c58-4f55-9868-9c38f1db2052';
 export const SIS_ACCREDITATION_PENDING_CONCEPT_UUID = '9b3df0a1-0c58-4f55-9868-9c38f1db2053';
 export const SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID = '9b3df0a1-0c58-4f55-9868-9c38f1db2054';
+export const SELF_FINANCED_CONCEPT_UUID = 'cc72568e-d0d9-46a8-a618-91f0d679f518';
 
 /**
  * Conceptos legacy de productos SIS que pueden aparecer como valor de
@@ -62,18 +64,20 @@ interface VisitAttributesResponse {
   attributes?: Array<RestAttribute>;
 }
 
-export type SisFinancingState =
-  | 'active'
-  | 'inactive'
-  | 'pending'
-  | 'notConsulted'
-  | 'missing'
-  | 'notApplicable';
+export type SisFinancingState = 'active' | 'inactive' | 'pending' | 'notConsulted' | 'missing' | 'notApplicable';
 
 export interface VisitInsurance {
   financiadorUuid: string | null;
   insuranceNumber: string | null;
   accreditationStatusUuid: string | null;
+  accreditationCheckedAt: string | null;
+}
+
+interface PatientIdentifiersResponse {
+  identifiers?: Array<{
+    identifier?: string;
+    voided?: boolean;
+  }>;
 }
 
 // ── Helpers de mapeo/normalización ───────────────────────────────────────────
@@ -103,6 +107,7 @@ export function getTextValue(value: RestAttributeValue): string | null {
 export interface NormalizeFinanciadorOptions {
   sisConceptUuid?: string;
   legacySisProductConceptUuids?: ReadonlyArray<string>;
+  selfFinancedConceptUuids?: ReadonlyArray<string>;
 }
 
 /**
@@ -129,15 +134,19 @@ export function normalizeFinanciadorConceptUuid(
  */
 export function getSisFinancingState({
   financiadorUuid,
+  insuranceNumber,
   accreditationStatusUuid,
-}: Pick<VisitInsurance, 'financiadorUuid' | 'accreditationStatusUuid'>): SisFinancingState {
+  accreditationCheckedAt,
+}: VisitInsurance): SisFinancingState {
   if (normalizeFinanciadorConceptUuid(financiadorUuid) !== SIS_CONCEPT_UUID) {
     return 'notApplicable';
   }
 
+  if (accreditationStatusUuid === SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID) {
+    return insuranceNumber && accreditationCheckedAt ? 'active' : 'missing';
+  }
+
   switch (accreditationStatusUuid) {
-    case SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID:
-      return 'active';
     case SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID:
       return 'inactive';
     case SIS_ACCREDITATION_PENDING_CONCEPT_UUID:
@@ -217,6 +226,7 @@ export async function fetchVisitInsurance(
     financiadorVisitAttributeTypeUuid = FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
     insuranceNumberVisitAttributeTypeUuid = INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
     accreditationStatusVisitAttributeTypeUuid = SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+    accreditationCheckedAtVisitAttributeTypeUuid = SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
   }: FinanciadorVisitAttributeTypeUuids = {},
 ): Promise<VisitInsurance> {
   const { data } = await openmrsFetch<VisitAttributesResponse>(
@@ -230,7 +240,25 @@ export async function fetchVisitInsurance(
     accreditationStatusUuid: getCodedValueUuid(
       findAttribute(attributes, accreditationStatusVisitAttributeTypeUuid)?.value,
     ),
+    accreditationCheckedAt: getTextValue(
+      findAttribute(attributes, accreditationCheckedAtVisitAttributeTypeUuid)?.value,
+    ),
   };
+}
+
+/** Lee los documentos vigentes del paciente para impedir que se usen como afiliación. */
+export async function fetchPatientIdentifierValues(patientUuid: string): Promise<Array<string>> {
+  if (!patientUuid?.trim()) {
+    return [];
+  }
+
+  const { data } = await openmrsFetch<PatientIdentifiersResponse>(
+    `${restBaseUrl}/patient/${patientUuid}?v=custom:(identifiers:(identifier,voided))`,
+  );
+  return (data?.identifiers ?? [])
+    .filter(({ voided }) => !voided)
+    .map(({ identifier }) => identifier?.trim() ?? '')
+    .filter(Boolean);
 }
 
 // ── Upsert persona → visita ──────────────────────────────────────────────────
@@ -239,6 +267,7 @@ export interface FinanciadorVisitAttributeTypeUuids {
   financiadorVisitAttributeTypeUuid?: string;
   insuranceNumberVisitAttributeTypeUuid?: string;
   accreditationStatusVisitAttributeTypeUuid?: string;
+  accreditationCheckedAtVisitAttributeTypeUuid?: string;
 }
 
 export interface CopyFinanciadorToVisitParams extends NormalizeFinanciadorOptions {
@@ -247,18 +276,24 @@ export interface CopyFinanciadorToVisitParams extends NormalizeFinanciadorOption
   personAttributeTypeUuids?: PersonInsuranceAttributeTypeUuids;
   visitAttributeTypeUuids?: FinanciadorVisitAttributeTypeUuids;
   /**
-   * Solo rellena los atributos ausentes; deja intacto todo valor ya presente en
-   * la visita. Necesario cuando el usuario pudo fijar el financiador a mano.
+   * Rellena atributos compatibles ausentes y conserva el financiador elegido
+   * manualmente. Los complementos sin financiador se eliminan como huérfanos.
    */
   onlyFillMissing?: boolean;
+  /**
+   * Identificadores documentales conocidos del paciente (DNI, CE, pasaporte,
+   * etc.). Ninguno de ellos puede usarse como número de afiliación.
+   */
+  patientIdentifierValues?: ReadonlyArray<string>;
 }
 
 export interface CopyFinanciadorToVisitResult {
   ok: true;
-  /** true cuando la persona no tenía datos de seguro y no se escribió nada. */
+  /** true cuando no existe un financiador efectivo que copiar o conservar. */
   skipped: boolean;
   created: number;
   updated: number;
+  reviewReason?: 'missing-financiador' | 'incomplete-coverage' | 'sis-accreditation-conflict';
 }
 
 export type SafeCopyFinanciadorToVisitResult = CopyFinanciadorToVisitResult | { ok: false; error: unknown };
@@ -274,19 +309,40 @@ function attributeValueEquals(persisted: RestAttributeValue, desired: string): b
   return persisted.uuid === desired || (!persisted.uuid && persisted.display === desired);
 }
 
+function normalizeDocumentValue(value: string): string {
+  return value
+    .trim()
+    .toLocaleUpperCase()
+    .replace(/[^\p{L}\p{N}]/gu, '');
+}
+
+function isPatientIdentifier(value: string | null, patientIdentifierValues: ReadonlyArray<string>): boolean {
+  if (!value) {
+    return false;
+  }
+
+  const normalizedValue = normalizeDocumentValue(value);
+  return patientIdentifierValues.some((identifier) => normalizeDocumentValue(identifier) === normalizedValue);
+}
+
 /**
  * Copia el financiador desde la afiliación de la persona a los visit
- * attributes de la visita (Financiador, Número de Seguro, Estado de
+ * attributes de la visita (Financiador, Número de Seguro, Estado y Fecha de
  * Acreditación SIS).
  *
  * - Idempotente: lee los atributos existentes de la visita y solo escribe
  *   cuando el valor cambió (crea si falta, actualiza si difiere).
- * - Se salta silenciosamente cuando la persona no tiene datos de seguro.
+ * - Devuelve `reviewReason` cuando falta el financiador, la cobertura queda
+ *   incompleta o la acreditación SIS contradice la afiliación; la UI debe
+ *   hacerlo visible.
  * - Normaliza los productos SIS legacy al concepto SIS canónico para el
  *   atributo Financiador.
- * - Con `onlyFillMissing`, nunca pisa un valor ya presente en la visita: se usa
- *   desde flujos donde el usuario pudo elegir el financiador a mano (formulario
- *   de inicio de visita), porque esa elección corrige a la afiliación y debe ganar.
+ * - Autofinanciamiento copia únicamente el financiador. Otras IAFAS conservan
+ *   su número de póliza, pero no reciben estado/fecha SIS.
+ * - Con `onlyFillMissing`, el financiador efectivo de la visita gana. Si difiere
+ *   de la afiliación de la persona, no se mezclan sus datos complementarios;
+ *   si no existe financiador, primero se eliminan los complementos huérfanos.
+ * - Un identificador documental del paciente nunca se copia como afiliación.
  *
  * Lanza en caso de error de red/servidor; los flujos de UI deben usar
  * {@link safeCopyFinanciadorToVisit}, que nunca lanza.
@@ -298,49 +354,190 @@ export async function copyFinanciadorToVisit({
   visitAttributeTypeUuids,
   sisConceptUuid,
   legacySisProductConceptUuids,
+  selfFinancedConceptUuids = [SELF_FINANCED_CONCEPT_UUID],
   onlyFillMissing = false,
+  patientIdentifierValues,
 }: CopyFinanciadorToVisitParams): Promise<CopyFinanciadorToVisitResult> {
   const {
     financiadorVisitAttributeTypeUuid = FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
     insuranceNumberVisitAttributeTypeUuid = INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
     accreditationStatusVisitAttributeTypeUuid = SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+    accreditationCheckedAtVisitAttributeTypeUuid = SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
   } = visitAttributeTypeUuids ?? {};
 
   const personInsurance = await fetchPersonInsurance(patientUuid, personAttributeTypeUuids);
-
-  const desiredAttributes = [
-    {
-      attributeTypeUuid: financiadorVisitAttributeTypeUuid,
-      value: normalizeFinanciadorConceptUuid(personInsurance.insuranceTypeUuid, {
-        sisConceptUuid,
-        legacySisProductConceptUuids,
-      }),
-    },
-    {
-      attributeTypeUuid: insuranceNumberVisitAttributeTypeUuid,
-      value: personInsurance.insuranceCode,
-    },
-    {
-      attributeTypeUuid: accreditationStatusVisitAttributeTypeUuid,
-      value: personInsurance.accreditationStatusUuid,
-    },
-  ].filter((attribute): attribute is { attributeTypeUuid: string; value: string } => Boolean(attribute.value));
-
-  if (desiredAttributes.length === 0) {
-    return { ok: true, skipped: true, created: 0, updated: 0 };
-  }
+  const personFinanciador = normalizeFinanciadorConceptUuid(personInsurance.insuranceTypeUuid, {
+    sisConceptUuid,
+    legacySisProductConceptUuids,
+  });
+  const personIsSelfFinanced = Boolean(personFinanciador && selfFinancedConceptUuids.includes(personFinanciador));
+  const resolvedPatientIdentifierValues =
+    personFinanciador && personInsurance.insuranceCode && !personIsSelfFinanced
+      ? patientIdentifierValues?.length
+        ? patientIdentifierValues
+        : await fetchPatientIdentifierValues(patientUuid)
+      : [];
+  const safeInsuranceCode = personIsSelfFinanced
+    ? null
+    : isPatientIdentifier(personInsurance.insuranceCode, resolvedPatientIdentifierValues)
+      ? null
+      : personInsurance.insuranceCode;
 
   const { data } = await openmrsFetch<VisitAttributesResponse>(
     `${restBaseUrl}/visit/${visitUuid}?v=custom:(attributes:(uuid,value,attributeType:(uuid)))`,
   );
   const existingAttributes = data?.attributes ?? [];
+  const existingFinanciador = normalizeFinanciadorConceptUuid(
+    getCodedValueUuid(findAttribute(existingAttributes, financiadorVisitAttributeTypeUuid)?.value),
+    { sisConceptUuid, legacySisProductConceptUuids },
+  );
+  const complementAttributeTypeUuids = [
+    insuranceNumberVisitAttributeTypeUuid,
+    accreditationStatusVisitAttributeTypeUuid,
+    accreditationCheckedAtVisitAttributeTypeUuid,
+  ];
+  // A complement without a persisted payer has no trustworthy owner. If a
+  // payer is now copied from the person, remove those orphan values before
+  // writing the new bundle; otherwise `onlyFillMissing` could silently relabel
+  // an old SIS number as EsSalud (or vice versa).
+  const orphanedComplementAttributeTypeUuids = new Set(
+    !existingFinanciador && personFinanciador
+      ? complementAttributeTypeUuids.filter((attributeTypeUuid) =>
+          Boolean(findAttribute(existingAttributes, attributeTypeUuid)),
+        )
+      : [],
+  );
+  const preserveExistingVisitSnapshot = Boolean(!personFinanciador && existingFinanciador);
+  const effectiveFinanciador =
+    onlyFillMissing && existingFinanciador ? existingFinanciador : (personFinanciador ?? existingFinanciador);
+  const complementsMatchEffectiveFinanciador = Boolean(personFinanciador) && effectiveFinanciador === personFinanciador;
+  const resolvedSisConceptUuid = sisConceptUuid ?? SIS_CONCEPT_UUID;
+  const isSis = effectiveFinanciador === resolvedSisConceptUuid;
+  const isSelfFinanced = Boolean(effectiveFinanciador && selfFinancedConceptUuids.includes(effectiveFinanciador));
+  const existingAccreditationStatus = getCodedValueUuid(
+    findAttribute(existingAttributes, accreditationStatusVisitAttributeTypeUuid)?.value,
+  );
+  const existingAccreditationCheckedAt = getTextValue(
+    findAttribute(existingAttributes, accreditationCheckedAtVisitAttributeTypeUuid)?.value,
+  );
+  const accreditationStatusConflicts = Boolean(
+    onlyFillMissing &&
+      existingFinanciador &&
+      isSis &&
+      existingAccreditationStatus &&
+      personInsurance.accreditationStatusUuid &&
+      existingAccreditationStatus !== personInsurance.accreditationStatusUuid,
+  );
+  const orphanAccreditationDateConflicts = Boolean(
+    onlyFillMissing &&
+      existingFinanciador &&
+      isSis &&
+      !existingAccreditationStatus &&
+      existingAccreditationCheckedAt &&
+      existingAccreditationCheckedAt !== personInsurance.accreditationCheckedAt,
+  );
+  const accreditationBundleConflicts = accreditationStatusConflicts || orphanAccreditationDateConflicts;
+  const shouldCopySisAccreditation = complementsMatchEffectiveFinanciador && isSis && !accreditationBundleConflicts;
+  const desiredAttributes = [
+    {
+      attributeTypeUuid: financiadorVisitAttributeTypeUuid,
+      value: personFinanciador,
+    },
+    {
+      attributeTypeUuid: insuranceNumberVisitAttributeTypeUuid,
+      value: complementsMatchEffectiveFinanciador && !isSelfFinanced ? safeInsuranceCode : null,
+    },
+    {
+      attributeTypeUuid: accreditationCheckedAtVisitAttributeTypeUuid,
+      value:
+        shouldCopySisAccreditation && personInsurance.accreditationStatusUuid
+          ? personInsurance.accreditationCheckedAt
+          : null,
+    },
+    {
+      // El estado se escribe al final: si una escritura previa falla, la lista
+      // de acreditaciones pendientes todavía puede detectar la visita.
+      attributeTypeUuid: accreditationStatusVisitAttributeTypeUuid,
+      value: shouldCopySisAccreditation ? personInsurance.accreditationStatusUuid : null,
+    },
+  ].filter((attribute): attribute is { attributeTypeUuid: string; value: string } => Boolean(attribute.value));
+  const desiredAttributeTypes = new Set(desiredAttributes.map(({ attributeTypeUuid }) => attributeTypeUuid));
+  const preserveCompatibleVisitComplements = onlyFillMissing || preserveExistingVisitSnapshot;
+  const attributesToRemove = (
+    preserveCompatibleVisitComplements
+      ? [
+          ...(!effectiveFinanciador || isSelfFinanced ? [insuranceNumberVisitAttributeTypeUuid] : []),
+          ...(!isSis ? [accreditationStatusVisitAttributeTypeUuid, accreditationCheckedAtVisitAttributeTypeUuid] : []),
+        ]
+      : [
+          insuranceNumberVisitAttributeTypeUuid,
+          accreditationStatusVisitAttributeTypeUuid,
+          accreditationCheckedAtVisitAttributeTypeUuid,
+        ].filter((attributeTypeUuid) => !desiredAttributeTypes.has(attributeTypeUuid))
+  ).filter(
+    (attributeTypeUuid) =>
+      !orphanedComplementAttributeTypeUuids.has(attributeTypeUuid) &&
+      Boolean(findAttribute(existingAttributes, attributeTypeUuid)),
+  );
+
+  const getResultingValue = (attributeTypeUuid: string): RestAttributeValue => {
+    if (orphanedComplementAttributeTypeUuids.has(attributeTypeUuid)) {
+      return desiredAttributes.find((attribute) => attribute.attributeTypeUuid === attributeTypeUuid)?.value ?? null;
+    }
+
+    if (attributesToRemove.includes(attributeTypeUuid)) {
+      return null;
+    }
+
+    const desired = desiredAttributes.find((attribute) => attribute.attributeTypeUuid === attributeTypeUuid);
+    const existing = findAttribute(existingAttributes, attributeTypeUuid);
+    if (desired && (!existing || !onlyFillMissing)) {
+      return desired.value;
+    }
+    return existing?.value;
+  };
+  const resultingInsuranceNumber = getTextValue(getResultingValue(insuranceNumberVisitAttributeTypeUuid));
+  const resultingAccreditationStatus = getCodedValueUuid(getResultingValue(accreditationStatusVisitAttributeTypeUuid));
+  const resultingAccreditationCheckedAt = getTextValue(getResultingValue(accreditationCheckedAtVisitAttributeTypeUuid));
+  const coverageIsIncomplete = Boolean(
+    effectiveFinanciador &&
+      !isSelfFinanced &&
+      (!resultingInsuranceNumber || (isSis && (!resultingAccreditationStatus || !resultingAccreditationCheckedAt))),
+  );
+  const reviewReason: CopyFinanciadorToVisitResult['reviewReason'] = accreditationBundleConflicts
+    ? 'sis-accreditation-conflict'
+    : !effectiveFinanciador
+      ? 'missing-financiador'
+      : coverageIsIncomplete
+        ? 'incomplete-coverage'
+        : undefined;
+
+  if (desiredAttributes.length === 0 && attributesToRemove.length === 0) {
+    return {
+      ok: true,
+      skipped: !effectiveFinanciador,
+      created: 0,
+      updated: 0,
+      ...(reviewReason ? { reviewReason } : {}),
+    };
+  }
 
   let created = 0;
   let updated = 0;
 
-  for (const { attributeTypeUuid, value } of desiredAttributes) {
-    const existing = findAttribute(existingAttributes, attributeTypeUuid);
+  const deleteAttribute = async (existing: RestAttribute | undefined) => {
+    if (existing) {
+      await openmrsFetch(`${restBaseUrl}/visit/${visitUuid}/attribute/${existing.uuid}`, {
+        method: 'DELETE',
+      });
+      updated += 1;
+    }
+  };
 
+  const upsertAttribute = async (
+    { attributeTypeUuid, value }: { attributeTypeUuid: string; value: string },
+    existing?: RestAttribute,
+  ) => {
     if (!existing) {
       await openmrsFetch(`${restBaseUrl}/visit/${visitUuid}/attribute`, {
         method: 'POST',
@@ -348,10 +545,6 @@ export async function copyFinanciadorToVisit({
         body: { attributeType: attributeTypeUuid, value },
       });
       created += 1;
-    } else if (onlyFillMissing) {
-      // El valor ya está en la visita: puede venir de una corrección manual, y
-      // la afiliación de la persona no debe revertirla en silencio.
-      continue;
     } else if (!attributeValueEquals(existing.value, value)) {
       await openmrsFetch(`${restBaseUrl}/visit/${visitUuid}/attribute/${existing.uuid}`, {
         method: 'POST',
@@ -360,9 +553,134 @@ export async function copyFinanciadorToVisit({
       });
       updated += 1;
     }
+  };
+
+  if (onlyFillMissing) {
+    // Orphans are deleted before the payer is written. This ordering keeps the
+    // operation retry-safe: a failure cannot leave a newly assigned payer beside
+    // complements whose provenance is unknown.
+    for (const attributeTypeUuid of orphanedComplementAttributeTypeUuids) {
+      await deleteAttribute(findAttribute(existingAttributes, attributeTypeUuid));
+    }
+
+    for (const desiredAttribute of desiredAttributes) {
+      const existing = orphanedComplementAttributeTypeUuids.has(desiredAttribute.attributeTypeUuid)
+        ? undefined
+        : findAttribute(existingAttributes, desiredAttribute.attributeTypeUuid);
+
+      if (!existing) {
+        await upsertAttribute(desiredAttribute);
+      }
+    }
+
+    for (const attributeTypeUuid of attributesToRemove) {
+      await deleteAttribute(findAttribute(existingAttributes, attributeTypeUuid));
+    }
+  } else {
+    const existingPayerAttribute = findAttribute(existingAttributes, financiadorVisitAttributeTypeUuid);
+    const existingStatusAttribute = findAttribute(existingAttributes, accreditationStatusVisitAttributeTypeUuid);
+    const desiredPayerAttribute = desiredAttributes.find(
+      ({ attributeTypeUuid }) => attributeTypeUuid === financiadorVisitAttributeTypeUuid,
+    );
+    const desiredStatusAttribute = desiredAttributes.find(
+      ({ attributeTypeUuid }) => attributeTypeUuid === accreditationStatusVisitAttributeTypeUuid,
+    );
+    const desiredComplementAttributes = desiredAttributes.filter(
+      ({ attributeTypeUuid }) =>
+        attributeTypeUuid !== financiadorVisitAttributeTypeUuid &&
+        attributeTypeUuid !== accreditationStatusVisitAttributeTypeUuid,
+    );
+    const payerIsChanging = Boolean(desiredPayerAttribute && existingFinanciador !== desiredPayerAttribute.value);
+    const payerBecomesSis = Boolean(payerIsChanging && desiredPayerAttribute?.value === resolvedSisConceptUuid);
+
+    if (payerIsChanging) {
+      // The SIS status is the commit marker for the former accreditation, so
+      // invalidate it before changing the bundle. Payer order then depends on
+      // direction: preserve the complete non-SIS bundle until SIS is committed,
+      // or keep the old SIS payer as a worklist marker while leaving SIS.
+      await deleteAttribute(existingStatusAttribute);
+      // Commit transitions into SIS before deleting the former non-SIS
+      // complements. If the payer write itself fails, the original bundle is
+      // still intact; after it succeeds, every later failure is discoverable
+      // as SIS + missing status.
+      if (payerBecomesSis && desiredPayerAttribute) {
+        await upsertAttribute(desiredPayerAttribute, existingPayerAttribute);
+      }
+      for (const attributeTypeUuid of complementAttributeTypeUuids) {
+        if (attributeTypeUuid !== accreditationStatusVisitAttributeTypeUuid) {
+          await deleteAttribute(findAttribute(existingAttributes, attributeTypeUuid));
+        }
+      }
+
+      // Entering SIS is asymmetric: commit the SIS payer before its
+      // complements so a later failure remains discoverable as SIS + missing
+      // status. When leaving SIS, keep the former payer until cleanup and
+      // complement staging finish, preserving the old SIS retry marker.
+      for (const desiredAttribute of desiredComplementAttributes) {
+        await upsertAttribute(desiredAttribute);
+      }
+      if (!payerBecomesSis && desiredPayerAttribute) {
+        await upsertAttribute(desiredPayerAttribute, existingPayerAttribute);
+      }
+      if (desiredStatusAttribute) {
+        await upsertAttribute(desiredStatusAttribute);
+      }
+    } else {
+      const desiredAttributesByType = new Map(
+        desiredAttributes.map((attribute) => [attribute.attributeTypeUuid, attribute]),
+      );
+      const attributeWillChange = (attributeTypeUuid: string) => {
+        const desired = desiredAttributesByType.get(attributeTypeUuid);
+        const existing = findAttribute(existingAttributes, attributeTypeUuid);
+        if (desired) {
+          return !existing || !attributeValueEquals(existing.value, desired.value);
+        }
+        return attributesToRemove.includes(attributeTypeUuid) && Boolean(existing);
+      };
+      const sisAccreditationWillChange = Boolean(
+        isSis &&
+          existingStatusAttribute &&
+          [
+            insuranceNumberVisitAttributeTypeUuid,
+            accreditationCheckedAtVisitAttributeTypeUuid,
+            accreditationStatusVisitAttributeTypeUuid,
+          ].some(attributeWillChange),
+      );
+      const statusMustBeRemovedFirst = Boolean(
+        existingStatusAttribute &&
+          (sisAccreditationWillChange || attributesToRemove.includes(accreditationStatusVisitAttributeTypeUuid)),
+      );
+
+      // The prior status is a commit marker for its number/date pair. Invalidate
+      // it before changing any member, then recreate it only after every prior
+      // write succeeds.
+      if (statusMustBeRemovedFirst) {
+        await deleteAttribute(existingStatusAttribute);
+      }
+      for (const attributeTypeUuid of attributesToRemove) {
+        if (attributeTypeUuid !== accreditationStatusVisitAttributeTypeUuid) {
+          await deleteAttribute(findAttribute(existingAttributes, attributeTypeUuid));
+        }
+      }
+      for (const desiredAttribute of desiredComplementAttributes) {
+        await upsertAttribute(desiredAttribute, findAttribute(existingAttributes, desiredAttribute.attributeTypeUuid));
+      }
+      if (desiredPayerAttribute) {
+        await upsertAttribute(desiredPayerAttribute, existingPayerAttribute);
+      }
+      if (desiredStatusAttribute) {
+        await upsertAttribute(desiredStatusAttribute, statusMustBeRemovedFirst ? undefined : existingStatusAttribute);
+      }
+    }
   }
 
-  return { ok: true, skipped: false, created, updated };
+  return {
+    ok: true,
+    skipped: !effectiveFinanciador,
+    created,
+    updated,
+    ...(reviewReason ? { reviewReason } : {}),
+  };
 }
 
 /**

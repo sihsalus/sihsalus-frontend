@@ -37,20 +37,58 @@ permanente entre la persona y el paciente ni reutilizarse automáticamente en at
 - Cardinalidad backend: `0..1` por visita, usando `FreeTextDatatype`.
 - En menores de edad la selección de una persona adulta es obligatoria; en adultos es opcional.
 
+### Cobertura de la consulta
+
+El formulario de inicio/edición aplica el financiador efectivo de la visita, que puede corregir la
+afiliación administrativa de la persona para esa atención:
+
+- SIS muestra número, estado y fecha/hora de acreditación mediante los cuatro atributos canónicos que el
+  formulario reinyecta siempre. Al editar, la fecha persistida vuelve a mostrarse; borrarla conserva un valor
+  vacío y nunca lo sustituye silenciosamente por la fecha actual.
+- Otra IAFAS muestra el número de póliza y oculta los campos SIS.
+- Autofinanciamiento muestra solo el financiador.
+- Cambiar de financiador limpia los complementos del anterior y el payload vuelve a sanearlos antes de
+  persistir.
+- DNI, CE, pasaporte y otros identificadores del paciente nunca se copian como número de seguro.
+
+El mapeo predeterminado persona→visita incluye financiador, número, estado SIS y fecha/hora de consulta;
+los ocho tipos de atributo forman el contrato canónico compartido con Visitas Activas y FUA. Los overrides
+genéricos de `visitAttributeTypes` y `defaultVisitAttributesFromPersonAttributes` pueden agregar campos y
+mapeos locales, pero el formulario reinyecta siempre los cuatro atributos y cuatro mapeos canónicos: un
+override aislado no puede retirar ni redirigir la cobertura compartida.
+
+Al editar una consulta, el formulario vuelve a leer los atributos persistidos y trata el estado SIS como
+marcador de commit. Lo invalida antes de cambiar el bundle, escribe el estado nuevamente al final y usa un
+orden asimétrico al cambiar de IAFAS: entrar a SIS confirma primero el financiador para que un fallo posterior
+quede visible como SIS pendiente; salir de SIS conserva el financiador anterior hasta limpiar los complementos.
+El reintento parte del snapshot actual del servidor y converge sin repetir la actualización clínica.
+
+Después de crear la consulta, la copia persona→visita es no bloqueante e idempotente. Si una escritura
+administrativa transitoria falla, el usuario recibe `Reintentar cobertura`; el reintento completa la misma
+visita y no crea otra. Antes de intentarla, la UI exige `Get People`, `Get Patients`, `Get Visits`, `Edit Visits`
+y `Get Visit Attribute Types`. Si el rol no reúne esa capacidad —o el servidor responde 401/403— la consulta
+clínica permanece creada, se deriva la cobertura a Admisión y no se ofrece un reintento imposible. Una cobertura
+completa incluida en el POST inicial no necesita esta capacidad posterior. Los resultados determinísticos
+—financiador ausente, cobertura incompleta o conflicto SIS—
+no entran en un ciclo de reintentos: muestran `Revisar cobertura` y llevan a la sección de seguro del paciente
+solo cuando el usuario tiene `app:opciones.registrarPaciente`; sin ese permiso no se ofrece una acción que
+terminaría bloqueada. La obligatoriedad del financiador, la derivación automática a Caja y un privilegio
+administrativo más específico para editar únicamente cobertura continúan como decisiones pendientes.
+
 ## Taxonomia clinica del resumen del paciente
 
 Los nombres visibles del resumen deben usar lenguaje clinico entendido por los equipos peruanos. Los nombres tecnicos de FHIR son detalles de implementacion. Por ejemplo, FHIR `Condition` puede representar un problema activo, un diagnostico de una atencion o una condicion historica resuelta; eso no obliga a mostrar una seccion llamada `Condiciones`.
 
 ### Secciones recomendadas
 
-| Seccion UI | Proposito | Contenido tipico | Mapeo tecnico |
-| --- | --- | --- | --- |
-| Problemas activos | Problemas clinicamente relevantes que afectan la atencion actual. | Diabetes, hipertension, asma, desnutricion, embarazo de alto riesgo, enfermedad cronica en seguimiento. | Usualmente FHIR `Condition` con estado activo o recurrente. |
-| Diagnosticos de la atencion | Diagnosticos registrados para una consulta/encuentro especifico. | Diagnostico agudo, diagnostico diferencial, diagnostico final, diagnostico CIE-10 de la consulta. | `Condition`, `Encounter.diagnosis` u observaciones diagnosticas segun soporte backend. |
-| Antecedentes | Historia pasada o informacion contextual relevante. | Antecedentes patologicos, familiares, sociales, ocupacionales, gineco-obstetricos y otros. | Puede venir de `Condition`, observaciones, formularios o modelos locales. |
-| Procedimientos y cirugias | Procedimientos invasivos, quirurgicos o terapeuticos importantes. | Cesarea, apendicectomia, legrado, cirugia de catarata, endoscopia, dispositivos implantados. | Preferir FHIR `Procedure`; datos legacy pueden venir de formularios u observaciones. |
-| Alergias | Alergias e intolerancias. | Alergia medicamentosa, alimentaria, reaccion, severidad/criticidad. | FHIR `AllergyIntolerance`. |
-| Medicamentos | Medicacion activa y medicacion anterior relevante. | Prescripciones activas, medicamentos previos, renovaciones. | `MedicationRequest`, `MedicationStatement` u ordenes de medicamentos OpenMRS. |
+| Seccion UI                  | Proposito                                                         | Contenido tipico                                                                                        | Mapeo tecnico                                                                          |
+| --------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Problemas activos           | Problemas clinicamente relevantes que afectan la atencion actual. | Diabetes, hipertension, asma, desnutricion, embarazo de alto riesgo, enfermedad cronica en seguimiento. | Usualmente FHIR `Condition` con estado activo o recurrente.                            |
+| Diagnosticos de la atencion | Diagnosticos registrados para una consulta/encuentro especifico.  | Diagnostico agudo, diagnostico diferencial, diagnostico final, diagnostico CIE-10 de la consulta.       | `Condition`, `Encounter.diagnosis` u observaciones diagnosticas segun soporte backend. |
+| Antecedentes                | Historia pasada o informacion contextual relevante.               | Antecedentes patologicos, familiares, sociales, ocupacionales, gineco-obstetricos y otros.              | Puede venir de `Condition`, observaciones, formularios o modelos locales.              |
+| Procedimientos y cirugias   | Procedimientos invasivos, quirurgicos o terapeuticos importantes. | Cesarea, apendicectomia, legrado, cirugia de catarata, endoscopia, dispositivos implantados.            | Preferir FHIR `Procedure`; datos legacy pueden venir de formularios u observaciones.   |
+| Alergias                    | Alergias e intolerancias.                                         | Alergia medicamentosa, alimentaria, reaccion, severidad/criticidad.                                     | FHIR `AllergyIntolerance`.                                                             |
+| Medicamentos                | Medicacion activa y medicacion anterior relevante.                | Prescripciones activas, medicamentos previos, renovaciones.                                             | `MedicationRequest`, `MedicationStatement` u ordenes de medicamentos OpenMRS.          |
 
 ### Regla de nombres
 

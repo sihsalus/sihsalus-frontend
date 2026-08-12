@@ -10,8 +10,16 @@ import {
   TextInput,
   TextInputSkeleton,
 } from '@carbon/react';
-import { useConfig } from '@openmrs/esm-framework';
-import { safeEvaluateExpression } from '@openmrs/esm-patient-common-lib';
+import {
+  FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+  normalizeFinanciadorConceptUuid,
+  safeEvaluateExpression,
+  SELF_FINANCED_CONCEPT_UUID,
+  SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_CONCEPT_UUID,
+} from '@openmrs/esm-patient-common-lib';
 import {
   shouldPreventPlainNumberKey,
   shouldPreventPlainNumberPaste,
@@ -19,7 +27,7 @@ import {
 } from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import React, { useEffect, useId, useMemo } from 'react';
-import { Controller, type ControllerRenderProps, useFormContext } from 'react-hook-form';
+import { Controller, type ControllerRenderProps, useFormContext, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { type ChartConfig } from '../../config-schema';
@@ -50,6 +58,7 @@ function preventInvalidFloatPaste(event: React.ClipboardEvent<HTMLInputElement>)
 }
 
 interface VisitAttributeTypeFieldsProps {
+  visitAttributeTypes: ChartConfig['visitAttributeTypes'];
   setErrorFetchingResources: React.Dispatch<
     React.SetStateAction<{
       blockSavingForm: boolean;
@@ -57,20 +66,62 @@ interface VisitAttributeTypeFieldsProps {
   >;
 }
 
-const VisitAttributeTypeFields: React.FC<VisitAttributeTypeFieldsProps> = ({ setErrorFetchingResources }) => {
-  const { visitAttributeTypes } = useConfig<ChartConfig>();
-  const { control, getValues } = useFormContext<VisitFormData>();
-  if (visitAttributeTypes?.length) {
-    const { visitAttributes } = getValues();
+export function shouldShowCoverageVisitAttribute(
+  attributeTypeUuid: string,
+  visitAttributes: Record<string, string> = {},
+  financiadorIsConfigured = true,
+) {
+  if (!financiadorIsConfigured) {
+    return true;
+  }
 
+  const financiador = normalizeFinanciadorConceptUuid(visitAttributes[FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID] || null);
+
+  if (attributeTypeUuid === INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID) {
+    return Boolean(financiador && financiador !== SELF_FINANCED_CONCEPT_UUID);
+  }
+
+  if (
+    attributeTypeUuid === SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID ||
+    attributeTypeUuid === SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID
+  ) {
+    return financiador === SIS_CONCEPT_UUID;
+  }
+
+  return true;
+}
+
+export function shouldClearCoverageComplements(previousFinanciador: string, nextFinanciador: string) {
+  return (
+    normalizeFinanciadorConceptUuid(previousFinanciador || null) !==
+    normalizeFinanciadorConceptUuid(nextFinanciador || null)
+  );
+}
+
+const VisitAttributeTypeFields: React.FC<VisitAttributeTypeFieldsProps> = ({
+  setErrorFetchingResources,
+  visitAttributeTypes,
+}) => {
+  const { control } = useFormContext<VisitFormData>();
+  const visitAttributes = useWatch({ control, name: 'visitAttributes' }) ?? {};
+  if (visitAttributeTypes?.length) {
+    const financiadorIsConfigured = visitAttributeTypes.some(
+      ({ uuid }) => uuid === FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+    );
     return (
       <>
         {visitAttributeTypes.map((attributeType) => {
-          const showAttributeType = attributeType?.showWhenExpression
+          const matchesCoverageRules = shouldShowCoverageVisitAttribute(
+            attributeType.uuid,
+            visitAttributes,
+            financiadorIsConfigured,
+          );
+          const matchesConfiguredExpression = attributeType?.showWhenExpression
             ? safeEvaluateExpression(attributeType.showWhenExpression, {
                 visitAttributes,
               })
             : true;
+          const showAttributeType = matchesCoverageRules && matchesConfiguredExpression;
 
           return (
             showAttributeType && (
@@ -138,6 +189,7 @@ const AttributeTypeField: React.FC<AttributeTypeFieldProps> = ({
 
   const {
     formState: { errors },
+    setValue,
   } = useFormContext<VisitFormData>();
 
   useEffect(() => {
@@ -188,6 +240,27 @@ const AttributeTypeField: React.FC<AttributeTypeFieldProps> = ({
             invalidText={errors.visitAttributes?.[uuid]?.message}
             value={fieldProps.value ?? ''}
             disabled={readOnly}
+            onChange={(event) => {
+              const nextValue = event.target.value;
+              if (
+                uuid === FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID &&
+                shouldClearCoverageComplements(fieldProps.value ?? '', nextValue)
+              ) {
+                setValue(`visitAttributes.${INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID}`, '', {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+                setValue(`visitAttributes.${SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID}`, '', {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+                setValue(`visitAttributes.${SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID}`, '', {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+              }
+              fieldProps.onChange(event);
+            }}
           >
             <SelectItem text={t('selectAnOption', 'Select an option')} value={''} />
             {(answers ?? []).map((ans) => (
@@ -277,7 +350,8 @@ const AttributeTypeField: React.FC<AttributeTypeFieldProps> = ({
           <DatePicker
             dateFormat="d/m/Y"
             datePickerType="single"
-            onChange={([date]) => onChange(dayjs(date).format('YYYY-MM-DD'))}
+            onChange={([date]) => onChange(date ? dayjs(date).format('YYYY-MM-DD') : '')}
+            value={fieldProps.value ? dayjs(fieldProps.value).format('DD/MM/YYYY') : null}
           >
             <DatePickerInput
               id={`date-picker-${id}`}
@@ -317,6 +391,7 @@ const AttributeTypeField: React.FC<AttributeTypeFieldProps> = ({
     id,
     readOnly,
     readOnlyConceptDisplay,
+    setValue,
   ]);
 
   if (isLoading) {

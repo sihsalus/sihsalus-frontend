@@ -1,6 +1,8 @@
 import { makeUrl, openmrsFetch } from '@openmrs/esm-framework';
 import {
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
 } from '@openmrs/esm-patient-common-lib';
 
@@ -11,9 +13,11 @@ import {
   FuaGenerationError,
   generateFuaFromVisit,
   generateFuasFromVisits,
+  getVisitAccreditationCheckedAt,
   getVisitAccreditationStatusUuid,
   getVisitFinanciadorDisplay,
   getVisitFinanciadorUuid,
+  getVisitInsuranceNumber,
   isSisFinanciador,
   type VisitSummary,
 } from './useVisit';
@@ -135,13 +139,25 @@ describe('visit financiador helpers', () => {
         attributeType: { uuid: SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID },
         value: { uuid: 'vigente-concept-uuid', display: 'Vigente' },
       },
+      {
+        uuid: 'attr-numero-afiliacion',
+        attributeType: { uuid: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID },
+        value: 'SIS-AFILIACION-001',
+      },
+      {
+        uuid: 'attr-acreditacion-fecha',
+        attributeType: { uuid: SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID },
+        value: '2026-08-11T14:30:00.000-05:00',
+      },
     ],
   };
 
   it('reads the financiador and accreditation status from the visit attributes', () => {
     expect(getVisitFinanciadorUuid(visit)).toBe(sisConceptUuid);
     expect(getVisitFinanciadorDisplay(visit)).toBe('SIS');
+    expect(getVisitInsuranceNumber(visit)).toBe('SIS-AFILIACION-001');
     expect(getVisitAccreditationStatusUuid(visit)).toBe('vigente-concept-uuid');
+    expect(getVisitAccreditationCheckedAt(visit)).toBe('2026-08-11T14:30:00.000-05:00');
   });
 
   it('returns null when the visit has no financiador or accreditation attributes', () => {
@@ -149,7 +165,9 @@ describe('visit financiador helpers', () => {
 
     expect(getVisitFinanciadorUuid(bareVisit)).toBeNull();
     expect(getVisitFinanciadorDisplay(bareVisit)).toBeNull();
+    expect(getVisitInsuranceNumber(bareVisit)).toBeNull();
     expect(getVisitAccreditationStatusUuid(bareVisit)).toBeNull();
+    expect(getVisitAccreditationCheckedAt(bareVisit)).toBeNull();
     expect(getVisitFinanciadorUuid({ uuid: 'visit-uuid' })).toBeNull();
   });
 

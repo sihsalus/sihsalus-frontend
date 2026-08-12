@@ -7,11 +7,7 @@ import {
   usePatient,
   userHasAccess,
 } from '@openmrs/esm-framework';
-import {
-  fetchVisitInsurance,
-  getSisFinancingState,
-  safeCopyFinanciadorToVisit,
-} from '@openmrs/esm-patient-common-lib';
+import { fetchVisitInsurance, getSisFinancingState, safeCopyFinanciadorToVisit } from '@openmrs/esm-patient-common-lib';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
@@ -622,6 +618,7 @@ describe('AppointmentArrivalModal', () => {
       financiadorUuid: 'sis-uuid',
       insuranceNumber: 'SIS-123',
       accreditationStatusUuid: 'inactive-status-uuid',
+      accreditationCheckedAt: '2026-08-11T14:30:00.000-05:00',
     });
     mockGetSisFinancingState.mockReturnValue('inactive');
 
@@ -659,9 +656,7 @@ describe('AppointmentArrivalModal', () => {
     renderModal();
     await userEvent.click(getDirectButton());
 
-    expect(
-      await screen.findByText(/menor de edad y requiere un acompañante/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/menor de edad y requiere un acompañante/i)).toBeInTheDocument();
     expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
   });

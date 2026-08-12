@@ -9,8 +9,15 @@ import {
 } from '@openmrs/esm-framework';
 import {
   type amPm,
+  FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
   INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID,
   INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
+  normalizeFinanciadorConceptUuid,
+  SELF_FINANCED_CONCEPT_UUID,
+  SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_CONCEPT_UUID,
 } from '@openmrs/esm-patient-common-lib';
 import { useMemo, useState } from 'react';
 import useSWR from 'swr';
@@ -264,7 +271,55 @@ export function usePersonAttributesForVisitDefaults(patientUuid?: string) {
 }
 
 function normalizeIdentifierValue(value: string) {
-  return value.trim().toLocaleUpperCase().replace(/[^\p{L}\p{N}]/gu, '');
+  return value
+    .trim()
+    .toLocaleUpperCase()
+    .replace(/[^\p{L}\p{N}]/gu, '');
+}
+
+/**
+ * Enforces the coverage contract immediately before persistence. This is
+ * intentionally based on the payer selected for this visit, not only on the
+ * person's affiliation defaults.
+ */
+export function sanitizeVisitCoverageAttributes(
+  attributes: Record<string, string>,
+  patientIdentifierValues: ReadonlyArray<string> = [],
+  financiadorIsConfigured = true,
+) {
+  const sanitizedAttributes = { ...attributes };
+  const rawFinanciador = sanitizedAttributes[FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID];
+  const financiador = normalizeFinanciadorConceptUuid(rawFinanciador || null);
+
+  if (financiador) {
+    sanitizedAttributes[FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID] = financiador;
+  }
+
+  const isSis = financiador === SIS_CONCEPT_UUID;
+  const isSelfFinanced = financiador === SELF_FINANCED_CONCEPT_UUID;
+  const insuranceNumber = sanitizedAttributes[INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID];
+  const normalizedIdentifiers = new Set(patientIdentifierValues.map(normalizeIdentifierValue).filter(Boolean));
+  const insuranceNumberIsDocument = Boolean(
+    insuranceNumber && normalizedIdentifiers.has(normalizeIdentifierValue(insuranceNumber)),
+  );
+
+  if (!financiadorIsConfigured) {
+    if (insuranceNumberIsDocument) {
+      sanitizedAttributes[INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID] = '';
+    }
+    return sanitizedAttributes;
+  }
+
+  if (!financiador || isSelfFinanced || insuranceNumberIsDocument) {
+    sanitizedAttributes[INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID] = '';
+  }
+
+  if (!isSis) {
+    sanitizedAttributes[SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID] = '';
+    sanitizedAttributes[SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID] = '';
+  }
+
+  return sanitizedAttributes;
 }
 
 export function getDefaultVisitAttributesFromPersonAttributes(
@@ -275,36 +330,33 @@ export function getDefaultVisitAttributesFromPersonAttributes(
 ) {
   const identifiers = Array.isArray(patient?.identifier) ? patient.identifier : [];
   const patientIdentifiers = new Set(
-    identifiers
-      .map(({ value }) => (value ? normalizeIdentifierValue(value) : ''))
-      .filter(Boolean),
+    identifiers.map(({ value }) => (value ? normalizeIdentifierValue(value) : '')).filter(Boolean),
   );
 
-  return mappings.reduce<Record<string, string>>(
-    (defaults, { personAttributeTypeUuid, visitAttributeTypeUuid }) => {
-      if (!configuredVisitAttributeUuids.has(visitAttributeTypeUuid)) {
-        return defaults;
-      }
-
-      const personAttribute = attributes.find(
-        (attribute) => attribute.attributeType.uuid === personAttributeTypeUuid,
-      );
-      const value = personAttribute?.value;
-      const normalizedValue = typeof value === 'object' ? value?.uuid : value?.trim();
-      const isInsuranceNumberMapping =
-        personAttributeTypeUuid === INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID &&
-        visitAttributeTypeUuid === INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID;
-      const duplicatesPatientIdentifier =
-        typeof normalizedValue === 'string' && patientIdentifiers.has(normalizeIdentifierValue(normalizedValue));
-
-      if (normalizedValue && !(isInsuranceNumberMapping && duplicatesPatientIdentifier)) {
-        defaults[visitAttributeTypeUuid] = normalizedValue;
-      }
-
+  return mappings.reduce<Record<string, string>>((defaults, { personAttributeTypeUuid, visitAttributeTypeUuid }) => {
+    if (!configuredVisitAttributeUuids.has(visitAttributeTypeUuid)) {
       return defaults;
-    },
-    {},
-  );
+    }
+
+    const personAttribute = attributes.find((attribute) => attribute.attributeType.uuid === personAttributeTypeUuid);
+    const value = personAttribute?.value;
+    const rawValue = typeof value === 'object' ? value?.uuid : value?.trim();
+    const isFinanciadorMapping =
+      personAttributeTypeUuid === INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID &&
+      visitAttributeTypeUuid === FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID;
+    const normalizedValue = isFinanciadorMapping ? normalizeFinanciadorConceptUuid(rawValue || null) : rawValue;
+    const isInsuranceNumberMapping =
+      personAttributeTypeUuid === INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID &&
+      visitAttributeTypeUuid === INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID;
+    const duplicatesPatientIdentifier =
+      typeof normalizedValue === 'string' && patientIdentifiers.has(normalizeIdentifierValue(normalizedValue));
+
+    if (normalizedValue && !(isInsuranceNumberMapping && duplicatesPatientIdentifier)) {
+      defaults[visitAttributeTypeUuid] = normalizedValue;
+    }
+
+    return defaults;
+  }, {});
 }
 
 function getOpenmrsAddressExtensionValue(address: fhir.Address | undefined, field: string) {

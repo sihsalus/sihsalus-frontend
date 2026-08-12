@@ -4,6 +4,8 @@
   "accreditationNoVigente": "Not active",
   "accreditationPendiente": "Pending",
   "accreditationSinRegistrar": "Not recorded",
+  "accreditationMissingCheckedAt": "Missing accreditation date",
+  "accreditationMissingInsuranceNumber": "Missing affiliation number",
   "accreditationVigente": "Active",
   "accreditationWarningBody": "The SIS accreditation for this visit is {{estado}}. The FUA is a sworn statement and an affiliation error is grounds for payment rejection. Generate anyway?",
   "accreditationWarningTitle": "SIS accreditation not active",

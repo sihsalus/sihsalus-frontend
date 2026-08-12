@@ -1,9 +1,12 @@
-import { getDefaultsFromConfigSchema, navigate, useConfig, useSession } from '@openmrs/esm-framework';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { getDefaultsFromConfigSchema, navigate, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
+import { safeCopyFinanciadorToVisit, type SafeCopyFinanciadorToVisitResult } from '@openmrs/esm-patient-common-lib';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 
 import { type ActiveVisitsConfigSchema, configSchema } from '../config-schema';
-import PendingSisAccreditationsTable from './pending-sis-accreditations.component';
+import PendingSisAccreditationsTable, {
+  syncPendingSisCoveragePrivileges,
+} from './pending-sis-accreditations.component';
 import { type PendingSisVisit, usePendingSisAccreditations } from './pending-sis-accreditations.resource';
 
 void React;
@@ -13,15 +16,33 @@ vi.mock('./pending-sis-accreditations.resource', async () => ({
   usePendingSisAccreditations: vi.fn(),
 }));
 
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  safeCopyFinanciadorToVisit: vi.fn(),
+}));
+
 const mockUsePendingSisAccreditations = vi.mocked(usePendingSisAccreditations);
 const mockUseConfig = vi.mocked(useConfig<ActiveVisitsConfigSchema>);
 const mockUseSession = vi.mocked(useSession);
 const mockNavigate = vi.mocked(navigate);
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockSafeCopyFinanciadorToVisit = vi.mocked(safeCopyFinanciadorToVisit);
+const mockRefreshPendingVisits = vi.fn();
 
 const admisionSession = {
   authenticated: true,
   sessionId: 'session-id',
-  user: { privileges: [{ display: 'app:home.admision' }] },
+  user: {
+    privileges: [
+      { display: 'app:home.admision' },
+      { display: 'app:opciones.registrarPaciente' },
+      { display: 'Get People' },
+      { display: 'Get Patients' },
+      { display: 'Get Visits' },
+      { display: 'Edit Visits' },
+      { display: 'Get Visit Attribute Types' },
+    ],
+  },
 } as unknown as ReturnType<typeof useSession>;
 
 const pendingVisits: Array<PendingSisVisit> = [
@@ -47,13 +68,22 @@ const pendingVisits: Array<PendingSisVisit> = [
 
 describe('PendingSisAccreditationsTable', () => {
   beforeEach(() => {
-    mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema) as ActiveVisitsConfigSchema);
+    const config = getDefaultsFromConfigSchema(configSchema) as ActiveVisitsConfigSchema;
+    mockUseConfig.mockReturnValue(config);
     mockUseSession.mockReturnValue(admisionSession);
+    mockSafeCopyFinanciadorToVisit.mockResolvedValue({
+      ok: true,
+      skipped: false,
+      created: 1,
+      updated: 0,
+    });
+    mockRefreshPendingVisits.mockResolvedValue(undefined);
     mockUsePendingSisAccreditations.mockReturnValue({
       pendingVisits,
       error: undefined,
       isLoading: false,
       isValidating: false,
+      mutate: mockRefreshPendingVisits,
     });
   });
 
@@ -61,19 +91,34 @@ describe('PendingSisAccreditationsTable', () => {
     vi.clearAllMocks();
   });
 
-  it('renders the pending visits with patient link, DNI, accreditation tag, and location', () => {
+  it('renders pending visits without a dead patient-chart link for an admission-only user', () => {
     render(<PendingSisAccreditationsTable />);
 
     expect(screen.getByText('Acreditaciones SIS pendientes')).toBeInTheDocument();
-
-    const patientLink = screen.getByRole('link', { name: 'Maria Quispe' });
-    expect(patientLink).toHaveAttribute('href', expect.stringContaining('/patient/patient-1/chart'));
+    expect(screen.getByText('Maria Quispe')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Maria Quispe' })).not.toBeInTheDocument();
 
     expect(screen.getByText('79000001')).toBeInTheDocument();
     expect(screen.getByText('79000002')).toBeInTheDocument();
     expect(screen.getByText('Pendiente')).toBeInTheDocument();
     expect(screen.getByText('Sin registrar')).toBeInTheDocument();
     expect(screen.getByText('Emergencia')).toBeInTheDocument();
+  });
+
+  it('links the patient name to the chart only with clinical-chart access', () => {
+    mockUseSession.mockReturnValue({
+      ...admisionSession,
+      user: {
+        privileges: [...(admisionSession.user?.privileges ?? []), { display: 'app:hoja.clinica' }],
+      },
+    } as unknown as ReturnType<typeof useSession>);
+
+    render(<PendingSisAccreditationsTable />);
+
+    expect(screen.getByRole('link', { name: 'Maria Quispe' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('/patient/patient-1/chart'),
+    );
   });
 
   it('opens patient editing from the accreditation action and returns to home after saving', () => {
@@ -84,6 +129,200 @@ describe('PendingSisAccreditationsTable', () => {
     expect(mockNavigate).toHaveBeenCalledWith({
       to: expect.stringMatching(/\/patient\/patient-1\/edit\?focusSection=insurance&afterUrl=.*%2Fhome$/),
     });
+  });
+
+  it('synchronizes the same visit, shows loading, and refreshes the persisted worklist', async () => {
+    const config = getDefaultsFromConfigSchema(configSchema) as ActiveVisitsConfigSchema;
+    let resolveSync: (result: SafeCopyFinanciadorToVisitResult) => void = () => {};
+    mockSafeCopyFinanciadorToVisit.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSync = resolve;
+      }),
+    );
+
+    render(<PendingSisAccreditationsTable />);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Sincronizar cobertura' })[0]);
+    expect(screen.getByText('Sincronizando cobertura…')).toBeInTheDocument();
+
+    await act(async () => {
+      resolveSync({ ok: true, skipped: false, created: 3, updated: 0 });
+    });
+
+    await waitFor(() => expect(mockRefreshPendingVisits).toHaveBeenCalledTimes(1));
+    expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledWith({
+      patientUuid: 'patient-1',
+      visitUuid: 'visit-1',
+      onlyFillMissing: false,
+      sisConceptUuid: config.pendingSisAccreditations.sisConceptUuids[0],
+      legacySisProductConceptUuids: config.pendingSisAccreditations.sisConceptUuids.slice(1),
+    });
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'success', title: 'Cobertura sincronizada' }),
+    );
+    expect(screen.getAllByRole('button', { name: 'Sincronizar cobertura' })[0]).toBeEnabled();
+  });
+
+  it('keeps synchronization available and reports a transient failure honestly', async () => {
+    mockSafeCopyFinanciadorToVisit.mockResolvedValueOnce({ ok: false, error: new Error('network down') });
+
+    render(<PendingSisAccreditationsTable />);
+    const syncButton = screen.getAllByRole('button', { name: 'Sincronizar cobertura' })[0];
+    fireEvent.click(syncButton);
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'error',
+          title: 'No se pudo sincronizar la cobertura',
+          subtitle: 'La consulta quedó pendiente. Puede volver a sincronizarla desde esta misma fila.',
+        }),
+      ),
+    );
+    expect(mockRefreshPendingVisits).toHaveBeenCalledTimes(1);
+    expect(screen.getAllByRole('button', { name: 'Sincronizar cobertura' })[0]).toBeEnabled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('removes the dead synchronization action after a deterministic authorization failure', async () => {
+    mockSafeCopyFinanciadorToVisit.mockResolvedValueOnce({ ok: false, error: { response: { status: 403 } } });
+
+    render(<PendingSisAccreditationsTable />);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Sincronizar cobertura' })[0]);
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actionButtonLabel: 'Revisar cobertura',
+          kind: 'warning',
+          title: 'Sin permisos para sincronizar cobertura',
+          subtitle: 'Su rol no puede actualizar la cobertura de la consulta. Derive el caso a un usuario autorizado.',
+        }),
+      ),
+    );
+    expect(mockRefreshPendingVisits).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: 'Sincronizar cobertura' })).not.toBeInTheDocument();
+
+    const warning = mockShowSnackbar.mock.calls
+      .map(([options]) => options)
+      .find((options) => options.title === 'Sin permisos para sincronizar cobertura');
+    await act(async () => warning?.onActionButtonClick?.());
+    expect(mockNavigate).toHaveBeenCalledWith({
+      to: expect.stringMatching(/\/patient\/patient-1\/edit\?focusSection=insurance&afterUrl=.*%2Fhome$/),
+    });
+  });
+
+  it.each([
+    ['missing-financiador', 'La consulta sigue sin financiador'],
+    ['incomplete-coverage', 'La cobertura de la consulta sigue incompleta'],
+    ['sis-accreditation-conflict', 'La acreditación SIS requiere revisión'],
+  ] as const)('offers coverage review instead of looping when synchronization returns %s', async (reviewReason, title) => {
+    mockSafeCopyFinanciadorToVisit.mockResolvedValueOnce({
+      ok: true,
+      skipped: reviewReason === 'missing-financiador',
+      created: 0,
+      updated: 0,
+      reviewReason,
+    });
+
+    render(<PendingSisAccreditationsTable />);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Sincronizar cobertura' })[0]);
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actionButtonLabel: 'Revisar cobertura',
+          kind: 'warning',
+          title,
+        }),
+      ),
+    );
+    const warning = mockShowSnackbar.mock.calls.map(([options]) => options).find((options) => options.title === title);
+    await act(async () => warning?.onActionButtonClick?.());
+
+    expect(mockNavigate).toHaveBeenCalledWith({
+      to: expect.stringMatching(/\/patient\/patient-1\/edit\?focusSection=insurance&afterUrl=.*%2Fhome$/),
+    });
+    expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not expose patient editing or a dead review action without the registration privilege', async () => {
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionId: 'session-id',
+      user: {
+        privileges: [
+          { display: 'app:home.admision' },
+          { display: 'Get People' },
+          { display: 'Get Patients' },
+          { display: 'Get Visits' },
+          { display: 'Edit Visits' },
+          { display: 'Get Visit Attribute Types' },
+        ],
+      },
+    } as unknown as ReturnType<typeof useSession>);
+    mockSafeCopyFinanciadorToVisit.mockResolvedValueOnce({
+      ok: true,
+      skipped: false,
+      created: 0,
+      updated: 0,
+      reviewReason: 'incomplete-coverage',
+    });
+
+    render(<PendingSisAccreditationsTable />);
+    expect(screen.queryByRole('button', { name: 'Acreditar' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Sincronizar cobertura' })[0]);
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'La cobertura de la consulta sigue incompleta' }),
+      ),
+    );
+    const warning = mockShowSnackbar.mock.calls
+      .map(([options]) => options)
+      .find((options) => options.title === 'La cobertura de la consulta sigue incompleta');
+    expect(warning).not.toHaveProperty('actionButtonLabel');
+    expect(warning).not.toHaveProperty('onActionButtonClick');
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('keeps the list and accreditation edit readable but hides sync without its complete backend capability set', () => {
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionId: 'session-id',
+      user: {
+        privileges: [{ display: 'app:home.admision' }, { display: 'app:opciones.registrarPaciente' }],
+      },
+    } as unknown as ReturnType<typeof useSession>);
+
+    render(<PendingSisAccreditationsTable />);
+
+    expect(screen.getByText('Acreditaciones SIS pendientes')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Acreditar' })).toHaveLength(2);
+    expect(screen.queryByRole('button', { name: 'Sincronizar cobertura' })).not.toBeInTheDocument();
+    expect(mockSafeCopyFinanciadorToVisit).not.toHaveBeenCalled();
+  });
+
+  it.each(syncPendingSisCoveragePrivileges)('requires the native %s capability before showing sync', (missing) => {
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionId: 'session-id',
+      user: {
+        privileges: [
+          { display: 'app:home.admision' },
+          { display: 'app:opciones.registrarPaciente' },
+          ...syncPendingSisCoveragePrivileges
+            .filter((privilege) => privilege !== missing)
+            .map((display) => ({ display })),
+        ],
+      },
+    } as unknown as ReturnType<typeof useSession>);
+
+    render(<PendingSisAccreditationsTable />);
+
+    expect(screen.queryByRole('button', { name: 'Sincronizar cobertura' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Acreditar' })).toHaveLength(2);
+    expect(mockSafeCopyFinanciadorToVisit).not.toHaveBeenCalled();
   });
 
   it('renders nothing (and does not fetch) without the admisión privilege', () => {
@@ -105,6 +344,7 @@ describe('PendingSisAccreditationsTable', () => {
       error: undefined,
       isLoading: false,
       isValidating: false,
+      mutate: mockRefreshPendingVisits,
     });
 
     render(<PendingSisAccreditationsTable />);
@@ -118,6 +358,7 @@ describe('PendingSisAccreditationsTable', () => {
       error: new Error('network down'),
       isLoading: false,
       isValidating: false,
+      mutate: mockRefreshPendingVisits,
     });
 
     render(<PendingSisAccreditationsTable />);

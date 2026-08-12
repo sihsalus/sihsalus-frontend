@@ -99,6 +99,7 @@ describe('QueueFields', () => {
       financiadorUuid: SIS_CONCEPT_UUID,
       insuranceNumber: 'SIS-123',
       accreditationStatusUuid: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+      accreditationCheckedAt: '2026-08-11T14:30:00.000-05:00',
     });
     mockGetSisFinancingState.mockReturnValue('active');
   });
@@ -176,12 +177,7 @@ describe('QueueFields', () => {
     let callbacks: QueueFieldsCallbacks | undefined;
     mockGetSisFinancingState.mockReturnValue('inactive');
 
-    render(
-      <QueueFields
-        requireActiveSisFinancing
-        setCallbacks={(value) => (callbacks = value)}
-      />,
-    );
+    render(<QueueFields requireActiveSisFinancing setCallbacks={(value) => (callbacks = value)} />);
     await user.selectOptions(screen.getByLabelText('Select a service'), queues[0].uuid);
 
     await expect(callbacks?.onVisitCreatedOrUpdated(mockVisitAlice)).rejects.toMatchObject({

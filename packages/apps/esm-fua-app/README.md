@@ -11,6 +11,20 @@ Microfrontend para OpenMRS 3.x que implementa la UI del Formato Único de Atenci
 - Visor HTML del FUA (integrado con el microservicio generador).
 - Link de acceso desde el panel izquierdo de OpenMRS 3.
 
+### Integridad de la acreditación SIS
+
+Una acreditación se considera completa únicamente cuando la visita conserva el
+número de afiliación, el estado SIS y la fecha/hora de consulta
+`e3a66f60-4abe-4948-b323-7c4935d8eb8a`. Un estado `Vigente` sin número o fecha no entra en la generación masiva y requiere la
+misma confirmación explícita de contingencia que cualquier acreditación no
+vigente o incompleta en la generación individual.
+
+Los UUID de los cuatro atributos de cobertura de la visita son parte del
+contrato canónico de `esm-patient-common-lib`, el mismo que consumen Hoja
+Clínica y Visitas Activas. No se configuran por separado en FUA: un override
+aislado haría que la lista leyera atributos diferentes de los que se escriben
+al iniciar o sincronizar una consulta.
+
 ## Instalación
 
 Instalar desde npm (tag `next`):
@@ -25,9 +39,9 @@ Agregar a tu import map (OpenMRS 3 SPA):
 
 ```json
 {
-	"imports": {
-		"@pucp-gidis-hiisc/esm-fua-app": "https://unpkg.com/@pucp-gidis-hiisc/esm-fua-app@next/dist/pucp-gidis-hiisc-esm-fua-app.js"
-	}
+  "imports": {
+    "@pucp-gidis-hiisc/esm-fua-app": "https://unpkg.com/@pucp-gidis-hiisc/esm-fua-app@next/dist/pucp-gidis-hiisc-esm-fua-app.js"
+  }
 }
 ```
 
@@ -36,12 +50,12 @@ Con eso, el módulo registra sus rutas y extensiones automáticamente.
 ## Rutas y Extensiones
 
 - Rutas registradas:
-	- `#/fua-request` (dashboard principal FUA)
-	- `#/fua-viewer` (visor de FUA)
+  - `#/fua-request` (dashboard principal FUA)
+  - `#/fua-viewer` (visor de FUA)
 - Extensiones principales (slots):
-	- `homepage-dashboard-slot` → enlace “Formato Único de Atención”.
-	- `fua-tiles-slot` → tiles de resumen por estado.
-	- `fua-panels-slot` → paneles/tablas por estado.
+  - `homepage-dashboard-slot` → enlace “Formato Único de Atención”.
+  - `fua-tiles-slot` → tiles de resumen por estado.
+  - `fua-panels-slot` → paneles/tablas por estado.
 
 ## Configuración
 
@@ -49,14 +63,15 @@ Puedes sobreescribir la configuración vía SPA config de OpenMRS:
 
 ```json
 {
-	"@pucp-gidis-hiisc/esm-fua-app": {
-		"enableFuaApprovalWorkflow": false,
-		"fuaGeneratorEndpoint": "https://<tu-host>/services/fua-generator/demo"
-	}
+  "@pucp-gidis-hiisc/esm-fua-app": {
+    "enableFuaApprovalWorkflow": false,
+    "fuaGeneratorEndpoint": "https://<tu-host>/services/fua-generator/demo"
+  }
 }
 ```
 
 Campos soportados:
+
 - `enableFuaApprovalWorkflow` (boolean): habilita el flujo de aprobación (WIP según backend).
 - `fuaGeneratorEndpoint` (string): URL del microservicio que genera el HTML del FUA.
 
@@ -97,6 +112,7 @@ yarn workspace @pucp-gidis-hiisc/esm-fua-app build
 ```
 
 Estructura relevante:
+
 - `src/` componentes, extensiones, rutas y workspaces.
 - `src/routes.json` define rutas y extensiones.
 - `src/config-schema.ts` define la configuración soportada.
@@ -104,6 +120,7 @@ Estructura relevante:
 ## Compatibilidad
 
 Peer deps clave:
+
 - `@openmrs/esm-framework` 8.x
 - `react` 18.x
 - `react-router-dom` 6.x

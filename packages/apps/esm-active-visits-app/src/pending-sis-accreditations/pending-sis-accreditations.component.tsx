@@ -22,12 +22,20 @@ import {
   isDesktop,
   navigate,
   parseDate,
+  showSnackbar,
   useConfig,
   useLayoutType,
   usePagination,
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
+import {
+  canCopyFinanciadorToVisit,
+  copyFinanciadorToVisitPrivileges,
+  isFinanciadorCopyAuthorizationError,
+  safeCopyFinanciadorToVisit,
+  type SafeCopyFinanciadorToVisitResult,
+} from '@openmrs/esm-patient-common-lib';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styles from '../active-visits-widget/active-visits.scss';
@@ -44,11 +52,17 @@ import {
  * alineamiento de seguros); la lista de trabajo se muestra solo a ese rol.
  */
 export const pendingSisAccreditationsPrivilege = 'app:home.admision';
+export const editPatientInsurancePrivilege = 'app:opciones.registrarPaciente';
+export const patientChartPrivilege = 'app:hoja.clinica';
+export const syncPendingSisCoveragePrivileges = copyFinanciadorToVisitPrivileges;
+export const canSyncPendingSisCoverage = canCopyFinanciadorToVisit;
 
 const statusTagTypes: Record<PendingAccreditationStatus, 'blue' | 'gray' | 'red' | 'magenta'> = {
   pending: 'blue',
   notConsulted: 'gray',
   missing: 'red',
+  missingInsuranceNumber: 'red',
+  missingCheckedAt: 'red',
   // Highest urgency: without the payer on the visit no FUA can be generated at all.
   financiadorNotCopied: 'magenta',
 };
@@ -62,6 +76,8 @@ function AccreditationStatusTag({ status }: { status: PendingAccreditationStatus
     pending: t('sisAccreditationPending', 'Pendiente'),
     notConsulted: t('sisAccreditationNotConsulted', 'No consultada'),
     missing: t('sisAccreditationMissing', 'Sin registrar'),
+    missingInsuranceNumber: t('sisAccreditationMissingInsuranceNumber', 'Sin número de afiliación'),
+    missingCheckedAt: t('sisAccreditationMissingCheckedAt', 'Sin fecha de acreditación'),
     financiadorNotCopied: t('sisFinanciadorNotCopied', 'Sin financiador en la visita'),
   };
 
@@ -79,11 +95,19 @@ const PendingSisAccreditationsTable = () => {
   const layout = useLayoutType();
   const pageSizes = config?.activeVisits?.pageSizes ?? [10, 20, 30, 40, 50];
   const [pageSize, setPageSize] = useState(config?.activeVisits?.pageSize ?? 10);
+  const [syncingVisitUuid, setSyncingVisitUuid] = useState<string | null>(null);
+  const [syncAuthorizationDenied, setSyncAuthorizationDenied] = useState(false);
   const canViewList = userHasAccess(pendingSisAccreditationsPrivilege, session?.user);
-  const { pendingVisits, isLoading, isValidating, error } = usePendingSisAccreditations(
-    config.pendingSisAccreditations,
-    canViewList,
-  );
+  const canEditPatientInsurance = userHasAccess(editPatientInsurancePrivilege, session?.user);
+  const canAccessPatientChart = userHasAccess(patientChartPrivilege, session?.user);
+  const canSyncCoverage = canSyncPendingSisCoverage(session?.user);
+  const {
+    pendingVisits,
+    isLoading,
+    isValidating,
+    error,
+    mutate: refreshPendingVisits,
+  } = usePendingSisAccreditations(config.pendingSisAccreditations, canViewList);
   const { paginated, goTo, results, currentPage } = usePagination(pendingVisits, pageSize);
 
   const headerTitle = t('pendingSisAccreditations', 'Acreditaciones SIS pendientes');
@@ -101,6 +125,118 @@ const PendingSisAccreditationsTable = () => {
     const afterUrl = encodeURIComponent(`${globalThis.spaBase}/home`);
     navigate({
       to: `${globalThis.spaBase}/patient/${patientUuid}/edit?focusSection=insurance&afterUrl=${afterUrl}`,
+    });
+  };
+
+  const handleSyncCoverage = async (visit: PendingSisVisit) => {
+    if (syncingVisitUuid) {
+      return;
+    }
+
+    setSyncingVisitUuid(visit.visitUuid);
+    const [sisConceptUuid, ...legacySisProductConceptUuids] = config.pendingSisAccreditations.sisConceptUuids;
+    let result: SafeCopyFinanciadorToVisitResult;
+
+    try {
+      result = await safeCopyFinanciadorToVisit({
+        patientUuid: visit.patientUuid,
+        visitUuid: visit.visitUuid,
+        // This is an explicit operator action after reviewing the affiliation:
+        // the current person coverage is intentionally synchronized to the
+        // visit, including replacing a former pending/conflicting snapshot.
+        onlyFillMissing: false,
+        sisConceptUuid,
+        legacySisProductConceptUuids,
+      });
+    } catch (error) {
+      // The safe helper should not reject, but keep the worklist recoverable if
+      // a host provides an older or incompatible implementation.
+      result = { ok: false, error };
+    }
+
+    try {
+      // A failed copy may still have written part of the idempotent bundle, so
+      // revalidate after every attempt and render the persisted server state.
+      await refreshPendingVisits();
+    } catch (refreshError) {
+      console.error('Could not refresh pending SIS accreditations after synchronizing coverage', refreshError);
+    } finally {
+      setSyncingVisitUuid(null);
+    }
+
+    if (result.ok === false) {
+      if (isFinanciadorCopyAuthorizationError(result.error)) {
+        setSyncAuthorizationDenied(true);
+        const reviewAction = canEditPatientInsurance
+          ? {
+              actionButtonLabel: t('reviewCoverage', 'Revisar cobertura'),
+              onActionButtonClick: () => handleAccredit(visit.patientUuid),
+            }
+          : {};
+        showSnackbar({
+          isLowContrast: true,
+          kind: 'warning',
+          title: t('coverageSyncNotAuthorized', 'Sin permisos para sincronizar cobertura'),
+          subtitle: t(
+            'coverageSyncNotAuthorizedSubtitle',
+            'Su rol no puede actualizar la cobertura de la consulta. Derive el caso a un usuario autorizado.',
+          ),
+          ...reviewAction,
+        });
+        return;
+      }
+
+      showSnackbar({
+        isLowContrast: true,
+        kind: 'error',
+        title: t('coverageSyncFailed', 'No se pudo sincronizar la cobertura'),
+        subtitle: t(
+          'coverageSyncFailedSubtitle',
+          'La consulta quedó pendiente. Puede volver a sincronizarla desde esta misma fila.',
+        ),
+      });
+      return;
+    }
+
+    if (result.skipped || result.reviewReason) {
+      const hasConflict = result.reviewReason === 'sis-accreditation-conflict';
+      const isIncomplete = result.reviewReason === 'incomplete-coverage';
+      const reviewAction = canEditPatientInsurance
+        ? {
+            actionButtonLabel: t('reviewCoverage', 'Revisar cobertura'),
+            onActionButtonClick: () => handleAccredit(visit.patientUuid),
+          }
+        : {};
+
+      showSnackbar({
+        isLowContrast: true,
+        kind: 'warning',
+        title: hasConflict
+          ? t('coverageSyncConflict', 'La acreditación SIS requiere revisión')
+          : isIncomplete
+            ? t('coverageSyncIncomplete', 'La cobertura de la consulta sigue incompleta')
+            : t('coverageSyncMissing', 'La consulta sigue sin financiador'),
+        subtitle: hasConflict
+          ? t(
+              'coverageSyncConflictSubtitle',
+              'El estado de la consulta no coincide con la afiliación. Revise la cobertura del paciente.',
+            )
+          : isIncomplete
+            ? t(
+                'coverageSyncIncompleteSubtitle',
+                'Complete el número de afiliación y, para SIS, el estado y la fecha de acreditación.',
+              )
+            : t('coverageSyncMissingSubtitle', 'Registre el financiador en la cobertura del paciente.'),
+        ...reviewAction,
+      });
+      return;
+    }
+
+    showSnackbar({
+      isLowContrast: true,
+      kind: 'success',
+      title: t('coverageSyncSuccess', 'Cobertura sincronizada'),
+      subtitle: t('coverageSyncSuccessSubtitle', 'La cobertura se actualizó en esta misma consulta.'),
     });
   };
 
@@ -157,7 +293,7 @@ const PendingSisAccreditationsTable = () => {
   const renderCell = (visit: PendingSisVisit, key: string) => {
     switch (key) {
       case 'patientName':
-        return visit.patientUuid ? (
+        return visit.patientUuid && canAccessPatientChart ? (
           <ConfigurableLink to={`${globalThis.spaBase}/patient/${visit.patientUuid}/chart`}>
             {visit.patientName}
           </ConfigurableLink>
@@ -174,9 +310,30 @@ const PendingSisAccreditationsTable = () => {
         return visit.location;
       case 'actions':
         return visit.patientUuid ? (
-          <Button kind="ghost" size="sm" onClick={() => handleAccredit(visit.patientUuid)}>
-            {t('accredit', 'Acreditar')}
-          </Button>
+          <div className={styles.pendingSisActions}>
+            {canSyncCoverage && !syncAuthorizationDenied && syncingVisitUuid === visit.visitUuid ? (
+              <InlineLoading description={t('syncingCoverage', 'Sincronizando cobertura…')} />
+            ) : canSyncCoverage && !syncAuthorizationDenied ? (
+              <Button
+                disabled={Boolean(syncingVisitUuid)}
+                kind="ghost"
+                size="sm"
+                onClick={() => void handleSyncCoverage(visit)}
+              >
+                {t('syncCoverage', 'Sincronizar cobertura')}
+              </Button>
+            ) : null}
+            {canEditPatientInsurance ? (
+              <Button
+                disabled={Boolean(syncingVisitUuid)}
+                kind="ghost"
+                size="sm"
+                onClick={() => handleAccredit(visit.patientUuid)}
+              >
+                {t('accredit', 'Acreditar')}
+              </Button>
+            ) : null}
+          </div>
         ) : (
           '--'
         );

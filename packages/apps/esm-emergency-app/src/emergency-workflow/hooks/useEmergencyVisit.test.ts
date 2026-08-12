@@ -1,4 +1,9 @@
 import { getDefaultsFromConfigSchema, openmrsFetch, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import {
+  assertFreshPatientIsAlive,
+  DECEASED_PATIENT_OPERATION_BLOCKED,
+  PATIENT_VITAL_STATUS_UNAVAILABLE,
+} from '@openmrs/esm-patient-common-lib';
 import { act, renderHook } from '@testing-library/react';
 import { type Config, configSchema } from '../../config-schema';
 import { useEmergencyVisit } from './useEmergencyVisit';
@@ -6,6 +11,12 @@ import { useEmergencyVisit } from './useEmergencyVisit';
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseConfig = vi.mocked(useConfig<Config>);
+const mockAssertFreshPatientIsAlive = vi.mocked(assertFreshPatientIsAlive);
+
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  assertFreshPatientIsAlive: vi.fn(),
+}));
 
 describe('useEmergencyVisit', () => {
   const config: Config = {
@@ -23,6 +34,8 @@ describe('useEmergencyVisit', () => {
     mockOpenmrsFetch.mockReset();
     mockShowSnackbar.mockReset();
     mockUseConfig.mockReturnValue(config);
+    mockAssertFreshPatientIsAlive.mockReset();
+    mockAssertFreshPatientIsAlive.mockResolvedValue({ dead: false, deathDate: null, isDeceased: false });
   });
 
   it('creates an emergency visit at the provided arrival time and stores administrative notes as a visit attribute', async () => {
@@ -52,6 +65,10 @@ describe('useEmergencyVisit', () => {
         startDatetime: '2026-05-30T15:15:00.000Z',
       },
     });
+    expect(mockAssertFreshPatientIsAlive).toHaveBeenCalledWith('patient-uuid');
+    expect(mockAssertFreshPatientIsAlive.mock.invocationCallOrder[0]).toBeLessThan(
+      mockOpenmrsFetch.mock.invocationCallOrder[0],
+    );
     expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(2, '/ws/rest/v1/visit/visit-uuid/attribute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -105,6 +122,83 @@ describe('useEmergencyVisit', () => {
         kind: 'warning',
         title: 'Visita creada, observación pendiente',
       }),
+    );
+  });
+
+  it('fails closed when the active-visit lookup is unavailable', async () => {
+    const lookupError = new TypeError('network unavailable');
+    mockOpenmrsFetch.mockRejectedValueOnce(lookupError);
+    const { result } = renderHook(() => useEmergencyVisit());
+
+    await expect(result.current.getOrCreateEmergencyVisit('patient-uuid')).rejects.toBe(lookupError);
+
+    expect(mockAssertFreshPatientIsAlive).not.toHaveBeenCalled();
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
+    expect(mockOpenmrsFetch.mock.calls.some(([url, init]) => url === '/ws/rest/v1/visit' && init?.method === 'POST')).toBe(
+      false,
+    );
+  });
+
+  it('fresh-checks a living patient immediately before reusing an active visit', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          {
+            uuid: 'active-visit-uuid',
+            visitType: { uuid: config.emergencyVisitTypeUuid, display: 'Emergency' },
+            startDatetime: '2026-08-12T12:00:00.000Z',
+          },
+        ],
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+    const { result } = renderHook(() => useEmergencyVisit());
+
+    await expect(result.current.getOrCreateEmergencyVisit('patient-uuid')).resolves.toBe('active-visit-uuid');
+
+    expect(mockAssertFreshPatientIsAlive).toHaveBeenCalledWith('patient-uuid');
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
+  });
+
+  it('does not reuse an active visit when the patient is deceased', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          {
+            uuid: 'active-visit-uuid',
+            visitType: { uuid: config.emergencyVisitTypeUuid, display: 'Emergency' },
+            startDatetime: '2026-08-12T12:00:00.000Z',
+          },
+        ],
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+    mockAssertFreshPatientIsAlive.mockRejectedValueOnce(
+      Object.assign(new Error('deceased patient'), { code: DECEASED_PATIENT_OPERATION_BLOCKED }),
+    );
+    const { result } = renderHook(() => useEmergencyVisit());
+
+    await expect(result.current.getOrCreateEmergencyVisit('patient-uuid')).rejects.toMatchObject({
+      code: DECEASED_PATIENT_OPERATION_BLOCKED,
+    });
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
+  });
+
+  it('does not create a visit when fresh vital status is unavailable after the lookup', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: { results: [] } } as Awaited<ReturnType<typeof openmrsFetch>>);
+    mockAssertFreshPatientIsAlive.mockRejectedValueOnce(
+      Object.assign(new Error('vital status unavailable'), { code: PATIENT_VITAL_STATUS_UNAVAILABLE }),
+    );
+    const { result } = renderHook(() => useEmergencyVisit());
+
+    let visitUuid: string | null = 'not-null';
+    await act(async () => {
+      visitUuid = await result.current.getOrCreateEmergencyVisit('patient-uuid');
+    });
+
+    expect(visitUuid).toBeNull();
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
+    expect(mockOpenmrsFetch.mock.calls.some(([url, init]) => url === '/ws/rest/v1/visit' && init?.method === 'POST')).toBe(
+      false,
     );
   });
 });

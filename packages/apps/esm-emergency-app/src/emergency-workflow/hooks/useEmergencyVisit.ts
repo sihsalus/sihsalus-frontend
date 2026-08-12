@@ -11,6 +11,7 @@
  */
 
 import { getUserFacingErrorMessage, openmrsFetch, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { assertFreshPatientIsAlive } from '@openmrs/esm-patient-common-lib';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Config } from '../../config-schema';
@@ -41,24 +42,20 @@ export function useEmergencyVisit() {
    */
   const checkActiveEmergencyVisit = useCallback(
     async (patientUuid: string): Promise<VisitResponse | null> => {
-      try {
-        const response: VisitSearchResponse = await openmrsFetch(
-          `/ws/rest/v1/visit?patient=${patientUuid}&includeInactive=false&v=default`,
-        );
+      const response: VisitSearchResponse = await openmrsFetch(
+        `/ws/rest/v1/visit?patient=${patientUuid}&includeInactive=false&v=default`,
+      );
 
-        const visits = response.data.results;
+      const visits = response.data.results;
 
-        const activeVisits = visits.filter((visit: VisitResponse) => !visit.stopDatetime);
+      const activeVisits = visits.filter((visit: VisitResponse) => !visit.stopDatetime);
 
-        // Prefer an active emergency visit, but reuse any active visit to avoid overlapping visits.
-        const activeEmergencyVisit = activeVisits.find(
-          (visit: VisitResponse) => visit.visitType?.uuid === config.emergencyVisitTypeUuid,
-        );
+      // Prefer an active emergency visit, but reuse any active visit to avoid overlapping visits.
+      const activeEmergencyVisit = activeVisits.find(
+        (visit: VisitResponse) => visit.visitType?.uuid === config.emergencyVisitTypeUuid,
+      );
 
-        return activeEmergencyVisit || activeVisits[0] || null;
-      } catch {
-        return null;
-      }
+      return activeEmergencyVisit || activeVisits[0] || null;
     },
     [config.emergencyVisitTypeUuid],
   );
@@ -88,6 +85,9 @@ export function useEmergencyVisit() {
           startDatetime: startDatetime ? new Date(startDatetime).toISOString() : new Date().toISOString(),
         };
 
+        // Keep the authoritative check adjacent to the visit write so a death
+        // concurrent with the earlier active-visit lookup cannot create care.
+        await assertFreshPatientIsAlive(patientUuid);
         const response = await openmrsFetch('/ws/rest/v1/visit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -157,6 +157,9 @@ export function useEmergencyVisit() {
       const existingVisit = await checkActiveEmergencyVisit(patientUuid);
 
       if (existingVisit) {
+        // Reusing a visit continues care just like creating one. Do not trust
+        // the patient state embedded in a previously rendered workflow.
+        await assertFreshPatientIsAlive(patientUuid);
         const isEmergencyVisit = existingVisit.visitType?.uuid === config.emergencyVisitTypeUuid;
         if (isEmergencyVisit) {
           showSnackbar({

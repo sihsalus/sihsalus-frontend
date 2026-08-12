@@ -49,6 +49,7 @@ describe('InProgressFuaRequestsTile', () => {
         location: { display: 'Area' },
         startDatetime: '2026-04-28T14:10:41.000+0000',
       })),
+      hasLoadedVisits: true,
       isLoading: false,
       isError: null,
       mutate: vi.fn(),
@@ -62,6 +63,7 @@ describe('InProgressFuaRequestsTile', () => {
   it('uses the visits hook', () => {
     mockUseVisits.mockReturnValue({
       visits: [],
+      hasLoadedVisits: true,
       isLoading: false,
       isError: null,
       mutate: vi.fn(),

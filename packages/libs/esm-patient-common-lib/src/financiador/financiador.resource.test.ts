@@ -20,6 +20,8 @@ import {
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
   SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID,
+  SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID,
+  SIS_ACCREDITATION_PENDING_CONCEPT_UUID,
   SIS_CONCEPT_UUID,
   safeCopyFinanciadorToVisit,
 } from './financiador.resource';
@@ -38,7 +40,7 @@ const identifiersUrl = `${restBaseUrl}/patient/${patientUuid}?v=custom:(identifi
 const visitUrl = `${restBaseUrl}/visit/${visitUuid}?v=custom:(attributes:(uuid,value,attributeType:(uuid)))`;
 
 const essaludConceptUuid = 'af799b5e-313c-4352-80c4-5007dcd42f29';
-const accreditationVigenteUuid = 'accreditation-vigente-uuid';
+const accreditationVigenteUuid = SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID;
 const accreditationCheckedAt = '2026-08-11T14:30:00.000-05:00';
 
 type PersonAttribute = {
@@ -697,6 +699,42 @@ describe('copyFinanciadorToVisit', () => {
     });
   });
 
+  it('marks an unknown SIS accreditation status for review instead of reporting a false success', async () => {
+    mockFetchSequence({
+      personAttributes: [
+        {
+          uuid: 'attr-1',
+          value: SIS_CONCEPT_UUID,
+          attributeType: { uuid: INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID },
+        },
+        {
+          uuid: 'attr-2',
+          value: 'SIS-UNKNOWN-10',
+          attributeType: { uuid: INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID },
+        },
+        {
+          uuid: 'attr-3',
+          value: '0f5a8a7d-5d6e-4f4f-8f36-24d99ac0baca',
+          attributeType: { uuid: ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID },
+        },
+        {
+          uuid: 'attr-4',
+          value: accreditationCheckedAt,
+          attributeType: { uuid: ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID },
+        },
+      ],
+      visitAttributes: [],
+    });
+
+    await expect(copyFinanciadorToVisit({ patientUuid, visitUuid })).resolves.toEqual({
+      ok: true,
+      skipped: false,
+      created: 4,
+      updated: 0,
+      reviewReason: 'unknown-accreditation-status',
+    });
+  });
+
   it('never copies a document identifier as the affiliation number', async () => {
     mockFetchSequence({
       personAttributes: [
@@ -1340,7 +1378,7 @@ describe('copyFinanciadorToVisit', () => {
   describe('failure-safe explicit synchronization', () => {
     const previousCheckedAt = '2026-08-10T09:00:00.000-05:00';
     const currentCheckedAt = '2026-08-11T16:00:00.000-05:00';
-    const accreditationNoVigenteUuid = 'accreditation-no-vigente-uuid';
+    const accreditationNoVigenteUuid = SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID;
 
     const completeSisVisit = (): Array<PersonAttribute> => [
       {
@@ -1364,6 +1402,58 @@ describe('copyFinanciadorToVisit', () => {
         attributeType: { uuid: SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID },
       },
     ];
+
+    it.each([
+      ['pending', SIS_ACCREDITATION_PENDING_CONCEPT_UUID],
+      ['inactive', SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID],
+      ['not consulted', SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID],
+      ['unknown', 'unknown-sis-accreditation-status'],
+    ])('refreshes a %s visit accreditation after the person is corrected to active', async (_case, staleStatus) => {
+      mockFetchSequence({
+        personAttributes: [
+          {
+            uuid: 'person-payer',
+            value: SIS_CONCEPT_UUID,
+            attributeType: { uuid: INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID },
+          },
+          {
+            uuid: 'person-number',
+            value: 'SIS-OLD-10',
+            attributeType: { uuid: INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID },
+          },
+          {
+            uuid: 'person-status',
+            value: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+            attributeType: { uuid: ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID },
+          },
+          {
+            uuid: 'person-checked-at',
+            value: currentCheckedAt,
+            attributeType: { uuid: ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID },
+          },
+        ],
+        visitAttributes: completeSisVisit().map((attribute) =>
+          attribute.attributeType.uuid === SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID
+            ? { ...attribute, value: staleStatus }
+            : attribute,
+        ),
+      });
+
+      await expect(copyFinanciadorToVisit({ patientUuid, visitUuid, onlyFillMissing: false })).resolves.toEqual({
+        ok: true,
+        skipped: false,
+        created: 1,
+        updated: 2,
+      });
+      expect(getDeleteCalls().map(([url]) => url)).toContain(`${restBaseUrl}/visit/${visitUuid}/attribute/old-status`);
+      expect(getWriteCalls().map(([, init]) => (init as { body: unknown }).body)).toEqual([
+        { value: currentCheckedAt },
+        {
+          attributeType: SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+          value: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+        },
+      ]);
+    });
 
     it('invalidates the old SIS status before replacing date/status and converges after status creation fails', async () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

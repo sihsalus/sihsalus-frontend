@@ -19,8 +19,8 @@ import {
   ExtensionSlot,
   formatDatetime,
   getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
-  navigate,
   type NewVisitPayload,
+  navigate,
   saveVisit,
   showSnackbar,
   toDateObjectStrict,
@@ -31,8 +31,8 @@ import {
   useFeatureFlag,
   useLayoutType,
   usePatient,
-  useSession,
   userHasAccess,
+  useSession,
   useVisit,
   type Visit,
   Workspace2,
@@ -43,16 +43,17 @@ import {
   createOfflineVisitForPatient,
   type DefaultPatientWorkspaceProps,
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  getSisFinancingState,
   INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
   isFinanciadorCopyAuthorizationError,
   normalizeFinanciadorConceptUuid,
   type PatientWorkspace2DefinitionProps,
-  safeCopyFinanciadorToVisit,
+  type SafeCopyFinanciadorToVisitResult,
   SELF_FINANCED_CONCEPT_UUID,
   SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_CONCEPT_UUID,
-  type SafeCopyFinanciadorToVisitResult,
+  safeCopyFinanciadorToVisit,
   time12HourFormatRegex,
   useActivePatientEnrollment,
 } from '@openmrs/esm-patient-common-lib';
@@ -134,7 +135,10 @@ function isDefinitiveClientRejection(error: unknown) {
   return Number.isInteger(status) && DETERMINISTIC_VISIT_CREATE_REJECTION_STATUSES.has(status);
 }
 
-function hasCompleteVisitCoverage(attributes: NewVisitPayload['attributes']): boolean {
+function hasCompleteVisitCoverage(
+  attributes: NewVisitPayload['attributes'],
+  requireActiveSisFinancing: boolean,
+): boolean {
   const values = new Map((attributes ?? []).map(({ attributeType, value }) => [attributeType, value]));
   const financiador = normalizeFinanciadorConceptUuid(
     typeof values.get(FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID) === 'string'
@@ -145,12 +149,31 @@ function hasCompleteVisitCoverage(attributes: NewVisitPayload['attributes']): bo
   if (!financiador) {
     return false;
   }
+  const insuranceNumber = String(values.get(INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID) ?? '').trim();
+  const accreditationStatusUuid = String(values.get(SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID) ?? '').trim();
+  const accreditationCheckedAt = String(
+    values.get(SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID) ?? '',
+  ).trim();
+
+  if (requireActiveSisFinancing) {
+    if (financiador !== SIS_CONCEPT_UUID) {
+      return false;
+    }
+    return (
+      getSisFinancingState({
+        financiadorUuid: financiador,
+        insuranceNumber,
+        accreditationStatusUuid,
+        accreditationCheckedAt,
+      }) === 'active'
+    );
+  }
+
   if (financiador === SELF_FINANCED_CONCEPT_UUID) {
     return true;
   }
 
-  const hasInsuranceNumber = Boolean(String(values.get(INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID) ?? '').trim());
-  if (!hasInsuranceNumber) {
+  if (!insuranceNumber) {
     return false;
   }
   if (financiador !== SIS_CONCEPT_UUID) {
@@ -158,8 +181,16 @@ function hasCompleteVisitCoverage(attributes: NewVisitPayload['attributes']): bo
   }
 
   return Boolean(
-    String(values.get(SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID) ?? '').trim() &&
-      String(values.get(SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID) ?? '').trim(),
+    accreditationStatusUuid &&
+      accreditationCheckedAt &&
+      ['active', 'inactive', 'pending', 'notConsulted'].includes(
+        getSisFinancingState({
+          financiadorUuid: financiador,
+          insuranceNumber,
+          accreditationStatusUuid,
+          accreditationCheckedAt,
+        }),
+      ),
   );
 }
 
@@ -411,7 +442,10 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           copyPromise = safeCopyFinanciadorToVisit({
             patientUuid,
             visitUuid,
-            onlyFillMissing: true,
+            // Triage treats active SIS as a hard precondition. In that context,
+            // a retry after Admissions corrects the affiliation must refresh a
+            // stale pending/inactive/unknown visit bundle instead of preserving it.
+            onlyFillMissing: !requireActiveSisFinancing,
             patientIdentifierValues,
           });
           financiadorCopyInFlight.current = copyPromise;
@@ -437,6 +471,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           if (result.skipped || result.reviewReason) {
             const hasAccreditationConflict = result.reviewReason === 'sis-accreditation-conflict';
             const hasIncompleteCoverage = result.reviewReason === 'incomplete-coverage';
+            const hasUnknownAccreditationStatus = result.reviewReason === 'unknown-accreditation-status';
             const reviewAction = canReviewPatientCoverage
               ? {
                   actionButtonLabel: t('reviewCoverage', 'Revisar cobertura'),
@@ -448,23 +483,30 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
               kind: 'warning',
               title: hasAccreditationConflict
                 ? t('financiadorAccreditationConflict', 'La acreditación SIS requiere revisión')
-                : hasIncompleteCoverage
-                  ? t('financiadorIncomplete', 'Cobertura incompleta en la consulta')
-                  : t('financiadorMissing', 'Consulta iniciada sin financiador'),
+                : hasUnknownAccreditationStatus
+                  ? t('financiadorAccreditationUnknown', 'Estado de acreditación SIS no reconocido')
+                  : hasIncompleteCoverage
+                    ? t('financiadorIncomplete', 'Cobertura incompleta en la consulta')
+                    : t('financiadorMissing', 'Consulta iniciada sin financiador'),
               subtitle: hasAccreditationConflict
                 ? t(
                     'financiadorAccreditationConflictSubtitle',
                     'El estado de la consulta no coincide con la afiliación. Revíselo antes de generar el FUA.',
                   )
-                : hasIncompleteCoverage
+                : hasUnknownAccreditationStatus
                   ? t(
-                      'financiadorIncompleteSubtitle',
-                      'Complete el número de afiliación y, para SIS, el estado y la fecha de acreditación antes del FUA.',
+                      'financiadorAccreditationUnknownSubtitle',
+                      'El estado registrado no pertenece al catálogo SIS. Corrija la acreditación antes de generar el FUA.',
                     )
-                  : t(
-                      'financiadorMissingSubtitle',
-                      'Registre la cobertura del paciente para completar los datos de esta consulta.',
-                    ),
+                  : hasIncompleteCoverage
+                    ? t(
+                        'financiadorIncompleteSubtitle',
+                        'Complete el número de afiliación y, para SIS, el estado y la fecha de acreditación antes del FUA.',
+                      )
+                    : t(
+                        'financiadorMissingSubtitle',
+                        'Registre la cobertura del paciente para completar los datos de esta consulta.',
+                      ),
               ...reviewAction,
             });
             return result;
@@ -509,6 +551,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       openPatientCoverageReview,
       patientIdentifierValues,
       patientUuid,
+      requireActiveSisFinancing,
       showCoveragePermissionHandoff,
       t,
     ],
@@ -1400,7 +1443,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
         }
       }
 
-      const coverageCapturedInVisitPayload = hasCompleteVisitCoverage(payload.attributes);
+      const coverageCapturedInVisitPayload = hasCompleteVisitCoverage(payload.attributes, requireActiveSisFinancing);
 
       if (isOnline) {
         let visit: Visit | null = recoveredVisit;
@@ -1513,7 +1556,10 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             } else {
               const recordCoverageResult = (coverageResult: SafeCopyFinanciadorToVisitResult) => {
                 if (
-                  (coverageResult.ok === true && !coverageResult.skipped && !coverageResult.reviewReason) ||
+                  (!requireActiveSisFinancing &&
+                    coverageResult.ok === true &&
+                    !coverageResult.skipped &&
+                    !coverageResult.reviewReason) ||
                   (coverageResult.ok === false && isFinanciadorCopyAuthorizationError(coverageResult.error))
                 ) {
                   completedPostSubmitActions.current.add('financiador');
@@ -1534,6 +1580,12 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
               await callbacks.onVisitCreatedOrUpdated(visit);
               completedPostSubmitActions.current.add(actionId);
               if (callbacks.kind === 'queue-entry') {
+                // A successful triage queue callback has freshly verified the
+                // persisted visit as active SIS coverage. Until that happens,
+                // keep the copy retryable on the already-created visit.
+                if (requireActiveSisFinancing) {
+                  completedPostSubmitActions.current.add('financiador');
+                }
                 setQueueEntryPersistenceCompleted(true);
               }
             }

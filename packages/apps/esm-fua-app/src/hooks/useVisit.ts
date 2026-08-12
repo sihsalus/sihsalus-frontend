@@ -170,6 +170,9 @@ export function useVisits() {
 
   return {
     visits: data?.data?.results ?? [],
+    // An empty array is a valid server response. Keep this signal separate so
+    // consumers can distinguish cached/loaded data from an initial load error.
+    hasLoadedVisits: data !== undefined,
     isLoading,
     isError: error,
     isValidating,

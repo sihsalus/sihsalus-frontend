@@ -119,6 +119,26 @@
   @include type.type-style("helper-text-02");
 }
 
+.errorActions {
+  display: flex;
+  justify-content: flex-end;
+  padding: layout.$spacing-03 layout.$spacing-05 layout.$spacing-05;
+  background-color: var(--cds-layer-01);
+}
+
+.cachedError {
+  border-bottom: 1px solid var(--cds-border-subtle-01);
+
+  :global(.cds--inline-notification) {
+    max-width: none;
+    margin: 0;
+  }
+
+  .errorActions {
+    padding-top: 0;
+  }
+}
+
 .pagination {
   border-top: 1px solid var(--cds-border-subtle-01);
   background-color: var(--cds-layer-01);

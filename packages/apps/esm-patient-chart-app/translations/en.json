@@ -124,6 +124,8 @@
   "filterByEncounterType": "Filter by encounter type",
   "financiadorAccreditationConflict": "SIS accreditation requires review",
   "financiadorAccreditationConflictSubtitle": "The visit status does not match the affiliation. Review it before generating the FUA.",
+  "financiadorAccreditationUnknown": "Unrecognized SIS accreditation status",
+  "financiadorAccreditationUnknownSubtitle": "The recorded status is not in the SIS catalog. Correct the accreditation before generating the FUA.",
   "financiadorCopyFailed": "Visit started; coverage is pending",
   "financiadorCopyFailedSubtitle": "Care can continue. Retry coverage; do not start another visit.",
   "financiadorCopyNotAuthorized": "Visit started; coverage needs support",

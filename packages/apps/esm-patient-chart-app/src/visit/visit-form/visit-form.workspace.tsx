@@ -43,6 +43,7 @@ import {
   createOfflineVisitForPatient,
   type DefaultPatientWorkspaceProps,
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  getSisFinancingState,
   INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
   isFinanciadorCopyAuthorizationError,
   normalizeFinanciadorConceptUuid,
@@ -134,7 +135,10 @@ function isDefinitiveClientRejection(error: unknown) {
   return Number.isInteger(status) && DETERMINISTIC_VISIT_CREATE_REJECTION_STATUSES.has(status);
 }
 
-function hasCompleteVisitCoverage(attributes: NewVisitPayload['attributes']): boolean {
+function hasCompleteVisitCoverage(
+  attributes: NewVisitPayload['attributes'],
+  requireActiveSisFinancing: boolean,
+): boolean {
   const values = new Map((attributes ?? []).map(({ attributeType, value }) => [attributeType, value]));
   const financiador = normalizeFinanciadorConceptUuid(
     typeof values.get(FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID) === 'string'
@@ -145,12 +149,31 @@ function hasCompleteVisitCoverage(attributes: NewVisitPayload['attributes']): bo
   if (!financiador) {
     return false;
   }
+  const insuranceNumber = String(values.get(INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID) ?? '').trim();
+  const accreditationStatusUuid = String(values.get(SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID) ?? '').trim();
+  const accreditationCheckedAt = String(
+    values.get(SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID) ?? '',
+  ).trim();
+
+  if (requireActiveSisFinancing) {
+    if (financiador !== SIS_CONCEPT_UUID) {
+      return false;
+    }
+    return (
+      getSisFinancingState({
+        financiadorUuid: financiador,
+        insuranceNumber,
+        accreditationStatusUuid,
+        accreditationCheckedAt,
+      }) === 'active'
+    );
+  }
+
   if (financiador === SELF_FINANCED_CONCEPT_UUID) {
     return true;
   }
 
-  const hasInsuranceNumber = Boolean(String(values.get(INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID) ?? '').trim());
-  if (!hasInsuranceNumber) {
+  if (!insuranceNumber) {
     return false;
   }
   if (financiador !== SIS_CONCEPT_UUID) {
@@ -158,8 +181,16 @@ function hasCompleteVisitCoverage(attributes: NewVisitPayload['attributes']): bo
   }
 
   return Boolean(
-    String(values.get(SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID) ?? '').trim() &&
-      String(values.get(SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID) ?? '').trim(),
+    accreditationStatusUuid &&
+      accreditationCheckedAt &&
+      ['active', 'inactive', 'pending', 'notConsulted'].includes(
+        getSisFinancingState({
+          financiadorUuid: financiador,
+          insuranceNumber,
+          accreditationStatusUuid,
+          accreditationCheckedAt,
+        }),
+      ),
   );
 }
 
@@ -402,7 +433,10 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           copyPromise = safeCopyFinanciadorToVisit({
             patientUuid,
             visitUuid,
-            onlyFillMissing: true,
+            // Triage treats active SIS as a hard precondition. In that context,
+            // a retry after Admissions corrects the affiliation must refresh a
+            // stale pending/inactive/unknown visit bundle instead of preserving it.
+            onlyFillMissing: !requireActiveSisFinancing,
             patientIdentifierValues,
           });
           financiadorCopyInFlight.current = copyPromise;
@@ -508,6 +542,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       openPatientCoverageReview,
       patientIdentifierValues,
       patientUuid,
+      requireActiveSisFinancing,
       showCoveragePermissionHandoff,
       t,
     ],
@@ -1399,7 +1434,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
         }
       }
 
-      const coverageCapturedInVisitPayload = hasCompleteVisitCoverage(payload.attributes);
+      const coverageCapturedInVisitPayload = hasCompleteVisitCoverage(payload.attributes, requireActiveSisFinancing);
 
       if (isOnline) {
         let visit: Visit | null = recoveredVisit;
@@ -1512,7 +1547,10 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             } else {
               const recordCoverageResult = (coverageResult: SafeCopyFinanciadorToVisitResult) => {
                 if (
-                  (coverageResult.ok === true && !coverageResult.skipped && !coverageResult.reviewReason) ||
+                  (!requireActiveSisFinancing &&
+                    coverageResult.ok === true &&
+                    !coverageResult.skipped &&
+                    !coverageResult.reviewReason) ||
                   (coverageResult.ok === false && isFinanciadorCopyAuthorizationError(coverageResult.error))
                 ) {
                   completedPostSubmitActions.current.add('financiador');
@@ -1533,6 +1571,12 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
               await callbacks.onVisitCreatedOrUpdated(visit);
               completedPostSubmitActions.current.add(actionId);
               if (callbacks.kind === 'queue-entry') {
+                // A successful triage queue callback has freshly verified the
+                // persisted visit as active SIS coverage. Until that happens,
+                // keep the copy retryable on the already-created visit.
+                if (requireActiveSisFinancing) {
+                  completedPostSubmitActions.current.add('financiador');
+                }
                 setQueueEntryPersistenceCompleted(true);
               }
             }

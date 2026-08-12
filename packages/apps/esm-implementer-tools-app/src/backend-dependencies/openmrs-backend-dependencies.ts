@@ -283,15 +283,15 @@ async function resolveFrontendModules(): Promise<Array<ResolvedDependenciesModul
     }));
 
   const installedBackendModules = await fetchInstalledBackendModules();
-  const resolvedFrontendModules = modules.map((module) =>
-    checkIfModulesAreInstalled(module, installedBackendModules),
-  );
+  const resolvedFrontendModules = modules.map((module) => checkIfModulesAreInstalled(module, installedBackendModules));
   return resolvedFrontendModules;
 }
 
-export function checkModules({ forceRefresh = false }: { forceRefresh?: boolean } = {}): Promise<
-  Array<ResolvedDependenciesModule>
-> {
+export function checkModules({
+  forceRefresh = false,
+}: {
+  forceRefresh?: boolean;
+} = {}): Promise<Array<ResolvedDependenciesModule>> {
   if (forceRefresh) {
     frontendModulesGeneration += 1;
     cachedFrontendModules = undefined;

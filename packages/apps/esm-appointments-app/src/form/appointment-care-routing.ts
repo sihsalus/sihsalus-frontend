@@ -40,9 +40,7 @@ export function filterAppointmentServicesByLocation({
 
   return services.filter((service) => {
     const serviceLocationUuid = service.location?.uuid;
-    return serviceLocationUuid
-      ? serviceLocationUuid === selectedLocationUuid
-      : !enforceArrivalRouting;
+    return serviceLocationUuid ? serviceLocationUuid === selectedLocationUuid : !enforceArrivalRouting;
   });
 }
 

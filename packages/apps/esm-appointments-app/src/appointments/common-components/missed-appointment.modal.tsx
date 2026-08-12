@@ -77,11 +77,7 @@ const MissedAppointmentModal: React.FC<MissedAppointmentModalProps> = ({ appoint
 
   return (
     <div>
-      <ModalHeader
-        className={styles.modalHeader}
-        closeModal={closeModal}
-        title={t('markAsMissed', 'Mark as missed')}
-      />
+      <ModalHeader className={styles.modalHeader} closeModal={closeModal} title={t('markAsMissed', 'Mark as missed')} />
       <ModalBody>
         <p>
           {t(

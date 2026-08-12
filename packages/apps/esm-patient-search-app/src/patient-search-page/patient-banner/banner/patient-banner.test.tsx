@@ -1,10 +1,4 @@
-import {
-  ExtensionSlot,
-  PatientBannerActionsMenu,
-  userHasAccess,
-  useSession,
-  useVisit,
-} from '@openmrs/esm-framework';
+import { ExtensionSlot, PatientBannerActionsMenu, userHasAccess, useSession, useVisit } from '@openmrs/esm-framework';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { mockAdvancedSearchResults } from 'test-utils';
 

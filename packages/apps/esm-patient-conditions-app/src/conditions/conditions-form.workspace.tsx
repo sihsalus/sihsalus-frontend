@@ -55,15 +55,15 @@ export const createSchema = (formContext: 'creating' | 'editing', t: TFunction, 
           !patientBirthDate ||
           !dayjs(onsetDateTime).startOf('day').isBefore(dayjs(patientBirthDate).startOf('day')),
         {
-          message: t(
-            'onsetDateCannotBeBeforeBirthDate',
-            "Onset date cannot be earlier than the patient's birth date",
-          ),
+          message: t('onsetDateCannotBeBeforeBirthDate', "Onset date cannot be earlier than the patient's birth date"),
         },
       )
-      .refine((onsetDateTime) => !onsetDateTime || !dayjs(onsetDateTime).startOf('day').isAfter(dayjs().startOf('day')), {
-        message: t('onsetDateCannotBeInTheFuture', 'Onset date cannot be in the future'),
-      }),
+      .refine(
+        (onsetDateTime) => !onsetDateTime || !dayjs(onsetDateTime).startOf('day').isAfter(dayjs().startOf('day')),
+        {
+          message: t('onsetDateCannotBeInTheFuture', 'Onset date cannot be in the future'),
+        },
+      ),
   });
 };
 

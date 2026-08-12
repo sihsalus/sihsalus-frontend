@@ -516,9 +516,7 @@ export async function copyFinanciadorToVisit({
       (!resultingInsuranceNumber || (isSis && (!resultingAccreditationStatus || !resultingAccreditationCheckedAt))),
   );
   const hasUnknownSisAccreditationStatus = Boolean(
-    isSis &&
-      resultingAccreditationStatus &&
-      !canonicalSisAccreditationStatusUuids.has(resultingAccreditationStatus),
+    isSis && resultingAccreditationStatus && !canonicalSisAccreditationStatusUuids.has(resultingAccreditationStatus),
   );
   const reviewReason: CopyFinanciadorToVisitResult['reviewReason'] = accreditationBundleConflicts
     ? 'sis-accreditation-conflict'

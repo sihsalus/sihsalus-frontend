@@ -16,10 +16,7 @@ import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { type PatientSearchConfig } from '../../../config-schema';
 import { usePatientChartAccess } from '../../../patient-chart-access';
 import { PatientSearchContext, usePatientSearchContext2 } from '../../../patient-search-context';
-import {
-  getSearchedPatientDisplayName,
-  mapSearchedPatientToFhir,
-} from '../../../patient-search-result.utils';
+import { getSearchedPatientDisplayName, mapSearchedPatientToFhir } from '../../../patient-search-result.utils';
 import { SihsalusPatientInfo } from '../../../sihsalus-patient-info/sihsalus-patient-info.component';
 import { type SearchedPatient } from '../../../types';
 
@@ -64,8 +61,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
 
   const patientName = getSearchedPatientDisplayName(patient);
   const isDeceased = Boolean(patient.person.dead || patient.person.deathDate);
-  const canStartVisit =
-    !isDeceased && !effectiveVisit && !isVisitLoading && !isVisitValidating && !visitError;
+  const canStartVisit = !isDeceased && !effectiveVisit && !isVisitLoading && !isVisitValidating && !visitError;
 
   const [showContactDetails, setShowContactDetails] = useState(false);
 

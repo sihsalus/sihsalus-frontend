@@ -14,10 +14,7 @@ import { type Appointment, type AppointmentSummary } from '../types';
 
 import SelectedDateContext from './selectedDateContext';
 
-const filterAppointmentsByService = (
-  appointments: Array<Appointment>,
-  appointmentServiceTypeUuids: Array<string>,
-) =>
+const filterAppointmentsByService = (appointments: Array<Appointment>, appointmentServiceTypeUuids: Array<string>) =>
   appointmentServiceTypeUuids.length > 0
     ? appointments.filter(({ service }) => service && appointmentServiceTypeUuids.includes(service.uuid))
     : appointments;
@@ -71,11 +68,9 @@ export const useAppointmentsForDate = () => {
       },
     });
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: Array<Appointment> }, Error>(
-    key,
-    fetcher,
-    { errorRetryCount: 2 },
-  );
+  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: Array<Appointment> }, Error>(key, fetcher, {
+    errorRetryCount: 2,
+  });
 
   return {
     data,

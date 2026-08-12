@@ -131,10 +131,7 @@ describe('AppointmentActions', () => {
     render(<AppointmentActions {...defaultProps} />);
 
     expect(screen.getByRole('button', { name: /check in/i })).toBeInTheDocument();
-    expect(mockUserHasAccess).toHaveBeenCalledWith(
-      ['app:home.citas', 'app:home.citas.editar'],
-      expect.anything(),
-    );
+    expect(mockUserHasAccess).toHaveBeenCalledWith(['app:home.citas', 'app:home.citas.editar'], expect.anything());
   });
 
   it.each(['app:home.citas', 'app:home.citas.editar'])('does not offer check-in without %s', (missingPrivilege) => {
@@ -390,44 +387,44 @@ describe('AppointmentActions', () => {
     expect(screen.getByText(/finish care/i)).toBeInTheDocument();
   });
 
-  it.each(['app:home.citas', 'app:home.citas.editar.finalizarAtencion'])(
-    'does not offer checkout without %s',
-    (missingPrivilege) => {
-      appointment.status = AppointmentStatus.CHECKEDIN;
-      mockUserHasAccess.mockImplementation((requiredPrivileges) =>
-        Array.isArray(requiredPrivileges) ? !requiredPrivileges.includes(missingPrivilege) : true,
-      );
-      mockUseConfig.mockReturnValue({
-        ...getDefaultsFromConfigSchema(configSchema),
-        checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
-        checkOutButton: { enabled: true, customUrl: '' },
-      });
-      mockUseTodaysVisits.mockReturnValue({
-        visits: [
-          {
-            patient: { uuid: appointment.patient.uuid },
-            startDatetime: new Date().toISOString(),
-            stopDatetime: null,
-            uuid: 'linked-active-visit-uuid',
-            attributes: [
-              {
-                attributeType: { uuid: '193508ab-20c6-5291-9f23-0257335eaabd' },
-                value: appointment.uuid,
-              },
-            ],
-          },
-        ],
-        error: null,
-        isLoading: false,
-        mutateVisit: vi.fn(),
-      });
+  it.each([
+    'app:home.citas',
+    'app:home.citas.editar.finalizarAtencion',
+  ])('does not offer checkout without %s', (missingPrivilege) => {
+    appointment.status = AppointmentStatus.CHECKEDIN;
+    mockUserHasAccess.mockImplementation((requiredPrivileges) =>
+      Array.isArray(requiredPrivileges) ? !requiredPrivileges.includes(missingPrivilege) : true,
+    );
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
+      checkOutButton: { enabled: true, customUrl: '' },
+    });
+    mockUseTodaysVisits.mockReturnValue({
+      visits: [
+        {
+          patient: { uuid: appointment.patient.uuid },
+          startDatetime: new Date().toISOString(),
+          stopDatetime: null,
+          uuid: 'linked-active-visit-uuid',
+          attributes: [
+            {
+              attributeType: { uuid: '193508ab-20c6-5291-9f23-0257335eaabd' },
+              value: appointment.uuid,
+            },
+          ],
+        },
+      ],
+      error: null,
+      isLoading: false,
+      mutateVisit: vi.fn(),
+    });
 
-      render(<AppointmentActions {...defaultProps} />);
+    render(<AppointmentActions {...defaultProps} />);
 
-      expect(screen.queryByRole('button', { name: /finish care/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Regularizar cierre' })).not.toBeInTheDocument();
-    },
-  );
+    expect(screen.queryByRole('button', { name: /finish care/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Regularizar cierre' })).not.toBeInTheDocument();
+  });
 
   it('shows a verifying indicator instead of definitive actions while visits load', () => {
     appointment.status = AppointmentStatus.CHECKEDIN;

@@ -14,12 +14,13 @@ describe('isSafeInternalTarget', () => {
     expect(isSafeInternalTarget(target as string | null | undefined)).toBe(false);
   });
 
-  it.each(['/home', '/openmrs/spa/patient/abc/chart', '/login/location?returnToUrl=%2Fhome'])(
-    'accepts the same-origin path %j',
-    (target) => {
-      expect(isSafeInternalTarget(target)).toBe(true);
-    },
-  );
+  it.each([
+    '/home',
+    '/openmrs/spa/patient/abc/chart',
+    '/login/location?returnToUrl=%2Fhome',
+  ])('accepts the same-origin path %j', (target) => {
+    expect(isSafeInternalTarget(target)).toBe(true);
+  });
 });
 
 describe('isSafePostLoginTarget', () => {
@@ -38,10 +39,12 @@ describe('isSafePostLoginTarget', () => {
     expect(isSafePostLoginTarget(target)).toBe(false);
   });
 
-  it.each(['/home', '/patient/abc/chart', '/openmrs/spa/home', '/openmrs/spa/patient/abc/chart'])(
-    'accepts the application route %j',
-    (target) => {
-      expect(isSafePostLoginTarget(target)).toBe(true);
-    },
-  );
+  it.each([
+    '/home',
+    '/patient/abc/chart',
+    '/openmrs/spa/home',
+    '/openmrs/spa/patient/abc/chart',
+  ])('accepts the application route %j', (target) => {
+    expect(isSafePostLoginTarget(target)).toBe(true);
+  });
 });

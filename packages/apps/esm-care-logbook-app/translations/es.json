@@ -114,11 +114,11 @@
   "selectPreferredPatient": "Seleccionar paciente preferido",
   "service": "Servicio",
   "serviceLocation": "Servicio/UPSS",
-  "visitTypes": "Tipos de visita",
   "sex": "Sexo",
   "status": "Estado",
   "time": "Hora",
-  "visitType": "Tipo de visita",
   "visitHistoryError": "No se pudo cargar el historial de atenciones",
+  "visitType": "Tipo de visita",
+  "visitTypes": "Tipos de visita",
   "yes": "Si"
 }

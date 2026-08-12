@@ -288,10 +288,7 @@ function isFHIRCondition(resource: FHIRCondition | null | undefined): resource i
   return resource?.resourceType === 'Condition' && Boolean(resource.id);
 }
 
-function upsertConditionInBundle(
-  response: ConditionsFetchResponse,
-  condition: FHIRCondition,
-): ConditionsFetchResponse {
+function upsertConditionInBundle(response: ConditionsFetchResponse, condition: FHIRCondition): ConditionsFetchResponse {
   const entries = response.data.entry ?? [];
   const matchingEntryIndex = entries.findIndex((entry) => entry.resource?.id === condition.id);
   const nextEntry =

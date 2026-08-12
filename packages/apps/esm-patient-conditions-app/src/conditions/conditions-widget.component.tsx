@@ -305,9 +305,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
             </p>
           )}
         </FormGroup>
-        <FormGroup
-          legendText={isEditing ? <RequiredFieldLabel label={t('antecedent', 'Antecedent')} t={t} /> : ''}
-        >
+        <FormGroup legendText={isEditing ? <RequiredFieldLabel label={t('antecedent', 'Antecedent')} t={t} /> : ''}>
           {isEditing ? (
             <FormLabel className={styles.conditionLabel}>{displayName}</FormLabel>
           ) : (

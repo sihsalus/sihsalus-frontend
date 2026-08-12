@@ -1,10 +1,4 @@
-import {
-  getDefaultsFromConfigSchema,
-  restBaseUrl,
-  userHasAccess,
-  useConfig,
-  useSession,
-} from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, restBaseUrl, userHasAccess, useConfig, useSession } from '@openmrs/esm-framework';
 import { render, screen, within } from '@testing-library/react';
 import dayjs from 'dayjs';
 

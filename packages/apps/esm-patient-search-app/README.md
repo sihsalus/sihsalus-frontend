@@ -5,12 +5,15 @@ App para búsqueda de pacientes y selección contextual.
 Terminología de dominio: visita = consulta, encounter = atención, appointment = cita.
 
 ## Marco normativo
+
 - Ley N.° 29733, Ley de Protección de Datos Personales (Perú).
 
 ## Límites funcionales
+
 - Proporciona búsqueda compacta, overlay y página de resultados.
 - Facilita la selección de paciente para otros módulos del portal.
 - En selección contextual, los resultados ocultan las acciones clínicas ajenas al flujo; solo muestran acciones adicionales habilitadas explícitamente por la integración.
+- En búsqueda standalone, la tarjeta solo navega a la hoja clínica con `app:hoja.clinica`. Sin ese privilegio permanece informativa y no navega por clic ni teclado; esto no deshabilita el callback de una selección contextual.
 - No crea ni modifica el registro del paciente.
 - No reemplaza módulos de admisión, listas o atención clínica.
 - No debe depender de DNI, teléfono o código postal como pivotes principales para encontrar pacientes.
@@ -38,6 +41,7 @@ Los resultados se muestran de 10 en 10. Cada cambio de página devuelve el foco 
 El filtro de atributos textuales usa coincidencia parcial para facilitar búsquedas operativas, por ejemplo `SAMU` encuentra `SAMU Loreto`.
 
 ## Integraciones
+
 - API de búsqueda y datos básicos del paciente.
 - Componentes compactos, overlays y extensiones del buscador.
 - Contexto compartido para interoperar con otros flujos del frontend.
@@ -45,9 +49,9 @@ El filtro de atributos textuales usa coincidencia parcial para facilitar búsque
 
 ## Metadata esperada
 
-| Uso | Person attribute type |
-| --- | --- |
-| Estado de verificación civil | `Estado de Verificación de Identidad` |
+| Uso                                     | Person attribute type                  |
+| --------------------------------------- | -------------------------------------- |
+| Estado de verificación civil            | `Estado de Verificación de Identidad`  |
 | Estado administrativo de identificación | `Estado de Identificación en Admisión` |
 
 Si alguno de estos person attribute types no existe en el backend objetivo, el filtro se oculta para no bloquear ni ensuciar la búsqueda.

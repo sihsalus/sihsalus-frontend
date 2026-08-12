@@ -1,9 +1,17 @@
-import { getDefaultsFromConfigSchema, useConfig, useDebounce } from '@openmrs/esm-framework';
+import {
+  getDefaultsFromConfigSchema,
+  navigate,
+  userHasAccess,
+  useConfig,
+  useDebounce,
+  useSession,
+} from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockAdvancedSearchResults } from 'test-utils';
 
 import { configSchema, type PatientSearchConfig } from '../config-schema';
+import { patientChartPrivilege } from '../patient-chart-access';
 import { useInfinitePatientSearch } from '../patient-search.resource';
 
 import CompactPatientSearchComponent from './index';
@@ -14,12 +22,22 @@ vi.mock('../patient-search.resource', () => ({
 
 const mockUseConfig = vi.mocked(useConfig<PatientSearchConfig>);
 const mockUseDebounce = vi.mocked(useDebounce);
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
+const mockNavigate = vi.mocked(navigate);
 const mockUseInfinitePatientSearch = vi.mocked(useInfinitePatientSearch);
+const clinicalUser = {
+  privileges: [{ display: patientChartPrivilege }],
+  roles: [],
+};
 
 describe('compact patient search extension', () => {
   beforeEach(() => {
     mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
     mockUseDebounce.mockImplementation((value) => value);
+    mockUseSession.mockReturnValue({ user: clinicalUser } as ReturnType<typeof useSession>);
+    mockUserHasAccess.mockImplementation((privilege) => privilege === patientChartPrivilege);
+    mockNavigate.mockClear();
     mockUseInfinitePatientSearch.mockReturnValue({
       currentPage: 1,
       data: [],
@@ -84,6 +102,31 @@ describe('compact patient search extension', () => {
     await user.keyboard('{ArrowDown}{Enter}');
 
     expect(selectPatientAction).toHaveBeenCalledWith(patient.uuid);
+  });
+
+  it('does not navigate by keyboard when a standalone user lacks patient-chart access', async () => {
+    const user = userEvent.setup();
+    const patient = mockAdvancedSearchResults[0];
+    mockUserHasAccess.mockReturnValue(false);
+    mockUseInfinitePatientSearch.mockReturnValue({
+      currentPage: 1,
+      data: [patient] as unknown as ReturnType<typeof useInfinitePatientSearch>['data'],
+      fetchError: null,
+      hasMore: false,
+      isLoading: false,
+      isValidating: false,
+      setPage: vi.fn(),
+      totalResults: 1,
+    });
+
+    render(<CompactPatientSearchComponent initialSearchTerm="Joshua" />);
+
+    await user.click(screen.getByRole('searchbox'));
+    await user.keyboard('{ArrowDown}{Enter}');
+
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.getByText(patient.person.personName.display)).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('hides previous results while a changed query is still debouncing', async () => {

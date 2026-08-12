@@ -14,6 +14,7 @@ import classNames from 'classnames';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
 
 import { type PatientSearchConfig } from '../../../config-schema';
+import { usePatientChartAccess } from '../../../patient-chart-access';
 import { PatientSearchContext, usePatientSearchContext2 } from '../../../patient-search-context';
 import {
   getSearchedPatientDisplayName,
@@ -25,6 +26,7 @@ import { type SearchedPatient } from '../../../types';
 import styles from './patient-banner.scss';
 
 interface ClickablePatientContainerProps {
+  canAccessPatientChart: boolean;
   children: React.ReactNode;
   patient: fhir.Patient;
   patientUuid: string;
@@ -53,6 +55,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
   const effectiveVisit = currentVisit ?? activeVisit;
   const { nonNavigationSelectPatientAction } = useContext(PatientSearchContext);
   const patientSearchContext2 = usePatientSearchContext2();
+  const canAccessPatientChart = usePatientChartAccess();
   const isEmbeddedSelection = Boolean(nonNavigationSelectPatientAction || patientSearchContext2?.onPatientSelected);
   const allowsEmbeddedStartVisit = Boolean(
     patientSearchContext2?.onPatientSelected && patientSearchContext2.startVisitWorkspaceName,
@@ -119,7 +122,11 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
         })}
         role="banner"
       >
-        <ClickablePatientContainer patient={fhirMappedPatient} patientUuid={patientUuid}>
+        <ClickablePatientContainer
+          canAccessPatientChart={canAccessPatientChart}
+          patient={fhirMappedPatient}
+          patientUuid={patientUuid}
+        >
           <div className={styles.patientAvatar} role="img">
             <PatientPhoto patientUuid={patientUuid} patientName={patientName} />
           </div>
@@ -137,7 +144,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
                 actionsSlotName="patient-search-actions-slot"
                 additionalActionsSlotState={{
                   selectPatientAction,
-                  launchPatientChart: true,
+                  launchPatientChart: canAccessPatientChart,
                 }}
                 patient={fhirMappedPatient}
                 patientUuid={patientUuid}
@@ -168,7 +175,12 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
   );
 };
 
-const ClickablePatientContainer = ({ patient, patientUuid, children }: ClickablePatientContainerProps) => {
+const ClickablePatientContainer = ({
+  canAccessPatientChart,
+  patient,
+  patientUuid,
+  children,
+}: ClickablePatientContainerProps) => {
   const { nonNavigationSelectPatientAction, patientClickSideEffect } = useContext(PatientSearchContext);
   const patientSearchContext2 = usePatientSearchContext2();
   const config = useConfig<PatientSearchConfig>();
@@ -204,7 +216,9 @@ const ClickablePatientContainer = ({ patient, patientUuid, children }: Clickable
         {children}
       </button>
     );
-  } else {
+  }
+
+  if (canAccessPatientChart) {
     return (
       <ConfigurableLink
         className={styles.patientBanner}
@@ -216,6 +230,8 @@ const ClickablePatientContainer = ({ patient, patientUuid, children }: Clickable
       </ConfigurableLink>
     );
   }
+
+  return <div className={styles.patientBanner}>{children}</div>;
 };
 
 export const PatientBannerSkeleton = () => {

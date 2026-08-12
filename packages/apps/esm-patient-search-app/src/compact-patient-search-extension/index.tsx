@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import PatientSearch from '../compact-patient-search/patient-search.component';
 import { type PatientSearchConfig } from '../config-schema';
 import useArrowNavigation from '../hooks/useArrowNavigation';
+import { usePatientChartAccess } from '../patient-chart-access';
 import {
   isPatientSearchTermValid,
   limitPatientSearchTerm,
@@ -32,6 +33,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
   buttonProps,
 }) => {
   const { t } = useTranslation();
+  const canAccessPatientChart = usePatientChartAccess();
   const config = useConfig<PatientSearchConfig>();
   const inputRef = useRef<HTMLInputElement>(null);
   const bannerContainerRef = useRef<HTMLDivElement>(null);
@@ -66,7 +68,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
       event.preventDefault();
       if (selectPatientAction) {
         selectPatientAction(patient.uuid);
-      } else {
+      } else if (canAccessPatientChart) {
         navigate({
           to: interpolateString(config.search.patientChartUrl, {
             patientUuid: patient.uuid,
@@ -75,7 +77,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
       }
       handleClear();
     },
-    [config.search, selectPatientAction, visiblePatients, handleClear],
+    [canAccessPatientChart, config.search, selectPatientAction, visiblePatients, handleClear],
   );
 
   const handleFocusToInput = useCallback(() => {
@@ -92,7 +94,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
   }, []);
 
   const { focusedResult, handleKeyPress, resetFocusedResult } = useArrowNavigation(
-    visiblePatients?.length ?? 0,
+    selectPatientAction || canAccessPatientChart ? (visiblePatients?.length ?? 0) : 0,
     handlePatientSelection,
     handleFocusToInput,
     {

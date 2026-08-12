@@ -8,7 +8,9 @@
   align-items: center;
   border: none;
   border-bottom: 1px solid $ui-03;
+}
 
+.patientSearchResultInteractive {
   &:hover,
   &:focus {
     background-color: $ui-01;

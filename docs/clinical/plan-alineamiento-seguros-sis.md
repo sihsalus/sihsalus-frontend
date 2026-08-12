@@ -1,9 +1,30 @@
 # Plan de alineamiento: capa de financiador/seguros (SIS)
 
-**Estado:** propuesta para discusión del equipo.
-**Fecha:** 2026-07-17.
+**Estado:** implementación parcial; contrato base desplegado y siguientes fases pendientes.
+**Fecha inicial:** 2026-07-17.
+**Última actualización:** 2026-08-11.
 **Base:** auditoría exhaustiva de frontend, content package/OCL, módulos backend
 (FUA, identitylookup) y normativa vigente (referencias al final).
+
+> El diagnóstico de la sección 1 conserva la fotografía encontrada el
+> 2026-07-17. No debe interpretarse como el estado actual de los módulos.
+
+## Estado de ejecución al 2026-08-11
+
+| Fase | Estado | Implementado | Pendiente |
+|---|---|---|---|
+| 0. Decisiones | Parcial | Autofinanciamiento, SIS y el bundle mínimo de cobertura tienen UUID canónico en la librería común. | Aprobar catálogo institucional completo, plazo FUA y responsables de edición. |
+| 1. Catálogo | Pendiente fuera de este repo | El frontend consume los conceptos actuales sin inventar equivalencias. | Extender y publicar el catálogo IAFAS/OCL, y separar formalmente financiador de plan SIS. |
+| 2. Persona → visita | Implementada para el contrato base | Inicio/edición de visita, Citas, Colas y Emergencia usan la copia común y preservan el orden recuperable del bundle. | Eliminar consumidores legacy restantes y consolidar el planificador de mutaciones duplicado en edición de visita. |
+| 3. Verificación | Parcial | Registro conserva financiador, número, estado y fecha; la visita distingue cobertura completa, incompleta y en revisión. | Integración productiva con SIS/IAFAS y trazabilidad durable del método/usuario de verificación. |
+| 4. Pendientes | Parcial | Admisión lista y permite sincronizar acreditaciones SIS incompletas sobre la misma visita. | Flujo offline completo y paginación REST sin límite fijo. |
+| 5. FUA | Parcial | FUA exige bundle SIS completo para el flujo normal y diferencia contingencia explícita. | Auditoría backend del override y reintentos durables del generador. |
+| 6. RBAC/auditoría | Parcial | El frontend comprueba capacidades REST antes de copiar/sincronizar cobertura. | Privilegio administrativo específico y auditoría persistente; los guards UI no sustituyen al backend. |
+
+La integración de este contrato llegó a `main` mediante los PRs #788, #789 y
+#791. El artefacto frontend `64b0b8d527e92298a46b2867842eb4b611255049`
+(`sha256:998e02ba38eb03297e6da4b3580c2ba963c35b328ca7eb11571fe0db81d062a5`)
+fue publicado y desplegado en DEV/QLTY el 2026-08-11 (hora de Lima).
 
 ---
 

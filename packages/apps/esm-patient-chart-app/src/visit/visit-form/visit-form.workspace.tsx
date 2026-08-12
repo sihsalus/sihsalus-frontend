@@ -19,8 +19,8 @@ import {
   ExtensionSlot,
   formatDatetime,
   getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
-  navigate,
   type NewVisitPayload,
+  navigate,
   saveVisit,
   showSnackbar,
   toDateObjectStrict,
@@ -31,8 +31,8 @@ import {
   useFeatureFlag,
   useLayoutType,
   usePatient,
-  useSession,
   userHasAccess,
+  useSession,
   useVisit,
   type Visit,
   Workspace2,
@@ -47,12 +47,12 @@ import {
   isFinanciadorCopyAuthorizationError,
   normalizeFinanciadorConceptUuid,
   type PatientWorkspace2DefinitionProps,
-  safeCopyFinanciadorToVisit,
+  type SafeCopyFinanciadorToVisitResult,
   SELF_FINANCED_CONCEPT_UUID,
   SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_CONCEPT_UUID,
-  type SafeCopyFinanciadorToVisitResult,
+  safeCopyFinanciadorToVisit,
   time12HourFormatRegex,
   useActivePatientEnrollment,
 } from '@openmrs/esm-patient-common-lib';
@@ -1504,7 +1504,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             } else {
               const recordCoverageResult = (coverageResult: SafeCopyFinanciadorToVisitResult) => {
                 if (
-                  (coverageResult.ok === true && !coverageResult.skipped && !coverageResult.reviewReason) ||
+                  coverageResult.ok === true ||
                   (coverageResult.ok === false && isFinanciadorCopyAuthorizationError(coverageResult.error))
                 ) {
                   completedPostSubmitActions.current.add('financiador');

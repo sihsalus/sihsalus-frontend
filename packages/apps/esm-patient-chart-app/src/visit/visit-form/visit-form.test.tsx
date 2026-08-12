@@ -22,11 +22,11 @@ import {
   createOfflineVisitForPatient,
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
   INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+  SELF_FINANCED_CONCEPT_UUID,
   SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_CONCEPT_UUID,
   safeCopyFinanciadorToVisit,
-  SELF_FINANCED_CONCEPT_UUID,
 } from '@openmrs/esm-patient-common-lib';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -1105,6 +1105,41 @@ describe('Visit form', () => {
       2,
       expect.objectContaining({ patientUuid: mockPatient.id, visitUuid }),
     );
+  });
+
+  it('does not repeat a deterministic coverage review when a later callback is retried', async () => {
+    const user = userEvent.setup();
+    mockSafeCopyFinanciadorToVisit.mockResolvedValue({
+      ok: true,
+      skipped: false,
+      created: 1,
+      updated: 0,
+      reviewReason: 'incomplete-coverage',
+    });
+    mockOnVisitCreatedOrUpdatedCallback
+      .mockRejectedValueOnce(new Error('later callback failed'))
+      .mockResolvedValueOnce(undefined);
+
+    renderVisitForm();
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Cobertura incompleta en la consulta' }),
+      ),
+    );
+    const retryButton = await screen.findByRole('button', { name: /Reintentar registro|Retry registration/i });
+    expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledTimes(1);
+    expect(mockOnVisitCreatedOrUpdatedCallback).toHaveBeenCalledTimes(1);
+
+    await user.click(retryButton);
+
+    await waitFor(() => expect(mockOnVisitCreatedOrUpdatedCallback).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
+    expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledTimes(1);
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
   });
 
   it('keeps missing coverage visible instead of reporting a false repair', async () => {

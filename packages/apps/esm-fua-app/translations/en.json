@@ -152,5 +152,8 @@
   "viewFua": "View FUA",
   "viewHistory": "View history",
   "viewPatientFuas": "View patient FUAs",
-  "visits": "Visits"
+  "visits": "Visits",
+  "visitsLoadError": "Visits could not be loaded",
+  "visitsRefreshError": "Visits could not be refreshed",
+  "visitsRefreshErrorCached": "The latest available data is shown. Try refreshing again."
 }

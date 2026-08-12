@@ -190,6 +190,22 @@ describe('filterPendingSisVisits', () => {
     ]);
   });
 
+  it('keeps a SIS visit pending when the persisted accreditation status is unknown', () => {
+    const unknownStatusVisit = buildVisit({
+      financiador: { uuid: sisConceptUuid },
+      insuranceNumber: 'SIS-0004',
+      status: { uuid: 'unknown-accreditation-status-uuid' },
+      checkedAt: '2026-08-11T14:30:00.000-05:00',
+    });
+
+    expect(filterPendingSisVisits([unknownStatusVisit], config)).toEqual([
+      expect.objectContaining({
+        visitUuid: unknownStatusVisit.uuid,
+        accreditationStatus: 'missing',
+      }),
+    ]);
+  });
+
   it('keeps a failed SIS-to-other-payer synchronization visible by its old SIS payer marker', () => {
     // Explicit synchronization invalidates the old status before staging the
     // new coverage and only replaces the payer at commit time. If a staged

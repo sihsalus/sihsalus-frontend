@@ -10,15 +10,16 @@ export const extractPriorityFromInstructions = (
   if (!instructions) {
     return { urgency: defaultUrgency, cleanInstructions: '' };
   }
-  const match = instructions.match(/(.*?)\s*\|\|priorityUuid:([a-fA-F0-9-]+)\|\|\s*$/);
+  const match = instructions.match(/\|\|priorityUuid:([a-fA-F0-9-]+)\|\|/);
+  const cleanInstructions = instructions.replace(/\s*\|\|priorityUuid:[a-fA-F0-9-]+\|\|/g, '').trim();
   if (match) {
     return {
-      urgency: match[2],
-      cleanInstructions: match[1].trim(),
+      urgency: match[1],
+      cleanInstructions,
     };
   }
   return {
     urgency: defaultUrgency,
-    cleanInstructions: instructions,
+    cleanInstructions,
   };
 };

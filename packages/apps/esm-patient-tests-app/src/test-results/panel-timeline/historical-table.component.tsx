@@ -20,6 +20,7 @@ const HistoricalTable: React.FC<HistoricalTableProps> = ({ conceptUuids, grouped
       value: obs.value,
       date: obs.effectiveDateTime ? formatDate(parseDate(obs.effectiveDateTime), { time: true }) : '--',
       registeredBy: obs.performer?.[0]?.display ?? '--',
+      orderNumber: obs.orderNumber ?? '--',
     })),
   );
 
@@ -32,6 +33,7 @@ const HistoricalTable: React.FC<HistoricalTableProps> = ({ conceptUuids, grouped
       <TableHead>
         <TableRow>
           <TableHeader>{t('test', 'Test')}</TableHeader>
+          <TableHeader>{t('orderNumber', 'Order number')}</TableHeader>
           <TableHeader>{t('value', 'Value')}</TableHeader>
           <TableHeader>{t('dateTime', 'Date and time')}</TableHeader>
           <TableHeader>{t('registeredBy', 'Registered by')}</TableHeader>
@@ -41,6 +43,7 @@ const HistoricalTable: React.FC<HistoricalTableProps> = ({ conceptUuids, grouped
         {rows.map((row) => (
           <TableRow key={row.id}>
             <TableCell>{row.name}</TableCell>
+            <TableCell>{row.orderNumber}</TableCell>
             <TableCell>{row.value}</TableCell>
             <TableCell>{row.date}</TableCell>
             <TableCell>{row.registeredBy}</TableCell>

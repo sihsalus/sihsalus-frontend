@@ -76,8 +76,27 @@ const RejectLabRequestModal: React.FC<RejectLabRequestModalProps> = ({ order, cl
               id="commentField"
               maxCount={500}
               enableCounter
+              value={fulfillerComment}
               onChange={(e) => setFulfillerComment(e.target.value)}
             />
+            <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <Button
+                type="button"
+                kind="ghost"
+                size="sm"
+                onClick={() => setFulfillerComment("No hay máquina para realizar el examen")}
+              >
+                No hay máquina
+              </Button>
+              <Button
+                type="button"
+                kind="ghost"
+                size="sm"
+                onClick={() => setFulfillerComment("No hay reactivo")}
+              >
+                No hay reactivo
+              </Button>
+            </div>
           </Layer>
         </div>
       </ModalBody>

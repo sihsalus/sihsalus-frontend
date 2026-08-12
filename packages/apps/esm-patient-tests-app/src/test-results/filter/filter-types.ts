@@ -79,6 +79,11 @@ export interface ObservationData {
   obsDatetime: string;
   value: string;
   interpretation: OBSERVATION_INTERPRETATION;
+  order?: {
+    uuid: string;
+    display: string;
+    orderNumber?: string;
+  };
 }
 
 export interface ParsedTimeType {

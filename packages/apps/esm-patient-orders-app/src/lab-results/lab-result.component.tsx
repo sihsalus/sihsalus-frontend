@@ -49,5 +49,5 @@ const LabResults: React.FC<LabResultsProps> = ({ order }) => {
 export default LabResults;
 
 const OrderDetail = ({ order }: { order: Order }) => {
-  return <TestOrder testOrder={order} />;
+  return <TestOrder testOrder={order} hideInstructions={true} />;
 };

@@ -196,6 +196,24 @@ const OrderCancellationForm: React.FC<OrderCancellationFormProps> = (props) => {
                     invalid={!!errors['reasonForCancellation']}
                     invalidText={!!errors['reasonForCancellation'] && errors['reasonForCancellation'].message}
                   />
+                  <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <Button
+                      type="button"
+                      kind="ghost"
+                      size="sm"
+                      onClick={() => onChange("No hay máquina para realizar el examen")}
+                    >
+                      No hay máquina
+                    </Button>
+                    <Button
+                      type="button"
+                      kind="ghost"
+                      size="sm"
+                      onClick={() => onChange("No hay reactivo")}
+                    >
+                      No hay reactivo
+                    </Button>
+                  </div>
                 </div>
               )}
             />

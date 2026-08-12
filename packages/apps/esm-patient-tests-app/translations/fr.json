@@ -48,6 +48,7 @@
   "ordered": "Commandé",
   "orderReason": "Raison de la prescription",
   "orderReasonRequired": "Order reason is required",
+  "orderNumber": "Numéro de commande",
   "other": "Autre",
   "overTime": "Au fil du temps",
   "panel": "Panels",

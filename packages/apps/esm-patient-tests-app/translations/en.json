@@ -58,6 +58,7 @@
   "ordered": "Ordered",
   "orderReason": "Order reason",
   "orderReasonRequired": "Order reason is required",
+  "orderNumber": "Order number",
   "other": "Other",
   "overlayHeader": "Overlay",
   "overTime": "Over time",

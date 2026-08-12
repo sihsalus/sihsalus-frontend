@@ -17,11 +17,10 @@ import { birthAddressMarker, birthAddressMarkerField } from '../../patient-regis
 import {
   getEffectiveRegistrationConfig,
   peruEmailAttributeTypeUuid,
-  peruInsuranceAccreditationCheckedAtAttributeTypeUuid,
-  peruInsuranceAccreditationStatusAttributeTypeUuid,
-  peruInsuranceCodeAttributeTypeUuid,
+  peruFinancerDependentAttributeTypeUuids,
   peruInsuranceTypeAttributeTypeUuid,
   peruMobilePhoneAttributeTypeUuid,
+  replacePeruInsuranceCoverageInForm,
 } from '../../peru-registration-config';
 import { isMinorPatient } from '../../validation/patient-registration-validation';
 
@@ -183,12 +182,19 @@ export function CopyResponsibleDataButton({ mode }: CopyResponsibleDataButtonPro
       }
 
       if (mode === 'insurance') {
-        copied += copyAttributes(attributes, [
-          peruInsuranceTypeAttributeTypeUuid,
-          peruInsuranceCodeAttributeTypeUuid,
-          peruInsuranceAccreditationStatusAttributeTypeUuid,
-          peruInsuranceAccreditationCheckedAtAttributeTypeUuid,
-        ]);
+        const insuranceAttributes = Object.fromEntries(
+          [peruInsuranceTypeAttributeTypeUuid, ...peruFinancerDependentAttributeTypeUuids].map((attributeTypeUuid) => [
+            attributeTypeUuid,
+            getAttributeValue(attributes, attributeTypeUuid),
+          ]),
+        );
+        if (registrationContext) {
+          copied += replacePeruInsuranceCoverageInForm(
+            insuranceAttributes,
+            registrationContext.setFieldValue,
+            registrationContext.setFieldTouched,
+          );
+        }
       }
 
       setStatus(copied > 0 ? 'success' : 'warning');

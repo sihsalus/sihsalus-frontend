@@ -14,6 +14,7 @@ import {
   peruInsuranceAccreditationCheckedAtAttributeTypeUuid,
   peruInsuranceAccreditationStatusAttributeTypeUuid,
   peruInsuranceCodeAttributeTypeUuid,
+  peruInsuranceSisConceptUuid,
   peruInsuranceTypeAttributeTypeUuid,
   peruMobilePhoneAttributeTypeUuid,
   peruPhoneAttributeTypeUuid,
@@ -277,6 +278,38 @@ describe('CopyResponsibleDataButton', () => {
     expect(screen.getByText('Seguro copiado del responsable')).toBeInTheDocument();
   });
 
+  it('does not erase current coverage when the responsible person has no financer', async () => {
+    const user = userEvent.setup();
+    mockFetchPersonRegistrationCopyData.mockResolvedValue({
+      uuid: 'responsible-person-uuid',
+      attributes: [
+        {
+          uuid: 'orphan-insurance-code',
+          display: 'Código de seguro = ORPHAN',
+          attributeType: {
+            uuid: peruInsuranceCodeAttributeTypeUuid,
+            display: 'Código de seguro',
+            format: 'java.lang.String',
+          },
+          value: 'ORPHAN',
+        },
+      ],
+    });
+    const { setFieldValue } = renderCopyButton('insurance', {
+      ...baseValues,
+      attributes: {
+        [peruInsuranceTypeAttributeTypeUuid]: peruInsuranceSisConceptUuid,
+        [peruInsuranceCodeAttributeTypeUuid]: 'SIS-12345678',
+      },
+    });
+
+    await user.click(screen.getByRole('button', { name: /copiar seguro del responsable/i }));
+
+    await waitFor(() => expect(mockFetchPersonRegistrationCopyData).toHaveBeenCalledTimes(1));
+    expect(setFieldValue).not.toHaveBeenCalled();
+    expect(screen.getByText('El responsable no tiene seguro registrado')).toBeInTheDocument();
+  });
+
   it('does not call the backend when there is no selected responsible person', async () => {
     const user = userEvent.setup();
     renderCopyButton('residenceContact', { ...baseValues, relationships: [] });
@@ -355,6 +388,16 @@ describe('CopyResponsibleDataButton', () => {
         uuid: 'second-responsible-uuid',
         attributes: [
           {
+            uuid: 'second-insurance-type',
+            display: 'Tipo de seguro = EsSalud',
+            attributeType: {
+              uuid: peruInsuranceTypeAttributeTypeUuid,
+              display: 'Tipo de seguro',
+              format: 'org.openmrs.Concept',
+            },
+            value: { uuid: 'essalud-concept-uuid', display: 'EsSalud' },
+          },
+          {
             uuid: 'second-insurance-code',
             display: 'Código de seguro = SECOND',
             attributeType: {
@@ -403,6 +446,16 @@ describe('CopyResponsibleDataButton', () => {
       resolveFirstRequest({
         uuid: 'responsible-person-uuid',
         attributes: [
+          {
+            uuid: 'first-insurance-type',
+            display: 'Tipo de seguro = SIS',
+            attributeType: {
+              uuid: peruInsuranceTypeAttributeTypeUuid,
+              display: 'Tipo de seguro',
+              format: 'org.openmrs.Concept',
+            },
+            value: { uuid: peruInsuranceSisConceptUuid, display: 'SIS' },
+          },
           {
             uuid: 'first-insurance-code',
             display: 'Código de seguro = FIRST',

@@ -6,6 +6,7 @@ import {
   peruDniPatientIdentifierTypeUuid,
   peruEmailAttributeTypeUuid,
   peruForeignPatientIdentifierTypeUuids,
+  peruInsuranceSelfFinancingConceptUuid,
   peruNationalityAttributeTypeUuid,
   peruNationalityConceptSetUuid,
   peruNationalityConceptUuid,
@@ -14,6 +15,10 @@ import {
 } from './peru-registration-config';
 
 describe('getEffectiveRegistrationConfig', () => {
+  it('uses the canonical IAFAS concept for self-financing', () => {
+    expect(peruInsuranceSelfFinancingConceptUuid).toBe('cc72568e-d0d9-46a8-a618-91f0d679f518');
+  });
+
   it('orders Peru basic info fields for registration', () => {
     const config = getEffectiveRegistrationConfig(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
 

@@ -35,11 +35,20 @@ import {
 import {
   getEffectiveRegistrationConfig,
   peruEmailAttributeTypeUuid,
+  peruInsuranceAccreditationActiveConceptUuid,
+  peruInsuranceAccreditationCheckedAtAttributeTypeUuid,
+  peruInsuranceAccreditationStatusAttributeTypeUuid,
   peruInsuranceCodeAttributeTypeUuid,
+  peruInsuranceSelfFinancingConceptUuid,
+  peruInsuranceSisConceptUuid,
+  peruInsuranceTypeAttributeTypeUuid,
+  peruInsuranceVerificationMethodAttributeTypeUuid,
   peruMobilePhoneAttributeTypeUuid,
   peruNationalityAttributeTypeUuid,
   peruNationalityConceptUuid,
   peruPhoneAttributeTypeUuid,
+  peruSisEessNameAttributeTypeUuid,
+  peruSisTypeDescriptionAttributeTypeUuid,
 } from './peru-registration-config';
 import { registrationErrorCodes } from './registration-errors';
 
@@ -532,6 +541,63 @@ describe('FormManager', () => {
       expect(mockDeletePersonAttribute).toHaveBeenLastCalledWith('patient-uuid', 'attribute-value-uuid', undefined);
     });
 
+    it('deletes persisted affiliation and SIS accreditation attributes after changing to self-financing', async () => {
+      const transaction = new SavePatientTransactionManager();
+      const sisAttributeTypeUuids = [
+        peruInsuranceCodeAttributeTypeUuid,
+        peruInsuranceAccreditationStatusAttributeTypeUuid,
+        peruInsuranceAccreditationCheckedAtAttributeTypeUuid,
+        peruInsuranceVerificationMethodAttributeTypeUuid,
+        peruSisTypeDescriptionAttributeTypeUuid,
+        peruSisEessNameAttributeTypeUuid,
+      ];
+      const values = {
+        ...formValues,
+        patientUuid: 'patient-uuid',
+        attributes: {
+          [peruInsuranceTypeAttributeTypeUuid]: peruInsuranceSelfFinancingConceptUuid,
+        },
+      };
+      const patientUuidMap = Object.fromEntries(
+        sisAttributeTypeUuids.map((attributeTypeUuid) => [
+          `attribute.${attributeTypeUuid}`,
+          `value-${attributeTypeUuid}`,
+        ]),
+      );
+      mockDeletePersonAttribute.mockResolvedValue({ ok: true } as never);
+
+      await FormManager.deleteRemovedPatientAttributes(false, values, patientUuidMap, transaction);
+
+      expect(mockDeletePersonAttribute).toHaveBeenCalledTimes(sisAttributeTypeUuids.length);
+      sisAttributeTypeUuids.forEach((attributeTypeUuid) => {
+        expect(mockDeletePersonAttribute).toHaveBeenCalledWith(
+          'patient-uuid',
+          `value-${attributeTypeUuid}`,
+          undefined,
+        );
+      });
+    });
+
+    it('does not delete a non-SIS accreditation attribute that was not hydrated into the form', async () => {
+      const transaction = new SavePatientTransactionManager();
+      const persistedAccreditationValueUuid = 'persisted-accreditation-value-uuid';
+      const values = {
+        ...formValues,
+        patientUuid: 'patient-uuid',
+        attributes: {
+          [peruInsuranceTypeAttributeTypeUuid]: 'essalud-concept-uuid',
+          [peruInsuranceCodeAttributeTypeUuid]: 'ESSALUD-123',
+        },
+      };
+      const patientUuidMap = {
+        [`attribute.${peruInsuranceAccreditationStatusAttributeTypeUuid}`]: persistedAccreditationValueUuid,
+      };
+
+      await FormManager.deleteRemovedPatientAttributes(false, values, patientUuidMap, transaction);
+
+      expect(mockDeletePersonAttribute).not.toHaveBeenCalled();
+    });
+
     it('does not delete the additional name during an ordinary edit', async () => {
       mockSavePatient.mockResolvedValue({
         ok: true,
@@ -730,6 +796,7 @@ describe('FormManager', () => {
         attributes: {
           [peruEmailAttributeTypeUuid]: 'juan.perez@example.org',
           [peruPhoneAttributeTypeUuid]: '999888777',
+          [peruInsuranceTypeAttributeTypeUuid]: peruInsuranceSisConceptUuid,
           [peruInsuranceCodeAttributeTypeUuid]: 'SIS-12345678',
           [peruNationalityAttributeTypeUuid]: peruNationalityConceptUuid,
         },
@@ -788,6 +855,68 @@ describe('FormManager', () => {
           },
         ]),
       );
+    });
+
+    it('keeps the complete SIS affiliation in the patient payload', () => {
+      const attributes = {
+        [peruInsuranceTypeAttributeTypeUuid]: peruInsuranceSisConceptUuid,
+        [peruInsuranceCodeAttributeTypeUuid]: 'SIS-12345678',
+        [peruInsuranceAccreditationStatusAttributeTypeUuid]: peruInsuranceAccreditationActiveConceptUuid,
+        [peruInsuranceAccreditationCheckedAtAttributeTypeUuid]: '2026-08-11',
+        [peruInsuranceVerificationMethodAttributeTypeUuid]: 'setisis',
+        [peruSisTypeDescriptionAttributeTypeUuid]: 'SIS Gratuito',
+        [peruSisEessNameAttributeTypeUuid]: 'Hospital Santa Clotilde',
+      };
+
+      expect(FormManager.getPatientAttributes({ ...formValues, attributes })).toEqual(
+        Object.entries(attributes).map(([attributeType, value]) => ({ attributeType, value })),
+      );
+    });
+
+    it('omits affiliation and SIS accreditation data for self-financing', () => {
+      const unrelatedAttributeTypeUuid = 'unrelated-attribute-type-uuid';
+      const attributes = {
+        [peruInsuranceTypeAttributeTypeUuid]: peruInsuranceSelfFinancingConceptUuid,
+        [peruInsuranceCodeAttributeTypeUuid]: 'SHOULD-NOT-BE-SAVED',
+        [peruInsuranceAccreditationStatusAttributeTypeUuid]: peruInsuranceAccreditationActiveConceptUuid,
+        [peruInsuranceAccreditationCheckedAtAttributeTypeUuid]: '2026-08-11',
+        [peruInsuranceVerificationMethodAttributeTypeUuid]: 'setisis',
+        [peruSisTypeDescriptionAttributeTypeUuid]: 'SIS Gratuito',
+        [peruSisEessNameAttributeTypeUuid]: 'Hospital Santa Clotilde',
+        [unrelatedAttributeTypeUuid]: 'preserved',
+      };
+
+      expect(FormManager.getPatientAttributes({ ...formValues, attributes })).toEqual([
+        {
+          attributeType: peruInsuranceTypeAttributeTypeUuid,
+          value: peruInsuranceSelfFinancingConceptUuid,
+        },
+        { attributeType: unrelatedAttributeTypeUuid, value: 'preserved' },
+      ]);
+    });
+
+    it('keeps general IAFAS accreditation data but omits SIS-only attributes', () => {
+      const otherFinancerConceptUuid = 'other-financer-concept-uuid';
+      const attributes = {
+        [peruInsuranceTypeAttributeTypeUuid]: otherFinancerConceptUuid,
+        [peruInsuranceCodeAttributeTypeUuid]: 'POLIZA-987654',
+        [peruInsuranceAccreditationStatusAttributeTypeUuid]: peruInsuranceAccreditationActiveConceptUuid,
+        [peruInsuranceAccreditationCheckedAtAttributeTypeUuid]: '2026-08-11',
+        [peruInsuranceVerificationMethodAttributeTypeUuid]: 'siteds',
+        [peruSisTypeDescriptionAttributeTypeUuid]: 'SHOULD-NOT-BE-SAVED',
+        [peruSisEessNameAttributeTypeUuid]: 'SHOULD-NOT-BE-SAVED',
+      };
+
+      expect(FormManager.getPatientAttributes({ ...formValues, attributes })).toEqual([
+        { attributeType: peruInsuranceTypeAttributeTypeUuid, value: otherFinancerConceptUuid },
+        { attributeType: peruInsuranceCodeAttributeTypeUuid, value: 'POLIZA-987654' },
+        {
+          attributeType: peruInsuranceAccreditationStatusAttributeTypeUuid,
+          value: peruInsuranceAccreditationActiveConceptUuid,
+        },
+        { attributeType: peruInsuranceAccreditationCheckedAtAttributeTypeUuid, value: '2026-08-11' },
+        { attributeType: peruInsuranceVerificationMethodAttributeTypeUuid, value: 'siteds' },
+      ]);
     });
 
     it('drops person attributes without a valid attribute type key', () => {

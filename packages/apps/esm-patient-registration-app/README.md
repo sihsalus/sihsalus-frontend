@@ -2,6 +2,36 @@
 
 App para crear y editar datos de filiación, identificadores y atributos administrativos del paciente.
 
+## Financiador y acreditación
+
+El registro usa el catálogo canónico `Tipo de seguro` de `sihsalus-content#163`. El concepto
+`Particular / Sin seguro`, presentado como `Autofinanciamiento`, es
+`cc72568e-d0d9-46a8-a618-91f0d679f518`; no debe sustituirse por conceptos `Particular` de formularios
+clínicos legacy.
+
+Contrato de datos de la persona:
+
+| Financiador        | Datos que se conservan                                                   |
+| ------------------ | ------------------------------------------------------------------------ |
+| SIS                | financiador, código, estado/fecha/método de acreditación y datos SETISIS |
+| Otra IAFAS         | financiador y póliza; puede conservar acreditación genérica SITEDS       |
+| Autofinanciamiento | solo financiador                                                         |
+| Sin financiador    | ningún dato dependiente de cobertura                                     |
+
+Al cambiar realmente de financiador se reemplaza la cobertura de forma atómica: primero se limpian el
+código, la acreditación y los datos específicos del anterior y después se escribe la nueva selección o
+el resultado compuesto de SETISIS/SITEDS. Así no se reinterpreta, por ejemplo, un código SIS como póliza
+EsSalud, y una verificación recién aplicada se conserva aunque alguno de sus valores coincida con el
+anterior. Volver a SIS comienza explícitamente en `No consultada` hasta aplicar una verificación. Abrir y
+guardar un paciente EsSalud/EPS sin cambiar su financiador conserva los atributos genéricos provenientes
+de SITEDS. La UI oculta los controles incompatibles y el armado del payload aplica el mismo contrato como
+segunda defensa; al editar un paciente autofinanciado también se eliminan los valores incompatibles que
+ya estuvieran persistidos.
+
+El financiador continúa siendo opcional mientras Producto no apruebe la obligatoriedad y el tratamiento
+de los casos sin cobertura. La consulta real a SETISIS/IAFAS y la derivación a Caja tampoco forman parte
+de este contrato frontend.
+
 ## Pacientes no identificados o incapaces de comunicarse
 
 El registro debe permitir crear un paciente aunque no exista DNI, nombre legal confirmado, teléfono, dirección o fecha exacta de nacimiento. Ese caso se marca con el atributo `Paciente No Identificado` configurado en `fieldConfigurations.name.unidentifiedPatientAttributeTypeUuid`.
@@ -44,18 +74,18 @@ El registro Perú muestra residencia, lugar de nacimiento y teléfono en una sol
 
 Contrato canónico de campos territoriales:
 
-| Campo OpenMRS | Significado en SIH Salus |
-| --- | --- |
-| `country` | País |
-| `address1` | Departamento |
-| `stateProvince` | Provincia |
-| `countyDistrict` | Distrito |
-| `cityVillage` | Centro poblado |
-| `address3` | Barrio |
-| `address4` | Dirección |
-| `address13` | Path jerárquico interno |
-| `address14` | Código UBIGEO interno |
-| `address15` | Marca interna de dirección de nacimiento |
+| Campo OpenMRS    | Significado en SIH Salus                 |
+| ---------------- | ---------------------------------------- |
+| `country`        | País                                     |
+| `address1`       | Departamento                             |
+| `stateProvince`  | Provincia                                |
+| `countyDistrict` | Distrito                                 |
+| `cityVillage`    | Centro poblado                           |
+| `address3`       | Barrio                                   |
+| `address4`       | Dirección                                |
+| `address13`      | Path jerárquico interno                  |
+| `address14`      | Código UBIGEO interno                    |
+| `address15`      | Marca interna de dirección de nacimiento |
 
 FHIR proyecta `stateProvince` como `state`, `countyDistrict` como `district` y `cityVillage` como `city`; los campos `address*` se reciben como extensiones. Las vistas deben traducir esos alias sin reinterpretar ni mover sus valores.
 

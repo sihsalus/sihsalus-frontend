@@ -510,11 +510,7 @@ describe('SisLookupField', () => {
       expect.stringMatching(checkedAtIsoPattern),
       false,
     );
-    expect(setFieldValue).not.toHaveBeenCalledWith(
-      `attributes.${peruInsuranceCodeAttributeTypeUuid}`,
-      expect.anything(),
-      false,
-    );
+    expect(setFieldValue).toHaveBeenCalledWith(`attributes.${peruInsuranceCodeAttributeTypeUuid}`, '', false);
     expect(setFieldValue).toHaveBeenCalledWith(
       `attributes.${peruSisTypeDescriptionAttributeTypeUuid}`,
       'SIS Para Todos',

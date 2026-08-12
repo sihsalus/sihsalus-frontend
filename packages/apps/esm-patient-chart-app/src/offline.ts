@@ -5,7 +5,7 @@ import {
   saveVisit,
   setupOfflineSync,
 } from '@openmrs/esm-framework';
-import { type OfflineVisit, visitSyncType } from '@openmrs/esm-patient-common-lib';
+import { assertFreshPatientIsAlive, type OfflineVisit, visitSyncType } from '@openmrs/esm-patient-common-lib';
 
 export function setupCacheableRoutes() {
   messageOmrsServiceWorker({
@@ -28,6 +28,11 @@ export function setupOfflineVisitsSync() {
       ...visit,
       stopDatetime: new Date(),
     };
+
+    // A queued visit may have been created from an old cached patient snapshot.
+    // Throwing here keeps the synchronization item queued with its last error,
+    // so a later retry can verify the patient again without writing meanwhile.
+    await assertFreshPatientIsAlive(visit.patient);
 
     const res = await saveVisit(visitPayload, options.abort);
     if (!res.ok) {

@@ -1,4 +1,5 @@
 import { getLocale, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { assertFreshPatientIsAlive } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
@@ -484,6 +485,9 @@ export async function createEmergencyQueueEntry(
   queueUuid: string,
   sortWeight?: number,
 ) {
+  // This writer is also called directly outside the workflow workspace. Keep
+  // the authoritative assertion adjacent to the operational queue write.
+  await assertFreshPatientIsAlive(patientUuid);
   return openmrsFetch(`${restBaseUrl}/visit-queue-entry`, {
     method: 'POST',
     headers: {

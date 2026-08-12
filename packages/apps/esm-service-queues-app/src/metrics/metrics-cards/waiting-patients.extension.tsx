@@ -2,11 +2,10 @@ import { Dropdown } from '@carbon/react';
 import { isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
-import { useQueueEntries } from '../../hooks/useQueueEntries';
+import { useOperationalQueueEntries } from '../../hooks/useOperationalQueueEntries';
 import useQueueServices from '../../hooks/useQueueService';
 import { updateSelectedService, useServiceQueuesStore } from '../../store/store';
 import { type Concept } from '../../types';
-import { useServiceMetricsCount } from '../metrics.resource';
 import { type Service } from '../metrics-container.component';
 import { MetricsCard, MetricsCardBody, MetricsCardHeader, MetricsCardItem } from './metrics-card.component';
 
@@ -15,9 +14,8 @@ type ServiceListItem = Service | Concept;
 export default function WaitingPatientsExtension() {
   const { t } = useTranslation();
   const layout = useLayoutType();
-  const { selectedServiceUuid, selectedServiceDisplay, selectedQueueLocationUuid } = useServiceQueuesStore();
+  const { selectedServiceUuid, selectedQueueLocationUuid } = useServiceQueuesStore();
   const { services } = useQueueServices();
-  const { serviceCount } = useServiceMetricsCount(selectedServiceUuid, selectedQueueLocationUuid);
   const {
     concepts: { defaultStatusConceptUuid },
   } = useConfig<ConfigObject>();
@@ -30,7 +28,7 @@ export default function WaitingPatientsExtension() {
 
   const selectedService = services?.find((service) => service.uuid === selectedServiceUuid);
 
-  const { totalCount, queueEntries } = useQueueEntries({
+  const { isLoading, queueEntries } = useOperationalQueueEntries({
     service: selectedServiceUuid,
     location: selectedQueueLocationUuid,
     isEnded: false,
@@ -65,7 +63,7 @@ export default function WaitingPatientsExtension() {
       <MetricsCardBody>
         <MetricsCardItem
           label={t('patients', 'Patients')}
-          value={!selectedServiceUuid ? (Number.isNaN(totalCount) ? '--' : totalCount) : serviceCount}
+          value={isLoading ? '--' : queueEntries.length}
         />
         <MetricsCardItem label={t('urgent', 'Urgent')} value={urgentCount > 0 ? urgentCount : null} color="red" small />
       </MetricsCardBody>

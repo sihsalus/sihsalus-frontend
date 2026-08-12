@@ -3,7 +3,7 @@ import { getUserFacingErrorMessage, isDesktop, showSnackbar, useLayoutType } fro
 import classNames from 'classnames';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQueueEntries } from '../hooks/useQueueEntries';
+import { useOperationalQueueEntries } from '../hooks/useOperationalQueueEntries';
 import useQueueStatuses from '../hooks/useQueueStatuses';
 import { updateSelectedQueueStatus, updateSelectedService, useServiceQueuesStore } from '../store/store';
 import { useQueueWorkflowMetadata } from '../triage-workflow/triage-workflow.resource';
@@ -60,7 +60,7 @@ function QueueTableSection() {
     };
   }, [selectedServiceUuid, selectedQueueLocationUuid, selectedQueueStatusUuid]);
 
-  const { queueEntries, isLoading, error, isValidating } = useQueueEntries(searchCriteria);
+  const { queueEntries, isLoading, error, isValidating } = useOperationalQueueEntries(searchCriteria);
   const {
     entries: operationalQueueEntries,
     error: workflowError,

@@ -193,7 +193,10 @@ async function findLegacyAttentionEncounter(
     const responseDate = response.headers?.get?.('Date');
     const parsedResponseDate = responseDate ? new Date(responseDate).valueOf() : Number.NaN;
     if (Number.isFinite(parsedResponseDate)) {
-      authoritativeNow = Math.max(authoritativeNow ?? parsedResponseDate, parsedResponseDate);
+      // HTTP Date has second precision while OpenMRS encounter timestamps may
+      // retain milliseconds. Treat the full represented second as authoritative.
+      const responseSecondEnd = parsedResponseDate + 999;
+      authoritativeNow = Math.max(authoritativeNow ?? responseSecondEnd, responseSecondEnd);
     }
     const page = response.data?.results ?? [];
     let newUuidCount = 0;
@@ -229,14 +232,22 @@ async function findLegacyAttentionEncounter(
       'The server time needed to reconcile emergency attention encounters was unavailable.',
     );
   }
-  const windowCandidates = [...scopeCandidatesByUuid.values()].filter(({ encounter }) => {
+  const scopeCandidates = [...scopeCandidatesByUuid.values()];
+  const hasUnverifiableCandidateTime = scopeCandidates.some(({ encounter }) => {
     const encounterTime = getParsedEncounterTime(encounter);
     return (
-      encounterTime !== null &&
-      encounterTime >= queueStart.valueOf() &&
-      encounterTime <= (authoritativeNow as number)
+      encounterTime === null ||
+      encounterTime < queueStart.valueOf() ||
+      encounterTime > (authoritativeNow as number)
     );
   });
+  if (hasUnverifiableCandidateTime) {
+    throw attentionEncounterError(
+      EMERGENCY_ATTENTION_ENCOUNTER_CONFLICT,
+      'An emergency attention encounter has an unverifiable time for this queue entry window.',
+    );
+  }
+  const windowCandidates = scopeCandidates;
   const deterministicCandidate = windowCandidates.find(
     ({ encounter }) => encounter.uuid === deterministicEncounterUuid,
   );

@@ -241,6 +241,38 @@ describe('createAttentionEncounter', () => {
     expect(mockOpenmrsFetch.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
   });
 
+  it('accepts an encounter in the final millisecond range represented by the HTTP Date second', async () => {
+    const legacy = {
+      ...persistedEncounter('legacy-subsecond'),
+      encounterDatetime: '2026-08-12T16:00:00.500Z',
+    };
+    mockOpenmrsFetch
+      .mockRejectedValueOnce(notFound())
+      .mockResolvedValueOnce(response(queueEntry))
+      .mockResolvedValueOnce(response({ results: [legacy] }, 'Wed, 12 Aug 2026 16:00:00 GMT'));
+
+    await expect(createAttentionEncounter(input)).resolves.toMatchObject({ data: { uuid: legacy.uuid } });
+    expect(mockOpenmrsFetch.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+  });
+
+  it.each([
+    ['missing', null],
+    ['invalid', 'not-a-date'],
+    ['before the queue window', '2026-08-12T13:59:59.000Z'],
+    ['after the authoritative server second', '2026-08-12T16:00:01.000Z'],
+  ])('fails closed when a same-scope legacy encounter time is %s', async (_state, encounterDatetime) => {
+    const legacy = { ...persistedEncounter('legacy-bad-time'), encounterDatetime };
+    mockOpenmrsFetch
+      .mockRejectedValueOnce(notFound())
+      .mockResolvedValueOnce(response(queueEntry))
+      .mockResolvedValueOnce(response({ results: [legacy] }, 'Wed, 12 Aug 2026 16:00:00 GMT'));
+
+    await expect(createAttentionEncounter(input)).rejects.toMatchObject({
+      code: EMERGENCY_ATTENTION_ENCOUNTER_CONFLICT,
+    });
+    expect(mockOpenmrsFetch.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+  });
+
   it('rejects a different legacy encounter in the same queue window instead of duplicating attention', async () => {
     const other = {
       ...persistedEncounter('other-encounter'),

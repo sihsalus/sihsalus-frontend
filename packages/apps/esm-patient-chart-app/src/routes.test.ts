@@ -26,4 +26,21 @@ describe('patient chart route privilege contract', () => {
     expect(routes.modals.find(({ name }) => name === 'end-visit-dialog')?.privileges).toEqual(closurePrivileges);
     expect(routes.modals.find(({ name }) => name === 'cancel-visit-dialog')?.privileges).toEqual(closurePrivileges);
   });
+
+  it('requires person editing for every action that changes death status', () => {
+    const deathStatusPrivileges = ['app:hoja.clinica.visitas.editar', 'Edit People'];
+
+    expect(routes.extensions.find(({ name }) => name === 'mark-alive-button')?.privileges).toEqual(
+      deathStatusPrivileges,
+    );
+    expect(routes.extensions.find(({ name }) => name === 'mark-patient-deceased-button')?.privileges).toEqual(
+      deathStatusPrivileges,
+    );
+    expect(routes.modals.find(({ name }) => name === 'mark-patient-alive-modal')?.privileges).toEqual(
+      deathStatusPrivileges,
+    );
+    expect(routes.workspaces2.find(({ name }) => name === 'mark-patient-deceased-workspace-form')?.privileges).toEqual(
+      deathStatusPrivileges,
+    );
+  });
 });

@@ -1,4 +1,5 @@
 import {
+  fetchCurrentPatient,
   getDefaultsFromConfigSchema,
   launchWorkspace2,
   navigate,
@@ -51,6 +52,7 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => ({
 }));
 
 const mockUsePatient = vi.mocked(usePatient);
+const mockFetchCurrentPatient = vi.mocked(fetchCurrentPatient);
 const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockChangeAppointmentStatus = vi.mocked(changeAppointmentStatus);
@@ -182,6 +184,10 @@ describe('AppointmentArrivalModal', () => {
       patientUuid: 'patient-uuid',
     } as unknown as ReturnType<typeof usePatient>);
     vi.clearAllMocks();
+    mockFetchCurrentPatient.mockResolvedValue({
+      id: appointment.patient.uuid,
+      deceasedBoolean: false,
+    } as fhir.Patient);
     mockGetAppointmentStatus.mockResolvedValue(AppointmentStatus.SCHEDULED);
     mockEnsureAppointmentVisitLink.mockResolvedValue({ created: false });
     mockChangeAppointmentStatus.mockResolvedValue({ data: {} } as Awaited<ReturnType<typeof changeAppointmentStatus>>);
@@ -204,6 +210,42 @@ describe('AppointmentArrivalModal', () => {
     expect(getQueueButton()).toBeEnabled();
     expect(getDirectButton()).toBeEnabled();
     expect(screen.getByRole('button', { name: /cancelar/i })).toBeEnabled();
+  });
+
+  it('blocks arrival when the patient is already known to be deceased', () => {
+    mockUsePatient.mockReturnValue({
+      patient: {
+        birthDate: '1990-01-01',
+        deceasedDateTime: '2026-08-12T15:41:28.000Z',
+      },
+      isLoading: false,
+      error: null,
+      patientUuid: appointment.patient.uuid,
+    } as unknown as ReturnType<typeof usePatient>);
+
+    renderModal();
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/no se puede registrar la llegada de un paciente fallecido/i);
+    expect(getQueueButton()).toBeDisabled();
+    expect(getDirectButton()).toBeDisabled();
+  });
+
+  it('fresh-checks death status before starting arrival', async () => {
+    const user = userEvent.setup();
+    mockFetchCurrentPatient.mockResolvedValueOnce({
+      id: appointment.patient.uuid,
+      deceasedBoolean: true,
+    } as fhir.Patient);
+
+    renderModal();
+    await user.click(getQueueButton());
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(/no se puede registrar la llegada de un paciente fallecido/i),
+    );
+    expect(mockFetchCurrentPatient).toHaveBeenCalledWith(appointment.patient.uuid, undefined, false);
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
   });
 
   it('fails closed when the service and location have no arrival rule', () => {
@@ -379,6 +421,24 @@ describe('AppointmentArrivalModal', () => {
     await act(async () => launchOptions.onVisitStarted());
 
     expect(mockChangeAppointmentStatus).toHaveBeenCalledWith(AppointmentStatus.CHECKEDIN, appointment.uuid);
+  });
+
+  it('does not check in when the patient is marked deceased while the arrival workspace is open', async () => {
+    mockFetchCurrentPatient
+      .mockResolvedValueOnce({ id: appointment.patient.uuid, deceasedBoolean: false } as fhir.Patient)
+      .mockResolvedValueOnce({ id: appointment.patient.uuid, deceasedBoolean: true } as fhir.Patient);
+
+    renderModal();
+    await userEvent.click(getQueueButton());
+
+    const launchOptions = mockLaunchWorkspace2.mock.calls[0][1] as {
+      onVisitStarted: () => Promise<void>;
+    };
+    await expect(launchOptions.onVisitStarted()).rejects.toMatchObject({
+      code: 'DECEASED_PATIENT_ARRIVAL_BLOCKED',
+    });
+
+    expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
   });
 
   it('routes an appointment arrival through the configured triage queue', async () => {

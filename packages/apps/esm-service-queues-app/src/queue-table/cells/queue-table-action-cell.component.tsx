@@ -1,5 +1,6 @@
 import { Button, OverflowMenu, OverflowMenuItem } from '@carbon/react';
 import {
+  fetchCurrentPatient,
   getUserFacingErrorMessage,
   isDesktop,
   launchWorkspace2,
@@ -31,10 +32,13 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
   const canEdit = canEditServiceQueues(session?.user);
   const canTriage = canTriageQueuePatients(session?.user);
   const isTriageQueue = Boolean(queueEntry.workflow?.isTriageQueue);
+  const patientPerson = queueEntry.patient?.person as { dead?: boolean; deathDate?: string | null } | undefined;
+  const isDeceasedPatient = Boolean(patientPerson?.dead || patientPerson?.deathDate);
   const requiresCashier = isTriageQueue && queueEntry.workflow?.sisState !== 'active';
   const canOpenBilling = userHasAccess('app:home.facturacion', session?.user);
   const canPerformTriage =
     isTriageQueue &&
+    !isDeceasedPatient &&
     !requiresCashier &&
     canTriage &&
     Boolean(queueEntry.visit?.uuid);
@@ -74,6 +78,22 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
   const handleTriage = async () => {
     setIsSubmittingTriage(true);
     try {
+      const latestPatient = await fetchCurrentPatient(queueEntry.patient.uuid, undefined, false);
+      if (!latestPatient) {
+        throw new Error('The patient could not be loaded.');
+      }
+      if (latestPatient.deceasedBoolean || latestPatient.deceasedDateTime) {
+        showSnackbar({
+          isLowContrast: false,
+          kind: 'error',
+          title: t('triageUnavailable', 'Triaje no disponible'),
+          subtitle: t(
+            'deceasedPatientTriageBlocked',
+            'No se puede realizar ni derivar el triaje de un paciente fallecido.',
+          ),
+        });
+        return;
+      }
       if (queueEntry.workflow?.triageState === 'completed') {
         await transitionAfterTriage();
         return;
@@ -127,7 +147,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
 
   return (
     <div className={styles.actionsCell}>
-      {isTriageQueue && requiresCashier ? (
+      {isTriageQueue && !isDeceasedPatient && requiresCashier ? (
         <Button
           kind="danger--tertiary"
           onClick={handleSendToCashier}
@@ -146,7 +166,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
             ? t('sendToCare', 'Enviar a atención')
             : t('performTriage', 'Realizar triaje')}
         </Button>
-      ) : canEdit ? (
+      ) : canEdit && !isDeceasedPatient ? (
         <Button
           kind="ghost"
           aria-label={t('transition', 'Transition')}

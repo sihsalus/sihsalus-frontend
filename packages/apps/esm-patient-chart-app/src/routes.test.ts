@@ -26,4 +26,22 @@ describe('patient chart route privilege contract', () => {
     expect(routes.modals.find(({ name }) => name === 'end-visit-dialog')?.privileges).toEqual(closurePrivileges);
     expect(routes.modals.find(({ name }) => name === 'cancel-visit-dialog')?.privileges).toEqual(closurePrivileges);
   });
+
+  it('requires clinical chart access and patient vital status privilege to mark a patient alive or deceased', () => {
+    const patientVitalStatusPrivileges = ['app:hoja.clinica', 'app:hoja.clinica.estadoVitalPaciente'];
+    const patientVitalStatusButtons = routes.extensions.filter(({ name }) =>
+      ['mark-alive-button', 'mark-patient-deceased-button'].includes(name),
+    );
+    const markAliveModal = routes.modals.find(({ name }) => name === 'mark-patient-alive-modal');
+    const markDeceasedWorkspace = routes.workspaces2.find(
+      ({ name }) => name === 'mark-patient-deceased-workspace-form',
+    );
+
+    expect(patientVitalStatusButtons).toHaveLength(2);
+    patientVitalStatusButtons.forEach((extension) => {
+      expect(extension.privileges).toEqual(patientVitalStatusPrivileges);
+    });
+    expect(markAliveModal?.privileges).toEqual(patientVitalStatusPrivileges);
+    expect(markDeceasedWorkspace?.privileges).toEqual(patientVitalStatusPrivileges);
+  });
 });

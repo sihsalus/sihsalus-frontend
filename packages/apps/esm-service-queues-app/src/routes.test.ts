@@ -19,6 +19,29 @@ describe('service queue route privilege contract', () => {
     expect(workspace?.privileges).toEqual(expect.arrayContaining(visitMutationPrivileges));
   });
 
+  it('keeps visit creation privileges on the start-visit child instead of every queue-entry branch', () => {
+    const startVisitWorkspace = routes.workspaces2.find(
+      ({ name }) => name === 'queue-patient-search-start-visit-workspace',
+    );
+    const queueEntryWorkspace = routes.workspaces2.find(
+      ({ name }) => name === 'queue-patient-search-add-to-queue-workspace',
+    );
+    const queueEntryLaunchSurfaces = [
+      routes.workspaces.find(({ name }) => name === 'create-queue-entry-workspace'),
+      routes.workspaces2.find(({ name }) => name === 'queue-patient-search-workspace'),
+      queueEntryWorkspace,
+    ];
+
+    expect(startVisitWorkspace?.privileges).toEqual(expect.arrayContaining(['Add Visits', 'Get Visit Types']));
+    expect(startVisitWorkspace?.privileges).toEqual(expect.arrayContaining(queueEntryWorkspace?.privileges ?? []));
+    expect(queueEntryLaunchSurfaces).not.toContain(undefined);
+    queueEntryLaunchSurfaces.forEach((surface) => {
+      expect(surface?.privileges).toEqual(expect.arrayContaining(queueEntryWorkspace?.privileges ?? []));
+      expect(surface?.privileges).not.toContain('Add Visits');
+      expect(surface?.privileges).not.toContain('Get Visit Types');
+    });
+  });
+
   it('requires the edit privilege on every queue mutation surface', () => {
     const editingSurfaces = [
       ...routes.extensions.filter(({ name, privileges }) =>

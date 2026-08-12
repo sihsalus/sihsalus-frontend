@@ -6,9 +6,10 @@ The `Service Queues` app is a frontend module that enables users to track a pati
 - The number of patients waiting for a particular service.
 - The average number of minutes spent by patients waiting for a service.
 
-The key component of the service queue app is the `Active Visits` table. It displays a tabular overview of the active visits ongoing in a facility and the wait time of patients. Users can add patients to the service queue by starting visits for them. They can also view information from the current active visits as well as the previous visit on each queue entry by clicking the table extension slot. Users can also change the priority and status of an entry in the queue from the UI, effectively moving a patient from one point in the queue to another. In order to indicate that a patient is currently attending service, click on the bell icon. In order to edit an entry, click the pencil icon. 
+The key component of the service queue app is the `Active Visits` table. It displays a tabular overview of the active visits ongoing in a facility and the wait time of patients. Users can add patients to the service queue by starting visits for them. They can also view information from the current active visits as well as the previous visit on each queue entry by clicking the table extension slot. Users can also change the priority and status of an entry in the queue from the UI, effectively moving a patient from one point in the queue to another. In order to indicate that a patient is currently attending service, click on the bell icon. In order to edit an entry, click the pencil icon.
 
 Amend the following concepts in the configuration schema to get started using the module:
+
 - `defaultPriorityConceptUuid` - concept UUID for `not urgent`.
 - `defaultStatusConceptUuid` - concept UUID for `waiting`.
 - `emergencyPriorityConcept` - concept UUID for `emergency`.
@@ -36,19 +37,26 @@ You should now be able to leverage the service queues module 🎉
 
 ## Contrato RBAC actual
 
-| Capacidad | Privilegios frontend acumulativos |
-| --- | --- |
-| Ver Colas de atención | `app:home.colasAtencion` |
-| Modificar una entrada de cola | `app:home.colasAtencion.editar` + `Get Queue Entries` + `Get Queues` + `Manage Queue Entries` |
-| Limpiar todas las entradas | Los anteriores + `app:home.colasAtencion.limpiar` |
-| Administrar servicios de cola | `app:home.colasAtencion.editar` + `Get Queues` + `Manage Queues` |
-| Administrar ambientes/rooms | `app:home.colasAtencion.editar` + `Get Queue Rooms` + `Get Queues` + `Manage Queue Rooms` |
-| Registrar signos vitales desde Colas | `app:home.colasAtencion` + `app:hoja.clinica.signosVitales.editar` |
-| Crear el resumen de consulta desde Colas | `app:home.colasAtencion` + `app:hoja.clinica.resumenConsulta` |
+| Capacidad                                                                          | Privilegios frontend acumulativos                                                                                                                                                             |
+| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ver Colas de atención                                                              | `app:home.colasAtencion`                                                                                                                                                                      |
+| Buscar un paciente y agregarlo con una consulta activa o a una cola administrativa | `app:home.colasAtencion.editar` + `Get Patients` + `Get Locations` + `Get Visits` + `Edit Visits` + `Get Visit Attribute Types` + `Get Queue Entries` + `Get Queues` + `Manage Queue Entries` |
+| Crear una consulta nueva para agregar al paciente                                  | Los anteriores + `Add Visits` + `Get Visit Types`                                                                                                                                             |
+| Resolver el acompañante de un menor al crear la consulta                           | `Get People` **o** (`app:opciones.registrarAcompanante` + `Add People`)                                                                                                                       |
+| Modificar una entrada de cola                                                      | `app:home.colasAtencion.editar` + `Get Queue Entries` + `Get Queues` + `Manage Queue Entries`                                                                                                 |
+| Limpiar todas las entradas                                                         | Los anteriores + `app:home.colasAtencion.limpiar`                                                                                                                                             |
+| Administrar servicios de cola                                                      | `app:home.colasAtencion.editar` + `Get Queues` + `Manage Queues`                                                                                                                              |
+| Administrar ambientes/rooms                                                        | `app:home.colasAtencion.editar` + `Get Queue Rooms` + `Get Queues` + `Manage Queue Rooms`                                                                                                     |
+| Realizar triaje, registrar signos y mover a la cola clínica                        | `app:home.colasAtencion` + `app:hoja.clinica.signosVitales.editar` + `Get Queue Entries` + `Get Queues` + `Manage Queue Entries`; no requiere `app:home.colasAtencion.editar`                 |
+| Crear el resumen de consulta desde Colas                                           | `app:home.colasAtencion` + `app:hoja.clinica.resumenConsulta`                                                                                                                                 |
 
 Los arreglos anteriores tienen semántica AND. El resumen de consulta usa actualmente el mismo privilegio `app:hoja.clinica.resumenConsulta` para mostrar la sección y abrir el workspace de creación; no existe una separación frontend de escritura para esta acción. Si la política exige distinguir lectura y edición, debe implementarse y probarse un privilegio específico en Patient Notes y en esta integración.
 
 Los privilegios nativos de Queue/Visit siguen siendo obligatorios donde aparecen en `src/routes.json`; el RBAC de la UI no reemplaza las validaciones del backend.
+
+El launcher exige el conjunto común de lectura y escritura de colas. `Add Visits` y `Get Visit Types` se evalúan dinámicamente después de seleccionar al paciente: solo son obligatorios cuando la UPSS exige consulta y no existe una activa. La ruta hija de inicio de consulta conserva el conjunto completo como segunda barrera. Las ramas que reutilizan una consulta o crean una entrada administrativa no reciben permisos clínicos innecesarios.
+
+Antes de abrir esa ruta hija también se valida la edad. La carga, el error o una fecha de nacimiento inválida fallan de forma cerrada y visible. Para un menor se acepta la búsqueda de una persona existente o el par completo que permite registrarla; si no existe ninguna vía, el formulario de consulta no se abre.
 
 Excepción actual: la extensión `visit-form-queue-fields` declara únicamente privilegios nativos de Queue y no exige `app:home.colasAtencion.editar`. Debe conservarse solo si iniciar una consulta está autorizado para crear su entrada de cola; de lo contrario, hay que alinear ese registro y sus pruebas con la política general de edición.
 

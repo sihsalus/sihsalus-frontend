@@ -10,14 +10,18 @@ import {
   PatientBannerToggleContactDetailsButton,
   PatientPhoto,
   usePatient,
+  useSession,
   useVisit,
 } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { canStartQueueVisit, hasQueueCompanionCapability } from '../permissions';
 import styles from './create-queue-entry.scss';
 import ExistingVisitFormComponent from './existing-visit-form/existing-visit-form.component';
 import QueueOnlyForm from './queue-only-form/queue-only-form.component';
+import QueueVisitStartPreflightNotice from './queue-visit-start-preflight.component';
+import { getQueueVisitStartPreflightState } from './queue-visit-start-preflight';
 
 interface PatientSearchProps extends DefaultWorkspaceProps {
   selectedPatientUuid: string;
@@ -49,7 +53,8 @@ const CreateQueueEntryWorkspace: React.FC<PatientSearchProps> = ({
   handleBackToSearchList,
 }) => {
   const { t } = useTranslation();
-  const { patient } = usePatient(selectedPatientUuid);
+  const session = useSession();
+  const { patient, isLoading: isLoadingPatient, error: patientError } = usePatient(selectedPatientUuid);
   const { activeVisit, isLoading, error } = useVisit(selectedPatientUuid);
 
   const [showContactDetails, setShowContactDetails] = useState(false);
@@ -59,26 +64,37 @@ const CreateQueueEntryWorkspace: React.FC<PatientSearchProps> = ({
   }, []);
 
   const patientName = patient && getPatientName(patient);
+  const needsNewVisit = Boolean(selectedPatientUuid && !isLoading && !error && !activeVisit && requiredVisitLocation);
+  const startVisitPreflightState = getQueueVisitStartPreflightState({
+    birthDate: patient?.birthDate,
+    canStartVisit: canStartQueueVisit(session?.user),
+    hasCompanionCapability: hasQueueCompanionCapability(session?.user),
+    needsNewVisit,
+    patientError,
+    patientIsLoading: isLoadingPatient,
+  });
 
-  return patient ? (
+  return selectedPatientUuid ? (
     <div className={styles.patientSearchContainer}>
       <AddPatientToQueueContext.Provider value={{ currentQueueLocationUuid, currentServiceQueueUuid }}>
-        <div className={styles.patientBannerContainer}>
-          <div className={styles.patientBanner}>
-            <div className={styles.patientPhoto} role="img">
-              <PatientPhoto patientUuid={patient.id} patientName={patientName} />
+        {patient ? (
+          <div className={styles.patientBannerContainer}>
+            <div className={styles.patientBanner}>
+              <div className={styles.patientPhoto} role="img">
+                <PatientPhoto patientUuid={patient.id} patientName={patientName} />
+              </div>
+              <PatientBannerPatientInfo patient={patient} />
+              <PatientBannerToggleContactDetailsButton
+                className={styles.toggleContactDetailsButton}
+                showContactDetails={showContactDetails}
+                toggleContactDetails={handleToggleContactDetails}
+              />
             </div>
-            <PatientBannerPatientInfo patient={patient} />
-            <PatientBannerToggleContactDetailsButton
-              className={styles.toggleContactDetailsButton}
-              showContactDetails={showContactDetails}
-              toggleContactDetails={handleToggleContactDetails}
-            />
+            {showContactDetails ? (
+              <PatientBannerContactDetails deceased={patient.deceasedBoolean} patientId={patient.id} />
+            ) : null}
           </div>
-          {showContactDetails ? (
-            <PatientBannerContactDetails deceased={patient.deceasedBoolean} patientId={patient.id} />
-          ) : null}
-        </div>
+        ) : null}
         <div className={styles.backButton}>
           <Button
             className={styles.backButton}
@@ -103,18 +119,22 @@ const CreateQueueEntryWorkspace: React.FC<PatientSearchProps> = ({
             currentServiceQueueUuid={currentServiceQueueUuid}
           />
         ) : requiredVisitLocation ? (
-          <ExtensionSlot
-            name="start-visit-workspace-form-slot"
-            state={{
-              patientUuid: selectedPatientUuid,
-              closeWorkspace,
-              currentQueueLocationUuid,
-              currentServiceQueueUuid,
-              requiredVisitLocation,
-              promptBeforeClosing,
-              openedFrom: 'service-queues-add-patient',
-            }}
-          />
+          startVisitPreflightState === 'ready' ? (
+            <ExtensionSlot
+              name="start-visit-workspace-form-slot"
+              state={{
+                patientUuid: selectedPatientUuid,
+                closeWorkspace,
+                currentQueueLocationUuid,
+                currentServiceQueueUuid,
+                requiredVisitLocation,
+                promptBeforeClosing,
+                openedFrom: 'service-queues-add-patient',
+              }}
+            />
+          ) : startVisitPreflightState === 'not-required' ? null : (
+            <QueueVisitStartPreflightNotice state={startVisitPreflightState} />
+          )
         ) : (
           <QueueOnlyForm
             closeWorkspace={closeWorkspace}

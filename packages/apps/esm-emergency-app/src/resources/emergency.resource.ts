@@ -1,4 +1,4 @@
-import { getLocale, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { type FetchResponse, getLocale, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { assertFreshPatientIsAlive } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo } from 'react';
@@ -515,25 +515,64 @@ export async function createEmergencyQueueEntry(
  */
 interface QueueEntryState {
   uuid: string;
+  startedAt?: string | null;
   status?: { uuid: string };
   priority?: { uuid: string };
+  priorityComment?: string | null;
   queue?: { uuid: string };
+  patient?: { uuid?: string | null };
+  visit?: { uuid?: string | null } | null;
+  queueComingFrom?: { uuid?: string | null } | null;
   endedAt?: string | null;
 }
 
+interface QueueEntrySearchResponse {
+  results?: Array<QueueEntryState>;
+}
+
+export const EMERGENCY_QUEUE_ENTRY_PATIENT_UNAVAILABLE = 'EMERGENCY_QUEUE_ENTRY_PATIENT_UNAVAILABLE';
+export const EMERGENCY_QUEUE_ENTRY_ALREADY_ENDED = 'EMERGENCY_QUEUE_ENTRY_ALREADY_ENDED';
+export const EMERGENCY_QUEUE_ENTRY_UPDATE_UNVERIFIED = 'EMERGENCY_QUEUE_ENTRY_UPDATE_UNVERIFIED';
+export const EMERGENCY_QUEUE_ENTRY_TRANSITION_UNVERIFIED = 'EMERGENCY_QUEUE_ENTRY_TRANSITION_UNVERIFIED';
+export const EMERGENCY_QUEUE_ENTRY_RECONCILIATION_STALLED = 'EMERGENCY_QUEUE_ENTRY_RECONCILIATION_STALLED';
+
+const emergencyQueueEntryStateRepresentation =
+  'custom:(uuid,startedAt,endedAt,status:(uuid),priority:(uuid),priorityComment,queue:(uuid),patient:(uuid),visit:(uuid),queueComingFrom:(uuid))';
+
+function emergencyQueueEntryError(code: string, message: string) {
+  return Object.assign(new Error(message), { code });
+}
+
 /**
- * Re-reads a queue entry so callers can reconcile after a request whose
- * response was lost (the backend may have applied the change anyway).
+ * Re-reads the queue entry and its patient instead of trusting a table row or
+ * modal payload that may have become stale.
  */
-async function fetchQueueEntryState(queueEntryUuid: string): Promise<QueueEntryState | null> {
-  try {
-    const response = await openmrsFetch<QueueEntryState>(
-      `${restBaseUrl}/queue-entry/${queueEntryUuid}?v=custom:(uuid,status:(uuid),priority:(uuid),queue:(uuid),endedAt)`,
+async function fetchQueueEntryState(queueEntryUuid: string): Promise<FetchResponse<QueueEntryState>> {
+  const searchParams = new URLSearchParams({ v: emergencyQueueEntryStateRepresentation });
+  return openmrsFetch<QueueEntryState>(`${restBaseUrl}/queue-entry/${queueEntryUuid}?${searchParams.toString()}`);
+}
+
+async function assertQueueEntryPatientIsAlive(queueEntry: QueueEntryState) {
+  const patientUuid = queueEntry.patient?.uuid;
+  if (!patientUuid) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_PATIENT_UNAVAILABLE,
+      'The emergency queue entry patient could not be verified.',
     );
-    return response.data ?? null;
-  } catch {
-    return null;
   }
+
+  return assertFreshPatientIsAlive(patientUuid);
+}
+
+function queueEntryMatchesUpdate(
+  queueEntry: QueueEntryState,
+  updates: { priorityUuid?: string; statusUuid?: string; priorityComment?: string },
+) {
+  return (
+    (!updates.statusUuid || queueEntry.status?.uuid === updates.statusUuid) &&
+    (!updates.priorityUuid || queueEntry.priority?.uuid === updates.priorityUuid) &&
+    (!updates.priorityComment || queueEntry.priorityComment === updates.priorityComment)
+  );
 }
 
 export async function updateEmergencyQueueEntry(
@@ -558,8 +597,18 @@ export async function updateEmergencyQueueEntry(
     body.priorityComment = updates.priorityComment;
   }
 
+  const freshResponse = await fetchQueueEntryState(queueEntryUuid);
+  if (freshResponse.data.endedAt) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_ALREADY_ENDED,
+      'Cannot update an emergency queue entry that has already ended.',
+    );
+  }
+  await assertQueueEntryPatientIsAlive(freshResponse.data);
+
+  let response: FetchResponse;
   try {
-    return await openmrsFetch(`${restBaseUrl}/queue-entry/${queueEntryUuid}`, {
+    response = await openmrsFetch(`${restBaseUrl}/queue-entry/${queueEntryUuid}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -567,14 +616,27 @@ export async function updateEmergencyQueueEntry(
       body,
     });
   } catch (error) {
-    const current = await fetchQueueEntryState(queueEntryUuid);
-    const statusApplied = !updates.statusUuid || current?.status?.uuid === updates.statusUuid;
-    const priorityApplied = !updates.priorityUuid || current?.priority?.uuid === updates.priorityUuid;
-    if (current && statusApplied && priorityApplied) {
+    let current: FetchResponse<QueueEntryState>;
+    try {
+      current = await fetchQueueEntryState(queueEntryUuid);
+    } catch {
+      throw error;
+    }
+    if (!current.data.endedAt && queueEntryMatchesUpdate(current.data, updates)) {
+      await assertQueueEntryPatientIsAlive(current.data);
       return null;
     }
     throw error;
   }
+
+  const current = await fetchQueueEntryState(queueEntryUuid);
+  if (current.data.endedAt || !queueEntryMatchesUpdate(current.data, updates)) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_UPDATE_UNVERIFIED,
+      'The emergency queue entry update could not be verified.',
+    );
+  }
+  return response;
 }
 
 /**
@@ -623,11 +685,104 @@ export async function endEmergencyQueueEntry(queueEntryUuid: string) {
       },
     });
   } catch (error) {
-    const current = await fetchQueueEntryState(queueEntryUuid);
-    if (current?.endedAt) {
-      return null;
+    try {
+      const current = await fetchQueueEntryState(queueEntryUuid);
+      if (current.data.endedAt) {
+        return null;
+      }
+    } catch {
+      // Preserve the original write error when its outcome cannot be verified.
     }
     throw error;
+  }
+}
+
+interface EmergencyQueueTransitionParams {
+  queueEntryToTransition: string;
+  newStatus?: string;
+  newPriority?: string;
+  newPriorityComment?: string;
+  newQueue?: string;
+  transitionDate?: string;
+}
+
+function isSameQueueEntrySubject(candidate: QueueEntryState, source: QueueEntryState) {
+  if (source.visit?.uuid) {
+    return candidate.visit?.uuid === source.visit.uuid;
+  }
+  return !candidate.visit?.uuid && Boolean(source.patient?.uuid) && candidate.patient?.uuid === source.patient.uuid;
+}
+
+function queueEntryMatchesTransition(
+  candidate: QueueEntryState,
+  source: QueueEntryState,
+  params: EmergencyQueueTransitionParams,
+) {
+  const sourceEndedAt = source.endedAt ? new Date(source.endedAt).valueOf() : Number.NaN;
+  const candidateStartedAt = candidate.startedAt ? new Date(candidate.startedAt).valueOf() : Number.NaN;
+
+  return (
+    candidate.uuid !== source.uuid &&
+    Number.isFinite(sourceEndedAt) &&
+    candidateStartedAt === sourceEndedAt &&
+    isSameQueueEntrySubject(candidate, source) &&
+    candidate.queueComingFrom?.uuid === source.queue?.uuid &&
+    candidate.queue?.uuid === (params.newQueue ?? source.queue?.uuid) &&
+    candidate.status?.uuid === (params.newStatus ?? source.status?.uuid) &&
+    candidate.priority?.uuid === (params.newPriority ?? source.priority?.uuid) &&
+    (candidate.priorityComment ?? '') === (params.newPriorityComment ?? source.priorityComment ?? '')
+  );
+}
+
+/** Finds the exact successor requested by this transition, across capped result pages. */
+async function findEmergencyQueueTransitionSuccessor(
+  source: QueueEntryState,
+  params: EmergencyQueueTransitionParams,
+): Promise<FetchResponse<QueueEntryState> | null> {
+  const subject = source.visit?.uuid
+    ? { visit: source.visit.uuid }
+    : source.patient?.uuid
+      ? { patient: source.patient.uuid }
+      : null;
+  if (!source.endedAt || !source.queue?.uuid || !subject) {
+    return null;
+  }
+
+  const pageSize = 100;
+  const seenEntries = new Set<string>();
+  for (let startIndex = 0; ; startIndex += pageSize) {
+    const searchParams = new URLSearchParams({
+      ...subject,
+      queueComingFrom: source.queue.uuid,
+      limit: String(pageSize),
+      startIndex: String(startIndex),
+      v: emergencyQueueEntryStateRepresentation,
+    });
+    const response = await openmrsFetch<QueueEntrySearchResponse>(
+      `${restBaseUrl}/queue-entry?${searchParams.toString()}`,
+    );
+    const page = response.data?.results ?? [];
+    const matchingEntry = page.find((candidate) => queueEntryMatchesTransition(candidate, source, params));
+    if (matchingEntry) {
+      return { ...response, data: matchingEntry } as FetchResponse<QueueEntryState>;
+    }
+
+    let newEntryCount = 0;
+    page.forEach((entry) => {
+      if (!seenEntries.has(entry.uuid)) {
+        seenEntries.add(entry.uuid);
+        newEntryCount += 1;
+      }
+    });
+    if (page.length < pageSize) {
+      return null;
+    }
+    if (newEntryCount === 0) {
+      throw emergencyQueueEntryError(
+        EMERGENCY_QUEUE_ENTRY_RECONCILIATION_STALLED,
+        'Emergency queue transition reconciliation did not advance.',
+      );
+    }
   }
 }
 
@@ -635,16 +790,24 @@ export async function endEmergencyQueueEntry(queueEntryUuid: string) {
  * Transition a queue entry using the OpenMRS Queue Module transition endpoint.
  * This ends the current entry and creates a new one with the specified parameters.
  */
-export async function transitionEmergencyQueueEntry(params: {
-  queueEntryToTransition: string;
-  newStatus?: string;
-  newPriority?: string;
-  newPriorityComment?: string;
-  newQueue?: string;
-  transitionDate?: string;
-}) {
+export async function transitionEmergencyQueueEntry(params: EmergencyQueueTransitionParams) {
+  const freshResponse = await fetchQueueEntryState(params.queueEntryToTransition);
+  await assertQueueEntryPatientIsAlive(freshResponse.data);
+
+  if (freshResponse.data.endedAt) {
+    const existingSuccessor = await findEmergencyQueueTransitionSuccessor(freshResponse.data, params);
+    if (existingSuccessor) {
+      await assertQueueEntryPatientIsAlive(freshResponse.data);
+      return existingSuccessor;
+    }
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_ALREADY_ENDED,
+      'Cannot transition an emergency queue entry that has already ended.',
+    );
+  }
+
   try {
-    return await openmrsFetch(`${restBaseUrl}/queue-entry/transition`, {
+    await openmrsFetch(`${restBaseUrl}/queue-entry/transition`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -652,14 +815,34 @@ export async function transitionEmergencyQueueEntry(params: {
       body: params,
     });
   } catch (error) {
-    // A transition ends the source entry; if it is already ended, the backend
-    // applied the transition even though the response was lost.
-    const current = await fetchQueueEntryState(params.queueEntryToTransition);
-    if (current?.endedAt) {
-      return null;
+    let current: FetchResponse<QueueEntryState>;
+    let successor: FetchResponse<QueueEntryState> | null;
+    try {
+      current = await fetchQueueEntryState(params.queueEntryToTransition);
+      successor = await findEmergencyQueueTransitionSuccessor(current.data, params);
+    } catch {
+      // Preserve the original write error when its outcome cannot be verified.
+      throw error;
+    }
+    if (successor) {
+      // Do not let a response-loss reconciliation resume care if the patient
+      // died while the transition request was in flight.
+      await assertQueueEntryPatientIsAlive(current.data);
+      return successor;
     }
     throw error;
   }
+
+  const current = await fetchQueueEntryState(params.queueEntryToTransition);
+  const successor = await findEmergencyQueueTransitionSuccessor(current.data, params);
+  if (!successor) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_TRANSITION_UNVERIFIED,
+      'The emergency queue transition could not be verified.',
+    );
+  }
+  await assertQueueEntryPatientIsAlive(current.data);
+  return successor;
 }
 
 /**

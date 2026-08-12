@@ -30,6 +30,7 @@ const queueEntryCreationPrivileges = [
   'Get Queues',
   'Manage Queue Entries',
 ];
+const queueVisitCreationPrivileges = [...queueEntryCreationPrivileges, 'Add Visits', 'Get Visit Types'];
 const queueCatalogPrivileges = [serviceQueuesEditPrivilege, 'Get Queues', 'Manage Queues'];
 const queueRoomCatalogPrivileges = [serviceQueuesEditPrivilege, 'Get Queue Rooms', 'Get Queues', 'Manage Queue Rooms'];
 const queueProviderRoomPrivileges = [serviceQueuesEditPrivilege, 'Get Queue Rooms', 'Manage Queue Rooms'];
@@ -60,6 +61,27 @@ export function canTriageQueuePatients(user?: LoggedInUser): boolean {
 
 export function canCreateQueueEntries(user?: LoggedInUser): boolean {
   return userHasAllAccess(queueEntryCreationPrivileges, user);
+}
+
+/**
+ * Starting a new clinical visit is only one branch of queue entry creation.
+ * Existing visits and administrative queues deliberately do not require these
+ * extra native privileges.
+ */
+export function canStartQueueVisit(user?: LoggedInUser): boolean {
+  return userHasAllAccess(queueVisitCreationPrivileges, user);
+}
+
+export function canSearchQueueCompanion(user?: LoggedInUser): boolean {
+  return Boolean(user && userHasAccess('Get People', user));
+}
+
+export function canRegisterQueueCompanion(user?: LoggedInUser): boolean {
+  return Boolean(user && userHasAccess('app:opciones.registrarAcompanante', user) && userHasAccess('Add People', user));
+}
+
+export function hasQueueCompanionCapability(user?: LoggedInUser): boolean {
+  return canSearchQueueCompanion(user) || canRegisterQueueCompanion(user);
 }
 
 export function canManageServiceQueueCatalog(user?: LoggedInUser): boolean {

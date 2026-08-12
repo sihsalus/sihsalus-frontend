@@ -10,6 +10,7 @@ import {
   PatientPhoto,
   showSnackbar,
   usePatient,
+  useSession,
   useVisit,
   type Visit,
   Workspace2,
@@ -23,10 +24,13 @@ import {
   serviceQueuesCompanionPersonRegistrationWorkspace,
   serviceQueuesCompanionPersonSearchWorkspace,
 } from '../constants';
+import { canStartQueueVisit, hasQueueCompanionCapability } from '../permissions';
 import styles from './create-queue-entry.scss';
 import { AddPatientToQueueContext } from './create-queue-entry.workspace';
 import ExistingVisitFormComponent from './existing-visit-form/existing-visit-form.component';
 import QueueOnlyForm from './queue-only-form/queue-only-form.component';
+import QueueVisitStartPreflightNotice from './queue-visit-start-preflight.component';
+import { getQueueVisitStartPreflightState } from './queue-visit-start-preflight';
 
 interface CreateQueueEntryWorkspace2Props {
   selectedPatientUuid: string;
@@ -72,7 +76,8 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
     startVisitWorkspaceName = defaultStartVisitWorkspaceName,
     visitFormOpenedFrom = 'service-queues-add-patient',
   } = workspaceProps ?? {};
-  const { patient } = usePatient(selectedPatientUuid);
+  const session = useSession();
+  const { patient, isLoading: isLoadingPatient, error: patientError } = usePatient(selectedPatientUuid);
   const { activeVisit: fetchedActiveVisit, isLoading, error } = useVisit(selectedPatientUuid);
   const activeVisit = suppliedActiveVisit ?? fetchedActiveVisit;
   const [showContactDetails, setShowContactDetails] = useState(false);
@@ -95,6 +100,16 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
     setShowContactDetails((value) => !value);
   }, []);
 
+  const needsNewVisit = Boolean(selectedPatientUuid && !isLoading && !error && !activeVisit && requiredVisitLocation);
+  const startVisitPreflightState = getQueueVisitStartPreflightState({
+    birthDate: patient?.birthDate,
+    canStartVisit: canStartQueueVisit(session?.user),
+    hasCompanionCapability: hasQueueCompanionCapability(session?.user),
+    needsNewVisit,
+    patientError,
+    patientIsLoading: isLoadingPatient,
+  });
+
   useEffect(() => {
     if (
       !selectedPatientUuid ||
@@ -102,6 +117,7 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
       error ||
       activeVisit ||
       !requiredVisitLocation ||
+      startVisitPreflightState !== 'ready' ||
       hasLaunchedStartVisitWorkspace.current
     ) {
       return;
@@ -152,6 +168,7 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
     searchedPatient,
     selectedPatientUuid,
     startVisitWorkspaceName,
+    startVisitPreflightState,
     requestedServiceName,
     requiredVisitLocation,
     requiredVisitTypeUuid,
@@ -214,7 +231,11 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
               requestedServiceName={requestedServiceName}
             />
           ) : requiredVisitLocation ? (
-            <DataTableSkeleton role="progressbar" />
+            startVisitPreflightState === 'ready' ? (
+              <DataTableSkeleton role="progressbar" />
+            ) : startVisitPreflightState === 'not-required' ? null : (
+              <QueueVisitStartPreflightNotice state={startVisitPreflightState} />
+            )
           ) : (
             <QueueOnlyForm
               closeWorkspace={handleCloseWindow}

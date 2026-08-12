@@ -255,6 +255,9 @@
       "type": "service-queues",
       "privileges": [
         "app:home.colasAtencion.editar",
+        "Get Patients",
+        "Get Locations",
+        "Get Visits",
         "Edit Visits",
         "Get Visit Attribute Types",
         "Get Queue Entries",
@@ -281,7 +284,17 @@
       "name": "queue-patient-search-workspace",
       "component": "@sihsalus/esm-patient-search-app#patientSearchWorkspace2",
       "window": "add-queue-entry",
-      "privileges": "app:home.colasAtencion.editar"
+      "privileges": [
+        "app:home.colasAtencion.editar",
+        "Get Patients",
+        "Get Locations",
+        "Get Visits",
+        "Edit Visits",
+        "Get Visit Attribute Types",
+        "Get Queue Entries",
+        "Get Queues",
+        "Manage Queue Entries"
+      ]
     },
     {
       "name": "queue-patient-search-add-to-queue-workspace",

@@ -7,7 +7,23 @@ import {
   canManageServiceQueueCatalog,
   canManageServiceQueueRoomCatalog,
   canTriageQueuePatients,
+  canRegisterQueueCompanion,
+  canSearchQueueCompanion,
+  canStartQueueVisit,
+  hasQueueCompanionCapability,
 } from './permissions';
+import routes from './routes.json';
+
+const queueEntryWorkspacePrivileges = routes.workspaces2.find(
+  ({ name }) => name === 'queue-patient-search-add-to-queue-workspace',
+)?.privileges;
+const startVisitWorkspacePrivileges = routes.workspaces2.find(
+  ({ name }) => name === 'queue-patient-search-start-visit-workspace',
+)?.privileges;
+
+if (!Array.isArray(queueEntryWorkspacePrivileges) || !Array.isArray(startVisitWorkspacePrivileges)) {
+  throw new Error('The queue entry workspaces must declare their complete privilege lists');
+}
 
 function userWithPrivileges(privileges: string[], roles: string[] = []) {
   return {
@@ -32,7 +48,12 @@ describe('canEditServiceQueues', () => {
   it('allows entry actions with the edit privilege plus every native dependency of their modals', () => {
     expect(
       canEditServiceQueues(
-        userWithPrivileges(['app:home.colasAtencion.editar', 'Get Queue Entries', 'Get Queues', 'Manage Queue Entries']),
+        userWithPrivileges([
+          'app:home.colasAtencion.editar',
+          'Get Queue Entries',
+          'Get Queues',
+          'Manage Queue Entries',
+        ]),
       ),
     ).toBe(true);
   });
@@ -60,27 +81,58 @@ describe('canEditServiceQueues', () => {
     ).toBe(false);
   });
 
-  it('requires the full patient-and-visit set before offering to add someone to a queue', () => {
-    expect(
-      canCreateQueueEntries(
-        userWithPrivileges(['app:home.colasAtencion.editar', 'Get Queue Entries', 'Get Queues', 'Manage Queue Entries']),
-      ),
-    ).toBe(false);
+  it('requires the base patient, visit and queue set before offering to add someone to a queue', () => {
     expect(
       canCreateQueueEntries(
         userWithPrivileges([
           'app:home.colasAtencion.editar',
-          'Get Patients',
-          'Get Locations',
-          'Get Visits',
-          'Edit Visits',
-          'Get Visit Attribute Types',
           'Get Queue Entries',
           'Get Queues',
           'Manage Queue Entries',
         ]),
       ),
-    ).toBe(true);
+    ).toBe(false);
+    queueEntryWorkspacePrivileges.forEach((missingPrivilege) => {
+      expect(
+        canCreateQueueEntries(
+          userWithPrivileges(queueEntryWorkspacePrivileges.filter((privilege) => privilege !== missingPrivilege)),
+        ),
+      ).toBe(false);
+    });
+    expect(canCreateQueueEntries(userWithPrivileges(queueEntryWorkspacePrivileges))).toBe(true);
+  });
+
+  it('allows the active-visit and administrative-queue branches without visit creation privileges', () => {
+    const user = userWithPrivileges(queueEntryWorkspacePrivileges);
+
+    expect(queueEntryWorkspacePrivileges).not.toEqual(expect.arrayContaining(['Add Visits', 'Get Visit Types']));
+    expect(canCreateQueueEntries(user)).toBe(true);
+    expect(canStartQueueVisit(user)).toBe(false);
+  });
+
+  it('requires the complete child workspace set before starting a new visit', () => {
+    startVisitWorkspacePrivileges.forEach((missingPrivilege) => {
+      expect(
+        canStartQueueVisit(
+          userWithPrivileges(startVisitWorkspacePrivileges.filter((privilege) => privilege !== missingPrivilege)),
+        ),
+      ).toBe(false);
+    });
+    expect(canStartQueueVisit(userWithPrivileges(startVisitWorkspacePrivileges))).toBe(true);
+  });
+
+  it('accepts search or the complete registration pair as alternative companion capabilities', () => {
+    const searchUser = userWithPrivileges(['Get People']);
+    const registrationUser = userWithPrivileges(['app:opciones.registrarAcompanante', 'Add People']);
+
+    expect(canSearchQueueCompanion(searchUser)).toBe(true);
+    expect(canRegisterQueueCompanion(searchUser)).toBe(false);
+    expect(hasQueueCompanionCapability(searchUser)).toBe(true);
+    expect(canSearchQueueCompanion(registrationUser)).toBe(false);
+    expect(canRegisterQueueCompanion(registrationUser)).toBe(true);
+    expect(hasQueueCompanionCapability(registrationUser)).toBe(true);
+    expect(hasQueueCompanionCapability(userWithPrivileges(['app:opciones.registrarAcompanante']))).toBe(false);
+    expect(hasQueueCompanionCapability(userWithPrivileges(['Add People']))).toBe(false);
   });
 
   it('scopes provider room assignment to the room privileges its modal demands', () => {

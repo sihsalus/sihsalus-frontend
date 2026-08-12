@@ -119,6 +119,39 @@ describe('active queue entry reconciliation', () => {
     expect(mockOpenmrsFetch).toHaveBeenCalledTimes(3);
   });
 
+  it('fails closed when a successful close response was not persisted', async () => {
+    const activeEntry = {
+      uuid: 'queue-entry-uuid',
+      startedAt: '2026-07-14T15:00:00.000Z',
+      endedAt: null,
+    };
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response(activeEntry, 'Tue, 14 Jul 2026 15:30:00 GMT'))
+      .mockResolvedValueOnce(response({}))
+      .mockResolvedValueOnce(response(activeEntry));
+
+    await expect(endActiveQueueEntries([activeEntry])).rejects.toMatchObject({
+      code: 'ACTIVE_QUEUE_ENTRY_CLOSE_UNVERIFIED',
+    });
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('preserves a lost-response error when a fresh read still finds the entry active', async () => {
+    const activeEntry = {
+      uuid: 'queue-entry-uuid',
+      startedAt: '2026-07-14T15:00:00.000Z',
+      endedAt: null,
+    };
+    const writeError = new Error('connection closed before response');
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response(activeEntry, 'Tue, 14 Jul 2026 15:30:00 GMT'))
+      .mockRejectedValueOnce(writeError)
+      .mockResolvedValueOnce(response(activeEntry));
+
+    await expect(endActiveQueueEntries([activeEntry])).rejects.toBe(writeError);
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(3);
+  });
+
   it('paginates every active queue entry for an appointment visit', async () => {
     const entries = Array.from({ length: 205 }, (_, index) => ({ uuid: `entry-${index}`, endedAt: null }));
     mockOpenmrsFetch.mockImplementation(async (url) => {

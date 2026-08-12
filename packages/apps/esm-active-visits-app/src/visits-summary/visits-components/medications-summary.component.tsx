@@ -19,10 +19,10 @@ const MedicationSummary: React.FC<MedicationSummaryProps> = ({ medications }) =>
       {medications.length > 0 ? (
         <div className={styles.medicationRecord}>
           {medications.map(
-            (medication, i) =>
+            (medication) =>
               medication.order?.dose &&
               medication.order?.orderType?.display === 'Drug Order' && (
-                <React.Fragment key={i}>
+                <React.Fragment key={medication.order.uuid}>
                   <div className={styles.medicationContainer}>
                     <div>
                       <p className={styles.bodyLong01}>

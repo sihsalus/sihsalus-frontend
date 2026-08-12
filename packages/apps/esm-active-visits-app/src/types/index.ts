@@ -147,6 +147,7 @@ export interface Order {
 }
 
 export interface Note {
+  uuid: string;
   note: string;
   provider: {
     name: string;

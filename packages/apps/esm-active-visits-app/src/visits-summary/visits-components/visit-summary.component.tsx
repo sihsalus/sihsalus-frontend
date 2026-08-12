@@ -15,7 +15,7 @@ function extractDiagnosis(obs: Observation): DiagnosisItem | null {
   const diagnosis = findGroupMemberValue(obs, 'PROBLEM LIST');
   const order = findGroupMemberValue(obs, 'Diagnosis order');
   if (!diagnosis || !order) return null;
-  return { diagnosis, order };
+  return { uuid: obs.uuid, diagnosis, order };
 }
 
 import MedicationSummary from './medications-summary.component';
@@ -23,6 +23,7 @@ import NotesSummary from './notes-summary.component';
 import TestsSummary from './tests-summary.component';
 
 interface DiagnosisItem {
+  uuid: string;
   diagnosis: string;
   order: string;
 }
@@ -67,6 +68,7 @@ const VisitSummary: React.FC<VisitSummaryProps> = ({ encounters, patientUuid }) 
           } else if (obs.concept.display === 'Text of encounter note') {
             // Putting all notes in a single array.
             notes.push({
+              uuid: obs.uuid,
               note: typeof obs.value === 'string' ? obs.value : '',
               provider: {
                 name: enc.encounterProviders.length ? enc.encounterProviders[0].provider.person.display : '',
@@ -89,8 +91,8 @@ const VisitSummary: React.FC<VisitSummaryProps> = ({ encounters, patientUuid }) 
 
       <div className={styles.diagnosesList}>
         {diagnoses.length > 0 ? (
-          diagnoses.map((diagnosis, i) => (
-            <Tag key={i} type={diagnosis.order === 'Primary' ? 'blue' : 'red'}>
+          diagnoses.map((diagnosis) => (
+            <Tag key={diagnosis.uuid} type={diagnosis.order === 'Primary' ? 'blue' : 'red'}>
               {diagnosis.diagnosis}
             </Tag>
           ))

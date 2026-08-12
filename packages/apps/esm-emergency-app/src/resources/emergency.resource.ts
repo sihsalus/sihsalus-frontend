@@ -910,7 +910,7 @@ export async function endEmergencyQueueEntry(queueEntryUuid: string) {
     if (!current.data.endedAt) {
       throw error;
     }
-    if (await findAnyEmergencyQueueTransitionSuccessor(current.data)) {
+    if (await findAnyEmergencyQueueTransitionSuccessor(current.data, freshResponse.data.startedAt)) {
       throw emergencyQueueEntryError(
         EMERGENCY_QUEUE_ENTRY_TRANSITION_CONFLICT,
         'The emergency queue entry was transitioned by another user.',
@@ -926,7 +926,7 @@ export async function endEmergencyQueueEntry(queueEntryUuid: string) {
       'The emergency queue entry close could not be verified.',
     );
   }
-  if (await findAnyEmergencyQueueTransitionSuccessor(current.data)) {
+  if (await findAnyEmergencyQueueTransitionSuccessor(current.data, freshResponse.data.startedAt)) {
     throw emergencyQueueEntryError(
       EMERGENCY_QUEUE_ENTRY_TRANSITION_CONFLICT,
       'The emergency queue entry was transitioned by another user.',
@@ -972,9 +972,17 @@ function queueEntryMatchesTransition(
   );
 }
 
-function isPossibleDirectTransitionSuccessor(candidate: QueueEntryState, source: QueueEntryState) {
+function isPossibleDirectTransitionSuccessor(
+  candidate: QueueEntryState,
+  source: QueueEntryState,
+  activeSourceStartedAt?: string | null,
+) {
   const sourceEndedAt = source.endedAt ? new Date(source.endedAt).valueOf() : Number.NaN;
   const candidateStartedAt = candidate.startedAt ? new Date(candidate.startedAt).valueOf() : Number.NaN;
+  const activeSourceStart = activeSourceStartedAt ? new Date(activeSourceStartedAt).valueOf() : Number.NaN;
+  const matchesTransitionWindow = Number.isFinite(activeSourceStart)
+    ? candidateStartedAt >= activeSourceStart && candidateStartedAt <= sourceEndedAt
+    : candidateStartedAt === sourceEndedAt;
 
   return (
     candidate.uuid !== source.uuid &&
@@ -982,7 +990,7 @@ function isPossibleDirectTransitionSuccessor(candidate: QueueEntryState, source:
     candidate.queueComingFrom?.uuid === source.queue?.uuid &&
     Number.isFinite(sourceEndedAt) &&
     Number.isFinite(candidateStartedAt) &&
-    candidateStartedAt === sourceEndedAt
+    matchesTransitionWindow
   );
 }
 
@@ -1037,8 +1045,10 @@ async function findEmergencyQueueSuccessor(
   }
 }
 
-function findAnyEmergencyQueueTransitionSuccessor(source: QueueEntryState) {
-  return findEmergencyQueueSuccessor(source, (candidate) => isPossibleDirectTransitionSuccessor(candidate, source));
+function findAnyEmergencyQueueTransitionSuccessor(source: QueueEntryState, activeSourceStartedAt?: string | null) {
+  return findEmergencyQueueSuccessor(source, (candidate) =>
+    isPossibleDirectTransitionSuccessor(candidate, source, activeSourceStartedAt),
+  );
 }
 
 /** Finds the exact successor requested by this transition, across capped result pages. */

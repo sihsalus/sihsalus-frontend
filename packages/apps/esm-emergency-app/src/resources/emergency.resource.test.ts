@@ -478,6 +478,26 @@ describe('endEmergencyQueueEntry', () => {
     await expect(endEmergencyQueueEntry(activeQueueEntry.uuid)).resolves.toBe(freshEndedResponse);
   });
 
+  it('rejects a concurrent transition even when the direct close overwrites the source end time', async () => {
+    const transitionBeforeCloseOverwrite = {
+      ...expectedSuccessor,
+      startedAt: '2026-08-12T14:10:00.000Z',
+    };
+    const overwrittenSource = {
+      ...endedQueueEntry,
+      endedAt: '2026-08-12T14:15:00.000Z',
+    };
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response(activeQueueEntry))
+      .mockResolvedValueOnce(response({ uuid: activeQueueEntry.uuid }))
+      .mockResolvedValueOnce(response(overwrittenSource))
+      .mockResolvedValueOnce(response({ results: [transitionBeforeCloseOverwrite] }));
+
+    await expect(endEmergencyQueueEntry(activeQueueEntry.uuid)).rejects.toMatchObject({
+      code: EMERGENCY_QUEUE_ENTRY_TRANSITION_CONFLICT,
+    });
+  });
+
   it('rejects a 2xx close response when the entry remains active', async () => {
     mockOpenmrsFetch
       .mockResolvedValueOnce(response(activeQueueEntry))

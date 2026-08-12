@@ -3,9 +3,7 @@ import {
   type Encounter as CoreEncounter,
   formatDate,
   type Obs,
-  openmrsFetch,
   parseDate,
-  restBaseUrl,
   type Visit,
 } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
@@ -14,6 +12,8 @@ import { transitionQueueEntry } from './modals/queue-entry-actions.resource';
 import { type Concept, type Identifer, type Queue, type QueueEntry } from './types';
 
 dayjs.extend(isToday);
+
+export { serveQueueEntry } from './queue-screen.resource';
 
 export interface VisitQueueEntry {
   queueEntry: QueueEntry;
@@ -117,22 +117,5 @@ export async function updateQueueEntry(
     newPriority: priority,
     newStatus: status,
     ...(priorityComment !== undefined ? { newPriorityComment: priorityComment } : {}),
-  });
-}
-
-export function serveQueueEntry(servicePointName: string, ticketNumber: string, status: string) {
-  const abortController = new AbortController();
-
-  return openmrsFetch(`${restBaseUrl}/queueutil/assignticket`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    signal: abortController.signal,
-    body: {
-      servicePointName,
-      ticketNumber,
-      status,
-    },
   });
 }

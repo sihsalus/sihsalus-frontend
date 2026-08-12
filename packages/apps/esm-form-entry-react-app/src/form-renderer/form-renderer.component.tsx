@@ -40,6 +40,7 @@ const FormRenderer: React.FC<FormWidgetProps> = (props) => {
     showDiscardSubmitButtons,
     handlePostResponse,
     handleEncounterCreate,
+    onBeforeEncounterSave,
     handleOnValidate,
     clinicalFormsWorkspaceName = clinicalFormsWorkspace,
     setHasUnsavedChanges,
@@ -148,6 +149,7 @@ const FormRenderer: React.FC<FormWidgetProps> = (props) => {
       handleClose={handleCloseForm}
       handleConfirmQuestionDeletion={handleConfirmQuestionDeletion}
       handleEncounterCreate={handleEncounterCreate}
+      onBeforeEncounterSave={onBeforeEncounterSave}
       handleOnValidate={handleValidate}
       hideControls={effectiveHideControls}
       hidePatientBanner={hidePatientBanner}

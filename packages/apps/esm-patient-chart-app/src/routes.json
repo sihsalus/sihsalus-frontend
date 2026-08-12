@@ -62,7 +62,7 @@
       "component": "markPatientAliveActionButton",
       "privileges": ["app:hoja.clinica", "app:hoja.clinica.estadoVitalPaciente", "Edit People"],
       "online": true,
-      "offline": true,
+      "offline": false,
       "order": 8
     },
     {
@@ -96,7 +96,7 @@
       "component": "markPatientDeceasedActionButton",
       "privileges": ["app:hoja.clinica", "app:hoja.clinica.estadoVitalPaciente", "Edit People"],
       "online": true,
-      "offline": true,
+      "offline": false,
       "order": 8
     },
     {

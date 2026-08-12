@@ -8157,6 +8157,7 @@ __metadata:
     react-hook-form: "npm:^7.51.0"
     swr: "npm:^2.3.6"
     typescript: "npm:6.0.3"
+    uuid: "npm:^14.0.0"
     vitest: "npm:^4.1.7"
     zod: "npm:^3.22.0"
   peerDependencies:
@@ -8177,6 +8178,7 @@ __metadata:
   dependencies:
     "@carbon/react": "npm:^1.83.0"
     "@openmrs/esm-framework": "workspace:*"
+    "@openmrs/esm-patient-common-lib": "workspace:*"
     "@playwright/test": "npm:^1.50.1"
     "@sihsalus/esm-rbac": "workspace:*"
     "@swc-node/loader": "npm:^1.3.7"
@@ -8205,6 +8207,7 @@ __metadata:
   peerDependencies:
     "@carbon/react": 1.x
     "@openmrs/esm-framework": "*"
+    "@openmrs/esm-patient-common-lib": "*"
     lodash-es: 4.x
     react: 18.x
     react-dom: 18.x

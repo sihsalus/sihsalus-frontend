@@ -139,6 +139,31 @@ describe('FormWorkflowReducer', () => {
     });
   });
 
+  it('returns a failed submission to edit mode without discarding workflow data', () => {
+    const state = buildState({
+      workflowState: 'SUBMIT_FOR_NEXT',
+      activePatientUuid: 'patient-a',
+      activeEncounterUuid: 'encounter-a',
+      patientUuids: ['patient-a'],
+      encounters: { 'patient-a': 'encounter-a' },
+    });
+
+    const nextState = reducer(state, { type: 'SUBMISSION_FAILED' });
+
+    expect(nextState.forms['triage-form']).toEqual({
+      ...state.forms['triage-form'],
+      workflowState: 'EDIT_FORM',
+    });
+  });
+
+  it.each([
+    ['already reset', buildState({ workflowState: 'EDIT_FORM', activePatientUuid: 'patient-a' })],
+    ['closed', { ...buildState(), activeFormUuid: null }],
+    ['cancelled', { ...buildState(), activeFormUuid: 'missing-form', forms: {} }],
+  ])('ignores a duplicate or stale submission failure after the workflow is %s', (_case, state) => {
+    expect(reducer(state, { type: 'SUBMISSION_FAILED' })).toBe(state);
+  });
+
   it('destroys the active form session and navigates back to the forms page after complete', () => {
     const state = buildState({
       workflowState: 'SUBMIT_FOR_COMPLETE',

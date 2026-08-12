@@ -42,6 +42,7 @@ import {
   convertTime12to24,
   createOfflineVisitForPatient,
   type DefaultPatientWorkspaceProps,
+  fetchFreshPatientVitalStatus,
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
   getSisFinancingState,
   INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
@@ -120,6 +121,7 @@ import { filterVisitTypesByEligibility } from './visit-type-eligibility';
 dayjs.extend(isSameOrBefore);
 
 const VISIT_SAVE_OUTCOME_UNKNOWN = 'VISIT_SAVE_OUTCOME_UNKNOWN';
+export const DECEASED_PATIENT_VISIT_BLOCKED = 'DECEASED_PATIENT_VISIT_BLOCKED';
 const defaultCompanionPersonSearchWorkspace = 'visit-companion-search-workspace';
 const defaultCompanionPersonRegistrationWorkspace = 'visit-companion-registration-workspace';
 const DETERMINISTIC_VISIT_CREATE_REJECTION_STATUSES = new Set([
@@ -1450,6 +1452,15 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
         try {
           if (!visit) {
+            if (!visitToEdit?.uuid) {
+              const vitalStatus = await fetchFreshPatientVitalStatus(patientUuid);
+              if (vitalStatus.isDeceased) {
+                throw Object.assign(new Error('A visit cannot be started for a deceased patient.'), {
+                  code: DECEASED_PATIENT_VISIT_BLOCKED,
+                });
+              }
+            }
+
             if (!completedPostSubmitActions.current.has('extra-visit-info')) {
               await extraVisitInfo?.handleCreateExtraVisitInfo?.();
               completedPostSubmitActions.current.add('extra-visit-info');
@@ -1459,6 +1470,12 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
               const response = await updateVisit(visitToEdit.uuid, payload, abortController);
               visit = response.data;
             } else {
+              const vitalStatus = await fetchFreshPatientVitalStatus(patientUuid);
+              if (vitalStatus.isDeceased) {
+                throw Object.assign(new Error('A visit cannot be started for a deceased patient.'), {
+                  code: DECEASED_PATIENT_VISIT_BLOCKED,
+                });
+              }
               pendingVisitCreationPayload.current = payload;
               setVisitCreationRequiresReconciliation(true);
 
@@ -1648,6 +1665,10 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                     'visitPersistenceCorrelationConflict',
                     'Se encontraron consultas inconsistentes para este registro. Regularícelas antes de continuar.',
                   ),
+                  [DECEASED_PATIENT_VISIT_BLOCKED]: t(
+                    'deceasedPatientVisitBlocked',
+                    'No se puede iniciar una consulta para un paciente fallecido.',
+                  ),
                 },
                 logContext: visitWasPersisted ? 'Complete visit post-submit actions' : 'Save visit',
               },
@@ -1662,6 +1683,19 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
         return;
       } else {
+        if (patient?.deceasedBoolean || patient?.deceasedDateTime) {
+          showSnackbar({
+            title: t('startVisitError', 'No se pudo iniciar la consulta'),
+            kind: 'error',
+            isLowContrast: false,
+            subtitle: t(
+              'deceasedPatientVisitBlocked',
+              'No se puede iniciar una consulta para un paciente fallecido.',
+            ),
+          });
+          return;
+        }
+
         extraVisitInfo?.handleCreateExtraVisitInfo?.();
         createOfflineVisitForPatient(
           patientUuid,
@@ -1718,6 +1752,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       onVisitStarted,
       onBeforeVisitSave,
       openedFrom,
+      patient?.deceasedBoolean,
+      patient?.deceasedDateTime,
       persistedVisitPendingPostSubmit,
       queueEntryPersistenceCompleted,
       visitFormCallbacks,

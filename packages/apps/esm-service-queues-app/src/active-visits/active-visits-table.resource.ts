@@ -8,6 +8,8 @@ import { type Concept, type Identifer, type MappedServiceQueueEntry, type Queue,
 
 dayjs.extend(isToday);
 
+export { serveQueueEntry } from '../queue-screen.resource';
+
 export interface VisitQueueEntry {
   queueEntry: QueueEntry;
   uuid: string;
@@ -157,21 +159,4 @@ export function useServiceQueueEntries(service: string, locationUuid: string) {
     error,
     isValidating,
   };
-}
-
-export function serveQueueEntry(servicePointName: string, ticketNumber: string, status: string) {
-  const abortController = new AbortController();
-
-  return openmrsFetch(`${restBaseUrl}/queueutil/assignticket`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    signal: abortController.signal,
-    body: {
-      servicePointName,
-      ticketNumber,
-      status,
-    },
-  });
 }

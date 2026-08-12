@@ -1,6 +1,11 @@
 import { Button } from '@carbon/react';
 import { getGlobalStore, useConfig, useSession, useStore } from '@openmrs/esm-framework';
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  assertFreshPatientIsAlive,
+  PATIENT_VITAL_STATUS_UNAVAILABLE,
+  type FormRendererProps,
+} from '@openmrs/esm-patient-common-lib';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { v4 as uuid } from 'uuid';
 import CancelModal from '../CancelModal';
@@ -75,9 +80,11 @@ const GroupSessionWorkspace = () => {
     updateVisitUuid,
     submitForNext,
     workflowState,
+    resetSubmission,
   } = useContext(GroupFormWorkflowContext);
 
   const { sessionLocation } = useSession();
+  const pendingVisitRef = useRef<{ patientUuid: string; visitUuid: string } | null>(null);
 
   useEffect(() => {
     if (activeVisitUuid) {
@@ -85,13 +92,30 @@ const GroupSessionWorkspace = () => {
     }
   }, [updateVisitUuid, activeVisitUuid]);
 
+  const assertActivePatientIsAlive = useCallback(async () => {
+    try {
+      if (!activePatientUuid) {
+        throw Object.assign(new Error('The patient vital status could not be loaded.'), {
+          code: PATIENT_VITAL_STATUS_UNAVAILABLE,
+        });
+      }
+      await assertFreshPatientIsAlive(activePatientUuid);
+    } catch (error) {
+      resetSubmission();
+      throw error;
+    }
+  }, [activePatientUuid, resetSubmission]);
+
   // If there's no active visit, trigger the creation of a new one
-  const handleEncounterCreate = useCallback(
-    (payload) => {
+  const handleEncounterCreate = useCallback<NonNullable<FormRendererProps['handleEncounterCreate']>>(
+    async (payload) => {
+      await assertActivePatientIsAlive();
       // Create a visit with the same date as the encounter being saved
       const obsTime = new Date(activeSessionMeta.sessionDate);
-      payload.obs.forEach((item, index) => {
-        payload.obs[index] = {
+      const observations = payload.obs ?? [];
+      payload.obs = observations;
+      observations.forEach((item, index) => {
+        observations[index] = {
           ...item,
           groupMembers: item.groupMembers?.map((mem) => ({
             ...mem,
@@ -100,26 +124,29 @@ const GroupSessionWorkspace = () => {
           obsDatetime: obsTime.toISOString(),
         };
       });
-      const visitUuid = activeVisitUuid ? activeVisitUuid : uuid();
+      const pendingVisitUuid =
+        pendingVisitRef.current?.patientUuid === activePatientUuid ? pendingVisitRef.current.visitUuid : undefined;
+      const visitUuid = activeVisitUuid ?? pendingVisitUuid ?? uuid();
       if (!activeVisitUuid) {
+        pendingVisitRef.current = { patientUuid: activePatientUuid, visitUuid };
         Object.entries(groupSessionConcepts).forEach(([field, uuid]) => {
-          if (activeSessionMeta?.[field] != null && !payload.obs.some((obsItem) => obsItem.concept === uuid)) {
-            payload.obs.push({
-              concept: uuid,
+          if (activeSessionMeta?.[field] != null && !observations.some((obsItem) => obsItem.concept === uuid)) {
+            observations.push({
+              concept: uuid as string,
               value: activeSessionMeta[field],
-            });
+            } as (typeof observations)[number]);
           }
         });
 
-        const otherIdentifiers = [
+        const otherIdentifiers: typeof observations = [
           { concept: groupSessionConcepts.cohortId, value: activeGroupUuid },
           { concept: groupSessionConcepts.cohortName, value: activeGroupName },
           {
             concept: groupSessionConcepts.sessionUuid,
             value: activeSessionUuid,
           },
-        ];
-        payload.obs.push(...otherIdentifiers);
+        ] as typeof observations;
+        observations.push(...otherIdentifiers);
         // If this is a newly created encounter and visit, add session concepts to encounter payload.
         const visitInfo = {
           startDatetime: activeSessionMeta.sessionDate,
@@ -136,10 +163,10 @@ const GroupSessionWorkspace = () => {
           },
         };
         payload.visit = visitInfo;
-        updateVisitUuid(visitUuid);
       }
       payload.location = sessionLocation?.uuid;
       payload.encounterDatetime = obsTime.toISOString();
+      return payload;
     },
     [
       activeSessionMeta,
@@ -151,7 +178,7 @@ const GroupSessionWorkspace = () => {
       activeSessionUuid,
       activePatientUuid,
       groupVisitTypeUuid,
-      updateVisitUuid,
+      assertActivePatientIsAlive,
     ],
   );
 
@@ -159,10 +186,14 @@ const GroupSessionWorkspace = () => {
   const handlePostResponse = useCallback(
     (encounter) => {
       if (encounter && encounter.uuid) {
+        if (pendingVisitRef.current?.patientUuid === activePatientUuid) {
+          updateVisitUuid(pendingVisitRef.current.visitUuid);
+          pendingVisitRef.current = null;
+        }
         saveEncounter(encounter.uuid);
       }
     },
-    [saveEncounter],
+    [activePatientUuid, saveEncounter, updateVisitUuid],
   );
 
   const switchPatient = useCallback(
@@ -185,6 +216,7 @@ const GroupSessionWorkspace = () => {
               formUuid: activeFormUuid,
               handlePostResponse,
               handleEncounterCreate,
+              onBeforeEncounterSave: assertActivePatientIsAlive,
             }}
             hidePatientBanner={false}
           />

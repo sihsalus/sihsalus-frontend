@@ -1,6 +1,5 @@
 import { Button, InlineLoading, InlineNotification, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
 import {
-  fetchCurrentPatient,
   formatDatetime,
   getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
   launchWorkspace2,
@@ -13,7 +12,12 @@ import {
   type Visit,
 } from '@openmrs/esm-framework';
 import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
-import { fetchVisitInsurance, getSisFinancingState, safeCopyFinanciadorToVisit } from '@openmrs/esm-patient-common-lib';
+import {
+  fetchFreshPatientVitalStatus,
+  fetchVisitInsurance,
+  getSisFinancingState,
+  safeCopyFinanciadorToVisit,
+} from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -393,13 +397,15 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
   }, [patientUuid, shouldResolveVisitBranch]);
 
   const assertPatientIsAlive = async () => {
-    const latestPatient = await fetchCurrentPatient(patientUuid, undefined, false);
-    if (!latestPatient) {
-      throw Object.assign(new Error('The patient could not be loaded.'), {
+    let vitalStatus: Awaited<ReturnType<typeof fetchFreshPatientVitalStatus>>;
+    try {
+      vitalStatus = await fetchFreshPatientVitalStatus(patientUuid);
+    } catch (error) {
+      throw Object.assign(error instanceof Error ? error : new Error('The patient could not be loaded.'), {
         code: PATIENT_DEATH_STATUS_UNAVAILABLE,
       });
     }
-    if (latestPatient.deceasedBoolean || latestPatient.deceasedDateTime) {
+    if (vitalStatus.isDeceased) {
       throw Object.assign(new Error('Arrival cannot be registered for a deceased patient.'), {
         code: DECEASED_PATIENT_ARRIVAL_BLOCKED,
       });
@@ -507,6 +513,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       return;
     }
 
+    await assertPatientIsAlive();
     await changeAppointmentStatus(AppointmentStatus.CHECKEDIN, appointment.uuid);
     showSnackbar({
       title: t('checkedIn', 'Llegada registrada'),

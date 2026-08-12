@@ -37,6 +37,7 @@ export function normalizeFormWidgetProps(props: FormWidgetProps): NormalizedForm
       encounterUuid: props.encounterUuid,
       formUuid: props.formUuid,
       handleEncounterCreate: props.handleEncounterCreate,
+      onBeforeEncounterSave: props.onBeforeEncounterSave,
       handleOnValidate: props.handleOnValidate,
       handlePostResponse: props.handlePostResponse,
       hideControls: props.hideControls,

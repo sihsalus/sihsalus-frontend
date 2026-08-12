@@ -1,5 +1,10 @@
 import { Button } from '@carbon/react';
 import { ExtensionSlot, useSession } from '@openmrs/esm-framework';
+import {
+  assertFreshPatientIsAlive,
+  PATIENT_VITAL_STATUS_UNAVAILABLE,
+  type FormRendererProps,
+} from '@openmrs/esm-patient-common-lib';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { v4 as uuid } from 'uuid';
@@ -42,7 +47,7 @@ const WorkflowNavigationButtons = () => {
   );
 };
 
-const FormWorkspace = () => {
+export const FormWorkspace = () => {
   const {
     patientUuids,
     activePatientUuid,
@@ -52,6 +57,7 @@ const FormWorkspace = () => {
     editEncounter,
     encounters,
     singleSessionVisitTypeUuid,
+    resetSubmission,
   } = useContext(FormWorkflowContext);
   const { t } = useTranslation();
 
@@ -84,8 +90,23 @@ const FormWorkspace = () => {
     }
   }, [visitSaveSuccess]);
 
-  const handleEncounterCreate = useCallback(
-    (payload) => {
+  const assertActivePatientIsAlive = useCallback(async () => {
+    try {
+      if (!activePatientUuid) {
+        throw Object.assign(new Error('The patient vital status could not be loaded.'), {
+          code: PATIENT_VITAL_STATUS_UNAVAILABLE,
+        });
+      }
+      await assertFreshPatientIsAlive(activePatientUuid);
+    } catch (error) {
+      resetSubmission();
+      throw error;
+    }
+  }, [activePatientUuid, resetSubmission]);
+
+  const handleEncounterCreate = useCallback<NonNullable<FormRendererProps['handleEncounterCreate']>>(
+    async (payload) => {
+      await assertActivePatientIsAlive();
       payload.location = sessionLocation?.uuid;
       payload.encounterDatetime = payload.encounterDatetime ? payload.encounterDatetime : new Date().toISOString();
       // Create a visit with the same date as the encounter being saved
@@ -107,8 +128,9 @@ const FormWorkspace = () => {
       };
 
       payload.visit = visitInfo;
+      return payload;
     },
-    [activePatientUuid, singleSessionVisitTypeUuid, sessionLocation],
+    [activePatientUuid, assertActivePatientIsAlive, singleSessionVisitTypeUuid, sessionLocation],
   );
 
   return (
@@ -126,6 +148,7 @@ const FormWorkspace = () => {
                 formUuid: activeFormUuid,
                 handlePostResponse,
                 handleEncounterCreate,
+                onBeforeEncounterSave: assertActivePatientIsAlive,
               }}
               hidePatientBanner={true}
             />

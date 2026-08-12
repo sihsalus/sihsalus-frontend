@@ -14,6 +14,7 @@ declare module '@openmrs/esm-patient-common-lib' {
     hidePatientBanner?: boolean;
     handlePostResponse?: (encounter?: Encounter) => void;
     handleEncounterCreate?: (encounter: OpenmrsEncounter) => OpenmrsEncounter | void | Promise<OpenmrsEncounter | void>;
+    onBeforeEncounterSave?: (encounter: OpenmrsEncounter) => void | Promise<void>;
     handleOnValidate?: (valid: boolean) => void;
     showDiscardSubmitButtons?: boolean;
     preFilledQuestions?: Record<string, unknown>;

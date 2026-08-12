@@ -1,4 +1,8 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
+import {
+  assertFreshPatientIsAlive,
+  DECEASED_PATIENT_OPERATION_BLOCKED,
+} from '@openmrs/esm-patient-common-lib';
 
 import {
   ACTIVE_QUEUE_ENTRY_CONFLICT,
@@ -14,6 +18,16 @@ import {
 } from './queue-fields.resource';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockAssertFreshPatientIsAlive = vi.mocked(assertFreshPatientIsAlive);
+
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  assertFreshPatientIsAlive: vi.fn(),
+}));
+
+beforeEach(() => {
+  mockAssertFreshPatientIsAlive.mockResolvedValue({ dead: false, deathDate: null, isDeceased: false });
+});
 
 const input = {
   visitUuid: 'visit-uuid',
@@ -102,6 +116,27 @@ describe('postQueueEntryWithoutVisit', () => {
     expect(mockOpenmrsFetch.mock.calls[2][0]).toContain('/queue-entry?');
   });
 
+  it('does not create a visitless entry when the fresh patient guard blocks it', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: { results: [] } } as never);
+    mockAssertFreshPatientIsAlive.mockRejectedValue(
+      Object.assign(new Error('deceased patient'), { code: DECEASED_PATIENT_OPERATION_BLOCKED }),
+    );
+
+    await expect(
+      postQueueEntryWithoutVisit(
+        input.queueUuid,
+        input.patientUuid,
+        input.priorityUuid,
+        input.statusUuid,
+        input.sortWeight,
+      ),
+    ).rejects.toMatchObject({ code: DECEASED_PATIENT_OPERATION_BLOCKED });
+
+    expect(mockOpenmrsFetch.mock.calls.some(([url, init]) => init?.method === 'POST' && /\/queue-entry$/.test(String(url)))).toBe(
+      false,
+    );
+  });
+
   it('uses the current time when startedAt is omitted', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-16T16:45:30.250Z'));
@@ -123,6 +158,25 @@ describe('postQueueEntryWithoutVisit', () => {
     expect(mockOpenmrsFetch.mock.calls[1][1]?.body).toMatchObject({
       startedAt: new Date('2026-07-16T16:45:30.250Z'),
     });
+  });
+
+  it('does not return an existing visitless entry when the patient is now deceased', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: { results: [{ uuid: 'existing-entry', queue: { uuid: input.queueUuid } }] },
+    } as never);
+    mockAssertFreshPatientIsAlive.mockRejectedValue(
+      Object.assign(new Error('deceased patient'), { code: DECEASED_PATIENT_OPERATION_BLOCKED }),
+    );
+
+    await expect(
+      postQueueEntryWithoutVisit(
+        input.queueUuid,
+        input.patientUuid,
+        input.priorityUuid,
+        input.statusUuid,
+        input.sortWeight,
+      ),
+    ).rejects.toMatchObject({ code: DECEASED_PATIENT_OPERATION_BLOCKED });
   });
 
   it('reuses an existing active entry for the patient and queue', async () => {
@@ -295,6 +349,25 @@ describe('postQueueEntry', () => {
     expect(mockOpenmrsFetch.mock.calls[0][0]).not.toContain(`queue=${input.queueUuid}`);
   });
 
+  it('does not return an existing visit-backed entry when the patient is now deceased', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          {
+            uuid: 'existing-entry',
+            queue: { uuid: input.queueUuid },
+            visit: { uuid: input.visitUuid, attributes: [] },
+          },
+        ],
+      },
+    } as never);
+    mockAssertFreshPatientIsAlive.mockRejectedValue(
+      Object.assign(new Error('deceased patient'), { code: DECEASED_PATIENT_OPERATION_BLOCKED }),
+    );
+
+    await expect(createQueueEntry()).rejects.toMatchObject({ code: DECEASED_PATIENT_OPERATION_BLOCKED });
+  });
+
   it('generates the ticket before creating a new queue entry', async () => {
     mockOpenmrsFetch
       .mockResolvedValueOnce({ data: { results: [] } } as never)
@@ -319,6 +392,59 @@ describe('postQueueEntry', () => {
       visit: { uuid: input.visitUuid },
       queueEntry: { startedAt: new Date('2026-07-14T15:30:00.000Z') },
     });
+  });
+
+  it('does not generate a ticket or create a visit-backed entry when the patient died', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce({ data: { results: [] } } as never);
+    mockAssertFreshPatientIsAlive.mockRejectedValue(
+      Object.assign(new Error('deceased patient'), { code: DECEASED_PATIENT_OPERATION_BLOCKED }),
+    );
+
+    await expect(createQueueEntry()).rejects.toMatchObject({ code: DECEASED_PATIENT_OPERATION_BLOCKED });
+
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('/queue-entry-number'))).toBe(false);
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('/visit-queue-entry'))).toBe(false);
+  });
+
+  it('re-checks immediately before ticket generation after the visit read', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce(visitWithoutQueueTicket);
+    mockAssertFreshPatientIsAlive
+      .mockResolvedValueOnce({ dead: false, deathDate: null, isDeceased: false })
+      .mockRejectedValueOnce(
+        Object.assign(new Error('deceased patient'), { code: DECEASED_PATIENT_OPERATION_BLOCKED }),
+      );
+
+    await expect(createQueueEntry()).rejects.toMatchObject({ code: DECEASED_PATIENT_OPERATION_BLOCKED });
+
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('/queue-entry-number'))).toBe(false);
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('/visit-queue-entry'))).toBe(false);
+  });
+
+  it('re-checks after ticket generation and does not create an entry when the patient dies meanwhile', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce(visitWithoutQueueTicket)
+      .mockResolvedValueOnce({
+        data: { visitQueueNumber: 'A-01' },
+        headers: new Headers({ Date: 'Tue, 14 Jul 2026 15:30:00 GMT' }),
+      } as never);
+    mockAssertFreshPatientIsAlive
+      .mockResolvedValueOnce({ dead: false, deathDate: null, isDeceased: false })
+      .mockResolvedValueOnce({ dead: false, deathDate: null, isDeceased: false })
+      .mockRejectedValueOnce(
+        Object.assign(new Error('deceased patient'), { code: DECEASED_PATIENT_OPERATION_BLOCKED }),
+      );
+
+    await expect(createQueueEntry()).rejects.toMatchObject({ code: DECEASED_PATIENT_OPERATION_BLOCKED });
+
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('/queue-entry-number'))).toBe(true);
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('/visit-queue-entry'))).toBe(false);
   });
 
   it('does not create an entry before the visit millisecond-precision start time', async () => {

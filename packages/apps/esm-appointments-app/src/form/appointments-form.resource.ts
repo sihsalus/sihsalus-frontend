@@ -1,4 +1,5 @@
-import { fetchCurrentPatient, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { fetchFreshPatientVitalStatus } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import { useCallback } from 'react';
@@ -21,13 +22,15 @@ export const PATIENT_DEATH_STATUS_UNAVAILABLE = 'PATIENT_DEATH_STATUS_UNAVAILABL
 
 /** Fresh online check used immediately before creating an appointment. */
 export async function assertPatientCanReceiveAppointment(patientUuid: string) {
-  const patient = await fetchCurrentPatient(patientUuid, undefined, false);
-  if (!patient) {
-    throw Object.assign(new Error('The patient could not be loaded.'), {
+  let vitalStatus: Awaited<ReturnType<typeof fetchFreshPatientVitalStatus>>;
+  try {
+    vitalStatus = await fetchFreshPatientVitalStatus(patientUuid);
+  } catch (error) {
+    throw Object.assign(error instanceof Error ? error : new Error('The patient could not be loaded.'), {
       code: PATIENT_DEATH_STATUS_UNAVAILABLE,
     });
   }
-  if (patient.deceasedBoolean || patient.deceasedDateTime) {
+  if (vitalStatus.isDeceased) {
     throw Object.assign(new Error('Appointments cannot be created for a deceased patient.'), {
       code: DECEASED_PATIENT_APPOINTMENT_BLOCKED,
     });
@@ -120,12 +123,13 @@ export function useAppointmentService() {
   };
 }
 
-export function saveAppointment(
+export async function saveAppointment(
   appointment: AppointmentPayload,
   abortController: AbortController,
   originalStartDate?: Date,
 ) {
   assertAppointmentPayloadDates(appointment, { originalStartDate });
+  await assertPatientCanReceiveAppointment(appointment.patientUuid);
   return openmrsFetch(`${restBaseUrl}/appointment`, {
     method: 'POST',
     signal: abortController.signal,
@@ -136,13 +140,14 @@ export function saveAppointment(
   });
 }
 
-export function saveRecurringAppointments(
+export async function saveRecurringAppointments(
   recurringAppointments: RecurringAppointmentsPayload,
   abortController: AbortController,
   originalStartDate?: Date,
 ) {
   assertAppointmentPayloadDates(recurringAppointments.appointmentRequest, { originalStartDate });
   assertRecurringPatternDates(recurringAppointments.appointmentRequest, recurringAppointments.recurringPattern);
+  await assertPatientCanReceiveAppointment(recurringAppointments.appointmentRequest.patientUuid);
   return openmrsFetch(`${restBaseUrl}/recurring-appointments`, {
     method: 'POST',
     signal: abortController.signal,

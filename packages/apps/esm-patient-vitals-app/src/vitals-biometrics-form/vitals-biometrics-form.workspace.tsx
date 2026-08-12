@@ -12,7 +12,6 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ExtensionSlot,
-  fetchCurrentPatient,
   getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
   showSnackbar,
   useConfig,
@@ -23,6 +22,8 @@ import {
 } from '@openmrs/esm-framework';
 import {
   type DefaultPatientWorkspaceProps,
+  fetchFreshPatientVitalStatus,
+  type FormRendererProps,
   type PatientWorkspace2DefinitionProps,
   useReferenceRanges,
   useVisitOrOfflineVisit,
@@ -57,6 +58,9 @@ import {
 import VitalsAndBiometricsInput from './vitals-biometrics-input.component';
 
 const glasgowFieldKeys = ['glasgowEyeOpening', 'glasgowVerbalResponse', 'glasgowMotorResponse'] as const;
+const DECEASED_PATIENT_VITALS_BLOCKED = 'DECEASED_PATIENT_VITALS_BLOCKED';
+
+type FormEngineEncounter = Parameters<NonNullable<FormRendererProps['handleEncounterCreate']>>[0];
 
 interface GlasgowComaScaleOption {
   label: string;
@@ -251,6 +255,57 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   const [showErrorNotification, setShowErrorNotification] = useState(false);
   const [showErrorMessage, setShowErrorMessage] = useState(false);
   const [formErrorMessage, setFormErrorMessage] = useState('');
+
+  const assertPatientCanRecordVitals = useCallback(async () => {
+    const vitalStatus = await fetchFreshPatientVitalStatus(patientUuid);
+    if (vitalStatus.isDeceased) {
+      throw Object.assign(new Error('New vitals cannot be recorded for a deceased patient.'), {
+        code: DECEASED_PATIENT_VITALS_BLOCKED,
+      });
+    }
+  }, [patientUuid]);
+
+  const showPatientVitalStatusError = useCallback(
+    (error: unknown) => {
+      const isDeceasedError =
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code === DECEASED_PATIENT_VITALS_BLOCKED;
+      showSnackbar({
+        title: isDeceasedError
+          ? t('vitalsAndBiometricsSaveBlocked', 'Vitals and biometrics cannot be saved')
+          : t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
+        kind: 'error',
+        isLowContrast: false,
+        subtitle: isDeceasedError
+          ? t('deceasedPatientVitalsBlocked', 'New vitals cannot be recorded for a deceased patient.')
+          : getCompatibleUserFacingErrorMessage(
+              error,
+              t(
+                'patientVitalStatusCheckFailed',
+                "The patient's current vital status could not be verified. Try again before saving.",
+              ),
+              { logContext: 'Check patient vital status before saving vitals' },
+              frameworkGetUserFacingErrorMessage,
+            ),
+      });
+    },
+    [t],
+  );
+
+  const handleFormEngineEncounterCreate = useCallback(
+    async (encounter: FormEngineEncounter) => {
+      try {
+        await assertPatientCanRecordVitals();
+        return encounter;
+      } catch (error) {
+        showPatientVitalStatusError(error);
+        throw error;
+      }
+    },
+    [assertPatientCanRecordVitals, showPatientVitalStatusError],
+  );
 
   const {
     control,
@@ -489,34 +544,9 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       setFormErrorMessage('');
 
       try {
-        const latestPatient = await fetchCurrentPatient(patientUuid, undefined, false);
-        if (!latestPatient) {
-          throw new Error('The patient could not be loaded.');
-        }
-        if (latestPatient.deceasedBoolean || latestPatient.deceasedDateTime) {
-          showSnackbar({
-            title: t('vitalsAndBiometricsSaveBlocked', 'Vitals and biometrics cannot be saved'),
-            kind: 'error',
-            isLowContrast: false,
-            subtitle: t('deceasedPatientVitalsBlocked', 'New vitals cannot be recorded for a deceased patient.'),
-          });
-          return;
-        }
+        await assertPatientCanRecordVitals();
       } catch (error) {
-        showSnackbar({
-          title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
-          kind: 'error',
-          isLowContrast: false,
-          subtitle: getCompatibleUserFacingErrorMessage(
-            error,
-            t(
-              'patientVitalStatusCheckFailed',
-              "The patient's current vital status could not be verified. Try again before saving.",
-            ),
-            { logContext: 'Check patient vital status before saving vitals' },
-            frameworkGetUserFacingErrorMessage,
-          ),
-        });
+        showPatientVitalStatusError(error);
         return;
       }
 
@@ -618,6 +648,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       }
     },
     [
+      assertPatientCanRecordVitals,
       closeCurrentWorkspaceWithSavedChanges,
       conceptMetadata,
       config.concepts,
@@ -630,6 +661,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       getPatientReferenceRange,
       patientUuid,
       session?.currentProvider?.uuid,
+      showPatientVitalStatusError,
       t,
       workspaceOverrides,
     ],
@@ -784,6 +816,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
           patientUuid: patientUuid ?? null,
           patient,
           encounterUuid,
+          handleEncounterCreate: handleFormEngineEncounterCreate,
           closeWorkspaceWithSavedChanges: closeCurrentWorkspaceWithSavedChanges,
         }}
       />,

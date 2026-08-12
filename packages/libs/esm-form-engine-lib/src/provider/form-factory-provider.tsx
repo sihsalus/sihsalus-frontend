@@ -34,6 +34,7 @@ interface FormFactoryProviderContextProps {
   setIsFormDirty: (isFormDirty: boolean) => void;
   handleOnValidate?: (valid: boolean) => void;
   handleEncounterCreate?: (encounter: OpenmrsEncounter) => OpenmrsEncounter | void | Promise<OpenmrsEncounter | void>;
+  onBeforeEncounterSave?: (encounter: OpenmrsEncounter) => void | Promise<void>;
 }
 
 interface FormFactoryProviderProps {
@@ -60,6 +61,7 @@ interface FormFactoryProviderProps {
   handleConfirmQuestionDeletion?: (question: Readonly<FormField>) => Promise<void>;
   setIsFormDirty: (isFormDirty: boolean) => void;
   handleEncounterCreate?: (encounter: OpenmrsEncounter) => OpenmrsEncounter | void | Promise<OpenmrsEncounter | void>;
+  onBeforeEncounterSave?: (encounter: OpenmrsEncounter) => void | Promise<void>;
 }
 
 const FormFactoryProviderContext = createContext<FormFactoryProviderContextProps | undefined>(undefined);
@@ -81,6 +83,7 @@ export const FormFactoryProvider: React.FC<FormFactoryProviderProps> = ({
   handleConfirmQuestionDeletion,
   setIsFormDirty,
   handleEncounterCreate,
+  onBeforeEncounterSave,
 }) => {
   const { t } = useTranslation();
   const rootForm = useRef<FormContextProps>();
@@ -278,6 +281,7 @@ export const FormFactoryProvider: React.FC<FormFactoryProviderProps> = ({
         setIsFormDirty,
         handleOnValidate,
         handleEncounterCreate,
+        onBeforeEncounterSave,
       }}
     >
       {formProcessors.current && children}

@@ -53,11 +53,13 @@ interface CreateQueueEntryWorkspace2Props {
 }
 
 const defaultStartVisitWorkspaceName = 'queue-patient-search-start-visit-workspace';
+type StartVisitLaunchState = 'idle' | 'launching' | 'recovery-required';
 
 const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueueEntryWorkspace2Props>> = ({
   workspaceProps,
   launchChildWorkspace,
   closeWorkspace,
+  isLeafWorkspace = true,
 }) => {
   const { t } = useTranslation();
   const {
@@ -81,7 +83,9 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
   const { activeVisit: fetchedActiveVisit, isLoading, error } = useVisit(selectedPatientUuid);
   const activeVisit = suppliedActiveVisit ?? fetchedActiveVisit;
   const [showContactDetails, setShowContactDetails] = useState(false);
+  const [startVisitLaunchState, setStartVisitLaunchState] = useState<StartVisitLaunchState>('idle');
   const hasLaunchedStartVisitWorkspace = useRef(false);
+  const startVisitChildWasOpened = useRef(false);
 
   const handleCloseWindow = useCallback(() => {
     void closeWorkspace({ closeWindow: true, discardUnsavedChanges: true });
@@ -100,6 +104,12 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
     setShowContactDetails((value) => !value);
   }, []);
 
+  const handleRetryStartVisitLaunch = useCallback(() => {
+    hasLaunchedStartVisitWorkspace.current = false;
+    startVisitChildWasOpened.current = false;
+    setStartVisitLaunchState('idle');
+  }, []);
+
   const needsNewVisit = Boolean(selectedPatientUuid && !isLoading && !error && !activeVisit && requiredVisitLocation);
   const startVisitPreflightState = getQueueVisitStartPreflightState({
     birthDate: patient?.birthDate,
@@ -111,6 +121,23 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
   });
 
   useEffect(() => {
+    if (startVisitLaunchState !== 'launching') {
+      return;
+    }
+
+    if (!isLeafWorkspace) {
+      startVisitChildWasOpened.current = true;
+      return;
+    }
+
+    if (startVisitChildWasOpened.current) {
+      hasLaunchedStartVisitWorkspace.current = false;
+      startVisitChildWasOpened.current = false;
+      setStartVisitLaunchState('recovery-required');
+    }
+  }, [isLeafWorkspace, startVisitLaunchState]);
+
+  useEffect(() => {
     if (
       !selectedPatientUuid ||
       isLoading ||
@@ -118,12 +145,14 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
       activeVisit ||
       !requiredVisitLocation ||
       startVisitPreflightState !== 'ready' ||
+      startVisitLaunchState !== 'idle' ||
       hasLaunchedStartVisitWorkspace.current
     ) {
       return;
     }
 
     hasLaunchedStartVisitWorkspace.current = true;
+    setStartVisitLaunchState('launching');
 
     void launchChildWorkspace(startVisitWorkspaceName, {
       currentServiceQueueUuid,
@@ -139,20 +168,28 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
       requiredVisitTypeUuid,
       workspaceTitle: t('addPatientToQueue', 'Add patient to queue'),
       onQueueEntryAdded: handleQueueEntryAddedAndClose,
-    }).catch((launchError) => {
-      hasLaunchedStartVisitWorkspace.current = false;
-      showSnackbar({
-        isLowContrast: false,
-        kind: 'error',
-        title: t('errorAddingPatientToQueue', 'No se pudo agregar el paciente a la cola'),
-        subtitle: getCompatibleUserFacingErrorMessage(
-          launchError,
-          t('queueEntryActionErrorMessage', 'No se pudo completar la acción de cola. Intente nuevamente.'),
-          { logContext: 'Launch start visit workspace from service queues' },
-          frameworkGetUserFacingErrorMessage,
-        ),
+    })
+      .then((workspaceOpened) => {
+        if (!workspaceOpened) {
+          hasLaunchedStartVisitWorkspace.current = false;
+          setStartVisitLaunchState('recovery-required');
+        }
+      })
+      .catch((launchError) => {
+        hasLaunchedStartVisitWorkspace.current = false;
+        setStartVisitLaunchState('recovery-required');
+        showSnackbar({
+          isLowContrast: false,
+          kind: 'error',
+          title: t('errorAddingPatientToQueue', 'No se pudo agregar el paciente a la cola'),
+          subtitle: getCompatibleUserFacingErrorMessage(
+            launchError,
+            t('queueEntryActionErrorMessage', 'No se pudo completar la acción de cola. Intente nuevamente.'),
+            { logContext: 'Launch start visit workspace from service queues' },
+            frameworkGetUserFacingErrorMessage,
+          ),
+        });
       });
-    });
   }, [
     activeVisit,
     companionPersonRegistrationWorkspaceName,
@@ -169,6 +206,7 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
     selectedPatientUuid,
     startVisitWorkspaceName,
     startVisitPreflightState,
+    startVisitLaunchState,
     requestedServiceName,
     requiredVisitLocation,
     requiredVisitTypeUuid,
@@ -232,7 +270,14 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
             />
           ) : requiredVisitLocation ? (
             startVisitPreflightState === 'ready' ? (
-              <DataTableSkeleton role="progressbar" />
+              startVisitLaunchState === 'recovery-required' ? (
+                <QueueVisitStartPreflightNotice
+                  state="workspace-launch-recovery"
+                  onRetry={handleRetryStartVisitLaunch}
+                />
+              ) : (
+                <DataTableSkeleton role="progressbar" />
+              )
             ) : startVisitPreflightState === 'not-required' ? null : (
               <QueueVisitStartPreflightNotice state={startVisitPreflightState} />
             )

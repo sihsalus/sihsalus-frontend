@@ -82,6 +82,7 @@ export type PendingAccreditationStatus =
   | 'pending'
   | 'notConsulted'
   | 'missing'
+  | 'unknown'
   | 'missingInsuranceNumber'
   | 'missingCheckedAt'
   | 'financiadorNotCopied';
@@ -195,7 +196,7 @@ export function filterPendingSisVisits(
       } else {
         // An unknown status must remain visible instead of being treated as a
         // verified accreditation merely because number and date are present.
-        accreditationStatus = 'missing';
+        accreditationStatus = 'unknown';
       }
     }
 

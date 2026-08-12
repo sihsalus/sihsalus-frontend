@@ -194,14 +194,14 @@ describe('filterPendingSisVisits', () => {
     const unknownStatusVisit = buildVisit({
       financiador: { uuid: sisConceptUuid },
       insuranceNumber: 'SIS-0004',
-      status: { uuid: 'unknown-accreditation-status-uuid' },
+      status: { uuid: '0f5a8a7d-5d6e-4f4f-8f36-24d99ac0baca' },
       checkedAt: '2026-08-11T14:30:00.000-05:00',
     });
 
     expect(filterPendingSisVisits([unknownStatusVisit], config)).toEqual([
       expect.objectContaining({
         visitUuid: unknownStatusVisit.uuid,
-        accreditationStatus: 'missing',
+        accreditationStatus: 'unknown',
       }),
     ]);
   });

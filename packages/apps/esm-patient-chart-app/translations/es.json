@@ -124,6 +124,8 @@
   "filterByEncounterType": "Filtrar por tipo de atención",
   "financiadorAccreditationConflict": "La acreditación SIS requiere revisión",
   "financiadorAccreditationConflictSubtitle": "El estado de la consulta no coincide con la afiliación. Revíselo antes de generar el FUA.",
+  "financiadorAccreditationUnknown": "Estado de acreditación SIS no reconocido",
+  "financiadorAccreditationUnknownSubtitle": "El estado registrado no pertenece al catálogo SIS. Corrija la acreditación antes de generar el FUA.",
   "financiadorCopyFailed": "Consulta iniciada; cobertura pendiente",
   "financiadorCopyFailedSubtitle": "La atención puede continuar. Reintente la cobertura; no inicie otra consulta.",
   "financiadorCopyNotAuthorized": "Consulta iniciada; cobertura requiere apoyo",

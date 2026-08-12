@@ -428,6 +428,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           if (result.skipped || result.reviewReason) {
             const hasAccreditationConflict = result.reviewReason === 'sis-accreditation-conflict';
             const hasIncompleteCoverage = result.reviewReason === 'incomplete-coverage';
+            const hasUnknownAccreditationStatus = result.reviewReason === 'unknown-accreditation-status';
             const reviewAction = canReviewPatientCoverage
               ? {
                   actionButtonLabel: t('reviewCoverage', 'Revisar cobertura'),
@@ -439,23 +440,30 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
               kind: 'warning',
               title: hasAccreditationConflict
                 ? t('financiadorAccreditationConflict', 'La acreditación SIS requiere revisión')
-                : hasIncompleteCoverage
-                  ? t('financiadorIncomplete', 'Cobertura incompleta en la consulta')
-                  : t('financiadorMissing', 'Consulta iniciada sin financiador'),
+                : hasUnknownAccreditationStatus
+                  ? t('financiadorAccreditationUnknown', 'Estado de acreditación SIS no reconocido')
+                  : hasIncompleteCoverage
+                    ? t('financiadorIncomplete', 'Cobertura incompleta en la consulta')
+                    : t('financiadorMissing', 'Consulta iniciada sin financiador'),
               subtitle: hasAccreditationConflict
                 ? t(
                     'financiadorAccreditationConflictSubtitle',
                     'El estado de la consulta no coincide con la afiliación. Revíselo antes de generar el FUA.',
                   )
-                : hasIncompleteCoverage
+                : hasUnknownAccreditationStatus
                   ? t(
-                      'financiadorIncompleteSubtitle',
-                      'Complete el número de afiliación y, para SIS, el estado y la fecha de acreditación antes del FUA.',
+                      'financiadorAccreditationUnknownSubtitle',
+                      'El estado registrado no pertenece al catálogo SIS. Corrija la acreditación antes de generar el FUA.',
                     )
-                  : t(
-                      'financiadorMissingSubtitle',
-                      'Registre la cobertura del paciente para completar los datos de esta consulta.',
-                    ),
+                  : hasIncompleteCoverage
+                    ? t(
+                        'financiadorIncompleteSubtitle',
+                        'Complete el número de afiliación y, para SIS, el estado y la fecha de acreditación antes del FUA.',
+                      )
+                    : t(
+                        'financiadorMissingSubtitle',
+                        'Registre la cobertura del paciente para completar los datos de esta consulta.',
+                      ),
               ...reviewAction,
             });
             return result;
@@ -1504,7 +1512,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             } else {
               const recordCoverageResult = (coverageResult: SafeCopyFinanciadorToVisitResult) => {
                 if (
-                  coverageResult.ok === true ||
+                  (coverageResult.ok === true && !coverageResult.skipped && !coverageResult.reviewReason) ||
                   (coverageResult.ok === false && isFinanciadorCopyAuthorizationError(coverageResult.error))
                 ) {
                   completedPostSubmitActions.current.add('financiador');

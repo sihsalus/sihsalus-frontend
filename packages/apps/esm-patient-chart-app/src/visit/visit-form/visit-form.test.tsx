@@ -1107,39 +1107,62 @@ describe('Visit form', () => {
     );
   });
 
-  it('does not repeat a deterministic coverage review when a later callback is retried', async () => {
+  it.each([
+    [
+      'missing financer',
+      {
+        ok: true,
+        skipped: true,
+        created: 0,
+        updated: 0,
+        reviewReason: 'missing-financiador',
+      },
+    ],
+    [
+      'incomplete SIS bundle',
+      {
+        ok: true,
+        skipped: false,
+        created: 1,
+        updated: 0,
+        reviewReason: 'incomplete-coverage',
+      },
+    ],
+  ] as const)('retries %s after the affiliation is corrected without posting a second visit', async (_case, result) => {
     const user = userEvent.setup();
-    mockSafeCopyFinanciadorToVisit.mockResolvedValue({
-      ok: true,
-      skipped: false,
-      created: 1,
-      updated: 0,
-      reviewReason: 'incomplete-coverage',
-    });
+    mockSafeCopyFinanciadorToVisit
+      .mockResolvedValueOnce(result)
+      .mockResolvedValueOnce({ ok: true, skipped: false, created: 1, updated: 0 });
     mockOnVisitCreatedOrUpdatedCallback
-      .mockRejectedValueOnce(new Error('later callback failed'))
+      .mockRejectedValueOnce(
+        Object.assign(new Error('The visit does not have active SIS financing.'), {
+          code: 'TRIAGE_SIS_FINANCING_REQUIRED',
+        }),
+      )
       .mockResolvedValueOnce(undefined);
 
-    renderVisitForm();
+    renderVisitForm(undefined, { requireActiveSisFinancing: true });
     await selectVisitType(user);
     await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
     await user.click(screen.getByRole('button', { name: /Start visit/i }));
 
-    await waitFor(() =>
-      expect(showSnackbar).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'Cobertura incompleta en la consulta' }),
-      ),
-    );
     const retryButton = await screen.findByRole('button', { name: /Reintentar registro|Retry registration/i });
     expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledTimes(1);
     expect(mockOnVisitCreatedOrUpdatedCallback).toHaveBeenCalledTimes(1);
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
 
+    // A concurrent Admissions correction changes the next copy result. The
+    // retry must propagate that corrected affiliation onto the same visit.
     await user.click(retryButton);
 
+    await waitFor(() => expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(mockOnVisitCreatedOrUpdatedCallback).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
-    expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledTimes(1);
     expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+    expect(mockSafeCopyFinanciadorToVisit).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ patientUuid: mockPatient.id, visitUuid }),
+    );
   });
 
   it('keeps missing coverage visible instead of reporting a false repair', async () => {
@@ -1219,6 +1242,42 @@ describe('Visit form', () => {
     );
     expect(showSnackbar).not.toHaveBeenCalledWith(
       expect.objectContaining({ title: 'Cobertura registrada en la consulta' }),
+    );
+    expect(mockCloseWorkspace).toHaveBeenCalled();
+  });
+
+  it('reports an unknown SIS accreditation status without claiming that the financer is missing', async () => {
+    const user = userEvent.setup();
+    mockUserHasAccess.mockImplementation(
+      (privilege) =>
+        typeof privilege === 'string' &&
+        (['app:home.admision', 'app:opciones.registrarPaciente'].includes(privilege) ||
+          coverageCopyPrivileges.has(privilege)),
+    );
+    mockSafeCopyFinanciadorToVisit.mockResolvedValue({
+      ok: true,
+      skipped: false,
+      created: 4,
+      updated: 0,
+      reviewReason: 'unknown-accreditation-status',
+    });
+
+    renderVisitForm();
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actionButtonLabel: 'Revisar cobertura',
+          kind: 'warning',
+          title: 'Estado de acreditación SIS no reconocido',
+        }),
+      ),
+    );
+    expect(showSnackbar).not.toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Consulta iniciada sin financiador' }),
     );
     expect(mockCloseWorkspace).toHaveBeenCalled();
   });

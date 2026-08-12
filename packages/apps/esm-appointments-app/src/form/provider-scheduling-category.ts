@@ -23,8 +23,7 @@ interface AssessProviderSchedulingCategoryOptions {
   service?: AppointmentService;
 }
 
-interface FilterProvidersBySchedulingCategoryOptions
-  extends Omit<AssessProviderSchedulingCategoryOptions, 'provider'> {
+interface FilterProvidersBySchedulingCategoryOptions extends Omit<AssessProviderSchedulingCategoryOptions, 'provider'> {
   providers: ReadonlyArray<Provider>;
 }
 

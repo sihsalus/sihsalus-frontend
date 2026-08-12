@@ -58,6 +58,8 @@
   "patientIdentifierDuplication": "Duplicación de identificador de paciente",
   "patientIdentifierDuplicationDescription": "El identificador proporcionado ya está asociado con un paciente existente. Por favor, verifique el identificador y vuelva a intentarlo.",
   "patientIdentifiersSaved": "Identificador(es) del paciente guardado(s) con éxito",
+  "patientIdentifierValidationFailed": "Could not validate patient identifiers",
+  "patientIdentifierValidationFailedDescription": "The duplicate identifier check could not be completed. Please check your connection and try again.",
   "patientIdIsMissing": "Falta el ID del paciente",
   "patientIsAlreadyMarkedAsDeceased": "El paciente ya está marcado como fallecido",
   "patientProgramsSaved": "Programa(s) del paciente guardado(s) con éxito",

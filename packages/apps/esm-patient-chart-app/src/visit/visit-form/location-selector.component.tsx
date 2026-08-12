@@ -51,7 +51,9 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ control, lockedLoca
 
   useEffect(() => {
     if (config.restrictByVisitLocationTag && !isEmrApiModuleInstalled) {
-      console.warn('EMR API module is not installed. The default visit location cannot be resolved from its hierarchy.');
+      console.warn(
+        'EMR API module is not installed. The default visit location cannot be resolved from its hierarchy.',
+      );
     }
   }, [config.restrictByVisitLocationTag, isEmrApiModuleInstalled]);
 

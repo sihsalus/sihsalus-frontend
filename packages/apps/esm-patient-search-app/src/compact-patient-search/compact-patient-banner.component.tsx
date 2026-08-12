@@ -5,10 +5,7 @@ import React, { forwardRef, useCallback, useContext, useMemo } from 'react';
 import { type PatientSearchConfig } from '../config-schema';
 import { usePatientChartAccess } from '../patient-chart-access';
 import { PatientSearchContext } from '../patient-search-context';
-import {
-  getSearchedPatientDisplayName,
-  mapSearchedPatientToFhir,
-} from '../patient-search-result.utils';
+import { getSearchedPatientDisplayName, mapSearchedPatientToFhir } from '../patient-search-result.utils';
 import { SihsalusPatientInfo } from '../sihsalus-patient-info/sihsalus-patient-info.component';
 import type { SearchedPatient } from '../types';
 
@@ -90,11 +87,7 @@ const ClickablePatientContainer = ({ patient, children }: ClickablePatientContai
     );
   }
 
-  return (
-    <div className={classNames(styles.patientSearchResult, { [styles.deceased]: isDeceased })}>
-      {children}
-    </div>
-  );
+  return <div className={classNames(styles.patientSearchResult, { [styles.deceased]: isDeceased })}>{children}</div>;
 };
 
 export default CompactPatientBanner;

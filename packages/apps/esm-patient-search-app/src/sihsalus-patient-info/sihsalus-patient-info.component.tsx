@@ -17,10 +17,7 @@ function isDniIdentifier(identifier: fhir.Identifier) {
   const codingDisplay = coding?.display?.trim().toLowerCase();
 
   return (
-    typeText === 'dni' ||
-    codingDisplay === 'dni' ||
-    codingCode === 'dni' ||
-    coding?.code === dniIdentifierTypeUuid
+    typeText === 'dni' || codingDisplay === 'dni' || codingCode === 'dni' || coding?.code === dniIdentifierTypeUuid
   );
 }
 

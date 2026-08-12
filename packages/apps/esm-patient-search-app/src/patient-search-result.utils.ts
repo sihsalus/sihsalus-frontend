@@ -74,8 +74,8 @@ export function mapSearchedPatientToFhir(patient: SearchedPatient): MappedSearch
   const preferredAddress = addresses.find((address) => isObject(address) && address.preferred);
   const identifiers = Array.isArray(patient.identifiers) ? patient.identifiers : [];
   const personName = patient.person.personName;
-  const givenNames = [personName?.givenName, personName?.middleName].filter(
-    (name): name is string => Boolean(getNonEmptyString(name)),
+  const givenNames = [personName?.givenName, personName?.middleName].filter((name): name is string =>
+    Boolean(getNonEmptyString(name)),
   );
   const familyName = [personName?.familyName, personName?.familyName2]
     .filter((name): name is string => Boolean(getNonEmptyString(name)))

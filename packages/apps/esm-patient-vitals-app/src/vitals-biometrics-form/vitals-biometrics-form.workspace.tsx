@@ -407,10 +407,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
     if (err?.bloodPressureOrder) {
       setShowErrorMessage(false);
       setFormErrorMessage(
-        t(
-          'bloodPressureOrder',
-          'Systolic blood pressure must be greater than diastolic blood pressure',
-        ),
+        t('bloodPressureOrder', 'Systolic blood pressure must be greater than diastolic blood pressure'),
       );
       setShowErrorNotification(true);
       return;

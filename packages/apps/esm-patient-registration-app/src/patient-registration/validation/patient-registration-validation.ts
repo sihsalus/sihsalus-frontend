@@ -722,51 +722,53 @@ export function getValidationSchema(
           return !isUnidentifiedPatient(values, config) || hasActiveRelationship(relationships);
         },
       ),
-  }).test(
-    'insurance-accreditation-date-after-birthdate',
-    insuranceAccreditationDateBeforeBirthdateMessage,
-    function (values) {
-      const formValues = values as unknown as FormValues | undefined;
-      const insuranceAccreditationCheckedAt = parseDateOnly(
-        getAttributeValue(formValues, insuranceAccreditationCheckedAtAttributeUuid),
-      );
-      const birthdate = parseDateOnly(formValues?.birthdate);
+  })
+    .test(
+      'insurance-accreditation-date-after-birthdate',
+      insuranceAccreditationDateBeforeBirthdateMessage,
+      function (values) {
+        const formValues = values as unknown as FormValues | undefined;
+        const insuranceAccreditationCheckedAt = parseDateOnly(
+          getAttributeValue(formValues, insuranceAccreditationCheckedAtAttributeUuid),
+        );
+        const birthdate = parseDateOnly(formValues?.birthdate);
 
-      if (
-        !insuranceAccreditationCheckedAt ||
-        !birthdate ||
-        !insuranceAccreditationCheckedAt.isBefore(birthdate, 'day')
-      ) {
+        if (
+          !insuranceAccreditationCheckedAt ||
+          !birthdate ||
+          !insuranceAccreditationCheckedAt.isBefore(birthdate, 'day')
+        ) {
+          return true;
+        }
+
+        return this.createError({
+          path: `attributes.${insuranceAccreditationCheckedAtAttributeUuid}`,
+          message: insuranceAccreditationDateBeforeBirthdateMessage,
+        });
+      },
+    )
+    .test('sis-requires-insurance-code', insuranceCodeRequiredForSisMessage, function (values) {
+      // NTS 139: la filiación de la HC debe incluir los datos del seguro, y el FUA
+      // es declaración jurada — un afiliado SIS sin código se rechaza al facturar.
+      const formValues = values as unknown as FormValues | undefined;
+
+      if (!insuranceTypeAttributeUuid || !insuranceCodeAttributeUuid) {
+        return true;
+      }
+
+      const insuranceType = getAttributeValue(formValues, insuranceTypeAttributeUuid);
+      if (insuranceType !== peruInsuranceSisConceptUuid) {
+        return true;
+      }
+
+      const insuranceCode = getAttributeValue(formValues, insuranceCodeAttributeUuid);
+      if (typeof insuranceCode === 'string' && insuranceCode.trim()) {
         return true;
       }
 
       return this.createError({
-        path: `attributes.${insuranceAccreditationCheckedAtAttributeUuid}`,
-        message: insuranceAccreditationDateBeforeBirthdateMessage,
+        path: `attributes.${insuranceCodeAttributeUuid}`,
+        message: insuranceCodeRequiredForSisMessage,
       });
-    },
-  ).test('sis-requires-insurance-code', insuranceCodeRequiredForSisMessage, function (values) {
-    // NTS 139: la filiación de la HC debe incluir los datos del seguro, y el FUA
-    // es declaración jurada — un afiliado SIS sin código se rechaza al facturar.
-    const formValues = values as unknown as FormValues | undefined;
-
-    if (!insuranceTypeAttributeUuid || !insuranceCodeAttributeUuid) {
-      return true;
-    }
-
-    const insuranceType = getAttributeValue(formValues, insuranceTypeAttributeUuid);
-    if (insuranceType !== peruInsuranceSisConceptUuid) {
-      return true;
-    }
-
-    const insuranceCode = getAttributeValue(formValues, insuranceCodeAttributeUuid);
-    if (typeof insuranceCode === 'string' && insuranceCode.trim()) {
-      return true;
-    }
-
-    return this.createError({
-      path: `attributes.${insuranceCodeAttributeUuid}`,
-      message: insuranceCodeRequiredForSisMessage,
     });
-  });
 }

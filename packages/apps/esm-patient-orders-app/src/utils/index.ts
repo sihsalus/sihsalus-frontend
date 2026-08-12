@@ -81,7 +81,7 @@ export function buildLabOrder(order: Order, action?: OrderAction) {
 
   const priorityUuid = priorityMatch ? priorityMatch[1].toLowerCase() : null;
   const matchedPriority = configSchema.priorityConfigs._default.find(
-    (p) => p.conceptUuid.toLowerCase() === priorityUuid || p.conceptUuid.toLowerCase() === order.urgency?.toLowerCase()
+    (p) => p.conceptUuid.toLowerCase() === priorityUuid || p.conceptUuid.toLowerCase() === order.urgency?.toLowerCase(),
   );
   const urgency = priorityMatch ? priorityMatch[1] : order.urgency;
   const urgencyCode = matchedPriority ? matchedPriority.urgency : (order.urgency as string);
@@ -119,7 +119,7 @@ export function buildGeneralOrder(order: Order, action?: OrderAction): OrderBask
 
   const priorityUuid = priorityMatch ? priorityMatch[1].toLowerCase() : null;
   const matchedPriority = configSchema.priorityConfigs._default.find(
-    (p) => p.conceptUuid.toLowerCase() === priorityUuid || p.conceptUuid.toLowerCase() === order.urgency?.toLowerCase()
+    (p) => p.conceptUuid.toLowerCase() === priorityUuid || p.conceptUuid.toLowerCase() === order.urgency?.toLowerCase(),
   );
   const urgency = priorityMatch ? priorityMatch[1] : order.urgency;
   const urgencyCode = matchedPriority ? matchedPriority.urgency : (order.urgency as string);

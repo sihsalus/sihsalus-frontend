@@ -13,12 +13,7 @@ const queueEntryActionPrivileges = [
   'Get Queues',
   'Manage Queue Entries',
 ];
-const triageActionPrivileges = [
-  vitalsEditPrivilege,
-  'Get Queue Entries',
-  'Get Queues',
-  'Manage Queue Entries',
-];
+const triageActionPrivileges = [vitalsEditPrivilege, 'Get Queue Entries', 'Get Queues', 'Manage Queue Entries'];
 const queueEntryCreationPrivileges = [
   serviceQueuesEditPrivilege,
   'Get Patients',

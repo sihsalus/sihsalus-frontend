@@ -184,7 +184,9 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
               aria-label={t('selectQueueLocation', 'Select a queue UPSS')}
               className={styles.dropdown}
               id="queueLocationDropdown"
-              label={selectedQueueLocationIsAvailable ? (selectedQueueLocationName ?? t('all', 'All')) : t('all', 'All')}
+              label={
+                selectedQueueLocationIsAvailable ? (selectedQueueLocationName ?? t('all', 'All')) : t('all', 'All')
+              }
               items={
                 upssLocations.length !== 1 ? [{ id: 'all', name: t('all', 'All') }, ...upssLocations] : upssLocations
               }

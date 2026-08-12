@@ -135,10 +135,8 @@ export function useTreatmentPlan(
     },
     [concepts, isEncounterFromRestrictedForm, legacyCe001FieldPaths],
   );
-  const { data, error, isLoading, isValidating, mutate, pagination, sourceErrors } = useMergedClinicalHistoryPagination<Encounter>(
-    sources,
-    isRelevant,
-  );
+  const { data, error, isLoading, isValidating, mutate, pagination, sourceErrors } =
+    useMergedClinicalHistoryPagination<Encounter>(sources, isRelevant);
 
   const getObsValue = (
     obs: Obs[] | undefined,

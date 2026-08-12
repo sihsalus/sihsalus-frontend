@@ -97,9 +97,7 @@ describe('visit summary stable identities', () => {
     );
     const firstDiagnosis = screen.getByText('Condition A');
 
-    rerender(
-      <VisitSummary encounters={[makeVisitNoteEncounter([...diagnoses].reverse())]} patientUuid="patient" />,
-    );
+    rerender(<VisitSummary encounters={[makeVisitNoteEncounter([...diagnoses].reverse())]} patientUuid="patient" />);
 
     expect(screen.getByText('Condition A')).toBe(firstDiagnosis);
   });

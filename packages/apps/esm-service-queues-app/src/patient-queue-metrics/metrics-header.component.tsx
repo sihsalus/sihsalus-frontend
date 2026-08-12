@@ -12,7 +12,11 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { serviceQueuesBasePath } from '../constants';
-import { canAssignProviderToQueueRoom, canManageServiceQueueCatalog, canManageServiceQueueRoomCatalog } from '../permissions';
+import {
+  canAssignProviderToQueueRoom,
+  canManageServiceQueueCatalog,
+  canManageServiceQueueRoomCatalog,
+} from '../permissions';
 
 import styles from './metrics-header.scss';
 

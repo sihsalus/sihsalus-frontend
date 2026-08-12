@@ -19,9 +19,7 @@ describe('useBackendDependencies', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     clearCache();
-    window.installedModules = [
-      ['@openmrs/esm-test-app', { backendDependencies: { 'webservices.rest': '^2.0.0' } }],
-    ];
+    window.installedModules = [['@openmrs/esm-test-app', { backendDependencies: { 'webservices.rest': '^2.0.0' } }]];
   });
 
   afterEach(() => {

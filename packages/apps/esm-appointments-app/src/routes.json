@@ -158,18 +158,12 @@
     {
       "name": "end-appointment-modal",
       "component": "endAppointmentModal",
-      "privileges": [
-        "app:home.citas",
-        "app:home.citas.editar.finalizarAtencion"
-      ]
+      "privileges": ["app:home.citas", "app:home.citas.editar.finalizarAtencion"]
     },
     {
       "name": "patient-chart-end-appointment-modal",
       "component": "endAppointmentModal",
-      "privileges": [
-        "app:hoja.clinica.citas",
-        "app:hoja.clinica.citas.editar.finalizarAtencion"
-      ]
+      "privileges": ["app:hoja.clinica.citas", "app:hoja.clinica.citas.editar.finalizarAtencion"]
     },
     {
       "name": "cancel-appointment-modal",

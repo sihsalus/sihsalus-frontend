@@ -626,7 +626,11 @@ describe('OrderDetailsTable', () => {
   it('discards a drug hydration result after the patient context changes', async () => {
     const hydration = createDeferred<{ data: Order }>();
     mockGetDrugOrderByUuid.mockReturnValue(hydration.promise);
-    const { rerender } = renderSingleOrder(drugOrder, [medicationsEditPrivilege, ordersEditPrivilege, basketWindowPrivilege]);
+    const { rerender } = renderSingleOrder(drugOrder, [
+      medicationsEditPrivilege,
+      ordersEditPrivilege,
+      basketWindowPrivilege,
+    ]);
 
     await openActionsMenu();
     await user.click(screen.getByText('Modify order'));
@@ -649,7 +653,11 @@ describe('OrderDetailsTable', () => {
     const hydration = createDeferred<{ data: Order }>();
     const settledHydration = hydration.promise.catch(() => undefined);
     mockGetDrugOrderByUuid.mockReturnValue(hydration.promise);
-    const { unmount } = renderSingleOrder(drugOrder, [medicationsEditPrivilege, ordersEditPrivilege, basketWindowPrivilege]);
+    const { unmount } = renderSingleOrder(drugOrder, [
+      medicationsEditPrivilege,
+      ordersEditPrivilege,
+      basketWindowPrivilege,
+    ]);
 
     await openActionsMenu();
     await user.click(screen.getByText('Modify order'));
@@ -669,7 +677,11 @@ describe('OrderDetailsTable', () => {
   it('discards a drug hydration result after the authenticated session changes', async () => {
     const hydration = createDeferred<{ data: Order }>();
     mockGetDrugOrderByUuid.mockReturnValue(hydration.promise);
-    const { rerender } = renderSingleOrder(drugOrder, [medicationsEditPrivilege, ordersEditPrivilege, basketWindowPrivilege]);
+    const { rerender } = renderSingleOrder(drugOrder, [
+      medicationsEditPrivilege,
+      ordersEditPrivilege,
+      basketWindowPrivilege,
+    ]);
 
     await openActionsMenu();
     await user.click(screen.getByText('Modify order'));
@@ -680,12 +692,7 @@ describe('OrderDetailsTable', () => {
       sessionId: 'another-session-id',
     });
     rerender(
-      <OrderDetailsTable
-        patientUuid={drugOrder.patient.uuid}
-        showAddButton
-        showPrintButton
-        title="Patient Orders"
-      />,
+      <OrderDetailsTable patientUuid={drugOrder.patient.uuid} showAddButton showPrintButton title="Patient Orders" />,
     );
     await act(async () => {
       hydration.resolve({ data: hydratedDrugOrder });
@@ -750,9 +757,7 @@ describe('OrderDetailsTable', () => {
     });
     expect(mockSetOrders).toHaveBeenCalledTimes(1);
     expect(mockSetOrders).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ previousOrder: secondDrugOrder.uuid }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ previousOrder: secondDrugOrder.uuid })]),
     );
 
     await act(async () => {
@@ -798,7 +803,11 @@ describe('OrderDetailsTable', () => {
   it('discards a drug hydration when medication edit access is revoked before it resolves', async () => {
     const hydration = createDeferred<{ data: Order }>();
     mockGetDrugOrderByUuid.mockReturnValue(hydration.promise);
-    const { rerender } = renderSingleOrder(drugOrder, [medicationsEditPrivilege, ordersEditPrivilege, basketWindowPrivilege]);
+    const { rerender } = renderSingleOrder(drugOrder, [
+      medicationsEditPrivilege,
+      ordersEditPrivilege,
+      basketWindowPrivilege,
+    ]);
 
     await openActionsMenu();
     await user.click(screen.getByText('Modify order'));
@@ -806,12 +815,7 @@ describe('OrderDetailsTable', () => {
 
     mockUserHasAccess.mockReturnValue(false);
     rerender(
-      <OrderDetailsTable
-        patientUuid={drugOrder.patient.uuid}
-        showAddButton
-        showPrintButton
-        title="Patient Orders"
-      />,
+      <OrderDetailsTable patientUuid={drugOrder.patient.uuid} showAddButton showPrintButton title="Patient Orders" />,
     );
     await act(async () => {
       hydration.resolve({ data: hydratedDrugOrder });
@@ -888,7 +892,10 @@ describe('OrderDetailsTable', () => {
       label: 'general order',
       order: generalOrder,
     },
-  ])('disables only Modify when a $label with the same concept is already in its basket', async ({ basketOrder, order }) => {
+  ])('disables only Modify when a $label with the same concept is already in its basket', async ({
+    basketOrder,
+    order,
+  }) => {
     renderSingleOrder(order, [ordersEditPrivilege, basketWindowPrivilege], [basketOrder]);
 
     await openActionsMenu();
@@ -936,12 +943,7 @@ describe('OrderDetailsTable', () => {
     translationMock.values.allOrders = 'Todas las órdenes';
     await act(async () => {
       rerender(
-        <OrderDetailsTable
-          patientUuid="mock-patient-uuid"
-          showAddButton
-          showPrintButton
-          title="Patient Orders"
-        />,
+        <OrderDetailsTable patientUuid="mock-patient-uuid" showAddButton showPrintButton title="Patient Orders" />,
       );
     });
 

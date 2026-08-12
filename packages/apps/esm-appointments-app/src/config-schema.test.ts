@@ -63,7 +63,9 @@ describe('appointments configuration', () => {
       encounterTypeUuid: '67a71486-1a54-468f-ac3e-7091a9a79584',
     });
     expect(
-      arrivalRules.filter(({ arrivalPolicy }) => arrivalPolicy !== 'direct').every(({ requiresTriage }) => requiresTriage),
+      arrivalRules
+        .filter(({ arrivalPolicy }) => arrivalPolicy !== 'direct')
+        .every(({ requiresTriage }) => requiresTriage),
     ).toBe(true);
   });
 

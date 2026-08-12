@@ -384,7 +384,6 @@ test('closes the form and the workspace when the cancel button is clicked', asyn
   expect(defaultProps.closeWorkspace).toHaveBeenCalledTimes(1);
 });
 
-
 async function selectCodigoPrestacional(user: ReturnType<typeof userEvent.setup>) {
   mockFetchPrestacionalConceptsByName.mockResolvedValue([
     { uuid: 'prestacional-001', display: '001 - Consulta externa' },

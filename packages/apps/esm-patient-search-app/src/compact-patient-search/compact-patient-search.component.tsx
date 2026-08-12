@@ -67,11 +67,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
 
   const recentPatientSearchResponse = useRestPatients(recentlyViewedPatientUuids, !hasCurrentSearchTerm);
   const { data: recentPatients, fetchError } = recentPatientSearchResponse;
-  const patientsForKeyboardNavigation = shouldSearch
-    ? searchedPatients
-    : !hasCurrentSearchTerm
-      ? recentPatients
-      : null;
+  const patientsForKeyboardNavigation = shouldSearch ? searchedPatients : !hasCurrentSearchTerm ? recentPatients : null;
 
   const handleFocusToInput = useCallback(() => {
     if (searchInputRef.current) {

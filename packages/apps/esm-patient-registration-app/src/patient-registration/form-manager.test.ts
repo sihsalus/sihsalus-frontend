@@ -570,11 +570,7 @@ describe('FormManager', () => {
 
       expect(mockDeletePersonAttribute).toHaveBeenCalledTimes(sisAttributeTypeUuids.length);
       sisAttributeTypeUuids.forEach((attributeTypeUuid) => {
-        expect(mockDeletePersonAttribute).toHaveBeenCalledWith(
-          'patient-uuid',
-          `value-${attributeTypeUuid}`,
-          undefined,
-        );
+        expect(mockDeletePersonAttribute).toHaveBeenCalledWith('patient-uuid', `value-${attributeTypeUuid}`, undefined);
       });
     });
 

@@ -41,11 +41,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
   const normalizedSearchTerm = useMemo(() => searchTerm?.trim() ?? '', [searchTerm]);
   const debouncedSearchTerm = useDebounce(normalizedSearchTerm);
   const shouldSearch = isPatientSearchTermValid(normalizedSearchTerm) && normalizedSearchTerm === debouncedSearchTerm;
-  const patientSearchResponse = useInfinitePatientSearch(
-    debouncedSearchTerm,
-    config.includeDead,
-    shouldSearch,
-  );
+  const patientSearchResponse = useInfinitePatientSearch(debouncedSearchTerm, config.includeDead, shouldSearch);
   const { data: patients } = patientSearchResponse;
   const visiblePatients = shouldSearch ? patients : null;
 

@@ -16,10 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { serviceQueuesPatientVitalsWorkspace } from '../../constants';
 import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
 import { canEditServiceQueues, canTriageQueuePatients } from '../../permissions';
-import {
-  getAppointmentTriageConfig,
-  transitionTriagedPatient,
-} from '../../triage-workflow/triage-workflow.resource';
+import { getAppointmentTriageConfig, transitionTriagedPatient } from '../../triage-workflow/triage-workflow.resource';
 import { type QueueTableCellComponentProps, type QueueTableColumnFunction } from '../../types';
 
 import styles from './queue-table-action-cell.scss';
@@ -33,11 +30,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
   const isTriageQueue = Boolean(queueEntry.workflow?.isTriageQueue);
   const requiresCashier = isTriageQueue && queueEntry.workflow?.sisState !== 'active';
   const canOpenBilling = userHasAccess('app:home.facturacion', session?.user);
-  const canPerformTriage =
-    isTriageQueue &&
-    !requiresCashier &&
-    canTriage &&
-    Boolean(queueEntry.visit?.uuid);
+  const canPerformTriage = isTriageQueue && !requiresCashier && canTriage && Boolean(queueEntry.visit?.uuid);
   const [isSubmittingTriage, setIsSubmittingTriage] = useState(false);
   const { mutateQueueEntries } = useMutateQueueEntries();
 
@@ -49,10 +42,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
         isLowContrast: true,
         kind: 'success',
         title: t('triageCompleted', 'Triaje realizado'),
-        subtitle: t(
-          'patientSentToClinicalQueue',
-          'El paciente fue enviado a la cola correspondiente a su cita.',
-        ),
+        subtitle: t('patientSentToClinicalQueue', 'El paciente fue enviado a la cola correspondiente a su cita.'),
       });
     } catch (error) {
       showSnackbar({
@@ -61,10 +51,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
         title: t('triageRoutingFailed', 'El triaje se guardó, pero no se pudo derivar al paciente'),
         subtitle: getUserFacingErrorMessage(
           error,
-          t(
-            'triageRoutingFailedDescription',
-            'Use “Enviar a atención” para reintentar o revise la ruta de la cita.',
-          ),
+          t('triageRoutingFailedDescription', 'Use “Enviar a atención” para reintentar o revise la ruta de la cita.'),
           { logContext: `Route triaged queue entry ${queueEntry.uuid}` },
         ),
       });
@@ -128,11 +115,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
   return (
     <div className={styles.actionsCell}>
       {isTriageQueue && requiresCashier ? (
-        <Button
-          kind="danger--tertiary"
-          onClick={handleSendToCashier}
-          size={isDesktop(layout) ? 'sm' : 'lg'}
-        >
+        <Button kind="danger--tertiary" onClick={handleSendToCashier} size={isDesktop(layout) ? 'sm' : 'lg'}>
           {canOpenBilling ? t('sendToCashier', 'Derivar a Caja') : t('requiresCashier', 'Requiere Caja')}
         </Button>
       ) : isTriageQueue && canPerformTriage ? (

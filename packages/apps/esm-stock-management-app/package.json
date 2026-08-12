@@ -44,7 +44,7 @@
     "@hookform/resolvers": "^3.3.0",
     "@playwright/test": "^1.58.2",
     "@sihsalus/esm-rbac": "workspace:*",
-    "dompurify": "3.4.12",
+    "dompurify": "3.4.13",
     "dotenv": "^17.3.1",
     "file-saver": "^2.0.5",
     "lodash-es": "^4.17.21",

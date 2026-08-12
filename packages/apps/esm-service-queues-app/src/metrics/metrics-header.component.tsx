@@ -4,7 +4,7 @@ import { isDesktop, navigate, useLayoutType } from '@openmrs/esm-framework';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { serviceQueuesBasePath } from '../constants';
-import { useQueueEntries } from '../hooks/useQueueEntries';
+import { useOperationalQueueEntries } from '../hooks/useOperationalQueueEntries';
 import ClearQueueEntries from '../modals/clear-queue-entries-modal/clear-queue-entries.component';
 import AddPatientToQueueButton from '../queue-table/components/add-patient-to-queue-button.component';
 import { useServiceQueuesStore } from '../store/store';
@@ -23,7 +23,7 @@ const MetricsHeader = () => {
     }),
     [selectedServiceUuid, selectedQueueLocationUuid],
   );
-  const { queueEntries } = useQueueEntries(searchCriteria);
+  const { queueEntries } = useOperationalQueueEntries(searchCriteria);
 
   return (
     <div className={styles.metricsContainer}>

@@ -5,6 +5,7 @@ import {
   DatePickerInput,
   DatePickerSkeleton,
   Form,
+  InlineNotification,
   InlineLoading,
   RadioButton,
   RadioButtonGroup,
@@ -38,7 +39,8 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { type ChartConfig } from '../config-schema';
-import { markPatientDeceased, useCausesOfDeath } from '../data.resource';
+import { useCausesOfDeath } from '../data.resource';
+import { type DeathCareContext, reconcileDeceasedPatientWorkflow } from './deceased-patient-workflow.resource';
 
 import styles from './mark-patient-deceased-form.scss';
 
@@ -82,6 +84,9 @@ const MarkPatientDeceasedForm: React.FC<MarkPatientDeceasedWorkspaceProps> = (pr
       deathDate: z.date().refine((date) => !!date, {
         message: t('deathDateRequired', 'Please select the date of death'),
       }),
+      careContext: z.string().refine((value) => ['during-care', 'outside-care'].includes(value), {
+        message: t('deathCareContextRequired', 'Select the care context in which the death was recorded'),
+      }),
       nonCodedCauseOfDeath: z.string().optional(),
     })
     .refine((data) => !(data.causeOfDeath === freeTextFieldConceptUuid && !data.nonCodedCauseOfDeath), {
@@ -102,6 +107,7 @@ const MarkPatientDeceasedForm: React.FC<MarkPatientDeceasedWorkspaceProps> = (pr
     defaultValues: {
       causeOfDeath: '',
       deathDate: new Date(),
+      careContext: '',
       nonCodedCauseOfDeath: '',
     },
   });
@@ -121,26 +127,43 @@ const MarkPatientDeceasedForm: React.FC<MarkPatientDeceasedWorkspaceProps> = (pr
   );
 
   const onSubmit: SubmitHandler<MarkPatientDeceasedFormSchema> = useCallback(
-    (data) => {
-      const { causeOfDeath, deathDate, nonCodedCauseOfDeath } = data;
+    async (data) => {
+      const { careContext, causeOfDeath, deathDate, nonCodedCauseOfDeath } = data;
 
-      markPatientDeceased(deathDate, patientUuid, causeOfDeath, nonCodedCauseOfDeath)
-        .then(async () => {
-          await closeCurrentWorkspace(true);
-          globalThis.location.reload();
-        })
-        .catch((error) => {
-          showSnackbar({
-            kind: 'error',
-            isLowContrast: false,
-            subtitle: getUserFacingErrorMessage(
-              error,
-              t('errorMarkingPatientDeceasedMessage', 'No se pudo registrar el fallecimiento. Intente nuevamente.'),
-              { logContext: 'Mark patient deceased' },
-            ),
-            title: t('errorMarkingPatientDeceased', 'Error marking patient deceased'),
-          });
+      try {
+        await reconcileDeceasedPatientWorkflow({
+          careContext: careContext as DeathCareContext,
+          causeOfDeath,
+          deathDate,
+          nonCodedCauseOfDeath,
+          patientUuid,
         });
+        await closeCurrentWorkspace(true);
+        globalThis.location.reload();
+      } catch (error) {
+        const reconciliationFailed =
+          error &&
+          typeof error === 'object' &&
+          'code' in error &&
+          error.code === 'DECEASED_PATIENT_RECONCILIATION_FAILED';
+        showSnackbar({
+          kind: 'error',
+          isLowContrast: false,
+          subtitle: reconciliationFailed
+            ? t(
+                'errorReconcilingDeceasedPatientMessage',
+                'The death was recorded, but visits, queues, or appointments could not all be closed. Correct the problem and save again; completed steps will not be repeated.',
+              )
+            : getUserFacingErrorMessage(
+                error,
+                t('errorMarkingPatientDeceasedMessage', 'No se pudo registrar el fallecimiento. Intente nuevamente.'),
+                { logContext: 'Mark patient deceased' },
+              ),
+          title: reconciliationFailed
+            ? t('errorReconcilingDeceasedPatient', 'Incomplete death workflow')
+            : t('errorMarkingPatientDeceased', 'Error marking patient deceased'),
+        });
+      }
     },
     [closeCurrentWorkspace, patientUuid, t],
   );
@@ -160,6 +183,44 @@ const MarkPatientDeceasedForm: React.FC<MarkPatientDeceasedWorkspaceProps> = (pr
               {t('markDeceasedWarning', 'Marking the patient as deceased will end any active visits for this patient')}
             </span>
           </span>
+          <InlineNotification
+            hideCloseButton
+            kind="info"
+            lowContrast
+            title={t('deathWorkflowTitle', 'Operational closure')}
+            subtitle={t(
+              'deathWorkflowDescription',
+              'Active visits and queues will be closed. Pending appointments will be cancelled; a checked-in appointment is completed only when the death occurred during that care.',
+            )}
+          />
+          <section>
+            <div className={styles.sectionTitle}>{t('deathCareContext', 'Care context')}</div>
+            <Controller
+              name="careContext"
+              control={control}
+              render={({ field: { onChange, value } }) => (
+                <RadioButtonGroup
+                  className={styles.radioButtonGroup}
+                  name="death-care-context"
+                  orientation="vertical"
+                  onChange={onChange}
+                  valueSelected={value}
+                >
+                  <RadioButton
+                    id="death-during-care"
+                    labelText={t('deathDuringCare', 'During active care')}
+                    value="during-care"
+                  />
+                  <RadioButton
+                    id="death-outside-care"
+                    labelText={t('deathOutsideCare', 'Outside active care or retrospective record')}
+                    value="outside-care"
+                  />
+                </RadioButtonGroup>
+              )}
+            />
+            {errors?.careContext && <p className={styles.errorMessage}>{errors.careContext.message}</p>}
+          </section>
           <section>
             <div className={styles.sectionTitle}>{t('dateOfDeath', 'Date of death')}</div>
             {causesOfDeath?.length ? (

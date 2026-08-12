@@ -12,6 +12,7 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ExtensionSlot,
+  fetchCurrentPatient,
   getUserFacingErrorMessage as frameworkGetUserFacingErrorMessage,
   showSnackbar,
   useConfig,
@@ -198,6 +199,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   // comes from the visit (or an explicit workspace override), never from the session.
   const session = useSession();
   const patient = usePatient(patientUuid);
+  const isPatientDeceased = Boolean(patient?.patient?.deceasedBoolean || patient?.patient?.deceasedDateTime);
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
   const {
     data: conceptUnits,
@@ -486,6 +488,38 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       setShowErrorNotification(false);
       setFormErrorMessage('');
 
+      try {
+        const latestPatient = await fetchCurrentPatient(patientUuid, undefined, false);
+        if (!latestPatient) {
+          throw new Error('The patient could not be loaded.');
+        }
+        if (latestPatient.deceasedBoolean || latestPatient.deceasedDateTime) {
+          showSnackbar({
+            title: t('vitalsAndBiometricsSaveBlocked', 'Vitals and biometrics cannot be saved'),
+            kind: 'error',
+            isLowContrast: false,
+            subtitle: t('deceasedPatientVitalsBlocked', 'New vitals cannot be recorded for a deceased patient.'),
+          });
+          return;
+        }
+      } catch (error) {
+        showSnackbar({
+          title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
+          kind: 'error',
+          isLowContrast: false,
+          subtitle: getCompatibleUserFacingErrorMessage(
+            error,
+            t(
+              'patientVitalStatusCheckFailed',
+              "The patient's current vital status could not be verified. Try again before saving.",
+            ),
+            { logContext: 'Check patient vital status before saving vitals' },
+            frameworkGetUserFacingErrorMessage,
+          ),
+        });
+        return;
+      }
+
       const outOfRangeEntries = Object.entries(formData)
         .filter(([, value]) => value != null && value !== '')
         .filter(([key, value]) => {
@@ -724,6 +758,18 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
     }),
     [t],
   );
+
+  if (isPatientDeceased) {
+    return renderWorkspace(
+      <InlineNotification
+        hideCloseButton
+        kind="error"
+        lowContrast={false}
+        title={t('vitalsAndBiometricsUnavailable', 'Vitals and biometrics unavailable')}
+        subtitle={t('deceasedPatientVitalsBlocked', 'New vitals cannot be recorded for a deceased patient.')}
+      />,
+    );
+  }
 
   if (config.vitals.useFormEngine) {
     return renderWorkspace(

@@ -1,4 +1,5 @@
 import {
+  fetchCurrentPatient,
   launchWorkspace2,
   navigate,
   showModal,
@@ -17,6 +18,7 @@ import { getAppointmentTriageConfig } from '../../triage-workflow/triage-workflo
 import { QueueTableActionCell } from './queue-table-action-cell.component';
 
 const mockShowModal = vi.mocked(showModal);
+const mockFetchCurrentPatient = vi.mocked(fetchCurrentPatient);
 const mockUseLayoutType = vi.mocked(useLayoutType);
 const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
@@ -36,6 +38,10 @@ describe('QueueTableActionCell', () => {
     mockUseLayoutType.mockReturnValue('small-desktop');
     mockUseSession.mockReturnValue(mockSession.data);
     mockUserHasAccess.mockReturnValue(true);
+    mockFetchCurrentPatient.mockResolvedValue({
+      id: mockQueueEntryAlice.patient.uuid,
+      deceasedBoolean: false,
+    } as fhir.Patient);
   });
 
   it('labels the overflow menu as actions instead of Carbon default options', async () => {
@@ -135,6 +141,71 @@ describe('QueueTableActionCell', () => {
     expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Realizar triaje' }));
     expect(mockLaunchWorkspace2).toHaveBeenCalled();
+  });
+
+  it('does not offer triage for a deceased patient returned by the queue API', () => {
+    const triageQueueEntry = {
+      ...mockQueueEntryAlice,
+      patient: {
+        ...mockQueueEntryAlice.patient,
+        person: { uuid: 'person-uuid', dead: true, deathDate: '2026-08-12T15:41:28.000Z' },
+      },
+      visit: { ...mockQueueEntryAlice.visit, uuid: 'visit-uuid' },
+      workflow: {
+        isTriageQueue: true,
+        sisState: 'active' as const,
+        triageState: 'pending' as const,
+      },
+    };
+    mockUserHasAccess.mockImplementation((privilege) => privilege !== serviceQueuesEditPrivilege);
+
+    render(<QueueTableActionCell queueEntry={triageQueueEntry} />);
+
+    expect(screen.queryByRole('button', { name: 'Realizar triaje' })).not.toBeInTheDocument();
+  });
+
+  it('keeps administrative cleanup actions but does not offer queue transition for a deceased patient', () => {
+    const deceasedQueueEntry = {
+      ...mockQueueEntryAlice,
+      patient: {
+        ...mockQueueEntryAlice.patient,
+        person: { uuid: 'person-uuid', dead: true, deathDate: '2026-08-12T15:41:28.000Z' },
+      },
+    };
+
+    render(<QueueTableActionCell queueEntry={deceasedQueueEntry} />);
+
+    expect(screen.queryByRole('button', { name: 'Transition' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Actions' })).toBeInTheDocument();
+  });
+
+  it('fresh-checks vital status before opening triage and blocks a concurrent death', async () => {
+    const user = userEvent.setup();
+    const triageQueueEntry = {
+      ...mockQueueEntryAlice,
+      visit: { ...mockQueueEntryAlice.visit, uuid: 'visit-uuid' },
+      workflow: {
+        isTriageQueue: true,
+        sisState: 'active' as const,
+        triageState: 'pending' as const,
+      },
+    };
+    mockFetchCurrentPatient.mockResolvedValueOnce({
+      id: mockQueueEntryAlice.patient.uuid,
+      deceasedDateTime: '2026-08-12T15:41:28.000Z',
+    } as fhir.Patient);
+
+    render(<QueueTableActionCell queueEntry={triageQueueEntry} />);
+    await user.click(screen.getByRole('button', { name: 'Realizar triaje' }));
+
+    expect(mockFetchCurrentPatient).toHaveBeenCalledWith(mockQueueEntryAlice.patient.uuid, undefined, false);
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        title: 'Triaje no disponible',
+      }),
+    );
   });
 
   it('blocks triage and directs a patient without active SIS financing to the cashier', async () => {

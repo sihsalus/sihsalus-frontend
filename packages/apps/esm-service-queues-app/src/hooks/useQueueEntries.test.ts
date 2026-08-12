@@ -1,10 +1,11 @@
-import { getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
-import { renderHook } from '@testing-library/react';
+import { getUserFacingErrorMessage, openmrsFetch, showSnackbar } from '@openmrs/esm-framework';
+import { renderHook, waitFor } from '@testing-library/react';
 
-import { useMutateQueueEntries } from './useQueueEntries';
+import { useMutateQueueEntries, useQueueEntries } from './useQueueEntries';
 
 const mockMutate = vi.hoisted(() => vi.fn());
 const mockGetUserFacingErrorMessage = vi.mocked(getUserFacingErrorMessage);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 
 vi.mock('swr/_internal', async (importOriginal) => {
@@ -70,5 +71,27 @@ describe('useMutateQueueEntries', () => {
     } finally {
       consoleErrorSpy.mockRestore();
     }
+  });
+});
+
+describe('useQueueEntries representation', () => {
+  beforeEach(() => {
+    mockOpenmrsFetch.mockReset();
+    mockOpenmrsFetch.mockResolvedValue({ data: { results: [], links: [], totalCount: 0 } } as never);
+  });
+
+  // The queue table renders person.display as the patient name and derives the age
+  // from person.birthdate. Narrowing the person representation blanks both without
+  // failing a single component test, because those render fully populated fixtures.
+  it('asks for the whole person, which the queue table columns render', async () => {
+    renderHook(() => useQueueEntries());
+
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalled());
+
+    const requestedUrl = String(mockOpenmrsFetch.mock.calls[0][0]);
+    const representation = new URLSearchParams(requestedUrl.split('?')[1]).get('v');
+
+    expect(representation).toContain('person,');
+    expect(representation).not.toMatch(/person:\(/);
   });
 });

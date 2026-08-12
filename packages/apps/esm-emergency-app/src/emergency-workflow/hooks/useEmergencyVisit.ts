@@ -11,7 +11,11 @@
  */
 
 import { getUserFacingErrorMessage, openmrsFetch, showSnackbar, useConfig } from '@openmrs/esm-framework';
-import { assertFreshPatientIsAlive } from '@openmrs/esm-patient-common-lib';
+import {
+  assertFreshPatientIsAlive,
+  DECEASED_PATIENT_OPERATION_BLOCKED,
+  PATIENT_VITAL_STATUS_UNAVAILABLE,
+} from '@openmrs/esm-patient-common-lib';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Config } from '../../config-schema';
@@ -24,6 +28,11 @@ interface VisitResponse {
   };
   startDatetime: string;
   stopDatetime?: string;
+  attributes?: Array<{
+    uuid: string;
+    value?: unknown;
+    attributeType?: { uuid?: string };
+  }>;
 }
 
 interface VisitSearchResponse {
@@ -32,10 +41,86 @@ interface VisitSearchResponse {
   };
 }
 
+export const EMERGENCY_ADMINISTRATIVE_NOTES_PENDING = 'EMERGENCY_ADMINISTRATIVE_NOTES_PENDING';
+export const EMERGENCY_VISIT_UUID_UNAVAILABLE = 'EMERGENCY_VISIT_UUID_UNAVAILABLE';
+
+function administrativeNotesPending(cause?: unknown) {
+  return Object.assign(new Error('The emergency administrative notes could not be verified.', { cause }), {
+    code: EMERGENCY_ADMINISTRATIVE_NOTES_PENDING,
+  });
+}
+
 export function useEmergencyVisit() {
   const { t } = useTranslation();
   const [isCreatingVisit, setIsCreatingVisit] = useState(false);
   const config = useConfig<Config>();
+
+  const showAdministrativeNotesWarning = useCallback(() => {
+    showSnackbar({
+      title: t('visitCreatedAdministrativeNotesPending', 'Visita creada, observación pendiente'),
+      subtitle: t(
+        'couldNotSaveAdministrativeNotes',
+        'No se pudo guardar la observación administrativa de emergencia',
+      ),
+      kind: 'warning',
+    });
+  }, [t]);
+
+  const ensureAdministrativeNotes = useCallback(
+    async (patientUuid: string, visit: Pick<VisitResponse, 'uuid' | 'attributes'>, administrativeNotes?: string) => {
+      const value = administrativeNotes?.trim();
+      const attributeTypeUuid = config.patientRegistration?.administrativeNotesVisitAttributeTypeUuid;
+      if (!value || !attributeTypeUuid) {
+        return;
+      }
+
+      const matches = (attributes: VisitResponse['attributes']) =>
+        attributes?.some(
+          (attribute) =>
+            attribute.attributeType?.uuid === attributeTypeUuid && String(attribute.value ?? '').trim() === value,
+        ) ?? false;
+      if (matches(visit.attributes)) {
+        return;
+      }
+
+      const existing = visit.attributes?.find((attribute) => attribute.attributeType?.uuid === attributeTypeUuid);
+      // The active-visit guard may precede this helper. Repeat it adjacent to
+      // the attribute write because an update also mutates the visit record.
+      await assertFreshPatientIsAlive(patientUuid);
+      const url = existing
+        ? `/ws/rest/v1/visit/${visit.uuid}/attribute/${existing.uuid}`
+        : `/ws/rest/v1/visit/${visit.uuid}/attribute`;
+      const body = existing ? { value } : { attributeType: attributeTypeUuid, value };
+      let writeError: unknown;
+      try {
+        await openmrsFetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+        });
+      } catch (error) {
+        writeError = error;
+      }
+
+      let latestAttributes: VisitResponse['attributes'];
+      try {
+        const latest = await openmrsFetch<Pick<VisitResponse, 'attributes'>>(
+          `/ws/rest/v1/visit/${visit.uuid}?v=custom:(attributes:(uuid,value,attributeType:(uuid)))`,
+        );
+        latestAttributes = latest.data?.attributes;
+      } catch {
+        if (writeError) {
+          throw administrativeNotesPending(writeError);
+        }
+        throw administrativeNotesPending();
+      }
+
+      if (!matches(latestAttributes)) {
+        throw administrativeNotesPending(writeError);
+      }
+    },
+    [config.patientRegistration?.administrativeNotesVisitAttributeTypeUuid],
+  );
 
   /**
    * Verifica si el paciente tiene una visita activa de emergencia
@@ -43,7 +128,7 @@ export function useEmergencyVisit() {
   const checkActiveEmergencyVisit = useCallback(
     async (patientUuid: string): Promise<VisitResponse | null> => {
       const response: VisitSearchResponse = await openmrsFetch(
-        `/ws/rest/v1/visit?patient=${patientUuid}&includeInactive=false&v=default`,
+        `/ws/rest/v1/visit?patient=${patientUuid}&includeInactive=false&v=custom:(uuid,visitType:(uuid,display),startDatetime,stopDatetime,attributes:(uuid,value,attributeType:(uuid)))`,
       );
 
       const visits = response.data.results;
@@ -88,37 +173,25 @@ export function useEmergencyVisit() {
         // Keep the authoritative check adjacent to the visit write so a death
         // concurrent with the earlier active-visit lookup cannot create care.
         await assertFreshPatientIsAlive(patientUuid);
-        const response = await openmrsFetch('/ws/rest/v1/visit', {
+        const response = await openmrsFetch<{ uuid?: string }>('/ws/rest/v1/visit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: visitPayload,
         });
 
-        const visitUuid = response.data.uuid;
-        const trimmedAdministrativeNotes = administrativeNotes?.trim();
-        const administrativeNotesAttributeTypeUuid =
-          config.patientRegistration?.administrativeNotesVisitAttributeTypeUuid;
-
-        if (trimmedAdministrativeNotes && administrativeNotesAttributeTypeUuid) {
-          try {
-            await openmrsFetch(`/ws/rest/v1/visit/${visitUuid}/attribute`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: {
-                attributeType: administrativeNotesAttributeTypeUuid,
-                value: trimmedAdministrativeNotes,
-              },
-            });
-          } catch {
-            showSnackbar({
-              title: t('visitCreatedAdministrativeNotesPending', 'Visita creada, observación pendiente'),
-              subtitle: t(
-                'couldNotSaveAdministrativeNotes',
-                'No se pudo guardar la observación administrativa de emergencia',
-              ),
-              kind: 'warning',
-            });
+        const visitUuid = response.data?.uuid;
+        if (!visitUuid) {
+          throw Object.assign(new Error('The emergency visit response did not include a UUID.'), {
+            code: EMERGENCY_VISIT_UUID_UNAVAILABLE,
+          });
+        }
+        try {
+          await ensureAdministrativeNotes(patientUuid, { uuid: visitUuid, attributes: [] }, administrativeNotes);
+        } catch (error) {
+          if ((error as { code?: string })?.code !== EMERGENCY_ADMINISTRATIVE_NOTES_PENDING) {
+            throw error;
           }
+          showAdministrativeNotesWarning();
         }
 
         showSnackbar({
@@ -139,12 +212,21 @@ export function useEmergencyVisit() {
           ),
           kind: 'error',
         });
+        const errorCode = (error as { code?: string })?.code;
+        if (
+          errorCode === EMERGENCY_VISIT_UUID_UNAVAILABLE ||
+          errorCode === DECEASED_PATIENT_OPERATION_BLOCKED ||
+          errorCode === PATIENT_VITAL_STATUS_UNAVAILABLE ||
+          error instanceof TypeError
+        ) {
+          throw error;
+        }
         return null;
       } finally {
         setIsCreatingVisit(false);
       }
     },
-    [config, t],
+    [config, ensureAdministrativeNotes, showAdministrativeNotesWarning, t],
   );
 
   /**
@@ -160,6 +242,14 @@ export function useEmergencyVisit() {
         // Reusing a visit continues care just like creating one. Do not trust
         // the patient state embedded in a previously rendered workflow.
         await assertFreshPatientIsAlive(patientUuid);
+        try {
+          await ensureAdministrativeNotes(patientUuid, existingVisit, administrativeNotes);
+        } catch (error) {
+          if ((error as { code?: string })?.code !== EMERGENCY_ADMINISTRATIVE_NOTES_PENDING) {
+            throw error;
+          }
+          showAdministrativeNotesWarning();
+        }
         const isEmergencyVisit = existingVisit.visitType?.uuid === config.emergencyVisitTypeUuid;
         if (isEmergencyVisit) {
           showSnackbar({
@@ -188,7 +278,14 @@ export function useEmergencyVisit() {
       // 2. Si no existe, crear nueva visita
       return await createEmergencyVisit(patientUuid, startDatetime, administrativeNotes);
     },
-    [checkActiveEmergencyVisit, createEmergencyVisit, config.emergencyVisitTypeUuid, t],
+    [
+      checkActiveEmergencyVisit,
+      createEmergencyVisit,
+      config.emergencyVisitTypeUuid,
+      ensureAdministrativeNotes,
+      showAdministrativeNotesWarning,
+      t,
+    ],
   );
 
   return {

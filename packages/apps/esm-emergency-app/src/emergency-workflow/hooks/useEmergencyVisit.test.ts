@@ -6,7 +6,7 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import { act, renderHook } from '@testing-library/react';
 import { type Config, configSchema } from '../../config-schema';
-import { useEmergencyVisit } from './useEmergencyVisit';
+import { EMERGENCY_VISIT_UUID_UNAVAILABLE, useEmergencyVisit } from './useEmergencyVisit';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockShowSnackbar = vi.mocked(showSnackbar);
@@ -41,7 +41,18 @@ describe('useEmergencyVisit', () => {
   it('creates an emergency visit at the provided arrival time and stores administrative notes as a visit attribute', async () => {
     mockOpenmrsFetch
       .mockResolvedValueOnce({ data: { uuid: 'visit-uuid' } } as Awaited<ReturnType<typeof openmrsFetch>>)
-      .mockResolvedValueOnce({ data: { uuid: 'visit-attribute-uuid' } } as Awaited<ReturnType<typeof openmrsFetch>>);
+      .mockResolvedValueOnce({ data: { uuid: 'visit-attribute-uuid' } } as Awaited<ReturnType<typeof openmrsFetch>>)
+      .mockResolvedValueOnce({
+        data: {
+          attributes: [
+            {
+              uuid: 'visit-attribute-uuid',
+              attributeType: { uuid: '6ffc9f6b-a9fb-434e-9b2d-4a2591cc16b3' },
+              value: 'Ingreso por SAMU sin documentos',
+            },
+          ],
+        },
+      } as Awaited<ReturnType<typeof openmrsFetch>>);
 
     const { result } = renderHook(() => useEmergencyVisit());
     let visitUuid: string | null = null;
@@ -103,7 +114,8 @@ describe('useEmergencyVisit', () => {
   it('keeps the visit when administrative notes cannot be saved', async () => {
     mockOpenmrsFetch
       .mockResolvedValueOnce({ data: { uuid: 'visit-uuid' } } as Awaited<ReturnType<typeof openmrsFetch>>)
-      .mockRejectedValueOnce(new Error('attribute failure'));
+      .mockRejectedValueOnce(new Error('attribute failure'))
+      .mockResolvedValueOnce({ data: { attributes: [] } } as Awaited<ReturnType<typeof openmrsFetch>>);
 
     const { result } = renderHook(() => useEmergencyVisit());
     let visitUuid: string | null = null;
@@ -190,15 +202,175 @@ describe('useEmergencyVisit', () => {
     );
     const { result } = renderHook(() => useEmergencyVisit());
 
-    let visitUuid: string | null = 'not-null';
-    await act(async () => {
-      visitUuid = await result.current.getOrCreateEmergencyVisit('patient-uuid');
+    await expect(result.current.getOrCreateEmergencyVisit('patient-uuid')).rejects.toMatchObject({
+      code: PATIENT_VITAL_STATUS_UNAVAILABLE,
     });
-
-    expect(visitUuid).toBeNull();
     expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
     expect(mockOpenmrsFetch.mock.calls.some(([url, init]) => url === '/ws/rest/v1/visit' && init?.method === 'POST')).toBe(
       false,
     );
+  });
+
+  it('applies pending administrative notes when a retry recovers an active visit', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({
+        data: {
+          results: [
+            {
+              uuid: 'active-visit-uuid',
+              visitType: { uuid: config.emergencyVisitTypeUuid, display: 'Emergency' },
+              startDatetime: '2026-08-12T12:00:00.000Z',
+              attributes: [],
+            },
+          ],
+        },
+      } as Awaited<ReturnType<typeof openmrsFetch>>)
+      .mockResolvedValueOnce({ data: { uuid: 'notes-attribute-uuid' } } as Awaited<ReturnType<typeof openmrsFetch>>)
+      .mockResolvedValueOnce({
+        data: {
+          attributes: [
+            {
+              uuid: 'notes-attribute-uuid',
+              attributeType: { uuid: config.patientRegistration.administrativeNotesVisitAttributeTypeUuid },
+              value: 'Ingreso recuperado',
+            },
+          ],
+        },
+      } as Awaited<ReturnType<typeof openmrsFetch>>);
+    const { result } = renderHook(() => useEmergencyVisit());
+
+    await expect(
+      result.current.getOrCreateEmergencyVisit('patient-uuid', undefined, ' Ingreso recuperado '),
+    ).resolves.toBe('active-visit-uuid');
+
+    expect(mockAssertFreshPatientIsAlive).toHaveBeenCalledTimes(2);
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(2, '/ws/rest/v1/visit/active-visit-uuid/attribute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        attributeType: config.patientRegistration.administrativeNotesVisitAttributeTypeUuid,
+        value: 'Ingreso recuperado',
+      },
+    });
+  });
+
+  it('does not duplicate administrative notes already present on a recovered visit', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          {
+            uuid: 'active-visit-uuid',
+            visitType: { uuid: config.emergencyVisitTypeUuid, display: 'Emergency' },
+            startDatetime: '2026-08-12T12:00:00.000Z',
+            attributes: [
+              {
+                uuid: 'notes-attribute-uuid',
+                attributeType: { uuid: config.patientRegistration.administrativeNotesVisitAttributeTypeUuid },
+                value: 'Ingreso recuperado',
+              },
+            ],
+          },
+        ],
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+    const { result } = renderHook(() => useEmergencyVisit());
+
+    await expect(
+      result.current.getOrCreateEmergencyVisit('patient-uuid', undefined, 'Ingreso recuperado'),
+    ).resolves.toBe('active-visit-uuid');
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
+    expect(mockAssertFreshPatientIsAlive).toHaveBeenCalledOnce();
+  });
+
+  it('reconciles a lost administrative-note response when the value persisted', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({
+        data: {
+          results: [
+            {
+              uuid: 'active-visit-uuid',
+              visitType: { uuid: config.emergencyVisitTypeUuid, display: 'Emergency' },
+              startDatetime: '2026-08-12T12:00:00.000Z',
+              attributes: [],
+            },
+          ],
+        },
+      } as Awaited<ReturnType<typeof openmrsFetch>>)
+      .mockRejectedValueOnce(new TypeError('response lost'))
+      .mockResolvedValueOnce({
+        data: {
+          attributes: [
+            {
+              uuid: 'notes-attribute-uuid',
+              attributeType: { uuid: config.patientRegistration.administrativeNotesVisitAttributeTypeUuid },
+              value: 'Ingreso recuperado',
+            },
+          ],
+        },
+      } as Awaited<ReturnType<typeof openmrsFetch>>);
+    const { result } = renderHook(() => useEmergencyVisit());
+
+    await expect(
+      result.current.getOrCreateEmergencyVisit('patient-uuid', undefined, 'Ingreso recuperado'),
+    ).resolves.toBe('active-visit-uuid');
+
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Visita creada, observación pendiente' }),
+    );
+  });
+
+  it.each([
+    [
+      'deceased',
+      Object.assign(new Error('deceased during notes'), { code: DECEASED_PATIENT_OPERATION_BLOCKED }),
+    ],
+    [
+      'vital status unavailable',
+      Object.assign(new Error('network unavailable during notes'), { code: PATIENT_VITAL_STATUS_UNAVAILABLE }),
+    ],
+    ['network failure', new TypeError('network unavailable during notes')],
+  ])('does not recover the visit successfully when the notes fresh-check is %s', async (_state, guardError) => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          {
+            uuid: 'active-visit-uuid',
+            visitType: { uuid: config.emergencyVisitTypeUuid, display: 'Emergency' },
+            startDatetime: '2026-08-12T12:00:00.000Z',
+            attributes: [],
+          },
+        ],
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+    mockAssertFreshPatientIsAlive
+      .mockResolvedValueOnce({ dead: false, deathDate: null, isDeceased: false })
+      .mockRejectedValueOnce(guardError);
+    const { result } = renderHook(() => useEmergencyVisit());
+
+    await expect(
+      result.current.getOrCreateEmergencyVisit('patient-uuid', undefined, 'Ingreso recuperado'),
+    ).rejects.toBe(guardError);
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Visita creada, observación pendiente' }),
+    );
+  });
+
+  it('requires a newly created visit response to include a UUID', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: {} } as Awaited<ReturnType<typeof openmrsFetch>>);
+    const { result } = renderHook(() => useEmergencyVisit());
+    await expect(result.current.createEmergencyVisit('patient-uuid')).rejects.toMatchObject({
+      code: EMERGENCY_VISIT_UUID_UNAVAILABLE,
+    });
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        subtitle: expect.any(String),
+      }),
+    );
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
+    expect(EMERGENCY_VISIT_UUID_UNAVAILABLE).toBe('EMERGENCY_VISIT_UUID_UNAVAILABLE');
   });
 });

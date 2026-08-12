@@ -22,7 +22,7 @@ export const PATIENT_DEATH_STATUS_UNAVAILABLE = 'PATIENT_DEATH_STATUS_UNAVAILABL
 
 /** Fresh online check used immediately before creating an appointment. */
 export async function assertPatientCanReceiveAppointment(patientUuid: string) {
-  let vitalStatus;
+  let vitalStatus: Awaited<ReturnType<typeof fetchFreshPatientVitalStatus>>;
   try {
     vitalStatus = await fetchFreshPatientVitalStatus(patientUuid);
   } catch (error) {

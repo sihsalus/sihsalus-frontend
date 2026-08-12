@@ -397,7 +397,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
   }, [patientUuid, shouldResolveVisitBranch]);
 
   const assertPatientIsAlive = async () => {
-    let vitalStatus;
+    let vitalStatus: Awaited<ReturnType<typeof fetchFreshPatientVitalStatus>>;
     try {
       vitalStatus = await fetchFreshPatientVitalStatus(patientUuid);
     } catch (error) {

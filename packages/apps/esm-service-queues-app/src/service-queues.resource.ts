@@ -3,9 +3,7 @@ import {
   type Encounter as CoreEncounter,
   formatDate,
   type Obs,
-  openmrsFetch,
   parseDate,
-  restBaseUrl,
   type Visit,
 } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';

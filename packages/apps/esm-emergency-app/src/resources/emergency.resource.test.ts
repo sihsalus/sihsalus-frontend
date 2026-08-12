@@ -5,6 +5,7 @@ import {
   PATIENT_VITAL_STATUS_UNAVAILABLE,
 } from '@openmrs/esm-patient-common-lib';
 import {
+  assertEmergencyQueueEntryIsActiveForSubject,
   createEmergencyQueueEntry,
   EMERGENCY_QUEUE_ENTRY_ALREADY_ENDED,
   EMERGENCY_QUEUE_ENTRY_CLOSE_UNVERIFIED,
@@ -13,6 +14,8 @@ import {
   EMERGENCY_QUEUE_ENTRY_CREATION_UNVERIFIED,
   EMERGENCY_QUEUE_ENTRY_PATIENT_UNAVAILABLE,
   EMERGENCY_QUEUE_ENTRY_SEARCH_STALLED,
+  EMERGENCY_QUEUE_ENTRY_STATE_UNAVAILABLE,
+  EMERGENCY_QUEUE_ENTRY_SUBJECT_MISMATCH,
   EMERGENCY_QUEUE_ENTRY_TRANSITION_CONFLICT,
   EMERGENCY_QUEUE_ENTRY_TRANSITION_UNVERIFIED,
   EMERGENCY_QUEUE_ENTRY_UPDATE_UNVERIFIED,
@@ -311,6 +314,56 @@ const transitionParams = {
   newStatus: expectedSuccessor.status.uuid,
   newPriority: expectedSuccessor.priority.uuid,
 };
+
+describe('assertEmergencyQueueEntryIsActiveForSubject', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns an authoritative active entry for the exact patient and visit', async () => {
+    const freshResponse = response(activeQueueEntry);
+    mockOpenmrsFetch.mockResolvedValueOnce(freshResponse);
+
+    await expect(
+      assertEmergencyQueueEntryIsActiveForSubject(
+        activeQueueEntry.uuid,
+        activeQueueEntry.patient.uuid,
+        activeQueueEntry.visit.uuid,
+      ),
+    ).resolves.toBe(freshResponse);
+  });
+
+  it.each([
+    ['wrong queue UUID', { ...activeQueueEntry, uuid: 'different-entry' }],
+    ['missing endedAt state', { ...activeQueueEntry, endedAt: undefined }],
+  ])('fails closed for %s', async (_reason, invalidEntry) => {
+    const data = { ...invalidEntry } as Record<string, unknown>;
+    if (_reason === 'missing endedAt state') {
+      delete data.endedAt;
+    }
+    mockOpenmrsFetch.mockResolvedValueOnce(response(data));
+
+    await expect(
+      assertEmergencyQueueEntryIsActiveForSubject(
+        activeQueueEntry.uuid,
+        activeQueueEntry.patient.uuid,
+        activeQueueEntry.visit.uuid,
+      ),
+    ).rejects.toMatchObject({ code: EMERGENCY_QUEUE_ENTRY_STATE_UNAVAILABLE });
+  });
+
+  it('fails closed when the fresh queue entry belongs to a different visit', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce(response({ ...activeQueueEntry, visit: { uuid: 'different-visit' } }));
+
+    await expect(
+      assertEmergencyQueueEntryIsActiveForSubject(
+        activeQueueEntry.uuid,
+        activeQueueEntry.patient.uuid,
+        activeQueueEntry.visit.uuid,
+      ),
+    ).rejects.toMatchObject({ code: EMERGENCY_QUEUE_ENTRY_SUBJECT_MISMATCH });
+  });
+});
 
 describe('updateEmergencyQueueEntry', () => {
   beforeEach(() => {

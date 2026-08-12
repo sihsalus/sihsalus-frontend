@@ -8157,6 +8157,7 @@ __metadata:
     react-hook-form: "npm:^7.51.0"
     swr: "npm:^2.3.6"
     typescript: "npm:6.0.3"
+    uuid: "npm:^14.0.0"
     vitest: "npm:^4.1.7"
     zod: "npm:^3.22.0"
   peerDependencies:

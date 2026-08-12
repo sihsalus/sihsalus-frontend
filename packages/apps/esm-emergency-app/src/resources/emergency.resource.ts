@@ -706,7 +706,7 @@ export function createEmergencyQueueEntry(
  * @param updates - Partial updates to apply
  * @returns Promise with the updated queue entry
  */
-interface QueueEntryState {
+export interface QueueEntryState {
   uuid: string;
   startedAt?: string | null;
   status?: { uuid: string };
@@ -726,6 +726,8 @@ interface QueueEntrySearchResponse {
 
 export const EMERGENCY_QUEUE_ENTRY_PATIENT_UNAVAILABLE = 'EMERGENCY_QUEUE_ENTRY_PATIENT_UNAVAILABLE';
 export const EMERGENCY_QUEUE_ENTRY_ALREADY_ENDED = 'EMERGENCY_QUEUE_ENTRY_ALREADY_ENDED';
+export const EMERGENCY_QUEUE_ENTRY_SUBJECT_MISMATCH = 'EMERGENCY_QUEUE_ENTRY_SUBJECT_MISMATCH';
+export const EMERGENCY_QUEUE_ENTRY_STATE_UNAVAILABLE = 'EMERGENCY_QUEUE_ENTRY_STATE_UNAVAILABLE';
 export const EMERGENCY_QUEUE_ENTRY_UPDATE_UNVERIFIED = 'EMERGENCY_QUEUE_ENTRY_UPDATE_UNVERIFIED';
 export const EMERGENCY_QUEUE_ENTRY_TRANSITION_UNVERIFIED = 'EMERGENCY_QUEUE_ENTRY_TRANSITION_UNVERIFIED';
 export const EMERGENCY_QUEUE_ENTRY_RECONCILIATION_STALLED = 'EMERGENCY_QUEUE_ENTRY_RECONCILIATION_STALLED';
@@ -743,9 +745,61 @@ function emergencyQueueEntryError(code: string, message: string) {
  * Re-reads the queue entry and its patient instead of trusting a table row or
  * modal payload that may have become stale.
  */
-async function fetchQueueEntryState(queueEntryUuid: string): Promise<FetchResponse<QueueEntryState>> {
+export async function fetchQueueEntryState(queueEntryUuid: string): Promise<FetchResponse<QueueEntryState>> {
   const searchParams = new URLSearchParams({ v: emergencyQueueEntryStateRepresentation });
   return openmrsFetch<QueueEntryState>(`${restBaseUrl}/queue-entry/${queueEntryUuid}?${searchParams.toString()}`);
+}
+
+/**
+ * Freshly verifies that a queue entry is still active for the patient and visit
+ * about to receive a clinical write. Callers must still perform the patient
+ * vital-status assertion immediately before their own write.
+ */
+export async function assertEmergencyQueueEntryIsActiveForSubject(
+  queueEntryUuid: string,
+  patientUuid: string,
+  visitUuid: string,
+  requireActive = true,
+) {
+  const response = await fetchQueueEntryState(queueEntryUuid);
+  const normalizeUuid = (uuid: string) => uuid.trim().toLowerCase();
+  const hasVerifiableEndState =
+    response.data.endedAt === null ||
+    (typeof response.data.endedAt === 'string' && !Number.isNaN(new Date(response.data.endedAt).valueOf()));
+  if (
+    normalizeUuid(response.data.uuid ?? '') !== normalizeUuid(queueEntryUuid) ||
+    !Object.hasOwn(response.data, 'endedAt') ||
+    !hasVerifiableEndState ||
+    !response.data.startedAt ||
+    Number.isNaN(new Date(response.data.startedAt).valueOf())
+  ) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_STATE_UNAVAILABLE,
+      'The emergency queue entry state could not be verified.',
+    );
+  }
+  if (requireActive && response.data.endedAt) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_ALREADY_ENDED,
+      'Cannot record emergency care for a queue entry that has already ended or transitioned.',
+    );
+  }
+  if (!response.data.patient?.uuid) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_PATIENT_UNAVAILABLE,
+      'The emergency queue entry patient could not be verified.',
+    );
+  }
+  if (
+    normalizeUuid(response.data.patient.uuid) !== normalizeUuid(patientUuid) ||
+    normalizeUuid(response.data.visit?.uuid ?? '') !== normalizeUuid(visitUuid)
+  ) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_SUBJECT_MISMATCH,
+      'The emergency queue entry does not match the patient and visit being recorded.',
+    );
+  }
+  return response;
 }
 
 async function assertQueueEntryPatientIsAlive(queueEntry: QueueEntryState) {

@@ -15,7 +15,7 @@ import {
   showSnackbar,
   useConfig,
 } from '@openmrs/esm-framework';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { type Config } from '../config-schema';
@@ -34,11 +34,20 @@ interface AttentionFormWorkspaceProps extends DefaultWorkspaceProps {
   queueEntry: EmergencyQueueEntry;
 }
 
+interface AttentionSubmissionAttempt {
+  encounterDatetime: string;
+  encounterConfirmed: boolean;
+  encounterTypeUuid: string;
+  locationUuid: string;
+  observations: Array<{ conceptUuid: string; value: string }>;
+}
+
 const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEntry, closeWorkspace }) => {
   const { t } = useTranslation();
   const config = useConfig<Config>();
   const { mutateEmergencyQueueEntries } = useMutateEmergencyQueueEntries();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submissionAttemptRef = useRef<AttentionSubmissionAttempt | null>(null);
 
   const {
     register,
@@ -68,17 +77,34 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEn
           return;
         }
 
-        await createAttentionEncounter({
-          patientUuid: queueEntry.patient.uuid,
-          visitUuid,
-          encounterTypeUuid: attentionEncounter.encounterTypeUuid,
-          locationUuid: emergencyLocationUuid,
-          observations: [
-            { conceptUuid: attentionEncounter.concepts.diagnosisUuid, value: data.diagnosis },
-            { conceptUuid: attentionEncounter.concepts.treatmentUuid, value: data.treatment },
-            { conceptUuid: attentionEncounter.concepts.auxiliaryExamsUuid, value: data.auxiliaryExams || '' },
-          ],
-        });
+        let submissionAttempt = submissionAttemptRef.current;
+        if (!submissionAttempt) {
+          submissionAttempt = {
+            encounterDatetime: new Date().toISOString(),
+            encounterConfirmed: false,
+            encounterTypeUuid: attentionEncounter.encounterTypeUuid,
+            locationUuid: emergencyLocationUuid,
+            observations: [
+              { conceptUuid: attentionEncounter.concepts.diagnosisUuid, value: data.diagnosis },
+              { conceptUuid: attentionEncounter.concepts.treatmentUuid, value: data.treatment },
+              { conceptUuid: attentionEncounter.concepts.auxiliaryExamsUuid, value: data.auxiliaryExams || '' },
+            ],
+          };
+          submissionAttemptRef.current = submissionAttempt;
+        }
+
+        if (!submissionAttempt.encounterConfirmed) {
+          await createAttentionEncounter({
+            queueEntryUuid: queueEntry.uuid,
+            patientUuid: queueEntry.patient.uuid,
+            visitUuid,
+            encounterTypeUuid: submissionAttempt.encounterTypeUuid,
+            locationUuid: submissionAttempt.locationUuid,
+            encounterDatetime: submissionAttempt.encounterDatetime,
+            observations: submissionAttempt.observations,
+          });
+          submissionAttempt.encounterConfirmed = true;
+        }
 
         await endEmergencyQueueEntry(queueEntry.uuid);
 
@@ -107,6 +133,7 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEn
           timeoutInMs: 5000,
         });
 
+        submissionAttemptRef.current = null;
         closeWorkspace();
       } catch (error) {
         showSnackbar({

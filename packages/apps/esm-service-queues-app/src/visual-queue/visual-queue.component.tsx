@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../config-schema';
 import { serviceQueuesBasePath } from '../constants';
-import { useQueueEntries } from '../hooks/useQueueEntries';
+import { useOperationalQueueEntries } from '../hooks/useOperationalQueueEntries';
 import useQueueStatuses from '../hooks/useQueueStatuses';
 import PatientQueueHeader from '../patient-queue-header/patient-queue-header.component';
 import QueueDuration from '../queue-table/components/queue-duration.component';
@@ -108,7 +108,7 @@ const VisualQueue = () => {
     }),
     [selectedQueueLocationUuid, selectedQueueStatusUuid, selectedServiceUuid],
   );
-  const { queueEntries, error, isLoading, isValidating } = useQueueEntries(searchCriteria);
+  const { queueEntries, error, isLoading, isValidating } = useOperationalQueueEntries(searchCriteria);
   const columns = useMemo(
     () => buildQueueBoardColumns(queueEntries ?? [], statuses, selectedQueueStatusUuid, selectedQueueStatusDisplay),
     [queueEntries, selectedQueueStatusDisplay, selectedQueueStatusUuid, statuses],

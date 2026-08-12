@@ -1,17 +1,17 @@
-@use "@carbon/layout";
-@use "@carbon/type";
-@use "@openmrs/esm-styleguide/src/vars" as *;
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
 
 .desktopHeading {
   text-align: left;
   text-transform: capitalize;
 
   h4 {
-    @include type.type-style("heading-compact-02");
+    @include type.type-style('heading-compact-02');
     color: $text-02;
 
     &:after {
-      content: "";
+      content: '';
       display: block;
       width: 2rem;
       padding-top: 3px;
@@ -56,7 +56,7 @@
 }
 
 .clinicalEntryToolbarLabel {
-  @include type.type-style("label-01");
+  @include type.type-style('label-01');
   color: $text-02;
 }
 
@@ -83,7 +83,7 @@
 }
 
 .emptyPage {
-  @include type.type-style("body-compact-01");
+  @include type.type-style('body-compact-01');
   color: $text-02;
   padding: layout.$spacing-07 layout.$spacing-05;
   text-align: center;
@@ -113,7 +113,7 @@
   text-align: center;
 
   p {
-    @include type.type-style("body-compact-01");
+    @include type.type-style('body-compact-01');
     color: $text-02;
     margin-top: layout.$spacing-03;
   }
@@ -127,7 +127,7 @@
 }
 
 .tableHeaderTitle {
-  @include type.type-style("heading-compact-01");
+  @include type.type-style('heading-compact-01');
   color: $text-02;
 }
 
@@ -157,7 +157,7 @@
   margin-bottom: layout.$spacing-05;
 
   h5 {
-    @include type.type-style("heading-compact-01");
+    @include type.type-style('heading-compact-01');
     color: $text-02;
     margin-bottom: layout.$spacing-03;
     padding: layout.$spacing-02 layout.$spacing-03;
@@ -165,7 +165,7 @@
   }
 
   p {
-    @include type.type-style("body-compact-01");
+    @include type.type-style('body-compact-01');
     color: $text-02;
     padding-left: layout.$spacing-05;
   }
@@ -209,12 +209,12 @@
 }
 
 .vitalLabel {
-  @include type.type-style("label-01");
+  @include type.type-style('label-01');
   color: $text-02;
 }
 
 .vitalValue {
-  @include type.type-style("body-compact-01");
+  @include type.type-style('body-compact-01');
   color: $text-02;
 }
 
@@ -229,7 +229,7 @@
   margin-bottom: layout.$spacing-04;
 
   span:first-child {
-    @include type.type-style("heading-compact-01");
+    @include type.type-style('heading-compact-01');
     color: $text-02;
   }
 }

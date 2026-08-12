@@ -58,6 +58,7 @@
   "ordered": "Ordenado",
   "orderReason": "Motivo de la orden",
   "orderReasonRequired": "El motivo de la orden es requerido",
+  "orderNumber": "N° de orden",
   "other": "Otro",
   "overlayHeader": "Superposición",
   "overTime": "Con el tiempo",

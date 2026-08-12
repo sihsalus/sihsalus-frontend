@@ -110,7 +110,7 @@ export default function usePanelData() {
 
   const { data: restObsData } = useSWR<FetchResponse<{ results: Array<any> }>>(
     patientUuid
-      ? `${restBaseUrl}/obs?patient=${patientUuid}&v=custom:(uuid,auditInfo:(creator:(display)))&limit=200`
+      ? `${restBaseUrl}/obs?patient=${patientUuid}&v=custom:(uuid,auditInfo:(creator:(display)),order:(uuid,orderNumber,display))&limit=500`
       : null,
     openmrsFetch,
   );
@@ -163,6 +163,21 @@ export default function usePanelData() {
     return map;
   }, [restObsData, userMap]);
 
+  const orderNumberMap = useMemo(() => {
+    const map = new Map<string, string>();
+    if (restObsData?.data?.results) {
+      restObsData.data.results.forEach((obs: any) => {
+        if (obs.uuid && obs.order) {
+          const ordNum = obs.order.orderNumber || obs.order.display;
+          if (ordNum) {
+            map.set(obs.uuid, ordNum);
+          }
+        }
+      });
+    }
+    return map;
+  }, [restObsData]);
+
   const observations: Array<ObsRecord> = useMemo(
     () =>
       fhirObservations?.map((observation) => {
@@ -202,6 +217,7 @@ export default function usePanelData() {
           performerName = creatorMap.get(observation.id);
         }
         const performer = performerName ? [{ reference: '', display: performerName }] : observation.performer;
+        const orderNumber = orderNumberMap.get(observation.id) ?? observation.basedOn?.[0]?.display;
         return {
           ...observation,
           conceptUuid,
@@ -210,10 +226,11 @@ export default function usePanelData() {
           interpretation: interpretation as any,
           name,
           performer,
+          orderNumber,
           relatedObs: [],
         };
       }),
-    [fhirObservations, conceptData, creatorMap],
+    [fhirObservations, conceptData, creatorMap, orderNumberMap],
   );
 
   const groupedObservations: Record<string, Array<ObsRecord>> = useMemo(() => {

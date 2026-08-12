@@ -1,4 +1,4 @@
-import { Button, Checkbox, Select, SelectItem, Tile } from '@carbon/react';
+import { Button, Checkbox, Select, SelectItem, TextArea, Tile } from '@carbon/react';
 import {
   AddIcon,
   ChevronDownIcon,
@@ -90,25 +90,64 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
   const { orders, setOrders } = useOrderBasket<TestOrderBasketItem>(orderTypeUuid, prepareTestOrderPostData);
   const [isExpanded, setIsExpanded] = useState(orders.length > 0);
 
-  const HOSPITALIZED_TEXT = 'paciente hospitalizado';
-  const REGIONAL_TEXT = 'solo para ser enviado a hospital regional';
+  const HOSPITALIZED_TEXT = 'paciente hospitalizado.';
+  const REGIONAL_TEXT = 'solo para ser enviado a hospital regional.';
+
+  const isHospitalizedLine = useCallback((line: string) => {
+    const normalized = line.trim().toLowerCase();
+    return normalized === 'paciente hospitalizado' || normalized === 'paciente hospitalizado.';
+  }, []);
+
+  const isRegionalLine = useCallback((line: string) => {
+    const normalized = line.trim().toLowerCase();
+    return normalized === 'solo para ser enviado a hospital regional' || normalized === 'solo para ser enviado a hospital regional.';
+  }, []);
+
+  // Helper to extract custom/bulk instructions excluding hospitalized and regional keywords
+  const getBulkInstructionsFromOrder = useCallback((instructions: string) => {
+    if (!instructions) return '';
+    return instructions
+      .split('\n')
+      .filter((line) => !isHospitalizedLine(line) && !isRegionalLine(line))
+      .join('\n')
+      .trim();
+  }, [isHospitalizedLine, isRegionalLine]);
 
   // Inicializar checkboxes basándose en los items que ya están en la canasta
   const [isHospitalized, setIsHospitalized] = useState(() => {
-    return orders.some((order) => (order.instructions || '').toLowerCase().includes(HOSPITALIZED_TEXT));
+    return orders.some((order) => {
+      const instr = (order.instructions || '').toLowerCase();
+      return instr.includes('paciente hospitalizado') || instr.includes('paciente hospitalizado.');
+    });
   });
 
   const [isRegional, setIsRegional] = useState(() => {
-    return orders.some((order) => (order.instructions || '').toLowerCase().includes(REGIONAL_TEXT));
+    return orders.some((order) => {
+      const instr = (order.instructions || '').toLowerCase();
+      return instr.includes('solo para ser enviado a hospital regional') || instr.includes('solo para ser enviado a hospital regional.');
+    });
+  });
+
+  const [bulkInstructions, setBulkInstructions] = useState(() => {
+    if (orders.length === 0) return '';
+    const firstBulk = getBulkInstructionsFromOrder(orders[0].instructions || '');
+    const allShareFirst = orders.every(
+      (order) => getBulkInstructionsFromOrder(order.instructions || '') === firstBulk,
+    );
+    return allShareFirst ? firstBulk : '';
   });
 
   const handleHospitalizedChange = (checked: boolean) => {
     setIsHospitalized(checked);
     if (checked) {
       setIsRegional(false);
-      // Restablecer todas las órdenes para que tengan ÚNICAMENTE el texto "paciente hospitalizado"
+      // Restablecer todas las órdenes para que tengan ÚNICAMENTE el texto "paciente hospitalizado." + bulkInstructions
       const newOrders = orders.map((order) => {
-        return { ...order, instructions: HOSPITALIZED_TEXT };
+        const lines = [HOSPITALIZED_TEXT];
+        if (bulkInstructions.trim()) {
+          lines.push(bulkInstructions.trim());
+        }
+        return { ...order, instructions: lines.join('\n') };
       });
       setOrders(newOrders);
     } else {
@@ -116,7 +155,7 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
       const newOrders = orders.map((order) => {
         const nextInstructions = (order.instructions || '')
           .split('\n')
-          .filter((line) => line.trim().toLowerCase() !== HOSPITALIZED_TEXT)
+          .filter((line) => !isHospitalizedLine(line))
           .join('\n');
         return { ...order, instructions: nextInstructions };
       });
@@ -128,9 +167,13 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
     setIsRegional(checked);
     if (checked) {
       setIsHospitalized(false);
-      // Restablecer todas las órdenes para que tengan ÚNICAMENTE el texto "solo para ser enviado a hospital regional"
+      // Restablecer todas las órdenes para que tengan ÚNICAMENTE el texto "solo para ser enviado a hospital regional." + bulkInstructions
       const newOrders = orders.map((order) => {
-        return { ...order, instructions: REGIONAL_TEXT };
+        const lines = [REGIONAL_TEXT];
+        if (bulkInstructions.trim()) {
+          lines.push(bulkInstructions.trim());
+        }
+        return { ...order, instructions: lines.join('\n') };
       });
       setOrders(newOrders);
     } else {
@@ -138,12 +181,33 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
       const newOrders = orders.map((order) => {
         const nextInstructions = (order.instructions || '')
           .split('\n')
-          .filter((line) => line.trim().toLowerCase() !== REGIONAL_TEXT)
+          .filter((line) => !isRegionalLine(line))
           .join('\n');
         return { ...order, instructions: nextInstructions };
       });
       setOrders(newOrders);
     }
+  };
+
+  const handleBulkInstructionsChange = (value: string) => {
+    setBulkInstructions(value);
+    const newOrders = orders.map((order) => {
+      const lines = [];
+      if (isHospitalized) {
+        lines.push(HOSPITALIZED_TEXT);
+      }
+      if (isRegional) {
+        lines.push(REGIONAL_TEXT);
+      }
+      if (value.trim()) {
+        lines.push(value.trim());
+      }
+      return {
+        ...order,
+        instructions: lines.join('\n'),
+      };
+    });
+    setOrders(newOrders);
   };
 
   const prevOrdersRef = useRef<Array<any>>(orders);
@@ -163,19 +227,24 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
       const newOrders = orders.map((order) => {
         const isNew = addedOrders.some((added) => added.testType?.conceptUuid === order.testType?.conceptUuid);
         if (isNew) {
-          let nextInstructions = order.instructions || '';
-          if (isHospitalized && !nextInstructions.toLowerCase().includes(HOSPITALIZED_TEXT)) {
-            nextInstructions = nextInstructions ? `${nextInstructions}\n${HOSPITALIZED_TEXT}` : HOSPITALIZED_TEXT;
-            needsUpdate = true;
+          const lines = [];
+          if (isHospitalized) {
+            lines.push(HOSPITALIZED_TEXT);
           }
-          if (isRegional && !nextInstructions.toLowerCase().includes(REGIONAL_TEXT)) {
-            nextInstructions = nextInstructions ? `${nextInstructions}\n${REGIONAL_TEXT}` : REGIONAL_TEXT;
-            needsUpdate = true;
+          if (isRegional) {
+            lines.push(REGIONAL_TEXT);
           }
-          return {
-            ...order,
-            instructions: nextInstructions,
-          };
+          if (bulkInstructions.trim()) {
+            lines.push(bulkInstructions.trim());
+          }
+          const nextInstructions = lines.join('\n');
+          if (order.instructions !== nextInstructions) {
+            needsUpdate = true;
+            return {
+              ...order,
+              instructions: nextInstructions,
+            };
+          }
         }
         return order;
       });
@@ -184,7 +253,7 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
         setOrders(newOrders);
       }
     }
-  }, [orders, isHospitalized, isRegional, setOrders]);
+  }, [orders, isHospitalized, isRegional, bulkInstructions, setOrders]);
 
   const [selectedPriorityUuid, setSelectedPriorityUuid] = useState<string>(() => {
     const savedPriorityUuid = localStorage.getItem(priorityStorageKey);
@@ -428,6 +497,18 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
               labelText={t('onlyRegionalHospital', 'Solo para ser enviado a hospital regional')}
               checked={isRegional}
               onChange={(_, { checked }) => handleRegionalChange(checked)}
+            />
+          </div>
+          <div className={styles.bulkInstructionsContainer}>
+            <TextArea
+              id="bulk-instructions-textarea"
+              enableCounter
+              labelText={t('bulkInstructionsLabel', 'Instrucciones comunes')}
+              placeholder={t('bulkInstructionsPlaceholder', 'Ingresar instrucciones para todas las órdenes')}
+              value={bulkInstructions}
+              onChange={(e) => handleBulkInstructionsChange(e.target.value)}
+              rows={2}
+              maxCount={500}
             />
           </div>
           {incompleteOrderBasketItems.length > 0 &&

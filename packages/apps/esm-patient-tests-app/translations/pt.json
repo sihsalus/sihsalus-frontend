@@ -48,6 +48,7 @@
   "ordered": "Solicitado",
   "orderReason": "Motivo do pedido",
   "orderReasonRequired": "Order reason is required",
+  "orderNumber": "Número do pedido",
   "other": "Outro",
   "overTime": "Ao longo do tempo",
   "panel": "Painel",

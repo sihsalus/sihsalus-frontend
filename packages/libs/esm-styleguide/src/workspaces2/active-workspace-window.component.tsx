@@ -30,7 +30,7 @@ const ActiveWorkspaceWindow: React.FC<WorkspaceWindowProps> = ({ openedWindow, s
         return loadLifeCycles(moduleName, component);
       }),
     ).then(setLifeCycles);
-  }, [openedWorkspaces]);
+  }, [openedWorkspaces, registeredWorkspacesByName]);
 
   return (
     <>
@@ -56,6 +56,98 @@ interface ActiveWorkspaceProps {
   isRootWorkspace: boolean;
   isLeafWorkspace: boolean;
   showActionMenu: boolean;
+}
+
+interface ChildWorkspaceLauncherDependencies {
+  openedWorkspace: OpenedWorkspace;
+  openedWindow: OpenedWindow;
+  openChildWorkspace: ReturnType<typeof useWorkspace2Store>['openChildWorkspace'];
+  getOpenedWindow?: (windowName: string) => OpenedWindow | undefined;
+  getWorkspace?: (workspaceName: string) => { privileges?: string | Array<string> } | undefined;
+  canLaunchWorkspace?: typeof userCanLaunch;
+  promptForClosing?: typeof promptForClosingWorkspaces;
+  warn?: (message: string) => void;
+}
+
+export function createChildWorkspaceLauncher({
+  openedWorkspace,
+  openedWindow,
+  openChildWorkspace,
+  getOpenedWindow = (windowName) =>
+    workspace2Store.getState().openedWindows.find((window) => window.windowName === windowName),
+  getWorkspace = (workspaceName) => workspace2Store.getState().registeredWorkspacesByName[workspaceName],
+  canLaunchWorkspace = userCanLaunch,
+  promptForClosing = promptForClosingWorkspaces,
+  warn = console.warn,
+}: ChildWorkspaceLauncherDependencies): Workspace2DefinitionProps['launchChildWorkspace'] {
+  return async (childWorkspaceName, childWorkspaceProps) => {
+    const childWorkspace = getWorkspace(childWorkspaceName);
+    if (!childWorkspace || !canLaunchWorkspace(childWorkspace.privileges)) {
+      warn(`Access denied while launching workspace "${childWorkspaceName}".`);
+      return false;
+    }
+
+    const parentWorkspaceName = openedWorkspace.workspaceName;
+    const getCurrentParent = () => {
+      const currentOpenedWindow = getOpenedWindow(openedWindow.windowName);
+      const parentIndex = currentOpenedWindow?.openedWorkspaces.findIndex(
+        (workspace) => workspace.uuid === openedWorkspace.uuid,
+      );
+
+      if (!currentOpenedWindow || parentIndex == null || parentIndex < 0) {
+        return null;
+      }
+
+      return { currentOpenedWindow, parentIndex };
+    };
+
+    let currentParent = getCurrentParent();
+    if (!currentParent) {
+      return false;
+    }
+
+    const { currentOpenedWindow, parentIndex } = currentParent;
+    const { openedWorkspaces } = currentOpenedWindow;
+    const isLeaf = parentIndex === openedWorkspaces.length - 1;
+    const dirtyWorkspaceUuidsBeforePrompt = new Set(
+      openedWorkspaces
+        .slice(parentIndex + 1)
+        .filter((workspace) => workspace.hasUnsavedChanges)
+        .map((workspace) => workspace.uuid),
+    );
+    if (!isLeaf) {
+      const workspacesAboveParent = openedWorkspaces.slice(parentIndex + 1);
+      if (workspacesAboveParent.some((workspace) => workspace.hasUnsavedChanges)) {
+        const okToClose = await promptForClosing({
+          reason: 'CLOSE_WORKSPACE',
+          explicit: true,
+          windowName: openedWindow.windowName,
+          workspaceName: openedWorkspaces[parentIndex + 1].workspaceName,
+        });
+        if (!okToClose) {
+          return false;
+        }
+      }
+    }
+
+    currentParent = getCurrentParent();
+    if (!currentParent) {
+      return false;
+    }
+
+    const currentWorkspacesAboveParent = currentParent.currentOpenedWindow.openedWorkspaces.slice(
+      currentParent.parentIndex + 1,
+    );
+    const newDirtyWorkspaceAppeared = currentWorkspacesAboveParent.some(
+      (workspace) => workspace.hasUnsavedChanges && !dirtyWorkspaceUuidsBeforePrompt.has(workspace.uuid),
+    );
+    if (newDirtyWorkspaceAppeared) {
+      return false;
+    }
+
+    openChildWorkspace(parentWorkspaceName, childWorkspaceName, childWorkspaceProps || {});
+    return true;
+  };
 }
 
 const ActiveWorkspace: React.FC<ActiveWorkspaceProps> = ({
@@ -102,40 +194,7 @@ const ActiveWorkspace: React.FC<ActiveWorkspaceProps> = ({
             return false;
           }
         },
-        launchChildWorkspace: async (childWorkspaceName, childWorkspaceProps) => {
-          const childWorkspace = workspace2Store.getState().registeredWorkspacesByName[childWorkspaceName];
-          if (!childWorkspace || !userCanLaunch(childWorkspace.privileges)) {
-            console.warn(`Access denied while launching workspace "${childWorkspaceName}".`);
-            return;
-          }
-
-          const parentWorkspaceName = openedWorkspace.workspaceName;
-          const { openedWorkspaces } = openedWindow;
-          const parentIndex = openedWorkspaces.findIndex((w) => w.workspaceName === parentWorkspaceName);
-          if (parentIndex === -1) {
-            return;
-          }
-          const isLeaf = parentIndex === openedWorkspaces.length - 1;
-
-          if (!isLeaf) {
-            // There are workspaces above the parent that will be closed.
-            // Prompt if any of them have unsaved changes.
-            const workspacesAboveParent = openedWorkspaces.slice(parentIndex + 1);
-            if (workspacesAboveParent.some((w) => w.hasUnsavedChanges)) {
-              const okToClose = await promptForClosingWorkspaces({
-                reason: 'CLOSE_WORKSPACE',
-                explicit: true,
-                windowName: openedWindow.windowName,
-                workspaceName: openedWorkspaces[parentIndex + 1].workspaceName,
-              });
-              if (!okToClose) {
-                return;
-              }
-            }
-          }
-
-          openChildWorkspace(parentWorkspaceName, childWorkspaceName, childWorkspaceProps || {});
-        },
+        launchChildWorkspace: createChildWorkspaceLauncher({ openedWorkspace, openedWindow, openChildWorkspace }),
         workspaceName: openedWorkspace.workspaceName,
         workspaceProps: openedWorkspace.props,
         windowProps: openedWindow.props,
@@ -145,7 +204,16 @@ const ActiveWorkspace: React.FC<ActiveWorkspaceProps> = ({
         windowName: openedWindow.windowName,
         showActionMenu,
       },
-    [openedWorkspace, closeWorkspace, openedGroup, openedWindow],
+    [
+      openedWorkspace,
+      closeWorkspace,
+      openedGroup,
+      openedWindow,
+      openChildWorkspace,
+      isRootWorkspace,
+      isLeafWorkspace,
+      showActionMenu,
+    ],
   );
 
   if (!lifeCycle) {

@@ -177,6 +177,13 @@ interface StartVisitFormWorkspaceProps {
   onQueueEntryAdded?: () => void | Promise<void>;
   additionalVisitAttributes?: NewVisitPayload['attributes'];
   visitPersistenceCorrelation?: VisitPersistenceCorrelation;
+  /**
+   * Idempotency token for the visit this form is about to create, owned by the
+   * launcher. The form generates its own per mount, which a launcher that can
+   * relaunch it after a failure must override: a fresh token on the second
+   * attempt makes the backend treat the retry as a new visit.
+   */
+  visitPersistenceToken?: string;
   patientUuid?: string;
   currentServiceQueueUuid?: string;
   currentQueueLocationUuid?: string;
@@ -219,6 +226,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     onQueueEntryAdded,
     additionalVisitAttributes,
     visitPersistenceCorrelation,
+    visitPersistenceToken: providedVisitPersistenceToken,
     currentServiceQueueUuid,
     currentQueueLocationUuid,
     companionPersonSearchWorkspaceName = defaultCompanionPersonSearchWorkspace,
@@ -357,12 +365,13 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     return config.visitPersistenceTokenAttributeTypeUuid
       ? {
           attributeType: config.visitPersistenceTokenAttributeTypeUuid,
-          value: visitPersistenceToken.current,
+          value: providedVisitPersistenceToken ?? visitPersistenceToken.current,
         }
       : undefined;
   }, [
     config.visitPersistenceTokenAttributeTypeUuid,
     persistenceAttributeTypeExists,
+    providedVisitPersistenceToken,
     visitPersistenceCorrelation,
     visitToEdit,
   ]);

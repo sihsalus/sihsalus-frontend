@@ -1,15 +1,36 @@
-import { InlineNotification } from '@carbon/react';
+import { ActionableNotification, InlineNotification } from '@carbon/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { QueueVisitStartPreflightState } from './queue-visit-start-preflight';
 
 interface QueueVisitStartPreflightNoticeProps {
-  state: Exclude<QueueVisitStartPreflightState, 'not-required' | 'ready'>;
+  state: Exclude<QueueVisitStartPreflightState, 'not-required' | 'ready'> | 'workspace-launch-recovery';
+  onRetry?: () => void;
 }
 
-const QueueVisitStartPreflightNotice: React.FC<QueueVisitStartPreflightNoticeProps> = ({ state }) => {
+const QueueVisitStartPreflightNotice: React.FC<QueueVisitStartPreflightNoticeProps> = ({ state, onRetry }) => {
   const { t } = useTranslation();
+
+  if (state === 'workspace-launch-recovery') {
+    return (
+      <ActionableNotification
+        actionButtonLabel={t('retry', 'Retry')}
+        hideCloseButton
+        inline
+        kind="error"
+        lowContrast
+        onActionButtonClick={onRetry}
+        role="alert"
+        title={t('queueVisitWorkspaceRecoveryRequired', 'No se pudo completar el inicio de la consulta')}
+        subtitle={t(
+          'queueVisitWorkspaceRecoveryRequiredDescription',
+          'Intente nuevamente. Si cerró el formulario antes de terminar, puede volver a abrirlo desde aquí.',
+        )}
+      />
+    );
+  }
+
   const isLoading = state === 'patient-loading';
   const message = {
     'visit-capability-missing': {

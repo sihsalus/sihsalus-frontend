@@ -7,9 +7,12 @@ import {
 import {
   createEmergencyQueueEntry,
   EMERGENCY_QUEUE_ENTRY_ALREADY_ENDED,
+  EMERGENCY_QUEUE_ENTRY_CLOSE_UNVERIFIED,
   EMERGENCY_QUEUE_ENTRY_PATIENT_UNAVAILABLE,
+  EMERGENCY_QUEUE_ENTRY_TRANSITION_CONFLICT,
   EMERGENCY_QUEUE_ENTRY_TRANSITION_UNVERIFIED,
   EMERGENCY_QUEUE_ENTRY_UPDATE_UNVERIFIED,
+  endEmergencyQueueEntry,
   transitionEmergencyQueueEntry,
   transitionToAttentionQueue,
   updateEmergencyQueueEntry,
@@ -247,6 +250,115 @@ describe('updateEmergencyQueueEntry', () => {
     await expect(
       updateEmergencyQueueEntry(activeQueueEntry.uuid, { statusUuid: updatedQueueEntry.status.uuid }),
     ).rejects.toMatchObject({ code: EMERGENCY_QUEUE_ENTRY_UPDATE_UNVERIFIED });
+  });
+});
+
+describe('endEmergencyQueueEntry', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('fresh-reads, closes directly with a date not before startedAt, and returns the verified response', async () => {
+    const freshActiveResponse = {
+      ...response(activeQueueEntry),
+      headers: new Headers({ Date: 'Wed, 12 Aug 2026 13:30:00 GMT' }),
+    } as FetchResponse<typeof activeQueueEntry>;
+    const verifiedResponse = response(endedQueueEntry);
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(freshActiveResponse)
+      .mockResolvedValueOnce(response({ uuid: activeQueueEntry.uuid }))
+      .mockResolvedValueOnce(verifiedResponse)
+      .mockResolvedValueOnce(response({ results: [] }));
+
+    await expect(endEmergencyQueueEntry(activeQueueEntry.uuid)).resolves.toBe(verifiedResponse);
+
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(2, `${restBaseUrl}/queue-entry/${activeQueueEntry.uuid}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { endedAt: expect.any(String) },
+    });
+    const postedEnd = (mockOpenmrsFetch.mock.calls[1][1]?.body as { endedAt: string }).endedAt;
+    expect(new Date(postedEnd).toISOString()).toBe(activeQueueEntry.startedAt);
+  });
+
+  it('preserves an already-ended entry when it has no transition successor', async () => {
+    const freshEndedResponse = response(endedQueueEntry);
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(freshEndedResponse)
+      .mockResolvedValueOnce(response({ results: [] }));
+
+    await expect(endEmergencyQueueEntry(activeQueueEntry.uuid)).resolves.toBe(freshEndedResponse);
+
+    expect(mockOpenmrsFetch.mock.calls.some(([url, init]) => url === `${restBaseUrl}/queue-entry/${activeQueueEntry.uuid}` && init?.method === 'POST')).toBe(false);
+  });
+
+  it('does not misreport a concurrent transition as a direct close', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response(endedQueueEntry))
+      .mockResolvedValueOnce(response({ results: [expectedSuccessor] }));
+
+    await expect(endEmergencyQueueEntry(activeQueueEntry.uuid)).rejects.toMatchObject({
+      code: EMERGENCY_QUEUE_ENTRY_TRANSITION_CONFLICT,
+    });
+  });
+
+  it('does not mistake an earlier historical transition for a successor of this close', async () => {
+    const historicalTransition = {
+      ...expectedSuccessor,
+      uuid: 'historical-successor',
+      startedAt: '2026-08-12T14:05:00.000Z',
+    };
+    const freshEndedResponse = response(endedQueueEntry);
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(freshEndedResponse)
+      .mockResolvedValueOnce(response({ results: [historicalTransition] }));
+
+    await expect(endEmergencyQueueEntry(activeQueueEntry.uuid)).resolves.toBe(freshEndedResponse);
+  });
+
+  it('rejects a 2xx close response when the entry remains active', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response(activeQueueEntry))
+      .mockResolvedValueOnce(response({ uuid: activeQueueEntry.uuid }))
+      .mockResolvedValueOnce(response(activeQueueEntry));
+
+    await expect(endEmergencyQueueEntry(activeQueueEntry.uuid)).rejects.toMatchObject({
+      code: EMERGENCY_QUEUE_ENTRY_CLOSE_UNVERIFIED,
+    });
+  });
+
+  it('reconciles a lost response when a fresh read proves a direct close', async () => {
+    const writeError = new TypeError('response lost');
+    const verifiedResponse = response(endedQueueEntry);
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response(activeQueueEntry))
+      .mockRejectedValueOnce(writeError)
+      .mockResolvedValueOnce(verifiedResponse)
+      .mockResolvedValueOnce(response({ results: [] }));
+
+    await expect(endEmergencyQueueEntry(activeQueueEntry.uuid)).resolves.toBe(verifiedResponse);
+  });
+
+  it('preserves the lost-response error when the close did not persist', async () => {
+    const writeError = new TypeError('response lost');
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response(activeQueueEntry))
+      .mockRejectedValueOnce(writeError)
+      .mockResolvedValueOnce(response(activeQueueEntry));
+
+    await expect(endEmergencyQueueEntry(activeQueueEntry.uuid)).rejects.toBe(writeError);
+  });
+
+  it('reports transition conflict when a lost close response reveals a successor', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response(activeQueueEntry))
+      .mockRejectedValueOnce(new TypeError('response lost'))
+      .mockResolvedValueOnce(response(endedQueueEntry))
+      .mockResolvedValueOnce(response({ results: [expectedSuccessor] }));
+
+    await expect(endEmergencyQueueEntry(activeQueueEntry.uuid)).rejects.toMatchObject({
+      code: EMERGENCY_QUEUE_ENTRY_TRANSITION_CONFLICT,
+    });
   });
 });
 

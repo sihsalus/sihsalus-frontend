@@ -535,6 +535,8 @@ export const EMERGENCY_QUEUE_ENTRY_ALREADY_ENDED = 'EMERGENCY_QUEUE_ENTRY_ALREAD
 export const EMERGENCY_QUEUE_ENTRY_UPDATE_UNVERIFIED = 'EMERGENCY_QUEUE_ENTRY_UPDATE_UNVERIFIED';
 export const EMERGENCY_QUEUE_ENTRY_TRANSITION_UNVERIFIED = 'EMERGENCY_QUEUE_ENTRY_TRANSITION_UNVERIFIED';
 export const EMERGENCY_QUEUE_ENTRY_RECONCILIATION_STALLED = 'EMERGENCY_QUEUE_ENTRY_RECONCILIATION_STALLED';
+export const EMERGENCY_QUEUE_ENTRY_CLOSE_UNVERIFIED = 'EMERGENCY_QUEUE_ENTRY_CLOSE_UNVERIFIED';
+export const EMERGENCY_QUEUE_ENTRY_TRANSITION_CONFLICT = 'EMERGENCY_QUEUE_ENTRY_TRANSITION_CONFLICT';
 
 const emergencyQueueEntryStateRepresentation =
   'custom:(uuid,startedAt,endedAt,status:(uuid),priority:(uuid),priorityComment,queue:(uuid),patient:(uuid),visit:(uuid),queueComingFrom:(uuid))';
@@ -674,27 +676,69 @@ export async function transitionToAttentionQueue(
 }
 
 export async function endEmergencyQueueEntry(queueEntryUuid: string) {
+  const freshResponse = await fetchQueueEntryState(queueEntryUuid);
+  if (freshResponse.data.endedAt) {
+    if (await findAnyEmergencyQueueTransitionSuccessor(freshResponse.data)) {
+      throw emergencyQueueEntryError(
+        EMERGENCY_QUEUE_ENTRY_TRANSITION_CONFLICT,
+        'The emergency queue entry was transitioned by another user.',
+      );
+    }
+    return freshResponse;
+  }
+
+  const responseDate = freshResponse.headers?.get?.('Date');
+  const parsedResponseDate = responseDate ? new Date(responseDate) : null;
+  const serverDate =
+    parsedResponseDate && !Number.isNaN(parsedResponseDate.valueOf()) ? parsedResponseDate : new Date();
+  const startedAt = freshResponse.data.startedAt ? new Date(freshResponse.data.startedAt) : null;
+  const endedAt =
+    startedAt && !Number.isNaN(startedAt.valueOf()) && startedAt > serverDate ? startedAt : serverDate;
+
   try {
-    return await openmrsFetch(`${restBaseUrl}/queue-entry/${queueEntryUuid}`, {
+    await openmrsFetch(`${restBaseUrl}/queue-entry/${queueEntryUuid}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: {
-        endedAt: dayjs().format(omrsDateFormat),
+        endedAt: dayjs(endedAt).format(omrsDateFormat),
       },
     });
   } catch (error) {
+    let current: FetchResponse<QueueEntryState>;
     try {
-      const current = await fetchQueueEntryState(queueEntryUuid);
-      if (current.data.endedAt) {
-        return null;
-      }
+      current = await fetchQueueEntryState(queueEntryUuid);
     } catch {
       // Preserve the original write error when its outcome cannot be verified.
+      throw error;
     }
-    throw error;
+    if (!current.data.endedAt) {
+      throw error;
+    }
+    if (await findAnyEmergencyQueueTransitionSuccessor(current.data)) {
+      throw emergencyQueueEntryError(
+        EMERGENCY_QUEUE_ENTRY_TRANSITION_CONFLICT,
+        'The emergency queue entry was transitioned by another user.',
+      );
+    }
+    return current;
   }
+
+  const current = await fetchQueueEntryState(queueEntryUuid);
+  if (!current.data.endedAt) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_CLOSE_UNVERIFIED,
+      'The emergency queue entry close could not be verified.',
+    );
+  }
+  if (await findAnyEmergencyQueueTransitionSuccessor(current.data)) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_TRANSITION_CONFLICT,
+      'The emergency queue entry was transitioned by another user.',
+    );
+  }
+  return current;
 }
 
 interface EmergencyQueueTransitionParams {
@@ -734,10 +778,23 @@ function queueEntryMatchesTransition(
   );
 }
 
-/** Finds the exact successor requested by this transition, across capped result pages. */
-async function findEmergencyQueueTransitionSuccessor(
+function isPossibleDirectTransitionSuccessor(candidate: QueueEntryState, source: QueueEntryState) {
+  const sourceEndedAt = source.endedAt ? new Date(source.endedAt).valueOf() : Number.NaN;
+  const candidateStartedAt = candidate.startedAt ? new Date(candidate.startedAt).valueOf() : Number.NaN;
+
+  return (
+    candidate.uuid !== source.uuid &&
+    isSameQueueEntrySubject(candidate, source) &&
+    candidate.queueComingFrom?.uuid === source.queue?.uuid &&
+    Number.isFinite(sourceEndedAt) &&
+    Number.isFinite(candidateStartedAt) &&
+    candidateStartedAt === sourceEndedAt
+  );
+}
+
+async function findEmergencyQueueSuccessor(
   source: QueueEntryState,
-  params: EmergencyQueueTransitionParams,
+  matches: (candidate: QueueEntryState) => boolean,
 ): Promise<FetchResponse<QueueEntryState> | null> {
   const subject = source.visit?.uuid
     ? { visit: source.visit.uuid }
@@ -762,7 +819,7 @@ async function findEmergencyQueueTransitionSuccessor(
       `${restBaseUrl}/queue-entry?${searchParams.toString()}`,
     );
     const page = response.data?.results ?? [];
-    const matchingEntry = page.find((candidate) => queueEntryMatchesTransition(candidate, source, params));
+    const matchingEntry = page.find(matches);
     if (matchingEntry) {
       return { ...response, data: matchingEntry } as FetchResponse<QueueEntryState>;
     }
@@ -784,6 +841,18 @@ async function findEmergencyQueueTransitionSuccessor(
       );
     }
   }
+}
+
+function findAnyEmergencyQueueTransitionSuccessor(source: QueueEntryState) {
+  return findEmergencyQueueSuccessor(source, (candidate) => isPossibleDirectTransitionSuccessor(candidate, source));
+}
+
+/** Finds the exact successor requested by this transition, across capped result pages. */
+async function findEmergencyQueueTransitionSuccessor(
+  source: QueueEntryState,
+  params: EmergencyQueueTransitionParams,
+): Promise<FetchResponse<QueueEntryState> | null> {
+  return findEmergencyQueueSuccessor(source, (candidate) => queueEntryMatchesTransition(candidate, source, params));
 }
 
 /**

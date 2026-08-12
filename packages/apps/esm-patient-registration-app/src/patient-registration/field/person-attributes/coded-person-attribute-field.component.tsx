@@ -6,7 +6,11 @@ import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../../../constants';
 import { type PersonAttributeTypeResponse } from '../../patient-registration.types';
-import { peruLegacySisPlanConceptUuid } from '../../peru-registration-config';
+import {
+  peruInsuranceTypeAttributeTypeUuid,
+  peruLegacySisPlanConceptUuid,
+  replacePeruFinancerInForm,
+} from '../../peru-registration-config';
 import { isMissingConceptError, useConceptAnswers } from '../field.resource';
 import styles from './../field.scss';
 
@@ -161,6 +165,18 @@ export function CodedPersonAttributeField({
               const selectedAnswer = answers.find((answer) => answer.uuid === field.value) ?? null;
               const errorMessage = getIn(errors, fieldName);
               const invalid = Boolean(errorMessage && getIn(touched, fieldName));
+              const setCodedValue = (nextValue: string) => {
+                if (nextValue === (field.value ?? '')) {
+                  return;
+                }
+
+                if (personAttributeType.uuid === peruInsuranceTypeAttributeTypeUuid) {
+                  replacePeruFinancerInForm(nextValue, setFieldValue);
+                  return;
+                }
+
+                setFieldValue(fieldName, nextValue);
+              };
 
               if (searchable) {
                 return (
@@ -174,13 +190,7 @@ export function CodedPersonAttributeField({
                     invalid={invalid}
                     invalidText={typeof errorMessage === 'string' ? errorMessage : undefined}
                     disabled={readOnly}
-                    onChange={({ selectedItem }) => {
-                      const nextValue = selectedItem?.uuid ?? '';
-
-                      if (nextValue !== (field.value ?? '')) {
-                        setFieldValue(fieldName, nextValue);
-                      }
-                    }}
+                    onChange={({ selectedItem }) => setCodedValue(selectedItem?.uuid ?? '')}
                   />
                 );
               }
@@ -197,7 +207,7 @@ export function CodedPersonAttributeField({
                     required={required}
                     readOnly={readOnly}
                     orientation="horizontal"
-                    onChange={(selectedValue) => setFieldValue(fieldName, selectedValue)}
+                    onChange={(selectedValue) => setCodedValue(String(selectedValue))}
                   >
                     {!required ? (
                       <RadioButton id={`${id}-unspecified`} labelText={t('notSpecified', 'Not specified')} value="" />
@@ -225,6 +235,7 @@ export function CodedPersonAttributeField({
                   disabled={readOnly}
                   {...field}
                   value={field.value ?? ''}
+                  onChange={(event) => setCodedValue(event.target.value)}
                 >
                   <SelectItem value={''} text={t('selectAnOption', 'Select an option')} />
                   {answers.map((answer) => (

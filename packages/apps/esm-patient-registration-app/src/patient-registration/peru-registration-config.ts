@@ -15,8 +15,14 @@ export const peruInsuranceAccreditationCheckedAtAttributeTypeUuid = '9b3df0a1-0c
 export const peruInsuranceAccreditationActiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2051';
 export const peruInsuranceAccreditationInactiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2052';
 export const peruInsuranceAccreditationPendingConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2053';
+export const peruInsuranceAccreditationNotConsultedConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2054';
 // Concepto "SIS" (respuesta del set canónico "Tipo de seguro" 6b932638-…) en sihsalus-content.
 export const peruInsuranceSisConceptUuid = '97c6e901-7570-4ab8-a9c0-9cf2b0f5bc0c';
+// Concepto canónico "Particular / sin seguro" del catálogo IAFAS provisionado
+// por sihsalus-content#163, presentado al usuario como "Autofinanciamiento".
+// A diferencia de otras IAFAS, no admite número de póliza/afiliación ni datos
+// de acreditación SIS.
+export const peruInsuranceSelfFinancingConceptUuid = 'cc72568e-d0d9-46a8-a618-91f0d679f518';
 // Legacy concept incorrectly exposed as a top-level financer. It represents
 // the SIS plan/product question, not an IAFAS.
 export const peruLegacySisPlanConceptUuid = 'b76a9a24-4905-4132-a215-8a567281852a';
@@ -30,6 +36,118 @@ export const peruSisEessNameAttributeTypeUuid = '2b0382d9-5f7c-425d-ad6e-a4489da
 // Person attribute "Método de Verificación de Seguro" (sihsalus-content #167).
 // FreeText con valores acordados: manual-web | setisis | siteds.
 export const peruInsuranceVerificationMethodAttributeTypeUuid = 'bc1e5c92-e46a-4bc9-8cba-d9093a0eb659';
+
+/** SETISIS attributes whose meaning is exclusive to SIS. */
+export const peruSisOnlyAttributeTypeUuids: ReadonlyArray<string> = [
+  peruSisTypeDescriptionAttributeTypeUuid,
+  peruSisEessNameAttributeTypeUuid,
+];
+
+/** Generic accreditation attributes, also valid for other IAFAS via SITEDS. */
+export const peruInsuranceAccreditationAttributeTypeUuids: ReadonlyArray<string> = [
+  peruInsuranceAccreditationStatusAttributeTypeUuid,
+  peruInsuranceAccreditationCheckedAtAttributeTypeUuid,
+  peruInsuranceVerificationMethodAttributeTypeUuid,
+];
+
+/** Values tied to the selected financer and invalid for self-financing. */
+export const peruFinancerDependentAttributeTypeUuids: ReadonlyArray<string> = [
+  peruInsuranceCodeAttributeTypeUuid,
+  ...peruInsuranceAccreditationAttributeTypeUuids,
+  ...peruSisOnlyAttributeTypeUuids,
+];
+
+export function isPeruSisFinancer(insuranceType: string | undefined) {
+  return insuranceType === peruInsuranceSisConceptUuid || insuranceType === peruLegacySisPlanConceptUuid;
+}
+
+export function shouldPersistPeruInsuranceAttribute(
+  attributeTypeUuid: string,
+  attributes: Record<string, string> | undefined,
+) {
+  const insuranceType = attributes?.[peruInsuranceTypeAttributeTypeUuid];
+
+  if (
+    peruFinancerDependentAttributeTypeUuids.includes(attributeTypeUuid) &&
+    (!insuranceType || insuranceType === peruInsuranceSelfFinancingConceptUuid)
+  ) {
+    return false;
+  }
+
+  if (peruSisOnlyAttributeTypeUuids.includes(attributeTypeUuid)) {
+    return isPeruSisFinancer(insuranceType);
+  }
+
+  return true;
+}
+
+type SetInsuranceFormFieldValue = (field: string, value: string, shouldValidate?: boolean) => unknown;
+type SetInsuranceFormFieldTouched = (field: string, isTouched: boolean, shouldValidate?: boolean) => unknown;
+
+function writePeruInsuranceCoverageToForm(
+  attributes: Record<string, string>,
+  setFieldValue: SetInsuranceFormFieldValue,
+  setFieldTouched?: SetInsuranceFormFieldTouched,
+) {
+  const insuranceType = attributes[peruInsuranceTypeAttributeTypeUuid] ?? '';
+
+  peruFinancerDependentAttributeTypeUuids.forEach((attributeTypeUuid) => {
+    setFieldValue(`attributes.${attributeTypeUuid}`, '', false);
+  });
+  setFieldValue(`attributes.${peruInsuranceTypeAttributeTypeUuid}`, insuranceType, false);
+
+  const effectiveAttributes = { ...attributes };
+  if (isPeruSisFinancer(insuranceType) && !effectiveAttributes[peruInsuranceAccreditationStatusAttributeTypeUuid]) {
+    effectiveAttributes[peruInsuranceAccreditationStatusAttributeTypeUuid] =
+      peruInsuranceAccreditationNotConsultedConceptUuid;
+  }
+
+  let writtenValues = insuranceType ? 1 : 0;
+  if (insuranceType) {
+    setFieldTouched?.(`attributes.${peruInsuranceTypeAttributeTypeUuid}`, true, false);
+  }
+
+  peruFinancerDependentAttributeTypeUuids.forEach((attributeTypeUuid) => {
+    const value = effectiveAttributes[attributeTypeUuid];
+    if (!value || !shouldPersistPeruInsuranceAttribute(attributeTypeUuid, effectiveAttributes)) {
+      return;
+    }
+
+    setFieldValue(`attributes.${attributeTypeUuid}`, value, false);
+    setFieldTouched?.(`attributes.${attributeTypeUuid}`, true, false);
+    writtenValues += 1;
+  });
+
+  return writtenValues;
+}
+
+/**
+ * Replaces coverage selected manually. Every real payer change invalidates the
+ * previous payer's dependent values. Selecting SIS starts explicitly as "No
+ * consultada" until a verification result replaces that default.
+ */
+export function replacePeruFinancerInForm(insuranceType: string, setFieldValue: SetInsuranceFormFieldValue) {
+  writePeruInsuranceCoverageToForm({ [peruInsuranceTypeAttributeTypeUuid]: insuranceType }, setFieldValue);
+}
+
+/**
+ * Atomically replaces coverage from an authoritative composite operation
+ * (SETISIS/manual verification or copying a responsible person's coverage).
+ * Clearing first and then writing the supplied snapshot preserves fresh values
+ * even when their strings happen to equal those of the previous payer.
+ */
+export function replacePeruInsuranceCoverageInForm(
+  attributes: Record<string, string>,
+  setFieldValue: SetInsuranceFormFieldValue,
+  setFieldTouched?: SetInsuranceFormFieldTouched,
+) {
+  if (!attributes[peruInsuranceTypeAttributeTypeUuid]) {
+    return 0;
+  }
+
+  return writePeruInsuranceCoverageToForm(attributes, setFieldValue, setFieldTouched);
+}
+
 export const peruPhoneAttributeTypeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
 export const peruMobilePhoneAttributeTypeUuid = 'fee4e8ef-aef8-4bb9-8ed0-7ded6055c61f';
 export const peruEmailAttributeTypeUuid = '4bdf3a33-2f63-11f0-8ab4-1a7535b1b3e8';
@@ -291,9 +409,9 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
       { uuid: peruInsuranceAccreditationActiveConceptUuid, label: 'Vigente' },
       { uuid: peruInsuranceAccreditationInactiveConceptUuid, label: 'No vigente' },
       { uuid: peruInsuranceAccreditationPendingConceptUuid, label: 'Pendiente' },
-      { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2054', label: 'No consultada' },
+      { uuid: peruInsuranceAccreditationNotConsultedConceptUuid, label: 'No consultada' },
     ],
-    defaultValue: '9b3df0a1-0c58-4f55-9868-9c38f1db2054',
+    defaultValue: peruInsuranceAccreditationNotConsultedConceptUuid,
   },
   {
     id: 'insuranceAccreditationCheckedAt',

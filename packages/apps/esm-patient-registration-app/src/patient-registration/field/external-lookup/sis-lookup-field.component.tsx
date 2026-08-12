@@ -29,6 +29,7 @@ import {
   peruSisEessNameAttributeTypeUuid,
   peruSisProductConceptUuid,
   peruSisTypeDescriptionAttributeTypeUuid,
+  replacePeruInsuranceCoverageInForm,
 } from '../../peru-registration-config';
 import styles from '../field.scss';
 import { dniPattern, getDniIdentifier } from './dni-identifier';
@@ -81,27 +82,24 @@ export function applySisVerificationToForm(
   setFieldValue: SetFieldValue,
   setFieldTouched: SetFieldTouched,
 ) {
-  const fieldValues: Array<[string, unknown]> = [
-    [`attributes.${peruInsuranceTypeAttributeTypeUuid}`, peruInsuranceSisConceptUuid],
-    [`attributes.${peruInsuranceAccreditationStatusAttributeTypeUuid}`, accreditationStatusConceptUuids[result.status]],
-    [`attributes.${peruInsuranceAccreditationCheckedAtAttributeTypeUuid}`, result.checkedAt],
-    [`attributes.${peruInsuranceVerificationMethodAttributeTypeUuid}`, result.method],
-  ];
+  const attributes: Record<string, string> = {
+    [peruInsuranceTypeAttributeTypeUuid]: peruInsuranceSisConceptUuid,
+    [peruInsuranceAccreditationStatusAttributeTypeUuid]: accreditationStatusConceptUuids[result.status],
+    [peruInsuranceAccreditationCheckedAtAttributeTypeUuid]: result.checkedAt,
+    [peruInsuranceVerificationMethodAttributeTypeUuid]: result.method,
+  };
 
   if (result.insuranceCode) {
-    fieldValues.push([`attributes.${peruInsuranceCodeAttributeTypeUuid}`, result.insuranceCode]);
+    attributes[peruInsuranceCodeAttributeTypeUuid] = result.insuranceCode;
   }
   if (result.productDisplay) {
-    fieldValues.push([`attributes.${peruSisTypeDescriptionAttributeTypeUuid}`, result.productDisplay]);
+    attributes[peruSisTypeDescriptionAttributeTypeUuid] = result.productDisplay;
   }
   if (result.eessName) {
-    fieldValues.push([`attributes.${peruSisEessNameAttributeTypeUuid}`, result.eessName]);
+    attributes[peruSisEessNameAttributeTypeUuid] = result.eessName;
   }
 
-  fieldValues.forEach(([field, value]) => {
-    setFieldValue(field, value, false);
-    setFieldTouched(field, true, false);
-  });
+  replacePeruInsuranceCoverageInForm(attributes, setFieldValue, setFieldTouched);
 }
 
 // Camino automático (mock en desarrollo hoy, SETISIS en el futuro): mismo

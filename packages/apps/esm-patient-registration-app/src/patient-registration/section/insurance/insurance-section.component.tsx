@@ -9,9 +9,12 @@ import {
   peruInsuranceAccreditationInactiveConceptUuid,
   peruInsuranceAccreditationPendingConceptUuid,
   peruInsuranceAccreditationStatusAttributeTypeUuid,
+  peruFinancerDependentAttributeTypeUuids,
+  peruInsuranceSelfFinancingConceptUuid,
   peruInsuranceSisConceptUuid,
   peruInsuranceTypeAttributeTypeUuid,
   peruLegacySisPlanConceptUuid,
+  shouldPersistPeruInsuranceAttribute,
 } from '../../peru-registration-config';
 import styles from '../section.scss';
 
@@ -37,24 +40,38 @@ const insuranceAccreditationDateVisibleStatuses = new Set([
 
 export const InsuranceSection = ({ sectionDefinition }: InsuranceSectionProps) => {
   const registrationContext = useContext(PatientRegistrationContext);
-  const insuranceType = registrationContext?.values?.attributes?.[peruInsuranceTypeAttributeTypeUuid];
+  const attributes = registrationContext?.values?.attributes;
+  const insuranceType = attributes?.[peruInsuranceTypeAttributeTypeUuid];
   const isSisFinancer = insuranceType === peruInsuranceSisConceptUuid || insuranceType === peruLegacySisPlanConceptUuid;
-  const accreditationStatus =
-    registrationContext?.values?.attributes?.[peruInsuranceAccreditationStatusAttributeTypeUuid];
+  const isSelfFinancing = insuranceType === peruInsuranceSelfFinancingConceptUuid;
+  const accreditationStatus = attributes?.[peruInsuranceAccreditationStatusAttributeTypeUuid];
   const shouldShowAccreditationDate =
     isSisFinancer && insuranceAccreditationDateVisibleStatuses.has(accreditationStatus ?? '');
-  const accreditationCheckedAt =
-    registrationContext?.values?.attributes?.[peruInsuranceAccreditationCheckedAtAttributeTypeUuid];
+  const accreditationCheckedAt = attributes?.[peruInsuranceAccreditationCheckedAtAttributeTypeUuid];
 
   useEffect(() => {
-    if (!shouldShowAccreditationDate && accreditationCheckedAt) {
-      registrationContext?.setFieldValue(
-        `attributes.${peruInsuranceAccreditationCheckedAtAttributeTypeUuid}`,
-        '',
-        false,
-      );
+    const attributesToClear = new Set(
+      peruFinancerDependentAttributeTypeUuids.filter(
+        (attributeTypeUuid) =>
+          Boolean(attributes?.[attributeTypeUuid]) &&
+          !shouldPersistPeruInsuranceAttribute(attributeTypeUuid, attributes),
+      ),
+    );
+
+    if (isSisFinancer && !shouldShowAccreditationDate && accreditationCheckedAt) {
+      attributesToClear.add(peruInsuranceAccreditationCheckedAtAttributeTypeUuid);
     }
-  }, [accreditationCheckedAt, registrationContext, shouldShowAccreditationDate]);
+
+    attributesToClear.forEach((attributeTypeUuid) => {
+      registrationContext?.setFieldValue(`attributes.${attributeTypeUuid}`, '', false);
+    });
+  }, [
+    accreditationCheckedAt,
+    attributes,
+    isSisFinancer,
+    registrationContext,
+    shouldShowAccreditationDate,
+  ]);
 
   useEffect(() => {
     if (insuranceType === peruLegacySisPlanConceptUuid) {
@@ -73,14 +90,14 @@ export const InsuranceSection = ({ sectionDefinition }: InsuranceSectionProps) =
           return isSisFinancer;
         }
         if (name === insuranceCodeField) {
-          return Boolean(insuranceType);
+          return Boolean(insuranceType) && !isSelfFinancing;
         }
         if (name === insuranceAccreditationCheckedAtField) {
           return shouldShowAccreditationDate;
         }
         return true;
       }),
-    [insuranceType, isSisFinancer, sectionDefinition.fields, shouldShowAccreditationDate],
+    [insuranceType, isSelfFinancing, isSisFinancer, sectionDefinition.fields, shouldShowAccreditationDate],
   );
 
   return (

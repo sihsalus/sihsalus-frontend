@@ -70,6 +70,12 @@ import {
   birthAddressMarker,
   birthAddressMarkerField,
 } from './patient-registration-utils';
+import {
+  peruFinancerDependentAttributeTypeUuids,
+  peruInsuranceSelfFinancingConceptUuid,
+  peruInsuranceTypeAttributeTypeUuid,
+  shouldPersistPeruInsuranceAttribute,
+} from './peru-registration-config';
 import { isRegistrationDomainError, RegistrationDomainError, registrationErrorCodes } from './registration-errors';
 import { buildResponsiblePersonPayload } from './section/patient-relationships/responsible-person.utils';
 
@@ -1147,7 +1153,10 @@ export class FormManager {
     const attributes: Array<AttributeValue> = [];
     if (values.attributes) {
       Object.entries(values.attributes)
-        .filter(([key, value]) => isValidAttributeTypeKey(key) && !!value)
+        .filter(
+          ([key, value]) =>
+            isValidAttributeTypeKey(key) && !!value && shouldPersistPeruInsuranceAttribute(key, values.attributes),
+        )
         .forEach(([key, value]) => {
           const attributeUuid = patientUuidMap[`attribute.${key}`];
           attributes.push({
@@ -1172,8 +1181,22 @@ export class FormManager {
       return;
     }
 
-    for (const [attributeTypeUuid, value] of Object.entries(values.attributes ?? {})) {
-      if (!isValidAttributeTypeKey(attributeTypeUuid) || value) {
+    const insuranceType = values.attributes?.[peruInsuranceTypeAttributeTypeUuid];
+    const attributeTypeUuids = new Set(Object.keys(values.attributes ?? {}));
+
+    // Absence from form state is not an explicit delete: the attribute might
+    // simply not have been hydrated/configured. Self-financing is the one
+    // intentional exception because no affiliation/accreditation may remain.
+    if (insuranceType === peruInsuranceSelfFinancingConceptUuid) {
+      peruFinancerDependentAttributeTypeUuids.forEach((attributeTypeUuid) => {
+        attributeTypeUuids.add(attributeTypeUuid);
+      });
+    }
+
+    for (const attributeTypeUuid of attributeTypeUuids) {
+      const value = values.attributes?.[attributeTypeUuid];
+      const shouldDelete = !value || !shouldPersistPeruInsuranceAttribute(attributeTypeUuid, values.attributes);
+      if (!isValidAttributeTypeKey(attributeTypeUuid) || !shouldDelete) {
         continue;
       }
 

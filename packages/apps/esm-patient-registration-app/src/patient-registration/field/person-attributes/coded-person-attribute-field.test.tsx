@@ -4,6 +4,19 @@ import userEvent from '@testing-library/user-event';
 import { Form, Formik, FormikProvider, useFormikContext } from 'formik';
 import { useCallback } from 'react';
 
+import {
+  peruFinancerDependentAttributeTypeUuids,
+  peruInsuranceAccreditationActiveConceptUuid,
+  peruInsuranceAccreditationCheckedAtAttributeTypeUuid,
+  peruInsuranceAccreditationNotConsultedConceptUuid,
+  peruInsuranceAccreditationStatusAttributeTypeUuid,
+  peruInsuranceCodeAttributeTypeUuid,
+  peruInsuranceSelfFinancingConceptUuid,
+  peruInsuranceSisConceptUuid,
+  peruInsuranceTypeAttributeTypeUuid,
+  peruInsuranceVerificationMethodAttributeTypeUuid,
+  replacePeruInsuranceCoverageInForm,
+} from '../../peru-registration-config';
 import { useConceptAnswers } from '../field.resource';
 
 const mockReportError = vi.mocked(reportError);
@@ -92,6 +105,15 @@ describe('CodedPersonAttributeField', () => {
     );
 
     return { fieldName, onSetFieldValue };
+  }
+
+  function FormikAttributesProbe() {
+    const { values } = useFormikContext<{ attributes: Record<string, string> }>();
+    return <output data-testid="formik-attributes">{JSON.stringify(values.attributes)}</output>;
+  }
+
+  function getFormikAttributes() {
+    return JSON.parse(screen.getByTestId('formik-attributes').textContent ?? '{}') as Record<string, string>;
   }
 
   it('renders a non-fatal inline warning if there is no concept answer set provided', () => {
@@ -289,6 +311,141 @@ describe('CodedPersonAttributeField', () => {
     expect(screen.getByRole('option', { name: 'Self-financing' })).toHaveValue('self-funded-concept');
     expect(screen.queryByText('Particular / Sin seguro')).not.toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Plan de atención SIS' })).not.toBeInTheDocument();
+  });
+
+  it('clears SIS data across payer changes and restores No consultada when SIS is selected again', async () => {
+    const user = userEvent.setup();
+    const insuranceType = { ...personAttributeType, uuid: peruInsuranceTypeAttributeTypeUuid };
+    mockUseConceptAnswers.mockReturnValue({
+      data: [
+        { uuid: peruInsuranceSisConceptUuid, display: 'SIS' },
+        { uuid: 'essalud-concept-uuid', display: 'EsSalud' },
+        { uuid: peruInsuranceSelfFinancingConceptUuid, display: 'Particular / Sin seguro' },
+      ],
+      isLoading: false,
+      error: undefined,
+    });
+
+    render(
+      <Formik
+        initialValues={{
+          attributes: {
+            [peruInsuranceTypeAttributeTypeUuid]: peruInsuranceSisConceptUuid,
+            [peruInsuranceCodeAttributeTypeUuid]: 'SIS-12345678',
+            [peruInsuranceAccreditationStatusAttributeTypeUuid]: peruInsuranceAccreditationActiveConceptUuid,
+            [peruInsuranceAccreditationCheckedAtAttributeTypeUuid]: '2026-08-11',
+            [peruInsuranceVerificationMethodAttributeTypeUuid]: 'setisis',
+          },
+        }}
+        onSubmit={() => {}}
+      >
+        <Form>
+          <CodedPersonAttributeField
+            id="insuranceType"
+            personAttributeType={insuranceType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label="Financiador"
+            customConceptAnswers={[]}
+            required={false}
+          />
+          <FormikAttributesProbe />
+        </Form>
+      </Formik>,
+    );
+
+    const financer = screen.getByLabelText('Financiador (optional)');
+    await user.selectOptions(financer, 'essalud-concept-uuid');
+
+    await waitFor(() => {
+      const attributes = getFormikAttributes();
+      expect(attributes[peruInsuranceTypeAttributeTypeUuid]).toBe('essalud-concept-uuid');
+      peruFinancerDependentAttributeTypeUuids.forEach((attributeTypeUuid) => {
+        expect(attributes[attributeTypeUuid]).toBe('');
+      });
+    });
+
+    await user.selectOptions(financer, peruInsuranceSelfFinancingConceptUuid);
+
+    await waitFor(() => {
+      const attributes = getFormikAttributes();
+      expect(attributes[peruInsuranceTypeAttributeTypeUuid]).toBe(peruInsuranceSelfFinancingConceptUuid);
+      peruFinancerDependentAttributeTypeUuids.forEach((attributeTypeUuid) => {
+        expect(attributes[attributeTypeUuid]).toBe('');
+      });
+    });
+
+    await user.selectOptions(financer, peruInsuranceSisConceptUuid);
+
+    await waitFor(() => {
+      const attributes = getFormikAttributes();
+      expect(attributes[peruInsuranceTypeAttributeTypeUuid]).toBe(peruInsuranceSisConceptUuid);
+      expect(attributes[peruInsuranceAccreditationStatusAttributeTypeUuid]).toBe(
+        peruInsuranceAccreditationNotConsultedConceptUuid,
+      );
+      expect(attributes[peruInsuranceCodeAttributeTypeUuid]).toBe('');
+    });
+  });
+
+  it('preserves equal accreditation values from an explicit composite coverage replacement', async () => {
+    const user = userEvent.setup();
+    const sharedCheckedAt = '2026-08-11';
+
+    function CompositeCoverageHarness() {
+      const { setFieldTouched, setFieldValue } = useFormikContext<{ attributes: Record<string, string> }>();
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() =>
+              replacePeruInsuranceCoverageInForm(
+                {
+                  [peruInsuranceTypeAttributeTypeUuid]: 'essalud-concept-uuid',
+                  [peruInsuranceCodeAttributeTypeUuid]: 'ESSALUD-987654',
+                  [peruInsuranceAccreditationStatusAttributeTypeUuid]: peruInsuranceAccreditationActiveConceptUuid,
+                  [peruInsuranceAccreditationCheckedAtAttributeTypeUuid]: sharedCheckedAt,
+                  [peruInsuranceVerificationMethodAttributeTypeUuid]: 'siteds',
+                },
+                setFieldValue,
+                setFieldTouched,
+              )
+            }
+          >
+            Replace coverage
+          </button>
+          <FormikAttributesProbe />
+        </>
+      );
+    }
+
+    render(
+      <Formik
+        initialValues={{
+          attributes: {
+            [peruInsuranceTypeAttributeTypeUuid]: peruInsuranceSisConceptUuid,
+            [peruInsuranceCodeAttributeTypeUuid]: 'SIS-12345678',
+            [peruInsuranceAccreditationStatusAttributeTypeUuid]: peruInsuranceAccreditationActiveConceptUuid,
+            [peruInsuranceAccreditationCheckedAtAttributeTypeUuid]: sharedCheckedAt,
+            [peruInsuranceVerificationMethodAttributeTypeUuid]: 'setisis',
+          },
+        }}
+        onSubmit={() => {}}
+      >
+        <CompositeCoverageHarness />
+      </Formik>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Replace coverage' }));
+
+    await waitFor(() => {
+      const attributes = getFormikAttributes();
+      expect(attributes[peruInsuranceTypeAttributeTypeUuid]).toBe('essalud-concept-uuid');
+      expect(attributes[peruInsuranceCodeAttributeTypeUuid]).toBe('ESSALUD-987654');
+      expect(attributes[peruInsuranceAccreditationStatusAttributeTypeUuid]).toBe(
+        peruInsuranceAccreditationActiveConceptUuid,
+      );
+      expect(attributes[peruInsuranceAccreditationCheckedAtAttributeTypeUuid]).toBe(sharedCheckedAt);
+      expect(attributes[peruInsuranceVerificationMethodAttributeTypeUuid]).toBe('siteds');
+    });
   });
 
   it('renders customConceptAnswers as select options when they are provided', () => {

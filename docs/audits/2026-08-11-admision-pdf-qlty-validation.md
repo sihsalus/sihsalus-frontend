@@ -6,10 +6,12 @@
 
 **Base original de auditoría:** `53bef2832582aee5e865db9193863e690d3e9a7c`
 
-**Artefacto disponible para validación:** frontend
+**Baseline histórico desplegado el 2026-08-11:** frontend
 `64b0b8d527e92298a46b2867842eb4b611255049`, digest
 `sha256:998e02ba38eb03297e6da4b3580c2ba963c35b328ca7eb11571fe0db81d062a5`,
-con los PRs #785–#791 fusionados y desplegados en DEV/QLTY.
+con los PRs #785–#791 fusionados y desplegados en DEV/QLTY. Este SHA registra
+el cierre técnico de esa fecha; no identifica necesariamente el despliegue
+actual de los ambientes.
 
 **Ambiente a validar:** QLTY
 
@@ -126,7 +128,7 @@ correctamente.
 | Cita vencida se puede marcar como no atendida                                                                  | 15, 91                    | Existe estado real `MISSED`, no solo una etiqueta, por `00330f742`. Automatizarlo sigue siendo decisión de Producto.                                               | QLTY-13                       |
 | Una consulta activa compatible ya no impide crear otra cita                                                    | 77                        | Resuelto: se puede crear la cita aunque exista una consulta activa.                                                                                                | QLTY-17A                      |
 | Llegada no navega automáticamente a HCE, valida capacidades y cancelación muestra resumen                      | 56, 75, 103               | Implementado por `c47f8ca81` más el preflight por rama integrado en #787; una capacidad opcional no bloquea otra rama y una acción denegada no realiza peticiones. | QLTY-14A/B/C y QLTY-18A/B     |
-| Financiador separado del plan SIS y cobertura coherente en persona/visita                                      | 80–81, 95–96, 99–101      | Los PRs #788 y #789 proponen aplicar SIS/IAFAS/Particular, evitar documentos civiles y huérfanos, exigir el bundle completo y reparar sobre la misma visita.       | QLTY-03, QLTY-04 y QLTY-16A–H |
+| Financiador separado del plan SIS y cobertura coherente en persona/visita                                      | 80–81, 95–96, 99–101      | Los PRs #788 y #789 integraron el manejo de SIS/IAFAS/Particular, evitaron documentos civiles y huérfanos, exigieron el bundle completo y repararon sobre la misma visita. | QLTY-03, QLTY-04 y QLTY-16A–H |
 | Código prestacional obligatorio y persistido como observación codificada                                       | 108                       | Resuelto por `d0e3ec4ea` y `81c1bb6ff`.                                                                                                                            | QLTY-23                       |
 | Filtros de Colas permiten `Todo`, cambio de UPSS/servicio y refresco tras triaje                               | 35, 76, 83, 126–127       | Resuelto por `fe4e77aa0` y flujo de derivación de triaje.                                                                                                          | QLTY-19 y QLTY-20             |
 | Expansión de fila sin visita muestra mensaje seguro                                                            | 87, 131                   | Resuelto para la ausencia de visita; los componentes internos todavía necesitan datos/permisos reales.                                                             | QLTY-21                       |

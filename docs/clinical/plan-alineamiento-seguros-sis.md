@@ -28,7 +28,7 @@ fue publicado y desplegado en DEV/QLTY el 2026-08-11 (hora de Lima).
 
 ---
 
-## 1. Diagnóstico (lo que hay hoy)
+## 1. Diagnóstico encontrado el 2026-07-17
 
 ### 1.1 Tres modelos de datos desconectados
 

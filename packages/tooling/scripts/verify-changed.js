@@ -11,7 +11,6 @@ const repoWidePrefixes = ['.yarn/', 'config/', 'packages/tooling/'];
 
 const repoWideFiles = new Set([
   '.yarnrc.yml',
-  '.prettierrc',
   'biome.json',
   'package.json',
   'turbo.json',

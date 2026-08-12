@@ -1,7 +1,7 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .header {
   background-color: $ui-02;
@@ -33,7 +33,7 @@
   }
 
   :global(.cds--label) {
-    @include type.type-style('body-compact-01');
+    @include type.type-style("body-compact-01");
 
     margin: 0;
     white-space: nowrap;
@@ -154,7 +154,7 @@
 }
 
 // Overriding styles for RTL support
-html[dir='rtl'] {
+html[dir="rtl"] {
   .date-and-location {
     & > svg {
       order: -1;

@@ -22,7 +22,16 @@ const StartVisitButton = ({ patientUuid }: StartVisitButtonProps) => {
       if (isOnline) {
         const vitalStatus = await fetchFreshPatientVitalStatus(patientUuid);
         if (vitalStatus.isDeceased) {
-          throw new DeceasedPatientVisitError('A visit cannot be started for a deceased patient.');
+          showSnackbar({
+            isLowContrast: false,
+            kind: 'error',
+            title: t('errorStartingVisit', 'Error starting visit'),
+            subtitle: t(
+              'deceasedPatientVisitBlocked',
+              'No se puede iniciar una consulta para un paciente fallecido.',
+            ),
+          });
+          return;
         }
       }
       launchPatientWorkspace(startVisitWorkspaceForm, {
@@ -38,10 +47,8 @@ const StartVisitButton = ({ patientUuid }: StartVisitButtonProps) => {
         subtitle: getUserFacingErrorMessage(
           error,
           t(
-            vitalStatusErrorMessageKey(error),
-            error instanceof DeceasedPatientVisitError
-              ? 'No se puede iniciar una consulta para un paciente fallecido.'
-              : 'No se pudo verificar el estado vital. Intente nuevamente antes de iniciar la consulta.',
+            'patientVitalStatusCheckFailedBeforeVisit',
+            'No se pudo verificar el estado vital. Intente nuevamente antes de iniciar la consulta.',
           ),
           { logContext: 'Launch start visit workspace' },
         ),
@@ -55,13 +62,5 @@ const StartVisitButton = ({ patientUuid }: StartVisitButtonProps) => {
     </Button>
   ) : null;
 };
-
-class DeceasedPatientVisitError extends Error {}
-
-function vitalStatusErrorMessageKey(error: unknown) {
-  return error instanceof DeceasedPatientVisitError
-    ? 'deceasedPatientVisitBlocked'
-    : 'patientVitalStatusCheckFailedBeforeVisit';
-}
 
 export default StartVisitButton;

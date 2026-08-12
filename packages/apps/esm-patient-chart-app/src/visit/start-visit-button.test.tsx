@@ -1,4 +1,10 @@
-import { showSnackbar, userHasAccess, useConnectivity, useSession } from '@openmrs/esm-framework';
+import {
+  getUserFacingErrorMessage,
+  showSnackbar,
+  userHasAccess,
+  useConnectivity,
+  useSession,
+} from '@openmrs/esm-framework';
 import { fetchFreshPatientVitalStatus, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -8,6 +14,7 @@ import StartVisitButton from './start-visit-button.component';
 
 const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
 const mockFetchFreshPatientVitalStatus = vi.mocked(fetchFreshPatientVitalStatus);
+const mockGetUserFacingErrorMessage = vi.mocked(getUserFacingErrorMessage);
 const mockUseSession = vi.mocked(useSession);
 const mockUseConnectivity = vi.mocked(useConnectivity);
 const mockUserHasAccess = vi.mocked(userHasAccess);
@@ -68,7 +75,35 @@ describe('StartVisitButton', () => {
 
     expect(mockFetchFreshPatientVitalStatus).toHaveBeenCalledWith(mockPatient.id);
     expect(mockLaunchPatientWorkspace).not.toHaveBeenCalled();
-    expect(showSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' }));
+    expect(mockGetUserFacingErrorMessage).not.toHaveBeenCalled();
+    expect(showSnackbar).toHaveBeenCalledWith({
+      isLowContrast: false,
+      kind: 'error',
+      title: 'Error starting visit',
+      subtitle: 'No se puede iniciar una consulta para un paciente fallecido.',
+    });
+  });
+
+  it('shows a safe fallback and does not launch when the fresh vital-status check fails', async () => {
+    const user = userEvent.setup();
+    const technicalError = new Error('backend implementation details');
+    mockFetchFreshPatientVitalStatus.mockRejectedValue(technicalError);
+
+    render(<StartVisitButton patientUuid={mockPatient.id} />);
+    await user.click(screen.getByRole('button', { name: /start visit/i }));
+
+    expect(mockLaunchPatientWorkspace).not.toHaveBeenCalled();
+    expect(mockGetUserFacingErrorMessage).toHaveBeenCalledWith(
+      technicalError,
+      'No se pudo verificar el estado vital. Intente nuevamente antes de iniciar la consulta.',
+      { logContext: 'Launch start visit workspace' },
+    );
+    expect(showSnackbar).toHaveBeenCalledWith({
+      isLowContrast: false,
+      kind: 'error',
+      title: 'Error starting visit',
+      subtitle: 'No se pudo verificar el estado vital. Intente nuevamente antes de iniciar la consulta.',
+    });
   });
 
   it('keeps the existing offline form launch so cached death status can be evaluated in the form', async () => {

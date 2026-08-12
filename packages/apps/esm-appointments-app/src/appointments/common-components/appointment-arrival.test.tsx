@@ -1,5 +1,4 @@
 import {
-  fetchCurrentPatient,
   getDefaultsFromConfigSchema,
   launchWorkspace2,
   navigate,
@@ -9,7 +8,12 @@ import {
   useSession,
   userHasAccess,
 } from '@openmrs/esm-framework';
-import { fetchVisitInsurance, getSisFinancingState, safeCopyFinanciadorToVisit } from '@openmrs/esm-patient-common-lib';
+import {
+  fetchFreshPatientVitalStatus,
+  fetchVisitInsurance,
+  getSisFinancingState,
+  safeCopyFinanciadorToVisit,
+} from '@openmrs/esm-patient-common-lib';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
@@ -46,13 +50,14 @@ vi.mock('./batch-change-appointment-statuses.resources', () => ({
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  fetchFreshPatientVitalStatus: vi.fn(),
   fetchVisitInsurance: vi.fn(),
   getSisFinancingState: vi.fn(),
   safeCopyFinanciadorToVisit: vi.fn(),
 }));
 
 const mockUsePatient = vi.mocked(usePatient);
-const mockFetchCurrentPatient = vi.mocked(fetchCurrentPatient);
+const mockFetchFreshPatientVitalStatus = vi.mocked(fetchFreshPatientVitalStatus);
 const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockChangeAppointmentStatus = vi.mocked(changeAppointmentStatus);
@@ -184,10 +189,7 @@ describe('AppointmentArrivalModal', () => {
       patientUuid: 'patient-uuid',
     } as unknown as ReturnType<typeof usePatient>);
     vi.clearAllMocks();
-    mockFetchCurrentPatient.mockResolvedValue({
-      id: appointment.patient.uuid,
-      deceasedBoolean: false,
-    } as fhir.Patient);
+    mockFetchFreshPatientVitalStatus.mockResolvedValue({ dead: false, deathDate: null, isDeceased: false });
     mockLaunchWorkspace2.mockResolvedValue(true);
     mockGetAppointmentStatus.mockResolvedValue(AppointmentStatus.SCHEDULED);
     mockEnsureAppointmentVisitLink.mockResolvedValue({ created: false });
@@ -233,10 +235,7 @@ describe('AppointmentArrivalModal', () => {
 
   it('fresh-checks death status before starting arrival', async () => {
     const user = userEvent.setup();
-    mockFetchCurrentPatient.mockResolvedValueOnce({
-      id: appointment.patient.uuid,
-      deceasedBoolean: true,
-    } as fhir.Patient);
+    mockFetchFreshPatientVitalStatus.mockResolvedValueOnce({ dead: true, deathDate: null, isDeceased: true });
 
     renderModal();
     await user.click(getQueueButton());
@@ -244,7 +243,7 @@ describe('AppointmentArrivalModal', () => {
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent(/no se puede registrar la llegada de un paciente fallecido/i),
     );
-    expect(mockFetchCurrentPatient).toHaveBeenCalledWith(appointment.patient.uuid, undefined, false);
+    expect(mockFetchFreshPatientVitalStatus).toHaveBeenCalledWith(appointment.patient.uuid);
     expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
   });
@@ -462,9 +461,9 @@ describe('AppointmentArrivalModal', () => {
   });
 
   it('does not check in when the patient is marked deceased while the arrival workspace is open', async () => {
-    mockFetchCurrentPatient
-      .mockResolvedValueOnce({ id: appointment.patient.uuid, deceasedBoolean: false } as fhir.Patient)
-      .mockResolvedValueOnce({ id: appointment.patient.uuid, deceasedBoolean: true } as fhir.Patient);
+    mockFetchFreshPatientVitalStatus
+      .mockResolvedValueOnce({ dead: false, deathDate: null, isDeceased: false })
+      .mockResolvedValueOnce({ dead: true, deathDate: null, isDeceased: true });
 
     renderModal();
     await userEvent.click(getQueueButton());
@@ -476,6 +475,26 @@ describe('AppointmentArrivalModal', () => {
       code: 'DECEASED_PATIENT_ARRIVAL_BLOCKED',
     });
 
+    expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
+  });
+
+  it('rechecks death immediately before changing appointment status', async () => {
+    mockFetchFreshPatientVitalStatus
+      .mockResolvedValueOnce({ dead: false, deathDate: null, isDeceased: false })
+      .mockResolvedValueOnce({ dead: false, deathDate: null, isDeceased: false })
+      .mockResolvedValueOnce({ dead: true, deathDate: null, isDeceased: true });
+
+    renderModal();
+    await userEvent.click(getQueueButton());
+
+    const launchOptions = mockLaunchWorkspace2.mock.calls[0][1] as {
+      onVisitStarted: () => Promise<void>;
+    };
+    await expect(launchOptions.onVisitStarted()).rejects.toMatchObject({
+      code: 'DECEASED_PATIENT_ARRIVAL_BLOCKED',
+    });
+
+    expect(mockGetAppointmentStatus).toHaveBeenCalledTimes(2);
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
   });
 

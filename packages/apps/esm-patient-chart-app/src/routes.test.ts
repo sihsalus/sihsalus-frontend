@@ -40,8 +40,22 @@ describe('patient chart route privilege contract', () => {
     expect(patientVitalStatusButtons).toHaveLength(2);
     patientVitalStatusButtons.forEach((extension) => {
       expect(extension.privileges).toEqual(patientVitalStatusPrivileges);
+      expect(extension.online).toBe(true);
+      expect(extension.offline).toBe(false);
     });
     expect(markAliveModal?.privileges).toEqual(patientVitalStatusPrivileges);
     expect(markDeceasedWorkspace?.privileges).toEqual(patientVitalStatusPrivileges);
+  });
+
+  it('keeps offline visit creation available for patients not already known to be deceased', () => {
+    const startVisitButtons = routes.extensions.filter(({ name }) =>
+      ['start-visit-button', 'start-visit-button-patient-search'].includes(name),
+    );
+
+    expect(startVisitButtons).toHaveLength(2);
+    startVisitButtons.forEach((extension) => {
+      expect(extension.online).toBe(true);
+      expect(extension.offline).toBe(true);
+    });
   });
 });

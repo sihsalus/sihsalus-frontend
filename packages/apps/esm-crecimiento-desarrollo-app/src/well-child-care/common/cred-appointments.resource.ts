@@ -1,4 +1,5 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { fetchFreshPatientVitalStatus } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 
 import type { CREDControlWithStatus } from '../../hooks/useCREDSchedule';
@@ -8,6 +9,8 @@ interface CreateCREDAppointmentsResult {
   created: string[];
   errors: Array<{ controlNumber: number; error: Error }>;
 }
+
+export const DECEASED_PATIENT_CRED_APPOINTMENT_BLOCKED = 'DECEASED_PATIENT_CRED_APPOINTMENT_BLOCKED';
 
 /**
  * Crea citas CRED para los controles proporcionados usando la API de Appointments.
@@ -49,6 +52,13 @@ export async function createCREDAppointments(
     };
 
     try {
+      const vitalStatus = await fetchFreshPatientVitalStatus(patientUuid);
+      if (vitalStatus.isDeceased) {
+        throw Object.assign(new Error('No se pueden crear citas CRED para un paciente fallecido.'), {
+          code: DECEASED_PATIENT_CRED_APPOINTMENT_BLOCKED,
+        });
+      }
+
       const response = await openmrsFetch(`${restBaseUrl}/appointment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

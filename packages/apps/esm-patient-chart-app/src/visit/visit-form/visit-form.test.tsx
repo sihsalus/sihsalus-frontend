@@ -20,6 +20,7 @@ import {
 import {
   copyFinanciadorToVisitPrivileges,
   createOfflineVisitForPatient,
+  fetchFreshPatientVitalStatus,
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
   INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
   SELF_FINANCED_CONCEPT_UUID,
@@ -310,6 +311,7 @@ const mockDeleteVisitAttribute = vi.mocked(deleteVisitAttribute).mockResolvedVal
 const mockGetVisitAttributes = vi.mocked(getVisitAttributes);
 const mockReconcileVisitCreation = vi.mocked(reconcileVisitCreation);
 const mockCreateOfflineVisitForPatient = vi.mocked(createOfflineVisitForPatient);
+const mockFetchFreshPatientVitalStatus = vi.mocked(fetchFreshPatientVitalStatus);
 const mockSafeCopyFinanciadorToVisit = vi.mocked(safeCopyFinanciadorToVisit);
 const mockUsePersonAttributesForVisitDefaults = vi.mocked(usePersonAttributesForVisitDefaults);
 const mockUseVisitProvenanceAddressOptions = vi.mocked(useVisitProvenanceAddressOptions);
@@ -317,6 +319,7 @@ const mockUseVisitProvenanceAddressOptions = vi.mocked(useVisitProvenanceAddress
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
   createOfflineVisitForPatient: vi.fn(),
+  fetchFreshPatientVitalStatus: vi.fn(),
   safeCopyFinanciadorToVisit: vi.fn(),
   useActivePatientEnrollment: vi.fn().mockReturnValue({
     activePatientEnrollment: [],
@@ -484,6 +487,10 @@ describe('Visit form', () => {
       updated: 0,
     });
     mockUseConnectivity.mockReturnValue(true);
+    mockCreateOfflineVisitForPatient.mockResolvedValue({} as Awaited<
+      ReturnType<typeof createOfflineVisitForPatient>
+    >);
+    mockFetchFreshPatientVitalStatus.mockResolvedValue({ dead: false, deathDate: null, isDeceased: false });
     mockOnVisitCreatedOrUpdatedCallback.mockResolvedValue(undefined);
     mockUseSession.mockReturnValue({
       user: {
@@ -893,6 +900,151 @@ describe('Visit form', () => {
       kind: 'success',
       title: 'Visit started',
     });
+  });
+
+  it('fresh-checks patient-search visit creation and performs no write after a concurrent death', async () => {
+    const user = userEvent.setup();
+    const handleCreateExtraVisitInfo = vi.fn();
+    mockFetchFreshPatientVitalStatus.mockResolvedValue({
+      dead: true,
+      deathDate: '2026-08-12T15:41:28.000Z',
+      isDeceased: true,
+    });
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      showExtraVisitAttributesSlot: true,
+      visitAttributeTypes: [],
+      defaultVisitAttributesFromPersonAttributes: [],
+    });
+    mockExtensionSlot.mockImplementation(({ children, name, state }): React.JSX.Element => {
+      if (name === 'extra-visit-attribute-slot') {
+        return (
+          <ExtraVisitSlotTestDouble
+            attributes={[]}
+            handleCreateExtraVisitInfo={handleCreateExtraVisitInfo}
+            setExtraVisitInfo={
+              (
+                state as {
+                  setExtraVisitInfo: (value: {
+                    attributes: Array<{ attributeType: string; value: string }>;
+                    handleCreateExtraVisitInfo?: () => Promise<void>;
+                  }) => void;
+                }
+              ).setExtraVisitInfo
+            }
+          />
+        );
+      }
+      return typeof children === 'function' ? <>{children({} as AssignedExtension)}</> : <>{children ?? null}</>;
+    });
+
+    renderVisitForm(undefined, { openedFrom: 'patient-search-start-visit' });
+    await screen.findByTestId('extra-visit-attribute-slot');
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockFetchFreshPatientVitalStatus).toHaveBeenCalledWith(mockPatient.id));
+    expect(handleCreateExtraVisitInfo).not.toHaveBeenCalled();
+    expect(mockSaveVisit).not.toHaveBeenCalled();
+    expect(showSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        subtitle: 'No se puede iniciar una consulta para un paciente fallecido.',
+      }),
+    );
+  });
+
+  it('fails closed before extra-info or visit writes when the fresh vital-status request fails', async () => {
+    const user = userEvent.setup();
+    const handleCreateExtraVisitInfo = vi.fn();
+    mockFetchFreshPatientVitalStatus.mockRejectedValue(new TypeError('Failed to fetch'));
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      showExtraVisitAttributesSlot: true,
+      visitAttributeTypes: [],
+      defaultVisitAttributesFromPersonAttributes: [],
+    });
+    mockExtensionSlot.mockImplementation(({ children, name, state }): React.JSX.Element => {
+      if (name === 'extra-visit-attribute-slot') {
+        return (
+          <ExtraVisitSlotTestDouble
+            attributes={[]}
+            handleCreateExtraVisitInfo={handleCreateExtraVisitInfo}
+            setExtraVisitInfo={
+              (
+                state as {
+                  setExtraVisitInfo: (value: {
+                    attributes: Array<{ attributeType: string; value: string }>;
+                    handleCreateExtraVisitInfo?: () => Promise<void>;
+                  }) => void;
+                }
+              ).setExtraVisitInfo
+            }
+          />
+        );
+      }
+      return typeof children === 'function' ? <>{children({} as AssignedExtension)}</> : <>{children ?? null}</>;
+    });
+
+    renderVisitForm();
+    await screen.findByTestId('extra-visit-attribute-slot');
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockFetchFreshPatientVitalStatus).toHaveBeenCalledWith(mockPatient.id));
+    expect(handleCreateExtraVisitInfo).not.toHaveBeenCalled();
+    expect(mockSaveVisit).not.toHaveBeenCalled();
+  });
+
+  it('re-checks after extra-info and does not create a visit when the patient dies during that write', async () => {
+    const user = userEvent.setup();
+    const handleCreateExtraVisitInfo = vi.fn().mockResolvedValue(undefined);
+    mockFetchFreshPatientVitalStatus
+      .mockResolvedValueOnce({ dead: false, deathDate: null, isDeceased: false })
+      .mockResolvedValueOnce({
+        dead: true,
+        deathDate: '2026-08-12T15:41:28.000Z',
+        isDeceased: true,
+      });
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      showExtraVisitAttributesSlot: true,
+      visitAttributeTypes: [],
+      defaultVisitAttributesFromPersonAttributes: [],
+    });
+    mockExtensionSlot.mockImplementation(({ children, name, state }): React.JSX.Element => {
+      if (name === 'extra-visit-attribute-slot') {
+        return (
+          <ExtraVisitSlotTestDouble
+            attributes={[]}
+            handleCreateExtraVisitInfo={handleCreateExtraVisitInfo}
+            setExtraVisitInfo={
+              (
+                state as {
+                  setExtraVisitInfo: (value: {
+                    attributes: Array<{ attributeType: string; value: string }>;
+                    handleCreateExtraVisitInfo?: () => Promise<void>;
+                  }) => void;
+                }
+              ).setExtraVisitInfo
+            }
+          />
+        );
+      }
+      return typeof children === 'function' ? <>{children({} as AssignedExtension)}</> : <>{children ?? null}</>;
+    });
+
+    renderVisitForm();
+    await screen.findByTestId('extra-visit-attribute-slot');
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockFetchFreshPatientVitalStatus).toHaveBeenCalledTimes(2));
+    expect(handleCreateExtraVisitInfo).toHaveBeenCalledOnce();
+    expect(mockSaveVisit).not.toHaveBeenCalled();
   });
 
   it('keeps care moving and offers an idempotent coverage retry for the same visit', async () => {
@@ -1577,13 +1729,51 @@ describe('Visit form', () => {
     await user.click(screen.getByRole('button', { name: /Start visit/i }));
 
     expect(mockSaveVisit).not.toHaveBeenCalled();
-    expect(mockCreateOfflineVisitForPatient).not.toHaveBeenCalled();
     expect(queuePreSave).not.toHaveBeenCalled();
     expect(queueCallback).not.toHaveBeenCalled();
     expect(showSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'error',
         title: 'No se puede registrar la atención sin conexión',
+      }),
+    );
+  });
+
+  it('preserves offline visit creation for a patient not known to be deceased', async () => {
+    const user = userEvent.setup();
+    mockUseConnectivity.mockReturnValue(false);
+    renderVisitForm();
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockCreateOfflineVisitForPatient).toHaveBeenCalledOnce());
+    expect(mockFetchFreshPatientVitalStatus).not.toHaveBeenCalled();
+  });
+
+  it('does not queue an offline visit when the cached patient is already known to be deceased', async () => {
+    const user = userEvent.setup();
+    mockUseConnectivity.mockReturnValue(false);
+    mockUsePatient.mockReturnValue({
+      error: null,
+      isLoading: false,
+      patient: {
+        ...mockFhirPatient,
+        deceasedBoolean: true,
+        deceasedDateTime: '2026-08-12T15:41:28.000Z',
+      },
+      patientUuid: mockPatient.id,
+    });
+    renderVisitForm();
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    expect(mockCreateOfflineVisitForPatient).not.toHaveBeenCalled();
+    expect(showSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        subtitle: 'No se puede iniciar una consulta para un paciente fallecido.',
       }),
     );
   });
@@ -3249,14 +3439,19 @@ function hasRenderedExtensionSlot(name: string) {
 
 function ExtraVisitSlotTestDouble({
   attributes,
+  handleCreateExtraVisitInfo,
   setExtraVisitInfo,
 }: {
   attributes: Array<{ attributeType: string; value: string }>;
-  setExtraVisitInfo: (state: { attributes: Array<{ attributeType: string; value: string }> }) => void;
+  handleCreateExtraVisitInfo?: () => Promise<void>;
+  setExtraVisitInfo: (state: {
+    attributes: Array<{ attributeType: string; value: string }>;
+    handleCreateExtraVisitInfo?: () => Promise<void>;
+  }) => void;
 }) {
   React.useEffect(() => {
-    setExtraVisitInfo({ attributes });
-  }, [attributes, setExtraVisitInfo]);
+    setExtraVisitInfo({ attributes, handleCreateExtraVisitInfo });
+  }, [attributes, handleCreateExtraVisitInfo, setExtraVisitInfo]);
 
   return <div data-testid="extra-visit-attribute-slot" />;
 }

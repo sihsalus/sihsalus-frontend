@@ -1,4 +1,5 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { assertFreshPatientIsAlive } from '@openmrs/esm-patient-common-lib';
 
 /**
  * Payload for creating an emergency attention encounter.
@@ -21,7 +22,7 @@ interface AttentionEncounterPayload {
  *
  * @returns Promise with the created encounter (POST /ws/rest/v1/encounter)
  */
-export function createAttentionEncounter({
+export async function createAttentionEncounter({
   patientUuid,
   visitUuid,
   encounterTypeUuid,
@@ -35,6 +36,7 @@ export function createAttentionEncounter({
       value: o.value.trim(),
     }));
 
+  await assertFreshPatientIsAlive(patientUuid);
   return openmrsFetch(`${restBaseUrl}/encounter`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

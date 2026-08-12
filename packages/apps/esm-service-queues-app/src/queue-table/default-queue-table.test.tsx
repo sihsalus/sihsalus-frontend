@@ -213,7 +213,7 @@ describe('DefaultQueueTable', () => {
     expect(screen.queryByRole('columnheader', { name: /^(status|estado)$/i })).not.toBeInTheDocument();
   });
 
-  it('restores a persisted status selection and applies it to the queue request', async () => {
+  it('restores a persisted status selection and resolves the selected UPSS operationally', async () => {
     mockUseServiceQueuesStore.mockReturnValue({
       queueLocationSelectionInitialized: true,
       selectedServiceUuid: 'service-uuid',
@@ -241,9 +241,65 @@ describe('DefaultQueueTable', () => {
     expect(screen.getByRole('heading', { name: `Patients: ${mockStatusWaiting.display}` })).toBeInTheDocument();
     expect(mockUseQueueEntries).toHaveBeenCalledWith({
       service: 'service-uuid',
-      location: 'location-uuid',
+      location: null,
       isEnded: false,
       status: mockStatusWaiting.uuid,
+    });
+  });
+
+  it('shows a shared triage queue entry under the UPSS of its visit', async () => {
+    mockUseServiceQueuesStore.mockReturnValue({
+      queueLocationSelectionInitialized: true,
+      selectedServiceUuid: null,
+      selectedQueueLocationUuid: 'upss-consulta-externa',
+      selectedQueueStatusUuid: null,
+      selectedAppointmentStatus: '',
+      selectedQueueRoomTimestamp: new Date(),
+      isPermanentProviderQueueRoom: false,
+    });
+    mockQueueLocations.mockReturnValue({ queueLocations: [], isLoading: false, error: null });
+    mockUseQueueRooms.mockReturnValue({ rooms: [], isLoading: false, error: undefined });
+    mockUseQueueEntries.mockReturnValue({
+      queueEntries: [
+        {
+          ...mockQueueEntries[0],
+          queue: {
+            ...mockQueueEntries[0].queue,
+            location: { ...mockQueueEntries[0].queue.location, uuid: 'hospital' },
+          },
+          visit: {
+            ...mockQueueEntries[0].visit,
+            location: { uuid: 'upss-consulta-externa' },
+          },
+        },
+        {
+          ...mockQueueEntries[1],
+          queue: {
+            ...mockQueueEntries[1].queue,
+            location: { ...mockQueueEntries[1].queue.location, uuid: 'hospital' },
+          },
+          visit: {
+            ...mockQueueEntries[1].visit,
+            location: { uuid: 'upss-rehabilitacion' },
+          },
+        },
+      ],
+      isLoading: false,
+      error: undefined,
+      totalCount: 2,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+
+    rendeDefaultQueueTable();
+
+    expect(await screen.findByRole('link', { name: /Brian Johnson/i })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Alice Johnson/i })).not.toBeInTheDocument();
+    expect(mockUseQueueEntries).toHaveBeenCalledWith({
+      service: null,
+      location: null,
+      isEnded: false,
+      status: null,
     });
   });
 

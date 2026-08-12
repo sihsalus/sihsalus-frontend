@@ -37,7 +37,7 @@ describe('MetricsHeader', () => {
     mockUseServiceQueuesStore.mockReturnValue({
       queueLocationSelectionInitialized: true,
       selectedServiceUuid: 'service-uuid',
-      selectedQueueLocationUuid: 'location-uuid',
+      selectedQueueLocationUuid: null,
       selectedQueueStatusUuid: null,
       selectedAppointmentStatus: '',
       selectedQueueRoomTimestamp: new Date(),
@@ -53,7 +53,7 @@ describe('MetricsHeader', () => {
 
     expect(mockUseQueueEntries).toHaveBeenCalledWith({
       service: 'service-uuid',
-      location: 'location-uuid',
+      location: null,
       isEnded: false,
     });
 

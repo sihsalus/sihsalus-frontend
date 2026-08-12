@@ -64,13 +64,14 @@ describe('AttentionFormWorkspace', () => {
     const closeError = new TypeError('queue close response lost');
     mockEndEmergencyQueueEntry.mockRejectedValueOnce(closeError).mockResolvedValueOnce({ data: {} } as never);
     const closeWorkspace = vi.fn();
+    const closeWorkspaceWithSavedChanges = vi.fn();
     const promptBeforeClosing = vi.fn();
     const user = userEvent.setup();
     render(
       <AttentionFormWorkspace
         queueEntry={queueEntry}
         closeWorkspace={closeWorkspace}
-        closeWorkspaceWithSavedChanges={vi.fn()}
+        closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
         promptBeforeClosing={promptBeforeClosing}
         setTitle={vi.fn()}
       />,
@@ -93,7 +94,8 @@ describe('AttentionFormWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: 'Reintentar finalización' }));
 
-    await waitFor(() => expect(closeWorkspace).toHaveBeenCalledOnce());
+    await waitFor(() => expect(closeWorkspaceWithSavedChanges).toHaveBeenCalledOnce());
+    expect(closeWorkspace).not.toHaveBeenCalled();
     expect(mockCreateAttentionEncounter).toHaveBeenCalledOnce();
     expect(mockEndEmergencyQueueEntry).toHaveBeenCalledTimes(2);
     expect(mockShowSnackbar.mock.calls.filter(([options]) => options.kind === 'error')).toHaveLength(1);
@@ -105,13 +107,14 @@ describe('AttentionFormWorkspace', () => {
       .mockRejectedValueOnce(createError)
       .mockResolvedValueOnce({ data: { uuid: 'encounter-uuid' } } as never);
     const closeWorkspace = vi.fn();
+    const closeWorkspaceWithSavedChanges = vi.fn();
     const promptBeforeClosing = vi.fn();
     const user = userEvent.setup();
     render(
       <AttentionFormWorkspace
         queueEntry={queueEntry}
         closeWorkspace={closeWorkspace}
-        closeWorkspaceWithSavedChanges={vi.fn()}
+        closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
         promptBeforeClosing={promptBeforeClosing}
         setTitle={vi.fn()}
       />,
@@ -133,7 +136,8 @@ describe('AttentionFormWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: 'Reintentar finalización' }));
 
-    await waitFor(() => expect(closeWorkspace).toHaveBeenCalledOnce());
+    await waitFor(() => expect(closeWorkspaceWithSavedChanges).toHaveBeenCalledOnce());
+    expect(closeWorkspace).not.toHaveBeenCalled();
     expect(mockCreateAttentionEncounter).toHaveBeenCalledTimes(2);
     expect(mockCreateAttentionEncounter.mock.calls[1][0]).toEqual(originalPayload);
     expect(mockEndEmergencyQueueEntry).toHaveBeenCalledOnce();

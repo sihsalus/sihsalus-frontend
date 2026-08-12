@@ -44,6 +44,7 @@ interface AttentionSubmissionAttempt {
 const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({
   queueEntry,
   closeWorkspace,
+  closeWorkspaceWithSavedChanges,
   promptBeforeClosing,
 }) => {
   const { t } = useTranslation();
@@ -142,7 +143,7 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({
         });
 
         setSubmissionAttempt(null);
-        closeWorkspace();
+        closeWorkspaceWithSavedChanges();
       } catch (error) {
         showSnackbar({
           title: t('errorSavingAttention', 'Error al guardar atención'),
@@ -157,7 +158,7 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({
         setIsSubmitting(false);
       }
     },
-    [config, queueEntry, t, closeWorkspace, mutateEmergencyQueueEntries, submissionAttempt],
+    [config, queueEntry, t, closeWorkspaceWithSavedChanges, mutateEmergencyQueueEntries, submissionAttempt],
   );
 
   return (

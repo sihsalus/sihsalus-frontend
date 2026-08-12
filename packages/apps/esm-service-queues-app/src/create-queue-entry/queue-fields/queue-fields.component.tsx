@@ -180,6 +180,11 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
               });
             }
             const visitInsurance = await fetchVisitInsurance(visit.uuid);
+            if (!visitInsurance.financiadorUuid) {
+              throw Object.assign(new Error('The visit does not have a financing type assigned.'), {
+                code: TRIAGE_SIS_FINANCING_REQUIRED,
+              });
+            }
             if (getSisFinancingState(visitInsurance) !== 'active') {
               throw Object.assign(new Error('The visit does not have active SIS financing.'), {
                 code: TRIAGE_SIS_FINANCING_REQUIRED,
@@ -242,7 +247,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
                     ),
                     [TRIAGE_SIS_FINANCING_REQUIRED]: t(
                       'triageSisFinancingRequired',
-                      'No se puede continuar con el triaje porque esta atención no tiene SIS vigente. Derive al paciente a Caja para regularizar el pago o la cobertura.',
+                      'No se puede continuar con el triaje porque esta atención no tiene financiador definido o no tiene SIS vigente (ejemplo: SIS). Derive al paciente a Caja para regularizar el pago o la cobertura.',
                     ),
                   },
                   logContext: 'Add patient to queue',

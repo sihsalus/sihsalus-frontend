@@ -113,7 +113,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
       title: t('triageBlockedByFinancing', 'Triaje bloqueado por financiamiento'),
       subtitle: t(
         'sendPatientToCashierDescription',
-        'El paciente no tiene SIS vigente. Debe regularizar el pago o la cobertura en Caja antes de continuar con el triaje.',
+        'El paciente no tiene financiador definido o no tiene SIS vigente. Debe regularizar el pago o la cobertura en Caja antes de continuar con el triaje.',
       ),
     });
     if (canOpenBilling) {

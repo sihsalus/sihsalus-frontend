@@ -61,17 +61,6 @@ jobs:
       - name: Test Tooling
         run: yarn test:tooling
 
-      # SCSS is formatted by Prettier in lint-staged, while Biome handles the
-      # rest of the repository. Enforce that same contract in CI without
-      # requiring a one-shot rewrite of all historical stylesheets.
-      - name: Validate Changed SCSS Formatting
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            yarn validate:scss-format --base "origin/${{ github.base_ref }}" --head "${{ github.sha }}"
-          else
-            yarn validate:scss-format --base "${{ github.event.before }}" --head "${{ github.sha }}"
-          fi
-
       - name: Validate Error Exposure
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then

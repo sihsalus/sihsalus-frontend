@@ -1,14 +1,14 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
 
 .heading {
-  @include type.type-style('heading-03');
+  @include type.type-style("heading-03");
   margin-bottom: layout.$spacing-03;
 }
 
 .columnLabel {
-  @include type.type-style('heading-compact-02');
+  @include type.type-style("heading-compact-02");
   color: colors.$gray-70;
 }
 
@@ -41,7 +41,7 @@
 }
 
 .diagnosisButton {
-  @include type.type-style('body-compact-01');
+  @include type.type-style("body-compact-01");
   display: grid;
   grid-template-columns: minmax(3.5rem, max-content) max-content 1fr;
   gap: layout.$spacing-03;
@@ -65,7 +65,7 @@
 }
 
 .diagnosisCode {
-  @include type.type-style('code-01');
+  @include type.type-style("code-01");
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -86,7 +86,7 @@
 }
 
 .selectedDiagnosis {
-  @include type.type-style('body-compact-01');
+  @include type.type-style("body-compact-01");
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -140,19 +140,19 @@
 }
 
 .diagnosesText {
-  @include type.type-style('body-compact-01');
+  @include type.type-style("body-compact-01");
   color: colors.$gray-70;
   margin-bottom: layout.$spacing-06;
 }
 
 .emptyResults {
-  @include type.type-style('body-compact-01');
+  @include type.type-style("body-compact-01");
   color: colors.$gray-70;
   min-height: layout.$spacing-05;
 }
 
 .imgUploadHelperText {
-  @include type.type-style('body-compact-01');
+  @include type.type-style("body-compact-01");
   color: colors.$gray-70;
 }
 
@@ -273,7 +273,7 @@
 }
 
 .errorMessage {
-  @include type.type-style('label-02');
+  @include type.type-style("label-02");
   color: colors.$red-60;
 }
 
@@ -342,7 +342,7 @@
   }
 
   :global(.cds--radio-button__label) {
-    @include type.type-style('label-01');
+    @include type.type-style("label-01");
   }
 }
 

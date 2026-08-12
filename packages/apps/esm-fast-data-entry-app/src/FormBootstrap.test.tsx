@@ -54,7 +54,8 @@ describe('FormBootstrap', () => {
   });
 
   it('passes the expected widget state once the patient is available', () => {
-    renderFormBootstrap();
+    const onBeforeEncounterSave = vi.fn();
+    renderFormBootstrap({ onBeforeEncounterSave });
 
     expect(screen.getByTestId('form-widget-slot')).toBeInTheDocument();
 
@@ -72,6 +73,7 @@ describe('FormBootstrap', () => {
         showDiscardSubmitButtons: false,
         hideControls: true,
         hidePatientBanner: true,
+        onBeforeEncounterSave,
         preFilledQuestions: {
           sessionName: 'April Session',
           practitionerName: 'Alice',

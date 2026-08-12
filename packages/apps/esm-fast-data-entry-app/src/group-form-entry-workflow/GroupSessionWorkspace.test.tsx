@@ -1,4 +1,9 @@
 import { getGlobalStore, useConfig, useSession, useStore } from '@openmrs/esm-framework';
+import {
+  assertFreshPatientIsAlive,
+  DECEASED_PATIENT_OPERATION_BLOCKED,
+  PATIENT_VITAL_STATUS_UNAVAILABLE,
+} from '@openmrs/esm-patient-common-lib';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import GroupFormWorkflowContext from '../context/GroupFormWorkflowContext';
@@ -11,6 +16,12 @@ vi.mock('@openmrs/esm-framework', async () => ({
   useConfig: vi.fn(),
   useSession: vi.fn(),
   useStore: vi.fn(),
+}));
+
+vi.mock('@openmrs/esm-patient-common-lib', () => ({
+  assertFreshPatientIsAlive: vi.fn(),
+  DECEASED_PATIENT_OPERATION_BLOCKED: 'DECEASED_PATIENT_OPERATION_BLOCKED',
+  PATIENT_VITAL_STATUS_UNAVAILABLE: 'PATIENT_VITAL_STATUS_UNAVAILABLE',
 }));
 
 vi.mock('uuid', () => ({
@@ -45,6 +56,7 @@ const mockGetGlobalStore = vi.mocked(getGlobalStore);
 const mockUseConfig = vi.mocked(useConfig);
 const mockUseSession = vi.mocked(useSession);
 const mockUseStore = vi.mocked(useStore);
+const mockAssertFreshPatientIsAlive = vi.mocked(assertFreshPatientIsAlive);
 const mockFormBootstrap = FormBootstrap as vi.Mock;
 
 const renderWorkspace = (contextOverrides = {}) => {
@@ -102,9 +114,10 @@ describe('GroupSessionWorkspace', () => {
         sessionUuid: 'concept-session-uuid',
       },
     } as never);
+    mockAssertFreshPatientIsAlive.mockResolvedValue({ dead: false, isDeceased: false });
   });
 
-  it('builds encounter payloads with group-session metadata when no visit exists yet', () => {
+  it('checks a living patient before building the encounter and again before its final save', async () => {
     const updateVisitUuid = vi.fn();
     renderWorkspace({ updateVisitUuid });
 
@@ -119,8 +132,8 @@ describe('GroupSessionWorkspace', () => {
       ],
     };
 
-    act(() => {
-      formBootstrapProps.handleEncounterCreate(payload);
+    await act(async () => {
+      await formBootstrapProps.handleEncounterCreate(payload);
     });
 
     const expectedObsDatetime = new Date('2026-04-15').toISOString();
@@ -164,6 +177,68 @@ describe('GroupSessionWorkspace', () => {
         uuid: 'visit-type-1',
       },
     });
+    expect(updateVisitUuid).not.toHaveBeenCalled();
+
+    await expect(formBootstrapProps.onBeforeEncounterSave(payload)).resolves.toBeUndefined();
+    formBootstrapProps.handlePostResponse({ uuid: 'saved-encounter-uuid' });
+    expect(updateVisitUuid).toHaveBeenCalledWith('generated-visit-uuid');
+    expect(mockAssertFreshPatientIsAlive).toHaveBeenNthCalledWith(1, 'patient-a');
+    expect(mockAssertFreshPatientIsAlive).toHaveBeenNthCalledWith(2, 'patient-a');
+    expect(mockAssertFreshPatientIsAlive.mock.invocationCallOrder[0]).toBeLessThan(
+      updateVisitUuid.mock.invocationCallOrder[0],
+    );
+  });
+
+  it.each([
+    ['deceased', DECEASED_PATIENT_OPERATION_BLOCKED],
+    ['unavailable', PATIENT_VITAL_STATUS_UNAVAILABLE],
+  ])('does not mutate the encounter payload when the initial patient check is %s', async (_state, code) => {
+    const updateVisitUuid = vi.fn();
+    const guardError = Object.assign(new Error(`Patient status ${_state}`), { code });
+    mockAssertFreshPatientIsAlive.mockRejectedValueOnce(guardError);
+    renderWorkspace({ updateVisitUuid });
+
+    const [formBootstrapProps] = mockFormBootstrap.mock.calls[0];
+    const payload = {
+      location: 'original-location',
+      encounterDatetime: '2026-04-01T10:00:00.000Z',
+      obs: [{ concept: 'weight-concept', value: '70' }],
+    };
+    const originalPayload = structuredClone(payload);
+
+    await expect(formBootstrapProps.handleEncounterCreate(payload)).rejects.toBe(guardError);
+
+    expect(payload).toEqual(originalPayload);
+    expect(updateVisitUuid).not.toHaveBeenCalled();
+  });
+
+  it('blocks the final save when the patient dies after the initial check', async () => {
+    const updateVisitUuid = vi.fn();
+    const deceasedError = Object.assign(new Error('Patient is deceased'), {
+      code: DECEASED_PATIENT_OPERATION_BLOCKED,
+    });
+    mockAssertFreshPatientIsAlive
+      .mockResolvedValueOnce({ dead: false, isDeceased: false })
+      .mockRejectedValueOnce(deceasedError);
+    renderWorkspace({ updateVisitUuid });
+
+    const [formBootstrapProps] = mockFormBootstrap.mock.calls[0];
+    const payload = { obs: [] };
+
+    await formBootstrapProps.handleEncounterCreate(payload);
+
+    expect(payload).toHaveProperty('visit');
+    await expect(formBootstrapProps.onBeforeEncounterSave(payload)).rejects.toBe(deceasedError);
+    expect(mockAssertFreshPatientIsAlive).toHaveBeenCalledTimes(2);
+    expect(updateVisitUuid).not.toHaveBeenCalled();
+
+    mockAssertFreshPatientIsAlive.mockResolvedValue({ dead: false, isDeceased: false });
+    const retryPayload: Record<string, unknown> = { obs: [] };
+    await formBootstrapProps.handleEncounterCreate(retryPayload);
+    await formBootstrapProps.onBeforeEncounterSave(retryPayload);
+
+    expect(retryPayload.visit).toEqual(expect.objectContaining({ uuid: 'generated-visit-uuid' }));
+    formBootstrapProps.handlePostResponse({ uuid: 'retry-encounter-uuid' });
     expect(updateVisitUuid).toHaveBeenCalledWith('generated-visit-uuid');
   });
 

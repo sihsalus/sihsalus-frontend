@@ -172,18 +172,20 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
           align="left"
           flipped
         >
-          <OverflowMenuItem
-            className={styles.menuItem}
-            aria-label={t('edit', 'Edit')}
-            hasDivider
-            onClick={() => {
-              const dispose = showModal('edit-queue-entry-modal', {
-                closeModal: () => dispose(),
-                queueEntry,
-              });
-            }}
-            itemText={t('edit', 'Edit')}
-          />
+          {!isDeceasedPatient ? (
+            <OverflowMenuItem
+              className={styles.menuItem}
+              aria-label={t('edit', 'Edit')}
+              hasDivider
+              onClick={() => {
+                const dispose = showModal('edit-queue-entry-modal', {
+                  closeModal: () => dispose(),
+                  queueEntry,
+                });
+              }}
+              itemText={t('edit', 'Edit')}
+            />
+          ) : null}
           <OverflowMenuItem
             className={styles.menuItem}
             aria-label={t('removePatient', 'Remove patient')}
@@ -212,7 +214,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
               }}
               itemText={t('delete', 'Delete')}
             />
-          ) : (
+          ) : !isDeceasedPatient ? (
             <OverflowMenuItem
               className={styles.menuItem}
               aria-label={t('undoTransition', 'Undo transition')}
@@ -227,7 +229,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
               }}
               itemText={t('undoTransition', 'Undo transition')}
             />
-          )}
+          ) : null}
         </OverflowMenu>
       )}
     </div>

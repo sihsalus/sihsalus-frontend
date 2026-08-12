@@ -1,7 +1,7 @@
 import { getUserFacingErrorMessage, openmrsFetch, showSnackbar } from '@openmrs/esm-framework';
 import { renderHook, waitFor } from '@testing-library/react';
 
-import { useMutateQueueEntries, useQueueEntries } from './useQueueEntries';
+import { queueEntryRepresentation, useMutateQueueEntries, useQueueEntries } from './useQueueEntries';
 
 const mockMutate = vi.hoisted(() => vi.fn());
 const mockGetUserFacingErrorMessage = vi.mocked(getUserFacingErrorMessage);
@@ -71,6 +71,13 @@ describe('useMutateQueueEntries', () => {
     } finally {
       consoleErrorSpy.mockRestore();
     }
+  });
+});
+
+describe('queueEntryRepresentation', () => {
+  it('retains the full person representation used for demographics and deceased status', () => {
+    expect(queueEntryRepresentation).toContain('patient:(uuid,display,person,identifiers:');
+    expect(queueEntryRepresentation).not.toMatch(/person:\(/);
   });
 });
 

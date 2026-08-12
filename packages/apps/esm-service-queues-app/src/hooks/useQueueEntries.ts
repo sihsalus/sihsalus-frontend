@@ -25,7 +25,7 @@ type QueueEntryResponse = FetchResponse<{
 
 const queueEntryBaseUrl = `${restBaseUrl}/queue-entry`;
 
-const repString =
+export const queueEntryRepresentation =
   'custom:(uuid,display,queue:(uuid,display,name,location:(uuid,display),service:(uuid,display)),status,patient:(uuid,display,person,identifiers:(uuid,display,identifier,identifierType)),visit:(uuid,display,startDatetime,location:(uuid,display),encounters:(uuid,display,diagnoses,encounterDatetime,encounterType,obs,encounterProviders,voided),attributes:(uuid,display,value,attributeType)),priority,priorityComment,sortWeight,startedAt,endedAt,locationWaitingFor,queueComingFrom,providerWaitingFor,previousQueueEntry)';
 
 function getInitialUrl(rep: string, searchCriteria?: QueueEntrySearchCriteria) {
@@ -92,7 +92,7 @@ export function useMutateQueueEntries() {
   };
 }
 
-export function useQueueEntries(searchCriteria?: QueueEntrySearchCriteria, rep: string = repString) {
+export function useQueueEntries(searchCriteria?: QueueEntrySearchCriteria, rep: string = queueEntryRepresentation) {
   // This manually implements a kind of pagination using the useSWR hook. It does not use useSWRInfinite
   // because useSWRInfinite does not support with `mutate`. The hook starts by fetching the first page,
   // page zero, waits until data is fetched, then fetches the next page, and so on.

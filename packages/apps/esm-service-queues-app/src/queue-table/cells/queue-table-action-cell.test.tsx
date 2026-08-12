@@ -164,7 +164,8 @@ describe('QueueTableActionCell', () => {
     expect(screen.queryByRole('button', { name: 'Realizar triaje' })).not.toBeInTheDocument();
   });
 
-  it('keeps administrative cleanup actions but does not offer queue transition for a deceased patient', () => {
+  it('keeps only administrative cleanup actions for a deceased patient', async () => {
+    const user = userEvent.setup();
     const deceasedQueueEntry = {
       ...mockQueueEntryAlice,
       patient: {
@@ -176,7 +177,10 @@ describe('QueueTableActionCell', () => {
     render(<QueueTableActionCell queueEntry={deceasedQueueEntry} />);
 
     expect(screen.queryByRole('button', { name: 'Transition' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Actions' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Actions' }));
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+    expect(screen.queryByText('Undo transition')).not.toBeInTheDocument();
+    expect(screen.getByText('Remove patient')).toBeInTheDocument();
   });
 
   it('fresh-checks vital status before opening triage and blocks a concurrent death', async () => {

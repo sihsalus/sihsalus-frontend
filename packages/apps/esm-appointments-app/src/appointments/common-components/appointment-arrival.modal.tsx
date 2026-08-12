@@ -12,21 +12,15 @@ import {
   type Visit,
 } from '@openmrs/esm-framework';
 import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
-import {
-  fetchVisitInsurance,
-  getSisFinancingState,
-  safeCopyFinanciadorToVisit,
-} from '@openmrs/esm-patient-common-lib';
+import { fetchVisitInsurance, getSisFinancingState, safeCopyFinanciadorToVisit } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../config-schema';
 import {
   appointmentsCompanionPersonRegistrationWorkspace,
   appointmentsCompanionPersonSearchWorkspace,
-  appointmentsPrivilege,
-  appointmentsEditPrivilege,
   clinicalChartPrivilege,
 } from '../../constants';
 import { useMutateAppointments } from '../../form/appointments-form.resource';
@@ -39,12 +33,21 @@ import {
 } from '../../patient-appointments/patient-appointments.resource';
 import { type Appointment, AppointmentStatus } from '../../types';
 import styles from './appointment-arrival.scss';
+import {
+  canCreateAppointmentQueueEntry,
+  canCreateAppointmentVisit,
+  canInspectAppointmentVisits,
+  canReuseAppointmentVisit,
+} from './appointment-arrival-access';
 import { getActiveVisitsForPatient } from './batch-change-appointment-statuses.resources';
 
 const appointmentsStartVisitWorkspace = 'appointments-start-visit-workspace';
 const addActiveVisitToQueueWorkspace = 'appointments-add-active-visit-to-queue-workspace';
 const APPOINTMENT_STATUS_CONFLICT = 'APPOINTMENT_STATUS_CONFLICT';
 const COMPANION_CAPABILITY_MISSING = 'COMPANION_CAPABILITY_MISSING';
+const PATIENT_AGE_LOADING = 'PATIENT_AGE_LOADING';
+const PATIENT_AGE_UNAVAILABLE = 'PATIENT_AGE_UNAVAILABLE';
+const companionRegistrationPrivilege = 'app:opciones.registrarAcompanante';
 const ACTIVE_VISIT_CHANGED = 'ACTIVE_VISIT_CHANGED';
 const ACTIVE_VISIT_LOCATION_MISMATCH = 'ACTIVE_VISIT_LOCATION_MISMATCH';
 const ACTIVE_VISIT_TYPE_MISMATCH = 'ACTIVE_VISIT_TYPE_MISMATCH';
@@ -55,8 +58,17 @@ const APPOINTMENT_ARRIVAL_RULE_MISSING = 'APPOINTMENT_ARRIVAL_RULE_MISSING';
 const APPOINTMENT_ARRIVAL_ACTION_NOT_ALLOWED = 'APPOINTMENT_ARRIVAL_ACTION_NOT_ALLOWED';
 const MULTIPLE_ACTIVE_VISITS = 'MULTIPLE_ACTIVE_VISITS';
 const TRIAGE_SIS_FINANCING_REQUIRED = 'TRIAGE_SIS_FINANCING_REQUIRED';
+const CLINICAL_CHART_CAPABILITY_MISSING = 'CLINICAL_CHART_CAPABILITY_MISSING';
+const QUEUE_ENTRY_CAPABILITY_MISSING = 'QUEUE_ENTRY_CAPABILITY_MISSING';
+const VISIT_CREATION_CAPABILITY_MISSING = 'VISIT_CREATION_CAPABILITY_MISSING';
+const VISIT_INSPECTION_CAPABILITY_MISSING = 'VISIT_INSPECTION_CAPABILITY_MISSING';
+const VISIT_REUSE_CAPABILITY_MISSING = 'VISIT_REUSE_CAPABILITY_MISSING';
 
 type ArrivalAction = 'queue' | 'direct';
+type VisitBranchPreflight =
+  | { status: 'not-needed' | 'loading' }
+  | { status: 'ready'; hasActiveVisit: boolean }
+  | { status: 'error'; error: unknown };
 
 interface AppointmentArrivalModalProps {
   appointment: Appointment;
@@ -92,12 +104,24 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
   } = useConfig<ConfigObject>();
   const { t } = useTranslation();
   const session = useSession();
-  const { patient: fhirPatient } = usePatient(patientUuid);
+  const { patient: fhirPatient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
   const canOpenPatientChart = userHasAccess(clinicalChartPrivilege, session?.user);
   const { mutateAppointments } = useMutateAppointments();
   const [pendingAction, setPendingAction] = useState<ArrivalAction | null>(null);
   const [inlineError, setInlineError] = useState<unknown>(null);
   const isBusy = pendingAction !== null;
+
+  useEffect(() => {
+    if (
+      !isPatientLoading &&
+      inlineError &&
+      typeof inlineError === 'object' &&
+      'code' in inlineError &&
+      inlineError.code === PATIENT_AGE_LOADING
+    ) {
+      setInlineError(null);
+    }
+  }, [inlineError, isPatientLoading]);
 
   const appointmentLocationUuid = appointment.location?.uuid;
   const exactArrivalRules = appointmentLocationUuid
@@ -108,11 +132,20 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       )
     : [];
   const arrivalRule = exactArrivalRules.length === 1 ? exactArrivalRules[0] : undefined;
-  const canSendToQueue =
+  const queueAllowedByRule =
     arrivalRule?.arrivalPolicy === 'queue-optional' || arrivalRule?.arrivalPolicy === 'queue-required';
-  const canStartDirectly =
-    canOpenPatientChart &&
-    (arrivalRule?.arrivalPolicy === 'queue-optional' || arrivalRule?.arrivalPolicy === 'direct');
+  const directAllowedByRule =
+    arrivalRule?.arrivalPolicy === 'queue-optional' || arrivalRule?.arrivalPolicy === 'direct';
+  const canInspectVisits = canInspectAppointmentVisits(session?.user);
+  const canCreateVisit = canCreateAppointmentVisit(session?.user);
+  const canReuseVisit = canReuseAppointmentVisit(session?.user);
+  const canCreateQueueEntry = canCreateAppointmentQueueEntry(session?.user);
+  const shouldResolveVisitBranch = Boolean(
+    canInspectVisits &&
+      ((directAllowedByRule && canOpenPatientChart && (!canCreateVisit || !canReuseVisit)) ||
+        (queueAllowedByRule && canCreateQueueEntry && !canCreateVisit)),
+  );
+  const [visitBranchPreflight, setVisitBranchPreflight] = useState<VisitBranchPreflight>({ status: 'not-needed' });
 
   const getCheckInErrorMessageOptions = () =>
     ({
@@ -123,11 +156,39 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         ),
         [COMPANION_CAPABILITY_MISSING]: t(
           'companionCapabilityMissing',
-          'El paciente es menor de edad y requiere un acompañante, pero su usuario no tiene permisos para buscar personas. Solicite el registro de la llegada a un usuario con ese acceso.',
+          'El paciente es menor de edad y requiere un acompañante, pero su usuario no tiene permisos para buscar ni registrar personas. Solicite el registro de la llegada a un usuario con alguno de esos accesos.',
+        ),
+        [PATIENT_AGE_LOADING]: t(
+          'patientAgeLoading',
+          'Espere mientras se verifica la edad del paciente antes de registrar la llegada.',
+        ),
+        [PATIENT_AGE_UNAVAILABLE]: t(
+          'patientAgeUnavailable',
+          'No se pudo verificar la edad del paciente. Vuelva a intentar y, si el problema continúa, revise que tenga una fecha de nacimiento válida.',
         ),
         [MULTIPLE_ACTIVE_VISITS]: t(
           'multipleActiveVisits',
           'El paciente tiene más de una consulta activa. Regularice las consultas antes de continuar.',
+        ),
+        [CLINICAL_CHART_CAPABILITY_MISSING]: t(
+          'clinicalChartCapabilityMissing',
+          'La atención directa requiere acceso a la historia clínica del paciente. Solicite ese acceso o use la cola, si está habilitada.',
+        ),
+        [QUEUE_ENTRY_CAPABILITY_MISSING]: t(
+          'queueEntryCapabilityMissing',
+          'Su usuario no puede registrar entradas en cola. Solicite permisos para consultar pacientes, consultas y colas, y para gestionar entradas de cola.',
+        ),
+        [VISIT_CREATION_CAPABILITY_MISSING]: t(
+          'visitCreationCapabilityMissing',
+          'Su usuario no puede crear la consulta requerida. Solicite a un administrador permisos para iniciar consultas.',
+        ),
+        [VISIT_INSPECTION_CAPABILITY_MISSING]: t(
+          'visitInspectionCapabilityMissing',
+          'Su usuario no puede verificar las consultas activas del paciente. Solicite permisos para consultar visitas antes de registrar la llegada.',
+        ),
+        [VISIT_REUSE_CAPABILITY_MISSING]: t(
+          'visitReuseCapabilityMissing',
+          'Existe una consulta activa, pero su usuario no puede vincularla con la cita. Solicite permisos para consultar y editar visitas y sus atributos.',
         ),
         [ACTIVE_VISIT_CHANGED]: t(
           'activeVisitChanged',
@@ -222,7 +283,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         code: APPOINTMENT_ARRIVAL_RULE_MISSING,
       });
     }
-    if ((action === 'queue' && !canSendToQueue) || (action === 'direct' && !canStartDirectly)) {
+    if ((action === 'queue' && !queueAllowedByRule) || (action === 'direct' && !directAllowedByRule)) {
       throw Object.assign(new Error('The selected arrival action is not allowed by the routing rule.'), {
         code: APPOINTMENT_ARRIVAL_ACTION_NOT_ALLOWED,
       });
@@ -272,6 +333,52 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     }
     return activeVisits;
   };
+
+  // Only resolve the branch eagerly when permissions differ between creating
+  // and reusing a visit. Users capable of both paths avoid an extra read, while
+  // restricted users see a disabled action and its reason before opening a
+  // protected child workspace.
+  useEffect(() => {
+    let isCurrent = true;
+
+    if (!shouldResolveVisitBranch) {
+      setVisitBranchPreflight((current) => (current.status === 'not-needed' ? current : { status: 'not-needed' }));
+      return () => {
+        isCurrent = false;
+      };
+    }
+
+    setVisitBranchPreflight({ status: 'loading' });
+    void getActiveVisitsForPatient(
+      patientUuid,
+      undefined,
+      'custom:(uuid,patient:(uuid),visitType:(uuid,display),location:(uuid,display),startDatetime,stopDatetime,attributes)',
+    )
+      .then((response) => {
+        if (!isCurrent) {
+          return;
+        }
+        const activeVisits = response.data?.results ?? [];
+        if (activeVisits.length > 1) {
+          throw Object.assign(new Error('The patient has multiple active visits.'), {
+            code: MULTIPLE_ACTIVE_VISITS,
+          });
+        }
+        setVisitBranchPreflight({
+          status: 'ready',
+          hasActiveVisit: Boolean(activeVisits[0]),
+        });
+      })
+      .catch((error) => {
+        if (isCurrent) {
+          setVisitBranchPreflight({ status: 'error', error });
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [patientUuid, shouldResolveVisitBranch]);
 
   const validateAppointmentStatus = async (allowAlreadyCheckedIn = false) => {
     const currentStatus = await getCurrentCheckInStatus();
@@ -391,24 +498,73 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     }
   };
 
-  const canSearchCompanionPerson = userHasAccess(
-    [appointmentsPrivilege, appointmentsEditPrivilege, 'Get People'],
-    session?.user,
-  );
+  const canSearchCompanionPerson = userHasAccess('Get People', session?.user);
+  const canRegisterCompanionPerson =
+    userHasAccess(companionRegistrationPrivilege, session?.user) && userHasAccess('Add People', session?.user);
+
+  const assertCanInspectActiveVisits = () => {
+    if (!canInspectVisits) {
+      throw Object.assign(new Error('The operator cannot inspect active visits.'), {
+        code: VISIT_INSPECTION_CAPABILITY_MISSING,
+      });
+    }
+  };
+
+  const assertCanCreateVisit = () => {
+    if (!canCreateVisit) {
+      throw Object.assign(new Error('The operator cannot create visits.'), {
+        code: VISIT_CREATION_CAPABILITY_MISSING,
+      });
+    }
+  };
+
+  const assertCanReuseVisit = () => {
+    if (!canReuseVisit) {
+      throw Object.assign(new Error('The operator cannot edit the active visit or its attributes.'), {
+        code: VISIT_REUSE_CAPABILITY_MISSING,
+      });
+    }
+  };
+
+  const assertCanCreateQueueEntry = () => {
+    if (!canCreateQueueEntry) {
+      throw Object.assign(new Error('The operator cannot create queue entries.'), {
+        code: QUEUE_ENTRY_CAPABILITY_MISSING,
+      });
+    }
+  };
 
   // Both start-visit paths demand an adult companion for minors; without the
-  // search capability the operator cannot satisfy that inside the form, so the
-  // block is explained here instead of after opening it. Runs only when no
-  // reusable active visit exists, and fails open when the birth date is unknown
-  // because the form still enforces the requirement.
+  // search or registration capability the operator cannot satisfy that inside
+  // the form, so the block is explained here instead of after opening it. This
+  // runs only when no reusable active visit exists and fails closed until the
+  // patient's age can be determined reliably.
   const assertCompanionCapabilityForMinor = () => {
-    const birthDate = fhirPatient?.birthDate;
-    if (!birthDate) {
-      return;
+    if (isPatientLoading) {
+      throw Object.assign(new Error('The patient age is still loading.'), {
+        code: PATIENT_AGE_LOADING,
+      });
     }
-    const isMinor = dayjs().startOf('day').diff(dayjs(birthDate).startOf('day'), 'year') < 18;
-    if (isMinor && !canSearchCompanionPerson) {
-      throw Object.assign(new Error('The operator cannot search for a companion person.'), {
+
+    const birthDateValue = fhirPatient?.birthDate;
+    const normalizedBirthDate = birthDateValue?.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+    const birthDate = normalizedBirthDate ? dayjs(normalizedBirthDate).startOf('day') : null;
+    const today = dayjs().startOf('day');
+    const hasValidBirthDate =
+      Boolean(birthDate) &&
+      birthDate?.isValid() &&
+      birthDate.format('YYYY-MM-DD') === normalizedBirthDate &&
+      !birthDate.isAfter(today);
+
+    if (patientError || !hasValidBirthDate) {
+      throw Object.assign(new Error('The patient age could not be determined.'), {
+        code: PATIENT_AGE_UNAVAILABLE,
+      });
+    }
+
+    const isMinor = today.diff(birthDate, 'year') < 18;
+    if (isMinor && !canSearchCompanionPerson && !canRegisterCompanionPerson) {
+      throw Object.assign(new Error('The operator cannot search for or register a companion person.'), {
         code: COMPANION_CAPABILITY_MISSING,
       });
     }
@@ -440,9 +596,12 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       const arrivalQueueUuid = rule.requiresTriage ? triageRouting.queueUuid : rule.queueUuid;
       const requiredQueueLocationUuid = rule.requiresTriage ? triageRouting.queueLocationUuid : rule.queueLocationUuid;
 
+      assertCanInspectActiveVisits();
       const activeVisits = await fetchActiveVisits();
+      assertCanCreateQueueEntry();
 
       if (activeVisits[0]) {
+        assertCanReuseVisit();
         assertVisitMatchesAppointmentLocation(activeVisits[0]);
         assertVisitTypeIsCompatible(activeVisits[0]);
         if (!checkInButton.showIfActiveVisit) {
@@ -480,6 +639,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         return;
       }
 
+      assertCanCreateVisit();
       assertCompanionCapabilityForMinor();
       await launchWorkspace2(appointmentsStartVisitWorkspace, {
         patientUuid: patientUuid,
@@ -543,6 +703,11 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     setInlineError(null);
     try {
       const rule = assertArrivalActionIsConfigured('direct');
+      if (!canOpenPatientChart) {
+        throw Object.assign(new Error('The operator cannot open the patient chart.'), {
+          code: CLINICAL_CHART_CAPABILITY_MISSING,
+        });
+      }
       assertVisitLinkIsConfigured();
       const requiredAppointmentLocationUuid = getAppointmentLocationUuid();
       if (!(await validateAppointmentStatus())) {
@@ -550,9 +715,11 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         return;
       }
 
+      assertCanInspectActiveVisits();
       const activeVisits = await fetchActiveVisits();
 
       if (activeVisits[0]) {
+        assertCanReuseVisit();
         assertVisitMatchesAppointmentLocation(activeVisits[0]);
         assertVisitTypeIsCompatible(activeVisits[0]);
         await ensureAppointmentVisitLink(activeVisits[0].uuid, appointment.uuid, appointmentVisitAttributeTypeUuid);
@@ -576,6 +743,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       // Sin parámetros de cola y con un `openedFrom` distinto de
       // 'appointments-check-in', el formulario de inicio de consulta no exige
       // ni crea queue entries (misma vía que 'patient-chart-start-visit').
+      assertCanCreateVisit();
       assertCompanionCapabilityForMinor();
       await launchWorkspace2(appointmentsStartVisitWorkspace, {
         patientUuid: patientUuid,
@@ -625,6 +793,45 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
 
   const routingConfigurationError = getRoutingConfigurationError();
   const displayedError = inlineError ?? routingConfigurationError;
+  const isVisitBranchLoading =
+    shouldResolveVisitBranch &&
+    (visitBranchPreflight.status === 'not-needed' || visitBranchPreflight.status === 'loading');
+  const visitBranchError =
+    shouldResolveVisitBranch && visitBranchPreflight.status === 'error' ? visitBranchPreflight.error : null;
+  const directAccessError = directAllowedByRule
+    ? !canOpenPatientChart
+      ? Object.assign(new Error('The operator cannot open the patient chart.'), {
+          code: CLINICAL_CHART_CAPABILITY_MISSING,
+        })
+      : !canInspectVisits
+        ? Object.assign(new Error('The operator cannot inspect active visits.'), {
+            code: VISIT_INSPECTION_CAPABILITY_MISSING,
+          })
+        : visitBranchError
+          ? visitBranchError
+          : visitBranchPreflight.status === 'ready' && visitBranchPreflight.hasActiveVisit && !canReuseVisit
+            ? Object.assign(new Error('The operator cannot edit the active visit or its attributes.'), {
+                code: VISIT_REUSE_CAPABILITY_MISSING,
+              })
+            : visitBranchPreflight.status === 'ready' && !visitBranchPreflight.hasActiveVisit && !canCreateVisit
+              ? Object.assign(new Error('The operator cannot create visits.'), {
+                  code: VISIT_CREATION_CAPABILITY_MISSING,
+                })
+              : null
+    : null;
+  const queueAccessError = queueAllowedByRule
+    ? !canCreateQueueEntry
+      ? Object.assign(new Error('The operator cannot create queue entries.'), {
+          code: QUEUE_ENTRY_CAPABILITY_MISSING,
+        })
+      : visitBranchError
+        ? visitBranchError
+        : visitBranchPreflight.status === 'ready' && !visitBranchPreflight.hasActiveVisit && !canCreateVisit
+          ? Object.assign(new Error('The operator cannot create visits.'), {
+              code: VISIT_CREATION_CAPABILITY_MISSING,
+            })
+          : null
+    : null;
 
   return (
     <>
@@ -635,10 +842,18 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           <p className={styles.appointmentDetails}>
             {appointment.service?.name}
             {' · '}
+            {t('appointmentUpissSummary', 'UPSS: {{location}}', {
+              location: appointment.location?.name ?? t('appointmentLocationUnavailable', 'UPSS no disponible'),
+            })}
+            {' · '}
             {formatDatetime(new Date(appointment.startDateTime))}
           </p>
         </div>
         <p>{t('arrivalModalDescription', 'Seleccione cómo desea registrar la llegada del paciente.')}</p>
+        {isPatientLoading ? (
+          <InlineLoading description={t('verifyingPatientAge', 'Verificando la edad del paciente...')} />
+        ) : null}
+        {isVisitBranchLoading ? <InlineLoading description={t('verifyingVisit', 'Verificando consulta…')} /> : null}
         {displayedError ? (
           <InlineNotification
             hideCloseButton
@@ -654,13 +869,47 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
             )}
           />
         ) : null}
+        {!displayedError && directAccessError ? (
+          <InlineNotification
+            hideCloseButton
+            kind={queueAllowedByRule && !queueAccessError ? 'warning' : 'error'}
+            lowContrast
+            role="alert"
+            title={t('directCareUnavailable', 'Atención directa no disponible')}
+            subtitle={getCompatibleUserFacingErrorMessage(
+              directAccessError,
+              t('appointmentCheckInFailed', 'No se pudo registrar la llegada del paciente. Intente nuevamente.'),
+              getCheckInErrorMessageOptions(),
+              frameworkGetUserFacingErrorMessage,
+            )}
+          />
+        ) : null}
+        {!displayedError && queueAccessError ? (
+          <InlineNotification
+            hideCloseButton
+            kind={directAllowedByRule && !directAccessError ? 'warning' : 'error'}
+            lowContrast
+            role="alert"
+            title={t('queueArrivalUnavailable', 'Ingreso a cola no disponible')}
+            subtitle={getCompatibleUserFacingErrorMessage(
+              queueAccessError,
+              t('appointmentCheckInFailed', 'No se pudo registrar la llegada del paciente. Intente nuevamente.'),
+              getCheckInErrorMessageOptions(),
+              frameworkGetUserFacingErrorMessage,
+            )}
+          />
+        ) : null}
       </ModalBody>
       <ModalFooter>
         <Button disabled={isBusy} kind="secondary" onClick={closeModal}>
           {t('cancel', 'Cancelar')}
         </Button>
-        {canStartDirectly && !routingConfigurationError ? (
-          <Button disabled={isBusy} kind={canSendToQueue ? 'tertiary' : 'primary'} onClick={handleStartDirectly}>
+        {directAllowedByRule && !routingConfigurationError ? (
+          <Button
+            disabled={isBusy || isPatientLoading || isVisitBranchLoading || Boolean(directAccessError)}
+            kind={queueAllowedByRule ? 'tertiary' : 'primary'}
+            onClick={handleStartDirectly}
+          >
             {pendingAction === 'direct' ? (
               <InlineLoading description={t('startingDirectCare', 'Iniciando atención') + '...'} />
             ) : (
@@ -668,8 +917,12 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
             )}
           </Button>
         ) : null}
-        {canSendToQueue && !routingConfigurationError ? (
-          <Button disabled={isBusy} kind="primary" onClick={handleSendToQueue}>
+        {queueAllowedByRule && !routingConfigurationError ? (
+          <Button
+            disabled={isBusy || isPatientLoading || isVisitBranchLoading || Boolean(queueAccessError)}
+            kind="primary"
+            onClick={handleSendToQueue}
+          >
             {pendingAction === 'queue' ? (
               <InlineLoading description={t('sendingToQueue', 'Enviando a cola de espera') + '...'} />
             ) : (

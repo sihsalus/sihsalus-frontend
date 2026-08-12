@@ -5,13 +5,10 @@ import {
   showSnackbar,
   useConfig,
   usePatient,
+  useSession,
   userHasAccess,
 } from '@openmrs/esm-framework';
-import {
-  fetchVisitInsurance,
-  getSisFinancingState,
-  safeCopyFinanciadorToVisit,
-} from '@openmrs/esm-patient-common-lib';
+import { fetchVisitInsurance, getSisFinancingState, safeCopyFinanciadorToVisit } from '@openmrs/esm-patient-common-lib';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
@@ -54,6 +51,7 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => ({
 }));
 
 const mockUsePatient = vi.mocked(usePatient);
+const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockChangeAppointmentStatus = vi.mocked(changeAppointmentStatus);
 const mockEnsureAppointmentVisitLink = vi.mocked(ensureAppointmentVisitLink);
@@ -174,6 +172,9 @@ function getDirectButton() {
 describe('AppointmentArrivalModal', () => {
   beforeEach(() => {
     mockUserHasAccess.mockReturnValue(true);
+    mockUseSession.mockReturnValue({
+      user: { uuid: 'admission-user' },
+    } as ReturnType<typeof useSession>);
     mockUsePatient.mockReturnValue({
       patient: { birthDate: '1990-01-01' },
       isLoading: false,
@@ -199,6 +200,7 @@ describe('AppointmentArrivalModal', () => {
 
     expect(screen.getByText('John Wilson')).toBeInTheDocument();
     expect(screen.getByText(/Outpatient/)).toBeInTheDocument();
+    expect(screen.getByText(/UPSS: HIV Clinic/)).toBeInTheDocument();
     expect(getQueueButton()).toBeEnabled();
     expect(getDirectButton()).toBeEnabled();
     expect(screen.getByRole('button', { name: /cancelar/i })).toBeEnabled();
@@ -594,13 +596,16 @@ describe('AppointmentArrivalModal', () => {
     });
   });
 
-  it('hides direct clinical care from admission users without patient chart access', () => {
+  it('keeps direct care visible but disabled with an actionable reason when patient chart access is missing', () => {
     mockUserHasAccess.mockImplementation((privilege) => privilege !== clinicalChartPrivilege);
 
     renderModal();
 
     expect(getQueueButton()).toBeEnabled();
-    expect(screen.queryByRole('button', { name: /iniciar atención directamente/i })).not.toBeInTheDocument();
+    expect(getDirectButton()).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'La atención directa requiere acceso a la historia clínica del paciente. Solicite ese acceso o use la cola, si está habilitada.',
+    );
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
@@ -643,10 +648,174 @@ describe('AppointmentArrivalModal', () => {
     );
   });
 
-  it('explains the companion block before opening the visit form for a minor without people search access', async () => {
+  it('allows an already funded triage visit when the optional person backfill is not authorized', async () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentArrivalRules: [{ ...appointmentArrivalRule, requiresTriage: true }],
+      triageRouting: {
+        enabled: true,
+        encounterTypeUuid: 'triage-encounter-type-uuid',
+        queueLocationUuid: 'triage-location-uuid',
+        queueUuid: 'triage-queue-uuid',
+      },
+      checkInButton: { enabled: true, showIfActiveVisit: true, customUrl: '' },
+    });
+    mockGetActiveVisitsForPatient.mockResolvedValue(visitsResponse([activeVisit]));
+    mockUserHasAccess.mockImplementation((privilege) => privilege !== 'Get People');
+    mockSafeCopyFinanciadorToVisit.mockResolvedValue({ ok: false, error: { status: 403 } });
+    mockFetchVisitInsurance.mockResolvedValue({
+      financiadorUuid: 'sis-uuid',
+      insuranceNumber: 'SIS-123',
+      accreditationStatusUuid: 'active-status-uuid',
+    });
+    mockGetSisFinancingState.mockReturnValue('active');
+
+    renderModal();
+    await userEvent.click(getQueueButton());
+
+    const launchOptions = mockLaunchWorkspace2.mock.calls[0][1] as {
+      onBeforeQueueEntrySave: (visit: typeof activeVisit) => Promise<boolean>;
+    };
+    await expect(launchOptions.onBeforeQueueEntrySave(activeVisit)).resolves.toBe(true);
+    expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledWith({
+      patientUuid: appointment.patient.uuid,
+      visitUuid: activeVisit.uuid,
+      onlyFillMissing: true,
+    });
+    expect(mockFetchVisitInsurance).toHaveBeenCalledWith(activeVisit.uuid);
+    expect(mockEnsureAppointmentVisitLink).toHaveBeenCalledWith(
+      activeVisit.uuid,
+      appointment.uuid,
+      appointmentVisitAttributeTypeUuid,
+    );
+  });
+
+  it('does not leave a direct-only arrival modal with only Cancel when patient chart access is missing', () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentArrivalRules: [
+        {
+          appointmentServiceUuid: appointment.service.uuid,
+          appointmentLocationUuid: appointment.location.uuid,
+          arrivalPolicy: 'direct',
+          requiredVisitTypeUuid,
+        },
+      ],
+      checkInButton: { enabled: true, showIfActiveVisit: true, customUrl: '' },
+    });
+    mockUserHasAccess.mockImplementation((privilege) => privilege !== clinicalChartPrivilege);
+
+    renderModal();
+
+    expect(getDirectButton()).toBeDisabled();
+    expect(screen.getByRole('button', { name: /cancelar/i })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /enviar a cola/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent(/requiere acceso a la historia clínica/i);
+  });
+
+  it('blocks before reading visits when the operator cannot inspect active visits', async () => {
+    mockUserHasAccess.mockImplementation((privilege) => privilege !== 'Get Visits');
+
+    renderModal();
+    await userEvent.click(getDirectButton());
+
+    expect(
+      await screen.findByText(/Su usuario no puede verificar las consultas activas del paciente\./),
+    ).toBeInTheDocument();
+    expect(mockGetActiveVisitsForPatient).not.toHaveBeenCalled();
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+  });
+
+  it('uses the StartVisit guard OR contract and does not require queue privileges for direct care', async () => {
+    const directPrivileges = new Set([clinicalChartPrivilege, 'Get Visits', 'app:home.admision']);
+    mockUserHasAccess.mockImplementation(
+      (privilege) => typeof privilege === 'string' && directPrivileges.has(privilege),
+    );
+
+    renderModal();
+    await waitFor(() => expect(getDirectButton()).toBeEnabled());
+    await userEvent.click(getDirectButton());
+
+    await waitFor(() =>
+      expect(mockLaunchWorkspace2).toHaveBeenCalledWith('appointments-start-visit-workspace', expect.anything()),
+    );
+    expect(mockUserHasAccess).not.toHaveBeenCalledWith('Get Queue Entries', expect.anything());
+    expect(mockUserHasAccess).not.toHaveBeenCalledWith('Manage Queue Entries', expect.anything());
+  });
+
+  it('blocks a new direct visit when none of the StartVisit creation capabilities is present', async () => {
+    const directPrivileges = new Set([clinicalChartPrivilege, 'Get Visits']);
+    mockUserHasAccess.mockImplementation(
+      (privilege) => typeof privilege === 'string' && directPrivileges.has(privilege),
+    );
+
+    renderModal();
+    await userEvent.click(getDirectButton());
+
+    expect(await screen.findByText(/Su usuario no puede crear la consulta requerida\./)).toBeInTheDocument();
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+  });
+
+  it('blocks active-visit reuse before persistence when visit edit access is missing', async () => {
+    mockGetActiveVisitsForPatient.mockResolvedValue(visitsResponse([activeVisit]));
+    mockUserHasAccess.mockImplementation((privilege) => privilege !== 'Edit Visits');
+
+    renderModal();
+    await userEvent.click(getDirectButton());
+
+    expect(
+      await screen.findByText(/Existe una consulta activa, pero su usuario no puede vincularla con la cita\./),
+    ).toBeInTheDocument();
+    expect(mockEnsureAppointmentVisitLink).not.toHaveBeenCalled();
+    expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
+  });
+
+  it('blocks queue arrival when a native queue-entry dependency is missing', async () => {
+    mockUserHasAccess.mockImplementation((privilege) => privilege !== 'Manage Queue Entries');
+
+    renderModal();
+
+    expect(getQueueButton()).toBeDisabled();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Su usuario no puede registrar entradas en cola.');
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
+  });
+
+  it('reuses an active visit for queue arrival without requiring visit-creation authority', async () => {
+    const queuePrivileges = new Set([
+      'Get Patients',
+      'Get Locations',
+      'Get Visits',
+      'Edit Visits',
+      'Get Visit Attribute Types',
+      'Get Queue Entries',
+      'Get Queues',
+      'Manage Queue Entries',
+      clinicalChartPrivilege,
+    ]);
+    mockUserHasAccess.mockImplementation(
+      (privilege) => typeof privilege === 'string' && queuePrivileges.has(privilege),
+    );
+    mockGetActiveVisitsForPatient.mockResolvedValue(visitsResponse([activeVisit]));
+
+    renderModal();
+    await waitFor(() => expect(getQueueButton()).toBeEnabled());
+    await userEvent.click(getQueueButton());
+
+    await waitFor(() =>
+      expect(mockLaunchWorkspace2).toHaveBeenCalledWith(
+        'appointments-add-active-visit-to-queue-workspace',
+        expect.anything(),
+      ),
+    );
+  });
+
+  it('explains the companion block before opening the visit form for a minor without any companion path', async () => {
     mockUserHasAccess.mockImplementation((privilege) => {
       const privileges = Array.isArray(privilege) ? privilege : [privilege];
-      return !privileges.includes('Get People');
+      return !privileges.some((item) =>
+        ['Get People', 'app:opciones.registrarAcompanante', 'Add People'].includes(item),
+      );
     });
     mockUsePatient.mockReturnValue({
       patient: { birthDate: dayjs().subtract(10, 'year').format('YYYY-MM-DD') },
@@ -659,11 +828,150 @@ describe('AppointmentArrivalModal', () => {
     renderModal();
     await userEvent.click(getDirectButton());
 
-    expect(
-      await screen.findByText(/menor de edad y requiere un acompañante/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/menor de edad y requiere un acompañante/i)).toBeInTheDocument();
     expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
+  });
+
+  it('allows a minor arrival when the operator can search for a companion', async () => {
+    mockUserHasAccess.mockImplementation((privilege) => {
+      if (privilege === 'Get People') {
+        return true;
+      }
+      if (privilege === 'app:opciones.registrarAcompanante' || privilege === 'Add People') {
+        return false;
+      }
+      return true;
+    });
+    mockUsePatient.mockReturnValue({
+      patient: { birthDate: dayjs().subtract(10, 'year').format('YYYY-MM-DD') },
+      isLoading: false,
+      error: null,
+      patientUuid: 'patient-uuid',
+    } as unknown as ReturnType<typeof usePatient>);
+
+    renderModal();
+    await userEvent.click(getQueueButton());
+
+    await waitFor(() =>
+      expect(mockLaunchWorkspace2).toHaveBeenCalledWith('appointments-start-visit-workspace', expect.anything()),
+    );
+    expect(closeModal).toHaveBeenCalled();
+  });
+
+  it('allows a minor arrival when the operator can register a companion but cannot search', async () => {
+    mockUserHasAccess.mockImplementation((privilege) => {
+      if (privilege === 'Get People') {
+        return false;
+      }
+      if (privilege === 'app:opciones.registrarAcompanante' || privilege === 'Add People') {
+        return true;
+      }
+      return true;
+    });
+    mockUsePatient.mockReturnValue({
+      patient: { birthDate: dayjs().subtract(10, 'year').format('YYYY-MM-DD') },
+      isLoading: false,
+      error: null,
+      patientUuid: 'patient-uuid',
+    } as unknown as ReturnType<typeof usePatient>);
+
+    renderModal();
+    await userEvent.click(getDirectButton());
+
+    await waitFor(() =>
+      expect(mockLaunchWorkspace2).toHaveBeenCalledWith('appointments-start-visit-workspace', expect.anything()),
+    );
+    expect(closeModal).toHaveBeenCalled();
+  });
+
+  it('requires both registration privileges when search is unavailable', async () => {
+    mockUserHasAccess.mockImplementation((privilege) => {
+      if (privilege === 'Get People' || privilege === 'Add People') {
+        return false;
+      }
+      return true;
+    });
+    mockUsePatient.mockReturnValue({
+      patient: { birthDate: dayjs().subtract(10, 'year').format('YYYY-MM-DD') },
+      isLoading: false,
+      error: null,
+      patientUuid: 'patient-uuid',
+    } as unknown as ReturnType<typeof usePatient>);
+
+    renderModal();
+    await userEvent.click(getDirectButton());
+
+    expect(await screen.findByText(/no tiene permisos para buscar ni registrar personas/i)).toBeInTheDocument();
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+  });
+
+  it('does not open the visit form while the patient age is loading', async () => {
+    mockUsePatient.mockReturnValue({
+      patient: undefined,
+      isLoading: true,
+      error: null,
+      patientUuid: 'patient-uuid',
+    } as unknown as ReturnType<typeof usePatient>);
+
+    const { rerender } = renderModal();
+
+    expect(screen.getByText(/verificando la edad del paciente/i)).toBeInTheDocument();
+    expect(getDirectButton()).toBeDisabled();
+    expect(getQueueButton()).toBeDisabled();
+    expect(screen.getByRole('button', { name: /cancelar/i })).toBeEnabled();
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(closeModal).not.toHaveBeenCalled();
+
+    mockUsePatient.mockReturnValue({
+      patient: { birthDate: '1990-01-01' },
+      isLoading: false,
+      error: null,
+      patientUuid: 'patient-uuid',
+    } as unknown as ReturnType<typeof usePatient>);
+    rerender(
+      <AppointmentArrivalModal
+        appointment={appointment}
+        patientUuid={appointment.patient.uuid}
+        closeModal={closeModal}
+        mutateVisits={mutateVisits}
+      />,
+    );
+
+    expect(screen.queryByText(/verificando la edad del paciente/i)).not.toBeInTheDocument();
+    expect(getDirectButton()).toBeEnabled();
+  });
+
+  it('does not open the visit form when loading the patient fails', async () => {
+    mockUsePatient.mockReturnValue({
+      patient: undefined,
+      isLoading: false,
+      error: new Error('Patient request failed'),
+      patientUuid: 'patient-uuid',
+    } as unknown as ReturnType<typeof usePatient>);
+
+    renderModal();
+    await userEvent.click(getQueueButton());
+
+    expect(await screen.findByText(/no se pudo verificar la edad del paciente/i)).toBeInTheDocument();
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(closeModal).not.toHaveBeenCalled();
+  });
+
+  it('does not open the visit form when the patient has no valid birth date', async () => {
+    mockUsePatient.mockReturnValue({
+      patient: {},
+      isLoading: false,
+      error: null,
+      patientUuid: 'patient-uuid',
+    } as unknown as ReturnType<typeof usePatient>);
+
+    renderModal();
+    await userEvent.click(getDirectButton());
+
+    expect(await screen.findByText(/no se pudo verificar la edad del paciente/i)).toBeInTheDocument();
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(closeModal).not.toHaveBeenCalled();
   });
 
   it('reuses an active visit for a direct-only arrival rule', async () => {

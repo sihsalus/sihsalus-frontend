@@ -1,4 +1,4 @@
-import { formatPatientIdentifiers } from './patient-identifiers';
+import { formatCivilDocumentIdentifier, formatPatientIdentifiers } from './patient-identifiers';
 
 describe('formatPatientIdentifiers', () => {
   it('merges and orders supported OpenMRS and FHIR identifiers', () => {
@@ -43,5 +43,52 @@ describe('formatPatientIdentifiers', () => {
       '10000NH',
     );
     expect(formatPatientIdentifiers(null, null, '10001AA')).toBe('10001AA');
+  });
+});
+
+describe('formatCivilDocumentIdentifier', () => {
+  it('returns the preferred civil document with its type and excludes the clinical-history number', () => {
+    expect(
+      formatCivilDocumentIdentifier([
+        { identifier: '100009C', identifierName: 'N° Historia Clínica' },
+        { identifier: 'CE-123456', identifierName: 'Carné de Extranjería' },
+      ]),
+    ).toBe('CE - CE-123456');
+  });
+
+  it('uses supported FHIR document types when the appointment payload does not include them', () => {
+    expect(
+      formatCivilDocumentIdentifier([], [{ value: 'PAS123456', type: { text: 'Pasaporte' } }], {
+        PASS: 'Passport',
+      }),
+    ).toBe('Passport - PAS123456');
+  });
+
+  it('recognizes Peru document types when the backend only supplies their UUIDs', () => {
+    expect(
+      formatCivilDocumentIdentifier(
+        [
+          {
+            identifier: 'CE-123456',
+            identifierType: { uuid: '550e8400-e29b-41d4-a716-446655440002' },
+          },
+        ],
+        [
+          {
+            value: '87654321',
+            type: { coding: [{ code: '550e8400-e29b-41d4-a716-446655440001' }] },
+          },
+        ],
+      ),
+    ).toBe('DNI - 87654321');
+  });
+
+  it('does not present internal or clinical-history identifiers as identity documents', () => {
+    expect(
+      formatCivilDocumentIdentifier([
+        { identifier: '100009C', identifierName: 'N° Historia Clínica' },
+        { identifier: 'internal-id', identifierName: 'OpenMRS ID' },
+      ]),
+    ).toBe('');
   });
 });

@@ -6,6 +6,13 @@ type ExportIdentifier = {
   order: number;
 };
 
+const civilDocumentTypesByUuid: Record<string, Pick<ExportIdentifier, 'label' | 'order'>> = {
+  '550e8400-e29b-41d4-a716-446655440001': { label: 'DNI', order: 1 },
+  '550e8400-e29b-41d4-a716-446655440002': { label: 'CE', order: 2 },
+  '550e8400-e29b-41d4-a716-446655440003': { label: 'PASS', order: 3 },
+  '8d793bee-c2cc-11de-8d13-0010c6dffd0f': { label: 'DIE', order: 4 },
+};
+
 function normalizeIdentifierType(value?: string): string {
   return (
     value
@@ -19,6 +26,11 @@ function normalizeIdentifierType(value?: string): string {
 function resolveIdentifierType(values: Array<string | undefined>): Pick<ExportIdentifier, 'label' | 'order'> | null {
   for (const value of values) {
     const normalized = normalizeIdentifierType(value);
+    const typeByUuid = value ? civilDocumentTypesByUuid[value.trim().toLowerCase()] : undefined;
+
+    if (typeByUuid) {
+      return typeByUuid;
+    }
 
     if (/^(hc|hce)$/.test(normalized) || normalized.includes('historia clinica')) {
       return { label: 'HC', order: 0 };
@@ -56,6 +68,7 @@ function fromOpenmrsIdentifier(identifier: Identifier): ExportIdentifier | null 
   const value = identifier.identifier?.trim();
   const type = resolveIdentifierType([
     identifier.identifierName,
+    identifier.identifierType?.uuid,
     identifier.identifierType?.name,
     identifier.identifierType?.display,
   ]);
@@ -103,4 +116,28 @@ export function formatPatientIdentifiers(
   }
 
   return fallbackIdentifier?.trim() ?? '';
+}
+
+/**
+ * Returns the preferred civil identity document with its type. Clinical-history
+ * and internal OpenMRS identifiers are deliberately excluded because they are
+ * not identity documents.
+ */
+export function formatCivilDocumentIdentifier(
+  openmrsIdentifiers: Array<Identifier> | null | undefined = [],
+  fhirIdentifiers: Array<fhir.Identifier> | null | undefined = [],
+  documentTypeLabels: Readonly<Partial<Record<string, string>>> = {},
+): string {
+  const identifier = [
+    ...(openmrsIdentifiers ?? []).map(fromOpenmrsIdentifier),
+    ...(fhirIdentifiers ?? []).map(fromFhirIdentifier),
+  ]
+    .filter((candidate): candidate is ExportIdentifier => candidate !== null && candidate.order > 0)
+    .sort((left, right) => left.order - right.order)[0];
+
+  if (!identifier) {
+    return '';
+  }
+
+  return `${documentTypeLabels[identifier.label] ?? identifier.label} - ${identifier.value}`;
 }

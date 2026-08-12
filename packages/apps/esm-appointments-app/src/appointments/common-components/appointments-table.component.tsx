@@ -42,6 +42,7 @@ import isToday from 'dayjs/plugin/isToday';
 import utc from 'dayjs/plugin/utc';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSWRConfig } from 'swr';
 
 import { type ConfigObject } from '../../config-schema';
 import { appointmentsEditPrivileges, clinicalChartPrivilege } from '../../constants';
@@ -53,6 +54,7 @@ import {
   isAppointmentEditable,
 } from '../../helpers';
 import { createAppointmentsExportFileName, exportAppointmentsToSpreadsheet } from '../../helpers/excel';
+import { formatCivilDocumentIdentifier } from '../../helpers/patient-identifiers';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
 import { type Appointment, AppointmentStatus } from '../../types';
 import AppointmentDetails from '../details/appointment-details.component';
@@ -72,61 +74,43 @@ interface AppointmentsTableProps {
   hasActiveFilters?: boolean;
 }
 
-const normalizeIdentifierType = (value?: string) =>
-  value
-    ?.trim()
-    .toLocaleLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '');
-
-const dniIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440001';
-
-function isDniIdentifierType(value?: string) {
-  const normalizedType = normalizeIdentifierType(value);
-  return normalizedType === 'dni' || normalizedType?.includes('documento nacional de identidad');
-}
-
-function resolveDniIdentifier(appointment: Appointment) {
-  const identifiers = appointment.patient.identifiers ?? [];
-  const getIdentifierType = (identifier?: (typeof identifiers)[number]) =>
-    identifier?.identifierName ?? identifier?.identifierType?.name ?? identifier?.identifierType?.display;
-  const dniIdentifier = identifiers.find((identifier) => {
-    return (
-      identifier.identifierType?.uuid === dniIdentifierTypeUuid || isDniIdentifierType(getIdentifierType(identifier))
-    );
+function PatientDocumentFromPatientResource({ patientUuid }: { patientUuid: string }) {
+  const { t } = useTranslation();
+  const { mutate } = useSWRConfig();
+  const { patient, isLoading, error } = usePatient(patientUuid);
+  const document = formatCivilDocumentIdentifier([], patient?.identifier, {
+    PASS: t('passport', 'Passport'),
+    DIE: t('foreignIdentityDocument', 'Foreign identity document'),
   });
 
-  return dniIdentifier?.identifier?.trim() || undefined;
+  if (isLoading) {
+    return <span role="status">{t('loadingPatientDocument', 'Loading document...')}</span>;
+  }
+
+  if (error) {
+    return (
+      <Button
+        aria-label={t('retryPatientDocument', 'Retry loading patient document')}
+        kind="ghost"
+        onClick={() => void mutate(['patient', patientUuid])}
+        size="sm"
+      >
+        {t('retry', 'Retry')}
+      </Button>
+    );
+  }
+
+  return <>{document || '-'}</>;
 }
 
-function resolveFhirDniIdentifier(patient?: fhir.Patient | null) {
-  const dniIdentifier = patient?.identifier?.find((identifier) => {
-    const type = identifier.type;
-    return (
-      isDniIdentifierType(type?.text) ||
-      type?.coding?.some(
-        (coding) =>
-          coding.code === dniIdentifierTypeUuid ||
-          isDniIdentifierType(coding.code) ||
-          isDniIdentifierType(coding.display),
-      )
-    );
+function PatientDocumentCell({ appointment }: { appointment: Appointment }) {
+  const { t } = useTranslation();
+  const appointmentDocument = formatCivilDocumentIdentifier(appointment.patient.identifiers, [], {
+    PASS: t('passport', 'Passport'),
+    DIE: t('foreignIdentityDocument', 'Foreign identity document'),
   });
 
-  return dniIdentifier?.value?.trim() || undefined;
-}
-
-function PatientDniFromPatientResource({ patientUuid }: { patientUuid: string }) {
-  const { patient, isLoading } = usePatient(patientUuid);
-  const dni = resolveFhirDniIdentifier(patient);
-
-  return <>{dni ?? (isLoading ? '…' : '-')}</>;
-}
-
-function PatientDniCell({ appointment }: { appointment: Appointment }) {
-  const appointmentDni = resolveDniIdentifier(appointment);
-
-  return appointmentDni ?? <PatientDniFromPatientResource patientUuid={appointment.patient.uuid} />;
+  return appointmentDocument || <PatientDocumentFromPatientResource patientUuid={appointment.patient.uuid} />;
 }
 
 type CarbonTagType = 'blue' | 'cool-gray' | 'cyan' | 'gray' | 'green' | 'purple' | 'red' | 'teal';
@@ -211,8 +195,14 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
       sectionTitlesByConfigKey[tableHeading] ??
       `${translatedTableHeading} ${t('appointments', 'Appointments')}`);
   const emptyDisplayText = appointmentSectionTitle.toLocaleLowerCase();
-  const resolvedDniIdentifiers = new Map(
-    results?.map((appointment) => [appointment.uuid, resolveDniIdentifier(appointment)]),
+  const resolvedDocumentIdentifiers = new Map(
+    results?.map((appointment) => [
+      appointment.uuid,
+      formatCivilDocumentIdentifier(appointment.patient.identifiers, [], {
+        PASS: t('passport', 'Passport'),
+        DIE: t('foreignIdentityDocument', 'Foreign identity document'),
+      }),
+    ]),
   );
   const appointmentsByUuid = new Map(appointments.map((appointment) => [appointment.uuid, appointment]));
   const headerData = [
@@ -221,7 +211,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
       key: 'patientName',
     },
     {
-      header: 'DNI',
+      header: t('identityDocument', 'Document'),
       key: 'identifier',
     },
     {
@@ -266,7 +256,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
       appointment.patient.name
     ),
     nextAppointmentDate: '--',
-    identifier: resolvedDniIdentifiers.get(appointment.uuid) ?? '-',
+    identifier: resolvedDocumentIdentifiers.get(appointment.uuid) || '-',
     dateTime: formatDatetime(new Date(appointment.startDateTime)),
     serviceType: appointment.service.name,
     location: appointment.location?.name ?? appointment.service.location?.display ?? '—',
@@ -444,7 +434,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                               {row.cells.map((cell) => (
                                 <TableCell key={cell.id}>
                                   {cell.info.header === 'identifier' ? (
-                                    <PatientDniCell appointment={matchingAppointment} />
+                                    <PatientDocumentCell appointment={matchingAppointment} />
                                   ) : (
                                     (cell.value?.content ?? cell.value)
                                   )}

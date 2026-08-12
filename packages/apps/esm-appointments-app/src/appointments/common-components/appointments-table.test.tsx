@@ -9,6 +9,7 @@ import {
 } from '@openmrs/esm-framework';
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useSWRConfig } from 'swr';
 import { getByTextWithMarkup } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../../config-schema';
@@ -92,9 +93,18 @@ vi.mock('../../hooks/useTodaysVisits', () => ({
   useTodaysVisits: vi.fn(),
 }));
 
+vi.mock('swr', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('swr')>()),
+  useSWRConfig: vi.fn(),
+}));
+
+const mockMutateSWR = vi.fn();
+const mockUseSWRConfig = vi.mocked(useSWRConfig);
+
 describe('AppointmentsTable', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseSWRConfig.mockReturnValue({ mutate: mockMutateSWR } as unknown as ReturnType<typeof useSWRConfig>);
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
       customPatientChartUrl: 'url-to-patient-chart',
@@ -221,7 +231,7 @@ describe('AppointmentsTable', () => {
     expect(screen.queryByRole('link', { name: 'John Wilson' })).not.toBeInTheDocument();
   });
 
-  it('shows a dash in the DNI column when the patient only has a clinical history identifier', () => {
+  it('shows a dash in the document column when the patient only has a clinical-history identifier', () => {
     const appointmentWithIdentifiers = {
       ...mockAppointments[0],
       patient: {
@@ -236,14 +246,14 @@ describe('AppointmentsTable', () => {
 
     renderAppointmentsTable({ appointments: [appointmentWithIdentifiers], tableHeading: 'todaysAppointments' });
 
-    expect(screen.getByRole('columnheader', { name: /DNI/ })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /document/i })).toBeInTheDocument();
     const patientRow = screen.getByRole('row', { name: /John Wilson/i });
     expect(within(patientRow).getByRole('cell', { name: '-' })).toBeInTheDocument();
     expect(screen.queryByRole('cell', { name: '10000NH' })).not.toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /appointment time/i })).toBeInTheDocument();
   });
 
-  it('shows only DNI values and does not fall back to another identifier type', () => {
+  it('shows the identity-document type and number without falling back to the clinical-history number', () => {
     const historyNumberAppointment = {
       ...mockAppointments[0],
       patient: {
@@ -263,27 +273,43 @@ describe('AppointmentsTable', () => {
         identifiers: [{ identifier: '12345678', identifierName: 'DNI' }],
       },
     };
+    const foreignerAppointment = {
+      ...mockAppointments[0],
+      uuid: 'appointment-with-ce',
+      patient: {
+        ...mockAppointments[0].patient,
+        uuid: 'patient-with-ce',
+        name: 'María Pérez',
+        identifier: 'CE-123456',
+        identifiers: [{ identifier: 'CE-123456', identifierName: 'Carné de Extranjería' }],
+      },
+    };
 
     renderAppointmentsTable({
-      appointments: [historyNumberAppointment, dniAppointment],
+      appointments: [historyNumberAppointment, dniAppointment, foreignerAppointment],
       tableHeading: 'todaysAppointments',
     });
 
-    expect(screen.getByRole('columnheader', { name: /DNI/ })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /document/i })).toBeInTheDocument();
     expect(
       within(screen.getByRole('row', { name: /John Wilson/i })).getByRole('cell', { name: '-' }),
     ).toBeInTheDocument();
     expect(
-      within(screen.getByRole('row', { name: /Jane Doe/i })).getByRole('cell', { name: '12345678' }),
+      within(screen.getByRole('row', { name: /Jane Doe/i })).getByRole('cell', {
+        name: 'DNI - 12345678',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('row', { name: /María Pérez/i })).getByRole('cell', { name: 'CE - CE-123456' }),
     ).toBeInTheDocument();
   });
 
-  it('loads the DNI from the complete patient resource when the appointment response omits it', () => {
+  it('loads a typed civil document from the complete patient resource when the appointment response omits it', () => {
     mockUsePatient.mockReturnValue({
       patient: {
         id: mockAppointments[0].patient.uuid,
         resourceType: 'Patient',
-        identifier: [{ type: { text: 'DNI' }, value: '87654321' }],
+        identifier: [{ type: { text: 'Pasaporte' }, value: 'PAS876543' }],
       },
       patientUuid: mockAppointments[0].patient.uuid,
       isLoading: false,
@@ -292,8 +318,40 @@ describe('AppointmentsTable', () => {
 
     renderAppointmentsTable({ appointments: mockAppointments, tableHeading: 'todaysAppointments' });
 
-    expect(screen.getByRole('cell', { name: '87654321' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Passport - PAS876543' })).toBeInTheDocument();
     expect(screen.queryByRole('cell', { name: '-' })).not.toBeInTheDocument();
+  });
+
+  it('distinguishes a document lookup failure and lets the operator retry it', async () => {
+    const user = userEvent.setup();
+    mockUsePatient.mockReturnValue({
+      patient: null,
+      patientUuid: mockAppointments[0].patient.uuid,
+      isLoading: false,
+      error: new Error('Patient request failed'),
+    });
+
+    renderAppointmentsTable({ appointments: mockAppointments, tableHeading: 'todaysAppointments' });
+
+    const retryButton = screen.getByRole('button', { name: 'Retry loading patient document' });
+    expect(screen.queryByRole('cell', { name: '-' })).not.toBeInTheDocument();
+
+    await user.click(retryButton);
+
+    expect(mockMutateSWR).toHaveBeenCalledWith(['patient', mockAppointments[0].patient.uuid]);
+  });
+
+  it('announces that the patient document is still loading', () => {
+    mockUsePatient.mockReturnValue({
+      patient: null,
+      patientUuid: mockAppointments[0].patient.uuid,
+      isLoading: true,
+      error: null,
+    });
+
+    renderAppointmentsTable({ appointments: mockAppointments, tableHeading: 'todaysAppointments' });
+
+    expect(screen.getByRole('status')).toHaveTextContent('Loading document...');
   });
 
   it('updates the search string when the search input changes', async () => {

@@ -13,6 +13,7 @@ import {
   QUEUE_ENTRY_TRANSITION_CONFLICT,
   QueueEntryTransitionConflictError,
   transitionQueueEntry,
+  undoTransition,
   updateActiveQueueEntry,
 } from './queue-entry-actions.resource';
 
@@ -454,6 +455,55 @@ describe('updateActiveQueueEntry', () => {
     await expect(updateActiveQueueEntry(sourceEntry.uuid, { priorityComment: 'Requeued' })).rejects.toBeInstanceOf(
       QueueEntryTransitionConflictError,
     );
+  });
+});
+
+describe('undoTransition', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('fresh-checks the patient immediately before undoing a transition', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce(response(transitionedEntry)).mockResolvedValueOnce(response({}));
+
+    await undoTransition({ queueEntry: transitionedEntry.uuid });
+
+    expect(mockAssertFreshPatientIsAlive).toHaveBeenCalledWith('patient-uuid');
+    expect(mockAssertFreshPatientIsAlive.mock.invocationCallOrder[0]).toBeLessThan(
+      mockOpenmrsFetch.mock.invocationCallOrder[1],
+    );
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(2, `${restBaseUrl}/queue-entry/transition`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      signal: undefined,
+      body: { queueEntry: transitionedEntry.uuid },
+    });
+  });
+
+  it('does not undo a transition after the patient dies', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce(response(transitionedEntry));
+    mockAssertFreshPatientIsAlive.mockRejectedValue(
+      Object.assign(new Error('deceased patient'), { code: DECEASED_PATIENT_OPERATION_BLOCKED }),
+    );
+
+    await expect(undoTransition({ queueEntry: transitionedEntry.uuid })).rejects.toMatchObject({
+      code: DECEASED_PATIENT_OPERATION_BLOCKED,
+    });
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
+    expect(mockOpenmrsFetch.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+  });
+
+  it('does not undo when the fresh queue entry has no verifiable patient', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce(response({ ...transitionedEntry, patient: undefined } as QueueEntry));
+
+    await expect(undoTransition({ queueEntry: transitionedEntry.uuid })).rejects.toThrow(
+      'The queue entry patient could not be verified.',
+    );
+
+    expect(mockAssertFreshPatientIsAlive).not.toHaveBeenCalled();
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
+    expect(mockOpenmrsFetch.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
   });
 });
 

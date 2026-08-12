@@ -513,7 +513,15 @@ interface UndoTransitionParams {
   queueEntry: string;
 }
 
-export function undoTransition(params: UndoTransitionParams, abortController?: AbortController) {
+export async function undoTransition(params: UndoTransitionParams, abortController?: AbortController) {
+  const freshResponse = await fetchQueueEntry(params.queueEntry, abortController);
+  if (!freshResponse.data.patient?.uuid) {
+    throw new QueueEntryVerificationError('The queue entry patient could not be verified.');
+  }
+
+  // Undo reactivates operational queue state. Keep this assertion adjacent to
+  // the DELETE so a stale modal cannot bypass the deceased-patient invariant.
+  await assertFreshPatientIsAlive(freshResponse.data.patient.uuid);
   return openmrsFetch(`${restBaseUrl}/queue-entry/transition`, {
     method: 'DELETE',
     headers: {

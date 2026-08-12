@@ -10,12 +10,8 @@
  * - Proper error handling and user feedback
  */
 
-import { getUserFacingErrorMessage, openmrsFetch, showSnackbar, useConfig } from '@openmrs/esm-framework';
-import {
-  assertFreshPatientIsAlive,
-  DECEASED_PATIENT_OPERATION_BLOCKED,
-  PATIENT_VITAL_STATUS_UNAVAILABLE,
-} from '@openmrs/esm-patient-common-lib';
+import { openmrsFetch, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { assertFreshPatientIsAlive } from '@openmrs/esm-patient-common-lib';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Config } from '../../config-schema';
@@ -43,6 +39,7 @@ interface VisitSearchResponse {
 
 export const EMERGENCY_ADMINISTRATIVE_NOTES_PENDING = 'EMERGENCY_ADMINISTRATIVE_NOTES_PENDING';
 export const EMERGENCY_VISIT_UUID_UNAVAILABLE = 'EMERGENCY_VISIT_UUID_UNAVAILABLE';
+export const EMERGENCY_LOCATION_UNAVAILABLE = 'EMERGENCY_LOCATION_UNAVAILABLE';
 
 function administrativeNotesPending(cause?: unknown) {
   return Object.assign(new Error('The emergency administrative notes could not be verified.', { cause }), {
@@ -149,18 +146,15 @@ export function useEmergencyVisit() {
    * Crea una nueva visita de emergencia
    */
   const createEmergencyVisit = useCallback(
-    async (patientUuid: string, startDatetime?: string, administrativeNotes?: string): Promise<string | null> => {
+    async (patientUuid: string, startDatetime?: string, administrativeNotes?: string): Promise<string> => {
       setIsCreatingVisit(true);
 
       try {
         const emergencyLocationUuid = config.emergencyLocationUuid;
         if (!emergencyLocationUuid) {
-          showSnackbar({
-            title: t('errorCreatingVisit', 'Error al crear visita'),
-            subtitle: t('emergencyLocationNotConfigured', 'No se configuró la UPSS operativa de emergencia.'),
-            kind: 'error',
+          throw Object.assign(new Error('The emergency location is not configured.'), {
+            code: EMERGENCY_LOCATION_UNAVAILABLE,
           });
-          return null;
         }
 
         const visitPayload = {
@@ -202,26 +196,6 @@ export function useEmergencyVisit() {
         });
 
         return visitUuid;
-      } catch (error: unknown) {
-        showSnackbar({
-          title: t('errorCreatingVisit', 'Error al crear visita'),
-          subtitle: getUserFacingErrorMessage(
-            error,
-            t('couldNotCreateVisit', 'No se pudo crear la visita de emergencia. Intente nuevamente.'),
-            { logContext: 'Create emergency visit' },
-          ),
-          kind: 'error',
-        });
-        const errorCode = (error as { code?: string })?.code;
-        if (
-          errorCode === EMERGENCY_VISIT_UUID_UNAVAILABLE ||
-          errorCode === DECEASED_PATIENT_OPERATION_BLOCKED ||
-          errorCode === PATIENT_VITAL_STATUS_UNAVAILABLE ||
-          error instanceof TypeError
-        ) {
-          throw error;
-        }
-        return null;
       } finally {
         setIsCreatingVisit(false);
       }
@@ -234,7 +208,7 @@ export function useEmergencyVisit() {
    * (Lógica principal para el flujo automático)
    */
   const getOrCreateEmergencyVisit = useCallback(
-    async (patientUuid: string, startDatetime?: string, administrativeNotes?: string): Promise<string | null> => {
+    async (patientUuid: string, startDatetime?: string, administrativeNotes?: string): Promise<string> => {
       // 1. Verificar si ya existe una visita activa
       const existingVisit = await checkActiveEmergencyVisit(patientUuid);
 

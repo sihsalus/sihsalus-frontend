@@ -6,7 +6,11 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import { act, renderHook } from '@testing-library/react';
 import { type Config, configSchema } from '../../config-schema';
-import { EMERGENCY_VISIT_UUID_UNAVAILABLE, useEmergencyVisit } from './useEmergencyVisit';
+import {
+  EMERGENCY_LOCATION_UNAVAILABLE,
+  EMERGENCY_VISIT_UUID_UNAVAILABLE,
+  useEmergencyVisit,
+} from './useEmergencyVisit';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockShowSnackbar = vi.mocked(showSnackbar);
@@ -96,19 +100,11 @@ describe('useEmergencyVisit', () => {
       emergencyLocationUuid: '',
     });
     const { result } = renderHook(() => useEmergencyVisit());
-    let visitUuid: string | null = 'not-null';
-
-    await act(async () => {
-      visitUuid = await result.current.createEmergencyVisit('patient-uuid');
+    await expect(result.current.createEmergencyVisit('patient-uuid')).rejects.toMatchObject({
+      code: EMERGENCY_LOCATION_UNAVAILABLE,
     });
-
-    expect(visitUuid).toBeNull();
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
-    expect(mockShowSnackbar).toHaveBeenCalledWith({
-      kind: 'error',
-      subtitle: 'No se configuró la UPSS operativa de emergencia.',
-      title: 'Error al crear visita',
-    });
+    expect(mockShowSnackbar).not.toHaveBeenCalled();
   });
 
   it('keeps the visit when administrative notes cannot be saved', async () => {
@@ -364,12 +360,7 @@ describe('useEmergencyVisit', () => {
     await expect(result.current.createEmergencyVisit('patient-uuid')).rejects.toMatchObject({
       code: EMERGENCY_VISIT_UUID_UNAVAILABLE,
     });
-    expect(mockShowSnackbar).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kind: 'error',
-        subtitle: expect.any(String),
-      }),
-    );
+    expect(mockShowSnackbar).not.toHaveBeenCalled();
     expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
     expect(EMERGENCY_VISIT_UUID_UNAVAILABLE).toBe('EMERGENCY_VISIT_UUID_UNAVAILABLE');
   });

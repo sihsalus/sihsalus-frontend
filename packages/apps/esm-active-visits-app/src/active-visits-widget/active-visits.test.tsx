@@ -169,6 +169,24 @@ describe('ActiveVisitsTable', () => {
     expect(screen.queryByText('Some One')).not.toBeInTheDocument();
   });
 
+  it('preserves each visit row when the source order changes', () => {
+    const { rerender } = render(<ActiveVisitsTable />);
+    const firstVisitRow = screen.getByTestId('activeVisitRowuuid1');
+    const firstVisitNameCell = screen.getByTestId('1:name');
+
+    mockUseActiveVisits.mockReturnValue({
+      activeVisits: [...mockActiveVisits].reverse(),
+      isLoading: false,
+      isValidating: false,
+      error: undefined,
+      totalResults: 2,
+    });
+    rerender(<ActiveVisitsTable />);
+
+    expect(screen.getByTestId('activeVisitRowuuid1')).toBe(firstVisitRow);
+    expect(screen.getByTestId('1:name')).toBe(firstVisitNameCell);
+  });
+
   it('displays empty state when there are no active visits', () => {
     mockUseActiveVisits.mockReturnValue({
       activeVisits: [],

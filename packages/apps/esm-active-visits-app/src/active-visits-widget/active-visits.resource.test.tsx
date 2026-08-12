@@ -58,6 +58,7 @@ describe('useActiveVisits', () => {
     expect(result.current.activeVisits).toHaveLength(1);
     expect(result.current.activeVisits[0]).toMatchObject({
       age: '30',
+      id: 'visit-uuid',
       observations: {},
       patientUuid: 'patient-uuid',
       visitUuid: 'visit-uuid',

@@ -201,7 +201,7 @@ const ActiveVisitsTable = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row, index) => {
+                {rows.map((row) => {
                   const currentVisit = activeVisits.find((visit) => visit.id === row.id);
 
                   if (!currentVisit) {
@@ -209,7 +209,7 @@ const ActiveVisitsTable = () => {
                   }
 
                   return (
-                    <React.Fragment key={`active-visit-row-${index}`}>
+                    <React.Fragment key={row.id}>
                       {(() => {
                         const { key, ...rowProps } = getRowProps({ row });
 
@@ -220,7 +220,7 @@ const ActiveVisitsTable = () => {
                             data-testid={`activeVisitRow${currentVisit.patientUuid || 'unknown'}`}
                           >
                             {row.cells.map((cell) => (
-                              <TableCell key={`active-visit-row-${index}-cell-${cell.id}`} data-testid={cell.id}>
+                              <TableCell key={cell.id} data-testid={cell.id}>
                                 {cell.info.header === 'name' && currentVisit.patientUuid ? (
                                   <ConfigurableLink
                                     to={`${globalThis.spaBase}/patient/${currentVisit.patientUuid}/chart`}

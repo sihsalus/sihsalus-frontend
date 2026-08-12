@@ -19,8 +19,8 @@ const NotesSummary: React.FC<NotesSummaryProps> = ({ notes }) => {
   return (
     <>
       {notes.length ? (
-        notes.map((note: Note, i) => (
-          <div className={styles.notesContainer} key={i}>
+        notes.map((note: Note) => (
+          <div className={styles.notesContainer} key={note.uuid}>
             <p className={classNames(styles.noteText, styles.bodyLong01)} data-testid="note">
               {note.note}
             </p>

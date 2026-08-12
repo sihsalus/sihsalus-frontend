@@ -23,9 +23,9 @@ describe('EncounterObservations', () => {
 
   test('renders observations list correctly', () => {
     const observations = [
-      { display: 'Temperature: 98.6°F' },
-      { display: 'Blood Pressure: 120/80 mmHg' },
-      { display: 'Heart Rate: 72 bpm' },
+      { display: 'Temperature: 98.6°F', uuid: 'temperature-observation' },
+      { display: 'Blood Pressure: 120/80 mmHg', uuid: 'blood-pressure-observation' },
+      { display: 'Heart Rate: 72 bpm', uuid: 'heart-rate-observation' },
     ] as Array<Observation>;
     render(<EncounterObservations observations={observations} />);
 
@@ -37,5 +37,18 @@ describe('EncounterObservations', () => {
 
     expect(screen.getByText('Heart Rate:')).toBeInTheDocument();
     expect(screen.getByText('72 bpm')).toBeInTheDocument();
+  });
+
+  test('preserves each observation when their order changes', () => {
+    const observations = [
+      { display: 'Temperature: 98.6°F', uuid: 'temperature-observation' },
+      { display: 'Temperature: 99.1°F', uuid: 'second-temperature-observation' },
+    ] as Array<Observation>;
+    const { rerender } = render(<EncounterObservations observations={observations} />);
+    const firstReading = screen.getByText('98.6°F');
+
+    rerender(<EncounterObservations observations={[...observations].reverse()} />);
+
+    expect(screen.getByText('98.6°F')).toBe(firstReading);
   });
 });

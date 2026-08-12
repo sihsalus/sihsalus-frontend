@@ -7,6 +7,7 @@ import styles from '../visit-detail-overview.scss';
 
 interface EncounterObservation {
   display?: string;
+  uuid: string;
 }
 
 interface EncounterObservationsProps {
@@ -21,7 +22,7 @@ const EncounterObservations: React.FC<EncounterObservationsProps> = ({ observati
       observations &&
       observations.map((obs) => {
         const [question, answer] = (obs.display ?? '').split(':');
-        return { question, answer };
+        return { uuid: obs.uuid, question, answer };
       })
     );
   }, [observations]);
@@ -29,8 +30,8 @@ const EncounterObservations: React.FC<EncounterObservationsProps> = ({ observati
   return observationsList ? (
     observationsList.length > 0 ? (
       <div className={styles.observation}>
-        {observationsList.map((obs, ind) => (
-          <React.Fragment key={ind}>
+        {observationsList.map((obs) => (
+          <React.Fragment key={obs.uuid}>
             <span className={styles.caption01}>{obs.question}: </span>
             <span className={classNames(styles.bodyShort02, styles.text01)}>{obs.answer}</span>
           </React.Fragment>

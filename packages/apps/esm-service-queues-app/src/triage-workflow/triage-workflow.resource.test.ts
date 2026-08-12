@@ -1,6 +1,8 @@
 import { type FetchResponse, getConfig, openmrsFetch } from '@openmrs/esm-framework';
 import {
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_CONCEPT_UUID,
 } from '@openmrs/esm-patient-common-lib';
@@ -47,7 +49,12 @@ const appointmentConfig: AppointmentTriageConfig = {
   ],
 };
 
-function makeQueueEntry({ triaged = false, sis = true } = {}): QueueEntry {
+function makeQueueEntry({
+  triaged = false,
+  sis = true,
+  includeNumber = true,
+  includeCheckedAt = true,
+} = {}): QueueEntry {
   return {
     uuid: 'queue-entry-uuid',
     patient: { uuid: 'patient-uuid' },
@@ -60,10 +67,21 @@ function makeQueueEntry({ triaged = false, sis = true } = {}): QueueEntry {
         ...(sis
           ? [
               { attributeType: { uuid: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID }, value: SIS_CONCEPT_UUID },
+              ...(includeNumber
+                ? [{ attributeType: { uuid: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID }, value: 'SIS-123' }]
+                : []),
               {
                 attributeType: { uuid: SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID },
                 value: '9b3df0a1-0c58-4f55-9868-9c38f1db2051',
               },
+              ...(includeCheckedAt
+                ? [
+                    {
+                      attributeType: { uuid: SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID },
+                      value: '2026-08-11T14:30:00.000-05:00',
+                    },
+                  ]
+                : []),
             ]
           : []),
       ],
@@ -94,6 +112,11 @@ describe('outpatient triage workflow', () => {
     expect(getSisState(makeQueueEntry({ sis: false }))).toBe('notApplicable');
     expect(getTriageState(pendingEntry, appointmentConfig)).toBe('pending');
     expect(getTriageState(completedEntry, appointmentConfig)).toBe('completed');
+  });
+
+  it('does not expose an active SIS state when the visit bundle is incomplete', () => {
+    expect(getSisState(makeQueueEntry({ includeNumber: false }))).toBe('missing');
+    expect(getSisState(makeQueueEntry({ includeCheckedAt: false }))).toBe('missing');
   });
 
   it('transitions a triaged patient to the exact queue configured for the appointment', async () => {

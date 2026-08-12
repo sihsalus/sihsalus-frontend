@@ -19,6 +19,12 @@
   margin-top: layout.$spacing-05;
 }
 
+.pendingSisActions {
+  align-items: center;
+  display: flex;
+  gap: layout.$spacing-02;
+}
+
 .activeVisitsDetailHeaderContainer {
   display: flex;
   justify-content: space-between;

@@ -1,14 +1,12 @@
-import {
-  getConfig,
-  openmrsFetch,
-  restBaseUrl,
-  type FetchResponse,
-} from '@openmrs/esm-framework';
+import { getConfig, openmrsFetch, restBaseUrl, type FetchResponse } from '@openmrs/esm-framework';
 import {
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
   getCodedValueUuid,
   getSisFinancingState,
+  getTextValue,
 } from '@openmrs/esm-patient-common-lib';
 import useSWR from 'swr';
 
@@ -81,10 +79,19 @@ export function getLinkedAppointmentUuid(queueEntry: QueueEntry, config?: Appoin
 
 export function getSisState(queueEntry: QueueEntry): SisState {
   const funderUuid = getCodedValueUuid(getAttributeValue(queueEntry, FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID));
+  const insuranceNumber = getTextValue(getAttributeValue(queueEntry, INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID));
   const statusUuid = getCodedValueUuid(
     getAttributeValue(queueEntry, SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID),
   );
-  return getSisFinancingState({ financiadorUuid: funderUuid, accreditationStatusUuid: statusUuid });
+  const accreditationCheckedAt = getTextValue(
+    getAttributeValue(queueEntry, SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID),
+  );
+  return getSisFinancingState({
+    financiadorUuid: funderUuid,
+    insuranceNumber,
+    accreditationStatusUuid: statusUuid,
+    accreditationCheckedAt,
+  });
 }
 
 export function getTriageState(
@@ -96,14 +103,12 @@ export function getTriageState(
     return 'notRequired';
   }
   const requiresTriage =
-    queueEntry.queue?.uuid === config.triageRouting.queueUuid ||
-    Boolean(getDestinationQueueUuid(appointment, config));
+    queueEntry.queue?.uuid === config.triageRouting.queueUuid || Boolean(getDestinationQueueUuid(appointment, config));
   if (!requiresTriage) {
     return 'notRequired';
   }
   const completed = queueEntry.visit?.encounters?.some(
-    (encounter) =>
-      !encounter.voided && encounter.encounterType?.uuid === config.triageRouting.encounterTypeUuid,
+    (encounter) => !encounter.voided && encounter.encounterType?.uuid === config.triageRouting.encounterTypeUuid,
   );
   return completed ? 'completed' : 'pending';
 }

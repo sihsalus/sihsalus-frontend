@@ -39,9 +39,11 @@ import {
   FuaGenerationError,
   generateFuaFromVisit,
   generateFuasFromVisits,
+  getVisitAccreditationCheckedAt,
   getVisitAccreditationStatusUuid,
   getVisitFinanciadorDisplay,
   getVisitFinanciadorUuid,
+  getVisitInsuranceNumber,
   isSisFinanciador,
   useVisits,
   type VisitSummary,
@@ -75,7 +77,31 @@ interface AccreditationInfo {
   tagType: AccreditationTagType;
 }
 
-function getAccreditationInfo(statusUuid: string | null, t: TFunction): AccreditationInfo {
+function getAccreditationInfo(
+  statusUuid: string | null,
+  checkedAt: string | null,
+  hasRequiredInsuranceNumber: boolean,
+  t: TFunction,
+): AccreditationInfo {
+  const isVerifiedStatus =
+    statusUuid === sisAccreditationVigenteConceptUuid || statusUuid === sisAccreditationNoVigenteConceptUuid;
+
+  if (isVerifiedStatus && !hasRequiredInsuranceNumber) {
+    return {
+      isVigente: false,
+      label: t('accreditationMissingInsuranceNumber', 'Sin número de afiliación'),
+      tagType: 'red',
+    };
+  }
+
+  if (!checkedAt && isVerifiedStatus) {
+    return {
+      isVigente: false,
+      label: t('accreditationMissingCheckedAt', 'Sin fecha de acreditación'),
+      tagType: 'red',
+    };
+  }
+
   switch (statusUuid) {
     case sisAccreditationVigenteConceptUuid:
       return { isVigente: true, label: t('accreditationVigente', 'Vigente'), tagType: 'green' };
@@ -96,6 +122,7 @@ interface VisitRowInfo {
   financiadorDisplay: string;
   isSis: boolean;
   accreditationStatusUuid: string | null;
+  accreditationCheckedAt: string | null;
   accreditation: AccreditationInfo;
 }
 
@@ -150,15 +177,24 @@ const VisitTable: React.FC = () => {
     () =>
       visits.map((visit, index) => {
         const financiadorUuid = getVisitFinanciadorUuid(visit);
+        const isSis = isSisFinanciador(financiadorUuid, sisInsuranceConceptUuid, legacySisProductConceptUuids ?? []);
         const accreditationStatusUuid = getVisitAccreditationStatusUuid(visit);
+        const accreditationCheckedAt = getVisitAccreditationCheckedAt(visit);
+        const insuranceNumber = getVisitInsuranceNumber(visit);
 
         return {
           visit,
           rowId: visit.uuid ?? `${visit.startDatetime ?? 'visit'}-${index}`,
           financiadorDisplay: getVisitFinanciadorDisplay(visit) ?? t('noFinanciador', 'Sin financiador'),
-          isSis: isSisFinanciador(financiadorUuid, sisInsuranceConceptUuid, legacySisProductConceptUuids ?? []),
+          isSis,
           accreditationStatusUuid,
-          accreditation: getAccreditationInfo(accreditationStatusUuid, t),
+          accreditationCheckedAt,
+          accreditation: getAccreditationInfo(
+            accreditationStatusUuid,
+            accreditationCheckedAt,
+            !isSis || Boolean(insuranceNumber),
+            t,
+          ),
         };
       }),
     [visits, sisInsuranceConceptUuid, legacySisProductConceptUuids, t],

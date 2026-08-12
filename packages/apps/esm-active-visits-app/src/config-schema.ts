@@ -12,13 +12,10 @@ export interface ActiveVisitsConfigSchema {
 }
 
 export interface PendingSisAccreditationsConfig {
-  financiadorVisitAttributeTypeUuid: string;
-  accreditationStatusVisitAttributeTypeUuid: string;
   sisConceptUuids: Array<string>;
   pendingStatusConceptUuid: string;
   notConsultedStatusConceptUuid: string;
   dniIdentifierTypeUuid: string;
-  insuranceTypePersonAttributeTypeUuid: string;
 }
 
 export interface IdentifiersDefinition {
@@ -118,19 +115,10 @@ export const configSchema = {
     },
   },
   pendingSisAccreditations: {
-    financiadorVisitAttributeTypeUuid: {
-      _type: Type.UUID,
-      _description: 'Visit attribute type "Financiador" (fuente de verdad del financiador de la visita).',
-      _default: '3a988e33-a6c0-4b76-b924-01abb998944b',
-    },
-    accreditationStatusVisitAttributeTypeUuid: {
-      _type: Type.UUID,
-      _description: 'Visit attribute type "Estado de Acreditación SIS".',
-      _default: '5e13e902-2030-4f65-b9d5-9a4810c9a603',
-    },
     sisConceptUuids: {
       _type: Type.Array,
-      _description: 'Conceptos de financiador que cuentan como SIS: el concepto canónico y los productos SIS legados.',
+      _description:
+        'Conceptos de financiador que cuentan como SIS: primero el concepto canónico y después los productos SIS legados.',
       _elements: {
         _type: Type.UUID,
         _description: 'UUID de un concepto de financiador SIS.',
@@ -156,13 +144,6 @@ export const configSchema = {
       _type: Type.UUID,
       _description: 'Identifier type DNI, mostrado con prioridad en la lista de acreditaciones pendientes.',
       _default: '550e8400-e29b-41d4-a716-446655440001',
-    },
-    insuranceTypePersonAttributeTypeUuid: {
-      _type: Type.UUID,
-      _description:
-        'Person attribute «Tipo de seguro» (afiliación). Permite detectar visitas de pacientes SIS a las que ' +
-        'nunca se les copió el financiador, que de otro modo quedarían fuera de esta lista y sin FUA.',
-      _default: '56188294-b42c-481d-a987-4b495116c580',
     },
   },
 };

@@ -8,6 +8,7 @@ import {
   normalizeVisitTimeFormatInput,
   normalizeVisitTimeInput,
   reconcileVisitCreation,
+  sanitizeVisitCoverageAttributes,
   sanitizeVisitTimeInput,
   useVisitAttributeTypeExists,
   VISIT_PERSISTENCE_CORRELATION_CONFLICT,
@@ -15,7 +16,13 @@ import {
 
 const provenanceVisitAttributeTypeUuid = '9b640334-69e7-49a8-bc8d-1a379742f2f1';
 const insuranceCodePersonAttributeTypeUuid = '374b130f-7457-476f-87b1-f182aa77c434';
+const insuranceTypePersonAttributeTypeUuid = '56188294-b42c-481d-a987-4b495116c580';
 const insuranceNumberVisitAttributeTypeUuid = 'aac48226-d143-4274-80e0-264db4e368ee';
+const financiadorVisitAttributeTypeUuid = '3a988e33-a6c0-4b76-b924-01abb998944b';
+const accreditationStatusVisitAttributeTypeUuid = '5e13e902-2030-4f65-b9d5-9a4810c9a603';
+const accreditationCheckedAtVisitAttributeTypeUuid = 'e3a66f60-4abe-4948-b323-7c4935d8eb8a';
+const sisConceptUuid = '97c6e901-7570-4ab8-a9c0-9cf2b0f5bc0c';
+const selfFinancedConceptUuid = 'cc72568e-d0d9-46a8-a618-91f0d679f518';
 const addressExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/address';
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
@@ -210,6 +217,106 @@ describe('getDefaultVisitAttributesFromPersonAttributes', () => {
     );
 
     expect(defaults).toEqual({});
+  });
+
+  it('normalizes a legacy SIS plan when prefilling the visit financer', () => {
+    const defaults = getDefaultVisitAttributesFromPersonAttributes(
+      {} as fhir.Patient,
+      [
+        {
+          uuid: 'legacy-sis-attribute',
+          attributeType: { uuid: insuranceTypePersonAttributeTypeUuid, format: 'org.openmrs.Concept' },
+          value: { uuid: 'b61a9ff9-1485-4388-9f67-9c341f847f85', display: 'SIS Gratuito' },
+        },
+      ],
+      [
+        {
+          personAttributeTypeUuid: insuranceTypePersonAttributeTypeUuid,
+          visitAttributeTypeUuid: financiadorVisitAttributeTypeUuid,
+        },
+      ],
+      new Set([financiadorVisitAttributeTypeUuid]),
+    );
+
+    expect(defaults).toEqual({ [financiadorVisitAttributeTypeUuid]: sisConceptUuid });
+  });
+});
+
+describe('sanitizeVisitCoverageAttributes', () => {
+  const sisComplements = {
+    [insuranceNumberVisitAttributeTypeUuid]: 'SIS-452781',
+    [accreditationStatusVisitAttributeTypeUuid]: 'vigente-concept',
+    [accreditationCheckedAtVisitAttributeTypeUuid]: '2026-08-11T14:30:00.000-05:00',
+  };
+
+  it('keeps all applicable SIS coverage fields', () => {
+    expect(
+      sanitizeVisitCoverageAttributes({
+        [financiadorVisitAttributeTypeUuid]: sisConceptUuid,
+        ...sisComplements,
+      }),
+    ).toEqual({
+      [financiadorVisitAttributeTypeUuid]: sisConceptUuid,
+      ...sisComplements,
+    });
+  });
+
+  it('clears SIS complements when the user changes the visit to self-financed care', () => {
+    expect(
+      sanitizeVisitCoverageAttributes({
+        [financiadorVisitAttributeTypeUuid]: selfFinancedConceptUuid,
+        ...sisComplements,
+      }),
+    ).toEqual({
+      [financiadorVisitAttributeTypeUuid]: selfFinancedConceptUuid,
+      [insuranceNumberVisitAttributeTypeUuid]: '',
+      [accreditationStatusVisitAttributeTypeUuid]: '',
+      [accreditationCheckedAtVisitAttributeTypeUuid]: '',
+    });
+  });
+
+  it('keeps a general policy for another IAFAS but clears SIS-only fields', () => {
+    expect(
+      sanitizeVisitCoverageAttributes({
+        [financiadorVisitAttributeTypeUuid]: 'essalud-concept',
+        [insuranceNumberVisitAttributeTypeUuid]: 'ESSALUD-90',
+        [accreditationStatusVisitAttributeTypeUuid]: 'stale-sis-status',
+        [accreditationCheckedAtVisitAttributeTypeUuid]: '2026-08-11',
+      }),
+    ).toEqual({
+      [financiadorVisitAttributeTypeUuid]: 'essalud-concept',
+      [insuranceNumberVisitAttributeTypeUuid]: 'ESSALUD-90',
+      [accreditationStatusVisitAttributeTypeUuid]: '',
+      [accreditationCheckedAtVisitAttributeTypeUuid]: '',
+    });
+  });
+
+  it('clears orphan coverage fields when no financer is selected', () => {
+    expect(
+      sanitizeVisitCoverageAttributes({
+        [insuranceNumberVisitAttributeTypeUuid]: 'ORPHAN-90',
+        [accreditationStatusVisitAttributeTypeUuid]: 'stale-sis-status',
+      }),
+    ).toMatchObject({
+      [insuranceNumberVisitAttributeTypeUuid]: '',
+      [accreditationStatusVisitAttributeTypeUuid]: '',
+    });
+  });
+
+  it('clears an affiliation number that duplicates a document identifier', () => {
+    expect(
+      sanitizeVisitCoverageAttributes(
+        {
+          [financiadorVisitAttributeTypeUuid]: sisConceptUuid,
+          [insuranceNumberVisitAttributeTypeUuid]: '72-344-001',
+          [accreditationStatusVisitAttributeTypeUuid]: 'vigente-concept',
+        },
+        ['72344001'],
+      ),
+    ).toMatchObject({
+      [insuranceNumberVisitAttributeTypeUuid]: '',
+      [accreditationStatusVisitAttributeTypeUuid]: 'vigente-concept',
+    });
   });
 });
 

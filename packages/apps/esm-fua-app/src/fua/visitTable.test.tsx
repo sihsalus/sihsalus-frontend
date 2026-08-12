@@ -1,6 +1,8 @@
 import { getDefaultsFromConfigSchema, showModal, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import {
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_CONCEPT_UUID,
 } from '@openmrs/esm-patient-common-lib';
@@ -56,7 +58,9 @@ interface BuildVisitOptions {
   patientName: string;
   financiadorUuid?: string;
   financiadorDisplay?: string;
+  insuranceNumber?: string | null;
   accreditationStatusUuid?: string;
+  accreditationCheckedAt?: string;
 }
 
 function buildVisit({
@@ -64,7 +68,9 @@ function buildVisit({
   patientName,
   financiadorUuid,
   financiadorDisplay,
+  insuranceNumber = 'SIS-AFILIACION-001',
   accreditationStatusUuid,
+  accreditationCheckedAt,
 }: BuildVisitOptions): VisitSummary {
   const attributes: VisitSummary['attributes'] = [];
 
@@ -76,11 +82,27 @@ function buildVisit({
     });
   }
 
+  if (insuranceNumber) {
+    attributes.push({
+      uuid: `${uuid}-numero-afiliacion`,
+      attributeType: { uuid: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID },
+      value: insuranceNumber,
+    });
+  }
+
   if (accreditationStatusUuid) {
     attributes.push({
       uuid: `${uuid}-acreditacion`,
       attributeType: { uuid: SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID },
       value: { uuid: accreditationStatusUuid },
+    });
+  }
+
+  if (accreditationCheckedAt) {
+    attributes.push({
+      uuid: `${uuid}-acreditacion-fecha`,
+      attributeType: { uuid: SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID },
+      value: accreditationCheckedAt,
     });
   }
 
@@ -109,6 +131,7 @@ const sisVigenteVisit = buildVisit({
   financiadorUuid: SIS_CONCEPT_UUID,
   financiadorDisplay: 'SIS',
   accreditationStatusUuid: sisAccreditationVigenteConceptUuid,
+  accreditationCheckedAt: '2026-08-11T14:30:00.000-05:00',
 });
 
 const sisNoVigenteVisit = buildVisit({
@@ -117,6 +140,7 @@ const sisNoVigenteVisit = buildVisit({
   financiadorUuid: SIS_CONCEPT_UUID,
   financiadorDisplay: 'SIS',
   accreditationStatusUuid: sisAccreditationNoVigenteConceptUuid,
+  accreditationCheckedAt: '2026-08-11T14:31:00.000-05:00',
 });
 
 const privateVisit = buildVisit({
@@ -206,8 +230,76 @@ describe('VisitTable FUA generation', () => {
     await waitFor(() => expect(mockGenerateFuaFromVisit).toHaveBeenCalledWith('visit-sis-no-vigente'));
   });
 
+  it('does not treat a vigente status without checked-at as a complete accreditation after reload', () => {
+    const incompleteVisit = buildVisit({
+      uuid: 'visit-sis-vigente-without-date',
+      patientName: 'Paciente SIS sin fecha',
+      financiadorUuid: SIS_CONCEPT_UUID,
+      financiadorDisplay: 'SIS',
+      accreditationStatusUuid: sisAccreditationVigenteConceptUuid,
+    });
+    mockVisits([incompleteVisit]);
+
+    render(<VisitTable />);
+
+    expect(screen.getByText('Sin fecha de acreditación')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Generar FUA' }));
+
+    expect(mockGenerateFuaFromVisit).not.toHaveBeenCalled();
+    expect(mockShowModal).toHaveBeenCalledWith(
+      'fua-accreditation-warning-modal',
+      expect.objectContaining({
+        accreditationStatusLabel: 'sin fecha de acreditación',
+        patientName: 'Paciente SIS sin fecha',
+      }),
+    );
+  });
+
+  it('requires contingency before individual generation when the SIS affiliation number is missing', () => {
+    const missingInsuranceNumberVisit = buildVisit({
+      uuid: 'visit-sis-vigente-without-number',
+      patientName: 'Paciente SIS sin número',
+      financiadorUuid: SIS_CONCEPT_UUID,
+      financiadorDisplay: 'SIS',
+      insuranceNumber: null,
+      accreditationStatusUuid: sisAccreditationVigenteConceptUuid,
+      accreditationCheckedAt: '2026-08-11T14:30:00.000-05:00',
+    });
+    mockVisits([missingInsuranceNumberVisit]);
+
+    render(<VisitTable />);
+
+    expect(screen.getByText('Sin número de afiliación')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Generar FUA' }));
+
+    expect(mockGenerateFuaFromVisit).not.toHaveBeenCalled();
+    expect(mockShowModal).toHaveBeenCalledWith(
+      'fua-accreditation-warning-modal',
+      expect.objectContaining({
+        accreditationStatusLabel: 'sin número de afiliación',
+        patientName: 'Paciente SIS sin número',
+      }),
+    );
+  });
+
   it('excludes visits without an active SIS accreditation from bulk generation', async () => {
-    mockVisits([sisVigenteVisit, sisNoVigenteVisit]);
+    const incompleteVisit = buildVisit({
+      uuid: 'visit-sis-vigente-without-date',
+      patientName: 'Paciente SIS sin fecha',
+      financiadorUuid: SIS_CONCEPT_UUID,
+      financiadorDisplay: 'SIS',
+      accreditationStatusUuid: sisAccreditationVigenteConceptUuid,
+    });
+    const missingInsuranceNumberVisit = buildVisit({
+      uuid: 'visit-sis-vigente-without-number',
+      patientName: 'Paciente SIS sin número',
+      financiadorUuid: SIS_CONCEPT_UUID,
+      financiadorDisplay: 'SIS',
+      insuranceNumber: null,
+      accreditationStatusUuid: sisAccreditationVigenteConceptUuid,
+      accreditationCheckedAt: '2026-08-11T14:30:00.000-05:00',
+    });
+    mockVisits([sisVigenteVisit, sisNoVigenteVisit, incompleteVisit, missingInsuranceNumberVisit]);
     mockGenerateFuasFromVisits.mockResolvedValue({ successful: 1, failed: 0 });
 
     render(<VisitTable />);

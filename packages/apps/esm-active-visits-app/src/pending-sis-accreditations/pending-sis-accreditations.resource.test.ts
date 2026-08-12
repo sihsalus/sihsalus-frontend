@@ -1,4 +1,11 @@
 import { getDefaultsFromConfigSchema, openmrsFetch } from '@openmrs/esm-framework';
+import {
+  FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+} from '@openmrs/esm-patient-common-lib';
 import { renderHook, waitFor } from '@testing-library/react';
 
 import { type ActiveVisitsConfigSchema, configSchema } from '../config-schema';
@@ -12,8 +19,9 @@ const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
 const config = (getDefaultsFromConfigSchema(configSchema) as ActiveVisitsConfigSchema).pendingSisAccreditations;
 
-const financiadorAttributeTypeUuid = config.financiadorVisitAttributeTypeUuid;
-const statusAttributeTypeUuid = config.accreditationStatusVisitAttributeTypeUuid;
+const financiadorAttributeTypeUuid = FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID;
+const statusAttributeTypeUuid = SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID;
+const checkedAtAttributeTypeUuid = SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID;
 const sisConceptUuid = '97c6e901-7570-4ab8-a9c0-9cf2b0f5bc0c';
 const legacySisGratuitoConceptUuid = 'b61a9ff9-1485-4388-9f67-9c341f847f85';
 const essaludConceptUuid = 'essalud-concept-uuid';
@@ -24,7 +32,9 @@ let visitCounter = 0;
 
 function buildVisit({
   financiador,
+  insuranceNumber,
   status,
+  checkedAt,
   personInsurance,
   startDatetime = '2026-07-17T08:00:00.000-0500',
   identifiers = [
@@ -35,7 +45,9 @@ function buildVisit({
   ],
 }: {
   financiador?: string | { uuid?: string };
+  insuranceNumber?: string;
   status?: string | { uuid?: string };
+  checkedAt?: string;
   personInsurance?: string | { uuid?: string };
   startDatetime?: string;
   identifiers?: NonNullable<RestActiveVisit['patient']>['identifiers'];
@@ -50,11 +62,25 @@ function buildVisit({
       attributeType: { uuid: financiadorAttributeTypeUuid },
     });
   }
+  if (insuranceNumber) {
+    attributes.push({
+      uuid: `insurance-number-attr-${visitCounter}`,
+      value: insuranceNumber,
+      attributeType: { uuid: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID },
+    });
+  }
   if (status) {
     attributes.push({
       uuid: `status-attr-${visitCounter}`,
       value: status,
       attributeType: { uuid: statusAttributeTypeUuid },
+    });
+  }
+  if (checkedAt) {
+    attributes.push({
+      uuid: `checked-at-attr-${visitCounter}`,
+      value: checkedAt,
+      attributeType: { uuid: checkedAtAttributeTypeUuid },
     });
   }
 
@@ -72,7 +98,7 @@ function buildVisit({
               {
                 uuid: `person-insurance-attr-${visitCounter}`,
                 value: personInsurance,
-                attributeType: { uuid: config.insuranceTypePersonAttributeTypeUuid },
+                attributeType: { uuid: INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID },
               },
             ],
           }
@@ -113,11 +139,15 @@ describe('filterPendingSisVisits', () => {
     });
     const verifiedActiveVisit = buildVisit({
       financiador: { uuid: sisConceptUuid },
+      insuranceNumber: 'SIS-0001',
       status: { uuid: activeStatusConceptUuid },
+      checkedAt: '2026-08-11T14:30:00.000-05:00',
     });
     const verifiedInactiveVisit = buildVisit({
       financiador: { uuid: sisConceptUuid },
+      insuranceNumber: 'SIS-0002',
       status: inactiveStatusConceptUuid,
+      checkedAt: '2026-08-11T14:31:00.000-05:00',
     });
     const noFinanciadorVisit = buildVisit({ status: config.pendingStatusConceptUuid });
 
@@ -127,6 +157,55 @@ describe('filterPendingSisVisits', () => {
     );
 
     expect(result).toEqual([]);
+  });
+
+  it('keeps a verified SIS status pending after reload when the checked-at write failed', () => {
+    const statusPersistedWithoutDate = buildVisit({
+      financiador: { uuid: sisConceptUuid },
+      insuranceNumber: 'SIS-0003',
+      status: { uuid: activeStatusConceptUuid },
+    });
+
+    const result = filterPendingSisVisits([statusPersistedWithoutDate], config);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      visitUuid: statusPersistedWithoutDate.uuid,
+      accreditationStatus: 'missingCheckedAt',
+    });
+  });
+
+  it('keeps a SIS visit pending when status and checked-at exist but the affiliation number is missing', () => {
+    const missingInsuranceNumber = buildVisit({
+      financiador: { uuid: sisConceptUuid },
+      status: { uuid: activeStatusConceptUuid },
+      checkedAt: '2026-08-11T14:30:00.000-05:00',
+    });
+
+    expect(filterPendingSisVisits([missingInsuranceNumber], config)).toEqual([
+      expect.objectContaining({
+        visitUuid: missingInsuranceNumber.uuid,
+        accreditationStatus: 'missingInsuranceNumber',
+      }),
+    ]);
+  });
+
+  it('keeps a failed SIS-to-other-payer synchronization visible by its old SIS payer marker', () => {
+    // Explicit synchronization invalidates the old status before staging the
+    // new coverage and only replaces the payer at commit time. If a staged
+    // write fails after the person changed to another IAFAS, this persisted
+    // intermediate state must remain recoverable from the SIS worklist.
+    const interruptedTransition = buildVisit({
+      financiador: { uuid: sisConceptUuid },
+      personInsurance: { uuid: essaludConceptUuid },
+    });
+
+    expect(filterPendingSisVisits([interruptedTransition], config)).toEqual([
+      expect.objectContaining({
+        visitUuid: interruptedTransition.uuid,
+        accreditationStatus: 'missing',
+      }),
+    ]);
   });
 
   it('prefers the DNI identifier and falls back to the first available identifier', () => {

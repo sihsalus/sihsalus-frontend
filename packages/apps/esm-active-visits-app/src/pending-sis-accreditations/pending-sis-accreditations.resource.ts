@@ -8,6 +8,13 @@
  * requieren verificación de acreditación.
  */
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import {
+  FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+} from '@openmrs/esm-patient-common-lib';
 import useSWR from 'swr';
 
 import { type PendingSisAccreditationsConfig } from '../config-schema';
@@ -67,7 +74,13 @@ interface VisitsResponse {
   results?: Array<RestActiveVisit>;
 }
 
-export type PendingAccreditationStatus = 'pending' | 'notConsulted' | 'missing' | 'financiadorNotCopied';
+export type PendingAccreditationStatus =
+  | 'pending'
+  | 'notConsulted'
+  | 'missing'
+  | 'missingInsuranceNumber'
+  | 'missingCheckedAt'
+  | 'financiadorNotCopied';
 
 export interface PendingSisVisit {
   visitUuid: string;
@@ -94,6 +107,14 @@ function findAttributeValueUuid(attributes: Array<RestVisitAttribute>, attribute
   return attribute ? getCodedValueUuid(attribute.value) : null;
 }
 
+function findAttributeTextValue(attributes: Array<RestVisitAttribute>, attributeTypeUuid: string): string | null {
+  const attribute = attributes.find((candidate) => candidate.attributeType?.uuid === attributeTypeUuid);
+  if (!attribute?.value) {
+    return null;
+  }
+  return typeof attribute.value === 'string' ? attribute.value.trim() || null : attribute.value.display?.trim() || null;
+}
+
 /** DNI primero; si el paciente no tiene DNI, el primer identificador disponible. */
 function getDisplayIdentifier(identifiers: Array<RestVisitIdentifier>, dniIdentifierTypeUuid: string): string {
   const dni = identifiers.find((identifier) => identifier.identifierType?.uuid === dniIdentifierTypeUuid);
@@ -103,8 +124,9 @@ function getDisplayIdentifier(identifiers: Array<RestVisitIdentifier>, dniIdenti
 /**
  * Filtra las visitas activas que necesitan verificación SIS: financiador SIS
  * (canónico o producto legado) con acreditación pendiente, no consultada o sin
- * registrar. Las visitas de otros financiadores y las ya verificadas
- * (vigente / no vigente) quedan fuera. Ordena de la más antigua a la más
+ * registrar. Estado y fecha/hora forman un bundle: una visita vigente/no
+ * vigente sin fecha sigue pendiente. Las visitas de otros financiadores y las
+ * ya verificadas con bundle completo quedan fuera. Ordena de la más antigua a la más
  * reciente (la que más tiempo lleva esperando primero).
  */
 export function filterPendingSisVisits(
@@ -115,10 +137,10 @@ export function filterPendingSisVisits(
 
   for (const visit of visits) {
     const attributes = visit.attributes ?? [];
-    const financiadorUuid = findAttributeValueUuid(attributes, config.financiadorVisitAttributeTypeUuid);
+    const financiadorUuid = findAttributeValueUuid(attributes, FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID);
     const personInsuranceUuid = findAttributeValueUuid(
       visit.patient?.person?.attributes ?? [],
-      config.insuranceTypePersonAttributeTypeUuid,
+      INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
     );
 
     let accreditationStatus: PendingAccreditationStatus;
@@ -134,7 +156,9 @@ export function filterPendingSisVisits(
     } else if (!config.sisConceptUuids.includes(financiadorUuid)) {
       continue;
     } else {
-      const statusUuid = findAttributeValueUuid(attributes, config.accreditationStatusVisitAttributeTypeUuid);
+      const statusUuid = findAttributeValueUuid(attributes, SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID);
+      const insuranceNumber = findAttributeTextValue(attributes, INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID);
+      const checkedAt = findAttributeTextValue(attributes, SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID);
 
       if (statusUuid === config.pendingStatusConceptUuid) {
         accreditationStatus = 'pending';
@@ -142,8 +166,12 @@ export function filterPendingSisVisits(
         accreditationStatus = 'notConsulted';
       } else if (!statusUuid) {
         accreditationStatus = 'missing';
+      } else if (!insuranceNumber) {
+        accreditationStatus = 'missingInsuranceNumber';
+      } else if (!checkedAt) {
+        accreditationStatus = 'missingCheckedAt';
       } else {
-        // Vigente o no vigente: ya fue verificada, no es trabajo pendiente.
+        // Vigente o no vigente con fecha: bundle completo, no es trabajo pendiente.
         continue;
       }
     }
@@ -167,7 +195,7 @@ export function filterPendingSisVisits(
 }
 
 export function usePendingSisAccreditations(config: PendingSisAccreditationsConfig, isEnabled = true) {
-  const { data, error, isLoading, isValidating } = useSWR<FetchResponse<VisitsResponse>, Error>(
+  const { data, error, isLoading, isValidating, mutate } = useSWR<FetchResponse<VisitsResponse>, Error>(
     isEnabled ? pendingSisVisitsUrl : null,
     openmrsFetch,
     { refreshInterval: refreshIntervalMs },
@@ -178,5 +206,6 @@ export function usePendingSisAccreditations(config: PendingSisAccreditationsConf
     error,
     isLoading,
     isValidating,
+    mutate,
   };
 }

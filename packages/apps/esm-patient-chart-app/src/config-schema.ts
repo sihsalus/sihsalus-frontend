@@ -1,4 +1,56 @@
 import { Type } from '@openmrs/esm-framework';
+import {
+  ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID,
+  ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID,
+  FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+} from '@openmrs/esm-patient-common-lib';
+
+const canonicalCoverageVisitAttributeTypes = [
+  {
+    uuid: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+    required: false,
+    displayInThePatientBanner: false,
+  },
+  {
+    uuid: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+    required: false,
+    displayInThePatientBanner: false,
+  },
+  {
+    uuid: SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+    required: false,
+    displayInThePatientBanner: false,
+  },
+  {
+    uuid: SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
+    required: false,
+    displayInThePatientBanner: false,
+  },
+] as const;
+
+const canonicalCoveragePersonAttributeMappings = [
+  {
+    personAttributeTypeUuid: INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
+    visitAttributeTypeUuid: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  },
+  {
+    personAttributeTypeUuid: INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID,
+    visitAttributeTypeUuid: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+  },
+  {
+    personAttributeTypeUuid: ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID,
+    visitAttributeTypeUuid: SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+  },
+  {
+    personAttributeTypeUuid: ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID,
+    visitAttributeTypeUuid: SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
+  },
+] as const;
 
 export const esmPatientChartSchema = {
   defaultFacilityUrl: {
@@ -185,21 +237,7 @@ export const esmPatientChartSchema = {
       },
     },
     _default: [
-      {
-        uuid: '3a988e33-a6c0-4b76-b924-01abb998944b',
-        required: false,
-        displayInThePatientBanner: false,
-      },
-      {
-        uuid: 'aac48226-d143-4274-80e0-264db4e368ee',
-        required: false,
-        displayInThePatientBanner: false,
-      },
-      {
-        uuid: '5e13e902-2030-4f65-b9d5-9a4810c9a603',
-        required: false,
-        displayInThePatientBanner: false,
-      },
+      ...canonicalCoverageVisitAttributeTypes,
       {
         uuid: '9b640334-69e7-49a8-bc8d-1a379742f2f1',
         required: false,
@@ -287,20 +325,7 @@ export const esmPatientChartSchema = {
         _description: 'UUID of the visit attribute type used as target',
       },
     },
-    _default: [
-      {
-        personAttributeTypeUuid: '56188294-b42c-481d-a987-4b495116c580',
-        visitAttributeTypeUuid: '3a988e33-a6c0-4b76-b924-01abb998944b',
-      },
-      {
-        personAttributeTypeUuid: '374b130f-7457-476f-87b1-f182aa77c434',
-        visitAttributeTypeUuid: 'aac48226-d143-4274-80e0-264db4e368ee',
-      },
-      {
-        personAttributeTypeUuid: '9b3df0a1-0c58-4f55-9868-9c38f1db1005',
-        visitAttributeTypeUuid: '5e13e902-2030-4f65-b9d5-9a4810c9a603',
-      },
-    ],
+    _default: canonicalCoveragePersonAttributeMappings,
   },
   visitDiagnosisConceptUuid: {
     _default: '159947AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
@@ -392,4 +417,47 @@ export interface VisitTypeEligibilityRule {
   locationUuid: string;
   visitTypeUuids: Array<string>;
   allowedGenders?: Array<string>;
+}
+
+/**
+ * The coverage UUIDs are an installation contract shared with Active Visits
+ * and FUA. Generic array overrides may add presentation fields, but cannot
+ * remove the four canonical coverage attributes from Start/Edit Visit.
+ */
+export function resolveCanonicalCoverageVisitAttributeTypes(
+  configuredTypes: ChartConfig['visitAttributeTypes'] = [],
+): ChartConfig['visitAttributeTypes'] {
+  const resolvedTypes = [...configuredTypes];
+  for (const canonicalType of canonicalCoverageVisitAttributeTypes) {
+    if (!resolvedTypes.some(({ uuid }) => uuid === canonicalType.uuid)) {
+      resolvedTypes.push({ ...canonicalType });
+    }
+  }
+  return resolvedTypes;
+}
+
+/**
+ * Canonical person-to-visit coverage mappings always win over an isolated
+ * Chart override. Unrelated custom mappings remain configurable.
+ */
+export function resolveCanonicalCoveragePersonAttributeMappings(
+  configuredMappings: ChartConfig['defaultVisitAttributesFromPersonAttributes'] = [],
+): ChartConfig['defaultVisitAttributesFromPersonAttributes'] {
+  const canonicalSources = new Set<string>(
+    canonicalCoveragePersonAttributeMappings.map(({ personAttributeTypeUuid }) => personAttributeTypeUuid),
+  );
+  const canonicalTargets = new Set<string>(
+    canonicalCoveragePersonAttributeMappings.map(({ visitAttributeTypeUuid }) => visitAttributeTypeUuid),
+  );
+  const customMappings = configuredMappings.filter(
+    ({ personAttributeTypeUuid, visitAttributeTypeUuid }) =>
+      !canonicalSources.has(personAttributeTypeUuid) && !canonicalTargets.has(visitAttributeTypeUuid),
+  );
+
+  return [
+    ...canonicalCoveragePersonAttributeMappings.map((mapping) => ({
+      ...mapping,
+    })),
+    ...customMappings,
+  ];
 }

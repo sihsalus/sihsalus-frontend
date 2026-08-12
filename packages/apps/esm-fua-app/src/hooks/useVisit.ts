@@ -1,8 +1,11 @@
 import { makeUrl, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import {
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
   getCodedValueUuid,
+  getTextValue,
   type RestAttributeValue,
 } from '@openmrs/esm-patient-common-lib';
 import { getPreferredIdentifier } from '@openmrs/esm-utils';
@@ -53,9 +56,19 @@ export function getVisitFinanciadorDisplay(visit: VisitSummary): string | null {
   return typeof value === 'string' ? value.trim() || null : null;
 }
 
+/** Número de afiliación o póliza persistido en la visita, o null si el bundle está incompleto. */
+export function getVisitInsuranceNumber(visit: VisitSummary): string | null {
+  return getTextValue(getVisitAttributeValue(visit, INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID));
+}
+
 /** UUID del concepto de Estado de Acreditación SIS de la visita, o null si no está registrado. */
 export function getVisitAccreditationStatusUuid(visit: VisitSummary): string | null {
   return getCodedValueUuid(getVisitAttributeValue(visit, SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID));
+}
+
+/** Fecha/hora que prueba cuándo se consultó la acreditación SIS, o null si el bundle quedó incompleto. */
+export function getVisitAccreditationCheckedAt(visit: VisitSummary): string | null {
+  return getTextValue(getVisitAttributeValue(visit, SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID));
 }
 
 /**

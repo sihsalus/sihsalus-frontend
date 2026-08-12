@@ -65,7 +65,8 @@
       "component": "markPatientAliveActionButton",
       "privileges": [
         "app:hoja.clinica",
-        "app:hoja.clinica.estadoVitalPaciente"
+        "app:hoja.clinica.estadoVitalPaciente",
+        "Edit People"
       ],
       "online": true,
       "offline": true,
@@ -111,7 +112,8 @@
       "component": "markPatientDeceasedActionButton",
       "privileges": [
         "app:hoja.clinica",
-        "app:hoja.clinica.estadoVitalPaciente"
+        "app:hoja.clinica.estadoVitalPaciente",
+        "Edit People"
       ],
       "online": true,
       "offline": true,
@@ -280,7 +282,8 @@
       "component": "markPatientAliveModal",
       "privileges": [
         "app:hoja.clinica",
-        "app:hoja.clinica.estadoVitalPaciente"
+        "app:hoja.clinica.estadoVitalPaciente",
+        "Edit People"
       ]
     },
     {
@@ -328,7 +331,8 @@
       "window": "mark-patient-deceased-workspace-window",
       "privileges": [
         "app:hoja.clinica",
-        "app:hoja.clinica.estadoVitalPaciente"
+        "app:hoja.clinica.estadoVitalPaciente",
+        "Edit People"
       ]
     }
   ],

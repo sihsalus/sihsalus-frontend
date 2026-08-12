@@ -8,6 +8,8 @@ import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 
 import customOverflowMenuStyles from '../../custom-overflow-menu/custom-overflow-menu.module.scss';
 import styles from './patient-banner-actions-menu.module.scss';
 
+const actionItemSelector = '[role="menuitem"], button, a[href]';
+
 export interface PatientBannerActionsMenuProps {
   patient: fhir.Patient;
   patientUuid: string;
@@ -32,6 +34,7 @@ export function PatientBannerActionsMenu({
   additionalActionsSlotState,
 }: PatientBannerActionsMenuProps) {
   const [menuIsOpen, setMenuIsOpen] = useState(false);
+  const [hasRenderedActions, setHasRenderedActions] = useState(false);
   const { extensions: patientActions } = useExtensionSlot(actionsSlotName);
   const isTablet = useLayoutType() === 'tablet';
   const ref = useOnClickOutside<HTMLDivElement>(() => setMenuIsOpen(false), menuIsOpen);
@@ -88,6 +91,36 @@ export function PatientBannerActionsMenu({
     }
   }, [menuIsOpen]);
 
+  useEffect(() => {
+    if (patientActions.length === 0) {
+      setHasRenderedActions(false);
+      return;
+    }
+
+    const menu = menuRef.current;
+
+    if (!menu) {
+      setHasRenderedActions(false);
+      return;
+    }
+
+    const updateRenderedActions = () => {
+      const hasActions = Boolean(menu.querySelector(actionItemSelector));
+      setHasRenderedActions(hasActions);
+
+      if (!hasActions) {
+        setMenuIsOpen(false);
+      }
+    };
+
+    updateRenderedActions();
+
+    const observer = new MutationObserver(updateRenderedActions);
+    observer.observe(menu, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, [patientActions.length]);
+
   const patientActionsSlotState = useMemo(
     () => ({ patientUuid, patient, closeMenu: closeMenuAndFocusTrigger, ...additionalActionsSlotState }),
     [patientUuid, patient, closeMenuAndFocusTrigger, additionalActionsSlotState],
@@ -98,7 +131,7 @@ export function PatientBannerActionsMenu({
   }
 
   return (
-    <div className={styles.overflowMenuContainer}>
+    <div className={styles.overflowMenuContainer} hidden={!hasRenderedActions}>
       <div
         data-overflow-menu
         className={classNames('cds--overflow-menu', customOverflowMenuStyles.container)}

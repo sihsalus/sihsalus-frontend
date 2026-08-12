@@ -409,6 +409,9 @@ async function createQueueEntry(
     visitQueueNumberAttributeUuid,
     visitStartDatetime,
   );
+  if (!persistedTicket.queueNumber) {
+    await assertFreshPatientIsAlive(patientUuid);
+  }
   const { startedAt } = persistedTicket.queueNumber
     ? { startedAt: persistedTicket.startedAt }
     : await generateVisitQueueNumber(

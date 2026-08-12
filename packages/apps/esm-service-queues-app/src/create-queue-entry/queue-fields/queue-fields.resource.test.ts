@@ -408,6 +408,23 @@ describe('postQueueEntry', () => {
     expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('/visit-queue-entry'))).toBe(false);
   });
 
+  it('re-checks immediately before ticket generation after the visit read', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce(visitWithoutQueueTicket);
+    mockAssertFreshPatientIsAlive
+      .mockResolvedValueOnce({ dead: false, deathDate: null, isDeceased: false })
+      .mockRejectedValueOnce(
+        Object.assign(new Error('deceased patient'), { code: DECEASED_PATIENT_OPERATION_BLOCKED }),
+      );
+
+    await expect(createQueueEntry()).rejects.toMatchObject({ code: DECEASED_PATIENT_OPERATION_BLOCKED });
+
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('/queue-entry-number'))).toBe(false);
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('/visit-queue-entry'))).toBe(false);
+  });
+
   it('re-checks after ticket generation and does not create an entry when the patient dies meanwhile', async () => {
     mockOpenmrsFetch
       .mockResolvedValueOnce({ data: { results: [] } } as never)
@@ -418,6 +435,7 @@ describe('postQueueEntry', () => {
         headers: new Headers({ Date: 'Tue, 14 Jul 2026 15:30:00 GMT' }),
       } as never);
     mockAssertFreshPatientIsAlive
+      .mockResolvedValueOnce({ dead: false, deathDate: null, isDeceased: false })
       .mockResolvedValueOnce({ dead: false, deathDate: null, isDeceased: false })
       .mockRejectedValueOnce(
         Object.assign(new Error('deceased patient'), { code: DECEASED_PATIENT_OPERATION_BLOCKED }),

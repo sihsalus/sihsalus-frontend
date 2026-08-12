@@ -668,6 +668,7 @@ describe('AppointmentArrivalModal', () => {
       financiadorUuid: 'sis-uuid',
       insuranceNumber: 'SIS-123',
       accreditationStatusUuid: 'active-status-uuid',
+      accreditationCheckedAt: '2026-08-11T14:30:00.000-05:00',
     });
     mockGetSisFinancingState.mockReturnValue('active');
 

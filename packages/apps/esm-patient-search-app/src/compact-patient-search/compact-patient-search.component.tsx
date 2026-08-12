@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 
 import { type PatientSearchConfig } from '../config-schema';
 import useArrowNavigation from '../hooks/useArrowNavigation';
+import { usePatientChartAccess } from '../patient-chart-access';
 import { isPatientSearchTermValid, limitPatientSearchTerm } from '../patient-search-constants';
 import {
   isForbiddenUserPropertiesError,
@@ -39,6 +40,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
   shouldNavigateToPatientSearchPage,
 }) => {
   const { t } = useTranslation();
+  const canAccessPatientChart = usePatientChartAccess();
 
   const bannerContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -113,6 +115,10 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
     (evt: React.KeyboardEvent<HTMLElement>, index: number) => {
       const patient = patientsForKeyboardNavigation?.[index];
       if (patient) {
+        if (!canAccessPatientChart) {
+          return;
+        }
+
         evt.preventDefault();
         void addViewedPatientAndCloseSearchResults(patient.uuid);
         navigate({
@@ -122,7 +128,12 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
         });
       }
     },
-    [addViewedPatientAndCloseSearchResults, config.search.patientChartUrl, patientsForKeyboardNavigation],
+    [
+      addViewedPatientAndCloseSearchResults,
+      canAccessPatientChart,
+      config.search.patientChartUrl,
+      patientsForKeyboardNavigation,
+    ],
   );
 
   const isEventFromFocusedResult = useCallback((event: React.KeyboardEvent<HTMLElement>, index: number) => {
@@ -131,7 +142,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
   }, []);
 
   const { focusedResult, handleKeyPress, resetFocusedResult } = useArrowNavigation(
-    patientsForKeyboardNavigation?.length ?? 0,
+    canAccessPatientChart ? (patientsForKeyboardNavigation?.length ?? 0) : 0,
     handlePatientSelection,
     handleFocusToInput,
     {

@@ -1,8 +1,15 @@
-import { getDefaultsFromConfigSchema, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import {
+  getDefaultsFromConfigSchema,
+  restBaseUrl,
+  userHasAccess,
+  useConfig,
+  useSession,
+} from '@openmrs/esm-framework';
 import { render, screen, within } from '@testing-library/react';
 import dayjs from 'dayjs';
 
 import { configSchema, type PatientSearchConfig } from '../config-schema';
+import { patientChartPrivilege } from '../patient-chart-access';
 import { PatientSearchContext } from '../patient-search-context';
 import { type SearchedPatient } from '../types';
 
@@ -20,6 +27,12 @@ const defaultProps = {
 };
 
 const mockUseConfig = vi.mocked(useConfig<PatientSearchConfig>);
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
+const clinicalUser = {
+  privileges: [{ display: patientChartPrivilege }],
+  roles: [],
+};
 
 describe('RecentlySearchedPatients', () => {
   const birthdate = '1990-01-01T00:00:00.000+0000';
@@ -69,7 +82,11 @@ describe('RecentlySearchedPatients', () => {
     },
   ];
 
-  beforeEach(() => mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema)));
+  beforeEach(() => {
+    mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
+    mockUseSession.mockReturnValue({ user: clinicalUser } as ReturnType<typeof useSession>);
+    mockUserHasAccess.mockImplementation((privilege) => privilege === patientChartPrivilege);
+  });
 
   it('renders a loading state when fetching recently searched patients on initial render', () => {
     renderRecentlySearchedPatients({

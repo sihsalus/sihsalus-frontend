@@ -1,8 +1,16 @@
-import { getDefaultsFromConfigSchema, logError, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import {
+  getDefaultsFromConfigSchema,
+  logError,
+  restBaseUrl,
+  userHasAccess,
+  useConfig,
+  useSession,
+} from '@openmrs/esm-framework';
 import { render, screen, within } from '@testing-library/react';
 import dayjs from 'dayjs';
 
 import { configSchema } from '../config-schema';
+import { patientChartPrivilege } from '../patient-chart-access';
 import { PatientSearchContext } from '../patient-search-context';
 import { type SearchedPatient } from '../types';
 
@@ -22,11 +30,19 @@ const defaultProps = {
 
 const mockUseConfig = vi.mocked(useConfig);
 const mockLogError = vi.mocked(logError);
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
+const clinicalUser = {
+  privileges: [{ display: patientChartPrivilege }],
+  roles: [],
+};
 
 describe('PatientSearch', () => {
   beforeEach(() => {
     mockLogError.mockClear();
     mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
+    mockUseSession.mockReturnValue({ user: clinicalUser } as ReturnType<typeof useSession>);
+    mockUserHasAccess.mockImplementation((privilege) => privilege === patientChartPrivilege);
   });
 
   it('renders a loading state when search results are being fetched', () => {

@@ -3,6 +3,7 @@ import classNames from 'classnames';
 import React, { forwardRef, useCallback, useContext, useMemo } from 'react';
 
 import { type PatientSearchConfig } from '../config-schema';
+import { usePatientChartAccess } from '../patient-chart-access';
 import { PatientSearchContext } from '../patient-search-context';
 import {
   getSearchedPatientDisplayName,
@@ -47,6 +48,7 @@ const CompactPatientBanner = forwardRef<HTMLDivElement, CompactPatientBannerProp
 const ClickablePatientContainer = ({ patient, children }: ClickablePatientContainerProps) => {
   const { nonNavigationSelectPatientAction, patientClickSideEffect } = useContext(PatientSearchContext);
   const config = useConfig<PatientSearchConfig>();
+  const canAccessPatientChart = usePatientChartAccess();
   const isDeceased = Boolean(patient?.person?.dead || patient?.person?.deathDate);
 
   if (nonNavigationSelectPatientAction) {
@@ -54,9 +56,14 @@ const ClickablePatientContainer = ({ patient, children }: ClickablePatientContai
       <button
         aria-label={getSearchedPatientDisplayName(patient)}
         type="button"
-        className={classNames(styles.patientSearchResult, styles.patientSearchResultButton, {
-          [styles.deceased]: isDeceased,
-        })}
+        className={classNames(
+          styles.patientSearchResult,
+          styles.patientSearchResultInteractive,
+          styles.patientSearchResultButton,
+          {
+            [styles.deceased]: isDeceased,
+          },
+        )}
         onClick={() => {
           nonNavigationSelectPatientAction(patient.uuid);
           patientClickSideEffect?.(patient.uuid);
@@ -67,18 +74,26 @@ const ClickablePatientContainer = ({ patient, children }: ClickablePatientContai
     );
   }
 
+  if (canAccessPatientChart) {
+    return (
+      <ConfigurableLink
+        aria-label={getSearchedPatientDisplayName(patient)}
+        className={classNames(styles.patientSearchResult, styles.patientSearchResultInteractive, {
+          [styles.deceased]: isDeceased,
+        })}
+        onBeforeNavigate={() => patientClickSideEffect?.(patient.uuid)}
+        to={config.search.patientChartUrl}
+        templateParams={{ patientUuid: patient.uuid }}
+      >
+        {children}
+      </ConfigurableLink>
+    );
+  }
+
   return (
-    <ConfigurableLink
-      aria-label={getSearchedPatientDisplayName(patient)}
-      className={classNames(styles.patientSearchResult, {
-        [styles.deceased]: isDeceased,
-      })}
-      onBeforeNavigate={() => patientClickSideEffect?.(patient.uuid)}
-      to={config.search.patientChartUrl}
-      templateParams={{ patientUuid: patient.uuid }}
-    >
+    <div className={classNames(styles.patientSearchResult, { [styles.deceased]: isDeceased })}>
       {children}
-    </ConfigurableLink>
+    </div>
   );
 };
 

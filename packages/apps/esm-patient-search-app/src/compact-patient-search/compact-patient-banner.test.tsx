@@ -1,15 +1,28 @@
-import { getDefaultsFromConfigSchema, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import {
+  getDefaultsFromConfigSchema,
+  restBaseUrl,
+  userHasAccess,
+  useConfig,
+  useSession,
+} from '@openmrs/esm-framework';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
 
 import { configSchema, type PatientSearchConfig } from '../config-schema';
+import { patientChartPrivilege } from '../patient-chart-access';
 import { PatientSearchContext } from '../patient-search-context';
 import { type SearchedPatient } from '../types';
 
 import CompactPatientBanner from './compact-patient-banner.component';
 
 const mockUseConfig = vi.mocked(useConfig<PatientSearchConfig>);
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
+const clinicalUser = {
+  privileges: [{ display: patientChartPrivilege }],
+  roles: [],
+};
 
 const birthdate = '1990-01-01T00:00:00.000+0000';
 const age = dayjs().diff(birthdate, 'years');
@@ -59,7 +72,11 @@ const patients: Array<SearchedPatient> = [
 ];
 
 describe('CompactPatientBanner', () => {
-  beforeEach(() => mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema)));
+  beforeEach(() => {
+    mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
+    mockUseSession.mockReturnValue({ user: clinicalUser } as ReturnType<typeof useSession>);
+    mockUserHasAccess.mockImplementation((privilege) => privilege === patientChartPrivilege);
+  });
 
   it('renders a compact patient banner', () => {
     render(
@@ -111,6 +128,37 @@ describe('CompactPatientBanner', () => {
     expect(nonNavigationSelectPatientAction).toHaveBeenCalledWith('test-patient-uuid');
     expect(patientClickSideEffect).toHaveBeenCalledOnce();
     expect(patientClickSideEffect).toHaveBeenCalledWith('test-patient-uuid');
+  });
+
+  it('renders static patient information without a chart link when access is denied', () => {
+    mockUserHasAccess.mockReturnValue(false);
+
+    render(
+      <PatientSearchContext.Provider value={{}}>
+        <CompactPatientBanner patients={patients} />
+      </PatientSearchContext.Provider>,
+    );
+
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Smith, John Doe' })).not.toBeInTheDocument();
+    expect(screen.getByText(/Smith, John Doe/)).toBeInTheDocument();
+    expect(mockUserHasAccess).toHaveBeenCalledWith(patientChartPrivilege, clinicalUser);
+  });
+
+  it('keeps contextual selection available when chart access is denied', async () => {
+    const nonNavigationSelectPatientAction = vi.fn();
+    const user = userEvent.setup();
+    mockUserHasAccess.mockReturnValue(false);
+
+    render(
+      <PatientSearchContext.Provider value={{ nonNavigationSelectPatientAction }}>
+        <CompactPatientBanner patients={patients} />
+      </PatientSearchContext.Provider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Smith, John Doe' }));
+    expect(nonNavigationSelectPatientAction).toHaveBeenCalledWith('test-patient-uuid');
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 
   it('renders patients whose optional identifier metadata is incomplete', () => {

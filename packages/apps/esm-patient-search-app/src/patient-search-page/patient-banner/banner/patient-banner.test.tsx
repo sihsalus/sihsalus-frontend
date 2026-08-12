@@ -1,8 +1,15 @@
-import { ExtensionSlot, PatientBannerActionsMenu, useVisit } from '@openmrs/esm-framework';
+import {
+  ExtensionSlot,
+  PatientBannerActionsMenu,
+  userHasAccess,
+  useSession,
+  useVisit,
+} from '@openmrs/esm-framework';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { mockAdvancedSearchResults } from 'test-utils';
 
 import { PatientSearchContext, PatientSearchContext2 } from '../../../patient-search-context';
+import { patientChartPrivilege } from '../../../patient-chart-access';
 import { type SearchedPatient } from '../../../types';
 
 import PatientBanner from './patient-banner.component';
@@ -12,6 +19,8 @@ vi.mock('../../../sihsalus-patient-info/sihsalus-patient-info.component', () => 
 }));
 
 const mockUseVisit = vi.mocked(useVisit);
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockExtensionSlot = vi.mocked(ExtensionSlot);
 const mockPatientBannerActionsMenu = vi.mocked(PatientBannerActionsMenu);
 
@@ -33,6 +42,10 @@ vi.mock('@openmrs/esm-framework', async () => ({
 
 const patient = mockAdvancedSearchResults[0] as unknown as SearchedPatient;
 const activeVisit = { uuid: 'active-visit-uuid' } as unknown as NonNullable<ReturnType<typeof useVisit>['activeVisit']>;
+const clinicalUser = {
+  privileges: [{ display: patientChartPrivilege }],
+  roles: [],
+};
 
 function mockVisitReturn(overrides: Partial<ReturnType<typeof useVisit>>) {
   return {
@@ -82,6 +95,8 @@ describe('PatientBanner', () => {
   beforeEach(() => {
     mockExtensionSlot.mockClear();
     mockPatientBannerActionsMenu.mockClear();
+    mockUseSession.mockReturnValue({ user: clinicalUser } as ReturnType<typeof useSession>);
+    mockUserHasAccess.mockImplementation((privilege) => privilege === patientChartPrivilege);
   });
 
   it('does not show the start visit action when the patient has an active visit', () => {
@@ -100,8 +115,27 @@ describe('PatientBanner', () => {
     render(<PatientBanner patient={patient} patientUuid={patient.uuid} />);
 
     expect(screen.getByRole('button', { name: /start visit/i })).toBeInTheDocument();
+    expect(screen.getByRole('link')).toBeInTheDocument();
     expect(getRenderedSlotNames()).toEqual(['patient-search-primary-actions-slot', 'start-visit-button-slot']);
     expect(mockPatientBannerActionsMenu).toHaveBeenCalledOnce();
+    expect(mockPatientBannerActionsMenu.mock.calls[0][0].additionalActionsSlotState).toEqual(
+      expect.objectContaining({ launchPatientChart: true }),
+    );
+  });
+
+  it('renders a non-interactive standalone card when the user cannot access the patient chart', () => {
+    mockUseVisit.mockReturnValue(mockVisitReturn({}));
+    mockUserHasAccess.mockReturnValue(false);
+
+    render(<PatientBanner patient={patient} patientUuid={patient.uuid} />);
+
+    expect(screen.getByText('Joshua Johnson')).toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Joshua Johnson/i })).not.toBeInTheDocument();
+    expect(mockUserHasAccess).toHaveBeenCalledWith(patientChartPrivilege, clinicalUser);
+    expect(mockPatientBannerActionsMenu.mock.calls[0][0].additionalActionsSlotState).toEqual(
+      expect.objectContaining({ launchPatientChart: false }),
+    );
   });
 
   it('hides unrelated patient actions in legacy embedded selection mode', () => {
@@ -126,6 +160,19 @@ describe('PatientBanner', () => {
     expect(getRenderedSlotNames()).toEqual([]);
     expect(mockPatientBannerActionsMenu).not.toHaveBeenCalled();
 
+    fireEvent.click(screen.getByRole('button', { name: /Joshua Johnson/i }));
+    expect(onPatientSelected).toHaveBeenCalledOnce();
+    expect(onPatientSelected.mock.calls[0][0]).toBe(patient.uuid);
+  });
+
+  it('keeps Context2 patient selection interactive without patient-chart access', () => {
+    mockUseVisit.mockReturnValue(mockVisitReturn({}));
+    mockUserHasAccess.mockReturnValue(false);
+    const onPatientSelected = vi.fn();
+
+    renderPatientBannerWithContext2(patient, onPatientSelected);
+
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Joshua Johnson/i }));
     expect(onPatientSelected).toHaveBeenCalledOnce();
     expect(onPatientSelected.mock.calls[0][0]).toBe(patient.uuid);

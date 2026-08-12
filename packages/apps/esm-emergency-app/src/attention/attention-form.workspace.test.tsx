@@ -64,13 +64,14 @@ describe('AttentionFormWorkspace', () => {
     const closeError = new TypeError('queue close response lost');
     mockEndEmergencyQueueEntry.mockRejectedValueOnce(closeError).mockResolvedValueOnce({ data: {} } as never);
     const closeWorkspace = vi.fn();
+    const promptBeforeClosing = vi.fn();
     const user = userEvent.setup();
     render(
       <AttentionFormWorkspace
         queueEntry={queueEntry}
         closeWorkspace={closeWorkspace}
         closeWorkspaceWithSavedChanges={vi.fn()}
-        promptBeforeClosing={vi.fn()}
+        promptBeforeClosing={promptBeforeClosing}
         setTitle={vi.fn()}
       />,
     );
@@ -82,12 +83,59 @@ describe('AttentionFormWorkspace', () => {
     await waitFor(() => expect(mockEndEmergencyQueueEntry).toHaveBeenCalledOnce());
     expect(mockCreateAttentionEncounter).toHaveBeenCalledOnce();
     expect(closeWorkspace).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Diagnóstico(s) del paciente')).toBeDisabled();
+    expect(screen.getByLabelText('Plan de tratamiento')).toBeDisabled();
+    expect(screen.getByLabelText('Exámenes solicitados o realizados')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled();
+    expect(screen.getByText('Finalización pendiente')).toBeInTheDocument();
+    expect(screen.getByText(/la atención ya fue registrada/i)).toBeInTheDocument();
+    expect(promptBeforeClosing.mock.calls.at(-1)?.[0]()).toBe(true);
 
-    await user.click(screen.getByRole('button', { name: 'Guardar atención' }));
+    await user.click(screen.getByRole('button', { name: 'Reintentar finalización' }));
 
     await waitFor(() => expect(closeWorkspace).toHaveBeenCalledOnce());
     expect(mockCreateAttentionEncounter).toHaveBeenCalledOnce();
     expect(mockEndEmergencyQueueEntry).toHaveBeenCalledTimes(2);
     expect(mockShowSnackbar.mock.calls.filter(([options]) => options.kind === 'error')).toHaveLength(1);
+  });
+
+  it('locks the original payload and exposes a safe retry when encounter creation is uncertain', async () => {
+    const createError = new TypeError('encounter response lost');
+    mockCreateAttentionEncounter
+      .mockRejectedValueOnce(createError)
+      .mockResolvedValueOnce({ data: { uuid: 'encounter-uuid' } } as never);
+    const closeWorkspace = vi.fn();
+    const promptBeforeClosing = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <AttentionFormWorkspace
+        queueEntry={queueEntry}
+        closeWorkspace={closeWorkspace}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        promptBeforeClosing={promptBeforeClosing}
+        setTitle={vi.fn()}
+      />,
+    );
+
+    await user.type(screen.getByLabelText('Diagnóstico(s) del paciente'), 'Trauma');
+    await user.type(screen.getByLabelText('Plan de tratamiento'), 'Sutura');
+    await user.click(screen.getByRole('button', { name: 'Guardar atención' }));
+
+    await waitFor(() => expect(mockCreateAttentionEncounter).toHaveBeenCalledOnce());
+    const originalPayload = mockCreateAttentionEncounter.mock.calls[0][0];
+    expect(screen.getByLabelText('Diagnóstico(s) del paciente')).toBeDisabled();
+    expect(screen.getByLabelText('Plan de tratamiento')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled();
+    expect(screen.getByText(/el intento quedó protegido/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reintentar finalización' })).toBeEnabled();
+    expect(promptBeforeClosing.mock.calls.at(-1)?.[0]()).toBe(true);
+    expect(mockEndEmergencyQueueEntry).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Reintentar finalización' }));
+
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalledOnce());
+    expect(mockCreateAttentionEncounter).toHaveBeenCalledTimes(2);
+    expect(mockCreateAttentionEncounter.mock.calls[1][0]).toEqual(originalPayload);
+    expect(mockEndEmergencyQueueEntry).toHaveBeenCalledOnce();
   });
 });

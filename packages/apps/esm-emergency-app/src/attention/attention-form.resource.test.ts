@@ -10,6 +10,7 @@ import {
   EMERGENCY_ATTENTION_ENCOUNTER_CONFLICT,
   EMERGENCY_ATTENTION_ENCOUNTER_CREATION_UNVERIFIED,
   EMERGENCY_ATTENTION_ENCOUNTER_SEARCH_STALLED,
+  EMERGENCY_ATTENTION_ENCOUNTER_TIME_UNAVAILABLE,
   getAttentionEncounterUuid,
 } from './attention-form.resource';
 
@@ -33,7 +34,6 @@ const input = {
   visitUuid: 'visit-uuid',
   encounterTypeUuid: 'encounter-type-uuid',
   locationUuid: 'location-uuid',
-  encounterDatetime: '2026-08-12T15:00:00.123Z',
   observations: [
     { conceptUuid: 'diagnosis-concept', value: ' Trauma ' },
     { conceptUuid: 'treatment-concept', value: ' Sutura ' },
@@ -105,7 +105,6 @@ describe('createAttentionEncounter', () => {
           encounterType: input.encounterTypeUuid,
           visit: input.visitUuid,
           location: input.locationUuid,
-          encounterDatetime: '2026-08-12T15:00:00.000Z',
           obs: [
             { concept: 'diagnosis-concept', value: 'Trauma' },
             { concept: 'treatment-concept', value: 'Sutura' },
@@ -171,7 +170,7 @@ describe('createAttentionEncounter', () => {
   });
 
   it('reuses the exact deterministic encounter without another clinical write', async () => {
-    const persisted = persistedEncounter();
+    const persisted = { ...persistedEncounter(), encounterDatetime: '2026-08-12T15:45:00.000Z' };
     mockOpenmrsFetch.mockResolvedValueOnce(response(persisted));
 
     await expect(createAttentionEncounter(input)).resolves.toMatchObject({ data: { uuid: persisted.uuid } });
@@ -181,7 +180,7 @@ describe('createAttentionEncounter', () => {
 
   it.each([
     ['different visit', { visit: { uuid: 'different-visit' } }],
-    ['different datetime', { encounterDatetime: '2026-08-12T15:00:01.000Z' }],
+    ['invalid datetime', { encounterDatetime: 'not-a-date' }],
     ['different observations', { obs: [{ concept: { uuid: 'diagnosis-concept' }, value: 'Other' }] }],
   ])('rejects a deterministic UUID containing %s', async (_reason, override) => {
     mockOpenmrsFetch.mockResolvedValueOnce(response({ ...persistedEncounter(), ...override }));
@@ -242,7 +241,7 @@ describe('createAttentionEncounter', () => {
     expect(mockOpenmrsFetch.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
   });
 
-  it('ignores a different legitimate encounter in the same visit and creates the requested one', async () => {
+  it('rejects a different legacy encounter in the same queue window instead of duplicating attention', async () => {
     const other = {
       ...persistedEncounter('other-encounter'),
       obs: [{ concept: { uuid: 'diagnosis-concept' }, value: 'Different care' }],
@@ -250,13 +249,47 @@ describe('createAttentionEncounter', () => {
     mockOpenmrsFetch
       .mockRejectedValueOnce(notFound())
       .mockResolvedValueOnce(response(queueEntry))
-      .mockResolvedValueOnce(response({ results: [other] }))
-      .mockResolvedValueOnce(response(queueEntry))
-      .mockResolvedValueOnce(response({ uuid: getAttentionEncounterUuid(input.queueEntryUuid) }))
-      .mockResolvedValueOnce(response(persistedEncounter()));
+      .mockResolvedValueOnce(response({ results: [other] }));
 
-    await createAttentionEncounter(input);
+    await expect(createAttentionEncounter(input)).rejects.toMatchObject({
+      code: EMERGENCY_ATTENTION_ENCOUNTER_CONFLICT,
+    });
+    expect(mockOpenmrsFetch.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+  });
+
+  it('fails closed when a relevant legacy candidate is returned without authoritative server time', async () => {
+    const noDateResponse = { ...response({ results: [persistedEncounter('legacy')] }), headers: new Headers() };
+    mockOpenmrsFetch
+      .mockRejectedValueOnce(notFound())
+      .mockResolvedValueOnce(response(queueEntry))
+      .mockResolvedValueOnce(noDateResponse);
+
+    await expect(createAttentionEncounter(input)).rejects.toMatchObject({
+      code: EMERGENCY_ATTENTION_ENCOUNTER_TIME_UNAVAILABLE,
+    });
+    expect(mockOpenmrsFetch.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+  });
+
+  it('allows a deterministic create when an exhausted legacy search has no candidates or Date header', async () => {
+    const persisted = persistedEncounter();
+    mockOpenmrsFetch
+      .mockRejectedValueOnce(notFound())
+      .mockResolvedValueOnce(response(queueEntry))
+      .mockResolvedValueOnce({ ...response({ results: [] }), headers: new Headers() })
+      .mockResolvedValueOnce(response(queueEntry))
+      .mockResolvedValueOnce(response({ uuid: persisted.uuid }))
+      .mockResolvedValueOnce(response(persisted));
+
+    await expect(createAttentionEncounter(input)).resolves.toMatchObject({ data: { uuid: persisted.uuid } });
     expect(mockOpenmrsFetch.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(1);
+  });
+
+  it('does not reinterpret an arbitrary error message containing 404 as a missing encounter', async () => {
+    const networkError = new TypeError('gateway request 404-ish response was unreadable');
+    mockOpenmrsFetch.mockRejectedValueOnce(networkError);
+
+    await expect(createAttentionEncounter(input)).rejects.toBe(networkError);
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
   });
 
   it('rejects multiple identical legacy encounters as ambiguous', async () => {
@@ -275,7 +308,7 @@ describe('createAttentionEncounter', () => {
   it('exhausts capped legacy pages before reusing the exact encounter', async () => {
     const unrelatedPage = Array.from({ length: 100 }, (_, index) => ({
       ...persistedEncounter(`other-${index}`),
-      obs: [{ concept: { uuid: 'diagnosis-concept' }, value: `Other ${index}` }],
+      location: { uuid: 'different-location' },
     }));
     const legacy = persistedEncounter('legacy-page-two');
     mockOpenmrsFetch

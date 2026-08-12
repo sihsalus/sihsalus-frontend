@@ -9,6 +9,7 @@ export const EMERGENCY_ATTENTION_ENCOUNTER_CREATION_UNVERIFIED =
 export const EMERGENCY_ATTENTION_ENCOUNTER_UUID_UNAVAILABLE = 'EMERGENCY_ATTENTION_ENCOUNTER_UUID_UNAVAILABLE';
 export const EMERGENCY_ATTENTION_ENCOUNTER_AMBIGUOUS = 'EMERGENCY_ATTENTION_ENCOUNTER_AMBIGUOUS';
 export const EMERGENCY_ATTENTION_ENCOUNTER_SEARCH_STALLED = 'EMERGENCY_ATTENTION_ENCOUNTER_SEARCH_STALLED';
+export const EMERGENCY_ATTENTION_ENCOUNTER_TIME_UNAVAILABLE = 'EMERGENCY_ATTENTION_ENCOUNTER_TIME_UNAVAILABLE';
 
 interface AttentionObservationRequest {
   conceptUuid: string;
@@ -21,7 +22,6 @@ interface AttentionEncounterPayload {
   visitUuid: string;
   encounterTypeUuid: string;
   locationUuid: string;
-  encounterDatetime: string;
   observations: Array<AttentionObservationRequest>;
 }
 
@@ -57,7 +57,7 @@ function isNotFoundError(error: unknown) {
       ? ((error as { response?: { status?: number }; status?: number }).response?.status ??
         (error as { status?: number }).status)
       : undefined;
-  return status === 404 || (error instanceof Error && /\b404\b/.test(error.message));
+  return status === 404;
 }
 
 function normalizeRequestedObservations(observations: Array<AttentionObservationRequest>) {
@@ -69,24 +69,22 @@ function normalizeRequestedObservations(observations: Array<AttentionObservation
     }));
 }
 
-function normalizeEncounterDatetime(encounterDatetime: string) {
-  const normalized = new Date(encounterDatetime);
-  if (Number.isNaN(normalized.valueOf())) {
-    throw attentionEncounterError(
-      EMERGENCY_ATTENTION_ENCOUNTER_CREATION_UNVERIFIED,
-      'The emergency attention encounter date is invalid.',
-    );
-  }
-  normalized.setMilliseconds(0);
-  return normalized.toISOString();
-}
-
 function normalizedObservationSignature(conceptUuid: string, value: unknown) {
   const normalizedValue =
     typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
       ? String(value).trim()
       : '';
   return `${conceptUuid}\u0000${normalizedValue}`;
+}
+
+function encounterIsInRequestScope(encounter: AttentionEncounterState, request: AttentionEncounterPayload) {
+  return (
+    encounter.voided === false &&
+    encounter.patient?.uuid === request.patientUuid &&
+    encounter.visit?.uuid === request.visitUuid &&
+    encounter.encounterType?.uuid === request.encounterTypeUuid &&
+    encounter.location?.uuid === request.locationUuid
+  );
 }
 
 function encounterPayloadMatchesRequest(
@@ -102,26 +100,15 @@ function encounterPayloadMatchesRequest(
     .map((observation) => normalizedObservationSignature(observation.concept?.uuid ?? '', observation.value))
     .sort();
   return (
-    encounter.voided === false &&
-    encounter.patient?.uuid === request.patientUuid &&
-    encounter.visit?.uuid === request.visitUuid &&
-    encounter.encounterType?.uuid === request.encounterTypeUuid &&
-    encounter.location?.uuid === request.locationUuid &&
+    encounterIsInRequestScope(encounter, request) &&
     expectedObservations.length === actualObservations.length &&
     expectedObservations.every((observation, index) => observation === actualObservations[index])
   );
 }
 
-function encounterDatetimeMatchesRequest(encounter: AttentionEncounterState, request: AttentionEncounterPayload) {
-  const actualEncounterDatetime = encounter.encounterDatetime
-    ? new Date(encounter.encounterDatetime).valueOf()
-    : Number.NaN;
-  const expectedEncounterDatetime = new Date(request.encounterDatetime).valueOf();
-  return (
-    Number.isFinite(actualEncounterDatetime) &&
-    Number.isFinite(expectedEncounterDatetime) &&
-    actualEncounterDatetime === expectedEncounterDatetime
-  );
+function getParsedEncounterTime(encounter: AttentionEncounterState) {
+  const encounterTime = encounter.encounterDatetime ? new Date(encounter.encounterDatetime).valueOf() : Number.NaN;
+  return Number.isFinite(encounterTime) ? encounterTime : null;
 }
 
 export function getAttentionEncounterUuid(queueEntryUuid: string) {
@@ -147,6 +134,7 @@ function verifyAttentionEncounter(
   encounterUuid: string,
   request: AttentionEncounterPayload,
   observations: ReturnType<typeof normalizeRequestedObservations>,
+  timeBounds?: { queueStartedAt: string; authoritativeNow: number },
 ) {
   if (!response.data?.uuid) {
     throw attentionEncounterError(
@@ -154,10 +142,16 @@ function verifyAttentionEncounter(
       'The emergency attention encounter did not include a UUID.',
     );
   }
+  const encounterTime = getParsedEncounterTime(response.data);
+  const timeIsValid = timeBounds
+    ? encounterTime !== null &&
+      encounterTime >= new Date(timeBounds.queueStartedAt).valueOf() &&
+      encounterTime <= timeBounds.authoritativeNow
+    : encounterTime !== null;
   if (
     response.data.uuid !== encounterUuid ||
     !encounterPayloadMatchesRequest(response.data, request, observations) ||
-    !encounterDatetimeMatchesRequest(response.data, request)
+    !timeIsValid
   ) {
     throw attentionEncounterError(
       EMERGENCY_ATTENTION_ENCOUNTER_CONFLICT,
@@ -176,7 +170,10 @@ async function findLegacyAttentionEncounter(
   const pageSize = 100;
   const queueStart = new Date(queueStartedAt);
   queueStart.setMilliseconds(0);
-  const matchesByUuid = new Map<string, { response: FetchResponse<AttentionEncounterSearchResponse>; encounter: AttentionEncounterState }>();
+  const scopeCandidatesByUuid = new Map<
+    string,
+    { response: FetchResponse<AttentionEncounterSearchResponse>; encounter: AttentionEncounterState }
+  >();
   const seenUuids = new Set<string>();
   let authoritativeNow: number | null = null;
 
@@ -211,8 +208,8 @@ async function findLegacyAttentionEncounter(
         seenUuids.add(encounter.uuid);
         newUuidCount += 1;
       }
-      if (encounterPayloadMatchesRequest(encounter, request, observations)) {
-        matchesByUuid.set(encounter.uuid, { response, encounter });
+      if (encounterIsInRequestScope(encounter, request)) {
+        scopeCandidatesByUuid.set(encounter.uuid, { response, encounter });
       }
     });
     if (page.length < pageSize) {
@@ -226,52 +223,65 @@ async function findLegacyAttentionEncounter(
     }
   }
 
-  const upperBound = authoritativeNow ?? Date.now();
-  const candidates = [...matchesByUuid.values()].filter(({ encounter }) => {
-    const encounterTime = encounter.encounterDatetime ? new Date(encounter.encounterDatetime).valueOf() : Number.NaN;
-    return Number.isFinite(encounterTime) && encounterTime >= queueStart.valueOf() && encounterTime <= upperBound;
+  if (scopeCandidatesByUuid.size && authoritativeNow === null) {
+    throw attentionEncounterError(
+      EMERGENCY_ATTENTION_ENCOUNTER_TIME_UNAVAILABLE,
+      'The server time needed to reconcile emergency attention encounters was unavailable.',
+    );
+  }
+  const windowCandidates = [...scopeCandidatesByUuid.values()].filter(({ encounter }) => {
+    const encounterTime = getParsedEncounterTime(encounter);
+    return (
+      encounterTime !== null &&
+      encounterTime >= queueStart.valueOf() &&
+      encounterTime <= (authoritativeNow as number)
+    );
   });
-  const deterministicCandidate = candidates.find(({ encounter }) => encounter.uuid === deterministicEncounterUuid);
+  const deterministicCandidate = windowCandidates.find(
+    ({ encounter }) => encounter.uuid === deterministicEncounterUuid,
+  );
   if (deterministicCandidate) {
     return verifyAttentionEncounter(
-      { ...deterministicCandidate.response, data: deterministicCandidate.encounter } as FetchResponse<AttentionEncounterState>,
+      {
+        ...deterministicCandidate.response,
+        data: deterministicCandidate.encounter,
+      } as FetchResponse<AttentionEncounterState>,
       deterministicEncounterUuid,
       request,
       observations,
+      { queueStartedAt: queueStartedAt, authoritativeNow: authoritativeNow as number },
     );
   }
-
-  // Prefer the stable current-attempt time when it exists. After a browser
-  // refresh that time is unavailable, a single identical legacy encounter is
-  // the only safe backwards-compatible reconciliation signal.
-  const exactTimeCandidates = candidates.filter(({ encounter }) => encounterDatetimeMatchesRequest(encounter, request));
-  const resolvedCandidates = exactTimeCandidates.length ? exactTimeCandidates : candidates;
-  if (resolvedCandidates.length > 1) {
+  if (windowCandidates.some(({ encounter }) => !encounterPayloadMatchesRequest(encounter, request, observations))) {
+    throw attentionEncounterError(
+      EMERGENCY_ATTENTION_ENCOUNTER_CONFLICT,
+      'A different emergency attention encounter already exists for this queue entry window.',
+    );
+  }
+  if (windowCandidates.length > 1) {
     throw attentionEncounterError(
       EMERGENCY_ATTENTION_ENCOUNTER_AMBIGUOUS,
       'Multiple identical emergency attention encounters could match this queue entry.',
     );
   }
-  const resolved = resolvedCandidates[0];
-  if (!resolved) {
-    return null;
-  }
-  return { ...resolved.response, data: resolved.encounter } as FetchResponse<AttentionEncounterState>;
+  const resolved = windowCandidates[0];
+  return resolved
+    ? ({ ...resolved.response, data: resolved.encounter } as FetchResponse<AttentionEncounterState>)
+    : null;
 }
 
 /**
  * Creates one idempotent emergency-attention encounter per queue entry.
- *
- * OpenMRS accepts a caller-supplied encounter UUID and enforces its uniqueness.
- * The deterministic UUID therefore supplies the cross-tab/server idempotency key;
- * fresh GETs validate the exact persisted patient, visit, type, location, and obs.
+ * OpenMRS supplies the encounter time and enforces uniqueness of the
+ * deterministic client UUID, including across tabs and response loss.
  */
 export async function createAttentionEncounter(request: AttentionEncounterPayload) {
-  request = { ...request, encounterDatetime: normalizeEncounterDatetime(request.encounterDatetime) };
   const observations = normalizeRequestedObservations(request.observations);
   const encounterUuid = getAttentionEncounterUuid(request.queueEntryUuid);
   const existingResponse = await fetchAttentionEncounter(encounterUuid);
   if (existingResponse) {
+    // A prior tab/session used the same deterministic identity. Its server time
+    // is not expected to equal any new browser retry timestamp.
     return verifyAttentionEncounter(existingResponse, encounterUuid, request, observations);
   }
 
@@ -291,10 +301,7 @@ export async function createAttentionEncounter(request: AttentionEncounterPayloa
     return legacyResponse;
   }
 
-  // Search may be slow; re-read immediately before the clinical write so an
-  // entry that ended or transitioned meanwhile cannot receive new care.
   await assertEmergencyQueueEntryIsActiveForSubject(request.queueEntryUuid, request.patientUuid, request.visitUuid);
-  // Keep the authoritative vital-status assertion adjacent to the clinical write.
   await assertFreshPatientIsAlive(request.patientUuid);
 
   let writeResponse: FetchResponse<AttentionEncounterState>;
@@ -308,7 +315,6 @@ export async function createAttentionEncounter(request: AttentionEncounterPayloa
         encounterType: request.encounterTypeUuid,
         visit: request.visitUuid,
         location: request.locationUuid,
-        encounterDatetime: request.encounterDatetime,
         obs: observations,
       },
     });

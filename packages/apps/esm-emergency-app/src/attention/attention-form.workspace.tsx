@@ -6,7 +6,7 @@
  * in an "Atención en Emergencia" encounter linked to the patient's emergency visit.
  */
 
-import { Button, Form, InlineLoading, Stack, TextArea } from '@carbon/react';
+import { Button, Form, InlineLoading, InlineNotification, Stack, TextArea } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   age,
@@ -15,7 +15,7 @@ import {
   showSnackbar,
   useConfig,
 } from '@openmrs/esm-framework';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { type Config } from '../config-schema';
@@ -35,19 +35,22 @@ interface AttentionFormWorkspaceProps extends DefaultWorkspaceProps {
 }
 
 interface AttentionSubmissionAttempt {
-  encounterDatetime: string;
   encounterConfirmed: boolean;
   encounterTypeUuid: string;
   locationUuid: string;
   observations: Array<{ conceptUuid: string; value: string }>;
 }
 
-const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEntry, closeWorkspace }) => {
+const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({
+  queueEntry,
+  closeWorkspace,
+  promptBeforeClosing,
+}) => {
   const { t } = useTranslation();
   const config = useConfig<Config>();
   const { mutateEmergencyQueueEntries } = useMutateEmergencyQueueEntries();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const submissionAttemptRef = useRef<AttentionSubmissionAttempt | null>(null);
+  const [submissionAttempt, setSubmissionAttempt] = useState<AttentionSubmissionAttempt | null>(null);
 
   const {
     register,
@@ -60,6 +63,10 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEn
   const patientDisplay = queueEntry.patient?.person?.display || queueEntry.patient?.display || '';
   const patientAge = queueEntry.patient?.person?.birthdate ? age(queueEntry.patient.person.birthdate) : null;
   const patientGender = queueEntry.patient?.person?.gender;
+
+  useEffect(() => {
+    promptBeforeClosing(() => Boolean(submissionAttempt));
+  }, [promptBeforeClosing, submissionAttempt]);
 
   const onSubmit = useCallback(
     async (data: AttentionFormData) => {
@@ -77,10 +84,9 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEn
           return;
         }
 
-        let submissionAttempt = submissionAttemptRef.current;
-        if (!submissionAttempt) {
-          submissionAttempt = {
-            encounterDatetime: new Date().toISOString(),
+        let currentAttempt = submissionAttempt;
+        if (!currentAttempt) {
+          currentAttempt = {
             encounterConfirmed: false,
             encounterTypeUuid: attentionEncounter.encounterTypeUuid,
             locationUuid: emergencyLocationUuid,
@@ -90,20 +96,22 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEn
               { conceptUuid: attentionEncounter.concepts.auxiliaryExamsUuid, value: data.auxiliaryExams || '' },
             ],
           };
-          submissionAttemptRef.current = submissionAttempt;
+          // From this point on, the payload is immutable across response loss
+          // and retries. Reflect that lock in the rendered controls.
+          setSubmissionAttempt(currentAttempt);
         }
 
-        if (!submissionAttempt.encounterConfirmed) {
+        if (!currentAttempt.encounterConfirmed) {
           await createAttentionEncounter({
             queueEntryUuid: queueEntry.uuid,
             patientUuid: queueEntry.patient.uuid,
             visitUuid,
-            encounterTypeUuid: submissionAttempt.encounterTypeUuid,
-            locationUuid: submissionAttempt.locationUuid,
-            encounterDatetime: submissionAttempt.encounterDatetime,
-            observations: submissionAttempt.observations,
+            encounterTypeUuid: currentAttempt.encounterTypeUuid,
+            locationUuid: currentAttempt.locationUuid,
+            observations: currentAttempt.observations,
           });
-          submissionAttempt.encounterConfirmed = true;
+          currentAttempt = { ...currentAttempt, encounterConfirmed: true };
+          setSubmissionAttempt(currentAttempt);
         }
 
         await endEmergencyQueueEntry(queueEntry.uuid);
@@ -133,7 +141,7 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEn
           timeoutInMs: 5000,
         });
 
-        submissionAttemptRef.current = null;
+        setSubmissionAttempt(null);
         closeWorkspace();
       } catch (error) {
         showSnackbar({
@@ -149,7 +157,7 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEn
         setIsSubmitting(false);
       }
     },
-    [config, queueEntry, t, closeWorkspace, mutateEmergencyQueueEntries],
+    [config, queueEntry, t, closeWorkspace, mutateEmergencyQueueEntries, submissionAttempt],
   );
 
   return (
@@ -169,6 +177,25 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEn
         </div>
 
         <Stack gap={5}>
+          {submissionAttempt && (
+            <InlineNotification
+              kind="warning"
+              lowContrast
+              hideCloseButton
+              title={t('attentionFinalizationPending', 'Finalización pendiente')}
+              subtitle={
+                submissionAttempt.encounterConfirmed
+                  ? t(
+                      'attentionEncounterConfirmedPendingCleanup',
+                      'La atención ya fue registrada. Reintente únicamente la finalización de la cola.',
+                    )
+                  : t(
+                      'attentionAttemptPendingRetry',
+                      'El intento quedó protegido. Reintente para verificar el registro y finalizar la cola.',
+                    )
+              }
+            />
+          )}
           {/* Diagnóstico(s) */}
           <fieldset className={styles.formSection}>
             <legend className={styles.sectionTitle}>{t('diagnosis', 'Diagnóstico(s)')}</legend>
@@ -179,7 +206,7 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEn
               rows={3}
               invalid={!!errors.diagnosis}
               invalidText={errors.diagnosis?.message}
-              disabled={isSubmitting}
+              disabled={isSubmitting || Boolean(submissionAttempt)}
               {...register('diagnosis')}
             />
           </fieldset>
@@ -194,7 +221,7 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEn
               rows={5}
               invalid={!!errors.treatment}
               invalidText={errors.treatment?.message}
-              disabled={isSubmitting}
+              disabled={isSubmitting || Boolean(submissionAttempt)}
               {...register('treatment')}
             />
           </fieldset>
@@ -207,7 +234,7 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEn
               labelText={t('auxiliaryExamsLabel', 'Exámenes solicitados o realizados')}
               placeholder={t('auxiliaryExamsPlaceholder', 'Laboratorio, imágenes, otros...')}
               rows={3}
-              disabled={isSubmitting}
+              disabled={isSubmitting || Boolean(submissionAttempt)}
               {...register('auxiliaryExams')}
             />
           </fieldset>
@@ -215,14 +242,21 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEn
 
         {/* Actions */}
         <div className={styles.formActions}>
-          <Button kind="secondary" onClick={() => closeWorkspace()} disabled={isSubmitting}>
+          <Button
+            type="button"
+            kind="secondary"
+            onClick={() => closeWorkspace()}
+            disabled={isSubmitting || Boolean(submissionAttempt)}
+          >
             {t('cancel', 'Cancelar')}
           </Button>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (
               <InlineLoading description={t('saving', 'Guardando...')} />
             ) : (
-              t('saveAttention', 'Guardar atención')
+              submissionAttempt
+                ? t('retryAttentionFinalization', 'Reintentar finalización')
+                : t('saveAttention', 'Guardar atención')
             )}
           </Button>
         </div>

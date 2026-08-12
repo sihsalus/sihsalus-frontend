@@ -15,10 +15,6 @@ interface AppointmentSummary {
   uuid: string;
 }
 
-interface AppointmentSearchResponse {
-  data?: Array<AppointmentSummary>;
-}
-
 export interface DeceasedPatientWorkflowInput {
   careContext: DeathCareContext;
   causeOfDeath?: string;
@@ -36,6 +32,9 @@ export interface DeceasedPatientWorkflowResult {
 const APPOINTMENT_SEARCH_START_DATE = '1900-01-01T00:00:00.000Z';
 const terminalAppointmentStatuses = new Set(['cancelled', 'completed', 'missed']);
 const cancellableAppointmentStatuses = new Set(['requested', 'waitlist', 'scheduled', 'arrived']);
+const nonTerminalAppointmentStatuses = ['Requested', 'WaitList', 'Scheduled', 'Arrived', 'CheckedIn'] as const;
+
+type NonTerminalAppointmentStatus = (typeof nonTerminalAppointmentStatuses)[number];
 
 function normalizeAppointmentStatus(status: string | null | undefined) {
   return String(status ?? '')
@@ -108,13 +107,32 @@ async function closeActiveVisits(patientUuid: string) {
   return visits.length;
 }
 
-async function searchPatientAppointments(patientUuid: string) {
-  return openmrsFetch<AppointmentSearchResponse>(`${restBaseUrl}/appointments/search`, {
+async function searchPatientAppointments(
+  patientUuid: string,
+  status: NonTerminalAppointmentStatus,
+  withoutDates: boolean,
+) {
+  if (withoutDates) {
+    // Bahmni's singular search endpoint is the only API that can return
+    // appointments whose start/end dates are null.
+    return openmrsFetch<Array<AppointmentSummary>>(`${restBaseUrl}/appointment/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        patientUuids: [patientUuid],
+        status,
+        withoutDates: true,
+      },
+    });
+  }
+
+  return openmrsFetch<Array<AppointmentSummary>>(`${restBaseUrl}/appointments/search`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: {
       patientUuid,
       startDate: APPOINTMENT_SEARCH_START_DATE,
+      status,
     },
   });
 }
@@ -170,29 +188,83 @@ async function transitionAppointment(appointmentUuid: string, careContext: Death
   return targetStatus;
 }
 
-async function reconcileAppointments(patientUuid: string, careContext: DeathCareContext) {
-  const response = await searchPatientAppointments(patientUuid);
-  const appointments = Array.from(
-    new Map(
-      (response.data?.data ?? [])
-        .filter((appointment) => !terminalAppointmentStatuses.has(normalizeAppointmentStatus(appointment.status)))
-        .map((appointment) => [appointment.uuid, appointment]),
-    ).values(),
-  );
-  const results = await Promise.allSettled(
-    appointments.map((appointment) => transitionAppointment(appointment.uuid, careContext)),
-  );
-  const failure = results.find((result) => result.status === 'rejected');
+async function drainAppointmentSearch(
+  patientUuid: string,
+  status: NonTerminalAppointmentStatus,
+  withoutDates: boolean,
+  careContext: DeathCareContext,
+) {
+  let cancelledAppointments = 0;
+  let completedAppointments = 0;
+  const terminalAppointmentsSeenInSearch = new Set<string>();
 
-  if (failure?.status === 'rejected') {
-    throw failure.reason;
+  // Appointments 2.1.0 caps both search APIs and exposes no offset. Query one
+  // non-terminal status at a time, transition that page to a terminal status,
+  // then query again until the status bucket is empty. This is retry-safe and
+  // drains any number of dated and undated appointments.
+  while (true) {
+    const response = await searchPatientAppointments(patientUuid, status, withoutDates);
+    const appointments = Array.from(
+      new Map((response.data ?? []).map((appointment) => [appointment.uuid, appointment])).values(),
+    );
+
+    if (!appointments.length) {
+      return { cancelledAppointments, completedAppointments };
+    }
+
+    const results = await Promise.allSettled(
+      appointments.map((appointment) => transitionAppointment(appointment.uuid, careContext)),
+    );
+    const failure = results.find((result) => result.status === 'rejected');
+
+    if (failure?.status === 'rejected') {
+      throw failure.reason;
+    }
+
+    const targetStatuses = results.map((result) => (result as PromiseFulfilledResult<string | null>).value);
+    let madeProgress = false;
+    let observedNewTerminalAppointment = false;
+
+    targetStatuses.forEach((targetStatus, index) => {
+      if (targetStatus === 'Cancelled') {
+        cancelledAppointments += 1;
+        madeProgress = true;
+      } else if (targetStatus === 'Completed') {
+        completedAppointments += 1;
+        madeProgress = true;
+      } else {
+        const appointmentUuid = appointments[index].uuid;
+        if (!terminalAppointmentsSeenInSearch.has(appointmentUuid)) {
+          terminalAppointmentsSeenInSearch.add(appointmentUuid);
+          observedNewTerminalAppointment = true;
+        }
+      }
+    });
+
+    // A concurrent transition can legitimately leave one stale page in the
+    // search result. If the exact terminal rows keep reappearing, fail instead
+    // of looping forever and let the idempotent workflow be retried.
+    if (!madeProgress && !observedNewTerminalAppointment) {
+      throw Object.assign(new Error(`Appointment search did not advance for status ${status}.`), {
+        code: 'DECEASED_PATIENT_APPOINTMENT_SEARCH_STALLED',
+      });
+    }
+  }
+}
+
+async function reconcileAppointments(patientUuid: string, careContext: DeathCareContext) {
+  let cancelledAppointments = 0;
+  let completedAppointments = 0;
+
+  for (const status of nonTerminalAppointmentStatuses) {
+    for (const withoutDates of [false, true]) {
+      const result = await drainAppointmentSearch(patientUuid, status, withoutDates, careContext);
+      cancelledAppointments += result.cancelledAppointments;
+      completedAppointments += result.completedAppointments;
+    }
   }
 
-  const targetStatuses = results.map((result) => (result as PromiseFulfilledResult<string | null>).value);
-  return {
-    cancelledAppointments: targetStatuses.filter((status) => status === 'Cancelled').length,
-    completedAppointments: targetStatuses.filter((status) => status === 'Completed').length,
-  };
+  return { cancelledAppointments, completedAppointments };
 }
 
 /**

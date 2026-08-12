@@ -22,8 +22,7 @@ const AppointmentsMetrics: React.FC<AppointmentMetricsProps> = ({ appointmentSer
 
   const { highestServiceLoad, missedAppointments, error: summaryError } = useClinicalMetrics(appointmentServiceTypes);
   const { totalProviders, error: providersError } = useAllAppointmentsByDate(appointmentServiceTypes);
-  const { totalScheduledAppointments, error: appointmentsError } =
-    useScheduledAppointments(appointmentServiceTypes);
+  const { totalScheduledAppointments, error: appointmentsError } = useScheduledAppointments(appointmentServiceTypes);
 
   const { selectedDate } = useContext(SelectedDateContext);
   const formattedStartDate = formatDate(parseDate(selectedDate), { mode: 'standard', time: false });
@@ -41,11 +40,7 @@ const AppointmentsMetrics: React.FC<AppointmentMetricsProps> = ({ appointmentSer
   const filteredArrivedAppointments = filterByServiceType(arrivedAppointments, appointmentServiceTypes);
   const filteredPendingAppointments = filterByServiceType(pendingAppointments, appointmentServiceTypes);
   const error =
-    summaryError ??
-    providersError ??
-    appointmentsError ??
-    arrivedAppointmentsError ??
-    pendingAppointmentsError;
+    summaryError ?? providersError ?? appointmentsError ?? arrivedAppointmentsError ?? pendingAppointmentsError;
 
   if (error) {
     return (

@@ -10,11 +10,7 @@ const useArrowNavigation = (
   totalResults: number,
   enterCallback: (evt: React.KeyboardEvent<HTMLElement>, index: number) => void,
   resetFocusCallback: () => void,
-  {
-    initialFocusedResult = -1,
-    isEventFromFocusedResult,
-    resetKey,
-  }: ArrowNavigationOptions,
+  { initialFocusedResult = -1, isEventFromFocusedResult, resetKey }: ArrowNavigationOptions,
 ) => {
   const [focusedResult, setFocusedResult] = useState(initialFocusedResult);
   const previousResetKey = useRef(resetKey);
@@ -31,9 +27,7 @@ const useArrowNavigation = (
   }, [resetFocusedResult, resetKey]);
 
   useEffect(() => {
-    setFocusedResult((currentResult) =>
-      currentResult >= totalResults ? initialFocusedResult : currentResult,
-    );
+    setFocusedResult((currentResult) => (currentResult >= totalResults ? initialFocusedResult : currentResult));
   }, [initialFocusedResult, totalResults]);
 
   const handleKeyPress = useCallback(
@@ -48,25 +42,14 @@ const useArrowNavigation = (
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
         setFocusedResult((prev) => Math.min(totalResults - 1, prev + 1));
-      } else if (
-        e.key === 'Enter' &&
-        focusedResult > -1 &&
-        isEventFromFocusedResult(e, focusedResult)
-      ) {
+      } else if (e.key === 'Enter' && focusedResult > -1 && isEventFromFocusedResult(e, focusedResult)) {
         enterCallback(e, focusedResult);
       } else if (e.key === 'Escape' && focusedResult !== -1) {
         resetFocusCallback();
         resetFocusedResult();
       }
     },
-    [
-      enterCallback,
-      focusedResult,
-      isEventFromFocusedResult,
-      resetFocusCallback,
-      resetFocusedResult,
-      totalResults,
-    ],
+    [enterCallback, focusedResult, isEventFromFocusedResult, resetFocusCallback, resetFocusedResult, totalResults],
   );
 
   return { focusedResult, handleKeyPress, resetFocusedResult };

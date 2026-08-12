@@ -10,10 +10,14 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import {
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  getSisFinancingState,
   INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
   INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
   SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID,
+  SIS_ACCREDITATION_PENDING_CONCEPT_UUID,
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_CONCEPT_UUID,
 } from '@openmrs/esm-patient-common-lib';
 import useSWR from 'swr';
 
@@ -78,6 +82,7 @@ export type PendingAccreditationStatus =
   | 'pending'
   | 'notConsulted'
   | 'missing'
+  | 'unknown'
   | 'missingInsuranceNumber'
   | 'missingCheckedAt'
   | 'financiadorNotCopied';
@@ -159,10 +164,25 @@ export function filterPendingSisVisits(
       const statusUuid = findAttributeValueUuid(attributes, SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID);
       const insuranceNumber = findAttributeTextValue(attributes, INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID);
       const checkedAt = findAttributeTextValue(attributes, SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID);
+      const canonicalStatusUuid =
+        statusUuid === config.pendingStatusConceptUuid
+          ? SIS_ACCREDITATION_PENDING_CONCEPT_UUID
+          : statusUuid === config.notConsultedStatusConceptUuid
+            ? SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID
+            : statusUuid;
+      // The configured SIS catalog already established that this visit is SIS.
+      // Canonicalize that fact so the shared classifier remains the single
+      // source of truth for known and unknown accreditation states.
+      const financingState = getSisFinancingState({
+        financiadorUuid: SIS_CONCEPT_UUID,
+        insuranceNumber,
+        accreditationStatusUuid: canonicalStatusUuid,
+        accreditationCheckedAt: checkedAt,
+      });
 
-      if (statusUuid === config.pendingStatusConceptUuid) {
+      if (financingState === 'pending') {
         accreditationStatus = 'pending';
-      } else if (statusUuid === config.notConsultedStatusConceptUuid) {
+      } else if (financingState === 'notConsulted') {
         accreditationStatus = 'notConsulted';
       } else if (!statusUuid) {
         accreditationStatus = 'missing';
@@ -170,9 +190,13 @@ export function filterPendingSisVisits(
         accreditationStatus = 'missingInsuranceNumber';
       } else if (!checkedAt) {
         accreditationStatus = 'missingCheckedAt';
-      } else {
-        // Vigente o no vigente con fecha: bundle completo, no es trabajo pendiente.
+      } else if (financingState === 'active' || financingState === 'inactive') {
+        // Vigente o no vigente con bundle completo: no es trabajo pendiente.
         continue;
+      } else {
+        // An unknown status must remain visible instead of being treated as a
+        // verified accreditation merely because number and date are present.
+        accreditationStatus = 'unknown';
       }
     }
 

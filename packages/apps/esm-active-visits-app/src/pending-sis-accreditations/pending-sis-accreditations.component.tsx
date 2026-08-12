@@ -61,6 +61,7 @@ const statusTagTypes: Record<PendingAccreditationStatus, 'blue' | 'gray' | 'red'
   pending: 'blue',
   notConsulted: 'gray',
   missing: 'red',
+  unknown: 'red',
   missingInsuranceNumber: 'red',
   missingCheckedAt: 'red',
   // Highest urgency: without the payer on the visit no FUA can be generated at all.
@@ -76,6 +77,7 @@ function AccreditationStatusTag({ status }: { status: PendingAccreditationStatus
     pending: t('sisAccreditationPending', 'Pendiente'),
     notConsulted: t('sisAccreditationNotConsulted', 'No consultada'),
     missing: t('sisAccreditationMissing', 'Sin registrar'),
+    unknown: t('sisAccreditationUnknown', 'Estado no reconocido'),
     missingInsuranceNumber: t('sisAccreditationMissingInsuranceNumber', 'Sin número de afiliación'),
     missingCheckedAt: t('sisAccreditationMissingCheckedAt', 'Sin fecha de acreditación'),
     financiadorNotCopied: t('sisFinanciadorNotCopied', 'Sin financiador en la visita'),
@@ -201,6 +203,7 @@ const PendingSisAccreditationsTable = () => {
     if (result.skipped || result.reviewReason) {
       const hasConflict = result.reviewReason === 'sis-accreditation-conflict';
       const isIncomplete = result.reviewReason === 'incomplete-coverage';
+      const hasUnknownStatus = result.reviewReason === 'unknown-accreditation-status';
       const reviewAction = canEditPatientInsurance
         ? {
             actionButtonLabel: t('reviewCoverage', 'Revisar cobertura'),
@@ -213,20 +216,27 @@ const PendingSisAccreditationsTable = () => {
         kind: 'warning',
         title: hasConflict
           ? t('coverageSyncConflict', 'La acreditación SIS requiere revisión')
-          : isIncomplete
-            ? t('coverageSyncIncomplete', 'La cobertura de la consulta sigue incompleta')
-            : t('coverageSyncMissing', 'La consulta sigue sin financiador'),
+          : hasUnknownStatus
+            ? t('coverageSyncUnknownStatus', 'Estado de acreditación SIS no reconocido')
+            : isIncomplete
+              ? t('coverageSyncIncomplete', 'La cobertura de la consulta sigue incompleta')
+              : t('coverageSyncMissing', 'La consulta sigue sin financiador'),
         subtitle: hasConflict
           ? t(
               'coverageSyncConflictSubtitle',
               'El estado de la consulta no coincide con la afiliación. Revise la cobertura del paciente.',
             )
-          : isIncomplete
+          : hasUnknownStatus
             ? t(
-                'coverageSyncIncompleteSubtitle',
-                'Complete el número de afiliación y, para SIS, el estado y la fecha de acreditación.',
+                'coverageSyncUnknownStatusSubtitle',
+                'El estado sincronizado no pertenece al catálogo SIS. Corrija la acreditación del paciente.',
               )
-            : t('coverageSyncMissingSubtitle', 'Registre el financiador en la cobertura del paciente.'),
+            : isIncomplete
+              ? t(
+                  'coverageSyncIncompleteSubtitle',
+                  'Complete el número de afiliación y, para SIS, el estado y la fecha de acreditación.',
+                )
+              : t('coverageSyncMissingSubtitle', 'Registre el financiador en la cobertura del paciente.'),
         ...reviewAction,
       });
       return;

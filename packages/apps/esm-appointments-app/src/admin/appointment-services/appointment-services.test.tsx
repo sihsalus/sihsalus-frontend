@@ -39,8 +39,6 @@ describe('AppointmentServices', () => {
 
     fireEvent.blur(screen.getByLabelText('Appointment service name'));
 
-    await waitFor(() =>
-      expect(screen.getByText('Appointment service name is required')).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText('Appointment service name is required')).toBeInTheDocument());
   });
 });

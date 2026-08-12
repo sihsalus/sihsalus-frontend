@@ -78,10 +78,7 @@ export const updateSelectedQueueLocationName = (currentLocationName: string | nu
 export const updateSelectedQueueLocationUuid = (currentLocationUuid: string | null | undefined) => {
   const normalizedLocationUuid = normalizeQueueFilterValue(currentLocationUuid);
   updateValueInSessionStorage('queueLocationUuid', normalizedLocationUuid);
-  updateValueInSessionStorage(
-    queueLocationSelectionKey,
-    normalizedLocationUuid ? null : ALL_QUEUE_LOCATIONS,
-  );
+  updateValueInSessionStorage(queueLocationSelectionKey, normalizedLocationUuid ? null : ALL_QUEUE_LOCATIONS);
   serviceQueuesStore.setState({
     selectedQueueLocationUuid: normalizedLocationUuid,
     queueLocationSelectionInitialized: true,

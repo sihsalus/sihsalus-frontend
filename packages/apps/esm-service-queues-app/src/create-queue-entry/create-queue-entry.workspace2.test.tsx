@@ -1,5 +1,14 @@
-import { userHasAccess, usePatient, useSession, useVisit, type LoggedInUser, type Visit } from '@openmrs/esm-framework';
+import {
+  showSnackbar,
+  userHasAccess,
+  usePatient,
+  useSession,
+  useVisit,
+  type LoggedInUser,
+  type Visit,
+} from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import routes from '../routes.json';
 import CreateQueueEntryWorkspace2 from './create-queue-entry.workspace2';
@@ -27,6 +36,7 @@ const mockUsePatient = vi.mocked(usePatient);
 const mockUseSession = vi.mocked(useSession);
 const mockUseVisit = vi.mocked(useVisit);
 const mockUserHasAccess = vi.mocked(userHasAccess);
+const mockShowSnackbar = vi.mocked(showSnackbar);
 const queueEntryPrivileges = routes.workspaces2.find(
   ({ name }) => name === 'queue-patient-search-add-to-queue-workspace',
 )?.privileges;
@@ -71,17 +81,22 @@ function visitResult(activeVisit: Visit | null = null) {
   } as unknown as ReturnType<typeof useVisit>;
 }
 
-function renderWorkspace(options: {
-  requiredVisitLocation?: { uuid: string; display: string } | undefined;
-} = {}) {
+function renderWorkspace(
+  options: {
+    isLeafWorkspace?: boolean;
+    launchChildWorkspace?: (...args: Array<unknown>) => Promise<boolean>;
+    requiredVisitLocation?: { uuid: string; display: string } | undefined;
+  } = {},
+) {
   const requiredVisitLocation = Object.hasOwn(options, 'requiredVisitLocation')
     ? options.requiredVisitLocation
     : { uuid: 'location-uuid', display: 'UPSS Consulta Externa' };
-  const launchChildWorkspace = vi.fn().mockResolvedValue(true);
+  const launchChildWorkspace = vi.fn(options.launchChildWorkspace ?? (async () => true));
   const closeWorkspace = vi.fn().mockResolvedValue(undefined);
   const props = {
     closeWorkspace,
     groupProps: {},
+    isLeafWorkspace: options.isLeafWorkspace ?? true,
     isRootWorkspace: false,
     launchChildWorkspace,
     showActionMenu: true,
@@ -97,7 +112,7 @@ function renderWorkspace(options: {
     },
   } as unknown as React.ComponentProps<typeof CreateQueueEntryWorkspace2>;
 
-  return { ...render(<CreateQueueEntryWorkspace2 {...props} />), closeWorkspace, launchChildWorkspace };
+  return { ...render(<CreateQueueEntryWorkspace2 {...props} />), closeWorkspace, launchChildWorkspace, props };
 }
 
 describe('CreateQueueEntryWorkspace2 authorization preflight', () => {
@@ -187,6 +202,93 @@ describe('CreateQueueEntryWorkspace2 authorization preflight', () => {
         expect.objectContaining({ patientUuid: 'patient-uuid' }),
       ),
     );
+  });
+
+  it('shows a retry instead of leaving a permanent skeleton when the child workspace is not opened', async () => {
+    mockUseSession.mockReturnValue({ user: userWithPrivileges(startVisitPrivileges) } as ReturnType<typeof useSession>);
+    let attempts = 0;
+    const { launchChildWorkspace } = renderWorkspace({
+      launchChildWorkspace: async () => {
+        attempts += 1;
+        return attempts > 1;
+      },
+    });
+
+    const retryButton = await screen.findByRole('button', { name: /retry|reintentar/i });
+    expect(launchChildWorkspace).toHaveBeenCalledOnce();
+    expect(screen.getByRole('alert')).toHaveTextContent(/visit start could not be completed|no se pudo completar/i);
+
+    await userEvent.click(retryButton);
+
+    await waitFor(() => expect(launchChildWorkspace).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByRole('button', { name: /retry|reintentar/i })).not.toBeInTheDocument());
+  });
+
+  it('retries under the idempotency token of the first attempt', async () => {
+    // The visit form mints a token per mount, and retrying remounts it. Without a
+    // token owned here, a first attempt that persisted the visit but failed to
+    // enqueue the patient would be retried as a brand new visit.
+    mockUseSession.mockReturnValue({ user: userWithPrivileges(startVisitPrivileges) } as ReturnType<typeof useSession>);
+    let attempts = 0;
+    const { launchChildWorkspace } = renderWorkspace({
+      launchChildWorkspace: async () => {
+        attempts += 1;
+        return attempts > 1;
+      },
+    });
+
+    await userEvent.click(await screen.findByRole('button', { name: /retry|reintentar/i }));
+    await waitFor(() => expect(launchChildWorkspace).toHaveBeenCalledTimes(2));
+
+    const tokenOf = (call: number) =>
+      (launchChildWorkspace.mock.calls[call][1] as { visitPersistenceToken?: string }).visitPersistenceToken;
+    expect(tokenOf(0)).toEqual(expect.any(String));
+    expect(tokenOf(1)).toBe(tokenOf(0));
+  });
+
+  it('recovers visibly when launching the child workspace rejects', async () => {
+    mockUseSession.mockReturnValue({ user: userWithPrivileges(startVisitPrivileges) } as ReturnType<typeof useSession>);
+    let attempts = 0;
+    const { launchChildWorkspace } = renderWorkspace({
+      launchChildWorkspace: async () => {
+        attempts += 1;
+        if (attempts === 1) {
+          throw new Error('Workspace loader failed');
+        }
+        return true;
+      },
+    });
+
+    const retryButton = await screen.findByRole('button', { name: /retry|reintentar/i });
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        title: 'No se pudo agregar el paciente a la cola',
+      }),
+    );
+
+    await userEvent.click(retryButton);
+
+    await waitFor(() => expect(launchChildWorkspace).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByRole('button', { name: /retry|reintentar/i })).not.toBeInTheDocument());
+  });
+
+  it('offers recovery when the opened child is closed before the queue entry is completed', async () => {
+    mockUseSession.mockReturnValue({ user: userWithPrivileges(startVisitPrivileges) } as ReturnType<typeof useSession>);
+    const rendered = renderWorkspace();
+
+    await waitFor(() => expect(rendered.launchChildWorkspace).toHaveBeenCalledOnce());
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+
+    rendered.rerender(<CreateQueueEntryWorkspace2 {...rendered.props} isLeafWorkspace={false} />);
+    rendered.rerender(<CreateQueueEntryWorkspace2 {...rendered.props} isLeafWorkspace />);
+
+    const retryButton = await screen.findByRole('button', { name: /retry|reintentar/i });
+    expect(screen.getByRole('alert')).toHaveTextContent(/visit start could not be completed|no se pudo completar/i);
+
+    await userEvent.click(retryButton);
+
+    await waitFor(() => expect(rendered.launchChildWorkspace).toHaveBeenCalledTimes(2));
   });
 
   it.each([

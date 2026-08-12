@@ -144,10 +144,7 @@ interface VisitPaymentAttribute {
   value?: unknown;
 }
 
-export function getPatientPaymentInformation(
-  attributes: Array<unknown>,
-  paymentAttributeTypeUuids: Set<string>,
-) {
+export function getPatientPaymentInformation(attributes: Array<unknown>, paymentAttributeTypeUuids: Set<string>) {
   return attributes.flatMap((attribute) => {
     if (!attribute || typeof attribute !== 'object') {
       return [];

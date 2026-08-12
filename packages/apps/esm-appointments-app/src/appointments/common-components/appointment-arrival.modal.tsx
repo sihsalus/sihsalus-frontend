@@ -637,7 +637,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           closeModal();
           return;
         }
-        await launchWorkspace2(addActiveVisitToQueueWorkspace, {
+        const workspaceOpened = await launchWorkspace2(addActiveVisitToQueueWorkspace, {
           activeVisit: activeVisits[0],
           currentQueueLocationUuid: requiredQueueLocationUuid,
           currentServiceQueueUuid: arrivalQueueUuid,
@@ -663,13 +663,15 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
               ),
             ),
         });
-        closeModal();
+        if (workspaceOpened) {
+          closeModal();
+        }
         return;
       }
 
       assertCanCreateVisit();
       assertCompanionCapabilityForMinor();
-      await launchWorkspace2(appointmentsStartVisitWorkspace, {
+      const workspaceOpened = await launchWorkspace2(appointmentsStartVisitWorkspace, {
         patientUuid: patientUuid,
         companionPersonRegistrationWorkspaceName: appointmentsCompanionPersonRegistrationWorkspace,
         companionPersonSearchWorkspaceName: appointmentsCompanionPersonSearchWorkspace,
@@ -718,7 +720,9 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           );
         },
       });
-      closeModal();
+      if (workspaceOpened) {
+        closeModal();
+      }
     } catch (error) {
       setInlineError(error);
     } finally {
@@ -773,7 +777,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       // ni crea queue entries (misma vía que 'patient-chart-start-visit').
       assertCanCreateVisit();
       assertCompanionCapabilityForMinor();
-      await launchWorkspace2(appointmentsStartVisitWorkspace, {
+      const workspaceOpened = await launchWorkspace2(appointmentsStartVisitWorkspace, {
         patientUuid: patientUuid,
         companionPersonRegistrationWorkspaceName: appointmentsCompanionPersonRegistrationWorkspace,
         companionPersonSearchWorkspaceName: appointmentsCompanionPersonSearchWorkspace,
@@ -811,7 +815,9 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           navigateToPatientChart();
         },
       });
-      closeModal();
+      if (workspaceOpened) {
+        closeModal();
+      }
     } catch (error) {
       setInlineError(error);
     } finally {

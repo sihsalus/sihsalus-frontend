@@ -32,6 +32,12 @@ test('copies the SPA assembly module boundary into both init images', () => {
 test('prevents the local SPA shell and module registries from being cached', () => {
   const startDev = readFileSync(resolve(workspaceRoot, 'packages/tooling/scripts/start-dev.js'), 'utf8');
 
-  assert.match(startDev, /cliManagedPaths\.has\(req\.path\)[\s\S]*?'cache-control': 'no-store, no-cache, must-revalidate'/);
-  assert.match(startDev, /await ensureDevRuntimeReady\(\);[\s\S]*?'cache-control': 'no-store, no-cache, must-revalidate'/);
+  assert.match(
+    startDev,
+    /cliManagedPaths\.has\(req\.path\)[\s\S]*?'cache-control': 'no-store, no-cache, must-revalidate'/,
+  );
+  assert.match(
+    startDev,
+    /await ensureDevRuntimeReady\(\);[\s\S]*?'cache-control': 'no-store, no-cache, must-revalidate'/,
+  );
 });

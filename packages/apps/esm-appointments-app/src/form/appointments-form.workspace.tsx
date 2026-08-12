@@ -1166,10 +1166,7 @@ const AppointmentsForm: React.FC<
                       onChange(event);
 
                       if (context === 'creating') {
-                        setValue(
-                          'duration',
-                          nextService?.durationMins ?? DEFAULT_APPOINTMENT_DURATION_MINUTES,
-                        );
+                        setValue('duration', nextService?.durationMins ?? DEFAULT_APPOINTMENT_DURATION_MINUTES);
                       } else if (context === 'editing') {
                         const previousServiceDuration = availableServices?.find(
                           (service) => service.uuid === previousServiceUuid,

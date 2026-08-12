@@ -188,6 +188,7 @@ describe('AppointmentArrivalModal', () => {
       id: appointment.patient.uuid,
       deceasedBoolean: false,
     } as fhir.Patient);
+    mockLaunchWorkspace2.mockResolvedValue(true);
     mockGetAppointmentStatus.mockResolvedValue(AppointmentStatus.SCHEDULED);
     mockEnsureAppointmentVisitLink.mockResolvedValue({ created: false });
     mockChangeAppointmentStatus.mockResolvedValue({ data: {} } as Awaited<ReturnType<typeof changeAppointmentStatus>>);
@@ -246,6 +247,43 @@ describe('AppointmentArrivalModal', () => {
     expect(mockFetchCurrentPatient).toHaveBeenCalledWith(appointment.patient.uuid, undefined, false);
     expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    {
+      action: 'queue' as const,
+      activeVisits: [],
+      expectedWorkspace: 'appointments-start-visit-workspace',
+      label: 'new-visit queue',
+    },
+    {
+      action: 'direct' as const,
+      activeVisits: [],
+      expectedWorkspace: 'appointments-start-visit-workspace',
+      label: 'new direct visit',
+    },
+    {
+      action: 'queue' as const,
+      activeVisits: [activeVisit],
+      expectedWorkspace: 'appointments-add-active-visit-to-queue-workspace',
+      label: 'active-visit queue',
+    },
+  ])('keeps the modal open when the $label workspace is not opened', async ({
+    action,
+    activeVisits,
+    expectedWorkspace,
+  }) => {
+    mockGetActiveVisitsForPatient.mockResolvedValue(visitsResponse(activeVisits));
+    mockLaunchWorkspace2.mockResolvedValue(false);
+
+    renderModal();
+    const actionButton = action === 'queue' ? getQueueButton() : getDirectButton();
+    await userEvent.click(actionButton);
+
+    await waitFor(() => expect(mockLaunchWorkspace2).toHaveBeenCalledWith(expectedWorkspace, expect.anything()));
+    expect(closeModal).not.toHaveBeenCalled();
+    expect(screen.getByRole('heading', { name: /registrar llegada/i })).toBeInTheDocument();
+    expect(actionButton).toBeEnabled();
   });
 
   it('fails closed when the service and location have no arrival rule', () => {

@@ -28,11 +28,7 @@ describe('patient chart route privilege contract', () => {
   });
 
   it('requires clinical chart, patient vital status, and backend person-edit access to mark a patient alive or deceased', () => {
-    const patientVitalStatusPrivileges = [
-      'app:hoja.clinica',
-      'app:hoja.clinica.estadoVitalPaciente',
-      'Edit People',
-    ];
+    const patientVitalStatusPrivileges = ['app:hoja.clinica', 'app:hoja.clinica.estadoVitalPaciente', 'Edit People'];
     const patientVitalStatusButtons = routes.extensions.filter(({ name }) =>
       ['mark-alive-button', 'mark-patient-deceased-button'].includes(name),
     );

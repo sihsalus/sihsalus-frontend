@@ -1,9 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
-import AppointmentsCalendarView, {
-  filterCalendarEventsByServiceTypes,
-} from './appointments-calendar-view.component';
+import AppointmentsCalendarView, { filterCalendarEventsByServiceTypes } from './appointments-calendar-view.component';
 
 describe('Appointment calendar view', () => {
   it('renders appointments in calendar view from appointments list', async () => {

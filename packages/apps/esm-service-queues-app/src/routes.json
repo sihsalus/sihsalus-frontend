@@ -117,7 +117,13 @@
     {
       "name": "clear-all-queue-entries",
       "component": "clearAllQueueEntries",
-      "privileges": ["app:home.colasAtencion.editar", "app:home.colasAtencion.limpiar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
+      "privileges": [
+        "app:home.colasAtencion.editar",
+        "app:home.colasAtencion.limpiar",
+        "Get Queue Entries",
+        "Get Queues",
+        "Manage Queue Entries"
+      ]
     },
     {
       "name": "previous-visit-summary-widget",
@@ -163,7 +169,13 @@
     {
       "name": "clear-all-queue-entries-modal",
       "component": "clearAllQueueEntriesModal",
-      "privileges": ["app:home.colasAtencion.editar", "app:home.colasAtencion.limpiar", "Get Queue Entries", "Get Queues", "Manage Queue Entries"]
+      "privileges": [
+        "app:home.colasAtencion.editar",
+        "app:home.colasAtencion.limpiar",
+        "Get Queue Entries",
+        "Get Queues",
+        "Manage Queue Entries"
+      ]
     },
     {
       "name": "move-queue-entry-modal",

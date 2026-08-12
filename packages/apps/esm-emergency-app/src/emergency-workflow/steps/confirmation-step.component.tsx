@@ -118,11 +118,7 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ workflowState, onRe
               <div className={styles.patientInfo}>
                 <h5 className={styles.patientName}>{patientName}</h5>
                 <div className={styles.patientMeta}>
-                  {patientAge != null && (
-                    <span>
-                      {patientAge}
-                    </span>
-                  )}
+                  {patientAge != null && <span>{patientAge}</span>}
                   {patientAge != null && <span className={styles.separator}>|</span>}
                   <span>{genderLabel}</span>
                   {patientIdentifier && (

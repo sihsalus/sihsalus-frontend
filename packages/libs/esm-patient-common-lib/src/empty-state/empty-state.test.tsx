@@ -5,13 +5,7 @@ import { EmptyState } from '.';
 
 describe('EmptyState', () => {
   it('renders an empty state widget card', () => {
-    render(
-      <EmptyState
-        headerTitle="appointments"
-        displayText="appointments"
-        launchForm={vi.fn()}
-      />,
-    );
+    render(<EmptyState headerTitle="appointments" displayText="appointments" launchForm={vi.fn()} />);
 
     expect(screen.getByRole('heading', { name: /appointments/i })).toBeInTheDocument();
     expect(screen.getByTitle(/empty data illustration/i)).toBeInTheDocument();
@@ -21,7 +15,9 @@ describe('EmptyState', () => {
   it('renders punctuation in the display text without exposing HTML entities', () => {
     render(<EmptyState headerTitle="SOAP" displayText="physical exam / SOAP records" />);
 
-    expect(screen.getByText(/There are no physical exam \/ SOAP records to display for this patient/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/There are no physical exam \/ SOAP records to display for this patient/i),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/&#x2F;/i)).not.toBeInTheDocument();
   });
 

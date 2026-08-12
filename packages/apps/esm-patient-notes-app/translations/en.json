@@ -49,8 +49,8 @@
   "nextAppointmentPlaceholder": "Date or follow-up instruction",
   "noMatchingDiagnoses": "No diagnoses found matching",
   "noMatchingPrestacionales": "No se encontraron códigos prestacionales coincidentes",
-  "noVisitNoteToDisplay": "No visit note to display",
   "note": "Note",
+  "noVisitNoteToDisplay": "No visit note to display",
   "objective": "Objective / physical exam",
   "objectivePlaceholder": "Physical exam, vital findings and objective data",
   "plan": "Treatment plan",
@@ -92,9 +92,9 @@
   "visitDate": "Visit date",
   "visitNote": "Visit note",
   "visitNoteNowVisible": "It is now visible on the Encounters page",
-  "visitNoteSaveError": "Error saving visit note",
-  "visitNoteSaved": "Visit note saved",
-  "visitNoteWorkspaceTitle": "Visit Note",
   "visitNotes": "Visit notes",
+  "visitNoteSaved": "Visit note saved",
+  "visitNoteSaveError": "Error saving visit note",
+  "visitNoteWorkspaceTitle": "Visit Note",
   "workPlan": "Orders and continuity of care"
 }

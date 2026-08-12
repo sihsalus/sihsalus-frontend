@@ -31,7 +31,8 @@ function getProviderDisplayName(provider?: AppointmentProviderResource | null): 
 export function getAppointmentProviderName(appointment?: Appointment | null): string | undefined {
   const providers = (appointment?.providers ?? []) as Array<AppointmentProviderResource>;
   const acceptedProvider = providers.find(
-    (provider) => normalizeDisplayValue(provider.response)?.toLocaleUpperCase() === 'ACCEPTED' && getProviderDisplayName(provider),
+    (provider) =>
+      normalizeDisplayValue(provider.response)?.toLocaleUpperCase() === 'ACCEPTED' && getProviderDisplayName(provider),
   );
 
   return (

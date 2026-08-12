@@ -73,10 +73,7 @@ export const ErrorState: React.FC = () => {
         <div>
           <p className={styles.errorMessage}>{t('error', 'Error')}</p>
           <p className={styles.errorCopy}>
-            {t(
-              'errorCopy',
-              'Sorry, there was an error. Please try again or contact the site administrator.',
-            )}
+            {t('errorCopy', 'Sorry, there was an error. Please try again or contact the site administrator.')}
           </p>
         </div>
       </Tile>

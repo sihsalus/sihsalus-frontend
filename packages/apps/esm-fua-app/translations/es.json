@@ -1,11 +1,11 @@
 {
   "accreditation": "Acreditación",
+  "accreditationMissingCheckedAt": "Sin fecha de acreditación",
+  "accreditationMissingInsuranceNumber": "Sin número de afiliación",
   "accreditationNoConsultada": "No consultada",
   "accreditationNoVigente": "No vigente",
   "accreditationPendiente": "Pendiente",
   "accreditationSinRegistrar": "Sin registrar",
-  "accreditationMissingCheckedAt": "Sin fecha de acreditación",
-  "accreditationMissingInsuranceNumber": "Sin número de afiliación",
   "accreditationVigente": "Vigente",
   "accreditationWarningBody": "La acreditación SIS de esta visita está {{estado}}. El FUA es declaración jurada y un error de afiliación es causal de rechazo de pago. ¿Generar de todos modos?",
   "accreditationWarningTitle": "Acreditación SIS no vigente",
@@ -155,5 +155,8 @@
   "viewFua": "Ver FUA",
   "viewHistory": "Ver historial",
   "viewPatientFuas": "Ver FUAs del paciente",
-  "visits": "Visitas"
+  "visits": "Visitas",
+  "visitsLoadError": "No se pudieron cargar las visitas",
+  "visitsRefreshError": "No se pudieron actualizar las visitas",
+  "visitsRefreshErrorCached": "Se muestran los últimos datos disponibles. Intente actualizar nuevamente."
 }

@@ -74,7 +74,9 @@ async function selectLocationAndService(
   }
   const serviceSelect = screen.getByRole('combobox', { name: /select a service/i });
   await waitFor(() => expect(serviceSelect).toBeEnabled());
-  await waitFor(() => expect(screen.getByRole('option', { name: mockUseAppointmentServiceData[0].name })).toBeInTheDocument());
+  await waitFor(() =>
+    expect(screen.getByRole('option', { name: mockUseAppointmentServiceData[0].name })).toBeInTheDocument(),
+  );
   await user.selectOptions(serviceSelect, serviceUuid);
 }
 

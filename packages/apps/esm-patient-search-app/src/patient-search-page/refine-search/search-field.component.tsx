@@ -1,5 +1,9 @@
 import { ContentSwitcher, NumberInput, Select, SelectItem, Switch, TextInput } from '@carbon/react';
-import { normalizePatientAgeRange, shouldPreventPlainNumberKey, shouldPreventPlainNumberPaste } from '@openmrs/esm-utils';
+import {
+  normalizePatientAgeRange,
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+} from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React from 'react';
 import { type Control, Controller } from 'react-hook-form';

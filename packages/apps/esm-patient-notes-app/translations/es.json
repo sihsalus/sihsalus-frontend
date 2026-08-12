@@ -49,8 +49,8 @@
   "nextAppointmentPlaceholder": "Fecha o indicación de seguimiento",
   "noMatchingDiagnoses": "No se encontraron diagnósticos coincidentes",
   "noMatchingPrestacionales": "No se encontraron códigos prestacionales coincidentes",
-  "noVisitNoteToDisplay": "No hay resúmenes de consulta para mostrar",
   "note": "Nota",
+  "noVisitNoteToDisplay": "No hay resúmenes de consulta para mostrar",
   "objective": "Objetivo / examen físico",
   "objectivePlaceholder": "Examen físico, hallazgos vitales y datos objetivos",
   "plan": "Plan terapéutico",
@@ -92,9 +92,9 @@
   "visitDate": "Fecha de consulta",
   "visitNote": "Resumen de consulta",
   "visitNoteNowVisible": "Ahora es visible en la página de Atenciones",
-  "visitNoteSaveError": "Error al guardar el resumen de consulta",
-  "visitNoteSaved": "Resumen de consulta guardado",
-  "visitNoteWorkspaceTitle": "Resumen de consulta",
   "visitNotes": "Resúmenes de consulta",
+  "visitNoteSaved": "Resumen de consulta guardado",
+  "visitNoteSaveError": "Error al guardar el resumen de consulta",
+  "visitNoteWorkspaceTitle": "Resumen de consulta",
   "workPlan": "Órdenes y continuidad de atención"
 }

@@ -28,8 +28,11 @@ export interface Workspace2DefinitionProps<
    * the window props or group props
    * @param workspaceName
    * @param workspaceProps
+   * @returns `true` when the child was opened. Returns `false` when access is
+   * denied, the parent is no longer open, or the user cancels replacing an
+   * unsaved child workspace.
    */
-  launchChildWorkspace<Props extends object>(workspaceName: string, workspaceProps?: Props): Promise<void>;
+  launchChildWorkspace<Props extends object>(workspaceName: string, workspaceProps?: Props): Promise<boolean>;
 
   /**
    * closes the current workspace, along with its children.
@@ -46,6 +49,8 @@ export interface Workspace2DefinitionProps<
   workspaceName: string;
   windowName: string;
   isRootWorkspace: boolean;
+  /** Whether this workspace currently has no child workspace above it. */
+  isLeafWorkspace?: boolean;
   showActionMenu: boolean;
 }
 

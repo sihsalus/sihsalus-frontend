@@ -51,10 +51,7 @@
       "name": "stop-visit-button",
       "component": "stopVisitActionButton",
       "slot": "patient-actions-slot",
-      "privileges": [
-        "app:hoja.clinica",
-        "app:hoja.clinica.visitas.editar"
-      ],
+      "privileges": ["app:hoja.clinica", "app:hoja.clinica.visitas.editar"],
       "online": true,
       "offline": true,
       "order": 1
@@ -63,11 +60,7 @@
       "name": "mark-alive-button",
       "slot": "patient-actions-slot",
       "component": "markPatientAliveActionButton",
-      "privileges": [
-        "app:hoja.clinica",
-        "app:hoja.clinica.estadoVitalPaciente",
-        "Edit People"
-      ],
+      "privileges": ["app:hoja.clinica", "app:hoja.clinica.estadoVitalPaciente", "Edit People"],
       "online": true,
       "offline": true,
       "order": 8
@@ -76,10 +69,7 @@
       "name": "stop-visit-button-patient-search",
       "slot": "patient-search-actions-slot",
       "component": "stopVisitPatientSearchActionButton",
-      "privileges": [
-        "app:hoja.clinica",
-        "app:hoja.clinica.visitas.editar"
-      ],
+      "privileges": ["app:hoja.clinica", "app:hoja.clinica.visitas.editar"],
       "online": true,
       "offline": true
     },
@@ -87,10 +77,7 @@
       "name": "cancel-visit-button",
       "slot": "patient-actions-slot",
       "component": "cancelVisitActionButton",
-      "privileges": [
-        "app:hoja.clinica",
-        "app:hoja.clinica.visitas.editar"
-      ],
+      "privileges": ["app:hoja.clinica", "app:hoja.clinica.visitas.editar"],
       "online": true,
       "offline": true,
       "order": 2
@@ -99,10 +86,7 @@
       "name": "cancel-visit-button",
       "slot": "patient-search-actions-slot",
       "component": "cancelVisitPatientSearchActionButton",
-      "privileges": [
-        "app:hoja.clinica",
-        "app:hoja.clinica.visitas.editar"
-      ],
+      "privileges": ["app:hoja.clinica", "app:hoja.clinica.visitas.editar"],
       "online": true,
       "offline": true
     },
@@ -110,11 +94,7 @@
       "name": "mark-patient-deceased-button",
       "slot": "patient-actions-slot",
       "component": "markPatientDeceasedActionButton",
-      "privileges": [
-        "app:hoja.clinica",
-        "app:hoja.clinica.estadoVitalPaciente",
-        "Edit People"
-      ],
+      "privileges": ["app:hoja.clinica", "app:hoja.clinica.estadoVitalPaciente", "Edit People"],
       "online": true,
       "offline": true,
       "order": 8
@@ -254,10 +234,7 @@
     {
       "name": "cancel-visit-dialog",
       "component": "cancelVisitModal",
-      "privileges": [
-        "app:hoja.clinica",
-        "app:hoja.clinica.visitas.editar"
-      ]
+      "privileges": ["app:hoja.clinica", "app:hoja.clinica.visitas.editar"]
     },
     {
       "name": "delete-encounter-modal",
@@ -272,19 +249,12 @@
     {
       "name": "end-visit-dialog",
       "component": "endVisitModal",
-      "privileges": [
-        "app:hoja.clinica",
-        "app:hoja.clinica.visitas.editar"
-      ]
+      "privileges": ["app:hoja.clinica", "app:hoja.clinica.visitas.editar"]
     },
     {
       "name": "mark-patient-alive-modal",
       "component": "markPatientAliveModal",
-      "privileges": [
-        "app:hoja.clinica",
-        "app:hoja.clinica.estadoVitalPaciente",
-        "Edit People"
-      ]
+      "privileges": ["app:hoja.clinica", "app:hoja.clinica.estadoVitalPaciente", "Edit People"]
     },
     {
       "name": "modify-visit-date-dialog",
@@ -320,20 +290,13 @@
       "name": "visit-companion-registration-workspace",
       "component": "companionPersonRegistrationWorkspace",
       "window": "start-visit-workspace-window",
-      "privileges": [
-        "app:opciones.registrarAcompanante",
-        "Add People"
-      ]
+      "privileges": ["app:opciones.registrarAcompanante", "Add People"]
     },
     {
       "name": "mark-patient-deceased-workspace-form",
       "component": "markPatientDeceasedForm",
       "window": "mark-patient-deceased-workspace-window",
-      "privileges": [
-        "app:hoja.clinica",
-        "app:hoja.clinica.estadoVitalPaciente",
-        "Edit People"
-      ]
+      "privileges": ["app:hoja.clinica", "app:hoja.clinica.estadoVitalPaciente", "Edit People"]
     }
   ],
   "workspaceWindows2": [

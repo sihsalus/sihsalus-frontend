@@ -2,6 +2,7 @@ import {
   Button,
   DataTable,
   DataTableSkeleton,
+  InlineNotification,
   Layer,
   Pagination,
   Table,
@@ -21,10 +22,17 @@ import {
   Toggle,
 } from '@carbon/react';
 import { Add, Renew } from '@carbon/react/icons';
-import { getUserFacingErrorMessage, showModal, showSnackbar, useConfig, usePagination } from '@openmrs/esm-framework';
+import {
+  ErrorState,
+  getUserFacingErrorMessage,
+  showModal,
+  showSnackbar,
+  useConfig,
+  usePagination,
+} from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import type { TFunction } from 'i18next';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Config } from '../config-schema';
@@ -165,13 +173,15 @@ function getFuaGenerationErrorMessage(error: unknown, t: TFunction) {
 const VisitTable: React.FC = () => {
   const { t } = useTranslation();
   const { sisInsuranceConceptUuid, legacySisProductConceptUuids } = useConfig<Config>();
-  const { visits, isLoading, isValidating, mutate } = useVisits();
+  const { visits, hasLoadedVisits, isLoading, isError, isValidating, mutate } = useVisits();
   const [searchString, setSearchString] = useState('');
   const [showAllVisits, setShowAllVisits] = useState(false);
   const [generatingVisitUuid, setGeneratingVisitUuid] = useState<string | null>(null);
   const [isBulkGenerating, setIsBulkGenerating] = useState(false);
   const [isBulkSelectionMode, setIsBulkSelectionMode] = useState(false);
   const [dataTableKey, setDataTableKey] = useState(0);
+  const visitsRefreshInFlight = useRef<Promise<unknown> | null>(null);
+  const [isVisitsRefreshPending, setIsVisitsRefreshPending] = useState(false);
 
   const visitInfos = useMemo<Array<VisitRowInfo>>(
     () =>
@@ -244,9 +254,30 @@ const VisitTable: React.FC = () => {
     actions: info.visit.uuid ?? '',
   }));
 
-  const handleRefresh = useCallback(() => {
-    mutate();
-  }, [mutate]);
+  const handleVisitsRefresh = useCallback(async () => {
+    if (isValidating || visitsRefreshInFlight.current) {
+      return;
+    }
+
+    setIsVisitsRefreshPending(true);
+    const refreshPromise = Promise.resolve().then(() => mutate());
+    visitsRefreshInFlight.current = refreshPromise;
+
+    try {
+      await refreshPromise;
+    } catch (error) {
+      // SWR exposes this failure through `isError`; keep the click handler from
+      // producing an unhandled rejection while the recoverable UI stays open.
+      console.error('[esm-fua-app] No se pudieron actualizar las visitas.', error);
+    } finally {
+      if (visitsRefreshInFlight.current === refreshPromise) {
+        visitsRefreshInFlight.current = null;
+        setIsVisitsRefreshPending(false);
+      }
+    }
+  }, [isValidating, mutate]);
+
+  const visitsAreRefreshing = isValidating || isVisitsRefreshPending;
 
   const handleGenerateFua = useCallback(
     async (visitUuid: string) => {
@@ -410,12 +441,59 @@ const VisitTable: React.FC = () => {
     setDataTableKey((key) => key + 1);
   }, []);
 
-  if (isLoading) {
+  if (isLoading && !hasLoadedVisits) {
     return <DataTableSkeleton role="progressbar" showHeader={false} showToolbar={false} />;
   }
 
+  if (isError && !hasLoadedVisits) {
+    return (
+      <div className={styles.tableContainer} aria-busy={visitsAreRefreshing}>
+        <div role="alert">
+          <ErrorState error={isError} headerTitle={t('visitsLoadError', 'No se pudieron cargar las visitas')} />
+        </div>
+        <div className={styles.errorActions}>
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={Renew}
+            disabled={visitsAreRefreshing}
+            onClick={() => void handleVisitsRefresh()}
+          >
+            {visitsAreRefreshing ? t('refreshing', 'Actualizando...') : t('retry', 'Reintentar')}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={styles.tableContainer}>
+    <div className={styles.tableContainer} aria-busy={visitsAreRefreshing}>
+      {isError ? (
+        <div className={styles.cachedError}>
+          <InlineNotification
+            hideCloseButton
+            kind="error"
+            lowContrast
+            role="alert"
+            subtitle={t(
+              'visitsRefreshErrorCached',
+              'Se muestran los últimos datos disponibles. Intente actualizar nuevamente.',
+            )}
+            title={t('visitsRefreshError', 'No se pudieron actualizar las visitas')}
+          />
+          <div className={styles.errorActions}>
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={Renew}
+              disabled={visitsAreRefreshing}
+              onClick={() => void handleVisitsRefresh()}
+            >
+              {visitsAreRefreshing ? t('refreshing', 'Actualizando...') : t('retry', 'Reintentar')}
+            </Button>
+          </div>
+        </div>
+      ) : null}
       <DataTable key={dataTableKey} rows={rows} headers={headers} isSortable useZebraStyles size="sm">
         {({ rows, headers, getHeaderProps, getTableProps, getRowProps, getSelectionProps, selectedRows }) => (
           <TableContainer className={styles.tableContainer}>
@@ -470,8 +548,14 @@ const VisitTable: React.FC = () => {
                     </Button>
                   )}
                 </RequirePrivilege>
-                <Button kind="ghost" size="sm" renderIcon={Renew} onClick={handleRefresh} disabled={isValidating}>
-                  {isValidating ? t('refreshing', 'Actualizando...') : t('refresh', 'Actualizar')}
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  renderIcon={Renew}
+                  onClick={() => void handleVisitsRefresh()}
+                  disabled={visitsAreRefreshing}
+                >
+                  {visitsAreRefreshing ? t('refreshing', 'Actualizando...') : t('refresh', 'Actualizar')}
                 </Button>
               </TableToolbarContent>
             </TableToolbar>

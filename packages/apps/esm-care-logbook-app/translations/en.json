@@ -114,11 +114,11 @@
   "selectPreferredPatient": "Seleccionar paciente preferido",
   "service": "Service",
   "serviceLocation": "Service/UPSS",
-  "visitTypes": "Visit types",
   "sex": "Sex",
   "status": "Status",
   "time": "Time",
-  "visitType": "Visit type",
   "visitHistoryError": "Could not load care history",
+  "visitType": "Visit type",
+  "visitTypes": "Visit types",
   "yes": "Si"
 }

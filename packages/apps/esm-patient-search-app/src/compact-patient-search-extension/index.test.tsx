@@ -91,12 +91,7 @@ describe('compact patient search extension', () => {
       setPage: vi.fn(),
       totalResults: 1,
     });
-    render(
-      <CompactPatientSearchComponent
-        initialSearchTerm="Joshua"
-        selectPatientAction={selectPatientAction}
-      />,
-    );
+    render(<CompactPatientSearchComponent initialSearchTerm="Joshua" selectPatientAction={selectPatientAction} />);
 
     await user.click(screen.getByRole('searchbox'));
     await user.keyboard('{ArrowDown}{Enter}');
@@ -144,12 +139,7 @@ describe('compact patient search extension', () => {
       setPage: vi.fn(),
       totalResults: 1,
     });
-    render(
-      <CompactPatientSearchComponent
-        initialSearchTerm="Joshua"
-        selectPatientAction={selectPatientAction}
-      />,
-    );
+    render(<CompactPatientSearchComponent initialSearchTerm="Joshua" selectPatientAction={selectPatientAction} />);
     const searchbox = screen.getByRole('searchbox');
 
     expect(screen.getByRole('button', { name: patient.person.personName.display })).toBeInTheDocument();

@@ -377,10 +377,7 @@ if (fs.existsSync(indexHtmlPath)) {
   ) {
     fail('External SPA bootstrap does not initialize OpenMRS with the expected API URL');
   }
-  if (
-    !errorUiJavaScript.includes("action === 'reload'") ||
-    !errorUiJavaScript.includes("action === 'copy-error'")
-  ) {
+  if (!errorUiJavaScript.includes("action === 'reload'") || !errorUiJavaScript.includes("action === 'copy-error'")) {
     fail('External error UI does not preserve fatal error actions');
   }
 

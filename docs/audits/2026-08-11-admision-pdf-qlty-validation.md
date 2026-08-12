@@ -4,7 +4,14 @@
 
 **Fecha de revisión:** 2026-08-11
 
-**Base de código:** `main` / `origin/main` en `53bef2832582aee5e865db9193863e690d3e9a7c`, más las correcciones propuestas en los PRs #785–#789 descritas en la sección 2.1
+**Base original de auditoría:** `53bef2832582aee5e865db9193863e690d3e9a7c`
+
+**Baseline histórico desplegado el 2026-08-11:** frontend
+`64b0b8d527e92298a46b2867842eb4b611255049`, digest
+`sha256:998e02ba38eb03297e6da4b3580c2ba963c35b328ca7eb11571fe0db81d062a5`,
+con los PRs #785–#791 fusionados y desplegados en DEV/QLTY. Este SHA registra
+el cierre técnico de esa fecha; no identifica necesariamente el despliegue
+actual de los ambientes.
 
 **Ambiente a validar:** QLTY
 
@@ -35,7 +42,7 @@ Interpretación de estados:
 
 ## 2. Evidencia técnica ejecutada
 
-Se ejecutaron las suites completas de los diez paquetes usados como evidencia. Los conteos corresponden a las ramas reconciliadas de los PRs indicados en la sección 2.1; todavía no representan un único artefacto desplegado en QLTY. Además, el PR #789 volvió a ejecutar Citas (334/334) y Colas (292/292) como consumidores del contrato común: junto con sus cuatro paquetes propios, su validación aislada suma 1,160/1,160.
+Se ejecutaron las suites completas de los diez paquetes usados como evidencia. Los conteos corresponden a las ramas reconciliadas de los PRs indicados en la sección 2.1. Después de la integración, el CI del SHA `64b0b8d5…` pasó y el mismo SHA fue publicado y desplegado; esto cierra la trazabilidad técnica del artefacto, pero no sustituye las pruebas funcionales de esta matriz. Además, el PR #789 volvió a ejecutar Citas (334/334) y Colas (292/292) como consumidores del contrato común: junto con sus cuatro paquetes propios, su validación aislada suma 1,160/1,160.
 
 | Paquete                    |         Pruebas |
 | -------------------------- | --------------: |
@@ -79,9 +86,12 @@ yarn workspace @sihsalus/esm-fua-app typescript
 yarn workspace @sihsalus/esm-active-visits-app typescript
 ```
 
-### 2.1 Correcciones propuestas posteriores a la auditoría
+### 2.1 Correcciones integradas después de la auditoría
 
-Estas correcciones tienen commit y PR, pero al cierre del reporte siguen abiertas y no están desplegadas en QLTY:
+Estas correcciones fueron fusionadas antes de construir el artefacto indicado al
+inicio del reporte. El PR #791 añadió el fixture de integración requerido por
+el contrato final de cobertura; el CI y Release del SHA integrado terminaron
+correctamente.
 
 | PR                                                             | Rama                                             | SHA revisado | Alcance                                             |
 | -------------------------------------------------------------- | ------------------------------------------------ | ------------ | --------------------------------------------------- |
@@ -90,8 +100,10 @@ Estas correcciones tienen commit y PR, pero al cierre del reporte siguen abierta
 | [#787](https://github.com/sihsalus/sihsalus-frontend/pull/787) | `fix/appointments-arrival-access-context`        | `681fa3f83`  | Llegada por rama, identidad y documento en Citas    |
 | [#788](https://github.com/sihsalus/sihsalus-frontend/pull/788) | `fix/registration-financing-consistency`         | `b3c934103`  | Consistencia de financiador en Registro             |
 | [#789](https://github.com/sihsalus/sihsalus-frontend/pull/789) | `fix/visit-financing-integrity`                  | `f2cb2e355`  | Contrato y recuperación de cobertura por consulta   |
+| [#790](https://github.com/sihsalus/sihsalus-frontend/pull/790) | `docs/admission-pdf-audit-report`                | `02ca25314`  | Inventario trazable y matriz de validación QLTY      |
+| [#791](https://github.com/sihsalus/sihsalus-frontend/pull/791) | `fix/integrated-visit-insurance-fixture`         | `ce076a408`  | Fixture final del contrato integrado de cobertura    |
 
-| Brecha                                                 | Corrección propuesta                                                                                                                                                                                                 | Evidencia                                               |
+| Brecha                                                 | Corrección integrada                                                                                                                                                                                                  | Evidencia                                               |
 | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
 | Menor con permiso exclusivo para registrar acompañante | Citas y Colas aceptan `Get People` **o** `app:opciones.registrarAcompanante` + `Add People`; bloquean de forma segura durante carga, error o fecha de nacimiento inválida.                                           | Citas 360/360 + Colas 313/313; QLTY-15A/B.              |
 | Llegada con permisos distintos por rama                | Citas comprueba la rama que realmente se ejecutará: crear consulta, reutilizarla, encolar o ir a atención directa. Las acciones imposibles quedan deshabilitadas con la capacidad faltante y no disparan peticiones. | Suite completa de Citas; QLTY-14B/C.                    |
@@ -115,8 +127,8 @@ Estas correcciones tienen commit y PR, pero al cierre del reporte siguen abierta
 | Métricas, tabla, calendario y filtros de Citas sincronizados                                                   | 14, 53, 55, 57–59         | Implementado por `40a53a29e` y `1a77fa69b`.                                                                                                                        | QLTY-12                       |
 | Cita vencida se puede marcar como no atendida                                                                  | 15, 91                    | Existe estado real `MISSED`, no solo una etiqueta, por `00330f742`. Automatizarlo sigue siendo decisión de Producto.                                               | QLTY-13                       |
 | Una consulta activa compatible ya no impide crear otra cita                                                    | 77                        | Resuelto: se puede crear la cita aunque exista una consulta activa.                                                                                                | QLTY-17A                      |
-| Llegada no navega automáticamente a HCE, valida capacidades y cancelación muestra resumen                      | 56, 75, 103               | Implementado por `c47f8ca81` más el preflight por rama propuesto en #787; una capacidad opcional no bloquea otra rama y una acción denegada no realiza peticiones. | QLTY-14A/B/C y QLTY-18A/B     |
-| Financiador separado del plan SIS y cobertura coherente en persona/visita                                      | 80–81, 95–96, 99–101      | Los PRs #788 y #789 proponen aplicar SIS/IAFAS/Particular, evitar documentos civiles y huérfanos, exigir el bundle completo y reparar sobre la misma visita.       | QLTY-03, QLTY-04 y QLTY-16A–H |
+| Llegada no navega automáticamente a HCE, valida capacidades y cancelación muestra resumen                      | 56, 75, 103               | Implementado por `c47f8ca81` más el preflight por rama integrado en #787; una capacidad opcional no bloquea otra rama y una acción denegada no realiza peticiones. | QLTY-14A/B/C y QLTY-18A/B     |
+| Financiador separado del plan SIS y cobertura coherente en persona/visita                                      | 80–81, 95–96, 99–101      | Los PRs #788 y #789 integraron el manejo de SIS/IAFAS/Particular, evitaron documentos civiles y huérfanos, exigieron el bundle completo y repararon sobre la misma visita. | QLTY-03, QLTY-04 y QLTY-16A–H |
 | Código prestacional obligatorio y persistido como observación codificada                                       | 108                       | Resuelto por `d0e3ec4ea` y `81c1bb6ff`.                                                                                                                            | QLTY-23                       |
 | Filtros de Colas permiten `Todo`, cambio de UPSS/servicio y refresco tras triaje                               | 35, 76, 83, 126–127       | Resuelto por `fe4e77aa0` y flujo de derivación de triaje.                                                                                                          | QLTY-19 y QLTY-20             |
 | Expansión de fila sin visita muestra mensaje seguro                                                            | 87, 131                   | Resuelto para la ausencia de visita; los componentes internos todavía necesitan datos/permisos reales.                                                             | QLTY-21                       |
@@ -170,7 +182,7 @@ Estas correcciones tienen commit y PR, pero al cierre del reporte siguen abierta
 
 Antes de ejecutar casos funcionales:
 
-1. Registrar el SHA y digest realmente desplegados. Para cerrar las correcciones de la sección 2.1, el artefacto debe contener los cambios fusionados de los PRs #785–#789; verificar los merge commits reales, no solo el nombre de la rama o una caché del import map.
+1. Confirmar que `build-info.json` mantiene el SHA `64b0b8d527e92298a46b2867842eb4b611255049` (o un descendiente que contenga los PRs #785–#791) y registrar el digest observado. Si no coincide, detener la campaña; no usar solo el nombre de la rama o una caché del import map como evidencia.
 2. Usar únicamente pacientes sintéticos. El PDF contiene nombres y documentos aparentes de personas; no deben copiarse al reporte ni a nueva evidencia.
 3. Preparar cuentas separadas:
    - Admisión, sin privilegios de HCE/finalización;

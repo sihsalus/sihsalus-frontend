@@ -2,7 +2,13 @@
 
 **Fuente:** `SIH-SALUS.usuario Admisión-2.pdf`
 
-**Base revisada:** `53bef2832582aee5e865db9193863e690d3e9a7c`, más las correcciones propuestas en los PRs #785–#789 del reporte principal
+**Base revisada originalmente:** `53bef2832582aee5e865db9193863e690d3e9a7c`.
+
+**Cierre técnico:** las correcciones de los PRs #785–#791 forman parte de `main` en
+`64b0b8d527e92298a46b2867842eb4b611255049`, publicado y desplegado en
+DEV/QLTY. El estado de cada hallazgo sigue requiriendo la ejecución manual
+indicada en el reporte; “resuelto en código” no equivale por sí solo a
+aceptación funcional en QLTY.
 
 **Total:** 131 hallazgos
 

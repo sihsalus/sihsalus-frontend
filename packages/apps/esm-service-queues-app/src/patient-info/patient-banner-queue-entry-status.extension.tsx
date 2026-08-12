@@ -78,7 +78,12 @@ const getTagType = (priority: string) => {
     .toLocaleLowerCase();
   // Priority displays arrive localized, so both the English and Spanish catalog
   // values must map to their semantic color instead of falling through to gray.
-  if (normalized === 'emergency' || normalized === 'emergencia' || normalized === 'urgent' || normalized === 'urgente') {
+  if (
+    normalized === 'emergency' ||
+    normalized === 'emergencia' ||
+    normalized === 'urgent' ||
+    normalized === 'urgente'
+  ) {
     return 'red';
   }
   if (normalized === 'not urgent' || normalized === 'no urgente') {

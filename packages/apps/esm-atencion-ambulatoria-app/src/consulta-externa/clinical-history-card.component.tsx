@@ -124,9 +124,7 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
       role="toolbar"
       aria-label={t('clinicalEntryActions', 'Clinical entry actions')}
     >
-      <span className={styles.clinicalEntryToolbarLabel}>
-        {t('clinicalEntryActions', 'Clinical entry actions')}
-      </span>
+      <span className={styles.clinicalEntryToolbarLabel}>{t('clinicalEntryActions', 'Clinical entry actions')}</span>
       <div className={styles.historyHeaderActionItems}>
         {hasSecondaryAction ? (
           <Button

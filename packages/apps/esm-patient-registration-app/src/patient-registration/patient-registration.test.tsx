@@ -946,7 +946,10 @@ describe('Updating an existing patient record', () => {
     await waitFor(() => expect(mockMutateSWR).toHaveBeenCalledTimes(2));
     expect(mockMutateSWR).toHaveBeenNthCalledWith(1, relationshipsUrl);
     expect(mockMutateSWR).toHaveBeenNthCalledWith(2, relationshipsUrl, undefined, { revalidate: false });
-    expect(consoleError).toHaveBeenCalledWith('Could not refresh patient relationships after saving', cacheRefreshError);
+    expect(consoleError).toHaveBeenCalledWith(
+      'Could not refresh patient relationships after saving',
+      cacheRefreshError,
+    );
     expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
     consoleError.mockRestore();
   });

@@ -34,6 +34,7 @@ declare module '@sihsalus/esm-form-engine-lib' {
     handleClose: () => void;
     handleConfirmQuestionDeletion?: () => Promise<void>;
     handleEncounterCreate?: (encounter: OpenmrsEncounter) => OpenmrsEncounter | void | Promise<OpenmrsEncounter | void>;
+    onBeforeEncounterSave?: (encounter: OpenmrsEncounter) => void | Promise<void>;
     handleOnValidate?: (valid: boolean) => void;
     hideControls?: boolean;
     hidePatientBanner?: boolean;

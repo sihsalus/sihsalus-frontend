@@ -224,6 +224,28 @@ describe('CreateQueueEntryWorkspace2 authorization preflight', () => {
     await waitFor(() => expect(screen.queryByRole('button', { name: /retry|reintentar/i })).not.toBeInTheDocument());
   });
 
+  it('retries under the idempotency token of the first attempt', async () => {
+    // The visit form mints a token per mount, and retrying remounts it. Without a
+    // token owned here, a first attempt that persisted the visit but failed to
+    // enqueue the patient would be retried as a brand new visit.
+    mockUseSession.mockReturnValue({ user: userWithPrivileges(startVisitPrivileges) } as ReturnType<typeof useSession>);
+    let attempts = 0;
+    const { launchChildWorkspace } = renderWorkspace({
+      launchChildWorkspace: async () => {
+        attempts += 1;
+        return attempts > 1;
+      },
+    });
+
+    await userEvent.click(await screen.findByRole('button', { name: /retry|reintentar/i }));
+    await waitFor(() => expect(launchChildWorkspace).toHaveBeenCalledTimes(2));
+
+    const tokenOf = (call: number) =>
+      (launchChildWorkspace.mock.calls[call][1] as { visitPersistenceToken?: string }).visitPersistenceToken;
+    expect(tokenOf(0)).toEqual(expect.any(String));
+    expect(tokenOf(1)).toBe(tokenOf(0));
+  });
+
   it('recovers visibly when launching the child workspace rejects', async () => {
     mockUseSession.mockReturnValue({ user: userWithPrivileges(startVisitPrivileges) } as ReturnType<typeof useSession>);
     let attempts = 0;

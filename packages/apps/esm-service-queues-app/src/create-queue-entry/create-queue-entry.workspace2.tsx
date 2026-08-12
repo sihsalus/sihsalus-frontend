@@ -86,6 +86,11 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
   const [startVisitLaunchState, setStartVisitLaunchState] = useState<StartVisitLaunchState>('idle');
   const hasLaunchedStartVisitWorkspace = useRef(false);
   const startVisitChildWasOpened = useRef(false);
+  // Retrying relaunches the visit form, which mints a fresh idempotency token on
+  // every mount. Owning the token here keeps every attempt for this patient under
+  // the same key, so a visit persisted by an attempt whose queue entry failed is
+  // recognised instead of duplicated.
+  const visitPersistenceToken = useRef(crypto.randomUUID());
 
   const handleCloseWindow = useCallback(() => {
     void closeWorkspace({ closeWindow: true, discardUnsavedChanges: true });
@@ -166,6 +171,7 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
       requestedServiceName,
       requiredVisitLocation,
       requiredVisitTypeUuid,
+      visitPersistenceToken: visitPersistenceToken.current,
       workspaceTitle: t('addPatientToQueue', 'Add patient to queue'),
       onQueueEntryAdded: handleQueueEntryAddedAndClose,
     })

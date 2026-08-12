@@ -15,6 +15,8 @@ import { type Concept, type Identifer, type Queue, type QueueEntry } from './typ
 
 dayjs.extend(isToday);
 
+export { serveQueueEntry } from './queue-screen.resource';
+
 export interface VisitQueueEntry {
   queueEntry: QueueEntry;
   uuid: string;
@@ -117,22 +119,5 @@ export async function updateQueueEntry(
     newPriority: priority,
     newStatus: status,
     ...(priorityComment !== undefined ? { newPriorityComment: priorityComment } : {}),
-  });
-}
-
-export function serveQueueEntry(servicePointName: string, ticketNumber: string, status: string) {
-  const abortController = new AbortController();
-
-  return openmrsFetch(`${restBaseUrl}/queueutil/assignticket`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    signal: abortController.signal,
-    body: {
-      servicePointName,
-      ticketNumber,
-      status,
-    },
   });
 }

@@ -60,7 +60,12 @@ describe('CallQueueEntryModal', () => {
 
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledOnce());
     expect(mockUpdateQueueEntry).toHaveBeenCalledOnce();
-    expect(mockServeQueueEntry).toHaveBeenCalledOnce();
+    expect(mockServeQueueEntry).toHaveBeenCalledWith(
+      mockQueueEntryAlice.patient.uuid,
+      mockQueueEntryAlice.queue.name,
+      expect.any(String),
+      'serving',
+    );
     expect(mockNavigate).toHaveBeenCalledWith({
       to: `${globalThis.spaBase}/patient/${mockQueueEntryAlice.patient.uuid}/chart`,
     });

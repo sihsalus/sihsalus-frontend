@@ -1,4 +1,8 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import {
+  assertFreshPatientIsAlive,
+  DECEASED_PATIENT_OPERATION_BLOCKED,
+} from '@openmrs/esm-patient-common-lib';
 
 import { type QueueEntry } from '../types';
 import {
@@ -13,11 +17,22 @@ import {
 } from './queue-entry-actions.resource';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockAssertFreshPatientIsAlive = vi.mocked(assertFreshPatientIsAlive);
+
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  assertFreshPatientIsAlive: vi.fn(),
+}));
+
+beforeEach(() => {
+  mockAssertFreshPatientIsAlive.mockResolvedValue({ dead: false, deathDate: null, isDeceased: false });
+});
 
 const sourceEntry = {
   uuid: 'source-entry',
   endedAt: null,
   startedAt: '2026-07-14T13:00:00.000Z',
+  patient: { uuid: 'patient-uuid' },
   visit: { uuid: 'visit-uuid' },
   queue: { uuid: 'source-queue' },
   status: { uuid: 'waiting-status' },
@@ -137,6 +152,18 @@ describe('transitionQueueEntry', () => {
       body: transitionParams,
     });
     expect(mockOpenmrsFetch.mock.calls[1][1]?.body).not.toHaveProperty('transitionDate');
+  });
+
+  it('does not transition a queue entry after the patient dies', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce(response(sourceEntry));
+    mockAssertFreshPatientIsAlive.mockRejectedValue(
+      Object.assign(new Error('deceased patient'), { code: DECEASED_PATIENT_OPERATION_BLOCKED }),
+    );
+
+    await expect(transitionQueueEntry(transitionParams)).rejects.toMatchObject({
+      code: DECEASED_PATIENT_OPERATION_BLOCKED,
+    });
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => url === `${restBaseUrl}/queue-entry/transition`)).toBe(false);
   });
 
   it('reconciles a retry when the requested successor already exists', async () => {
@@ -375,6 +402,22 @@ describe('updateActiveQueueEntry', () => {
       signal: undefined,
       body: { priorityComment: 'Requeued' },
     });
+  });
+
+  it('does not update active queue metadata after the patient dies', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce(response(sourceEntry));
+    mockAssertFreshPatientIsAlive.mockRejectedValue(
+      Object.assign(new Error('deceased patient'), { code: DECEASED_PATIENT_OPERATION_BLOCKED }),
+    );
+
+    await expect(updateActiveQueueEntry(sourceEntry.uuid, { priorityComment: 'Requeued' })).rejects.toMatchObject({
+      code: DECEASED_PATIENT_OPERATION_BLOCKED,
+    });
+    expect(
+      mockOpenmrsFetch.mock.calls.some(
+        ([url, init]) => url === `${restBaseUrl}/queue-entry/${sourceEntry.uuid}` && init?.method === 'POST',
+      ),
+    ).toBe(false);
   });
 
   it('does not alter historical metadata after another user ended the entry', async () => {

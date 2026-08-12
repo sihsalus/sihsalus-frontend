@@ -67,7 +67,7 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ c
         queueEntry?.priority?.uuid,
         defaultTransitionStatus,
       );
-      await serveQueueEntry(queueEntry.queue.name, ticketNumber, 'serving');
+      await serveQueueEntry(queueEntry.patientUuid, queueEntry.queue.name, ticketNumber, 'serving');
 
       showSnackbar({
         isLowContrast: true,

@@ -66,7 +66,7 @@ const AppointmentServices: React.FC = () => {
             <Layer>
               <TextInput
                 id="name"
-                invalidText={t(props.errors.name)}
+                invalidText={t('appointmentServiceNameRequired', 'Appointment service name is required')}
                 labelText={t('appointmentServiceName', 'Appointment service name')}
                 placeholder={t('appointmentServiceName', 'Appointment service name')}
                 invalid={!!(props.touched && props.errors.name)}
@@ -125,7 +125,7 @@ const AppointmentServices: React.FC = () => {
             <Layer>
               <TextInput
                 id="durationMins"
-                invalidText={props.errors.durationMins}
+                invalidText={t('durationMinsRequired', 'Duration is required')}
                 labelText={t('durationMins', 'Duration min')}
                 placeholder={t('durationMins', 'Duration min')}
                 invalid={!!(props.touched && props.errors.durationMins)}
@@ -153,7 +153,7 @@ const AppointmentServices: React.FC = () => {
                 id="color"
                 invalid={!!(props.touched && props.errors.color)}
                 onChange={props.handleChange}
-                invalidText={props.errors.color}
+                invalidText={t('colorRequired', 'Appointment color is required')}
                 labelText={t('appointmentColor', 'Appointment color')}
                 type="color"
                 name="color"

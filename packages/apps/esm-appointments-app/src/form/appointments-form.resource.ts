@@ -1,4 +1,4 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { fetchCurrentPatient, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import { useCallback } from 'react';
@@ -16,6 +16,23 @@ dayjs.extend(isToday);
 
 const appointmentUrlMatcher = `${restBaseUrl}/appointment`;
 const appointmentsSearchUrl = `${restBaseUrl}/appointments/search`;
+export const DECEASED_PATIENT_APPOINTMENT_BLOCKED = 'DECEASED_PATIENT_APPOINTMENT_BLOCKED';
+export const PATIENT_DEATH_STATUS_UNAVAILABLE = 'PATIENT_DEATH_STATUS_UNAVAILABLE';
+
+/** Fresh online check used immediately before creating an appointment. */
+export async function assertPatientCanReceiveAppointment(patientUuid: string) {
+  const patient = await fetchCurrentPatient(patientUuid, undefined, false);
+  if (!patient) {
+    throw Object.assign(new Error('The patient could not be loaded.'), {
+      code: PATIENT_DEATH_STATUS_UNAVAILABLE,
+    });
+  }
+  if (patient.deceasedBoolean || patient.deceasedDateTime) {
+    throw Object.assign(new Error('Appointments cannot be created for a deceased patient.'), {
+      code: DECEASED_PATIENT_APPOINTMENT_BLOCKED,
+    });
+  }
+}
 
 export function useMutateAppointments() {
   const { mutate } = useSWRConfig();

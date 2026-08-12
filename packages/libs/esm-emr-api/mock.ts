@@ -1,5 +1,6 @@
 import { vi } from 'vitest';
 
+export const fetchCurrentPatient = vi.fn();
 export const setCurrentVisit = vi.fn();
 export const attachmentUrl = '/ws/rest/v1/attachment';
 export const getAttachmentByUuid = vi.fn();

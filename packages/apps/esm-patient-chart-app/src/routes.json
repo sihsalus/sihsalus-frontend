@@ -60,7 +60,7 @@
       "name": "mark-alive-button",
       "slot": "patient-actions-slot",
       "component": "markPatientAliveActionButton",
-      "privileges": ["app:hoja.clinica", "app:hoja.clinica.estadoVitalPaciente"],
+      "privileges": ["app:hoja.clinica", "app:hoja.clinica.estadoVitalPaciente", "Edit People"],
       "online": true,
       "offline": true,
       "order": 8
@@ -94,7 +94,7 @@
       "name": "mark-patient-deceased-button",
       "slot": "patient-actions-slot",
       "component": "markPatientDeceasedActionButton",
-      "privileges": ["app:hoja.clinica", "app:hoja.clinica.estadoVitalPaciente"],
+      "privileges": ["app:hoja.clinica", "app:hoja.clinica.estadoVitalPaciente", "Edit People"],
       "online": true,
       "offline": true,
       "order": 8
@@ -254,7 +254,7 @@
     {
       "name": "mark-patient-alive-modal",
       "component": "markPatientAliveModal",
-      "privileges": ["app:hoja.clinica", "app:hoja.clinica.estadoVitalPaciente"]
+      "privileges": ["app:hoja.clinica", "app:hoja.clinica.estadoVitalPaciente", "Edit People"]
     },
     {
       "name": "modify-visit-date-dialog",
@@ -296,7 +296,7 @@
       "name": "mark-patient-deceased-workspace-form",
       "component": "markPatientDeceasedForm",
       "window": "mark-patient-deceased-workspace-window",
-      "privileges": ["app:hoja.clinica", "app:hoja.clinica.estadoVitalPaciente"]
+      "privileges": ["app:hoja.clinica", "app:hoja.clinica.estadoVitalPaciente", "Edit People"]
     }
   ],
   "workspaceWindows2": [

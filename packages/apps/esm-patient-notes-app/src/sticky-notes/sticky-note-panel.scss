@@ -1,6 +1,6 @@
-@use "@carbon/layout";
-@use "@carbon/type";
-@use "@openmrs/esm-styleguide/src/vars" as *;
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
 
 .stickyNoteContainer {
   position: absolute;
@@ -17,7 +17,7 @@
 .noteContent {
   padding: layout.$spacing-05;
   min-height: 8rem;
-  @include type.type-style("body-long-01");
+  @include type.type-style('body-long-01');
   white-space: pre-wrap;
 }
 
@@ -31,7 +31,7 @@
 }
 
 .noteMetadata {
-  @include type.type-style("caption-01");
+  @include type.type-style('caption-01');
   color: var(--cds-text-02);
 }
 
@@ -50,5 +50,5 @@
 }
 
 .errorTitle {
-  @include type.type-style("body-short-01");
+  @include type.type-style('body-short-01');
 }

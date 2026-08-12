@@ -1,7 +1,7 @@
-@use "@carbon/colors";
-@use "@carbon/layout";
-@use "@carbon/type";
-@use "@openmrs/esm-styleguide/src/vars" as *;
+@use '@carbon/colors';
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
 
 .defaultQueueTable {
   margin: layout.$spacing-05;
@@ -129,14 +129,14 @@
 
 .desktopHeading {
   h4 {
-    @include type.type-style("heading-compact-02");
+    @include type.type-style('heading-compact-02');
     color: $text-02;
   }
 }
 
 .tabletHeading {
   h4 {
-    @include type.type-style("heading-03");
+    @include type.type-style('heading-03');
     color: $text-02;
   }
 }
@@ -147,7 +147,7 @@
   text-transform: capitalize;
 
   h4:after {
-    content: "";
+    content: '';
     display: block;
     width: layout.$spacing-07;
     padding-top: 3px;
@@ -175,7 +175,7 @@
 }
 
 // Overriding styles for RTL support
-html[dir="rtl"] {
+html[dir='rtl'] {
   .headerContainer {
     svg {
       margin-left: 0;
@@ -219,14 +219,14 @@ html[dir="rtl"] {
 }
 
 .content {
-  @include type.type-style("heading-compact-02");
+  @include type.type-style('heading-compact-02');
   color: $text-02;
   margin-top: layout.$spacing-05;
   margin-bottom: layout.$spacing-03;
 }
 
 .helper {
-  @include type.type-style("body-compact-01");
+  @include type.type-style('body-compact-01');
   color: $text-02;
 }
 

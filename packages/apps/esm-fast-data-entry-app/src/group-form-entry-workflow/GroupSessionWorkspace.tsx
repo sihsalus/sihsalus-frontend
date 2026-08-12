@@ -80,6 +80,7 @@ const GroupSessionWorkspace = () => {
     updateVisitUuid,
     submitForNext,
     workflowState,
+    resetSubmission,
   } = useContext(GroupFormWorkflowContext);
 
   const { sessionLocation } = useSession();
@@ -92,13 +93,18 @@ const GroupSessionWorkspace = () => {
   }, [updateVisitUuid, activeVisitUuid]);
 
   const assertActivePatientIsAlive = useCallback(async () => {
-    if (!activePatientUuid) {
-      throw Object.assign(new Error('The patient vital status could not be loaded.'), {
-        code: PATIENT_VITAL_STATUS_UNAVAILABLE,
-      });
+    try {
+      if (!activePatientUuid) {
+        throw Object.assign(new Error('The patient vital status could not be loaded.'), {
+          code: PATIENT_VITAL_STATUS_UNAVAILABLE,
+        });
+      }
+      await assertFreshPatientIsAlive(activePatientUuid);
+    } catch (error) {
+      resetSubmission();
+      throw error;
     }
-    await assertFreshPatientIsAlive(activePatientUuid);
-  }, [activePatientUuid]);
+  }, [activePatientUuid, resetSubmission]);
 
   // If there's no active visit, trigger the creation of a new one
   const handleEncounterCreate = useCallback<NonNullable<FormRendererProps['handleEncounterCreate']>>(

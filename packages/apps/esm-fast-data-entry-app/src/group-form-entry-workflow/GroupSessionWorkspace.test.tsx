@@ -4,9 +4,11 @@ import {
   DECEASED_PATIENT_OPERATION_BLOCKED,
   PATIENT_VITAL_STATUS_UNAVAILABLE,
 } from '@openmrs/esm-patient-common-lib';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useCallback, useReducer } from 'react';
 import GroupFormWorkflowContext from '../context/GroupFormWorkflowContext';
+import groupFormWorkflowReducer from '../context/GroupFormWorkflowReducer';
 import FormBootstrap from '../FormBootstrap';
 import GroupSessionWorkspace from './GroupSessionWorkspace';
 
@@ -24,9 +26,9 @@ vi.mock('@openmrs/esm-patient-common-lib', () => ({
   PATIENT_VITAL_STATUS_UNAVAILABLE: 'PATIENT_VITAL_STATUS_UNAVAILABLE',
 }));
 
-vi.mock('uuid', () => ({
-  v4: vi.fn(() => 'generated-visit-uuid'),
-}));
+const mockUuid = vi.hoisted(() => vi.fn());
+
+vi.mock('uuid', () => ({ v4: mockUuid }));
 
 vi.mock('../FormBootstrap', () => ({
   __esModule: true,
@@ -81,12 +83,72 @@ const renderWorkspace = (contextOverrides = {}) => {
     saveEncounter: vi.fn(),
     updateVisitUuid: vi.fn(),
     submitForNext: vi.fn(),
+    resetSubmission: vi.fn(),
   };
 
   return render(
     <GroupFormWorkflowContext.Provider value={{ ...defaultContext, ...contextOverrides } as never}>
       <GroupSessionWorkspace />
     </GroupFormWorkflowContext.Provider>,
+  );
+};
+
+const StatefulGroupWorkflow = () => {
+  const [state, dispatch] = useReducer(groupFormWorkflowReducer, {
+    activeFormUuid: 'group-form',
+    userUuid: 'user-1',
+    nextPatientUuid: null,
+    forms: {
+      'group-form': {
+        workflowState: 'EDIT_FORM',
+        patientUuids: ['patient-a', 'patient-b'],
+        activePatientUuid: 'patient-a',
+        activeEncounterUuid: null,
+        activeVisitUuid: null,
+        activeFormUuid: 'group-form',
+        activeGroupUuid: 'group-1',
+        activeGroupName: 'Nutrition Cohort',
+        activeSessionUuid: 'session-1',
+        activeSessionMeta: {
+          sessionName: 'April Session',
+          practitionerName: 'Alice',
+          sessionDate: '2026-04-15',
+          sessionNotes: 'Bring notebooks',
+        },
+        groupVisitTypeUuid: 'visit-type-1',
+        encounters: {},
+        visits: {},
+      },
+    },
+  });
+  const formState = state.forms['group-form'];
+  const saveEncounter = useCallback((encounterUuid) => dispatch({ type: 'SAVE_ENCOUNTER', encounterUuid }), []);
+  const updateVisitUuid = useCallback((visitUuid) => dispatch({ type: 'UPDATE_VISIT_UUID', visitUuid }), []);
+  const submitForNext = useCallback(
+    (nextPatientUuid) => dispatch({ type: 'SUBMIT_FOR_NEXT', nextPatientUuid }),
+    [],
+  );
+  const resetSubmission = useCallback(() => dispatch({ type: 'SUBMISSION_FAILED' }), []);
+
+  return (
+    <GroupFormWorkflowContext.Provider
+      value={
+        {
+          ...formState,
+          activeFormUuid: 'group-form',
+          activeGroupUuid: formState.activeGroupUuid,
+          activeGroupName: formState.activeGroupName,
+          activeSessionMeta: formState.activeSessionMeta,
+          groupVisitTypeUuid: formState.groupVisitTypeUuid,
+          saveEncounter,
+          updateVisitUuid,
+          submitForNext,
+          resetSubmission,
+        } as never
+      }
+    >
+      <GroupSessionWorkspace />
+    </GroupFormWorkflowContext.Provider>
   );
 };
 
@@ -115,6 +177,7 @@ describe('GroupSessionWorkspace', () => {
       },
     } as never);
     mockAssertFreshPatientIsAlive.mockResolvedValue({ dead: false, isDeceased: false });
+    mockUuid.mockReturnValue('generated-visit-uuid');
   });
 
   it('checks a living patient before building the encounter and again before its final save', async () => {
@@ -194,9 +257,10 @@ describe('GroupSessionWorkspace', () => {
     ['unavailable', PATIENT_VITAL_STATUS_UNAVAILABLE],
   ])('does not mutate the encounter payload when the initial patient check is %s', async (_state, code) => {
     const updateVisitUuid = vi.fn();
+    const resetSubmission = vi.fn();
     const guardError = Object.assign(new Error(`Patient status ${_state}`), { code });
     mockAssertFreshPatientIsAlive.mockRejectedValueOnce(guardError);
-    renderWorkspace({ updateVisitUuid });
+    renderWorkspace({ updateVisitUuid, resetSubmission });
 
     const [formBootstrapProps] = mockFormBootstrap.mock.calls[0];
     const payload = {
@@ -210,17 +274,19 @@ describe('GroupSessionWorkspace', () => {
 
     expect(payload).toEqual(originalPayload);
     expect(updateVisitUuid).not.toHaveBeenCalled();
+    expect(resetSubmission).toHaveBeenCalledOnce();
   });
 
   it('blocks the final save when the patient dies after the initial check', async () => {
     const updateVisitUuid = vi.fn();
+    const resetSubmission = vi.fn();
     const deceasedError = Object.assign(new Error('Patient is deceased'), {
       code: DECEASED_PATIENT_OPERATION_BLOCKED,
     });
     mockAssertFreshPatientIsAlive
       .mockResolvedValueOnce({ dead: false, isDeceased: false })
       .mockRejectedValueOnce(deceasedError);
-    renderWorkspace({ updateVisitUuid });
+    renderWorkspace({ updateVisitUuid, resetSubmission });
 
     const [formBootstrapProps] = mockFormBootstrap.mock.calls[0];
     const payload = { obs: [] };
@@ -231,6 +297,7 @@ describe('GroupSessionWorkspace', () => {
     await expect(formBootstrapProps.onBeforeEncounterSave(payload)).rejects.toBe(deceasedError);
     expect(mockAssertFreshPatientIsAlive).toHaveBeenCalledTimes(2);
     expect(updateVisitUuid).not.toHaveBeenCalled();
+    expect(resetSubmission).toHaveBeenCalledOnce();
 
     mockAssertFreshPatientIsAlive.mockResolvedValue({ dead: false, isDeceased: false });
     const retryPayload: Record<string, unknown> = { obs: [] };
@@ -240,6 +307,63 @@ describe('GroupSessionWorkspace', () => {
     expect(retryPayload.visit).toEqual(expect.objectContaining({ uuid: 'generated-visit-uuid' }));
     formBootstrapProps.handlePostResponse({ uuid: 'retry-encounter-uuid' });
     expect(updateVisitUuid).toHaveBeenCalledWith('generated-visit-uuid');
+  });
+
+  it('restores the button after a rejected final guard and retries with the same pending visit UUID', async () => {
+    const user = userEvent.setup();
+    const deceasedError = Object.assign(new Error('Patient died during submission'), {
+      code: DECEASED_PATIENT_OPERATION_BLOCKED,
+    });
+    mockAssertFreshPatientIsAlive
+      .mockResolvedValueOnce({ dead: false, isDeceased: false })
+      .mockRejectedValueOnce(deceasedError)
+      .mockResolvedValue({ dead: false, isDeceased: false });
+    mockUuid.mockReset().mockReturnValueOnce('pending-visit-uuid').mockReturnValue('unexpected-new-visit-uuid');
+    render(<StatefulGroupWorkflow />);
+
+    const attemptedVisitUuids: string[] = [];
+    const savedEncounterUuids: string[] = [];
+    const attemptCompletions: Array<Promise<void>> = [];
+    const onSubmit = () => {
+      const [formBootstrapProps] = mockFormBootstrap.mock.calls.at(-1);
+      const payload: Record<string, unknown> = { obs: [] };
+      const attempt = (async () => {
+        try {
+          await formBootstrapProps.handleEncounterCreate(payload);
+          attemptedVisitUuids.push((payload.visit as { uuid: string }).uuid);
+          await formBootstrapProps.onBeforeEncounterSave(payload);
+          const encounterUuid = `encounter-${attemptedVisitUuids.length}`;
+          savedEncounterUuids.push(encounterUuid);
+          formBootstrapProps.handlePostResponse({ uuid: encounterUuid });
+        } catch {
+          // The real form engine reports the rejection while the workflow guard
+          // restores EDIT_FORM. The retry is initiated by the user below.
+        }
+      })();
+      attemptCompletions.push(attempt);
+    };
+    window.addEventListener('ampath-form-action', onSubmit);
+
+    try {
+      await user.click(screen.getByRole('button', { name: 'Next patient' }));
+      await waitFor(() => expect(attemptCompletions).toHaveLength(1));
+      await attemptCompletions[0];
+
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Next patient' })).toBeEnabled());
+      expect(attemptedVisitUuids).toEqual(['pending-visit-uuid']);
+      expect(savedEncounterUuids).toEqual([]);
+
+      await user.click(screen.getByRole('button', { name: 'Next patient' }));
+      await waitFor(() => expect(attemptCompletions).toHaveLength(2));
+      await attemptCompletions[1];
+
+      expect(attemptedVisitUuids).toEqual(['pending-visit-uuid', 'pending-visit-uuid']);
+      expect(savedEncounterUuids).toEqual(['encounter-2']);
+      expect(mockUuid).toHaveBeenCalledOnce();
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Save Form' })).toBeEnabled());
+    } finally {
+      window.removeEventListener('ampath-form-action', onSubmit);
+    }
   });
 
   it('wires patient switching and save actions through the workflow callbacks', async () => {

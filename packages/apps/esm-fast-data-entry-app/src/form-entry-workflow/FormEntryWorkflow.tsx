@@ -57,6 +57,7 @@ export const FormWorkspace = () => {
     editEncounter,
     encounters,
     singleSessionVisitTypeUuid,
+    resetSubmission,
   } = useContext(FormWorkflowContext);
   const { t } = useTranslation();
 
@@ -90,13 +91,18 @@ export const FormWorkspace = () => {
   }, [visitSaveSuccess]);
 
   const assertActivePatientIsAlive = useCallback(async () => {
-    if (!activePatientUuid) {
-      throw Object.assign(new Error('The patient vital status could not be loaded.'), {
-        code: PATIENT_VITAL_STATUS_UNAVAILABLE,
-      });
+    try {
+      if (!activePatientUuid) {
+        throw Object.assign(new Error('The patient vital status could not be loaded.'), {
+          code: PATIENT_VITAL_STATUS_UNAVAILABLE,
+        });
+      }
+      await assertFreshPatientIsAlive(activePatientUuid);
+    } catch (error) {
+      resetSubmission();
+      throw error;
     }
-    await assertFreshPatientIsAlive(activePatientUuid);
-  }, [activePatientUuid]);
+  }, [activePatientUuid, resetSubmission]);
 
   const handleEncounterCreate = useCallback<NonNullable<FormRendererProps['handleEncounterCreate']>>(
     async (payload) => {

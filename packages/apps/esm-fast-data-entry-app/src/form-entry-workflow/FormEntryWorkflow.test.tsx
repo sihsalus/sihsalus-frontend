@@ -82,6 +82,7 @@ const renderWorkspace = (contextOverrides = {}) => {
     saveEncounter: vi.fn(),
     editEncounter: vi.fn(),
     destroySession: vi.fn(),
+    resetSubmission: vi.fn(),
   };
 
   return render(
@@ -136,9 +137,10 @@ describe('FormWorkspace encounter vital-status guards', () => {
     ['deceased', DECEASED_PATIENT_OPERATION_BLOCKED],
     ['unavailable', PATIENT_VITAL_STATUS_UNAVAILABLE],
   ])('does not mutate the encounter payload when the initial patient check is %s', async (_state, code) => {
+    const resetSubmission = vi.fn();
     const guardError = Object.assign(new Error(`Patient status ${_state}`), { code });
     mockAssertFreshPatientIsAlive.mockRejectedValueOnce(guardError);
-    renderWorkspace();
+    renderWorkspace({ resetSubmission });
 
     const [formBootstrapProps] = mockFormBootstrap.mock.calls[0];
     const payload = {
@@ -151,16 +153,18 @@ describe('FormWorkspace encounter vital-status guards', () => {
     await expect(formBootstrapProps.handleEncounterCreate(payload)).rejects.toBe(guardError);
 
     expect(payload).toEqual(originalPayload);
+    expect(resetSubmission).toHaveBeenCalledOnce();
   });
 
   it('blocks the final save when the patient dies after the initial check', async () => {
+    const resetSubmission = vi.fn();
     const deceasedError = Object.assign(new Error('Patient is deceased'), {
       code: DECEASED_PATIENT_OPERATION_BLOCKED,
     });
     mockAssertFreshPatientIsAlive
       .mockResolvedValueOnce({ dead: false, isDeceased: false })
       .mockRejectedValueOnce(deceasedError);
-    renderWorkspace();
+    renderWorkspace({ resetSubmission });
 
     const [formBootstrapProps] = mockFormBootstrap.mock.calls[0];
     const payload = { encounterDatetime: '2026-04-15T10:00:00.000Z' };
@@ -170,5 +174,6 @@ describe('FormWorkspace encounter vital-status guards', () => {
     expect(payload).toHaveProperty('visit');
     await expect(formBootstrapProps.onBeforeEncounterSave(payload)).rejects.toBe(deceasedError);
     expect(mockAssertFreshPatientIsAlive).toHaveBeenCalledTimes(2);
+    expect(resetSubmission).toHaveBeenCalledOnce();
   });
 });

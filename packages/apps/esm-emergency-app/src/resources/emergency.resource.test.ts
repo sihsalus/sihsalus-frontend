@@ -8,10 +8,15 @@ import {
   createEmergencyQueueEntry,
   EMERGENCY_QUEUE_ENTRY_ALREADY_ENDED,
   EMERGENCY_QUEUE_ENTRY_CLOSE_UNVERIFIED,
+  EMERGENCY_QUEUE_ENTRY_CREATION_AMBIGUOUS,
+  EMERGENCY_QUEUE_ENTRY_CREATION_CONFLICT,
+  EMERGENCY_QUEUE_ENTRY_CREATION_UNVERIFIED,
   EMERGENCY_QUEUE_ENTRY_PATIENT_UNAVAILABLE,
+  EMERGENCY_QUEUE_ENTRY_SEARCH_STALLED,
   EMERGENCY_QUEUE_ENTRY_TRANSITION_CONFLICT,
   EMERGENCY_QUEUE_ENTRY_TRANSITION_UNVERIFIED,
   EMERGENCY_QUEUE_ENTRY_UPDATE_UNVERIFIED,
+  EMERGENCY_QUEUE_ENTRY_UUID_UNAVAILABLE,
   endEmergencyQueueEntry,
   transitionEmergencyQueueEntry,
   transitionToAttentionQueue,
@@ -20,7 +25,6 @@ import {
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockAssertFreshPatientIsAlive = vi.mocked(assertFreshPatientIsAlive);
-const mockFetchResponse = { data: { uuid: 'queue-entry-uuid' } } as Awaited<ReturnType<typeof openmrsFetch>>;
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
@@ -35,6 +39,18 @@ function mockLivingPatient() {
   mockAssertFreshPatientIsAlive.mockResolvedValue({ dead: false, deathDate: null, isDeceased: false });
 }
 
+const createdEmergencyEntry = {
+  uuid: 'queue-entry-uuid',
+  startedAt: '2026-08-12T14:00:00.000Z',
+  endedAt: null,
+  patient: { uuid: 'patient-uuid' },
+  visit: { uuid: 'visit-uuid' },
+  queue: { uuid: 'queue-uuid' },
+  status: { uuid: 'waiting-status-uuid' },
+  priority: { uuid: 'priority-uuid' },
+  sortWeight: 4,
+};
+
 describe('createEmergencyQueueEntry', () => {
   beforeEach(() => {
     mockOpenmrsFetch.mockReset();
@@ -43,18 +59,27 @@ describe('createEmergencyQueueEntry', () => {
   });
 
   it('preserves sortWeight 0 for direct emergency attention', async () => {
-    mockOpenmrsFetch.mockResolvedValue(mockFetchResponse);
+    const directEntry = {
+      ...createdEmergencyEntry,
+      priority: { uuid: 'priority-i-uuid' },
+      status: { uuid: 'in-service-uuid' },
+      sortWeight: 0,
+    };
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response({ results: [] }))
+      .mockResolvedValueOnce(response({ uuid: directEntry.uuid }, 201))
+      .mockResolvedValueOnce(response({ results: [directEntry] }));
 
-    await createEmergencyQueueEntry(
+    await expect(createEmergencyQueueEntry(
       'patient-uuid',
       'visit-uuid',
       'priority-i-uuid',
       'in-service-uuid',
       'queue-uuid',
       0,
-    );
+    )).resolves.toMatchObject({ data: { uuid: directEntry.uuid } });
 
-    expect(mockOpenmrsFetch).toHaveBeenCalledWith(`${restBaseUrl}/visit-queue-entry`, {
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(2, `${restBaseUrl}/visit-queue-entry`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -67,16 +92,20 @@ describe('createEmergencyQueueEntry', () => {
     });
     expect(mockAssertFreshPatientIsAlive).toHaveBeenCalledWith('patient-uuid');
     expect(mockAssertFreshPatientIsAlive.mock.invocationCallOrder[0]).toBeLessThan(
-      mockOpenmrsFetch.mock.invocationCallOrder[0],
+      mockOpenmrsFetch.mock.invocationCallOrder[1],
     );
   });
 
   it('defaults sortWeight only when none is provided', async () => {
-    mockOpenmrsFetch.mockResolvedValue(mockFetchResponse);
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response({ results: [] }))
+      .mockResolvedValueOnce(response({ uuid: createdEmergencyEntry.uuid }, 201))
+      .mockResolvedValueOnce(response({ results: [createdEmergencyEntry] }));
 
     await createEmergencyQueueEntry('patient-uuid', 'visit-uuid', 'priority-uuid', 'waiting-status-uuid', 'queue-uuid');
 
-    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+      2,
       `${restBaseUrl}/visit-queue-entry`,
       expect.objectContaining({
         body: expect.objectContaining({
@@ -92,6 +121,7 @@ describe('createEmergencyQueueEntry', () => {
     ['deceased', DECEASED_PATIENT_OPERATION_BLOCKED],
     ['unavailable', PATIENT_VITAL_STATUS_UNAVAILABLE],
   ])('fails closed when patient vital status is %s', async (_state, code) => {
+    mockOpenmrsFetch.mockResolvedValueOnce(response({ results: [] }));
     mockAssertFreshPatientIsAlive.mockRejectedValueOnce(Object.assign(new Error(String(_state)), { code }));
 
     await expect(
@@ -104,7 +134,139 @@ describe('createEmergencyQueueEntry', () => {
       ),
     ).rejects.toMatchObject({ code });
 
-    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => url === `${restBaseUrl}/visit-queue-entry`)).toBe(false);
+  });
+
+  it('reuses one exact active entry for the visit after a fresh patient check', async () => {
+    const existingResponse = response({ results: [createdEmergencyEntry] });
+    mockOpenmrsFetch.mockResolvedValueOnce(existingResponse);
+
+    await expect(
+      createEmergencyQueueEntry('patient-uuid', 'visit-uuid', 'priority-uuid', 'waiting-status-uuid', 'queue-uuid'),
+    ).resolves.toMatchObject({ data: { uuid: createdEmergencyEntry.uuid } });
+
+    expect(mockAssertFreshPatientIsAlive).toHaveBeenCalledWith('patient-uuid');
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
+  });
+
+  it('rejects multiple active entries for the same visit as ambiguous', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce(
+      response({ results: [createdEmergencyEntry, { ...createdEmergencyEntry, uuid: 'duplicate-entry' }] }),
+    );
+
+    await expect(
+      createEmergencyQueueEntry('patient-uuid', 'visit-uuid', 'priority-uuid', 'waiting-status-uuid', 'queue-uuid'),
+    ).rejects.toMatchObject({ code: EMERGENCY_QUEUE_ENTRY_CREATION_AMBIGUOUS });
+
+    expect(mockAssertFreshPatientIsAlive).not.toHaveBeenCalled();
+  });
+
+  it('rejects a conflicting active entry instead of creating another one', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce(
+      response({ results: [{ ...createdEmergencyEntry, queue: { uuid: 'other-queue' } }] }),
+    );
+
+    await expect(
+      createEmergencyQueueEntry('patient-uuid', 'visit-uuid', 'priority-uuid', 'waiting-status-uuid', 'queue-uuid'),
+    ).rejects.toMatchObject({ code: EMERGENCY_QUEUE_ENTRY_CREATION_CONFLICT });
+
+    expect(mockAssertFreshPatientIsAlive).not.toHaveBeenCalled();
+  });
+
+  it('accepts a 2xx response without a UUID when the authoritative entry persisted', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response({ results: [] }))
+      .mockResolvedValueOnce(response({}, 201))
+      .mockResolvedValueOnce(response({ results: [createdEmergencyEntry] }));
+
+    await expect(
+      createEmergencyQueueEntry('patient-uuid', 'visit-uuid', 'priority-uuid', 'waiting-status-uuid', 'queue-uuid'),
+    ).resolves.toMatchObject({ data: { uuid: createdEmergencyEntry.uuid } });
+  });
+
+  it('rejects a 2xx response without a UUID when no authoritative entry persisted', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response({ results: [] }))
+      .mockResolvedValueOnce(response({}, 201))
+      .mockResolvedValueOnce(response({ results: [] }));
+
+    await expect(
+      createEmergencyQueueEntry('patient-uuid', 'visit-uuid', 'priority-uuid', 'waiting-status-uuid', 'queue-uuid'),
+    ).rejects.toMatchObject({ code: EMERGENCY_QUEUE_ENTRY_CREATION_UNVERIFIED });
+  });
+
+  it('rejects a 2xx response whose UUID contradicts the authoritative entry', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response({ results: [] }))
+      .mockResolvedValueOnce(response({ uuid: 'different-response-uuid' }, 201))
+      .mockResolvedValueOnce(response({ results: [createdEmergencyEntry] }));
+
+    await expect(
+      createEmergencyQueueEntry('patient-uuid', 'visit-uuid', 'priority-uuid', 'waiting-status-uuid', 'queue-uuid'),
+    ).rejects.toMatchObject({ code: EMERGENCY_QUEUE_ENTRY_CREATION_UNVERIFIED });
+  });
+
+  it('rejects an authoritative active entry without a UUID', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce(
+      response({ results: [{ ...createdEmergencyEntry, uuid: undefined }] }),
+    );
+
+    await expect(
+      createEmergencyQueueEntry('patient-uuid', 'visit-uuid', 'priority-uuid', 'waiting-status-uuid', 'queue-uuid'),
+    ).rejects.toMatchObject({ code: EMERGENCY_QUEUE_ENTRY_UUID_UNAVAILABLE });
+  });
+
+  it('fails closed when a capped active-entry page repeats without progress', async () => {
+    const repeatedPage = Array.from({ length: 100 }, () => createdEmergencyEntry);
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response({ results: repeatedPage }))
+      .mockResolvedValueOnce(response({ results: repeatedPage }));
+
+    await expect(
+      createEmergencyQueueEntry('patient-uuid', 'visit-uuid', 'priority-uuid', 'waiting-status-uuid', 'queue-uuid'),
+    ).rejects.toMatchObject({ code: EMERGENCY_QUEUE_ENTRY_SEARCH_STALLED });
+    expect(mockOpenmrsFetch.mock.calls[0][0]).toContain('startIndex=0');
+    expect(mockOpenmrsFetch.mock.calls[1][0]).toContain('startIndex=100');
+  });
+
+  it('reconciles a lost or duplicate response when exactly one requested entry persisted', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response({ results: [] }))
+      .mockRejectedValueOnce(Object.assign(new Error('duplicate response lost'), { status: 409 }))
+      .mockResolvedValueOnce(response({ results: [createdEmergencyEntry] }));
+
+    await expect(
+      createEmergencyQueueEntry('patient-uuid', 'visit-uuid', 'priority-uuid', 'waiting-status-uuid', 'queue-uuid'),
+    ).resolves.toMatchObject({ data: { uuid: createdEmergencyEntry.uuid } });
+    expect(mockAssertFreshPatientIsAlive).toHaveBeenCalledTimes(2);
+  });
+
+  it('preserves the write error when lost-response reconciliation finds no entry', async () => {
+    const writeError = new TypeError('response lost');
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response({ results: [] }))
+      .mockRejectedValueOnce(writeError)
+      .mockResolvedValueOnce(response({ results: [] }));
+
+    await expect(
+      createEmergencyQueueEntry('patient-uuid', 'visit-uuid', 'priority-uuid', 'waiting-status-uuid', 'queue-uuid'),
+    ).rejects.toBe(writeError);
+  });
+
+  it('coalesces identical concurrent attempts for the same visit into one POST', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response({ results: [] }))
+      .mockResolvedValueOnce(response({ uuid: createdEmergencyEntry.uuid }, 201))
+      .mockResolvedValueOnce(response({ results: [createdEmergencyEntry] }));
+
+    const calls = [
+      createEmergencyQueueEntry('patient-uuid', 'visit-uuid', 'priority-uuid', 'waiting-status-uuid', 'queue-uuid'),
+      createEmergencyQueueEntry('patient-uuid', 'visit-uuid', 'priority-uuid', 'waiting-status-uuid', 'queue-uuid'),
+    ];
+
+    await expect(Promise.all(calls)).resolves.toHaveLength(2);
+    expect(mockOpenmrsFetch.mock.calls.filter(([url]) => url === `${restBaseUrl}/visit-queue-entry`)).toHaveLength(1);
   });
 });
 

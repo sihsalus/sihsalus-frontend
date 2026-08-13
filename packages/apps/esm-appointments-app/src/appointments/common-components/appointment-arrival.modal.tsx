@@ -11,13 +11,13 @@ import {
   useSession,
   type Visit,
 } from '@openmrs/esm-framework';
-import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import {
   fetchFreshPatientVitalStatus,
   fetchVisitInsurance,
   getSisFinancingState,
   safeCopyFinanciadorToVisit,
 } from '@openmrs/esm-patient-common-lib';
+import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -85,16 +85,9 @@ interface AppointmentArrivalModalProps {
 }
 
 /**
- * Modal de registro de llegada de una cita. Ofrece dos rutas:
- *
- * 1. «Enviar a cola de espera»: el flujo de admisión existente (consulta + queue
- *    entry vía workspaces). Los errores de validación previos al lanzamiento
- *    del workspace se muestran inline dentro del modal sin cerrarlo. La política
- *    configurada determina si esta ruta es obligatoria, opcional o no aplica.
- * 2. «Iniciar atención directamente»: marca la cita como admitida y asegura
- *    una consulta activa (reutiliza la activa o abre el formulario de inicio de
- *    consulta sin parámetros de cola) sin crear queue entry, y navega a la
- *    historia del paciente.
+ * Modal de registro de llegada de una cita. Las políticas con cola muestran
+ * únicamente la acción «Enviar a cola de espera». La atención directa se
+ * conserva para servicios configurados explícitamente con la política `direct`.
  */
 const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
   appointment,
@@ -144,13 +137,14 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     arrivalRule?.arrivalPolicy === 'queue-optional' || arrivalRule?.arrivalPolicy === 'queue-required';
   const directAllowedByRule =
     arrivalRule?.arrivalPolicy === 'queue-optional' || arrivalRule?.arrivalPolicy === 'direct';
+  const showDirectAction = directAllowedByRule && !queueAllowedByRule;
   const canInspectVisits = canInspectAppointmentVisits(session?.user);
   const canCreateVisit = canCreateAppointmentVisit(session?.user);
   const canReuseVisit = canReuseAppointmentVisit(session?.user);
   const canCreateQueueEntry = canCreateAppointmentQueueEntry(session?.user);
   const shouldResolveVisitBranch = Boolean(
     canInspectVisits &&
-      ((directAllowedByRule && canOpenPatientChart && (!canCreateVisit || !canReuseVisit)) ||
+      ((showDirectAction && canOpenPatientChart && (!canCreateVisit || !canReuseVisit)) ||
         (queueAllowedByRule && canCreateQueueEntry && !canCreateVisit)),
   );
   const [visitBranchPreflight, setVisitBranchPreflight] = useState<VisitBranchPreflight>({ status: 'not-needed' });
@@ -844,7 +838,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     (visitBranchPreflight.status === 'not-needed' || visitBranchPreflight.status === 'loading');
   const visitBranchError =
     shouldResolveVisitBranch && visitBranchPreflight.status === 'error' ? visitBranchPreflight.error : null;
-  const directAccessError = directAllowedByRule
+  const directAccessError = showDirectAction
     ? !canOpenPatientChart
       ? Object.assign(new Error('The operator cannot open the patient chart.'), {
           code: CLINICAL_CHART_CAPABILITY_MISSING,
@@ -933,7 +927,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         {!displayedError && queueAccessError ? (
           <InlineNotification
             hideCloseButton
-            kind={directAllowedByRule && !directAccessError ? 'warning' : 'error'}
+            kind={showDirectAction && !directAccessError ? 'warning' : 'error'}
             lowContrast
             role="alert"
             title={t('queueArrivalUnavailable', 'Ingreso a cola no disponible')}
@@ -950,7 +944,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         <Button disabled={isBusy} kind="secondary" onClick={closeModal}>
           {t('cancel', 'Cancelar')}
         </Button>
-        {directAllowedByRule && !routingConfigurationError ? (
+        {showDirectAction && !routingConfigurationError ? (
           <Button
             disabled={
               isBusy || isPatientLoading || isVisitBranchLoading || isDeceasedPatient || Boolean(directAccessError)

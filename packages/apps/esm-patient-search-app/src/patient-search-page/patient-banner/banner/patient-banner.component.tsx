@@ -50,7 +50,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
     isValidating: isVisitValidating,
   } = useVisit(patientUuid);
   const effectiveVisit = currentVisit ?? activeVisit;
-  const { nonNavigationSelectPatientAction } = useContext(PatientSearchContext);
+  const { nonNavigationSelectPatientAction, showPrimaryActions } = useContext(PatientSearchContext);
   const patientSearchContext2 = usePatientSearchContext2();
   const canAccessPatientChart = usePatientChartAccess();
   const isEmbeddedSelection = Boolean(nonNavigationSelectPatientAction || patientSearchContext2?.onPatientSelected);
@@ -146,8 +146,8 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
                 patientUuid={patientUuid}
               />
             ) : null}
-            {!isEmbeddedSelection && !isDeceased ? (
-              <ExtensionSlot name="patient-search-primary-actions-slot" state={{ patientUuid }} />
+            {(!isEmbeddedSelection || showPrimaryActions) && !isDeceased ? (
+              <ExtensionSlot name="patient-search-primary-actions-slot" state={{ patientUuid, selectPatientAction }} />
             ) : null}
             {canStartVisit && (!isEmbeddedSelection || allowsEmbeddedStartVisit) ? (
               <ExtensionSlot name={startVisitButtonSlotName} state={startVisitButtonSlotState} />

@@ -1,9 +1,8 @@
 import { ExtensionSlot, PatientBannerActionsMenu, userHasAccess, useSession, useVisit } from '@openmrs/esm-framework';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { mockAdvancedSearchResults } from 'test-utils';
-
-import { PatientSearchContext, PatientSearchContext2 } from '../../../patient-search-context';
 import { patientChartPrivilege } from '../../../patient-chart-access';
+import { PatientSearchContext, PatientSearchContext2 } from '../../../patient-search-context';
 import { type SearchedPatient } from '../../../types';
 
 import PatientBanner from './patient-banner.component';
@@ -73,9 +72,13 @@ function renderPatientBannerWithContext2(
   );
 }
 
-function renderPatientBannerWithLegacySelection(patientToRender = patient, nonNavigationSelectPatientAction = vi.fn()) {
+function renderPatientBannerWithLegacySelection(
+  patientToRender = patient,
+  nonNavigationSelectPatientAction = vi.fn(),
+  showPrimaryActions = false,
+) {
   return render(
-    <PatientSearchContext.Provider value={{ nonNavigationSelectPatientAction }}>
+    <PatientSearchContext.Provider value={{ nonNavigationSelectPatientAction, showPrimaryActions }}>
       <PatientBanner patient={patientToRender} patientUuid={patientToRender.uuid} />
     </PatientSearchContext.Provider>,
   );
@@ -142,6 +145,25 @@ describe('PatientBanner', () => {
     expect(mockPatientBannerActionsMenu).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: /Joshua Johnson/i }));
+    expect(nonNavigationSelectPatientAction).toHaveBeenCalledWith(patient.uuid);
+  });
+
+  it('renders an opted-in primary action at the end of an embedded patient result', () => {
+    mockUseVisit.mockReturnValue(mockVisitReturn({ activeVisit }));
+    const nonNavigationSelectPatientAction = vi.fn();
+
+    renderPatientBannerWithLegacySelection(patient, nonNavigationSelectPatientAction, true);
+
+    expect(getRenderedSlotNames()).toEqual(['patient-search-primary-actions-slot']);
+    expect(mockExtensionSlot.mock.calls[0][0].state).toEqual({
+      patientUuid: patient.uuid,
+      selectPatientAction: expect.any(Function),
+    });
+
+    const selectPatientAction = mockExtensionSlot.mock.calls[0][0].state.selectPatientAction as (
+      patientUuid: string,
+    ) => void;
+    selectPatientAction(patient.uuid);
     expect(nonNavigationSelectPatientAction).toHaveBeenCalledWith(patient.uuid);
   });
 

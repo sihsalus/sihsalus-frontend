@@ -21,6 +21,8 @@ import { launchWorkspace2, userHasAccess, useSession } from '@openmrs/esm-framew
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { appointmentsEditPrivilege } from '../constants';
+
 import ScheduleAppointmentAction, { ScheduleAppointmentPrimaryAction } from './schedule-appointment-action.component';
 
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
@@ -30,6 +32,7 @@ const mockUseSession = vi.mocked(useSession);
 describe('ScheduleAppointmentAction', () => {
   beforeEach(() => {
     vi.stubGlobal('spaBase', '/openmrs/spa');
+    mockLaunchWorkspace2.mockClear();
     mockUserHasAccess.mockReset();
     mockUseSession.mockReturnValue({ user: { uuid: 'admission-user' } } as ReturnType<typeof useSession>);
   });
@@ -49,7 +52,7 @@ describe('ScheduleAppointmentAction', () => {
   });
 
   it('offers appointment creation as the primary patient-search action', async () => {
-    mockUserHasAccess.mockImplementation((privilege) => privilege === 'app:home.admision');
+    mockUserHasAccess.mockImplementation((privilege) => privilege === appointmentsEditPrivilege);
     render(<ScheduleAppointmentPrimaryAction patientUuid="patient-uuid" />);
 
     await userEvent.click(screen.getByRole('button', { name: /agregar cita/i }));
@@ -61,8 +64,19 @@ describe('ScheduleAppointmentAction', () => {
     });
   });
 
-  it('keeps scheduling in the actions menu for clinical users', () => {
-    mockUserHasAccess.mockReturnValue(false);
+  it('uses the embedded appointment-search action when provided', async () => {
+    const selectPatientAction = vi.fn();
+    mockUserHasAccess.mockImplementation((privilege) => privilege === appointmentsEditPrivilege);
+    render(<ScheduleAppointmentPrimaryAction patientUuid="patient-uuid" selectPatientAction={selectPatientAction} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /agregar cita/i }));
+
+    expect(selectPatientAction).toHaveBeenCalledWith('patient-uuid');
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+  });
+
+  it('hides the primary action without the appointment edit privilege', () => {
+    mockUserHasAccess.mockImplementation((privilege) => privilege === 'app:home.admision');
 
     render(<ScheduleAppointmentPrimaryAction patientUuid="patient-uuid" />);
 

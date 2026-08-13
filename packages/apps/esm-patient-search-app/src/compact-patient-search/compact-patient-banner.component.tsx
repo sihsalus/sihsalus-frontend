@@ -1,4 +1,4 @@
-import { ConfigurableLink, getPatientName, PatientPhoto, useConfig } from '@openmrs/esm-framework';
+import { ConfigurableLink, ExtensionSlot, getPatientName, PatientPhoto, useConfig } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { forwardRef, useCallback, useContext, useMemo } from 'react';
 
@@ -22,21 +22,40 @@ interface CompactPatientBannerProps {
 
 const CompactPatientBanner = forwardRef<HTMLDivElement, CompactPatientBannerProps>(({ patients }, ref) => {
   const fhirMappedPatients = useMemo(() => patients.map(mapSearchedPatientToFhir), [patients]);
+  const { nonNavigationSelectPatientAction, patientClickSideEffect, showPrimaryActions } =
+    useContext(PatientSearchContext);
+
+  const handlePrimaryAction = useCallback(
+    (patientUuid: string) => {
+      nonNavigationSelectPatientAction?.(patientUuid);
+      patientClickSideEffect?.(patientUuid);
+    },
+    [nonNavigationSelectPatientAction, patientClickSideEffect],
+  );
 
   const renderPatient = useCallback(
     (patient: fhir.Patient & { id: string }, index: number) => {
       const patientName = getPatientName(patient);
 
       return (
-        <ClickablePatientContainer key={patient.id} patient={patients[index]}>
-          <div className={styles.patientAvatar} role="img">
-            <PatientPhoto patientUuid={patient.id} patientName={patientName} />
-          </div>
-          <SihsalusPatientInfo patient={patient} renderedFrom="patient-search" />
-        </ClickablePatientContainer>
+        <div className={styles.patientSearchResultContainer} key={patient.id} tabIndex={-1}>
+          <ClickablePatientContainer patient={patients[index]}>
+            <div className={styles.patientAvatar} role="img">
+              <PatientPhoto patientUuid={patient.id} patientName={patientName} />
+            </div>
+            <SihsalusPatientInfo patient={patient} renderedFrom="patient-search" />
+          </ClickablePatientContainer>
+          {nonNavigationSelectPatientAction && showPrimaryActions ? (
+            <ExtensionSlot
+              className={styles.patientSearchActions}
+              name="patient-search-primary-actions-slot"
+              state={{ patientUuid: patient.id, selectPatientAction: handlePrimaryAction }}
+            />
+          ) : null}
+        </div>
       );
     },
-    [patients],
+    [handlePrimaryAction, nonNavigationSelectPatientAction, patients, showPrimaryActions],
   );
 
   return <div ref={ref}>{fhirMappedPatients.map((patient, index) => renderPatient(patient, index))}</div>;

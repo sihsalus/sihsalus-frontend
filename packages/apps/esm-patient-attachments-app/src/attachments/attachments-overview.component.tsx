@@ -56,9 +56,12 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
   const isTablet = useLayoutType() === 'tablet';
   const { t } = useTranslation(moduleName);
   const session = useSession();
+  // The backend may omit sessionId from /session (newer webservices.rest strips
+  // it). Cached data still gets isolated per user; when a session id is present
+  // it narrows the scope further. Rendering must not depend on sessionId.
   const attachmentCacheScope =
-    session?.authenticated && session.sessionId && session.user?.uuid
-      ? `${session.sessionId}:${session.user.uuid}`
+    session?.authenticated && session.user?.uuid
+      ? `${session.sessionId ?? 'no-session-id'}:${session.user.uuid}`
       : undefined;
   const canRead = Boolean(attachmentCacheScope && userHasAccess('app:hoja.clinica.adjuntos', session?.user));
   const canEdit = Boolean(attachmentCacheScope && userHasAccess('app:hoja.clinica.adjuntos.editar', session?.user));

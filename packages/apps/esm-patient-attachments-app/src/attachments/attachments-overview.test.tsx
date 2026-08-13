@@ -75,6 +75,28 @@ it('disables attachment requests when the session is not authenticated', () => {
   expect(screen.queryByRole('heading', { name: 'Attachments' })).not.toBeInTheDocument();
 });
 
+it('still renders when the backend session has no sessionId', () => {
+  // Newer webservices.rest omits sessionId from /session (QLTY runs such a
+  // backend). Reading attachments only needs an authenticated user with the
+  // privilege; the cache scope falls back to a per-user key.
+  mockUseSession.mockReturnValue({
+    authenticated: true,
+    user: { uuid: 'user-uuid' },
+  } as ReturnType<typeof useSession>);
+  mockUseAttachments.mockReturnValue({
+    data: [],
+    error: undefined,
+    isLoading: false,
+    isValidating: false,
+    mutate: vi.fn(),
+  });
+
+  render(<AttachmentsOverview patientUuid="test-uuid" />);
+
+  expect(mockUseAttachments).toHaveBeenCalledWith('test-uuid', true, true, 'no-session-id:user-uuid');
+  expect(screen.getByRole('heading', { name: 'Attachments' })).toBeInTheDocument();
+});
+
 it('shows an error state instead of an empty state when attachments cannot be read', () => {
   mockUseAttachments.mockReturnValue({
     data: [],

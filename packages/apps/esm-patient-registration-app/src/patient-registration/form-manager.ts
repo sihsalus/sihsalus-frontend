@@ -78,6 +78,7 @@ import {
 } from './peru-registration-config';
 import { isRegistrationDomainError, RegistrationDomainError, registrationErrorCodes } from './registration-errors';
 import { buildResponsiblePersonPayload } from './section/patient-relationships/responsible-person.utils';
+import { formatCalendarDate, parsePatientBirthdate } from '@openmrs/esm-utils';
 
 const familyName2ExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/patient-family-name2';
 const addressExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/address';
@@ -1055,13 +1056,27 @@ export class FormManager {
     identifiers: Array<PatientIdentifier>,
     config?: RegistrationConfig,
   ): Patient {
+    // The backend only accepts a calendar date. Mobile pickers and autofill can
+    // leave the field as a datetime string (e.g. "1996-08-13T00:00:00 GMT-0500"),
+    // which passes client validation but makes the whole POST fail with an
+    // unmapped 400. Every path must therefore end in a plain yyyy-MM-dd.
     let birthdate: string;
     if (values.birthdate instanceof Date) {
       const y = values.birthdate.getFullYear();
       const m = String(values.birthdate.getMonth() + 1).padStart(2, '0');
       const d = String(values.birthdate.getDate()).padStart(2, '0');
       birthdate = `${y}-${m}-${d}`;
+    } else if (typeof values.birthdate === 'string' && values.birthdate.trim()) {
+      const parsedBirthdate = parsePatientBirthdate(values.birthdate);
+      if (!parsedBirthdate) {
+        throw new RegistrationDomainError(
+          registrationErrorCodes.invalidBirthdateSubmitted,
+          `The submitted birthdate is not a calendar date: ${JSON.stringify(values.birthdate)}`,
+        );
+      }
+      birthdate = formatCalendarDate(parsedBirthdate);
     } else {
+      // An untouched birthdate (empty string) keeps its historical passthrough.
       birthdate = values.birthdate;
     }
 

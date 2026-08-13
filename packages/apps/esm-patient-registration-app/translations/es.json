@@ -237,6 +237,7 @@
   "invalidConfiguration": "Configuración inválida",
   "invalidDate": "Fecha inválida",
   "invalidEmail": "Correo electrónico inválido",
+  "invalidBirthdateSubmittedError": "La fecha de nacimiento no tiene un formato válido. Vuelva a seleccionarla e intente nuevamente.",
   "invalidFieldValidationConfig": "Este campo tiene una configuración de validación inválida",
   "invalidInput": "Entrada inválida",
   "invalidRegistrationData": "Algunos datos no son válidos. Revise el formulario e inténtelo nuevamente.",

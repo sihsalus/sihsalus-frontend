@@ -972,6 +972,33 @@ describe('FormManager', () => {
       ]);
     });
 
+    it('normalizes a datetime birthdate string to the calendar date the backend accepts', () => {
+      // A mobile picker can leave the field as an ISO-prefixed datetime, which
+      // passes client validation and used to reach the backend verbatim,
+      // failing the whole registration with an unmapped 400.
+      const patient = FormManager.getPatientToCreate(
+        true,
+        { ...formValues, patientUuid: 'patient-uuid', birthdate: '1996-08-13T00:00:00 GMT-0500' as never },
+        {},
+        {},
+        [],
+      );
+
+      expect(patient.person.birthdate).toBe('1996-08-13');
+    });
+
+    it('refuses to submit an unparseable birthdate with a field-specific error', () => {
+      expect(() =>
+        FormManager.getPatientToCreate(
+          true,
+          { ...formValues, patientUuid: 'patient-uuid', birthdate: '13/08/1996' as never },
+          {},
+          {},
+          [],
+        ),
+      ).toThrow(expect.objectContaining({ code: 'REGISTRATION_INVALID_BIRTHDATE_SUBMITTED' }));
+    });
+
     it('keeps existing residence and birthplace address UUIDs while editing', () => {
       const config = getPeruRegistrationConfig();
       const patient = FormManager.getPatientToCreate(

@@ -118,9 +118,6 @@ type CreatePayload = {
     ];
   };
   onsetDateTime?: string;
-  recorder: {
-    reference: string;
-  };
   recordedDate: string;
   resourceType: string;
   subject: {
@@ -250,9 +247,11 @@ function buildConditionPayload(payload: FormFields): CreatePayload {
     },
     ...(payload.abatementDateTime ? { abatementDateTime: payload.abatementDateTime } : {}),
     ...(payload.onsetDateTime ? { onsetDateTime: payload.onsetDateTime } : {}),
-    recorder: {
-      reference: `Practitioner/${payload.providerUuid}`,
-    },
+    // The recorder is intentionally omitted: the backend derives it from the
+    // authenticated user. Sending a Practitioner reference forces the FHIR
+    // translator to resolve it through UserService, which fails with
+    // "Privileges required: Get Users" for clinical roles — and the value the
+    // form used to send (the provider uuid) was not the user uuid anyway.
     recordedDate: new Date().toISOString(),
     resourceType: 'Condition',
     subject: {

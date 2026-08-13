@@ -25,7 +25,7 @@ describe('conditions FHIR resource', () => {
     mockOpenmrsFetch.mockResolvedValue({ status: 200 } as FetchResponse);
   });
 
-  it('uses the clinical provider as the FHIR Practitioner and omits empty dates', async () => {
+  it('lets the backend derive the recorder and omits empty dates', async () => {
     await createCondition({
       ...basePayload,
       abatementDateTime: null,
@@ -37,13 +37,16 @@ describe('conditions FHIR resource', () => {
       expect.objectContaining({
         method: 'POST',
         body: expect.objectContaining({
-          recorder: { reference: 'Practitioner/provider-uuid' },
           subject: { reference: 'Patient/patient-uuid' },
         }),
       }),
     );
 
     const requestBody = mockOpenmrsFetch.mock.calls[0][1].body;
+    // A Practitioner reference makes the FHIR translator resolve the recorder
+    // through UserService, which clinical roles cannot do (Get Users). The
+    // backend records the authenticated user on its own.
+    expect(requestBody).not.toHaveProperty('recorder');
     expect(requestBody).not.toHaveProperty('onsetDateTime');
     expect(requestBody).not.toHaveProperty('abatementDateTime');
   });
@@ -64,7 +67,6 @@ describe('conditions FHIR resource', () => {
           id: 'condition-uuid',
           onsetDateTime: '2026-07-01T12:00:00.000Z',
           abatementDateTime: '2026-07-14T12:00:00.000Z',
-          recorder: { reference: 'Practitioner/provider-uuid' },
         }),
       }),
     );

@@ -234,6 +234,7 @@
   "insuranceTypeFieldLabel": "Funder",
   "invalidConfiguration": "Invalid configuration",
   "invalidDate": "Invalid date",
+  "invalidBirthdateSubmittedError": "The date of birth does not have a valid format. Select it again and retry.",
   "invalidEmail": "Invalid email",
   "invalidFieldValidationConfig": "This field has an invalid validation configuration",
   "invalidInput": "Invalid Input",

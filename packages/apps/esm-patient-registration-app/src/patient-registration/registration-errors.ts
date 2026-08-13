@@ -7,6 +7,7 @@ export const registrationErrorCodes = {
   identifierRetryDeleteUnavailable: 'REGISTRATION_IDENTIFIER_RETRY_DELETE_UNAVAILABLE',
   identifierRetryUpdateUnavailable: 'REGISTRATION_IDENTIFIER_RETRY_UPDATE_UNAVAILABLE',
   identityVerificationMismatch: 'REGISTRATION_IDENTITY_VERIFICATION_MISMATCH',
+  invalidBirthdateSubmitted: 'REGISTRATION_INVALID_BIRTHDATE_SUBMITTED',
   partialCreateIdentifierChanged: 'REGISTRATION_PARTIAL_CREATE_IDENTIFIER_CHANGED',
   partialSavePatientChanged: 'REGISTRATION_PARTIAL_SAVE_PATIENT_CHANGED',
   promotionAlreadyPatient: 'REGISTRATION_PROMOTION_ALREADY_PATIENT',

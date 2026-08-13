@@ -545,6 +545,10 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
                   'responsiblePersonCreationError',
                   'The related person could not be saved. Try again.',
                 ),
+                [registrationErrorCodes.invalidBirthdateSubmitted]: t(
+                  'invalidBirthdateSubmittedError',
+                  'The date of birth does not have a valid format. Select it again and retry.',
+                ),
               } satisfies Record<RegistrationErrorCode, string>,
               logContext: 'Patient registration submission failed',
               statusMessages: {

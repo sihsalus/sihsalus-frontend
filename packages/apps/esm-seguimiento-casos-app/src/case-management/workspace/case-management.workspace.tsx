@@ -189,6 +189,7 @@ const CaseManagementForm: React.FC<CaseManagementProp> = ({ closeWorkspace }) =>
             control={control}
             render={({ field, fieldState }) => (
               <DatePicker
+                locale="es"
                 datePickerType="single"
                 onChange={(e) => field.onChange(e[0])}
                 className={styles.formDatePicker}

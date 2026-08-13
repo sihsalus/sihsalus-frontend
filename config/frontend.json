@@ -182,6 +182,13 @@
       }
     ]
   },
+  "@openmrs/esm-styleguide": {
+    "preferredDateLocale": {
+      "en": "es-ES",
+      "en-US": "es-ES",
+      "en-GB": "es-ES"
+    }
+  },
   "core": {
     "Translation overrides": {
       "es": {

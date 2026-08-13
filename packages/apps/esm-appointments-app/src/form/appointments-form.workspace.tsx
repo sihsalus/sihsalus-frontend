@@ -1119,10 +1119,7 @@ const AppointmentsForm: React.FC<
                       onChange(event);
 
                       if (context === 'creating') {
-                        setValue(
-                          'duration',
-                          nextService?.durationMins ?? DEFAULT_APPOINTMENT_DURATION_MINUTES,
-                        );
+                        setValue('duration', nextService?.durationMins ?? DEFAULT_APPOINTMENT_DURATION_MINUTES);
                       } else if (context === 'editing') {
                         const previousServiceDuration = availableServices?.find(
                           (service) => service.uuid === previousServiceUuid,
@@ -1273,6 +1270,7 @@ const AppointmentsForm: React.FC<
                       render={({ field: { onChange, value } }) => (
                         <ResponsiveWrapper>
                           <DatePicker
+                            locale="es"
                             datePickerType="range"
                             dateFormat={datePickerFormat}
                             value={[value.startDate, value.recurringPatternEndDate]}

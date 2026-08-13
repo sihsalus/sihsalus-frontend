@@ -84,6 +84,7 @@ export const OtherRelationshipsForm: React.FC<FichaFamiliarWorkspaceComponentPro
               name="startDate"
               render={({ field }) => (
                 <DatePicker
+                  locale="es"
                   className={styles.datePickerInput}
                   dateFormat="d/m/Y"
                   datePickerType="single"
@@ -110,6 +111,7 @@ export const OtherRelationshipsForm: React.FC<FichaFamiliarWorkspaceComponentPro
               name="endDate"
               render={({ field }) => (
                 <DatePicker
+                  locale="es"
                   className={styles.datePickerInput}
                   dateFormat="d/m/Y"
                   datePickerType="single"

@@ -29,6 +29,7 @@ const BillingHeader: React.FC<BillingHeaderProps> = ({ title }) => {
           <span className={styles.value}>{location}</span>
           <span className={styles.middot}>&middot;</span>
           <DatePicker
+            locale="es"
             onChange={([date]) => setSelectedDate(dayjs(date).startOf('day').format(omrsDateFormat))}
             value={dayjs(selectedDate).format('DD MMM YYYY')}
             dateFormat="d-M-Y"

@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { FormEngine } from '@sihsalus/esm-form-engine-lib';
 import React from 'react';
 
 import useFormSchema from '../hooks/useFormSchema';
@@ -6,6 +7,7 @@ import useFormSchema from '../hooks/useFormSchema';
 import FormRenderer from './form-renderer.component';
 
 const mockUseFormSchema = vi.mocked(useFormSchema);
+const mockFormEngine = vi.mocked(FormEngine);
 
 vi.mock('@sihsalus/esm-form-engine-lib', () => ({
   FormEngine: vi
@@ -46,13 +48,18 @@ describe('FormRenderer', () => {
   });
 
   test('renders a form preview from the engine when a schema is available', async () => {
+    const onBeforeEncounterSave = vi.fn();
     mockUseFormSchema.mockReturnValue({ schema: { uuid: 'test-schema' }, isLoading: false, error: null } as ReturnType<
       typeof useFormSchema
     >);
 
-    render(<FormRenderer {...defaultProps} />);
+    render(<FormRenderer {...defaultProps} onBeforeEncounterSave={onBeforeEncounterSave} />);
     expect(await screen.findByText(/form engine lib/i)).toBeInTheDocument();
     expect(mockUseFormSchema).toHaveBeenCalledWith('test-form-uuid');
+    expect(mockFormEngine).toHaveBeenLastCalledWith(
+      expect.objectContaining({ onBeforeEncounterSave }),
+      expect.anything(),
+    );
   });
 
   test('fallback submit closes only the current workspace', async () => {

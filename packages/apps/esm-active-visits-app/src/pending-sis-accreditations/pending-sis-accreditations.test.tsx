@@ -105,6 +105,21 @@ describe('PendingSisAccreditationsTable', () => {
     expect(screen.getByText('Emergencia')).toBeInTheDocument();
   });
 
+  it('labels an unknown accreditation status explicitly instead of calling it unrecorded', () => {
+    mockUsePendingSisAccreditations.mockReturnValue({
+      pendingVisits: [{ ...pendingVisits[1], accreditationStatus: 'unknown' }],
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+      mutate: mockRefreshPendingVisits,
+    });
+
+    render(<PendingSisAccreditationsTable />);
+
+    expect(screen.getByText('Estado no reconocido')).toBeInTheDocument();
+    expect(screen.queryByText('Sin registrar')).not.toBeInTheDocument();
+  });
+
   it('links the patient name to the chart only with clinical-chart access', () => {
     mockUseSession.mockReturnValue({
       ...admisionSession,
@@ -216,6 +231,7 @@ describe('PendingSisAccreditationsTable', () => {
     ['missing-financiador', 'La consulta sigue sin financiador'],
     ['incomplete-coverage', 'La cobertura de la consulta sigue incompleta'],
     ['sis-accreditation-conflict', 'La acreditación SIS requiere revisión'],
+    ['unknown-accreditation-status', 'Estado de acreditación SIS no reconocido'],
   ] as const)('offers coverage review instead of looping when synchronization returns %s', async (reviewReason, title) => {
     mockSafeCopyFinanciadorToVisit.mockResolvedValueOnce({
       ok: true,
@@ -244,6 +260,7 @@ describe('PendingSisAccreditationsTable', () => {
       to: expect.stringMatching(/\/patient\/patient-1\/edit\?focusSection=insurance&afterUrl=.*%2Fhome$/),
     });
     expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledTimes(1);
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
   });
 
   it('does not expose patient editing or a dead review action without the registration privilege', async () => {

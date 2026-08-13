@@ -38,6 +38,7 @@ const FormProcessorFactory = ({
     sessionDate,
     visit,
     handleEncounterCreate,
+    onBeforeEncounterSave,
   } = useFormFactory();
 
   const processor = useMemo<FormProcessor>(() => {
@@ -64,6 +65,7 @@ const FormProcessorFactory = ({
     sessionDate,
     visit,
     handleEncounterCreate,
+    onBeforeEncounterSave,
     formFields: [],
     formFieldAdapters: {},
     formFieldValidators: {},
@@ -108,6 +110,14 @@ const FormProcessorFactory = ({
           : {}),
     }));
   }, [formFieldAdapters, formFieldValidators, rawFormFields, formFieldsWithMeta]);
+
+  useEffect(() => {
+    setProcessorContext((prev) => ({
+      ...prev,
+      handleEncounterCreate,
+      onBeforeEncounterSave,
+    }));
+  }, [handleEncounterCreate, onBeforeEncounterSave]);
 
   useEffect(() => {
     reportError(initialValuesError, t('errorLoadingInitialValues', 'Error loading initial values'));

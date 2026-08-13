@@ -299,7 +299,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
     if (!selectedFromDate) return null;
     return dayjs(selectedFromDate).subtract(30, 'day').startOf('day').toISOString();
   }, [selectedFromDate]);
-    
+
   const {
     data: allOrders,
     error: error,
@@ -337,10 +337,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
           const intentToken = latestDrugModifyIntentRef.current + 1;
           latestDrugModifyIntentRef.current = intentToken;
           const existingRequest = inFlightDrugModificationsRef.current.get(orderUuid);
-          if (
-            existingRequest?.context === requestContext &&
-            existingRequest.generation === requestGeneration
-          ) {
+          if (existingRequest?.context === requestContext && existingRequest.generation === requestGeneration) {
             existingRequest.intentToken = intentToken;
             return;
           }
@@ -486,15 +483,19 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
       const filterEnd = selectedToDate ? dayjs(selectedToDate).endOf('day') : null;
 
       const isInRange = (d: dayjs.Dayjs) => {
-        return (!filterStart || d.isAfter(filterStart) || d.isSame(filterStart)) && 
-               (!filterEnd || d.isBefore(filterEnd) || d.isSame(filterEnd));
+        return (
+          (!filterStart || d.isAfter(filterStart) || d.isSame(filterStart)) &&
+          (!filterEnd || d.isBefore(filterEnd) || d.isSame(filterEnd))
+        );
       };
 
       result = result.filter((order) => {
         const dateActivated = dayjs(order.dateActivated);
         const priorityMatch = order.instructions?.match(/\|\|priorityUuid:([a-fA-F0-9-]+)\|\|/);
         const parsedUrgency = priorityMatch ? priorityMatch[1] : order.urgency;
-        const esProgramada = parsedUrgency?.toUpperCase() === '65CF194E-05A7-4832-BA6D-9B7C9940A7C2' || parsedUrgency?.toUpperCase() === 'ON_SCHEDULED_DATE';
+        const esProgramada =
+          parsedUrgency?.toUpperCase() === '65CF194E-05A7-4832-BA6D-9B7C9940A7C2' ||
+          parsedUrgency?.toUpperCase() === 'ON_SCHEDULED_DATE';
 
         if (!esProgramada) {
           return isInRange(dateActivated);
@@ -509,11 +510,11 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
         const programadaEnRango = scheduledDate && isInRange(scheduledDate);
 
         // 3. Pendiente del pasado (para evitar que se pierda)
-        const esPendiente = !order.fulfillerStatus || (
-          order.fulfillerStatus.toUpperCase() !== 'COMPLETED' && 
-          order.fulfillerStatus.toUpperCase() !== 'DECLINED' && 
-          order.fulfillerStatus.toUpperCase() !== 'EXCEPTION'
-        );
+        const esPendiente =
+          !order.fulfillerStatus ||
+          (order.fulfillerStatus.toUpperCase() !== 'COMPLETED' &&
+            order.fulfillerStatus.toUpperCase() !== 'DECLINED' &&
+            order.fulfillerStatus.toUpperCase() !== 'EXCEPTION');
         const pendienteYPasada = esPendiente && scheduledDate && filterStart && scheduledDate.isBefore(filterStart);
 
         return creadaEnRango || programadaEnRango || pendienteYPasada;
@@ -1075,10 +1076,7 @@ function OrderBasketItemActions({
       const intentToken = latestDrugModifyIntentRef.current + 1;
       latestDrugModifyIntentRef.current = intentToken;
       const existingRequest = inFlightDrugModificationsRef.current.get(orderUuid);
-      if (
-        existingRequest?.context === requestContext &&
-        existingRequest.generation === requestGeneration
-      ) {
+      if (existingRequest?.context === requestContext && existingRequest.generation === requestGeneration) {
         existingRequest.intentToken = intentToken;
         return;
       }
@@ -1173,7 +1171,6 @@ function OrderBasketItemActions({
     launchPatientWorkspace('test-results-form-workspace', { order: orderItem });
   }, [orderItem]);
 
-
   const handleCancelClick = useCallback(() => {
     if (!canUseOrderBasket) {
       return;
@@ -1198,8 +1195,7 @@ function OrderBasketItemActions({
       )) ||
       (orderItem.type === 'order' && ordersForType.some((order) => order.concept?.uuid === orderConceptUuid)));
   const orderAlreadyInBasket = ordersForType.some((order) => order.uuid === orderItem.uuid);
-  const canModifyOrder =
-    (orderItem.type === 'drugorder' ? canEditMedications : canEditOrders) && canUseOrderBasket;
+  const canModifyOrder = (orderItem.type === 'drugorder' ? canEditMedications : canEditOrders) && canUseOrderBasket;
   const canCancelOrder = canEditOrders && canUseOrderBasket;
 
   if (!canModifyOrder && !canCancelOrder) {

@@ -1,11 +1,11 @@
 {
   "accreditation": "Accreditation",
+  "accreditationMissingCheckedAt": "Missing accreditation date",
+  "accreditationMissingInsuranceNumber": "Missing affiliation number",
   "accreditationNoConsultada": "Not checked",
   "accreditationNoVigente": "Not active",
   "accreditationPendiente": "Pending",
   "accreditationSinRegistrar": "Not recorded",
-  "accreditationMissingCheckedAt": "Missing accreditation date",
-  "accreditationMissingInsuranceNumber": "Missing affiliation number",
   "accreditationVigente": "Active",
   "accreditationWarningBody": "The SIS accreditation for this visit is {{estado}}. The FUA is a sworn statement and an affiliation error is grounds for payment rejection. Generate anyway?",
   "accreditationWarningTitle": "SIS accreditation not active",
@@ -152,5 +152,8 @@
   "viewFua": "View FUA",
   "viewHistory": "View history",
   "viewPatientFuas": "View patient FUAs",
-  "visits": "Visits"
+  "visits": "Visits",
+  "visitsLoadError": "Visits could not be loaded",
+  "visitsRefreshError": "Visits could not be refreshed",
+  "visitsRefreshErrorCached": "The latest available data is shown. Try refreshing again."
 }

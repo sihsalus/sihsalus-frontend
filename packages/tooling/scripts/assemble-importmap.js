@@ -737,10 +737,7 @@ function patchIndexHtml() {
   html = html.replace(/<script>[\s\S]*?__sihsalusErrorUiInstalled[\s\S]*?<\/script>/, '');
   html = html
     .replace(/\s+onclick=["']location\.reload\(\)["']/g, ' data-sihsalus-action="reload"')
-    .replace(
-      /\s+onclick=["']copyText\(this\.parentElement\)["']/g,
-      ' data-sihsalus-action="copy-error"',
-    );
+    .replace(/\s+onclick=["']copyText\(this\.parentElement\)["']/g, ' data-sihsalus-action="copy-error"');
 
   fs.writeFileSync(path.join(outDir, errorUiFile), sihsalusErrorUiSource);
   const sihsalusErrorUiScript = `<script src="${joinUrl(spaPath, errorUiFile)}"></script>`;
@@ -804,10 +801,7 @@ function patchIndexHtml() {
     throw new Error('Cannot externalize the SPA bootstrap because initializeSpa() was not found');
   }
   fs.writeFileSync(path.join(outDir, spaBootstrapFile), `${bootstrapScript.trim()}\n`);
-  html = html.replace(
-    bootstrapScriptPattern,
-    `<script src="${joinUrl(spaPath, spaBootstrapFile)}"></script>`,
-  );
+  html = html.replace(bootstrapScriptPattern, `<script src="${joinUrl(spaPath, spaBootstrapFile)}"></script>`);
 
   if (/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?\S[\s\S]*?<\/script>/i.test(html)) {
     throw new Error('Executable inline script remains in index.html');

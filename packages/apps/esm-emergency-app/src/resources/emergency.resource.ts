@@ -1,4 +1,9 @@
-import { getLocale, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { type FetchResponse, getLocale, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import {
+  assertFreshPatientIsAlive,
+  DECEASED_PATIENT_OPERATION_BLOCKED,
+  PATIENT_VITAL_STATUS_UNAVAILABLE,
+} from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
@@ -476,7 +481,188 @@ export function useAverageWaitTimeByPriority(serviceUuid?: string, locationUuid?
  * @param sortWeight - Sort weight for the priority (optional)
  * @returns Promise with the created queue entry
  */
-export async function createEmergencyQueueEntry(
+export const EMERGENCY_QUEUE_ENTRY_CREATION_UNVERIFIED = 'EMERGENCY_QUEUE_ENTRY_CREATION_UNVERIFIED';
+export const EMERGENCY_QUEUE_ENTRY_UUID_UNAVAILABLE = 'EMERGENCY_QUEUE_ENTRY_UUID_UNAVAILABLE';
+export const EMERGENCY_QUEUE_ENTRY_CREATION_CONFLICT = 'EMERGENCY_QUEUE_ENTRY_CREATION_CONFLICT';
+export const EMERGENCY_QUEUE_ENTRY_CREATION_AMBIGUOUS = 'EMERGENCY_QUEUE_ENTRY_CREATION_AMBIGUOUS';
+export const EMERGENCY_QUEUE_ENTRY_SEARCH_STALLED = 'EMERGENCY_QUEUE_ENTRY_SEARCH_STALLED';
+
+interface EmergencyQueueEntryCreationRequest {
+  patientUuid: string;
+  visitUuid: string;
+  priorityUuid: string;
+  statusUuid: string;
+  queueUuid: string;
+  sortWeight: number;
+}
+
+interface PendingEmergencyQueueCreation {
+  signature: string;
+  promise: Promise<FetchResponse<QueueEntryState>>;
+}
+
+const pendingEmergencyQueueCreations = new Map<string, PendingEmergencyQueueCreation>();
+
+function queueEntryMatchesCreation(entry: QueueEntryState, request: EmergencyQueueEntryCreationRequest) {
+  return (
+    entry.patient?.uuid === request.patientUuid &&
+    entry.visit?.uuid === request.visitUuid &&
+    entry.queue?.uuid === request.queueUuid &&
+    entry.status?.uuid === request.statusUuid &&
+    entry.priority?.uuid === request.priorityUuid &&
+    entry.sortWeight === request.sortWeight
+  );
+}
+
+async function findActiveEmergencyQueueEntriesForVisit(
+  visitUuid: string,
+): Promise<FetchResponse<Array<QueueEntryState>>> {
+  const pageSize = 100;
+  const entriesByUuid = new Map<string, QueueEntryState>();
+  let firstResponse: FetchResponse<QueueEntrySearchResponse> | null = null;
+
+  for (let startIndex = 0; ; startIndex += pageSize) {
+    const searchParams = new URLSearchParams({
+      visit: visitUuid,
+      isEnded: 'false',
+      limit: String(pageSize),
+      startIndex: String(startIndex),
+      v: emergencyQueueEntryStateRepresentation,
+    });
+    const response = await openmrsFetch<QueueEntrySearchResponse>(
+      `${restBaseUrl}/queue-entry?${searchParams.toString()}`,
+    );
+    firstResponse ??= response;
+    const page = (response.data?.results ?? []).filter((entry) => !entry.endedAt);
+    if (page.some((entry) => !entry.uuid)) {
+      throw emergencyQueueEntryError(
+        EMERGENCY_QUEUE_ENTRY_UUID_UNAVAILABLE,
+        'An active emergency queue entry did not include a UUID.',
+      );
+    }
+    let newEntryCount = 0;
+    page.forEach((entry) => {
+      if (entry.uuid && !entriesByUuid.has(entry.uuid)) {
+        entriesByUuid.set(entry.uuid, entry);
+        newEntryCount += 1;
+      }
+    });
+
+    // More than one unique active entry already proves ambiguity; no later
+    // page can restore the one-active-entry invariant.
+    if (entriesByUuid.size > 1 || page.length < pageSize) {
+      return {
+        ...firstResponse,
+        data: [...entriesByUuid.values()],
+      } as FetchResponse<Array<QueueEntryState>>;
+    }
+    if (newEntryCount === 0) {
+      throw emergencyQueueEntryError(
+        EMERGENCY_QUEUE_ENTRY_SEARCH_STALLED,
+        'Emergency queue entry pagination did not advance.',
+      );
+    }
+  }
+}
+
+function resolveEmergencyQueueCreation(
+  response: FetchResponse<Array<QueueEntryState>>,
+  request: EmergencyQueueEntryCreationRequest,
+): FetchResponse<QueueEntryState> | null {
+  if (response.data.length > 1) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_CREATION_AMBIGUOUS,
+      'The emergency visit has multiple active queue entries.',
+    );
+  }
+  const entry = response.data[0];
+  if (!entry) {
+    return null;
+  }
+  if (!entry.uuid) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_UUID_UNAVAILABLE,
+      'The active emergency queue entry did not include a UUID.',
+    );
+  }
+  if (!queueEntryMatchesCreation(entry, request)) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_CREATION_CONFLICT,
+      'The emergency visit already has a conflicting active queue entry.',
+    );
+  }
+  return { ...response, data: entry } as FetchResponse<QueueEntryState>;
+}
+
+async function createEmergencyQueueEntryOnce(
+  request: EmergencyQueueEntryCreationRequest,
+): Promise<FetchResponse<QueueEntryState>> {
+  const existingResponse = await findActiveEmergencyQueueEntriesForVisit(request.visitUuid);
+  const existingEntry = resolveEmergencyQueueCreation(existingResponse, request);
+  if (existingEntry) {
+    await assertQueueEntryPatientIsAlive(existingEntry.data);
+    return existingEntry;
+  }
+
+  // Keep the authoritative assertion adjacent to the operational write after
+  // all idempotency reads have completed.
+  await assertFreshPatientIsAlive(request.patientUuid);
+  let writeResponse: FetchResponse<QueueEntryState>;
+  try {
+    writeResponse = await openmrsFetch<QueueEntryState>(`${restBaseUrl}/visit-queue-entry`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: {
+        visit: { uuid: request.visitUuid },
+        queueEntry: {
+          status: { uuid: request.statusUuid },
+          priority: { uuid: request.priorityUuid },
+          queue: { uuid: request.queueUuid },
+          patient: { uuid: request.patientUuid },
+          startedAt: dayjs().format(omrsDateFormat),
+          sortWeight: request.sortWeight,
+        },
+      },
+    });
+  } catch (error) {
+    try {
+      const currentResponse = await findActiveEmergencyQueueEntriesForVisit(request.visitUuid);
+      const reconciledEntry = resolveEmergencyQueueCreation(currentResponse, request);
+      if (reconciledEntry) {
+        await assertQueueEntryPatientIsAlive(reconciledEntry.data);
+        return reconciledEntry;
+      }
+    } catch (reconciliationError) {
+      const code = (reconciliationError as { code?: string })?.code;
+      if (
+        code === EMERGENCY_QUEUE_ENTRY_CREATION_AMBIGUOUS ||
+        code === EMERGENCY_QUEUE_ENTRY_CREATION_CONFLICT ||
+        code === EMERGENCY_QUEUE_ENTRY_PATIENT_UNAVAILABLE ||
+        code === DECEASED_PATIENT_OPERATION_BLOCKED ||
+        code === PATIENT_VITAL_STATUS_UNAVAILABLE
+      ) {
+        throw reconciliationError;
+      }
+      // Preserve the original write error if reconciliation itself is unavailable.
+    }
+    throw error;
+  }
+
+  const currentResponse = await findActiveEmergencyQueueEntriesForVisit(request.visitUuid);
+  const createdEntry = resolveEmergencyQueueCreation(currentResponse, request);
+  const responseEntryUuid = writeResponse.data?.uuid;
+  if (!createdEntry || (responseEntryUuid && createdEntry.data.uuid !== responseEntryUuid)) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_CREATION_UNVERIFIED,
+      'The emergency queue entry creation could not be verified.',
+    );
+  }
+  return { ...writeResponse, data: createdEntry.data } as FetchResponse<QueueEntryState>;
+}
+
+export function createEmergencyQueueEntry(
   patientUuid: string,
   visitUuid: string,
   priorityUuid: string,
@@ -484,23 +670,34 @@ export async function createEmergencyQueueEntry(
   queueUuid: string,
   sortWeight?: number,
 ) {
-  return openmrsFetch(`${restBaseUrl}/visit-queue-entry`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: {
-      visit: { uuid: visitUuid },
-      queueEntry: {
-        status: { uuid: statusUuid },
-        priority: { uuid: priorityUuid },
-        queue: { uuid: queueUuid },
-        patient: { uuid: patientUuid },
-        startedAt: dayjs().format(omrsDateFormat),
-        sortWeight: sortWeight ?? 4,
-      },
-    },
+  const request: EmergencyQueueEntryCreationRequest = {
+    patientUuid,
+    visitUuid,
+    priorityUuid,
+    statusUuid,
+    queueUuid,
+    sortWeight: sortWeight ?? 4,
+  };
+  const signature = JSON.stringify(request);
+  const pending = pendingEmergencyQueueCreations.get(visitUuid);
+  if (pending?.signature === signature) {
+    return pending.promise;
+  }
+  if (pending) {
+    return pending.promise.then(
+      () => createEmergencyQueueEntry(patientUuid, visitUuid, priorityUuid, statusUuid, queueUuid, sortWeight),
+      () => createEmergencyQueueEntry(patientUuid, visitUuid, priorityUuid, statusUuid, queueUuid, sortWeight),
+    );
+  }
+
+  let trackedPromise: Promise<FetchResponse<QueueEntryState>>;
+  trackedPromise = createEmergencyQueueEntryOnce(request).finally(() => {
+    if (pendingEmergencyQueueCreations.get(visitUuid)?.promise === trackedPromise) {
+      pendingEmergencyQueueCreations.delete(visitUuid);
+    }
   });
+  pendingEmergencyQueueCreations.set(visitUuid, { signature, promise: trackedPromise });
+  return trackedPromise;
 }
 
 /**
@@ -509,27 +706,123 @@ export async function createEmergencyQueueEntry(
  * @param updates - Partial updates to apply
  * @returns Promise with the updated queue entry
  */
-interface QueueEntryState {
+export interface QueueEntryState {
   uuid: string;
+  startedAt?: string | null;
   status?: { uuid: string };
   priority?: { uuid: string };
+  priorityComment?: string | null;
   queue?: { uuid: string };
+  patient?: { uuid?: string | null };
+  visit?: { uuid?: string | null } | null;
+  queueComingFrom?: { uuid?: string | null } | null;
+  sortWeight?: number | null;
   endedAt?: string | null;
 }
 
+interface QueueEntrySearchResponse {
+  results?: Array<QueueEntryState>;
+}
+
+export const EMERGENCY_QUEUE_ENTRY_PATIENT_UNAVAILABLE = 'EMERGENCY_QUEUE_ENTRY_PATIENT_UNAVAILABLE';
+export const EMERGENCY_QUEUE_ENTRY_ALREADY_ENDED = 'EMERGENCY_QUEUE_ENTRY_ALREADY_ENDED';
+export const EMERGENCY_QUEUE_ENTRY_SUBJECT_MISMATCH = 'EMERGENCY_QUEUE_ENTRY_SUBJECT_MISMATCH';
+export const EMERGENCY_QUEUE_ENTRY_STATE_UNAVAILABLE = 'EMERGENCY_QUEUE_ENTRY_STATE_UNAVAILABLE';
+export const EMERGENCY_QUEUE_ENTRY_UPDATE_UNVERIFIED = 'EMERGENCY_QUEUE_ENTRY_UPDATE_UNVERIFIED';
+export const EMERGENCY_QUEUE_ENTRY_TRANSITION_UNVERIFIED = 'EMERGENCY_QUEUE_ENTRY_TRANSITION_UNVERIFIED';
+export const EMERGENCY_QUEUE_ENTRY_RECONCILIATION_STALLED = 'EMERGENCY_QUEUE_ENTRY_RECONCILIATION_STALLED';
+export const EMERGENCY_QUEUE_ENTRY_CLOSE_UNVERIFIED = 'EMERGENCY_QUEUE_ENTRY_CLOSE_UNVERIFIED';
+export const EMERGENCY_QUEUE_ENTRY_TRANSITION_CONFLICT = 'EMERGENCY_QUEUE_ENTRY_TRANSITION_CONFLICT';
+
+const emergencyQueueEntryStateRepresentation =
+  'custom:(uuid,startedAt,endedAt,status:(uuid),priority:(uuid),priorityComment,queue:(uuid),patient:(uuid),visit:(uuid),queueComingFrom:(uuid),sortWeight)';
+
+function emergencyQueueEntryError(code: string, message: string) {
+  return Object.assign(new Error(message), { code });
+}
+
 /**
- * Re-reads a queue entry so callers can reconcile after a request whose
- * response was lost (the backend may have applied the change anyway).
+ * Re-reads the queue entry and its patient instead of trusting a table row or
+ * modal payload that may have become stale.
  */
-async function fetchQueueEntryState(queueEntryUuid: string): Promise<QueueEntryState | null> {
-  try {
-    const response = await openmrsFetch<QueueEntryState>(
-      `${restBaseUrl}/queue-entry/${queueEntryUuid}?v=custom:(uuid,status:(uuid),priority:(uuid),queue:(uuid),endedAt)`,
+export async function fetchQueueEntryState(queueEntryUuid: string): Promise<FetchResponse<QueueEntryState>> {
+  const searchParams = new URLSearchParams({ v: emergencyQueueEntryStateRepresentation });
+  return openmrsFetch<QueueEntryState>(`${restBaseUrl}/queue-entry/${queueEntryUuid}?${searchParams.toString()}`);
+}
+
+/**
+ * Freshly verifies that a queue entry is still active for the patient and visit
+ * about to receive a clinical write. Callers must still perform the patient
+ * vital-status assertion immediately before their own write.
+ */
+export async function assertEmergencyQueueEntryIsActiveForSubject(
+  queueEntryUuid: string,
+  patientUuid: string,
+  visitUuid: string,
+  requireActive = true,
+) {
+  const response = await fetchQueueEntryState(queueEntryUuid);
+  const normalizeUuid = (uuid: string) => uuid.trim().toLowerCase();
+  const hasVerifiableEndState =
+    response.data.endedAt === null ||
+    (typeof response.data.endedAt === 'string' && !Number.isNaN(new Date(response.data.endedAt).valueOf()));
+  if (
+    normalizeUuid(response.data.uuid ?? '') !== normalizeUuid(queueEntryUuid) ||
+    !Object.hasOwn(response.data, 'endedAt') ||
+    !hasVerifiableEndState ||
+    !response.data.startedAt ||
+    Number.isNaN(new Date(response.data.startedAt).valueOf())
+  ) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_STATE_UNAVAILABLE,
+      'The emergency queue entry state could not be verified.',
     );
-    return response.data ?? null;
-  } catch {
-    return null;
   }
+  if (requireActive && response.data.endedAt) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_ALREADY_ENDED,
+      'Cannot record emergency care for a queue entry that has already ended or transitioned.',
+    );
+  }
+  if (!response.data.patient?.uuid) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_PATIENT_UNAVAILABLE,
+      'The emergency queue entry patient could not be verified.',
+    );
+  }
+  if (
+    normalizeUuid(response.data.patient.uuid) !== normalizeUuid(patientUuid) ||
+    normalizeUuid(response.data.visit?.uuid ?? '') !== normalizeUuid(visitUuid)
+  ) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_SUBJECT_MISMATCH,
+      'The emergency queue entry does not match the patient and visit being recorded.',
+    );
+  }
+  return response;
+}
+
+async function assertQueueEntryPatientIsAlive(queueEntry: QueueEntryState) {
+  const patientUuid = queueEntry.patient?.uuid;
+  if (!patientUuid) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_PATIENT_UNAVAILABLE,
+      'The emergency queue entry patient could not be verified.',
+    );
+  }
+
+  return assertFreshPatientIsAlive(patientUuid);
+}
+
+function queueEntryMatchesUpdate(
+  queueEntry: QueueEntryState,
+  updates: { priorityUuid?: string; statusUuid?: string; priorityComment?: string },
+) {
+  return (
+    (!updates.statusUuid || queueEntry.status?.uuid === updates.statusUuid) &&
+    (!updates.priorityUuid || queueEntry.priority?.uuid === updates.priorityUuid) &&
+    (!updates.priorityComment || queueEntry.priorityComment === updates.priorityComment)
+  );
 }
 
 export async function updateEmergencyQueueEntry(
@@ -554,8 +847,18 @@ export async function updateEmergencyQueueEntry(
     body.priorityComment = updates.priorityComment;
   }
 
+  const freshResponse = await fetchQueueEntryState(queueEntryUuid);
+  if (freshResponse.data.endedAt) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_ALREADY_ENDED,
+      'Cannot update an emergency queue entry that has already ended.',
+    );
+  }
+  await assertQueueEntryPatientIsAlive(freshResponse.data);
+
+  let response: FetchResponse;
   try {
-    return await openmrsFetch(`${restBaseUrl}/queue-entry/${queueEntryUuid}`, {
+    response = await openmrsFetch(`${restBaseUrl}/queue-entry/${queueEntryUuid}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -563,14 +866,27 @@ export async function updateEmergencyQueueEntry(
       body,
     });
   } catch (error) {
-    const current = await fetchQueueEntryState(queueEntryUuid);
-    const statusApplied = !updates.statusUuid || current?.status?.uuid === updates.statusUuid;
-    const priorityApplied = !updates.priorityUuid || current?.priority?.uuid === updates.priorityUuid;
-    if (current && statusApplied && priorityApplied) {
+    let current: FetchResponse<QueueEntryState>;
+    try {
+      current = await fetchQueueEntryState(queueEntryUuid);
+    } catch {
+      throw error;
+    }
+    if (!current.data.endedAt && queueEntryMatchesUpdate(current.data, updates)) {
+      await assertQueueEntryPatientIsAlive(current.data);
       return null;
     }
     throw error;
   }
+
+  const current = await fetchQueueEntryState(queueEntryUuid);
+  if (current.data.endedAt || !queueEntryMatchesUpdate(current.data, updates)) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_UPDATE_UNVERIFIED,
+      'The emergency queue entry update could not be verified.',
+    );
+  }
+  return response;
 }
 
 /**
@@ -608,39 +924,217 @@ export async function transitionToAttentionQueue(
 }
 
 export async function endEmergencyQueueEntry(queueEntryUuid: string) {
+  const freshResponse = await fetchQueueEntryState(queueEntryUuid);
+  if (freshResponse.data.endedAt) {
+    if (await findAnyEmergencyQueueTransitionSuccessor(freshResponse.data)) {
+      throw emergencyQueueEntryError(
+        EMERGENCY_QUEUE_ENTRY_TRANSITION_CONFLICT,
+        'The emergency queue entry was transitioned by another user.',
+      );
+    }
+    return freshResponse;
+  }
+
+  const responseDate = freshResponse.headers?.get?.('Date');
+  const parsedResponseDate = responseDate ? new Date(responseDate) : null;
+  const serverDate =
+    parsedResponseDate && !Number.isNaN(parsedResponseDate.valueOf()) ? parsedResponseDate : new Date();
+  const startedAt = freshResponse.data.startedAt ? new Date(freshResponse.data.startedAt) : null;
+  const endedAt =
+    startedAt && !Number.isNaN(startedAt.valueOf()) && startedAt > serverDate ? startedAt : serverDate;
+
   try {
-    return await openmrsFetch(`${restBaseUrl}/queue-entry/${queueEntryUuid}`, {
+    await openmrsFetch(`${restBaseUrl}/queue-entry/${queueEntryUuid}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: {
-        endedAt: dayjs().format(omrsDateFormat),
+        endedAt: dayjs(endedAt).format(omrsDateFormat),
       },
     });
   } catch (error) {
-    const current = await fetchQueueEntryState(queueEntryUuid);
-    if (current?.endedAt) {
-      return null;
+    let current: FetchResponse<QueueEntryState>;
+    try {
+      current = await fetchQueueEntryState(queueEntryUuid);
+    } catch {
+      // Preserve the original write error when its outcome cannot be verified.
+      throw error;
     }
-    throw error;
+    if (!current.data.endedAt) {
+      throw error;
+    }
+    if (await findAnyEmergencyQueueTransitionSuccessor(current.data, freshResponse.data.startedAt)) {
+      throw emergencyQueueEntryError(
+        EMERGENCY_QUEUE_ENTRY_TRANSITION_CONFLICT,
+        'The emergency queue entry was transitioned by another user.',
+      );
+    }
+    return current;
   }
+
+  const current = await fetchQueueEntryState(queueEntryUuid);
+  if (!current.data.endedAt) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_CLOSE_UNVERIFIED,
+      'The emergency queue entry close could not be verified.',
+    );
+  }
+  if (await findAnyEmergencyQueueTransitionSuccessor(current.data, freshResponse.data.startedAt)) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_TRANSITION_CONFLICT,
+      'The emergency queue entry was transitioned by another user.',
+    );
+  }
+  return current;
 }
 
-/**
- * Transition a queue entry using the OpenMRS Queue Module transition endpoint.
- * This ends the current entry and creates a new one with the specified parameters.
- */
-export async function transitionEmergencyQueueEntry(params: {
+interface EmergencyQueueTransitionParams {
   queueEntryToTransition: string;
   newStatus?: string;
   newPriority?: string;
   newPriorityComment?: string;
   newQueue?: string;
   transitionDate?: string;
-}) {
+}
+
+function isSameQueueEntrySubject(candidate: QueueEntryState, source: QueueEntryState) {
+  if (source.visit?.uuid) {
+    return candidate.visit?.uuid === source.visit.uuid;
+  }
+  return !candidate.visit?.uuid && Boolean(source.patient?.uuid) && candidate.patient?.uuid === source.patient.uuid;
+}
+
+function queueEntryMatchesTransition(
+  candidate: QueueEntryState,
+  source: QueueEntryState,
+  params: EmergencyQueueTransitionParams,
+) {
+  const sourceEndedAt = source.endedAt ? new Date(source.endedAt).valueOf() : Number.NaN;
+  const candidateStartedAt = candidate.startedAt ? new Date(candidate.startedAt).valueOf() : Number.NaN;
+
+  return (
+    candidate.uuid !== source.uuid &&
+    Number.isFinite(sourceEndedAt) &&
+    candidateStartedAt === sourceEndedAt &&
+    isSameQueueEntrySubject(candidate, source) &&
+    candidate.queueComingFrom?.uuid === source.queue?.uuid &&
+    candidate.queue?.uuid === (params.newQueue ?? source.queue?.uuid) &&
+    candidate.status?.uuid === (params.newStatus ?? source.status?.uuid) &&
+    candidate.priority?.uuid === (params.newPriority ?? source.priority?.uuid) &&
+    (candidate.priorityComment ?? '') === (params.newPriorityComment ?? source.priorityComment ?? '')
+  );
+}
+
+function isPossibleDirectTransitionSuccessor(
+  candidate: QueueEntryState,
+  source: QueueEntryState,
+  activeSourceStartedAt?: string | null,
+) {
+  const sourceEndedAt = source.endedAt ? new Date(source.endedAt).valueOf() : Number.NaN;
+  const candidateStartedAt = candidate.startedAt ? new Date(candidate.startedAt).valueOf() : Number.NaN;
+  const activeSourceStart = activeSourceStartedAt ? new Date(activeSourceStartedAt).valueOf() : Number.NaN;
+  const matchesTransitionWindow = Number.isFinite(activeSourceStart)
+    ? candidateStartedAt >= activeSourceStart && candidateStartedAt <= sourceEndedAt
+    : candidateStartedAt === sourceEndedAt;
+
+  return (
+    candidate.uuid !== source.uuid &&
+    isSameQueueEntrySubject(candidate, source) &&
+    candidate.queueComingFrom?.uuid === source.queue?.uuid &&
+    Number.isFinite(sourceEndedAt) &&
+    Number.isFinite(candidateStartedAt) &&
+    matchesTransitionWindow
+  );
+}
+
+async function findEmergencyQueueSuccessor(
+  source: QueueEntryState,
+  matches: (candidate: QueueEntryState) => boolean,
+): Promise<FetchResponse<QueueEntryState> | null> {
+  const subject = source.visit?.uuid
+    ? { visit: source.visit.uuid }
+    : source.patient?.uuid
+      ? { patient: source.patient.uuid }
+      : null;
+  if (!source.endedAt || !source.queue?.uuid || !subject) {
+    return null;
+  }
+
+  const pageSize = 100;
+  const seenEntries = new Set<string>();
+  for (let startIndex = 0; ; startIndex += pageSize) {
+    const searchParams = new URLSearchParams({
+      ...subject,
+      queueComingFrom: source.queue.uuid,
+      limit: String(pageSize),
+      startIndex: String(startIndex),
+      v: emergencyQueueEntryStateRepresentation,
+    });
+    const response = await openmrsFetch<QueueEntrySearchResponse>(
+      `${restBaseUrl}/queue-entry?${searchParams.toString()}`,
+    );
+    const page = response.data?.results ?? [];
+    const matchingEntry = page.find(matches);
+    if (matchingEntry) {
+      return { ...response, data: matchingEntry } as FetchResponse<QueueEntryState>;
+    }
+
+    let newEntryCount = 0;
+    page.forEach((entry) => {
+      if (!seenEntries.has(entry.uuid)) {
+        seenEntries.add(entry.uuid);
+        newEntryCount += 1;
+      }
+    });
+    if (page.length < pageSize) {
+      return null;
+    }
+    if (newEntryCount === 0) {
+      throw emergencyQueueEntryError(
+        EMERGENCY_QUEUE_ENTRY_RECONCILIATION_STALLED,
+        'Emergency queue transition reconciliation did not advance.',
+      );
+    }
+  }
+}
+
+function findAnyEmergencyQueueTransitionSuccessor(source: QueueEntryState, activeSourceStartedAt?: string | null) {
+  return findEmergencyQueueSuccessor(source, (candidate) =>
+    isPossibleDirectTransitionSuccessor(candidate, source, activeSourceStartedAt),
+  );
+}
+
+/** Finds the exact successor requested by this transition, across capped result pages. */
+async function findEmergencyQueueTransitionSuccessor(
+  source: QueueEntryState,
+  params: EmergencyQueueTransitionParams,
+): Promise<FetchResponse<QueueEntryState> | null> {
+  return findEmergencyQueueSuccessor(source, (candidate) => queueEntryMatchesTransition(candidate, source, params));
+}
+
+/**
+ * Transition a queue entry using the OpenMRS Queue Module transition endpoint.
+ * This ends the current entry and creates a new one with the specified parameters.
+ */
+export async function transitionEmergencyQueueEntry(params: EmergencyQueueTransitionParams) {
+  const freshResponse = await fetchQueueEntryState(params.queueEntryToTransition);
+  await assertQueueEntryPatientIsAlive(freshResponse.data);
+
+  if (freshResponse.data.endedAt) {
+    const existingSuccessor = await findEmergencyQueueTransitionSuccessor(freshResponse.data, params);
+    if (existingSuccessor) {
+      await assertQueueEntryPatientIsAlive(freshResponse.data);
+      return existingSuccessor;
+    }
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_ALREADY_ENDED,
+      'Cannot transition an emergency queue entry that has already ended.',
+    );
+  }
+
   try {
-    return await openmrsFetch(`${restBaseUrl}/queue-entry/transition`, {
+    await openmrsFetch(`${restBaseUrl}/queue-entry/transition`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -648,14 +1142,34 @@ export async function transitionEmergencyQueueEntry(params: {
       body: params,
     });
   } catch (error) {
-    // A transition ends the source entry; if it is already ended, the backend
-    // applied the transition even though the response was lost.
-    const current = await fetchQueueEntryState(params.queueEntryToTransition);
-    if (current?.endedAt) {
-      return null;
+    let current: FetchResponse<QueueEntryState>;
+    let successor: FetchResponse<QueueEntryState> | null;
+    try {
+      current = await fetchQueueEntryState(params.queueEntryToTransition);
+      successor = await findEmergencyQueueTransitionSuccessor(current.data, params);
+    } catch {
+      // Preserve the original write error when its outcome cannot be verified.
+      throw error;
+    }
+    if (successor) {
+      // Do not let a response-loss reconciliation resume care if the patient
+      // died while the transition request was in flight.
+      await assertQueueEntryPatientIsAlive(current.data);
+      return successor;
     }
     throw error;
   }
+
+  const current = await fetchQueueEntryState(params.queueEntryToTransition);
+  const successor = await findEmergencyQueueTransitionSuccessor(current.data, params);
+  if (!successor) {
+    throw emergencyQueueEntryError(
+      EMERGENCY_QUEUE_ENTRY_TRANSITION_UNVERIFIED,
+      'The emergency queue transition could not be verified.',
+    );
+  }
+  await assertQueueEntryPatientIsAlive(current.data);
+  return successor;
 }
 
 /**

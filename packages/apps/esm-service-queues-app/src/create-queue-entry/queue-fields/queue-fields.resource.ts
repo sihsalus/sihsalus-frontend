@@ -1,4 +1,8 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import {
+  assertFreshPatientIsAlive,
+  DECEASED_PATIENT_OPERATION_BLOCKED,
+} from '@openmrs/esm-patient-common-lib';
 
 interface VisitAttributeSummary {
   value?: unknown;
@@ -281,11 +285,13 @@ async function createQueueEntryWithoutVisit(
   const searchParams = { patient: patientUuid, queue: queueUuid };
   const [existingEntry] = await findActiveQueueEntries(searchParams);
   if (existingEntry) {
+    await assertFreshPatientIsAlive(patientUuid);
     return { created: false, queueEntry: existingEntry };
   }
 
   const abortController = new AbortController();
   let response: FetchResponse<{ uuid?: string }>;
+  await assertFreshPatientIsAlive(patientUuid);
   try {
     response = await openmrsFetch<{ uuid?: string }>(`${restBaseUrl}/queue-entry`, {
       method: 'POST',
@@ -306,9 +312,13 @@ async function createQueueEntryWithoutVisit(
     try {
       const [entryCreatedConcurrently] = await findActiveQueueEntries(searchParams);
       if (entryCreatedConcurrently) {
+        await assertFreshPatientIsAlive(patientUuid);
         return { created: false, queueEntry: entryCreatedConcurrently };
       }
-    } catch {
+    } catch (reconciliationError) {
+      if ((reconciliationError as { code?: string })?.code === DECEASED_PATIENT_OPERATION_BLOCKED) {
+        throw reconciliationError;
+      }
       // Preserve the original write failure if the reconciliation read also fails.
     }
 
@@ -362,6 +372,7 @@ async function createQueueEntry(
   }
   const existingForVisit = existingEntriesForVisit[0];
   if (existingForVisit) {
+    await assertFreshPatientIsAlive(patientUuid);
     if (existingForVisit.queue?.uuid !== queueUuid) {
       throw new ActiveVisitQueueConflictError(existingForVisit.queue?.display);
     }
@@ -390,6 +401,7 @@ async function createQueueEntry(
     throw new ActiveQueueEntryConflictError();
   }
 
+  await assertFreshPatientIsAlive(patientUuid);
   const abortController = new AbortController();
 
   const persistedTicket = await getPersistedVisitQueueTicket(
@@ -397,6 +409,9 @@ async function createQueueEntry(
     visitQueueNumberAttributeUuid,
     visitStartDatetime,
   );
+  if (!persistedTicket.queueNumber) {
+    await assertFreshPatientIsAlive(patientUuid);
+  }
   const { startedAt } = persistedTicket.queueNumber
     ? { startedAt: persistedTicket.startedAt }
     : await generateVisitQueueNumber(
@@ -408,6 +423,7 @@ async function createQueueEntry(
       );
 
   let response: FetchResponse<{ uuid?: string }>;
+  await assertFreshPatientIsAlive(patientUuid);
   try {
     response = await openmrsFetch<{ uuid?: string }>(`${restBaseUrl}/visit-queue-entry`, {
       method: 'POST',
@@ -435,10 +451,14 @@ async function createQueueEntry(
       }
       const entryCreatedConcurrently = entriesCreatedConcurrently[0];
       if (entryCreatedConcurrently?.queue?.uuid === queueUuid) {
+        await assertFreshPatientIsAlive(patientUuid);
         return { created: false, queueEntry: entryCreatedConcurrently };
       }
     } catch (reconciliationError) {
-      if (reconciliationError instanceof MultipleActiveVisitQueueEntriesError) {
+      if (
+        reconciliationError instanceof MultipleActiveVisitQueueEntriesError ||
+        (reconciliationError as { code?: string })?.code === DECEASED_PATIENT_OPERATION_BLOCKED
+      ) {
         throw reconciliationError;
       }
       // Preserve the original write failure if the reconciliation read also fails.

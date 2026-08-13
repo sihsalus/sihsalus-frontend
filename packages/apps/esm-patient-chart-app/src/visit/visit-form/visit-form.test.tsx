@@ -20,13 +20,17 @@ import {
 import {
   copyFinanciadorToVisitPrivileges,
   createOfflineVisitForPatient,
+  fetchFreshPatientVitalStatus,
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
   INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+  SELF_FINANCED_CONCEPT_UUID,
   SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID,
+  SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID,
+  SIS_ACCREDITATION_PENDING_CONCEPT_UUID,
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_CONCEPT_UUID,
   safeCopyFinanciadorToVisit,
-  SELF_FINANCED_CONCEPT_UUID,
 } from '@openmrs/esm-patient-common-lib';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -307,6 +311,7 @@ const mockDeleteVisitAttribute = vi.mocked(deleteVisitAttribute).mockResolvedVal
 const mockGetVisitAttributes = vi.mocked(getVisitAttributes);
 const mockReconcileVisitCreation = vi.mocked(reconcileVisitCreation);
 const mockCreateOfflineVisitForPatient = vi.mocked(createOfflineVisitForPatient);
+const mockFetchFreshPatientVitalStatus = vi.mocked(fetchFreshPatientVitalStatus);
 const mockSafeCopyFinanciadorToVisit = vi.mocked(safeCopyFinanciadorToVisit);
 const mockUsePersonAttributesForVisitDefaults = vi.mocked(usePersonAttributesForVisitDefaults);
 const mockUseVisitProvenanceAddressOptions = vi.mocked(useVisitProvenanceAddressOptions);
@@ -314,6 +319,7 @@ const mockUseVisitProvenanceAddressOptions = vi.mocked(useVisitProvenanceAddress
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
   createOfflineVisitForPatient: vi.fn(),
+  fetchFreshPatientVitalStatus: vi.fn(),
   safeCopyFinanciadorToVisit: vi.fn(),
   useActivePatientEnrollment: vi.fn().mockReturnValue({
     activePatientEnrollment: [],
@@ -481,6 +487,10 @@ describe('Visit form', () => {
       updated: 0,
     });
     mockUseConnectivity.mockReturnValue(true);
+    mockCreateOfflineVisitForPatient.mockResolvedValue({} as Awaited<
+      ReturnType<typeof createOfflineVisitForPatient>
+    >);
+    mockFetchFreshPatientVitalStatus.mockResolvedValue({ dead: false, deathDate: null, isDeceased: false });
     mockOnVisitCreatedOrUpdatedCallback.mockResolvedValue(undefined);
     mockUseSession.mockReturnValue({
       user: {
@@ -892,6 +902,151 @@ describe('Visit form', () => {
     });
   });
 
+  it('fresh-checks patient-search visit creation and performs no write after a concurrent death', async () => {
+    const user = userEvent.setup();
+    const handleCreateExtraVisitInfo = vi.fn();
+    mockFetchFreshPatientVitalStatus.mockResolvedValue({
+      dead: true,
+      deathDate: '2026-08-12T15:41:28.000Z',
+      isDeceased: true,
+    });
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      showExtraVisitAttributesSlot: true,
+      visitAttributeTypes: [],
+      defaultVisitAttributesFromPersonAttributes: [],
+    });
+    mockExtensionSlot.mockImplementation(({ children, name, state }): React.JSX.Element => {
+      if (name === 'extra-visit-attribute-slot') {
+        return (
+          <ExtraVisitSlotTestDouble
+            attributes={[]}
+            handleCreateExtraVisitInfo={handleCreateExtraVisitInfo}
+            setExtraVisitInfo={
+              (
+                state as {
+                  setExtraVisitInfo: (value: {
+                    attributes: Array<{ attributeType: string; value: string }>;
+                    handleCreateExtraVisitInfo?: () => Promise<void>;
+                  }) => void;
+                }
+              ).setExtraVisitInfo
+            }
+          />
+        );
+      }
+      return typeof children === 'function' ? <>{children({} as AssignedExtension)}</> : <>{children ?? null}</>;
+    });
+
+    renderVisitForm(undefined, { openedFrom: 'patient-search-start-visit' });
+    await screen.findByTestId('extra-visit-attribute-slot');
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockFetchFreshPatientVitalStatus).toHaveBeenCalledWith(mockPatient.id));
+    expect(handleCreateExtraVisitInfo).not.toHaveBeenCalled();
+    expect(mockSaveVisit).not.toHaveBeenCalled();
+    expect(showSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        subtitle: 'No se puede iniciar una consulta para un paciente fallecido.',
+      }),
+    );
+  });
+
+  it('fails closed before extra-info or visit writes when the fresh vital-status request fails', async () => {
+    const user = userEvent.setup();
+    const handleCreateExtraVisitInfo = vi.fn();
+    mockFetchFreshPatientVitalStatus.mockRejectedValue(new TypeError('Failed to fetch'));
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      showExtraVisitAttributesSlot: true,
+      visitAttributeTypes: [],
+      defaultVisitAttributesFromPersonAttributes: [],
+    });
+    mockExtensionSlot.mockImplementation(({ children, name, state }): React.JSX.Element => {
+      if (name === 'extra-visit-attribute-slot') {
+        return (
+          <ExtraVisitSlotTestDouble
+            attributes={[]}
+            handleCreateExtraVisitInfo={handleCreateExtraVisitInfo}
+            setExtraVisitInfo={
+              (
+                state as {
+                  setExtraVisitInfo: (value: {
+                    attributes: Array<{ attributeType: string; value: string }>;
+                    handleCreateExtraVisitInfo?: () => Promise<void>;
+                  }) => void;
+                }
+              ).setExtraVisitInfo
+            }
+          />
+        );
+      }
+      return typeof children === 'function' ? <>{children({} as AssignedExtension)}</> : <>{children ?? null}</>;
+    });
+
+    renderVisitForm();
+    await screen.findByTestId('extra-visit-attribute-slot');
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockFetchFreshPatientVitalStatus).toHaveBeenCalledWith(mockPatient.id));
+    expect(handleCreateExtraVisitInfo).not.toHaveBeenCalled();
+    expect(mockSaveVisit).not.toHaveBeenCalled();
+  });
+
+  it('re-checks after extra-info and does not create a visit when the patient dies during that write', async () => {
+    const user = userEvent.setup();
+    const handleCreateExtraVisitInfo = vi.fn().mockResolvedValue(undefined);
+    mockFetchFreshPatientVitalStatus
+      .mockResolvedValueOnce({ dead: false, deathDate: null, isDeceased: false })
+      .mockResolvedValueOnce({
+        dead: true,
+        deathDate: '2026-08-12T15:41:28.000Z',
+        isDeceased: true,
+      });
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      showExtraVisitAttributesSlot: true,
+      visitAttributeTypes: [],
+      defaultVisitAttributesFromPersonAttributes: [],
+    });
+    mockExtensionSlot.mockImplementation(({ children, name, state }): React.JSX.Element => {
+      if (name === 'extra-visit-attribute-slot') {
+        return (
+          <ExtraVisitSlotTestDouble
+            attributes={[]}
+            handleCreateExtraVisitInfo={handleCreateExtraVisitInfo}
+            setExtraVisitInfo={
+              (
+                state as {
+                  setExtraVisitInfo: (value: {
+                    attributes: Array<{ attributeType: string; value: string }>;
+                    handleCreateExtraVisitInfo?: () => Promise<void>;
+                  }) => void;
+                }
+              ).setExtraVisitInfo
+            }
+          />
+        );
+      }
+      return typeof children === 'function' ? <>{children({} as AssignedExtension)}</> : <>{children ?? null}</>;
+    });
+
+    renderVisitForm();
+    await screen.findByTestId('extra-visit-attribute-slot');
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockFetchFreshPatientVitalStatus).toHaveBeenCalledTimes(2));
+    expect(handleCreateExtraVisitInfo).toHaveBeenCalledOnce();
+    expect(mockSaveVisit).not.toHaveBeenCalled();
+  });
+
   it('keeps care moving and offers an idempotent coverage retry for the same visit', async () => {
     const user = userEvent.setup();
     const copyFailure = new Error('coverage write failed');
@@ -1003,6 +1158,100 @@ describe('Visit form', () => {
     );
   });
 
+  it('uses an active SIS payload as the triage fast path without recopying coverage', async () => {
+    const user = userEvent.setup();
+
+    renderVisitForm(undefined, {
+      requireActiveSisFinancing: true,
+      additionalVisitAttributes: [
+        { attributeType: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID, value: SIS_CONCEPT_UUID },
+        { attributeType: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID, value: 'SIS-123' },
+        { attributeType: SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID, value: sisAccreditationStatusConceptUuid },
+        { attributeType: SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID, value: '2026-08-12' },
+      ],
+    });
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+    expect(mockSafeCopyFinanciadorToVisit).not.toHaveBeenCalled();
+    expect(mockOnVisitCreatedOrUpdatedCallback).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not use self-financing as an active SIS triage fast path', async () => {
+    const user = userEvent.setup();
+    mockSafeCopyFinanciadorToVisit.mockResolvedValueOnce({
+      ok: true,
+      skipped: false,
+      created: 0,
+      updated: 0,
+      reviewReason: 'incomplete-coverage',
+    });
+    mockOnVisitCreatedOrUpdatedCallback.mockRejectedValueOnce(
+      Object.assign(new Error('The visit does not have active SIS financing.'), {
+        code: 'TRIAGE_SIS_FINANCING_REQUIRED',
+      }),
+    );
+
+    renderVisitForm(undefined, {
+      requireActiveSisFinancing: true,
+      additionalVisitAttributes: [
+        { attributeType: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID, value: SELF_FINANCED_CONCEPT_UUID },
+      ],
+    });
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledTimes(1));
+    expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledWith(
+      expect.objectContaining({ onlyFillMissing: false, patientUuid: mockPatient.id, visitUuid }),
+    );
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+    expect(mockOnVisitCreatedOrUpdatedCallback).toHaveBeenCalledTimes(1);
+    expect(mockCloseWorkspace).not.toHaveBeenCalled();
+  });
+
+  it('does not treat an unknown SIS payload as complete in a non-triage flow', async () => {
+    const user = userEvent.setup();
+    mockSafeCopyFinanciadorToVisit.mockResolvedValueOnce({
+      ok: true,
+      skipped: false,
+      created: 0,
+      updated: 0,
+      reviewReason: 'unknown-accreditation-status',
+    });
+
+    renderVisitForm(undefined, {
+      additionalVisitAttributes: [
+        { attributeType: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID, value: SIS_CONCEPT_UUID },
+        { attributeType: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID, value: 'SIS-123' },
+        {
+          attributeType: SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+          value: 'unknown-sis-accreditation-status',
+        },
+        { attributeType: SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID, value: '2026-08-12' },
+      ],
+    });
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledTimes(1));
+    expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledWith(
+      expect.objectContaining({ onlyFillMissing: true, patientUuid: mockPatient.id, visitUuid }),
+    );
+    expect(showSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'warning', title: 'Estado de acreditación SIS no reconocido' }),
+    );
+    expect(showSnackbar).not.toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Cobertura registrada en la consulta' }),
+    );
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+  });
+
   it('treats a backend authorization denial as deterministic even if the session advertised the privileges', async () => {
     const user = userEvent.setup();
     mockSafeCopyFinanciadorToVisit.mockResolvedValueOnce({
@@ -1107,6 +1356,160 @@ describe('Visit form', () => {
     );
   });
 
+  it.each([
+    [
+      'missing financer',
+      {
+        ok: true,
+        skipped: true,
+        created: 0,
+        updated: 0,
+        reviewReason: 'missing-financiador',
+      },
+    ],
+    [
+      'incomplete SIS bundle',
+      {
+        ok: true,
+        skipped: false,
+        created: 1,
+        updated: 0,
+        reviewReason: 'incomplete-coverage',
+      },
+    ],
+  ] as const)('retries %s after the affiliation is corrected without posting a second visit', async (_case, result) => {
+    const user = userEvent.setup();
+    mockSafeCopyFinanciadorToVisit
+      .mockResolvedValueOnce(result)
+      .mockResolvedValueOnce({ ok: true, skipped: false, created: 1, updated: 0 });
+    mockOnVisitCreatedOrUpdatedCallback
+      .mockRejectedValueOnce(
+        Object.assign(new Error('The visit does not have active SIS financing.'), {
+          code: 'TRIAGE_SIS_FINANCING_REQUIRED',
+        }),
+      )
+      .mockResolvedValueOnce(undefined);
+
+    renderVisitForm(undefined, { requireActiveSisFinancing: true });
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    const retryButton = await screen.findByRole('button', { name: /Reintentar registro|Retry registration/i });
+    expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledTimes(1);
+    expect(mockOnVisitCreatedOrUpdatedCallback).toHaveBeenCalledTimes(1);
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+
+    // A concurrent Admissions correction changes the next copy result. The
+    // retry must propagate that corrected affiliation onto the same visit.
+    await user.click(retryButton);
+
+    await waitFor(() => expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mockOnVisitCreatedOrUpdatedCallback).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+    expect(mockSafeCopyFinanciadorToVisit).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ patientUuid: mockPatient.id, visitUuid }),
+    );
+  });
+
+  it.each([
+    {
+      caseName: 'pending',
+      statusUuid: SIS_ACCREDITATION_PENDING_CONCEPT_UUID,
+      firstCopyResult: { ok: true, skipped: false, created: 0, updated: 0 } as const,
+    },
+    {
+      caseName: 'inactive',
+      statusUuid: SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID,
+      firstCopyResult: { ok: true, skipped: false, created: 0, updated: 0 } as const,
+    },
+    {
+      caseName: 'not consulted',
+      statusUuid: SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID,
+      firstCopyResult: { ok: true, skipped: false, created: 0, updated: 0 } as const,
+    },
+    {
+      caseName: 'unknown',
+      statusUuid: 'unknown-sis-accreditation-status',
+      firstCopyResult: {
+        ok: true,
+        skipped: false,
+        created: 0,
+        updated: 0,
+        reviewReason: 'unknown-accreditation-status',
+      } as const,
+    },
+  ])('recopies a $caseName SIS payload after correction to active and retries without recreating the visit', async ({
+    statusUuid,
+    firstCopyResult,
+  }) => {
+    const user = userEvent.setup();
+    mockSafeCopyFinanciadorToVisit
+      .mockResolvedValueOnce(firstCopyResult)
+      .mockResolvedValueOnce({ ok: true, skipped: false, created: 0, updated: 1 });
+    mockOnVisitCreatedOrUpdatedCallback
+      .mockRejectedValueOnce(
+        Object.assign(new Error('The visit does not have active SIS financing.'), {
+          code: 'TRIAGE_SIS_FINANCING_REQUIRED',
+        }),
+      )
+      .mockResolvedValueOnce(undefined);
+    mockUseVisitFormCallbacks.mockReturnValue([
+      new Map([
+        [
+          'queue-entry-extension-id',
+          { kind: 'queue-entry', onVisitCreatedOrUpdated: mockOnVisitCreatedOrUpdatedCallback },
+        ],
+      ]),
+      vi.fn(),
+    ]);
+
+    renderVisitForm(undefined, {
+      requireActiveSisFinancing: true,
+      additionalVisitAttributes: [
+        { attributeType: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID, value: SIS_CONCEPT_UUID },
+        { attributeType: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID, value: 'SIS-123' },
+        { attributeType: SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID, value: statusUuid },
+        { attributeType: SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID, value: '2026-08-12' },
+      ],
+    });
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    const retryButton = await screen.findByRole('button', { name: /Reintentar registro|Retry registration/i });
+    expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledTimes(1);
+    expect(mockSafeCopyFinanciadorToVisit).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        onlyFillMissing: false,
+        patientUuid: mockPatient.id,
+        visitUuid,
+      }),
+    );
+    expect(mockOnVisitCreatedOrUpdatedCallback).toHaveBeenCalledTimes(1);
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+
+    // Admissions corrects the person's SIS accreditation to active. The retry
+    // must refresh coverage on the persisted visit before attempting the queue again.
+    await user.click(retryButton);
+
+    await waitFor(() => expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledTimes(2));
+    expect(mockSafeCopyFinanciadorToVisit).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        onlyFillMissing: false,
+        patientUuid: mockPatient.id,
+        visitUuid,
+      }),
+    );
+    await waitFor(() => expect(mockOnVisitCreatedOrUpdatedCallback).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps missing coverage visible instead of reporting a false repair', async () => {
     const user = userEvent.setup();
     mockUserHasAccess.mockImplementation(
@@ -1184,6 +1587,42 @@ describe('Visit form', () => {
     );
     expect(showSnackbar).not.toHaveBeenCalledWith(
       expect.objectContaining({ title: 'Cobertura registrada en la consulta' }),
+    );
+    expect(mockCloseWorkspace).toHaveBeenCalled();
+  });
+
+  it('reports an unknown SIS accreditation status without claiming that the financer is missing', async () => {
+    const user = userEvent.setup();
+    mockUserHasAccess.mockImplementation(
+      (privilege) =>
+        typeof privilege === 'string' &&
+        (['app:home.admision', 'app:opciones.registrarPaciente'].includes(privilege) ||
+          coverageCopyPrivileges.has(privilege)),
+    );
+    mockSafeCopyFinanciadorToVisit.mockResolvedValue({
+      ok: true,
+      skipped: false,
+      created: 4,
+      updated: 0,
+      reviewReason: 'unknown-accreditation-status',
+    });
+
+    renderVisitForm();
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actionButtonLabel: 'Revisar cobertura',
+          kind: 'warning',
+          title: 'Estado de acreditación SIS no reconocido',
+        }),
+      ),
+    );
+    expect(showSnackbar).not.toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Consulta iniciada sin financiador' }),
     );
     expect(mockCloseWorkspace).toHaveBeenCalled();
   });
@@ -1290,13 +1729,51 @@ describe('Visit form', () => {
     await user.click(screen.getByRole('button', { name: /Start visit/i }));
 
     expect(mockSaveVisit).not.toHaveBeenCalled();
-    expect(mockCreateOfflineVisitForPatient).not.toHaveBeenCalled();
     expect(queuePreSave).not.toHaveBeenCalled();
     expect(queueCallback).not.toHaveBeenCalled();
     expect(showSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'error',
         title: 'No se puede registrar la atención sin conexión',
+      }),
+    );
+  });
+
+  it('preserves offline visit creation for a patient not known to be deceased', async () => {
+    const user = userEvent.setup();
+    mockUseConnectivity.mockReturnValue(false);
+    renderVisitForm();
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockCreateOfflineVisitForPatient).toHaveBeenCalledOnce());
+    expect(mockFetchFreshPatientVitalStatus).not.toHaveBeenCalled();
+  });
+
+  it('does not queue an offline visit when the cached patient is already known to be deceased', async () => {
+    const user = userEvent.setup();
+    mockUseConnectivity.mockReturnValue(false);
+    mockUsePatient.mockReturnValue({
+      error: null,
+      isLoading: false,
+      patient: {
+        ...mockFhirPatient,
+        deceasedBoolean: true,
+        deceasedDateTime: '2026-08-12T15:41:28.000Z',
+      },
+      patientUuid: mockPatient.id,
+    });
+    renderVisitForm();
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    expect(mockCreateOfflineVisitForPatient).not.toHaveBeenCalled();
+    expect(showSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        subtitle: 'No se puede iniciar una consulta para un paciente fallecido.',
       }),
     );
   });
@@ -2962,14 +3439,19 @@ function hasRenderedExtensionSlot(name: string) {
 
 function ExtraVisitSlotTestDouble({
   attributes,
+  handleCreateExtraVisitInfo,
   setExtraVisitInfo,
 }: {
   attributes: Array<{ attributeType: string; value: string }>;
-  setExtraVisitInfo: (state: { attributes: Array<{ attributeType: string; value: string }> }) => void;
+  handleCreateExtraVisitInfo?: () => Promise<void>;
+  setExtraVisitInfo: (state: {
+    attributes: Array<{ attributeType: string; value: string }>;
+    handleCreateExtraVisitInfo?: () => Promise<void>;
+  }) => void;
 }) {
   React.useEffect(() => {
-    setExtraVisitInfo({ attributes });
-  }, [attributes, setExtraVisitInfo]);
+    setExtraVisitInfo({ attributes, handleCreateExtraVisitInfo });
+  }, [attributes, handleCreateExtraVisitInfo, setExtraVisitInfo]);
 
   return <div data-testid="extra-visit-attribute-slot" />;
 }

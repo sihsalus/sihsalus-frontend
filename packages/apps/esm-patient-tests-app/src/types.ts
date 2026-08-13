@@ -71,6 +71,10 @@ export interface FHIRObservationResource {
     reference: string;
     display: string;
   }>;
+  basedOn?: Array<{
+    reference: string;
+    display?: string;
+  }>;
 }
 
 export interface Concept {
@@ -118,6 +122,7 @@ export interface ObsRecord extends FHIRObservationResource {
   value: string;
   name: string;
   interpretation: OBSERVATION_INTERPRETATION;
+  orderNumber?: string;
 }
 
 export enum observationInterpretation {

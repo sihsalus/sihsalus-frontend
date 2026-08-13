@@ -166,8 +166,8 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
           }),
         }).catch((err) => {
           console.error(`Failed to decline previous order ${order.previousOrder}:`, err);
-        })
-      )
+        }),
+      ),
     );
   }, []);
 

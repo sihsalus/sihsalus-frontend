@@ -61,10 +61,7 @@ export default function WaitingPatientsExtension() {
         />
       </MetricsCardHeader>
       <MetricsCardBody>
-        <MetricsCardItem
-          label={t('patients', 'Patients')}
-          value={isLoading ? '--' : queueEntries.length}
-        />
+        <MetricsCardItem label={t('patients', 'Patients')} value={isLoading ? '--' : queueEntries.length} />
         <MetricsCardItem label={t('urgent', 'Urgent')} value={urgentCount > 0 ? urgentCount : null} color="red" small />
       </MetricsCardBody>
     </MetricsCard>

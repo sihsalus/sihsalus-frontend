@@ -40,6 +40,7 @@ interface FormEngineProps {
   markFormAsDirty?: (isDirty: boolean) => void;
   handleOnValidate?: (valid: boolean) => void;
   handleEncounterCreate?: (encounter: OpenmrsEncounter) => OpenmrsEncounter | void | Promise<OpenmrsEncounter | void>;
+  onBeforeEncounterSave?: (encounter: OpenmrsEncounter) => void | Promise<void>;
   hideControls?: boolean;
   hidePatientBanner?: boolean;
   preFilledQuestions?: PreFilledQuestions;
@@ -60,6 +61,7 @@ const FormEngine = ({
   markFormAsDirty,
   handleOnValidate,
   handleEncounterCreate,
+  onBeforeEncounterSave,
   hideControls = false,
   hidePatientBanner = false,
   preFilledQuestions,
@@ -158,6 +160,7 @@ const FormEngine = ({
           }}
           hideFormCollapseToggle={hideFormCollapseToggle}
           handleEncounterCreate={handleEncounterCreate}
+          onBeforeEncounterSave={onBeforeEncounterSave}
           setIsFormDirty={setIsFormDirty}
         >
           <div className={styles.formContainer}>

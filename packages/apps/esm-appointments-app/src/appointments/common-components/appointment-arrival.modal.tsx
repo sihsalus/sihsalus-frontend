@@ -12,7 +12,12 @@ import {
   type Visit,
 } from '@openmrs/esm-framework';
 import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
-import { fetchVisitInsurance, getSisFinancingState, safeCopyFinanciadorToVisit } from '@openmrs/esm-patient-common-lib';
+import {
+  fetchFreshPatientVitalStatus,
+  fetchVisitInsurance,
+  getSisFinancingState,
+  safeCopyFinanciadorToVisit,
+} from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -63,6 +68,8 @@ const QUEUE_ENTRY_CAPABILITY_MISSING = 'QUEUE_ENTRY_CAPABILITY_MISSING';
 const VISIT_CREATION_CAPABILITY_MISSING = 'VISIT_CREATION_CAPABILITY_MISSING';
 const VISIT_INSPECTION_CAPABILITY_MISSING = 'VISIT_INSPECTION_CAPABILITY_MISSING';
 const VISIT_REUSE_CAPABILITY_MISSING = 'VISIT_REUSE_CAPABILITY_MISSING';
+const DECEASED_PATIENT_ARRIVAL_BLOCKED = 'DECEASED_PATIENT_ARRIVAL_BLOCKED';
+const PATIENT_DEATH_STATUS_UNAVAILABLE = 'PATIENT_DEATH_STATUS_UNAVAILABLE';
 
 type ArrivalAction = 'queue' | 'direct';
 type VisitBranchPreflight =
@@ -105,6 +112,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
   const { t } = useTranslation();
   const session = useSession();
   const { patient: fhirPatient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
+  const isDeceasedPatient = Boolean(fhirPatient?.deceasedBoolean || fhirPatient?.deceasedDateTime);
   const canOpenPatientChart = userHasAccess(clinicalChartPrivilege, session?.user);
   const { mutateAppointments } = useMutateAppointments();
   const [pendingAction, setPendingAction] = useState<ArrivalAction | null>(null);
@@ -229,6 +237,14 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         [TRIAGE_SIS_FINANCING_REQUIRED]: t(
           'triageSisFinancingRequired',
           'No se puede continuar con el triaje porque esta atención no tiene financiador definido o no tiene SIS vigente (ejemplo: SIS). Derive al paciente a Caja para regularizar el pago o la cobertura.',
+        ),
+        [DECEASED_PATIENT_ARRIVAL_BLOCKED]: t(
+          'deceasedPatientArrivalBlocked',
+          'No se puede registrar la llegada de un paciente fallecido.',
+        ),
+        [PATIENT_DEATH_STATUS_UNAVAILABLE]: t(
+          'patientVitalStatusCheckFailed',
+          'No se pudo verificar el estado vital actual del paciente. Intente nuevamente.',
         ),
       },
       logContext: 'Check in appointment',
@@ -380,7 +396,24 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     };
   }, [patientUuid, shouldResolveVisitBranch]);
 
+  const assertPatientIsAlive = async () => {
+    let vitalStatus: Awaited<ReturnType<typeof fetchFreshPatientVitalStatus>>;
+    try {
+      vitalStatus = await fetchFreshPatientVitalStatus(patientUuid);
+    } catch (error) {
+      throw Object.assign(error instanceof Error ? error : new Error('The patient could not be loaded.'), {
+        code: PATIENT_DEATH_STATUS_UNAVAILABLE,
+      });
+    }
+    if (vitalStatus.isDeceased) {
+      throw Object.assign(new Error('Arrival cannot be registered for a deceased patient.'), {
+        code: DECEASED_PATIENT_ARRIVAL_BLOCKED,
+      });
+    }
+  };
+
   const validateAppointmentStatus = async (allowAlreadyCheckedIn = false) => {
+    await assertPatientIsAlive();
     const currentStatus = await getCurrentCheckInStatus();
     if (currentStatus === AppointmentStatus.CHECKEDIN) {
       mutateAppointments?.();
@@ -478,12 +511,14 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
   };
 
   const checkIn = async (subtitle: string) => {
+    await assertPatientIsAlive();
     const currentStatus = await getCurrentCheckInStatus();
     if (currentStatus === AppointmentStatus.CHECKEDIN) {
       mutateAppointments?.();
       return;
     }
 
+    await assertPatientIsAlive();
     await changeAppointmentStatus(AppointmentStatus.CHECKEDIN, appointment.uuid);
     showSnackbar({
       title: t('checkedIn', 'Llegada registrada'),
@@ -614,7 +649,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           closeModal();
           return;
         }
-        await launchWorkspace2(addActiveVisitToQueueWorkspace, {
+        const workspaceOpened = await launchWorkspace2(addActiveVisitToQueueWorkspace, {
           activeVisit: activeVisits[0],
           currentQueueLocationUuid: requiredQueueLocationUuid,
           currentServiceQueueUuid: arrivalQueueUuid,
@@ -640,13 +675,15 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
               ),
             ),
         });
-        closeModal();
+        if (workspaceOpened) {
+          closeModal();
+        }
         return;
       }
 
       assertCanCreateVisit();
       assertCompanionCapabilityForMinor();
-      await launchWorkspace2(appointmentsStartVisitWorkspace, {
+      const workspaceOpened = await launchWorkspace2(appointmentsStartVisitWorkspace, {
         patientUuid: patientUuid,
         companionPersonRegistrationWorkspaceName: appointmentsCompanionPersonRegistrationWorkspace,
         companionPersonSearchWorkspaceName: appointmentsCompanionPersonSearchWorkspace,
@@ -695,7 +732,9 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           );
         },
       });
-      closeModal();
+      if (workspaceOpened) {
+        closeModal();
+      }
     } catch (error) {
       setInlineError(error);
     } finally {
@@ -750,7 +789,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       // ni crea queue entries (misma vía que 'patient-chart-start-visit').
       assertCanCreateVisit();
       assertCompanionCapabilityForMinor();
-      await launchWorkspace2(appointmentsStartVisitWorkspace, {
+      const workspaceOpened = await launchWorkspace2(appointmentsStartVisitWorkspace, {
         patientUuid: patientUuid,
         companionPersonRegistrationWorkspaceName: appointmentsCompanionPersonRegistrationWorkspace,
         companionPersonSearchWorkspaceName: appointmentsCompanionPersonSearchWorkspace,
@@ -788,7 +827,9 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           navigateToPatientChart();
         },
       });
-      closeModal();
+      if (workspaceOpened) {
+        closeModal();
+      }
     } catch (error) {
       setInlineError(error);
     } finally {
@@ -797,7 +838,12 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
   };
 
   const routingConfigurationError = getRoutingConfigurationError();
-  const displayedError = inlineError ?? routingConfigurationError;
+  const deceasedPatientError = isDeceasedPatient
+    ? Object.assign(new Error('Arrival cannot be registered for a deceased patient.'), {
+        code: DECEASED_PATIENT_ARRIVAL_BLOCKED,
+      })
+    : null;
+  const displayedError = inlineError ?? deceasedPatientError ?? routingConfigurationError;
   const isVisitBranchLoading =
     shouldResolveVisitBranch &&
     (visitBranchPreflight.status === 'not-needed' || visitBranchPreflight.status === 'loading');
@@ -911,7 +957,9 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         </Button>
         {directAllowedByRule && !routingConfigurationError ? (
           <Button
-            disabled={isBusy || isPatientLoading || isVisitBranchLoading || Boolean(directAccessError)}
+            disabled={
+              isBusy || isPatientLoading || isVisitBranchLoading || isDeceasedPatient || Boolean(directAccessError)
+            }
             kind={queueAllowedByRule ? 'tertiary' : 'primary'}
             onClick={handleStartDirectly}
           >
@@ -924,7 +972,9 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         ) : null}
         {queueAllowedByRule && !routingConfigurationError ? (
           <Button
-            disabled={isBusy || isPatientLoading || isVisitBranchLoading || Boolean(queueAccessError)}
+            disabled={
+              isBusy || isPatientLoading || isVisitBranchLoading || isDeceasedPatient || Boolean(queueAccessError)
+            }
             kind="primary"
             onClick={handleSendToQueue}
           >

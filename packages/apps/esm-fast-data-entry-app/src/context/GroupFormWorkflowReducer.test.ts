@@ -281,6 +281,43 @@ describe('GroupFormWorkflowReducer', () => {
     });
   });
 
+  it('returns a failed submission to edit mode without discarding visit or session data', () => {
+    const state = buildState(
+      {
+        workflowState: 'SUBMIT_FOR_NEXT',
+        activePatientUuid: 'patient-a',
+        activeEncounterUuid: 'encounter-a',
+        activeVisitUuid: 'visit-a',
+        activeSessionUuid: 'session-a',
+        patientUuids: ['patient-a', 'patient-b'],
+        encounters: { 'patient-a': 'encounter-a' },
+        visits: { 'patient-a': 'visit-a' },
+      },
+      { nextPatientUuid: 'patient-b' },
+    );
+
+    const nextState = reducer(state, { type: 'SUBMISSION_FAILED' });
+
+    expect(nextState).toEqual({
+      ...state,
+      forms: {
+        ...state.forms,
+        'group-form': {
+          ...state.forms['group-form'],
+          workflowState: 'EDIT_FORM',
+        },
+      },
+    });
+  });
+
+  it.each([
+    ['already reset', buildState({ workflowState: 'EDIT_FORM', activePatientUuid: 'patient-a' })],
+    ['closed', { ...buildState(), activeFormUuid: null }],
+    ['cancelled', { ...buildState(), activeFormUuid: 'missing-form', forms: {} }],
+  ])('ignores a duplicate or stale submission failure after the workflow is %s', (_case, state) => {
+    expect(reducer(state, { type: 'SUBMISSION_FAILED' })).toBe(state);
+  });
+
   it('clears the active session pointers when going to review', () => {
     const state = buildState({
       workflowState: 'EDIT_FORM',

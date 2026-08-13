@@ -15,11 +15,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { useTreatmentPlan } from '../hooks/useTreatmentPlan';
-import {
-  consultaExternaEditPrivilege,
-  orderBasketEditPrivilege,
-  patientFormEntryWorkspace,
-} from '../utils/constants';
+import { consultaExternaEditPrivilege, orderBasketEditPrivilege, patientFormEntryWorkspace } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface PlanTratamientoProps {

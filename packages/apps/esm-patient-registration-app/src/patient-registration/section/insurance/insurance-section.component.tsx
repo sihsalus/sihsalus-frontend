@@ -65,13 +65,7 @@ export const InsuranceSection = ({ sectionDefinition }: InsuranceSectionProps) =
     attributesToClear.forEach((attributeTypeUuid) => {
       registrationContext?.setFieldValue(`attributes.${attributeTypeUuid}`, '', false);
     });
-  }, [
-    accreditationCheckedAt,
-    attributes,
-    isSisFinancer,
-    registrationContext,
-    shouldShowAccreditationDate,
-  ]);
+  }, [accreditationCheckedAt, attributes, isSisFinancer, registrationContext, shouldShowAccreditationDate]);
 
   useEffect(() => {
     if (insuranceType === peruLegacySisPlanConceptUuid) {

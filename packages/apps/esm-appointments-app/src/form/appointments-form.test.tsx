@@ -33,7 +33,11 @@ import { useProviders } from '../hooks/useProviders';
 import { changeAppointmentStatus, getAppointmentStatus } from '../patient-appointments/patient-appointments.resource';
 import { type Appointment, AppointmentKind, AppointmentStatus } from '../types';
 
-import { saveAppointment } from './appointments-form.resource';
+import {
+  assertPatientCanReceiveAppointment,
+  DECEASED_PATIENT_APPOINTMENT_BLOCKED,
+  saveAppointment,
+} from './appointments-form.resource';
 import AppointmentForm from './appointments-form.workspace';
 
 const defaultProps = {
@@ -46,6 +50,7 @@ const defaultProps = {
 };
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockAssertPatientCanReceiveAppointment = vi.mocked(assertPatientCanReceiveAppointment);
 const mockChangeAppointmentStatus = vi.mocked(changeAppointmentStatus);
 const mockGetAppointmentStatus = vi.mocked(getAppointmentStatus);
 const mockGetUserFacingErrorMessage = vi.mocked(getUserFacingErrorMessage);
@@ -69,7 +74,9 @@ async function selectLocationAndService(
   }
   const serviceSelect = screen.getByRole('combobox', { name: /select a service/i });
   await waitFor(() => expect(serviceSelect).toBeEnabled());
-  await waitFor(() => expect(screen.getByRole('option', { name: mockUseAppointmentServiceData[0].name })).toBeInTheDocument());
+  await waitFor(() =>
+    expect(screen.getByRole('option', { name: mockUseAppointmentServiceData[0].name })).toBeInTheDocument(),
+  );
   await user.selectOptions(serviceSelect, serviceUuid);
 }
 
@@ -143,6 +150,7 @@ function makeEditableAppointment(): Appointment {
 
 vi.mock('./appointments-form.resource', async () => ({
   ...(await vi.importActual('./appointments-form.resource')),
+  assertPatientCanReceiveAppointment: vi.fn(),
   saveAppointment: vi.fn(),
 }));
 
@@ -171,6 +179,7 @@ describe('AppointmentForm', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAssertPatientCanReceiveAppointment.mockResolvedValue(undefined);
     mockSaveAppointment.mockResolvedValue({} as FetchResponse<unknown>);
     mockOpenmrsFetch.mockResolvedValue({ data: {} } as FetchResponse<unknown>);
     mockGetAppointmentStatus.mockResolvedValue(AppointmentStatus.SCHEDULED);
@@ -233,6 +242,26 @@ describe('AppointmentForm', () => {
     expect(screen.getByRole('textbox', { name: /time/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /discard/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save and close/i })).toBeInTheDocument();
+  });
+
+  it('does not render appointment creation controls for a deceased patient', async () => {
+    mockOpenmrsFetch.mockResolvedValue(mockUseAppointmentServiceData as unknown as FetchResponse);
+    mockUsePatient.mockReturnValue({
+      error: null,
+      isLoading: false,
+      patient: {
+        id: mockPatient.uuid,
+        gender: 'male',
+        deceasedDateTime: '2026-08-12T15:41:28.000Z',
+      } as fhir.Patient,
+      patientUuid: mockPatient.uuid,
+    });
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+
+    expect(screen.getByText(/appointments cannot be created for a deceased patient/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/select a UPSS/i)).not.toBeInTheDocument();
   });
 
   it('hides all-day scheduling while keeping time and duration', async () => {
@@ -763,6 +792,30 @@ describe('AppointmentForm', () => {
     await waitFor(() => {
       expect(defaultProps.closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true });
     });
+  });
+
+  it('fresh-checks vital status and blocks creation when the patient died after the form opened', async () => {
+    const user = userEvent.setup();
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+    mockAssertPatientCanReceiveAppointment.mockRejectedValueOnce(
+      Object.assign(new Error('deceased patient'), { code: DECEASED_PATIENT_APPOINTMENT_BLOCKED }),
+    );
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'error',
+          subtitle: 'Appointments cannot be created for a deceased patient.',
+        }),
+      ),
+    );
+    expect(mockAssertPatientCanReceiveAppointment).toHaveBeenCalledWith(mockPatient.id);
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
   });
 
   it('warns but allows saving when the provider category is not confirmed in warn mode', async () => {

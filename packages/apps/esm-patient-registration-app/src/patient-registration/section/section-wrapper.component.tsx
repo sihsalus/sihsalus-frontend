@@ -35,10 +35,7 @@ export const SectionWrapper = ({ sectionDefinition, index }: SectionWrapperProps
     responsibleRelationshipRequired && Boolean(getIn(touched, 'relationships') && getIn(errors, 'relationships'));
   const sectionNumber = isIdentityLookupSection ? 0 : index;
   const helperText = isIdentityLookupSection
-    ? t(
-        'identityLookupSectionHelpText',
-        'Ingrese el DNI del paciente y consulte RENIEC antes de completar los datos.',
-      )
+    ? t('identityLookupSectionHelpText', 'Ingrese el DNI del paciente y consulte RENIEC antes de completar los datos.')
     : t('allFieldsRequiredText', 'All fields are required unless marked optional');
 
   /*

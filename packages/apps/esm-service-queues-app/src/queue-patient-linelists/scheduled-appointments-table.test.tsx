@@ -6,11 +6,7 @@ import { mockAppointmentsData } from 'test-utils';
 import englishTranslations from '../../translations/en.json';
 import spanishTranslations from '../../translations/es.json';
 import { type ConfigObject, configSchema } from '../config-schema';
-import {
-  ALL_APPOINTMENT_STATUSES,
-  updateSelectedAppointmentStatus,
-  useServiceQueuesStore,
-} from '../store/store';
+import { ALL_APPOINTMENT_STATUSES, updateSelectedAppointmentStatus, useServiceQueuesStore } from '../store/store';
 
 import AppointmentsTable from './scheduled-appointments-table.component';
 
@@ -137,11 +133,11 @@ describe('AppointmentsTable', () => {
     const spanishDropdown = screen.getByRole('combobox', { name: `${spanishTranslations.status}:` });
 
     await user.click(spanishDropdown);
-    expect(within(screen.getByRole('listbox')).getAllByRole('option').map((option) => option.textContent)).toEqual([
-      spanishTranslations.all,
-      'Scheduled',
-      'Completed',
-    ]);
+    expect(
+      within(screen.getByRole('listbox'))
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual([spanishTranslations.all, 'Scheduled', 'Completed']);
     await user.click(screen.getByRole('option', { name: 'Completed' }));
 
     expect(queueState.current.selectedAppointmentStatus).toBe('Completed');
@@ -155,11 +151,11 @@ describe('AppointmentsTable', () => {
     expect(englishDropdown).toHaveTextContent('Completed');
     expect(queueState.current.selectedAppointmentStatus).toBe('Completed');
     await user.click(englishDropdown);
-    expect(within(screen.getByRole('listbox')).getAllByRole('option').map((option) => option.textContent)).toEqual([
-      englishTranslations.all,
-      'Scheduled',
-      'Completed',
-    ]);
+    expect(
+      within(screen.getByRole('listbox'))
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual([englishTranslations.all, 'Scheduled', 'Completed']);
     await user.click(screen.getByRole('option', { name: englishTranslations.all }));
 
     expect(ALL_APPOINTMENT_STATUSES).toBe('');

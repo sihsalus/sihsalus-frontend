@@ -1,5 +1,5 @@
 import { type FetchResponse, openmrsFetch, showSnackbar } from '@openmrs/esm-framework';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockQueueEntryAlice, mockQueues, renderWithSwr } from 'test-utils';
 
@@ -31,9 +31,24 @@ describe('UndoTransitionQueueEntryModal', () => {
   });
 
   it('has an working submit button', async () => {
-    mockOpenmrsFetch.mockResolvedValue({
-      status: 200,
-    } as unknown as FetchResponse);
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({
+        data: queueEntry,
+        status: 200,
+      } as unknown as FetchResponse)
+      .mockResolvedValueOnce({
+        data: {
+          person: {
+            uuid: queueEntry.patient.uuid,
+            dead: false,
+            deathDate: null,
+          },
+        },
+        status: 200,
+      } as unknown as FetchResponse)
+      .mockResolvedValueOnce({
+        status: 200,
+      } as unknown as FetchResponse);
 
     const user = userEvent.setup();
 
@@ -43,12 +58,16 @@ describe('UndoTransitionQueueEntryModal', () => {
     expect(submitButton).toBeEnabled();
 
     await user.click(submitButton);
-    expect(showSnackbar).toHaveBeenCalledWith({
-      isLowContrast: true,
-      kind: 'success',
-      subtitle: 'Queue entry transition undo success',
-      title: 'Undo transition success',
-    });
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith({
+        isLowContrast: true,
+        kind: 'success',
+        subtitle: 'Queue entry transition undo success',
+        title: 'Undo transition success',
+      }),
+    );
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(3);
+    expect(mockOpenmrsFetch.mock.calls[2][1]).toMatchObject({ method: 'DELETE' });
   });
 });
 

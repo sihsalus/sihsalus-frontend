@@ -32,6 +32,13 @@ export const SIS_ACCREDITATION_PENDING_CONCEPT_UUID = '9b3df0a1-0c58-4f55-9868-9
 export const SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID = '9b3df0a1-0c58-4f55-9868-9c38f1db2054';
 export const SELF_FINANCED_CONCEPT_UUID = 'cc72568e-d0d9-46a8-a618-91f0d679f518';
 
+const canonicalSisAccreditationStatusUuids: ReadonlySet<string> = new Set([
+  SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+  SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID,
+  SIS_ACCREDITATION_PENDING_CONCEPT_UUID,
+  SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID,
+]);
+
 /**
  * Conceptos legacy de productos SIS que pueden aparecer como valor de
  * `insuranceType` en datos existentes. Al copiar a la visita se normalizan al
@@ -293,7 +300,11 @@ export interface CopyFinanciadorToVisitResult {
   skipped: boolean;
   created: number;
   updated: number;
-  reviewReason?: 'missing-financiador' | 'incomplete-coverage' | 'sis-accreditation-conflict';
+  reviewReason?:
+    | 'missing-financiador'
+    | 'incomplete-coverage'
+    | 'sis-accreditation-conflict'
+    | 'unknown-accreditation-status';
 }
 
 export type SafeCopyFinanciadorToVisitResult = CopyFinanciadorToVisitResult | { ok: false; error: unknown };
@@ -333,8 +344,8 @@ function isPatientIdentifier(value: string | null, patientIdentifierValues: Read
  * - Idempotente: lee los atributos existentes de la visita y solo escribe
  *   cuando el valor cambió (crea si falta, actualiza si difiere).
  * - Devuelve `reviewReason` cuando falta el financiador, la cobertura queda
- *   incompleta o la acreditación SIS contradice la afiliación; la UI debe
- *   hacerlo visible.
+ *   incompleta, la acreditación SIS contradice la afiliación o su estado no
+ *   pertenece al catálogo canónico; la UI debe hacerlo visible.
  * - Normaliza los productos SIS legacy al concepto SIS canónico para el
  *   atributo Financiador.
  * - Autofinanciamiento copia únicamente el financiador. Otras IAFAS conservan
@@ -504,13 +515,18 @@ export async function copyFinanciadorToVisit({
       !isSelfFinanced &&
       (!resultingInsuranceNumber || (isSis && (!resultingAccreditationStatus || !resultingAccreditationCheckedAt))),
   );
+  const hasUnknownSisAccreditationStatus = Boolean(
+    isSis && resultingAccreditationStatus && !canonicalSisAccreditationStatusUuids.has(resultingAccreditationStatus),
+  );
   const reviewReason: CopyFinanciadorToVisitResult['reviewReason'] = accreditationBundleConflicts
     ? 'sis-accreditation-conflict'
     : !effectiveFinanciador
       ? 'missing-financiador'
       : coverageIsIncomplete
         ? 'incomplete-coverage'
-        : undefined;
+        : hasUnknownSisAccreditationStatus
+          ? 'unknown-accreditation-status'
+          : undefined;
 
   if (desiredAttributes.length === 0 && attributesToRemove.length === 0) {
     return {

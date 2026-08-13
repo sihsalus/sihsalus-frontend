@@ -22,6 +22,7 @@ import styles from './test-order.scss';
 
 interface TestOrderProps {
   testOrder: Order;
+  hideInstructions?: boolean;
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: generic value display mapping
@@ -83,7 +84,7 @@ const extractRangesFromFhirObs = (fhirObs: any) => {
   return result;
 };
 
-const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
+const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const { concept, isLoading: isLoadingTestConcepts } = useOrderConceptByUuid(testOrder.concept.uuid);
@@ -147,12 +148,14 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
   if (testOrder.fulfillerStatus?.toUpperCase() === 'DECLINED') {
     return (
       <div className={styles.declinedOrderDetails}>
-        <div className={styles.detailRow}>
-          <span className={styles.detailLabel}>{t('instructions', 'Instructions')}:</span>
-          <span className={styles.detailValue}>
-            {cleanInstructions || t('NoInstructionLeft', 'No instructions are provided.')}
-          </span>
-        </div>
+        {!hideInstructions && (
+          <div className={styles.detailRow}>
+            <span className={styles.detailLabel}>{t('instructions', 'Instructions')}:</span>
+            <span className={styles.detailValue}>
+              {cleanInstructions || t('NoInstructionLeft', 'No instructions are provided.')}
+            </span>
+          </div>
+        )}
         <div className={styles.detailRow}>
           <span className={styles.detailLabel}>{t('reasonForDecline', 'Reason for decline')}:</span>
           <span className={styles.detailValue}>{testOrder.fulfillerComment || '--'}</span>
@@ -178,7 +181,7 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
 
   return (
     <div className={styles.testOrder}>
-      {cleanInstructions && (
+      {cleanInstructions && !hideInstructions && (
         <div className={styles.instructionsContainer}>
           <span className={styles.detailLabel}>{t('instructions', 'Instructions')}:</span>
           <span className={styles.detailValue}>{cleanInstructions}</span>

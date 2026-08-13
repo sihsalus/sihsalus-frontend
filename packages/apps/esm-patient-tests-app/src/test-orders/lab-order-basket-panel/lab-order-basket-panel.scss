@@ -98,3 +98,8 @@
   flex-direction: column;
   gap: layout.$spacing-03;
 }
+
+.bulkInstructionsContainer {
+  padding: 0 layout.$spacing-05 layout.$spacing-05 layout.$spacing-05;
+  margin-top: layout.$spacing-03;
+}

@@ -83,8 +83,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   const { sessionLocation, user } = useSession();
   const sessionLocationUuid = sessionLocation?.uuid;
   const canSelectQueueLocation = userHasAccess(serviceQueuesEditPrivilege, user);
-  const isAdmissionOnly =
-    userHasAccess(admissionPrivilege, user) && !userHasAccess(vitalsEditPrivilege, user);
+  const isAdmissionOnly = userHasAccess(admissionPrivilege, user) && !userHasAccess(vitalsEditPrivilege, user);
   const {
     visitQueueNumberAttributeUuid,
     concepts: { defaultStatusConceptUuid, defaultPriorityConceptUuid, emergencyPriorityConceptUuid },
@@ -180,11 +179,6 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
               });
             }
             const visitInsurance = await fetchVisitInsurance(visit.uuid);
-            if (!visitInsurance.financiadorUuid) {
-              throw Object.assign(new Error('The visit does not have a financing type assigned.'), {
-                code: TRIAGE_SIS_FINANCING_REQUIRED,
-              });
-            }
             if (getSisFinancingState(visitInsurance) !== 'active') {
               throw Object.assign(new Error('The visit does not have active SIS financing.'), {
                 code: TRIAGE_SIS_FINANCING_REQUIRED,
@@ -216,46 +210,46 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
           memoMutateQueueEntries();
           return await onQueueEntryAdded?.();
         } catch (error) {
-            showSnackbar({
-              title: t('queueEntryError', 'No se pudo agregar el paciente a la cola'),
-              kind: 'error',
-              isLowContrast: false,
-              subtitle: getCompatibleUserFacingErrorMessage(
-                error,
-                t('queueEntryActionErrorMessage', 'No se pudo completar la acción de cola. Intente nuevamente.'),
-                {
-                  codeMessages: {
-                    [ACTIVE_QUEUE_ENTRY_CONFLICT]: t(
-                      'activeQueueEntryForAnotherVisit',
-                      'El paciente ya tiene una entrada activa en esta cola asociada a otra consulta.',
-                    ),
-                    [ACTIVE_VISIT_QUEUE_CONFLICT]: t(
-                      'activeVisitInAnotherQueue',
-                      'La consulta ya tiene una entrada activa en otra cola. Transicione o finalice esa entrada antes de seleccionar otra cola.',
-                    ),
-                    [MULTIPLE_ACTIVE_VISIT_QUEUE_ENTRIES]: t(
-                      'multipleActiveQueueEntriesForVisit',
-                      'La consulta tiene más de una entrada activa en cola. Regularice las entradas antes de continuar.',
-                    ),
-                    [QUEUE_ENTRY_CREATION_UNVERIFIED]: t(
-                      'queueEntryCreationUnverified',
-                      'No se pudo verificar la entrada activa en la cola seleccionada. Actualice la cola antes de reintentar.',
-                    ),
-                    [QUEUE_TICKET_GENERATION_FAILED]: t(
-                      'queueTicketGenerationFailed',
-                      'No se pudo generar el número de turno. Verifique la configuración antes de reintentar.',
-                    ),
-                    [TRIAGE_SIS_FINANCING_REQUIRED]: t(
-                      'triageSisFinancingRequired',
-                      'No se puede continuar con el triaje porque esta atención no tiene financiador definido o no tiene SIS vigente (ejemplo: SIS). Derive al paciente a Caja para regularizar el pago o la cobertura.',
-                    ),
-                  },
-                  logContext: 'Add patient to queue',
+          showSnackbar({
+            title: t('queueEntryError', 'No se pudo agregar el paciente a la cola'),
+            kind: 'error',
+            isLowContrast: false,
+            subtitle: getCompatibleUserFacingErrorMessage(
+              error,
+              t('queueEntryActionErrorMessage', 'No se pudo completar la acción de cola. Intente nuevamente.'),
+              {
+                codeMessages: {
+                  [ACTIVE_QUEUE_ENTRY_CONFLICT]: t(
+                    'activeQueueEntryForAnotherVisit',
+                    'El paciente ya tiene una entrada activa en esta cola asociada a otra consulta.',
+                  ),
+                  [ACTIVE_VISIT_QUEUE_CONFLICT]: t(
+                    'activeVisitInAnotherQueue',
+                    'La consulta ya tiene una entrada activa en otra cola. Transicione o finalice esa entrada antes de seleccionar otra cola.',
+                  ),
+                  [MULTIPLE_ACTIVE_VISIT_QUEUE_ENTRIES]: t(
+                    'multipleActiveQueueEntriesForVisit',
+                    'La consulta tiene más de una entrada activa en cola. Regularice las entradas antes de continuar.',
+                  ),
+                  [QUEUE_ENTRY_CREATION_UNVERIFIED]: t(
+                    'queueEntryCreationUnverified',
+                    'No se pudo verificar la entrada activa en la cola seleccionada. Actualice la cola antes de reintentar.',
+                  ),
+                  [QUEUE_TICKET_GENERATION_FAILED]: t(
+                    'queueTicketGenerationFailed',
+                    'No se pudo generar el número de turno. Verifique la configuración antes de reintentar.',
+                  ),
+                  [TRIAGE_SIS_FINANCING_REQUIRED]: t(
+                    'triageSisFinancingRequired',
+                    'No se puede continuar con el triaje porque esta atención no tiene financiador definido o no tiene SIS vigente (ejemplo: SIS). Derive al paciente a Caja para regularizar el pago o la cobertura.',
+                  ),
                 },
-                frameworkGetUserFacingErrorMessage,
-              ),
-            });
-            throw error;
+                logContext: 'Add patient to queue',
+              },
+              frameworkGetUserFacingErrorMessage,
+            ),
+          });
+          throw error;
         }
       } else {
         return;
@@ -540,10 +534,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
             </InlineNotification>
           ) : isAdmissionOnly ? (
             <TextInput
-              helperText={t(
-                'priorityManagedByTriage',
-                'La prioridad clínica puede actualizarse durante el triaje.',
-              )}
+              helperText={t('priorityManagedByTriage', 'La prioridad clínica puede actualizarse durante el triaje.')}
               id="priority"
               labelText={t('assignedPriority', 'Prioridad asignada')}
               name="priority"

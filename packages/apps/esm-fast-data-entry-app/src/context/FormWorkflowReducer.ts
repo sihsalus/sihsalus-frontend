@@ -232,6 +232,25 @@ const reducer = (state, action) => {
           },
         },
       };
+    case 'SUBMISSION_FAILED': {
+      const activeForm = state.forms?.[state.activeFormUuid];
+      if (
+        !activeForm ||
+        !['SUBMIT_FOR_NEXT', 'SUBMIT_FOR_REVIEW', 'SUBMIT_FOR_COMPLETE'].includes(activeForm.workflowState)
+      ) {
+        return state;
+      }
+      return {
+        ...state,
+        forms: {
+          ...state.forms,
+          [state.activeFormUuid]: {
+            ...activeForm,
+            workflowState: 'EDIT_FORM',
+          },
+        },
+      };
+    }
     case 'GO_TO_REVIEW': {
       const newState = {
         ...state,

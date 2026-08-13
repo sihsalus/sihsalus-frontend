@@ -29,23 +29,21 @@ describe('usePatientListsForPatient', () => {
   });
 
   it('maps valid patient lists and ignores incomplete memberships', async () => {
-    vi.mocked(openmrsFetch).mockResolvedValue(
-      {
-        data: {
-          results: [
-            {
-              cohort: {
-                uuid: 'cohort-1',
-                name: 'Lista prioritaria',
-                startDate: '2026-01-01',
-                endDate: null,
-              },
+    vi.mocked(openmrsFetch).mockResolvedValue({
+      data: {
+        results: [
+          {
+            cohort: {
+              uuid: 'cohort-1',
+              name: 'Lista prioritaria',
+              startDate: '2026-01-01',
+              endDate: null,
             },
-            { cohort: null },
-          ],
-        },
-      } as never,
-    );
+          },
+          { cohort: null },
+        ],
+      },
+    } as never);
 
     const { result } = renderHook(() => usePatientListsForPatient('patient-123'), { wrapper });
 

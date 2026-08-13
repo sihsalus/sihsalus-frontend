@@ -92,12 +92,8 @@ function getPriorityTagType(priorityDisplay: string) {
 const VisualQueue = () => {
   const { t } = useTranslation();
   const layout = useLayoutType();
-  const {
-    selectedQueueLocationUuid,
-    selectedQueueStatusDisplay,
-    selectedQueueStatusUuid,
-    selectedServiceUuid,
-  } = useServiceQueuesStore();
+  const { selectedQueueLocationUuid, selectedQueueStatusDisplay, selectedQueueStatusUuid, selectedServiceUuid } =
+    useServiceQueuesStore();
   const { statuses, isLoadingQueueStatuses } = useQueueStatuses();
   const searchCriteria = useMemo(
     () => ({

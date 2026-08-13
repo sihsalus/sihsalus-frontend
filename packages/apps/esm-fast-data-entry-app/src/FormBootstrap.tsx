@@ -1,4 +1,5 @@
 import { detach, ExtensionSlot } from '@openmrs/esm-framework';
+import type { FormRendererProps } from '@openmrs/esm-patient-common-lib';
 import { useContext, useEffect, useState } from 'react';
 import GroupFormWorkflowContext from './context/GroupFormWorkflowContext';
 import useGetPatient from './hooks/useGetPatient';
@@ -113,7 +114,8 @@ interface FormParams {
   preFilledQuestions?: PreFilledQuestions;
   showDiscardSubmitButtons?: boolean;
   handlePostResponse?: (encounter: Encounter) => void;
-  handleEncounterCreate?: (encounter: Object) => void;
+  handleEncounterCreate?: FormRendererProps['handleEncounterCreate'];
+  onBeforeEncounterSave?: FormRendererProps['onBeforeEncounterSave'];
   handleOnValidate?: (isValid: boolean) => void;
   hidePatientBanner?: boolean;
 }
@@ -126,6 +128,7 @@ const FormBootstrap = ({
   encounterUuid,
   handlePostResponse,
   handleEncounterCreate,
+  onBeforeEncounterSave,
   handleOnValidate,
   hidePatientBanner,
 }: FormParams) => {
@@ -168,6 +171,7 @@ const FormBootstrap = ({
               updateFormComponent();
             },
             handleEncounterCreate,
+            onBeforeEncounterSave,
             handleOnValidate,
             showDiscardSubmitButtons: false,
             preFilledQuestions: {

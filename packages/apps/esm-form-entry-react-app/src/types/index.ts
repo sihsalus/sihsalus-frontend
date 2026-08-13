@@ -47,6 +47,7 @@ export interface LegacyFormWidgetProps extends DefaultWorkspaceProps {
   showDiscardSubmitButtons?: boolean;
   handlePostResponse?: (encounter?: FrameworkEncounter) => void;
   handleEncounterCreate?: (encounter: OpenmrsEncounter) => OpenmrsEncounter | void | Promise<OpenmrsEncounter | void>;
+  onBeforeEncounterSave?: (encounter: OpenmrsEncounter) => void | Promise<void>;
   handleOnValidate?: (valid: boolean) => void;
   clinicalFormsWorkspaceName?: string;
 }

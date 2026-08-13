@@ -91,7 +91,9 @@ import {
 } from './appointment-date-validation';
 //TO DO FIX THIS SHIT
 import {
+  assertPatientCanReceiveAppointment,
   checkAppointmentConflict,
+  DECEASED_PATIENT_APPOINTMENT_BLOCKED,
   saveAppointment,
   saveRecurringAppointments,
   useAppointmentService,
@@ -332,6 +334,7 @@ const AppointmentsForm: React.FC<
   const closeWorkspace = props.closeWorkspace ?? (() => Promise.resolve(true));
   const promptBeforeClosing = props.promptBeforeClosing;
   const { patient } = usePatient(patientUuid);
+  const isDeceasedPatient = Boolean(patient?.deceasedBoolean || patient?.deceasedDateTime);
   const { mutateAppointments } = useMutateAppointments();
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -834,6 +837,36 @@ const AppointmentsForm: React.FC<
       return;
     }
 
+    if (context === 'creating') {
+      try {
+        await assertPatientCanReceiveAppointment(patientUuid);
+      } catch (error) {
+        setIsSubmitting(false);
+        showSnackbar({
+          title: t('appointmentFormError', 'Error scheduling appointment'),
+          kind: 'error',
+          isLowContrast: false,
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t(
+              'patientVitalStatusCheckFailed',
+              "The patient's current vital status could not be verified. Try again before scheduling.",
+            ),
+            {
+              codeMessages: {
+                [DECEASED_PATIENT_APPOINTMENT_BLOCKED]: t(
+                  'deceasedPatientAppointmentBlocked',
+                  'Appointments cannot be created for a deceased patient.',
+                ),
+              },
+              logContext: 'Check patient vital status before scheduling appointment',
+            },
+          ),
+        });
+        return;
+      }
+    }
+
     // Construct recurring pattern payload
     const recurringAppointmentPayload = {
       appointmentRequest: appointmentPayload,
@@ -1010,6 +1043,20 @@ const AppointmentsForm: React.FC<
         <InlineLoading className={styles.loader} description={`${t('loading', 'Loading')} ...`} role="progressbar" />
       </Workspace2>
     );
+
+  if (context === 'creating' && isDeceasedPatient) {
+    return (
+      <Workspace2 title={title} hasUnsavedChanges={false}>
+        <InlineNotification
+          hideCloseButton
+          kind="error"
+          lowContrast={false}
+          title={t('appointmentUnavailable', 'Appointment unavailable')}
+          subtitle={t('deceasedPatientAppointmentBlocked', 'Appointments cannot be created for a deceased patient.')}
+        />
+      </Workspace2>
+    );
+  }
 
   const handleAppointmentValidationErrors = (validationErrors: Record<string, unknown>) => {
     const validationMessages = getAppointmentValidationMessages(validationErrors, t);

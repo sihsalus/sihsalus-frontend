@@ -3,10 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { ResourcesContext, type Resources } from '../offline.resources';
 import type { ParsedPatientImportRow } from './bulk-patient-import.types';
-import {
-  createPatientFromImportRow,
-  parseSantaClotildeWorkbook,
-} from './bulk-patient-import.utils';
+import { createPatientFromImportRow, parseSantaClotildeWorkbook } from './bulk-patient-import.utils';
 import BulkPatientImport from './bulk-patient-import.component';
 
 vi.mock('./bulk-patient-import.utils', async (importOriginal) => {

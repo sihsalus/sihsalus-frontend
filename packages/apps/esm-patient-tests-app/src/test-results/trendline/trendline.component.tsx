@@ -107,6 +107,7 @@ const Trendline: React.FC<TrendlineProps> = ({
       dateTime: string;
       testName: string;
       registeredBy: string;
+      orderNumber: string;
       value:
         | number
         | {
@@ -162,6 +163,7 @@ const Trendline: React.FC<TrendlineProps> = ({
                 dateTime: formattedDate,
                 testName: obs.name || title,
                 registeredBy: obs.performer?.[0]?.display ?? '--',
+                orderNumber: obs.orderNumber ?? '--',
                 value: {
                   value: val,
                   interpretation: obs.interpretation,
@@ -202,6 +204,7 @@ const Trendline: React.FC<TrendlineProps> = ({
           dateTime: formattedDate,
           testName: trendlineData.display,
           registeredBy: '--',
+          orderNumber: obs.order?.display ?? obs.order?.orderNumber ?? '--',
           value: {
             value: parseFloat(obs.value),
             interpretation: obs.interpretation,
@@ -309,6 +312,10 @@ const Trendline: React.FC<TrendlineProps> = ({
       {
         header: t('dateTime', 'Date and time'),
         key: 'dateTime',
+      },
+      {
+        header: t('orderNumber', 'Order number'),
+        key: 'orderNumber',
       },
     ];
     if (targetUuids.length > 1) {

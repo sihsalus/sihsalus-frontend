@@ -1,4 +1,5 @@
 import { type FetchResponse, type Location, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { assertFreshPatientIsAlive } from '@openmrs/esm-patient-common-lib';
 import { queueEntryCustomRepresentation } from '../constants';
 import { type Concept, type Provider, type QueueEntry } from '../types';
 
@@ -268,6 +269,11 @@ export async function transitionQueueEntry(
   const freshResponse = await fetchQueueEntry(params.queueEntryToTransition, abortController);
   const freshEntry = freshResponse.data;
 
+  if (!freshEntry.patient?.uuid) {
+    throw new QueueEntryVerificationError('The queue entry patient could not be verified.');
+  }
+  await assertFreshPatientIsAlive(freshEntry.patient.uuid);
+
   if (freshEntry.endedAt) {
     const reconciledResponse = await reconcileTransition(freshEntry, params, abortController);
     if (reconciledResponse) {
@@ -290,6 +296,10 @@ export async function transitionQueueEntry(
       const latestResponse = await fetchQueueEntry(params.queueEntryToTransition, abortController);
       const reconciledResponse = await reconcileTransition(latestResponse.data, params, abortController);
       if (reconciledResponse) {
+        if (!latestResponse.data.patient?.uuid) {
+          throw new QueueEntryVerificationError('The queue entry patient could not be verified.');
+        }
+        await assertFreshPatientIsAlive(latestResponse.data.patient.uuid);
         return reconciledResponse;
       }
     } catch {
@@ -437,6 +447,11 @@ export async function updateActiveQueueEntry(
     throw new QueueEntryAlreadyEndedError();
   }
 
+  if (!freshResponse.data.patient?.uuid) {
+    throw new QueueEntryVerificationError('The queue entry patient could not be verified.');
+  }
+  await assertFreshPatientIsAlive(freshResponse.data.patient.uuid);
+
   try {
     await updateQueueEntry(queueEntryUuid, params, abortController);
   } catch (error) {
@@ -449,6 +464,10 @@ export async function updateActiveQueueEntry(
         throw new QueueEntryAlreadyEndedError();
       }
       if (queueEntryMatchesUpdate(latestResponse.data, params)) {
+        if (!latestResponse.data.patient?.uuid) {
+          throw new QueueEntryVerificationError('The queue entry patient could not be verified.');
+        }
+        await assertFreshPatientIsAlive(latestResponse.data.patient.uuid);
         return latestResponse;
       }
     } catch (reconciliationError) {
@@ -494,7 +513,15 @@ interface UndoTransitionParams {
   queueEntry: string;
 }
 
-export function undoTransition(params: UndoTransitionParams, abortController?: AbortController) {
+export async function undoTransition(params: UndoTransitionParams, abortController?: AbortController) {
+  const freshResponse = await fetchQueueEntry(params.queueEntry, abortController);
+  if (!freshResponse.data.patient?.uuid) {
+    throw new QueueEntryVerificationError('The queue entry patient could not be verified.');
+  }
+
+  // Undo reactivates operational queue state. Keep this assertion adjacent to
+  // the DELETE so a stale modal cannot bypass the deceased-patient invariant.
+  await assertFreshPatientIsAlive(freshResponse.data.patient.uuid);
   return openmrsFetch(`${restBaseUrl}/queue-entry/transition`, {
     method: 'DELETE',
     headers: {

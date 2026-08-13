@@ -10,16 +10,14 @@ import {
   useLayoutType,
   useSession,
 } from '@openmrs/esm-framework';
+import { fetchFreshPatientVitalStatus } from '@openmrs/esm-patient-common-lib';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { serviceQueuesPatientVitalsWorkspace } from '../../constants';
 import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
 import { canEditServiceQueues, canTriageQueuePatients } from '../../permissions';
-import {
-  getAppointmentTriageConfig,
-  transitionTriagedPatient,
-} from '../../triage-workflow/triage-workflow.resource';
+import { getAppointmentTriageConfig, transitionTriagedPatient } from '../../triage-workflow/triage-workflow.resource';
 import { type QueueTableCellComponentProps, type QueueTableColumnFunction } from '../../types';
 
 import styles from './queue-table-action-cell.scss';
@@ -31,28 +29,28 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
   const canEdit = canEditServiceQueues(session?.user);
   const canTriage = canTriageQueuePatients(session?.user);
   const isTriageQueue = Boolean(queueEntry.workflow?.isTriageQueue);
+  const patientPerson = queueEntry.patient?.person as { dead?: boolean; deathDate?: string | null } | undefined;
+  const isDeceasedPatient = Boolean(patientPerson?.dead || patientPerson?.deathDate);
   const requiresCashier = isTriageQueue && queueEntry.workflow?.sisState !== 'active';
   const canOpenBilling = userHasAccess('app:home.facturacion', session?.user);
   const canPerformTriage =
-    isTriageQueue &&
-    !requiresCashier &&
-    canTriage &&
-    Boolean(queueEntry.visit?.uuid);
+    isTriageQueue && !isDeceasedPatient && !requiresCashier && canTriage && Boolean(queueEntry.visit?.uuid);
   const [isSubmittingTriage, setIsSubmittingTriage] = useState(false);
   const { mutateQueueEntries } = useMutateQueueEntries();
 
   const transitionAfterTriage = async () => {
     try {
+      const vitalStatus = await fetchFreshPatientVitalStatus(queueEntry.patient.uuid);
+      if (vitalStatus.isDeceased) {
+        throw new Error('Triage routing is not permitted for a deceased patient.');
+      }
       await transitionTriagedPatient(queueEntry);
       await mutateQueueEntries();
       showSnackbar({
         isLowContrast: true,
         kind: 'success',
         title: t('triageCompleted', 'Triaje realizado'),
-        subtitle: t(
-          'patientSentToClinicalQueue',
-          'El paciente fue enviado a la cola correspondiente a su cita.',
-        ),
+        subtitle: t('patientSentToClinicalQueue', 'El paciente fue enviado a la cola correspondiente a su cita.'),
       });
     } catch (error) {
       showSnackbar({
@@ -61,10 +59,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
         title: t('triageRoutingFailed', 'El triaje se guardó, pero no se pudo derivar al paciente'),
         subtitle: getUserFacingErrorMessage(
           error,
-          t(
-            'triageRoutingFailedDescription',
-            'Use “Enviar a atención” para reintentar o revise la ruta de la cita.',
-          ),
+          t('triageRoutingFailedDescription', 'Use “Enviar a atención” para reintentar o revise la ruta de la cita.'),
           { logContext: `Route triaged queue entry ${queueEntry.uuid}` },
         ),
       });
@@ -74,6 +69,19 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
   const handleTriage = async () => {
     setIsSubmittingTriage(true);
     try {
+      const vitalStatus = await fetchFreshPatientVitalStatus(queueEntry.patient.uuid);
+      if (vitalStatus.isDeceased) {
+        showSnackbar({
+          isLowContrast: false,
+          kind: 'error',
+          title: t('triageUnavailable', 'Triaje no disponible'),
+          subtitle: t(
+            'deceasedPatientTriageBlocked',
+            'No se puede realizar ni derivar el triaje de un paciente fallecido.',
+          ),
+        });
+        return;
+      }
       if (queueEntry.workflow?.triageState === 'completed') {
         await transitionAfterTriage();
         return;
@@ -127,15 +135,11 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
 
   return (
     <div className={styles.actionsCell}>
-      {isTriageQueue && requiresCashier ? (
-        <Button
-          kind="danger--tertiary"
-          onClick={handleSendToCashier}
-          size={isDesktop(layout) ? 'sm' : 'lg'}
-        >
+      {isTriageQueue && !isDeceasedPatient && requiresCashier ? (
+        <Button kind="danger--tertiary" onClick={handleSendToCashier} size={isDesktop(layout) ? 'sm' : 'lg'}>
           {canOpenBilling ? t('sendToCashier', 'Derivar a Caja') : t('requiresCashier', 'Requiere Caja')}
         </Button>
-      ) : isTriageQueue && canPerformTriage ? (
+      ) : isTriageQueue && !isDeceasedPatient && canPerformTriage ? (
         <Button
           disabled={isSubmittingTriage}
           kind="primary"
@@ -146,7 +150,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
             ? t('sendToCare', 'Enviar a atención')
             : t('performTriage', 'Realizar triaje')}
         </Button>
-      ) : canEdit ? (
+      ) : canEdit && !isDeceasedPatient ? (
         <Button
           kind="ghost"
           aria-label={t('transition', 'Transition')}
@@ -169,18 +173,20 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
           align="left"
           flipped
         >
-          <OverflowMenuItem
-            className={styles.menuItem}
-            aria-label={t('edit', 'Edit')}
-            hasDivider
-            onClick={() => {
-              const dispose = showModal('edit-queue-entry-modal', {
-                closeModal: () => dispose(),
-                queueEntry,
-              });
-            }}
-            itemText={t('edit', 'Edit')}
-          />
+          {!isDeceasedPatient ? (
+            <OverflowMenuItem
+              className={styles.menuItem}
+              aria-label={t('edit', 'Edit')}
+              hasDivider
+              onClick={() => {
+                const dispose = showModal('edit-queue-entry-modal', {
+                  closeModal: () => dispose(),
+                  queueEntry,
+                });
+              }}
+              itemText={t('edit', 'Edit')}
+            />
+          ) : null}
           <OverflowMenuItem
             className={styles.menuItem}
             aria-label={t('removePatient', 'Remove patient')}
@@ -209,7 +215,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
               }}
               itemText={t('delete', 'Delete')}
             />
-          ) : (
+          ) : !isDeceasedPatient ? (
             <OverflowMenuItem
               className={styles.menuItem}
               aria-label={t('undoTransition', 'Undo transition')}
@@ -224,7 +230,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
               }}
               itemText={t('undoTransition', 'Undo transition')}
             />
-          )}
+          ) : null}
         </OverflowMenu>
       )}
     </div>

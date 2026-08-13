@@ -396,7 +396,7 @@ describe('LabResultsForm', () => {
     await user.clear(setMember2Input);
     await user.type(setMember2Input, '31');
     expect(await screen.findByText('Set Member 2 debe estar entre 5 y 30')).toBeInTheDocument();
-    
+
     // Out of range input, lower limit
     await user.clear(setMember1Input);
     await user.type(setMember1Input, '49');

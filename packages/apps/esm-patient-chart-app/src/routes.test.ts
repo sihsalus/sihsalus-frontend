@@ -27,8 +27,8 @@ describe('patient chart route privilege contract', () => {
     expect(routes.modals.find(({ name }) => name === 'cancel-visit-dialog')?.privileges).toEqual(closurePrivileges);
   });
 
-  it('requires clinical chart access and patient vital status privilege to mark a patient alive or deceased', () => {
-    const patientVitalStatusPrivileges = ['app:hoja.clinica', 'app:hoja.clinica.estadoVitalPaciente'];
+  it('requires clinical chart, patient vital status, and backend person-edit access to mark a patient alive or deceased', () => {
+    const patientVitalStatusPrivileges = ['app:hoja.clinica', 'app:hoja.clinica.estadoVitalPaciente', 'Edit People'];
     const patientVitalStatusButtons = routes.extensions.filter(({ name }) =>
       ['mark-alive-button', 'mark-patient-deceased-button'].includes(name),
     );
@@ -40,8 +40,22 @@ describe('patient chart route privilege contract', () => {
     expect(patientVitalStatusButtons).toHaveLength(2);
     patientVitalStatusButtons.forEach((extension) => {
       expect(extension.privileges).toEqual(patientVitalStatusPrivileges);
+      expect(extension.online).toBe(true);
+      expect(extension.offline).toBe(false);
     });
     expect(markAliveModal?.privileges).toEqual(patientVitalStatusPrivileges);
     expect(markDeceasedWorkspace?.privileges).toEqual(patientVitalStatusPrivileges);
+  });
+
+  it('keeps offline visit creation available for patients not already known to be deceased', () => {
+    const startVisitButtons = routes.extensions.filter(({ name }) =>
+      ['start-visit-button', 'start-visit-button-patient-search'].includes(name),
+    );
+
+    expect(startVisitButtons).toHaveLength(2);
+    startVisitButtons.forEach((extension) => {
+      expect(extension.online).toBe(true);
+      expect(extension.offline).toBe(true);
+    });
   });
 });

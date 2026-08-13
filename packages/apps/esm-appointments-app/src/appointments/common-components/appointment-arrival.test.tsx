@@ -8,7 +8,12 @@ import {
   useSession,
   userHasAccess,
 } from '@openmrs/esm-framework';
-import { fetchVisitInsurance, getSisFinancingState, safeCopyFinanciadorToVisit } from '@openmrs/esm-patient-common-lib';
+import {
+  fetchFreshPatientVitalStatus,
+  fetchVisitInsurance,
+  getSisFinancingState,
+  safeCopyFinanciadorToVisit,
+} from '@openmrs/esm-patient-common-lib';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
@@ -45,12 +50,14 @@ vi.mock('./batch-change-appointment-statuses.resources', () => ({
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  fetchFreshPatientVitalStatus: vi.fn(),
   fetchVisitInsurance: vi.fn(),
   getSisFinancingState: vi.fn(),
   safeCopyFinanciadorToVisit: vi.fn(),
 }));
 
 const mockUsePatient = vi.mocked(usePatient);
+const mockFetchFreshPatientVitalStatus = vi.mocked(fetchFreshPatientVitalStatus);
 const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockChangeAppointmentStatus = vi.mocked(changeAppointmentStatus);
@@ -182,6 +189,8 @@ describe('AppointmentArrivalModal', () => {
       patientUuid: 'patient-uuid',
     } as unknown as ReturnType<typeof usePatient>);
     vi.clearAllMocks();
+    mockFetchFreshPatientVitalStatus.mockResolvedValue({ dead: false, deathDate: null, isDeceased: false });
+    mockLaunchWorkspace2.mockResolvedValue(true);
     mockGetAppointmentStatus.mockResolvedValue(AppointmentStatus.SCHEDULED);
     mockEnsureAppointmentVisitLink.mockResolvedValue({ created: false });
     mockChangeAppointmentStatus.mockResolvedValue({ data: {} } as Awaited<ReturnType<typeof changeAppointmentStatus>>);
@@ -204,6 +213,76 @@ describe('AppointmentArrivalModal', () => {
     expect(getQueueButton()).toBeEnabled();
     expect(getDirectButton()).toBeEnabled();
     expect(screen.getByRole('button', { name: /cancelar/i })).toBeEnabled();
+  });
+
+  it('blocks arrival when the patient is already known to be deceased', () => {
+    mockUsePatient.mockReturnValue({
+      patient: {
+        birthDate: '1990-01-01',
+        deceasedDateTime: '2026-08-12T15:41:28.000Z',
+      },
+      isLoading: false,
+      error: null,
+      patientUuid: appointment.patient.uuid,
+    } as unknown as ReturnType<typeof usePatient>);
+
+    renderModal();
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/no se puede registrar la llegada de un paciente fallecido/i);
+    expect(getQueueButton()).toBeDisabled();
+    expect(getDirectButton()).toBeDisabled();
+  });
+
+  it('fresh-checks death status before starting arrival', async () => {
+    const user = userEvent.setup();
+    mockFetchFreshPatientVitalStatus.mockResolvedValueOnce({ dead: true, deathDate: null, isDeceased: true });
+
+    renderModal();
+    await user.click(getQueueButton());
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(/no se puede registrar la llegada de un paciente fallecido/i),
+    );
+    expect(mockFetchFreshPatientVitalStatus).toHaveBeenCalledWith(appointment.patient.uuid);
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    {
+      action: 'queue' as const,
+      activeVisits: [],
+      expectedWorkspace: 'appointments-start-visit-workspace',
+      label: 'new-visit queue',
+    },
+    {
+      action: 'direct' as const,
+      activeVisits: [],
+      expectedWorkspace: 'appointments-start-visit-workspace',
+      label: 'new direct visit',
+    },
+    {
+      action: 'queue' as const,
+      activeVisits: [activeVisit],
+      expectedWorkspace: 'appointments-add-active-visit-to-queue-workspace',
+      label: 'active-visit queue',
+    },
+  ])('keeps the modal open when the $label workspace is not opened', async ({
+    action,
+    activeVisits,
+    expectedWorkspace,
+  }) => {
+    mockGetActiveVisitsForPatient.mockResolvedValue(visitsResponse(activeVisits));
+    mockLaunchWorkspace2.mockResolvedValue(false);
+
+    renderModal();
+    const actionButton = action === 'queue' ? getQueueButton() : getDirectButton();
+    await userEvent.click(actionButton);
+
+    await waitFor(() => expect(mockLaunchWorkspace2).toHaveBeenCalledWith(expectedWorkspace, expect.anything()));
+    expect(closeModal).not.toHaveBeenCalled();
+    expect(screen.getByRole('heading', { name: /registrar llegada/i })).toBeInTheDocument();
+    expect(actionButton).toBeEnabled();
   });
 
   it('fails closed when the service and location have no arrival rule', () => {
@@ -379,6 +458,44 @@ describe('AppointmentArrivalModal', () => {
     await act(async () => launchOptions.onVisitStarted());
 
     expect(mockChangeAppointmentStatus).toHaveBeenCalledWith(AppointmentStatus.CHECKEDIN, appointment.uuid);
+  });
+
+  it('does not check in when the patient is marked deceased while the arrival workspace is open', async () => {
+    mockFetchFreshPatientVitalStatus
+      .mockResolvedValueOnce({ dead: false, deathDate: null, isDeceased: false })
+      .mockResolvedValueOnce({ dead: true, deathDate: null, isDeceased: true });
+
+    renderModal();
+    await userEvent.click(getQueueButton());
+
+    const launchOptions = mockLaunchWorkspace2.mock.calls[0][1] as {
+      onVisitStarted: () => Promise<void>;
+    };
+    await expect(launchOptions.onVisitStarted()).rejects.toMatchObject({
+      code: 'DECEASED_PATIENT_ARRIVAL_BLOCKED',
+    });
+
+    expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
+  });
+
+  it('rechecks death immediately before changing appointment status', async () => {
+    mockFetchFreshPatientVitalStatus
+      .mockResolvedValueOnce({ dead: false, deathDate: null, isDeceased: false })
+      .mockResolvedValueOnce({ dead: false, deathDate: null, isDeceased: false })
+      .mockResolvedValueOnce({ dead: true, deathDate: null, isDeceased: true });
+
+    renderModal();
+    await userEvent.click(getQueueButton());
+
+    const launchOptions = mockLaunchWorkspace2.mock.calls[0][1] as {
+      onVisitStarted: () => Promise<void>;
+    };
+    await expect(launchOptions.onVisitStarted()).rejects.toMatchObject({
+      code: 'DECEASED_PATIENT_ARRIVAL_BLOCKED',
+    });
+
+    expect(mockGetAppointmentStatus).toHaveBeenCalledTimes(2);
+    expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
   });
 
   it('routes an appointment arrival through the configured triage queue', async () => {

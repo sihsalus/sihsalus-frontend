@@ -354,7 +354,11 @@ export function usePrenatalAntecedents(patientUuid: string, options: PrenatalHoo
     error: error
       ? new PrenatalHookError('Failed to fetch prenatal antecedents', 'ANTECEDENTS_FETCH_ERROR', error)
       : processingError
-        ? new PrenatalHookError('Failed to process prenatal antecedents', 'ANTECEDENTS_PROCESSING_ERROR', processingError)
+        ? new PrenatalHookError(
+            'Failed to process prenatal antecedents',
+            'ANTECEDENTS_PROCESSING_ERROR',
+            processingError,
+          )
         : null,
     hasMore,
     isValidating,

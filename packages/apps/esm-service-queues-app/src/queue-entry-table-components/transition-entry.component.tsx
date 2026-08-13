@@ -33,7 +33,7 @@ const TransitionMenu: React.FC<TransitionMenuProps> = ({ queueEntry }) => {
       return;
     }
 
-    serveQueueEntry(queueEntry.queue.name, ticketNumber, 'calling').then(
+    serveQueueEntry(queueEntry.patientUuid, queueEntry.queue.name, ticketNumber, 'calling').then(
       ({ status }) => {
         if (status === 200) {
           mutate(`${restBaseUrl}/queueutil/assignticket`);

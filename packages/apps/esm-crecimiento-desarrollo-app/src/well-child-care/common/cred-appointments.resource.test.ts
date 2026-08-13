@@ -1,8 +1,12 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
+import { fetchFreshPatientVitalStatus } from '@openmrs/esm-patient-common-lib';
 
 import { generateCREDSchedule } from '../../utils/cred-schedule-rules';
 
-import { createCREDAppointments } from './cred-appointments.resource';
+import {
+  createCREDAppointments,
+  DECEASED_PATIENT_CRED_APPOINTMENT_BLOCKED,
+} from './cred-appointments.resource';
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
@@ -10,12 +14,19 @@ vi.mock('@openmrs/esm-framework', async () => ({
   restBaseUrl: '/ws/rest/v1',
 }));
 
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  fetchFreshPatientVitalStatus: vi.fn(),
+}));
+
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockFetchFreshPatientVitalStatus = vi.mocked(fetchFreshPatientVitalStatus);
 
 describe('createCREDAppointments', () => {
   beforeEach(() => {
     vi.useFakeTimers().setSystemTime(new Date('2026-07-10T12:00:00-05:00'));
     mockOpenmrsFetch.mockReset();
+    mockFetchFreshPatientVitalStatus.mockResolvedValue({ dead: false, deathDate: null, isDeceased: false });
   });
 
   afterEach(() => {
@@ -54,5 +65,22 @@ describe('createCREDAppointments', () => {
       }),
     );
     expect(result.created).toEqual(['appointment-uuid']);
+    expect(mockFetchFreshPatientVitalStatus).toHaveBeenCalledWith('patient-uuid');
+  });
+
+  it('fresh-checks each write and does not create an appointment for a deceased patient', async () => {
+    const futureControl = { ...generateCREDSchedule('2026-07-01')[10], status: 'future' as const };
+    mockFetchFreshPatientVitalStatus.mockResolvedValue({
+      dead: true,
+      deathDate: '2026-08-12T15:41:28.000Z',
+      isDeceased: true,
+    });
+
+    const result = await createCREDAppointments('patient-uuid', [futureControl], 'service-uuid', 'location-uuid', 30);
+
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+    expect(result.created).toEqual([]);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].error).toMatchObject({ code: DECEASED_PATIENT_CRED_APPOINTMENT_BLOCKED });
   });
 });

@@ -111,10 +111,8 @@ export function useDiagnosisHistory(
     : null;
 
   const isRelevant = useCallback((encounter: Encounter) => Boolean(encounter.diagnoses?.length), []);
-  const { data, error, isLoading, isValidating, mutate, pagination, sourceErrors } = useMergedClinicalHistoryPagination<Encounter>(
-    sources,
-    isRelevant,
-  );
+  const { data, error, isLoading, isValidating, mutate, pagination, sourceErrors } =
+    useMergedClinicalHistoryPagination<Encounter>(sources, isRelevant);
 
   const diagnoses: DiagnosisEntry[] = data.flatMap((encounter) => {
     // Mirrors patient-notes: one obs links the MINSA P/D/R type to each coded diagnosis.

@@ -33,6 +33,7 @@ const FormRenderer: React.FC<FormRendererComponentProps> = (props) => {
     formUuid,
     handlePostResponse,
     handleEncounterCreate,
+    onBeforeEncounterSave,
     handleOnValidate,
     hideControls,
     hidePatientBanner,
@@ -124,6 +125,7 @@ const FormRenderer: React.FC<FormRendererComponentProps> = (props) => {
           handleClose={handleCloseForm}
           handleConfirmQuestionDeletion={handleConfirmQuestionDeletion}
           handleEncounterCreate={handleEncounterCreate}
+          onBeforeEncounterSave={onBeforeEncounterSave}
           handleOnValidate={handleOnValidate}
           hideControls={effectiveHideControls}
           hidePatientBanner={hidePatientBanner}

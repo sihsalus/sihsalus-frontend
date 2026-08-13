@@ -199,7 +199,11 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
                   : t('lowAbnormalValue', 'Low abnormal value')
               }
             >
-              {isHighAbnormalValue ? <ArrowUp aria-hidden="true" size={16} /> : <ArrowDown aria-hidden="true" size={16} />}
+              {isHighAbnormalValue ? (
+                <ArrowUp aria-hidden="true" size={16} />
+              ) : (
+                <ArrowDown aria-hidden="true" size={16} />
+              )}
               {isCriticalAbnormalValue &&
                 (isHighAbnormalValue ? (
                   <ArrowUp aria-hidden="true" size={16} />

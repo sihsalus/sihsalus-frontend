@@ -98,9 +98,7 @@ function QueueTableSection() {
   const configuredColumns = useColumns(null, selectedQueueStatusUuid);
   const columns = useMemo(
     () =>
-      selectedQueueStatusUuid
-        ? configuredColumns?.filter((column) => column.key !== 'status')
-        : configuredColumns,
+      selectedQueueStatusUuid ? configuredColumns?.filter((column) => column.key !== 'status') : configuredColumns,
     [configuredColumns, selectedQueueStatusUuid],
   );
   useEffect(() => {
@@ -116,10 +114,7 @@ function QueueTableSection() {
   const filteredQueueEntries = useMemo(() => {
     const searchTermLowercase = searchTerm.toLowerCase();
     return operationalQueueEntries
-      .filter(
-        (queueEntry) =>
-          triageFilter === 'all' || queueEntry.workflow?.triageState === triageFilter,
-      )
+      .filter((queueEntry) => triageFilter === 'all' || queueEntry.workflow?.triageState === triageFilter)
       .filter((queueEntry) => {
         return columns?.some((column) => {
           const columnSearchTerm = column.getFilterableValue?.(queueEntry)?.toLocaleLowerCase();

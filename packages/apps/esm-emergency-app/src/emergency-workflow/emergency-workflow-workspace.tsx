@@ -70,20 +70,25 @@ const EmergencyWorkflowWorkspace: React.FC<EmergencyWorkflowWorkspaceProps> = ({
       }
 
       // 2. Create or get emergency visit
-      const visitUuid = await getOrCreateEmergencyVisit(
-        patientUuid,
-        patientData.emergencyRegistrationContext?.arrivalDateTime,
-        patientData.emergencyRegistrationContext?.administrativeNotes,
-      );
-      if (!visitUuid) {
+      let visitUuid: string;
+      try {
+        visitUuid = await getOrCreateEmergencyVisit(
+          patientUuid,
+          patientData.emergencyRegistrationContext?.arrivalDateTime,
+          patientData.emergencyRegistrationContext?.administrativeNotes,
+        );
+      } catch (error: unknown) {
         showSnackbar({
           title: t('errorCreatingVisit', 'Error al crear visita'),
-          subtitle: t('couldNotCreateVisit', 'No se pudo crear la visita de emergencia'),
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('couldNotPrepareEmergencyVisit', 'No se pudo preparar una visita segura para la atención de emergencia.'),
+            { logContext: 'Get or create emergency visit' },
+          ),
           kind: 'error',
         });
         return;
       }
-
       // 2.5. Copy financiador persona→visita. Fire-and-forget: la atención de
       // emergencia no se condiciona a ningún trámite administrativo (Ley 27604),
       // así que un fallo aquí nunca bloquea el encolado.

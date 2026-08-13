@@ -37,11 +37,14 @@ export const DatePickerInput = /*#__PURE__*/ forwardRef<HTMLDivElement, DateInpu
     const inputRef = useRef<HTMLInputElement>(null);
     const { fieldProps, inputProps } = useDateField({ ...dateFieldProps, inputRef }, state, fieldRef);
 
-    const onClick = useCallback((event: ReactMouseEvent<HTMLDivElement>) => {
-      if (!state.isDisabled) {
-        event.currentTarget.querySelector<HTMLElement>('[data-type]:not([data-readonly])')?.focus();
-      }
-    }, [state.isDisabled]);
+    const onClick = useCallback(
+      (event: ReactMouseEvent<HTMLDivElement>) => {
+        if (!state.isDisabled) {
+          event.currentTarget.querySelector<HTMLElement>('[data-type]:not([data-readonly])')?.focus();
+        }
+      },
+      [state.isDisabled],
+    );
 
     return (
       <Provider

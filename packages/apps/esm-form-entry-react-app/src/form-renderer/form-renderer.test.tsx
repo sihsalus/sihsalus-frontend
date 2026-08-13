@@ -131,13 +131,18 @@ describe('FormRenderer', () => {
   });
 
   it('renders FormEngine when schema is loaded', () => {
+    const onBeforeEncounterSave = vi.fn();
     mockUseFormSchema.mockReturnValue({
       schema: mockSchema,
       error: undefined,
       isLoading: false,
     });
-    render(<FormRenderer {...defaultProps} />);
+    render(<FormRenderer {...defaultProps} onBeforeEncounterSave={onBeforeEncounterSave} />);
     expect(screen.getByTestId('form-engine')).toBeInTheDocument();
+    expect(mockFormEngine).toHaveBeenCalledWith(
+      expect.objectContaining({ onBeforeEncounterSave }),
+      expect.anything(),
+    );
   });
 
   it('passes encounterUUID for edit mode', () => {

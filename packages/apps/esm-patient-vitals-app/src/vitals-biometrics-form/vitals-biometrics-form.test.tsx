@@ -1,4 +1,5 @@
 import {
+  ExtensionSlot,
   type FetchResponse,
   getDefaultsFromConfigSchema,
   showSnackbar,
@@ -6,6 +7,7 @@ import {
   usePatient,
 } from '@openmrs/esm-framework';
 import {
+  fetchFreshPatientVitalStatus,
   type PatientWorkspace2DefinitionProps,
   useReferenceRanges,
   useVisitOrOfflineVisit,
@@ -68,6 +70,8 @@ const testWorkspace2Props: PatientWorkspace2DefinitionProps<
 };
 
 const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockExtensionSlot = vi.mocked(ExtensionSlot);
+const mockFetchFreshPatientVitalStatus = vi.mocked(fetchFreshPatientVitalStatus);
 const mockSavePatientVitals = vi.mocked(saveVitalsAndBiometrics);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUsePatient = vi.mocked(usePatient);
@@ -94,6 +98,7 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => {
 
   return {
     ...originalModule,
+    fetchFreshPatientVitalStatus: vi.fn(),
     useReferenceRanges: vi.fn().mockReturnValue({
       ranges: new Map(),
       isLoading: false,
@@ -128,6 +133,13 @@ const activeVisitMock = {
 describe('VitalsBiometricsForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUsePatient.mockReturnValue({
+      patient: {
+        birthDate: mockPatient.birthdate,
+        deceasedBoolean: false,
+      },
+    } as ReturnType<typeof usePatient>);
+    mockFetchFreshPatientVitalStatus.mockResolvedValue({ dead: false, deathDate: null, isDeceased: false });
     mockUseReferenceRanges.mockReturnValue({
       ranges: new Map(),
       isLoading: false,
@@ -172,6 +184,81 @@ describe('VitalsBiometricsForm', () => {
     expect(screen.getByRole('button', { name: /discard/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save and close/i })).toBeInTheDocument();
     expect(screen.queryByText(/glasgow coma scale/i)).not.toBeInTheDocument();
+  });
+
+  it('does not render the form for a deceased patient', () => {
+    mockUsePatient.mockReturnValue({
+      patient: {
+        birthDate: mockPatient.birthdate,
+        deceasedBoolean: true,
+        deceasedDateTime: '2026-08-12T15:41:28.000Z',
+      },
+    } as ReturnType<typeof usePatient>);
+
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    expect(screen.getByText(/new vitals cannot be recorded for a deceased patient/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /save and close/i })).not.toBeInTheDocument();
+  });
+
+  it('fresh-checks vital status and blocks a save when the patient was marked deceased after the form opened', async () => {
+    const user = userEvent.setup();
+    mockFetchFreshPatientVitalStatus.mockResolvedValue({
+      dead: true,
+      deathDate: '2026-08-12T15:41:28.000Z',
+      isDeceased: true,
+    });
+
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    await user.type(screen.getByRole('spinbutton', { name: /pulse/i }), '80');
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'error',
+          subtitle: 'New vitals cannot be recorded for a deceased patient.',
+        }),
+      ),
+    );
+    expect(mockFetchFreshPatientVitalStatus).toHaveBeenCalledWith(mockPatient.id);
+    expect(mockSavePatientVitals).not.toHaveBeenCalled();
+  });
+
+  it('fresh-checks vital status in the Form Engine pre-persistence seam', async () => {
+    mockUseConfig.mockReturnValueOnce({
+      ...getDefaultsFromConfigSchema(configSchema),
+      ...mockVitalsConfig,
+      vitals: {
+        ...mockVitalsConfig.vitals,
+        useFormEngine: true,
+        formUuid: 'vitals-form-uuid',
+      },
+    } as ConfigObject);
+    mockFetchFreshPatientVitalStatus.mockResolvedValue({
+      dead: true,
+      deathDate: '2026-08-12T15:41:28.000Z',
+      isDeceased: true,
+    });
+
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    const formWidgetProps = mockExtensionSlot.mock.calls.find(
+      ([props]) => props.name === 'form-widget-slot',
+    )?.[0] as unknown as {
+      state: { handleEncounterCreate: (encounter: object) => Promise<object> };
+    };
+    await expect(formWidgetProps.state.handleEncounterCreate({ patient: mockPatient.id })).rejects.toMatchObject({
+      code: 'DECEASED_PATIENT_VITALS_BLOCKED',
+    });
+    expect(mockFetchFreshPatientVitalStatus).toHaveBeenCalledWith(mockPatient.id);
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        subtitle: 'New vitals cannot be recorded for a deceased patient.',
+      }),
+    );
   });
 
   it('loads patient reference ranges for abdominal circumference', async () => {

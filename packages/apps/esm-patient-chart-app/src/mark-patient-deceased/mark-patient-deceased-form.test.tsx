@@ -5,7 +5,8 @@ import React from 'react';
 import { mockPatient } from 'test-utils';
 
 import { type ChartConfig, esmPatientChartSchema } from '../config-schema';
-import { markPatientDeceased, useCausesOfDeath } from '../data.resource';
+import { useCausesOfDeath } from '../data.resource';
+import { reconcileDeceasedPatientWorkflow } from './deceased-patient-workflow.resource';
 
 import MarkPatientDeceasedForm from './mark-patient-deceased-form.workspace';
 
@@ -72,15 +73,23 @@ Object.defineProperty(window, 'location', {
   value: { ...originalLocation, reload: vi.fn() } as Location,
 });
 
-const mockMarkPatientDeceased = vi.mocked(markPatientDeceased);
+const mockReconcileDeceasedPatientWorkflow = vi.mocked(reconcileDeceasedPatientWorkflow);
 const mockUseCausesOfDeath = vi.mocked(useCausesOfDeath);
 const mockUseConfig = vi.mocked(useConfig<ChartConfig>);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockCloseWorkspace = vi.fn();
 
 vi.mock('../data.resource.ts', async () => ({
-  markPatientDeceased: vi.fn().mockResolvedValue({}),
   useCausesOfDeath: vi.fn(),
+}));
+
+vi.mock('./deceased-patient-workflow.resource', async () => ({
+  reconcileDeceasedPatientWorkflow: vi.fn().mockResolvedValue({
+    cancelledAppointments: 0,
+    closedQueueEntries: 0,
+    closedVisits: 0,
+    completedAppointments: 0,
+  }),
 }));
 
 describe('MarkPatientDeceasedForm', () => {
@@ -147,6 +156,8 @@ describe('MarkPatientDeceasedForm', () => {
     expect(screen.getByText(/cause of death/i)).toBeInTheDocument();
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /date/i }));
+    expect(screen.getByRole('radio', { name: /during active care/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /outside active care/i })).toBeInTheDocument();
     codedCausesOfDeath.forEach((codedCauseOfDeath) => {
       expect(screen.getByRole('radio', { name: codedCauseOfDeath.display })).toBeInTheDocument();
     });
@@ -168,7 +179,9 @@ describe('MarkPatientDeceasedForm', () => {
     await user.type(searchInput, 'traumatic injury');
 
     expect(screen.getByRole('radio', { name: 'Traumatic injury' })).toBeInTheDocument();
-    expect(screen.getAllByRole('radio')).toHaveLength(1);
+    expect(screen.queryByRole('radio', { name: 'Neoplasm/cancer' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'Infectious disease' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'Other' })).not.toBeInTheDocument();
   });
 
   it('selecting "Other" as the cause of death requires the user to enter a non-coded cause of death', async () => {
@@ -182,6 +195,7 @@ describe('MarkPatientDeceasedForm', () => {
     });
 
     await user.click(screen.getByRole('radio', { name: 'Other' }));
+    await user.click(screen.getByRole('radio', { name: /during active care/i }));
     expect(screen.getByRole('textbox', { name: /non-coded cause of death/i })).toBeInTheDocument();
 
     await user.click(submitButton);
@@ -191,12 +205,13 @@ describe('MarkPatientDeceasedForm', () => {
     await user.type(screen.getByRole('textbox', { name: /non-coded cause of death/i }), 'Septicemia');
     await user.click(submitButton);
 
-    expect(markPatientDeceased).toHaveBeenCalledWith(
-      expect.any(Date),
-      '8673ee4f-e2ab-4077-ba55-4980f408773e', // causeOfDeathUuid
-      freeTextFieldConceptUuid, // otherCauseOfDeathConceptUuid
-      'Septicemia', // otherCauseOfDeath
-    );
+    expect(mockReconcileDeceasedPatientWorkflow).toHaveBeenCalledWith({
+      careContext: 'during-care',
+      causeOfDeath: freeTextFieldConceptUuid,
+      deathDate: expect.any(Date),
+      nonCodedCauseOfDeath: 'Septicemia',
+      patientUuid: '8673ee4f-e2ab-4077-ba55-4980f408773e',
+    });
     consoleError.mockRestore();
   });
 
@@ -213,14 +228,16 @@ describe('MarkPatientDeceasedForm', () => {
     });
 
     await user.click(traumaticInjuryRadio);
+    await user.click(screen.getByRole('radio', { name: /outside active care/i }));
     await user.click(submitButton);
 
-    expect(markPatientDeceased).toHaveBeenCalledWith(
-      expect.any(Date),
-      '8673ee4f-e2ab-4077-ba55-4980f408773e',
-      '8b64f45e-1d5f-4894-b77c-4e1d840e2c99', // causeOfDeathUuid for Traumatic injury,
-      '',
-    );
+    expect(mockReconcileDeceasedPatientWorkflow).toHaveBeenCalledWith({
+      careContext: 'outside-care',
+      causeOfDeath: '8b64f45e-1d5f-4894-b77c-4e1d840e2c99',
+      deathDate: expect.any(Date),
+      nonCodedCauseOfDeath: '',
+      patientUuid: '8673ee4f-e2ab-4077-ba55-4980f408773e',
+    });
   });
 
   it('renders an error message when saving the cause of death fails', async () => {
@@ -228,7 +245,7 @@ describe('MarkPatientDeceasedForm', () => {
     const user = userEvent.setup();
     const mockError = new Error('API Error');
 
-    mockMarkPatientDeceased.mockRejectedValueOnce(mockError);
+    mockReconcileDeceasedPatientWorkflow.mockRejectedValueOnce(mockError);
 
     render(React.createElement(MarkPatientDeceasedForm, defaultProps));
 
@@ -240,6 +257,7 @@ describe('MarkPatientDeceasedForm', () => {
     });
 
     await user.click(traumaticInjuryRadio);
+    await user.click(screen.getByRole('radio', { name: /during active care/i }));
     await user.click(submitButton);
 
     expect(mockShowSnackbar).toHaveBeenCalledWith({
@@ -249,6 +267,28 @@ describe('MarkPatientDeceasedForm', () => {
       title: 'Error marking patient deceased',
     });
     consoleError.mockRestore();
+  });
+
+  it('explains that a partially completed operational closure is safe to retry', async () => {
+    const user = userEvent.setup();
+    mockReconcileDeceasedPatientWorkflow.mockRejectedValueOnce(
+      Object.assign(new Error('partial failure'), { code: 'DECEASED_PATIENT_RECONCILIATION_FAILED' }),
+    );
+
+    render(React.createElement(MarkPatientDeceasedForm, defaultProps));
+
+    await user.click(screen.getByRole('radio', { name: 'Traumatic injury' }));
+    await user.click(screen.getByRole('radio', { name: /during active care/i }));
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        subtitle: expect.stringMatching(/completed steps will not be repeated/i),
+        title: 'Incomplete death workflow',
+      }),
+    );
+    expect(mockCloseWorkspace).not.toHaveBeenCalled();
   });
 
   it('clicking the discard button closes the workspace', async () => {

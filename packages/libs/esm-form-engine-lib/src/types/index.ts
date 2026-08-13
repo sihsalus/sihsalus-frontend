@@ -23,6 +23,7 @@ export interface FormProcessorContextProps {
   formFieldValidators?: Record<string, FormFieldValidator>;
   customDependencies?: Record<string, unknown>;
   handleEncounterCreate?: (encounter: OpenmrsEncounter) => OpenmrsEncounter | void | Promise<OpenmrsEncounter | void>;
+  onBeforeEncounterSave?: (encounter: OpenmrsEncounter) => void | Promise<void>;
 }
 
 export interface ValueAndDisplay {

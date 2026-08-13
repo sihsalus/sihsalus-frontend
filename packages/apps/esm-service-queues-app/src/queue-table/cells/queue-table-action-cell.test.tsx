@@ -7,21 +7,27 @@ import {
   useSession,
   userHasAccess,
 } from '@openmrs/esm-framework';
+import { fetchFreshPatientVitalStatus } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockQueueEntryAlice, mockSession } from 'test-utils';
 
 import { serviceQueuesEditPrivilege, vitalsEditPrivilege } from '../../constants';
-import { getAppointmentTriageConfig } from '../../triage-workflow/triage-workflow.resource';
+import {
+  getAppointmentTriageConfig,
+  transitionTriagedPatient,
+} from '../../triage-workflow/triage-workflow.resource';
 
 import { QueueTableActionCell } from './queue-table-action-cell.component';
 
 const mockShowModal = vi.mocked(showModal);
+const mockFetchFreshPatientVitalStatus = vi.mocked(fetchFreshPatientVitalStatus);
 const mockUseLayoutType = vi.mocked(useLayoutType);
 const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
 const mockGetAppointmentTriageConfig = vi.mocked(getAppointmentTriageConfig);
+const mockTransitionTriagedPatient = vi.mocked(transitionTriagedPatient);
 const mockNavigate = vi.mocked(navigate);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 
@@ -30,12 +36,18 @@ vi.mock('../../triage-workflow/triage-workflow.resource', () => ({
   transitionTriagedPatient: vi.fn(),
 }));
 
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  fetchFreshPatientVitalStatus: vi.fn(),
+}));
+
 describe('QueueTableActionCell', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseLayoutType.mockReturnValue('small-desktop');
     mockUseSession.mockReturnValue(mockSession.data);
     mockUserHasAccess.mockReturnValue(true);
+    mockFetchFreshPatientVitalStatus.mockResolvedValue({ dead: false, deathDate: null, isDeceased: false });
   });
 
   it('labels the overflow menu as actions instead of Carbon default options', async () => {
@@ -135,6 +147,117 @@ describe('QueueTableActionCell', () => {
     expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Realizar triaje' }));
     expect(mockLaunchWorkspace2).toHaveBeenCalled();
+  });
+
+  it('does not offer triage for a deceased patient returned by the queue API', () => {
+    const triageQueueEntry = {
+      ...mockQueueEntryAlice,
+      patient: {
+        ...mockQueueEntryAlice.patient,
+        person: { uuid: 'person-uuid', dead: true, deathDate: '2026-08-12T15:41:28.000Z' },
+      },
+      visit: { ...mockQueueEntryAlice.visit, uuid: 'visit-uuid' },
+      workflow: {
+        isTriageQueue: true,
+        sisState: 'active' as const,
+        triageState: 'pending' as const,
+      },
+    };
+    mockUserHasAccess.mockImplementation((privilege) => privilege !== serviceQueuesEditPrivilege);
+
+    render(<QueueTableActionCell queueEntry={triageQueueEntry} />);
+
+    expect(screen.queryByRole('button', { name: 'Realizar triaje' })).not.toBeInTheDocument();
+  });
+
+  it('keeps only administrative cleanup actions for a deceased patient', async () => {
+    const user = userEvent.setup();
+    const deceasedQueueEntry = {
+      ...mockQueueEntryAlice,
+      patient: {
+        ...mockQueueEntryAlice.patient,
+        person: { uuid: 'person-uuid', dead: true, deathDate: '2026-08-12T15:41:28.000Z' },
+      },
+    };
+
+    render(<QueueTableActionCell queueEntry={deceasedQueueEntry} />);
+
+    expect(screen.queryByRole('button', { name: 'Transition' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Actions' }));
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+    expect(screen.queryByText('Undo transition')).not.toBeInTheDocument();
+    expect(screen.getByText('Remove patient')).toBeInTheDocument();
+  });
+
+  it('fresh-checks vital status before opening triage and blocks a concurrent death', async () => {
+    const user = userEvent.setup();
+    const triageQueueEntry = {
+      ...mockQueueEntryAlice,
+      visit: { ...mockQueueEntryAlice.visit, uuid: 'visit-uuid' },
+      workflow: {
+        isTriageQueue: true,
+        sisState: 'active' as const,
+        triageState: 'pending' as const,
+      },
+    };
+    mockFetchFreshPatientVitalStatus.mockResolvedValueOnce({
+      dead: true,
+      deathDate: '2026-08-12T15:41:28.000Z',
+      isDeceased: true,
+    });
+
+    render(<QueueTableActionCell queueEntry={triageQueueEntry} />);
+    await user.click(screen.getByRole('button', { name: 'Realizar triaje' }));
+
+    expect(mockFetchFreshPatientVitalStatus).toHaveBeenCalledWith(mockQueueEntryAlice.patient.uuid);
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        title: 'Triaje no disponible',
+      }),
+    );
+  });
+
+  it('fresh-checks again after vitals and does not route a patient who died while triage was open', async () => {
+    const user = userEvent.setup();
+    const triageQueueEntry = {
+      ...mockQueueEntryAlice,
+      visit: { ...mockQueueEntryAlice.visit, uuid: 'visit-uuid' },
+      workflow: {
+        isTriageQueue: true,
+        sisState: 'active' as const,
+        triageState: 'pending' as const,
+      },
+    };
+    mockGetAppointmentTriageConfig.mockResolvedValue({
+      appointmentArrivalRules: [],
+      appointmentVisitAttributeTypeUuid: 'appointment-attribute-type-uuid',
+      triageRouting: {
+        enabled: true,
+        encounterTypeUuid: 'triage-encounter-type-uuid',
+        queueLocationUuid: 'triage-location-uuid',
+        queueUuid: 'triage-queue-uuid',
+      },
+    });
+    mockFetchFreshPatientVitalStatus
+      .mockResolvedValueOnce({ dead: false, deathDate: null, isDeceased: false })
+      .mockResolvedValueOnce({
+        dead: true,
+        deathDate: '2026-08-12T15:41:28.000Z',
+        isDeceased: true,
+      });
+
+    render(<QueueTableActionCell queueEntry={triageQueueEntry} />);
+    await user.click(screen.getByRole('button', { name: 'Realizar triaje' }));
+    const workspaceOptions = mockLaunchWorkspace2.mock.calls[0][1] as { onVitalsSaved: () => Promise<void> };
+    await workspaceOptions.onVitalsSaved();
+
+    expect(mockFetchFreshPatientVitalStatus).toHaveBeenCalledTimes(2);
+    expect(mockTransitionTriagedPatient).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'error', title: 'El triaje se guardó, pero no se pudo derivar al paciente' }),
+    );
   });
 
   it('blocks triage and directs a patient without active SIS financing to the cashier', async () => {

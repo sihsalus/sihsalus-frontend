@@ -269,6 +269,7 @@ export class EncounterFormProcessor extends FormProcessor {
 
     // save encounter
     try {
+      await context.onBeforeEncounterSave?.(encounter);
       const { data: savedEncounter } = await saveEncounter(abortController, encounter, encounter.uuid);
       const savedOrders = getSavedOrderNumbers(savedEncounter);
       const savedDiagnoses = getSavedDiagnosisLabels(savedEncounter);

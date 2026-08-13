@@ -118,9 +118,7 @@ function formatRelationshipAge(
     return '';
   }
 
-  return `${ageInYears} ${
-    ageInYears === 1 ? t('yearAbbreviation', 'yr') : t('yearsAbbreviation', 'yrs')
-  }`;
+  return `${ageInYears} ${ageInYears === 1 ? t('yearAbbreviation', 'yr') : t('yearsAbbreviation', 'yrs')}`;
 }
 
 function getAttributeByTypeUuid(attributes: Array<Attribute>, uuid?: string) {
@@ -435,11 +433,7 @@ const Relationships: React.FC<{ patientId: string }> = ({ patientId }) => {
                   />
                   <RelationshipMetaItem
                     label={t('age', 'Age')}
-                    value={formatRelationshipAge(
-                      relationship.relativeBirthdate,
-                      relationship.relativeAge,
-                      t,
-                    )}
+                    value={formatRelationshipAge(relationship.relativeBirthdate, relationship.relativeAge, t)}
                   />
                 </span>
               </span>

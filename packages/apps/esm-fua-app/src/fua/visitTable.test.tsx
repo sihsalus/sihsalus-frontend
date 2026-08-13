@@ -6,10 +6,10 @@ import {
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_CONCEPT_UUID,
 } from '@openmrs/esm-patient-common-lib';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
-import { configSchema, type Config } from '../config-schema';
+import { type Config, configSchema } from '../config-schema';
 import { sisAccreditationNoVigenteConceptUuid, sisAccreditationVigenteConceptUuid } from '../constant';
 import {
   FuaGenerationError,
@@ -118,6 +118,7 @@ function buildVisit({
 function mockVisits(visits: Array<VisitSummary>) {
   mockUseVisits.mockReturnValue({
     visits,
+    hasLoadedVisits: true,
     isLoading: false,
     isError: null,
     isValidating: false,
@@ -186,6 +187,81 @@ describe('VisitTable FUA generation', () => {
         'El servidor rechazó la generación del FUA. Su sesión permanece activa; inténtelo nuevamente o contacte al administrador.',
     });
     expect(mockMutate).not.toHaveBeenCalled();
+  });
+
+  it('shows ErrorState when visits fail before any response is available', async () => {
+    mockUseVisits.mockReturnValue({
+      visits: [],
+      hasLoadedVisits: false,
+      isLoading: false,
+      isError: new Error('visit request failed'),
+      isValidating: false,
+      mutate: mockMutate,
+    });
+
+    render(<VisitTable />);
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText('Error State')).toBeInTheDocument();
+    expect(screen.queryByText('No se encontraron visitas con financiador SIS')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    await waitFor(() => expect(mockMutate).toHaveBeenCalledTimes(1));
+  });
+
+  it('keeps cached visits visible and shows an inline recoverable warning when refresh fails', async () => {
+    mockUseVisits.mockReturnValue({
+      visits: [sisVigenteVisit],
+      hasLoadedVisits: true,
+      isLoading: false,
+      isError: new Error('visit refresh failed'),
+      isValidating: false,
+      mutate: mockMutate,
+    });
+
+    render(<VisitTable />);
+
+    expect(screen.getByText('Paciente SIS vigente')).toBeInTheDocument();
+    expect(screen.queryByText('Error State')).not.toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('No se pudieron actualizar las visitas');
+    expect(screen.getByRole('alert')).toHaveTextContent('Se muestran los últimos datos disponibles');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    await waitFor(() => expect(mockMutate).toHaveBeenCalledTimes(1));
+  });
+
+  it('announces retry progress, disables the action, and coalesces repeated clicks', async () => {
+    let resolveRefresh!: () => void;
+    const refreshPromise = new Promise<void>((resolve) => {
+      resolveRefresh = resolve;
+    });
+    mockMutate.mockReturnValueOnce(refreshPromise);
+    mockUseVisits.mockReturnValue({
+      visits: [],
+      hasLoadedVisits: false,
+      isLoading: false,
+      isError: new Error('visit request failed'),
+      isValidating: false,
+      mutate: mockMutate,
+    });
+
+    render(<VisitTable />);
+
+    const retryButton = screen.getByRole('button', { name: 'Reintentar' });
+    fireEvent.click(retryButton);
+
+    await waitFor(() => expect(mockMutate).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole('button', { name: 'Actualizando...' })).toBeDisabled();
+    expect(screen.getByRole('alert').parentElement).toHaveAttribute('aria-busy', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Actualizando...' }));
+    expect(mockMutate).toHaveBeenCalledTimes(1);
+
+    await act(async () => resolveRefresh());
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Reintentar' })).toBeEnabled());
+    expect(screen.getByRole('alert').parentElement).toHaveAttribute('aria-busy', 'false');
   });
 
   it('hides non-SIS visits by default and disables generation for them when showing all', () => {

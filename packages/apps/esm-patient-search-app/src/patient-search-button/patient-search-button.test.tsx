@@ -39,13 +39,20 @@ describe('PatientSearchButton', () => {
 
   it('displays workspace when patient search button is clicked', async () => {
     const user = userEvent.setup();
+    const selectPatientAction = vi.fn();
 
-    render(<PatientSearchButton />);
+    render(<PatientSearchButton selectPatientAction={selectPatientAction} showPrimaryActions />);
 
     const searchButton = screen.getByLabelText('Search Patient Button');
 
     await user.click(searchButton);
 
-    expect(mockedLaunchWorkspace).toHaveBeenCalled();
+    expect(mockedLaunchWorkspace).toHaveBeenCalledWith('patient-search-workspace', {
+      handleSearchTermUpdated: undefined,
+      initialQuery: '',
+      nonNavigationSelectPatientAction: selectPatientAction,
+      showPrimaryActions: true,
+      workspaceTitle: undefined,
+    });
   });
 });

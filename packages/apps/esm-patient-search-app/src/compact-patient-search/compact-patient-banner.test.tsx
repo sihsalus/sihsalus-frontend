@@ -133,12 +133,27 @@ describe('CompactPatientBanner', () => {
     expect(patientClickSideEffect).toHaveBeenCalledWith('test-patient-uuid');
   });
 
+  it('hides primary actions in embedded searches that do not opt in', () => {
+    render(
+      <PatientSearchContext.Provider value={{ nonNavigationSelectPatientAction: vi.fn() }}>
+        <CompactPatientBanner patients={patients} />
+      </PatientSearchContext.Provider>,
+    );
+
+    expect(mockExtensionSlot).not.toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'patient-search-primary-actions-slot' }),
+      expect.anything(),
+    );
+  });
+
   it('exposes the primary patient action in embedded appointment search', () => {
     const nonNavigationSelectPatientAction = vi.fn();
     const patientClickSideEffect = vi.fn();
 
     render(
-      <PatientSearchContext.Provider value={{ nonNavigationSelectPatientAction, patientClickSideEffect }}>
+      <PatientSearchContext.Provider
+        value={{ nonNavigationSelectPatientAction, patientClickSideEffect, showPrimaryActions: true }}
+      >
         <CompactPatientBanner patients={patients} />
       </PatientSearchContext.Provider>,
     );

@@ -21,6 +21,7 @@ const PatientSearch: React.FC<Partial<Workspace2DefinitionProps<object, object>>
           name="patient-search-bar-slot"
           state={{
             selectPatientAction: launchCreateAppointmentForm,
+            showPrimaryActions: true,
             buttonProps: {
               kind: 'primary',
             },

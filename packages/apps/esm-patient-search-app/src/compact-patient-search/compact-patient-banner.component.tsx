@@ -22,7 +22,8 @@ interface CompactPatientBannerProps {
 
 const CompactPatientBanner = forwardRef<HTMLDivElement, CompactPatientBannerProps>(({ patients }, ref) => {
   const fhirMappedPatients = useMemo(() => patients.map(mapSearchedPatientToFhir), [patients]);
-  const { nonNavigationSelectPatientAction, patientClickSideEffect } = useContext(PatientSearchContext);
+  const { nonNavigationSelectPatientAction, patientClickSideEffect, showPrimaryActions } =
+    useContext(PatientSearchContext);
 
   const handlePrimaryAction = useCallback(
     (patientUuid: string) => {
@@ -44,7 +45,7 @@ const CompactPatientBanner = forwardRef<HTMLDivElement, CompactPatientBannerProp
             </div>
             <SihsalusPatientInfo patient={patient} renderedFrom="patient-search" />
           </ClickablePatientContainer>
-          {nonNavigationSelectPatientAction ? (
+          {nonNavigationSelectPatientAction && showPrimaryActions ? (
             <ExtensionSlot
               className={styles.patientSearchActions}
               name="patient-search-primary-actions-slot"
@@ -54,7 +55,7 @@ const CompactPatientBanner = forwardRef<HTMLDivElement, CompactPatientBannerProp
         </div>
       );
     },
-    [handlePrimaryAction, nonNavigationSelectPatientAction, patients],
+    [handlePrimaryAction, nonNavigationSelectPatientAction, patients, showPrimaryActions],
   );
 
   return <div ref={ref}>{fhirMappedPatients.map((patient, index) => renderPatient(patient, index))}</div>;

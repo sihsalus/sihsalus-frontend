@@ -1,4 +1,11 @@
-import { getDefaultsFromConfigSchema, restBaseUrl, userHasAccess, useConfig, useSession } from '@openmrs/esm-framework';
+import {
+  ExtensionSlot,
+  getDefaultsFromConfigSchema,
+  restBaseUrl,
+  useConfig,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
@@ -13,6 +20,7 @@ import CompactPatientBanner from './compact-patient-banner.component';
 const mockUseConfig = vi.mocked(useConfig<PatientSearchConfig>);
 const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
+const mockExtensionSlot = vi.mocked(ExtensionSlot);
 const clinicalUser = {
   privileges: [{ display: patientChartPrivilege }],
   roles: [],
@@ -67,6 +75,7 @@ const patients: Array<SearchedPatient> = [
 
 describe('CompactPatientBanner', () => {
   beforeEach(() => {
+    mockExtensionSlot.mockClear();
     mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
     mockUseSession.mockReturnValue({ user: clinicalUser } as ReturnType<typeof useSession>);
     mockUserHasAccess.mockImplementation((privilege) => privilege === patientChartPrivilege);
@@ -121,6 +130,35 @@ describe('CompactPatientBanner', () => {
     expect(nonNavigationSelectPatientAction).toHaveBeenCalledOnce();
     expect(nonNavigationSelectPatientAction).toHaveBeenCalledWith('test-patient-uuid');
     expect(patientClickSideEffect).toHaveBeenCalledOnce();
+    expect(patientClickSideEffect).toHaveBeenCalledWith('test-patient-uuid');
+  });
+
+  it('exposes the primary patient action in embedded appointment search', () => {
+    const nonNavigationSelectPatientAction = vi.fn();
+    const patientClickSideEffect = vi.fn();
+
+    render(
+      <PatientSearchContext.Provider value={{ nonNavigationSelectPatientAction, patientClickSideEffect }}>
+        <CompactPatientBanner patients={patients} />
+      </PatientSearchContext.Provider>,
+    );
+
+    const primaryActionCall = mockExtensionSlot.mock.calls.find(
+      ([props]) => props.name === 'patient-search-primary-actions-slot',
+    );
+    const primaryActionState = primaryActionCall?.[0].state as {
+      patientUuid: string;
+      selectPatientAction: (patientUuid: string) => void;
+    };
+    expect(primaryActionState).toEqual(
+      expect.objectContaining({
+        patientUuid: 'test-patient-uuid',
+        selectPatientAction: expect.any(Function),
+      }),
+    );
+
+    primaryActionState.selectPatientAction('test-patient-uuid');
+    expect(nonNavigationSelectPatientAction).toHaveBeenCalledWith('test-patient-uuid');
     expect(patientClickSideEffect).toHaveBeenCalledWith('test-patient-uuid');
   });
 

@@ -3,12 +3,14 @@ import { launchWorkspace2, userHasAccess, useSession } from '@openmrs/esm-framew
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const admissionPrivilege = 'app:home.admision';
+import { appointmentsEditPrivilege } from '../constants';
+
 const patientSearchAppointmentWorkspace = 'patient-search-appointments-form-workspace';
 
 interface ScheduleAppointmentActionProps {
   closeMenu?: () => void;
   patientUuid: string;
+  selectPatientAction?: (patientUuid: string) => void;
 }
 
 const ScheduleAppointmentAction: React.FC<ScheduleAppointmentActionProps> = ({ closeMenu, patientUuid }) => {
@@ -30,22 +32,27 @@ const ScheduleAppointmentAction: React.FC<ScheduleAppointmentActionProps> = ({ c
 
 export default ScheduleAppointmentAction;
 
-export const ScheduleAppointmentPrimaryAction: React.FC<Pick<ScheduleAppointmentActionProps, 'patientUuid'>> = ({
-  patientUuid,
-}) => {
+export const ScheduleAppointmentPrimaryAction: React.FC<
+  Pick<ScheduleAppointmentActionProps, 'patientUuid' | 'selectPatientAction'>
+> = ({ patientUuid, selectPatientAction }) => {
   const { t } = useTranslation();
   const { user } = useSession();
-  const isAdmissionUser = userHasAccess(admissionPrivilege, user);
+  const canEditAppointments = userHasAccess(appointmentsEditPrivilege, user);
 
   const handleScheduleAppointment = useCallback(() => {
+    if (selectPatientAction) {
+      selectPatientAction(patientUuid);
+      return;
+    }
+
     void launchWorkspace2(patientSearchAppointmentWorkspace, {
       context: 'creating',
       patientUuid,
       workspaceTitle: t('createNewAppointment', 'Crear nueva cita'),
     });
-  }, [patientUuid, t]);
+  }, [patientUuid, selectPatientAction, t]);
 
-  if (!isAdmissionUser) {
+  if (!canEditAppointments) {
     return null;
   }
 

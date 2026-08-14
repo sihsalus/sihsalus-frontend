@@ -132,7 +132,7 @@ function getColumnFromDefinition(t: TFunction, columnDef: ColumnDefinition): Que
       return queueTableTriageStatusColumn(id, translatedHeader ?? t('triageStatus', 'Triaje'));
     }
     case 'sis-status': {
-      return queueTableSisStatusColumn(id, translatedHeader ?? t('sisStatus', 'Estado SIS'));
+      return queueTableSisStatusColumn(id, translatedHeader ?? t('sisStatus', 'Estado SIS actual'));
     }
     case 'coming-from': {
       return queueTableComingFromColumn(id, translatedHeader ?? t('comingFrom', 'Coming from'));

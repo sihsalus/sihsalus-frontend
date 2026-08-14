@@ -356,7 +356,7 @@
   "sisNotApplicable": "No SIS",
   "sisNotConsulted": "SIS no consultado",
   "sisPending": "SIS pendiente",
-  "sisStatus": "Estado SIS",
+  "sisStatus": "Estado SIS actual",
   "sp02": "SpO2",
   "startAgeRangeInvalid": "El rango de edad inicial no es válido",
   "status": "Estado",

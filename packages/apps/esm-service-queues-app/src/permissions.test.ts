@@ -59,26 +59,23 @@ describe('canEditServiceQueues', () => {
   });
 
   it('allows clinical triage without granting administrative queue editing', () => {
-    const nurse = userWithPrivileges([
-      'app:hoja.clinica.signosVitales.editar',
-      'Get Queue Entries',
-      'Get Queues',
-      'Manage Queue Entries',
-    ]);
+    const nurse = userWithPrivileges(['app:home.colasAtencion', 'app:hoja.clinica.signosVitales.editar']);
 
     expect(canTriageQueuePatients(nurse)).toBe(true);
     expect(canEditServiceQueues(nurse)).toBe(false);
   });
 
-  it('does not allow triage without both vitals and queue transition privileges', () => {
+  it('does not hide triage when the nurse lacks administrative queue privileges', () => {
     expect(
       canTriageQueuePatients(
-        userWithPrivileges(['app:hoja.clinica.signosVitales.editar', 'Get Queue Entries', 'Get Queues']),
+        userWithPrivileges(['app:home.colasAtencion', 'app:hoja.clinica.signosVitales.editar', 'Get Queue Entries']),
       ),
-    ).toBe(false);
-    expect(
-      canTriageQueuePatients(userWithPrivileges(['Get Queue Entries', 'Get Queues', 'Manage Queue Entries'])),
-    ).toBe(false);
+    ).toBe(true);
+  });
+
+  it('requires both access to queues and permission to edit vital signs', () => {
+    expect(canTriageQueuePatients(userWithPrivileges(['app:home.colasAtencion']))).toBe(false);
+    expect(canTriageQueuePatients(userWithPrivileges(['app:hoja.clinica.signosVitales.editar']))).toBe(false);
   });
 
   it('requires the base patient, visit and queue set before offering to add someone to a queue', () => {

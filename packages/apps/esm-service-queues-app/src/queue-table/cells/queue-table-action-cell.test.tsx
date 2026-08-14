@@ -12,7 +12,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockQueueEntryAlice, mockSession } from 'test-utils';
 
-import { serviceQueuesEditPrivilege, vitalsEditPrivilege } from '../../constants';
+import { serviceQueuesEditPrivilege, serviceQueuesPrivilege, vitalsEditPrivilege } from '../../constants';
 import {
   getAppointmentTriageConfig,
   revalidateCurrentSisState,
@@ -133,7 +133,9 @@ describe('QueueTableActionCell', () => {
         triageState: 'pending' as const,
       },
     };
-    mockUserHasAccess.mockImplementation((privilege) => privilege !== serviceQueuesEditPrivilege);
+    mockUserHasAccess.mockImplementation(
+      (privilege) => privilege === serviceQueuesPrivilege || privilege === vitalsEditPrivilege,
+    );
     mockGetAppointmentTriageConfig.mockResolvedValue({
       appointmentArrivalRules: [],
       appointmentVisitAttributeTypeUuid: 'appointment-attribute-type-uuid',
@@ -148,6 +150,8 @@ describe('QueueTableActionCell', () => {
     render(<QueueTableActionCell queueEntry={triageQueueEntry} />);
 
     expect(mockUserHasAccess).toHaveBeenCalledWith(vitalsEditPrivilege, mockSession.data.user);
+    expect(mockUserHasAccess).toHaveBeenCalledWith(serviceQueuesPrivilege, mockSession.data.user);
+    expect(mockUserHasAccess).not.toHaveBeenCalledWith('Manage Queue Entries', mockSession.data.user);
     expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Realizar triaje' }));
     expect(mockLaunchWorkspace2).toHaveBeenCalled();

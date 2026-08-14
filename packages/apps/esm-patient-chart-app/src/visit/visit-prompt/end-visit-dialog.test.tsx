@@ -2,9 +2,7 @@ import {
   type FetchResponse,
   openmrsFetch,
   showSnackbar,
-  updateVisit,
   useVisit,
-  type Visit,
 } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { act, render, screen, waitFor } from '@testing-library/react';
@@ -18,17 +16,12 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   launchPatientWorkspace: vi.fn(),
 }));
 
-const endVisitPayload = {
-  stopDatetime: expect.any(Date),
-};
-
 const mockCloseModal = vi.fn();
 const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
 const mockMutate = vi.fn();
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseVisit = vi.mocked(useVisit);
-const mockUpdateVisit = vi.mocked(updateVisit);
 
 describe('End visit dialog', () => {
   beforeEach(() => {
@@ -71,15 +64,15 @@ describe('End visit dialog', () => {
           ],
         },
       } as FetchResponse)
-      .mockReturnValueOnce(generateFuaPromise);
-    mockUpdateVisit.mockResolvedValue({
-      status: 200,
-      data: {
-        visitType: {
-          display: 'Facility Visit',
+      .mockResolvedValueOnce({
+        status: 200,
+        data: {
+          visitType: {
+            display: 'Facility Visit',
+          },
         },
-      },
-    } as unknown as FetchResponse<Visit>);
+      } as FetchResponse)
+      .mockReturnValueOnce(generateFuaPromise);
 
     render(<EndVisitDialog patientUuid="some-patient-uuid" closeModal={mockCloseModal} />);
 
@@ -93,7 +86,17 @@ describe('End visit dialog', () => {
     await user.click(screen.getByRole('button', { name: /finalizar consulta y generar fua/i }));
 
     await waitFor(() =>
-      expect(updateVisit).toHaveBeenCalledWith(mockCurrentVisit.uuid, endVisitPayload, expect.anything()),
+      expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+        2,
+        '/ws/rest/v1/clinicalvisitclosure',
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.objectContaining({
+            visitUuid: mockCurrentVisit.uuid,
+            stopDatetime: expect.any(String),
+          }),
+        }),
+      ),
     );
     expect(screen.getAllByText(/generando fua/i).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /cancel/i })).toBeDisabled();
@@ -136,7 +139,7 @@ describe('End visit dialog', () => {
       }),
     );
     expect(mockCloseModal).toHaveBeenCalled();
-    expect(updateVisit).not.toHaveBeenCalled();
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       title: 'Missing required visit summary data',
       kind: 'warning',
@@ -166,7 +169,7 @@ describe('End visit dialog', () => {
         ],
       },
     } as FetchResponse);
-    mockUpdateVisit.mockRejectedValue(error);
+    mockOpenmrsFetch.mockRejectedValueOnce(error);
 
     render(<EndVisitDialog patientUuid="some-patient-uuid" closeModal={mockCloseModal} />);
 
@@ -177,7 +180,17 @@ describe('End visit dialog', () => {
     await user.click(screen.getByRole('button', { name: /finalizar consulta y generar fua/i }));
 
     await waitFor(() =>
-      expect(updateVisit).toHaveBeenCalledWith(mockCurrentVisit.uuid, endVisitPayload, expect.anything()),
+      expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+        2,
+        '/ws/rest/v1/clinicalvisitclosure',
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.objectContaining({
+            visitUuid: mockCurrentVisit.uuid,
+            stopDatetime: expect.any(String),
+          }),
+        }),
+      ),
     );
     await waitFor(() =>
       expect(mockShowSnackbar).toHaveBeenCalledWith({

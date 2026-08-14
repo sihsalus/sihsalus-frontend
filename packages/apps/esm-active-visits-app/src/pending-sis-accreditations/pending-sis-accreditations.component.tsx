@@ -353,7 +353,7 @@ const PendingSisAccreditationsTable = () => {
   };
 
   return (
-    <div className={pendingSisContainerClassName}>
+    <div className={pendingSisContainerClassName} id="pending-sis-accreditations">
       <div className={styles.activeVisitsDetailHeaderContainer}>
         <div className={!isDesktop(layout) ? styles.tabletHeading : styles.desktopHeading}>
           <h4>{headerTitle}</h4>

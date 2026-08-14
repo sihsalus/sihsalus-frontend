@@ -26,8 +26,8 @@
   gap: layout.$spacing-01;
   aspect-ratio: 1 / 1;
   width: 100%;
-  max-width: 20rem;
-  max-height: 20rem;
+  max-width: 16rem;
+  max-height: 16rem;
   justify-self: center;
   min-height: 0;
   min-width: 0;
@@ -119,8 +119,8 @@
 .actionIllustration {
   display: block;
   position: relative;
-  width: clamp(6.5rem, 74%, 9.75rem);
-  height: clamp(6.5rem, 74%, 9.75rem);
+  width: clamp(6rem, 70%, 8.5rem);
+  height: clamp(6rem, 70%, 8.5rem);
   max-width: 96%;
   max-height: 96%;
   object-fit: contain;

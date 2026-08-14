@@ -7,12 +7,12 @@ import PatientSearch from '../compact-patient-search/patient-search.component';
 import { type PatientSearchConfig } from '../config-schema';
 import useArrowNavigation from '../hooks/useArrowNavigation';
 import { usePatientChartAccess } from '../patient-chart-access';
+import { useInfinitePatientSearch } from '../patient-search.resource';
 import {
   isPatientSearchTermValid,
   limitPatientSearchTerm,
   MAX_PATIENT_SEARCH_CHARACTERS,
 } from '../patient-search-constants';
-import { useInfinitePatientSearch } from '../patient-search.resource';
 import { PatientSearchContext } from '../patient-search-context';
 
 import styles from './compact-patient-search.scss';
@@ -24,11 +24,13 @@ interface CompactPatientSearchProps {
   initialSearchTerm: string;
   /** An action to take when the patient is selected, other than navigation. If not provided, navigation takes place. */
   selectPatientAction?: (patientUuid: string) => undefined;
+  showPrimaryActions?: boolean;
   buttonProps?: object;
 }
 
 const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
   selectPatientAction,
+  showPrimaryActions = false,
   initialSearchTerm = '',
   buttonProps,
 }) => {
@@ -148,6 +150,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
           value={{
             nonNavigationSelectPatientAction: selectPatientAction,
             patientClickSideEffect: handleClear,
+            showPrimaryActions,
           }}
         >
           <div className={styles.floatingSearchResultsContainer}>

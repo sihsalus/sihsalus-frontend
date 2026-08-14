@@ -14,6 +14,12 @@ export interface PatientSearchContextProps {
    * just before navigation (or after nonNavigationSelectPatientAction is called).
    */
   patientClickSideEffect?: ((patientUuid: string) => void) | (() => void);
+  /**
+   * Whether the embedded search should render the registered primary patient
+   * actions. Embedded selectors hide these actions unless the consuming flow
+   * explicitly opts in.
+   */
+  showPrimaryActions?: boolean;
 }
 
 export const PatientSearchContext = createContext<PatientSearchContextProps>({});

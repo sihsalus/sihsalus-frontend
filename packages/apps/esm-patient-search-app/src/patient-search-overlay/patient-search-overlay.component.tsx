@@ -29,6 +29,7 @@ const PatientSearchOverlay: React.FC<PatientSearchOverlayProps> = ({
   handleSearchTermUpdated,
   nonNavigationSelectPatientAction,
   patientClickSideEffect,
+  showPrimaryActions,
 }) => {
   const { t } = useTranslation();
 
@@ -39,6 +40,7 @@ const PatientSearchOverlay: React.FC<PatientSearchOverlayProps> = ({
         handleSearchTermUpdated={handleSearchTermUpdated}
         nonNavigationSelectPatientAction={nonNavigationSelectPatientAction}
         patientClickSideEffect={patientClickSideEffect}
+        showPrimaryActions={showPrimaryActions}
       />
     </Overlay>
   );

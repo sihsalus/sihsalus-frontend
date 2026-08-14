@@ -5,8 +5,8 @@ import {
   showSnackbar,
   useConfig,
   usePatient,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import {
   fetchFreshPatientVitalStatus,
@@ -176,6 +176,21 @@ function getDirectButton() {
   return screen.getByRole('button', { name: /iniciar atención directamente/i });
 }
 
+function configureDirectArrivalRule() {
+  mockUseConfig.mockReturnValue({
+    ...getDefaultsFromConfigSchema(configSchema),
+    appointmentArrivalRules: [
+      {
+        appointmentServiceUuid: appointment.service.uuid,
+        appointmentLocationUuid: appointment.location.uuid,
+        arrivalPolicy: 'direct',
+        requiredVisitTypeUuid,
+      },
+    ],
+    checkInButton: { enabled: true, showIfActiveVisit: true, customUrl: '' },
+  });
+}
+
 describe('AppointmentArrivalModal', () => {
   beforeEach(() => {
     mockUserHasAccess.mockReturnValue(true);
@@ -204,14 +219,14 @@ describe('AppointmentArrivalModal', () => {
     });
   });
 
-  it('offers both arrival options along with the appointment summary', () => {
+  it('offers only queue arrival and Cancel for a queue-optional rule', () => {
     renderModal();
 
     expect(screen.getByText('John Wilson')).toBeInTheDocument();
     expect(screen.getByText(/Outpatient/)).toBeInTheDocument();
     expect(screen.getByText(/UPSS: HIV Clinic/)).toBeInTheDocument();
     expect(getQueueButton()).toBeEnabled();
-    expect(getDirectButton()).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /iniciar atención directamente/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cancelar/i })).toBeEnabled();
   });
 
@@ -230,7 +245,7 @@ describe('AppointmentArrivalModal', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent(/no se puede registrar la llegada de un paciente fallecido/i);
     expect(getQueueButton()).toBeDisabled();
-    expect(getDirectButton()).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /iniciar atención directamente/i })).not.toBeInTheDocument();
   });
 
   it('fresh-checks death status before starting arrival', async () => {
@@ -272,6 +287,9 @@ describe('AppointmentArrivalModal', () => {
     activeVisits,
     expectedWorkspace,
   }) => {
+    if (action === 'direct') {
+      configureDirectArrivalRule();
+    }
     mockGetActiveVisitsForPatient.mockResolvedValue(visitsResponse(activeVisits));
     mockLaunchWorkspace2.mockResolvedValue(false);
 
@@ -637,6 +655,7 @@ describe('AppointmentArrivalModal', () => {
   });
 
   it('starts care directly by creating a visit without a queue entry and checking in', async () => {
+    configureDirectArrivalRule();
     renderModal();
     await userEvent.click(getDirectButton());
 
@@ -694,6 +713,7 @@ describe('AppointmentArrivalModal', () => {
   });
 
   it('starts care directly by reusing the active visit and navigating to the patient chart', async () => {
+    configureDirectArrivalRule();
     mockGetActiveVisitsForPatient.mockResolvedValue(visitsResponse([activeVisit]));
 
     renderModal();
@@ -713,16 +733,14 @@ describe('AppointmentArrivalModal', () => {
     });
   });
 
-  it('keeps direct care visible but disabled with an actionable reason when patient chart access is missing', () => {
+  it('does not expose direct care or its access warning alongside the queue', () => {
     mockUserHasAccess.mockImplementation((privilege) => privilege !== clinicalChartPrivilege);
 
     renderModal();
 
     expect(getQueueButton()).toBeEnabled();
-    expect(getDirectButton()).toBeDisabled();
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      'La atención directa requiere acceso a la historia clínica del paciente. Solicite ese acceso o use la cola, si está habilitada.',
-    );
+    expect(screen.queryByRole('button', { name: /iniciar atención directamente/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
@@ -833,6 +851,7 @@ describe('AppointmentArrivalModal', () => {
   });
 
   it('blocks before reading visits when the operator cannot inspect active visits', async () => {
+    configureDirectArrivalRule();
     mockUserHasAccess.mockImplementation((privilege) => privilege !== 'Get Visits');
 
     renderModal();
@@ -846,6 +865,7 @@ describe('AppointmentArrivalModal', () => {
   });
 
   it('uses the StartVisit guard OR contract and does not require queue privileges for direct care', async () => {
+    configureDirectArrivalRule();
     const directPrivileges = new Set([clinicalChartPrivilege, 'Get Visits', 'app:home.admision']);
     mockUserHasAccess.mockImplementation(
       (privilege) => typeof privilege === 'string' && directPrivileges.has(privilege),
@@ -863,6 +883,7 @@ describe('AppointmentArrivalModal', () => {
   });
 
   it('blocks a new direct visit when none of the StartVisit creation capabilities is present', async () => {
+    configureDirectArrivalRule();
     const directPrivileges = new Set([clinicalChartPrivilege, 'Get Visits']);
     mockUserHasAccess.mockImplementation(
       (privilege) => typeof privilege === 'string' && directPrivileges.has(privilege),
@@ -876,6 +897,7 @@ describe('AppointmentArrivalModal', () => {
   });
 
   it('blocks active-visit reuse before persistence when visit edit access is missing', async () => {
+    configureDirectArrivalRule();
     mockGetActiveVisitsForPatient.mockResolvedValue(visitsResponse([activeVisit]));
     mockUserHasAccess.mockImplementation((privilege) => privilege !== 'Edit Visits');
 
@@ -930,6 +952,7 @@ describe('AppointmentArrivalModal', () => {
   });
 
   it('explains the companion block before opening the visit form for a minor without any companion path', async () => {
+    configureDirectArrivalRule();
     mockUserHasAccess.mockImplementation((privilege) => {
       const privileges = Array.isArray(privilege) ? privilege : [privilege];
       return !privileges.some((item) =>
@@ -979,6 +1002,7 @@ describe('AppointmentArrivalModal', () => {
   });
 
   it('allows a minor arrival when the operator can register a companion but cannot search', async () => {
+    configureDirectArrivalRule();
     mockUserHasAccess.mockImplementation((privilege) => {
       if (privilege === 'Get People') {
         return false;
@@ -1005,6 +1029,7 @@ describe('AppointmentArrivalModal', () => {
   });
 
   it('requires both registration privileges when search is unavailable', async () => {
+    configureDirectArrivalRule();
     mockUserHasAccess.mockImplementation((privilege) => {
       if (privilege === 'Get People' || privilege === 'Add People') {
         return false;
@@ -1036,7 +1061,7 @@ describe('AppointmentArrivalModal', () => {
     const { rerender } = renderModal();
 
     expect(screen.getByText(/verificando la edad del paciente/i)).toBeInTheDocument();
-    expect(getDirectButton()).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /iniciar atención directamente/i })).not.toBeInTheDocument();
     expect(getQueueButton()).toBeDisabled();
     expect(screen.getByRole('button', { name: /cancelar/i })).toBeEnabled();
     expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
@@ -1058,7 +1083,7 @@ describe('AppointmentArrivalModal', () => {
     );
 
     expect(screen.queryByText(/verificando la edad del paciente/i)).not.toBeInTheDocument();
-    expect(getDirectButton()).toBeEnabled();
+    expect(getQueueButton()).toBeEnabled();
   });
 
   it('does not open the visit form when loading the patient fails', async () => {
@@ -1078,6 +1103,7 @@ describe('AppointmentArrivalModal', () => {
   });
 
   it('does not open the visit form when the patient has no valid birth date', async () => {
+    configureDirectArrivalRule();
     mockUsePatient.mockReturnValue({
       patient: {},
       isLoading: false,
@@ -1117,6 +1143,7 @@ describe('AppointmentArrivalModal', () => {
   });
 
   it('blocks starting care directly with an active visit from another location', async () => {
+    configureDirectArrivalRule();
     mockGetActiveVisitsForPatient.mockResolvedValue(
       visitsResponse([
         {

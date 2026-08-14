@@ -7,8 +7,8 @@ import {
   launchWorkspace2,
   navigate,
   useLayoutType,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
@@ -71,6 +71,7 @@ const MetricsHeader: React.FC<MetricsHeaderProps> = ({ appointmentServiceTypes }
               selectPatientAction: launchCreateAppointmentForm,
               buttonText: t('createNewAppointment', 'Create new appointment'),
               overlayHeader: t('createNewAppointment', 'Create new appointment'),
+              showPrimaryActions: true,
               buttonProps: {
                 kind: 'primary',
                 renderIcon: (props) => <Hospital size={32} {...props} />,

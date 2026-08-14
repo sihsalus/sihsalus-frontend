@@ -2,8 +2,8 @@ import { useConfig, useDebounce } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 
 import { type PatientSearchConfig } from '../config-schema';
-import { isPatientSearchTermValid } from '../patient-search-constants';
 import PatientSearchBar from '../patient-search-bar/patient-search-bar.component';
+import { isPatientSearchTermValid } from '../patient-search-constants';
 import { PatientSearchContext, type PatientSearchContextProps } from '../patient-search-context';
 import AdvancedPatientSearchComponent from '../patient-search-page/advanced-patient-search.component';
 
@@ -20,6 +20,7 @@ const PatientSearchWorkspace: React.FC<PatientSearchWorkspaceProps> = ({
   handleSearchTermUpdated,
   nonNavigationSelectPatientAction,
   patientClickSideEffect,
+  showPrimaryActions,
 }) => {
   const {
     search: { disableTabletSearchOnKeyUp },
@@ -39,7 +40,9 @@ const PatientSearchWorkspace: React.FC<PatientSearchWorkspaceProps> = ({
   );
 
   return (
-    <PatientSearchContext.Provider value={{ nonNavigationSelectPatientAction, patientClickSideEffect }}>
+    <PatientSearchContext.Provider
+      value={{ nonNavigationSelectPatientAction, patientClickSideEffect, showPrimaryActions }}
+    >
       <PatientSearchBar
         initialSearchTerm={initialQuery}
         onChange={(value) => !disableTabletSearchOnKeyUp && onSearchTermChange(value)}

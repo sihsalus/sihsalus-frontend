@@ -3,12 +3,22 @@ import routes from './routes.json';
 describe('appointments route privilege contract', () => {
   it('offers scheduling from patient search only to appointment editors', () => {
     const scheduleAction = routes.extensions.find(({ name }) => name === 'schedule-appointment-patient-search-action');
+    const primaryScheduleAction = routes.extensions.find(
+      ({ name }) => name === 'schedule-appointment-patient-search-primary-action',
+    );
 
     expect(scheduleAction).toEqual(
       expect.objectContaining({
         component: 'scheduleAppointmentPatientSearchAction',
         privileges: ['app:home.citas', 'app:home.citas.editar'],
         slot: 'patient-search-actions-slot',
+      }),
+    );
+    expect(primaryScheduleAction).toEqual(
+      expect.objectContaining({
+        component: 'scheduleAppointmentPatientSearchPrimaryAction',
+        privileges: ['app:home.citas', 'app:home.citas.editar'],
+        slot: 'patient-search-primary-actions-slot',
       }),
     );
   });

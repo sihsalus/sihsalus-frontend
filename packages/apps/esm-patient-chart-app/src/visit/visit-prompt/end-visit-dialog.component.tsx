@@ -4,7 +4,7 @@ import {
   openmrsFetch,
   restBaseUrl,
   showSnackbar,
-  updateVisit,
+  toOmrsIsoString,
   useVisit,
 } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
@@ -129,7 +129,15 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
         return;
       }
 
-      await updateVisit(activeVisit.uuid, { stopDatetime: new Date() }, abortController);
+      await openmrsFetch(`${restBaseUrl}/clinicalvisitclosure`, {
+        signal: abortController.signal,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: {
+          visitUuid: activeVisit.uuid,
+          stopDatetime: toOmrsIsoString(new Date()),
+        },
+      });
       void mutate();
       void mutateInfiniteVisits();
 

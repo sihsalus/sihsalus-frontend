@@ -241,7 +241,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
                   ),
                   [TRIAGE_SIS_FINANCING_REQUIRED]: t(
                     'triageSisFinancingRequired',
-                    'No se puede continuar con el triaje porque esta atención no tiene SIS vigente. Derive al paciente a Caja para regularizar el pago o la cobertura.',
+                    'No se puede continuar con el triaje porque esta atención no tiene financiador definido o no tiene SIS vigente (ejemplo: SIS). Derive al paciente a Caja para regularizar el pago o la cobertura.',
                   ),
                 },
                 logContext: 'Add patient to queue',

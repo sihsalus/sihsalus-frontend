@@ -266,6 +266,7 @@ const SearchByConcepts: React.FC<SearchByProps> = ({ onSubmit }) => {
         <div className={styles.dateRange}>
           <Column>
             <DatePicker
+              locale="es"
               datePickerType="single"
               allowInput={false}
               onChange={(date) => setOnOrAfter(dayjs(date[0]).format())}
@@ -281,6 +282,7 @@ const SearchByConcepts: React.FC<SearchByProps> = ({ onSubmit }) => {
           </Column>
           <Column>
             <DatePicker
+              locale="es"
               datePickerType="single"
               allowInput={false}
               onChange={(date) => setOnOrBefore(dayjs(date[0]).format())}

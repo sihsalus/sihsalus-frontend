@@ -77,7 +77,7 @@ const EndRelationshipWorkspace: React.FC<EndRelationshipWorkspaceProps> = ({ clo
               name="endDate"
               control={control}
               render={({ field, fieldState }) => (
-                <DatePicker datePickerType="single" onChange={(e) => field.onChange(e[0])}>
+                <DatePicker locale="es" datePickerType="single" onChange={(e) => field.onChange(e[0])}>
                   <DatePickerInput
                     placeholder="mm/dd/yyyy"
                     labelText={t('endDate', 'End Date')}

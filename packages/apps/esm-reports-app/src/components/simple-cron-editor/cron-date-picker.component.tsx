@@ -43,6 +43,7 @@ const CronDatePicker: React.FC<CronDatePickerProps> = ({ value, onChange }) => {
   return (
     <div>
       <DatePicker
+        locale="es"
         datePickerType="single"
         value={valueInternal}
         onChange={([selectedDate]) => {

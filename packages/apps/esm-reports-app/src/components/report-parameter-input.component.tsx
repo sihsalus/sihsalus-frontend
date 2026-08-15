@@ -135,6 +135,7 @@ const ReportParameterInput: React.FC<ReportParameterInputProps> = ({ parameter, 
       case 'java.util.Date':
         return (
           <DatePicker
+            locale="es"
             datePickerType="single"
             onChange={([dateValue]) => handleOnDateChange(dateValue)}
             className={styles.datePicker}

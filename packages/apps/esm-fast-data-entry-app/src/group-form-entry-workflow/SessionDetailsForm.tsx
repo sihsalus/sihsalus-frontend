@@ -69,7 +69,7 @@ const SessionDetailsForm = () => {
                     control={control}
                     rules={{ required: true }}
                     render={({ field }) => (
-                      <DatePicker datePickerType="single" maxDate={new Date()} {...field}>
+                      <DatePicker locale="es" datePickerType="single" maxDate={new Date()} {...field}>
                         <DatePickerInput
                           id="session-date"
                           labelText={t('sessionDate', 'Session Date')}

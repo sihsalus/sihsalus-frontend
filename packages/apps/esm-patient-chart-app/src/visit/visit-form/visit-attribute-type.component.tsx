@@ -348,6 +348,7 @@ const AttributeTypeField: React.FC<AttributeTypeFieldProps> = ({
       case 'org.openmrs.customdatatype.datatype.DateDatatype':
         return (
           <DatePicker
+            locale="es"
             dateFormat="d/m/Y"
             datePickerType="single"
             onChange={([date]) => onChange(date ? dayjs(date).format('YYYY-MM-DD') : '')}

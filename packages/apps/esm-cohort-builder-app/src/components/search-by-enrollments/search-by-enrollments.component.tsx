@@ -89,6 +89,7 @@ const SearchByEnrollments: React.FC<SearchByProps> = ({ onSubmit }) => {
       <div className={styles.column}>
         <Column>
           <DatePicker
+            locale="es"
             datePickerType="single"
             allowInput={false}
             onChange={(date) => setEnrolledOnOrAfter(dayjs(date[0]).format())}
@@ -104,6 +105,7 @@ const SearchByEnrollments: React.FC<SearchByProps> = ({ onSubmit }) => {
         </Column>
         <Column>
           <DatePicker
+            locale="es"
             datePickerType="single"
             allowInput={false}
             onChange={(date) => setEnrolledOnOrBefore(dayjs(date[0]).format())}
@@ -116,6 +118,7 @@ const SearchByEnrollments: React.FC<SearchByProps> = ({ onSubmit }) => {
       <div className={styles.column}>
         <Column>
           <DatePicker
+            locale="es"
             datePickerType="single"
             allowInput={false}
             onChange={(date) => setCompletedOnOrAfter(dayjs(date[0]).format())}
@@ -131,6 +134,7 @@ const SearchByEnrollments: React.FC<SearchByProps> = ({ onSubmit }) => {
         </Column>
         <Column>
           <DatePicker
+            locale="es"
             datePickerType="single"
             allowInput={false}
             onChange={(date) => setCompletedOnOrBefore(dayjs(date[0]).format())}

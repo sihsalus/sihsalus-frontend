@@ -24,6 +24,7 @@ export const FuaDateRangePicker = () => {
     <div className={styles.datePickerWrapper}>
       <p>{t('dateRange', 'Date range')}:</p>
       <DatePicker
+        locale="es"
         className={styles.dateRangePicker}
         dateFormat="d/m/Y"
         datePickerType="range"

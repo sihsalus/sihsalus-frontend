@@ -1,3 +1,7 @@
 .menuitem {
   max-width: none;
+
+  :global(.cds--overflow-menu-options__btn) {
+    max-inline-size: none;
+  }
 }

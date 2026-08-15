@@ -329,7 +329,7 @@
   "time": "Time",
   "today": "Today",
   "todaysAppointments": "Today's appointments",
-  "triageSisFinancingRequired": "Triage cannot continue because this visit does not have active SIS coverage. Send the patient to the cashier to regularize payment or coverage.",
+  "triageSisFinancingRequired": "Triage cannot continue because this visit does not have a defined funding source or active SIS coverage (for example, SIS). Send the patient to the cashier to regularize payment or coverage.",
   "type": "Type",
   "unassignedProvider": "No provider assigned",
   "unknown": "Unknown",

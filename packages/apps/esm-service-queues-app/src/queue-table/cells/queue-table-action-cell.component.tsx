@@ -10,14 +10,18 @@ import {
   useLayoutType,
   useSession,
 } from '@openmrs/esm-framework';
-import { fetchFreshPatientVitalStatus } from '@openmrs/esm-patient-common-lib';
+import { canCopyFinanciadorToVisit, fetchFreshPatientVitalStatus } from '@openmrs/esm-patient-common-lib';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { serviceQueuesPatientVitalsWorkspace } from '../../constants';
 import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
 import { canEditServiceQueues, canTriageQueuePatients } from '../../permissions';
-import { getAppointmentTriageConfig, transitionTriagedPatient } from '../../triage-workflow/triage-workflow.resource';
+import {
+  getAppointmentTriageConfig,
+  revalidateCurrentSisState,
+  transitionTriagedPatient,
+} from '../../triage-workflow/triage-workflow.resource';
 import { type QueueTableCellComponentProps, type QueueTableColumnFunction } from '../../types';
 
 import styles from './queue-table-action-cell.scss';
@@ -69,6 +73,12 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
   const handleTriage = async () => {
     setIsSubmittingTriage(true);
     try {
+      const freshSisState = await revalidateCurrentSisState(queueEntry, canCopyFinanciadorToVisit(session?.user));
+      await mutateQueueEntries();
+      if (freshSisState !== 'active') {
+        handleSendToCashier();
+        return;
+      }
       const vitalStatus = await fetchFreshPatientVitalStatus(queueEntry.patient.uuid);
       if (vitalStatus.isDeceased) {
         showSnackbar({
@@ -121,7 +131,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
       title: t('triageBlockedByFinancing', 'Triaje bloqueado por financiamiento'),
       subtitle: t(
         'sendPatientToCashierDescription',
-        'El paciente no tiene SIS vigente. Debe regularizar el pago o la cobertura en Caja antes de continuar con el triaje.',
+        'El paciente no tiene financiador definido o no tiene SIS vigente. Debe regularizar el pago o la cobertura en Caja antes de continuar con el triaje.',
       ),
     });
     if (canOpenBilling) {

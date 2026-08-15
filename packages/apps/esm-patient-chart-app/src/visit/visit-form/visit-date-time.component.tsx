@@ -55,6 +55,7 @@ const VisitDateTimeField: React.FC<VisitDateTimeFieldProps> = ({
             <ResponsiveWrapper>
               <DatePicker
                 className={styles.datePicker}
+                locale="es"
                 dateFormat="d/m/Y"
                 datePickerType="single"
                 maxDate={maxDateObj}

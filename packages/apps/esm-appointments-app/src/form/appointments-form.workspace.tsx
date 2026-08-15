@@ -1317,6 +1317,7 @@ const AppointmentsForm: React.FC<
                       render={({ field: { onChange, value } }) => (
                         <ResponsiveWrapper>
                           <DatePicker
+                            locale="es"
                             datePickerType="range"
                             dateFormat={datePickerFormat}
                             value={[value.startDate, value.recurringPatternEndDate]}

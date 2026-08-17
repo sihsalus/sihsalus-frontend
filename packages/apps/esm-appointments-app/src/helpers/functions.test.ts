@@ -60,7 +60,8 @@ describe('appointment labels', () => {
 
   it('uses localized labels for known backend values', () => {
     expect(getAppointmentStatusLabel(AppointmentStatus.CHECKEDIN, t)).toBe('Llegada registrada');
-    expect(getAppointmentKindLabel(AppointmentKind.WALKIN, t)).toBe('Sin cita');
+    expect(getAppointmentKindLabel(AppointmentKind.SCHEDULED, t)).toBe('Programada presencial');
+    expect(getAppointmentKindLabel(AppointmentKind.WALKIN, t)).toBe('No programada presencial');
   });
 
   it('uses grammatical Spanish labels for appointment tabs and collections', () => {

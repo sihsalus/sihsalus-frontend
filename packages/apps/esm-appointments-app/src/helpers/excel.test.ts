@@ -13,6 +13,7 @@ const translations: Record<string, string> = {
   patientName: 'Nombre del paciente',
   phoneNumber: 'Número de teléfono',
   responsibleProvider: 'Personal de salud responsable',
+  serviceType: 'Tipo de servicio',
   unassignedProvider: 'Sin personal de salud asignado',
 };
 const t = ((key: string, defaultValue: string) => translations[key] ?? defaultValue) as TFunction;
@@ -54,7 +55,8 @@ describe('appointment spreadsheet localization', () => {
       Sexo: 'Femenino',
       Edad: '25',
       'Identificadores del paciente': 'HC: 100009C; DNI: 87654321',
-      'Modalidad de cita': 'Medicina general',
+      'Tipo de servicio': 'Medicina general',
+      'Modalidad de cita': 'Programada presencial',
       'Personal de salud responsable': 'Sin personal de salud asignado',
       'Número de teléfono': '999888777',
     });

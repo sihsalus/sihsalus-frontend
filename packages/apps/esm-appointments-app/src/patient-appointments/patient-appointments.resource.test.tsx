@@ -85,6 +85,32 @@ describe('usePatientAppointments', () => {
     await waitFor(() => expect(result.current.data?.pastAppointments).toHaveLength(1));
   });
 
+  it('recovers from a transient appointment search failure before showing an error', async () => {
+    mockOpenmrsFetch
+      .mockRejectedValueOnce({ response: { status: 503 } })
+      .mockResolvedValueOnce(mockFetchResponse([]));
+
+    const { result } = renderHook(() => usePatientAppointments('patient-1', '2026-04-01', abortController), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.data).not.toBeNull());
+    expect(result.current.error).toBeUndefined();
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not retry an authorization or validation failure', async () => {
+    const error = { response: { status: 403 } };
+    mockOpenmrsFetch.mockRejectedValueOnce(error);
+
+    const { result } = renderHook(() => usePatientAppointments('patient-1', '2026-04-01', abortController), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.error).toBe(error));
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
+  });
+
   it('triggers a new fetch and returns fresh data when only patientUuid changes', async () => {
     // patient-1 returns empty; patient-2 returns one past appointment
     const pastDate = new Date('2020-01-01').getTime();

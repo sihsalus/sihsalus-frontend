@@ -227,6 +227,7 @@ interface StartVisitFormWorkspaceProps {
     display: string;
   };
   requiredVisitTypeUuid?: string;
+  requestedUpssName?: string;
   requestedServiceName?: string;
   requireActiveSisFinancing?: boolean;
   visitToEdit?: Visit;
@@ -266,6 +267,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     companionPersonRegistrationWorkspaceName = defaultCompanionPersonRegistrationWorkspace,
     requiredVisitLocation,
     requiredVisitTypeUuid,
+    requestedUpssName,
     requestedServiceName,
     requireActiveSisFinancing,
     visitToEdit,
@@ -1876,6 +1878,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                       patientUuid={patientUuid}
                       currentServiceQueueUuid={currentServiceQueueUuid}
                       currentQueueLocationUuid={currentQueueLocationUuid}
+                      requestedUpssName={requestedUpssName}
                       requestedServiceName={requestedServiceName}
                       requireActiveSisFinancing={requireActiveSisFinancing}
                       onQueueEntryAdded={onQueueEntryAdded}
@@ -2030,6 +2033,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                   patientUuid={patientUuid}
                   currentServiceQueueUuid={currentServiceQueueUuid}
                   currentQueueLocationUuid={currentQueueLocationUuid}
+                  requestedUpssName={requestedUpssName}
                   requestedServiceName={requestedServiceName}
                   requireActiveSisFinancing={requireActiveSisFinancing}
                   onQueueEntryAdded={onQueueEntryAdded}
@@ -2113,6 +2117,7 @@ interface VisitFormExtensionSlotProps {
   patientUuid: string;
   currentServiceQueueUuid?: string;
   currentQueueLocationUuid?: string;
+  requestedUpssName?: string;
   requestedServiceName?: string;
   requireActiveSisFinancing?: boolean;
   onQueueEntryAdded?: () => void | Promise<void>;
@@ -2136,6 +2141,7 @@ type VisitFormExtensionState = {
   patientChartConfig: ChartConfig;
   currentServiceQueueUuid?: string;
   currentQueueLocationUuid?: string;
+  requestedUpssName?: string;
   requestedServiceName?: string;
   requireActiveSisFinancing?: boolean;
   onQueueEntryAdded?: () => void | Promise<void>;
@@ -2147,6 +2153,7 @@ const VisitFormExtensionSlot: React.FC<VisitFormExtensionSlotProps> = React.memo
     patientUuid,
     currentServiceQueueUuid,
     currentQueueLocationUuid,
+    requestedUpssName,
     requestedServiceName,
     requireActiveSisFinancing,
     onQueueEntryAdded,
@@ -2169,6 +2176,7 @@ const VisitFormExtensionSlot: React.FC<VisitFormExtensionSlotProps> = React.memo
             patientChartConfig: config,
             currentServiceQueueUuid,
             currentQueueLocationUuid,
+            requestedUpssName,
             requestedServiceName,
             requireActiveSisFinancing,
             onQueueEntryAdded,

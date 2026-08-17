@@ -9,6 +9,7 @@ import { type PersonAttributeTypeResponse } from '../../patient-registration.typ
 import {
   peruInsuranceTypeAttributeTypeUuid,
   peruLegacySisPlanConceptUuid,
+  peruInsuranceSisConceptUuid,
   replacePeruFinancerInForm,
 } from '../../peru-registration-config';
 import { isMissingConceptError, useConceptAnswers } from '../field.resource';
@@ -65,7 +66,7 @@ export function CodedPersonAttributeField({
           .map((answer) => ({ ...answer, label: answer.display }))
           .sort((a, b) => a.label.localeCompare(b.label));
 
-    return availableAnswers
+    const normalizedAnswers = availableAnswers
       .filter((answer) => id !== 'insuranceType' || answer.uuid !== peruLegacySisPlanConceptUuid)
       .map((answer) => ({
         ...answer,
@@ -74,6 +75,20 @@ export function CodedPersonAttributeField({
             ? t('selfFinancing', 'Self-financing')
             : answer.label,
       }));
+
+    if (id !== 'insuranceType') {
+      return normalizedAnswers;
+    }
+
+    return [...normalizedAnswers].sort((a, b) => {
+      if (a.uuid === peruInsuranceSisConceptUuid) {
+        return -1;
+      }
+      if (b.uuid === peruInsuranceSisConceptUuid) {
+        return 1;
+      }
+      return 0;
+    });
   }, [conceptAnswers, customConceptAnswers, hasCustomConceptAnswers, id, t]);
 
   const fieldName = `attributes.${personAttributeType.uuid}`;

@@ -6,7 +6,7 @@ import { type ConfigObject } from '../config-schema';
 import { moduleName } from '../constants';
 import { type Appointment, type Identifier } from '../types';
 import { getAppointmentProviderName } from './appointment-provider';
-import { getGender } from './functions';
+import { getAppointmentKindLabel, getGender } from './functions';
 import { formatPatientIdentifiers } from './patient-identifiers';
 
 type UnscheduledAppointment = {
@@ -43,7 +43,8 @@ export function createAppointmentSpreadsheetRow(
       patientInfo?.identifier,
       appointment.patient.identifier,
     ),
-    [t('appointmentType', 'Appointment type')]: appointment.service?.name ?? '',
+    [t('serviceType', 'Service type')]: appointment.service?.name ?? '',
+    [t('appointmentType', 'Appointment type')]: getAppointmentKindLabel(appointment.appointmentKind, t),
     [t('responsibleProvider', 'Responsible provider')]:
       getAppointmentProviderName(appointment) ?? t('unassignedProvider', 'No provider assigned'),
     [t('appointmentDateTime', 'Appointment date and time')]: formatDatetime(new Date(appointment.startDateTime)),

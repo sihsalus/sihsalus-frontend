@@ -1,6 +1,10 @@
 import { type AppointmentArrivalRule } from '../config-schema';
 import { type AppointmentService } from '../types';
-import { filterAppointmentServicesByLocation, getAppointmentCareRoutingIssue } from './appointment-care-routing';
+import {
+  filterAppointmentLocationsByServices,
+  filterAppointmentServicesByLocation,
+  getAppointmentCareRoutingIssue,
+} from './appointment-care-routing';
 
 const service = {
   uuid: 'service-uuid',
@@ -23,6 +27,30 @@ const baseInput = {
 };
 
 describe('appointment care routing', () => {
+  it('only exposes UPSS that have an available appointment service', () => {
+    const locations = [{ uuid: 'upss-uuid' }, { uuid: 'upss-without-services' }];
+
+    expect(
+      filterAppointmentLocationsByServices({
+        enforceArrivalRouting: true,
+        locations,
+        services: [service],
+      }),
+    ).toEqual([{ uuid: 'upss-uuid' }]);
+  });
+
+  it('keeps tagged UPSS compatible when the canonical routing contract is disabled', () => {
+    const locations = [{ uuid: 'upss-uuid' }, { uuid: 'legacy-upss' }];
+
+    expect(
+      filterAppointmentLocationsByServices({
+        enforceArrivalRouting: false,
+        locations,
+        services: [{ ...service, location: undefined }],
+      }),
+    ).toEqual(locations);
+  });
+
   it('filters services by the UPSS selected first', () => {
     const otherService = {
       ...service,

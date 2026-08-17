@@ -107,6 +107,7 @@ function renderWorkspace(
       currentQueueLocationUuid: 'location-uuid',
       currentServiceQueueUuid: 'queue-uuid',
       patient: patientResult().patient,
+      requestedUpssName: 'UPSS Consulta Externa',
       requiredVisitLocation,
       selectedPatientUuid: 'patient-uuid',
     },
@@ -138,7 +139,9 @@ describe('CreateQueueEntryWorkspace2 authorization preflight', () => {
     const { launchChildWorkspace } = renderWorkspace();
 
     expect(screen.getByText('Existing visit queue form')).toBeInTheDocument();
-    expect(mocks.existingVisitForm).toHaveBeenCalledWith(expect.objectContaining({ visit: activeVisit }));
+    expect(mocks.existingVisitForm).toHaveBeenCalledWith(
+      expect.objectContaining({ requestedUpssName: 'UPSS Consulta Externa', visit: activeVisit }),
+    );
     expect(launchChildWorkspace).not.toHaveBeenCalled();
   });
 
@@ -199,7 +202,7 @@ describe('CreateQueueEntryWorkspace2 authorization preflight', () => {
     await waitFor(() =>
       expect(launchChildWorkspace).toHaveBeenCalledWith(
         'queue-patient-search-start-visit-workspace',
-        expect.objectContaining({ patientUuid: 'patient-uuid' }),
+        expect.objectContaining({ patientUuid: 'patient-uuid', requestedUpssName: 'UPSS Consulta Externa' }),
       ),
     );
   });

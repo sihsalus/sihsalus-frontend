@@ -9,6 +9,7 @@ dayjs.extend(isToday);
 
 const appointmentsSearchUrl = `${restBaseUrl}/appointments/search`;
 export const APPOINTMENT_VISIT_LINK_CONFIGURATION_MISSING = 'APPOINTMENT_VISIT_LINK_CONFIGURATION_MISSING';
+const patientAppointmentsSearchAttempts = 3;
 
 const pendingAppointmentStatuses = new Set(['requested', 'scheduled', 'waitlist']);
 
@@ -33,6 +34,55 @@ function isPendingAppointment(status: unknown) {
     .replace(/[\s_-]/g, '')
     .toLowerCase();
   return pendingAppointmentStatuses.has(normalizedStatus);
+}
+
+function isTransientAppointmentSearchError(error: unknown) {
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    return false;
+  }
+
+  const candidate = error as { status?: number; response?: { status?: number } };
+  const status = Number(candidate?.status ?? candidate?.response?.status);
+  return !Number.isFinite(status) || status === 408 || status === 425 || status === 429 || status >= 500;
+}
+
+function waitBeforeRetry(delay: number, signal: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    const handleAbort = () => {
+      globalThis.clearTimeout(timeout);
+      reject(new DOMException('The appointment search was aborted.', 'AbortError'));
+    };
+    const timeout = globalThis.setTimeout(() => {
+      signal.removeEventListener('abort', handleAbort);
+      resolve();
+    }, delay);
+    signal.addEventListener('abort', handleAbort, { once: true });
+  });
+}
+
+async function fetchPatientAppointments(patientUuid: string, startDate: string, signal: AbortSignal) {
+  for (let attempt = 1; attempt <= patientAppointmentsSearchAttempts; attempt++) {
+    try {
+      return await openmrsFetch(appointmentsSearchUrl, {
+        method: 'POST',
+        signal,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: {
+          patientUuid,
+          startDate,
+        },
+      });
+    } catch (error) {
+      if (attempt === patientAppointmentsSearchAttempts || !isTransientAppointmentSearchError(error)) {
+        throw error;
+      }
+      await waitBeforeRetry(250 * attempt, signal);
+    }
+  }
+
+  throw new Error('Patient appointment search exhausted all attempts.');
 }
 
 interface VisitAttributeSummary {
@@ -96,18 +146,7 @@ export function usePatientAppointments(patientUuid: string, startDate: string, a
     SWR isn't meant to make POST requests for data fetching. This is a consequence of the API only exposing this resource via POST.
     This works but likely isn't recommended.
   */
-  const fetcher = () =>
-    openmrsFetch(appointmentsSearchUrl, {
-      method: 'POST',
-      signal: abortController.signal,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: {
-        patientUuid: patientUuid,
-        startDate: startDate,
-      },
-    });
+  const fetcher = () => fetchPatientAppointments(patientUuid, startDate, abortController.signal);
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<AppointmentsFetchResponse, Error>(
     patientUuid ? [appointmentsSearchUrl, patientUuid, startDate] : null,

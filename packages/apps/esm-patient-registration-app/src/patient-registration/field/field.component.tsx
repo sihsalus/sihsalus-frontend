@@ -17,9 +17,10 @@ import { PhoneField } from './phone/phone-field.component';
 
 export interface FieldProps {
   name: string;
+  requiredOverride?: boolean;
 }
 
-export function Field({ name }: FieldProps) {
+export function Field({ name, requiredOverride }: FieldProps) {
   const config = getEffectiveRegistrationConfig(useConfig() as RegistrationConfig);
   if (
     !(builtInFields as ReadonlyArray<string>).includes(name) &&
@@ -71,6 +72,6 @@ export function Field({ name }: FieldProps) {
     case 'phone':
       return <PhoneField />;
     default:
-      return <CustomField name={name} />;
+      return <CustomField name={name} requiredOverride={requiredOverride} />;
   }
 }

@@ -313,6 +313,38 @@ describe('CodedPersonAttributeField', () => {
     expect(screen.queryByRole('option', { name: 'Plan de atención SIS' })).not.toBeInTheDocument();
   });
 
+  it('shows SIS as the first payer option', () => {
+    mockUseConceptAnswers.mockReturnValue({
+      data: [
+        { uuid: 'self-funded-concept', display: 'Autoseguro de salud' },
+        { uuid: 'essalud-concept', display: 'ESSALUD' },
+        { uuid: peruInsuranceSisConceptUuid, display: 'Seguro Integral de Salud (SIS)' },
+      ],
+      isLoading: false,
+      error: undefined,
+    });
+
+    render(
+      <Formik initialValues={{ attributes: {} }} onSubmit={() => {}}>
+        <Form>
+          <CodedPersonAttributeField
+            id="insuranceType"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label="Financiador"
+            customConceptAnswers={[]}
+            required={false}
+          />
+        </Form>
+      </Formik>,
+    );
+
+    const options = screen.getAllByRole('option');
+    expect(options[0]).toHaveTextContent('Select an option');
+    expect(options[1]).toHaveTextContent('Seguro Integral de Salud (SIS)');
+    expect(options[1]).toHaveValue(peruInsuranceSisConceptUuid);
+  });
+
   it('clears SIS data across payer changes and restores No consultada when SIS is selected again', async () => {
     const user = userEvent.setup();
     const insuranceType = { ...personAttributeType, uuid: peruInsuranceTypeAttributeTypeUuid };

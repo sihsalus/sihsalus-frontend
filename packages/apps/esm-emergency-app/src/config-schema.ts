@@ -1,4 +1,9 @@
 import { Type, validators } from '@openmrs/esm-framework';
+import {
+  INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_TYPE_CONCEPT_SET_UUID,
+  INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
+} from '@openmrs/esm-patient-common-lib';
 
 /**
  * Configuration schema for the Emergency module.
@@ -375,12 +380,12 @@ export const configSchema = {
     },
     insuranceTypeAttributeTypeUuid: {
       _type: Type.UUID,
-      _default: '56188294-b42c-481d-a987-4b495116c580',
+      _default: INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
       _description: 'UUID del person attribute type Tipo de Seguro de Salud (Coded → Concept)',
     },
     insuranceCodeAttributeTypeUuid: {
       _type: Type.UUID,
-      _default: '374b130f-7457-476f-87b1-f182aa77c434',
+      _default: INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID,
       _description: 'UUID del person attribute type Código de Seguro (Text)',
     },
     companionNameAttributeTypeUuid: {
@@ -450,7 +455,7 @@ export const configSchema = {
     },
     insuranceTypeConceptSetUuid: {
       _type: Type.ConceptUuid,
-      _default: '6b932638-242e-49ef-8ba7-0ae87199835c',
+      _default: INSURANCE_TYPE_CONCEPT_SET_UUID,
       _description:
         'UUID del catálogo canónico «Tipo de seguro» (pregunta coded / concept set) del que se cargan las opciones del campo Seguro.',
     },

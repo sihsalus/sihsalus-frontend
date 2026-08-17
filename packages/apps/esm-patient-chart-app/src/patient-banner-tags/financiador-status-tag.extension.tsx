@@ -1,10 +1,11 @@
 import { Tag } from '@carbon/react';
-import { useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
+import {
+  FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+  useVisitOrOfflineVisit,
+} from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-
-const FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID = '3a988e33-a6c0-4b76-b924-01abb998944b';
-const ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID = '5e13e902-2030-4f65-b9d5-9a4810c9a603';
 
 type CarbonTagType = 'green' | 'red' | 'gray';
 
@@ -75,7 +76,7 @@ const FinanciadorStatusTag: React.FC<FinanciadorStatusTagProps> = ({ patientUuid
     return null;
   }
 
-  const statusDisplay = getAttributeDisplay(findAttribute(ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID)?.value);
+  const statusDisplay = getAttributeDisplay(findAttribute(SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID)?.value);
   const tagType = getAccreditationTagType(statusDisplay);
   const statusLabel = statusDisplay ?? t('accreditationNotValidated', 'Acreditación no validada');
 

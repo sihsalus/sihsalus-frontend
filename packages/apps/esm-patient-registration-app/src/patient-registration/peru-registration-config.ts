@@ -1,3 +1,15 @@
+import {
+  ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID,
+  ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
+  SELF_FINANCED_CONCEPT_UUID,
+  SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+  SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID,
+  SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID,
+  SIS_ACCREDITATION_PENDING_CONCEPT_UUID,
+  SIS_CONCEPT_UUID,
+} from '@openmrs/esm-patient-common-lib';
 import { type FieldDefinition, type RegistrationConfig, type SectionDefinition } from '../config-schema';
 
 export const peruDniPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440001';
@@ -8,21 +20,21 @@ export const peruDiePatientIdentifierTypeUuid = '8d793bee-c2cc-11de-8d13-0010c6d
 export const peruSisIdnumregPatientIdentifierTypeUuid = '6ff8b876-0aea-4219-b03f-dfc428ae05f4';
 export const peruSisContractPatientIdentifierTypeUuid = '406574d4-396a-4787-9c4e-0bbfa30de39f';
 export const peruSisTemporaryPatientIdentifierTypeUuid = '97d1a1f2-6b38-4319-9ea2-46a8763ad671';
-export const peruInsuranceTypeAttributeTypeUuid = '56188294-b42c-481d-a987-4b495116c580';
-export const peruInsuranceCodeAttributeTypeUuid = '374b130f-7457-476f-87b1-f182aa77c434';
-export const peruInsuranceAccreditationStatusAttributeTypeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1005';
-export const peruInsuranceAccreditationCheckedAtAttributeTypeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1006';
-export const peruInsuranceAccreditationActiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2051';
-export const peruInsuranceAccreditationInactiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2052';
-export const peruInsuranceAccreditationPendingConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2053';
-export const peruInsuranceAccreditationNotConsultedConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2054';
+export const peruInsuranceTypeAttributeTypeUuid = INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID;
+export const peruInsuranceCodeAttributeTypeUuid = INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID;
+export const peruInsuranceAccreditationStatusAttributeTypeUuid = ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID;
+export const peruInsuranceAccreditationCheckedAtAttributeTypeUuid = ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID;
+export const peruInsuranceAccreditationActiveConceptUuid = SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID;
+export const peruInsuranceAccreditationInactiveConceptUuid = SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID;
+export const peruInsuranceAccreditationPendingConceptUuid = SIS_ACCREDITATION_PENDING_CONCEPT_UUID;
+export const peruInsuranceAccreditationNotConsultedConceptUuid = SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID;
 // Concepto "SIS" (respuesta del set canónico "Tipo de seguro" 6b932638-…) en sihsalus-content.
-export const peruInsuranceSisConceptUuid = '97c6e901-7570-4ab8-a9c0-9cf2b0f5bc0c';
+export const peruInsuranceSisConceptUuid = SIS_CONCEPT_UUID;
 // Concepto canónico "Particular / sin seguro" del catálogo IAFAS provisionado
 // por sihsalus-content#163, presentado al usuario como "Autofinanciamiento".
 // A diferencia de otras IAFAS, no admite número de póliza/afiliación ni datos
 // de acreditación SIS.
-export const peruInsuranceSelfFinancingConceptUuid = 'cc72568e-d0d9-46a8-a618-91f0d679f518';
+export const peruInsuranceSelfFinancingConceptUuid = SELF_FINANCED_CONCEPT_UUID;
 // Legacy concept incorrectly exposed as a top-level financer. It represents
 // the SIS plan/product question, not an IAFAS.
 export const peruLegacySisPlanConceptUuid = 'b76a9a24-4905-4132-a215-8a567281852a';

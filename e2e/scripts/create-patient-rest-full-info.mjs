@@ -1,10 +1,7 @@
-const openmrsBase = process.env.OPENMRS_BASE ?? 'https://gidis-hsc-qlty.inf.pucp.edu.pe/openmrs';
-const username = process.env.E2E_USERNAME;
-const password = process.env.E2E_PASSWORD;
+import { getE2ECredentials } from './e2e-credentials.mjs';
 
-if (!username || !password) {
-  throw new Error('E2E_USERNAME and E2E_PASSWORD are required to create a patient via REST.');
-}
+const openmrsBase = process.env.OPENMRS_BASE ?? 'https://gidis-hsc-qlty.inf.pucp.edu.pe/openmrs';
+const { username, password } = getE2ECredentials();
 
 const auth = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
 const runId = new Date().toISOString().replace(/\D/g, '').slice(4, 14);

@@ -1,14 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium, request } from '@playwright/test';
+import { getE2ECredentials } from './e2e-credentials.mjs';
 import { getOpenmrsBaseUrl, getSpaBaseUrl } from './e2e-urls.mjs';
 
 const spaBase = getSpaBaseUrl('http://localhost:8090/openmrs/spa');
-const username = process.env.E2E_USERNAME;
-const password = process.env.E2E_PASSWORD;
-if (!username || !password) {
-  throw new Error('E2E_USERNAME and E2E_PASSWORD must be configured.');
-}
+const { username, password } = getE2ECredentials();
 const openmrsBase = getOpenmrsBaseUrl('http://localhost:8090/openmrs/spa');
 const outputDir = path.resolve('e2e/screenshots');
 const screenshotPath = path.join(outputDir, 'patient-registration-concepts-after-import.png');

@@ -1,13 +1,10 @@
 import { chromium, request } from '@playwright/test';
+import { getE2ECredentials } from './e2e-credentials.mjs';
 import { getOpenmrsBaseUrl, getSpaBaseUrl } from './e2e-urls.mjs';
 
 const spaBase = getSpaBaseUrl('http://localhost:8090/openmrs/spa');
 const openmrsBase = getOpenmrsBaseUrl('http://localhost:8090/openmrs/spa');
-const username = process.env.E2E_USERNAME;
-const password = process.env.E2E_PASSWORD;
-if (!username || !password) {
-  throw new Error('E2E_USERNAME and E2E_PASSWORD must be configured.');
-}
+const { username, password } = getE2ECredentials();
 
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({

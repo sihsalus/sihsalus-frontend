@@ -10,6 +10,10 @@ export type ConditionalFieldId = 'chestCircumference' | 'headCircumference' | 'g
 
 export type VitalsBiometricsWorkspaceProfile = 'default' | 'emergency-triage';
 
+export const MUAC_MIN_CM = 6;
+export const MUAC_MAX_CM = 26;
+export const MUAC_MAX_AGE_MONTHS = 59;
+
 export interface ConditionalFieldOverrides {
   /** Force-show these fields regardless of age rules (e.g. CRED launching for a newborn) */
   showFields?: Array<ConditionalFieldId>;
@@ -72,6 +76,29 @@ export function getAgeInDays(birthDate: string | undefined, asOf: Date = new Dat
   const isDateOnly = /^\d{4}(-\d{2}){0,2}$/.test(birthDate.trim());
   const birth = isDateOnly ? new Date(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate()) : parsed;
   return Math.floor((asOf.getTime() - birth.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+export function getAgeInCompletedMonths(birthDate: string | undefined, asOf: Date = new Date()): number | null {
+  if (!birthDate) {
+    return null;
+  }
+  const parsed = new Date(birthDate);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+  const isDateOnly = /^\d{4}(-\d{2}){0,2}$/.test(birthDate.trim());
+  const birth = isDateOnly ? new Date(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate()) : parsed;
+  let months = (asOf.getFullYear() - birth.getFullYear()) * 12 + asOf.getMonth() - birth.getMonth();
+  if (asOf.getDate() < birth.getDate()) {
+    months -= 1;
+  }
+  return months;
+}
+
+/** MINSA MUAC screening applies from birth through 59 completed months. */
+export function isMuacApplicableAge(birthDate: string | undefined, asOf: Date = new Date()): boolean {
+  const ageInMonths = getAgeInCompletedMonths(birthDate, asOf);
+  return ageInMonths != null && ageInMonths >= 0 && ageInMonths <= MUAC_MAX_AGE_MONTHS;
 }
 
 export function isConditionalFieldVisible(
@@ -145,46 +172,18 @@ export function extractNumbers(str: string) {
   return parseInt(match[0], 10);
 }
 
-export function getMuacColorCode(age: number, muac: number, setColorCode: (color) => void) {
+export function getMuacColorCode(ageInMonths: number, muac: number, setColorCode: (color: string) => void) {
   switch (true) {
-    // children 5 years and below with a muac equal to 14
-    case age <= 5 && muac <= 11.5 && muac > 0:
+    case ageInMonths < 0 || ageInMonths > MUAC_MAX_AGE_MONTHS || muac <= 0:
+      setColorCode('');
+      break;
+    case muac <= 11.5:
       setColorCode('red');
       break;
-    case age < 5 && muac > 11.5 && muac < 12.5:
+    case muac < 12.5:
       setColorCode('yellow');
       break;
-    case age < 5 && muac > 12.5:
-      setColorCode('green');
-      break;
-    // above 5 but less than 10
-    case age > 5 && age < 10 && muac <= 13.5 && muac > 0:
-      setColorCode('red');
-      break;
-    case age > 5 && age < 10 && muac > 13.5 && muac < 14.5:
-      setColorCode('yellow');
-      break;
-    case age > 5 && age < 10 && muac > 14.5:
-      setColorCode('green');
-      break;
-    //above 10 but less than 18
-    case age > 10 && age < 18 && muac <= 16.5 && muac > 0:
-      setColorCode('red');
-      break;
-    case age > 10 && age < 18 && muac > 16.5 && muac < 19.0:
-      setColorCode('yellow');
-      break;
-    case age > 10 && age < 18 && muac > 19.0:
-      setColorCode('green');
-      break;
-    // above 18
-    case age > 18 && muac <= 19.5 && muac > 0:
-      setColorCode('red');
-      break;
-    case age > 18 && muac > 19.5 && muac < 22.0:
-      setColorCode('yellow');
-      break;
-    case age > 18 && muac > 22.0:
+    default:
       setColorCode('green');
       break;
   }

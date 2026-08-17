@@ -1,6 +1,7 @@
 import { type LoggedInUser, userHasAccess, useSession } from '@openmrs/esm-framework';
 import type { ReactNode } from 'react';
 import {
+  admissionPrivilege,
   serviceQueuesClearPrivilege,
   serviceQueuesEditPrivilege,
   serviceQueuesPrivilege,
@@ -48,6 +49,19 @@ function userHasAllAccess(privileges: Array<string>, user?: LoggedInUser): boole
 
 export function canEditServiceQueues(user?: LoggedInUser): boolean {
   return userHasAllAccess(queueEntryActionPrivileges, user);
+}
+
+/**
+ * Admissions can register arrivals and create queue entries, but must not
+ * perform clinical queue transitions. Users with a clinical vitals capability
+ * (including administrators) keep the queue actions granted by their native
+ * queue privileges.
+ */
+export function canTransitionServiceQueueEntries(user?: LoggedInUser): boolean {
+  const isAdmissionOnly =
+    Boolean(user) && userHasAccess(admissionPrivilege, user) && !userHasAccess(vitalsEditPrivilege, user);
+
+  return !isAdmissionOnly && canEditServiceQueues(user);
 }
 
 /**

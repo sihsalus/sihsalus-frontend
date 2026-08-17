@@ -7,6 +7,7 @@ import {
   canManageServiceQueueCatalog,
   canManageServiceQueueRoomCatalog,
   canTriageQueuePatients,
+  canTransitionServiceQueueEntries,
   canRegisterQueueCompanion,
   canSearchQueueCompanion,
   canStartQueueVisit,
@@ -56,6 +57,32 @@ describe('canEditServiceQueues', () => {
         ]),
       ),
     ).toBe(true);
+  });
+
+  it('does not allow an admission-only user to change a patient queue status', () => {
+    const admissionUser = userWithPrivileges([
+      'app:home.admision',
+      'app:home.colasAtencion.editar',
+      'Get Queue Entries',
+      'Get Queues',
+      'Manage Queue Entries',
+    ]);
+
+    expect(canEditServiceQueues(admissionUser)).toBe(true);
+    expect(canTransitionServiceQueueEntries(admissionUser)).toBe(false);
+  });
+
+  it('keeps queue transitions available to a clinically authorized user and to administrators', () => {
+    const privileges = [
+      'app:home.colasAtencion.editar',
+      'app:hoja.clinica.signosVitales.editar',
+      'Get Queue Entries',
+      'Get Queues',
+      'Manage Queue Entries',
+    ];
+
+    expect(canTransitionServiceQueueEntries(userWithPrivileges(privileges))).toBe(true);
+    expect(canTransitionServiceQueueEntries(userWithPrivileges([...privileges, 'app:home.admision']))).toBe(true);
   });
 
   it('allows clinical triage without granting administrative queue editing', () => {

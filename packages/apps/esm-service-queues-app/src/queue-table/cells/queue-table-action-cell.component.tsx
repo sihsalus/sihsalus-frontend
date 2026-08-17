@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 
 import { serviceQueuesPatientVitalsWorkspace } from '../../constants';
 import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
-import { canEditServiceQueues, canTriageQueuePatients } from '../../permissions';
+import { canTransitionServiceQueueEntries, canTriageQueuePatients } from '../../permissions';
 import {
   getAppointmentTriageConfig,
   revalidateCurrentSisState,
@@ -30,7 +30,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
   const { t } = useTranslation();
   const layout = useLayoutType();
   const session = useSession();
-  const canEdit = canEditServiceQueues(session?.user);
+  const canTransition = canTransitionServiceQueueEntries(session?.user);
   const canTriage = canTriageQueuePatients(session?.user);
   const isTriageQueue = Boolean(queueEntry.workflow?.isTriageQueue);
   const patientPerson = queueEntry.patient?.person as { dead?: boolean; deathDate?: string | null } | undefined;
@@ -139,7 +139,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
     }
   };
 
-  if (!canEdit && !canPerformTriage) {
+  if (!canTransition && !canPerformTriage) {
     return null;
   }
 
@@ -160,7 +160,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
             ? t('sendToCare', 'Enviar a atención')
             : t('performTriage', 'Realizar triaje')}
         </Button>
-      ) : canEdit && !isDeceasedPatient ? (
+      ) : canTransition && !isDeceasedPatient ? (
         <Button
           kind="ghost"
           aria-label={t('transition', 'Transition')}
@@ -175,7 +175,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
           {t('transition', 'Transition')}
         </Button>
       ) : null}
-      {canEdit && (
+      {canTransition && (
         <OverflowMenu
           aria-label={t('actions', 'Actions')}
           iconDescription={t('actions', 'Actions')}

@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-reports-app",
-  "version": "1.0.0-alpha",
+  "version": "1.0.9",
   "license": "MPL-2.0",
   "description": "Reports admin dashboard for 03",
   "browser": "dist/openmrs-esm-reports-app.js",

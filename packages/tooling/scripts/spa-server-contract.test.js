@@ -20,6 +20,19 @@ test('keeps the nginx SPA fallback and static-asset policy aligned', () => {
   assert.doesNotMatch(config, /try_files[^;]* \/index\.html;/);
 });
 
+test('absolutizes the social preview tags with the request host', () => {
+  const config = readFileSync(resolve(workspaceRoot, 'nginx.spa.conf'), 'utf8');
+  const subFilterMatches =
+    config.match(/sub_filter 'content="\/openmrs\/spa' 'content="https:\/\/\$host\/openmrs\/spa';/g) ?? [];
+
+  assert.equal(subFilterMatches.length, 2, 'both index-serving locations must rewrite the social preview URLs');
+  assert.equal((config.match(/sub_filter_once off;/g) ?? []).length, 2);
+  assert.ok(
+    config.indexOf('location /openmrs/ {') > config.lastIndexOf('sub_filter'),
+    'the backend proxy location must not rewrite proxied responses',
+  );
+});
+
 test('copies the SPA assembly module boundary into both init images', () => {
   const dockerfile = readFileSync(resolve(workspaceRoot, 'Dockerfile'), 'utf8');
   const scriptDirectoryCopies =

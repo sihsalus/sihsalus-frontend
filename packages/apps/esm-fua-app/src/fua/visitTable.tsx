@@ -324,10 +324,6 @@ const VisitTable: React.FC = () => {
         return;
       }
 
-      if (info.hasGeneratedFua) {
-        return;
-      }
-
       if (info.accreditation.isVigente) {
         void handleGenerateFua(visitUuid);
         return;
@@ -368,7 +364,7 @@ const VisitTable: React.FC = () => {
       for (const visitUuid of selectedVisitUuids) {
         const info = infoByRowId.get(visitUuid);
 
-        if (info?.isSis && info.accreditation.isVigente && !info.hasGeneratedFua) {
+        if (info?.isSis && info.accreditation.isVigente) {
           eligibleVisitUuids.push(visitUuid);
         } else {
           excludedVisits.push({
@@ -594,7 +590,7 @@ const VisitTable: React.FC = () => {
                         <RequirePrivilege privilege={fuaManagePrivilege} hideUnauthorized>
                           <TableSelectRow
                             {...getSelectionProps({ row })}
-                            disabled={isBulkGenerating || !rowInfo?.isSis || rowInfo?.hasGeneratedFua}
+                            disabled={isBulkGenerating || !rowInfo?.isSis}
                           />
                         </RequirePrivilege>
                       ) : null}
@@ -609,8 +605,6 @@ const VisitTable: React.FC = () => {
                                         'fuaOnlyForSisVisits',
                                         'El FUA solo aplica a visitas con financiador SIS. Esta visita tiene otro financiador o no lo tiene registrado.',
                                       )
-                                    : rowInfo?.hasGeneratedFua
-                                      ? t('fuaAlreadyGenerated', 'Esta visita ya tiene FUA generado.')
                                     : undefined
                                 }
                               >
@@ -622,7 +616,6 @@ const VisitTable: React.FC = () => {
                                   disabled={
                                     !cell.value ||
                                     !rowInfo?.isSis ||
-                                    rowInfo?.hasGeneratedFua ||
                                     generatingVisitUuid === cell.value ||
                                     isBulkGenerating
                                   }

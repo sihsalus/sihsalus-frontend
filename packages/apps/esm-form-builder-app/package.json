@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-form-builder-app",
-  "version": "1.0.0-alpha",
+  "version": "1.0.9",
   "license": "MPL-2.0",
   "description": "Form Builder for O3",
   "browser": "dist/openmrs-esm-form-builder-app.js",

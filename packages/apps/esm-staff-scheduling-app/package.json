@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-staff-scheduling-app",
-  "version": "1.0.0-alpha",
+  "version": "1.0.9",
   "license": "MPL-2.0",
   "description": "Resource and staff shift scheduling microfrontend for SIHSALUS",
   "browser": "dist/sihsalus-esm-staff-scheduling-app.js",

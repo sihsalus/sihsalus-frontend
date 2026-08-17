@@ -30,6 +30,7 @@
   "discard": "Discard",
   "error": "Error",
   "errorFetchingWeight": "Error loading weight",
+  "expectedRange": "Expected range",
   "exitFullscreen": "Exit fullscreen",
   "exportAsCSV": "Export to CSV",
   "exportAsPNG": "Export to PNG",

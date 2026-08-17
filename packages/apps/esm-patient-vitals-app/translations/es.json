@@ -33,6 +33,7 @@
   "discard": "Descartar",
   "error": "Error",
   "errorFetchingWeight": "Error al cargar peso",
+  "expectedRange": "Rango esperado",
   "exitFullscreen": "Salir de pantalla completa",
   "exportAsCSV": "Exportar a CSV",
   "exportAsPNG": "Exportar a PNG",

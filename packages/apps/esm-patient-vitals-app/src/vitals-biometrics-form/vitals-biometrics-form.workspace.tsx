@@ -53,6 +53,7 @@ import {
   getMuacColorCode,
   isConditionalFieldVisible,
   isValueWithinReferenceRange,
+  mergeReferenceRanges,
   type VitalsBiometricsWorkspaceProfile,
 } from './vitals-biometrics-form.utils';
 import VitalsAndBiometricsInput from './vitals-biometrics-input.component';
@@ -524,7 +525,10 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
 
   const getPatientReferenceRange = useCallback(
     (conceptUuid: string) =>
-      patientReferenceRanges.get(conceptUuid) ?? getReferenceRangesForConcept(conceptUuid, conceptMetadata),
+      mergeReferenceRanges(
+        getReferenceRangesForConcept(conceptUuid, conceptMetadata),
+        patientReferenceRanges.get(conceptUuid),
+      ),
     [conceptMetadata, patientReferenceRanges],
   );
 
@@ -906,6 +910,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                 showErrorMessage={showErrorMessage}
                 showRequiredIndicator={workspaceProfile === 'emergency-triage'}
                 label={t('temperature', 'Temperature')}
+                referenceRanges={[{ range: getPatientReferenceRange(config.concepts.temperatureUuid) }]}
                 unitSymbol={conceptUnits.get(config.concepts.temperatureUuid) ?? ''}
               />
             </Column>
@@ -968,6 +973,16 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                 showErrorMessage={showErrorMessage}
                 showRequiredIndicator={workspaceProfile === 'emergency-triage'}
                 label={t('bloodPressure', 'Blood pressure')}
+                referenceRanges={[
+                  {
+                    label: t('systolic', 'systolic'),
+                    range: getPatientReferenceRange(config.concepts.systolicBloodPressureUuid),
+                  },
+                  {
+                    label: t('diastolic', 'diastolic'),
+                    range: getPatientReferenceRange(config.concepts.diastolicBloodPressureUuid),
+                  },
+                ]}
                 unitSymbol={conceptUnits.get(config.concepts.systolicBloodPressureUuid) ?? ''}
               />
             </Column>
@@ -997,6 +1012,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   )
                 }
                 label={t('heartRate', 'Heart rate')}
+                referenceRanges={[{ range: getPatientReferenceRange(config.concepts.pulseUuid) }]}
                 showRequiredIndicator={workspaceProfile === 'emergency-triage'}
                 showErrorMessage={showErrorMessage}
                 unitSymbol={conceptUnits.get(config.concepts.pulseUuid) ?? ''}
@@ -1031,6 +1047,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                 showErrorMessage={showErrorMessage}
                 showRequiredIndicator={workspaceProfile === 'emergency-triage'}
                 label={t('respirationRate', 'Respiration rate')}
+                referenceRanges={[{ range: getPatientReferenceRange(config.concepts.respiratoryRateUuid) }]}
                 unitSymbol={conceptUnits.get(config.concepts.respiratoryRateUuid) ?? ''}
               />
             </Column>
@@ -1063,6 +1080,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                 showErrorMessage={showErrorMessage}
                 showRequiredIndicator={workspaceProfile === 'emergency-triage'}
                 label={t('spo2', 'SpO2')}
+                referenceRanges={[{ range: getPatientReferenceRange(config.concepts.oxygenSaturationUuid) }]}
                 unitSymbol={conceptUnits.get(config.concepts.oxygenSaturationUuid) ?? ''}
               />
             </Column>

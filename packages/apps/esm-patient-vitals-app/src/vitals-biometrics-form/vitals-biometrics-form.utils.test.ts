@@ -4,6 +4,7 @@ import {
   getAgeInDays,
   getMuacColorCode,
   isConditionalFieldVisible,
+  mergeReferenceRanges,
   validateClinicalNumberInput,
 } from './vitals-biometrics-form.utils';
 
@@ -53,6 +54,33 @@ describe('validateClinicalNumberInput', () => {
   it('marks values outside configured clinical ranges', () => {
     expect(validateClinicalNumberInput('251', { min: 0, max: 250 }).isOutOfRange).toBe(true);
     expect(validateClinicalNumberInput('80', { min: 0, max: 250 }).isInvalid).toBe(false);
+  });
+});
+
+describe('mergeReferenceRanges', () => {
+  it('fills missing patient limits with the general concept ranges', () => {
+    expect(
+      mergeReferenceRanges(
+        { lowNormal: 36, hiNormal: 37.5, lowAbsolute: 30, hiAbsolute: 45 },
+        { lowNormal: undefined, hiNormal: undefined, lowAbsolute: 35, hiAbsolute: 42 },
+      ),
+    ).toEqual({
+      lowNormal: 36,
+      hiNormal: 37.5,
+      lowAbsolute: 35,
+      hiAbsolute: 42,
+      lowCritical: undefined,
+      hiCritical: undefined,
+    });
+  });
+
+  it('prefers the patient-specific normal range when available', () => {
+    expect(
+      mergeReferenceRanges(
+        { lowNormal: 36, hiNormal: 37.5 },
+        { lowNormal: 36.5, hiNormal: 37.2 },
+      ),
+    ).toMatchObject({ lowNormal: 36.5, hiNormal: 37.2 });
   });
 });
 

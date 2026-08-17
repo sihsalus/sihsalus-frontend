@@ -37,6 +37,28 @@ export function validateClinicalNumberInput(
   return validatePlainNumberInput(value, { ...constraints, nonNegative: true });
 }
 
+export function mergeReferenceRanges(
+  fallbackRange: ObsReferenceRanges | undefined,
+  patientRange: ObsReferenceRanges | undefined,
+): ObsReferenceRanges | undefined {
+  if (!patientRange) {
+    return fallbackRange;
+  }
+
+  if (!fallbackRange) {
+    return patientRange;
+  }
+
+  return {
+    hiAbsolute: patientRange.hiAbsolute ?? fallbackRange.hiAbsolute,
+    hiCritical: patientRange.hiCritical ?? fallbackRange.hiCritical,
+    hiNormal: patientRange.hiNormal ?? fallbackRange.hiNormal,
+    lowAbsolute: patientRange.lowAbsolute ?? fallbackRange.lowAbsolute,
+    lowCritical: patientRange.lowCritical ?? fallbackRange.lowCritical,
+    lowNormal: patientRange.lowNormal ?? fallbackRange.lowNormal,
+  };
+}
+
 export function getAgeInDays(birthDate: string | undefined, asOf: Date = new Date()): number | null {
   if (!birthDate) {
     return null;

@@ -16,7 +16,7 @@ import {
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
-import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
+import { formatPersonName, getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -225,7 +225,7 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
   ]);
 
   const patientToDisplay = patient ?? searchedPatient;
-  const patientName = patientToDisplay && getPatientName(patientToDisplay);
+  const patientName = patientToDisplay && formatPersonName(getPatientName(patientToDisplay));
 
   return (
     <Workspace2 title={t('addPatientToQueue', 'Add patient to queue')}>

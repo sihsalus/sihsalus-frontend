@@ -7685,6 +7685,7 @@ __metadata:
   dependencies:
     "@carbon/react": "npm:^1.71.0"
     "@openmrs/esm-patient-common-lib": "workspace:*"
+    "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     classnames: "npm:^2.3.2"
     lodash-es: "npm:^4.17.15"

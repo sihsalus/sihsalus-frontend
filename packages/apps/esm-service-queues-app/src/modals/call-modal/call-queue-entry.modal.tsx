@@ -1,5 +1,6 @@
 import { Button, ModalBody, ModalFooter, ModalHeader, Tag } from '@carbon/react';
 import { getUserFacingErrorMessage, navigate, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { formatPersonName } from '@openmrs/esm-utils';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
@@ -115,7 +116,7 @@ const CallQueueEntryModal: React.FC<CallQueueEntryModalProps> = ({ closeModal, q
         <div>
           <section className={styles.modalBody}>
             <p className={styles.p}>
-              {t('patientName', 'Patient name')}: &nbsp; {mappedQueueEntry.name}
+              {t('patientName', 'Patient name')}: &nbsp; {formatPersonName(mappedQueueEntry.name)}
             </p>
             {preferredIdentifiers?.length
               ? preferredIdentifiers.map((identifier) => (

@@ -29,6 +29,7 @@ import {
   useConfig,
   usePagination,
 } from '@openmrs/esm-framework';
+import { formatPersonName } from '@openmrs/esm-utils';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -157,7 +158,7 @@ const AppointmentsTable: React.FC = () => {
       name: {
         content: (
           <ConfigurableLink to={`${globalThis.spaBase}/patient/${appointment.patient.uuid}/chart`}>
-            {appointment.patient.name}
+            {formatPersonName(appointment.patient.name)}
           </ConfigurableLink>
         ),
       },

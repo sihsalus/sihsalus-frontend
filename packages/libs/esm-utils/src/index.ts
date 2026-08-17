@@ -1,6 +1,7 @@
 /// <reference path="./intl-durationformat.d.ts" />
 export * from './age-helpers';
 export * from './dates';
+export * from './display-text';
 export * from './get-locale';
 export * from './identifiers';
 export * from './is-online';

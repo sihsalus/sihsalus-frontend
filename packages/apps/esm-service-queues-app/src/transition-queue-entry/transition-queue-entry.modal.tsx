@@ -1,5 +1,6 @@
 import { Button, ModalBody, ModalFooter, ModalHeader, Tag } from '@carbon/react';
 import { getUserFacingErrorMessage, navigate, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { formatPersonName } from '@openmrs/esm-utils';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -137,7 +138,7 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ c
         <div>
           <section className={styles.modalBody}>
             <p className={styles.p}>
-              {t('patientName', 'Patient name')} : &nbsp; {queueEntry?.name}
+              {t('patientName', 'Patient name')} : &nbsp; {formatPersonName(queueEntry?.name)}
             </p>
             {preferredIdentifiers?.length
               ? preferredIdentifiers.map((identifier) => (

@@ -18,7 +18,7 @@ import {
   getSisFinancingState,
   safeCopyFinanciadorToVisit,
 } from '@openmrs/esm-patient-common-lib';
-import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
+import { formatPersonName, getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -930,7 +930,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       <ModalHeader closeModal={closeModal} title={t('arrivalModalTitle', 'Registrar llegada')} />
       <ModalBody>
         <div className={styles.appointmentSummary}>
-          <p className={styles.patientName}>{appointment.patient.name}</p>
+          <p className={styles.patientName}>{formatPersonName(appointment.patient.name)}</p>
           <p className={styles.appointmentDetails}>
             {appointment.service?.name}
             {' · '}

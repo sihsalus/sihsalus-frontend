@@ -1,4 +1,5 @@
 import { fetchCurrentPatient, formatDatetime, getConfig } from '@openmrs/esm-framework';
+import { formatPersonName } from '@openmrs/esm-utils';
 import type { CellValue, Workbook } from 'exceljs';
 import type { TFunction } from 'i18next';
 
@@ -35,7 +36,7 @@ export function createAppointmentSpreadsheetRow(
   t: TFunction,
 ): Record<string, string | number> {
   return {
-    [t('patientName', 'Patient name')]: appointment.patient.name,
+    [t('patientName', 'Patient name')]: formatPersonName(appointment.patient.name),
     [t('gender', 'Gender')]: getGender(appointment.patient.gender ?? '', t),
     [t('age', 'Age')]: appointment.patient.age ?? '',
     [t('patientIdentifiers', 'Patient identifiers')]: formatPatientIdentifiers(
@@ -102,7 +103,7 @@ export function exportUnscheduledAppointmentsToSpreadsheet(
   fileName = `${t('unscheduledAppointments', 'Unscheduled appointments')}.xlsx`,
 ): Promise<void> {
   const appointmentsJSON = unscheduledAppointments?.map((appointment) => ({
-    [t('patientName', 'Patient name')]: appointment.name,
+    [t('patientName', 'Patient name')]: formatPersonName(appointment.name),
     [t('gender', 'Gender')]: getGender(appointment.gender ?? '', t),
     [t('age', 'Age')]: appointment.age ?? '',
     [t('phoneNumber', 'Phone number')]: appointment.phoneNumber ?? '--',

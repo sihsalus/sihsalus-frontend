@@ -8,6 +8,7 @@
  * requieren verificación de acreditación.
  */
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { formatPersonName } from '@openmrs/esm-utils';
 import {
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
   getSisFinancingState,
@@ -203,7 +204,7 @@ export function filterPendingSisVisits(
     pendingVisits.push({
       visitUuid: visit.uuid,
       patientUuid: visit.patient?.uuid ?? '',
-      patientName: visit.patient?.display ?? '--',
+      patientName: formatPersonName(visit.patient?.display) || '--',
       identifier: getDisplayIdentifier(visit.patient?.identifiers ?? [], config.dniIdentifierTypeUuid),
       startDatetime: visit.startDatetime ?? null,
       location: visit.location?.display ?? '--',

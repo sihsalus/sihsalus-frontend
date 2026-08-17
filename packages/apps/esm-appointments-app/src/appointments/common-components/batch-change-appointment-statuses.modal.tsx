@@ -16,6 +16,7 @@ import {
   showSnackbar,
   useLayoutType,
 } from '@openmrs/esm-framework';
+import { formatPersonName } from '@openmrs/esm-utils';
 import React, { useCallback, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useMutateAppointments } from '../../form/appointments-form.resource';
@@ -95,7 +96,7 @@ const BatchChangeAppointmentStatusesModal: React.FC<BatchChangeAppointmentStatus
                   t(
                     'appointmentsUpdateFailedSafeMessage',
                     'No se pudo actualizar la cita de {{patient}}. Revise su estado e intente nuevamente.',
-                    { patient: appointment.patient.name },
+                    { patient: formatPersonName(appointment.patient.name) },
                   ),
                   {
                     codeMessages: {
@@ -136,12 +137,12 @@ const BatchChangeAppointmentStatusesModal: React.FC<BatchChangeAppointmentStatus
                 <Trans
                   i18nKey="appointmentDisplay"
                   values={{
-                    patientName: appointment.patient.name,
+                    patientName: formatPersonName(appointment.patient.name),
                     serviceName: appointment.service.name,
                     currentStatus: getAppointmentStatusLabel(appointment.status, t),
                   }}
                 >
-                  <strong>{appointment.patient.name}</strong> - {appointment.service.name} -{' '}
+                  <strong>{formatPersonName(appointment.patient.name)}</strong> - {appointment.service.name} -{' '}
                   {getAppointmentStatusLabel(appointment.status, t)}
                 </Trans>
               </li>

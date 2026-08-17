@@ -35,6 +35,7 @@ import {
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
+import { formatPersonName } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
@@ -230,10 +231,10 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
         to={customPatientChartUrl}
         templateParams={{ patientUuid: appointment.patient.uuid }}
       >
-        {appointment.patient.name}
+        {formatPersonName(appointment.patient.name)}
       </ConfigurableLink>
     ) : (
-      appointment.patient.name
+      formatPersonName(appointment.patient.name)
     ),
     nextAppointmentDate: '--',
     identifier: resolvedDocumentIdentifiers.get(appointment.uuid) || '-',

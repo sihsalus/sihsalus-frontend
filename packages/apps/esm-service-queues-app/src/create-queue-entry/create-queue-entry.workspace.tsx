@@ -13,6 +13,7 @@ import {
   useSession,
   useVisit,
 } from '@openmrs/esm-framework';
+import { formatPersonName } from '@openmrs/esm-utils';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -63,7 +64,7 @@ const CreateQueueEntryWorkspace: React.FC<PatientSearchProps> = ({
     setShowContactDetails((value) => !value);
   }, []);
 
-  const patientName = patient && getPatientName(patient);
+  const patientName = patient && formatPersonName(getPatientName(patient));
   const needsNewVisit = Boolean(selectedPatientUuid && !isLoading && !error && !activeVisit && requiredVisitLocation);
   const startVisitPreflightState = getQueueVisitStartPreflightState({
     birthDate: patient?.birthDate,

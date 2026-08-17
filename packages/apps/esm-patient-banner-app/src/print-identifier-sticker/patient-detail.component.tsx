@@ -1,4 +1,5 @@
 import { age, type CoreTranslationKey, getCoreTranslation, getPatientName, useConfig } from '@openmrs/esm-framework';
+import { formatPersonName } from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,7 +19,7 @@ export const PatientName: React.FC<PatientDetailProps> = ({ patient }) => {
       <span>
         <strong className={styles.strong}>{t('patientNameWithSeparator', 'Patient name:')}</strong>
       </span>
-      <span className={styles.patientDetail}>{getPatientName(patient)}</span>
+      <span className={styles.patientDetail}>{formatPersonName(getPatientName(patient))}</span>
     </div>
   );
 };

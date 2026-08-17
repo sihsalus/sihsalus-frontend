@@ -43,8 +43,12 @@ const IdentifierInput: React.FC<IdentifierInputProps> = ({ patientIdentifier, fi
       ? t('foreignIdentityCardLabel', 'Identity card issued by country of origin')
       : identifierName;
   const manualEntryEnabled = selectedSource?.autoGenerationOption?.manualEntryEnabled;
+  // Protect an already assigned medical record number during edits. New
+  // registrations must keep the normal source/auto-generation behavior so
+  // Formik can request a number from the backend instead of treating a blank,
+  // disabled required field as invalid.
   const isSystemManagedMedicalRecord =
-    patientIdentifier.identifierTypeUuid === openmrsMedicalRecordIdentifierTypeUuid;
+    patientIdentifier.identifierTypeUuid === openmrsMedicalRecordIdentifierTypeUuid && Boolean(initialValue);
   const requiredForRegistration =
     required || defaultPatientIdentifierTypes?.includes(patientIdentifier.identifierTypeUuid);
   const [hideInputField, setHideInputField] = useState(

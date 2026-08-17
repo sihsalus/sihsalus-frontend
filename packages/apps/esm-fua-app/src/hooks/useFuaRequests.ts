@@ -92,7 +92,7 @@ export function revalidateFuaRequestCaches() {
  *   for newOrdersOnly).
  */
 export function useFuaRequests(params: Partial<UseFuaRequestsParams> = useFuaRequestsDefaultParams) {
-  const { status, newOrdersOnly } = { ...useFuaRequestsDefaultParams, ...params };
+  const { status, newOrdersOnly, excludeCanceled } = { ...useFuaRequestsDefaultParams, ...params };
   const { dateRange } = useAppContext<DateFilterContext>('fua-date-filter') ?? {
     dateRange: [dayjs().startOf('day').toDate(), new Date()],
   };
@@ -117,9 +117,11 @@ export function useFuaRequests(params: Partial<UseFuaRequestsParams> = useFuaReq
   const allOrders = normalizeFuaRequestsPayload(data?.data);
 
   // newOrdersOnly: only FUAs without an assigned estado (just generated)
-  const filteredOrders = allOrders.filter(
-    (order) => !newOrdersOnly || order?.fuaEstado === null || order?.fuaEstado === undefined,
-  );
+  const filteredOrders = allOrders.filter((order) => {
+    const isNewOrder = order?.fuaEstado === null || order?.fuaEstado === undefined;
+    const isCanceled = order?.fuaEstado?.nombre === 'Cancelado';
+    return (!newOrdersOnly || isNewOrder) && (!excludeCanceled || !isCanceled);
+  });
 
   return {
     fuaOrders: filteredOrders,

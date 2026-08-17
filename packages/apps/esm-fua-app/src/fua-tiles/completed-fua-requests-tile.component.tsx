@@ -1,16 +1,16 @@
 import { useTranslation } from 'react-i18next';
 
 import FuaSummaryTile from '../components/summary-tiles/summary-tile.component';
-import { useFuaRequests } from '../hooks/useFuaRequests';
+import useFuaFormats from '../hooks/useFuaFormats';
 
 const CompletedFuaRequestsTile = () => {
   const { t } = useTranslation();
-  const { fuaOrders } = useFuaRequests({ status: 'COMPLETED', excludeCanceled: false });
+  const { fuaFormats } = useFuaFormats();
 
   return (
     <FuaSummaryTile
       label={t('completed', 'Lista de Formatos FUA')}
-      value={fuaOrders?.length}
+      value={fuaFormats?.length}
       headerLabel={t('completedHeader', 'Lista de Formatos FUA')}
     />
   );

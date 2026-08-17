@@ -52,13 +52,7 @@ const FuaFormatTable: React.FC = () => {
     }
 
     const search = searchString.toLowerCase();
-    return fuaFormats.filter(
-      (format) =>
-        format.uuid?.toLowerCase().includes(search) ||
-        format.codeName?.toLowerCase().includes(search) ||
-        format.createdAt?.toLowerCase().includes(search) ||
-        format.updatedAt?.toLowerCase().includes(search),
-    );
+    return fuaFormats.filter((format) => format.codeName?.toLowerCase().includes(search));
   }, [fuaFormats, searchString]);
 
   const pageSizes = [10, 20, 30, 40, 50];

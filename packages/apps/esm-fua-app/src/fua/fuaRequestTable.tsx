@@ -3,8 +3,6 @@ import {
   DataTable,
   DataTableSkeleton,
   Layer,
-  OverflowMenu,
-  OverflowMenuItem,
   Pagination,
   Table,
   TableBody,
@@ -25,18 +23,19 @@ import {
   formatDate,
   getUserFacingErrorMessage,
   openmrsFetch,
+  restBaseUrl,
   showModal,
   showSnackbar,
   usePagination,
 } from '@openmrs/esm-framework';
-import { RequirePrivilege } from '@sihsalus/esm-rbac';
+import { getPreferredIdentifier } from '@openmrs/esm-utils';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import useSWR from 'swr';
 
-import { fuaUpdatePrivilege, ModuleFuaRestURL } from '../constant';
-import useFuaRequests, { type FuaRequest, revalidateFuaRequestCaches, setFuaEstado } from '../hooks/useFuaRequests';
-import { useVisit } from '../hooks/useVisit';
-import { FUA_ESTADOS } from '../modals/change-fua-status.modal';
+import { ModuleFuaRestURL } from '../constant';
+import useFuaRequests, { type FuaRequest } from '../hooks/useFuaRequests';
+import type { VisitPatientInfo } from '../hooks/useVisit';
 import { exportFuasToExcel } from '../utils/fua-export';
 import { loadSafeFuaHtmlInWindow } from '../utils/safe-fua-html';
 
@@ -69,15 +68,18 @@ const estadoTagType: Record<string, TagType> = {
   Cancelado: 'magenta',
 };
 
+interface FuaRequestPatientInfo {
+  display: string;
+  identifier: string | null;
+  searchableText: string;
+}
+
 interface FuaActionsCellProps {
   fuaRequest: FuaRequest;
   onView: (fuaRequest: FuaRequest) => void;
   onViewHistory: (fuaRequest: FuaRequest) => void;
   onDownload: (fuaRequest: FuaRequest) => void;
   isDownloading: boolean;
-  onChangeStatus: (fuaRequest: FuaRequest) => void;
-  onResend: (fuaRequest: FuaRequest) => void;
-  onCancel: (fuaRequest: FuaRequest) => void;
   t: (key: string, defaultValue: string) => string;
 }
 
@@ -87,9 +89,6 @@ const FuaActionsCell: React.FC<FuaActionsCellProps> = ({
   onViewHistory,
   onDownload,
   isDownloading,
-  onChangeStatus,
-  onResend,
-  onCancel,
   t,
 }) => (
   <div className={styles.actionsCell}>
@@ -122,37 +121,59 @@ const FuaActionsCell: React.FC<FuaActionsCellProps> = ({
       onClick={() => onDownload(fuaRequest)}
       tooltipPosition="left"
     />
-    <RequirePrivilege privilege={fuaUpdatePrivilege} hideUnauthorized>
-      <OverflowMenu size="sm" flipped ariaLabel={t('actions', 'Acciones')}>
-        <OverflowMenuItem itemText={t('changeStatus', 'Cambiar Estado')} onClick={() => onChangeStatus(fuaRequest)} />
-        {fuaRequest?.fuaEstado?.nombre === FUA_ESTADOS.RECHAZADO.nombre && (
-          <OverflowMenuItem itemText={t('resend', 'Reenviar a SETI-SIS')} onClick={() => onResend(fuaRequest)} />
-        )}
-        <OverflowMenuItem
-          itemText={t('cancelFua', 'Cancelar FUA')}
-          onClick={() => onCancel(fuaRequest)}
-          isDelete
-          hasDivider
-        />
-      </OverflowMenu>
-    </RequirePrivilege>
   </div>
 );
 
-/** Resolves visitUuid -> patient name + preferred identity document inline with SWR */
-const PatientCell: React.FC<{ visitUuid: string }> = ({ visitUuid }) => {
-  const { patient, patientIdentifier, isLoading } = useVisit(visitUuid);
-  if (isLoading) return <span>—</span>;
-  if (!patient) return <span title={visitUuid}>—</span>;
+async function fetchFuaRequestPatients(_key: string, visitUuids: Array<string>) {
+  const patientEntries = await Promise.all(
+    visitUuids.map(async (visitUuid) => {
+      const response = await openmrsFetch<{ patient: VisitPatientInfo }>(
+        `${restBaseUrl}/visit/${visitUuid}?v=custom:(patient:(display,identifiers:(identifier,identifierType:(display))))`,
+      );
+      const patient = response.data?.patient;
+      const identifier = getPreferredIdentifier(patient?.identifiers ?? [])?.identifier ?? null;
+      const searchableText = [patient?.display, identifier].filter(Boolean).join(' ').toLowerCase();
+
+      return [
+        visitUuid,
+        {
+          display: patient?.display ?? '',
+          identifier,
+          searchableText,
+        },
+      ] as const;
+    }),
+  );
+
+  return new Map<string, FuaRequestPatientInfo>(patientEntries);
+}
+
+const PatientCell: React.FC<{ visitUuid: string; patientInfo?: FuaRequestPatientInfo }> = ({ visitUuid, patientInfo }) => {
+  if (!patientInfo) {
+    return <span>—</span>;
+  }
+
+  if (!patientInfo.display) {
+    return <span title={visitUuid}>—</span>;
+  }
+
   return (
     <div>
-      <div>{patient.display}</div>
-      {patientIdentifier && (
-        <div style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)' }}>{patientIdentifier}</div>
-      )}
+      <div>{patientInfo.display}</div>
+      {patientInfo.identifier ? (
+        <div style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)' }}>{patientInfo.identifier}</div>
+      ) : null}
     </div>
   );
 };
+
+function getFuaRequestRowId(request: FuaRequest, index: number) {
+  return request.uuid || request.visitUuid || String(index);
+}
+
+function getPatientCellValue(patientInfo?: FuaRequestPatientInfo) {
+  return [patientInfo?.display, patientInfo?.identifier].filter(Boolean).join(' ') || '—';
+}
 
 const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' }) => {
   const { t } = useTranslation();
@@ -164,19 +185,22 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
 
   const [searchString, setSearchString] = useState('');
   const [downloadingVisitUuids, setDownloadingVisitUuids] = useState<ReadonlySet<string>>(new Set());
+  const visitUuids = useMemo(
+    () => Array.from(new Set((fuaOrders ?? []).map((request) => request.visitUuid).filter(Boolean))).sort(),
+    [fuaOrders],
+  );
+  const { data: patientInfoByVisitUuid } = useSWR(
+    visitUuids.length > 0 ? ['fua-request-patients', visitUuids] : null,
+    ([key, uuids]) => fetchFuaRequestPatients(key, uuids),
+  );
 
   const filteredData = useMemo(() => {
     if (!fuaOrders) return [];
     if (!searchString) return fuaOrders;
-    const search = searchString.toLowerCase();
-    return fuaOrders.filter(
-      (req) =>
-        req.name?.toLowerCase().includes(search) ||
-        req.uuid?.toLowerCase().includes(search) ||
-        req.numeroFua?.toLowerCase().includes(search) ||
-        req.fuaEstado?.nombre?.toLowerCase().includes(search),
-    );
-  }, [fuaOrders, searchString]);
+    if (!patientInfoByVisitUuid) return fuaOrders;
+    const search = searchString.toLowerCase().trim();
+    return fuaOrders.filter((req) => patientInfoByVisitUuid.get(req.visitUuid)?.searchableText.includes(search));
+  }, [fuaOrders, patientInfoByVisitUuid, searchString]);
 
   const pageSizes = [10, 20, 30, 40, 50];
   const [currentPageSize, setPageSize] = useState(10);
@@ -290,50 +314,12 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
     [t],
   );
 
-  const handleChangeStatus = useCallback((fuaRequest: FuaRequest) => {
-    const dispose = showModal('change-fua-status-modal', {
-      fuaRequest,
-      onStatusChanged: () => revalidateFuaRequestCaches(),
-      closeModal: () => dispose(),
-    });
-  }, []);
-
-  const handleCancelFua = useCallback((fuaRequest: FuaRequest) => {
-    const dispose = showModal('cancel-fua-modal', {
-      fuaRequest,
-      onCancelled: () => revalidateFuaRequestCaches(),
-      closeModal: () => dispose(),
-    });
-  }, []);
-
   const handleViewHistorial = useCallback((fuaRequest: FuaRequest) => {
     const dispose = showModal('fua-historial-modal', {
       fuaRequest,
       closeModal: () => dispose(),
     });
   }, []);
-
-  const handleReenviar = useCallback(
-    async (fuaRequest: FuaRequest) => {
-      const abortController = new AbortController();
-      try {
-        await setFuaEstado(fuaRequest.id, FUA_ESTADOS.PENDIENTE.id, abortController);
-        mutate();
-        showSnackbar({
-          kind: 'success',
-          title: t('success', 'Éxito'),
-          subtitle: t('fuaReset', 'FUA devuelto a Pendiente para corrección'),
-        });
-      } catch {
-        showSnackbar({
-          kind: 'error',
-          title: t('error', 'Error'),
-          subtitle: t('errorChangingStatus', 'Ocurrió un error al cambiar el estado del FUA'),
-        });
-      }
-    },
-    [mutate, t],
-  );
 
   const handleExport = useCallback(() => {
     void exportFuasToExcel(filteredData);
@@ -345,16 +331,16 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
 
   const headers = [
     { key: 'patient', header: t('patient', 'Paciente') },
-    { key: 'fechaActualizacion', header: t('fuaUpdatedAt', 'Fecha de Actualización') },
     { key: 'estado', header: t('status', 'Estado') },
     { key: 'fechaCreacion', header: t('creationDate', 'Fecha de Creación') },
+    { key: 'fechaActualizacion', header: t('fuaUpdatedAt', 'Fecha de Actualización') },
     { key: 'actions', header: t('actions', 'Acciones') },
   ];
 
   const rows =
     results?.map((request: FuaRequest, index: number) => ({
-      id: String(index),
-      patient: request.visitUuid,
+      id: getFuaRequestRowId(request, index),
+      patient: getPatientCellValue(patientInfoByVisitUuid?.get(request.visitUuid)),
       fechaActualizacion: request.fechaActualizacion
         ? formatDate(new Date(request.fechaActualizacion), { mode: 'standard' })
         : 'N/A',
@@ -362,6 +348,11 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
       fechaCreacion: formatDate(new Date(request.fechaCreacion), { mode: 'standard' }),
       actions: request,
     })) ?? [];
+
+  const requestByRowId = useMemo(
+    () => new Map(results?.map((request, index) => [getFuaRequestRowId(request, index), request]) ?? []),
+    [results],
+  );
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" showHeader={false} showToolbar={false} />;
@@ -412,14 +403,21 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row, rowIndex) => {
-                  const fuaRequest = results[rowIndex];
+                {rows.map((row) => {
+                  const fuaRequest = requestByRowId.get(row.id);
+                  if (!fuaRequest) {
+                    return null;
+                  }
+
                   return (
                     <TableRow key={row.id} {...getRowProps({ row })}>
                       {row.cells.map((cell) => (
                         <TableCell key={cell.id} className={styles.tableCell}>
                           {cell.info.header === 'patient' ? (
-                            <PatientCell visitUuid={cell.value} />
+                            <PatientCell
+                              visitUuid={fuaRequest.visitUuid}
+                              patientInfo={patientInfoByVisitUuid?.get(fuaRequest.visitUuid)}
+                            />
                           ) : cell.info.header === 'estado' ? (
                             <div>
                               <Tag type={estadoTagType[cell.value] || 'gray'} size="sm">
@@ -450,9 +448,6 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
                               isDownloading={Boolean(
                                 fuaRequest.visitUuid && downloadingVisitUuids.has(fuaRequest.visitUuid),
                               )}
-                              onChangeStatus={handleChangeStatus}
-                              onResend={handleReenviar}
-                              onCancel={handleCancelFua}
                               t={t}
                             />
                           ) : (

@@ -6,7 +6,7 @@ import { useFuaRequests } from '../hooks/useFuaRequests';
 const AllFuaRequestsTile = () => {
   const { t } = useTranslation();
 
-  const { fuaOrders } = useFuaRequests({ newOrdersOnly: true });
+  const { fuaOrders } = useFuaRequests({ status: null, excludeCanceled: true });
 
   return (
     <FuaSummaryTile

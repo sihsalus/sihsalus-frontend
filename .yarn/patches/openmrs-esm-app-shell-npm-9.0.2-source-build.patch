@@ -106,14 +106,25 @@ index 5d35660053b7543a164ee1432a37d594ee3f339f..6b7928ab1d797796559778f9f501703b
 @@ -229 +230 @@ function renderFatalErrorPage(e?: Error) {
 -      messageContainer.textContent = e?.message || 'No additional information available.';
 +      messageContainer.textContent = getCoreTranslation('fatalErrorMessage');
-@@ -328,8 +329,8 @@ async function setupOffline() {
+@@ -328,8 +329,19 @@ async function setupOffline() {
      console.error('Error while setting up offline mode.', error);
++    const isSpanish = document.documentElement.lang.toLowerCase().startsWith('es');
++    const title = isSpanish
++      ? getCoreTranslation('offlineSetupErrorTitle', 'Modo sin conexión no disponible', { lng: 'es' })
++      : getCoreTranslation('offlineSetupErrorTitle');
++    const description = isSpanish
++      ? getCoreTranslation(
++          'offlineSetupGenericError',
++          'No se pudo activar el modo sin conexión. Puede iniciar sesión y trabajar en línea. Si el problema continúa, contacte a soporte.',
++          { lng: 'es' },
++        )
++      : getCoreTranslation('offlineSetupGenericError');
      showNotification({
        kind: 'error',
 -      title: 'Offline Setup Error',
 -      description: error.message,
-+      title: getCoreTranslation('offlineSetupErrorTitle'),
-+      description: getCoreTranslation('offlineSetupGenericError'),
++      title,
++      description,
      });
    }
  }

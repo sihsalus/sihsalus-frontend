@@ -1,6 +1,11 @@
 import { type LoggedInUser, userHasAccess, useSession } from '@openmrs/esm-framework';
 import type { ReactNode } from 'react';
-import { serviceQueuesClearPrivilege, serviceQueuesEditPrivilege, vitalsEditPrivilege } from './constants';
+import {
+  serviceQueuesClearPrivilege,
+  serviceQueuesEditPrivilege,
+  serviceQueuesPrivilege,
+  vitalsEditPrivilege,
+} from './constants';
 
 /**
  * Each capability lists everything its route destinations demand, so an action
@@ -13,7 +18,7 @@ const queueEntryActionPrivileges = [
   'Get Queues',
   'Manage Queue Entries',
 ];
-const triageActionPrivileges = [vitalsEditPrivilege, 'Get Queue Entries', 'Get Queues', 'Manage Queue Entries'];
+const triageActionPrivileges = [serviceQueuesPrivilege, vitalsEditPrivilege];
 const queueEntryCreationPrivileges = [
   serviceQueuesEditPrivilege,
   'Get Patients',
@@ -46,9 +51,10 @@ export function canEditServiceQueues(user?: LoggedInUser): boolean {
 }
 
 /**
- * Triage staff only need to record vitals and move the patient to the
- * configured clinical queue. They must not need the broader queue-editing
- * privilege that also exposes edit, remove and void actions.
+ * Keep this aligned with the vitals workspace declaration in routes.json.
+ * Native queue permissions are enforced by the API when the saved triage is
+ * routed, but must not hide the clinical action from an otherwise authorized
+ * triage nurse.
  */
 export function canTriageQueuePatients(user?: LoggedInUser): boolean {
   return userHasAllAccess(triageActionPrivileges, user);

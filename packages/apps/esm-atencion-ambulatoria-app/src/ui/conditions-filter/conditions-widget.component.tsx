@@ -30,7 +30,7 @@ import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../config-schema';
 import {
   type CodedCondition,
-  type ConditionDataTableRow,
+  type Condition,
   createCondition,
   type FormFields,
   updateCondition,
@@ -42,7 +42,7 @@ import { type ConditionsFormSchema } from './conditions-form.workspace';
 
 interface ConditionsWidgetProps {
   closeWorkspaceWithSavedChanges?: DefaultPatientWorkspaceProps['closeWorkspaceWithSavedChanges'];
-  conditionToEdit?: ConditionDataTableRow;
+  conditionToEdit?: Condition;
   isEditing?: boolean;
   isSubmittingForm: boolean;
   patientUuid: string;
@@ -97,19 +97,11 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
   const freeText = watch('freeText');
   const matchingCondition = conditions?.find((condition) => condition?.id === conditionToEdit?.id);
 
-  const getFieldValue = (
-    tableCells: Array<{
-      info: {
-        header: string;
-      };
-      value: string;
-    }>,
-    fieldName,
-  ): string => tableCells?.find((cell) => cell?.info?.header === fieldName)?.value;
-
-  const displayName = getFieldValue(conditionToEdit?.cells, 'display');
-  const editableClinicalStatus = getFieldValue(conditionToEdit?.cells, 'clinicalStatus');
-  const editableAbatementDateTime = getFieldValue(conditionToEdit?.cells, 'abatementDateTime');
+  // El servidor es la fuente de verdad al editar; el prop (la fila seleccionada)
+  // cubre el primer render mientras SWR resuelve.
+  const displayName = matchingCondition?.display ?? conditionToEdit?.display;
+  const editableClinicalStatus = matchingCondition?.clinicalStatus ?? conditionToEdit?.clinicalStatus;
+  const editableAbatementDateTime = matchingCondition?.abatementDateTime ?? conditionToEdit?.abatementDateTime;
   const [selectedCondition, setSelectedCondition] = useState<CodedCondition>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm);
@@ -123,6 +115,10 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
     setSelectedCondition(selectedCondition);
   }, []);
 
+  const focusOnSearchInput = useCallback(() => {
+    searchInputRef?.current?.focus();
+  }, []);
+
   const handleCreate = useCallback(async () => {
     // If category is free text, build a pseudo condition from freeText.
     const selected =
@@ -132,6 +128,13 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
         : null);
 
     if (!selected) {
+      // Texto escrito sin elegir un resultado: sin esto el envío quedaba
+      // colgado en "Guardando…" sin error visible y sin POST.
+      setIsSubmittingForm(false);
+      setErrorCreating?.(
+        new Error(t('antecedentSelectionRequired', 'Seleccione un antecedente de los resultados de búsqueda')),
+      );
+      focusOnSearchInput();
       return;
     }
 
@@ -166,6 +169,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
     }
   }, [
     closeWorkspaceWithSavedChanges,
+    focusOnSearchInput,
     getValues,
     mutate,
     patientUuid,
@@ -180,6 +184,18 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
   ]);
 
   const handleUpdate = useCallback(async () => {
+    if (!conditionToEdit?.id || !matchingCondition?.conceptId || !displayName) {
+      // Sin el antecedente resuelto el PUT saldría con conceptId/display
+      // indefinidos y corrompería el registro clínico.
+      setIsSubmittingForm(false);
+      setErrorUpdating?.(
+        new Error(
+          t('antecedentEditUnavailable', 'No se pudo cargar el antecedente a editar. Recargue e intente nuevamente.'),
+        ),
+      );
+      return;
+    }
+
     type ExtendedFormFields = FormFields & { category?: string; note?: string };
 
     const payload: ExtendedFormFields = {
@@ -232,10 +248,6 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
     freeText,
   ]);
 
-  const focusOnSearchInput = useCallback(() => {
-    searchInputRef?.current?.focus();
-  }, []);
-
   const handleSearchTermChange = (searchTerm: string) => {
     setSearchTerm(searchTerm);
   };
@@ -280,8 +292,12 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
                         const val = event.target.value;
                         onChange(val);
                         handleSearchTermChange(val);
+                        // Teclear invalida la selección previa; evita guardar un
+                        // concepto distinto al texto visible.
+                        setSelectedCondition(null);
                       }}
                       onClear={() => {
+                        onChange('');
                         setSearchTerm('');
                         setSelectedCondition(null);
                       }}

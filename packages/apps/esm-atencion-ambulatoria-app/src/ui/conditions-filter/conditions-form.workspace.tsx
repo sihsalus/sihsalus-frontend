@@ -28,12 +28,12 @@ import { z } from 'zod';
 
 import type { ConfigObject } from '../../config-schema';
 import { patientFormEntryWorkspace } from '../../utils/constants';
-import { type ConditionDataTableRow, useConditions } from './conditions.resource';
+import { type Condition, useConditions } from './conditions.resource';
 import styles from './conditions-form.scss';
 import ConditionsWidget from './conditions-widget.component';
 
 interface ConditionFormProps extends DefaultPatientWorkspaceProps {
-  condition?: ConditionDataTableRow;
+  condition?: Condition;
   formContext: 'creating' | 'editing';
   workspaceProps?: {
     conceptSetUuid?: string;

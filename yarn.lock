@@ -1190,6 +1190,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@babel/runtime@npm:^7.29.2":
+  version: 7.29.7
+  resolution: "@babel/runtime@npm:7.29.7"
+  checksum: 10c0/ca11572f7146b21e0bde6a9ed4bb6a89eafbee5f0944c7eb54d0d8a2dac962c33638a1d611e14faa71dfbb92b4b5f9236232208568a6b7d5c6f3f39ddb91771e
+  languageName: node
+  linkType: hard
+
 "@babel/template@npm:^7.28.6":
   version: 7.28.6
   resolution: "@babel/template@npm:7.28.6"
@@ -4464,7 +4471,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     rimraf: "npm:^6.1.3"
     rxjs: "npm:^6.5.3"
     single-spa-react: "npm:^6.0.2"
@@ -7748,7 +7755,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.56.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-is: "npm:^19.1.1"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.6.7"
@@ -7847,7 +7854,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.49.3"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     react-to-print: "npm:^3.1.1"
     rxjs: "npm:^6.6.7"
@@ -7887,7 +7894,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.6.7"
     swr: "npm:^2.3.6"
@@ -7930,7 +7937,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.56.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     turbo: "npm:^2.9.14"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.7"
@@ -7939,7 +7946,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     react: 18.x
     react-dom: 18.x
-    react-i18next: ^16.0.0
+    react-i18next: ^17.0.11
   languageName: unknown
   linkType: soft
 
@@ -7966,7 +7973,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.66.0"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.6.7"
     swr: "npm:^2.3.6"
@@ -8011,7 +8018,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.56.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-is: "npm:^19.1.1"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.6.7"
@@ -8050,7 +8057,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.7"
   peerDependencies:
@@ -8083,7 +8090,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     react-to-print: "npm:^2.14.13"
     rxjs: "npm:^6.6.7"
@@ -8186,7 +8193,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.34.2"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     semver: "npm:^7.5.4"
     swr: "npm:^2.2.4"
@@ -8201,7 +8208,7 @@ __metadata:
     lodash-es: 4.x
     react: 18.x
     react-dom: 18.x
-    react-i18next: ^16.0.0
+    react-i18next: ^17.0.11
     react-router-dom: ">=6.30.4 <8"
     swr: 2.x
   languageName: unknown
@@ -8228,7 +8235,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.56.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-is: "npm:^19.1.1"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.6.7"
@@ -8280,7 +8287,7 @@ __metadata:
     react-ace: "npm:^11.0.1"
     react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^4.0.13"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-markdown: "npm:^10.1.0"
     react-mde: "npm:^11.5.0"
     react-router-dom: "npm:7.18.2"
@@ -8328,7 +8335,7 @@ __metadata:
     react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^4.0.13"
     react-hook-form: "npm:^7.52.0"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-markdown: "npm:^10.1.0"
     react-waypoint: "npm:^10.3.0"
     react-webcam: "npm:^7.2.0"
@@ -8440,7 +8447,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.7"
   peerDependencies:
@@ -8484,7 +8491,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-ace: "npm:^14.0.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     rxjs: "npm:^6.5.3"
     swr: "npm:2.2.5"
     typescript: "npm:6.0.3"
@@ -8516,7 +8523,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.6.7"
     swr: "npm:^2.3.6"
@@ -8579,7 +8586,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.52.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.7"
@@ -8604,7 +8611,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.52.2"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.5.3"
     swr: "npm:2.2.5"
@@ -8659,7 +8666,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.5.3"
     swr: "npm:2.2.5"
@@ -8905,7 +8912,7 @@ __metadata:
     react: "npm:^18.x"
     react-dom: "npm:^18.x"
     react-hook-form: "npm:^7.x"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-is: "npm:^19.1.0"
     rxjs: "npm:^6.6.7"
     sass: "npm:^1.54.3"
@@ -9284,7 +9291,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.5.3"
     typescript: "npm:6.0.3"
@@ -9314,7 +9321,7 @@ __metadata:
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     sass: "npm:^1.98.0"
     swr: "npm:^2.4.1"
@@ -9426,7 +9433,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.56.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-is: "npm:^19.1.1"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.6.7"
@@ -9555,7 +9562,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.45.4"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     react-to-print: "npm:^2.14.13"
     rxjs: "npm:^6.6.7"
@@ -9611,7 +9618,7 @@ __metadata:
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     sass: "npm:^1.98.0"
     typescript: "npm:6.0.3"
@@ -9640,7 +9647,7 @@ __metadata:
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     sass: "npm:^1.98.0"
     swr: "npm:^2.4.1"
@@ -9680,7 +9687,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-joyride: "npm:^2.8.2"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.6.7"
@@ -16782,6 +16789,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"html-parse-stringify@npm:^4.0.1":
+  version: 4.0.1
+  resolution: "html-parse-stringify@npm:4.0.1"
+  checksum: 10c0/8d7267acbc8b70a50096176e28ba491af89fb31613b6a062bce4b8201b2703fd652bedfbe0db6efe90145379c89524a3319b1b58b8c96a72779b0f49e4c2c180
+  languageName: node
+  linkType: hard
+
 "html-to-image@npm:1.11.11":
   version: 1.11.11
   resolution: "html-to-image@npm:1.11.11"
@@ -21705,6 +21719,28 @@ __metadata:
     typescript:
       optional: true
   checksum: 10c0/a234ed701e53c47ce4c67f2bc74b5718a4fea2865d6eaae06f850cca35a1ead038e6fd25b2a4b629c96947f3e6bb997f6d81d07cc4584997a0373c62c6aba3eb
+  languageName: node
+  linkType: hard
+
+"react-i18next@npm:^17.0.11":
+  version: 17.0.11
+  resolution: "react-i18next@npm:17.0.11"
+  dependencies:
+    "@babel/runtime": "npm:^7.29.2"
+    html-parse-stringify: "npm:^4.0.1"
+    use-sync-external-store: "npm:^1.6.0"
+  peerDependencies:
+    i18next: ">= 26.2.0"
+    react: ">= 16.8.0"
+    typescript: ^5 || ^6 || ^7
+  peerDependenciesMeta:
+    react-dom:
+      optional: true
+    react-native:
+      optional: true
+    typescript:
+      optional: true
+  checksum: 10c0/f49e83e377f56d8f6a198a00539925edbc77370b68a51ad8b1829b581abcd22dd57843118a8e541c2284f58899d8035d255c41e246cfc64e9c0ca42df071ed81
   languageName: node
   linkType: hard
 

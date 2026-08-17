@@ -1,0 +1,6 @@
+@use "@carbon/layout";
+
+.warning {
+  margin-block-end: layout.$spacing-03;
+  max-inline-size: none;
+}

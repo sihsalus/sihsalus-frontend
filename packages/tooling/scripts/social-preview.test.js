@@ -15,6 +15,12 @@ const {
   toOpenGraphLocale,
 } = require('./social-preview');
 
+// Reads a meta tag's exact value so assertions compare full URLs instead of substrings.
+function readMetaContent(html, attribute, name) {
+  const match = new RegExp(`<meta ${attribute}="${name}" content="([^"]*)">`).exec(html);
+  return match ? match[1] : null;
+}
+
 test('prefers the explicit public SPA URL over the backend origin', () => {
   const resolved = resolveSocialPreviewBaseUrl({
     spaPath: '/openmrs/spa',
@@ -123,6 +129,9 @@ test('patches the title and injects exactly one social preview block', () => {
   const twice = applySocialPreview(once, { baseUrl: 'https://b.test/openmrs/spa', locale: 'es' });
   assert.equal(twice.split(SOCIAL_PREVIEW_START).length, 2);
   assert.equal(twice.split(SOCIAL_PREVIEW_END).length, 2);
-  assert.ok(twice.includes('https://b.test/openmrs/spa'));
-  assert.ok(!twice.includes('https://a.test/openmrs/spa'));
+  assert.equal(readMetaContent(twice, 'property', 'og:url'), 'https://b.test/openmrs/spa');
+  assert.equal(
+    readMetaContent(twice, 'property', 'og:image'),
+    `https://b.test/openmrs/spa/${SOCIAL_PREVIEW_IMAGE_FILE}`,
+  );
 });

@@ -421,7 +421,7 @@ if (fs.existsSync(indexHtmlPath)) {
       }
     }
 
-    const escapedImageFile = SOCIAL_PREVIEW_IMAGE_FILE.replace(/\./g, '\\.');
+    const escapedImageFile = SOCIAL_PREVIEW_IMAGE_FILE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     if (!new RegExp(`<meta property="og:image" content="[^"]*${escapedImageFile}">`).test(indexHtml)) {
       fail(`index.html og:image does not reference ${SOCIAL_PREVIEW_IMAGE_FILE}`);
     }

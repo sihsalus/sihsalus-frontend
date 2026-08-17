@@ -23,6 +23,7 @@ import {
   getTriageState,
   revalidateCurrentSisState,
   refreshVisitSisStateFromPerson,
+  selectAppointmentForQueueEntry,
   transitionTriagedPatient,
 } from './triage-workflow.resource';
 
@@ -134,6 +135,59 @@ describe('outpatient triage workflow', () => {
     expect(getSisState(makeQueueEntry({ sis: false }))).toBe('notApplicable');
     expect(getTriageState(pendingEntry, appointmentConfig)).toBe('pending');
     expect(getTriageState(completedEntry, appointmentConfig)).toBe('completed');
+  });
+
+  it('keeps triage pending for a legacy entry in the triage queue without an appointment attribute', () => {
+    const entry = makeQueueEntry();
+    entry.visit.attributes = entry.visit.attributes.filter(
+      (attribute) => attribute.attributeType?.uuid !== appointmentAttributeTypeUuid,
+    );
+
+    expect(getTriageState(entry, appointmentConfig)).toBe('pending');
+  });
+
+  it('recovers the appointment hour using the same patient, date and UPSS', () => {
+    const entry = {
+      ...makeQueueEntry(),
+      startedAt: '2026-08-13T10:05:00.000-05:00',
+      visit: {
+        ...makeQueueEntry().visit,
+        startDatetime: '2026-08-13T10:05:00.000-05:00',
+        location: { uuid: 'appointment-location-uuid' },
+      },
+    } as QueueEntry;
+    const appointments = [
+      {
+        uuid: 'other-patient',
+        patient: { uuid: 'other-patient-uuid' },
+        location: { uuid: 'appointment-location-uuid' },
+        startDateTime: '2026-08-13T10:00:00.000-05:00',
+        status: 'CheckedIn',
+      },
+      {
+        uuid: 'wrong-upss',
+        patient: { uuid: 'patient-uuid' },
+        location: { uuid: 'other-location-uuid' },
+        startDateTime: '2026-08-13T10:00:00.000-05:00',
+        status: 'CheckedIn',
+      },
+      {
+        uuid: 'scheduled-nearby',
+        patient: { uuid: 'patient-uuid' },
+        location: { uuid: 'appointment-location-uuid' },
+        startDateTime: '2026-08-13T10:10:00.000-05:00',
+        status: 'Scheduled',
+      },
+      {
+        uuid: 'checked-in-appointment',
+        patient: { uuid: 'patient-uuid' },
+        location: { uuid: 'appointment-location-uuid' },
+        startDateTime: Date.parse('2026-08-13T11:00:00.000-05:00'),
+        status: 'CheckedIn',
+      },
+    ];
+
+    expect(selectAppointmentForQueueEntry(entry, appointments)?.uuid).toBe('checked-in-appointment');
   });
 
   it('does not expose an active SIS state when the visit bundle is incomplete', () => {

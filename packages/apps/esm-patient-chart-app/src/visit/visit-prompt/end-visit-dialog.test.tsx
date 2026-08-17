@@ -4,7 +4,11 @@ import {
   showSnackbar,
   useVisit,
 } from '@openmrs/esm-framework';
-import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
+import {
+  fetchVisitInsurance,
+  getSisFinancingState,
+  launchPatientWorkspace,
+} from '@openmrs/esm-patient-common-lib';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockCurrentVisit } from 'test-utils';
@@ -13,10 +17,14 @@ import EndVisitDialog from './end-visit-dialog.component';
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  fetchVisitInsurance: vi.fn(),
+  getSisFinancingState: vi.fn(),
   launchPatientWorkspace: vi.fn(),
 }));
 
 const mockCloseModal = vi.fn();
+const mockFetchVisitInsurance = vi.mocked(fetchVisitInsurance);
+const mockGetSisFinancingState = vi.mocked(getSisFinancingState);
 const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
 const mockMutate = vi.fn();
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
@@ -26,6 +34,13 @@ const mockUseVisit = vi.mocked(useVisit);
 describe('End visit dialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFetchVisitInsurance.mockResolvedValue({
+      financiadorUuid: 'sis-concept',
+      insuranceNumber: 'SIS-123',
+      accreditationStatusUuid: 'vigente-concept',
+      accreditationCheckedAt: '2026-08-17',
+    });
+    mockGetSisFinancingState.mockReturnValue('active');
     mockUseVisit.mockReturnValue({
       activeVisit: mockCurrentVisit,
       currentVisit: mockCurrentVisit,
@@ -37,12 +52,12 @@ describe('End visit dialog', () => {
     });
   });
 
-  test('only shows cancel and end visit with FUA actions', () => {
+  test('shows a neutral end-visit action while eligibility is verified on submit', () => {
     render(<EndVisitDialog patientUuid="some-patient-uuid" closeModal={mockCloseModal} />);
 
     expect(screen.getByRole('button', { name: /^close$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /finalizar consulta y generar fua/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /finalizar consulta$/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /close visit/i })).not.toBeInTheDocument();
   });
 
@@ -83,7 +98,7 @@ describe('End visit dialog', () => {
       screen.getByText(/you can add additional encounters to this visit in the visit summary/i),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /finalizar consulta y generar fua/i }));
+    await user.click(screen.getByRole('button', { name: /finalizar consulta$/i }));
 
     await waitFor(() =>
       expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
@@ -98,7 +113,7 @@ describe('End visit dialog', () => {
         }),
       ),
     );
-    expect(screen.getAllByText(/generando fua/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/finalizando consulta/i).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /cancel/i })).toBeDisabled();
 
     await act(async () => {
@@ -130,7 +145,7 @@ describe('End visit dialog', () => {
 
     render(<EndVisitDialog patientUuid="some-patient-uuid" closeModal={mockCloseModal} />);
 
-    await user.click(screen.getByRole('button', { name: /finalizar consulta y generar fua/i }));
+    await user.click(screen.getByRole('button', { name: /finalizar consulta$/i }));
 
     await waitFor(() =>
       expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith('visit-notes-form-workspace', {
@@ -145,6 +160,32 @@ describe('End visit dialog', () => {
       kind: 'warning',
       isLowContrast: true,
       subtitle: 'Complete Primary diagnosis, Codigo Prestacional in Resumen de consulta before finalizing the visit.',
+    });
+  });
+
+  test('ends a non-SIS visit without validating or generating a FUA', async () => {
+    const user = userEvent.setup();
+    mockGetSisFinancingState.mockReturnValue('notApplicable');
+    mockOpenmrsFetch.mockResolvedValueOnce({ status: 200, data: {} } as FetchResponse);
+
+    render(<EndVisitDialog patientUuid="some-patient-uuid" closeModal={mockCloseModal} />);
+
+    await user.click(screen.getByRole('button', { name: /finalizar consulta$/i }));
+
+    await waitFor(() =>
+      expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+        '/ws/rest/v1/clinicalvisitclosure',
+        expect.objectContaining({ method: 'POST' }),
+      ),
+    );
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+    expect(mockOpenmrsFetch).not.toHaveBeenCalledWith(expect.stringContaining('/ws/module/fua'), expect.anything());
+    expect(mockLaunchPatientWorkspace).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      isLowContrast: true,
+      kind: 'success',
+      subtitle: 'Visit ended',
+      title: 'Visit ended',
     });
   });
 
@@ -177,7 +218,7 @@ describe('End visit dialog', () => {
       screen.getByText(/you can add additional encounters to this visit in the visit summary/i),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /finalizar consulta y generar fua/i }));
+    await user.click(screen.getByRole('button', { name: /finalizar consulta$/i }));
 
     await waitFor(() =>
       expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(

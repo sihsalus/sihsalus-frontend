@@ -82,7 +82,9 @@ function Identifier({ identifier, highlighted }: { identifier: fhir.Identifier; 
 }
 
 function PatientIdentifiers({ identifiers }: { identifiers?: fhir.Identifier[] }) {
-  const filteredIdentifiers = (identifiers?.filter((identifier) => identifier.value) ?? []).sort(
+  const filteredIdentifiers = (
+    identifiers?.filter((identifier) => identifier.value && !isClinicalHistoryIdentifier(identifier)) ?? []
+  ).sort(
     (firstIdentifier, secondIdentifier) => getIdentifierOrder(firstIdentifier) - getIdentifierOrder(secondIdentifier),
   );
   const hasDniIdentifier = filteredIdentifiers.some(isDniIdentifier);

@@ -1,6 +1,7 @@
 import { userHasAccess, useSession } from '@openmrs/esm-framework';
 
 export const patientChartPrivilege = 'app:hoja.clinica';
+export const editPatientPrivilege = 'app:opciones.registrarPaciente';
 
 /**
  * Patient-search results must fail closed while the session is loading and for
@@ -10,4 +11,10 @@ export function usePatientChartAccess() {
   const { user } = useSession();
 
   return Boolean(user && userHasAccess(patientChartPrivilege, user));
+}
+
+export function usePatientEditAccess() {
+  const { user } = useSession();
+
+  return Boolean(user && userHasAccess(editPatientPrivilege, user));
 }

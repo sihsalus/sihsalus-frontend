@@ -34,15 +34,13 @@ describe('SihsalusPatientInfo', () => {
     mockExtensionSlot.mockImplementation(() => null);
   });
 
-  it('highlights and displays DNI before the clinical history identifier', () => {
+  it('highlights DNI and does not display the clinical history identifier', () => {
     render(<SihsalusPatientInfo patient={patient} renderedFrom="patient-search" />);
 
     const dni = screen.getByText('79000001');
-    const clinicalHistory = screen.getByText('100005I');
 
     expect(dni.tagName).toBe('STRONG');
-    expect(clinicalHistory.tagName).toBe('SPAN');
-    expect(dni.compareDocumentPosition(clinicalHistory) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByText('100005I')).not.toBeInTheDocument();
   });
 
   it('does not classify an eight-digit clinical history number as DNI', () => {
@@ -63,6 +61,6 @@ describe('SihsalusPatientInfo', () => {
     render(<SihsalusPatientInfo patient={patientWithoutDni} renderedFrom="patient-search" />);
 
     expect(screen.getByText('CE-1234').tagName).toBe('STRONG');
-    expect(screen.getByText('12345678').tagName).toBe('SPAN');
+    expect(screen.queryByText('12345678')).not.toBeInTheDocument();
   });
 });

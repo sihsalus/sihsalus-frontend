@@ -355,7 +355,7 @@
   "visitCreationCapabilityMissing": "Su usuario no puede crear la consulta requerida. Solicite a un administrador permisos para iniciar consultas.",
   "visitInspectionCapabilityMissing": "Su usuario no puede verificar las consultas activas del paciente. Solicite permisos para consultar visitas antes de registrar la llegada.",
   "visitReuseCapabilityMissing": "Existe una consulta activa, pero su usuario no puede vincularla con la cita. Solicite permisos para consultar y editar visitas y sus atributos.",
-  "vitals": "Signos Vitales",
+  "vitals": "Signos vitales",
   "waitList": "Lista de espera",
   "walkIn": "No programada presencial",
   "week": "Semana",

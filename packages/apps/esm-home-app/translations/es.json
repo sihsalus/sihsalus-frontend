@@ -2,7 +2,7 @@
   "admissionReportByUps": "Registro de Atenciones",
   "appointments": "Citas",
   "appointmentsDescription": "Agenda diaria",
-  "careQueues": "Colas de atención",
+  "careQueues": "Cola de atención",
   "careQueuesDescription": "Pacientes en espera y atención",
   "caseMonitoring": "Monitoreo y seguimiento de casos",
   "contactAdministrator": "Por favor, intente usar los links del menú de navegación situado a la izquierda. Si el problema persiste, contacte con su administrador del sistema.",
@@ -24,5 +24,5 @@
   "returnToHome": "Volver al inicio",
   "searchPatient": "Buscar paciente",
   "searchPatientDescription": "DNI, CE, CNV o HCE",
-  "serviceQueues": "Colas de atención"
+  "serviceQueues": "Cola de atención"
 }

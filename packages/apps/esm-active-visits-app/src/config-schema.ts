@@ -70,10 +70,6 @@ export const configSchema = {
           header: { key: 'dni', default: 'DNI' },
           identifierName: 'DNI',
         },
-        {
-          header: { key: 'historyNumber', default: 'N° Historia Clínica' },
-          identifierName: 'N° Historia Clínica',
-        },
       ],
     },
     attributes: {

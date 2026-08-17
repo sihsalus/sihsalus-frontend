@@ -1,4 +1,9 @@
 import { Type } from '@openmrs/esm-framework';
+import {
+  ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
+} from '@openmrs/esm-patient-common-lib';
 
 export const configSchema = {
   contactAttributeTypes: {
@@ -27,9 +32,9 @@ export const configSchema = {
       '77bbb234-2312-4644-99d0-fa894d438817',
       '9b3df0a1-0c58-4f55-9868-9c38f1db1001',
       '9b3df0a1-0c58-4f55-9868-9c38f1db1002',
-      '56188294-b42c-481d-a987-4b495116c580',
-      '374b130f-7457-476f-87b1-f182aa77c434',
-      '9b3df0a1-0c58-4f55-9868-9c38f1db1005',
+      INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
+      INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID,
+      ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID,
     ],
     _elements: {
       _type: Type.UUID,

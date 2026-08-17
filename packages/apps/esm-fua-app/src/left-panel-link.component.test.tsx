@@ -29,6 +29,15 @@ vi.mock('@openmrs/esm-framework', async () => {
   };
 });
 
+// constant.ts importa estos UUID desde la lib; el stub evita cargar la lib real,
+// cuyo grafo de módulos necesita más exports del framework que este mock cerrado.
+vi.mock('@openmrs/esm-patient-common-lib', () => ({
+  SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID: '9b3df0a1-0c58-4f55-9868-9c38f1db2051',
+  SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID: '9b3df0a1-0c58-4f55-9868-9c38f1db2052',
+  SIS_ACCREDITATION_PENDING_CONCEPT_UUID: '9b3df0a1-0c58-4f55-9868-9c38f1db2053',
+  SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID: '9b3df0a1-0c58-4f55-9868-9c38f1db2054',
+}));
+
 describe('LinkExtension', () => {
   beforeEach(() => {
     vi.stubGlobal(

@@ -34,6 +34,11 @@ vi.mock('@openmrs/esm-framework', async () => ({
 
 vi.mock('@openmrs/esm-patient-common-lib', () => ({
   usePatientChartStore: mockUsePatientChartStore,
+  // constant.ts reexporta estos UUID desde la lib; el factory cerrado debe proveerlos.
+  SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID: '9b3df0a1-0c58-4f55-9868-9c38f1db2051',
+  SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID: '9b3df0a1-0c58-4f55-9868-9c38f1db2052',
+  SIS_ACCREDITATION_PENDING_CONCEPT_UUID: '9b3df0a1-0c58-4f55-9868-9c38f1db2053',
+  SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID: '9b3df0a1-0c58-4f55-9868-9c38f1db2054',
 }));
 
 vi.mock('react-i18next', () => ({

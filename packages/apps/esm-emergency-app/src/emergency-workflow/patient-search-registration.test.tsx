@@ -55,8 +55,11 @@ describe('PatientSearchRegistration nationality flow', () => {
     });
   });
 
+  // El tipeo tecla a tecla (8 dígitos + combobox) supera el timeout por defecto
+  // cuando la suite corre en paralelo bajo carga; sin delay entre eventos y con
+  // margen explícito el test deja de ser flaky sin perder la lógica por tecla.
   it('assigns, clears, and then allows manually selecting nationality as DNI completeness changes', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<PatientSearchRegistration onPatientQueued={vi.fn()} />);
 
     await user.click(screen.getByRole('button', { name: 'Registrar nuevo paciente' }));
@@ -78,5 +81,5 @@ describe('PatientSearchRegistration nationality flow', () => {
     await user.click(await screen.findByText('Colombia'));
 
     await waitFor(() => expect(nationality).toHaveValue('Colombia'));
-  });
+  }, 15_000);
 });

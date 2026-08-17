@@ -345,7 +345,7 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
 
   const headers = [
     { key: 'patient', header: t('patient', 'Paciente') },
-    { key: 'name', header: t('fuaName', 'Nombre del FUA') },
+    { key: 'fechaActualizacion', header: t('fuaUpdatedAt', 'Fecha de Actualización') },
     { key: 'estado', header: t('status', 'Estado') },
     { key: 'fechaCreacion', header: t('creationDate', 'Fecha de Creación') },
     { key: 'actions', header: t('actions', 'Acciones') },
@@ -355,7 +355,9 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
     results?.map((request: FuaRequest, index: number) => ({
       id: String(index),
       patient: request.visitUuid,
-      name: request.numeroFua ? `${request.numeroFua} — ${request.name || ''}` : request.name || 'N/A',
+      fechaActualizacion: request.fechaActualizacion
+        ? formatDate(new Date(request.fechaActualizacion), { mode: 'standard' })
+        : 'N/A',
       estado: request.fuaEstado?.nombre || t('noStatus', 'Sin estado'),
       fechaCreacion: formatDate(new Date(request.fechaCreacion), { mode: 'standard' }),
       actions: request,

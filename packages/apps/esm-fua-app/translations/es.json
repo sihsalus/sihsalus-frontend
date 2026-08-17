@@ -74,6 +74,7 @@
   "fuaOnlyForSisVisits": "El FUA solo aplica a visitas con financiador SIS. Esta visita tiene otro financiador o no lo tiene registrado.",
   "fuaRequests": "Solicitudes FUA",
   "fuaReset": "FUA devuelto a Pendiente para corrección",
+  "fuaUpdatedAt": "Fecha de Actualización",
   "fuasGeneratedSuccessfully": "Se generaron {{count}} FUAs correctamente",
   "fuasGeneratedSuccessfully_one": "Se generaron {{count}} FUAs correctamente",
   "fuasGeneratedSuccessfully_many": "Se generaron {{count}} FUAs correctamente",

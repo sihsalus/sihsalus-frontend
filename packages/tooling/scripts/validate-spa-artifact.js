@@ -11,6 +11,12 @@ const {
   findUnboundReactReferences,
 } = require('./javascript-runtime-contract');
 const { formatSpaArtifactIssue, getSpaArtifactFiles, inspectSpaArtifacts } = require('./spa-artifact-manifest');
+const {
+  SOCIAL_PREVIEW_END,
+  SOCIAL_PREVIEW_IMAGE_FILE,
+  SOCIAL_PREVIEW_START,
+  SOCIAL_PREVIEW_TITLE,
+} = require('./social-preview');
 
 const logInfo = (msg) => console.log(`${chalk.green.bold('[validate-spa]')} ${msg}`);
 const logWarn = (msg) => console.warn(`${chalk.yellow.bold('[validate-spa]')} ${chalk.yellow(msg)}`);
@@ -389,6 +395,40 @@ if (fs.existsSync(indexHtmlPath)) {
     if (!indexHtml.includes(text)) {
       fail(`Fatal app-shell error template does not match locale ${documentLocale || '(missing)'}`);
     }
+  }
+
+  if (!indexHtml.includes(`<title>${SOCIAL_PREVIEW_TITLE}</title>`)) {
+    fail('index.html does not contain the branded document title');
+  }
+
+  const socialPreviewStarts = indexHtml.split(SOCIAL_PREVIEW_START).length - 1;
+  const socialPreviewEnds = indexHtml.split(SOCIAL_PREVIEW_END).length - 1;
+  if (socialPreviewStarts !== 1 || socialPreviewEnds !== 1) {
+    fail(`index.html must contain exactly one social preview block (found ${socialPreviewStarts})`);
+  } else {
+    const requiredSocialPreviewTags = [
+      '<meta name="description" content="',
+      '<meta property="og:title" content="',
+      '<meta property="og:description" content="',
+      '<meta property="og:url" content="',
+      '<meta property="og:image" content="',
+      '<meta name="twitter:card" content="summary_large_image">',
+      '<meta name="twitter:image" content="',
+    ];
+    for (const requiredTag of requiredSocialPreviewTags) {
+      if (!indexHtml.includes(requiredTag)) {
+        fail(`index.html social preview is missing a required tag: ${requiredTag}`);
+      }
+    }
+
+    const escapedImageFile = SOCIAL_PREVIEW_IMAGE_FILE.replace(/\./g, '\\.');
+    if (!new RegExp(`<meta property="og:image" content="[^"]*${escapedImageFile}">`).test(indexHtml)) {
+      fail(`index.html og:image does not reference ${SOCIAL_PREVIEW_IMAGE_FILE}`);
+    }
+  }
+
+  if (!fs.existsSync(path.join(outDir, SOCIAL_PREVIEW_IMAGE_FILE))) {
+    fail(`Social preview image is missing from the artifact: ${SOCIAL_PREVIEW_IMAGE_FILE}`);
   }
 }
 

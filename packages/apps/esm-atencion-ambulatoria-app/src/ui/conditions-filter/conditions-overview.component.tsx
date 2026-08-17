@@ -76,7 +76,11 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) 
   const isTablet = !isDesktop;
 
   const conceptSetUuid = config?.conditionConceptSets?.antecedentesPatologicos?.uuid;
-  const { conditions, error, isLoading, isValidating } = useConditionsFromConceptSet(patientUuid, conceptSetUuid);
+  const { conditions, error, isLoading, isValidating } = useConditionsFromConceptSet(
+    patientUuid,
+    conceptSetUuid,
+    config?.conditionFreeTextFallbackConceptUuid,
+  );
   const [filter, setFilter] = useState<'All' | 'Active' | 'Inactive'>('Active');
 
   // Opciones de filtro traducidas

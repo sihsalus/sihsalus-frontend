@@ -20,6 +20,10 @@ describe('Atencion Ambulatoria configuration', () => {
     expect(configSchema.concepts[configKey]._default).toBe(conceptUuid);
   });
 
+  it('keeps the SIS financing warning opt-in so behavior only changes via configuration', () => {
+    expect(configSchema.showSisFinancingWarning._default).toBe(false);
+  });
+
   it('ships the CE-001 question paths needed to read compatibility-mapped observations', () => {
     expect(configSchema.legacyCe001FieldPaths._default).toEqual({
       labOrders: 'ordenesLaboratorio',

@@ -684,6 +684,16 @@ export const configSchema = {
       _default: '',
     },
   },
+
+  // 16. SIS FINANCING WARNING (CONSULTA EXTERNA)
+  showSisFinancingWarning: {
+    _type: Type.Boolean,
+    _description:
+      'Muestra en consulta externa una advertencia con derivación a Caja cuando la visita activa no tiene ' +
+      'financiador definido o el SIS no está vigente. No bloquea la atención clínica; el bloqueo duro permanece ' +
+      'en el flujo de FUA.',
+    _default: false,
+  },
 };
 
 // ===============================
@@ -811,6 +821,7 @@ export interface ConfigObject {
   maritalStatusUuid: string;
   defaultIdentifierSourceUuid: string;
   legend: LegendConfigObject;
+  showSisFinancingWarning: boolean;
   hivProgramUuid: string;
   contactPersonAttributesUuid: {
     telephone: string;

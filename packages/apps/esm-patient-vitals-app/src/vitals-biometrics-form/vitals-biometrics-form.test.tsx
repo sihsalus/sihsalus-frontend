@@ -78,6 +78,15 @@ const mockUsePatient = vi.mocked(usePatient);
 const mockUseReferenceRanges = vi.mocked(useReferenceRanges);
 const mockUseVisitOrOfflineVisit = vi.mocked(useVisitOrOfflineVisit);
 
+function mockPatientAgeInMonths(months: number) {
+  const birthDate = new Date();
+  birthDate.setHours(12, 0, 0, 0);
+  birthDate.setMonth(birthDate.getMonth() - months);
+  mockUsePatient.mockReturnValue({
+    patient: { birthDate: birthDate.toISOString().slice(0, 10), deceasedBoolean: false },
+  } as ReturnType<typeof usePatient>);
+}
+
 vi.mock('../common', () => ({
   assessValue: vi.fn(),
   getReferenceRangesForConcept: vi.fn(),
@@ -180,10 +189,23 @@ describe('VitalsBiometricsForm', () => {
     });
     expect(abdominalCircumferenceInput).toBeInTheDocument();
     expect(abdominalCircumferenceInput.closest('section')).toHaveTextContent(/^cm$/i);
-    expect(screen.getByRole('spinbutton', { name: /muac/i })).toBeInTheDocument();
+    expect(screen.queryByRole('spinbutton', { name: /muac/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /discard/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save and close/i })).toBeInTheDocument();
     expect(screen.queryByText(/glasgow coma scale/i)).not.toBeInTheDocument();
+  });
+
+  it('shows MUAC and its preventive ranges only for a patient aged 0 to 59 months', () => {
+    mockPatientAgeInMonths(24);
+
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    const muac = screen.getByRole('spinbutton', { name: /muac/i });
+    expect(muac).toHaveAttribute('min', '6');
+    expect(muac).toHaveAttribute('max', '26');
+    expect(screen.getByText(/desnutrición aguda severa/i)).toBeInTheDocument();
+    expect(screen.getByText(/riesgo de desnutrición aguda/i)).toBeInTheDocument();
+    expect(screen.getByText(/adecuado/i)).toBeInTheDocument();
   });
 
   it('does not render the form for a deceased patient', () => {
@@ -326,6 +348,7 @@ describe('VitalsBiometricsForm', () => {
   it('renders a success snackbar upon clicking the save button', async () => {
     const user = userEvent.setup();
     const onVitalsSaved = vi.fn();
+    mockPatientAgeInMonths(24);
 
     const response = {
       statusText: 'created',
@@ -537,7 +560,7 @@ describe('VitalsBiometricsForm', () => {
     );
 
     expect(screen.getAllByText('*')).toHaveLength(5);
-    expect(screen.getByText('Notes').parentElement).not.toHaveTextContent('*');
+    expect(screen.getByRole('textbox', { name: 'Notes' }).closest('div')).not.toHaveTextContent('*');
     expect(screen.getByText('Weight').parentElement).not.toHaveTextContent('*');
   });
 
@@ -604,6 +627,7 @@ describe('VitalsBiometricsForm', () => {
 
   it('renders an error snackbar if there was a problem saving vitals and biometrics', async () => {
     const user = userEvent.setup();
+    mockPatientAgeInMonths(24);
 
     const error = {
       message: 'Some of the values entered are invalid',
@@ -657,6 +681,22 @@ describe('VitalsBiometricsForm', () => {
       title: 'Error saving vitals and biometrics',
     });
     expect(mockShowSnackbar.mock.calls[0][0].subtitle).not.toContain('Internal Server Error');
+  });
+
+  it('never saves a MUAC value outside the physical 6 to 26 cm range', async () => {
+    const user = userEvent.setup();
+    mockPatientAgeInMonths(24);
+
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    const muacInput = screen.getByRole('spinbutton', { name: /muac/i });
+    await user.type(muacInput, '3333');
+    const saveButton = screen.getByRole('button', { name: /save and close/i });
+    await user.click(saveButton);
+    await user.click(saveButton);
+
+    expect(mockSavePatientVitals).not.toHaveBeenCalled();
+    expect(muacInput).toBeInvalid();
   });
 
   it('does not save vitals and biometrics without an active visit', async () => {

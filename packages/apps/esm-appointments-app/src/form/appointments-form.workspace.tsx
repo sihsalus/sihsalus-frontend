@@ -81,6 +81,7 @@ import {
 import Workload from '../workload/workload.component';
 import {
   type AppointmentCareRoutingIssue,
+  filterAppointmentLocationsByServices,
   filterAppointmentServicesByLocation,
   getAppointmentCareRoutingIssue,
 } from './appointment-care-routing';
@@ -632,9 +633,17 @@ const AppointmentsForm: React.FC<
   });
   const selectedServiceUuid = watch('selectedServiceUuid');
   const selectedService = servicesForSelectedLocation.find(({ uuid }) => uuid === selectedServiceUuid);
+  const selectedAppointmentType = watch('appointmentType');
+  const isWalkInAppointment =
+    Boolean(selectedAppointmentType) && normalizeAppointmentKind(selectedAppointmentType) === AppointmentKind.WALKIN;
+  const selectableAppointmentLocations = filterAppointmentLocationsByServices({
+    enforceArrivalRouting: enforceAppointmentRouting,
+    locations,
+    services: availableServices ?? [],
+  });
   const appointmentLocations = isExternalConsultationProviderCreating
-    ? locations.filter(({ uuid }) => uuid === session?.sessionLocation?.uuid)
-    : locations;
+    ? selectableAppointmentLocations.filter(({ uuid }) => uuid === session?.sessionLocation?.uuid)
+    : selectableAppointmentLocations;
   const isAppointmentLocationLocked = isExternalConsultationProviderCreating;
   const selectedProviderUuid = watch('provider');
   const selectedProvider = providers.providers?.find(({ uuid }) => uuid === selectedProviderUuid);
@@ -664,6 +673,28 @@ const AppointmentsForm: React.FC<
     : [];
 
   useEffect(() => setValue('formIsRecurringAppointment', isRecurringAppointment), [isRecurringAppointment, setValue]);
+
+  useEffect(() => {
+    if (context !== 'creating' || !isWalkInAppointment) {
+      return;
+    }
+
+    const now = dayjs();
+    const appointmentDateTime = getValues('appointmentDateTime');
+    setValue(
+      'appointmentDateTime',
+      {
+        ...appointmentDateTime,
+        startDate: now.toDate(),
+        startDateText: now.format(dateFormat),
+      },
+      { shouldValidate: true },
+    );
+    setValue('startTime', now.format('hh:mm'), { shouldValidate: true });
+    setValue('timeFormat', now.hour() >= 12 ? 'PM' : 'AM', { shouldValidate: true });
+    setIsAllDayAppointment(false);
+    setIsRecurringAppointment(false);
+  }, [context, getValues, isWalkInAppointment, setValue]);
 
   // Retrive ref callback for appointmentDateTime (startDate & recurringPatternEndDate)
   const {
@@ -973,7 +1004,7 @@ const AppointmentsForm: React.FC<
       timeFormat,
       appointmentDateTime: { startDate },
       duration,
-      appointmentType: selectedAppointmentType,
+      appointmentType: appointmentTypeValue,
       location,
       provider,
       appointmentNote,
@@ -982,16 +1013,22 @@ const AppointmentsForm: React.FC<
 
     const selectedAppointmentService = availableServices?.find((service) => service.uuid === selectedServiceUuid);
     const serviceUuid = selectedAppointmentService?.uuid;
+    const appointmentKind = normalizeAppointmentKind(appointmentTypeValue);
     const [hourValue, minuteValue] = startTime.split(':').map((item) => parseInt(item, 10));
     const hours = (hourValue % 12) + (timeFormat === 'PM' ? 12 : 0);
-    const startDateTime = isAllDayAppointment
-      ? dayjs(startDate).startOf('day')
-      : dayjs(startDate).hour(hours).minute(minuteValue).second(0).millisecond(0);
-    const endDateTime = isAllDayAppointment
+    const walkInStartDateTime =
+      context === 'creating' && appointmentKind === AppointmentKind.WALKIN ? dayjs().startOf('minute') : null;
+    const useAllDayDuration = isAllDayAppointment && appointmentKind !== AppointmentKind.WALKIN;
+    const startDateTime = walkInStartDateTime
+      ? walkInStartDateTime
+      : useAllDayDuration
+        ? dayjs(startDate).startOf('day')
+        : dayjs(startDate).hour(hours).minute(minuteValue).second(0).millisecond(0);
+    const endDateTime = useAllDayDuration
       ? dayjs(startDate).endOf('day')
       : startDateTime.add(duration ?? 0, 'minutes');
     const payload: AppointmentPayload = {
-      appointmentKind: normalizeAppointmentKind(selectedAppointmentType),
+      appointmentKind,
       serviceUuid: serviceUuid,
       startDateTime: startDateTime.format(),
       endDateTime: endDateTime.format(),
@@ -1352,7 +1389,14 @@ const AppointmentsForm: React.FC<
                   </ResponsiveWrapper>
 
                   {!isAllDayAppointment && (
-                    <TimeAndDuration control={control} errors={errors} services={services} watch={watch} t={t} />
+                    <TimeAndDuration
+                      control={control}
+                      errors={errors}
+                      isTimeReadOnly={isWalkInAppointment}
+                      services={services}
+                      watch={watch}
+                      t={t}
+                    />
                   )}
 
                   <ResponsiveWrapper>
@@ -1473,7 +1517,7 @@ const AppointmentsForm: React.FC<
                           }}
                           id="datePickerInput"
                           data-testid="datePickerInput"
-                          isReadOnly={!canEditAppointmentStartDate}
+                          isReadOnly={!canEditAppointmentStartDate || isWalkInAppointment}
                           labelText={<RequiredFieldLabel label={t('date', 'Date')} />}
                           style={{ width: '100%' }}
                           invalid={Boolean(errors.appointmentDateTime?.startDate?.message)}
@@ -1485,14 +1529,21 @@ const AppointmentsForm: React.FC<
                   </ResponsiveWrapper>
 
                   {!isAllDayAppointment && (
-                    <TimeAndDuration control={control} services={services} watch={watch} t={t} errors={errors} />
+                    <TimeAndDuration
+                      control={control}
+                      services={services}
+                      watch={watch}
+                      t={t}
+                      errors={errors}
+                      isTimeReadOnly={isWalkInAppointment}
+                    />
                   )}
                 </div>
               )}
             </div>
           </section>
 
-          {selectedService && (
+          {selectedService && !isWalkInAppointment && (
             <section className={styles.formGroup}>
               <ResponsiveWrapper>
                 <Workload
@@ -1644,7 +1695,7 @@ const AppointmentsForm: React.FC<
   );
 };
 
-function TimeAndDuration({ t, watch: _watch, control, services: _services, errors }) {
+function TimeAndDuration({ t, watch: _watch, control, services: _services, errors, isTimeReadOnly = false }) {
   return (
     <>
       <ResponsiveWrapper>
@@ -1653,6 +1704,7 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
           control={control}
           render={({ field: { onChange, value } }) => (
             <TimePicker
+              disabled={isTimeReadOnly}
               id="time-picker"
               pattern={time12HourFormatRegexPattern}
               invalid={!!errors?.startTime}
@@ -1669,6 +1721,7 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
                 control={control}
                 render={({ field: { value, onChange } }) => (
                   <TimePickerSelect
+                    disabled={isTimeReadOnly}
                     id="time-picker-select-1"
                     onChange={(event) => onChange(event.target.value as 'AM' | 'PM')}
                     value={value}

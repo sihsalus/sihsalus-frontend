@@ -21,7 +21,11 @@ import {
 import { InsuranceSection } from './insurance-section.component';
 
 vi.mock('../../field/field.component', () => ({
-  Field: ({ name }: { name: string }) => <div data-testid={`field-${name}`}>{name}</div>,
+  Field: ({ name, requiredOverride }: { name: string; requiredOverride?: boolean }) => (
+    <div data-required={requiredOverride ? 'true' : 'false'} data-testid={`field-${name}`}>
+      {name}
+    </div>
+  ),
 }));
 
 const insuranceSectionDefinition: SectionDefinition = {
@@ -92,8 +96,8 @@ describe('InsuranceSection', () => {
     });
 
     expect(screen.getByTestId('field-sisLookup')).toBeInTheDocument();
-    expect(screen.getByTestId('field-insuranceCode')).toBeInTheDocument();
-    expect(screen.getByTestId('field-insuranceAccreditationStatus')).toBeInTheDocument();
+    expect(screen.getByTestId('field-insuranceCode')).toHaveAttribute('data-required', 'true');
+    expect(screen.queryByTestId('field-insuranceAccreditationStatus')).not.toBeInTheDocument();
     expect(screen.getByTestId('field-insuranceAccreditationCheckedAt')).toBeInTheDocument();
   });
 
@@ -111,7 +115,7 @@ describe('InsuranceSection', () => {
     );
 
     expect(screen.queryByTestId('field-sisLookup')).not.toBeInTheDocument();
-    expect(screen.getByTestId('field-insuranceCode')).toBeInTheDocument();
+    expect(screen.getByTestId('field-insuranceCode')).toHaveAttribute('data-required', 'false');
     expect(screen.queryByTestId('field-insuranceAccreditationStatus')).not.toBeInTheDocument();
     expect(screen.queryByTestId('field-insuranceAccreditationCheckedAt')).not.toBeInTheDocument();
     expect(setFieldValue).not.toHaveBeenCalled();
@@ -177,7 +181,7 @@ describe('InsuranceSection', () => {
 
     expect(screen.getByTestId('field-sisLookup')).toBeInTheDocument();
     expect(screen.getByTestId('field-insuranceCode')).toBeInTheDocument();
-    expect(screen.getByTestId('field-insuranceAccreditationStatus')).toBeInTheDocument();
+    expect(screen.queryByTestId('field-insuranceAccreditationStatus')).not.toBeInTheDocument();
     expect(screen.getByTestId('field-insuranceAccreditationCheckedAt')).toBeInTheDocument();
     expect(setFieldValue).not.toHaveBeenCalled();
   });

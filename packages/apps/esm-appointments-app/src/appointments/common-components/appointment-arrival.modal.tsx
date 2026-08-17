@@ -12,12 +12,13 @@ import {
   type Visit,
 } from '@openmrs/esm-framework';
 import {
+  fetchPersonInsurance,
   fetchFreshPatientVitalStatus,
   fetchVisitInsurance,
   getSisFinancingState,
   safeCopyFinanciadorToVisit,
 } from '@openmrs/esm-patient-common-lib';
-import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
+import { formatPersonName, getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -62,6 +63,7 @@ const APPOINTMENT_ARRIVAL_RULE_INVALID = 'APPOINTMENT_ARRIVAL_RULE_INVALID';
 const APPOINTMENT_ARRIVAL_RULE_MISSING = 'APPOINTMENT_ARRIVAL_RULE_MISSING';
 const APPOINTMENT_ARRIVAL_ACTION_NOT_ALLOWED = 'APPOINTMENT_ARRIVAL_ACTION_NOT_ALLOWED';
 const MULTIPLE_ACTIVE_VISITS = 'MULTIPLE_ACTIVE_VISITS';
+const TRIAGE_FINANCING_UNDEFINED = 'TRIAGE_FINANCING_UNDEFINED';
 const TRIAGE_SIS_FINANCING_REQUIRED = 'TRIAGE_SIS_FINANCING_REQUIRED';
 const CLINICAL_CHART_CAPABILITY_MISSING = 'CLINICAL_CHART_CAPABILITY_MISSING';
 const QUEUE_ENTRY_CAPABILITY_MISSING = 'QUEUE_ENTRY_CAPABILITY_MISSING';
@@ -142,6 +144,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
   const canCreateVisit = canCreateAppointmentVisit(session?.user);
   const canReuseVisit = canReuseAppointmentVisit(session?.user);
   const canCreateQueueEntry = canCreateAppointmentQueueEntry(session?.user);
+  const canReviewPatientCoverage = userHasAccess('app:opciones.registrarPaciente', session?.user);
   const shouldResolveVisitBranch = Boolean(
     canInspectVisits &&
       ((showDirectAction && canOpenPatientChart && (!canCreateVisit || !canReuseVisit)) ||
@@ -230,7 +233,11 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         ),
         [TRIAGE_SIS_FINANCING_REQUIRED]: t(
           'triageSisFinancingRequired',
-          'No se puede continuar con el triaje porque esta atención no tiene financiador definido o no tiene SIS vigente (ejemplo: SIS). Derive al paciente a Caja para regularizar el pago o la cobertura.',
+          'El paciente no tiene una acreditación SIS vigente. Revise el financiamiento en Admisión o derive al paciente a Caja para regularizar el pago o la cobertura antes del triaje.',
+        ),
+        [TRIAGE_FINANCING_UNDEFINED]: t(
+          'triageFinancingUndefined',
+          'El paciente no tiene un financiador definido. Admisión debe registrar su financiamiento antes de enviarlo a triaje.',
         ),
         [DECEASED_PATIENT_ARRIVAL_BLOCKED]: t(
           'deceasedPatientArrivalBlocked',
@@ -450,6 +457,37 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     }
   };
 
+  const assertPatientHasActiveSisForTriage = async () => {
+    if (!arrivalRule?.requiresTriage) {
+      return;
+    }
+
+    const patientInsurance = await fetchPersonInsurance(patientUuid);
+    if (!patientInsurance.insuranceTypeUuid) {
+      throw Object.assign(new Error('The patient does not have a financing type assigned.'), {
+        code: TRIAGE_FINANCING_UNDEFINED,
+      });
+    }
+    if (getSisFinancingState({
+      financiadorUuid: patientInsurance.insuranceTypeUuid,
+      insuranceNumber: patientInsurance.insuranceCode,
+      accreditationStatusUuid: patientInsurance.accreditationStatusUuid,
+      accreditationCheckedAt: patientInsurance.accreditationCheckedAt,
+    }) !== 'active') {
+      throw Object.assign(new Error('The patient does not have active SIS financing.'), {
+        code: TRIAGE_SIS_FINANCING_REQUIRED,
+      });
+    }
+  };
+
+  const openPatientCoverageReview = () => {
+    const returnUrl = `${globalThis.location.pathname}${globalThis.location.search}`;
+    closeModal();
+    navigate({
+      to: `${globalThis.spaBase}/patient/${patientUuid}/edit?focusSection=insurance&afterUrl=${encodeURIComponent(returnUrl)}`,
+    });
+  };
+
   const getAppointmentLocationUuid = () => {
     if (!appointmentLocationUuid) {
       throw Object.assign(new Error('The appointment does not have a location.'), {
@@ -617,6 +655,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     try {
       const rule = assertArrivalActionIsConfigured('queue');
       assertVisitLinkIsConfigured();
+      await assertPatientHasActiveSisForTriage();
       const requiredAppointmentLocationUuid = getAppointmentLocationUuid();
       if (!(await validateAppointmentStatus())) {
         closeModal();
@@ -647,6 +686,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
           activeVisit: activeVisits[0],
           currentQueueLocationUuid: requiredQueueLocationUuid,
           currentServiceQueueUuid: arrivalQueueUuid,
+          requestedUpssName: appointment.location?.name,
           requestedServiceName: appointment.service.name,
           requiredVisitLocation: {
             uuid: requiredAppointmentLocationUuid,
@@ -693,6 +733,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         },
         currentQueueLocationUuid: requiredQueueLocationUuid,
         currentServiceQueueUuid: arrivalQueueUuid,
+        requestedUpssName: appointment.location?.name,
         requestedServiceName: appointment.service.name,
         requireActiveSisFinancing: rule.requiresTriage,
         requiredVisitLocation: {
@@ -838,6 +879,12 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       })
     : null;
   const displayedError = inlineError ?? deceasedPatientError ?? routingConfigurationError;
+  const displayedErrorCode =
+    displayedError && typeof displayedError === 'object' && 'code' in displayedError
+      ? displayedError.code
+      : undefined;
+  const coverageNeedsReview =
+    displayedErrorCode === TRIAGE_FINANCING_UNDEFINED || displayedErrorCode === TRIAGE_SIS_FINANCING_REQUIRED;
   const isVisitBranchLoading =
     shouldResolveVisitBranch &&
     (visitBranchPreflight.status === 'not-needed' || visitBranchPreflight.status === 'loading');
@@ -883,7 +930,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
       <ModalHeader closeModal={closeModal} title={t('arrivalModalTitle', 'Registrar llegada')} />
       <ModalBody>
         <div className={styles.appointmentSummary}>
-          <p className={styles.patientName}>{appointment.patient.name}</p>
+          <p className={styles.patientName}>{formatPersonName(appointment.patient.name)}</p>
           <p className={styles.appointmentDetails}>
             {appointment.service?.name}
             {' · '}
@@ -949,6 +996,11 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         <Button disabled={isBusy} kind="secondary" onClick={closeModal}>
           {t('cancel', 'Cancelar')}
         </Button>
+        {coverageNeedsReview && canReviewPatientCoverage ? (
+          <Button disabled={isBusy} kind="tertiary" onClick={openPatientCoverageReview}>
+            {t('reviewPatientFinancing', 'Revisar financiamiento')}
+          </Button>
+        ) : null}
         {showDirectAction && !routingConfigurationError ? (
           <Button
             disabled={

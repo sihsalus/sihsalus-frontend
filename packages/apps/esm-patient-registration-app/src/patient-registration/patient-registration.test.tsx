@@ -28,7 +28,13 @@ import {
 import { generateIdentifier, saveEncounter, savePatient } from './patient-registration.resource';
 import type { AddressTemplate, Encounter, FormValues } from './patient-registration.types';
 import { useInitialFormValues } from './patient-registration-hooks';
-import { peruDniPatientIdentifierTypeUuid, peruPassportPatientIdentifierTypeUuid } from './peru-registration-config';
+import { usePersonAttributeType } from './field/person-attributes/person-attributes.resource';
+import {
+  peruDniPatientIdentifierTypeUuid,
+  peruInsuranceSelfFinancingConceptUuid,
+  peruInsuranceTypeAttributeTypeUuid,
+  peruPassportPatientIdentifierTypeUuid,
+} from './peru-registration-config';
 import { RegistrationDomainError, registrationErrorCodes } from './registration-errors';
 import { getPatientRelationshipsUrl } from './section/patient-relationships/relationships.resource';
 
@@ -41,6 +47,7 @@ const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
 const mockUsePatient = vi.mocked(usePatient);
 const mockUseParams = useParams as vi.Mock;
 const mockUseInitialFormValues = vi.mocked(useInitialFormValues);
+const mockUsePersonAttributeType = vi.mocked(usePersonAttributeType);
 const mockSearchLocalIdentityByDocument = vi.mocked(searchLocalIdentityByDocument);
 const mockUseSWRConfig = vi.mocked(useSWRConfig);
 const mockMutateSWR = vi.fn();
@@ -99,6 +106,11 @@ vi.mock('./field/field.resource', async () => ({
         isLoading: false,
       };
     }
+
+    return {
+      data: [{ display: 'Financiamiento propio', uuid: peruInsuranceSelfFinancingConceptUuid }],
+      isLoading: false,
+    };
   }),
 }));
 
@@ -136,6 +148,11 @@ vi.mock('./patient-registration-hooks', async () => ({
   usePatientUuidMap: vi.fn().mockReturnValue([{}, vi.fn()]),
 }));
 
+vi.mock('./field/person-attributes/person-attributes.resource', async () => ({
+  ...(await vi.importActual('./field/person-attributes/person-attributes.resource')),
+  usePersonAttributeType: vi.fn(),
+}));
+
 const mockResourcesContextValue: Resources = {
   addressTemplate: mockedAddressTemplate as AddressTemplate,
   currentSession: {
@@ -155,7 +172,20 @@ const mockOpenmrsConfig: RegistrationConfig = {
     { id: 'contact', name: 'Contact Info', fields: ['address'] },
     { id: 'relationships', name: 'Relationships', fields: ['relationship'] },
   ],
-  fieldDefinitions: [],
+  fieldDefinitions: [
+    {
+      id: 'insuranceType',
+      type: 'person attribute',
+      uuid: peruInsuranceTypeAttributeTypeUuid,
+      label: 'Financiador',
+      showHeading: false,
+      answerConceptSetUuid: '',
+      customConceptAnswers: [
+        { label: 'Financiamiento propio', uuid: peruInsuranceSelfFinancingConceptUuid },
+      ],
+      validation: { required: true },
+    },
+  ],
   fieldConfigurations: {
     phone: {
       personAttributeUuid: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
@@ -218,6 +248,7 @@ const mockOpenmrsConfig: RegistrationConfig = {
 const configWithObs = JSON.parse(JSON.stringify(mockOpenmrsConfig));
 
 configWithObs.fieldDefinitions = [
+  mockOpenmrsConfig.fieldDefinitions[0],
   {
     id: 'weight',
     type: 'obs',
@@ -274,6 +305,10 @@ const fillRequiredFields = async () => {
   await user.type(familyName2Input, 'Materno');
   fireEvent.change(dateInput, { target: { value: '1993-08-02' } });
   await user.click(genderInput);
+  await user.selectOptions(
+    screen.getByRole('combobox', { name: /^Financiador$/i }),
+    peruInsuranceSelfFinancingConceptUuid,
+  );
 };
 
 const Wrapper = ({ children }) => (
@@ -303,6 +338,15 @@ const getReactText = (node: ReactNode): string => {
 };
 
 beforeEach(() => {
+  mockUsePersonAttributeType.mockImplementation((uuid: string) => ({
+    data: {
+      uuid,
+      display: uuid === peruInsuranceTypeAttributeTypeUuid ? 'Financiador' : 'Atributo',
+      format: uuid === peruInsuranceTypeAttributeTypeUuid ? 'org.openmrs.Concept' : 'java.lang.String',
+    },
+    error: undefined,
+    isLoading: false,
+  }) as ReturnType<typeof usePersonAttributeType>);
   mockMutateSWR.mockReset();
   mockMutateSWR.mockResolvedValue(undefined);
   mockUseSWRConfig.mockReturnValue({ mutate: mockMutateSWR } as unknown as ReturnType<typeof useSWRConfig>);
@@ -473,7 +517,12 @@ describe('Registering a new patient', () => {
         ]),
         person: {
           addresses: expect.arrayContaining([expect.any(Object)]),
-          attributes: [],
+          attributes: expect.arrayContaining([
+            expect.objectContaining({
+              attributeType: peruInsuranceTypeAttributeTypeUuid,
+              value: peruInsuranceSelfFinancingConceptUuid,
+            }),
+          ]),
           birthdate: '1993-08-02',
           birthdateEstimated: false,
           gender: expect.stringMatching(/^M$/),
@@ -880,6 +929,7 @@ describe('Updating an existing patient record', () => {
         gender: 'male',
         givenName: 'John',
         identifiers: mockOpenmrsId,
+        attributes: { [peruInsuranceTypeAttributeTypeUuid]: peruInsuranceSelfFinancingConceptUuid },
         patientUuid: mockPatient.uuid,
         relationships: [
           {
@@ -921,6 +971,7 @@ describe('Updating an existing patient record', () => {
         gender: 'male',
         givenName: 'John',
         identifiers: mockOpenmrsId,
+        attributes: { [peruInsuranceTypeAttributeTypeUuid]: peruInsuranceSelfFinancingConceptUuid },
         patientUuid: mockPatient.uuid,
         relationships: [
           {
@@ -1036,7 +1087,7 @@ describe('Updating an existing patient record', () => {
       additionalMiddleName: '',
       addNameInLocalLanguage: false,
       address: {},
-      attributes: {},
+      attributes: { [peruInsuranceTypeAttributeTypeUuid]: peruInsuranceSelfFinancingConceptUuid },
       birthdate: new Date(1990, 0, 1),
       birthdateEstimated: false,
       deathCause: '',
@@ -1101,6 +1152,7 @@ describe('Updating an existing patient record', () => {
         additionalMiddleName: '',
         addNameInLocalLanguage: false,
         address: {},
+        attributes: { [peruInsuranceTypeAttributeTypeUuid]: peruInsuranceSelfFinancingConceptUuid },
         birthdate: new Date(1972, 3, 4),
         birthdateEstimated: false,
         deathCause: '',
@@ -1250,6 +1302,7 @@ describe('Updating an existing patient record', () => {
       additionalMiddleName: '',
       addNameInLocalLanguage: false,
       address: {},
+      attributes: { [peruInsuranceTypeAttributeTypeUuid]: peruInsuranceSelfFinancingConceptUuid },
       birthdate: new Date(1972, 3, 4),
       birthdateEstimated: false,
       deathCause: '',

@@ -253,6 +253,15 @@ describe('AppointmentsTable', () => {
     expect(screen.getByRole('columnheader', { name: /appointment time/i })).toBeInTheDocument();
   });
 
+  it('shows appointment modality separately from its workflow status', () => {
+    renderAppointmentsTable({ appointments: mockAppointments });
+
+    expect(screen.getByRole('columnheader', { name: /Appointment type/ })).toBeInTheDocument();
+    const patientRow = screen.getByRole('row', { name: /John Wilson/i });
+    expect(within(patientRow).getByRole('cell', { name: 'No programada presencial' })).toBeInTheDocument();
+    expect(within(patientRow).getByText('Programada')).toBeInTheDocument();
+  });
+
   it('shows the identity-document type and number without falling back to the clinical-history number', () => {
     const historyNumberAppointment = {
       ...mockAppointments[0],

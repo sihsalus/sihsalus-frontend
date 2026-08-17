@@ -13,11 +13,19 @@ import { PersonAttributeField } from './person-attributes/person-attribute-field
 
 export interface CustomFieldProps {
   name: string;
+  requiredOverride?: boolean;
 }
 
-export function CustomField({ name }: CustomFieldProps) {
+export function CustomField({ name, requiredOverride }: CustomFieldProps) {
   const config = getEffectiveRegistrationConfig(useConfig() as RegistrationConfig);
   const fieldDefinition = config.fieldDefinitions.filter((def) => def.id === name)[0];
+  const effectiveFieldDefinition =
+    requiredOverride === undefined
+      ? fieldDefinition
+      : {
+          ...fieldDefinition,
+          validation: { ...fieldDefinition.validation, required: requiredOverride },
+        };
   const { identifierTypes = [] } = useContext(ResourcesContext);
   const { values } = useContext(PatientRegistrationContext);
   const hasForeignIdentifier = useMemo(() => {
@@ -38,20 +46,20 @@ export function CustomField({ name }: CustomFieldProps) {
   }, [identifierTypes, values.identifiers]);
 
   if (name === 'nationality') {
-    return <NationalityField fieldDefinition={fieldDefinition} />;
+    return <NationalityField fieldDefinition={effectiveFieldDefinition} />;
   }
 
-  if (fieldDefinition.showIf?.foreignIdentifierPresent && !hasForeignIdentifier) {
+  if (effectiveFieldDefinition.showIf?.foreignIdentifierPresent && !hasForeignIdentifier) {
     return null;
   }
 
-  if (fieldDefinition.type === 'person attribute') {
-    return <PersonAttributeField fieldDefinition={fieldDefinition} />;
-  } else if (fieldDefinition.type === 'obs') {
-    return <ObsField fieldDefinition={fieldDefinition} />;
-  } else if (fieldDefinition.type === 'address') {
-    return <AddressField fieldDefinition={fieldDefinition} />;
+  if (effectiveFieldDefinition.type === 'person attribute') {
+    return <PersonAttributeField fieldDefinition={effectiveFieldDefinition} />;
+  } else if (effectiveFieldDefinition.type === 'obs') {
+    return <ObsField fieldDefinition={effectiveFieldDefinition} />;
+  } else if (effectiveFieldDefinition.type === 'address') {
+    return <AddressField fieldDefinition={effectiveFieldDefinition} />;
   } else {
-    return <div>Error: Unknown field type {fieldDefinition.type}</div>;
+    return <div>Error: Unknown field type {effectiveFieldDefinition.type}</div>;
   }
 }

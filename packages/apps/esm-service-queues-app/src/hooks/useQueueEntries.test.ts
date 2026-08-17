@@ -79,6 +79,10 @@ describe('queueEntryRepresentation', () => {
     expect(queueEntryRepresentation).toContain('patient:(uuid,display,person,identifiers:');
     expect(queueEntryRepresentation).not.toMatch(/person:\(/);
   });
+
+  it('expands visit attribute types so appointment links can be identified', () => {
+    expect(queueEntryRepresentation).toContain('attributeType:(uuid,display)');
+  });
 });
 
 describe('useQueueEntries representation', () => {

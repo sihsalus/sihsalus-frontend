@@ -191,7 +191,6 @@ const peruInsuranceFieldOrder = [
   'insuranceType',
   'sisLookup',
   'insuranceCode',
-  'insuranceAccreditationStatus',
   'insuranceAccreditationCheckedAt',
 ];
 const peruDemographicsFieldOrder = ['name', 'dob', 'gender', 'nationality'];
@@ -345,6 +344,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     label: 'Financiador',
     showHeading: false,
     answerConceptSetUuid: '6b932638-242e-49ef-8ba7-0ae87199835c',
+    validation: { required: true },
   },
   {
     id: 'insuranceCode',
@@ -439,6 +439,17 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
 function appendMissingById<T extends { id: string }>(configured: Array<T>, defaults: Array<T>) {
   const configuredIds = new Set(configured.map((item) => item.id));
   return [...configured, ...defaults.filter((item) => !configuredIds.has(item.id))];
+}
+
+function requirePeruFinancing(fields: Array<FieldDefinition>): Array<FieldDefinition> {
+  return fields.map((field) =>
+    field.id === 'insuranceType'
+      ? {
+          ...field,
+          validation: { ...field.validation, required: true },
+        }
+      : field,
+  );
 }
 
 function mergeSectionDefinitions(configured: Array<SectionDefinition>, defaults: Array<SectionDefinition>) {
@@ -625,7 +636,7 @@ export function getEffectiveRegistrationConfig(config: RegistrationConfig): Regi
         normalizePeruLookupSection(mergeSectionDefinitions(config.sectionDefinitions, peruSectionDefinitions)),
       ),
     ),
-    fieldDefinitions: appendMissingById(config.fieldDefinitions, peruFieldDefinitions),
+    fieldDefinitions: requirePeruFinancing(appendMissingById(config.fieldDefinitions, peruFieldDefinitions)),
     fieldConfigurations: {
       ...config.fieldConfigurations,
       name: {

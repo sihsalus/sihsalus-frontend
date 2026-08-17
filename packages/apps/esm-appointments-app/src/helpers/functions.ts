@@ -195,8 +195,8 @@ export const getAppointmentStatusLabel = (
 };
 
 const appointmentKindLabels: Record<AppointmentKind, { key: string; defaultValue: string }> = {
-  [AppointmentKind.SCHEDULED]: { key: 'scheduled', defaultValue: 'Programada' },
-  [AppointmentKind.WALKIN]: { key: 'walkIn', defaultValue: 'Sin cita' },
+  [AppointmentKind.SCHEDULED]: { key: 'scheduledInPerson', defaultValue: 'Programada presencial' },
+  [AppointmentKind.WALKIN]: { key: 'walkIn', defaultValue: 'No programada presencial' },
   [AppointmentKind.VIRTUAL]: { key: 'virtual', defaultValue: 'Virtual' },
 };
 

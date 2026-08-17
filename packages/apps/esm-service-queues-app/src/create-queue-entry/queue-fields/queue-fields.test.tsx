@@ -160,7 +160,9 @@ describe('QueueFields', () => {
     const assignedPriority = await screen.findByDisplayValue('High');
     expect(assignedPriority).toHaveAttribute('readonly');
     expect(screen.queryByRole('radio', { name: 'High' })).not.toBeInTheDocument();
-    expect(screen.getByText(/prioridad clínica.*triaje/i)).toBeInTheDocument();
+    expect(screen.getByText('Initial priority')).toBeInTheDocument();
+    expect(screen.getByLabelText('Automatically assigned priority')).toBe(assignedPriority);
+    expect(screen.getByText(/assigned automatically.*triage/i)).toBeInTheDocument();
   });
 
   it('blocks submission until a service is selected', async () => {
@@ -298,6 +300,21 @@ describe('QueueFields', () => {
     expect(service).toHaveAttribute('readonly');
     expect(screen.queryByRole('combobox', { name: 'Select a queue UPSS' })).not.toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: 'Select a service' })).not.toBeInTheDocument();
+  });
+
+  it('shows the appointment UPSS instead of the technical queue location', async () => {
+    render(
+      <QueueFields
+        currentQueueLocationUuid="1"
+        requestedUpssName="UPSS - CONSULTA EXTERNA"
+        setCallbacks={vi.fn()}
+      />,
+    );
+
+    const upss = await screen.findByRole('textbox', { name: 'UPSS' });
+    expect(upss).toHaveValue('UPSS - CONSULTA EXTERNA');
+    expect(upss).toHaveAttribute('readonly');
+    expect(screen.queryByDisplayValue('Location 1')).not.toBeInTheDocument();
   });
 
   it('shows a contextual error instead of a stale fixed Queue Location UUID', () => {

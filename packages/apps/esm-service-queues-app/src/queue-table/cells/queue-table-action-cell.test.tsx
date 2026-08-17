@@ -12,7 +12,12 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockQueueEntryAlice, mockSession } from 'test-utils';
 
-import { serviceQueuesEditPrivilege, serviceQueuesPrivilege, vitalsEditPrivilege } from '../../constants';
+import {
+  admissionPrivilege,
+  serviceQueuesEditPrivilege,
+  serviceQueuesPrivilege,
+  vitalsEditPrivilege,
+} from '../../constants';
 import {
   getAppointmentTriageConfig,
   revalidateCurrentSisState,
@@ -78,6 +83,22 @@ describe('QueueTableActionCell', () => {
 
     render(<QueueTableActionCell queueEntry={mockQueueEntryAlice} />);
 
+    expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
+  });
+
+  it('does not expose patient status actions to an admission-only user', () => {
+    mockUserHasAccess.mockImplementation(
+      (privilege) =>
+        privilege === admissionPrivilege ||
+        privilege === serviceQueuesEditPrivilege ||
+        privilege === 'Get Queue Entries' ||
+        privilege === 'Get Queues' ||
+        privilege === 'Manage Queue Entries',
+    );
+
+    render(<QueueTableActionCell queueEntry={mockQueueEntryAlice} />);
+
+    expect(screen.queryByRole('button', { name: 'Transition' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
   });
 

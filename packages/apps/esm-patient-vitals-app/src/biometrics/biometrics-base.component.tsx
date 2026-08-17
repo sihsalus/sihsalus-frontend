@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { shouldShowBmi, useVitalsAndBiometrics, useVitalsConceptMetadata, withUnit } from '../common';
 import { type ConfigObject } from '../config-schema';
 import { launchVitalsAndBiometricsForm } from '../utils';
+import { isMuacApplicableAge } from '../vitals-biometrics-form/vitals-biometrics-form.utils';
 
 import styles from './biometrics-base.scss';
 import BiometricsChart from './biometrics-chart.component';
@@ -45,6 +46,7 @@ const BiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pageSize, 
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
 
   const showBmi = shouldShowBmi(patient, config.biometrics);
+  const showMuac = patient?.birthDate ? isMuacApplicableAge(patient.birthDate) : true;
 
   const launchBiometricsForm = useCallback(
     () => launchVitalsAndBiometricsForm(currentVisit, config),
@@ -81,12 +83,17 @@ const BiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pageSize, 
           },
         ]
       : []),
-    {
-      key: 'muacRender',
-      header: withUnit(t('muac', 'MUAC'), conceptUnits.get(config.concepts.midUpperArmCircumferenceUuid) ?? ''),
-      isSortable: true,
-      sortFunc: (valueA, valueB) => (valueA.muac && valueB.muac ? valueA.muac - valueB.muac : 0),
-    },
+    ...(showMuac
+      ? [
+          {
+            key: 'muacRender' as const,
+            header: withUnit(t('muac', 'MUAC'), conceptUnits.get(config.concepts.midUpperArmCircumferenceUuid) ?? ''),
+            isSortable: true,
+            sortFunc: (valueA: BiometricsTableRow, valueB: BiometricsTableRow) =>
+              valueA.muac && valueB.muac ? valueA.muac - valueB.muac : 0,
+          },
+        ]
+      : []),
     {
       key: 'abdominalCircumferenceRender',
       header: withUnit(
@@ -152,7 +159,12 @@ const BiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pageSize, 
           </div>
         </CardHeader>
         {chartView ? (
-          <BiometricsChart patientBiometrics={biometrics} conceptUnits={conceptUnits} config={config} />
+          <BiometricsChart
+            patientBiometrics={biometrics}
+            conceptUnits={conceptUnits}
+            config={config}
+            showMuac={showMuac}
+          />
         ) : (
           <PaginatedBiometrics
             tableRows={tableRows}

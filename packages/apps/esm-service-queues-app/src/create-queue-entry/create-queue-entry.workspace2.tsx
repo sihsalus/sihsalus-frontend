@@ -16,7 +16,7 @@ import {
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
-import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
+import { formatPersonName, getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -44,6 +44,7 @@ interface CreateQueueEntryWorkspace2Props {
   startVisitWorkspaceName?: string;
   visitFormOpenedFrom?: string;
   patient?: fhir.Patient;
+  requestedUpssName?: string;
   requestedServiceName?: string;
   requiredVisitLocation?: {
     uuid: string;
@@ -72,6 +73,7 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
     onBeforeQueueEntrySave,
     onQueueEntryAdded,
     patient: searchedPatient,
+    requestedUpssName,
     requestedServiceName,
     requiredVisitLocation,
     requiredVisitTypeUuid,
@@ -168,6 +170,7 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
       onBeforeVisitSave: onBeforeQueueEntrySave,
       patient: searchedPatient ?? patient,
       patientUuid: selectedPatientUuid,
+      requestedUpssName,
       requestedServiceName,
       requiredVisitLocation,
       requiredVisitTypeUuid,
@@ -214,6 +217,7 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
     startVisitPreflightState,
     startVisitLaunchState,
     requestedServiceName,
+    requestedUpssName,
     requiredVisitLocation,
     requiredVisitTypeUuid,
     t,
@@ -221,7 +225,7 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
   ]);
 
   const patientToDisplay = patient ?? searchedPatient;
-  const patientName = patientToDisplay && getPatientName(patientToDisplay);
+  const patientName = patientToDisplay && formatPersonName(getPatientName(patientToDisplay));
 
   return (
     <Workspace2 title={t('addPatientToQueue', 'Add patient to queue')}>
@@ -272,6 +276,7 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
               currentServiceQueueUuid={currentServiceQueueUuid}
               onBeforeQueueEntrySave={onBeforeQueueEntrySave}
               onQueueEntryAdded={handleQueueEntryAdded}
+              requestedUpssName={requestedUpssName}
               requestedServiceName={requestedServiceName}
             />
           ) : requiredVisitLocation ? (

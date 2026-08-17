@@ -19,6 +19,21 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(peruInsuranceSelfFinancingConceptUuid).toBe('cc72568e-d0d9-46a8-a618-91f0d679f518');
   });
 
+  it('keeps the financer required even when an installation override marks it optional', () => {
+    const baseConfig = getEffectiveRegistrationConfig(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
+    const overriddenConfig = {
+      ...baseConfig,
+      fieldDefinitions: baseConfig.fieldDefinitions.map((field) =>
+        field.id === 'insuranceType'
+          ? { ...field, validation: { ...field.validation, required: false } }
+          : field,
+      ),
+    };
+
+    const config = getEffectiveRegistrationConfig(overriddenConfig);
+    expect(config.fieldDefinitions.find(({ id }) => id === 'insuranceType')?.validation?.required).toBe(true);
+  });
+
   it('orders Peru basic info fields for registration', () => {
     const config = getEffectiveRegistrationConfig(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
 
@@ -35,7 +50,6 @@ describe('getEffectiveRegistrationConfig', () => {
       'insuranceType',
       'sisLookup',
       'insuranceCode',
-      'insuranceAccreditationStatus',
       'insuranceAccreditationCheckedAt',
     ]);
     expect(demographics?.fields).toEqual(['name', 'dob', 'gender', 'nationality']);
@@ -159,6 +173,7 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(fieldsById.insuranceType.answerConceptSetUuid).toBe('6b932638-242e-49ef-8ba7-0ae87199835c');
     expect(fieldsById.insuranceType.customConceptAnswers).toBeUndefined();
     expect(fieldsById.insuranceType.label).toBe('Financiador');
+    expect(fieldsById.insuranceType.validation).toEqual({ required: true });
     expect(fieldsById.insuranceCode.label).toBe('Código de seguro o afiliación');
     expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.name).toBe('Financiador');
     expect(fieldsById.rhFactor.customConceptAnswers).toEqual([

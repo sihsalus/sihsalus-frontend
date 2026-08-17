@@ -1,6 +1,7 @@
 import { Button } from '@carbon/react';
 import { ArrowLeft } from '@carbon/react/icons';
 import { getPatientName, PatientBannerPatientInfo, PatientPhoto } from '@openmrs/esm-framework';
+import { formatPersonName } from '@openmrs/esm-utils';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -14,7 +15,7 @@ interface PatientAppointmentsHeaderProps {
 const PatientAppointmentsHeader: React.FC<PatientAppointmentsHeaderProps> = ({ patient }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const patientName = getPatientName(patient);
+  const patientName = formatPersonName(getPatientName(patient));
 
   return (
     <header>

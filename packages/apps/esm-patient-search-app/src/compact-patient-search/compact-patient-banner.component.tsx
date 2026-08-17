@@ -1,4 +1,5 @@
 import { ConfigurableLink, ExtensionSlot, getPatientName, PatientPhoto, useConfig } from '@openmrs/esm-framework';
+import { formatPersonName } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { forwardRef, useCallback, useContext, useMemo } from 'react';
 
@@ -35,7 +36,7 @@ const CompactPatientBanner = forwardRef<HTMLDivElement, CompactPatientBannerProp
 
   const renderPatient = useCallback(
     (patient: fhir.Patient & { id: string }, index: number) => {
-      const patientName = getPatientName(patient);
+      const patientName = formatPersonName(getPatientName(patient));
 
       return (
         <div className={styles.patientSearchResultContainer} key={patient.id} tabIndex={-1}>

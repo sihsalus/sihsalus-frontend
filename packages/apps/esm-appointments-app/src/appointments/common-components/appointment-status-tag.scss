@@ -1,0 +1,7 @@
+@use '@carbon/colors';
+@use '@carbon/type';
+
+.cancelledStatus {
+  @include type.type-style('body-compact-01');
+  color: colors.$red-60;
+}

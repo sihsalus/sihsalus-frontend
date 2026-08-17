@@ -30,6 +30,7 @@ const StartVisitButton2 = ({
         ...startVisitWorkspaceProps,
         patient,
         patientUuid,
+        showPatientHeader: true,
       });
     } catch (error) {
       console.error('Error launching visit form workspace:', error);

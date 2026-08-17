@@ -16,6 +16,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AppointmentStatusTag } from '../appointments/common-components/appointment-status-tag.component';
 import { getAppointmentKindLabel, getAppointmentProviderName, getAppointmentStatusLabel } from '../helpers';
 import { type Appointment } from '../types';
 
@@ -59,9 +60,9 @@ const PatientAppointmentsTable: React.FC<AppointmentTableProps> = ({
       { key: 'date', header: t('date', 'Date') },
       { key: 'location', header: t('location', 'UPSS') },
       { key: 'service', header: t('service', 'Service') },
-      { key: 'provider', header: t('responsibleProvider', 'Responsible provider') },
+      { key: 'provider', header: t('provider', 'Provider') },
       { key: 'status', header: t('status', 'Status') },
-      { key: 'type', header: t('type', 'Type') },
+      { key: 'type', header: t('appointmentType', 'Appointment type') },
       { key: 'notes', header: t('notes', 'Notes') },
     ],
     [t],
@@ -82,6 +83,10 @@ const PatientAppointmentsTable: React.FC<AppointmentTableProps> = ({
         };
       }),
     [paginatedAppointments, t],
+  );
+  const appointmentsByUuid = useMemo(
+    () => new Map(paginatedAppointments.map((appointment) => [appointment.uuid, appointment])),
+    [paginatedAppointments],
   );
 
   return (
@@ -112,16 +117,28 @@ const PatientAppointmentsTable: React.FC<AppointmentTableProps> = ({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row, i) => (
-                  <TableRow key={row.id}>
-                    {row.cells.map((cell) => (
-                      <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
-                    ))}
-                    <TableCell className="cds--table-column-menu">
-                      <PatientAppointmentsActionMenu appointment={paginatedAppointments[i]} patientUuid={patientUuid} />
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {rows.map((row) => {
+                  const appointment = appointmentsByUuid.get(row.id);
+
+                  return (
+                    <TableRow key={row.id}>
+                      {row.cells.map((cell) => (
+                        <TableCell key={cell.id}>
+                          {cell.info.header === 'status' ? (
+                            <AppointmentStatusTag status={appointment?.status} />
+                          ) : (
+                            (cell.value?.content ?? cell.value)
+                          )}
+                        </TableCell>
+                      ))}
+                      <TableCell className="cds--table-column-menu">
+                        {appointment ? (
+                          <PatientAppointmentsActionMenu appointment={appointment} patientUuid={patientUuid} />
+                        ) : null}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>

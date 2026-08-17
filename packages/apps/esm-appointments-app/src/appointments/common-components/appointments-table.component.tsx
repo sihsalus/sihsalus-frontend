@@ -19,7 +19,6 @@ import {
   TableRow,
   TableSelectAll,
   TableSelectRow,
-  Tag,
   Tile,
 } from '@carbon/react';
 import { Download } from '@carbon/react/icons';
@@ -36,6 +35,7 @@ import {
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
+import { formatPersonName } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
@@ -49,8 +49,8 @@ import { appointmentsEditPrivileges, clinicalChartPrivilege } from '../../consta
 import { EmptyState } from '../../empty-state/empty-state.component';
 import {
   canTransition,
+  getAppointmentKindLabel,
   getAppointmentProviderName,
-  getAppointmentStatusLabel,
   isAppointmentEditable,
 } from '../../helpers';
 import { createAppointmentsExportFileName, exportAppointmentsToSpreadsheet } from '../../helpers/excel';
@@ -60,6 +60,7 @@ import { type Appointment, AppointmentStatus } from '../../types';
 import AppointmentDetails from '../details/appointment-details.component';
 import { getPageSizes, useAppointmentSearchResults } from '../utils';
 
+import { AppointmentStatusTag } from './appointment-status-tag.component';
 import AppointmentActions from './appointments-actions.component';
 import styles from './appointments-table.scss';
 
@@ -111,30 +112,6 @@ function PatientDocumentCell({ appointment }: { appointment: Appointment }) {
   });
 
   return appointmentDocument || <PatientDocumentFromPatientResource patientUuid={appointment.patient.uuid} />;
-}
-
-type CarbonTagType = 'blue' | 'cool-gray' | 'cyan' | 'gray' | 'green' | 'purple' | 'red' | 'teal';
-
-const appointmentStatusTagTypes: Partial<Record<AppointmentStatus, CarbonTagType>> = {
-  [AppointmentStatus.REQUESTED]: 'purple',
-  [AppointmentStatus.WAITLIST]: 'gray',
-  [AppointmentStatus.SCHEDULED]: 'blue',
-  [AppointmentStatus.ARRIVED]: 'teal',
-  [AppointmentStatus.CHECKEDIN]: 'cyan',
-  [AppointmentStatus.COMPLETED]: 'green',
-  [AppointmentStatus.MISSED]: 'red',
-};
-
-function AppointmentStatusTag({ status }: { status: AppointmentStatus | string | null | undefined }) {
-  const { t } = useTranslation();
-  const label = getAppointmentStatusLabel(status, t);
-  if (!label) {
-    return null;
-  }
-  if (status === AppointmentStatus.CANCELLED) {
-    return <span className={styles.cancelledStatus}>{label}</span>;
-  }
-  return <Tag type={appointmentStatusTagTypes[status as AppointmentStatus] ?? 'gray'}>{label}</Tag>;
 }
 
 const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
@@ -233,6 +210,10 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
       key: 'provider',
     },
     {
+      header: t('appointmentType', 'Appointment type'),
+      key: 'appointmentKind',
+    },
+    {
       header: t('status', 'Status'),
       key: 'status',
     },
@@ -250,10 +231,10 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
         to={customPatientChartUrl}
         templateParams={{ patientUuid: appointment.patient.uuid }}
       >
-        {appointment.patient.name}
+        {formatPersonName(appointment.patient.name)}
       </ConfigurableLink>
     ) : (
-      appointment.patient.name
+      formatPersonName(appointment.patient.name)
     ),
     nextAppointmentDate: '--',
     identifier: resolvedDocumentIdentifiers.get(appointment.uuid) || '-',
@@ -261,6 +242,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
     serviceType: appointment.service.name,
     location: appointment.location?.name ?? appointment.service.location?.display ?? '—',
     provider: getAppointmentProviderName(appointment) ?? t('unassignedProvider', 'No provider assigned'),
+    appointmentKind: getAppointmentKindLabel(appointment.appointmentKind, t),
     status: <AppointmentStatusTag status={appointment.status} />,
     care: <AppointmentActions appointment={appointment} />,
   }));

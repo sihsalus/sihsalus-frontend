@@ -25,6 +25,11 @@ const testProps = {
   patient: mockFhirPatient as fhir.Patient,
 };
 
+const pediatricPatient = {
+  ...mockFhirPatient,
+  birthDate: new Date(new Date().setFullYear(new Date().getFullYear() - 2)).toISOString().slice(0, 10),
+} as fhir.Patient;
+
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseVitalsAndBiometrics = vi.mocked(useVitalsAndBiometrics);
 const mockUserHasAccess = vi.mocked(userHasAccess);
@@ -113,7 +118,7 @@ describe('BiometricsOverview', () => {
 
     const initialRowElements = getDataRowText();
 
-    const expectedColumnHeaders = [/date/, /weight/, /height/, /bmi/, /muac/, /abdominal circumference/];
+    const expectedColumnHeaders = [/date/, /weight/, /height/, /bmi/, /abdominal circumference/];
     expectedColumnHeaders.map((header) =>
       expect(screen.getByRole('columnheader', { name: new RegExp(header, 'i') })).toBeInTheDocument(),
     );
@@ -122,9 +127,10 @@ describe('BiometricsOverview', () => {
     expect(
       tableRows.some(
         (row) =>
-          row.includes('90') && row.includes('186') && row.includes('26.0') && row.includes('17') && row.includes('95'),
+          row.includes('90') && row.includes('186') && row.includes('26.0') && row.includes('95'),
       ),
     ).toBe(true);
+    expect(screen.queryByRole('columnheader', { name: /muac/i })).not.toBeInTheDocument();
 
     const sortRowsButton = screen.getByRole('button', { name: /date and time/i });
 
@@ -167,12 +173,12 @@ describe('BiometricsOverview', () => {
     expect(screen.getByRole('tab', { name: /weight/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /height/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /bmi/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /muac/i })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /muac/i })).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /abdominal circumference/i })).toBeInTheDocument();
 
     const biometricSelector = screen.getByRole('tablist', { name: /biometric displayed/i });
     const biometricTabs = within(biometricSelector).getAllByRole('tab');
-    expect(biometricTabs).toHaveLength(5);
+    expect(biometricTabs).toHaveLength(4);
     expect(biometricSelector).toHaveAttribute('aria-orientation', 'vertical');
     expect(biometricSelector.closest('.cds--tabs--vertical')).not.toBeNull();
     biometricTabs.forEach((tab) => {
@@ -213,6 +219,17 @@ describe('BiometricsOverview', () => {
     });
   });
 
+  it('shows MUAC history for a child younger than 60 months', async () => {
+    mockUseVitalsAndBiometrics.mockReturnValue({
+      data: formattedBiometrics,
+    } as ReturnType<typeof useVitalsAndBiometrics>);
+
+    renderWithSwr(<BiometricsOverview {...testProps} patient={pediatricPatient} />);
+
+    await waitForLoadingToFinish();
+    expect(screen.getByRole('columnheader', { name: /muac/i })).toBeInTheDocument();
+  });
+
   it('shows every biometric selector without horizontal scrolling on small screens', async () => {
     const originalMatchMedia = window.matchMedia;
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -232,7 +249,7 @@ describe('BiometricsOverview', () => {
         data: formattedBiometrics.slice(0, 2),
       } as ReturnType<typeof useVitalsAndBiometrics>);
 
-      renderWithSwr(<BiometricsOverview {...testProps} />);
+      renderWithSwr(<BiometricsOverview {...testProps} patient={pediatricPatient} />);
       await waitForLoadingToFinish();
       await user.click(screen.getByRole('tab', { name: /chart view/i }));
 

@@ -288,7 +288,7 @@ Antes de sumar funcionalidad clinica nueva, revisar:
 
 ## Environment Variables
 
-Crea un archivo `.env` en la raíz del repo (ver [.env.template](.env.template)). `yarn start` carga ese archivo directamente. Los comandos de ensamble leen `SPA_PATH`, `API_URL` y `SIHSALUS_PUBLIC_SPA_URL` del entorno del proceso; expórtalas en la shell o defínelas en `.env.yarn` cuando deban afectar `yarn assemble`.
+Crea un archivo `.env` en la raíz del repo (ver [.env.template](.env.template)). `yarn start` carga ese archivo directamente. Los comandos de ensamble leen `SPA_PATH`, `API_URL`, `SIHSALUS_PUBLIC_SPA_URL` y, como respaldo para los metatags sociales, `SIHSALUS_BACKEND_URL` del entorno del proceso; expórtalas en la shell o defínelas en `.env.yarn` cuando deban afectar `yarn assemble`.
 
 | Variable | Ámbito y valor por defecto | Descripción |
 | --- | --- | --- |
@@ -300,7 +300,7 @@ Crea un archivo `.env` en la raíz del repo (ver [.env.template](.env.template))
 | `SIHSALUS_AUTH_MODE` | Dev server; `openmrs` | Modo de autenticación: `openmrs` o `keycloak` |
 | `SIHSALUS_ALLOW_SELF_SIGNED_TLS` | Dev/E2E; la plantilla usa `true`; si se omite, es automático solo para los hosts DEV/QLTY conocidos | `true` desactiva la verificación TLS para el backend configurado; usa un override explícito solo en entornos controlados |
 | `SIHSALUS_FHIR_BASE` | Dev server; derivado de `SIHSALUS_BACKEND_URL` | URL base de FHIR R4 mostrada y propagada al proceso de desarrollo |
-| `SIHSALUS_PUBLIC_SPA_URL` | Ensamble; vacío | URL pública absoluta usada para metatags Open Graph/Twitter |
+| `SIHSALUS_PUBLIC_SPA_URL` | Ensamble; vacío | URL pública absoluta usada para metatags Open Graph/Twitter; si falta, el ensamble deriva el origen de `SIHSALUS_BACKEND_URL` + `SPA_PATH` y advierte cuando el resultado no es absoluto |
 | `SIHSALUS_DEV_LOCAL_CONFIG_RATE_LIMIT_WINDOW_MS` | `openmrs develop`; `60000` | Ventana del límite por IP para leer configuración local |
 | `SIHSALUS_DEV_LOCAL_CONFIG_RATE_LIMIT_MAX` | `openmrs develop`; `300` | Máximo de lecturas por IP y ventana; cero no desactiva esta protección |
 | `SPA_PATH` | Ensamble/contenedor; `/openmrs/spa` | Ruta base de los assets del SPA |

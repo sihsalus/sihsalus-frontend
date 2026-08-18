@@ -11,12 +11,12 @@ import { z } from 'zod';
 
 import { credAntecedentsEditPrivilege } from '../../constants';
 import { type DefaultPatientWorkspaceProps } from '../../types';
-import { type ConditionDataTableRow, useConditions } from './conditions.resource';
+import { type Condition, useConditions } from './conditions.resource';
 import styles from './conditions-form.scss';
 import ConditionsWidget from './conditions-widget.component';
 
 interface ConditionFormProps extends DefaultPatientWorkspaceProps {
-  condition?: ConditionDataTableRow;
+  condition?: Condition;
   formContext: 'creating' | 'editing';
 }
 

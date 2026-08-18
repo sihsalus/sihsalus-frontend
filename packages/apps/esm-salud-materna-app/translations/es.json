@@ -37,6 +37,7 @@
   "completedPlural": "completos",
   "condition": "Condición",
   "conditionDeleted": "Condición eliminada",
+  "conditionEditUnavailable": "No se pudo cargar la condición a editar. Recargue e intente nuevamente.",
   "conditionNowVisible": "Ahora es visible en la página de condiciones",
   "conditionRequired": "Se requiere una condición",
   "conditions": "Condiciones",

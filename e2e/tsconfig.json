@@ -2,12 +2,30 @@
   "$schema": "https://json.schemastore.org/tsconfig.json",
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "noEmit": true,
-    "types": ["node", "@playwright/test"]
+    "types": [
+      "node",
+      "@playwright/test"
+    ]
   },
-  "include": ["global-setup.ts", "tests/**/*.ts", "patient-imaging/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "global-setup.ts",
+    "tests/**/*.ts",
+    "utils/**/*.ts",
+    "cohort-builder/**/*.ts",
+    "dyaku/**/*.ts",
+    "patient-imaging/**/*.ts",
+    "stock-management/**/*.ts",
+    "user-onboarding/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

@@ -1,7 +1,11 @@
 export interface DateFilterContext {
   dateRange: Date[];
   setDateRange: (dateRange: Date[]) => void;
+  dateFilterMode: FuaDateFilterMode;
+  setDateFilterMode: (dateFilterMode: FuaDateFilterMode) => void;
 }
+
+export type FuaDateFilterMode = 'none' | 'created' | 'updated' | 'both';
 
 // FUA status lifecycle
 export type FuaEstado = 'PENDIENTE' | 'EN_PROCESO' | 'ENVIADO_SETI_SIS' | 'COMPLETADO' | 'RECHAZADO' | 'CANCELADO';

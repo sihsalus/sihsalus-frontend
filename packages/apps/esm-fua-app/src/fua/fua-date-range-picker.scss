@@ -1,9 +1,20 @@
 @use '@carbon/layout';
+@use '@carbon/type';
 
 .datePickerWrapper {
   display: flex;
-  gap: layout.$spacing-03;
+  gap: layout.$spacing-05;
   align-items: center;
+
+  :global(.cds--select-input) {
+    min-width: 11rem;
+  }
+}
+
+.filterLabel {
+  @include type.type-style('body-compact-01');
+  color: var(--cds-text-secondary);
+  white-space: nowrap;
 }
 
 .dateRangePicker {

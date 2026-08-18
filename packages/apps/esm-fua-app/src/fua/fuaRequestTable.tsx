@@ -4,6 +4,8 @@ import {
   DataTableSkeleton,
   Layer,
   Pagination,
+  Select,
+  SelectItem,
   Table,
   TableBody,
   TableCell,
@@ -34,7 +36,7 @@ import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 
 import { ModuleFuaRestURL } from '../constant';
-import useFuaRequests, { type FuaRequest } from '../hooks/useFuaRequests';
+import useFuaRequests, { type FuaRequest, useFuaEstados } from '../hooks/useFuaRequests';
 import type { VisitPatientInfo } from '../hooks/useVisit';
 import { exportFuasToExcel } from '../utils/fua-export';
 import { loadSafeFuaHtmlInWindow } from '../utils/safe-fua-html';
@@ -60,18 +62,31 @@ type TagType =
   | 'outline';
 
 const estadoTagType: Record<string, TagType> = {
-  Pendiente: 'gray',
+  Pendiente: 'warm-gray',
   'En Proceso': 'blue',
-  Completado: 'green',
+  Completado: 'teal',
   'Enviado a SETI-SIS': 'cyan',
   Rechazado: 'red',
   Cancelado: 'magenta',
+};
+
+const estadoClassName: Record<string, string> = {
+  Pendiente: styles.estadoPendiente,
+  'En Proceso': styles.estadoEnProceso,
+  Completado: styles.estadoCompletado,
+  'Enviado a SETI-SIS': styles.estadoEnviado,
+  Rechazado: styles.estadoRechazado,
+  Cancelado: styles.estadoCancelado,
 };
 
 interface FuaRequestPatientInfo {
   display: string;
   identifier: string | null;
   searchableText: string;
+}
+
+function getPatientDisplayName(display: string | null | undefined) {
+  return display?.replace(/^\s*[^-]+?\s+-\s+/, '').trim() ?? '';
 }
 
 interface FuaActionsCellProps {
@@ -132,12 +147,13 @@ async function fetchFuaRequestPatients(_key: string, visitUuids: Array<string>) 
       );
       const patient = response.data?.patient;
       const identifier = getPreferredIdentifier(patient?.identifiers ?? [])?.identifier ?? null;
-      const searchableText = [patient?.display, identifier].filter(Boolean).join(' ').toLowerCase();
+      const display = getPatientDisplayName(patient?.display);
+      const searchableText = [display, identifier].filter(Boolean).join(' ').toLowerCase();
 
       return [
         visitUuid,
         {
-          display: patient?.display ?? '',
+          display,
           identifier,
           searchableText,
         },
@@ -182,8 +198,10 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
     status: statusFilter !== 'all' ? statusFilter : null,
     excludeCanceled: true,
   });
+  const { estados } = useFuaEstados();
 
   const [searchString, setSearchString] = useState('');
+  const [selectedEstadoUuid, setSelectedEstadoUuid] = useState('all');
   const [downloadingVisitUuids, setDownloadingVisitUuids] = useState<ReadonlySet<string>>(new Set());
   const visitUuids = useMemo(
     () => Array.from(new Set((fuaOrders ?? []).map((request) => request.visitUuid).filter(Boolean))).sort(),
@@ -196,11 +214,16 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
 
   const filteredData = useMemo(() => {
     if (!fuaOrders) return [];
-    if (!searchString) return fuaOrders;
-    if (!patientInfoByVisitUuid) return fuaOrders;
+    const estadoFilteredOrders =
+      selectedEstadoUuid === 'all'
+        ? fuaOrders
+        : fuaOrders.filter((req) => req.fuaEstado?.uuid === selectedEstadoUuid);
+
+    if (!searchString) return estadoFilteredOrders;
+    if (!patientInfoByVisitUuid) return estadoFilteredOrders;
     const search = searchString.toLowerCase().trim();
-    return fuaOrders.filter((req) => patientInfoByVisitUuid.get(req.visitUuid)?.searchableText.includes(search));
-  }, [fuaOrders, patientInfoByVisitUuid, searchString]);
+    return estadoFilteredOrders.filter((req) => patientInfoByVisitUuid.get(req.visitUuid)?.searchableText.includes(search));
+  }, [fuaOrders, patientInfoByVisitUuid, searchString, selectedEstadoUuid]);
 
   const pageSizes = [10, 20, 30, 40, 50];
   const [currentPageSize, setPageSize] = useState(10);
@@ -366,32 +389,50 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
         {({ rows, headers, getHeaderProps, getTableProps, getRowProps }) => (
           <TableContainer className={styles.tableContainer}>
             <TableToolbar>
-              <TableToolbarContent className={styles.toolbarContent}>
-                <Layer className={styles.toolbarItem}>
-                  <FuaDateRangePicker />
-                </Layer>
-                <Layer className={styles.toolbarItem}>
+              <TableToolbarContent className={`${styles.toolbarContent} ${styles.requestToolbarContent}`}>
+                <Layer className={`${styles.toolbarItem} ${styles.requestSearchFilter}`}>
                   <TableToolbarSearch
                     expanded
                     onChange={(e) => {
                       setSearchString(typeof e === 'string' ? e : e.target.value);
                     }}
-                    placeholder={t('searchThisList', 'Buscar en esta lista')}
+                    placeholder={t('searchNameOrDni', 'Buscar Nombre o DNI')}
                     size="sm"
                   />
                 </Layer>
-                <Button
-                  kind="ghost"
-                  size="sm"
-                  renderIcon={Download}
-                  onClick={handleExport}
-                  disabled={filteredData.length === 0}
-                >
-                  {t('exportExcel', 'Exportar a Excel')}
-                </Button>
-                <Button kind="ghost" size="sm" renderIcon={Renew} onClick={handleRefresh} disabled={isValidating}>
-                  {isValidating ? t('refreshing', 'Actualizando...') : t('refresh', 'Actualizar')}
-                </Button>
+                <Layer className={`${styles.toolbarItem} ${styles.requestStatusFilter}`}>
+                  <span className={styles.filterLabel}>{t('status', 'Estado')}:</span>
+                  <Select
+                    id="fua-request-status-filter"
+                    hideLabel
+                    labelText={t('filterByStatus', 'Filtrar por estado')}
+                    size="md"
+                    value={selectedEstadoUuid}
+                    onChange={(event) => setSelectedEstadoUuid(event.target.value)}
+                  >
+                    <SelectItem value="all" text={t('allStatuses', 'Todos los estados')} />
+                    {estados.map((estado) => (
+                      <SelectItem key={estado.uuid} value={estado.uuid} text={estado.nombre} />
+                    ))}
+                  </Select>
+                </Layer>
+                <Layer className={`${styles.toolbarItem} ${styles.requestDateFilter}`}>
+                  <FuaDateRangePicker />
+                </Layer>
+                <div className={`${styles.toolbarActions} ${styles.requestToolbarActions}`}>
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    renderIcon={Download}
+                    onClick={handleExport}
+                    disabled={filteredData.length === 0}
+                  >
+                    {t('exportExcel', 'Exportar a Excel')}
+                  </Button>
+                  <Button kind="ghost" size="sm" renderIcon={Renew} onClick={handleRefresh} disabled={isValidating}>
+                    {isValidating ? t('refreshing', 'Actualizando...') : t('refresh', 'Actualizar')}
+                  </Button>
+                </div>
               </TableToolbarContent>
             </TableToolbar>
             <Table {...getTableProps()} className={styles.table} aria-label={t('fuaRequests', 'Solicitudes FUA')}>
@@ -422,7 +463,11 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
                             />
                           ) : cell.info.header === 'estado' ? (
                             <div>
-                              <Tag type={estadoTagType[cell.value] || 'gray'} size="sm">
+                              <Tag
+                                type={estadoTagType[cell.value] || 'gray'}
+                                size="sm"
+                                className={estadoClassName[cell.value]}
+                              >
                                 {cell.value}
                               </Tag>
                               {fuaRequest?.observacionesSetiSis && (

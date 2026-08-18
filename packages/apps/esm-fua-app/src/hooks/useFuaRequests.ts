@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import useSWR, { mutate as mutateSwr } from 'swr';
 
 import { ModuleFuaRestURL } from '../constant';
+import type { FuaDateFilterMode } from '../types';
 
 export interface FuaEstado {
   uuid: string;
@@ -32,6 +33,7 @@ export interface FuaRequest {
 
 export interface DateFilterContext {
   dateRange: [Date, Date];
+  dateFilterMode: FuaDateFilterMode;
 }
 
 const useFuaRequestsDefaultParams: UseFuaRequestsParams = {
@@ -57,6 +59,56 @@ function normalizeFuaRequestsPayload(payload: unknown): Array<FuaRequest> {
   }
 
   return [];
+}
+
+function normalizeFuaEstadosPayload(payload: unknown): Array<FuaEstado> {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (payload && typeof payload === 'object' && 'results' in payload) {
+    const results = (payload as { results?: unknown }).results;
+    return Array.isArray(results) ? results : [];
+  }
+
+  return [];
+}
+
+function isDateInRange(value: number | string | null | undefined, dateRange: Array<Date>) {
+  const [startDate, endDate] = dateRange;
+
+  if (!value || !startDate || !endDate) {
+    return true;
+  }
+
+  const timestamp = dayjs(value).valueOf();
+  const start = dayjs(startDate).startOf('day').valueOf();
+  const end = dayjs(endDate).endOf('day').valueOf();
+
+  return timestamp >= start && timestamp <= end;
+}
+
+function matchesDateFilter(order: FuaRequest, dateRange: Array<Date>, dateFilterMode: FuaDateFilterMode) {
+  if (dateFilterMode === 'none') {
+    return true;
+  }
+
+  if (!dateRange || dateRange.length < 2) {
+    return true;
+  }
+
+  const matchesCreatedAt = isDateInRange(order.fechaCreacion, dateRange);
+  const matchesUpdatedAt = isDateInRange(order.fechaActualizacion, dateRange);
+
+  switch (dateFilterMode) {
+    case 'updated':
+      return matchesUpdatedAt;
+    case 'both':
+      return matchesCreatedAt || matchesUpdatedAt;
+    case 'created':
+    default:
+      return matchesCreatedAt;
+  }
 }
 
 // Maps frontend status keys to the Spanish nombres stored in fua_estado table
@@ -93,24 +145,20 @@ export function revalidateFuaRequestCaches() {
  */
 export function useFuaRequests(params: Partial<UseFuaRequestsParams> = useFuaRequestsDefaultParams) {
   const { status, newOrdersOnly, excludeCanceled } = { ...useFuaRequestsDefaultParams, ...params };
-  const { dateRange } = useAppContext<DateFilterContext>('fua-date-filter') ?? {
+  const { dateRange, dateFilterMode } = useAppContext<DateFilterContext>('fua-date-filter') ?? {
     dateRange: [dayjs().startOf('day').toDate(), new Date()],
+    dateFilterMode: 'none',
   };
 
   const url = useMemo(() => {
     if (status) {
       const queryParams: string[] = [`status=${encodeURIComponent(mapStatus(status))}`];
 
-      if (dateRange) {
-        queryParams.push(`fechaInicio=${dayjs(dateRange[0]).format('YYYY-MM-DD')}`);
-        queryParams.push(`fechaFin=${dayjs(dateRange[1]).format('YYYY-MM-DD')}`);
-      }
-
       return `${ModuleFuaRestURL}/solicitudes?${queryParams.join('&')}`;
     }
 
     return `${ModuleFuaRestURL}/list`;
-  }, [status, dateRange]);
+  }, [status]);
 
   const { data, error, mutate, isLoading, isValidating } = useSWR<{ data: Array<FuaRequest> }>(url, openmrsFetch);
 
@@ -120,11 +168,30 @@ export function useFuaRequests(params: Partial<UseFuaRequestsParams> = useFuaReq
   const filteredOrders = allOrders.filter((order) => {
     const isNewOrder = order?.fuaEstado === null || order?.fuaEstado === undefined;
     const isCanceled = order?.fuaEstado?.nombre === 'Cancelado';
-    return (!newOrdersOnly || isNewOrder) && (!excludeCanceled || !isCanceled);
+    return (
+      (!newOrdersOnly || isNewOrder) &&
+      (!excludeCanceled || !isCanceled) &&
+      matchesDateFilter(order, dateRange, dateFilterMode)
+    );
   });
 
   return {
     fuaOrders: filteredOrders,
+    isLoading,
+    isError: error,
+    mutate,
+    isValidating,
+  };
+}
+
+export function useFuaEstados() {
+  const { data, error, mutate, isLoading, isValidating } = useSWR<{ data: Array<FuaEstado> }>(
+    `${ModuleFuaRestURL}/estado/list/`,
+    openmrsFetch,
+  );
+
+  return {
+    estados: normalizeFuaEstadosPayload(data?.data),
     isLoading,
     isError: error,
     mutate,

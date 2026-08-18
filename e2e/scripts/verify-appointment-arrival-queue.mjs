@@ -3,8 +3,10 @@ import { getOpenmrsBaseUrl, getSpaBaseUrl } from './e2e-urls.mjs';
 
 const spaBase = getSpaBaseUrl();
 const openmrsBase = getOpenmrsBaseUrl(spaBase);
-const username = process.env.E2E_USERNAME;
-const password = process.env.E2E_PASSWORD;
+// Acepta también las credenciales de la suite Playwright (E2E_USER_ADMIN_*),
+// manteniendo el reporte agregado de variables faltantes de este script.
+const username = process.env.E2E_USERNAME || process.env.E2E_USER_ADMIN_USERNAME;
+const password = process.env.E2E_PASSWORD || process.env.E2E_USER_ADMIN_PASSWORD;
 const patientUuid = process.env.E2E_PATIENT_UUID;
 const patientName = process.env.E2E_PATIENT_NAME;
 const appointmentUuid = process.env.E2E_APPOINTMENT_UUID;

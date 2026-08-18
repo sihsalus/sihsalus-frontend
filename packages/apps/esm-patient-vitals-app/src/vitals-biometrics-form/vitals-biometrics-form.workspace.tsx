@@ -50,9 +50,14 @@ import {
   calculateBodyMassIndex,
   calculateGlasgowComaScaleTotal,
   getAgeInDays,
+  getAgeInCompletedMonths,
   getMuacColorCode,
   isConditionalFieldVisible,
+  isMuacApplicableAge,
   isValueWithinReferenceRange,
+  mergeReferenceRanges,
+  MUAC_MAX_CM,
+  MUAC_MIN_CM,
   type VitalsBiometricsWorkspaceProfile,
 } from './vitals-biometrics-form.utils';
 import VitalsAndBiometricsInput from './vitals-biometrics-input.component';
@@ -401,6 +406,8 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
     config.vitals.glasgowComaScale.enabled &&
     (workspaceProfile === 'emergency-triage' || Boolean(fieldOverrides.showFields?.includes('glasgowComaScale')));
   const ageInDays = getAgeInDays(patient?.patient?.birthDate);
+  const ageInMonths = getAgeInCompletedMonths(patient?.patient?.birthDate);
+  const showMuac = isMuacApplicableAge(patient?.patient?.birthDate);
   const showHeadCircumference = isConditionalFieldVisible(
     'headCircumference',
     config.biometrics.headCircumference,
@@ -416,11 +423,12 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
 
   useEffect(() => {
     // A null age (missing/unparseable birth date) must not be treated as age 0
-    if (ageInDays != null && midUpperArmCircumference != null) {
-      const patientAge = Math.floor(ageInDays / 365.2425);
-      getMuacColorCode(patientAge, midUpperArmCircumference, setMuacColorCode);
+    if (ageInMonths != null && midUpperArmCircumference != null) {
+      getMuacColorCode(ageInMonths, midUpperArmCircumference, setMuacColorCode);
+    } else {
+      setMuacColorCode('');
     }
-  }, [ageInDays, midUpperArmCircumference]);
+  }, [ageInMonths, midUpperArmCircumference]);
 
   useEffect(() => {
     if (height != null && weight != null) {
@@ -524,7 +532,10 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
 
   const getPatientReferenceRange = useCallback(
     (conceptUuid: string) =>
-      patientReferenceRanges.get(conceptUuid) ?? getReferenceRangesForConcept(conceptUuid, conceptMetadata),
+      mergeReferenceRanges(
+        getReferenceRangesForConcept(conceptUuid, conceptMetadata),
+        patientReferenceRanges.get(conceptUuid),
+      ),
     [conceptMetadata, patientReferenceRanges],
   );
 
@@ -542,6 +553,25 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       };
       setShowErrorNotification(false);
       setFormErrorMessage('');
+
+      if (
+        formData.midUpperArmCircumference != null &&
+        (!showMuac ||
+          formData.midUpperArmCircumference < MUAC_MIN_CM ||
+          formData.midUpperArmCircumference > MUAC_MAX_CM)
+      ) {
+        setShowErrorMessage(true);
+        setFormErrorMessage(
+          showMuac
+            ? t('muacMeasurementRangeError', 'El MUAC debe estar entre {{min}} y {{max}} cm.', {
+                min: MUAC_MIN_CM,
+                max: MUAC_MAX_CM,
+              })
+            : t('muacAgeNotApplicable', 'El MUAC solo se registra en pacientes de 0 a 59 meses.'),
+        );
+        setShowErrorNotification(true);
+        return;
+      }
 
       try {
         await assertPatientCanRecordVitals();
@@ -662,6 +692,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       patientUuid,
       session?.currentProvider?.uuid,
       showPatientVitalStatusError,
+      showMuac,
       t,
       workspaceOverrides,
     ],
@@ -906,6 +937,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                 showErrorMessage={showErrorMessage}
                 showRequiredIndicator={workspaceProfile === 'emergency-triage'}
                 label={t('temperature', 'Temperature')}
+                referenceRanges={[{ range: getPatientReferenceRange(config.concepts.temperatureUuid) }]}
                 unitSymbol={conceptUnits.get(config.concepts.temperatureUuid) ?? ''}
               />
             </Column>
@@ -968,6 +1000,16 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                 showErrorMessage={showErrorMessage}
                 showRequiredIndicator={workspaceProfile === 'emergency-triage'}
                 label={t('bloodPressure', 'Blood pressure')}
+                referenceRanges={[
+                  {
+                    label: t('systolic', 'systolic'),
+                    range: getPatientReferenceRange(config.concepts.systolicBloodPressureUuid),
+                  },
+                  {
+                    label: t('diastolic', 'diastolic'),
+                    range: getPatientReferenceRange(config.concepts.diastolicBloodPressureUuid),
+                  },
+                ]}
                 unitSymbol={conceptUnits.get(config.concepts.systolicBloodPressureUuid) ?? ''}
               />
             </Column>
@@ -997,6 +1039,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   )
                 }
                 label={t('heartRate', 'Heart rate')}
+                referenceRanges={[{ range: getPatientReferenceRange(config.concepts.pulseUuid) }]}
                 showRequiredIndicator={workspaceProfile === 'emergency-triage'}
                 showErrorMessage={showErrorMessage}
                 unitSymbol={conceptUnits.get(config.concepts.pulseUuid) ?? ''}
@@ -1031,6 +1074,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                 showErrorMessage={showErrorMessage}
                 showRequiredIndicator={workspaceProfile === 'emergency-triage'}
                 label={t('respirationRate', 'Respiration rate')}
+                referenceRanges={[{ range: getPatientReferenceRange(config.concepts.respiratoryRateUuid) }]}
                 unitSymbol={conceptUnits.get(config.concepts.respiratoryRateUuid) ?? ''}
               />
             </Column>
@@ -1063,6 +1107,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                 showErrorMessage={showErrorMessage}
                 showRequiredIndicator={workspaceProfile === 'emergency-triage'}
                 label={t('spo2', 'SpO2')}
+                referenceRanges={[{ range: getPatientReferenceRange(config.concepts.oxygenSaturationUuid) }]}
                 unitSymbol={conceptUnits.get(config.concepts.oxygenSaturationUuid) ?? ''}
               />
             </Column>
@@ -1349,34 +1394,43 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                 }
               />
             </Column>
-            <Column>
-              <VitalsAndBiometricsInput
-                control={control}
-                fieldProperties={[
-                  {
-                    name: t('muac', 'MUAC'),
-                    type: 'number',
-                    min: concepts.midUpperArmCircumferenceRange?.lowAbsolute,
-                    max: concepts.midUpperArmCircumferenceRange?.highAbsolute,
-                    id: 'midUpperArmCircumference',
-                  },
-                ]}
-                muacColorCode={muacColorCode}
-                isValueWithinReferenceRange={
-                  midUpperArmCircumference
-                    ? isValueWithinReferenceRange(
-                        conceptMetadata,
-                        config.concepts['midUpperArmCircumferenceUuid'],
-                        midUpperArmCircumference,
-                      )
-                    : true
-                }
-                showErrorMessage={showErrorMessage}
-                label={t('muac', 'MUAC')}
-                unitSymbol={conceptUnits.get(config.concepts.midUpperArmCircumferenceUuid) ?? ''}
-                useMuacColors={useMuacColorStatus}
-              />
-            </Column>
+            {showMuac ? (
+              <Column>
+                <VitalsAndBiometricsInput
+                  control={control}
+                  fieldProperties={[
+                    {
+                      name: t('muac', 'MUAC'),
+                      type: 'number',
+                      min: Math.max(concepts.midUpperArmCircumferenceRange?.lowAbsolute ?? MUAC_MIN_CM, MUAC_MIN_CM),
+                      max: Math.min(
+                        concepts.midUpperArmCircumferenceRange?.highAbsolute ?? MUAC_MAX_CM,
+                        MUAC_MAX_CM,
+                      ),
+                      id: 'midUpperArmCircumference',
+                    },
+                  ]}
+                  muacColorCode={muacColorCode}
+                  isValueWithinReferenceRange={
+                    midUpperArmCircumference
+                      ? midUpperArmCircumference >= MUAC_MIN_CM && midUpperArmCircumference <= MUAC_MAX_CM
+                      : true
+                  }
+                  referenceRanges={[
+                    { label: t('muacSevereAcuteMalnutrition', 'Desnutrición aguda severa'), range: { hiNormal: 11.5 } },
+                    {
+                      label: t('muacAcuteMalnutritionRisk', 'Riesgo de desnutrición aguda'),
+                      range: { lowNormal: 11.6, hiNormal: 12.4 },
+                    },
+                    { label: t('muacAdequate', 'Adecuado'), range: { lowNormal: 12.5 } },
+                  ]}
+                  showErrorMessage={showErrorMessage}
+                  label={t('muacForChildren', 'MUAC (0 a 59 meses)')}
+                  unitSymbol={conceptUnits.get(config.concepts.midUpperArmCircumferenceUuid) ?? 'cm'}
+                  useMuacColors={useMuacColorStatus}
+                />
+              </Column>
+            ) : null}
           </Row>
         </Stack>
       </div>

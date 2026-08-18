@@ -3,7 +3,7 @@ import { Add } from '@carbon/react/icons';
 import { launchWorkspace2, useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration, ErrorState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { appointmentsEditPrivileges, chartAppointmentsEditPrivileges } from '../constants';
 import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patientAppointmentContext';
@@ -16,8 +16,8 @@ interface PatientAppointmentsBaseProps {
 }
 
 enum AppointmentTypes {
-  UPCOMING = 0,
-  TODAY = 1,
+  TODAY = 0,
+  UPCOMING = 1,
   PAST = 2,
 }
 
@@ -37,12 +37,14 @@ const PatientAppointmentsBase: React.FC<PatientAppointmentsBaseProps> = ({ patie
 
   const [contentSwitcherValue, setContentSwitcherValue] = useState(0);
   const [startDate] = useState(() => dayjs(new Date().toISOString()).subtract(6, 'month').toISOString());
+  const abortController = useMemo(() => new AbortController(), []);
+  useEffect(() => () => abortController.abort(), [abortController]);
   const {
     data: appointmentsData,
     error,
     isLoading,
     isValidating,
-  } = usePatientAppointments(patientUuid, startDate, new AbortController());
+  } = usePatientAppointments(patientUuid, startDate, abortController);
 
   const handleLaunchAppointmentsForm = () => {
     const workspaceProps = {
@@ -83,8 +85,8 @@ const PatientAppointmentsBase: React.FC<PatientAppointmentsBaseProps> = ({ patie
                 setSwitchedView(true);
               }}
             >
-              <Switch name={'upcoming'} text={t('upcoming', 'Upcoming')} />
               <Switch name={'today'} text={t('today', 'Today')} />
+              <Switch name={'upcoming'} text={t('upcoming', 'Upcoming')} />
               <Switch name={'past'} text={t('past', 'Past')} />
             </ContentSwitcher>
             <div className={styles.divider}>|</div>

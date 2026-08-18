@@ -1,7 +1,7 @@
 import { Layer, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
+import { Activity, ArrowRight, Catalog, DocumentMultiple_01, ListChecked } from '@carbon/react/icons';
 import { ExtensionSlot } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import { Activity, ArrowRight, Catalog, DocumentMultiple_01, ListChecked } from '@carbon/react/icons';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { consultaExternaPrivilege } from '../utils/constants';
@@ -11,6 +11,7 @@ import DiagnosticoClasificado from './diagnostico-clasificado.component';
 import NotasSoap from './notas-soap.component';
 import PlanTratamiento from './plan-tratamiento.component';
 import ReferenciaContraReferencia from './referencia-contrarreferencia.component';
+import SisFinancingWarning from './sis-financing-warning.component';
 
 interface ConsultaExternaDashboardProps {
   patientUuid: string;
@@ -23,6 +24,7 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
   return (
     <RequirePrivilege privilege={consultaExternaPrivilege}>
       <div>
+        <SisFinancingWarning patientUuid={patientUuid} />
         <Layer className={styles.tabsContainer}>
           <Tabs selectedIndex={selectedTab} onChange={({ selectedIndex }) => setSelectedTab(selectedIndex)}>
             <TabList contained activation="manual" aria-label={t('consultaExternaTabs', 'Consulta Externa tabs')}>

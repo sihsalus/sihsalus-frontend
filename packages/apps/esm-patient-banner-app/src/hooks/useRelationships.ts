@@ -1,4 +1,5 @@
 import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { formatPersonName, formatSentenceCase } from '@openmrs/esm-utils';
 import useSWR from 'swr';
 import { type ConfigObject } from '../config-schema';
 
@@ -47,7 +48,7 @@ function extractRelationshipData(
         relativeAge: relationship.personB.age,
         relativeBirthdate: relationship.personB.birthdate,
         relativeUuid: relationship.personB.uuid,
-        relationshipType: relationship.relationshipType.bIsToA,
+        relationshipType: formatSentenceCase(relationship.relationshipType.bIsToA),
       });
     } else {
       relationshipsData.push({
@@ -56,7 +57,7 @@ function extractRelationshipData(
         relativeAge: relationship.personA.age,
         relativeBirthdate: relationship.personA.birthdate,
         relativeUuid: relationship.personA.uuid,
-        relationshipType: relationship.relationshipType.aIsToB,
+        relationshipType: formatSentenceCase(relationship.relationshipType.aIsToB),
       });
     }
   }
@@ -65,7 +66,8 @@ function extractRelationshipData(
 
 function getRelativeName(display: string) {
   const separatorIndex = display.indexOf(' - ');
-  return separatorIndex >= 0 ? display.slice(separatorIndex + 3).trim() : display;
+  const relativeName = separatorIndex >= 0 ? display.slice(separatorIndex + 3).trim() : display;
+  return formatPersonName(relativeName);
 }
 
 interface RelationshipsResponse {

@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-patient-imaging-app",
-  "version": "1.0.0-alpha",
+  "version": "1.0.9",
   "license": "MPL-2.0",
   "description": "Patient imaging microfrontend for the OpenMRS SPA",
   "browser": "dist/openmrs-esm-patient-imaging-app.js",
@@ -79,7 +79,7 @@
     "openmrs": "*",
     "react": "^18.x",
     "react-dom": "^18.x",
-    "react-i18next": "^16.0.0",
+    "react-i18next": "^17.0.11",
     "rxjs": "^6.6.7",
     "sass": "^1.54.3",
     "swc-loader": "^0.2.3",

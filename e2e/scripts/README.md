@@ -15,6 +15,10 @@ export E2E_PASSWORD="..."
 export E2E_IGNORE_HTTPS_ERRORS="true"
 ```
 
+If `E2E_USERNAME`/`E2E_PASSWORD` are not set, the scripts fall back to
+`E2E_USER_ADMIN_USERNAME`/`E2E_USER_ADMIN_PASSWORD`, the variables already
+used by the Playwright suite, so a single `.env` works for both.
+
 `E2E_IGNORE_HTTPS_ERRORS` is only appropriate for controlled environments
 using a self-signed certificate.
 

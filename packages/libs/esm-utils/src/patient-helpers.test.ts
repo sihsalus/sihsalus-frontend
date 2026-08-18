@@ -15,9 +15,9 @@ import {
 describe('Formatted display name', () => {
   it.each([
     [nameWithFormat, 'Wilson, John'],
-    [nameWithoutFormat, 'given middle family name'],
-    [familyNameOnly, 'family name'],
-    [givenNameOnly, 'given'],
+    [nameWithoutFormat, 'Given Middle Family Name'],
+    [familyNameOnly, 'Family Name'],
+    [givenNameOnly, 'Given'],
     [mockPatientWithNoName, ''],
   ])('Is formatted name text if present else default name format', (name, expected) => {
     const result = formatPatientName(name);
@@ -28,8 +28,8 @@ describe('Formatted display name', () => {
 describe('Patient display name', () => {
   it.each([
     [mockPatientWithMultipleNames, 'Smith, John Murray'],
-    [mockPatientWithOfficialName, 'my actual name'],
-    [mockPatientWithNickAndOfficialName, 'my official name'],
+    [mockPatientWithOfficialName, 'My Actual Name'],
+    [mockPatientWithNickAndOfficialName, 'My Official Name'],
   ])('Is selected from usual name or official name', (patient, expected) => {
     const result = getPatientName(patient);
     expect(result).toBe(expected);

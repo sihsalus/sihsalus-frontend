@@ -22,6 +22,7 @@ dayjs.extend(duration);
 import { interpretBloodPressure, shouldShowBmi, useVitalsAndBiometrics, useVitalsConceptMetadata } from '../common';
 import { type ConfigObject } from '../config-schema';
 import { launchVitalsAndBiometricsForm as launchForm } from '../utils';
+import { isMuacApplicableAge } from '../vitals-biometrics-form/vitals-biometrics-form.utils';
 import styles from './vitals-header.scss';
 import VitalsHeaderItem from './vitals-header-item.component';
 
@@ -69,6 +70,7 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
   );
 
   const showBmi = shouldShowBmi(patient, config.biometrics);
+  const showMuac = patient?.birthDate ? isMuacApplicableAge(patient.birthDate) : true;
 
   if (isLoading) {
     return (
@@ -287,7 +289,7 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
                 value={latestVitals?.bmi ?? '--'}
               />
             )}
-            {latestVitals?.muac && (
+            {showMuac && latestVitals?.muac && (
               <VitalsHeaderItem
                 unitName={t('muac', 'MUAC')}
                 unitSymbol={

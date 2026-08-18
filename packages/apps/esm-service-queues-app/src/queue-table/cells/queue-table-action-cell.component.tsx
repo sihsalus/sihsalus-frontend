@@ -10,14 +10,18 @@ import {
   useLayoutType,
   useSession,
 } from '@openmrs/esm-framework';
-import { fetchFreshPatientVitalStatus } from '@openmrs/esm-patient-common-lib';
+import { canCopyFinanciadorToVisit, fetchFreshPatientVitalStatus } from '@openmrs/esm-patient-common-lib';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { serviceQueuesPatientVitalsWorkspace } from '../../constants';
 import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
-import { canEditServiceQueues, canTriageQueuePatients } from '../../permissions';
-import { getAppointmentTriageConfig, transitionTriagedPatient } from '../../triage-workflow/triage-workflow.resource';
+import { canTransitionServiceQueueEntries, canTriageQueuePatients } from '../../permissions';
+import {
+  getAppointmentTriageConfig,
+  revalidateCurrentSisState,
+  transitionTriagedPatient,
+} from '../../triage-workflow/triage-workflow.resource';
 import { type QueueTableCellComponentProps, type QueueTableColumnFunction } from '../../types';
 
 import styles from './queue-table-action-cell.scss';
@@ -26,7 +30,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
   const { t } = useTranslation();
   const layout = useLayoutType();
   const session = useSession();
-  const canEdit = canEditServiceQueues(session?.user);
+  const canTransition = canTransitionServiceQueueEntries(session?.user);
   const canTriage = canTriageQueuePatients(session?.user);
   const isTriageQueue = Boolean(queueEntry.workflow?.isTriageQueue);
   const patientPerson = queueEntry.patient?.person as { dead?: boolean; deathDate?: string | null } | undefined;
@@ -69,6 +73,12 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
   const handleTriage = async () => {
     setIsSubmittingTriage(true);
     try {
+      const freshSisState = await revalidateCurrentSisState(queueEntry, canCopyFinanciadorToVisit(session?.user));
+      await mutateQueueEntries();
+      if (freshSisState !== 'active') {
+        handleSendToCashier();
+        return;
+      }
       const vitalStatus = await fetchFreshPatientVitalStatus(queueEntry.patient.uuid);
       if (vitalStatus.isDeceased) {
         showSnackbar({
@@ -121,7 +131,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
       title: t('triageBlockedByFinancing', 'Triaje bloqueado por financiamiento'),
       subtitle: t(
         'sendPatientToCashierDescription',
-        'El paciente no tiene SIS vigente. Debe regularizar el pago o la cobertura en Caja antes de continuar con el triaje.',
+        'El paciente no tiene financiador definido o no tiene SIS vigente. Debe regularizar el pago o la cobertura en Caja antes de continuar con el triaje.',
       ),
     });
     if (canOpenBilling) {
@@ -129,7 +139,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
     }
   };
 
-  if (!canEdit && !canPerformTriage) {
+  if (!canTransition && !canPerformTriage) {
     return null;
   }
 
@@ -150,7 +160,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
             ? t('sendToCare', 'Enviar a atención')
             : t('performTriage', 'Realizar triaje')}
         </Button>
-      ) : canEdit && !isDeceasedPatient ? (
+      ) : canTransition && !isDeceasedPatient ? (
         <Button
           kind="ghost"
           aria-label={t('transition', 'Transition')}
@@ -165,7 +175,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
           {t('transition', 'Transition')}
         </Button>
       ) : null}
-      {canEdit && (
+      {canTransition && (
         <OverflowMenu
           aria-label={t('actions', 'Actions')}
           iconDescription={t('actions', 'Actions')}

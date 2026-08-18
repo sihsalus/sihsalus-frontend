@@ -8,6 +8,7 @@ import { type Control, Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { generatePlaceholder } from '../common';
+import type { ObsReferenceRanges } from '../common/types';
 
 import { validateClinicalNumberInput } from './vitals-biometrics-form.utils';
 import { type VitalsBiometricsFormData } from './vitals-biometrics-form.workspace';
@@ -41,6 +42,11 @@ interface SelectOption {
   value: number | string;
 }
 
+interface ReferenceRangeItem {
+  label?: string;
+  range?: ObsReferenceRanges;
+}
+
 interface VitalsAndBiometricsInputProps {
   control: Control<VitalsBiometricsFormData>;
   fieldStyles?: React.CSSProperties;
@@ -63,6 +69,7 @@ interface VitalsAndBiometricsInputProps {
   muacColorCode?: string;
   placeholder?: string;
   readOnly?: boolean;
+  referenceRanges?: Array<ReferenceRangeItem>;
   showRequiredIndicator?: boolean;
   showErrorMessage?: boolean;
   unitSymbol?: string;
@@ -80,6 +87,7 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
   muacColorCode,
   placeholder,
   readOnly,
+  referenceRanges,
   showRequiredIndicator = false,
   showErrorMessage,
   unitSymbol,
@@ -90,11 +98,30 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
   const isTablet = useLayoutType() === 'tablet';
   const [invalid, setInvalid] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const isTextAreaField = fieldProperties.some(({ type }) => type === 'textarea');
 
   const abnormalValues: Array<AbnormalValue> = ['critically_low', 'critically_high', 'high', 'low'];
   const hasAbnormalValue = !isFocused && interpretation && abnormalValues.includes(interpretation as AbnormalValue);
   const isHighAbnormalValue = interpretation === 'high' || interpretation === 'critically_high';
   const isCriticalAbnormalValue = interpretation === 'critically_low' || interpretation === 'critically_high';
+
+  const expectedRange = referenceRanges
+    ?.map(({ label, range }) => {
+      if (range?.lowNormal == null && range?.hiNormal == null) {
+        return null;
+      }
+
+      const limits =
+        range.lowNormal != null && range.hiNormal != null
+          ? `${range.lowNormal}–${range.hiNormal}`
+          : range.lowNormal != null
+            ? `≥ ${range.lowNormal}`
+            : `≤ ${range.hiNormal}`;
+
+      return label ? `${label}: ${limits}` : limits;
+    })
+    .filter(Boolean)
+    .join(' / ');
 
   function checkValidity(
     value: string,
@@ -160,12 +187,14 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
   const containerClasses = classNames(styles.container, {
     [styles.inputInTabletView]: isTablet,
     [styles.inputWithAbnormalValue]: hasAbnormalValue,
+    [styles.textAreaField]: isTextAreaField,
   });
 
   const inputClasses = classNames(styles.inputContainer, {
     [styles['critical-value']]: hasAbnormalValue,
     [styles.focused]: isFocused,
     [styles.readonly]: readOnly,
+    [styles.textAreaContainer]: isTextAreaField,
     [muacColorCode]: useMuacColors,
     [errorMessageClass]: true,
   });
@@ -222,7 +251,7 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
         <section aria-invalid={showInvalidInputError} className={inputClasses} style={{ ...fieldStyles }}>
           <div
             className={classNames({
-              [styles.centered]: !isTablet || unitSymbol === 'mmHg',
+              [styles.centered]: !isTextAreaField && (!isTablet || unitSymbol === 'mmHg'),
             })}
           >
             {fieldProperties.map((fieldProperty) => {
@@ -284,7 +313,7 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
                           counterMode="character"
                           enableCounter
                           id={`${fieldId}-${fieldProperty.id}`}
-                          labelText=""
+                          labelText={label}
                           maxCount={100}
                           maxLength={100}
                           name={fieldProperty.name}
@@ -344,6 +373,12 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
           </div>
           {Boolean(unitSymbol) && <p className={styles.unitName}>{unitSymbol}</p>}
         </section>
+        {expectedRange ? (
+          <p className={styles.referenceRange}>
+            {t('expectedRange', 'Expected range')}: {expectedRange}
+            {unitSymbol ? ` ${unitSymbol}` : ''}
+          </p>
+        ) : null}
       </div>
 
       {showInvalidInputError && (

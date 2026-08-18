@@ -41,6 +41,7 @@ export const FuaDateRangePicker = () => {
         <SelectItem value="both" text={t('bothDates', 'Ambas fechas')} />
       </Select>
       <DatePicker
+        locale="es"
         className={styles.dateRangePicker}
         dateFormat="d/m/Y"
         datePickerType="range"

@@ -9,7 +9,9 @@ import { CustomField } from './custom-field.component';
 
 vi.mock('./person-attributes/person-attribute-field.component', () => ({
   PersonAttributeField: ({ fieldDefinition }) => (
-    <div data-testid="person-attribute-field">{fieldDefinition.label}</div>
+    <div data-required={fieldDefinition.validation?.required ? 'true' : 'false'} data-testid="person-attribute-field">
+      {fieldDefinition.label}
+    </div>
   ),
 }));
 
@@ -114,5 +116,22 @@ describe('CustomField', () => {
     });
 
     expect(screen.getByTestId('nationality-field')).toHaveTextContent('Nacionalidad');
+  });
+
+  it('applies a contextual required override to a person attribute', () => {
+    render(
+      <ResourcesContext.Provider value={resources}>
+        <PatientRegistrationContext.Provider
+          value={{
+            ...baseContext,
+            values: { identifiers: {} } as FormValues,
+          }}
+        >
+          <CustomField name="insuranceCode" requiredOverride />
+        </PatientRegistrationContext.Provider>
+      </ResourcesContext.Provider>,
+    );
+
+    expect(screen.getByTestId('person-attribute-field')).toHaveAttribute('data-required', 'true');
   });
 });

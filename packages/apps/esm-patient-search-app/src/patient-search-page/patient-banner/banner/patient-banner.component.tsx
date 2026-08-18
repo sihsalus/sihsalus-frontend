@@ -14,7 +14,7 @@ import classNames from 'classnames';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
 
 import { type PatientSearchConfig } from '../../../config-schema';
-import { usePatientChartAccess } from '../../../patient-chart-access';
+import { usePatientChartAccess, usePatientEditAccess } from '../../../patient-chart-access';
 import { PatientSearchContext, usePatientSearchContext2 } from '../../../patient-search-context';
 import { getSearchedPatientDisplayName, mapSearchedPatientToFhir } from '../../../patient-search-result.utils';
 import { SihsalusPatientInfo } from '../../../sihsalus-patient-info/sihsalus-patient-info.component';
@@ -24,6 +24,7 @@ import styles from './patient-banner.scss';
 
 interface ClickablePatientContainerProps {
   canAccessPatientChart: boolean;
+  canEditPatient: boolean;
   children: React.ReactNode;
   patient: fhir.Patient;
   patientUuid: string;
@@ -53,6 +54,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
   const { nonNavigationSelectPatientAction, showPrimaryActions } = useContext(PatientSearchContext);
   const patientSearchContext2 = usePatientSearchContext2();
   const canAccessPatientChart = usePatientChartAccess();
+  const canEditPatient = usePatientEditAccess();
   const isEmbeddedSelection = Boolean(nonNavigationSelectPatientAction || patientSearchContext2?.onPatientSelected);
   const allowsEmbeddedStartVisit = Boolean(
     patientSearchContext2?.onPatientSelected && patientSearchContext2.startVisitWorkspaceName,
@@ -120,6 +122,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
       >
         <ClickablePatientContainer
           canAccessPatientChart={canAccessPatientChart}
+          canEditPatient={canEditPatient}
           patient={fhirMappedPatient}
           patientUuid={patientUuid}
         >
@@ -173,6 +176,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
 
 const ClickablePatientContainer = ({
   canAccessPatientChart,
+  canEditPatient,
   patient,
   patientUuid,
   children,
@@ -222,6 +226,14 @@ const ClickablePatientContainer = ({
         to={config.search.patientChartUrl}
         templateParams={{ patientUuid: patientUuid }}
       >
+        {children}
+      </ConfigurableLink>
+    );
+  }
+
+  if (canEditPatient) {
+    return (
+      <ConfigurableLink className={styles.patientBanner} to={`${globalThis.spaBase}/patient/${patientUuid}/edit`}>
         {children}
       </ConfigurableLink>
     );

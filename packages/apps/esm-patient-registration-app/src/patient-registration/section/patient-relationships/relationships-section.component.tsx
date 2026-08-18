@@ -15,6 +15,8 @@ import { TrashCan } from '@carbon/react/icons';
 import { useConfig } from '@openmrs/esm-framework';
 import {
   calculatePatientAge,
+  formatPersonName,
+  formatSentenceCase,
   MAX_PATIENT_AGE_YEARS,
   parsePatientBirthdate,
   shouldPreventPlainNumberKey,
@@ -265,14 +267,14 @@ function getLocalizedRelationshipLabel(label: string, t: ReturnType<typeof useTr
   const normalizedLabel = normalizeRelationshipLabel(label);
 
   if (['aunt/uncle', 'aunt / uncle', 'aunt or uncle'].includes(normalizedLabel)) {
-    return t('relationshipAuntUncleLabel', 'Aunt/Uncle');
+    return formatSentenceCase(t('relationshipAuntUncleLabel', 'Aunt/Uncle'));
   }
 
   if (['niece', 'nephew', 'niece/nephew', 'nephew/niece', 'nephew / niece'].includes(normalizedLabel)) {
-    return t('relationshipNephewNieceLabel', 'Niece/Nephew');
+    return formatSentenceCase(t('relationshipNephewNieceLabel', 'Niece/Nephew'));
   }
 
-  return label;
+  return formatSentenceCase(label);
 }
 
 function getAgeFromBirthdate(birthdate?: string) {
@@ -305,7 +307,7 @@ function getPersonSearchResultAge(person?: PersonSearchResult | null) {
 }
 
 function getPersonSearchResultDisplay(person?: PersonSearchResult | null) {
-  return person?.person?.display ?? person?.display ?? '';
+  return formatPersonName(person?.person?.display ?? person?.display);
 }
 
 function isMinorPersonSearchResult(person?: PersonSearchResult | null) {
@@ -525,7 +527,10 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
     }
 
     setFieldValue(`relationships[${index}].newPerson`, personFormValues);
-    setFieldValue(`relationships[${index}].relatedPersonName`, getResponsiblePersonDisplayName(personFormValues));
+    setFieldValue(
+      `relationships[${index}].relatedPersonName`,
+      formatPersonName(getResponsiblePersonDisplayName(personFormValues)),
+    );
     setFieldValue(`relationships[${index}].relationshipType`, personFormValues.relationshipType);
     setFieldValue(`relationships[${index}].action`, 'ADD');
   }, [index, markAllNewPersonFieldsTouched, personFormValues, requiresAdultResponsible, setFieldValue]);
@@ -741,7 +746,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
         <div className={styles.selectedPerson}>
           <span className={styles.labelText}>{t('relativeFullNameLabelText', 'Full name')}</span>
           <p className={styles.bodyShort02}>
-            {relationship.relatedPersonName ?? t('selectedPerson', 'Selected person')}
+            {formatPersonName(relationship.relatedPersonName) || t('selectedPerson', 'Selected person')}
           </p>
           {isPendingNewPerson ? (
             <>
@@ -816,10 +821,13 @@ const PrimaryResponsibleSection: React.FC<PrimaryResponsibleSectionProps> = ({ r
       {availableRelationships.length ? (
         <div className={styles.responsibleOptions}>
           {availableRelationships.map(({ relationship, index }) => {
-            const personName =
+            const personName = formatPersonName(
               relationship.relatedPersonName ||
-              (relationship.newPerson ? getResponsiblePersonDisplayName(relationship.newPerson) : '');
-            const relationshipLabel = relationship.relation ? ` · ${relationship.relation}` : '';
+                (relationship.newPerson ? getResponsiblePersonDisplayName(relationship.newPerson) : ''),
+            );
+            const relationshipLabel = relationship.relation
+              ? ` · ${formatSentenceCase(relationship.relation)}`
+              : '';
 
             return (
               <Checkbox

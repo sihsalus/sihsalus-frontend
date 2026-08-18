@@ -1,9 +1,12 @@
 import {
   calculateBodyMassIndex,
   calculateGlasgowComaScaleTotal,
+  getAgeInCompletedMonths,
   getAgeInDays,
   getMuacColorCode,
   isConditionalFieldVisible,
+  isMuacApplicableAge,
+  mergeReferenceRanges,
   validateClinicalNumberInput,
 } from './vitals-biometrics-form.utils';
 
@@ -17,14 +20,20 @@ describe('vitals biometrics form utils', () => {
     expect(calculateBodyMassIndex(62, 0)).toBeUndefined();
   });
 
-  it('classifies adult MUAC values without overlapping red and yellow ranges', () => {
+  it('classifies MUAC only for children up to 59 months', () => {
     const setColorCode = vi.fn();
 
-    getMuacColorCode(19, 19.5, setColorCode);
+    getMuacColorCode(24, 11.5, setColorCode);
     expect(setColorCode).toHaveBeenLastCalledWith('red');
 
-    getMuacColorCode(19, 19.6, setColorCode);
+    getMuacColorCode(24, 12, setColorCode);
     expect(setColorCode).toHaveBeenLastCalledWith('yellow');
+
+    getMuacColorCode(24, 12.5, setColorCode);
+    expect(setColorCode).toHaveBeenLastCalledWith('green');
+
+    getMuacColorCode(60, 12, setColorCode);
+    expect(setColorCode).toHaveBeenLastCalledWith('');
   });
 
   it('calculates Glasgow coma scale total only when all components are present', () => {
@@ -56,6 +65,33 @@ describe('validateClinicalNumberInput', () => {
   });
 });
 
+describe('mergeReferenceRanges', () => {
+  it('fills missing patient limits with the general concept ranges', () => {
+    expect(
+      mergeReferenceRanges(
+        { lowNormal: 36, hiNormal: 37.5, lowAbsolute: 30, hiAbsolute: 45 },
+        { lowNormal: undefined, hiNormal: undefined, lowAbsolute: 35, hiAbsolute: 42 },
+      ),
+    ).toEqual({
+      lowNormal: 36,
+      hiNormal: 37.5,
+      lowAbsolute: 35,
+      hiAbsolute: 42,
+      lowCritical: undefined,
+      hiCritical: undefined,
+    });
+  });
+
+  it('prefers the patient-specific normal range when available', () => {
+    expect(
+      mergeReferenceRanges(
+        { lowNormal: 36, hiNormal: 37.5 },
+        { lowNormal: 36.5, hiNormal: 37.2 },
+      ),
+    ).toMatchObject({ lowNormal: 36.5, hiNormal: 37.2 });
+  });
+});
+
 describe('getAgeInDays', () => {
   it('computes whole days between birth date and the reference date', () => {
     expect(getAgeInDays('2024-01-01', new Date('2024-01-31T12:00:00Z'))).toBe(30);
@@ -64,6 +100,23 @@ describe('getAgeInDays', () => {
   it('returns null for missing or invalid birth dates', () => {
     expect(getAgeInDays(undefined)).toBeNull();
     expect(getAgeInDays('not-a-date')).toBeNull();
+  });
+});
+
+describe('MUAC age applicability', () => {
+  const asOf = new Date(2026, 7, 17, 12);
+
+  it('uses completed calendar months at the 59-to-60-month boundary', () => {
+    expect(getAgeInCompletedMonths('2021-09-17', asOf)).toBe(59);
+    expect(isMuacApplicableAge('2021-09-17', asOf)).toBe(true);
+    expect(getAgeInCompletedMonths('2021-08-17', asOf)).toBe(60);
+    expect(isMuacApplicableAge('2021-08-17', asOf)).toBe(false);
+  });
+
+  it('rejects missing, invalid and future birth dates', () => {
+    expect(isMuacApplicableAge(undefined, asOf)).toBe(false);
+    expect(isMuacApplicableAge('invalid', asOf)).toBe(false);
+    expect(isMuacApplicableAge('2026-09-17', asOf)).toBe(false);
   });
 });
 

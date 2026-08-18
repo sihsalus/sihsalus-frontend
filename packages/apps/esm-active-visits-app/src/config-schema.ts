@@ -1,4 +1,10 @@
 import { Type } from '@openmrs/esm-framework';
+import {
+  LEGACY_SIS_PRODUCT_CONCEPT_UUIDS,
+  SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID,
+  SIS_ACCREDITATION_PENDING_CONCEPT_UUID,
+  SIS_CONCEPT_UUID,
+} from '@openmrs/esm-patient-common-lib';
 
 export interface ActiveVisitsConfigSchema {
   activeVisits: {
@@ -64,10 +70,6 @@ export const configSchema = {
           header: { key: 'dni', default: 'DNI' },
           identifierName: 'DNI',
         },
-        {
-          header: { key: 'historyNumber', default: 'N° Historia Clínica' },
-          identifierName: 'N° Historia Clínica',
-        },
       ],
     },
     attributes: {
@@ -123,22 +125,17 @@ export const configSchema = {
         _type: Type.UUID,
         _description: 'UUID de un concepto de financiador SIS.',
       },
-      _default: [
-        '97c6e901-7570-4ab8-a9c0-9cf2b0f5bc0c', // SIS (canónico)
-        'b61a9ff9-1485-4388-9f67-9c341f847f85', // SIS Gratuito (legado)
-        'e43e0a71-0b5d-4fc2-b599-a76e4562ae5a', // SIS Semicontributivo (legado)
-        'cc6958d9-7948-4f29-b244-4ff896c0b2ee', // SIS Emprendedor (legado)
-      ],
+      _default: [SIS_CONCEPT_UUID, ...LEGACY_SIS_PRODUCT_CONCEPT_UUIDS],
     },
     pendingStatusConceptUuid: {
       _type: Type.UUID,
       _description: 'Concepto "Acreditación pendiente".',
-      _default: '9b3df0a1-0c58-4f55-9868-9c38f1db2053',
+      _default: SIS_ACCREDITATION_PENDING_CONCEPT_UUID,
     },
     notConsultedStatusConceptUuid: {
       _type: Type.UUID,
       _description: 'Concepto "Acreditación no consultada".',
-      _default: '9b3df0a1-0c58-4f55-9868-9c38f1db2054',
+      _default: SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID,
     },
     dniIdentifierTypeUuid: {
       _type: Type.UUID,

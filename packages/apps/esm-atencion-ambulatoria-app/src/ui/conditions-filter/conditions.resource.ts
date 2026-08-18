@@ -112,8 +112,14 @@ export type OpenmrsConcept = {
   setMembers?: Array<OpenmrsConceptMember>;
 };
 
-// Hook para obtener conditions filtradas por ConceptSet
-export function useConditionsFromConceptSet(patientUuid: string, conceptSetUuid: string) {
+// Hook para obtener conditions filtradas por ConceptSet. El concepto genérico
+// de texto libre ("Otros") no es miembro del set, así que debe admitirse
+// explícitamente o los antecedentes libres guardados nunca aparecerían.
+export function useConditionsFromConceptSet(
+  patientUuid: string,
+  conceptSetUuid: string,
+  freeTextFallbackConceptUuid?: string,
+) {
   const conditionsUrl = `${fhirBaseUrl}/Condition?patient=${patientUuid}&_count=100`;
 
   // Obtenemos todas las conditions del paciente
@@ -141,13 +147,23 @@ export function useConditionsFromConceptSet(patientUuid: string, conceptSetUuid:
 
     const conceptSet = conceptSetData.data;
     const allowedConceptUuids = new Set(conceptSet.setMembers.map((member) => member.uuid));
+    if (freeTextFallbackConceptUuid) {
+      allowedConceptUuids.add(freeTextFallbackConceptUuid);
+    }
 
     return conditionsData.data.entry
       .map((entry) => entry.resource ?? [])
       .map(mapConditionProperties)
       .filter((condition) => allowedConceptUuids.has(condition.conceptId))
+      .map((condition) =>
+        // Los antecedentes libres comparten el concepto genérico; el texto del
+        // clínico (guardado en la nota) es su único nombre distinguible.
+        condition.conceptId === freeTextFallbackConceptUuid && condition.noteText
+          ? { ...condition, display: condition.noteText }
+          : condition,
+      )
       .sort((a, b) => (b.onsetDateTime > a.onsetDateTime ? 1 : -1));
-  }, [conditionsData, conceptSetData]);
+  }, [conditionsData, conceptSetData, freeTextFallbackConceptUuid]);
 
   return {
     conditions: formattedConditions,

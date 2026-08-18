@@ -80,7 +80,10 @@ export const InsuranceSection = ({ sectionDefinition }: InsuranceSectionProps) =
   const visibleFields = useMemo(
     () =>
       sectionDefinition.fields.filter((name) => {
-        if (name === sisLookupField || name === insuranceAccreditationStatusField) {
+        if (name === insuranceAccreditationStatusField) {
+          return false;
+        }
+        if (name === sisLookupField) {
           return isSisFinancer;
         }
         if (name === insuranceCodeField) {
@@ -97,7 +100,11 @@ export const InsuranceSection = ({ sectionDefinition }: InsuranceSectionProps) =
   return (
     <section className={styles.formSection} aria-label={`${sectionDefinition.name} Section`}>
       {visibleFields.map((name) => (
-        <Field key={`${sectionDefinition.name}-${name}`} name={name} />
+        <Field
+          key={`${sectionDefinition.name}-${name}`}
+          name={name}
+          requiredOverride={name === insuranceCodeField && isSisFinancer ? true : undefined}
+        />
       ))}
     </section>
   );

@@ -1,4 +1,5 @@
 import { age, ExtensionSlot, formatPartialDate, getPatientName } from '@openmrs/esm-framework';
+import { formatPersonName } from '@openmrs/esm-utils';
 import React, { useMemo } from 'react';
 import styles from './patient-banner.scss';
 
@@ -81,7 +82,9 @@ function Identifier({ identifier, highlighted }: { identifier: fhir.Identifier; 
 }
 
 function PatientIdentifiers({ identifiers }: { identifiers?: fhir.Identifier[] }) {
-  const filteredIdentifiers = (identifiers?.filter((identifier) => identifier.value) ?? []).sort(
+  const filteredIdentifiers = (
+    identifiers?.filter((identifier) => identifier.value && !isClinicalHistoryIdentifier(identifier)) ?? []
+  ).sort(
     (firstIdentifier, secondIdentifier) => getIdentifierOrder(firstIdentifier) - getIdentifierOrder(secondIdentifier),
   );
   const hasDniIdentifier = filteredIdentifiers.some(isDniIdentifier);
@@ -111,7 +114,7 @@ export function SihsalusPatientInfo({ patient, renderedFrom }: SihsalusPatientIn
   return (
     <div className={styles.patientInfo}>
       <div className={styles.patientNameRow}>
-        <span className={styles.patientName}>{getPatientName(patient)}</span>
+        <span className={styles.patientName}>{formatPersonName(getPatientName(patient))}</span>
         {gender ? (
           <span className={styles.patientGender}>
             {gender.icon ? <span aria-hidden="true">{gender.icon}</span> : null}

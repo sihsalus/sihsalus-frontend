@@ -8,6 +8,7 @@ import {
   useConfig,
   type Visit,
 } from '@openmrs/esm-framework';
+import { formatPersonName } from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import last from 'lodash-es/last';
@@ -60,7 +61,7 @@ export function useActiveVisits() {
       idNumber: null,
       gender: visit?.patient?.person?.gender,
       location: visit?.location?.uuid,
-      name: visit?.patient?.person?.display,
+      name: formatPersonName(visit?.patient?.person?.display),
       patientUuid: visit?.patient?.uuid,
       visitStartDatetime: visit?.startDatetime,
       visitStartTime: formatDatetime(parseDate(visit?.startDatetime)),

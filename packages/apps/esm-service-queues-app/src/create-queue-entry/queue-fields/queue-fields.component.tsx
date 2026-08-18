@@ -51,6 +51,7 @@ export interface QueueFieldsProps {
   currentServiceQueueUuid?: string;
   currentQueueLocationUuid?: string;
   patientGender?: string;
+  requestedUpssName?: string;
   requestedServiceName?: string;
   patientUuid?: string;
   visitRequired?: boolean;
@@ -72,6 +73,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   currentQueueLocationUuid,
   patientGender,
   patientUuid,
+  requestedUpssName,
   requestedServiceName,
   visitRequired = true,
   requireActiveSisFinancing = false,
@@ -241,7 +243,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
                   ),
                   [TRIAGE_SIS_FINANCING_REQUIRED]: t(
                     'triageSisFinancingRequired',
-                    'No se puede continuar con el triaje porque esta atención no tiene SIS vigente. Derive al paciente a Caja para regularizar el pago o la cobertura.',
+                    'No se puede continuar con el triaje porque esta atención no tiene financiador definido o no tiene SIS vigente (ejemplo: SIS). Derive al paciente a Caja para regularizar el pago o la cobertura.',
                   ),
                 },
                 logContext: 'Add patient to queue',
@@ -355,7 +357,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
         />
       )}
       <section className={styles.section}>
-        <div className={styles.sectionTitle}>{t('queueLocation', 'Queue UPSS')}</div>
+        <div className={styles.sectionTitle}>{requestedUpssName ? t('upss', 'UPSS') : t('queueLocation', 'Queue UPSS')}</div>
         <ResponsiveWrapper>
           {isLoadingQueueLocations ? (
             <SelectSkeleton />
@@ -400,6 +402,8 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
               lowContrast
               title={t('selectedQueueLocationUnavailable', 'This queue UPSS is not available')}
             />
+          ) : requestedUpssName ? (
+            <TextInput id="upss" labelText={t('upss', 'UPSS')} name="upss" readOnly value={requestedUpssName} />
           ) : isQueueLocationFixed ? (
             <TextInput
               id="queueLocation"
@@ -512,7 +516,11 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
       {selectedQueue ? (
         <section className={styles.section}>
           <div className={styles.sectionTitle}>
-            <RequiredFieldLabel label={t('priority', 'Priority')} />
+            {isAdmissionOnly ? (
+              t('initialPriority', 'Initial priority')
+            ) : (
+              <RequiredFieldLabel label={t('priority', 'Priority')} />
+            )}
           </div>
           {isLoadingQueues ? (
             <RadioButtonGroup id="priority-skeleton" name="priority-skeleton">
@@ -534,9 +542,12 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
             </InlineNotification>
           ) : isAdmissionOnly ? (
             <TextInput
-              helperText={t('priorityManagedByTriage', 'La prioridad clínica puede actualizarse durante el triaje.')}
+              helperText={t(
+                'priorityAssignedAutomatically',
+                'It is assigned automatically when arrival is registered. Triage can update it after assessing the patient.',
+              )}
               id="priority"
-              labelText={t('assignedPriority', 'Prioridad asignada')}
+              labelText={t('automaticallyAssignedPriority', 'Automatically assigned priority')}
               name="priority"
               readOnly
               value={selectedPriorityName}

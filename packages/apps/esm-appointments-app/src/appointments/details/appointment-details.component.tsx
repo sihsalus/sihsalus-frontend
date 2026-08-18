@@ -1,4 +1,5 @@
 import { formatDate, formatDatetime, usePatient } from '@openmrs/esm-framework';
+import { formatPersonName } from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -80,7 +81,7 @@ const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({ appointment }) 
           <p className={styles.gridTitle}>{t('patientDetails', 'Patient details')}</p>
           <div className={styles.labelContainer}>
             <p className={styles.labelBold}>{t('patientName', 'Patient name')}: </p>
-            <p className={styles.label}>{appointment.patient.name}</p>
+            <p className={styles.label}>{formatPersonName(appointment.patient.name)}</p>
           </div>
           <div className={styles.labelContainer}>
             <p className={styles.labelBold}>{t('age', 'Age')}: </p>

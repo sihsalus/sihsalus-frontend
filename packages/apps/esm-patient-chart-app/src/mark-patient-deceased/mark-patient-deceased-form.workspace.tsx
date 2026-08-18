@@ -231,6 +231,7 @@ const MarkPatientDeceasedForm: React.FC<MarkPatientDeceasedWorkspaceProps> = (pr
                   render={({ field: { onChange, value } }) => (
                     <DatePicker
                       className={styles.datePicker}
+                      locale="es"
                       dateFormat="d/m/Y"
                       datePickerType="single"
                       maxDate={new Date().toISOString()}

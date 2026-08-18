@@ -19,13 +19,11 @@ import {
   TableToolbarSearch,
   Tag,
   Tile,
-  Toggle,
 } from '@carbon/react';
 import { Add, Renew } from '@carbon/react/icons';
 import {
   ErrorState,
   getUserFacingErrorMessage,
-  showModal,
   showSnackbar,
   useConfig,
   usePagination,
@@ -178,7 +176,6 @@ const VisitTable: React.FC = () => {
   const { visits, hasLoadedVisits, isLoading, isError, isValidating, mutate } = useVisits();
   const { fuaOrders } = useFuaRequests({ status: null, excludeCanceled: true });
   const [searchString, setSearchString] = useState('');
-  const [showAllVisits, setShowAllVisits] = useState(false);
   const [generatingVisitUuid, setGeneratingVisitUuid] = useState<string | null>(null);
   const [isBulkGenerating, setIsBulkGenerating] = useState(false);
   const [isBulkSelectionMode, setIsBulkSelectionMode] = useState(false);
@@ -219,15 +216,15 @@ const VisitTable: React.FC = () => {
   );
 
   const filteredData = useMemo(() => {
-    const financiadorFiltered = showAllVisits ? visitInfos : visitInfos.filter((info) => info.isSis);
+    const eligibleVisits = visitInfos.filter((info) => info.isSis && info.accreditation.isVigente);
 
     if (!searchString) {
-      return financiadorFiltered;
+      return eligibleVisits;
     }
 
     const search = searchString.toLowerCase();
-    return financiadorFiltered.filter((info) => getPatientName(info.visit).toLowerCase().includes(search));
-  }, [visitInfos, showAllVisits, searchString]);
+    return eligibleVisits.filter((info) => getPatientName(info.visit).toLowerCase().includes(search));
+  }, [visitInfos, searchString]);
 
   const pageSizes = [10, 20, 30, 40, 50];
   const [currentPageSize, setPageSize] = useState(10);
@@ -320,32 +317,11 @@ const VisitTable: React.FC = () => {
 
       const info = infoByRowId.get(visitUuid);
 
-      if (!info?.isSis) {
+      if (!info?.isSis || !info.accreditation.isVigente) {
         return;
       }
 
-      if (info.accreditation.isVigente) {
-        void handleGenerateFua(visitUuid);
-        return;
-      }
-
-      const dispose = showModal('fua-accreditation-warning-modal', {
-        accreditationStatusLabel: info.accreditation.label.toLocaleLowerCase(),
-        patientName: getPatientName(info.visit),
-        closeModal: () => dispose(),
-        onConfirm: () => {
-          // Auditoría del override (contingencia FUA papel): el FUA es
-          // declaración jurada y un error de afiliación es causal de rechazo.
-          console.warn('[esm-fua-app] Override de acreditación SIS no vigente al generar FUA', {
-            visitUuid,
-            accreditationStatusUuid: info.accreditationStatusUuid,
-            accreditationStatus: info.accreditation.label,
-            timestamp: new Date().toISOString(),
-          });
-          dispose();
-          void handleGenerateFua(visitUuid);
-        },
-      });
+      void handleGenerateFua(visitUuid);
     },
     [infoByRowId, handleGenerateFua],
   );
@@ -511,17 +487,6 @@ const VisitTable: React.FC = () => {
                     size="sm"
                   />
                 </Layer>
-                <Layer className={styles.toolbarItem}>
-                  <Toggle
-                    aria-label={t('showAllVisitsToggleLabel', 'Mostrar visitas de todos los financiadores')}
-                    id="fua-show-all-visits-toggle"
-                    labelA={t('showAllVisits', 'Mostrar todas')}
-                    labelB={t('showAllVisits', 'Mostrar todas')}
-                    onToggle={(toggled: boolean) => setShowAllVisits(toggled)}
-                    size="sm"
-                    toggled={showAllVisits}
-                  />
-                </Layer>
                 <RequirePrivilege privilege={fuaManagePrivilege} hideUnauthorized>
                   <div className={styles.toolbarActions}>
                     {isBulkSelectionMode ? (
@@ -590,7 +555,7 @@ const VisitTable: React.FC = () => {
                         <RequirePrivilege privilege={fuaManagePrivilege} hideUnauthorized>
                           <TableSelectRow
                             {...getSelectionProps({ row })}
-                            disabled={isBulkGenerating || !rowInfo?.isSis}
+                            disabled={isBulkGenerating || !rowInfo?.isSis || !rowInfo.accreditation.isVigente}
                           />
                         </RequirePrivilege>
                       ) : null}
@@ -616,6 +581,7 @@ const VisitTable: React.FC = () => {
                                   disabled={
                                     !cell.value ||
                                     !rowInfo?.isSis ||
+                                    !rowInfo.accreditation.isVigente ||
                                     generatingVisitUuid === cell.value ||
                                     isBulkGenerating
                                   }
@@ -654,17 +620,13 @@ const VisitTable: React.FC = () => {
                 <Tile className={styles.tile}>
                   <div className={styles.tileContent}>
                     <p className={styles.content}>
-                      {showAllVisits
-                        ? t('noVisitsFound', 'No se encontraron visitas')
-                        : t('noSisVisitsFound', 'No se encontraron visitas con financiador SIS')}
+                      {t('noActiveSisVisitsFound', 'No se encontraron visitas con SIS vigente')}
                     </p>
                     <p className={styles.emptyStateHelperText}>
-                      {showAllVisits
-                        ? t('checkFilters', 'Por favor revisa los filtros de arriba e intenta de nuevo')
-                        : t(
-                            'noSisVisitsHelper',
-                            'Active «Mostrar todas» para ver las visitas de otros financiadores (sin generación de FUA)',
-                          )}
+                      {t(
+                        'noActiveSisVisitsHelper',
+                        'El FUA solo está disponible para pacientes con financiador SIS y acreditación vigente.',
+                      )}
                     </p>
                   </div>
                 </Tile>

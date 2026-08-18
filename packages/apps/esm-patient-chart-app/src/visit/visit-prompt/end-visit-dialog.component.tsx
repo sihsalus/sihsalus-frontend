@@ -7,7 +7,11 @@ import {
   toOmrsIsoString,
   useVisit,
 } from '@openmrs/esm-framework';
-import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
+import {
+  fetchVisitInsurance,
+  getSisFinancingState,
+  launchPatientWorkspace,
+} from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInfiniteVisits2 } from '../visits-widget/visit.resource';
@@ -83,10 +87,10 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
   const { t } = useTranslation();
   const { activeVisit, mutate } = useVisit(patientUuid);
   const { mutate: mutateInfiniteVisits } = useInfiniteVisits2(patientUuid);
-  const [isGeneratingFua, setIsGeneratingFua] = React.useState(false);
+  const [isFinalizing, setIsFinalizing] = React.useState(false);
 
   const handleEndVisitAndGenerateFUA = async () => {
-    if (isGeneratingFua) {
+    if (isFinalizing) {
       return;
     }
 
@@ -102,31 +106,35 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
 
     const abortController = new AbortController();
     try {
-      setIsGeneratingFua(true);
-      const validation = await validateRequiredVisitSummaryFields(patientUuid, activeVisit.uuid);
-      const missingFields = [
-        !validation.hasPrimaryDiagnosis ? t('primaryDiagnosis', 'Primary diagnosis') : null,
-        !validation.hasCodigoPrestacional ? t('codigoPrestacional', 'Codigo Prestacional') : null,
-      ].filter(Boolean);
+      setIsFinalizing(true);
+      const shouldGenerateFua = getSisFinancingState(await fetchVisitInsurance(activeVisit.uuid)) === 'active';
 
-      if (missingFields.length) {
-        setIsGeneratingFua(false);
-        closeModal();
-        launchPatientWorkspace('visit-notes-form-workspace', {
-          formContext: 'creating',
-          openedFrom: 'end-visit-dialog',
-        });
-        showSnackbar({
-          title: t('missingRequiredVisitSummaryFields', 'Missing required visit summary data'),
-          kind: 'warning',
-          isLowContrast: true,
-          subtitle: t(
-            'completeRequiredVisitSummaryFields',
-            'Complete {{fields}} in Resumen de consulta before finalizing the visit.',
-            { fields: missingFields.join(', ') },
-          ),
-        });
-        return;
+      if (shouldGenerateFua) {
+        const validation = await validateRequiredVisitSummaryFields(patientUuid, activeVisit.uuid);
+        const missingFields = [
+          !validation.hasPrimaryDiagnosis ? t('primaryDiagnosis', 'Primary diagnosis') : null,
+          !validation.hasCodigoPrestacional ? t('codigoPrestacional', 'Codigo Prestacional') : null,
+        ].filter(Boolean);
+
+        if (missingFields.length) {
+          setIsFinalizing(false);
+          closeModal();
+          launchPatientWorkspace('visit-notes-form-workspace', {
+            formContext: 'creating',
+            openedFrom: 'end-visit-dialog',
+          });
+          showSnackbar({
+            title: t('missingRequiredVisitSummaryFields', 'Missing required visit summary data'),
+            kind: 'warning',
+            isLowContrast: true,
+            subtitle: t(
+              'completeRequiredVisitSummaryFields',
+              'Complete {{fields}} in Resumen de consulta before finalizing the visit.',
+              { fields: missingFields.join(', ') },
+            ),
+          });
+          return;
+        }
       }
 
       await openmrsFetch(`${restBaseUrl}/clinicalvisitclosure`, {
@@ -141,17 +149,23 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
       void mutate();
       void mutateInfiniteVisits();
 
-      await openmrsFetch(`${ModuleFuaRestURL}/generateFromVisit/${encodeURIComponent(activeVisit.uuid)}`, {
-        method: 'POST',
-      });
+      if (shouldGenerateFua) {
+        await openmrsFetch(`${ModuleFuaRestURL}/generateFromVisit/${encodeURIComponent(activeVisit.uuid)}`, {
+          method: 'POST',
+        });
+      }
 
       closeModal();
 
       showSnackbar({
         isLowContrast: true,
         kind: 'success',
-        subtitle: t('visitEndedAndFUAGenerated', 'Visit ended and FUA Generated'),
-        title: t('visitEndedAndFUAGenerated', 'Visit ended and FUA Generated'),
+        subtitle: shouldGenerateFua
+          ? t('visitEndedAndFUAGenerated', 'Visit ended and FUA Generated')
+          : t('visitEnded', 'Visit ended'),
+        title: shouldGenerateFua
+          ? t('visitEndedAndFUAGenerated', 'Visit ended and FUA Generated')
+          : t('visitEnded', 'Visit ended'),
       });
     } catch (error: unknown) {
       showSnackbar({
@@ -168,7 +182,7 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
         ),
       });
     } finally {
-      setIsGeneratingFua(false);
+      setIsFinalizing(false);
     }
   };
 
@@ -182,18 +196,16 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
         <p className={styles.bodyShort02}>
           {t('youCanAddAdditionalEncounters', 'You can add additional encounters to this visit in the visit summary.')}
         </p>
-        {isGeneratingFua ? (
-          <InlineLoading description={t('generatingFua', 'Generando FUA...')} status="active" />
+        {isFinalizing ? (
+          <InlineLoading description={t('finalizingVisit', 'Finalizando consulta...')} status="active" />
         ) : null}
       </ModalBody>
       <ModalFooter>
-        <Button kind="secondary" onClick={closeModal} disabled={isGeneratingFua}>
+        <Button kind="secondary" onClick={closeModal} disabled={isFinalizing}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button kind="danger" onClick={() => void handleEndVisitAndGenerateFUA()} disabled={isGeneratingFua}>
-          {isGeneratingFua
-            ? t('generatingFua', 'Generando FUA...')
-            : t('endVisitAndGenerateFua_title', 'Finalizar Consulta y Generar FUA')}
+        <Button kind="danger" onClick={() => void handleEndVisitAndGenerateFUA()} disabled={isFinalizing}>
+          {isFinalizing ? t('finalizingVisit', 'Finalizando consulta...') : t('endVisit_title', 'Finalizar consulta')}
         </Button>
       </ModalFooter>
     </div>

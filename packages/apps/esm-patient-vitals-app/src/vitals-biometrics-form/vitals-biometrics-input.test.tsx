@@ -157,6 +157,46 @@ describe('VitalsAndBiometricsInput', () => {
     expect(screen.getByText('*')).toBeInTheDocument();
   });
 
+  it('shows the configured expected range before a value is entered', () => {
+    renderVitalsBiometricsInput({
+      fieldProperties: [
+        { id: 'systolicBloodPressure', name: 'systolic', type: 'number' },
+        { id: 'diastolicBloodPressure', name: 'diastolic', type: 'number' },
+      ],
+      label: 'Blood pressure',
+      referenceRanges: [
+        { label: 'systolic', range: { lowNormal: 90, hiNormal: 120 } },
+        { label: 'diastolic', range: { lowNormal: 60, hiNormal: 80 } },
+      ],
+      unitSymbol: 'mmHg',
+    });
+
+    expect(screen.getByText('Expected range: systolic: 90–120 / diastolic: 60–80 mmHg')).toBeInTheDocument();
+  });
+
+  it('renders units containing a slash without exposing HTML entities', () => {
+    renderVitalsBiometricsInput({
+      fieldProperties: [{ id: 'pulse', name: 'Heart rate', type: 'number' }],
+      label: 'Heart rate',
+      referenceRanges: [{ range: { lowNormal: 60, hiNormal: 100 } }],
+      unitSymbol: 'beats/min',
+    });
+
+    expect(screen.getByText('Expected range: 60–100 beats/min')).toBeInTheDocument();
+    expect(screen.queryByText(/&#x2F;/)).not.toBeInTheDocument();
+  });
+
+  it('does not invent an expected range when normal limits are unavailable', () => {
+    renderVitalsBiometricsInput({
+      fieldProperties: [{ id: 'temperature', name: 'Temperature', type: 'number' }],
+      label: 'Temperature',
+      referenceRanges: [{ range: { lowAbsolute: 25, hiAbsolute: 50 } }],
+      unitSymbol: '°C',
+    });
+
+    expect(screen.queryByText(/expected range/i)).not.toBeInTheDocument();
+  });
+
   it('blocks invalid clinical numeric keys and preserves keyboard shortcuts', () => {
     renderVitalsBiometricsInput({
       fieldProperties: [

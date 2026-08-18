@@ -1,4 +1,4 @@
-import { getDefaultsFromConfigSchema, showModal, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import {
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
   INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
@@ -6,7 +6,7 @@ import {
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_CONCEPT_UUID,
 } from '@openmrs/esm-patient-common-lib';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
 import { type Config, configSchema } from '../config-schema';
@@ -24,7 +24,6 @@ import VisitTable from './visitTable';
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
-  showModal: vi.fn(),
   showSnackbar: vi.fn(),
   useConfig: vi.fn(),
 }));
@@ -50,7 +49,6 @@ const mockGenerateFuaFromVisit = vi.mocked(generateFuaFromVisit);
 const mockGenerateFuasFromVisits = vi.mocked(generateFuasFromVisits);
 const mockUseVisits = vi.mocked(useVisits);
 const mockUseFuaRequests = vi.mocked(useFuaRequests);
-const mockShowModal = vi.mocked(showModal);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseConfig = vi.mocked(useConfig);
 const mockMutate = vi.fn();
@@ -159,7 +157,6 @@ describe('VisitTable FUA generation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema) as Config);
-    mockShowModal.mockReturnValue(vi.fn());
     mockUseFuaRequests.mockReturnValue({
       fuaOrders: [],
       isLoading: false,
@@ -214,7 +211,7 @@ describe('VisitTable FUA generation', () => {
 
     expect(screen.getByRole('alert')).toBeInTheDocument();
     expect(screen.getByText('Error State')).toBeInTheDocument();
-    expect(screen.queryByText('No se encontraron visitas con financiador SIS')).not.toBeInTheDocument();
+    expect(screen.queryByText('No se encontraron visitas con SIS vigente')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
 
@@ -275,46 +272,28 @@ describe('VisitTable FUA generation', () => {
     expect(screen.getByRole('alert').parentElement).toHaveAttribute('aria-busy', 'false');
   });
 
-  it('hides non-SIS visits by default and disables generation for them when showing all', () => {
-    mockVisits([sisVigenteVisit, privateVisit]);
+  it('only lists visits with SIS and an active, complete accreditation', () => {
+    mockVisits([sisVigenteVisit, sisNoVigenteVisit, privateVisit]);
 
     render(<VisitTable />);
 
     expect(screen.getByText('Paciente SIS vigente')).toBeInTheDocument();
+    expect(screen.queryByText('Paciente SIS no vigente')).not.toBeInTheDocument();
     expect(screen.queryByText('Paciente privado')).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('switch', { name: 'Mostrar visitas de todos los financiadores' }));
-
-    const privateRow = screen.getByText('Paciente privado').closest('tr');
-    expect(privateRow).not.toBeNull();
-    expect(within(privateRow as HTMLElement).getByRole('button', { name: 'Generar FUA' })).toBeDisabled();
-
-    const sisRow = screen.getByText('Paciente SIS vigente').closest('tr');
-    expect(within(sisRow as HTMLElement).getByRole('button', { name: 'Generar FUA' })).toBeEnabled();
+    expect(screen.queryByRole('switch', { name: /todos los financiadores/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Generar FUA' })).toBeEnabled();
     expect(mockGenerateFuaFromVisit).not.toHaveBeenCalled();
   });
 
-  it('asks for confirmation before generating a FUA when the SIS accreditation is not active', async () => {
+  it('does not offer FUA generation when the SIS accreditation is not active', () => {
     mockVisits([sisNoVigenteVisit]);
-    mockGenerateFuaFromVisit.mockResolvedValue(new Response(null, { status: 200 }));
 
     render(<VisitTable />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Generar FUA' }));
-
+    expect(screen.queryByText('Paciente SIS no vigente')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Generar FUA' })).not.toBeInTheDocument();
+    expect(screen.getByText('No se encontraron visitas con SIS vigente')).toBeInTheDocument();
     expect(mockGenerateFuaFromVisit).not.toHaveBeenCalled();
-    expect(mockShowModal).toHaveBeenCalledWith(
-      'fua-accreditation-warning-modal',
-      expect.objectContaining({
-        accreditationStatusLabel: 'no vigente',
-        patientName: 'Paciente SIS no vigente',
-      }),
-    );
-
-    const modalProps = mockShowModal.mock.calls[0][1] as { onConfirm: () => void };
-    modalProps.onConfirm();
-
-    await waitFor(() => expect(mockGenerateFuaFromVisit).toHaveBeenCalledWith('visit-sis-no-vigente'));
   });
 
   it('does not treat a vigente status without checked-at as a complete accreditation after reload', () => {
@@ -329,20 +308,12 @@ describe('VisitTable FUA generation', () => {
 
     render(<VisitTable />);
 
-    expect(screen.getByText('Sin fecha de acreditación')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Generar FUA' }));
-
+    expect(screen.queryByText('Paciente SIS sin fecha')).not.toBeInTheDocument();
+    expect(screen.getByText('No se encontraron visitas con SIS vigente')).toBeInTheDocument();
     expect(mockGenerateFuaFromVisit).not.toHaveBeenCalled();
-    expect(mockShowModal).toHaveBeenCalledWith(
-      'fua-accreditation-warning-modal',
-      expect.objectContaining({
-        accreditationStatusLabel: 'sin fecha de acreditación',
-        patientName: 'Paciente SIS sin fecha',
-      }),
-    );
   });
 
-  it('requires contingency before individual generation when the SIS affiliation number is missing', () => {
+  it('does not offer individual generation when the SIS affiliation number is missing', () => {
     const missingInsuranceNumberVisit = buildVisit({
       uuid: 'visit-sis-vigente-without-number',
       patientName: 'Paciente SIS sin número',
@@ -356,17 +327,9 @@ describe('VisitTable FUA generation', () => {
 
     render(<VisitTable />);
 
-    expect(screen.getByText('Sin número de afiliación')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Generar FUA' }));
-
+    expect(screen.queryByText('Paciente SIS sin número')).not.toBeInTheDocument();
+    expect(screen.getByText('No se encontraron visitas con SIS vigente')).toBeInTheDocument();
     expect(mockGenerateFuaFromVisit).not.toHaveBeenCalled();
-    expect(mockShowModal).toHaveBeenCalledWith(
-      'fua-accreditation-warning-modal',
-      expect.objectContaining({
-        accreditationStatusLabel: 'sin número de afiliación',
-        patientName: 'Paciente SIS sin número',
-      }),
-    );
   });
 
   it('excludes visits without an active SIS accreditation from bulk generation', async () => {
@@ -402,11 +365,8 @@ describe('VisitTable FUA generation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Generar FUAs seleccionados' }));
 
     await waitFor(() => expect(mockGenerateFuasFromVisits).toHaveBeenCalledWith(['visit-sis-vigente']));
-    expect(mockShowSnackbar).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kind: 'warning',
-        title: 'Visitas excluidas del lote',
-      }),
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'warning', title: 'Visitas excluidas del lote' }),
     );
   });
 });

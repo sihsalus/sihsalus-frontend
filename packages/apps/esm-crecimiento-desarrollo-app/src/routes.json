@@ -389,7 +389,7 @@
   ],
   "modals": [
     {
-      "name": "condition-delete-confirmation-dialog",
+      "name": "cred-condition-delete-confirmation-dialog",
       "component": "conditionFilterDeleteConfirmationDialog",
       "privileges": "app:hoja.clinica.cred.antecedentes.editar"
     }
@@ -408,27 +408,6 @@
       "title": "Antecedentes Patológicos",
       "type": "form",
       "privileges": "app:hoja.clinica.cred.antecedentes.editar"
-    },
-    {
-      "name": "conditions-filter-form-workspace",
-      "component": "conditionsFilterWorkspace",
-      "title": "Agregar Condición",
-      "type": "form",
-      "privileges": "app:hoja.clinica.cred.antecedentes.editar"
-    },
-    {
-      "name": "maternal-conditions-form-workspace",
-      "component": "conditionsFilterWorkspace",
-      "title": "Agregar Condición",
-      "type": "form",
-      "privileges": "app:hoja.clinica.cred.antecedentes.editar"
-    },
-    {
-      "name": "forms-selector-workspace",
-      "component": "formsSelectorWorkspace",
-      "title": "Selección de Formularios",
-      "type": "form",
-      "privileges": "app:hoja.clinica.cred.cursoVida.editar"
     },
     {
       "name": "wellchild-control-form",

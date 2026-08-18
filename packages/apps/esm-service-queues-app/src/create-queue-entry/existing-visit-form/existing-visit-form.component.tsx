@@ -15,6 +15,7 @@ interface ExistingVisitFormProps {
   currentServiceQueueUuid?: string;
   onBeforeQueueEntrySave?: (visit: Visit) => boolean | Promise<boolean>;
   onQueueEntryAdded?: () => void | Promise<void>;
+  requestedUpssName?: string;
   requestedServiceName?: string;
   visit: Visit;
 }
@@ -30,6 +31,7 @@ const ExistingVisitForm: React.FC<ExistingVisitFormProps> = ({
   currentServiceQueueUuid,
   onBeforeQueueEntrySave,
   onQueueEntryAdded,
+  requestedUpssName,
   requestedServiceName,
 }) => {
   const { t } = useTranslation();
@@ -97,6 +99,7 @@ const ExistingVisitForm: React.FC<ExistingVisitFormProps> = ({
           currentQueueLocationUuid={currentQueueLocationUuid}
           currentServiceQueueUuid={currentServiceQueueUuid}
           patientGender={patientGender}
+          requestedUpssName={requestedUpssName}
           requestedServiceName={requestedServiceName}
           onQueueEntryAdded={onQueueEntryAdded}
           setCallbacks={setCallbacks}

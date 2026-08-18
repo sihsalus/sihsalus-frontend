@@ -1190,6 +1190,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@babel/runtime@npm:^7.29.2":
+  version: 7.29.7
+  resolution: "@babel/runtime@npm:7.29.7"
+  checksum: 10c0/ca11572f7146b21e0bde6a9ed4bb6a89eafbee5f0944c7eb54d0d8a2dac962c33638a1d611e14faa71dfbb92b4b5f9236232208568a6b7d5c6f3f39ddb91771e
+  languageName: node
+  linkType: hard
+
 "@babel/template@npm:^7.28.6":
   version: 7.28.6
   resolution: "@babel/template@npm:7.28.6"
@@ -4024,7 +4031,7 @@ __metadata:
 
 "@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch::locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A.":
   version: 9.0.2
-  resolution: "@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch::version=9.0.2&hash=307be9&locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A."
+  resolution: "@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch::version=9.0.2&hash=1d9e69&locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A."
   dependencies:
     "@carbon/react": "npm:^1.92.1"
     "@internationalized/date": "npm:^3.8.0"
@@ -4054,7 +4061,7 @@ __metadata:
     workbox-strategies: "npm:^6.1.5"
     workbox-webpack-plugin: "npm:^6.1.5"
     workbox-window: "npm:^6.1.5"
-  checksum: 10c0/edcb402ed2f7f15c0c2b07f04e53af21e210a6d3c101c199b45da8b12089d6eb143063d72d32ade8d21c8a0026318919a6cfb149ce00a54d5a93ffb813a2b2a6
+  checksum: 10c0/b1b9f39b6d1cdb4f7827f40280ce2dcd31a12d7dd22d38a497d9c6c0e222421733e0065bcad02addd06ae16283c4340a0621a15e00a169e7c618984870d9a1af
   languageName: node
   linkType: hard
 
@@ -4464,7 +4471,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     rimraf: "npm:^6.1.3"
     rxjs: "npm:^6.5.3"
     single-spa-react: "npm:^6.0.2"
@@ -7509,41 +7516,30 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rspack/dev-server@npm:1.2.1":
-  version: 1.2.1
-  resolution: "@rspack/dev-server@npm:1.2.1"
-  dependencies:
-    "@types/bonjour": "npm:^3.5.13"
-    "@types/connect-history-api-fallback": "npm:^1.5.4"
-    "@types/express": "npm:^4.17.25"
-    "@types/express-serve-static-core": "npm:^4.17.21"
-    "@types/serve-index": "npm:^1.9.4"
-    "@types/serve-static": "npm:^1.15.5"
-    "@types/sockjs": "npm:^0.3.36"
-    "@types/ws": "npm:^8.5.10"
-    ansi-html-community: "npm:^0.0.8"
-    bonjour-service: "npm:^1.2.1"
-    chokidar: "npm:^3.6.0"
-    colorette: "npm:^2.0.10"
-    compression: "npm:^1.8.1"
-    connect-history-api-fallback: "npm:^2.0.0"
-    express: "npm:^4.22.1"
-    graceful-fs: "npm:^4.2.6"
-    http-proxy-middleware: "npm:^2.0.9"
-    ipaddr.js: "npm:^2.1.0"
-    launch-editor: "npm:^2.6.1"
-    open: "npm:^10.0.3"
-    p-retry: "npm:^6.2.0"
-    schema-utils: "npm:^4.2.0"
-    selfsigned: "npm:^2.4.1"
-    serve-index: "npm:^1.9.1"
-    sockjs: "npm:^0.3.24"
-    spdy: "npm:^4.0.2"
-    webpack-dev-middleware: "npm:^7.4.2"
-    ws: "npm:^8.18.0"
+"@rspack/dev-middleware@npm:^2.0.3":
+  version: 2.0.3
+  resolution: "@rspack/dev-middleware@npm:2.0.3"
   peerDependencies:
-    "@rspack/core": "*"
-  checksum: 10c0/f54d499aae531a5560ae09394c935d95674f8888a0037848acdddb8ddf8e418f27a68562b08f6ba368bb897d308c3b803cdd3d71f86d0e14fc64c8a3dd37789c
+    "@rspack/core": ^2.0.0
+  peerDependenciesMeta:
+    "@rspack/core":
+      optional: true
+  checksum: 10c0/603d51113a793235a04cc344c4cc7d82c411f651b067e88024ce16870e61c09cfed59c9b7142506dde43f2168448460a2eb03eb519c15d6e408785e3db0ed41b
+  languageName: node
+  linkType: hard
+
+"@rspack/dev-server@npm:2.2.0":
+  version: 2.2.0
+  resolution: "@rspack/dev-server@npm:2.2.0"
+  dependencies:
+    "@rspack/dev-middleware": "npm:^2.0.3"
+  peerDependencies:
+    "@rspack/core": ^2.0.0
+    selfsigned: ^5.0.0
+  peerDependenciesMeta:
+    selfsigned:
+      optional: true
+  checksum: 10c0/c98856c67d1b4d541fcaa02028d504464dda95d775953e979eadb4380ad580d49184b570f7c98af921d8808e31b8afcd50267c170543dc2b1067b6e62274c50d
   languageName: node
   linkType: hard
 
@@ -7685,6 +7681,7 @@ __metadata:
   dependencies:
     "@carbon/react": "npm:^1.71.0"
     "@openmrs/esm-patient-common-lib": "workspace:*"
+    "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     classnames: "npm:^2.3.2"
     lodash-es: "npm:^4.17.15"
@@ -7758,7 +7755,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.56.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-is: "npm:^19.1.1"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.6.7"
@@ -7857,7 +7854,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.49.3"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     react-to-print: "npm:^3.1.1"
     rxjs: "npm:^6.6.7"
@@ -7897,7 +7894,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.6.7"
     swr: "npm:^2.3.6"
@@ -7940,7 +7937,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.56.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     turbo: "npm:^2.9.14"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.7"
@@ -7949,7 +7946,7 @@ __metadata:
     "@openmrs/esm-framework": "*"
     react: 18.x
     react-dom: 18.x
-    react-i18next: ^16.0.0
+    react-i18next: ^17.0.11
   languageName: unknown
   linkType: soft
 
@@ -7976,7 +7973,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.66.0"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.6.7"
     swr: "npm:^2.3.6"
@@ -8021,7 +8018,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.56.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-is: "npm:^19.1.1"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.6.7"
@@ -8060,7 +8057,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.7"
   peerDependencies:
@@ -8093,7 +8090,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     react-to-print: "npm:^2.14.13"
     rxjs: "npm:^6.6.7"
@@ -8196,7 +8193,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.34.2"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     semver: "npm:^7.5.4"
     swr: "npm:^2.2.4"
@@ -8211,7 +8208,7 @@ __metadata:
     lodash-es: 4.x
     react: 18.x
     react-dom: 18.x
-    react-i18next: ^16.0.0
+    react-i18next: ^17.0.11
     react-router-dom: ">=6.30.4 <8"
     swr: 2.x
   languageName: unknown
@@ -8238,7 +8235,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.56.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-is: "npm:^19.1.1"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.6.7"
@@ -8290,8 +8287,8 @@ __metadata:
     react-ace: "npm:^11.0.1"
     react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^4.0.13"
-    react-i18next: "npm:^16.0.0"
-    react-markdown: "npm:^9.0.1"
+    react-i18next: "npm:^17.0.11"
+    react-markdown: "npm:^10.1.0"
     react-mde: "npm:^11.5.0"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.6.7"
@@ -8338,8 +8335,8 @@ __metadata:
     react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^4.0.13"
     react-hook-form: "npm:^7.52.0"
-    react-i18next: "npm:^16.0.0"
-    react-markdown: "npm:^9.0.1"
+    react-i18next: "npm:^17.0.11"
+    react-markdown: "npm:^10.1.0"
     react-waypoint: "npm:^10.3.0"
     react-webcam: "npm:^7.2.0"
     resize-observer-polyfill: "npm:^1.5.1"
@@ -8450,7 +8447,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.7"
   peerDependencies:
@@ -8494,7 +8491,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-ace: "npm:^14.0.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     rxjs: "npm:^6.5.3"
     swr: "npm:2.2.5"
     typescript: "npm:6.0.3"
@@ -8526,7 +8523,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.6.7"
     swr: "npm:^2.3.6"
@@ -8589,7 +8586,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.52.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.7"
@@ -8614,7 +8611,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.52.2"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.5.3"
     swr: "npm:2.2.5"
@@ -8669,7 +8666,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.5.3"
     swr: "npm:2.2.5"
@@ -8915,7 +8912,7 @@ __metadata:
     react: "npm:^18.x"
     react-dom: "npm:^18.x"
     react-hook-form: "npm:^7.x"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-is: "npm:^19.1.0"
     rxjs: "npm:^6.6.7"
     sass: "npm:^1.54.3"
@@ -9294,7 +9291,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.5.3"
     typescript: "npm:6.0.3"
@@ -9324,7 +9321,7 @@ __metadata:
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     sass: "npm:^1.98.0"
     swr: "npm:^2.4.1"
@@ -9436,7 +9433,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.56.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-is: "npm:^19.1.1"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.6.7"
@@ -9565,7 +9562,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.45.4"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     react-to-print: "npm:^2.14.13"
     rxjs: "npm:^6.6.7"
@@ -9621,7 +9618,7 @@ __metadata:
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     sass: "npm:^1.98.0"
     typescript: "npm:6.0.3"
@@ -9650,7 +9647,7 @@ __metadata:
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
     sass: "npm:^1.98.0"
     swr: "npm:^2.4.1"
@@ -9690,7 +9687,7 @@ __metadata:
     openmrs: "npm:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
+    react-i18next: "npm:^17.0.11"
     react-joyride: "npm:^2.8.2"
     react-router-dom: "npm:7.18.2"
     rxjs: "npm:^6.6.7"
@@ -11016,15 +11013,6 @@ __metadata:
   dependencies:
     node-fetch: "npm:*"
   checksum: 10c0/2fedd8ff347c0d1fcd0491a3408087a1d8306a38a2425464ec72049ab3353debdec99d988e2a5ab5b32ee9f275aab30c1e10a250f2b6c3b91824b7aa26653700
-  languageName: node
-  linkType: hard
-
-"@types/node-forge@npm:^1.3.0":
-  version: 1.3.14
-  resolution: "@types/node-forge@npm:1.3.14"
-  dependencies:
-    "@types/node": "npm:*"
-  checksum: 10c0/da6158fd34fa7652aa7f8164508f97a76b558724ab292f13c257e39d54d95d4d77604e8fb14dc454a867f1aeec7af70118294889195ec4400cecbb8a5c77a212
   languageName: node
   linkType: hard
 
@@ -16801,6 +16789,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"html-parse-stringify@npm:^4.0.1":
+  version: 4.0.1
+  resolution: "html-parse-stringify@npm:4.0.1"
+  checksum: 10c0/8d7267acbc8b70a50096176e28ba491af89fb31613b6a062bce4b8201b2703fd652bedfbe0db6efe90145379c89524a3319b1b58b8c96a72779b0f49e4c2c180
+  languageName: node
+  linkType: hard
+
 "html-to-image@npm:1.11.11":
   version: 1.11.11
   resolution: "html-to-image@npm:1.11.11"
@@ -18376,7 +18371,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"launch-editor@npm:^2.14.1, launch-editor@npm:^2.6.1":
+"launch-editor@npm:^2.14.1":
   version: 2.14.1
   resolution: "launch-editor@npm:2.14.1"
   dependencies:
@@ -19967,13 +19962,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-forge@npm:^1":
-  version: 1.4.0
-  resolution: "node-forge@npm:1.4.0"
-  checksum: 10c0/67330a5f1f95257a4c8a93b7d555abe87b5f15e350123aa396c97a21a8ca94f9c6549008eb2c73668a91e0d7e3a905785acbd8f8bd0751c29401292011f8f8e1
-  languageName: node
-  linkType: hard
-
 "node-gyp@npm:^12.1.0":
   version: 12.4.0
   resolution: "node-gyp@npm:12.4.0"
@@ -20341,7 +20329,7 @@ __metadata:
     "@pnpm/npm-conf": "npm:^2.1.0"
     "@rspack/cli": "npm:1.7.11"
     "@rspack/core": "npm:1.7.11"
-    "@rspack/dev-server": "npm:1.2.1"
+    "@rspack/dev-server": "npm:2.2.0"
     "@swc/core": "npm:1.15.21"
     "@types/express": "npm:^4.11.1"
     "@types/glob": "npm:^7.1.1"
@@ -21734,6 +21722,28 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-i18next@npm:^17.0.11":
+  version: 17.0.11
+  resolution: "react-i18next@npm:17.0.11"
+  dependencies:
+    "@babel/runtime": "npm:^7.29.2"
+    html-parse-stringify: "npm:^4.0.1"
+    use-sync-external-store: "npm:^1.6.0"
+  peerDependencies:
+    i18next: ">= 26.2.0"
+    react: ">= 16.8.0"
+    typescript: ^5 || ^6 || ^7
+  peerDependenciesMeta:
+    react-dom:
+      optional: true
+    react-native:
+      optional: true
+    typescript:
+      optional: true
+  checksum: 10c0/f49e83e377f56d8f6a198a00539925edbc77370b68a51ad8b1829b581abcd22dd57843118a8e541c2284f58899d8035d255c41e246cfc64e9c0ca42df071ed81
+  languageName: node
+  linkType: hard
+
 "react-images@npm:^0.5.16":
   version: 0.5.19
   resolution: "react-images@npm:0.5.19"
@@ -21846,9 +21856,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-markdown@npm:^9.0.1":
-  version: 9.1.0
-  resolution: "react-markdown@npm:9.1.0"
+"react-markdown@npm:^10.1.0":
+  version: 10.1.0
+  resolution: "react-markdown@npm:10.1.0"
   dependencies:
     "@types/hast": "npm:^3.0.0"
     "@types/mdast": "npm:^4.0.0"
@@ -21864,7 +21874,7 @@ __metadata:
   peerDependencies:
     "@types/react": ">=18"
     react: ">=18"
-  checksum: 10c0/5bd645d39379f776d64588105f4060c390c3c8e4ff048552c9fa0ad31b756bb3ff7c11081542dc58d840ccf183a6dd4fd4d4edab44d8c24dee8b66551a5fd30d
+  checksum: 10c0/4a5dc7d15ca6d05e9ee95318c1904f83b111a76f7588c44f50f1d54d4c97193b84e4f64c4b592057c989228238a2590306cedd0c4d398e75da49262b2b5ae1bf
   languageName: node
   linkType: hard
 
@@ -23024,16 +23034,6 @@ __metadata:
   version: 2.0.0
   resolution: "select-hose@npm:2.0.0"
   checksum: 10c0/01cc52edd29feddaf379efb4328aededa633f0ac43c64b11a8abd075ff34f05b0d280882c4fbcbdf1a0658202c9cd2ea8d5985174dcf9a2dac7e3a4996fa9b67
-  languageName: node
-  linkType: hard
-
-"selfsigned@npm:^2.4.1":
-  version: 2.4.1
-  resolution: "selfsigned@npm:2.4.1"
-  dependencies:
-    "@types/node-forge": "npm:^1.3.0"
-    node-forge: "npm:^1"
-  checksum: 10c0/521829ec36ea042f7e9963bf1da2ed040a815cf774422544b112ec53b7edc0bc50a0f8cc2ae7aa6cc19afa967c641fd96a15de0fc650c68651e41277d2e1df09
   languageName: node
   linkType: hard
 

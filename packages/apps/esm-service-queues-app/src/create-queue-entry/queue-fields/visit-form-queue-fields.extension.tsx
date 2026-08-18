@@ -20,6 +20,7 @@ export interface VisitFormQueueFieldsProps {
   patientUuid: string;
   currentServiceQueueUuid?: string;
   currentQueueLocationUuid?: string;
+  requestedUpssName?: string;
   requestedServiceName?: string;
   requireActiveSisFinancing?: boolean;
   onQueueEntryAdded?: () => void | Promise<void>;
@@ -72,6 +73,7 @@ const VisitFormQueueFields: React.FC<VisitFormQueueFieldsProps> = (props) => {
     patientChartConfig,
     currentServiceQueueUuid,
     currentQueueLocationUuid,
+    requestedUpssName,
     patientUuid,
     requestedServiceName,
     requireActiveSisFinancing,
@@ -94,6 +96,7 @@ const VisitFormQueueFields: React.FC<VisitFormQueueFieldsProps> = (props) => {
         <QueueFields
           currentServiceQueueUuid={currentServiceQueueUuid}
           currentQueueLocationUuid={currentQueueLocationUuid}
+          requestedUpssName={requestedUpssName}
           patientGender={patient?.gender}
           requestedServiceName={requestedServiceName}
           requireActiveSisFinancing={requireActiveSisFinancing}

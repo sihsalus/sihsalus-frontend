@@ -16,7 +16,7 @@ Then, in a separate terminal, run either the full root E2E suite or only the dis
 ```sh
 yarn test:e2e --headed
 # or only dispensing
-yarn workspace @sihsalus/esm-dispensing-app test-e2e --headed
+yarn playwright test -c e2e/dispensing/playwright.config.ts --headed
 ```
 
 By default, the test suite will run against the http://localhost:8080. You can override this by exporting `E2E_BASE_URL` environment variables beforehand:
@@ -34,7 +34,7 @@ yarn test:e2e --headed
 To run a specific test by title:
 
 ```sh
-yarn workspace @sihsalus/esm-dispensing-app test-e2e --headed -g "title of the test"
+yarn playwright test -c e2e/dispensing/playwright.config.ts --headed -g "title of the test"
 ```
 
 Read the [e2e testing guide](https://o3-docs.openmrs.org/docs/frontend-modules/end-to-end-testing) to learn more about End-to-End tests in this project.

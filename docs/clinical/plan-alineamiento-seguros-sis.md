@@ -26,6 +26,14 @@ La integración de este contrato llegó a `main` mediante los PRs #788, #789 y
 (`sha256:998e02ba38eb03297e6da4b3580c2ba963c35b328ca7eb11571fe0db81d062a5`)
 fue publicado y desplegado en DEV/QLTY el 2026-08-11 (hora de Lima).
 
+> Nota 2026-08-16: consulta externa incorpora una advertencia opcional de
+> financiamiento (`showSisFinancingWarning` en `esm-atencion-ambulatoria-app`,
+> apagada por defecto) que reutiliza el estado de acreditación de la visita y
+> deriva a Caja sin bloquear la atención (Ley 27604). El bloqueo duro sigue en
+> FUA (Fase 5). Pendiente: el widget Financiador y `useInsuranceProvider`
+> quedaron sin montar desde `b55da5f97`; decidir si se reconectan al visit
+> attribute o se eliminan.
+
 ---
 
 ## 1. Diagnóstico encontrado el 2026-07-17

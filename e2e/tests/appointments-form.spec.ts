@@ -22,7 +22,13 @@ async function openAppointmentsForm(page: Page) {
   await expect(page).not.toHaveURL(/\/login/);
 
   // El botón de alta aparece como "Agregar" (con data) o como botón de registro (vacío).
-  const addButton = page
+  // Dentro del widget Citas: el navbar ("Agregar paciente") y el banner de
+  // vitales ("Registrar signos vitales") pescaban con un selector amplio.
+  const citasWidget = page
+    .getByRole('complementary')
+    .filter({ has: page.getByRole('heading', { name: /^Citas$/i }) })
+    .first();
+  const addButton = citasWidget
     .getByRole('button', {
       name: /Agregar|Add Appointments|Registrar|Record appointment/i,
     })

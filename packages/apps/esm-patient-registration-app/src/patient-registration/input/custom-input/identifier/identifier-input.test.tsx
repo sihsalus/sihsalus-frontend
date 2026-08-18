@@ -36,7 +36,7 @@ const mockIdentifierTypes = [
     name: 'OpenMRS ID',
     required: true,
     uniquenessBehavior: 'UNIQUE' as const,
-    uuid: '05a29f94-c0ed-11e2-94be-8c13b969e334',
+    uuid: 'generic-identifier-type-uuid',
   },
 ];
 
@@ -74,7 +74,7 @@ describe('identifier input', () => {
 
   const fieldName = 'openMrsId';
   const openmrsID = {
-    identifierTypeUuid: '05a29f94-c0ed-11e2-94be-8c13b969e334',
+    identifierTypeUuid: 'generic-identifier-type-uuid',
     initialValue: '',
     identifierName: 'OpenMRS ID',
     selectedSource: {
@@ -229,6 +229,48 @@ describe('identifier input', () => {
     // replay
     setupIdentifierInput(openmrsID);
     expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+  });
+
+  it('shows an existing medical record number as read-only even when manual entry is enabled', () => {
+    const medicalRecordIdentifier = {
+      ...openmrsID,
+      autoGeneration: false,
+      identifierTypeUuid: '05a29f94-c0ed-11e2-94be-8c13b969e334',
+      identifierValue: '1002UU9',
+      initialValue: '1002UU9',
+      required: true,
+      selectedSource: {
+        ...openmrsID.selectedSource,
+        autoGenerationOption: {
+          automaticGenerationEnabled: true,
+          manualEntryEnabled: true,
+        },
+      },
+    } as PatientIdentifierValue;
+
+    setupIdentifierInput(medicalRecordIdentifier, {
+      identifiers: { [fieldName]: medicalRecordIdentifier },
+    });
+
+    expect(screen.getByTestId('identifier-placeholder')).toHaveTextContent('1002UU9');
+    expect(screen.queryByRole('textbox', { name: openmrsID.identifierName })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('edit-button')).not.toBeInTheDocument();
+  });
+
+  it('keeps an existing DNI editable', () => {
+    const dniIdentifier = {
+      ...openmrsID,
+      autoGeneration: false,
+      identifierName: 'DNI',
+      identifierTypeUuid: 'dni-uuid',
+      identifierValue: '12345678',
+      initialValue: '12345678',
+      required: true,
+    } as PatientIdentifierValue;
+
+    setupIdentifierInput(dniIdentifier, { identifiers: { [fieldName]: dniIdentifier } });
+
+    expect(screen.getByRole('textbox', { name: 'DNI' })).toHaveValue('12345678');
   });
 
   it('displays a delete button when the identifier is not a default type', () => {

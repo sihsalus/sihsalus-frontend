@@ -17,7 +17,6 @@
 
 .container {
   width: 11.625rem;
-  border-bottom: 1px solid $ui-04;
   margin-bottom: layout.$spacing-03;
 }
 
@@ -71,6 +70,7 @@
   text-align: center;
   color: $text-02;
   background-color: $ui-01;
+  border-bottom: 1px solid $ui-04;
 
   &.focused {
     outline: layout.$spacing-01 solid colors.$blue-60;
@@ -87,6 +87,13 @@
       display: none;
     }
   }
+}
+
+.referenceRange {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+  min-height: layout.$spacing-06;
+  margin-top: layout.$spacing-02;
 }
 
 :global(.omrs-breakpoint-lt-desktop) .inputContainer {
@@ -129,17 +136,26 @@
 }
 
 .textarea {
-  border: none;
   @extend .bodyLong01;
+  width: 100%;
   text-align: left;
+}
 
-  textarea {
-    border-bottom: none;
+.textAreaContainer {
+  height: auto;
+  min-height: 7.5rem;
+  justify-content: flex-start;
+  text-align: left;
+  background-color: transparent;
+  border-bottom: none;
 
-    &:focus {
-      outline: none;
-    }
+  &.focused {
+    outline: none;
   }
+}
+
+.textAreaField > .labelContainer {
+  display: none;
 }
 
 .selectInput {

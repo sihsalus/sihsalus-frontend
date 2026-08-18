@@ -234,8 +234,8 @@ describe('AppointmentForm', () => {
     expect(screen.getByRole('option', { name: /^am$/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /^pm$/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /choose appointment type/i })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /programada/i })).toHaveValue('Scheduled');
-    expect(screen.getByRole('option', { name: /sin cita/i })).toHaveValue('WalkIn');
+    expect(screen.getByRole('option', { name: /^programada presencial$/i })).toHaveValue('Scheduled');
+    expect(screen.getByRole('option', { name: /no programada presencial/i })).toHaveValue('WalkIn');
     expect(screen.getByLabelText(/date appointment issued/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/is this a recurring appointment/i)).not.toBeInTheDocument();
 
@@ -459,6 +459,10 @@ describe('AppointmentForm', () => {
     renderWithSwr(<AppointmentForm {...defaultProps} />);
 
     await waitForLoadingToFinish();
+    expect(screen.getByRole('option', { name: serviceLocation.display })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('option', { name: mockLocations.data.results[0].display }),
+    ).not.toBeInTheDocument();
     await fillRequiredAppointmentFields(user);
 
     const locationSelect = screen.getByRole('combobox', { name: /select a UPSS/i });
@@ -1318,6 +1322,25 @@ describe('AppointmentForm', () => {
     await waitForLoadingToFinish();
 
     expect(screen.getByTestId('datePickerInput')).not.toHaveAttribute('readonly');
+  });
+
+  it('locks scheduling date and time for a walk-in appointment', async () => {
+    const user = userEvent.setup();
+    mockUserHasAccess.mockImplementation((privilege) => privilege === appointmentStartDateEditPrivilege);
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+    await selectLocationAndService(user);
+
+    expect(screen.getByLabelText(/appointment calendar/i)).toBeInTheDocument();
+    await user.selectOptions(screen.getByRole('combobox', { name: /select the type of appointment/i }), 'WalkIn');
+
+    expect(screen.getByTestId('datePickerInput')).toHaveAttribute('readonly');
+    expect(screen.getByRole('textbox', { name: /time/i })).toBeDisabled();
+    expect(screen.getByRole('combobox', { name: /time/i })).toBeDisabled();
+    expect(screen.getByRole('spinbutton', { name: /duration/i })).toBeEnabled();
+    expect(screen.queryByLabelText(/appointment calendar/i)).not.toBeInTheDocument();
   });
 
   it('rejects a historical appointment date even when the user can edit the field', async () => {

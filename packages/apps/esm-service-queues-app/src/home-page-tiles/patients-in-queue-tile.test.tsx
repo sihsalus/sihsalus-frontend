@@ -24,6 +24,10 @@ describe('PatientsInQueueTile', () => {
     expect(mockUseQueueEntriesMetrics).toHaveBeenCalledWith({ isEnded: false });
     expect(screen.getByText('Pacientes en cola')).toBeInTheDocument();
     expect(screen.getByText('7')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Pacientes en cola/i })).toHaveAttribute(
+      'href',
+      `${globalThis.spaBase}/home/service-queues`,
+    );
   });
 
   it('does not present a false zero while loading or after an error', () => {

@@ -11,6 +11,7 @@ import {
   peruInsuranceAccreditationNotConsultedConceptUuid,
   peruInsuranceAccreditationStatusAttributeTypeUuid,
   peruInsuranceCodeAttributeTypeUuid,
+  peruLegacySisPlanConceptUuid,
   peruInsuranceSelfFinancingConceptUuid,
   peruInsuranceSisConceptUuid,
   peruInsuranceTypeAttributeTypeUuid,
@@ -311,6 +312,85 @@ describe('CodedPersonAttributeField', () => {
     expect(screen.getByRole('option', { name: 'Self-financing' })).toHaveValue('self-funded-concept');
     expect(screen.queryByText('Particular / Sin seguro')).not.toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Plan de atención SIS' })).not.toBeInTheDocument();
+  });
+
+  it('shows SIS as the first payer option', () => {
+    mockUseConceptAnswers.mockReturnValue({
+      data: [
+        { uuid: 'self-funded-concept', display: 'Autoseguro de salud' },
+        { uuid: 'essalud-concept', display: 'ESSALUD' },
+        { uuid: peruInsuranceSisConceptUuid, display: 'Seguro Integral de Salud (SIS)' },
+      ],
+      isLoading: false,
+      error: undefined,
+    });
+
+    render(
+      <Formik initialValues={{ attributes: {} }} onSubmit={() => {}}>
+        <Form>
+          <CodedPersonAttributeField
+            id="insuranceType"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label="Financiador"
+            customConceptAnswers={[]}
+            required={false}
+          />
+        </Form>
+      </Formik>,
+    );
+
+    const options = screen.getAllByRole('option');
+    expect(options[0]).toHaveTextContent('Select an option');
+    expect(options[1]).toHaveTextContent('Seguro Integral de Salud (SIS)');
+    expect(options[1]).toHaveValue(peruInsuranceSisConceptUuid);
+  });
+
+  it('shows a unique, ordered financer list without SIS products', () => {
+    mockUseConceptAnswers.mockReturnValue({
+      data: [
+        { uuid: 'sis-gratuito', display: 'SIS Gratuito' },
+        { uuid: 'essalud-duplicate', display: ' essalud ' },
+        { uuid: 'self-funded-concept', display: 'Autoseguro de salud' },
+        { uuid: 'sis-emprendedor', display: 'SIS Emprendedor' },
+        { uuid: peruInsuranceSisConceptUuid, display: 'Seguro Integral de Salud (SIS)' },
+        { uuid: peruLegacySisPlanConceptUuid, display: 'Plan de atenciÃ³n SIS' },
+        { uuid: 'essalud-concept', display: 'ESSALUD' },
+        { uuid: 'sis-semicontributivo', display: 'SIS Semicontributivo' },
+        { uuid: 'eps-concept', display: 'EPS (Entidad Prestadora de Salud)' },
+      ],
+      isLoading: false,
+      error: undefined,
+    });
+
+    render(
+      <Formik initialValues={{ attributes: {} }} onSubmit={() => {}}>
+        <Form>
+          <CodedPersonAttributeField
+            id="insuranceType"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label="Financiador"
+            customConceptAnswers={[]}
+            required={false}
+          />
+        </Form>
+      </Formik>,
+    );
+
+    const optionLabels = screen.getAllByRole('option').map((option) => option.textContent?.trim());
+    expect(optionLabels).toEqual([
+      'Select an option',
+      'Seguro Integral de Salud (SIS)',
+      'Autoseguro de salud',
+      'EPS (Entidad Prestadora de Salud)',
+      'ESSALUD',
+    ]);
+    expect(screen.queryByRole('option', { name: /SIS Gratuito/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /SIS Emprendedor/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /SIS Semicontributivo/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Plan de atenciÃ³n SIS/i })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('option', { name: /ESSALUD/i })).toHaveLength(1);
   });
 
   it('clears SIS data across payer changes and restores No consultada when SIS is selected again', async () => {

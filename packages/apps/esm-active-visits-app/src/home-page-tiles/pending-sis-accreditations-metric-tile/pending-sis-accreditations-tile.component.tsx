@@ -1,4 +1,4 @@
-import { Tile } from '@carbon/react';
+import { ClickableTile } from '@carbon/react';
 import { useConfig } from '@openmrs/esm-framework';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,9 +15,10 @@ const PendingSisAccreditationsTile = () => {
     () => new Set(pendingVisits.map((visit) => visit.patientUuid || `visit:${visit.visitUuid}`)).size,
     [pendingVisits],
   );
+  const spaBase = (globalThis.spaBase ?? globalThis.getOpenmrsSpaBase()).replace(/\/$/, '');
 
   return (
-    <Tile className={styles.tileContainer}>
+    <ClickableTile className={styles.tileContainer} href={`${spaBase}/home/home#pending-sis-accreditations`}>
       <header className={styles.tileHeader}>
         {t('patientsPendingSisAccreditation', 'Pacientes pendientes de acreditación')}
       </header>
@@ -25,7 +26,7 @@ const PendingSisAccreditationsTile = () => {
         <div className={styles.countLabel}>{t('patients', 'Pacientes')}</div>
         <div className={styles.displayData}>{isLoading || error ? '--' : pendingPatients}</div>
       </div>
-    </Tile>
+    </ClickableTile>
   );
 };
 

@@ -513,7 +513,7 @@ describe('RelationshipsSection', () => {
       .filter((option) => !option.hasAttribute('disabled'))
       .map((option) => option.textContent);
 
-    expect(optionLabels).toEqual(['Father', 'Mother', 'Aunt/Uncle', 'Other']);
+    expect(optionLabels).toEqual(['Father', 'Mother', 'Aunt/uncle', 'Other']);
     expect(screen.queryByRole('option', { name: /doctor/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /patient/i })).not.toBeInTheDocument();
   });

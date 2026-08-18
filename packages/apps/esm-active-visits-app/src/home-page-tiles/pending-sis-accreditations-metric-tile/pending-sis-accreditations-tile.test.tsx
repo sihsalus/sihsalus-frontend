@@ -36,6 +36,10 @@ describe('PendingSisAccreditationsTile', () => {
 
     expect(screen.getByText('Pacientes pendientes de acreditación')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Pacientes pendientes de acreditaci/i })).toHaveAttribute(
+      'href',
+      `${globalThis.spaBase}/home/home#pending-sis-accreditations`,
+    );
   });
 
   it('does not present a false zero while loading or after an error', () => {

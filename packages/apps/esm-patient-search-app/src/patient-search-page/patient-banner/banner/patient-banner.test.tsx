@@ -1,7 +1,7 @@
 import { ExtensionSlot, PatientBannerActionsMenu, userHasAccess, useSession, useVisit } from '@openmrs/esm-framework';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { mockAdvancedSearchResults } from 'test-utils';
-import { patientChartPrivilege } from '../../../patient-chart-access';
+import { editPatientPrivilege, patientChartPrivilege } from '../../../patient-chart-access';
 import { PatientSearchContext, PatientSearchContext2 } from '../../../patient-search-context';
 import { type SearchedPatient } from '../../../types';
 
@@ -19,7 +19,7 @@ const mockPatientBannerActionsMenu = vi.mocked(PatientBannerActionsMenu);
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
-  ConfigurableLink: ({ children }) => <a href="/patient">{children}</a>,
+  ConfigurableLink: ({ children, to }) => <a href={typeof to === 'string' ? to : '/patient'}>{children}</a>,
   ExtensionSlot: vi.fn(({ name }) => (
     <button type="button">{name.includes('start-visit') ? 'Start visit' : 'Primary patient action'}</button>
   )),
@@ -120,7 +120,22 @@ describe('PatientBanner', () => {
     );
   });
 
-  it('renders a non-interactive standalone card when the user cannot access the patient chart', () => {
+  it('links the standalone card to patient editing when the user cannot access the chart but can edit patients', () => {
+    mockUseVisit.mockReturnValue(mockVisitReturn({}));
+    mockUserHasAccess.mockImplementation((privilege) => privilege === editPatientPrivilege);
+
+    render(<PatientBanner patient={patient} patientUuid={patient.uuid} />);
+
+    expect(screen.getByText('Joshua Johnson')).toBeInTheDocument();
+    expect(screen.getByRole('link')).toHaveAttribute('href', `${globalThis.spaBase}/patient/${patient.uuid}/edit`);
+    expect(mockUserHasAccess).toHaveBeenCalledWith(patientChartPrivilege, clinicalUser);
+    expect(mockUserHasAccess).toHaveBeenCalledWith(editPatientPrivilege, clinicalUser);
+    expect(mockPatientBannerActionsMenu.mock.calls[0][0].additionalActionsSlotState).toEqual(
+      expect.objectContaining({ launchPatientChart: false }),
+    );
+  });
+
+  it('renders a non-interactive standalone card when the user can neither access the chart nor edit patients', () => {
     mockUseVisit.mockReturnValue(mockVisitReturn({}));
     mockUserHasAccess.mockReturnValue(false);
 
@@ -129,10 +144,6 @@ describe('PatientBanner', () => {
     expect(screen.getByText('Joshua Johnson')).toBeInTheDocument();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Joshua Johnson/i })).not.toBeInTheDocument();
-    expect(mockUserHasAccess).toHaveBeenCalledWith(patientChartPrivilege, clinicalUser);
-    expect(mockPatientBannerActionsMenu.mock.calls[0][0].additionalActionsSlotState).toEqual(
-      expect.objectContaining({ launchPatientChart: false }),
-    );
   });
 
   it('hides unrelated patient actions in legacy embedded selection mode', () => {

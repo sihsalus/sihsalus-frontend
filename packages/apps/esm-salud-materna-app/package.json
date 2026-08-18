@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-salud-materna-app",
-  "version": "1.0.1-alpha",
+  "version": "1.0.9",
   "description": "Módulo de Salud Materna - Atención Prenatal, Parto y Puerperio - OpenMRS O3",
   "browser": "dist/sihsalus-esm-salud-materna-app.js",
   "main": "src/index.ts",
@@ -78,7 +78,7 @@
     "openmrs": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-i18next": "^16.0.0",
+    "react-i18next": "^17.0.11",
     "react-is": "^19.1.1",
     "react-router-dom": "7.18.2",
     "rxjs": "^6.6.7",

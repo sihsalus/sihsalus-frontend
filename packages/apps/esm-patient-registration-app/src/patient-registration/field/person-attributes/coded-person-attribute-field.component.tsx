@@ -9,12 +9,78 @@ import { type PersonAttributeTypeResponse } from '../../patient-registration.typ
 import {
   peruInsuranceTypeAttributeTypeUuid,
   peruLegacySisPlanConceptUuid,
+  peruInsuranceSisConceptUuid,
   replacePeruFinancerInForm,
 } from '../../peru-registration-config';
 import { isMissingConceptError, useConceptAnswers } from '../field.resource';
 import styles from './../field.scss';
 
 const getConceptsPrivilege = 'Get Concepts';
+
+function normalizeAnswerLabel(label: string | undefined) {
+  return (label ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLocaleLowerCase('es');
+}
+
+function isSisProductAnswer(answer: { uuid: string; label?: string }) {
+  if (answer.uuid === peruInsuranceSisConceptUuid) {
+    return false;
+  }
+
+  const label = normalizeAnswerLabel(answer.label);
+
+  return (
+    answer.uuid === peruLegacySisPlanConceptUuid ||
+    label === 'sis' ||
+    label.startsWith('sis ') ||
+    label.startsWith('sis-') ||
+    label.includes('plan de atencion sis') ||
+    label.includes('producto sis') ||
+    label.includes('seguro integral de salud')
+  );
+}
+
+function normalizeFinancerAnswers<T extends { uuid: string; label?: string }>(answers: Array<T>) {
+  const uniqueAnswers = new Map<string, T>();
+  const getLabelQuality = (answer: T) => {
+    const label = answer.label ?? '';
+    const trimmedLabel = label.trim();
+    const lettersOnly = trimmedLabel.replace(/[^a-zÃ¡Ã©Ã­Ã³ÃºÃ±]/gi, '');
+
+    return Number(label === trimmedLabel) + Number(Boolean(lettersOnly) && lettersOnly === lettersOnly.toUpperCase());
+  };
+
+  answers
+    .filter((answer) => !isSisProductAnswer(answer))
+    .forEach((answer) => {
+      const normalizedLabel = normalizeAnswerLabel(answer.label);
+      const key = normalizedLabel ? `label:${normalizedLabel}` : `uuid:${answer.uuid}`;
+
+      const currentAnswer = uniqueAnswers.get(key);
+      if (
+        !currentAnswer ||
+        answer.uuid === peruInsuranceSisConceptUuid ||
+        getLabelQuality(answer) > getLabelQuality(currentAnswer)
+      ) {
+        uniqueAnswers.set(key, answer);
+      }
+    });
+
+  return [...uniqueAnswers.values()].sort((a, b) => {
+    if (a.uuid === peruInsuranceSisConceptUuid) {
+      return -1;
+    }
+    if (b.uuid === peruInsuranceSisConceptUuid) {
+      return 1;
+    }
+
+    return (a.label ?? '').localeCompare(b.label ?? '', 'es', { sensitivity: 'base' });
+  });
+}
 
 export interface CodedPersonAttributeFieldProps {
   id: string;
@@ -65,15 +131,19 @@ export function CodedPersonAttributeField({
           .map((answer) => ({ ...answer, label: answer.display }))
           .sort((a, b) => a.label.localeCompare(b.label));
 
-    return availableAnswers
-      .filter((answer) => id !== 'insuranceType' || answer.uuid !== peruLegacySisPlanConceptUuid)
-      .map((answer) => ({
+    const normalizedAnswers = availableAnswers.map((answer) => ({
         ...answer,
         label:
           id === 'insuranceType' && /^particular\s*\/\s*sin seguro$/i.test(answer.label ?? '')
             ? t('selfFinancing', 'Self-financing')
-            : answer.label,
+            : answer.label?.trim(),
       }));
+
+    if (id !== 'insuranceType') {
+      return normalizedAnswers;
+    }
+
+    return normalizeFinancerAnswers(normalizedAnswers);
   }, [conceptAnswers, customConceptAnswers, hasCustomConceptAnswers, id, t]);
 
   const fieldName = `attributes.${personAttributeType.uuid}`;

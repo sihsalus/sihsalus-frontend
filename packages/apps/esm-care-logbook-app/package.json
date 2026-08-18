@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-care-logbook-app",
-  "version": "1.0.0-alpha",
+  "version": "1.0.9",
   "license": "MPL-2.0",
   "description": "OpenMRS ESM care logbook workflows and accreditation evidence for SIHSALUS",
   "browser": "dist/sihsalus-esm-care-logbook-app.js",
@@ -68,7 +68,7 @@
     "openmrs": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-i18next": "^16.0.0",
+    "react-i18next": "^17.0.11",
     "react-router-dom": "7.18.2",
     "rxjs": "^6.6.7",
     "typescript": "6.0.3",

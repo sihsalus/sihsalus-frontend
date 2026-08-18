@@ -1,3 +1,4 @@
+import { formatPersonName } from '@openmrs/esm-utils';
 import { type SearchedPatient } from './types';
 
 type MappedSearchedPatient = fhir.Patient & { id: string };
@@ -15,7 +16,7 @@ export function getSearchedPatientDisplayName(patient: SearchedPatient): string 
   const display = getNonEmptyString(personName?.display);
 
   if (display) {
-    return display;
+    return formatPersonName(display);
   }
 
   const nameParts = [
@@ -25,7 +26,7 @@ export function getSearchedPatientDisplayName(patient: SearchedPatient): string 
     personName?.familyName2,
   ].filter((part): part is string => Boolean(getNonEmptyString(part)));
 
-  return nameParts.join(' ') || patient.uuid;
+  return formatPersonName(nameParts.join(' ')) || patient.uuid;
 }
 
 export function isValidSearchedPatient(patient: unknown): patient is SearchedPatient {

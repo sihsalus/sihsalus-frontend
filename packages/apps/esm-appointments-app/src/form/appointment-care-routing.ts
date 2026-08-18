@@ -23,6 +23,33 @@ interface FilterAppointmentServicesByLocationInput {
   services: ReadonlyArray<AppointmentService>;
 }
 
+interface FilterAppointmentLocationsByServicesInput<TLocation extends { uuid: string }> {
+  enforceArrivalRouting: boolean;
+  locations: ReadonlyArray<TLocation>;
+  services: ReadonlyArray<AppointmentService>;
+}
+
+/**
+ * Lists only UPSS that have at least one appointment service available in the
+ * canonical routing contract. Legacy installations keep relying on the
+ * Appointment Location tag until their services have a configured location.
+ */
+export function filterAppointmentLocationsByServices<TLocation extends { uuid: string }>({
+  enforceArrivalRouting,
+  locations,
+  services,
+}: FilterAppointmentLocationsByServicesInput<TLocation>): Array<TLocation> {
+  if (!enforceArrivalRouting) {
+    return [...locations];
+  }
+
+  const serviceLocationUuids = new Set(
+    services.map((service) => service.location?.uuid).filter((uuid): uuid is string => Boolean(uuid)),
+  );
+
+  return locations.filter((location) => serviceLocationUuids.has(location.uuid));
+}
+
 /**
  * Keeps UPSS as the parent selection in the appointment form. Services with a
  * configured location are only exposed under that location. Legacy services

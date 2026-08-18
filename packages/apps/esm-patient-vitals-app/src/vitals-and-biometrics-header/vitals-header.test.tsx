@@ -153,6 +153,14 @@ describe('VitalsHeader', () => {
     expect(getByTextWithMarkup(/Abdominal circumference\s*95\s*cm/i)).toBeInTheDocument();
   });
 
+  it('does not present historical MUAC as applicable for an adult patient', async () => {
+    renderWithSwr(<VitalsHeader {...testProps} patient={mockFhirPatient as fhir.Patient} />);
+
+    await waitForLoadingToFinish();
+    expect(screen.queryByText(/^MUAC$/i)).not.toBeInTheDocument();
+    expect(getByTextWithMarkup(/Weight\s*-\s*/i)).toBeInTheDocument();
+  });
+
   it('launches the vitals form when the `record vitals` button is clicked', async () => {
     const user = userEvent.setup();
 

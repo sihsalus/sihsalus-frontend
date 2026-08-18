@@ -9,6 +9,7 @@ import {
   useConfig,
   useLayoutType,
 } from '@openmrs/esm-framework';
+import { formatPersonName } from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -198,7 +199,9 @@ const VisualQueue = () => {
 function QueuePatientCard({ position, queueEntry }: { position: number; queueEntry: QueueEntry }) {
   const { t } = useTranslation();
   const { customPatientChartUrl } = useConfig<ConfigObject>();
-  const patientName = queueEntry.patient?.person?.display ?? queueEntry.patient?.display ?? t('unknown', 'Unknown');
+  const patientName = formatPersonName(
+    queueEntry.patient?.person?.display ?? queueEntry.patient?.display ?? t('unknown', 'Unknown'),
+  );
   const priorityDisplay = queueEntry.priority?.display ?? t('unknown', 'Unknown');
 
   return (

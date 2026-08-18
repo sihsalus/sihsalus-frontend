@@ -67,7 +67,7 @@
   ],
   "modals": [
     {
-      "name": "condition-delete-confirmation-dialog",
+      "name": "ambulatoria-condition-delete-confirmation-dialog",
       "component": "conditionFilterDeleteConfirmationDialog",
       "privileges": "app:hoja.clinica.historiaSocial.editar"
     }

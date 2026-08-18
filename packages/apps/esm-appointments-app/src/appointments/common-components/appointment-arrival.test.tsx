@@ -9,6 +9,7 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import {
+  fetchPersonInsurance,
   fetchFreshPatientVitalStatus,
   fetchVisitInsurance,
   getSisFinancingState,
@@ -50,6 +51,7 @@ vi.mock('./batch-change-appointment-statuses.resources', () => ({
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  fetchPersonInsurance: vi.fn(),
   fetchFreshPatientVitalStatus: vi.fn(),
   fetchVisitInsurance: vi.fn(),
   getSisFinancingState: vi.fn(),
@@ -57,6 +59,7 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => ({
 }));
 
 const mockUsePatient = vi.mocked(usePatient);
+const mockFetchPersonInsurance = vi.mocked(fetchPersonInsurance);
 const mockFetchFreshPatientVitalStatus = vi.mocked(fetchFreshPatientVitalStatus);
 const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
@@ -210,6 +213,12 @@ describe('AppointmentArrivalModal', () => {
     mockEnsureAppointmentVisitLink.mockResolvedValue({ created: false });
     mockChangeAppointmentStatus.mockResolvedValue({ data: {} } as Awaited<ReturnType<typeof changeAppointmentStatus>>);
     mockGetActiveVisitsForPatient.mockResolvedValue(visitsResponse([]));
+    mockFetchPersonInsurance.mockResolvedValue({
+      insuranceTypeUuid: 'sis-uuid',
+      insuranceCode: 'SIS-123',
+      accreditationStatusUuid: 'active-status-uuid',
+      accreditationCheckedAt: '2026-08-11T14:30:00.000-05:00',
+    });
     mockGetSisFinancingState.mockReturnValue('active');
     mockSafeCopyFinanciadorToVisit.mockResolvedValue({ ok: true, skipped: true, created: 0, updated: 0 });
     mockUseConfig.mockReturnValue({
@@ -413,6 +422,7 @@ describe('AppointmentArrivalModal', () => {
         activeVisit: expect.objectContaining({ uuid: 'test-visit-uuid' }),
         currentQueueLocationUuid: 'mapped-queue-location-uuid',
         currentServiceQueueUuid: 'mapped-queue-uuid',
+        requestedUpssName: appointment.location.name,
         requiredVisitLocation: {
           uuid: appointment.location.uuid,
           display: appointment.location.name,
@@ -455,6 +465,7 @@ describe('AppointmentArrivalModal', () => {
         },
         currentQueueLocationUuid: appointmentArrivalRule.queueLocationUuid,
         currentServiceQueueUuid: appointmentArrivalRule.queueUuid,
+        requestedUpssName: appointment.location.name,
         requiredVisitLocation: {
           uuid: appointment.location.uuid,
           display: appointment.location.name,
@@ -537,12 +548,47 @@ describe('AppointmentArrivalModal', () => {
       expect.objectContaining({
         currentQueueLocationUuid: 'triage-location-uuid',
         currentServiceQueueUuid: 'triage-queue-uuid',
+        requestedUpssName: appointment.location.name,
         requireActiveSisFinancing: true,
         workspaceTitle: 'Registrar llegada y enviar a triaje',
         workspaceDescription:
           'Revise los datos de la atención. Al confirmar, se registrará la llegada y el paciente pasará primero a la cola de triaje.',
       }),
     );
+  });
+
+  it('blocks triage when Admission has not defined the patient financing and offers a correction path', async () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentArrivalRules: [{ ...appointmentArrivalRule, requiresTriage: true }],
+      triageRouting: {
+        enabled: true,
+        encounterTypeUuid: 'triage-encounter-type-uuid',
+        queueLocationUuid: 'triage-location-uuid',
+        queueUuid: 'triage-queue-uuid',
+      },
+      checkInButton: { enabled: true, showIfActiveVisit: true, customUrl: '' },
+    });
+    mockFetchPersonInsurance.mockResolvedValue({
+      insuranceTypeUuid: null,
+      insuranceCode: null,
+      accreditationStatusUuid: null,
+      accreditationCheckedAt: null,
+    });
+
+    renderModal();
+    await userEvent.click(getQueueButton());
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'El paciente no tiene un financiador definido. Admisión debe registrar su financiamiento antes de enviarlo a triaje.',
+    );
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Revisar financiamiento' }));
+    expect(closeModal).toHaveBeenCalled();
+    expect(mockNavigate).toHaveBeenCalledWith({
+      to: expect.stringContaining(`/patient/${appointment.patient.uuid}/edit?focusSection=insurance&afterUrl=`),
+    });
   });
 
   it('blocks enqueuing with an active visit from another location', async () => {
@@ -764,7 +810,7 @@ describe('AppointmentArrivalModal', () => {
       accreditationStatusUuid: 'inactive-status-uuid',
       accreditationCheckedAt: '2026-08-11T14:30:00.000-05:00',
     });
-    mockGetSisFinancingState.mockReturnValue('inactive');
+    mockGetSisFinancingState.mockReturnValueOnce('active').mockReturnValueOnce('inactive');
 
     renderModal();
     await userEvent.click(getQueueButton());
@@ -773,15 +819,15 @@ describe('AppointmentArrivalModal', () => {
       onBeforeQueueEntrySave: (visit: typeof activeVisit) => Promise<boolean>;
     };
     await expect(launchOptions.onBeforeQueueEntrySave(activeVisit)).resolves.toBe(false);
-    expect(mockFetchVisitInsurance).toHaveBeenCalledWith(activeVisit.uuid);
-    expect(mockEnsureAppointmentVisitLink).not.toHaveBeenCalled();
-    expect(mockShowSnackbar).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: 'No se pudo registrar la llegada',
-        subtitle:
-          'No se puede continuar con el triaje porque esta atención no tiene SIS vigente. Derive al paciente a Caja para regularizar el pago o la cobertura.',
-      }),
-    );
+      expect(mockFetchVisitInsurance).toHaveBeenCalledWith(activeVisit.uuid);
+      expect(mockEnsureAppointmentVisitLink).not.toHaveBeenCalled();
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'No se pudo registrar la llegada',
+          subtitle:
+          'El paciente no tiene una acreditación SIS vigente. Revise el financiamiento en Admisión o derive al paciente a Caja para regularizar el pago o la cobertura antes del triaje.',
+        }),
+      );
   });
 
   it('allows an already funded triage visit when the optional person backfill is not authorized', async () => {

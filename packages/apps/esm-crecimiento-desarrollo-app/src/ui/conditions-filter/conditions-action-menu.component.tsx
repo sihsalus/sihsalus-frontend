@@ -28,7 +28,7 @@ export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActio
   );
 
   const launchDeleteConditionDialog = (conditionId: string) => {
-    const dispose = showModal('condition-delete-confirmation-dialog', {
+    const dispose = showModal('cred-condition-delete-confirmation-dialog', {
       closeDeleteModal: () => dispose(),
       conditionId,
       patientUuid,

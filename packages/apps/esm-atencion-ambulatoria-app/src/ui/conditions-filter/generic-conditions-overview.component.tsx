@@ -76,7 +76,8 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
   enableAdd = true,
   urlPath = 'Antecedentes',
 }) => {
-  const { conditionPageSize } = useConfig<ConfigObject>();
+  const config = useConfig<ConfigObject>();
+  const { conditionPageSize } = config;
   const { t } = useTranslation();
   const displayText = title;
   const headerTitle = title;
@@ -86,7 +87,11 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
   const isDesktop = isDesktopLayout(layout);
   const isTablet = !isDesktop;
 
-  const { conditions, error, isLoading, isValidating } = useConditionsFromConceptSet(patientUuid, conceptSetUuid);
+  const { conditions, error, isLoading, isValidating } = useConditionsFromConceptSet(
+    patientUuid,
+    conceptSetUuid,
+    config?.conditionFreeTextFallbackConceptUuid,
+  );
   const [filter, setFilter] = useState<'All' | 'Active' | 'Inactive'>('Active');
 
   const launchConditionsForm = useCallback(

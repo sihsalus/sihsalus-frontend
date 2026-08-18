@@ -109,10 +109,11 @@ describe('ActiveVisitsTable', () => {
 
     render(<ActiveVisitsTable />);
 
-    const standardColumnHeaders = [/Visit Time/, /DNI/, /N° Historia Clínica/, /Name/, /Gender/, /Age/, /Visit Type/];
+    const standardColumnHeaders = [/Visit Time/, /DNI/, /Name/, /Gender/, /Age/, /Visit Type/];
     standardColumnHeaders.forEach((header) => {
       expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
     });
+    expect(screen.queryByRole('columnheader', { name: /N° Historia Clínica/ })).not.toBeInTheDocument();
 
     expect(screen.getByRole('columnheader', { name: /Sickle cell screening test/ })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /Nutritional support/ })).toBeInTheDocument();

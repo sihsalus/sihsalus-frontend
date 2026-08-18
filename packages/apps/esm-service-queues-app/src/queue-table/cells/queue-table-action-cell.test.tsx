@@ -12,9 +12,15 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockQueueEntryAlice, mockSession } from 'test-utils';
 
-import { serviceQueuesEditPrivilege, vitalsEditPrivilege } from '../../constants';
+import {
+  admissionPrivilege,
+  serviceQueuesEditPrivilege,
+  serviceQueuesPrivilege,
+  vitalsEditPrivilege,
+} from '../../constants';
 import {
   getAppointmentTriageConfig,
+  revalidateCurrentSisState,
   transitionTriagedPatient,
 } from '../../triage-workflow/triage-workflow.resource';
 
@@ -27,12 +33,14 @@ const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
 const mockGetAppointmentTriageConfig = vi.mocked(getAppointmentTriageConfig);
+const mockRevalidateCurrentSisState = vi.mocked(revalidateCurrentSisState);
 const mockTransitionTriagedPatient = vi.mocked(transitionTriagedPatient);
 const mockNavigate = vi.mocked(navigate);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 
 vi.mock('../../triage-workflow/triage-workflow.resource', () => ({
   getAppointmentTriageConfig: vi.fn(),
+  revalidateCurrentSisState: vi.fn(),
   transitionTriagedPatient: vi.fn(),
 }));
 
@@ -48,6 +56,7 @@ describe('QueueTableActionCell', () => {
     mockUseSession.mockReturnValue(mockSession.data);
     mockUserHasAccess.mockReturnValue(true);
     mockFetchFreshPatientVitalStatus.mockResolvedValue({ dead: false, deathDate: null, isDeceased: false });
+    mockRevalidateCurrentSisState.mockResolvedValue('active');
   });
 
   it('labels the overflow menu as actions instead of Carbon default options', async () => {
@@ -74,6 +83,22 @@ describe('QueueTableActionCell', () => {
 
     render(<QueueTableActionCell queueEntry={mockQueueEntryAlice} />);
 
+    expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
+  });
+
+  it('does not expose patient status actions to an admission-only user', () => {
+    mockUserHasAccess.mockImplementation(
+      (privilege) =>
+        privilege === admissionPrivilege ||
+        privilege === serviceQueuesEditPrivilege ||
+        privilege === 'Get Queue Entries' ||
+        privilege === 'Get Queues' ||
+        privilege === 'Manage Queue Entries',
+    );
+
+    render(<QueueTableActionCell queueEntry={mockQueueEntryAlice} />);
+
+    expect(screen.queryByRole('button', { name: 'Transition' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
   });
 
@@ -129,7 +154,9 @@ describe('QueueTableActionCell', () => {
         triageState: 'pending' as const,
       },
     };
-    mockUserHasAccess.mockImplementation((privilege) => privilege !== serviceQueuesEditPrivilege);
+    mockUserHasAccess.mockImplementation(
+      (privilege) => privilege === serviceQueuesPrivilege || privilege === vitalsEditPrivilege,
+    );
     mockGetAppointmentTriageConfig.mockResolvedValue({
       appointmentArrivalRules: [],
       appointmentVisitAttributeTypeUuid: 'appointment-attribute-type-uuid',
@@ -144,6 +171,8 @@ describe('QueueTableActionCell', () => {
     render(<QueueTableActionCell queueEntry={triageQueueEntry} />);
 
     expect(mockUserHasAccess).toHaveBeenCalledWith(vitalsEditPrivilege, mockSession.data.user);
+    expect(mockUserHasAccess).toHaveBeenCalledWith(serviceQueuesPrivilege, mockSession.data.user);
+    expect(mockUserHasAccess).not.toHaveBeenCalledWith('Manage Queue Entries', mockSession.data.user);
     expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Realizar triaje' }));
     expect(mockLaunchWorkspace2).toHaveBeenCalled();
@@ -281,5 +310,29 @@ describe('QueueTableActionCell', () => {
       expect.objectContaining({ title: 'Triaje bloqueado por financiamiento', kind: 'warning' }),
     );
     expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/spa/home/billing' });
+  });
+
+  it('revalidates current coverage and blocks a stale active row before opening triage', async () => {
+    const user = userEvent.setup();
+    const triageQueueEntry = {
+      ...mockQueueEntryAlice,
+      visit: { ...mockQueueEntryAlice.visit, uuid: 'visit-uuid' },
+      workflow: {
+        isTriageQueue: true,
+        sisState: 'active' as const,
+        triageState: 'pending' as const,
+      },
+    };
+    mockRevalidateCurrentSisState.mockResolvedValue('inactive');
+
+    render(<QueueTableActionCell queueEntry={triageQueueEntry} />);
+    await user.click(screen.getByRole('button', { name: 'Realizar triaje' }));
+
+    expect(mockRevalidateCurrentSisState).toHaveBeenCalledWith(triageQueueEntry, true);
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+    expect(mockFetchFreshPatientVitalStatus).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Triaje bloqueado por financiamiento', kind: 'warning' }),
+    );
   });
 });

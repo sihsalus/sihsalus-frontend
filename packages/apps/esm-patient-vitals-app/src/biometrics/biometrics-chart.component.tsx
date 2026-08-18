@@ -18,6 +18,7 @@ interface BiometricsChartProps {
   conceptUnits: Map<string, string>;
   config: ConfigObject;
   patientBiometrics: Array<PatientVitalsAndBiometrics>;
+  showMuac?: boolean;
 }
 
 interface BiometricChartData {
@@ -35,7 +36,7 @@ const chartColors = {
   abdominalCircumference: '#6929c4',
 };
 
-const BiometricsChart: React.FC<BiometricsChartProps> = ({ patientBiometrics, conceptUnits, config }) => {
+const BiometricsChart: React.FC<BiometricsChartProps> = ({ patientBiometrics, conceptUnits, config, showMuac = true }) => {
   const { t } = useTranslation();
   const biometricLabelId = useId();
   const isMobileChartLayout = useIsMobileChartLayout();
@@ -54,12 +55,16 @@ const BiometricsChart: React.FC<BiometricsChartProps> = ({ patientBiometrics, co
       groupName: 'height',
     },
     { id: 'bmi', title: `${t('bmi', 'BMI')} (${bmiUnit})`, value: 'bmi', groupName: 'bmi' },
-    {
-      id: 'muac',
-      title: `${t('muac', 'MUAC')} (${conceptUnits.get(config.concepts.midUpperArmCircumferenceUuid) ?? ''})`,
-      value: 'muac',
-      groupName: 'muac',
-    },
+    ...(showMuac
+      ? [
+          {
+            id: 'muac',
+            title: `${t('muac', 'MUAC')} (${conceptUnits.get(config.concepts.midUpperArmCircumferenceUuid) ?? ''})`,
+            value: 'muac',
+            groupName: 'muac',
+          },
+        ]
+      : []),
     {
       id: 'abdominalCircumference',
       title: `${t('abdominalCircumference', 'Abdominal circumference')} (${

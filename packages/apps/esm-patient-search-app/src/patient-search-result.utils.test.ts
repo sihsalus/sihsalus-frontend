@@ -82,6 +82,22 @@ describe('patient search result utilities', () => {
     expect(getSearchedPatientDisplayName(patientWithoutDisplayName)).toBe('Paciente Prueba');
   });
 
+  it('normalizes uppercase patient names without losing accents or compound surnames', () => {
+    const uppercasePatient = {
+      ...patient,
+      person: {
+        ...patient.person,
+        personName: {
+          ...patient.person.personName,
+          display: "MARÍA DEL CARMEN O'CONNOR-LÓPEZ",
+        },
+      },
+    } as unknown as SearchedPatient;
+
+    expect(getSearchedPatientDisplayName(uppercasePatient)).toBe("María del Carmen O'Connor-López");
+    expect(mapSearchedPatientToFhir(uppercasePatient).name?.[0]?.text).toBe("María del Carmen O'Connor-López");
+  });
+
   it('rejects records that cannot be rendered as patients', () => {
     expect(isValidSearchedPatient(null)).toBe(false);
     expect(isValidSearchedPatient({ uuid: 'patient-uuid', person: { personName: null } })).toBe(false);

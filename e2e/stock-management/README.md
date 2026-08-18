@@ -14,7 +14,7 @@ yarn start
 Then, in a separate terminal, run:
 
 ```sh
-yarn test-e2e --headed
+yarn playwright test -c e2e/stock-management/playwright.config.ts --headed
 ```
 
 By default, the test suite will run against the http://localhost:8080. You can override this by exporting `E2E_BASE_URL` environment variables beforehand:
@@ -26,13 +26,13 @@ export E2E_BASE_URL=https://dev3.openmrs.org/openmrs
 # Run all e2e tests:
 
 ```sh
-yarn test-e2e --headed
+yarn playwright test -c e2e/stock-management/playwright.config.ts --headed
 ```
 
 To run a specific test by title:
 
 ```sh
-yarn test-e2e --headed -g "title of the test"
+yarn playwright test -c e2e/stock-management/playwright.config.ts --headed -g "title of the test"
 ```
 
 Check [this documentation](https://playwright.dev/docs/running-tests#command-line) for more running options.  

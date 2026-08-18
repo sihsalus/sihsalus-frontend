@@ -4,6 +4,7 @@ import {
   PatientBannerToggleContactDetailsButton,
   PatientPhoto,
 } from '@openmrs/esm-framework';
+import { formatPersonName } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import { PatientBannerContactDetails } from './patient-banner-contact-details.component';
@@ -38,7 +39,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patient, patientUuid, hid
     };
   }, [patientBannerElement]);
 
-  const patientName = patient ? getPatientName(patient) : '';
+  const patientName = patient ? formatPersonName(getPatientName(patient)) : '';
 
   const toggleContactDetails = useCallback(() => {
     setShowContactDetails((value) => !value);

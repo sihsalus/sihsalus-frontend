@@ -1,6 +1,7 @@
 /** @module @category Utility */
 
 import { type NameUse } from '@openmrs/esm-globals';
+import { formatPersonName } from './display-text';
 
 /**
  * Gets the formatted display name for a patient.
@@ -27,7 +28,7 @@ export function displayName(patient: fhir.Patient): string {
  * @returns The formatted display name or an empty string if name is undefined.
  */
 export function formatPatientName(name: fhir.HumanName | undefined): string {
-  if (name) return name.text ?? defaultFormat(name);
+  if (name) return formatPersonName(name.text ?? defaultFormat(name));
   return '';
 }
 

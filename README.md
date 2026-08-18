@@ -8,6 +8,9 @@ This repository was developed by the **Pontificia Universidad Catolica del Peru 
 
 Contact: `sihsalus@pucp.edu.pe`
 
+Antes de proponer cambios, consulta [CONTRIBUTING.md](CONTRIBUTING.md). Los
+agentes automatizados también deben seguir [AGENTS.md](AGENTS.md).
+
 ## Prerequisites
 
 - **Node.js** 24 LTS
@@ -140,13 +143,13 @@ Estado QLTY actualizado el 2026-07-04: ver [QLTY frontend hardening audit](docs/
 - Identificar configs con `_default: ''` que representan conceptos, forms, encounter types o endpoints obligatorios, y convertirlos en defaults reales o feature flags.
 - Validar que cada app SIHSALUS custom tenga README propio con limites funcionales, dependencias backend/content, permisos y eventos auditables.
 - Agregar owners reales y warning budget a los workspaces custom prioritarios: atencion ambulatoria, CRED, salud materna, vacunacion, orders, dispensing, FUA, indicadores, ward, emergency, stock y billing.
-- Validar en QLTY el flujo end-to-end de vacunas: FHIR2 `Immunization` ya responde `200` para una busqueda vacia validada el 2026-07-04, pero falta probar guardado/recarga con paciente real, content y permisos.
+- Validar en QLTY el flujo end-to-end de vacunas: FHIR2 `Immunization` ya responde `200` para una busqueda vacia validada el 2026-07-04, pero falta probar guardado/recarga con un paciente sintetico y el content y permisos desplegados.
 - Corregir el formulario de visita/consulta: revisar apertura del workspace, dependencia de visita activa, guardado de `visit`/`encounter`, validaciones obligatorias y manejo de errores backend.
 - Corregir/ocultar campos semisoportados del formulario de inicio de visita en QLTY: el endpoint de tipos recomendados `/etl-latest/etl/patient/...` responde `404`; mantener `showRecommendedVisitTypeTab=false` o implementar backend/config real antes de mostrar `Program` y `Recommended`.
-- Revisar si `Upcoming appointments` y campos de cola (`Queue location`, `Service`, `Priority`) deben mostrarse en inicio de visita para QLTY; los endpoints responden, pero el flujo debe validarse con datos reales y sin crear entradas huerfanas.
+- Revisar si `Upcoming appointments` y campos de cola (`Queue location`, `Service`, `Priority`) deben mostrarse en inicio de visita para QLTY; los endpoints responden, pero el flujo debe validarse con datos sinteticos representativos y sin crear entradas huerfanas.
 - Revisar Consulta Externa / Atencion ambulatoria end-to-end: entrada desde home, busqueda de paciente, inicio de consulta, cola, formularios clinicos, guardado de encounter, ordenes y mensajes de error.
 - Auditar formularios clinicos con el mismo patron de riesgo (vacunacion, visita/consulta, CRED, salud materna, procedimientos y FUA) para detectar `501`, workspace no registrado, rutas rotas, payloads incompletos y mensajes de error sin traducir.
-- Repetir smoke real de guardado de signos vitales/Glasgow en QLTY; los UUIDs `glasgowEyeOpeningUuid`, `glasgowVerbalResponseUuid`, `glasgowMotorResponseUuid` y `glasgowTotalUuid` ya resuelven `200` desde el 2026-07-04.
+- Repetir el smoke end-to-end de guardado de signos vitales/Glasgow en QLTY con un paciente sintetico; los UUIDs `glasgowEyeOpeningUuid`, `glasgowVerbalResponseUuid`, `glasgowMotorResponseUuid` y `glasgowTotalUuid` ya resuelven `200` desde el 2026-07-04.
 - Validar nuevo content package.
 - Revisar cambios RBAC doctor.
 

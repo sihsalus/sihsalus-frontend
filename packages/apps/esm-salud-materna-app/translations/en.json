@@ -37,6 +37,7 @@
   "completedPlural": "completos",
   "condition": "Condition",
   "conditionDeleted": "Condition deleted",
+  "conditionEditUnavailable": "The condition to edit could not be loaded. Reload and try again.",
   "conditionNowVisible": "It is now visible on the Conditions page",
   "conditionRequired": "A condition is required",
   "conditions": "Conditions",

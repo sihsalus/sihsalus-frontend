@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test';
 
+// El service worker del SPA sirve las peticiones de la app y evade
+// page.route(): sin bloquearlo, los mocks de sesión/ubicación no se aplican.
+test.use({ serviceWorkers: 'block' });
+
 test.describe('Admission session location', () => {
   test.afterEach(async ({ page }) => {
     await page.unrouteAll({ behavior: 'ignoreErrors' });

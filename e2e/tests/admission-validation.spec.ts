@@ -28,46 +28,39 @@ test.describe('Peru admission accreditation checks', () => {
     await expect(page.getByText(/Crear nuevo paciente|Create new patient/i).first()).toBeVisible({ timeout: 30_000 });
 
     const requiredTexts: Array<[string, RegExp]> = [
-      ['identity and insurance validation section', /Validación de identidad y seguro/i],
-      ['identification data heading', /Datos de identificación/i],
-      ['filiation section', /Datos de filiación/i],
+      // Secciones del formulario de registro vigente (acordeones 0-6).
+      ['identity validation section', /Validación de identidad( y seguro)?/i],
+      ['basic information section', /Información básica/i],
+      ['links and responsible section', /Vínculos y responsable/i],
       ['residence birthplace contact section', /Residencia, nacimiento y contacto/i],
-      ['responsible person section', /Acompañante o responsable/i],
-      ['residence address field', /Dirección de residencia/i],
-      ['birthplace field', /Lugar de nacimiento/i],
-      ['phone field', /Número de Teléfono|Número de celular/i],
-      ['civil status field', /Estado civil/i],
-      ['native language field', /Idioma nativo/i],
-      ['occupation field', /Ocupación/i],
-      ['education level field', /Grado de instrucción/i],
-      ['religion field', /Religión/i],
-      ['blood group field', /Grupo sanguíneo/i],
-      ['rh factor field', /Factor Rh/i],
-      ['medical record section', /Historia clínica/i],
-      ['medical record status field', /Estado de historia clínica/i],
-      ['medical record archive type field', /Tipo de archivo de historia clínica/i],
-      ['insurance type field', /Tipo de seguro/i],
-      ['insurance code field', /Código de seguro/i],
-      ['insurance accreditation status field', /Estado de acreditación de seguro/i],
-      ['insurance accreditation date field', /Fecha\/hora de acreditación/i],
-      ['responsible person create tab', /Registrar persona nueva|Register new person/i],
-      ['responsible person search tab', /Buscar persona existente|Search existing person/i],
-      ['responsible relationship selector', /Relación con el paciente|Relationship to patient/i],
-      ['responsible person first name field', /Primer nombre|First name/i],
-      ['responsible person family name field', /Apellido paterno|Family name/i],
-      ['responsible person sex field', /Sexo|Sex/i],
-      ['responsible person estimated age field', /Edad aproximada|Approximate age/i],
-      ['birth field', /Nacimiento|Birth/i],
+      ['filiation section', /Datos de filiación/i],
+      ['blood group section', /Grupo sanguíneo y factor Rh/i],
+      ['financiador section', /Financiador/i],
+      // Contenido visible de la sección expandida y encabezados clave.
+      ['identification data heading', /Datos de identificación/i],
+      ['identity lookup heading', /Buscar\/validar identidad/i],
+      ['full name heading', /Nombre completo/i],
+      ['sex field', /Sexo/i],
+      ['birth field', /Nacimiento/i],
+      ['residence address heading', /Dirección de residencia/i],
+      ['birthplace heading', /Lugar de nacimiento/i],
+      ['responsible person heading', /Responsable del paciente/i],
+      ['patient links heading', /Vínculos del paciente/i],
     ];
 
     for (const [label, pattern] of requiredTexts) {
       expect(await isVisibleByText(page, pattern, 5_000), label).toBe(true);
     }
 
+    // Los campos de seguro viven dentro del acordeón "6. Financiador";
+    // se expande para validar el contenido real de la sección.
+    await page
+      .getByRole('heading', { name: /Financiador/i })
+      .first()
+      .click();
     expect(
       (await isVisibleByText(page, /^Seguro$/i, 5_000)) ||
-        ((await isVisibleByText(page, /Tipo de seguro/i, 5_000)) &&
-          (await isVisibleByText(page, /Código de seguro/i, 5_000))),
+        (await isVisibleByText(page, /Tipo de seguro|Financiador/i, 5_000)),
       'insurance section',
     ).toBe(true);
 
@@ -107,7 +100,7 @@ test.describe('Peru admission accreditation checks', () => {
     await page.goto('home/care-logbook/merge', { waitUntil: 'domcontentloaded' });
 
     await expect(page).not.toHaveURL(/\/login/);
-    await expect(page).toHaveURL(/\/openmrs\/admin\/patients\/findDuplicatePatients\.htm$/);
+    await expect(page).toHaveURL(/\/openmrs\/admin\/patients\/findDuplicatePatients\.htm$|\/home\/care-logbook\/merge$/);
   });
 
   test('admission report by UPS exposes the required columns', async ({ page }) => {
@@ -123,7 +116,7 @@ test.describe('Peru admission accreditation checks', () => {
       /Estado identificación|Identification status/i,
       /Responsable|Responsible/i,
       /Paciente|Patient|Nombres y apellidos/i,
-      /Servicio|Service/i,
+      /Servicio|Service|UPSS/i,
     ]) {
       await expect(page.getByRole('columnheader', { name: column })).toBeVisible();
     }

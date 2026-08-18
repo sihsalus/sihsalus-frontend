@@ -10,18 +10,18 @@ function isEncounterPayload(payload: unknown): payload is { patient?: string; ob
 }
 
 async function openOdontogramSection(page: Page) {
-  await page.goto(`/patient/${patientUuid}/chart`);
+  await page.goto(`patient/${patientUuid}/chart`);
   await page.waitForLoadState('networkidle').catch(() => null);
 
   const odontogramNav = page
     .locator('a, button')
-    .filter({ hasText: /Odontograma/i })
+    .filter({ hasText: /Odontolog/i })
     .first();
   if (await odontogramNav.isVisible().catch(() => false)) {
     await odontogramNav.click();
     await page.waitForLoadState('networkidle').catch(() => null);
   } else {
-    await page.goto(`/patient/${patientUuid}/chart/Odontograma`).catch(() => null);
+    await page.goto(`patient/${patientUuid}/chart/atencion-odontologica`).catch(() => null);
     await page.waitForLoadState('networkidle').catch(() => null);
   }
 }
@@ -30,7 +30,11 @@ test.describe('Odontograma - guardado básico en patient chart', () => {
   test('abre workspace y dispara guardado (o muestra error de configuración)', async ({ page }) => {
     await openOdontogramSection(page);
 
-    const registerBtn = page.getByTestId('odontogram-register-findings-btn');
+    // Estado vacío: "Registrar odontograma inicial"; con datos: el testid.
+    const registerBtn = page
+      .getByTestId('odontogram-register-findings-btn')
+      .or(page.getByRole('button', { name: /Registrar odontograma/i }))
+      .first();
     await expect(registerBtn).toBeVisible({ timeout: 10_000 });
 
     await registerBtn.click();

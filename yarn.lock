@@ -4268,7 +4268,7 @@ __metadata:
     cross-env: "npm:^10.1.0"
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"
-    react-error-boundary: "npm:^4.0.13"
+    react-error-boundary: "npm:^6.1.2"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.7"
   peerDependencies:
@@ -8286,7 +8286,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-ace: "npm:^11.0.1"
     react-dom: "npm:^18.3.1"
-    react-error-boundary: "npm:^4.0.13"
+    react-error-boundary: "npm:^6.1.2"
     react-i18next: "npm:^17.0.11"
     react-markdown: "npm:^10.1.0"
     react-mde: "npm:^11.5.0"
@@ -8333,7 +8333,7 @@ __metadata:
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    react-error-boundary: "npm:^4.0.13"
+    react-error-boundary: "npm:^6.1.2"
     react-hook-form: "npm:^7.52.0"
     react-i18next: "npm:^17.0.11"
     react-markdown: "npm:^10.1.0"
@@ -8368,7 +8368,7 @@ __metadata:
     cross-env: "npm:^10.1.0"
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
-    react-error-boundary: "npm:^4.0.13"
+    react-error-boundary: "npm:^6.1.2"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.7"
   peerDependencies:
@@ -21611,14 +21611,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-error-boundary@npm:^4.0.13":
-  version: 4.1.2
-  resolution: "react-error-boundary@npm:4.1.2"
-  dependencies:
-    "@babel/runtime": "npm:^7.12.5"
+"react-error-boundary@npm:^6.1.2":
+  version: 6.1.2
+  resolution: "react-error-boundary@npm:6.1.2"
   peerDependencies:
-    react: ">=16.13.1"
-  checksum: 10c0/0737e5259bed40ce14eb0823b3c7b152171921f2179e604f48f3913490cdc594d6c22d43d7abb4ffb1512c832850228db07aa69d3b941db324953a5e393cb399
+    react: ^18.0.0 || ^19.0.0
+  checksum: 10c0/592205d5bbf6f5bad792c8e5f68ec781775bb4abd2e96585f7b45016b3ed8f2697569d16bb3c0df95e2ef7c334be163c8477af9c511ec91c3984fdfbed9d186d
   languageName: node
   linkType: hard
 

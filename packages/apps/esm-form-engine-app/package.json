@@ -40,7 +40,7 @@
     "@carbon/react": "^1.83.0",
     "@sihsalus/esm-form-engine-lib": "workspace:*",
     "lodash-es": "^4.17.23",
-    "react-error-boundary": "^4.0.13"
+    "react-error-boundary": "^6.1.2"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",

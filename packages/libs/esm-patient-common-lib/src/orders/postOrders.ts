@@ -13,7 +13,7 @@ import type {
 } from './types';
 
 function isValidDate(date: Date | null): date is Date {
-  return Boolean(date) && !Number.isNaN(date.getTime());
+  return date instanceof Date && !Number.isNaN(date.getTime());
 }
 
 export async function postOrdersOnNewEncounter(
@@ -120,7 +120,7 @@ export function postOrder(body: OrderPost, abortController?: AbortController) {
 }
 
 function extractErrorDetails(errorObject: OrderErrorObject): ExtractedOrderErrorObject {
-  const errorDetails = {
+  const errorDetails: ExtractedOrderErrorObject = {
     message: errorObject.responseBody?.error?.message ?? '',
     fieldErrors: [],
     globalErrors: errorObject.responseBody?.error?.globalErrors ?? [],

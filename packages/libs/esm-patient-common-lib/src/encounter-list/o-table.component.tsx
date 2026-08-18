@@ -45,18 +45,22 @@ export const OTable: React.FC<TableProps> = ({
             <TableHead>
               <TableRow>
                 <TableExpandHeader enableToggle={false} />
-                {headers.map((header) => (
-                  <TableHeader
-                    key={header.key}
-                    className={`${styles.productiveHeading01} ${styles.text02}`}
-                    {...getHeaderProps({
-                      header,
-                      isSortable: header.isSortable,
-                    })}
-                  >
-                    {getHeaderContent(header.header)}
-                  </TableHeader>
-                ))}
+                {headers.map((header) => {
+                  const { key, ...headerProps } = getHeaderProps({
+                    header,
+                    isSortable: header.isSortable,
+                  });
+
+                  return (
+                    <TableHeader
+                      key={key ?? header.key}
+                      className={`${styles.productiveHeading01} ${styles.text02}`}
+                      {...headerProps}
+                    >
+                      {getHeaderContent(header.header)}
+                    </TableHeader>
+                  );
+                })}
               </TableRow>
             </TableHead>
             <TableBody>

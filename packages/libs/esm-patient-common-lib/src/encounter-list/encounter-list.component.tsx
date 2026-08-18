@@ -9,10 +9,11 @@ import type { Observation, OpenmrsEncounter } from './types';
 import { useEncounterRows } from './use-encounter-rows';
 
 function navigateToColumnLink(column: EncounterListColumn, encounter: OpenmrsEncounter): void {
-  if (column.link.handleNavigate) {
-    column.link.handleNavigate(encounter);
-  } else if (column.link?.getUrl) {
-    navigate({ to: column.link.getUrl() });
+  const link = column.link;
+  if (link?.handleNavigate) {
+    link.handleNavigate(encounter);
+  } else if (link?.getUrl) {
+    navigate({ to: link.getUrl() });
   }
 }
 

@@ -24,10 +24,10 @@ interface FormsTableProps {
   }>;
   tableRows: Array<{
     id: string;
-    lastCompleted: string;
+    lastCompleted?: string;
     formName: string;
     formUuid: string;
-    encounterUuid: string;
+    encounterUuid?: string;
     form: Form;
   }>;
   isTablet: boolean;
@@ -77,8 +77,9 @@ const FormsTable = ({
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rows.map((row, i) => {
+                  {rows.map((row) => {
                     const { key, ...rowProps } = getRowProps({ row });
+                    const formRow = tableRows.find((tableRow) => tableRow.id === row.id);
 
                     return (
                       <TableRow key={key ?? row.id} {...rowProps}>
@@ -86,12 +87,14 @@ const FormsTable = ({
                           <Link
                             style={{ cursor: 'pointer' }}
                             onClick={() => {
-                              handleFormOpen(tableRows[i].form, tableRows[i].encounterUuid ?? '');
+                              if (formRow) {
+                                handleFormOpen?.(formRow.form, formRow.encounterUuid ?? '');
+                              }
                             }}
                             role="presentation"
                             className={styles.formName}
                           >
-                            {tableRows[i]?.formName}
+                            {formRow?.formName}
                           </Link>
                         </TableCell>
                         <TableCell className={styles.editCell}>

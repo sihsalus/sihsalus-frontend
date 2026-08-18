@@ -1,18 +1,20 @@
-import { useVisit, type Visit } from '@openmrs/esm-framework';
+import { type Visit } from '@openmrs/esm-framework';
 import { renderHook } from '@testing-library/react';
 
-import { offlineVisitToVisit, useVisitOrOfflineVisit } from './visit';
+import { offlineVisitToVisit, useVisitOrOfflineVisit, type VisitOrOfflineVisitResult } from './visit';
+
+const { mockUseVisit } = vi.hoisted(() => ({
+  mockUseVisit: vi.fn<(patientUuid: string) => VisitOrOfflineVisitResult>(),
+}));
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
-  useVisit: vi.fn(),
+  useVisit: mockUseVisit,
   useSession: vi.fn(() => ({ sessionLocation: { uuid: 'location-uuid' } })),
   getSynchronizationItems: vi.fn(async () => []),
 }));
 
-const mockUseVisit = vi.mocked(useVisit);
-
-function visitReturnValue(overrides: Partial<ReturnType<typeof useVisit>>): ReturnType<typeof useVisit> {
+function visitReturnValue(overrides: Partial<VisitOrOfflineVisitResult>): VisitOrOfflineVisitResult {
   return {
     activeVisit: null,
     currentVisit: null,

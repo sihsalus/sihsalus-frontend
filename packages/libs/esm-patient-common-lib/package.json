@@ -39,7 +39,6 @@
     "@openmrs/esm-extensions": "*",
     "@openmrs/esm-framework": "*",
     "@openmrs/esm-styleguide": "*",
-    "@sihsalus/esm-form-engine-lib": "*",
     "react": "18.x",
     "react-router-dom": ">=6.30.4 <8",
     "single-spa": "6.x"
@@ -47,7 +46,6 @@
   "devDependencies": {
     "@openmrs/esm-extensions": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
-    "@sihsalus/esm-form-engine-lib": "workspace:*",
     "react-router-dom": "7.18.2",
     "typescript": "6.0.3",
     "vitest": "^4.1.7"

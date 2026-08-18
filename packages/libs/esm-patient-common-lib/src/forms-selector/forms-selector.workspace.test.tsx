@@ -1,17 +1,21 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import type { FormsListProps } from './forms-list.component';
 import FormsSelectorWorkspace, { type FormLaunchHandler } from './forms-selector.workspace';
 import type { CompletedFormInfo } from './types';
 
 let submitOpenedForm: (() => void) | undefined;
 
 vi.mock('./forms-list.component', () => ({
-  default: ({ completedForms, handleFormOpen }) => (
-    <button type="button" onClick={() => handleFormOpen(completedForms[0].form, '')}>
-      Abrir formulario
-    </button>
-  ),
+  default: ({ completedForms = [], handleFormOpen }: FormsListProps) => {
+    const firstForm = completedForms[0]?.form;
+    return (
+      <button type="button" disabled={!firstForm} onClick={() => firstForm && handleFormOpen(firstForm, '')}>
+        Abrir formulario
+      </button>
+    );
+  },
 }));
 
 const availableForms: CompletedFormInfo[] = [

@@ -15,11 +15,19 @@ export interface OfflineVisit extends NewVisitPayload {
 }
 
 /**
+ * `useVisit` returns no error until a request fails, even though its upstream
+ * `VisitReturnType` currently declares `error` as always present.
+ */
+export type VisitOrOfflineVisitResult = Omit<ReturnType<typeof useVisit>, 'error'> & {
+  error: Error | null | undefined;
+};
+
+/**
  * Similar to {@link useVisit}, returns the given patient's active visit, but also considers
  * offline visits created by the patient chart while offline.
  * @param patientUuid The UUID of the patient.
  */
-export function useVisitOrOfflineVisit(patientUuid: string): ReturnType<typeof useVisit> {
+export function useVisitOrOfflineVisit(patientUuid: string): VisitOrOfflineVisitResult {
   const isOnline = useOnlineStatus();
 
   const onlineVisit = useVisit(patientUuid);
@@ -45,7 +53,7 @@ export function useVisitOrOfflineVisit(patientUuid: string): ReturnType<typeof u
  * Returns the patient's current offline visit.
  * @param patientUuid The UUID of the patient.
  */
-export function useOfflineVisit(patientUuid: string): ReturnType<typeof useVisit> {
+export function useOfflineVisit(patientUuid: string): VisitOrOfflineVisitResult {
   const [offlineVisitState, setOfflineVisitState] = useState<{
     data: Visit | null;
     error: Error | null;

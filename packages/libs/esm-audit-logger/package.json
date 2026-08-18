@@ -20,6 +20,6 @@
     "@openmrs/esm-framework": "workspace:*",
     "react": "^18.3.1",
     "typescript": "6.0.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.10"
   }
 }

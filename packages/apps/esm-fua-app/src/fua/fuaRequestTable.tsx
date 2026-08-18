@@ -36,7 +36,7 @@ import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 
 import { ModuleFuaRestURL } from '../constant';
-import useFuaRequests, { type FuaRequest, useFuaEstados } from '../hooks/useFuaRequests';
+import useFuaRequests, { type FuaRequest, setFuaEstado, useFuaEstados } from '../hooks/useFuaRequests';
 import type { VisitPatientInfo } from '../hooks/useVisit';
 import { exportFuasToExcel } from '../utils/fua-export';
 import { loadSafeFuaHtmlInWindow } from '../utils/safe-fua-html';
@@ -78,6 +78,24 @@ const estadoClassName: Record<string, string> = {
   Rechazado: styles.estadoRechazado,
   Cancelado: styles.estadoCancelado,
 };
+
+const downloadedEstadoNames = new Set(['emitido', 'descargado']);
+
+function normalizeEstadoName(nombre: string | null | undefined) {
+  return nombre?.trim().toLowerCase() ?? '';
+}
+
+function isDownloadedEstado(nombre: string | null | undefined) {
+  return downloadedEstadoNames.has(normalizeEstadoName(nombre));
+}
+
+function getEstadoTagType(nombre: string): TagType {
+  return isDownloadedEstado(nombre) ? 'green' : estadoTagType[nombre] || 'gray';
+}
+
+function getEstadoClassName(nombre: string) {
+  return isDownloadedEstado(nombre) ? styles.estadoEmitido : estadoClassName[nombre];
+}
 
 interface FuaRequestPatientInfo {
   display: string;
@@ -199,6 +217,10 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
     excludeCanceled: true,
   });
   const { estados } = useFuaEstados();
+  const downloadedEstado = useMemo(
+    () => estados.find((estado) => isDownloadedEstado(estado.nombre)),
+    [estados],
+  );
 
   const [searchString, setSearchString] = useState('');
   const [selectedEstadoUuid, setSelectedEstadoUuid] = useState('all');
@@ -315,6 +337,34 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
+
+        if (!downloadedEstado) {
+          showSnackbar({
+            kind: 'error',
+            title: t('errorUpdatingFuaStatus', 'Error al actualizar estado FUA'),
+            subtitle: t(
+              'downloadedFuaStatusNotFound',
+              'No se encontro un estado FUA con nombre EMITIDO o DESCARGADO.',
+            ),
+          });
+          return;
+        }
+
+        try {
+          const abortController = new AbortController();
+          await setFuaEstado(fuaRequest.id, downloadedEstado.id, abortController);
+        } catch (error) {
+          const errorMessage = getUserFacingErrorMessage(
+            error,
+            t('errorUpdatingFuaStatusMessage', 'No se pudo actualizar el estado del FUA. Intente nuevamente.'),
+            { logContext: `Update downloaded FUA request status ${fuaRequest.uuid}` },
+          );
+          showSnackbar({
+            kind: 'error',
+            title: t('errorUpdatingFuaStatus', 'Error al actualizar estado FUA'),
+            subtitle: errorMessage,
+          });
+        }
       } catch (error) {
         const errorMessage = getUserFacingErrorMessage(
           error,
@@ -334,7 +384,7 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
         });
       }
     },
-    [t],
+    [downloadedEstado, t],
   );
 
   const handleViewHistorial = useCallback((fuaRequest: FuaRequest) => {
@@ -464,9 +514,9 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
                           ) : cell.info.header === 'estado' ? (
                             <div>
                               <Tag
-                                type={estadoTagType[cell.value] || 'gray'}
+                                type={getEstadoTagType(cell.value)}
                                 size="sm"
-                                className={estadoClassName[cell.value]}
+                                className={getEstadoClassName(cell.value)}
                               >
                                 {cell.value}
                               </Tag>

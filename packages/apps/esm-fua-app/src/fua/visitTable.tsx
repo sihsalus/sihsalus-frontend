@@ -54,6 +54,7 @@ import {
   useVisits,
   type VisitSummary,
 } from '../hooks/useVisit';
+import useFuaRequests from '../hooks/useFuaRequests';
 
 import styles from './fua-request-table.scss';
 
@@ -130,6 +131,7 @@ interface VisitRowInfo {
   accreditationStatusUuid: string | null;
   accreditationCheckedAt: string | null;
   accreditation: AccreditationInfo;
+  hasGeneratedFua: boolean;
 }
 
 function getFuaGenerationErrorMessage(error: unknown, t: TFunction) {
@@ -172,6 +174,7 @@ const VisitTable: React.FC = () => {
   const { t } = useTranslation();
   const { sisInsuranceConceptUuid, legacySisProductConceptUuids } = useConfig<Config>();
   const { visits, hasLoadedVisits, isLoading, isError, isValidating, mutate } = useVisits();
+  const { fuaOrders } = useFuaRequests({ status: null, excludeCanceled: true });
   const [searchString, setSearchString] = useState('');
   const [generatingVisitUuid, setGeneratingVisitUuid] = useState<string | null>(null);
   const [isBulkGenerating, setIsBulkGenerating] = useState(false);
@@ -179,6 +182,10 @@ const VisitTable: React.FC = () => {
   const [dataTableKey, setDataTableKey] = useState(0);
   const visitsRefreshInFlight = useRef<Promise<unknown> | null>(null);
   const [isVisitsRefreshPending, setIsVisitsRefreshPending] = useState(false);
+  const generatedFuaVisitUuids = useMemo(
+    () => new Set((fuaOrders ?? []).map((fuaOrder) => fuaOrder.visitUuid).filter(Boolean)),
+    [fuaOrders],
+  );
 
   const visitInfos = useMemo<Array<VisitRowInfo>>(
     () =>
@@ -196,6 +203,7 @@ const VisitTable: React.FC = () => {
           isSis,
           accreditationStatusUuid,
           accreditationCheckedAt,
+          hasGeneratedFua: Boolean(visit.uuid && generatedFuaVisitUuids.has(visit.uuid)),
           accreditation: getAccreditationInfo(
             accreditationStatusUuid,
             accreditationCheckedAt,
@@ -204,7 +212,7 @@ const VisitTable: React.FC = () => {
           ),
         };
       }),
-    [visits, sisInsuranceConceptUuid, legacySisProductConceptUuids, t],
+    [visits, sisInsuranceConceptUuid, legacySisProductConceptUuids, generatedFuaVisitUuids, t],
   );
 
   const filteredData = useMemo(() => {
@@ -215,15 +223,7 @@ const VisitTable: React.FC = () => {
     }
 
     const search = searchString.toLowerCase();
-    return eligibleVisits.filter((info) =>
-      [
-        getPatientName(info.visit),
-        getArea(info.visit),
-        formatVisitDate(info.visit.startDatetime),
-        info.financiadorDisplay,
-        info.accreditation.label,
-      ].some((value) => value.toLowerCase().includes(search)),
-    );
+    return eligibleVisits.filter((info) => getPatientName(info.visit).toLowerCase().includes(search));
   }, [visitInfos, searchString]);
 
   const pageSizes = [10, 20, 30, 40, 50];
@@ -238,6 +238,7 @@ const VisitTable: React.FC = () => {
     { key: 'financiador', header: t('financiador', 'Financiador') },
     { key: 'acreditacion', header: t('accreditation', 'Acreditación') },
     { key: 'fechaCreacion', header: t('creationDate', 'Fecha de Creación') },
+    { key: 'fua', header: t('fua', 'FUA') },
     { key: 'actions', header: t('actions', 'Acciones') },
   ];
 
@@ -248,6 +249,7 @@ const VisitTable: React.FC = () => {
     financiador: info.financiadorDisplay,
     acreditacion: info.accreditation.label,
     fechaCreacion: formatVisitDate(info.visit.startDatetime),
+    fua: info.hasGeneratedFua ? t('fuaGenerated', 'Generado') : t('fuaPending', 'Pendiente'),
     actions: info.visit.uuid ?? '',
   }));
 
@@ -474,7 +476,7 @@ const VisitTable: React.FC = () => {
         {({ rows, headers, getHeaderProps, getTableProps, getRowProps, getSelectionProps, selectedRows }) => (
           <TableContainer className={styles.tableContainer}>
             <TableToolbar>
-              <TableToolbarContent className={styles.toolbarContent}>
+              <TableToolbarContent className={`${styles.toolbarContent} ${styles.consultasToolbarContent}`}>
                 <Layer className={styles.toolbarItem}>
                   <TableToolbarSearch
                     expanded
@@ -486,34 +488,36 @@ const VisitTable: React.FC = () => {
                   />
                 </Layer>
                 <RequirePrivilege privilege={fuaManagePrivilege} hideUnauthorized>
-                  {isBulkSelectionMode ? (
-                    <>
+                  <div className={styles.toolbarActions}>
+                    {isBulkSelectionMode ? (
+                      <>
+                        <Button
+                          kind="primary"
+                          size="sm"
+                          renderIcon={Add}
+                          disabled={selectedRows.length === 0 || isBulkGenerating}
+                          onClick={() => handleBulkGenerateFuas(selectedRows.map((row) => row.id))}
+                        >
+                          {isBulkGenerating
+                            ? t('generatingFuas', 'Generando FUAs...')
+                            : t('generateSelectedFuas', 'Generar FUAs seleccionados')}
+                        </Button>
+                        <Button kind="ghost" size="sm" onClick={handleCancelBulkSelection} disabled={isBulkGenerating}>
+                          {t('cancel', 'Cancelar')}
+                        </Button>
+                      </>
+                    ) : (
                       <Button
-                        kind="primary"
+                        kind="secondary"
                         size="sm"
                         renderIcon={Add}
-                        disabled={selectedRows.length === 0 || isBulkGenerating}
-                        onClick={() => handleBulkGenerateFuas(selectedRows.map((row) => row.id))}
+                        onClick={() => setIsBulkSelectionMode(true)}
+                        disabled={isBulkGenerating}
                       >
-                        {isBulkGenerating
-                          ? t('generatingFuas', 'Generando FUAs...')
-                          : t('generateSelectedFuas', 'Generar FUAs seleccionados')}
+                        {t('generateFuasInBulk', 'Generar FUAs en masa')}
                       </Button>
-                      <Button kind="ghost" size="sm" onClick={handleCancelBulkSelection} disabled={isBulkGenerating}>
-                        {t('cancel', 'Cancelar')}
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      kind="secondary"
-                      size="sm"
-                      renderIcon={Add}
-                      onClick={() => setIsBulkSelectionMode(true)}
-                      disabled={isBulkGenerating}
-                    >
-                      {t('generateFuasInBulk', 'Generar FUAs en masa')}
-                    </Button>
-                  )}
+                    )}
+                  </div>
                 </RequirePrivilege>
                 <Button
                   kind="ghost"
@@ -595,6 +599,10 @@ const VisitTable: React.FC = () => {
                             </Tag>
                           ) : cell.info.header === 'acreditacion' ? (
                             <Tag size="sm" type={rowInfo?.accreditation.tagType ?? 'gray'}>
+                              {cell.value}
+                            </Tag>
+                          ) : cell.info.header === 'fua' ? (
+                            <Tag size="sm" type={rowInfo?.hasGeneratedFua ? 'green' : 'gray'}>
                               {cell.value}
                             </Tag>
                           ) : (

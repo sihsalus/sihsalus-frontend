@@ -73,6 +73,7 @@
   "fuaOnlyForSisVisits": "FUAs only apply to visits with SIS as payer. This visit has another payer or none recorded.",
   "fuaRequests": "FUA requests",
   "fuaReset": "FUA returned to Pending for correction",
+  "fuaUpdatedAt": "Update date",
   "fuasGeneratedSuccessfully": "{{count}} FUAs generated successfully",
   "fuasGeneratedSuccessfully_one": "Se generaron {{count}} FUAs correctamente",
   "fuasGeneratedSuccessfully_other": "Se generaron {{count}} FUAs correctamente",

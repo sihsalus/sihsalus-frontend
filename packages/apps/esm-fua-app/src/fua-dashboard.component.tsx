@@ -7,12 +7,16 @@ import { FuaHeader } from './fua/fua-header';
 import styles from './fua-dashboard.scss';
 import FuaOrdersTabs from './fua-tabs/fua-tabs.component';
 import FuaSummaryTiles from './fua-tiles/fua-summary-tiles.component';
-import { type DateFilterContext } from './types';
+import { type DateFilterContext, type FuaDateFilterMode } from './types';
 
 const FuaDashboard: React.FC = () => {
   const { t } = useTranslation();
   const [dateRange, setDateRange] = useState<Date[]>([dayjs().startOf('day').toDate(), new Date()]);
-  const contextValue = useMemo<DateFilterContext>(() => ({ dateRange, setDateRange }), [dateRange]);
+  const [dateFilterMode, setDateFilterMode] = useState<FuaDateFilterMode>('none');
+  const contextValue = useMemo<DateFilterContext>(
+    () => ({ dateRange, setDateRange, dateFilterMode, setDateFilterMode }),
+    [dateFilterMode, dateRange],
+  );
   useDefineAppContext<DateFilterContext>('fua-date-filter', contextValue);
 
   return (

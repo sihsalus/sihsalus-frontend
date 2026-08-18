@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 
 import { useFuaRequests } from '../hooks/useFuaRequests';
+import useFuaFormats from '../hooks/useFuaFormats';
 import { useVisits } from '../hooks/useVisit';
 
 import AllFuaRequestsTile from './all-fua-requests-tile.component';
@@ -9,9 +10,11 @@ import EnviadoFuaRequestsTile from './enviado-fua-requests-tile.component';
 import InProgressFuaRequestsTile from './in-progress-fua-requests-tile.component';
 
 vi.mock('../hooks/useFuaRequests');
+vi.mock('../hooks/useFuaFormats');
 vi.mock('../hooks/useVisit');
 
 const mockUseFuaRequests = useFuaRequests as vi.MockedFunction<typeof useFuaRequests>;
+const mockUseFuaFormats = useFuaFormats as vi.MockedFunction<typeof useFuaFormats>;
 const mockUseVisits = useVisits as vi.MockedFunction<typeof useVisits>;
 
 const makeMockOrders = (n: number) =>
@@ -76,8 +79,23 @@ describe('InProgressFuaRequestsTile', () => {
 
 describe('CompletedFuaRequestsTile', () => {
   it('renders completed count', () => {
-    mockUseFuaRequests.mockReturnValue({
-      fuaOrders: makeMockOrders(12),
+    mockUseFuaFormats.mockReturnValue({
+      fuaFormats: Array.from({ length: 12 }, (_, i) => ({
+        id: i,
+        uuid: `format-${i}`,
+        createdBy: 'admin',
+        updatedBy: null,
+        active: true,
+        inactiveBy: null,
+        inactiveAt: null,
+        inactiveReason: null,
+        codeName: `FORMAT-${i}`,
+        versionTag: 'v1',
+        versionNumber: 1,
+        name: `Formato ${i}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })),
       isLoading: false,
       isError: null,
       mutate: vi.fn(),

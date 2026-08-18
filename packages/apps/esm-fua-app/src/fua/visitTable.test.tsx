@@ -18,6 +18,7 @@ import {
   useVisits,
   type VisitSummary,
 } from '../hooks/useVisit';
+import useFuaRequests from '../hooks/useFuaRequests';
 
 import VisitTable from './visitTable';
 
@@ -42,9 +43,12 @@ vi.mock('../hooks/useVisit', async () => ({
   useVisits: vi.fn(),
 }));
 
+vi.mock('../hooks/useFuaRequests');
+
 const mockGenerateFuaFromVisit = vi.mocked(generateFuaFromVisit);
 const mockGenerateFuasFromVisits = vi.mocked(generateFuasFromVisits);
 const mockUseVisits = vi.mocked(useVisits);
+const mockUseFuaRequests = vi.mocked(useFuaRequests);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseConfig = vi.mocked(useConfig);
 const mockMutate = vi.fn();
@@ -153,6 +157,13 @@ describe('VisitTable FUA generation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema) as Config);
+    mockUseFuaRequests.mockReturnValue({
+      fuaOrders: [],
+      isLoading: false,
+      isError: null,
+      mutate: vi.fn(),
+      isValidating: false,
+    });
     mockVisits([sisVigenteVisit]);
     mockGenerateFuasFromVisits.mockResolvedValue({ successful: 0, failed: 0 });
   });

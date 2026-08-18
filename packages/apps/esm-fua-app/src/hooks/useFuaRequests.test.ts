@@ -2,7 +2,7 @@ import { openmrsFetch, useAppContext } from '@openmrs/esm-framework';
 import { renderHook } from '@testing-library/react';
 import useSWR from 'swr';
 
-import { cancelFuaRequest, setFuaEstado, useFuaRequests, useFuasByPatient } from './useFuaRequests';
+import { cancelFuaRequest, setFuaEstado, useFuaEstados, useFuaRequests, useFuasByPatient } from './useFuaRequests';
 
 vi.mock('swr');
 vi.mock('@openmrs/esm-framework', async () => ({
@@ -26,8 +26,8 @@ const mockFuaOrders = [
     name: 'FUA Test',
     payload: '{}',
     fuaEstado: { uuid: 'estado-1', id: 1, nombre: 'Pendiente' },
-    fechaCreacion: Date.now(),
-    fechaActualizacion: Date.now(),
+    fechaCreacion: new Date(2024, 0, 15).getTime(),
+    fechaActualizacion: new Date(2024, 0, 15).getTime(),
   },
   {
     uuid: 'fua-2',
@@ -36,14 +36,14 @@ const mockFuaOrders = [
     name: 'FUA Test 2',
     payload: '{}',
     fuaEstado: null,
-    fechaCreacion: Date.now(),
-    fechaActualizacion: Date.now(),
+    fechaCreacion: new Date(2024, 0, 16).getTime(),
+    fechaActualizacion: new Date(2024, 0, 16).getTime(),
   },
 ];
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockUseAppContext.mockReturnValue({ dateRange: mockDateRange });
+  mockUseAppContext.mockReturnValue({ dateRange: mockDateRange, dateFilterMode: 'none' });
 });
 
 describe('useFuaRequests', () => {
@@ -62,7 +62,7 @@ describe('useFuaRequests', () => {
     expect(result.current.fuaOrders).toHaveLength(2);
   });
 
-  it('builds /solicitudes URL with status and date range', () => {
+  it('builds /solicitudes URL with status', () => {
     mockUseSWR.mockReturnValue({
       data: { data: mockFuaOrders },
       error: null,
@@ -76,8 +76,8 @@ describe('useFuaRequests', () => {
     const calledUrl = (mockUseSWR as vi.Mock).mock.calls[0][0] as string;
     expect(calledUrl).toContain('/ws/module/fua/solicitudes');
     expect(calledUrl).toContain('status=En%20Proceso');
-    expect(calledUrl).toContain('fechaInicio=2024-01-01');
-    expect(calledUrl).toContain('fechaFin=2024-01-31');
+    expect(calledUrl).not.toContain('fechaInicio=');
+    expect(calledUrl).not.toContain('fechaFin=');
   });
 
   it('maps COMPLETED status to Completado', () => {
@@ -125,6 +125,56 @@ describe('useFuaRequests', () => {
     expect(result.current.fuaOrders[0].uuid).toBe('fua-2');
   });
 
+  it('filters by creation date range locally', () => {
+    mockUseAppContext.mockReturnValue({ dateRange: mockDateRange, dateFilterMode: 'created' });
+    mockUseSWR.mockReturnValue({
+      data: {
+        data: [
+          { ...mockFuaOrders[0], fechaCreacion: new Date(2024, 0, 15).getTime() },
+          { ...mockFuaOrders[1], fechaCreacion: new Date(2024, 1, 15).getTime() },
+        ],
+      },
+      error: null,
+      isLoading: false,
+      mutate: vi.fn(),
+      isValidating: false,
+    } as any);
+
+    const { result } = renderHook(() => useFuaRequests());
+
+    expect(result.current.fuaOrders).toHaveLength(1);
+    expect(result.current.fuaOrders[0].uuid).toBe('fua-1');
+  });
+
+  it('filters by update date range when selected', () => {
+    mockUseAppContext.mockReturnValue({ dateRange: mockDateRange, dateFilterMode: 'updated' });
+    mockUseSWR.mockReturnValue({
+      data: {
+        data: [
+          {
+            ...mockFuaOrders[0],
+            fechaCreacion: new Date(2023, 11, 15).getTime(),
+            fechaActualizacion: new Date(2024, 0, 15).getTime(),
+          },
+          {
+            ...mockFuaOrders[1],
+            fechaCreacion: new Date(2024, 0, 15).getTime(),
+            fechaActualizacion: new Date(2024, 1, 15).getTime(),
+          },
+        ],
+      },
+      error: null,
+      isLoading: false,
+      mutate: vi.fn(),
+      isValidating: false,
+    } as any);
+
+    const { result } = renderHook(() => useFuaRequests());
+
+    expect(result.current.fuaOrders).toHaveLength(1);
+    expect(result.current.fuaOrders[0].uuid).toBe('fua-1');
+  });
+
   it('returns isLoading true while fetching', () => {
     mockUseSWR.mockReturnValue({
       data: undefined,
@@ -153,6 +203,23 @@ describe('useFuaRequests', () => {
     const { result } = renderHook(() => useFuaRequests());
 
     expect(result.current.isError).toBe(mockError);
+  });
+});
+
+describe('useFuaEstados', () => {
+  it('calls /estado/list/', () => {
+    mockUseSWR.mockReturnValue({
+      data: { data: [{ uuid: 'estado-1', id: 1, nombre: 'Pendiente' }] },
+      error: null,
+      isLoading: false,
+      mutate: vi.fn(),
+      isValidating: false,
+    } as any);
+
+    const { result } = renderHook(() => useFuaEstados());
+
+    expect(mockUseSWR).toHaveBeenCalledWith('/ws/module/fua/estado/list/', openmrsFetch);
+    expect(result.current.estados).toHaveLength(1);
   });
 });
 

@@ -3,9 +3,9 @@ import {
   DataTable,
   DataTableSkeleton,
   Layer,
-  OverflowMenu,
-  OverflowMenuItem,
   Pagination,
+  Select,
+  SelectItem,
   Table,
   TableBody,
   TableCell,
@@ -25,18 +25,19 @@ import {
   formatDate,
   getUserFacingErrorMessage,
   openmrsFetch,
+  restBaseUrl,
   showModal,
   showSnackbar,
   usePagination,
 } from '@openmrs/esm-framework';
-import { RequirePrivilege } from '@sihsalus/esm-rbac';
+import { getPreferredIdentifier } from '@openmrs/esm-utils';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import useSWR from 'swr';
 
-import { fuaUpdatePrivilege, ModuleFuaRestURL } from '../constant';
-import useFuaRequests, { type FuaRequest, revalidateFuaRequestCaches, setFuaEstado } from '../hooks/useFuaRequests';
-import { useVisit } from '../hooks/useVisit';
-import { FUA_ESTADOS } from '../modals/change-fua-status.modal';
+import { ModuleFuaRestURL } from '../constant';
+import useFuaRequests, { type FuaRequest, useFuaEstados } from '../hooks/useFuaRequests';
+import type { VisitPatientInfo } from '../hooks/useVisit';
 import { exportFuasToExcel } from '../utils/fua-export';
 import { loadSafeFuaHtmlInWindow } from '../utils/safe-fua-html';
 
@@ -61,13 +62,32 @@ type TagType =
   | 'outline';
 
 const estadoTagType: Record<string, TagType> = {
-  Pendiente: 'gray',
+  Pendiente: 'warm-gray',
   'En Proceso': 'blue',
-  Completado: 'green',
+  Completado: 'teal',
   'Enviado a SETI-SIS': 'cyan',
   Rechazado: 'red',
   Cancelado: 'magenta',
 };
+
+const estadoClassName: Record<string, string> = {
+  Pendiente: styles.estadoPendiente,
+  'En Proceso': styles.estadoEnProceso,
+  Completado: styles.estadoCompletado,
+  'Enviado a SETI-SIS': styles.estadoEnviado,
+  Rechazado: styles.estadoRechazado,
+  Cancelado: styles.estadoCancelado,
+};
+
+interface FuaRequestPatientInfo {
+  display: string;
+  identifier: string | null;
+  searchableText: string;
+}
+
+function getPatientDisplayName(display: string | null | undefined) {
+  return display?.replace(/^\s*[^-]+?\s+-\s+/, '').trim() ?? '';
+}
 
 interface FuaActionsCellProps {
   fuaRequest: FuaRequest;
@@ -75,9 +95,6 @@ interface FuaActionsCellProps {
   onViewHistory: (fuaRequest: FuaRequest) => void;
   onDownload: (fuaRequest: FuaRequest) => void;
   isDownloading: boolean;
-  onChangeStatus: (fuaRequest: FuaRequest) => void;
-  onResend: (fuaRequest: FuaRequest) => void;
-  onCancel: (fuaRequest: FuaRequest) => void;
   t: (key: string, defaultValue: string) => string;
 }
 
@@ -87,9 +104,6 @@ const FuaActionsCell: React.FC<FuaActionsCellProps> = ({
   onViewHistory,
   onDownload,
   isDownloading,
-  onChangeStatus,
-  onResend,
-  onCancel,
   t,
 }) => (
   <div className={styles.actionsCell}>
@@ -122,37 +136,60 @@ const FuaActionsCell: React.FC<FuaActionsCellProps> = ({
       onClick={() => onDownload(fuaRequest)}
       tooltipPosition="left"
     />
-    <RequirePrivilege privilege={fuaUpdatePrivilege} hideUnauthorized>
-      <OverflowMenu size="sm" flipped ariaLabel={t('actions', 'Acciones')}>
-        <OverflowMenuItem itemText={t('changeStatus', 'Cambiar Estado')} onClick={() => onChangeStatus(fuaRequest)} />
-        {fuaRequest?.fuaEstado?.nombre === FUA_ESTADOS.RECHAZADO.nombre && (
-          <OverflowMenuItem itemText={t('resend', 'Reenviar a SETI-SIS')} onClick={() => onResend(fuaRequest)} />
-        )}
-        <OverflowMenuItem
-          itemText={t('cancelFua', 'Cancelar FUA')}
-          onClick={() => onCancel(fuaRequest)}
-          isDelete
-          hasDivider
-        />
-      </OverflowMenu>
-    </RequirePrivilege>
   </div>
 );
 
-/** Resolves visitUuid -> patient name + preferred identity document inline with SWR */
-const PatientCell: React.FC<{ visitUuid: string }> = ({ visitUuid }) => {
-  const { patient, patientIdentifier, isLoading } = useVisit(visitUuid);
-  if (isLoading) return <span>—</span>;
-  if (!patient) return <span title={visitUuid}>—</span>;
+async function fetchFuaRequestPatients(_key: string, visitUuids: Array<string>) {
+  const patientEntries = await Promise.all(
+    visitUuids.map(async (visitUuid) => {
+      const response = await openmrsFetch<{ patient: VisitPatientInfo }>(
+        `${restBaseUrl}/visit/${visitUuid}?v=custom:(patient:(display,identifiers:(identifier,identifierType:(display))))`,
+      );
+      const patient = response.data?.patient;
+      const identifier = getPreferredIdentifier(patient?.identifiers ?? [])?.identifier ?? null;
+      const display = getPatientDisplayName(patient?.display);
+      const searchableText = [display, identifier].filter(Boolean).join(' ').toLowerCase();
+
+      return [
+        visitUuid,
+        {
+          display,
+          identifier,
+          searchableText,
+        },
+      ] as const;
+    }),
+  );
+
+  return new Map<string, FuaRequestPatientInfo>(patientEntries);
+}
+
+const PatientCell: React.FC<{ visitUuid: string; patientInfo?: FuaRequestPatientInfo }> = ({ visitUuid, patientInfo }) => {
+  if (!patientInfo) {
+    return <span>—</span>;
+  }
+
+  if (!patientInfo.display) {
+    return <span title={visitUuid}>—</span>;
+  }
+
   return (
     <div>
-      <div>{patient.display}</div>
-      {patientIdentifier && (
-        <div style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)' }}>{patientIdentifier}</div>
-      )}
+      <div>{patientInfo.display}</div>
+      {patientInfo.identifier ? (
+        <div style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)' }}>{patientInfo.identifier}</div>
+      ) : null}
     </div>
   );
 };
+
+function getFuaRequestRowId(request: FuaRequest, index: number) {
+  return request.uuid || request.visitUuid || String(index);
+}
+
+function getPatientCellValue(patientInfo?: FuaRequestPatientInfo) {
+  return [patientInfo?.display, patientInfo?.identifier].filter(Boolean).join(' ') || '—';
+}
 
 const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' }) => {
   const { t } = useTranslation();
@@ -161,22 +198,32 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
     status: statusFilter !== 'all' ? statusFilter : null,
     excludeCanceled: true,
   });
+  const { estados } = useFuaEstados();
 
   const [searchString, setSearchString] = useState('');
+  const [selectedEstadoUuid, setSelectedEstadoUuid] = useState('all');
   const [downloadingVisitUuids, setDownloadingVisitUuids] = useState<ReadonlySet<string>>(new Set());
+  const visitUuids = useMemo(
+    () => Array.from(new Set((fuaOrders ?? []).map((request) => request.visitUuid).filter(Boolean))).sort(),
+    [fuaOrders],
+  );
+  const { data: patientInfoByVisitUuid } = useSWR(
+    visitUuids.length > 0 ? ['fua-request-patients', visitUuids] : null,
+    ([key, uuids]) => fetchFuaRequestPatients(key, uuids),
+  );
 
   const filteredData = useMemo(() => {
     if (!fuaOrders) return [];
-    if (!searchString) return fuaOrders;
-    const search = searchString.toLowerCase();
-    return fuaOrders.filter(
-      (req) =>
-        req.name?.toLowerCase().includes(search) ||
-        req.uuid?.toLowerCase().includes(search) ||
-        req.numeroFua?.toLowerCase().includes(search) ||
-        req.fuaEstado?.nombre?.toLowerCase().includes(search),
-    );
-  }, [fuaOrders, searchString]);
+    const estadoFilteredOrders =
+      selectedEstadoUuid === 'all'
+        ? fuaOrders
+        : fuaOrders.filter((req) => req.fuaEstado?.uuid === selectedEstadoUuid);
+
+    if (!searchString) return estadoFilteredOrders;
+    if (!patientInfoByVisitUuid) return estadoFilteredOrders;
+    const search = searchString.toLowerCase().trim();
+    return estadoFilteredOrders.filter((req) => patientInfoByVisitUuid.get(req.visitUuid)?.searchableText.includes(search));
+  }, [fuaOrders, patientInfoByVisitUuid, searchString, selectedEstadoUuid]);
 
   const pageSizes = [10, 20, 30, 40, 50];
   const [currentPageSize, setPageSize] = useState(10);
@@ -290,50 +337,12 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
     [t],
   );
 
-  const handleChangeStatus = useCallback((fuaRequest: FuaRequest) => {
-    const dispose = showModal('change-fua-status-modal', {
-      fuaRequest,
-      onStatusChanged: () => revalidateFuaRequestCaches(),
-      closeModal: () => dispose(),
-    });
-  }, []);
-
-  const handleCancelFua = useCallback((fuaRequest: FuaRequest) => {
-    const dispose = showModal('cancel-fua-modal', {
-      fuaRequest,
-      onCancelled: () => revalidateFuaRequestCaches(),
-      closeModal: () => dispose(),
-    });
-  }, []);
-
   const handleViewHistorial = useCallback((fuaRequest: FuaRequest) => {
     const dispose = showModal('fua-historial-modal', {
       fuaRequest,
       closeModal: () => dispose(),
     });
   }, []);
-
-  const handleReenviar = useCallback(
-    async (fuaRequest: FuaRequest) => {
-      const abortController = new AbortController();
-      try {
-        await setFuaEstado(fuaRequest.id, FUA_ESTADOS.PENDIENTE.id, abortController);
-        mutate();
-        showSnackbar({
-          kind: 'success',
-          title: t('success', 'Éxito'),
-          subtitle: t('fuaReset', 'FUA devuelto a Pendiente para corrección'),
-        });
-      } catch {
-        showSnackbar({
-          kind: 'error',
-          title: t('error', 'Error'),
-          subtitle: t('errorChangingStatus', 'Ocurrió un error al cambiar el estado del FUA'),
-        });
-      }
-    },
-    [mutate, t],
-  );
 
   const handleExport = useCallback(() => {
     void exportFuasToExcel(filteredData);
@@ -344,22 +353,31 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
   }, [mutate]);
 
   const headers = [
+    { key: 'requestId', header: t('id', 'ID') },
     { key: 'patient', header: t('patient', 'Paciente') },
-    { key: 'name', header: t('fuaName', 'Nombre del FUA') },
     { key: 'estado', header: t('status', 'Estado') },
     { key: 'fechaCreacion', header: t('creationDate', 'Fecha de Creación') },
+    { key: 'fechaActualizacion', header: t('fuaUpdatedAt', 'Fecha de Actualización') },
     { key: 'actions', header: t('actions', 'Acciones') },
   ];
 
   const rows =
     results?.map((request: FuaRequest, index: number) => ({
-      id: String(index),
-      patient: request.visitUuid,
-      name: request.numeroFua ? `${request.numeroFua} — ${request.name || ''}` : request.name || 'N/A',
+      id: getFuaRequestRowId(request, index),
+      requestId: request.id,
+      patient: getPatientCellValue(patientInfoByVisitUuid?.get(request.visitUuid)),
+      fechaActualizacion: request.fechaActualizacion
+        ? formatDate(new Date(request.fechaActualizacion), { mode: 'standard' })
+        : 'N/A',
       estado: request.fuaEstado?.nombre || t('noStatus', 'Sin estado'),
       fechaCreacion: formatDate(new Date(request.fechaCreacion), { mode: 'standard' }),
       actions: request,
     })) ?? [];
+
+  const requestByRowId = useMemo(
+    () => new Map(results?.map((request, index) => [getFuaRequestRowId(request, index), request]) ?? []),
+    [results],
+  );
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" showHeader={false} showToolbar={false} />;
@@ -371,32 +389,50 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
         {({ rows, headers, getHeaderProps, getTableProps, getRowProps }) => (
           <TableContainer className={styles.tableContainer}>
             <TableToolbar>
-              <TableToolbarContent className={styles.toolbarContent}>
-                <Layer className={styles.toolbarItem}>
-                  <FuaDateRangePicker />
-                </Layer>
-                <Layer className={styles.toolbarItem}>
+              <TableToolbarContent className={`${styles.toolbarContent} ${styles.requestToolbarContent}`}>
+                <Layer className={`${styles.toolbarItem} ${styles.requestSearchFilter}`}>
                   <TableToolbarSearch
                     expanded
                     onChange={(e) => {
                       setSearchString(typeof e === 'string' ? e : e.target.value);
                     }}
-                    placeholder={t('searchThisList', 'Buscar en esta lista')}
+                    placeholder={t('searchNameOrDni', 'Buscar Nombre o DNI')}
                     size="sm"
                   />
                 </Layer>
-                <Button
-                  kind="ghost"
-                  size="sm"
-                  renderIcon={Download}
-                  onClick={handleExport}
-                  disabled={filteredData.length === 0}
-                >
-                  {t('exportExcel', 'Exportar a Excel')}
-                </Button>
-                <Button kind="ghost" size="sm" renderIcon={Renew} onClick={handleRefresh} disabled={isValidating}>
-                  {isValidating ? t('refreshing', 'Actualizando...') : t('refresh', 'Actualizar')}
-                </Button>
+                <Layer className={`${styles.toolbarItem} ${styles.requestStatusFilter}`}>
+                  <span className={styles.filterLabel}>{t('status', 'Estado')}:</span>
+                  <Select
+                    id="fua-request-status-filter"
+                    hideLabel
+                    labelText={t('filterByStatus', 'Filtrar por estado')}
+                    size="md"
+                    value={selectedEstadoUuid}
+                    onChange={(event) => setSelectedEstadoUuid(event.target.value)}
+                  >
+                    <SelectItem value="all" text={t('allStatuses', 'Todos los estados')} />
+                    {estados.map((estado) => (
+                      <SelectItem key={estado.uuid} value={estado.uuid} text={estado.nombre} />
+                    ))}
+                  </Select>
+                </Layer>
+                <Layer className={`${styles.toolbarItem} ${styles.requestDateFilter}`}>
+                  <FuaDateRangePicker />
+                </Layer>
+                <div className={`${styles.toolbarActions} ${styles.requestToolbarActions}`}>
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    renderIcon={Download}
+                    onClick={handleExport}
+                    disabled={filteredData.length === 0}
+                  >
+                    {t('exportExcel', 'Exportar a Excel')}
+                  </Button>
+                  <Button kind="ghost" size="sm" renderIcon={Renew} onClick={handleRefresh} disabled={isValidating}>
+                    {isValidating ? t('refreshing', 'Actualizando...') : t('refresh', 'Actualizar')}
+                  </Button>
+                </div>
               </TableToolbarContent>
             </TableToolbar>
             <Table {...getTableProps()} className={styles.table} aria-label={t('fuaRequests', 'Solicitudes FUA')}>
@@ -410,17 +446,28 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row, rowIndex) => {
-                  const fuaRequest = results[rowIndex];
+                {rows.map((row) => {
+                  const fuaRequest = requestByRowId.get(row.id);
+                  if (!fuaRequest) {
+                    return null;
+                  }
+
                   return (
                     <TableRow key={row.id} {...getRowProps({ row })}>
                       {row.cells.map((cell) => (
                         <TableCell key={cell.id} className={styles.tableCell}>
                           {cell.info.header === 'patient' ? (
-                            <PatientCell visitUuid={cell.value} />
+                            <PatientCell
+                              visitUuid={fuaRequest.visitUuid}
+                              patientInfo={patientInfoByVisitUuid?.get(fuaRequest.visitUuid)}
+                            />
                           ) : cell.info.header === 'estado' ? (
                             <div>
-                              <Tag type={estadoTagType[cell.value] || 'gray'} size="sm">
+                              <Tag
+                                type={estadoTagType[cell.value] || 'gray'}
+                                size="sm"
+                                className={estadoClassName[cell.value]}
+                              >
                                 {cell.value}
                               </Tag>
                               {fuaRequest?.observacionesSetiSis && (
@@ -448,9 +495,6 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
                               isDownloading={Boolean(
                                 fuaRequest.visitUuid && downloadingVisitUuids.has(fuaRequest.visitUuid),
                               )}
-                              onChangeStatus={handleChangeStatus}
-                              onResend={handleReenviar}
-                              onCancel={handleCancelFua}
                               t={t}
                             />
                           ) : (

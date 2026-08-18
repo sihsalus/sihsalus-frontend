@@ -124,7 +124,7 @@ desde el artefacto local.
    `useAuditLogger` no tiene consumidores de runtime: nunca inicializa la
    sesión y la única llamada directa a `auditLogger.log` retorna sin registrar
    porque `sessionRef` es nulo. Hoy no existe auditoría clínica efectiva ni en
-   frontend ni en backend. Seguimiento: `sihsalus-core#95`.
+   frontend ni en backend. Seguimiento: `sihsalus/sihsalus#218` (migrado desde `sihsalus-core#95`; sihsalus-core no se ejecuta en esta instalación).
 3. **Candidato completo sin digest desplegado y validado.** La migración de
    Router ya está integrada en `main`, pero la sanitización de impresiones de
    stock continúa en rama candidata. No existe todavía un único SHA/digest con

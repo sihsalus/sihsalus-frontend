@@ -8,8 +8,8 @@ This repository was developed by the **Pontificia Universidad Catolica del Peru 
 
 Contact: `sihsalus@pucp.edu.pe`
 
-Antes de proponer cambios, consulta [CONTRIBUTING.md](CONTRIBUTING.md). Los
-agentes automatizados también deben seguir [AGENTS.md](AGENTS.md).
+Before proposing changes, read [CONTRIBUTING.md](CONTRIBUTING.md). Automated
+coding agents must also follow [AGENTS.md](AGENTS.md).
 
 ## Prerequisites
 

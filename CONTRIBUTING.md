@@ -1,263 +1,267 @@
-# Contribuir a SIH Salus Frontend
+# Contributing to SIH Salus Frontend
 
-Gracias por contribuir. Este repositorio contiene software clínico: la seguridad
-del paciente, la privacidad, la integridad de los datos y la continuidad
-operativa tienen prioridad sobre la velocidad de entrega.
+Thank you for contributing. This repository contains clinical software:
+patient safety, privacy, data integrity, and operational continuity take
+priority over delivery speed.
 
-Estas reglas se aplican a personas y agentes automatizados. Antes de participar,
-lee también el [Código de Conducta](CODE_OF_CONDUCT.md), el [README](README.md) y
-el README del paquete que modificarás.
+These rules apply to people and automated agents. Before contributing, also read
+the [Code of Conduct](CODE_OF_CONDUCT.md), the root [README](README.md), and the
+README of every package you will modify.
 
-## Reglas no negociables
+## Non-negotiable rules
 
-- Nunca uses producción, pacientes reales ni PHI para desarrollar, probar o
-  documentar un cambio. No versionees ni expongas credenciales, tokens, logs o
-  capturas que contengan información sensible o identificable.
-- Las pruebas clínicas y E2E usan cuentas autorizadas mediante secretos o
-  variables de entorno y datos sintéticos en un ambiente coordinado. Deben
-  limpiar o anular los datos que creen.
-- No afirmes que algo pasó si no ejecutaste esa validación sobre el diff o SHA
-  reportado. Usa `NO EJECUTADO` o `BLOQUEADO` y explica por qué.
-- Un typecheck, build o test unitario no demuestra por sí solo que un flujo
-  clínico funciona contra el backend y content desplegados.
-- Mantén cada PR enfocado en un solo resultado. No mezcles una corrección con
-  refactors, upgrades o limpieza no necesarios.
-- Conserva los cambios ajenos del árbol de trabajo. No restaures, borres,
-  formatees masivamente ni incluyas archivos fuera del alcance.
-- Abrir o actualizar un PR no autoriza a fusionarlo. Los agentes nunca deben
-  hacer merge sin una instrucción explícita del responsable del repositorio.
-- Tags, releases, promociones y despliegues requieren autorización explícita y
-  siguen el [runbook de go-live](docs/runbooks/frontend-go-live.md).
-- Fusionar a `main` afecta el release: un CI exitoso puede publicar la imagen y
-  señalizar su despliegue a DEV/QLTY. Antes del merge, un mantenedor debe
-  confirmar checks verdes, conversaciones resueltas, revisión de dominio y,
-  cuando aplique, aprobación clínica o de seguridad.
+- Never use production, real patients, or PHI to develop, test, or document a
+  change. Never commit or expose credentials, tokens, logs, or screenshots that
+  contain sensitive or identifiable information.
+- Clinical and E2E tests use authorized test accounts through secrets or
+  environment variables and synthetic data in a coordinated environment. They
+  must clean up or void any data they create.
+- Do not claim that a validation passed unless you ran it against the reported
+  diff or SHA. Use `NOT RUN` or `BLOCKED` and explain why.
+- A typecheck, build, or unit test does not by itself prove that a clinical flow
+  works against the deployed backend and content.
+- Keep each PR focused on one outcome. Do not mix a fix with unrelated
+  refactors, upgrades, or cleanup.
+- Preserve unrelated changes in the worktree. Do not restore, delete,
+  mass-format, or include files outside the requested scope.
+- Opening or updating a PR does not authorize any merge. Agents must never merge
+  without an explicit user instruction authorizing that exact merge.
+- Tags, releases, promotions, and deployments require explicit authorization
+  and must follow the [go-live runbook](docs/runbooks/frontend-go-live.md).
+- The release workflow treats `main` and `pre-release` as release branches and
+  may publish immutable images and move `latest` or `next` when its CI
+  preconditions are met. `main` may also signal deployment to DEV/QLTY. Before
+  merging into either branch, an authorized human maintainer must explicitly
+  approve that consequence and confirm green checks, resolved conversations,
+  domain review, and clinical or security approval when applicable.
 
-Si encuentras una vulnerabilidad, un secreto o datos clínicos expuestos, no
-publiques detalles explotables ni datos sensibles en un issue o PR público.
-Usa el [reporte privado de vulnerabilidades de GitHub](https://github.com/sihsalus/sihsalus-frontend/security/advisories/new).
-Si no puedes acceder, escribe a `sihsalus@pucp.edu.pe` sin incluir datos
-sensibles y solicita un canal privado.
+If you find a vulnerability, secret, or exposed clinical data, do not publish
+exploit details or sensitive data in a public issue or PR. Use
+[GitHub private vulnerability reporting](https://github.com/sihsalus/sihsalus-frontend/security/advisories/new).
+If that is unavailable, email `sihsalus@pucp.edu.pe` without sensitive details
+and request a private channel.
 
-## Preparar un cambio
+## Preparing a change
 
-### 1. Comprueba el contexto
+### 1. Check the current context
 
-Antes de editar:
+Before editing:
 
 ```sh
 git status --short --branch
 git fetch origin
 ```
 
-- Si el trabajo pertenece a un PR existente, usa únicamente su rama.
-- Para un PR nuevo, confirma primero que el árbol esté limpio o que trabajas en
-  un entorno aislado autorizado. Parte de `origin/main` —salvo que el mantenedor
-  indique otra base— en una rama corta y descriptiva. Usa normalmente los
-  prefijos `feat/`, `fix/`, `chore/`, `docs/`, `test/` o `refactor/`:
+- If the work belongs to an existing PR, use only that PR's branch.
+- For a new PR, first confirm that the worktree is clean or that you are in an
+  authorized isolated worktree. Start from `origin/main` unless a maintainer
+  specifies another base. Use a short, descriptive branch with a prefix such as
+  `feat/`, `fix/`, `chore/`, `docs/`, `test/`, or `refactor/`:
 
 ```sh
-git switch -c fix/area-descripcion origin/main
+git switch -c fix/area-description origin/main
 ```
 
-- No reutilices una rama que contenga cambios de otro objetivo.
-- No cambies de rama en un workspace compartido con cambios ajenos. Usa un
-  worktree aislado si está autorizado o detente y pide coordinación.
-- Revisa issues y PRs abiertos para no duplicar trabajo.
-- Identifica los paquetes afectados y sus consumidores antes de cambiar un
-  contrato compartido.
+- Do not reuse a branch that contains changes for another objective.
+- Do not switch branches in a shared worktree with unrelated changes. Use an
+  isolated worktree when authorized, or stop and request coordination.
+- Review open issues and PRs to avoid duplicating work.
+- Identify affected packages and consumers before changing a shared contract.
 
-### 2. Define alcance y riesgo
+### 2. Define scope and risk
 
-Antes de implementar, debes poder responder:
+Before implementation, you must be able to answer:
 
-- ¿Qué problema observable resuelve y qué queda fuera?
-- ¿Qué paquetes, rutas, workspaces, slots o flujos modifica?
-- ¿Puede alterar visitas, encounters, observaciones, órdenes, citas, colas,
-  identidad, seguros, permisos, auditoría u operación offline?
-- ¿Depende de endpoints, FHIR, OMODs, conceptos, formularios, UUIDs, roles o
-  content específico?
-- ¿Requiere migración, coordinación de despliegue, feature flag o rollback?
+- What observable problem does this solve, and what remains out of scope?
+- Which packages, routes, workspaces, slots, or workflows does it modify?
+- Can it affect visits, encounters, observations, orders, appointments, queues,
+  patient identity, insurance, permissions, auditing, or offline behavior?
+- Does it depend on endpoints, FHIR, OMODs, concepts, forms, UUIDs, roles, or
+  specific content?
+- Does it require a migration, coordinated rollout, feature flag, or rollback?
 
-Un cambio clínico o transversal sin respuestas verificables debe comenzar como
-investigación o PR en borrador, no como una afirmación de solución completa.
+A clinical or cross-cutting change without verifiable answers should begin as
+an investigation or draft PR, not as a claim of a complete solution.
 
-## Contratos del repositorio
+## Repository contracts
 
-Respeta los [contratos que no deben romperse](README.md#contratos-que-no-deben-romperse)
-y, cuando apliquen, estas reglas:
+Follow the repository's
+[contracts that must not be broken](README.md#contratos-que-no-deben-romperse)
+and these rules when applicable:
 
-- Los conceptos, formularios, encounter types, visit types, identifiers, care
-  settings y demás UUIDs clínicos configurables pertenecen a `config-schema`;
-  no deben quedar escondidos en componentes.
-- Toda dependencia entre workspaces debe declararse en `package.json`. El
-  análisis incremental depende del grafo de manifests.
-- Los nombres de workspaces, modales, rutas y extension slots usan constantes
-  compartidas cuando exista una fuente canónica.
-- Un launcher de workspace debe respetar la versión, props y contrato del
-  workspace registrado. Evita ampliar compatibilidad v1/v2 con tipos laxos.
-- Las entradas clínicas y administrativas deben fallar cerradas en frontend.
-  La autorización del backend sigue siendo la fuente definitiva.
-- No muestres objetos de error, endpoints, trazas ni mensajes técnicos del
-  backend a usuarios. Conserva detalle técnico solo en logging seguro.
-- Los textos visibles deben usar i18n y mantener `en.json` y `es.json`; una key
-  cruda en pantalla es un defecto.
-- No asumas que un recurso FHIR u OMOD funciona solo porque el endpoint existe.
-  Documenta dependencia, versión, fallback y comportamiento cuando falta.
-- No guardes datos clínicos sin visita o encounter cuando el flujo los exige.
-- Si cambias un fork o paquete local `@openmrs`, identifica la divergencia con
-  upstream, consumidores afectados y pruebas de contrato necesarias.
-- Un workspace que ya use TypeScript estricto no puede desactivar `strict`,
-  `noImplicitAny` ni `strictNullChecks` localmente.
+- Configurable concepts, forms, encounter types, visit types, identifiers, care
+  settings, and other clinical UUIDs belong in `config-schema`, not hidden in
+  components.
+- Declare every cross-workspace dependency in `package.json`. Incremental
+  validation relies on the manifest graph.
+- Use shared constants for workspace, modal, route, and extension-slot names
+  when a canonical source exists.
+- A workspace launcher must respect the registered workspace version, props,
+  and contract. Do not widen v1/v2 compatibility with loose types.
+- Clinical and administrative entry points must fail closed in the frontend.
+  Backend authorization remains authoritative.
+- Never render raw error objects, endpoints, traces, or technical backend
+  messages to users. Keep technical detail only in safe logging.
+- User-visible text must use i18n and maintain both `en.json` and `es.json`. A
+  raw translation key in the UI is a defect.
+- Do not assume a FHIR resource or OMOD works merely because an endpoint exists.
+  Document the dependency, version, fallback, and missing-capability behavior.
+- Do not save clinical data without an active visit or encounter when the flow
+  requires one.
+- When changing a local `@openmrs` fork or package, identify the upstream
+  divergence, affected consumers, and required contract tests.
+- A workspace that already uses strict TypeScript must not disable `strict`,
+  `noImplicitAny`, or `strictNullChecks` locally.
 
-Actualiza el README del paquete cuando cambien límites funcionales, contratos,
-backend/content requerido, permisos, fallbacks o validación mínima.
+Update the package README whenever functional boundaries, contracts,
+backend/content requirements, permissions, fallbacks, or minimum validation
+change.
 
-## Desarrollo local
+## Local development
 
-El entorno soportado usa Node 24 y Yarn 4.13.0:
+The supported environment uses Node 24 and Yarn 4.13.0:
 
 ```sh
 corepack enable
 yarn install --immutable
 ```
 
-Consulta el [Quick Start](README.md#quick-start) para construir y servir el SPA.
-No versionees `.env`, credenciales ni configuración privada. Los certificados
-autofirmados solo se aceptan mediante configuración explícita en ambientes
-controlados.
+Follow the [Quick Start](README.md#quick-start) to build and serve the SPA. Never
+commit `.env`, credentials, or private configuration. Self-signed certificates
+are allowed only through explicit configuration in controlled environments.
 
-## Validación proporcional al cambio
+## Proportional validation
 
-No todos los PR necesitan todos los comandos, pero cada PR debe explicar qué
-ejecutó y qué no. Después de crear los commits del PR, la base recomendada para
-cambios de código es:
+Not every PR needs every command, but every PR must explain what was and was not
+run. After creating the PR's commits, the recommended baseline for code changes
+is:
 
 ```sh
 yarn verify:changed --base origin/main --head HEAD
 ```
 
-Añade las comprobaciones que correspondan:
+Add the checks required by the scope:
 
-| Alcance                                             | Validación esperada                                                                                                                                                                                                                        |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Un workspace                                        | Los scripts disponibles y aplicables de su `package.json`; normalmente `lint`, `typescript`, `test` y, si cambia runtime o empaquetado, `build`. Valida también consumidores relevantes.                                                   |
-| Configuración raíz, tooling o contratos compartidos | `yarn verify`, `yarn lint:all`, `yarn test:tooling`, `yarn typecheck:e2e`                                                                                                                                                                  |
-| Workspaces, rutas o permisos                        | `yarn validate:workspaces`, `yarn validate:critical-route-privileges` y, si cambia navegación, `yarn validate:react-router`                                                                                                                |
-| Manejo de errores                                   | `yarn validate:error-exposure --base origin/main --head HEAD` y una regresión del estado de error visible                                                                                                                                  |
-| Conceptos o defaults de content                     | `yarn validate:concepts` solo contra DEV/QLTY autorizado. El comando cubre defaults extraíbles, no todo el content; sin ambiente o credenciales, registra `BLOQUEADO`                                                                      |
-| Dependencias o lockfile                             | `yarn install --immutable`, `yarn security:audit` y las pruebas de tooling aplicables                                                                                                                                                      |
-| Rspack, app-shell, import map o artefacto SPA       | `yarn build` y `yarn assemble`                                                                                                                                                                                                             |
-| Documentación o plantillas Markdown                 | `yarn prettier --check <archivos>` y `git diff --check`                                                                                                                                                                                    |
-| E2E                                                 | Confirma que la suite tocada esté incluida en `e2e/tsconfig.json` antes de interpretar `yarn typecheck:e2e`; si está excluida, usa su config o un probe específico y declara la exclusión. Ejecuta la suite aplicable con datos sintéticos |
+| Scope                                            | Expected validation                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| One workspace                                    | Scripts that exist and apply in its `package.json`, normally `lint`, `typescript`, `test`, and `build` when runtime or packaging changes. Validate relevant consumers too                                                                                                                    |
+| Root configuration, tooling, or shared contracts | `yarn verify`, `yarn lint:all`, `yarn test:tooling`, `yarn typecheck:e2e`                                                                                                                                                                                                                    |
+| Workspaces, routes, or permissions               | `yarn validate:workspaces`, `yarn validate:critical-route-privileges`, and `yarn validate:react-router` when navigation changes                                                                                                                                                              |
+| Error handling                                   | `yarn validate:error-exposure --base origin/main --head HEAD` and a regression test for the visible error state                                                                                                                                                                              |
+| Concepts or content defaults                     | `yarn validate:concepts` only against authorized DEV/QLTY. It covers extractable defaults, not all content; record `BLOCKED` when the environment or credentials are unavailable                                                                                                             |
+| Dependencies or lockfile                         | `yarn install --immutable`, `yarn security:audit`, and applicable tooling tests                                                                                                                                                                                                              |
+| Rspack, app-shell, import map, or SPA artifact   | `yarn build` and `yarn assemble`                                                                                                                                                                                                                                                             |
+| Markdown documentation or templates              | `yarn prettier --check` followed by the modified paths, then `git diff --check origin/main...HEAD` after committing; use the actual PR base when different                                                                                                                                   |
+| E2E                                              | Confirm that the changed suite is included in `e2e/tsconfig.json` before interpreting `yarn typecheck:e2e`. If excluded, create a focused `tsc` probe and disclose the exclusion; a Playwright config is not a typecheck. Separately run the applicable Playwright suite with synthetic data |
 
-Para un workspace, consulta primero los scripts de su `package.json` y ejecuta
-solo los que existan y correspondan:
+For a workspace, inspect its `package.json` first and run only scripts that
+exist and apply:
 
 ```sh
-PACKAGE_NAME=@sihsalus/esm-ejemplo-app
+PACKAGE_NAME=@sihsalus/esm-example-app
 yarn workspace "$PACKAGE_NAME" lint
 yarn workspace "$PACKAGE_NAME" typescript
 yarn workspace "$PACKAGE_NAME" test
 yarn workspace "$PACKAGE_NAME" build
 ```
 
-`yarn validate:concepts` requiere `SIHSALUS_BACKEND_URL` y credenciales de
-prueba proporcionadas mediante el entorno. Úsalo únicamente contra DEV/QLTY
-coordinado, nunca contra producción.
+`yarn validate:concepts` requires `SIHSALUS_BACKEND_URL` and test credentials
+provided through the environment. Use it only against coordinated DEV/QLTY,
+never production.
 
-`yarn test` puede usar `--passWithNoTests`; una salida exitosa sin pruebas
-descubiertas no cuenta como regresión funcional. Informa el número de pruebas o
-casos realmente ejecutados.
+`yarn test` may use `--passWithNoTests`; a successful exit without discovered
+tests does not count as a functional regression test. Report the number of
+tests or cases actually executed.
 
-Los cambios de alto riesgo —patient chart, identidad, workspaces, guardado,
-órdenes, colas, vacunación, offline y permisos— requieren smoke manual o
-Playwright contra un ambiente no productivo coordinado. El workflow E2E se
-activa con la etiqueta `e2e` o manualmente; consulta [e2e/README.md](e2e/README.md).
+High-risk changes—including patient chart, identity, workspaces, saving,
+orders, queues, immunizations, offline behavior, and permissions—require a
+manual smoke test or Playwright against a coordinated non-production
+environment. The E2E workflow runs with the `e2e` label or manual dispatch; see
+[e2e/README.md](e2e/README.md).
 
-Para cada validación registra:
+For every applicable validation, record:
 
-- comando o caso exacto;
-- estado: `PASÓ`, `FALLÓ`, `NO EJECUTADO` o `BLOQUEADO`;
-- resultado y conteo cuando exista;
-- alcance, ambiente y SHA si no fue estrictamente local;
-- warnings, flakiness y fallos preexistentes relevantes. Para declarar un fallo
-  como preexistente, reprodúcelo en `origin/main` o enlaza evidencia previa; si
-  no puedes comprobarlo, escribe `no verificado como preexistente`.
+- the exact command or case;
+- status: `PASSED`, `FAILED`, `NOT RUN`, or `BLOCKED`;
+- result and count when available;
+- scope, environment, and SHA when not strictly local;
+- relevant warnings, flakiness, and pre-existing failures. To call a failure
+  pre-existing, reproduce it on `origin/main` or link prior evidence. Otherwise,
+  write `not verified as pre-existing`.
 
-## Tests y regresiones
+## Tests and regressions
 
-- Una corrección debe incluir una prueba que falle por el defecto original
-  siempre que sea técnicamente viable.
-- Prueba el comportamiento y los límites del contrato, no únicamente snapshots
-  o detalles internos.
-- Para permisos, incluye caminos permitidos y denegados.
-- Para red, backend u offline, cubre los estados de carga, vacío, error,
-  reconexión y sesión expirada que el cambio pueda afectar.
-- Para cambios clínicos manuales, registra rol, datos sintéticos, resultado y
-  limpieza. No adjuntes PHI a la evidencia.
-- Si una regresión automatizada no es viable, explica concretamente la razón y
-  la validación alternativa; no escribas solo “no aplica”.
+- A fix must include a test that fails for the original defect whenever
+  technically feasible.
+- Test behavior and contract boundaries, not only snapshots or implementation
+  details.
+- Permission changes require both allowed and denied paths.
+- Network, backend, or offline changes must cover the relevant loading, empty,
+  error, reconnection, and expired-session states.
+- For manual clinical testing, record the role, synthetic data, result, and
+  cleanup. Never attach PHI to evidence.
+- If an automated regression is not feasible, explain the concrete reason and
+  alternative validation. Do not write only "not applicable."
 
-## Commits y título del PR
+## Commits and PR title
 
-Usa commits pequeños y títulos con formato convencional:
-
-```text
-tipo(scope): resumen imperativo y específico
-```
-
-Tipos habituales: `feat`, `fix`, `chore`, `docs`, `test`, `refactor`, `build` y
-`ci`. Ejemplos:
+Use small commits and conventional titles:
 
 ```text
-fix(registration): preserva ubicación de identificadores requeridos
-test(e2e): cubre guardado de odontograma sin service worker
-docs(contributing): define el contrato para pull requests
+type(scope): imperative, specific summary
 ```
 
-Usa `Closes #123` solo cuando el PR resuelva completamente el issue. Para
-trabajo parcial, enlaza el issue sin cerrarlo automáticamente.
+Common types are `feat`, `fix`, `chore`, `docs`, `test`, `refactor`, `build`,
+and `ci`. Examples:
 
-## Preparar el pull request
+```text
+fix(registration): preserve location for required identifiers
+test(e2e): cover odontogram save without service worker
+docs(contributing): define the pull request contract
+```
 
-GitHub cargará [la plantilla](.github/pull_request_template.md). Conserva todas
-sus secciones y completa cada línea; si algo no aplica, escribe `N/A` y la
-razón. El cuerpo debe permitir que otra persona revise el cambio sin reconstruir
-la investigación desde cero.
+Use `Closes #123` only when the PR fully resolves the issue. For partial work,
+link the issue without closing it automatically.
 
-Antes de publicar o actualizar el PR:
+## Preparing the pull request
 
-1. Revisa `git status`, los commits y el diff completo contra `origin/main`.
-2. Confirma que no hay cambios ajenos, secretos, datos reales ni artefactos
-   generados no requeridos.
-3. Explica resultado, causa, alcance incluido y deuda deliberadamente diferida.
-4. Completa la matriz de impacto sin dejar apartados ambiguos.
-5. Registra todas las validaciones aplicables. Usa `PASÓ` únicamente para las
-   ejecutadas sobre el diff o SHA actual.
-6. Añade capturas solo cuando aporten valor y estén libres de datos sensibles.
-7. Marca el PR como draft si depende de decisiones, accesos, backend/content o
-   validación clínica pendientes.
-8. Solicita la etiqueta `e2e` y coordina QLTY cuando el riesgo lo requiera.
-9. No hagas merge: deja el PR listo para revisión y decisión del mantenedor.
+GitHub will load [the PR template](.github/pull_request_template.md). Preserve
+every section and complete every line. If something does not apply, write `N/A`
+and give the reason. The body must let another person review the change without
+reconstructing the investigation from scratch.
 
-Si usas GitHub CLI, prepara primero un archivo con la plantilla completa y
-publícalo explícitamente:
+Before publishing or updating the PR:
+
+1. Review `git status`, the commits, and the complete diff against
+   `origin/main`.
+2. Confirm that the diff has no unrelated changes, secrets, real data, or
+   accidental generated artifacts.
+3. Explain the outcome, cause, included scope, and deliberately deferred work.
+4. Complete the impact matrix without ambiguous sections.
+5. Record every applicable validation. Use `PASSED` only for checks run against
+   the current diff or SHA.
+6. Add screenshots only when useful and free of sensitive data.
+7. Mark the PR as draft when decisions, access, backend/content, or clinical
+   validation remain pending.
+8. Request the `e2e` label and coordinate QLTY when the risk requires it.
+9. Do not merge. Leave the PR ready for maintainer review and decision.
+
+When using GitHub CLI, first prepare a file containing the completed template:
 
 ```sh
-PR_BRANCH=docs/descripcion
+PR_BRANCH=docs/description
 PR_BODY_FILE=/tmp/sihsalus-pr-body.md
 gh pr create \
   --base main \
   --head "$PR_BRANCH" \
-  --title "tipo(scope): resumen" \
+  --title "type(scope): summary" \
   --body-file "$PR_BODY_FILE"
 ```
 
-Completa primero `PR_BRANCH` y `PR_BODY_FILE` con los valores reales. Sustituye
-`main` solo cuando el mantenedor haya indicado otra rama base.
+Set `PR_BRANCH` and `PR_BODY_FILE` to real values first. Replace `main` only
+when a maintainer specifies another base branch.
 
-CI ejecuta los scripts y controles declarados, pero algunos tests permiten
-`--passWithNoTests` y E2E solo corre con etiqueta o ejecución manual. CI no
-sustituye una validación clínica, de backend/content o por roles. Un check verde
-es evidencia técnica, no autorización de despliegue.
+CI runs the declared scripts and controls, but some tests allow
+`--passWithNoTests`, and E2E runs only with a label or manual dispatch. CI does
+not replace clinical, backend/content, or role-based validation. A green check
+is technical evidence, not deployment authorization.

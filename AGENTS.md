@@ -1,99 +1,107 @@
 # AGENTS.md
 
-Instrucciones para agentes de código que trabajan en SIH Salus Frontend. Este
-archivo sigue el formato abierto [AGENTS.md](https://agents.md/) y aplica a todo
-el repositorio. Una instrucción explícita del usuario prevalece. Un `AGENTS.md`
-más cercano tiene precedencia para su subárbol; cualquier archivo anidado debe
-repetir y no debilitar las invariantes clínicas, de privacidad y de autorización
-de PR definidas aquí.
+Instructions for coding agents working on SIH Salus Frontend. This file follows
+the open [AGENTS.md](https://agents.md/) format and applies to the entire
+repository. Explicit user instructions take precedence over this file and
+define the task's scope and authorization. Do not infer permission for merges,
+releases, deployments, production access, PHI handling, or other
+safety-sensitive actions from a broader request. A closer `AGENTS.md` takes
+precedence within its subtree; nested files should preserve these repository
+safety policies.
 
 ## Project overview
 
-- Monorepo clínico OpenMRS 3 con microfrontends single-spa, TypeScript, Yarn y
-  Turborepo.
-- La seguridad del paciente, la privacidad, la integridad de datos y la
-  continuidad operativa tienen prioridad sobre la velocidad.
-- Lee `CONTRIBUTING.md` completamente antes de editar cualquier archivo; es la
-  fuente normativa para alcance, evidencia, riesgo y pull requests.
-- Lee también el README raíz, el README del paquete afectado y los contratos
-  clínicos o técnicos aplicables.
+- Clinical OpenMRS 3 monorepo using single-spa microfrontends, TypeScript, Yarn,
+  and Turborepo.
+- Patient safety, privacy, data integrity, and operational continuity take
+  priority over delivery speed.
+- Read `CONTRIBUTING.md` completely before editing any file. It is the normative
+  source for scope, evidence, risk, and pull request requirements.
+- Also read the root README, the affected package README, and any applicable
+  clinical or technical contracts.
 
 ## Setup commands
 
-Inspecciona siempre el estado antes de cambiar archivos:
+Always inspect the current state before changing files:
 
 ```sh
 git status --short --branch
 ```
 
-Cuando la tarea necesite dependencias, prepara el entorno soportado:
+When the task requires dependencies, prepare the supported environment:
 
 ```sh
 corepack enable
 yarn install --immutable
 ```
 
-- Conserva los cambios ajenos. No limpies, restaures ni formatees archivos fuera
-  del alcance.
-- Para documentación pura, una instalación existente es suficiente.
-- Para levantar el SPA, sigue el Quick Start de `README.md`; no improvises
-  backends, credenciales ni variables de entorno.
+- Preserve unrelated work. Do not clean, restore, or mass-format files outside
+  the requested scope.
+- An existing installation is sufficient for documentation-only work.
+- Follow the Quick Start in `README.md` to run the SPA. Do not improvise backend
+  URLs, credentials, or environment variables.
 
 ## Code style and repository contracts
 
-- Mantén el cambio mínimo y coherente con el objetivo solicitado.
-- Usa los scripts y convenciones existentes del workspace; no introduzcas una
-  segunda herramienta para resolver un problema ya cubierto por el monorepo.
-- Declara dependencias entre workspaces en `package.json`.
-- Mantén UUIDs clínicos configurables en `config-schema`, nombres de workspace
-  en constantes compartidas y textos visibles en `en.json` y `es.json`.
-- No debilites guards de rutas/RBAC, manejo seguro de errores ni opciones
-  TypeScript ya estrictas.
-- No uses producción, PHI ni pacientes reales. No expongas secretos o
-  credenciales en código, pruebas, logs, capturas o documentación.
+- Keep the change minimal and aligned with the requested outcome.
+- Use the workspace's existing scripts and conventions. Do not introduce a
+  second tool for a problem already covered by the monorepo.
+- Declare cross-workspace dependencies in `package.json`.
+- Keep configurable clinical UUIDs in `config-schema`, workspace names in shared
+  constants, and user-visible text in both `en.json` and `es.json`.
+- Do not weaken route/RBAC guards, safe error handling, or TypeScript options
+  that are already strict.
+- Never use production, PHI, or real patients. Never expose secrets or
+  credentials in code, tests, logs, screenshots, or documentation.
 
 ## Testing instructions
 
-Después de crear los commits del cambio, ejecuta como base cuando haya código:
+After creating the change's commits, use this as the baseline for code changes:
 
 ```sh
 yarn verify:changed --base origin/main --head HEAD
 ```
 
-- Revisa el `package.json` afectado y ejecuta sus scripts aplicables de `lint`,
-  `typescript`, `test` y `build`; valida también consumidores relevantes.
-- Para cambios Markdown ejecuta `yarn prettier --check` seguido de las rutas
-  modificadas y después `git diff --check`.
-- Usa la matriz de `CONTRIBUTING.md` para workspaces, rutas/RBAC, errores,
-  conceptos, dependencias, SPA y E2E.
-- No interpretes `--passWithNoTests` como regresión funcional ni un typecheck o
-  build como prueba clínica.
-- Registra cada validación aplicable como `PASÓ`, `FALLÓ`, `NO EJECUTADO` o
-  `BLOQUEADO`, con comando, resultado, alcance y SHA/ambiente cuando corresponda.
-- E2E y pruebas clínicas usan únicamente datos sintéticos en DEV/QLTY
-  coordinado; nunca producción. Si falta acceso, agota las comprobaciones
-  locales y bloquea solo la validación externa.
+- Inspect the affected `package.json` and run the applicable `lint`,
+  `typescript`, `test`, and `build` scripts. Validate relevant consumers too.
+- For Markdown changes, run `yarn prettier --check` followed by the modified
+  paths, then run `git diff --check origin/main...HEAD` after committing. Use
+  the actual PR base when it is not `main`.
+- Use the validation matrix in `CONTRIBUTING.md` for workspaces, routes/RBAC,
+  errors, concepts, dependencies, SPA packaging, and E2E.
+- Do not treat `--passWithNoTests` as a functional regression test, or a
+  typecheck/build as clinical validation.
+- Record every applicable validation as `PASSED`, `FAILED`, `NOT RUN`, or
+  `BLOCKED`, with the command, result, scope, and SHA/environment when relevant.
+- E2E and clinical tests use synthetic data only in a coordinated DEV/QLTY
+  environment, never production. If access is unavailable, exhaust local checks
+  and block only the external validation.
 
 ## Pull request instructions
 
-- Crea o cambia de rama solo cuando la solicitud autorice preparar un PR y el
-  árbol esté limpio o aislado. No cambies de rama en un workspace compartido con
-  cambios ajenos.
-- Para un PR nuevo usa por defecto una rama separada desde `origin/main`; para un
-  PR existente trabaja solo en su rama. No mezcles objetivos.
-- Usa título convencional: `tipo(scope): resumen`.
-- Completa `.github/pull_request_template.md` sin borrar secciones. Usa `N/A`
-  con una razón concreta y declara toda validación pendiente.
-- Revisa el diff completo contra la base y excluye cambios ajenos, artefactos,
-  secretos o datos identificables antes de publicar.
-- Publica o actualiza la rama y el PR solo cuando la solicitud lo autorice.
-- Abrir un PR no autoriza a fusionarlo. Nunca hagas merge, publiques un release
-  ni despliegues sin instrucción explícita del responsable del repositorio.
-- Si falta una decisión o autoridad que pueda cambiar el resultado, detente y
-  pide únicamente lo necesario.
+- Create or switch branches only when the request authorizes preparing a PR and
+  the worktree is clean or isolated. Never switch branches in a shared worktree
+  containing unrelated changes.
+- For a new PR, use a separate branch from `origin/main` by default. For an
+  existing PR, work only on its branch. Do not combine unrelated objectives.
+- Use a conventional title: `type(scope): summary`.
+- Complete `.github/pull_request_template.md` without deleting sections. Use
+  `N/A` with a concrete reason and disclose every pending validation.
+- Review the full diff against the base and exclude unrelated changes,
+  artifacts, secrets, and identifiable data before publishing.
+- Publish or update a branch and PR only when the request authorizes it.
+- Opening or updating a PR does not authorize any merge. Merge only when an
+  explicit user instruction authorizes that exact merge. Treat merges into
+  `main` or `pre-release` as release-affecting: the configured workflow can
+  publish immutable images and move `latest` or `next` after successful CI, and
+  `main` can signal DEV/QLTY deployment. Generic authorization to prepare a PR
+  is insufficient.
+- If a missing decision or authority could change the outcome, stop and ask
+  only for what is required.
 
 ## Security reporting
 
-No publiques vulnerabilidades, secretos o datos clínicos en issues o PRs. Usa el
-[reporte privado de GitHub](https://github.com/sihsalus/sihsalus-frontend/security/advisories/new)
-o solicita un canal privado a `sihsalus@pucp.edu.pe` sin incluir datos sensibles.
+Do not publish vulnerabilities, secrets, or clinical data in issues or PRs. Use
+[GitHub private vulnerability reporting](https://github.com/sihsalus/sihsalus-frontend/security/advisories/new),
+or ask `sihsalus@pucp.edu.pe` for a private channel without including sensitive
+details.

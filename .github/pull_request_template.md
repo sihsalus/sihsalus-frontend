@@ -1,68 +1,67 @@
 <!--
-Antes de preparar este PR, lee y aplica /CONTRIBUTING.md.
-Conserva todas las secciones. Si algo no aplica, escribe “N/A” y explica por qué.
-Abrir o actualizar este PR no autoriza a ningún agente a fusionarlo.
+Before preparing this PR, read and follow /CONTRIBUTING.md.
+Preserve every section. If something does not apply, write “N/A” and explain why.
+Opening or updating this PR does not authorize any agent to merge it.
 -->
 
-## Resultado y alcance
+## Outcome and scope
 
-- Problema o issue:
-- Cambio observable:
-- Paquetes, rutas o workspaces afectados:
-- Fuera de alcance o deuda diferida:
+- Problem or issue:
+- Observable change:
+- Affected packages, routes, or workspaces:
+- Out of scope or deferred debt:
 
-## Impacto
+## Impact
 
 <!--
-Completa cada línea. “N/A — <razón>” es válido; dejarla vacía o conservar el
-placeholder no. Considera visitas, encounters, órdenes, colas, identidad,
-offline/sync, FHIR/OMODs, conceptos/UUIDs, rutas, props, slots, RBAC,
-accesibilidad, estados de UI, PHI, logs, sesión, service worker y consumidores.
+Complete every line. “N/A — <reason>” is valid; leaving it blank or keeping the
+placeholder is not. Consider visits, encounters, orders, queues, identity,
+offline/sync, FHIR/OMODs, concepts/UUIDs, routes, props, slots, RBAC,
+accessibility, UI states, PHI, logs, sessions, service workers, and consumers.
 -->
 
-- Clínico y datos: `<impacto o N/A — razón>`
-- Backend, content y configuración: `<impacto o N/A — razón>`
-- Workspaces, rutas y permisos: `<impacto o N/A — razón>`
-- i18n y UI: `<impacto o N/A — razón>`
-- Seguridad y privacidad: `<impacto o N/A — razón>`
-- Compatibilidad, migración y consumidores: `<impacto o N/A — razón>`
+- Clinical and data: `<impact or N/A — reason>`
+- Backend, content, and configuration: `<impact or N/A — reason>`
+- Workspaces, routes, and permissions: `<impact or N/A — reason>`
+- i18n and UI: `<impact or N/A — reason>`
+- Security and privacy: `<impact or N/A — reason>`
+- Compatibility, migration, and consumers: `<impact or N/A — reason>`
 
-## Evidencia de validación
+## Validation evidence
 
 <!--
-Registra todas las validaciones aplicables. Usa PASÓ únicamente para una
-validación ejecutada sobre este diff/SHA; usa NO EJECUTADO o BLOQUEADO para las
-pendientes y explica el motivo.
-Compilar, inspeccionar visualmente o usar --passWithNoTests sin pruebas
-descubiertas no demuestra comportamiento funcional.
+Record every applicable validation. Use PASSED only for validation run against
+this diff/SHA; use NOT RUN or BLOCKED for pending validation and explain why.
+Compiling, visual inspection, or --passWithNoTests without discovered tests does
+not demonstrate functional behavior.
 
-Estados permitidos: PASÓ, FALLÓ, NO EJECUTADO, BLOQUEADO.
-Elimina la fila de ejemplo y agrega las necesarias.
+Allowed states: PASSED, FAILED, NOT RUN, BLOCKED.
+Delete the example row and add as many rows as required.
 -->
 
-| Estado     | Comando o caso     | Resultado exacto                      | Alcance, ambiente y SHA        |
-| ---------- | ------------------ | ------------------------------------- | ------------------------------ |
-| `<ESTADO>` | `<comando o caso>` | `<exit code; N/N; resultado o fallo>` | `<paquete/local/DEV/QLTY/SHA>` |
+| Status     | Command or case     | Exact result                          | Scope, environment, and SHA    |
+| ---------- | ------------------- | ------------------------------------- | ------------------------------ |
+| `<STATUS>` | `<command or case>` | `<exit code; N/N; result or failure>` | `<package/local/DEV/QLTY/SHA>` |
 
-- Regresión automatizada añadida o actualizada:
-- Prueba manual o E2E: rol, datos sintéticos, aserción y limpieza:
-- Warnings, flakiness o fallos preexistentes/no relacionados: `<evidencia en origin/main o issue previo; de lo contrario, “no verificado como preexistente”>`
+- Automated regression added or updated:
+- Manual or E2E test: role, synthetic data, assertion, and cleanup:
+- Warnings, flakiness, or pre-existing/unrelated failures: `<evidence on origin/main or prior issue; otherwise “not verified as pre-existing”>`
 
-## Riesgo, despliegue y rollback
+## Risk, rollout, and rollback
 
-- Nivel de riesgo: bajo / medio / alto — justificación:
-- Condiciones de rollout o coordinación:
-- Señal para detener o revertir:
-- Procedimiento de rollback, o `N/A` con motivo:
+- Risk level: low / medium / high — rationale:
+- Rollout or coordination requirements:
+- Stop or rollback signal:
+- Rollback procedure, or `N/A` with reason:
 
-## Checklist final
+## Final checklist
 
-- [ ] El diff coincide con el alcance y no contiene cambios ajenos ni artefactos accidentales.
-- [ ] El comportamiento corregido o nuevo tiene una regresión, o se explica concretamente por qué no.
-- [ ] Se validaron los paquetes afectados y consumidores relevantes cuando aplica, no solo el archivo editado.
-- [ ] La matriz de impacto y la documentación reflejan los contratos modificados, o explican por qué no aplica.
-- [ ] Cada `PASÓ` corresponde al diff/SHA actual y los fallos llamados preexistentes tienen evidencia.
-- [ ] No hay secretos, PHI, pacientes reales ni capturas o logs identificables.
-- [ ] Si hubo prueba clínica, se hizo fuera de producción con datos sintéticos y se registró su limpieza.
-- [ ] Si el cambio clínico es de alto riesgo, se solicitó/ejecutó el gate `e2e` o se registró como `BLOQUEADO` con causa.
-- [ ] El PR queda para revisión; no fue fusionado por el agente que lo preparó.
+- [ ] The diff matches the scope and contains no unrelated changes or accidental artifacts.
+- [ ] New or corrected behavior has a regression test, or the concrete reason why not is documented.
+- [ ] Applicable affected packages and relevant consumers were validated, not only the edited file.
+- [ ] The impact matrix and documentation reflect changed contracts, or explain why they do not apply.
+- [ ] Every `PASSED` entry corresponds to the current diff/SHA, and failures called pre-existing have evidence.
+- [ ] There are no secrets, PHI, real patients, or identifiable screenshots or logs.
+- [ ] Any clinical test ran outside production with synthetic data and recorded cleanup.
+- [ ] High-risk clinical changes record manual-smoke or Playwright evidence; when Playwright applies, the `e2e` gate ran or is `BLOCKED` with cause.
+- [ ] The PR is left for review and was not merged by the agent that prepared it.

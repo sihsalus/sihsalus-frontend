@@ -30,7 +30,7 @@ import type { ConfigObject } from '../../config-schema';
 import { type DefaultPatientWorkspaceProps } from '../../types';
 import {
   type CodedCondition,
-  type ConditionDataTableRow,
+  type Condition,
   createCondition,
   type FormFields,
   updateCondition,
@@ -42,7 +42,7 @@ import { type ConditionsFormSchema } from './conditions-form.workspace';
 
 interface ConditionsWidgetProps {
   closeWorkspace?: DefaultPatientWorkspaceProps['closeWorkspace'];
-  conditionToEdit?: ConditionDataTableRow;
+  conditionToEdit?: Condition;
   isEditing?: boolean;
   isSubmittingForm: boolean;
   patientUuid: string;
@@ -95,19 +95,11 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
   const clinicalStatus = watch('clinicalStatus');
   const matchingCondition = conditions?.find((condition) => condition?.id === conditionToEdit?.id);
 
-  const getFieldValue = (
-    tableCells: Array<{
-      info: {
-        header: string;
-      };
-      value: string;
-    }>,
-    fieldName,
-  ): string => tableCells?.find((cell) => cell?.info?.header === fieldName)?.value;
-
-  const displayName = getFieldValue(conditionToEdit?.cells, 'display');
-  const editableClinicalStatus = getFieldValue(conditionToEdit?.cells, 'clinicalStatus');
-  const editableAbatementDateTime = getFieldValue(conditionToEdit?.cells, 'abatementDateTime');
+  // El servidor es la fuente de verdad al editar; el prop (la fila
+  // seleccionada) cubre el primer render mientras SWR resuelve.
+  const displayName = matchingCondition?.display ?? conditionToEdit?.display;
+  const editableClinicalStatus = matchingCondition?.clinicalStatus ?? conditionToEdit?.clinicalStatus;
+  const editableAbatementDateTime = matchingCondition?.abatementDateTime ?? conditionToEdit?.abatementDateTime;
   const [selectedCondition, setSelectedCondition] = useState<CodedCondition>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm);
@@ -164,6 +156,18 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
   ]);
 
   const handleUpdate = useCallback(async () => {
+    if (!conditionToEdit?.id || !matchingCondition?.conceptId || !displayName) {
+      // Sin el antecedente resuelto el PUT saldría con conceptId/display
+      // indefinidos y corrompería el registro clínico.
+      setIsSubmittingForm(false);
+      setErrorUpdating?.(
+        new Error(
+          t('conditionEditUnavailable', 'No se pudo cargar la condición a editar. Recargue e intente nuevamente.'),
+        ),
+      );
+      return;
+    }
+
     const payload: FormFields = {
       clinicalStatus: isEditing ? getValues('clinicalStatus') : editableClinicalStatus,
       conceptId: matchingCondition?.conceptId,

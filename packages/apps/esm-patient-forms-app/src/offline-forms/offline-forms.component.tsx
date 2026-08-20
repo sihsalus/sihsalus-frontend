@@ -14,6 +14,7 @@ import {
 } from '@carbon/react';
 import {
   isDesktop,
+  showSnackbar,
   syncDynamicOfflineData,
   useConnectivity,
   useLayoutType,
@@ -138,7 +139,7 @@ const OfflineForms: React.FC<OfflineFormsProps> = () => {
   );
 };
 
-function OfflineFormToggle({ form, disabled }: { form: Form; disabled: boolean }) {
+export function OfflineFormToggle({ form, disabled }: { form: Form; disabled: boolean }) {
   const { t } = useTranslation();
   const session = useSession();
   const [isUpdating, setIsUpdating] = useState(false);
@@ -160,6 +161,26 @@ function OfflineFormToggle({ form, disabled }: { form: Form; disabled: boolean }
       } else {
         await removeDynamicFormDataEntryFor(userId, form.uuid);
       }
+    } catch {
+      if (checked) {
+        // Do not leave a form marked as available offline when its required data
+        // could not be downloaded. A later toggle can retry from a clean state.
+        try {
+          await removeDynamicFormDataEntryFor(userId, form.uuid);
+        } catch {
+          // The generic feedback below covers both the original failure and a
+          // best-effort rollback failure without exposing technical details.
+        }
+      }
+
+      showSnackbar({
+        kind: 'error',
+        title: t('offlineFormUpdateFailed', 'Offline form update failed'),
+        subtitle: t(
+          'offlineFormUpdateFailedSubtitle',
+          "The form's offline availability could not be changed. Please try again.",
+        ),
+      });
     } finally {
       setIsUpdating(false);
       dynamicFormEntriesSwr.mutate();

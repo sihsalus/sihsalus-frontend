@@ -16,9 +16,26 @@ const mockGetConfig = vi.mocked(getConfig);
 const mockMessageOmrsServiceWorker = vi.mocked(messageOmrsServiceWorker);
 
 describe('patient registration offline cache', () => {
+  let cachedResponses: Map<string, Response>;
+  let cachePut: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockMessageOmrsServiceWorker.mockResolvedValue({ success: true });
+    cachedResponses = new Map();
+    cachePut = vi.fn(async (request: RequestInfo | URL, response: Response) => {
+      const key = request instanceof Request ? request.url : request.toString();
+      cachedResponses.set(key, response.clone());
+    });
+    vi.stubGlobal('caches', {
+      open: vi.fn(async () => ({
+        match: async (request: RequestInfo | URL) => {
+          const key = request instanceof Request ? request.url : request.toString();
+          return cachedResponses.get(key)?.clone();
+        },
+        put: cachePut,
+      })),
+    });
   });
 
   afterEach(() => {
@@ -56,7 +73,7 @@ describe('patient registration offline cache', () => {
     const urls = ['https://example.test/patient', 'https://example.test/relationships', 'https://example.test/ids'];
     let relationshipsUnavailable = true;
     const mockFetch = vi.fn(async (input: RequestInfo | URL) => {
-      if (relationshipsUnavailable && input.toString().endsWith('/relationships')) {
+      if (relationshipsUnavailable && new URL(input.toString()).pathname.endsWith('/relationships')) {
         throw new TypeError('network unavailable');
       }
 
@@ -72,17 +89,19 @@ describe('patient registration offline cache', () => {
     await expect(failedAttempt).rejects.not.toThrow(/example\.test|relationships/);
     expect(mockMessageOmrsServiceWorker).toHaveBeenCalledTimes(3);
     expect(mockFetch).toHaveBeenCalledTimes(3);
+    expect(cachePut).toHaveBeenCalledTimes(2);
 
     relationshipsUnavailable = false;
 
     await expect(cachePatientUrlsForOfflineUse(urls)).resolves.toBeUndefined();
     expect(mockMessageOmrsServiceWorker).toHaveBeenCalledTimes(6);
     expect(mockFetch).toHaveBeenCalledTimes(6);
+    expect(cachePut).toHaveBeenCalledTimes(5);
   });
 
   it('treats a controlled service worker registration failure as a cache failure', async () => {
     const urls = ['https://example.test/patient', 'https://example.test/relationships'];
-    const mockFetch = vi.fn(async () => new Response(null, { status: 200 }));
+    const mockFetch = vi.fn(async (_input: RequestInfo | URL) => new Response(null, { status: 200 }));
     vi.stubGlobal('fetch', mockFetch);
     mockMessageOmrsServiceWorker
       .mockResolvedValueOnce({ success: false, error: 'service worker unavailable' })
@@ -94,13 +113,15 @@ describe('patient registration offline cache', () => {
     });
     expect(mockMessageOmrsServiceWorker).toHaveBeenCalledTimes(2);
     expect(mockFetch).toHaveBeenCalledOnce();
-    expect(mockFetch).toHaveBeenCalledWith('https://example.test/relationships');
+    const fetchedRequest = mockFetch.mock.calls.at(0)?.at(0);
+    expect(fetchedRequest).toBeDefined();
+    expect(new URL(fetchedRequest?.toString() ?? '').pathname).toBe('/relationships');
   });
 
   it('treats an unsuccessful HTTP response as a cache failure', async () => {
     const urls = ['https://example.test/patient', 'https://example.test/identifiers'];
     const mockFetch = vi.fn(async (input: RequestInfo | URL) =>
-      input.toString().endsWith('/identifiers')
+      new URL(input.toString()).pathname.endsWith('/identifiers')
         ? new Response(null, { status: 503 })
         : new Response(null, { status: 200 }),
     );
@@ -111,5 +132,45 @@ describe('patient registration offline cache', () => {
       message: 'Failed to cache 1 of 2 patient resources for offline use.',
     });
     expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not accept a stale cached 200 as a fresh update and preserves it for offline use', async () => {
+    const url = 'https://example.test/patient/patient-uuid';
+    cachedResponses.set(url, new Response('stale patient data', { status: 200 }));
+    let networkAvailable = false;
+    const mockFetch = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
+      const requestUrl = input instanceof Request ? input.url : input.toString();
+
+      if (!networkAvailable) {
+        return cachedResponses.get(requestUrl)?.clone() ?? new Response(null, { status: 503 });
+      }
+
+      return new Response('fresh patient data', { status: 200 });
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    // This is the false-success behavior of a normal network-first fetch: the
+    // stable URL already has a cached 200 even though the network is unavailable.
+    await expect(mockFetch(url).then((response) => response.text())).resolves.toBe('stale patient data');
+    mockFetch.mockClear();
+
+    await expect(cachePatientUrlsForOfflineUse([url])).rejects.toMatchObject({
+      name: 'AggregateError',
+      message: 'Failed to cache 1 of 1 patient resources for offline use.',
+    });
+    expect(mockFetch).toHaveBeenCalledOnce();
+    const refreshCall = mockFetch.mock.calls.at(0);
+    expect(refreshCall).toBeDefined();
+    expect(refreshCall?.[0].toString()).toContain('_openmrsOfflineRefresh=');
+    expect(refreshCall?.[1]).toMatchObject({
+      cache: 'no-store',
+      headers: { 'x-omrs-offline-caching-strategy': 'network-only-or-cache-only' },
+    });
+    await expect(cachedResponses.get(url)?.clone().text()).resolves.toBe('stale patient data');
+
+    networkAvailable = true;
+
+    await expect(cachePatientUrlsForOfflineUse([url])).resolves.toBeUndefined();
+    await expect(cachedResponses.get(url)?.clone().text()).resolves.toBe('fresh patient data');
   });
 });

@@ -4,6 +4,7 @@ import {
   makeUrl,
   messageOmrsServiceWorker,
   navigate,
+  omrsOfflineCachingStrategyHttpHeaderName,
   restBaseUrl,
   type SyncProcessOptions,
   setupDynamicOfflineDataHandler,
@@ -55,22 +56,36 @@ export function setupOffline() {
 }
 
 export async function cachePatientUrlsForOfflineUse(urlsToCache: Array<string>): Promise<void> {
+  const cache = await caches.open('omrs-spa-cache-v1');
   const results = await Promise.allSettled(
     urlsToCache.map(async (url) => {
       const routeRegistration = await messageOmrsServiceWorker({
         type: 'registerDynamicRoute',
         url,
+        strategy: 'network-first',
       });
 
       if (!routeRegistration.success) {
         throw new Error(routeRegistration.error ?? 'The offline cache route could not be registered.');
       }
 
-      const response = await fetch(url);
+      // A normal network-first request can return an old cached 200 when the network
+      // fails. Use a one-off cache key with the non-caching network strategy, then
+      // store the confirmed network response under the stable offline URL ourselves.
+      const refreshUrl = new URL(url);
+      refreshUrl.searchParams.set('_openmrsOfflineRefresh', globalThis.crypto.randomUUID());
+      const response = await fetch(refreshUrl, {
+        cache: 'no-store',
+        headers: {
+          [omrsOfflineCachingStrategyHttpHeaderName]: 'network-only-or-cache-only',
+        },
+      });
 
       if (!response.ok) {
         throw new Error(`The patient offline resource request failed with status ${response.status}.`);
       }
+
+      await cache.put(url, response.clone());
     }),
   );
   const failures = results.filter((result) => result.status === 'rejected');

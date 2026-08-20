@@ -317,15 +317,19 @@ async function processHandler(
 }
 
 async function getUserId() {
-  const user = await getLoggedInUser();
-  const userId = user?.uuid;
+  try {
+    const user = await getLoggedInUser();
+    const userId = user?.uuid;
 
-  if (!userId) {
+    if (!userId) {
+      throw createOfflineQueueOperationError();
+    }
+
+    assertSessionOwnedBy(userId);
+    return userId;
+  } catch {
     throw createOfflineQueueOperationError();
   }
-
-  assertSessionOwnedBy(userId);
-  return userId;
 }
 
 function createOfflineQueueOperationError() {
@@ -333,8 +337,12 @@ function createOfflineQueueOperationError() {
 }
 
 function isAuthenticatedSessionForUser(userId: string) {
-  const sessionState = getSessionStore().getState();
-  return sessionState.loaded && sessionState.session.authenticated && sessionState.session.user?.uuid === userId;
+  try {
+    const sessionState = getSessionStore().getState();
+    return sessionState.loaded && sessionState.session.authenticated && sessionState.session.user?.uuid === userId;
+  } catch {
+    return false;
+  }
 }
 
 function assertSessionOwnedBy(userId: string) {
@@ -552,7 +560,11 @@ export async function beginEditSynchronizationItem(id: number) {
   }
 
   assertSessionOwnedBy(userId);
-  editCallback(sanitizeSynchronizationItem(item));
+  try {
+    editCallback(sanitizeSynchronizationItem(item));
+  } catch {
+    throw createOfflineQueueOperationError();
+  }
 }
 
 /**

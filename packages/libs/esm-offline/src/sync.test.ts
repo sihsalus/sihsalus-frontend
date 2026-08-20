@@ -166,6 +166,21 @@ describe('Logged-in user specific functions', () => {
       userId: otherMockUserId,
     });
   });
+
+  it('replaces session lookup failures with the fixed queue error', async () => {
+    const sensitiveDetails =
+      'GET https://clinical.example.test/openmrs/ws/rest/v1/session exposed a private response body';
+    vi.mocked(getLoggedInUser).mockRejectedValueOnce(new Error(sensitiveDetails));
+
+    const error = await getFullSynchronizationItems().catch((reason: unknown) => reason);
+
+    expect(error).toEqual(
+      expect.objectContaining({
+        message: offlineQueueOperationUnavailableMessage,
+      }),
+    );
+    expect(String(error)).not.toContain(sensitiveDetails);
+  });
 });
 
 describe('getSynchronizationItems', () => {
@@ -292,6 +307,31 @@ describe('beginEditSynchronizationItem', () => {
 
     await expect(beginEditSynchronizationItem(404)).rejects.toThrow(offlineQueueOperationUnavailableMessage);
     await expect(beginEditSynchronizationItem(id)).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+  });
+
+  it('replaces a throwing edit callback with the fixed queue error', async () => {
+    const type = 'throwing-edit-item';
+    const sensitiveDetails = 'Patient 00000000-0000-0000-0000-000000000001 could not be opened';
+    setupOfflineSync(
+      type,
+      [],
+      vi.fn(async () => undefined),
+      {
+        onBeginEditSyncItem: () => {
+          throw new Error(sensitiveDetails);
+        },
+      },
+    );
+    const id = await queueSynchronizationItem(type, defaultMockSyncItem);
+
+    const error = await beginEditSynchronizationItem(id).catch((reason: unknown) => reason);
+
+    expect(error).toEqual(
+      expect.objectContaining({
+        message: offlineQueueOperationUnavailableMessage,
+      }),
+    );
+    expect(String(error)).not.toContain(sensitiveDetails);
   });
 });
 

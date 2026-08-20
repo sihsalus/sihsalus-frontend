@@ -489,7 +489,7 @@ export class FormManager {
         const { patientPhotoConceptUuid } = await getConfig<StyleguideConfigObject>('@openmrs/esm-styleguide');
         const savePhotoAsAttachment = async () => {
           try {
-            await savePatientPhotoAsAttachment(savePatientResponse.data.uuid, capturePhotoProps.imageData);
+            await savePatientPhotoAsAttachment(savePatientResponse.data.uuid, capturePhotoProps.imageData, signal);
             savePatientTransactionManager.photoSaved = true;
           } catch (attachmentError) {
             console.warn('Patient photo could not be saved as an attachment.', attachmentError);

@@ -20,8 +20,12 @@ export function setupSynchronizingOfflineActionsNotifications() {
       const activeSynchronizationIndex = currentSynchronizationIndex;
       showNotification({
         title: getI18n().t('offlineActionsSynchronizationNotificationTitle', 'Upload'),
-        description: SynchronizingNotification({ mySynchronizationIndex: { activeSynchronizationIndex } }),
-        action: CancelSynchronizationAction({ mySynchronizationIndex: { activeSynchronizationIndex } }),
+        description: SynchronizingNotification({
+          mySynchronizationIndex: { activeSynchronizationIndex },
+        }),
+        action: CancelSynchronizationAction({
+          mySynchronizationIndex: { activeSynchronizationIndex },
+        }),
         onAction: () => {
           const state = getOfflineSynchronizationStore().getState();
           if (activeSynchronizationIndex === currentSynchronizationIndex) {
@@ -43,7 +47,7 @@ function SynchronizingNotification({ mySynchronizationIndex }) {
   if (!synchronization) {
     return t(
       'offlineActionsSynchronizationNotificationSynchronized',
-      'The offline action synchronization has finished.',
+      'The synchronization attempt has ended. Review pending actions before continuing.',
     );
   }
 

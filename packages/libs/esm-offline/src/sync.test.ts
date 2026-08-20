@@ -73,6 +73,21 @@ function setCurrentUser(userId: string) {
   });
 }
 
+async function seedSynchronizationItemFor<T>(
+  userId: string,
+  type: string,
+  content: T,
+  descriptor: QueueItemDescriptor = {},
+) {
+  return await new OfflineDb().syncQueue.add({
+    userId,
+    type,
+    content,
+    descriptor,
+    createdOn: new Date(),
+  });
+}
+
 describe('Sync Queue', () => {
   beforeAll(() => {
     // We want to control the timers to ensure that we can test the `createdOn` attribute
@@ -109,6 +124,17 @@ describe('Sync Queue', () => {
     const queuedItems = await getFullSynchronizationItems();
     expect(queuedItems).toHaveLength(2);
   });
+
+  it('atomically replaces a current-user item with the same descriptor ID', async () => {
+    const descriptor = { id: 'replaceable-item' };
+    const originalId = await queueSynchronizationItem(mockSyncItemType, { value: 1 }, descriptor);
+
+    const replacementId = await queueSynchronizationItem(mockSyncItemType, { value: 2 }, descriptor);
+
+    expect(replacementId).not.toBe(originalId);
+    expect(await getSynchronizationItem(originalId)).toBeUndefined();
+    expect(await getSynchronizationItems<MockSyncItem>(mockSyncItemType)).toEqual([{ value: 2 }]);
+  });
 });
 
 describe('Logged-in user specific functions', () => {
@@ -119,6 +145,26 @@ describe('Logged-in user specific functions', () => {
 
     expect(queuedItems).toHaveLength(1);
     expect(queuedItems[0].userId).toBe(loggedInUserId);
+  });
+
+  it("does not enqueue or replace another user's item", async () => {
+    const descriptor = { id: 'foreign-item' };
+    const otherUserItemId = await seedSynchronizationItemFor(
+      otherMockUserId,
+      mockSyncItemType,
+      defaultMockSyncItem,
+      descriptor,
+    );
+
+    await expect(
+      queueSynchronizationItemFor(otherMockUserId, mockSyncItemType, { value: 999 }, descriptor),
+    ).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+
+    setCurrentUser(otherMockUserId);
+    expect(await getSynchronizationItem<MockSyncItem>(otherUserItemId)).toMatchObject({
+      content: defaultMockSyncItem,
+      userId: otherMockUserId,
+    });
   });
 });
 
@@ -159,7 +205,7 @@ describe('getSynchronizationItem', () => {
   });
 
   it("does not return another user's item even when its numeric ID is known", async () => {
-    const otherUserItemId = await queueSynchronizationItemFor(otherMockUserId, mockSyncItemType, defaultMockSyncItem);
+    const otherUserItemId = await seedSynchronizationItemFor(otherMockUserId, mockSyncItemType, defaultMockSyncItem);
 
     const item = await getSynchronizationItem(otherUserItemId);
 
@@ -167,9 +213,7 @@ describe('getSynchronizationItem', () => {
     await expect(getFullSynchronizationItemsFor(otherMockUserId)).rejects.toThrow(
       offlineQueueOperationUnavailableMessage,
     );
-    await expect(getSynchronizationItemsFor(otherMockUserId)).rejects.toThrow(
-      offlineQueueOperationUnavailableMessage,
-    );
+    await expect(getSynchronizationItemsFor(otherMockUserId)).rejects.toThrow(offlineQueueOperationUnavailableMessage);
 
     setCurrentUser(otherMockUserId);
     expect(await getSynchronizationItem(otherUserItemId)).toMatchObject({
@@ -209,7 +253,7 @@ describe('deleteSynchronizationItem', () => {
   });
 
   it("does not delete another user's item even when its numeric ID is known", async () => {
-    const otherUserItemId = await queueSynchronizationItemFor(otherMockUserId, mockSyncItemType, defaultMockSyncItem);
+    const otherUserItemId = await seedSynchronizationItemFor(otherMockUserId, mockSyncItemType, defaultMockSyncItem);
 
     await expect(deleteSynchronizationItem(otherUserItemId)).rejects.toThrow(offlineQueueOperationUnavailableMessage);
 
@@ -228,7 +272,7 @@ describe('beginEditSynchronizationItem', () => {
       vi.fn(async () => undefined),
       { onBeginEditSyncItem },
     );
-    const otherUserItemId = await queueSynchronizationItemFor(otherMockUserId, type, defaultMockSyncItem);
+    const otherUserItemId = await seedSynchronizationItemFor(otherMockUserId, type, defaultMockSyncItem);
 
     await expect(beginEditSynchronizationItem(otherUserItemId)).rejects.toThrow(
       offlineQueueOperationUnavailableMessage,
@@ -252,6 +296,89 @@ describe('beginEditSynchronizationItem', () => {
 });
 
 describe('runSynchronization', () => {
+  it('rejects a concurrent attempt instead of reporting false completion', async () => {
+    const type = 'concurrent-sync-item';
+    let finishProcessing: (() => void) | undefined;
+    setupOfflineSync(
+      type,
+      [],
+      vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            finishProcessing = resolve;
+          }),
+      ),
+    );
+    await queueSynchronizationItem(type, defaultMockSyncItem);
+
+    const synchronization = runSynchronization();
+    await vi.waitFor(() => expect(finishProcessing).toBeTypeOf('function'));
+
+    await expect(runSynchronization()).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+
+    finishProcessing?.();
+    await expect(synchronization).resolves.toBeUndefined();
+  });
+
+  it('rejects when a new current-user item remains after the handler snapshot', async () => {
+    const type = 'queue-growth-sync-item';
+    let finishProcessing: (() => void) | undefined;
+    setupOfflineSync(
+      type,
+      [],
+      vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            finishProcessing = resolve;
+          }),
+      ),
+    );
+    await queueSynchronizationItem(type, { value: 1 });
+
+    const synchronization = runSynchronization();
+    const handledSynchronization = synchronization.catch((error: unknown) => error);
+    await vi.waitFor(() => expect(finishProcessing).toBeTypeOf('function'));
+    await queueSynchronizationItem(type, { value: 2 });
+
+    finishProcessing?.();
+    await expect(handledSynchronization).resolves.toEqual(
+      expect.objectContaining({
+        message: offlineQueueOperationUnavailableMessage,
+      }),
+    );
+    expect(await getSynchronizationItems<MockSyncItem>(type)).toEqual([{ value: 2 }]);
+  });
+
+  it('preserves current-user items when explicit cancellation occurs', async () => {
+    const type = 'canceled-sync-item';
+    let finishProcessing: (() => void) | undefined;
+    const process = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishProcessing = resolve;
+        }),
+    );
+    setupOfflineSync(type, [], process);
+    const firstItemId = await queueSynchronizationItem(type, { value: 1 });
+    const secondItemId = await queueSynchronizationItem(type, { value: 2 });
+
+    const synchronization = runSynchronization();
+    const handledSynchronization = synchronization.catch((error: unknown) => error);
+    await vi.waitFor(() => expect(process).toHaveBeenCalledTimes(1));
+
+    getOfflineSynchronizationStore().getState().synchronization?.abortController.abort();
+    finishProcessing?.();
+
+    await expect(handledSynchronization).resolves.toEqual(
+      expect.objectContaining({
+        message: offlineQueueOperationUnavailableMessage,
+      }),
+    );
+    expect(process).toHaveBeenCalledTimes(1);
+    expect((await getSynchronizationItem(firstItemId))?.lastError).toBeUndefined();
+    expect((await getSynchronizationItem(secondItemId))?.lastError).toBeUndefined();
+  });
+
   it("processes and counts only the authenticated user's items", async () => {
     const type = 'user-isolated-sync-item';
     let finishProcessing: (() => void) | undefined;
@@ -263,7 +390,7 @@ describe('runSynchronization', () => {
     );
     setupOfflineSync(type, [], process);
     await queueSynchronizationItemFor(mockUserId, type, { value: 1 });
-    await queueSynchronizationItemFor(otherMockUserId, type, { value: 2 });
+    await seedSynchronizationItemFor(otherMockUserId, type, { value: 2 });
     setCurrentUser(otherMockUserId);
 
     const synchronization = runSynchronization();
@@ -293,28 +420,44 @@ describe('runSynchronization', () => {
   it('aborts visible progress and preserves the original queue when the authenticated user changes', async () => {
     const type = 'session-change-sync-item';
     let finishProcessing: (() => void) | undefined;
+    let observedAbortController: AbortController | undefined;
     const process = vi.fn(
-      () =>
+      (_item: MockSyncItem, options: { abort: AbortController }) =>
         new Promise<void>((resolve) => {
+          observedAbortController = options.abort;
           finishProcessing = resolve;
         }),
     );
     setupOfflineSync(type, [], process);
     const originalItemId = await queueSynchronizationItem(type, defaultMockSyncItem);
+    const secondOriginalItemId = await queueSynchronizationItem(type, {
+      value: 456,
+    });
 
     const synchronization = runSynchronization();
+    const handledSynchronization = synchronization.catch((error: unknown) => error);
     await vi.waitFor(() => expect(process).toHaveBeenCalledTimes(1));
-    expect(getOfflineSynchronizationStore().getState().synchronization?.totalCount).toBe(1);
+    expect(getOfflineSynchronizationStore().getState().synchronization?.totalCount).toBe(2);
 
     setCurrentUser(otherMockUserId);
     expect(getOfflineSynchronizationStore().getState().synchronization).toBeUndefined();
+    expect(observedAbortController?.signal.aborted).toBe(true);
 
     finishProcessing?.();
-    await synchronization;
+    await expect(handledSynchronization).resolves.toEqual(
+      expect.objectContaining({
+        message: offlineQueueOperationUnavailableMessage,
+      }),
+    );
+    expect(process).toHaveBeenCalledTimes(1);
 
     setCurrentUser(mockUserId);
     expect(await getSynchronizationItem(originalItemId)).toMatchObject({
       id: originalItemId,
+      userId: mockUserId,
+    });
+    expect(await getSynchronizationItem(secondOriginalItemId)).toMatchObject({
+      id: secondOriginalItemId,
       userId: mockUserId,
     });
   });
@@ -330,7 +473,7 @@ describe('runSynchronization', () => {
     );
     const id = await queueSynchronizationItem(type, defaultMockSyncItem);
 
-    await runSynchronization();
+    await expect(runSynchronization()).rejects.toThrow(offlineQueueOperationUnavailableMessage);
 
     const persistedItem = await new OfflineDb().syncQueue.get(id);
     expect(persistedItem?.lastError).toEqual({

@@ -4,10 +4,10 @@ Microfrontend para preparar pacientes para uso sin conexión, revisar acciones p
 
 ## Contrato RBAC actual
 
-| Superficie | Privilegio frontend |
-| --- | --- |
-| Página, menú de aplicación y opt-in de modo offline | `app:herramientasSinInternet` |
-| Widgets de acciones offline en la hoja clínica | `app:hoja.clinica.accionesSinConexion` |
+| Superficie                                          | Privilegio frontend                    |
+| --------------------------------------------------- | -------------------------------------- |
+| Página, menú de aplicación y opt-in de modo offline | `app:herramientasSinInternet`          |
+| Widgets de acciones offline en la hoja clínica      | `app:hoja.clinica.accionesSinConexion` |
 
 El componente raíz vuelve a comprobar `app:herramientasSinInternet`, de modo que ocultar el menú no es el único control frente a una URL directa.
 
@@ -18,3 +18,10 @@ Si se requiere separación entre lectura y eliminación, debe agregarse un privi
 ## Dependencia backend
 
 El manifest requiere `webservices.rest >= 2.2.0`. El soporte sin conexión también depende del service worker, del almacenamiento local y de las capacidades offline habilitadas por el app shell.
+
+## Synchronization failure contract
+
+Queue synchronization is complete only when `runSynchronization` fulfills. A rejected synchronization keeps pending
+items in the authenticated user's queue and is shown with a fixed, non-technical message; backend responses, URLs,
+identifiers, and exception details must never be rendered. The page refreshes the queue after both completed and
+incomplete attempts, and a refresh failure is handled separately instead of becoming an unhandled rejection.

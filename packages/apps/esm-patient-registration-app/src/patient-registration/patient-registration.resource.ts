@@ -213,7 +213,7 @@ export async function savePatientPhoto(
   });
 }
 
-export function savePatientPhotoAsAttachment(patientUuid: string, content: string) {
+export function savePatientPhotoAsAttachment(patientUuid: string, content: string, signal?: AbortSignal) {
   const patientPhoto = dataURItoFile(content);
   const uploadedFile: UploadedFile = {
     base64Content: content,
@@ -223,7 +223,7 @@ export function savePatientPhotoAsAttachment(patientUuid: string, content: strin
     fileType: 'image',
   };
 
-  return createAttachment(patientUuid, uploadedFile);
+  return createAttachment(patientUuid, uploadedFile, signal);
 }
 
 export async function fetchPerson(query: string, abortController: AbortController): Promise<Array<PersonSearchResult>> {

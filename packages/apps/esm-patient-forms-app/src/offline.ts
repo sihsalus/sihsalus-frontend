@@ -20,7 +20,11 @@ interface EncounterCreate {
   patient: string;
   encounterType: string;
   location: string;
-  encounterProviders?: Array<{ uuid?: string; person: string; provider: string }>;
+  encounterProviders?: Array<{
+    uuid?: string;
+    person: string;
+    provider: string;
+  }>;
   obs?: Array<Record<string, unknown>>;
   orders?: Array<Record<string, unknown>>;
   diagnoses?: Array<Record<string, unknown>>;
@@ -106,12 +110,12 @@ async function syncPatientForm(
   } = item;
 
   await Promise.all([
-    syncEncounter(associatedOfflineVisit, encounterCreate),
-    syncPersonUpdate(personUpdate?.uuid, personUpdate),
+    syncEncounter(associatedOfflineVisit, encounterCreate, options.abort.signal),
+    syncPersonUpdate(personUpdate?.uuid, personUpdate, options.abort.signal),
   ]);
 }
 
-async function syncEncounter(associatedOfflineVisit: Visit, encounter?: EncounterCreate) {
+async function syncEncounter(associatedOfflineVisit: Visit, encounter?: EncounterCreate, signal?: AbortSignal) {
   if (!encounter) {
     return;
   }
@@ -125,10 +129,11 @@ async function syncEncounter(associatedOfflineVisit: Visit, encounter?: Encounte
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
     body,
+    signal,
   });
 }
 
-async function syncPersonUpdate(personUuid?: string, personUpdate?: PersonUpdate) {
+async function syncPersonUpdate(personUuid?: string, personUpdate?: PersonUpdate, signal?: AbortSignal) {
   if (!personUuid || !personUpdate) {
     return;
   }
@@ -137,6 +142,7 @@ async function syncPersonUpdate(personUuid?: string, personUpdate?: PersonUpdate
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
     body: personUpdate,
+    signal,
   });
 }
 

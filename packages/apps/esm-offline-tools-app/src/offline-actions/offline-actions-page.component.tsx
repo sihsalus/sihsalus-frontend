@@ -4,6 +4,7 @@ import {
   getOfflineSynchronizationStore,
   isDesktop,
   runSynchronization,
+  showSnackbar,
   useConnectivity,
   useLayoutType,
   useStore,
@@ -24,7 +25,30 @@ const OfflineActionsPage: React.FC = () => {
   const { mutate: mutatePendingSyncItems } = usePendingSyncItems();
   const isSynchronizing = !!syncStore.synchronization;
 
-  const synchronize = () => runSynchronization().finally(() => mutatePendingSyncItems());
+  const synchronize = () => {
+    void runSynchronization()
+      .catch(() => {
+        showSnackbar({
+          kind: 'error',
+          title: t('offlineActionsSynchronizationFailed', 'Offline actions were not fully synchronized'),
+          subtitle: t(
+            'offlineActionsSynchronizationFailedSubtitle',
+            'Pending actions were kept. Verify the session and connection, then try again.',
+          ),
+        });
+      })
+      .then(() => mutatePendingSyncItems())
+      .catch(() => {
+        showSnackbar({
+          kind: 'error',
+          title: t('offlineActionsRefreshFailed', 'Pending actions could not be refreshed'),
+          subtitle: t(
+            'offlineActionsRefreshFailedSubtitle',
+            'The local queue may have changed. Reload this page before taking another action.',
+          ),
+        });
+      });
+  };
 
   const primaryActions = (
     <Button

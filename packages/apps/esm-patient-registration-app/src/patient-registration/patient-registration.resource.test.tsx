@@ -1,16 +1,19 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { createAttachment, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
 import {
   fetchPersonRegistrationCopyData,
   savePatient,
   savePatientPhoto,
+  savePatientPhotoAsAttachment,
   savePerson,
 } from './patient-registration.resource';
 
 const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockCreateAttachment = vi.mocked(createAttachment);
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
+  createAttachment: vi.fn(),
   openmrsFetch: vi.fn(),
 }));
 
@@ -114,5 +117,20 @@ describe('savePatientPhoto', () => {
     const file = formData.get('file') as File;
     expect(file.name).toBe('patient-photo.png');
     expect(file.type).toBe('image/png');
+  });
+
+  it('forwards the caller abort signal to the attachment fallback', async () => {
+    const signal = new AbortController().signal;
+
+    await savePatientPhotoAsAttachment('patient-uuid', 'data:image/png;base64,aGVsbG8=', signal);
+
+    expect(mockCreateAttachment).toHaveBeenCalledWith(
+      'patient-uuid',
+      expect.objectContaining({
+        fileDescription: 'Patient photo',
+        fileName: 'patient-photo.png',
+      }),
+      signal,
+    );
   });
 });

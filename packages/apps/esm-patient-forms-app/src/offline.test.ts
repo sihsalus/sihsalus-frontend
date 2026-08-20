@@ -1,8 +1,9 @@
-import { launchWorkspace2, setupOfflineSync } from '@openmrs/esm-framework';
+import { launchWorkspace2, openmrsFetch, setupOfflineSync, type SyncProcessOptions } from '@openmrs/esm-framework';
 
 import { setupPatientFormSync } from './offline';
 
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockSetupOfflineSync = vi.mocked(setupOfflineSync);
 
 vi.mock('@openmrs/esm-framework', async () => ({
@@ -93,6 +94,48 @@ describe('setupPatientFormSync', () => {
         visitContext: null,
         mutateVisitContext: null,
       },
+    );
+  });
+
+  it('passes the synchronization abort signal to every clinical write', async () => {
+    await setupPatientFormSync();
+    const process = mockSetupOfflineSync.mock.calls[0][2];
+    const abortController = new AbortController();
+    const options: SyncProcessOptions<unknown> = {
+      abort: abortController,
+      userId: 'user-uuid',
+      index: 0,
+      items: [],
+      dependencies: [{ stopDatetime: '2026-08-20T12:00:00.000Z' }],
+    };
+
+    await process(
+      {
+        _id: 'encounter-uuid',
+        encounter: {},
+        _payloads: {
+          encounterCreate: {
+            encounterDatetime: '2026-08-20T12:00:00.000Z',
+            patient: 'patient-uuid',
+            encounterType: 'encounter-type-uuid',
+            location: 'location-uuid',
+          },
+          personUpdate: {
+            uuid: 'person-uuid',
+            attributes: [],
+          },
+        },
+      },
+      options,
+    );
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      '/ws/rest/v1/encounter',
+      expect.objectContaining({ signal: abortController.signal }),
+    );
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      '/ws/rest/v1/person/person-uuid',
+      expect.objectContaining({ signal: abortController.signal }),
     );
   });
 });

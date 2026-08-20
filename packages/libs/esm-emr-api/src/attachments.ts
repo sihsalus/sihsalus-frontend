@@ -57,6 +57,7 @@ export function getAttachments(patientUuid: string, includeEncounterless: boolea
  * @param fileToUpload An object containing the file data and metadata to upload.
  *   Should include `file` (File object) or `base64Content`, plus `fileName` and
  *   `fileDescription`.
+ * @param signal An optional signal that cancels the upload request.
  * @returns A Promise that resolves with the FetchResponse containing the created
  *   attachment data.
  *
@@ -70,7 +71,7 @@ export function getAttachments(patientUuid: string, includeEncounterless: boolea
  * });
  * ```
  */
-export async function createAttachment(patientUuid: string, fileToUpload: UploadedFile) {
+export async function createAttachment(patientUuid: string, fileToUpload: UploadedFile, signal?: AbortSignal) {
   const formData = new FormData();
 
   formData.append('fileCaption', fileToUpload.fileDescription);
@@ -86,6 +87,7 @@ export async function createAttachment(patientUuid: string, fileToUpload: Upload
   return openmrsFetch(`${attachmentUrl}`, {
     method: 'POST',
     body: formData,
+    signal,
   });
 }
 

@@ -1,40 +1,107 @@
-# Instrucciones para agentes
+# AGENTS.md
 
-Estas instrucciones aplican a todo el repositorio.
+Instructions for coding agents working on SIH Salus Frontend. This file follows
+the open [AGENTS.md](https://agents.md/) format and applies to the entire
+repository. Explicit user instructions take precedence over this file and
+define the task's scope and authorization. Do not infer permission for merges,
+releases, deployments, production access, PHI handling, or other
+safety-sensitive actions from a broader request. A closer `AGENTS.md` takes
+precedence within its subtree; nested files should preserve these repository
+safety policies.
 
-## Antes de cambiar archivos
+## Project overview
 
-- Lee `CONTRIBUTING.md` completamente antes de editar cualquier archivo.
-- Revisa `git status --short --branch` y conserva todos los cambios ajenos.
-- Lee el README raíz, el README del paquete afectado y los contratos clínicos o
-  técnicos aplicables.
-- Crea o cambia de rama solo cuando la solicitud autorice preparar un PR y el
-  árbol esté limpio o aislado. Para un PR nuevo usa una rama separada desde
-  `origin/main`, salvo que el usuario o mantenedor indique otra base. Para un PR
-  existente trabaja únicamente en su rama y no mezcles otros objetivos.
-- No cambies de rama en un workspace compartido con cambios ajenos; usa un
-  worktree aislado si está autorizado o pide coordinación.
+- Clinical OpenMRS 3 monorepo using single-spa microfrontends, TypeScript, Yarn,
+  and Turborepo.
+- Patient safety, privacy, data integrity, and operational continuity take
+  priority over delivery speed.
+- Read `CONTRIBUTING.md` completely before editing any file. It is the normative
+  source for scope, evidence, risk, and pull request requirements.
+- Also read the root README, the affected package README, and any applicable
+  clinical or technical contracts.
 
-## Al implementar y validar
+## Setup commands
 
-- Mantén el cambio mínimo y coherente con el objetivo solicitado.
-- No uses producción, PHI ni pacientes reales. No expongas secretos o
-  credenciales en código, pruebas, logs, capturas o documentación.
-- Sigue la matriz de impacto y validación de `CONTRIBUTING.md`.
-- No presentes inferencias, inspección de código, typecheck o build como una
-  prueba funcional que no ejecutaste.
-- Conserva cambios y archivos no relacionados; no limpies ni restaures trabajo
-  ajeno.
+Always inspect the current state before changing files:
 
-## Al preparar un pull request
+```sh
+git status --short --branch
+```
 
-- Usa `.github/pull_request_template.md` sin eliminar secciones; completa `N/A`
-  con una razón concreta cuando corresponda.
-- Incluye alcance, riesgos, consumidores, validaciones exactas y pendientes.
-- Publica o actualiza la rama y el PR solo cuando la solicitud lo autorice.
-- Abrir un PR no autoriza a fusionarlo. Nunca hagas merge, publiques un release
-  ni despliegues sin una instrucción explícita del responsable del repositorio.
-- Si falta acceso a una validación externa, agota primero las comprobaciones
-  locales y marca solo esa validación como `BLOQUEADO`. Detén la implementación
-  completa únicamente cuando falte una decisión o autoridad que pueda cambiar
-  el resultado; pide solo el acceso o decisión necesarios.
+When the task requires dependencies, prepare the supported environment:
+
+```sh
+corepack enable
+yarn install --immutable
+```
+
+- Preserve unrelated work. Do not clean, restore, or mass-format files outside
+  the requested scope.
+- An existing installation is sufficient for documentation-only work.
+- Follow the Quick Start in `README.md` to run the SPA. Do not improvise backend
+  URLs, credentials, or environment variables.
+
+## Code style and repository contracts
+
+- Keep the change minimal and aligned with the requested outcome.
+- Use the workspace's existing scripts and conventions. Do not introduce a
+  second tool for a problem already covered by the monorepo.
+- Declare cross-workspace dependencies in `package.json`.
+- Keep configurable clinical UUIDs in `config-schema`, workspace names in shared
+  constants, and user-visible text in both `en.json` and `es.json`.
+- Do not weaken route/RBAC guards, safe error handling, or TypeScript options
+  that are already strict.
+- Never use production, PHI, or real patients. Never expose secrets or
+  credentials in code, tests, logs, screenshots, or documentation.
+
+## Testing instructions
+
+After creating the change's commits, use this as the baseline for code changes:
+
+```sh
+yarn verify:changed --base origin/main --head HEAD
+```
+
+- Inspect the affected `package.json` and run the applicable `lint`,
+  `typescript`, `test`, and `build` scripts. Validate relevant consumers too.
+- For Markdown changes, run `yarn prettier --check` followed by the modified
+  paths, then run `git diff --check origin/main...HEAD` after committing. Use
+  the actual PR base when it is not `main`.
+- Use the validation matrix in `CONTRIBUTING.md` for workspaces, routes/RBAC,
+  errors, concepts, dependencies, SPA packaging, and E2E.
+- Do not treat `--passWithNoTests` as a functional regression test, or a
+  typecheck/build as clinical validation.
+- Record every applicable validation as `PASSED`, `FAILED`, `NOT RUN`, or
+  `BLOCKED`, with the command, result, scope, and SHA/environment when relevant.
+- E2E and clinical tests use synthetic data only in a coordinated DEV/QLTY
+  environment, never production. If access is unavailable, exhaust local checks
+  and block only the external validation.
+
+## Pull request instructions
+
+- Create or switch branches only when the request authorizes preparing a PR and
+  the worktree is clean or isolated. Never switch branches in a shared worktree
+  containing unrelated changes.
+- For a new PR, use a separate branch from `origin/main` by default. For an
+  existing PR, work only on its branch. Do not combine unrelated objectives.
+- Use a conventional title: `type(scope): summary`.
+- Complete `.github/pull_request_template.md` without deleting sections. Use
+  `N/A` with a concrete reason and disclose every pending validation.
+- Review the full diff against the base and exclude unrelated changes,
+  artifacts, secrets, and identifiable data before publishing.
+- Publish or update a branch and PR only when the request authorizes it.
+- Opening or updating a PR does not authorize any merge. Merge only when an
+  explicit user instruction authorizes that exact merge. Treat merges into
+  `main` or `pre-release` as release-affecting: the configured workflow can
+  publish immutable images and move `latest` or `next` after successful CI, and
+  `main` can signal DEV/QLTY deployment. Generic authorization to prepare a PR
+  is insufficient.
+- If a missing decision or authority could change the outcome, stop and ask
+  only for what is required.
+
+## Security reporting
+
+Do not publish vulnerabilities, secrets, or clinical data in issues or PRs. Use
+[GitHub private vulnerability reporting](https://github.com/sihsalus/sihsalus-frontend/security/advisories/new),
+or ask `sihsalus@pucp.edu.pe` for a private channel without including sensitive
+details.

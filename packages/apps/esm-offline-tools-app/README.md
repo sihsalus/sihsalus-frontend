@@ -29,6 +29,11 @@ Patient-list updates also settle both view refreshes. An update failure takes pr
 shows one fixed stale-state warning without exposing the rejected value. Each merged view waits for all of its
 constituent SWR refreshes and rejects with one fixed, non-technical error only after every child settles.
 
+Patient synchronization succeeds only after the service worker accepts the patient route and a confirmed fresh
+network response replaces the stable cache entry. A failed or canceled refresh preserves any previously cached
+response and reports one fixed, non-sensitive failure; stale cache or locally queued data never count as a successful
+refresh.
+
 ## Error and privacy contract
 
 Synchronization details render a fixed translated message for failed handlers. Persisted `error.message` values are

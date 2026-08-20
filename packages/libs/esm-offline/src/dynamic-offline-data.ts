@@ -98,6 +98,7 @@ export interface DynamicOfflineDataSyncState {
 
 const dynamicOfflineDataHandlers: Record<string, DynamicOfflineDataHandler> = {};
 const persistedSyncErrorMessage = 'This offline data could not be synchronized.';
+const dynamicOfflineDataBatchSyncErrorMessage = 'Offline data synchronization failed.';
 
 /**
  * Returns all handlers which have been setup using the {@link setupDynamicOfflineDataHandler} function.
@@ -235,14 +236,25 @@ export async function removeDynamicOfflineDataFor(userId: string, type: string, 
 
 /**
  * Synchronizes all offline data entries of the given {@link type} for the currently logged in user.
+ * Every started entry settles before a failed batch rejects with a fixed, non-sensitive error.
  * @param type The type of the offline data. See {@link DynamicOfflineData} for details.
  * @param abortSignal An `AbortSignal` which can be used to cancel the operation.
  */
 export async function syncAllDynamicOfflineData(type: string, abortSignal?: AbortSignal): Promise<void> {
-  const dataEntriesToSync = await getDynamicOfflineDataEntries(type);
-  await Promise.all(
-    dataEntriesToSync.map(async (entry) => syncDynamicOfflineData(entry.type, entry.identifier, abortSignal)),
+  let dataEntriesToSync: Array<DynamicOfflineData>;
+  try {
+    dataEntriesToSync = await getDynamicOfflineDataEntries(type);
+  } catch {
+    throw new Error(dynamicOfflineDataBatchSyncErrorMessage);
+  }
+
+  const results = await Promise.allSettled(
+    dataEntriesToSync.map((entry) => syncDynamicOfflineData(entry.type, entry.identifier, abortSignal)),
   );
+
+  if (results.some((result) => result.status === 'rejected')) {
+    throw new Error(dynamicOfflineDataBatchSyncErrorMessage);
+  }
 }
 
 /**

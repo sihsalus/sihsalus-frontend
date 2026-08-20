@@ -1,3 +1,4 @@
+import { getLoggedInUser } from '@openmrs/esm-api';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import 'fake-indexeddb/auto';
 import {
@@ -8,6 +9,7 @@ import {
   removeDynamicOfflineData,
   removeDynamicOfflineDataFor,
   setupDynamicOfflineDataHandler,
+  syncAllDynamicOfflineData,
   syncDynamicOfflineData,
 } from './dynamic-offline-data';
 import { OfflineDb } from './offline-db';
@@ -17,6 +19,8 @@ const mockUserId = '00000000-0000-0000-0000-000000000000';
 vi.mock('@openmrs/esm-api', () => ({
   getLoggedInUser: vi.fn(async () => ({ uuid: mockUserId })),
 }));
+
+const mockGetLoggedInUser = vi.mocked(getLoggedInUser);
 
 let consoleWarn: ReturnType<typeof vi.spyOn>;
 
@@ -190,5 +194,87 @@ describe('syncDynamicOfflineData', () => {
     });
     expect(stableSync).toHaveBeenCalledTimes(2);
     expect(retryableSync).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('syncAllDynamicOfflineData', () => {
+  it('waits for every entry before rejecting once with a fixed non-sensitive error', async () => {
+    const handlerType = 'test-all-settled-batch';
+    const failedIdentifier = 'private-entry-uuid';
+    const delayedIdentifier = 'delayed-entry-uuid';
+    let finishDelayedEntry = () => {};
+    let notifyDelayedEntryStarted = () => {};
+    const delayedEntryStarted = new Promise<void>((resolve) => {
+      notifyDelayedEntryStarted = resolve;
+    });
+
+    setupDynamicOfflineDataHandler({
+      id: 'test-all-settled-batch:handler',
+      type: handlerType,
+      isSynced: vi.fn(async () => false),
+      sync: vi.fn(async (identifier) => {
+        if (identifier === failedIdentifier) {
+          throw new Error('GET /patient/private-entry-uuid?name=Synthetic%20Patient failed');
+        }
+
+        if (identifier === delayedIdentifier) {
+          notifyDelayedEntryStarted();
+          await new Promise<void>((resolve) => {
+            finishDelayedEntry = resolve;
+          });
+        }
+      }),
+    });
+    await putDynamicOfflineData(handlerType, failedIdentifier);
+    await putDynamicOfflineData(handlerType, delayedIdentifier);
+
+    let batchSettled = false;
+    const batchResult = syncAllDynamicOfflineData(handlerType)
+      .then(
+        () => ({ status: 'fulfilled' as const, error: undefined }),
+        (error: unknown) => ({ status: 'rejected' as const, error }),
+      )
+      .finally(() => {
+        batchSettled = true;
+      });
+
+    await delayedEntryStarted;
+    await vi.waitFor(async () => {
+      const entries = await getDynamicOfflineDataEntries(handlerType);
+      expect(entries.find((entry) => entry.identifier === failedIdentifier)?.syncState).toBeDefined();
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const settledBeforeDelayedEntry = batchSettled;
+
+    finishDelayedEntry();
+    const result = await batchResult;
+
+    expect(settledBeforeDelayedEntry).toBe(false);
+    expect(result.status).toBe('rejected');
+    expect(result.error).toBeInstanceOf(Error);
+    expect(result.error).not.toBeInstanceOf(AggregateError);
+    expect(result.error).toMatchObject({ message: 'Offline data synchronization failed.' });
+    expect(String(result.error)).not.toMatch(/private-entry-uuid|Synthetic%20Patient/);
+    expect(Object.hasOwn(result.error as object, 'cause')).toBe(false);
+
+    const entries = await getDynamicOfflineDataEntries(handlerType);
+    expect(entries.find((entry) => entry.identifier === failedIdentifier)?.syncState).toMatchObject({
+      succeededHandlers: [],
+      erroredHandlers: ['test-all-settled-batch:handler'],
+    });
+    expect(entries.find((entry) => entry.identifier === delayedIdentifier)?.syncState).toMatchObject({
+      succeededHandlers: ['test-all-settled-batch:handler'],
+      erroredHandlers: [],
+    });
+  });
+
+  it('sanitizes failures that occur before entry synchronization starts', async () => {
+    mockGetLoggedInUser.mockRejectedValueOnce(
+      new Error('Session lookup exposed private-patient-uuid and Synthetic Patient'),
+    );
+
+    const syncAttempt = syncAllDynamicOfflineData('test-batch-lookup-failure');
+    await expect(syncAttempt).rejects.toThrow('Offline data synchronization failed.');
+    await expect(syncAttempt).rejects.not.toThrow(/private-patient-uuid|Synthetic Patient/);
   });
 });

@@ -2,18 +2,24 @@ import { fetchCurrentPatient, getDynamicOfflineDataEntries, getSynchronizationIt
 import merge from 'lodash-es/merge';
 import { useMemo } from 'react';
 import useSWR, { type SWRResponse } from 'swr';
+import { useOfflineOwnerId } from './use-offline-owner';
 
 function useDynamicOfflineDataEntries(type: string) {
-  return useSWR(`dynamicOfflineData/entries/${type}`, () => getDynamicOfflineDataEntries(type));
+  const ownerId = useOfflineOwnerId();
+  return useSWR(ownerId ? ['dynamicOfflineData/entries', ownerId, type] : null, () =>
+    getDynamicOfflineDataEntries(type),
+  );
 }
 
 function useSynchronizationItems<T>(type: string) {
-  return useSWR(`syncQueue/items/${type}`, () => getSynchronizationItems<T>(type));
+  const ownerId = useOfflineOwnerId();
+  return useSWR(ownerId ? ['syncQueue/items', ownerId, type] : null, () => getSynchronizationItems<T>(type));
 }
 
 function useFhirPatients(ids: Array<string>) {
+  const ownerId = useOfflineOwnerId();
   const stableIds = useMemo(() => [...ids].sort((a, b) => a.localeCompare(b)), [ids]);
-  return useSWR(['fhirPatients', stableIds], () =>
+  return useSWR(ownerId ? ['fhirPatients', ownerId, ...stableIds] : null, () =>
     Promise.all(stableIds.map((patientId) => fetchCurrentPatient(patientId, undefined, false))),
   );
 }
@@ -75,18 +81,22 @@ export function useOfflinePatientStats() {
 }
 
 export function useLastSyncStateOfPatient(patientUuid: string) {
-  return useSWR(`offlineTools/offlinePatient/${patientUuid}/lastSyncState`, async () => {
-    const offlinePatientEntries = await getDynamicOfflineDataEntries('patient');
-    const patientEntry = offlinePatientEntries.find((entry) => entry.identifier === patientUuid);
-    return patientEntry?.syncState;
-  });
+  const ownerId = useOfflineOwnerId();
+  return useSWR(
+    ownerId && patientUuid ? ['offlineTools/offlinePatient/lastSyncState', ownerId, patientUuid] : null,
+    async () => {
+      const offlinePatientEntries = await getDynamicOfflineDataEntries('patient');
+      const patientEntry = offlinePatientEntries.find((entry) => entry.identifier === patientUuid);
+      return patientEntry?.syncState;
+    },
+  );
 }
 
 function useMergedSwr<T>(merge: () => T, swrResponses: Array<SWRResponse>): SWRResponse<T> {
   return useMemo(() => {
     const areAllLoaded = swrResponses.every((res) => !!res.data);
     const data = areAllLoaded ? merge() : null;
-    const error = swrResponses.find((res) => res.error);
+    const error = swrResponses.find((res) => res.error)?.error;
     const mutate: () => Promise<undefined> = () =>
       Promise.all(swrResponses.map((res) => res.mutate())).then(() => {
         merge();

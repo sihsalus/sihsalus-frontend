@@ -64,6 +64,19 @@ describe('offline form caching', () => {
     await vi.waitFor(() => expect(mockShowSnackbar).toHaveBeenCalledTimes(1));
 
     expect(mockMessageOmrsServiceWorker).toHaveBeenCalledTimes(2);
+    const registeredPatterns = mockMessageOmrsServiceWorker.mock.calls.map(
+      ([message]) => new RegExp(String(message.pattern)),
+    );
+    expect(
+      registeredPatterns[0].test(
+        `${globalThis.location.origin}/openmrs/ws/rest/v1/location?q=&v=custom:(uuid,display)`,
+      ),
+    ).toBe(true);
+    expect(
+      registeredPatterns[1].test(
+        `${globalThis.location.origin}/openmrs/ws/rest/v1/provider?q=&v=custom:(uuid,display,person:(uuid))`,
+      ),
+    ).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(cachePut).toHaveBeenCalledTimes(1);
     expect(mockShowSnackbar).toHaveBeenCalledWith({

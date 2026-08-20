@@ -41,7 +41,7 @@ async function precacheStaticFormDependencies(): Promise<void> {
     urlsToCache.map(async (url) => {
       const routeRegistration = await messageOmrsServiceWorker({
         type: 'registerDynamicRoute',
-        pattern: '.+' + url,
+        pattern: escapeRegExp(url),
       });
       if (!routeRegistration.success) {
         throw new Error('A required offline form route could not be registered.');

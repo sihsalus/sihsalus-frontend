@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import OfflinePatientTable from './offline-patient-table.component';
@@ -152,6 +152,122 @@ describe('OfflinePatientTable', () => {
     expect(JSON.stringify(mocks.showSnackbar.mock.calls)).not.toContain(sensitiveRefreshError);
   });
 
+  it('keeps update and removal controls locked until both post-sync refreshes settle', async () => {
+    const offlinePatientsRefresh = createDeferredRefresh();
+    const registeredPatientsRefresh = createDeferredRefresh();
+    mocks.mutateOfflinePatients.mockImplementationOnce(() => offlinePatientsRefresh.promise);
+    mocks.mutateOfflineRegisteredPatients.mockImplementationOnce(() => registeredPatientsRefresh.promise);
+    const user = userEvent.setup();
+    render(<OfflinePatientTable isInteractive showHeader={false} />);
+
+    await user.click(screen.getByRole('checkbox', { name: 'Select all rows' }));
+    const updateButton = screen.getByRole('button', { name: 'Update patients' });
+    const removeButton = screen.getByRole('button', { name: /Remove from list/ });
+    act(() => {
+      fireEvent.click(updateButton);
+      fireEvent.click(updateButton);
+    });
+
+    await waitFor(() => {
+      expect(mocks.syncSelectedOfflinePatients).toHaveBeenCalledTimes(1);
+      expect(mocks.mutateOfflinePatients).toHaveBeenCalledTimes(1);
+      expect(mocks.mutateOfflineRegisteredPatients).toHaveBeenCalledTimes(1);
+      expect(updateButton).toBeDisabled();
+      expect(removeButton).toBeDisabled();
+    });
+
+    await user.click(updateButton);
+    await user.click(removeButton);
+    expect(mocks.syncSelectedOfflinePatients).toHaveBeenCalledTimes(1);
+    expect(mocks.showModal).not.toHaveBeenCalled();
+
+    await act(async () => {
+      offlinePatientsRefresh.resolve();
+      await Promise.resolve();
+    });
+    expect(updateButton).toBeDisabled();
+    expect(removeButton).toBeDisabled();
+
+    await act(async () => {
+      registeredPatientsRefresh.resolve();
+    });
+
+    await waitFor(() => {
+      expect(updateButton).toBeEnabled();
+      expect(removeButton).toBeEnabled();
+    });
+    expect(mocks.syncSelectedOfflinePatients).toHaveBeenCalledTimes(1);
+    expect(mocks.showModal).not.toHaveBeenCalled();
+  });
+
+  it('keeps update and removal controls locked until removal and both refreshes settle', async () => {
+    const deferredRemoval = createDeferredRemoval();
+    const offlinePatientsRefresh = createDeferredRefresh();
+    const registeredPatientsRefresh = createDeferredRefresh();
+    mocks.getDynamicOfflineDataEntries.mockResolvedValueOnce([{ identifier: 'synthetic-patient-uuid' }]);
+    mocks.removeDynamicOfflineData.mockImplementationOnce(() => deferredRemoval.promise);
+    mocks.mutateOfflinePatients.mockImplementationOnce(() => offlinePatientsRefresh.promise);
+    mocks.mutateOfflineRegisteredPatients.mockImplementationOnce(() => registeredPatientsRefresh.promise);
+    const user = userEvent.setup();
+    render(<OfflinePatientTable isInteractive showHeader={false} />);
+
+    await user.click(screen.getByRole('checkbox', { name: 'Select all rows' }));
+    const updateButton = screen.getByRole('button', { name: 'Update patients' });
+    const removeButton = screen.getByRole('button', { name: /Remove from list/ });
+    await user.click(removeButton);
+    const modalProps = mocks.showModal.mock.calls[0]?.[1] as { onConfirm: () => void };
+
+    act(() => {
+      modalProps.onConfirm();
+      modalProps.onConfirm();
+    });
+
+    await waitFor(() => {
+      expect(mocks.getDynamicOfflineDataEntries).toHaveBeenCalledTimes(1);
+      expect(mocks.removeDynamicOfflineData).toHaveBeenCalledTimes(1);
+      expect(updateButton).toBeDisabled();
+      expect(removeButton).toBeDisabled();
+    });
+    expect(mocks.mutateOfflinePatients).not.toHaveBeenCalled();
+    expect(mocks.mutateOfflineRegisteredPatients).not.toHaveBeenCalled();
+
+    await user.click(updateButton);
+    await user.click(removeButton);
+    expect(mocks.syncSelectedOfflinePatients).not.toHaveBeenCalled();
+    expect(mocks.showModal).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      deferredRemoval.resolve();
+    });
+
+    await waitFor(() => {
+      expect(mocks.mutateOfflinePatients).toHaveBeenCalledTimes(1);
+      expect(mocks.mutateOfflineRegisteredPatients).toHaveBeenCalledTimes(1);
+      expect(updateButton).toBeDisabled();
+      expect(removeButton).toBeDisabled();
+    });
+
+    await act(async () => {
+      offlinePatientsRefresh.resolve();
+      await Promise.resolve();
+    });
+    expect(updateButton).toBeDisabled();
+    expect(removeButton).toBeDisabled();
+
+    await act(async () => {
+      registeredPatientsRefresh.resolve();
+    });
+
+    await waitFor(() => {
+      expect(updateButton).toBeEnabled();
+      expect(removeButton).toBeEnabled();
+    });
+    expect(mocks.getDynamicOfflineDataEntries).toHaveBeenCalledTimes(1);
+    expect(mocks.removeDynamicOfflineData).toHaveBeenCalledTimes(1);
+    expect(mocks.syncSelectedOfflinePatients).not.toHaveBeenCalled();
+    expect(mocks.showModal).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps a reported synchronization failure ahead of a subsequent refresh failure', async () => {
     const sensitiveRefreshError = 'Registration queue refresh exposed a local row';
     mocks.syncSelectedOfflinePatients.mockResolvedValueOnce({ failedCount: 1, skippedCount: 0 });
@@ -224,7 +340,7 @@ describe('OfflinePatientTable', () => {
     mocks.mutateOfflinePatients.mockRejectedValueOnce(new Error('Offline patient refresh failed'));
     mocks.mutateOfflineRegisteredPatients.mockRejectedValueOnce(new Error('Registration queue refresh failed'));
     const modalProps = await openRemovalConfirmation();
-    expect(modalProps.onConfirm()).toBeUndefined();
+    act(() => expect(modalProps.onConfirm()).toBeUndefined());
 
     await waitFor(() => {
       expect(mocks.showSnackbar).toHaveBeenCalledWith({
@@ -250,7 +366,7 @@ describe('OfflinePatientTable', () => {
       .mockImplementationOnce(() => deferredRemoval.promise);
     const modalProps = await openRemovalConfirmation();
 
-    expect(modalProps.onConfirm()).toBeUndefined();
+    act(() => expect(modalProps.onConfirm()).toBeUndefined());
     await waitFor(() => expect(mocks.removeDynamicOfflineData).toHaveBeenCalledTimes(2));
     expect(mocks.mutateOfflinePatients).not.toHaveBeenCalled();
     expect(mocks.mutateOfflineRegisteredPatients).not.toHaveBeenCalled();
@@ -278,7 +394,7 @@ describe('OfflinePatientTable', () => {
     mocks.mutateOfflinePatients.mockRejectedValueOnce(new Error('Offline patient refresh failed'));
     const modalProps = await openRemovalConfirmation();
 
-    expect(modalProps.onConfirm()).toBeUndefined();
+    act(() => expect(modalProps.onConfirm()).toBeUndefined());
 
     await waitFor(() => {
       expect(mocks.removeDynamicOfflineData).toHaveBeenCalledTimes(2);

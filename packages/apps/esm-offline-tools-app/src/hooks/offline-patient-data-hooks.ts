@@ -106,7 +106,6 @@ export function useMergedSwr<T>(merge: () => T, swrResponses: Array<SWRResponse>
         throw new Error('Offline patient data could not be refreshed.');
       }
 
-      merge();
       return undefined;
     };
     const isValidating = swrResponses.some((res) => res.isValidating);

@@ -35,6 +35,14 @@ describe('fetchPatientData', () => {
     expect(result).toEqual(mockPatient);
   });
 
+  it('returns online patient data when the local queue is unavailable', async () => {
+    const mockPatient = { id: '123', name: [{ given: ['John'], family: 'Doe' }] };
+    mockOpenmrsFetch.mockResolvedValue({ data: mockPatient, ok: true } as Partial<FetchResponse> as FetchResponse);
+    mockGetSynchronizationItems.mockRejectedValue(new Error('Offline queue operation is unavailable.'));
+
+    await expect(fetchCurrentPatient('123')).resolves.toEqual(mockPatient);
+  });
+
   it('should return offline patient data when online fetch fails', async () => {
     const mockOfflinePatient = { id: '123', name: [{ given: ['Jane'], family: 'Doe' }] };
     mockOpenmrsFetch.mockRejectedValue(new Error('Network error'));
@@ -45,9 +53,18 @@ describe('fetchPatientData', () => {
   });
 
   it('should throw an error when both online and offline fetches fail', async () => {
-    mockOpenmrsFetch.mockRejectedValue(new Error('Network error'));
-    mockGetSynchronizationItems.mockResolvedValue([]);
+    const onlineError = new Error('Network error');
+    mockOpenmrsFetch.mockRejectedValue(onlineError);
+    mockGetSynchronizationItems.mockRejectedValue(new Error('Offline queue operation is unavailable.'));
 
-    await expect(fetchCurrentPatient('123')).rejects.toThrow('Network error');
+    await expect(fetchCurrentPatient('123')).rejects.toBe(onlineError);
+  });
+
+  it('surfaces a queue failure when the online request completes without a patient', async () => {
+    const queueError = new Error('Offline queue operation is unavailable.');
+    mockOpenmrsFetch.mockResolvedValue({ data: null, ok: false } as Partial<FetchResponse> as FetchResponse);
+    mockGetSynchronizationItems.mockRejectedValue(queueError);
+
+    await expect(fetchCurrentPatient('123')).rejects.toBe(queueError);
   });
 });

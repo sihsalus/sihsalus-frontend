@@ -1,33 +1,29 @@
-import { showSnackbar, syncDynamicOfflineData, useSession } from '@openmrs/esm-framework';
+import { showSnackbar, useSession } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { type Form } from '../types';
 
-import {
-  putDynamicFormDataEntryFor,
-  removeDynamicFormDataEntryFor,
-  useDynamicFormDataEntries,
-} from './offline-form-helpers';
+import { useDynamicFormDataEntries } from './offline-form-helpers';
+import { updateOfflineFormAvailability } from './offline-form-membership';
 import { OfflineFormToggle } from './offline-forms.component';
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
   showSnackbar: vi.fn(),
-  syncDynamicOfflineData: vi.fn(),
   useSession: vi.fn(),
 }));
 
 vi.mock('./offline-form-helpers', () => ({
-  putDynamicFormDataEntryFor: vi.fn(),
-  removeDynamicFormDataEntryFor: vi.fn(),
   useDynamicFormDataEntries: vi.fn(),
 }));
 
-const mockPutDynamicFormDataEntryFor = vi.mocked(putDynamicFormDataEntryFor);
-const mockRemoveDynamicFormDataEntryFor = vi.mocked(removeDynamicFormDataEntryFor);
+vi.mock('./offline-form-membership', () => ({
+  updateOfflineFormAvailability: vi.fn(),
+}));
+
 const mockShowSnackbar = vi.mocked(showSnackbar);
-const mockSyncDynamicOfflineData = vi.mocked(syncDynamicOfflineData);
+const mockUpdateOfflineFormAvailability = vi.mocked(updateOfflineFormAvailability);
 const mockUseDynamicFormDataEntries = vi.mocked(useDynamicFormDataEntries);
 const mockUseSession = vi.mocked(useSession);
 
@@ -47,10 +43,10 @@ describe('OfflineFormToggle', () => {
     vi.clearAllMocks();
     mutate.mockReset();
     mutate.mockResolvedValue(undefined);
-    mockUseSession.mockReturnValue({ user: { uuid: 'user-uuid' } } as ReturnType<typeof useSession>);
-    mockPutDynamicFormDataEntryFor.mockResolvedValue(undefined);
-    mockRemoveDynamicFormDataEntryFor.mockResolvedValue(undefined);
-    mockSyncDynamicOfflineData.mockResolvedValue(undefined);
+    mockUseSession.mockReturnValue({
+      user: { uuid: 'user-uuid' },
+    } as ReturnType<typeof useSession>);
+    mockUpdateOfflineFormAvailability.mockResolvedValue(undefined);
     mockUseDynamicFormDataEntries.mockReturnValue({
       data: [],
       isValidating: false,
@@ -58,9 +54,9 @@ describe('OfflineFormToggle', () => {
     } as unknown as ReturnType<typeof useDynamicFormDataEntries>);
   });
 
-  it('rolls back a failed download, consumes the rejection, and allows retry', async () => {
+  it('consumes a failed availability update and allows retry', async () => {
     const user = userEvent.setup();
-    mockSyncDynamicOfflineData
+    mockUpdateOfflineFormAvailability
       .mockRejectedValueOnce(new Error('Failed to cache private form UUID form-uuid'))
       .mockResolvedValueOnce(undefined);
     mutate.mockRejectedValueOnce(new Error('IndexedDB refresh failed for private form UUID form-uuid'));
@@ -71,7 +67,6 @@ describe('OfflineFormToggle', () => {
     await user.click(toggle);
 
     await waitFor(() => {
-      expect(mockRemoveDynamicFormDataEntryFor).toHaveBeenCalledWith('user-uuid', 'form-uuid');
       expect(mockShowSnackbar).toHaveBeenCalledWith({
         kind: 'error',
         title: 'Offline form update failed',
@@ -84,11 +79,10 @@ describe('OfflineFormToggle', () => {
     await user.click(toggle);
 
     await waitFor(() => {
-      expect(mockSyncDynamicOfflineData).toHaveBeenCalledTimes(2);
-      expect(mockPutDynamicFormDataEntryFor).toHaveBeenCalledTimes(2);
+      expect(mockUpdateOfflineFormAvailability).toHaveBeenCalledTimes(2);
+      expect(mockUpdateOfflineFormAvailability).toHaveBeenCalledWith('user-uuid', 'form-uuid', true);
       expect(mutate).toHaveBeenCalledTimes(2);
     });
-    expect(mockRemoveDynamicFormDataEntryFor).toHaveBeenCalledTimes(1);
     expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
   });
 

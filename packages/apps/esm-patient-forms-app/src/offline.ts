@@ -109,10 +109,14 @@ async function syncPatientForm(
     _payloads: { encounterCreate, personUpdate },
   } = item;
 
-  await Promise.all([
-    syncEncounter(associatedOfflineVisit, encounterCreate, options.abort.signal),
-    syncPersonUpdate(personUpdate?.uuid, personUpdate, options.abort.signal),
+  const writeResults = await Promise.allSettled([
+    Promise.resolve().then(() => syncEncounter(associatedOfflineVisit, encounterCreate, options.abort.signal)),
+    Promise.resolve().then(() => syncPersonUpdate(personUpdate?.uuid, personUpdate, options.abort.signal)),
   ]);
+
+  if (writeResults.some((result) => result.status === 'rejected')) {
+    throw new Error('The offline patient form could not be synchronized.');
+  }
 }
 
 async function syncEncounter(associatedOfflineVisit: Visit, encounter?: EncounterCreate, signal?: AbortSignal) {

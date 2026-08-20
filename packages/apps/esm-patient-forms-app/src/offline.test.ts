@@ -15,6 +15,45 @@ const mockMessageOmrsServiceWorker = vi.mocked(messageOmrsServiceWorker);
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockSetupDynamicOfflineDataHandler = vi.mocked(setupDynamicOfflineDataHandler);
 const mockSetupOfflineSync = vi.mocked(setupOfflineSync);
+const successfulFetchResponse = { data: {} } as Awaited<ReturnType<typeof openmrsFetch>>;
+
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return { promise, reject, resolve };
+}
+
+function createPatientFormSyncOptions(): SyncProcessOptions<unknown> {
+  return {
+    abort: new AbortController(),
+    userId: 'user-uuid',
+    index: 0,
+    items: [],
+    dependencies: [{ stopDatetime: '2026-08-20T12:00:00.000Z' }],
+  };
+}
+
+const queuedPatientForm = {
+  _id: 'encounter-uuid',
+  encounter: {},
+  _payloads: {
+    encounterCreate: {
+      encounterDatetime: '2026-08-20T12:00:00.000Z',
+      patient: 'patient-uuid',
+      encounterType: 'encounter-type-uuid',
+      location: 'location-uuid',
+    },
+    personUpdate: {
+      uuid: 'person-uuid',
+      attributes: [],
+    },
+  },
+};
 
 vi.mock('@openmrs/esm-framework', async () => {
   const { refreshOfflineCacheEntry } = await vi.importActual<typeof import('@openmrs/esm-offline/src/public')>(
@@ -36,6 +75,8 @@ vi.mock('@openmrs/esm-framework', async () => {
 describe('setupPatientFormSync', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockOpenmrsFetch.mockReset();
+    mockOpenmrsFetch.mockResolvedValue(successfulFetchResponse);
   });
 
   afterEach(() => {
@@ -120,33 +161,12 @@ describe('setupPatientFormSync', () => {
     await setupPatientFormSync();
     const process = mockSetupOfflineSync.mock.calls[0][2];
     const abortController = new AbortController();
-    const options: SyncProcessOptions<unknown> = {
+    const options = {
+      ...createPatientFormSyncOptions(),
       abort: abortController,
-      userId: 'user-uuid',
-      index: 0,
-      items: [],
-      dependencies: [{ stopDatetime: '2026-08-20T12:00:00.000Z' }],
     };
 
-    await process(
-      {
-        _id: 'encounter-uuid',
-        encounter: {},
-        _payloads: {
-          encounterCreate: {
-            encounterDatetime: '2026-08-20T12:00:00.000Z',
-            patient: 'patient-uuid',
-            encounterType: 'encounter-type-uuid',
-            location: 'location-uuid',
-          },
-          personUpdate: {
-            uuid: 'person-uuid',
-            attributes: [],
-          },
-        },
-      },
-      options,
-    );
+    await process(queuedPatientForm, options);
 
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(
       '/ws/rest/v1/encounter',
@@ -155,6 +175,59 @@ describe('setupPatientFormSync', () => {
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(
       '/ws/rest/v1/person/person-uuid',
       expect.objectContaining({ signal: abortController.signal }),
+    );
+  });
+
+  it('waits for both clinical writes before rejecting with one fixed error', async () => {
+    const sensitiveEncounterError =
+      'POST /encounter failed for patient private-patient-uuid at https://clinical.example.test';
+    const pendingPersonWrite = createDeferred<Awaited<ReturnType<typeof openmrsFetch>>>();
+    mockOpenmrsFetch.mockImplementation((url) =>
+      url === '/ws/rest/v1/encounter' ? Promise.reject(new Error(sensitiveEncounterError)) : pendingPersonWrite.promise,
+    );
+    await setupPatientFormSync();
+    const process = mockSetupOfflineSync.mock.calls[0][2];
+    let attemptSettled = false;
+    const syncAttempt = process(queuedPatientForm, createPatientFormSyncOptions())
+      .then(
+        () => ({ status: 'fulfilled' as const, error: undefined }),
+        (error: unknown) => ({ status: 'rejected' as const, error }),
+      )
+      .finally(() => {
+        attemptSettled = true;
+      });
+
+    await vi.waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2));
+    await Promise.resolve();
+    expect(attemptSettled).toBe(false);
+
+    pendingPersonWrite.resolve(successfulFetchResponse);
+    const outcome = await syncAttempt;
+
+    expect(outcome.status).toBe('rejected');
+    expect(outcome.error).toEqual(new Error('The offline patient form could not be synchronized.'));
+    expect(String(outcome.error)).not.toContain(sensitiveEncounterError);
+  });
+
+  it('starts the sibling write and sanitizes a synchronous write failure', async () => {
+    const sensitiveEncounterError = 'Synchronous encounter failure for private-patient-uuid';
+    mockOpenmrsFetch.mockImplementation((url) => {
+      if (url === '/ws/rest/v1/encounter') {
+        throw new Error(sensitiveEncounterError);
+      }
+
+      return Promise.resolve(successfulFetchResponse);
+    });
+    await setupPatientFormSync();
+    const process = mockSetupOfflineSync.mock.calls[0][2];
+    const syncAttempt = process(queuedPatientForm, createPatientFormSyncOptions());
+
+    await expect(syncAttempt).rejects.toThrow('The offline patient form could not be synchronized.');
+    await expect(syncAttempt).rejects.not.toThrow(sensitiveEncounterError);
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      '/ws/rest/v1/person/person-uuid',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
   });
 
@@ -179,9 +252,7 @@ describe('setupPatientFormSync', () => {
     const stableUrls = [formEncounterUrl, formEncounterUrlPoc].map(
       (url) => `${globalThis.location.origin}/openmrs${url}`,
     );
-    const cachedResponses = new Map(
-      stableUrls.map((url) => [url, new Response('stale form list', { status: 200 })]),
-    );
+    const cachedResponses = new Map(stableUrls.map((url) => [url, new Response('stale form list', { status: 200 })]));
     const cachePut = vi.fn(async (request: RequestInfo | URL, response: Response) => {
       const key = request instanceof Request ? request.url : request.toString();
       cachedResponses.set(key, response.clone());
@@ -222,7 +293,9 @@ describe('setupPatientFormSync', () => {
       expect(refreshCall[0].toString()).toContain('_openmrsOfflineRefresh=');
       expect(refreshCall[1]).toMatchObject({
         cache: 'no-store',
-        headers: { 'x-omrs-offline-caching-strategy': 'network-only-or-cache-only' },
+        headers: {
+          'x-omrs-offline-caching-strategy': 'network-only-or-cache-only',
+        },
         signal: abortController.signal,
       });
     }

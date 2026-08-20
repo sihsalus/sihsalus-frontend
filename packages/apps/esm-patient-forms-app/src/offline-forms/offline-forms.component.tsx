@@ -15,7 +15,6 @@ import {
 import {
   isDesktop,
   showSnackbar,
-  syncDynamicOfflineData,
   useConnectivity,
   useLayoutType,
   userHasAccess,
@@ -27,11 +26,8 @@ import { useTranslation } from 'react-i18next';
 
 import { type Form } from '../types';
 
-import {
-  putDynamicFormDataEntryFor,
-  removeDynamicFormDataEntryFor,
-  useDynamicFormDataEntries,
-} from './offline-form-helpers';
+import { useDynamicFormDataEntries } from './offline-form-helpers';
+import { updateOfflineFormAvailability } from './offline-form-membership';
 import styles from './offline-forms.scss';
 import { useValidOfflineFormEncounters } from './use-offline-form-encounters';
 
@@ -156,25 +152,9 @@ export function OfflineFormToggle({ form, disabled }: { form: Form; disabled: bo
     let updateFailed = false;
 
     try {
-      if (checked) {
-        await putDynamicFormDataEntryFor(userId, form.uuid);
-        await syncDynamicOfflineData('form', form.uuid);
-      } else {
-        await removeDynamicFormDataEntryFor(userId, form.uuid);
-      }
+      await updateOfflineFormAvailability(userId, form.uuid, checked);
     } catch {
       updateFailed = true;
-      if (checked) {
-        // Do not leave a form marked as available offline when its required data
-        // could not be downloaded. A later toggle can retry from a clean state.
-        try {
-          await removeDynamicFormDataEntryFor(userId, form.uuid);
-        } catch {
-          // The generic feedback below covers both the original failure and a
-          // best-effort rollback failure without exposing technical details.
-        }
-      }
-
       showSnackbar({
         kind: 'error',
         title: t('offlineFormUpdateFailed', 'Offline form update failed'),

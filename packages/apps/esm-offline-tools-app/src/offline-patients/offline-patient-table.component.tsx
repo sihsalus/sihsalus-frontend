@@ -81,12 +81,14 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
 
   const handleUpdateSelectedPatientsClick = async (selectedRows: Array<OfflinePatientDataTableRow>) => {
     const selectedPatientUuids = selectedRows.map((row) => row.id);
+    let updateFailed = false;
     setSyncingPatientUuids(selectedPatientUuids);
 
     try {
       const failedCount = await syncSelectedOfflinePatients(selectedPatientUuids);
 
       if (failedCount > 0) {
+        updateFailed = true;
         showSnackbar({
           kind: 'error',
           title: t('offlinePatientsSyncFailed', 'Some patients could not be synchronized'),
@@ -98,6 +100,7 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
         });
       }
     } catch (error) {
+      updateFailed = true;
       showSnackbar({
         kind: 'error',
         title: t('offlinePatientsSyncFailed', 'Some patients could not be synchronized'),
@@ -114,8 +117,21 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
       setSyncingPatientUuids([]);
     }
 
-    offlinePatientsSwr.mutate();
-    offlineRegisteredPatientsSwr.mutate();
+    const refreshResults = await Promise.allSettled([
+      Promise.resolve().then(() => offlinePatientsSwr.mutate()),
+      Promise.resolve().then(() => offlineRegisteredPatientsSwr.mutate()),
+    ]);
+
+    if (!updateFailed && refreshResults.some((result) => result.status === 'rejected')) {
+      showSnackbar({
+        kind: 'warning',
+        title: t('offlinePatientsTableRefreshFailed', 'Offline patient list could not be refreshed'),
+        subtitle: t(
+          'offlinePatientsTableUpdateRefreshFailedSubtitle',
+          'The update attempt ended, but this page may be out of date. Reload it before taking another action.',
+        ),
+      });
+    }
   };
 
   const handleRemovePatientsFromOfflineListClick = (selectedRows: Array<OfflinePatientDataTableRow>) => {

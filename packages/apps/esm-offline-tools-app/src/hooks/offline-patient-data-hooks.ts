@@ -92,16 +92,23 @@ export function useLastSyncStateOfPatient(patientUuid: string) {
   );
 }
 
-function useMergedSwr<T>(merge: () => T, swrResponses: Array<SWRResponse>): SWRResponse<T> {
+export function useMergedSwr<T>(merge: () => T, swrResponses: Array<SWRResponse>): SWRResponse<T> {
   return useMemo(() => {
     const areAllLoaded = swrResponses.every((res) => !!res.data);
     const data = areAllLoaded ? merge() : null;
     const error = swrResponses.find((res) => res.error)?.error;
-    const mutate: () => Promise<undefined> = () =>
-      Promise.all(swrResponses.map((res) => res.mutate())).then(() => {
-        merge();
-        return undefined;
-      });
+    const mutate: () => Promise<undefined> = async () => {
+      const refreshResults = await Promise.allSettled(
+        swrResponses.map((response) => Promise.resolve().then(() => response.mutate())),
+      );
+
+      if (refreshResults.some((result) => result.status === 'rejected')) {
+        throw new Error('Offline patient data could not be refreshed.');
+      }
+
+      merge();
+      return undefined;
+    };
     const isValidating = swrResponses.some((res) => res.isValidating);
     const isLoading = swrResponses.some((res) => res.isLoading);
 

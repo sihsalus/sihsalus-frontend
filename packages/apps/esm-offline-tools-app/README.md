@@ -25,3 +25,6 @@ Queue synchronization is complete only when `runSynchronization` fulfills. A rej
 items in the authenticated user's queue and is shown with a fixed, non-technical message; backend responses, URLs,
 identifiers, and exception details must never be rendered. The page refreshes the queue after both completed and
 incomplete attempts, and a refresh failure is handled separately instead of becoming an unhandled rejection.
+Patient-list updates also settle both view refreshes. An update failure takes precedence; otherwise a refresh failure
+shows one fixed stale-state warning without exposing the rejected value. Each merged view waits for all of its
+constituent SWR refreshes and rejects with one fixed, non-technical error only after every child settles.

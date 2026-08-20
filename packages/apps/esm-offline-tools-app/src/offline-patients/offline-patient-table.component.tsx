@@ -130,9 +130,22 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
       closeModal: () => closeModal(),
       onConfirm: () => {
         void (async () => {
+          let removalFailed = false;
+
           try {
-            await removeSelectedOfflinePatients(selectedRows.map((row) => row.id));
+            removalFailed = !(await removeSelectedOfflinePatients(selectedRows.map((row) => row.id)));
           } catch {
+            removalFailed = true;
+          }
+
+          const refreshResults = await Promise.allSettled([
+            Promise.resolve().then(() => offlinePatientsSwr.mutate()),
+            Promise.resolve().then(() => offlineRegisteredPatientsSwr.mutate()),
+          ]);
+          const refreshFailed = refreshResults.some((result) => result.status === 'rejected');
+
+          // Removal failure takes precedence so one action produces only one, actionable notification.
+          if (removalFailed) {
             showSnackbar({
               kind: 'error',
               title: t('offlinePatientsTableRemovalFailed', 'Offline patient removal was incomplete'),
@@ -141,11 +154,15 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
                 'The local list may have changed. Review it, verify your session, and try again.',
               ),
             });
-          } finally {
-            await Promise.allSettled([
-              Promise.resolve().then(() => offlinePatientsSwr.mutate()),
-              Promise.resolve().then(() => offlineRegisteredPatientsSwr.mutate()),
-            ]);
+          } else if (refreshFailed) {
+            showSnackbar({
+              kind: 'warning',
+              title: t('offlinePatientsTableRefreshFailed', 'Offline patient list could not be refreshed'),
+              subtitle: t(
+                'offlinePatientsTableRefreshFailedSubtitle',
+                'The removal request completed, but this page may be out of date. Reload it before taking another action.',
+              ),
+            });
           }
         })();
       },
@@ -369,7 +386,7 @@ async function syncSelectedOfflinePatients(selectedPatientUuids: Array<string>):
   return results.filter((result) => result.status === 'rejected').length;
 }
 
-async function removeSelectedOfflinePatients(selectedPatientUuids: Array<string>) {
+async function removeSelectedOfflinePatients(selectedPatientUuids: Array<string>): Promise<boolean> {
   const offlinePatientEntries = await getDynamicOfflineDataEntries('patient');
   const offlineRegisteredPatients = await getFullSynchronizationItems<{
     fhirPatient: fhir.Patient;
@@ -381,9 +398,9 @@ async function removeSelectedOfflinePatients(selectedPatientUuids: Array<string>
     (id) => !offlinePatientUuidsToBeDeleted.includes(id),
   );
 
-  const promises = [
-    ...offlinePatientUuidsToBeDeleted.map((patientUuid) => removeDynamicOfflineData('patient', patientUuid)),
-    ...offlineRegisteredPatientUuidsToBeDeleted.map(async (patientUuid) => {
+  const removalOperations = [
+    ...offlinePatientUuidsToBeDeleted.map((patientUuid) => () => removeDynamicOfflineData('patient', patientUuid)),
+    ...offlineRegisteredPatientUuidsToBeDeleted.map((patientUuid) => async () => {
       const offlineRegisteredPatient = offlineRegisteredPatients.find(
         (syncItem) => syncItem.content.fhirPatient.id === patientUuid,
       );
@@ -394,7 +411,11 @@ async function removeSelectedOfflinePatients(selectedPatientUuids: Array<string>
     }),
   ];
 
-  await Promise.all(promises);
+  const results = await Promise.allSettled(
+    removalOperations.map((removePatient) => Promise.resolve().then(removePatient)),
+  );
+
+  return results.every((result) => result.status === 'fulfilled');
 }
 
 export default OfflinePatientTable;

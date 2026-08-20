@@ -62,6 +62,8 @@
   "offlinePatientsTableLastUpdatedOutdatedData": "Outdated data",
   "offlinePatientsTableNameNewlyRegistered": "New",
   "offlinePatientsTableRemoveFromOfflineList": "Remove from list",
+  "offlinePatientsTableRefreshFailed": "Offline patient list could not be refreshed",
+  "offlinePatientsTableRefreshFailedSubtitle": "The removal request completed, but this page may be out of date. Reload it before taking another action.",
   "offlinePatientsTableRemovalFailed": "Offline patient removal was incomplete",
   "offlinePatientsTableRemovalFailedSubtitle": "The local list may have changed. Review it, verify your session, and try again.",
   "offlinePatientsTableSearchLabel": "Search this list",

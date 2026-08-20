@@ -160,7 +160,7 @@ async function createSyntheticPatient(
   api: APIRequestContext,
   identifierType: IdentifierType,
   familyName: string,
-  onIdentifierGenerated: (identifier: string) => void,
+  onIdentifierGenerated: (identifier: string) => Promise<void>,
   onCreated: (patientUuid: string) => void,
 ): Promise<PatientResponse> {
   const generatedIdentifier = await expectOk<{ identifier?: string }>(
@@ -174,7 +174,7 @@ async function createSyntheticPatient(
   if (!generatedIdentifier.identifier) {
     throw new Error(`${gateConfig.target} identifier generation returned no identifier.`);
   }
-  onIdentifierGenerated(generatedIdentifier.identifier);
+  await onIdentifierGenerated(generatedIdentifier.identifier);
 
   const identifier = {
     identifier: generatedIdentifier.identifier,
@@ -540,8 +540,23 @@ test('branded browser preserves one queued visit across offline reload and synch
       api,
       identifierType,
       familyName,
-      (generatedIdentifier) => {
+      async (generatedIdentifier) => {
         syntheticIdentifier = generatedIdentifier;
+        await testInfo.attach('offline-laptop-cleanup-marker.json', {
+          body: Buffer.from(
+            JSON.stringify(
+              {
+                familyName,
+                identifier: generatedIdentifier,
+                identifierTypeUuid: gateConfig.identifierTypeUuid,
+                target: gateConfig.target,
+              },
+              null,
+              2,
+            ),
+          ),
+          contentType: 'application/json',
+        });
       },
       (createdPatientUuid) => {
         patientUuid = createdPatientUuid;

@@ -167,11 +167,12 @@ Use these result labels exactly:
 - `NOT RUN`: that browser profile was deliberately outside this laptop's test
   matrix.
 
-The gate records its generated identifier before creating the patient. If the
-create response is lost after the server commits it, cleanup searches by that
-identifier and requires an exact identifier type plus `SYNTHETIC` name match
-before voiding anything. Cleanup then verifies that the patient and every visit
-are voided. If recovery is ambiguous or verification fails, the run is
-`FAILED`; stop and reconcile only the marked synthetic record with an
-authorized DEV/QLTY operator. Do not delete or reconcile any non-synthetic
-record.
+Before the patient POST, the gate writes
+`offline-laptop-cleanup-marker.json` with the generated synthetic identifier,
+identifier type, family marker, and target. If the create response is lost
+after the server commits it, cleanup searches by that identifier and requires
+an exact identifier type plus `SYNTHETIC` name match before voiding anything.
+Cleanup then verifies that the patient and every visit are voided. If recovery
+is ambiguous or verification fails, the run is `FAILED`; stop and reconcile
+only the marked synthetic record with an authorized DEV/QLTY operator. Do not
+delete or reconcile any non-synthetic record.

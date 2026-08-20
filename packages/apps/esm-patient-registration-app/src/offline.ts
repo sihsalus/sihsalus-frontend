@@ -49,18 +49,38 @@ export function setupOffline() {
     },
     async sync(patientUuid) {
       const urlsToCache = await getPatientUrlsToBeCached(patientUuid);
-      await Promise.allSettled(
-        urlsToCache.map(async (url) => {
-          await messageOmrsServiceWorker({
-            type: 'registerDynamicRoute',
-            url,
-          });
-
-          await fetch(url);
-        }),
-      );
+      await cachePatientUrlsForOfflineUse(urlsToCache);
     },
   });
+}
+
+export async function cachePatientUrlsForOfflineUse(urlsToCache: Array<string>): Promise<void> {
+  const results = await Promise.allSettled(
+    urlsToCache.map(async (url) => {
+      const routeRegistration = await messageOmrsServiceWorker({
+        type: 'registerDynamicRoute',
+        url,
+      });
+
+      if (!routeRegistration.success) {
+        throw new Error(routeRegistration.error ?? 'The offline cache route could not be registered.');
+      }
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`The patient offline resource request failed with status ${response.status}.`);
+      }
+    }),
+  );
+  const failures = results.filter((result) => result.status === 'rejected');
+
+  if (failures.length > 0) {
+    throw new AggregateError(
+      failures.map((failure) => failure.reason),
+      `Failed to cache ${failures.length} of ${urlsToCache.length} patient resources for offline use.`,
+    );
+  }
 }
 
 export async function getPatientUrlsToBeCached(patientUuid: string) {

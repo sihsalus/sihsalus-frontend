@@ -31,7 +31,6 @@ import {
   removeDynamicOfflineData,
   showModal,
   showSnackbar,
-  syncDynamicOfflineData,
   useLayoutType,
 } from '@openmrs/esm-framework';
 import { capitalize } from 'lodash-es';
@@ -42,6 +41,7 @@ import { useOfflinePatientsWithEntries, useOfflineRegisteredPatients } from '../
 
 import EmptyState from './empty-state.component';
 import LastUpdatedTableCell from './last-updated-table-cell.component';
+import { syncSelectedOfflinePatients } from './offline-patient-sync';
 import styles from './offline-patient-table.scss';
 import PatientNameTableCell from './patient-name-table-cell.component';
 
@@ -85,7 +85,7 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
     setSyncingPatientUuids(selectedPatientUuids);
 
     try {
-      const failedCount = await syncSelectedOfflinePatients(selectedPatientUuids);
+      const { failedCount, skippedCount } = await syncSelectedOfflinePatients(selectedPatientUuids);
 
       if (failedCount > 0) {
         updateFailed = true;
@@ -94,8 +94,20 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
           title: t('offlinePatientsSyncFailed', 'Some patients could not be synchronized'),
           subtitle: t(
             'offlinePatientsSyncFailedSubtitle',
-            '{{count}} patient(s) failed to download and will not be available offline. Please try again.',
+            '{{count}} patient(s) could not be updated for offline use. Previously downloaded data may be out of date. Please try again.',
             { count: failedCount },
+          ),
+        });
+      }
+
+      if (skippedCount > 0) {
+        showSnackbar({
+          kind: 'warning',
+          title: t('offlinePatientsSyncSkipped', 'Pending registrations cannot be updated'),
+          subtitle: t(
+            'offlinePatientsSyncSkippedSubtitle',
+            '{{count}} selected patient(s) still have pending offline registrations. Synchronize pending actions before updating them.',
+            { count: skippedCount },
           ),
         });
       }
@@ -108,7 +120,7 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
           error,
           t(
             'offlinePatientsSyncFailedGenericSubtitle',
-            'The selected patients could not be downloaded for offline use. Please try again.',
+            'The selected patients could not be updated for offline use. Please try again.',
           ),
           { logContext: 'Sync offline patients' },
         ),
@@ -383,23 +395,6 @@ function useOfflinePatientTableRows(syncingPatientUuids: Array<string>): Array<O
 
     return result;
   }, [syncingPatientUuids, offlinePatientsSwr.data, offlineRegisteredPatientsSwr.data]);
-}
-
-/**
- * Synchronizes the selected patients, tolerating individual failures so one failed
- * patient doesn't abort (or silently hide) the rest of the batch.
- * @returns The number of patients that failed to synchronize.
- */
-async function syncSelectedOfflinePatients(selectedPatientUuids: Array<string>): Promise<number> {
-  const offlinePatientEntries = await getDynamicOfflineDataEntries('patient-registration');
-  const syncablePatientUuids = offlinePatientEntries.map((entry) => entry.identifier);
-  const offlinePatientUuidsToSync = selectedPatientUuids.filter((id) => syncablePatientUuids.includes(id));
-
-  const results = await Promise.allSettled(
-    offlinePatientUuidsToSync.map((patientUuid) => syncDynamicOfflineData('patient', patientUuid)),
-  );
-
-  return results.filter((result) => result.status === 'rejected').length;
 }
 
 async function removeSelectedOfflinePatients(selectedPatientUuids: Array<string>): Promise<boolean> {

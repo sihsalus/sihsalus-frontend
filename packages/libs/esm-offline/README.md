@@ -36,3 +36,9 @@ current-user helpers require no data migration. Code using `getFullSynchronizati
 `queueSynchronizationItemFor` helper must request only the authenticated user. Callers of `runSynchronization` must
 handle its fixed rejection and refresh the current-user list. UIs should also refresh after a generic edit/delete
 failure instead of using local IDs to infer whether another row exists.
+
+## Dynamic offline data synchronization
+
+`syncDynamicOfflineData` waits for every handler, persists the complete success/error state, and then rejects with an
+`AggregateError` when any handler failed. Batch callers that need to continue synchronizing other entries should use an
+all-settled strategy and must not treat a resolved handler invocation as proof that its asynchronous work finished.

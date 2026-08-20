@@ -44,6 +44,37 @@ Installing the SIH Salus PWA from the primary browser is optional. If installed,
 the PWA and its originating browser profile are one acceptance target; do not
 assume that a second browser can see its offline queue.
 
+### Required managed-browser policy checks
+
+An administrator must verify policy on the actual operational profile after the
+browser has restarted. Open `edge://policy` or `chrome://policy`, reload
+policies, and require every configured entry below to report `OK`. A policy
+shown only in a management console is not evidence that the laptop received it.
+
+| Intent                                                  | Microsoft Edge                                               | Google Chrome fallback        | Required state                                                                                                                                              |
+| ------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Prevent disposable guest sessions                       | `BrowserGuestModeEnabled`                                    | `BrowserGuestModeEnabled`     | `false`                                                                                                                                                     |
+| Prevent private sessions                                | `InPrivateModeAvailability`                                  | `IncognitoModeAvailability`   | `1` (disabled)                                                                                                                                              |
+| Prevent ephemeral profiles                              | `ForceEphemeralProfiles`                                     | `ForceEphemeralProfiles`      | `false` or not configured                                                                                                                                   |
+| Retain the accepted offline profile on browser close    | `ClearBrowsingDataOnExit`, `ClearCachedImagesAndFilesOnExit` | `ClearBrowsingDataOnExitList` | Edge values must be `false`; Chrome's list must not include `cookies_and_other_site_data`, `cached_images_and_files`, `site_settings`, or `hosted_app_data` |
+| Retain offline data for the approved operating interval | `BrowsingDataLifetime`                                       | `BrowsingDataLifetime`        | Must not expire the same four clinical-runtime data classes                                                                                                 |
+
+These settings preserve the accepted offline profile; they do not make account
+switching safe. The OS account and browser profile still need a single assigned
+clinical owner. If local policy requires automatic clinical-data deletion, the
+offline workflow is incompatible with that profile until Product and Security
+approve a retention/reconciliation design. Do not silently weaken the deletion
+policy or the offline acceptance criteria.
+
+Policy behavior and supported versions are defined in the vendor documentation:
+[Edge guest mode](https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies/browserguestmodeenabled),
+[Edge InPrivate mode](https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies/inprivatemodeavailability),
+[Edge ephemeral profiles](https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies/forceephemeralprofiles),
+[Edge clear-on-exit](https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies/clearbrowsingdataonexit),
+[Chrome guest mode](https://chromeenterprise.google/policies/browser-guest-mode-enabled/),
+[Chrome Incognito mode](https://chromeenterprise.google/policies/incognito-mode-availability/),
+and [Chrome clear-on-exit](https://chromeenterprise.google/policies/clear-browsing-data-on-exit-list/).
+
 Before recording acceptance, open the selected DEV/QLTY target once in the
 staff member's normal managed profile (not Playwright) and confirm that it is
 not private/guest, storage is not cleared on exit, and the site is not blocked
@@ -158,7 +189,9 @@ retries:
 ## Evidence and decision
 
 Record the laptop asset tag, OS build, browser project and version, deployed
-SHA, command, result, and operator. Playwright writes an HTML report under
+SHA, command, result, operator, and the `edge://policy` or `chrome://policy`
+verification outcome. Do not include unrelated policy values, account names, or
+organization identifiers in PR evidence. Playwright writes an HTML report under
 `playwright-report/offline-laptop` and attaches an early context file plus a
 final JSON evidence file containing the browser version, service-worker scope,
 cache keys, synthetic UUIDs, and deployed SHA. Credentialed traces, screenshots,

@@ -5,6 +5,7 @@ import {
   openmrsFetch,
   putDynamicOfflineData,
   refetchCurrentUser,
+  removeDynamicOfflineData,
   restBaseUrl,
   syncDynamicOfflineData,
   toOmrsIsoString,
@@ -266,8 +267,22 @@ export async function findFakePatientListsWithoutPatient(
           id: 'fake-offline-patient-list',
           displayName: t('offlinePatients', 'Offline patients'),
           async addPatient() {
-            await putDynamicOfflineData('patient', patientUuid);
-            await syncDynamicOfflineData('patient', patientUuid);
+            const currentEntries = await getDynamicOfflineDataEntries('patient');
+            const wasAlreadyRegistered = currentEntries.some((entry) => entry.identifier === patientUuid);
+
+            if (!wasAlreadyRegistered) {
+              await putDynamicOfflineData('patient', patientUuid);
+            }
+
+            try {
+              await syncDynamicOfflineData('patient', patientUuid);
+            } catch (error: unknown) {
+              if (!wasAlreadyRegistered) {
+                await removeDynamicOfflineData('patient', patientUuid);
+              }
+
+              throw error;
+            }
           },
         },
       ];

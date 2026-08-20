@@ -80,7 +80,7 @@
   "offlinePatientsTableUpdateRefreshFailedSubtitle": "The update attempt ended, but this page may be out of date. Reload it before taking another action.",
   "offlinePatientSyncDetailsDownloadedHeader": "Downloaded to this device",
   "offlinePatientSyncDetailsFailedHeader": "There was an error downloading the following items",
-  "offlinePatientSyncDetailsFallbackErrorMessage": "Unknown error.",
+  "offlinePatientSyncDetailsErrorMessage": "This item could not be downloaded. Try updating the patient again.",
   "offlinePatientSyncDetailsHeader": "Offline patient details",
   "offlineReady": "Offline Ready",
   "offlineToolsAppMenuLink": "Offline tools"

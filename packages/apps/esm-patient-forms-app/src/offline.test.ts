@@ -1,9 +1,18 @@
-import { launchWorkspace2, openmrsFetch, setupOfflineSync, type SyncProcessOptions } from '@openmrs/esm-framework';
+import {
+  launchWorkspace2,
+  messageOmrsServiceWorker,
+  openmrsFetch,
+  setupDynamicOfflineDataHandler,
+  setupOfflineSync,
+  type SyncProcessOptions,
+} from '@openmrs/esm-framework';
 
-import { setupPatientFormSync } from './offline';
+import { setupDynamicFormDataHandler, setupPatientFormSync } from './offline';
 
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
+const mockMessageOmrsServiceWorker = vi.mocked(messageOmrsServiceWorker);
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockSetupDynamicOfflineDataHandler = vi.mocked(setupDynamicOfflineDataHandler);
 const mockSetupOfflineSync = vi.mocked(setupOfflineSync);
 
 vi.mock('@openmrs/esm-framework', async () => ({
@@ -137,5 +146,25 @@ describe('setupPatientFormSync', () => {
       '/ws/rest/v1/person/person-uuid',
       expect.objectContaining({ signal: abortController.signal }),
     );
+  });
+
+  it('fails form synchronization when the service worker rejects route registration', async () => {
+    mockOpenmrsFetch.mockResolvedValue({
+      data: { uuid: 'synthetic-form-uuid' },
+    } as never);
+    mockMessageOmrsServiceWorker.mockResolvedValue({
+      success: false,
+      error: 'The service worker is unavailable.',
+    });
+
+    await setupDynamicFormDataHandler();
+
+    const handler = mockSetupDynamicOfflineDataHandler.mock.calls[0]?.[0];
+    expect(handler).toBeDefined();
+    await expect(handler?.sync('synthetic-form-uuid')).rejects.toThrow(
+      'Some form data could not be properly downloaded.',
+    );
+    expect(mockMessageOmrsServiceWorker).toHaveBeenCalledTimes(2);
+    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
   });
 });

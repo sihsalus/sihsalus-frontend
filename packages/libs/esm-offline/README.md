@@ -44,5 +44,5 @@ failure instead of using local IDs to infer whether another row exists.
 all-settled strategy and must not treat a resolved handler invocation as proof that its asynchronous work finished.
 
 Persisted handler failures contain only a fixed, non-sensitive message because handler exceptions can include URLs,
-UUIDs, or clinical data. The original causes exist only in the in-memory `AggregateError`; callers must not render or
-log them directly.
+UUIDs, or clinical data. The rejected `AggregateError` also contains only sanitized errors that identify the failed
+handler; original handler exceptions never cross the public synchronization boundary.

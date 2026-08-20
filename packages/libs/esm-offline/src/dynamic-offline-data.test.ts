@@ -124,9 +124,7 @@ describe('syncDynamicOfflineData', () => {
   it('persists partial handler failures, rejects the attempt, and succeeds on retry', async () => {
     const handlerType = 'test-retry-handler';
     const stableSync = vi.fn(async () => {});
-    const sensitiveHandlerError = new Error(
-      'GET /patient/private-patient-uuid?name=Synthetic%20Patient failed',
-    );
+    const sensitiveHandlerError = new Error('GET /patient/private-patient-uuid?name=Synthetic%20Patient failed');
     const retryableSync = vi
       .fn<() => Promise<void>>()
       .mockRejectedValueOnce(sensitiveHandlerError)
@@ -160,7 +158,14 @@ describe('syncDynamicOfflineData', () => {
     if (!(syncError instanceof AggregateError)) {
       throw new Error('Expected an AggregateError from the failed synchronization.');
     }
-    expect(syncError.errors).toContain(sensitiveHandlerError);
+    expect(syncError.errors).toHaveLength(1);
+    expect(syncError.errors[0]).toMatchObject({
+      message: 'Offline data handler "test-retry-handler:unstable" failed to synchronize.',
+    });
+    expect(syncError.errors).not.toContain(sensitiveHandlerError);
+    expect(syncError.errors.map((error) => String(error)).join(' ')).not.toMatch(
+      /private-patient-uuid|Synthetic%20Patient/,
+    );
 
     const entriesAfterFailure = await getDynamicOfflineDataEntries(handlerType);
     expect(entriesAfterFailure[0].syncState).toMatchObject({

@@ -88,7 +88,7 @@ export interface DynamicOfflineDataSyncState {
    */
   erroredHandlers: Array<string>;
   /**
-   * A collection of the errors caught while synchronizing, per handler.
+   * A collection of fixed, non-sensitive synchronization errors, per handler.
    */
   errors: Array<{
     handlerId: string;
@@ -279,11 +279,10 @@ export async function syncDynamicOfflineData(
       try {
         await handler.sync(identifier, abortSignal);
         return { id: handler.id, status: 'fulfilled' as const };
-      } catch (error: unknown) {
+      } catch {
         return {
           id: handler.id,
           status: 'rejected' as const,
-          error,
         };
       }
     }),
@@ -292,8 +291,8 @@ export async function syncDynamicOfflineData(
   const succeededHandlers = results.filter((result) => result.status === 'fulfilled').map((result) => result.id);
   const failedResults = results.filter((result) => result.status === 'rejected');
   const erroredHandlers = failedResults.map((result) => result.id);
-  // Handler errors can contain URLs, UUIDs, or clinical data. Keep the original
-  // causes only in the in-memory AggregateError and persist a fixed safe message.
+  // Handler errors can contain URLs, UUIDs, or clinical data. Persist and reject
+  // with sanitized errors only; original handler exceptions stay inside this call.
   const errors = failedResults.map((result) => ({
     handlerId: result.id,
     message: persistedSyncErrorMessage,
@@ -317,7 +316,7 @@ export async function syncDynamicOfflineData(
 
   if (failedResults.length > 0) {
     throw new AggregateError(
-      failedResults.map((result) => result.error),
+      failedResults.map((result) => new Error(`Offline data handler "${result.id}" failed to synchronize.`)),
       `${failedResults.length} of ${handlers.length} offline data handlers failed to synchronize.`,
     );
   }

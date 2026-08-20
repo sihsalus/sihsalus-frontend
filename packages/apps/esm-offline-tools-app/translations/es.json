@@ -84,7 +84,7 @@
   "offlinePatientsTableUpdateRefreshFailedSubtitle": "El intento de actualización terminó, pero esta página puede estar desactualizada. Vuelva a cargarla antes de realizar otra acción.",
   "offlinePatientSyncDetailsDownloadedHeader": "Descargado en este dispositivo",
   "offlinePatientSyncDetailsFailedHeader": "Hubo un error al descargar los siguientes elementos",
-  "offlinePatientSyncDetailsFallbackErrorMessage": "Error desconocido.",
+  "offlinePatientSyncDetailsErrorMessage": "No se pudo descargar este elemento. Intente actualizar al paciente nuevamente.",
   "offlinePatientSyncDetailsHeader": "Detalles de pacientes sin internet",
   "offlineReady": "Listo Sin Internet",
   "offlineToolsAppMenuLink": "Herramientas sin internet"

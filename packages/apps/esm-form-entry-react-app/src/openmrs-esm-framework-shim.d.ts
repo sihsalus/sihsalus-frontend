@@ -31,6 +31,12 @@ declare module '@openmrs/esm-framework' {
     data: T;
   }
 
+  export interface MessageServiceWorkerResult<T = unknown> {
+    success: boolean;
+    result?: T;
+    error?: string;
+  }
+
   export interface SyncItem<T = unknown> {
     content: T;
   }
@@ -66,7 +72,9 @@ declare module '@openmrs/esm-framework' {
     isSynced(identifier: string): Promise<boolean>;
     sync(identifier: string): Promise<void>;
   }): void;
-  export function messageOmrsServiceWorker(message: Record<string, unknown>): Promise<unknown>;
+  export function messageOmrsServiceWorker(
+    message: Record<string, unknown>,
+  ): Promise<MessageServiceWorkerResult>;
   export function queueSynchronizationItem<T>(type: string, content: T, meta: Record<string, unknown>): Promise<void>;
   export function getFullSynchronizationItems<T>(type: string): Promise<Array<SyncItem<T>>>;
 

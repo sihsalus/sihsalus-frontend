@@ -46,11 +46,15 @@ export function setupDynamicOfflineFormDataHandler() {
       const urlsToCache = await getCacheableFormUrls(identifier);
       const cacheResults = await Promise.allSettled(
         urlsToCache.map(async (urlToCache) => {
-          await messageOmrsServiceWorker({
+          const routeRegistration = await messageOmrsServiceWorker({
             type: 'registerDynamicRoute',
             pattern: escapeRegExp(urlToCache),
             strategy: 'network-first',
           });
+
+          if (!routeRegistration.success) {
+            throw new Error(routeRegistration.error ?? 'The offline form cache route could not be registered.');
+          }
 
           await openmrsFetch(urlToCache, {
             headers: {

@@ -28,3 +28,12 @@ incomplete attempts, and a refresh failure is handled separately instead of beco
 Patient-list updates also settle both view refreshes. An update failure takes precedence; otherwise a refresh failure
 shows one fixed stale-state warning without exposing the rejected value. Each merged view waits for all of its
 constituent SWR refreshes and rejects with one fixed, non-technical error only after every child settles.
+
+## Error and privacy contract
+
+Synchronization details render a fixed translated message for failed handlers. Persisted `error.message` values are
+never displayed because legacy IndexedDB records may contain URLs, UUIDs, or clinical data.
+
+Clinical responses and dynamic routes remain origin-wide. Removing a patient from the offline list currently removes
+membership, not every cached response. Shared devices therefore require a dedicated OS/browser profile per authorized
+user until cache partitioning or verified logout/removal purging is implemented.

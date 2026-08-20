@@ -25,6 +25,8 @@
     "serve:prod": "yarn build:apps && yarn assemble && openmrs start",
     "test": "cross-env TZ=UTC node node_modules/turbo/bin/turbo run test --concurrency=2",
     "test:e2e": "playwright test",
+    "test:e2e:offline-laptop:config": "vitest run e2e/offline-laptop/gate-config.test.ts --environment node",
+    "test:e2e:offline-laptop": "playwright test -c e2e/offline-laptop/playwright.config.ts",
     "format": "biome format --write .",
     "lint": "node node_modules/turbo/bin/turbo run lint",
     "lint:all": "biome lint .",

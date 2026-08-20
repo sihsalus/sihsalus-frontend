@@ -81,14 +81,14 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
 
   const handleUpdateSelectedPatientsClick = async (selectedRows: Array<OfflinePatientDataTableRow>) => {
     const selectedPatientUuids = selectedRows.map((row) => row.id);
-    let updateFailed = false;
+    let synchronizationIssueReported = false;
     setSyncingPatientUuids(selectedPatientUuids);
 
     try {
       const { failedCount, skippedCount } = await syncSelectedOfflinePatients(selectedPatientUuids);
 
       if (failedCount > 0) {
-        updateFailed = true;
+        synchronizationIssueReported = true;
         showSnackbar({
           kind: 'error',
           title: t('offlinePatientsSyncFailed', 'Some patients could not be synchronized'),
@@ -101,6 +101,7 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
       }
 
       if (skippedCount > 0) {
+        synchronizationIssueReported = true;
         showSnackbar({
           kind: 'warning',
           title: t('offlinePatientsSyncSkipped', 'Pending registrations cannot be updated'),
@@ -112,7 +113,7 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
         });
       }
     } catch (error) {
-      updateFailed = true;
+      synchronizationIssueReported = true;
       showSnackbar({
         kind: 'error',
         title: t('offlinePatientsSyncFailed', 'Some patients could not be synchronized'),
@@ -134,7 +135,7 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
       Promise.resolve().then(() => offlineRegisteredPatientsSwr.mutate()),
     ]);
 
-    if (!updateFailed && refreshResults.some((result) => result.status === 'rejected')) {
+    if (!synchronizationIssueReported && refreshResults.some((result) => result.status === 'rejected')) {
       showSnackbar({
         kind: 'warning',
         title: t('offlinePatientsTableRefreshFailed', 'Offline patient list could not be refreshed'),

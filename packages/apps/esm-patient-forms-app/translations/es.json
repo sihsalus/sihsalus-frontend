@@ -21,6 +21,8 @@
   "offlineFormsTableFormAvailableOffline": "Sin internet",
   "offlineFormsTableFormNameHeader": "Nombre del formulario",
   "offlineFormsTitle": "Formularios sin internet",
+  "offlineFormStatusRefreshFailed": "No se pudo actualizar el estado del formulario sin internet",
+  "offlineFormStatusRefreshFailedSubtitle": "La actualización se completó, pero esta página puede estar desactualizada. Vuelva a cargarla antes de realizar otra acción.",
   "offlineFormUpdateFailed": "No se pudo actualizar el formulario sin internet",
   "offlineFormUpdateFailedSubtitle": "No se pudo cambiar la disponibilidad sin internet del formulario. Inténtelo nuevamente.",
   "offlinePatientsTableSearchLabel": "Buscar en esta lista",

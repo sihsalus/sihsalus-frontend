@@ -7,12 +7,13 @@ const mocks = vi.hoisted(() => ({
   deleteSynchronizationItem: vi.fn(),
   getDynamicOfflineDataEntries: vi.fn(),
   getFullSynchronizationItems: vi.fn(),
+  getUserFacingErrorMessage: vi.fn(),
   mutateOfflinePatients: vi.fn(),
   mutateOfflineRegisteredPatients: vi.fn(),
   removeDynamicOfflineData: vi.fn(),
   showModal: vi.fn(),
   showSnackbar: vi.fn(),
-  syncDynamicOfflineData: vi.fn(),
+  syncSelectedOfflinePatients: vi.fn(),
 }));
 
 vi.mock('@openmrs/esm-framework', () => ({
@@ -20,13 +21,16 @@ vi.mock('@openmrs/esm-framework', () => ({
   deleteSynchronizationItem: mocks.deleteSynchronizationItem,
   getDynamicOfflineDataEntries: mocks.getDynamicOfflineDataEntries,
   getFullSynchronizationItems: mocks.getFullSynchronizationItems,
-  getUserFacingErrorMessage: vi.fn(),
+  getUserFacingErrorMessage: mocks.getUserFacingErrorMessage,
   isDesktop: () => true,
   removeDynamicOfflineData: mocks.removeDynamicOfflineData,
   showModal: mocks.showModal,
   showSnackbar: mocks.showSnackbar,
-  syncDynamicOfflineData: mocks.syncDynamicOfflineData,
   useLayoutType: () => 'desktop',
+}));
+
+vi.mock('./offline-patient-sync', () => ({
+  syncSelectedOfflinePatients: mocks.syncSelectedOfflinePatients,
 }));
 
 vi.mock('../hooks/offline-patient-data-hooks', () => ({
@@ -95,7 +99,7 @@ async function openRemovalConfirmation() {
   return mocks.showModal.mock.calls[0]?.[1] as { onConfirm: () => void };
 }
 
-async function startSelectedPatientsUpdate() {
+async function updateSelectedPatients() {
   const user = userEvent.setup();
   render(<OfflinePatientTable isInteractive showHeader={false} />);
 
@@ -109,26 +113,26 @@ describe('OfflinePatientTable', () => {
     mocks.deleteSynchronizationItem.mockResolvedValue(undefined);
     mocks.getDynamicOfflineDataEntries.mockResolvedValue([]);
     mocks.getFullSynchronizationItems.mockResolvedValue([]);
+    mocks.getUserFacingErrorMessage.mockImplementation((_error, fallback) => fallback);
     mocks.showModal.mockReturnValue(vi.fn());
     mocks.mutateOfflinePatients.mockResolvedValue(undefined);
     mocks.mutateOfflineRegisteredPatients.mockResolvedValue(undefined);
     mocks.removeDynamicOfflineData.mockResolvedValue(undefined);
-    mocks.syncDynamicOfflineData.mockResolvedValue(undefined);
+    mocks.syncSelectedOfflinePatients.mockResolvedValue({
+      failedCount: 0,
+      skippedCount: 0,
+    });
   });
 
-  it('settles both update refreshes and shows one fixed warning when the update succeeded', async () => {
+  it('settles both update refreshes and shows one fixed warning when synchronization succeeds', async () => {
     const deferredRefresh = createDeferredRefresh();
     const sensitiveRefreshError =
       'Queue refresh failed for patient 00000000-0000-0000-0000-000000000001 at https://clinical.example.test';
-    mocks.getDynamicOfflineDataEntries.mockResolvedValueOnce([
-      { identifier: 'synthetic-patient-uuid' },
-      { identifier: 'second-synthetic-patient-uuid' },
-    ]);
     mocks.mutateOfflinePatients.mockRejectedValueOnce(new Error(sensitiveRefreshError));
     mocks.mutateOfflineRegisteredPatients.mockImplementationOnce(() => deferredRefresh.promise);
-    await startSelectedPatientsUpdate();
+    await updateSelectedPatients();
 
-    await waitFor(() => expect(mocks.syncDynamicOfflineData).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mocks.syncSelectedOfflinePatients).toHaveBeenCalledTimes(1));
     await waitFor(() => {
       expect(mocks.mutateOfflinePatients).toHaveBeenCalledTimes(1);
       expect(mocks.mutateOfflineRegisteredPatients).toHaveBeenCalledTimes(1);
@@ -148,18 +152,12 @@ describe('OfflinePatientTable', () => {
     expect(JSON.stringify(mocks.showSnackbar.mock.calls)).not.toContain(sensitiveRefreshError);
   });
 
-  it('keeps update failure precedence when a subsequent refresh also rejects', async () => {
-    const sensitiveUpdateError =
-      'Download failed for patient 00000000-0000-0000-0000-000000000001 at https://clinical.example.test';
+  it('keeps a reported synchronization failure ahead of a subsequent refresh failure', async () => {
     const sensitiveRefreshError = 'Registration queue refresh exposed a local row';
-    mocks.getDynamicOfflineDataEntries.mockResolvedValueOnce([
-      { identifier: 'synthetic-patient-uuid' },
-      { identifier: 'second-synthetic-patient-uuid' },
-    ]);
-    mocks.syncDynamicOfflineData.mockRejectedValueOnce(new Error(sensitiveUpdateError));
+    mocks.syncSelectedOfflinePatients.mockResolvedValueOnce({ failedCount: 1, skippedCount: 0 });
     mocks.mutateOfflineRegisteredPatients.mockRejectedValueOnce(new Error(sensitiveRefreshError));
 
-    await startSelectedPatientsUpdate();
+    await updateSelectedPatients();
 
     await waitFor(() => {
       expect(mocks.mutateOfflinePatients).toHaveBeenCalledTimes(1);
@@ -167,12 +165,55 @@ describe('OfflinePatientTable', () => {
       expect(mocks.showSnackbar).toHaveBeenCalledWith({
         kind: 'error',
         title: 'Some patients could not be synchronized',
-        subtitle: '1 patient(s) failed to download and will not be available offline. Please try again.',
+        subtitle:
+          '1 patient(s) could not be updated for offline use. Previously downloaded data may be out of date. Please try again.',
       });
     });
     expect(mocks.showSnackbar).toHaveBeenCalledTimes(1);
-    expect(JSON.stringify(mocks.showSnackbar.mock.calls)).not.toContain(sensitiveUpdateError);
     expect(JSON.stringify(mocks.showSnackbar.mock.calls)).not.toContain(sensitiveRefreshError);
+  });
+
+  it('keeps a skipped-patient warning ahead of a subsequent refresh failure', async () => {
+    const sensitiveRefreshError = 'Registration queue refresh exposed a local row';
+    mocks.syncSelectedOfflinePatients.mockResolvedValueOnce({ failedCount: 0, skippedCount: 1 });
+    mocks.mutateOfflineRegisteredPatients.mockRejectedValueOnce(new Error(sensitiveRefreshError));
+
+    await updateSelectedPatients();
+
+    await waitFor(() => {
+      expect(mocks.mutateOfflinePatients).toHaveBeenCalledTimes(1);
+      expect(mocks.mutateOfflineRegisteredPatients).toHaveBeenCalledTimes(1);
+      expect(mocks.showSnackbar).toHaveBeenCalledWith({
+        kind: 'warning',
+        title: 'Pending registrations cannot be updated',
+        subtitle:
+          '1 selected patient(s) still have pending offline registrations. Synchronize pending actions before updating them.',
+      });
+    });
+    expect(mocks.showSnackbar).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(mocks.showSnackbar.mock.calls)).not.toContain(sensitiveRefreshError);
+  });
+
+  it('gives a synchronization rejection precedence over refresh failure without exposing either error', async () => {
+    const sensitiveSyncError = 'GET https://clinical.example.test/private-patient-uuid failed';
+    const sensitiveRefreshError = 'IndexedDB refresh failed for private-patient-uuid';
+    mocks.syncSelectedOfflinePatients.mockRejectedValueOnce(new Error(sensitiveSyncError));
+    mocks.mutateOfflinePatients.mockRejectedValueOnce(new Error(sensitiveRefreshError));
+    mocks.mutateOfflineRegisteredPatients.mockRejectedValueOnce(new Error(sensitiveRefreshError));
+
+    await updateSelectedPatients();
+
+    await waitFor(() => {
+      expect(mocks.mutateOfflinePatients).toHaveBeenCalledTimes(1);
+      expect(mocks.mutateOfflineRegisteredPatients).toHaveBeenCalledTimes(1);
+      expect(mocks.showSnackbar).toHaveBeenCalledWith({
+        kind: 'error',
+        title: 'Some patients could not be synchronized',
+        subtitle: 'The selected patients could not be updated for offline use. Please try again.',
+      });
+    });
+    expect(mocks.showSnackbar).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(mocks.showSnackbar.mock.calls)).not.toMatch(/private-patient-uuid|clinical\.example\.test/);
   });
 
   it('consumes a removal rejection, shows fixed feedback, and refreshes both patient lists', async () => {

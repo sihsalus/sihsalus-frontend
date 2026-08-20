@@ -21,6 +21,8 @@
   "offlineFormsTableFormAvailableOffline": "Offline",
   "offlineFormsTableFormNameHeader": "Form name",
   "offlineFormsTitle": "Offline forms",
+  "offlineFormStatusRefreshFailed": "Offline form status could not be refreshed",
+  "offlineFormStatusRefreshFailedSubtitle": "The update completed, but this page may be out of date. Reload it before taking another action.",
   "offlineFormUpdateFailed": "Offline form update failed",
   "offlineFormUpdateFailedSubtitle": "The form's offline availability could not be changed. Please try again.",
   "offlinePatientsTableSearchLabel": "Search this list",

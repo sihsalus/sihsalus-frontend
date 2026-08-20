@@ -153,6 +153,7 @@ export function OfflineFormToggle({ form, disabled }: { form: Form; disabled: bo
     }
 
     setIsUpdating(true);
+    let updateFailed = false;
 
     try {
       if (checked) {
@@ -162,6 +163,7 @@ export function OfflineFormToggle({ form, disabled }: { form: Form; disabled: bo
         await removeDynamicFormDataEntryFor(userId, form.uuid);
       }
     } catch {
+      updateFailed = true;
       if (checked) {
         // Do not leave a form marked as available offline when its required data
         // could not be downloaded. A later toggle can retry from a clean state.
@@ -182,8 +184,21 @@ export function OfflineFormToggle({ form, disabled }: { form: Form; disabled: bo
         ),
       });
     } finally {
+      try {
+        await dynamicFormEntriesSwr.mutate();
+      } catch {
+        if (!updateFailed) {
+          showSnackbar({
+            kind: 'warning',
+            title: t('offlineFormStatusRefreshFailed', 'Offline form status could not be refreshed'),
+            subtitle: t(
+              'offlineFormStatusRefreshFailedSubtitle',
+              'The update completed, but this page may be out of date. Reload it before taking another action.',
+            ),
+          });
+        }
+      }
       setIsUpdating(false);
-      dynamicFormEntriesSwr.mutate();
     }
   };
 

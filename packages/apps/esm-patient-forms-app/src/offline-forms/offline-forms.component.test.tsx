@@ -44,9 +44,13 @@ describe('OfflineFormToggle', () => {
   const mutate = vi.fn();
 
   beforeEach(() => {
+    vi.clearAllMocks();
+    mutate.mockReset();
+    mutate.mockResolvedValue(undefined);
     mockUseSession.mockReturnValue({ user: { uuid: 'user-uuid' } } as ReturnType<typeof useSession>);
     mockPutDynamicFormDataEntryFor.mockResolvedValue(undefined);
     mockRemoveDynamicFormDataEntryFor.mockResolvedValue(undefined);
+    mockSyncDynamicOfflineData.mockResolvedValue(undefined);
     mockUseDynamicFormDataEntries.mockReturnValue({
       data: [],
       isValidating: false,
@@ -59,6 +63,7 @@ describe('OfflineFormToggle', () => {
     mockSyncDynamicOfflineData
       .mockRejectedValueOnce(new Error('Failed to cache private form UUID form-uuid'))
       .mockResolvedValueOnce(undefined);
+    mutate.mockRejectedValueOnce(new Error('IndexedDB refresh failed for private form UUID form-uuid'));
 
     render(<OfflineFormToggle form={form} disabled={false} />);
 
@@ -85,5 +90,28 @@ describe('OfflineFormToggle', () => {
     });
     expect(mockRemoveDynamicFormDataEntryFor).toHaveBeenCalledTimes(1);
     expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
+  });
+
+  it('warns once when an update succeeds but its local status cannot be refreshed', async () => {
+    const user = userEvent.setup();
+    const sensitiveError = 'IndexedDB refresh failed for private form UUID form-uuid';
+    mutate.mockRejectedValueOnce(new Error(sensitiveError));
+
+    render(<OfflineFormToggle form={form} disabled={false} />);
+
+    const toggle = screen.getByRole('switch', { name: 'Offline toggle' });
+    await user.click(toggle);
+
+    await waitFor(() => {
+      expect(mutate).toHaveBeenCalledOnce();
+      expect(mockShowSnackbar).toHaveBeenCalledWith({
+        kind: 'warning',
+        title: 'Offline form status could not be refreshed',
+        subtitle: 'The update completed, but this page may be out of date. Reload it before taking another action.',
+      });
+      expect(toggle).toBeEnabled();
+    });
+    expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(mockShowSnackbar.mock.calls)).not.toContain(sensitiveError);
   });
 });

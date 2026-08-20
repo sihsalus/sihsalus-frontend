@@ -30,6 +30,7 @@
   "offlineActionsSynchronizationFailedSubtitle": "Pending actions were kept. Verify the session and connection, then try again.",
   "offlineActionsSynchronizationNotificationCanceling": "Canceling...",
   "offlineActionsSynchronizationNotificationCancelUpload": "Cancel upload",
+  "offlineActionsSynchronizationNotificationStarted": "Offline action upload started. Review pending actions for current status.",
   "offlineActionsSynchronizationNotificationStatus": "{{current}} / {{total}} actions",
   "offlineActionsSynchronizationNotificationSynchronized": "The synchronization attempt has ended. Review pending actions before continuing.",
   "offlineActionsSynchronizationNotificationTitle": "Upload",

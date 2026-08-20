@@ -31,6 +31,7 @@
   "offlineActionsSynchronizationFailedSubtitle": "Las acciones pendientes se conservaron. Verifique la sesión y la conexión, y vuelva a intentarlo.",
   "offlineActionsSynchronizationNotificationCanceling": "Cancelando...",
   "offlineActionsSynchronizationNotificationCancelUpload": "Cancelar carga",
+  "offlineActionsSynchronizationNotificationStarted": "La carga de acciones sin conexión comenzó. Revise las acciones pendientes para ver el estado actual.",
   "offlineActionsSynchronizationNotificationStatus": "{{current}} / {{total}} acciones",
   "offlineActionsSynchronizationNotificationSynchronized": "El intento de sincronización terminó. Revise las acciones pendientes antes de continuar.",
   "offlineActionsSynchronizationNotificationTitle": "Carga",

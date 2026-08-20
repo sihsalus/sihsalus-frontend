@@ -27,9 +27,18 @@ orders, or every field in the interactive start-visit form.
 - Do not use InPrivate, Incognito, Guest, or a profile that clears site data on
   exit. Allow service workers, Cache Storage, cookies, and IndexedDB for the
   selected DEV/QLTY origin. This gate never opens or requires production.
+- Assign one managed OS/browser profile to one authorized clinical user. The
+  offline cache and queue belong to the browser profile, not to the OpenMRS
+  login, and logout does not safely remove them. Do not switch clinical accounts
+  inside a profile that contains SIH Salus offline data.
 - A pending offline queue belongs to one browser profile. Never switch to the
-  fallback browser while the primary profile still has pending actions; first
-  reconnect and synchronize, or follow the incident reconciliation procedure.
+  fallback browser, another OS account, or another clinical login while the
+  primary profile still has pending actions; first reconnect and synchronize,
+  or follow the incident reconciliation procedure.
+- Before reassigning a laptop or browser profile, verify online that its queue is
+  empty, reconcile any failed action, and have an authorized operator clear the
+  SIH Salus site data or re-provision the profile. Never clear site data merely
+  to make a failed or pending queue disappear.
 
 Installing the SIH Salus PWA from the primary browser is optional. If installed,
 the PWA and its originating browser profile are one acceptance target; do not
@@ -38,8 +47,9 @@ assume that a second browser can see its offline queue.
 Before recording acceptance, open the selected DEV/QLTY target once in the
 staff member's normal managed profile (not Playwright) and confirm that it is
 not private/guest, storage is not cleared on exit, and the site is not blocked
-by browser policy. The automated gate does not inspect that profile or validate
-a PWA installation.
+by browser policy. Confirm that this profile is assigned to that staff member
+and is not used to switch among clinical accounts. The automated gate does not
+inspect that profile or validate a PWA installation.
 
 ## Preconditions
 

@@ -111,11 +111,11 @@ Use `SIHSALUS_ALLOW_SELF_SIGNED_TLS=true` only if the coordinated DEV/QLTY
 endpoint still uses a controlled self-signed certificate. It does not change
 the gate's HTTPS and exact-origin checks.
 
-Validate the local fail-closed configuration contract without contacting a
-backend:
+Validate the local fail-closed configuration, cleanup-recovery, and evidence
+sanitization contracts without contacting a backend:
 
 ```sh
-yarn test:e2e:offline-laptop:config
+yarn test:e2e:offline-laptop:unit
 ```
 
 ## Run each accepted browser channel

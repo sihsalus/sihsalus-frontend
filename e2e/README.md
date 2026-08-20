@@ -25,8 +25,8 @@ yarn playwright test -c e2e/<módulo>/playwright.config.ts --headed
 # Gate opt-in de navegador/laptop offline contra DEV/QLTY
 yarn test:e2e:offline-laptop --project="Microsoft Edge Stable" --headed
 
-# Contrato fail-closed del gate, sin tocar backend
-yarn test:e2e:offline-laptop:config
+# Contratos unitarios fail-closed del gate, sin tocar backend
+yarn test:e2e:offline-laptop:unit
 
 # Typecheck de lo que está bajo contrato
 yarn typecheck:e2e

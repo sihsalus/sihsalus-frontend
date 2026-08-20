@@ -9,6 +9,7 @@ import {
 } from '@playwright/test';
 import { getE2ECredentials } from '../../utils/e2e-api';
 import { shouldIgnoreHTTPSErrors } from '../../utils/e2e-urls';
+import { formatHttpFailure, summarizePendingSyncItems } from '../evidence-sanitization';
 import { loadOfflineLaptopGateConfig } from '../gate-config';
 import { recoverSyntheticPatientUuid } from '../synthetic-patient-cleanup';
 
@@ -67,11 +68,7 @@ interface StoredSyncItem {
     displayName?: string;
     patientUuid?: string;
   };
-  id?: number;
-  lastError?: {
-    message?: string;
-    name?: string;
-  };
+  lastError?: unknown;
   type?: string;
 }
 
@@ -100,7 +97,9 @@ async function readResponse(response: APIResponse): Promise<unknown> {
 
 async function expectOk<T>(response: APIResponse, message: string): Promise<T> {
   const body = await readResponse(response);
-  expect(response.ok(), `${message} (${response.status()}): ${JSON.stringify(body)?.slice(0, 600)}`).toBeTruthy();
+  // Backend error bodies can contain stack traces, URLs, or other internal data.
+  // Keep failure evidence limited to the controlled message and HTTP status.
+  expect(response.ok(), formatHttpFailure(message, response.status())).toBeTruthy();
   return body as T;
 }
 
@@ -512,11 +511,7 @@ async function expectQueueToDrain(page: Page): Promise<void> {
       .toBe(0);
   } catch (error) {
     const pending = await readSyncQueue(page);
-    const errors = pending.map((item) => ({
-      id: item.id,
-      lastError: item.lastError,
-      type: item.type,
-    }));
+    const errors = summarizePendingSyncItems(pending);
     throw new Error(`Offline queue did not drain. Pending action summary: ${JSON.stringify(errors)}`, {
       cause: error,
     });

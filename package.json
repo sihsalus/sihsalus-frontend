@@ -26,6 +26,7 @@
     "test": "cross-env TZ=UTC node node_modules/turbo/bin/turbo run test --concurrency=2",
     "test:e2e": "playwright test",
     "test:e2e:offline-laptop:config": "vitest run e2e/offline-laptop/gate-config.test.ts --environment node",
+    "test:e2e:offline-laptop:unit": "vitest run e2e/offline-laptop/gate-config.test.ts e2e/offline-laptop/synthetic-patient-cleanup.test.ts e2e/offline-laptop/evidence-sanitization.test.ts --environment node",
     "test:e2e:offline-laptop": "playwright test -c e2e/offline-laptop/playwright.config.ts",
     "format": "biome format --write .",
     "lint": "node node_modules/turbo/bin/turbo run lint",

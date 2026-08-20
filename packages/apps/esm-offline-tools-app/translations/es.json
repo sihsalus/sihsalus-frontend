@@ -65,6 +65,8 @@
   "offlinePatientsTableLastUpdatedOutdatedData": "Datos desactualizados",
   "offlinePatientsTableNameNewlyRegistered": "Nuevo",
   "offlinePatientsTableRemoveFromOfflineList": "Quitar de la lista",
+  "offlinePatientsTableRemovalFailed": "No se completó el retiro de pacientes sin internet",
+  "offlinePatientsTableRemovalFailedSubtitle": "La lista local puede haber cambiado. Revísela, verifique su sesión e inténtelo nuevamente.",
   "offlinePatientsTableSearchLabel": "Buscar en esta lista",
   "offlinePatientsTableSearchPlaceholder": "Buscar en esta lista",
   "offlinePatientsTableTitle": "Pacientes sin internet",

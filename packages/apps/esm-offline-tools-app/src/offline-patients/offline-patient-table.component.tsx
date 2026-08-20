@@ -118,7 +118,7 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
     offlineRegisteredPatientsSwr.mutate();
   };
 
-  const handleRemovePatientsFromOfflineListClick = async (selectedRows: Array<OfflinePatientDataTableRow>) => {
+  const handleRemovePatientsFromOfflineListClick = (selectedRows: Array<OfflinePatientDataTableRow>) => {
     const closeModal = showModal('offline-tools-confirmation-modal', {
       title: t('offlinePatientsTableDeleteConfirmationModalTitle', 'Remove offline patients'),
       children: t(
@@ -128,10 +128,26 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
       confirmText: t('offlinePatientsTableDeleteConfirmationModalConfirm', 'Remove patients'),
       cancelText: t('offlinePatientsTableDeleteConfirmationModalCancel', 'Cancel'),
       closeModal: () => closeModal(),
-      onConfirm: async () => {
-        await removeSelectedOfflinePatients(selectedRows.map((row) => row.id));
-        offlinePatientsSwr.mutate();
-        offlineRegisteredPatientsSwr.mutate();
+      onConfirm: () => {
+        void (async () => {
+          try {
+            await removeSelectedOfflinePatients(selectedRows.map((row) => row.id));
+          } catch {
+            showSnackbar({
+              kind: 'error',
+              title: t('offlinePatientsTableRemovalFailed', 'Offline patient removal was incomplete'),
+              subtitle: t(
+                'offlinePatientsTableRemovalFailedSubtitle',
+                'The local list may have changed. Review it, verify your session, and try again.',
+              ),
+            });
+          } finally {
+            await Promise.allSettled([
+              Promise.resolve().then(() => offlinePatientsSwr.mutate()),
+              Promise.resolve().then(() => offlineRegisteredPatientsSwr.mutate()),
+            ]);
+          }
+        })();
       },
     });
   };

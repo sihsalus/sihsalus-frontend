@@ -56,6 +56,7 @@ declare module '@openmrs/esm-framework' {
   export function makeUrl(path: string): string;
   export function showModal(name: string, props: Record<string, unknown>): () => void;
   export function showSnackbar(config: Record<string, unknown>): void;
+  export function translateFrom(moduleName: string, key: string, fallback?: string): string;
   export function useConfig<T = unknown>(): T;
   export function createGlobalStore<T>(name: string, initialState: T): void;
   export function getGlobalStore<T>(name: string): {

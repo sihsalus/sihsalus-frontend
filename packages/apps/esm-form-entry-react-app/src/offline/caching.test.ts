@@ -1,6 +1,13 @@
-import { messageOmrsServiceWorker, openmrsFetch, setupDynamicOfflineDataHandler } from '@openmrs/esm-framework';
+import {
+  messageOmrsServiceWorker,
+  openmrsFetch,
+  setupDynamicOfflineDataHandler,
+  showSnackbar,
+  subscribePrecacheStaticDependencies,
+  translateFrom,
+} from '@openmrs/esm-framework';
 
-import { setupDynamicOfflineFormDataHandler } from './caching';
+import { setupDynamicOfflineFormDataHandler, setupStaticDataOfflinePrecaching } from './caching';
 
 vi.mock('@openmrs/esm-framework', async () => {
   const { refreshOfflineCacheEntry } = await vi.importActual<typeof import('@openmrs/esm-offline/src/public')>(
@@ -13,14 +20,19 @@ vi.mock('@openmrs/esm-framework', async () => {
     openmrsFetch: vi.fn(),
     refreshOfflineCacheEntry,
     restBaseUrl: '/ws/rest/v1',
+    showSnackbar: vi.fn(),
     setupDynamicOfflineDataHandler: vi.fn(),
     subscribePrecacheStaticDependencies: vi.fn(),
+    translateFrom: vi.fn((_moduleName: string, _key: string, fallback?: string) => fallback),
   };
 });
 
 const mockMessageOmrsServiceWorker = vi.mocked(messageOmrsServiceWorker);
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockSetupDynamicOfflineDataHandler = vi.mocked(setupDynamicOfflineDataHandler);
+const mockSubscribePrecacheStaticDependencies = vi.mocked(subscribePrecacheStaticDependencies);
+const mockTranslateFrom = vi.mocked(translateFrom);
 
 describe('offline form caching', () => {
   beforeEach(() => {
@@ -29,6 +41,95 @@ describe('offline form caching', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('settles static dependencies and reports a route registration failure safely', async () => {
+    const cachePut = vi.fn();
+    vi.stubGlobal('caches', {
+      open: vi.fn(async () => ({ put: cachePut })),
+    });
+    const fetchMock = vi.fn(async () => new Response('fresh provider data', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    mockMessageOmrsServiceWorker.mockImplementation(async (message) =>
+      String(message.pattern).includes('/location')
+        ? { success: false, error: 'private-provider-uuid at /ws/rest/v1/location' }
+        : { success: true },
+    );
+
+    setupStaticDataOfflinePrecaching();
+
+    const callback = mockSubscribePrecacheStaticDependencies.mock.calls[0]?.[0];
+    expect(callback).toBeDefined();
+    expect(callback?.()).toBeUndefined();
+    await vi.waitFor(() => expect(mockShowSnackbar).toHaveBeenCalledTimes(1));
+
+    expect(mockMessageOmrsServiceWorker).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(cachePut).toHaveBeenCalledTimes(1);
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'Offline form dependencies could not be refreshed',
+      subtitle: 'Location or provider options may be out of date. Try again when online before using forms offline.',
+    });
+    expect(mockTranslateFrom).toHaveBeenNthCalledWith(
+      1,
+      '@sihsalus/esm-form-entry-react-app',
+      'offlineFormDependenciesRefreshFailed',
+      'Offline form dependencies could not be refreshed',
+    );
+    expect(mockTranslateFrom).toHaveBeenNthCalledWith(
+      2,
+      '@sihsalus/esm-form-entry-react-app',
+      'offlineFormDependenciesRefreshFailedSubtitle',
+      'Location or provider options may be out of date. Try again when online before using forms offline.',
+    );
+    expect(JSON.stringify(mockShowSnackbar.mock.calls)).not.toContain('private-provider-uuid');
+    expect(JSON.stringify(mockShowSnackbar.mock.calls)).not.toContain('/ws/rest/v1/location');
+  });
+
+  it('waits for every static dependency after a non-2xx response before reporting failure', async () => {
+    const cachePut = vi.fn();
+    vi.stubGlobal('caches', {
+      open: vi.fn(async () => ({ put: cachePut })),
+    });
+    mockMessageOmrsServiceWorker.mockResolvedValue({ success: true });
+    let releaseProviderResponse!: (response: Response) => void;
+    let markProviderStarted!: () => void;
+    const providerStarted = new Promise<void>((resolve) => {
+      markProviderStarted = resolve;
+    });
+    const providerResponse = new Promise<Response>((resolve) => {
+      releaseProviderResponse = resolve;
+    });
+    const fetchMock = vi.fn((input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => {
+      const requestUrl = input instanceof Request ? input.url : input.toString();
+      if (requestUrl.includes('/provider')) {
+        markProviderStarted();
+        return providerResponse;
+      }
+      return Promise.resolve(new Response(null, { status: 503 }));
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    setupStaticDataOfflinePrecaching();
+
+    const callback = mockSubscribePrecacheStaticDependencies.mock.calls[0]?.[0];
+    expect(callback).toBeDefined();
+    expect(callback?.()).toBeUndefined();
+    await providerStarted;
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const notificationsBeforeProviderSettles = mockShowSnackbar.mock.calls.length;
+    releaseProviderResponse(new Response('fresh provider data', { status: 200 }));
+    await vi.waitFor(() => expect(mockShowSnackbar).toHaveBeenCalledTimes(1));
+
+    expect(notificationsBeforeProviderSettles).toBe(0);
+    expect(cachePut).toHaveBeenCalledTimes(1);
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'Offline form dependencies could not be refreshed',
+      subtitle: 'Location or provider options may be out of date. Try again when online before using forms offline.',
+    });
   });
 
   it('fails synchronization when the service worker rejects route registration', async () => {

@@ -29,4 +29,8 @@ entry is replaced only after a successful response, and a failed refresh preserv
 service worker reports controlled failures as `{ success: false }`; callers must treat that result as a failed download
 rather than as a fulfilled synchronization.
 
+The location and provider metadata required by offline form entry is refreshed as one all-settled batch. Every route
+registration is checked, every resource attempt finishes, and any incomplete batch produces fixed translated feedback
+without exposing URLs, identifiers, or backend error details.
+
 Clinical cache content remains origin-wide. Shared devices require an isolated OS/browser profile per authorized user until cache partitioning or verified logout/removal purging is implemented.

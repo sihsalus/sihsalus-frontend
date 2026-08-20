@@ -50,8 +50,10 @@ a PWA installation.
    current.
 3. Use a dedicated test account with the minimum permissions needed to create
    and void a patient and visit, generate an identifier, read the patient chart,
-   open Offline Tools, and synchronize offline actions. Never use a personal or
-   production account.
+   add that synthetic patient to the `Offline patients` list, open Offline
+   Tools, and synchronize offline actions. The role therefore needs the
+   patient-list edit privilege used by the patient-chart `Add to list` action.
+   Never use a personal or production account.
 4. Record the full deployed SHA from the selected target before testing. For
    the preferred DEV target:
 
@@ -128,8 +130,10 @@ retries:
 
 1. the installed branded channel matches the selected project and the target
    serves the explicitly expected SHA;
-2. the SIH Salus service worker activates, controls the page, and has the shell
-   plus the synthetic patient's FHIR response in Cache Storage;
+2. the patient-chart `Add to list` action successfully adds the synthetic
+   patient to `Offline patients`, and the SIH Salus service worker activates,
+   controls the page, and has the shell plus that patient's FHIR response in
+   Cache Storage;
 3. the patient chart reloads successfully while the browser is offline and the
    response comes from the service worker;
 4. one supported `visit` action is stored in the `EsmOffline.syncQueue` and

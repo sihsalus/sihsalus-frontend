@@ -279,6 +279,34 @@ async function ensureServiceWorkerControl(page: Page) {
   });
 }
 
+async function addPatientToOfflineList(page: Page): Promise<void> {
+  const actionsButton = page.getByRole('button', { name: /^(Actions|Acciones)$/i });
+  await expect(
+    actionsButton,
+    'The patient chart actions menu must be available to the dedicated test role',
+  ).toBeVisible();
+  await actionsButton.click();
+
+  const addToListAction = page.getByRole('menuitem', { name: /^(Add to list|Agregar a la lista)$/i });
+  await expect(
+    addToListAction,
+    'The dedicated test role must be allowed to add the synthetic patient to the offline list',
+  ).toBeVisible();
+  await addToListAction.click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('heading', { name: /Add patient to list|Agregar paciente a la lista/i })).toBeVisible();
+  const offlinePatients = dialog.getByRole('checkbox', { name: /^(Offline patients|Pacientes sin conexión)$/i });
+  await expect(offlinePatients).toBeVisible();
+  await offlinePatients.check();
+  await dialog.getByRole('button', { name: /^(Save|Guardar)$/i }).click();
+
+  await expect(
+    page.getByText(/Successfully added|Agregada exitosamente/i),
+    'The supported offline-list flow must finish successfully before disconnecting',
+  ).toBeVisible({ timeout: 45_000 });
+}
+
 async function inspectCaches(page: Page, expectedUrls: Array<string>): Promise<CacheEvidence> {
   return page.evaluate(async (urls) => {
     const cacheNames = await caches.keys();
@@ -538,6 +566,12 @@ test('branded browser preserves one queued visit across offline reload and synch
     );
     expect(serviceWorker.scope, 'The worker scope must be the SIH Salus SPA').toBe(`${gateConfig.spaBaseUrl}/`);
     await expect(page.getByText(new RegExp(familyName, 'i')).first()).toBeVisible({ timeout: 30_000 });
+
+    // Use the same supported UI that staff use to declare and synchronize an
+    // offline patient. Merely opening an online chart does not register the
+    // patient in dynamic offline data or guarantee that its resources finish
+    // caching before the network is disconnected.
+    await addPatientToOfflineList(page);
 
     const deployedOfflineVisitTypeUuid = await page.evaluate(async () => {
       const framework = (

@@ -17,11 +17,17 @@ const expectedTranslations = {
     offlineActionsDeleteFailedSubtitle_many: '{{count}} acciones no se pudieron eliminar y siguen en la lista.',
     offlineActionsDeleteFailedSubtitle_other: '{{count}} acciones no se pudieron eliminar y siguen en la lista.',
     offlinePatientsSyncFailedSubtitle_one:
-      '{{count}} paciente no se descargó y no estará disponible sin conexión. Intente nuevamente.',
+      'No se pudo actualizar {{count}} paciente para uso sin conexión. Los datos descargados previamente pueden estar desactualizados. Intente nuevamente.',
     offlinePatientsSyncFailedSubtitle_many:
-      '{{count}} pacientes no se descargaron y no estarán disponibles sin conexión. Intente nuevamente.',
+      'No se pudieron actualizar {{count}} pacientes para uso sin conexión. Los datos descargados previamente pueden estar desactualizados. Intente nuevamente.',
     offlinePatientsSyncFailedSubtitle_other:
-      '{{count}} pacientes no se descargaron y no estarán disponibles sin conexión. Intente nuevamente.',
+      'No se pudieron actualizar {{count}} pacientes para uso sin conexión. Los datos descargados previamente pueden estar desactualizados. Intente nuevamente.',
+    offlinePatientsSyncSkippedSubtitle_one:
+      '{{count}} paciente seleccionado aún tiene un registro sin conexión pendiente. Sincronice las acciones pendientes antes de actualizarlo.',
+    offlinePatientsSyncSkippedSubtitle_many:
+      '{{count}} pacientes seleccionados aún tienen registros sin conexión pendientes. Sincronice las acciones pendientes antes de actualizarlos.',
+    offlinePatientsSyncSkippedSubtitle_other:
+      '{{count}} pacientes seleccionados aún tienen registros sin conexión pendientes. Sincronice las acciones pendientes antes de actualizarlos.',
   },
   'packages/apps/esm-patient-chart-app/translations/en.json': {
     minimumCompanionSearchCharacters_one: 'Enter at least {{count}} character',

@@ -1832,7 +1832,12 @@ describe('safeCopyFinanciadorToVisit', () => {
       ok: false,
       error: failure,
     });
-    expect(consoleErrorSpy).toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'No se pudo copiar el financiador de la persona a la visita.',
+      failure,
+    );
+    expect(consoleErrorSpy).not.toHaveBeenCalledWith(expect.stringContaining(patientUuid), expect.anything());
+    expect(consoleErrorSpy).not.toHaveBeenCalledWith(expect.stringContaining(visitUuid), expect.anything());
     consoleErrorSpy.mockRestore();
   });
 });

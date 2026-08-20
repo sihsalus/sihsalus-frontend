@@ -19,6 +19,8 @@
   "offlineActionsDeleteFailedSubtitle_one": "{{count}} acción no se pudo eliminar y sigue en la lista.",
   "offlineActionsDeleteFailedSubtitle_many": "{{count}} acciones no se pudieron eliminar y siguen en la lista.",
   "offlineActionsDeleteFailedSubtitle_other": "{{count}} acciones no se pudieron eliminar y siguen en la lista.",
+  "offlineActionsDeleteRefreshFailed": "No se pudieron actualizar las acciones pendientes",
+  "offlineActionsDeleteRefreshFailedSubtitle": "La eliminación terminó, pero esta página puede estar desactualizada. Recárguela antes de realizar otra acción.",
   "offlineActionsHeader": "Acciones sin Internet",
   "offlineActionsNoActionsEmptyStateContent": "Todas las acciones sin internet se han cargado correctamente\ny se han fusionado con los registros de pacientes en línea.",
   "offlineActionsNoActionsEmptyStateImageAlt": "No hay imagen de acciones pendientes",

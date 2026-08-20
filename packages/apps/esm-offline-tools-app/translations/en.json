@@ -18,6 +18,8 @@
   "offlineActionsDeleteFailedSubtitle": "{{count}} action(s) failed to delete and are still listed.",
   "offlineActionsDeleteFailedSubtitle_one": "{{count}} action(s) failed to delete and are still listed.",
   "offlineActionsDeleteFailedSubtitle_other": "{{count}} action(s) failed to delete and are still listed.",
+  "offlineActionsDeleteRefreshFailed": "Pending actions could not be refreshed",
+  "offlineActionsDeleteRefreshFailedSubtitle": "The deletion completed, but this page may be out of date. Reload it before taking another action.",
   "offlineActionsHeader": "Offline Actions",
   "offlineActionsNoActionsEmptyStateContent": "All offline actions have been uploaded successfully,\nand merged with the online patient records.",
   "offlineActionsNoActionsEmptyStateImageAlt": "No Pending Actions Image",

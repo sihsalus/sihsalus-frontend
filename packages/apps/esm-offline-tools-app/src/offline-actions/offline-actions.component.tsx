@@ -33,7 +33,7 @@ const OfflineActions: React.FC<OfflineActionsProps> = ({ patientUuid }) => {
   const isLoading = !syncItems || !syncItemPatients;
   const isSynchronizing = !!syncStore.synchronization;
 
-  const deleteSynchronizationItems = async (ids: Array<number>) => {
+  const deleteSynchronizationItems = (ids: Array<number>) => {
     const closeModal = showModal('offline-tools-confirmation-modal', {
       title: t('offlineActionsDeleteConfirmationModalTitle', 'Delete offline actions'),
       children: t(
@@ -43,23 +43,37 @@ const OfflineActions: React.FC<OfflineActionsProps> = ({ patientUuid }) => {
       confirmText: t('offlineActionsDeleteConfirmationModalConfirm', 'Delete forever'),
       cancelText: t('offlineActionsDeleteConfirmationModalCancel', 'Cancel'),
       closeModal: () => closeModal(),
-      onConfirm: async () => {
-        const results = await Promise.allSettled(ids.map((id) => deleteSynchronizationItem(id)));
-        const failedCount = results.filter((result) => result.status === 'rejected').length;
+      onConfirm: () => {
+        void (async () => {
+          const deleteResults = await Promise.allSettled(
+            ids.map((id) => Promise.resolve().then(() => deleteSynchronizationItem(id))),
+          );
+          const failedCount = deleteResults.filter((result) => result.status === 'rejected').length;
+          const [refreshResult] = await Promise.allSettled([Promise.resolve().then(() => mutate())]);
 
-        if (failedCount > 0) {
-          showSnackbar({
-            kind: 'error',
-            title: t('offlineActionsDeleteFailed', 'Some offline actions could not be deleted'),
-            subtitle: t(
-              'offlineActionsDeleteFailedSubtitle',
-              '{{count}} action(s) failed to delete and are still listed.',
-              { count: failedCount },
-            ),
-          });
-        }
-
-        mutate();
+          // A deletion failure takes precedence so one destructive action
+          // produces only one actionable, non-technical notification.
+          if (failedCount > 0) {
+            showSnackbar({
+              kind: 'error',
+              title: t('offlineActionsDeleteFailed', 'Some offline actions could not be deleted'),
+              subtitle: t(
+                'offlineActionsDeleteFailedSubtitle',
+                '{{count}} action(s) failed to delete and are still listed.',
+                { count: failedCount },
+              ),
+            });
+          } else if (refreshResult.status === 'rejected') {
+            showSnackbar({
+              kind: 'warning',
+              title: t('offlineActionsDeleteRefreshFailed', 'Pending actions could not be refreshed'),
+              subtitle: t(
+                'offlineActionsDeleteRefreshFailedSubtitle',
+                'The deletion completed, but this page may be out of date. Reload it before taking another action.',
+              ),
+            });
+          }
+        })();
       },
     });
   };

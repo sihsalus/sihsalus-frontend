@@ -130,6 +130,8 @@ Patient registration depends on metadata loaded at runtime: address template, re
 
 Queued registration writes share the queue synchronization abort signal, including the patient-photo attachment fallback.
 An interrupted upload must remain associated with the original queue owner and must not start under a later session.
+Existing-patient offline refreshes require confirmed fresh network responses. A stale cached success cannot complete the
+refresh, and each stable cache entry is replaced only after its corresponding network response succeeds.
 
 - New registrations must wait for patient identifier types before submission, because the form cannot safely create the required identifiers without that metadata.
 - Editing an existing patient may continue when identifier types are temporarily unavailable, as long as the form already has existing identifiers. The existing identifiers remain visible, but adding or changing identifier types is disabled until the metadata loads.

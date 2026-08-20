@@ -70,8 +70,9 @@ declare module '@openmrs/esm-framework' {
     type: string;
     displayName: string;
     isSynced(identifier: string): Promise<boolean>;
-    sync(identifier: string): Promise<void>;
+    sync(identifier: string, abortSignal?: AbortSignal): Promise<void>;
   }): void;
+  export function refreshOfflineCacheEntry(url: string, signal?: AbortSignal): Promise<void>;
   export function messageOmrsServiceWorker(
     message: Record<string, unknown>,
   ): Promise<MessageServiceWorkerResult>;

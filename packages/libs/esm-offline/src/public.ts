@@ -1,6 +1,7 @@
 export * from './dynamic-offline-data';
 export { getCurrentOfflineMode, type OfflineMode, type OfflineModeResult } from './mode';
 export { getOfflineDb } from './offline-db';
+export * from './offline-cache';
 export * from './offline-patient-data';
 export * from './service-worker-http-headers';
 export * from './service-worker-messaging';

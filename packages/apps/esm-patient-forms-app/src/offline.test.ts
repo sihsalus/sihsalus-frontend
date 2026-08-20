@@ -7,6 +7,7 @@ import {
   type SyncProcessOptions,
 } from '@openmrs/esm-framework';
 
+import { formEncounterUrl, formEncounterUrlPoc } from './constants';
 import { setupDynamicFormDataHandler, setupPatientFormSync } from './offline';
 
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
@@ -15,21 +16,30 @@ const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockSetupDynamicOfflineDataHandler = vi.mocked(setupDynamicOfflineDataHandler);
 const mockSetupOfflineSync = vi.mocked(setupOfflineSync);
 
-vi.mock('@openmrs/esm-framework', async () => ({
-  ...(await vi.importActual('@openmrs/esm-framework')),
-  launchWorkspace2: vi.fn(),
-  makeUrl: vi.fn(),
-  messageOmrsServiceWorker: vi.fn(),
-  omrsOfflineCachingStrategyHttpHeaderName: 'x-offline-strategy',
-  openmrsFetch: vi.fn(),
-  restBaseUrl: '/ws/rest/v1',
-  setupDynamicOfflineDataHandler: vi.fn(),
-  setupOfflineSync: vi.fn(),
-}));
+vi.mock('@openmrs/esm-framework', async () => {
+  const { refreshOfflineCacheEntry } = await vi.importActual<typeof import('@openmrs/esm-offline/src/public')>(
+    '@openmrs/esm-offline/src/public',
+  );
+  return {
+    ...(await vi.importActual('@openmrs/esm-framework')),
+    launchWorkspace2: vi.fn(),
+    makeUrl: vi.fn(),
+    messageOmrsServiceWorker: vi.fn(),
+    openmrsFetch: vi.fn(),
+    refreshOfflineCacheEntry,
+    restBaseUrl: '/ws/rest/v1',
+    setupDynamicOfflineDataHandler: vi.fn(),
+    setupOfflineSync: vi.fn(),
+  };
+});
 
 describe('setupPatientFormSync', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('launches canonical queued forms through the workspace2 contract', async () => {
@@ -149,9 +159,6 @@ describe('setupPatientFormSync', () => {
   });
 
   it('fails form synchronization when the service worker rejects route registration', async () => {
-    mockOpenmrsFetch.mockResolvedValue({
-      data: { uuid: 'synthetic-form-uuid' },
-    } as never);
     mockMessageOmrsServiceWorker.mockResolvedValue({
       success: false,
       error: 'The service worker is unavailable.',
@@ -165,6 +172,60 @@ describe('setupPatientFormSync', () => {
       'Some form data could not be properly downloaded.',
     );
     expect(mockMessageOmrsServiceWorker).toHaveBeenCalledTimes(2);
-    expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+  });
+
+  it('requires fresh form-list responses and preserves stale cache entries while offline', async () => {
+    const stableUrls = [formEncounterUrl, formEncounterUrlPoc].map(
+      (url) => `${globalThis.location.origin}/openmrs${url}`,
+    );
+    const cachedResponses = new Map(
+      stableUrls.map((url) => [url, new Response('stale form list', { status: 200 })]),
+    );
+    const cachePut = vi.fn(async (request: RequestInfo | URL, response: Response) => {
+      const key = request instanceof Request ? request.url : request.toString();
+      cachedResponses.set(key, response.clone());
+    });
+    vi.stubGlobal('caches', {
+      open: vi.fn(async () => ({ put: cachePut })),
+    });
+    let networkAvailable = false;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
+      const requestUrl = input instanceof Request ? input.url : input.toString();
+      return networkAvailable
+        ? new Response('fresh form list', { status: 200 })
+        : (cachedResponses.get(requestUrl)?.clone() ?? new Response(null, { status: 503 }));
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    mockMessageOmrsServiceWorker.mockResolvedValue({ success: true });
+
+    await setupDynamicFormDataHandler();
+    const handler = mockSetupDynamicOfflineDataHandler.mock.calls[0]?.[0];
+    const abortController = new AbortController();
+
+    await expect(handler?.sync('synthetic-form-uuid', abortController.signal)).rejects.toThrow(
+      'Some form data could not be properly downloaded.',
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(cachePut).not.toHaveBeenCalled();
+    for (const stableUrl of stableUrls) {
+      await expect(cachedResponses.get(stableUrl)?.clone().text()).resolves.toBe('stale form list');
+    }
+
+    networkAvailable = true;
+    await expect(handler?.sync('synthetic-form-uuid', abortController.signal)).resolves.toBeUndefined();
+    expect(cachePut).toHaveBeenCalledTimes(2);
+    for (const stableUrl of stableUrls) {
+      await expect(cachedResponses.get(stableUrl)?.clone().text()).resolves.toBe('fresh form list');
+    }
+    for (const refreshCall of fetchMock.mock.calls) {
+      expect(refreshCall[0].toString()).toContain('_openmrsOfflineRefresh=');
+      expect(refreshCall[1]).toMatchObject({
+        cache: 'no-store',
+        headers: { 'x-omrs-offline-caching-strategy': 'network-only-or-cache-only' },
+        signal: abortController.signal,
+      });
+    }
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });
 });

@@ -11,6 +11,8 @@ later requests from starting. An interrupted or failed item remains pending for 
 A form is marked as available offline only after every registered form-data handler completes successfully.
 Service-worker route registration is mandatory: a controlled `{ success: false }` response fails the download, rolls
 back a new selection, and produces fixed translated feedback without rendering technical errors or form identifiers.
+Form data refreshes require confirmed fresh network responses; a stale cached success cannot complete synchronization,
+and the previous stable cache entry remains available when the refresh fails.
 
 Previously cached forms remain available when a background refresh fails, but the user is warned that they may be
 outdated. Clinical cache content remains origin-wide; shared devices require an isolated OS/browser profile per

@@ -46,3 +46,10 @@ all-settled strategy and must not treat a resolved handler invocation as proof t
 Persisted handler failures contain only a fixed, non-sensitive message because handler exceptions can include URLs,
 UUIDs, or clinical data. The rejected `AggregateError` also contains only sanitized errors that identify the failed
 handler; original handler exceptions never cross the public synchronization boundary.
+
+## Confirmed offline cache refreshes
+
+`refreshOfflineCacheEntry` fetches a unique, non-cacheable URL using the service worker's network-only strategy and
+writes the response under the stable offline URL only after receiving a successful network response. A failed,
+non-successful, or canceled request rejects with a fixed non-sensitive error and leaves any existing cached response
+untouched. Callers remain responsible for registering the stable URL as a dynamic offline route.

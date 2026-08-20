@@ -2,8 +2,8 @@ import {
   launchWorkspace2,
   makeUrl,
   messageOmrsServiceWorker,
-  omrsOfflineCachingStrategyHttpHeaderName,
   openmrsFetch,
+  refreshOfflineCacheEntry,
   restBaseUrl,
   type SyncItem,
   type SyncProcessOptions,
@@ -151,15 +151,15 @@ export async function setupDynamicFormDataHandler() {
     id: 'esm-patient-forms-app:form',
     type: 'form',
     displayName: 'Patient forms',
-    async isSynced(identifier) {
-      const expectedUrls = await getCacheableFormUrls(identifier);
+    async isSynced() {
+      const expectedUrls = getCacheableFormUrls();
       const absoluteExpectedUrls = expectedUrls.map((url) => globalThis.location.origin + makeUrl(url));
       const cache = await caches.open('omrs-spa-cache-v1');
       const keys = (await cache.keys()).map((key) => key.url);
       return absoluteExpectedUrls.every((url) => keys.includes(url));
     },
-    async sync(identifier) {
-      const urlsToCache = await getCacheableFormUrls(identifier);
+    async sync(_identifier, abortSignal) {
+      const urlsToCache = getCacheableFormUrls();
       const cacheResults = await Promise.allSettled(
         urlsToCache.map(async (urlToCache) => {
           const routeRegistration = await messageOmrsServiceWorker({
@@ -172,28 +172,17 @@ export async function setupDynamicFormDataHandler() {
             throw new Error(routeRegistration.error ?? 'The offline form cache route could not be registered.');
           }
 
-          await openmrsFetch(urlToCache, {
-            headers: {
-              [omrsOfflineCachingStrategyHttpHeaderName]: 'network-first',
-            },
-          });
+          await refreshOfflineCacheEntry(urlToCache, abortSignal);
         }),
       );
 
       if (cacheResults.some((x) => x.status === 'rejected')) {
-        throw new Error(`Some form data could not be properly downloaded. (Form UUID: ${identifier})`);
+        throw new Error('Some form data could not be properly downloaded.');
       }
     },
   });
 }
 
-async function getCacheableFormUrls(formUuid: string) {
-  const getFormRes = await openmrsFetch<Form>(`${restBaseUrl}/form/${formUuid}?v=full`);
-  const form = getFormRes.data;
-
-  if (!form) {
-    throw new Error(`The form data could not be loaded from the server. (Form UUID: ${formUuid})`);
-  }
-
-  return [formEncounterUrl, formEncounterUrlPoc].filter(Boolean);
+function getCacheableFormUrls() {
+  return [formEncounterUrl, formEncounterUrlPoc];
 }

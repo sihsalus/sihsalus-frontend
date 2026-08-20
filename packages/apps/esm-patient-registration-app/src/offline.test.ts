@@ -2,15 +2,21 @@ import { getConfig, messageOmrsServiceWorker } from '@openmrs/esm-framework';
 
 import { cachePatientUrlsForOfflineUse, getPatientUrlsToBeCached } from './offline';
 
-vi.mock('@openmrs/esm-framework', async () => ({
-  ...(await vi.importActual('@openmrs/esm-framework')),
-  fhirBaseUrl: '/ws/fhir2/R4',
-  getConfig: vi.fn(),
-  makeUrl: vi.fn((url: string) => `/openmrs${url}`),
-  messageOmrsServiceWorker: vi.fn(),
-  omrsOfflineCachingStrategyHttpHeaderName: 'x-omrs-offline-caching-strategy',
-  restBaseUrl: '/ws/rest/v1',
-}));
+vi.mock('@openmrs/esm-framework', async () => {
+  const { refreshOfflineCacheEntry } = await vi.importActual<typeof import('@openmrs/esm-offline/src/public')>(
+    '@openmrs/esm-offline/src/public',
+  );
+  return {
+    ...(await vi.importActual('@openmrs/esm-framework')),
+    fhirBaseUrl: '/ws/fhir2/R4',
+    getConfig: vi.fn(),
+    makeUrl: vi.fn((url: string) => `/openmrs${url}`),
+    messageOmrsServiceWorker: vi.fn(),
+    omrsOfflineCachingStrategyHttpHeaderName: 'x-omrs-offline-caching-strategy',
+    refreshOfflineCacheEntry,
+    restBaseUrl: '/ws/rest/v1',
+  };
+});
 
 const mockGetConfig = vi.mocked(getConfig);
 const mockMessageOmrsServiceWorker = vi.mocked(messageOmrsServiceWorker);

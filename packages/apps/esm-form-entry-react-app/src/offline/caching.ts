@@ -1,8 +1,8 @@
 import {
   makeUrl,
   messageOmrsServiceWorker,
-  omrsOfflineCachingStrategyHttpHeaderName,
   openmrsFetch,
+  refreshOfflineCacheEntry,
   restBaseUrl,
   setupDynamicOfflineDataHandler,
   subscribePrecacheStaticDependencies,
@@ -42,8 +42,8 @@ export function setupDynamicOfflineFormDataHandler() {
       const keys = (await cache.keys()).map((key) => key.url);
       return absoluteExpectedUrls.every((url) => keys.includes(url));
     },
-    async sync(identifier) {
-      const urlsToCache = await getCacheableFormUrls(identifier);
+    async sync(identifier, abortSignal) {
+      const urlsToCache = getCacheableFormUrls(identifier);
       const cacheResults = await Promise.allSettled(
         urlsToCache.map(async (urlToCache) => {
           const routeRegistration = await messageOmrsServiceWorker({
@@ -56,28 +56,17 @@ export function setupDynamicOfflineFormDataHandler() {
             throw new Error(routeRegistration.error ?? 'The offline form cache route could not be registered.');
           }
 
-          await openmrsFetch(urlToCache, {
-            headers: {
-              [omrsOfflineCachingStrategyHttpHeaderName]: 'network-first',
-            },
-          });
+          await refreshOfflineCacheEntry(urlToCache, abortSignal);
         }),
       );
 
       if (cacheResults.some((x) => x.status === 'rejected')) {
-        throw new Error(`Some form data could not be properly downloaded. (Form UUID: ${identifier})`);
+        throw new Error('Some form data could not be properly downloaded.');
       }
     },
   });
 }
 
-async function getCacheableFormUrls(formUuid: string) {
-  const getFormRes = await openmrsFetch<{ uuid: string }>(`${restBaseUrl}/o3/forms/${formUuid}`);
-  const form = getFormRes.data;
-
-  if (!form) {
-    throw new Error(`The form data could not be loaded from the server. (Form UUID: ${formUuid})`);
-  }
-
-  return [`${restBaseUrl}/form/${formUuid}?v=full`, `${restBaseUrl}/o3/forms/${formUuid}`].filter(Boolean);
+function getCacheableFormUrls(formUuid: string) {
+  return [`${restBaseUrl}/form/${formUuid}?v=full`, `${restBaseUrl}/o3/forms/${formUuid}`];
 }

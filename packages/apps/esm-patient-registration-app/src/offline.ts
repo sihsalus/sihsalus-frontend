@@ -4,7 +4,7 @@ import {
   makeUrl,
   messageOmrsServiceWorker,
   navigate,
-  omrsOfflineCachingStrategyHttpHeaderName,
+  refreshOfflineCacheEntry,
   restBaseUrl,
   type SyncProcessOptions,
   setupDynamicOfflineDataHandler,
@@ -48,15 +48,17 @@ export function setupOffline() {
       const keys = (await cache.keys()).map((key) => key.url);
       return expectedUrls.every((url) => keys.includes(url));
     },
-    async sync(patientUuid) {
+    async sync(patientUuid, abortSignal) {
       const urlsToCache = await getPatientUrlsToBeCached(patientUuid);
-      await cachePatientUrlsForOfflineUse(urlsToCache);
+      await cachePatientUrlsForOfflineUse(urlsToCache, abortSignal);
     },
   });
 }
 
-export async function cachePatientUrlsForOfflineUse(urlsToCache: Array<string>): Promise<void> {
-  const cache = await caches.open('omrs-spa-cache-v1');
+export async function cachePatientUrlsForOfflineUse(
+  urlsToCache: Array<string>,
+  abortSignal?: AbortSignal,
+): Promise<void> {
   const results = await Promise.allSettled(
     urlsToCache.map(async (url) => {
       const routeRegistration = await messageOmrsServiceWorker({
@@ -69,30 +71,14 @@ export async function cachePatientUrlsForOfflineUse(urlsToCache: Array<string>):
         throw new Error(routeRegistration.error ?? 'The offline cache route could not be registered.');
       }
 
-      // A normal network-first request can return an old cached 200 when the network
-      // fails. Use a one-off cache key with the non-caching network strategy, then
-      // store the confirmed network response under the stable offline URL ourselves.
-      const refreshUrl = new URL(url);
-      refreshUrl.searchParams.set('_openmrsOfflineRefresh', globalThis.crypto.randomUUID());
-      const response = await fetch(refreshUrl, {
-        cache: 'no-store',
-        headers: {
-          [omrsOfflineCachingStrategyHttpHeaderName]: 'network-only-or-cache-only',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`The patient offline resource request failed with status ${response.status}.`);
-      }
-
-      await cache.put(url, response.clone());
+      await refreshOfflineCacheEntry(url, abortSignal);
     }),
   );
   const failures = results.filter((result) => result.status === 'rejected');
 
   if (failures.length > 0) {
     throw new AggregateError(
-      failures.map((failure) => failure.reason),
+      failures.map(() => new Error('A patient offline resource could not be refreshed.')),
       `Failed to cache ${failures.length} of ${urlsToCache.length} patient resources for offline use.`,
     );
   }

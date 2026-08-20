@@ -33,12 +33,15 @@ test('absolutizes the social preview tags with the request host', () => {
   );
 });
 
-test('copies the SPA assembly module boundary into both init images', () => {
+test('copies the SPA assembly sources into both init images', () => {
   const dockerfile = readFileSync(resolve(workspaceRoot, 'Dockerfile'), 'utf8');
   const scriptDirectoryCopies =
     dockerfile.match(/packages\/tooling\/scripts\/\s+\.\/packages\/tooling\/scripts\//g) ?? [];
+  const appShellDirectoryCopies =
+    dockerfile.match(/packages\/tooling\/app-shell\/\s+\.\/packages\/tooling\/app-shell\//g) ?? [];
 
   assert.equal(scriptDirectoryCopies.length, 2);
+  assert.equal(appShellDirectoryCopies.length, 2);
   assert.doesNotMatch(dockerfile, /COPY[^\n]*packages\/tooling\/scripts\/assemble-importmap\.js/);
 });
 

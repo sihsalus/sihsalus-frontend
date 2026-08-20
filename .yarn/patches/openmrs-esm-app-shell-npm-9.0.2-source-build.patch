@@ -132,7 +132,7 @@ diff --git a/webpack.config.js b/webpack.config.js
 index c94e881f82ea486079f676315f0750a9c62d4f61..7640f014b20c601f01030ebf0349d0096b281fa2 100644
 --- a/webpack.config.js
 +++ b/webpack.config.js
-@@ -4,7 +4,6 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
+@@ -4,8 +4,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
  const CopyWebpackPlugin = require('copy-webpack-plugin');
  const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
  const WebpackPwaManifest = require('webpack-pwa-manifest');
@@ -141,7 +141,18 @@ index c94e881f82ea486079f676315f0750a9c62d4f61..7640f014b20c601f01030ebf0349d009
 -const { DefinePlugin, container } = require('webpack');
 +const { DefinePlugin, ProvidePlugin, container } = require('webpack');
  const { basename, dirname, resolve } = require('path');
-@@ -26,6 +25,10 @@ const openmrsApiUrl = removeTrailingSlash(process.env.OMRS_API_URL || '/openmrs'
+-const { readdirSync, statSync, readFileSync } = require('fs');
++const { lstatSync, readdirSync, realpathSync, statSync, readFileSync } = require('fs');
+@@ -20,5 +19,7 @@ const timestamp = getTimestamp();
+ const production = 'production';
+ const allowedSuffixes = ['-app', '-widgets'];
+ const { ModuleFederationPlugin } = container;
+-
++
++const defaultServiceWorkerSource = resolve(__dirname, 'src/service-worker/index.ts');
++const repositoryServiceWorkerRelativePath = 'packages/tooling/app-shell/service-worker.ts';
+ const openmrsAddCookie = process.env.OMRS_ADD_COOKIE;
+@@ -26,6 +27,10 @@ const openmrsApiUrl = removeTrailingSlash(process.env.OMRS_API_URL || '/openmrs'
  const openmrsPublicPath = removeTrailingSlash(process.env.OMRS_PUBLIC_PATH || '/openmrs/spa');
  const openmrsProxyTarget = process.env.OMRS_PROXY_TARGET || 'https://dev3.openmrs.org/';
  const openmrsPageTitle = process.env.OMRS_PAGE_TITLE || 'OpenMRS';
@@ -152,7 +163,60 @@ index c94e881f82ea486079f676315f0750a9c62d4f61..7640f014b20c601f01030ebf0349d009
  const openmrsFavicon = process.env.OMRS_FAVICON || `${openmrsPublicPath}/favicon.ico`;
  const openmrsEnvironment = process.env.OMRS_ENV || process.env.NODE_ENV || '';
  const openmrsOffline = process.env.OMRS_OFFLINE === 'enable';
-@@ -338,28 +341,33 @@ module.exports = (env, argv = []) => {
+@@ -80,6 +85,43 @@ function checkFileExists(filename) {
+   return false;
+ }
+-
++
++function getServiceWorkerSource() {
++  const configuredSource = process.env.OMRS_SERVICE_WORKER_SRC;
++  if (!configuredSource) {
++    return defaultServiceWorkerSource;
++  }
++
++  const configuredRepositoryRoot = process.env.OMRS_REPOSITORY_ROOT;
++  if (!configuredRepositoryRoot) {
++    throw new Error('OMRS_REPOSITORY_ROOT is required when configuring OMRS_SERVICE_WORKER_SRC');
++  }
++
++  const resolvedRepositoryRoot = resolve(configuredRepositoryRoot);
++  const repositoryRootStat = lstatSync(resolvedRepositoryRoot);
++  if (!repositoryRootStat.isDirectory() || repositoryRootStat.isSymbolicLink()) {
++    throw new Error('OMRS_REPOSITORY_ROOT must be a regular, non-symlink directory');
++  }
++  const realRepositoryRoot = realpathSync(resolvedRepositoryRoot);
++  if (realRepositoryRoot !== resolvedRepositoryRoot) {
++    throw new Error('OMRS_REPOSITORY_ROOT must not resolve through a symlink');
++  }
++
++  const expectedSource = resolve(realRepositoryRoot, repositoryServiceWorkerRelativePath);
++  const resolvedSource = resolve(configuredSource);
++  if (resolvedSource !== expectedSource) {
++    throw new Error(`OMRS_SERVICE_WORKER_SRC must resolve to ${repositoryServiceWorkerRelativePath}`);
++  }
++  const sourceStat = lstatSync(resolvedSource);
++  if (!sourceStat.isFile() || sourceStat.isSymbolicLink()) {
++    throw new Error('OMRS_SERVICE_WORKER_SRC must be a regular, non-symlink file');
++  }
++  if (realpathSync(resolvedSource) !== expectedSource) {
++    throw new Error('OMRS_SERVICE_WORKER_SRC resolves outside the controlled repository entry');
++  }
++
++  return resolvedSource;
++}
++
+ function checkDirectoryHasContents(dirName) {
+   if (checkDirectoryExists(dirName)) {
+     const contents = readdirSync(dirName);
+@@ -306,6 +348,7 @@ module.exports = (env, argv = []) => {
+         url: false,
+       },
+       alias: {
++        '@openmrs/esm-app-shell/default-service-worker$': defaultServiceWorkerSource,
+         'lodash.debounce': 'lodash-es/debounce',
+         'lodash.findlast': 'lodash-es/findLast',
+         'lodash.isequal': 'lodash-es/isEqual',
+@@ -338,28 +381,33 @@ module.exports = (env, argv = []) => {
            openmrsConfigUrls,
            openmrsCoreImportmap: appPatterns.length > 0 && JSON.stringify(coreImportmap),
            openmrsCoreRoutes: Object.keys(coreRoutes).length > 0 && JSON.stringify(coreRoutes),
@@ -198,3 +262,12 @@ index c94e881f82ea486079f676315f0750a9c62d4f61..7640f014b20c601f01030ebf0349d009
 +              : depName === 'swr'
 +                ? require('swr/package.json').version
 +                : dependencies[depName];
+@@ -420,7 +468,7 @@ module.exports = (env, argv = []) => {
+       }),
+       openmrsOffline
+         ? new InjectManifest({
+-            swSrc: resolve(__dirname, './src/service-worker/index.ts'),
++            swSrc: getServiceWorkerSource(),
+             swDest: 'service-worker.js',
+             maximumFileSizeToCacheInBytes: mode === production ? undefined : Number.MAX_SAFE_INTEGER,
+             additionalManifestEntries: [

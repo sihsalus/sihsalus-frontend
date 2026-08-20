@@ -4031,7 +4031,7 @@ __metadata:
 
 "@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch::locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A.":
   version: 9.0.2
-  resolution: "@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch::version=9.0.2&hash=1d9e69&locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A."
+  resolution: "@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-source-build.patch::version=9.0.2&hash=46734e&locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A."
   dependencies:
     "@carbon/react": "npm:^1.92.1"
     "@internationalized/date": "npm:^3.8.0"
@@ -4061,7 +4061,7 @@ __metadata:
     workbox-strategies: "npm:^6.1.5"
     workbox-webpack-plugin: "npm:^6.1.5"
     workbox-window: "npm:^6.1.5"
-  checksum: 10c0/b1b9f39b6d1cdb4f7827f40280ce2dcd31a12d7dd22d38a497d9c6c0e222421733e0065bcad02addd06ae16283c4340a0621a15e00a169e7c618984870d9a1af
+  checksum: 10c0/eb58e02981b214907e6982ac585e04879d59cd7aa45018dd2c3e4e3c8afa99bf73db72b4230f5f4364ebd497ab93745ce6ae1932e21e4b15577f2f2f05f3b16a
   languageName: node
   linkType: hard
 

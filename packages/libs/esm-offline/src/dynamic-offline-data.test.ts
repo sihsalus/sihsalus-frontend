@@ -124,9 +124,12 @@ describe('syncDynamicOfflineData', () => {
   it('persists partial handler failures, rejects the attempt, and succeeds on retry', async () => {
     const handlerType = 'test-retry-handler';
     const stableSync = vi.fn(async () => {});
+    const sensitiveHandlerError = new Error(
+      'GET /patient/private-patient-uuid?name=Synthetic%20Patient failed',
+    );
     const retryableSync = vi
       .fn<() => Promise<void>>()
-      .mockRejectedValueOnce(new Error('temporary cache failure'))
+      .mockRejectedValueOnce(sensitiveHandlerError)
       .mockResolvedValue(undefined);
 
     setupDynamicOfflineDataHandler({
@@ -142,10 +145,22 @@ describe('syncDynamicOfflineData', () => {
       sync: retryableSync,
     });
 
-    await expect(syncDynamicOfflineData(handlerType, 'patient-456')).rejects.toMatchObject({
+    let syncError: unknown;
+    try {
+      await syncDynamicOfflineData(handlerType, 'patient-456');
+    } catch (error: unknown) {
+      syncError = error;
+    }
+
+    expect(syncError).toMatchObject({
       name: 'AggregateError',
       message: '1 of 2 offline data handlers failed to synchronize.',
     });
+    expect(syncError).toBeInstanceOf(AggregateError);
+    if (!(syncError instanceof AggregateError)) {
+      throw new Error('Expected an AggregateError from the failed synchronization.');
+    }
+    expect(syncError.errors).toContain(sensitiveHandlerError);
 
     const entriesAfterFailure = await getDynamicOfflineDataEntries(handlerType);
     expect(entriesAfterFailure[0].syncState).toMatchObject({
@@ -154,10 +169,11 @@ describe('syncDynamicOfflineData', () => {
       errors: [
         {
           handlerId: 'test-retry-handler:unstable',
-          message: 'temporary cache failure',
+          message: 'This offline data could not be synchronized.',
         },
       ],
     });
+    expect(JSON.stringify(entriesAfterFailure[0].syncState)).not.toMatch(/private-patient-uuid|Synthetic%20Patient/);
 
     await expect(syncDynamicOfflineData(handlerType, 'patient-456')).resolves.toBeUndefined();
 

@@ -42,3 +42,7 @@ failure instead of using local IDs to infer whether another row exists.
 `syncDynamicOfflineData` waits for every handler, persists the complete success/error state, and then rejects with an
 `AggregateError` when any handler failed. Batch callers that need to continue synchronizing other entries should use an
 all-settled strategy and must not treat a resolved handler invocation as proof that its asynchronous work finished.
+
+Persisted handler failures contain only a fixed, non-sensitive message because handler exceptions can include URLs,
+UUIDs, or clinical data. The original causes exist only in the in-memory `AggregateError`; callers must not render or
+log them directly.

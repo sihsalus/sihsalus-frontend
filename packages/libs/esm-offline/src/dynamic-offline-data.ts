@@ -97,6 +97,7 @@ export interface DynamicOfflineDataSyncState {
 }
 
 const dynamicOfflineDataHandlers: Record<string, DynamicOfflineDataHandler> = {};
+const persistedSyncErrorMessage = 'This offline data could not be synchronized.';
 
 /**
  * Returns all handlers which have been setup using the {@link setupDynamicOfflineDataHandler} function.
@@ -283,7 +284,6 @@ export async function syncDynamicOfflineData(
           id: handler.id,
           status: 'rejected' as const,
           error,
-          message: getErrorMessage(error),
         };
       }
     }),
@@ -292,7 +292,12 @@ export async function syncDynamicOfflineData(
   const succeededHandlers = results.filter((result) => result.status === 'fulfilled').map((result) => result.id);
   const failedResults = results.filter((result) => result.status === 'rejected');
   const erroredHandlers = failedResults.map((result) => result.id);
-  const errors = failedResults.map((result) => ({ handlerId: result.id, message: result.message }));
+  // Handler errors can contain URLs, UUIDs, or clinical data. Keep the original
+  // causes only in the in-memory AggregateError and persist a fixed safe message.
+  const errors = failedResults.map((result) => ({
+    handlerId: result.id,
+    message: persistedSyncErrorMessage,
+  }));
   const newSyncState: DynamicOfflineDataSyncState = {
     syncedOn: new Date(),
     syncedBy: userId,
@@ -316,10 +321,6 @@ export async function syncDynamicOfflineData(
       `${failedResults.length} of ${handlers.length} offline data handlers failed to synchronize.`,
     );
   }
-}
-
-function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 async function getCurrentUserId() {

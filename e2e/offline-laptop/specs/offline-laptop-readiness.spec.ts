@@ -10,6 +10,7 @@ import {
 import { getE2ECredentials } from '../../utils/e2e-api';
 import { shouldIgnoreHTTPSErrors } from '../../utils/e2e-urls';
 import { loadOfflineLaptopGateConfig } from '../gate-config';
+import { recoverSyntheticPatientUuid } from '../synthetic-patient-cleanup';
 
 const gateConfig = loadOfflineLaptopGateConfig();
 const cleanupReason = `${gateConfig.target} synthetic offline laptop acceptance cleanup`;
@@ -159,6 +160,7 @@ async function createSyntheticPatient(
   api: APIRequestContext,
   identifierType: IdentifierType,
   familyName: string,
+  onIdentifierGenerated: (identifier: string) => void,
   onCreated: (patientUuid: string) => void,
 ): Promise<PatientResponse> {
   const generatedIdentifier = await expectOk<{ identifier?: string }>(
@@ -169,6 +171,10 @@ async function createSyntheticPatient(
     generatedIdentifier.identifier,
     `${gateConfig.target} identifier generation returned no identifier`,
   ).toBeTruthy();
+  if (!generatedIdentifier.identifier) {
+    throw new Error(`${gateConfig.target} identifier generation returned no identifier.`);
+  }
+  onIdentifierGenerated(generatedIdentifier.identifier);
 
   const identifier = {
     identifier: generatedIdentifier.identifier,
@@ -235,8 +241,10 @@ async function cleanupSyntheticPatient(api: APIRequestContext, patientUuid: stri
   const visits = await getPatientVisits(api, patientUuid);
   const reason = encodeURIComponent(cleanupReason);
 
-  for (const visit of visits) {
-    const response = await api.delete(`visit/${visit.uuid}?reason=${reason}`, { data: {} });
+  for (const visit of visits.filter((candidate) => !candidate.voided)) {
+    const response = await api.delete(`visit/${visit.uuid}?reason=${reason}`, {
+      data: {},
+    });
     expect(response.ok(), `Could not void synthetic visit ${visit.uuid} (${response.status()})`).toBeTruthy();
   }
 
@@ -245,6 +253,20 @@ async function cleanupSyntheticPatient(api: APIRequestContext, patientUuid: stri
     patientResponse.ok(),
     `Could not void ${gateConfig.target} synthetic patient ${patientUuid} (${patientResponse.status()})`,
   ).toBeTruthy();
+
+  const visitsAfterCleanup = await getPatientVisits(api, patientUuid);
+  expect(
+    visitsAfterCleanup.filter((visit) => !visit.voided),
+    'Synthetic patient cleanup left an active visit behind',
+  ).toEqual([]);
+
+  const patientAfterCleanup = await api.get(`patient/${patientUuid}?v=custom:(uuid,voided)`);
+  if (patientAfterCleanup.ok()) {
+    const patient = (await patientAfterCleanup.json()) as PatientResponse;
+    expect(patient.voided, 'Synthetic patient remained active after cleanup').toBe(true);
+  } else {
+    expect(patientAfterCleanup.status(), 'Voided synthetic patient must be hidden or returned as voided').toBe(404);
+  }
 }
 
 async function ensureServiceWorkerControl(page: Page) {
@@ -255,7 +277,10 @@ async function ensureServiceWorkerControl(page: Page) {
           const registration = await navigator.serviceWorker.getRegistration();
           return registration?.active?.state ?? 'missing';
         }),
-      { message: 'The SIH Salus service worker must activate', timeout: 30_000 },
+      {
+        message: 'The SIH Salus service worker must activate',
+        timeout: 30_000,
+      },
     )
     .toBe('activated');
 
@@ -280,14 +305,18 @@ async function ensureServiceWorkerControl(page: Page) {
 }
 
 async function addPatientToOfflineList(page: Page): Promise<void> {
-  const actionsButton = page.getByRole('button', { name: /^(Actions|Acciones)$/i });
+  const actionsButton = page.getByRole('button', {
+    name: /^(Actions|Acciones)$/i,
+  });
   await expect(
     actionsButton,
     'The patient chart actions menu must be available to the dedicated test role',
   ).toBeVisible();
   await actionsButton.click();
 
-  const addToListAction = page.getByRole('menuitem', { name: /^(Add to list|Agregar a la lista)$/i });
+  const addToListAction = page.getByRole('menuitem', {
+    name: /^(Add to list|Agregar a la lista)$/i,
+  });
   await expect(
     addToListAction,
     'The dedicated test role must be allowed to add the synthetic patient to the offline list',
@@ -295,8 +324,14 @@ async function addPatientToOfflineList(page: Page): Promise<void> {
   await addToListAction.click();
 
   const dialog = page.getByRole('dialog');
-  await expect(dialog.getByRole('heading', { name: /Add patient to list|Agregar paciente a la lista/i })).toBeVisible();
-  const offlinePatients = dialog.getByRole('checkbox', { name: /^(Offline patients|Pacientes sin conexión)$/i });
+  await expect(
+    dialog.getByRole('heading', {
+      name: /Add patient to list|Agregar paciente a la lista/i,
+    }),
+  ).toBeVisible();
+  const offlinePatients = dialog.getByRole('checkbox', {
+    name: /^(Offline patients|Pacientes sin conexión)$/i,
+  });
   await expect(offlinePatients).toBeVisible();
   await offlinePatients.check();
   await dialog.getByRole('button', { name: /^(Save|Guardar)$/i }).click();
@@ -347,7 +382,10 @@ async function expectCached(page: Page, expectedUrls: Array<string>): Promise<Ca
         evidence = await inspectCaches(page, expectedUrls);
         return evidence.matchedEntries.filter((entry) => entry.cacheKey).length;
       },
-      { message: 'Every required shell and patient resource must exist in Cache Storage', timeout: 30_000 },
+      {
+        message: 'Every required shell and patient resource must exist in Cache Storage',
+        timeout: 30_000,
+      },
     )
     .toBe(expectedUrls.length);
 
@@ -474,7 +512,11 @@ async function expectQueueToDrain(page: Page): Promise<void> {
       .toBe(0);
   } catch (error) {
     const pending = await readSyncQueue(page);
-    const errors = pending.map((item) => ({ id: item.id, lastError: item.lastError, type: item.type }));
+    const errors = pending.map((item) => ({
+      id: item.id,
+      lastError: item.lastError,
+      type: item.type,
+    }));
     throw new Error(`Offline queue did not drain. Pending action summary: ${JSON.stringify(errors)}`, {
       cause: error,
     });
@@ -489,13 +531,22 @@ test('branded browser preserves one queued visit across offline reload and synch
 }, testInfo) => {
   const api = await createApiContext(playwright);
   const familyName = `${gateConfig.target}OfflineGate${Date.now()}${randomUUID().slice(0, 8)}`;
+  let syntheticIdentifier: string | undefined;
   let patientUuid: string | undefined;
 
   try {
     const identifierType = await validateBackendContract(api);
-    const patient = await createSyntheticPatient(api, identifierType, familyName, (createdPatientUuid) => {
-      patientUuid = createdPatientUuid;
-    });
+    const patient = await createSyntheticPatient(
+      api,
+      identifierType,
+      familyName,
+      (generatedIdentifier) => {
+        syntheticIdentifier = generatedIdentifier;
+      },
+      (createdPatientUuid) => {
+        patientUuid = createdPatientUuid;
+      },
+    );
     patientUuid = patient.uuid;
     expect(await getPatientVisits(api, patientUuid), 'A fresh synthetic patient must not have visits').toEqual([]);
 
@@ -526,7 +577,9 @@ test('branded browser preserves one queued visit across offline reload and synch
       `${gateConfig.target} is not serving the explicitly accepted frontend SHA`,
     ).toBe(gateConfig.expectedBuildSha);
 
-    await page.goto(`patient/${patientUuid}/chart/Patient%20Summary`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`patient/${patientUuid}/chart/Patient%20Summary`, {
+      waitUntil: 'domcontentloaded',
+    });
     await expect(page).not.toHaveURL(/\/login(?:[/?#]|$)/);
     await expect(page).toHaveURL(new RegExp(`/patient/${patientUuid}/chart`));
     await expect(page.getByText(new RegExp(familyName, 'i')).first()).toBeVisible({ timeout: 30_000 });
@@ -536,7 +589,9 @@ test('branded browser preserves one queued visit across offline reload and synch
       () =>
         (
           navigator as Navigator & {
-            userAgentData?: { brands?: Array<{ brand: string; version: string }> };
+            userAgentData?: {
+              brands?: Array<{ brand: string; version: string }>;
+            };
           }
         ).userAgentData?.brands ?? [],
     );
@@ -596,11 +651,19 @@ test('branded browser preserves one queued visit across offline reload and synch
     // Warm the actual manual synchronization UI before disconnecting, then reload
     // the chart under service-worker control so its FHIR patient response is cached.
     await page.goto('offline-tools/actions', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { name: /Offline Actions|Acciones sin Internet/i })).toBeVisible();
     await expect(
-      page.getByRole('button', { name: /Update offline patients|Actualizar pacientes sin internet/i }),
+      page.getByRole('heading', {
+        name: /Offline Actions|Acciones sin Internet/i,
+      }),
     ).toBeVisible();
-    await page.goto(`patient/${patientUuid}/chart/Patient%20Summary`, { waitUntil: 'domcontentloaded' });
+    await expect(
+      page.getByRole('button', {
+        name: /Update offline patients|Actualizar pacientes sin internet/i,
+      }),
+    ).toBeVisible();
+    await page.goto(`patient/${patientUuid}/chart/Patient%20Summary`, {
+      waitUntil: 'domcontentloaded',
+    });
     await expect(page.getByText(new RegExp(familyName, 'i')).first()).toBeVisible({ timeout: 30_000 });
 
     const expectedCacheUrls = [
@@ -636,7 +699,9 @@ test('branded browser preserves one queued visit across offline reload and synch
     expectSingleQueuedVisit(await readSyncQueue(page), patientUuid, offlineVisit.uuid);
 
     await page.goto('offline-tools/actions', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByText('Offline visit', { exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('Offline visit', { exact: true })).toBeVisible({
+      timeout: 30_000,
+    });
     const synchronizeButton = page.getByRole('button', {
       name: /Update offline patients|Actualizar pacientes sin internet/i,
     });
@@ -682,6 +747,13 @@ test('branded browser preserves one queued visit across offline reload and synch
   } finally {
     await context.setOffline(false).catch(() => undefined);
     try {
+      if (!patientUuid && syntheticIdentifier) {
+        patientUuid = await recoverSyntheticPatientUuid(api, {
+          familyName,
+          identifier: syntheticIdentifier,
+          identifierTypeUuid: gateConfig.identifierTypeUuid,
+        });
+      }
       if (patientUuid) {
         await cleanupSyntheticPatient(api, patientUuid);
       }

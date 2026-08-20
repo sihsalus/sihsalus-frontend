@@ -151,9 +151,10 @@ Record the laptop asset tag, OS build, browser project and version, deployed
 SHA, command, result, and operator. Playwright writes an HTML report under
 `playwright-report/offline-laptop` and attaches an early context file plus a
 final JSON evidence file containing the browser version, service-worker scope,
-cache keys, synthetic UUIDs, and deployed SHA. Failure traces, screenshots, and
-videos remain under the normal Playwright artifact directories; they contain
-only the gate-created synthetic patient.
+cache keys, synthetic UUIDs, and deployed SHA. Credentialed traces, screenshots,
+and videos are disabled because traces retain raw request headers, including
+session cookies. Do not attach the HTML report until it has been checked for
+secrets or data outside the gate-created synthetic record.
 
 Use these result labels exactly:
 
@@ -166,7 +167,11 @@ Use these result labels exactly:
 - `NOT RUN`: that browser profile was deliberately outside this laptop's test
   matrix.
 
-If the run fails after creating data, use the synthetic patient UUID from the
-Playwright evidence to confirm that the patient and all visits are voided in
-the selected target before retrying. Do not delete or reconcile any
-non-synthetic record.
+The gate records its generated identifier before creating the patient. If the
+create response is lost after the server commits it, cleanup searches by that
+identifier and requires an exact identifier type plus `SYNTHETIC` name match
+before voiding anything. Cleanup then verifies that the patient and every visit
+are voided. If recovery is ambiguous or verification fails, the run is
+`FAILED`; stop and reconcile only the marked synthetic record with an
+authorized DEV/QLTY operator. Do not delete or reconcile any non-synthetic
+record.

@@ -24,9 +24,11 @@ export default defineConfig({
     storageState: 'e2e/storage-state.json',
     ignoreHTTPSErrors: shouldIgnoreHTTPSErrors(),
     serviceWorkers: 'allow',
-    screenshot: 'only-on-failure',
-    trace: 'retain-on-failure',
-    video: 'retain-on-failure',
+    // Credentialed Playwright traces include raw Cookie/Set-Cookie headers.
+    // This clinical gate emits only the explicit, sanitized JSON attachments.
+    screenshot: 'off',
+    trace: 'off',
+    video: 'off',
     viewport: { width: 1440, height: 900 },
   },
   projects: [

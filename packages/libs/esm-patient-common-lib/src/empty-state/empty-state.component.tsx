@@ -15,6 +15,7 @@ export interface EmptyStateProps {
 export const EmptyState: React.FC<EmptyStateProps> = (props) => {
   const { t } = useTranslation('@sihsalus/esm-patient-chart-app');
   const isTablet = useLayoutType() === 'tablet';
+  const launchForm = props.launchForm;
 
   return (
     <Layer className={styles.layer}>
@@ -33,8 +34,8 @@ export const EmptyState: React.FC<EmptyStateProps> = (props) => {
           })}
         </p>
         <p className={styles.action}>
-          {props.launchForm && (
-            <Button onClick={() => props.launchForm()} kind="ghost" size={isTablet ? 'lg' : 'sm'}>
+          {launchForm && (
+            <Button onClick={launchForm} kind="ghost" size={isTablet ? 'lg' : 'sm'}>
               {t('record', 'Record')} {props.displayText.toLowerCase()}
             </Button>
           )}

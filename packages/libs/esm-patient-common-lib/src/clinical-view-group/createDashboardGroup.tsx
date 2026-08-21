@@ -11,8 +11,11 @@ type DashboardGroupProps = {
   isExpanded?: boolean;
   isChild?: boolean;
   showWhenExpression?: string;
-  basePath?: string;
+  basePath: string;
 };
+
+type DashboardGroupConfig = Omit<DashboardGroupProps, 'basePath'>;
+type DashboardGroupLifecycleProps = Pick<DashboardGroupProps, 'basePath'> & Partial<DashboardGroupConfig>;
 
 const DashboardGroup = memo(
   ({ title, slotName, isExpanded, isChild, basePath, showWhenExpression }: DashboardGroupProps) => {
@@ -47,8 +50,8 @@ export const createClinicalDashboardGroup = ({
   isExpanded,
   isChild,
   showWhenExpression,
-}: DashboardGroupProps) => {
-  return ({ basePath, ...rest }) => (
+}: DashboardGroupConfig) => {
+  return ({ basePath, ...rest }: DashboardGroupLifecycleProps) => (
     <DashboardGroup
       basePath={basePath}
       title={title}

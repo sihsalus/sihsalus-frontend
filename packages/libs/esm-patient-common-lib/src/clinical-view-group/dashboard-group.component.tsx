@@ -34,7 +34,7 @@ export const DashboardGroupExtension: React.FC<DashboardGroupExtensionProps> = (
   return (
     <SideNavItems className={styles.sideMenuItems} isSideNavExpanded={true}>
       <SideNavMenu
-        className={isChild && styles.sideNavMenu}
+        className={isChild ? styles.sideNavMenu : undefined}
         large={isTablet}
         defaultExpanded={isExpanded ?? true}
         title={t(title, title)}

@@ -7,9 +7,9 @@ import { useTranslation } from 'react-i18next';
 import { moduleName } from '../../../constants';
 import { type PersonAttributeTypeResponse } from '../../patient-registration.types';
 import {
+  peruInsuranceSisConceptUuid,
   peruInsuranceTypeAttributeTypeUuid,
   peruLegacySisPlanConceptUuid,
-  peruInsuranceSisConceptUuid,
   replacePeruFinancerInForm,
 } from '../../peru-registration-config';
 import { isMissingConceptError, useConceptAnswers } from '../field.resource';
@@ -49,7 +49,7 @@ function normalizeFinancerAnswers<T extends { uuid: string; label?: string }>(an
   const getLabelQuality = (answer: T) => {
     const label = answer.label ?? '';
     const trimmedLabel = label.trim();
-    const lettersOnly = trimmedLabel.replace(/[^a-zÃ¡Ã©Ã­Ã³ÃºÃ±]/gi, '');
+    const lettersOnly = trimmedLabel.replace(/[^\p{L}]/gu, '');
 
     return Number(label === trimmedLabel) + Number(Boolean(lettersOnly) && lettersOnly === lettersOnly.toUpperCase());
   };
@@ -132,12 +132,12 @@ export function CodedPersonAttributeField({
           .sort((a, b) => a.label.localeCompare(b.label));
 
     const normalizedAnswers = availableAnswers.map((answer) => ({
-        ...answer,
-        label:
-          id === 'insuranceType' && /^particular\s*\/\s*sin seguro$/i.test(answer.label ?? '')
-            ? t('selfFinancing', 'Self-financing')
-            : answer.label?.trim(),
-      }));
+      ...answer,
+      label:
+        id === 'insuranceType' && /^particular\s*\/\s*sin seguro$/i.test(answer.label ?? '')
+          ? t('selfFinancing', 'Self-financing')
+          : answer.label?.trim(),
+    }));
 
     if (id !== 'insuranceType') {
       return normalizedAnswers;

@@ -30,9 +30,12 @@ the authenticated user's UUID even when a caller knows another row's numeric ID.
   the same IndexedDB transaction as replacement, receives the latest stored content, and may preserve checkpoints or
   throw to keep the existing row unchanged. Errors are exposed only as the fixed queue-operation error. This is the
   supported guard for edits that must not erase an in-flight or ambiguous clinical-write state.
-- Database schema version 5 transactionally replaces every legacy `lastError` during upgrade. New failures persist only
-  a fixed non-identifying error, and reads also mask malformed details defensively. Consumers must treat the field as an
-  opaque status and must not depend on backend messages, URLs, UUIDs, response bodies, names, or exception causes.
+- The database remains on schema version 4 for rollback compatibility. Before queued operations proceed on each open,
+  an idempotent transaction replaces every malformed or legacy `lastError` while preserving the row and its clinical
+  content. New failures persist only a fixed non-identifying error, and reads also mask malformed details defensively.
+  Consumers must treat the field as an opaque status and must not depend on backend messages, URLs, UUIDs, response
+  bodies, names, or exception causes. Close or restart older open tabs during rollout so they cannot write a legacy raw
+  error after the new client's opening scrub.
 
 This contract does not partition CacheStorage, service-worker routes, the app shell, or other origin-wide browser data.
 It therefore does not make account switching in one browser profile safe and does not remove the operational

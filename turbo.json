@@ -2,6 +2,14 @@
   "$schema": "https://turbo.build/schema.json",
   "ui": "stream",
   "concurrency": "50%",
+  "globalDependencies": [
+    "tsconfig.base.json",
+    "packages/tsconfig.json",
+    "packages/tooling/tsconfig.app.json",
+    "packages/tooling/tsconfig.strict.json",
+    "packages/declarations.d.ts",
+    "packages/types/**"
+  ],
   "globalPassThroughEnv": ["IBM_TELEMETRY_DISABLED", "TURBO_TELEMETRY_DISABLED", "DO_NOT_TRACK"],
   "tasks": {
     "build": {
@@ -10,6 +18,7 @@
         "src/**",
         "!src/**/*.test.*",
         "!src/**/setup-tests.*",
+        "declarations.d.ts",
         "tsconfig.json",
         "tsconfig.build.json",
         "rspack.config.js",
@@ -26,7 +35,14 @@
     },
     "build:development": {
       "dependsOn": ["^build:development"],
-      "inputs": ["src/**", "!src/**/*.test.*", "tsconfig.json", "rspack.config.js", "translations/**"],
+      "inputs": [
+        "src/**",
+        "!src/**/*.test.*",
+        "declarations.d.ts",
+        "tsconfig.json",
+        "rspack.config.js",
+        "translations/**"
+      ],
       "outputs": ["dist/**"],
       "env": ["NODE_ENV", "SIHSALUS_AUTH_MODE", "SIHSALUS_FHIR_BASE"]
     },
@@ -39,6 +55,8 @@
       "inputs": [
         "src/**",
         "__mocks__/**",
+        "declarations.d.ts",
+        "$TURBO_ROOT$/packages/test-utils/**",
         "$TURBO_ROOT$/packages/tooling/configs/**",
         "$TURBO_ROOT$/packages/tooling/scripts/setup-tests.ts",
         "mock.ts",
@@ -58,7 +76,14 @@
       "persistent": true
     },
     "coverage": {
-      "inputs": ["src/**", "__mocks__/**", "vitest.config.ts", "setup-tests.ts"],
+      "inputs": [
+        "src/**",
+        "__mocks__/**",
+        "declarations.d.ts",
+        "$TURBO_ROOT$/packages/test-utils/**",
+        "vitest.config.ts",
+        "setup-tests.ts"
+      ],
       "outputs": ["coverage/**"]
     },
     "lint": {
@@ -66,7 +91,14 @@
     },
     "typescript": {
       "dependsOn": ["build", "^build", "^typescript"],
-      "inputs": ["src/**", "tsconfig.json", "tsconfig.build.json"]
+      "inputs": [
+        "src/**",
+        "declarations.d.ts",
+        "$TURBO_ROOT$/packages/test-utils/**",
+        "$TURBO_ROOT$/packages/tooling/scripts/setup-tests.ts",
+        "tsconfig.json",
+        "tsconfig.build.json"
+      ]
     },
     "extract-translations": {
       "cache": false

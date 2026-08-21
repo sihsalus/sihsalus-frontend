@@ -715,10 +715,7 @@ export async function safeCopyFinanciadorToVisit(
   try {
     return await copyFinanciadorToVisit(params);
   } catch (error) {
-    console.error(
-      `No se pudo copiar el financiador de la persona ${params.patientUuid} a la visita ${params.visitUuid}.`,
-      error,
-    );
+    console.error('No se pudo copiar el financiador de la persona a la visita.', error);
     return { ok: false, error };
   }
 }

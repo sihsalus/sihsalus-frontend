@@ -18,9 +18,16 @@ import { useVisitOrOfflineVisit } from './offline/visit';
 import { getPatientChartStore, getPatientUuidFromStore, usePatientChartStore } from './store/patient-chart-store';
 import { useSystemVisitSetting } from './useSystemVisitSetting';
 
-export interface DefaultPatientWorkspaceProps extends DefaultWorkspaceProps {
+/** Props injected by the legacy Workspace v1 runtime. */
+export interface LegacyPatientWorkspaceProps extends DefaultWorkspaceProps {
   patientUuid: string;
 }
+
+/**
+ * @deprecated Use `LegacyPatientWorkspaceProps` for an explicit Workspace v1
+ * compatibility boundary, or `PatientWorkspace2DefinitionProps` for Workspace v2.
+ */
+export type DefaultPatientWorkspaceProps = LegacyPatientWorkspaceProps;
 
 export interface PatientWorkspaceGroupProps {
   patient: fhir.Patient | null;
@@ -34,9 +41,28 @@ export interface PatientChartWorkspaceActionButtonProps {
 }
 
 export type PatientWorkspace2DefinitionProps<
-  WorkspaceProps extends object,
-  WindowProps extends object,
+  WorkspaceProps extends object = Record<string, never>,
+  WindowProps extends object = Record<string, never>,
 > = Workspace2DefinitionProps<WorkspaceProps, WindowProps, PatientWorkspaceGroupProps>;
+
+/**
+ * Props accepted while a patient workspace is being migrated from Workspace v1
+ * to Workspace v2. Consumers must narrow the generation before reading its
+ * payload or invoking lifecycle callbacks.
+ */
+export type PatientWorkspaceProps<
+  WorkspaceProps extends object = Record<string, never>,
+  WindowProps extends object = Record<string, never>,
+> = PatientWorkspace2DefinitionProps<WorkspaceProps, WindowProps> | (LegacyPatientWorkspaceProps & WorkspaceProps);
+
+export function isPatientWorkspace2Props<
+  WorkspaceProps extends object = Record<string, never>,
+  WindowProps extends object = Record<string, never>,
+>(
+  props: PatientWorkspaceProps<WorkspaceProps, WindowProps>,
+): props is PatientWorkspace2DefinitionProps<WorkspaceProps, WindowProps> {
+  return 'workspaceProps' in props && 'groupProps' in props && 'launchChildWorkspace' in props;
+}
 
 type WorkspaceFrameworkApi = {
   getRegisteredWorkspace2Names?: typeof getRegisteredWorkspace2Names;

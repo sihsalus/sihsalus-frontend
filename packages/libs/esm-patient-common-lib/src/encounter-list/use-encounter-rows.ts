@@ -52,7 +52,7 @@ export const encounterRepresentation =
 export function useEncounterRows(
   patientUuid: string,
   encounterType: string,
-  encounterFilter: (encounter: OpenmrsEncounter) => boolean,
+  encounterFilter?: (encounter: OpenmrsEncounter) => boolean,
 ) {
   const url = `/ws/rest/v1/encounter?encounterType=${encounterType}&patient=${patientUuid}&v=${encounterRepresentation}`;
 

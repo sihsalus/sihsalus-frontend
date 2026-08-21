@@ -19,14 +19,16 @@ export const DashboardGroupExtension = ({
   isExpanded,
 }: DashboardGroupExtensionProps): React.JSX.Element => {
   const { t } = useTranslation();
+  const navGroupName = slotName ?? title;
+
   useEffect(() => {
-    registerNavGroup(slotName);
-  }, [slotName]);
+    registerNavGroup(navGroupName);
+  }, [navGroupName]);
 
   return (
     <Accordion>
       <AccordionItem open={isExpanded ?? true} title={t(title)}>
-        <ExtensionSlot name={slotName ?? title} state={{ basePath }} />
+        <ExtensionSlot name={navGroupName} state={{ basePath }} />
       </AccordionItem>
     </Accordion>
   );

@@ -26,7 +26,7 @@ export const DashboardExtension = ({
   const { t } = useTranslation(moduleName);
   const location = useLocation();
 
-  const navLink = useMemo(() => decodeURIComponent(last(location.pathname.split('/'))), [location.pathname]);
+  const navLink = useMemo(() => decodeURIComponent(last(location.pathname.split('/')) ?? ''), [location.pathname]);
   const translatedTooltip = tooltip ? t(tooltip) : undefined;
   const link = (
     <ConfigurableLink

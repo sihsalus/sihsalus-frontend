@@ -13,6 +13,20 @@ vi.mock('@openmrs/esm-framework', async () => {
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
+function getFirstRequestBody(): object {
+  const firstCall = mockOpenmrsFetch.mock.calls[0];
+  if (!firstCall) {
+    throw new Error('Expected openmrsFetch to have been called');
+  }
+
+  const body = firstCall[1]?.body;
+  if (!body || typeof body !== 'object') {
+    throw new Error('Expected the first openmrsFetch call to contain an object body');
+  }
+
+  return body;
+}
+
 describe('postOrdersOnNewEncounter', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -82,7 +96,7 @@ describe('postOrdersOnNewEncounter', () => {
       }),
       signal: expect.any(AbortSignal),
     });
-    expect(mockOpenmrsFetch.mock.calls[0][1].body).not.toHaveProperty('encounterDatetime');
+    expect(getFirstRequestBody()).not.toHaveProperty('encounterDatetime');
   });
 
   it('omits the encounterDatetime when there is no active visit', async () => {
@@ -109,7 +123,7 @@ describe('postOrdersOnNewEncounter', () => {
       }),
       signal: expect.any(AbortSignal),
     });
-    expect(mockOpenmrsFetch.mock.calls[0][1].body).not.toHaveProperty('encounterDatetime');
+    expect(getFirstRequestBody()).not.toHaveProperty('encounterDatetime');
   });
 
   it('warns and uses the visit start date when the provided visit is not active', async () => {
@@ -167,6 +181,6 @@ describe('postOrdersOnNewEncounter', () => {
     );
 
     expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('not currently active'));
-    expect(mockOpenmrsFetch.mock.calls[0][1].body).not.toHaveProperty('encounterDatetime');
+    expect(getFirstRequestBody()).not.toHaveProperty('encounterDatetime');
   });
 });

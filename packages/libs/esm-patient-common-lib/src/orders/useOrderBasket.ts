@@ -139,7 +139,7 @@ export function useOrderBasket<T extends OrderBasketItem>(
     };
     return {
       orders,
-      clearOrders: (options) => clearOrders(options, explicitPatientUuid),
+      clearOrders: (options?: ClearOrdersOptions) => clearOrders(options, explicitPatientUuid),
       setOrders,
     } as unknown as UseOrderBasketReturn<T, string>;
   } else {
@@ -148,7 +148,7 @@ export function useOrderBasket<T extends OrderBasketItem>(
     };
     return {
       orders,
-      clearOrders: (options) => clearOrders(options, explicitPatientUuid),
+      clearOrders: (options?: ClearOrdersOptions) => clearOrders(options, explicitPatientUuid),
       setOrders,
     } as unknown as UseOrderBasketReturn<T, undefined>;
   }

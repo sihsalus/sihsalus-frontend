@@ -52,8 +52,10 @@ const OfflinePatientSyncDetails: React.FC = () => {
                   </span>
                   <WarningFilled size={16} className={styles.failedTileIcon} />
                   <span className={classNames(styles.failedTileErrorMessage, styles.label01)}>
-                    {lastSyncState.errors.find((error) => error.handlerId === id)?.message ??
-                      t('offlinePatientSyncDetailsFallbackErrorMessage', 'Unknown error.')}
+                    {t(
+                      'offlinePatientSyncDetailsErrorMessage',
+                      'This item could not be downloaded. Try updating the patient again.',
+                    )}
                   </span>
                 </Tile>
               </Layer>

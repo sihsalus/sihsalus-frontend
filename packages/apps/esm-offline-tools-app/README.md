@@ -4,10 +4,10 @@ Microfrontend para preparar pacientes para uso sin conexión, revisar acciones p
 
 ## Contrato RBAC actual
 
-| Superficie | Privilegio frontend |
-| --- | --- |
-| Página, menú de aplicación y opt-in de modo offline | `app:herramientasSinInternet` |
-| Widgets de acciones offline en la hoja clínica | `app:hoja.clinica.accionesSinConexion` |
+| Superficie                                          | Privilegio frontend                    |
+| --------------------------------------------------- | -------------------------------------- |
+| Página, menú de aplicación y opt-in de modo offline | `app:herramientasSinInternet`          |
+| Widgets de acciones offline en la hoja clínica      | `app:hoja.clinica.accionesSinConexion` |
 
 El componente raíz vuelve a comprobar `app:herramientasSinInternet`, de modo que ocultar el menú no es el único control frente a una URL directa.
 
@@ -18,3 +18,27 @@ Si se requiere separación entre lectura y eliminación, debe agregarse un privi
 ## Dependencia backend
 
 El manifest requiere `webservices.rest >= 2.2.0`. El soporte sin conexión también depende del service worker, del almacenamiento local y de las capacidades offline habilitadas por el app shell.
+
+## Synchronization failure contract
+
+Queue synchronization is complete only when `runSynchronization` fulfills. A rejected synchronization keeps pending
+items in the authenticated user's queue and is shown with a fixed, non-technical message; backend responses, URLs,
+identifiers, and exception details must never be rendered. The page refreshes the queue after both completed and
+incomplete attempts, and a refresh failure is handled separately instead of becoming an unhandled rejection.
+Patient-list updates also settle both view refreshes. An update failure takes precedence; otherwise a refresh failure
+shows one fixed stale-state warning without exposing the rejected value. Each merged view waits for all of its
+constituent SWR refreshes and rejects with one fixed, non-technical error only after every child settles.
+
+Patient synchronization succeeds only after the service worker accepts the patient route and a confirmed fresh
+network response replaces the stable cache entry. A failed or canceled refresh preserves any previously cached
+response and reports one fixed, non-sensitive failure; stale cache or locally queued data never count as a successful
+refresh.
+
+## Error and privacy contract
+
+Synchronization details render a fixed translated message for failed handlers. Persisted `error.message` values are
+never displayed because legacy IndexedDB records may contain URLs, UUIDs, or clinical data.
+
+Clinical responses and dynamic routes remain origin-wide. Removing a patient from the offline list currently removes
+membership, not every cached response. Shared devices therefore require a dedicated OS/browser profile per authorized
+user until cache partitioning or verified logout/removal purging is implemented.

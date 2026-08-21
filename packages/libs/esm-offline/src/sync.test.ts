@@ -4,14 +4,18 @@ import { getLoggedInUser } from '@openmrs/esm-api';
 import { OfflineDb } from './offline-db';
 import type { QueueItemDescriptor } from './sync';
 import {
+  beginEditSynchronizationItem,
   deleteSynchronizationItem,
   getFullSynchronizationItems,
   getFullSynchronizationItemsFor,
+  getOfflineSynchronizationStore,
   getSynchronizationItem,
   getSynchronizationItems,
   getSynchronizationItemsFor,
   queueSynchronizationItem,
   queueSynchronizationItemFor,
+  runSynchronization,
+  setupOfflineSync,
 } from './sync';
 
 interface MockSyncItem {
@@ -20,7 +24,9 @@ interface MockSyncItem {
 
 const systemTime = new Date();
 const mockUserId = '00000000-0000-0000-0000-000000000000';
+const otherMockUserId = '11111111-1111-1111-1111-111111111111';
 const mockSyncItemType = 'mock-sync-item';
+const offlineQueueOperationUnavailableMessage = 'Offline queue operation is unavailable.';
 const defaultMockSyncItem: MockSyncItem = {
   value: 123,
 };
@@ -31,14 +37,56 @@ const defaultMockSyncItemDescriptor: QueueItemDescriptor = {
   patientUuid: '00000000-0000-0000-0000-000000000001',
 };
 
+let currentUserId = mockUserId;
+const sessionSubscribers = new Set<() => void>();
+const mockSessionStore = {
+  getState: vi.fn(() => ({
+    loaded: true as const,
+    session: {
+      authenticated: true,
+      sessionId: 'test-session',
+      user: { uuid: currentUserId },
+    },
+  })),
+  subscribe: vi.fn((subscriber: () => void) => {
+    sessionSubscribers.add(subscriber);
+    return () => sessionSubscribers.delete(subscriber);
+  }),
+};
+
 vi.mock('@openmrs/esm-api', () => ({
-  getLoggedInUser: vi.fn(async () => ({ uuid: mockUserId })),
+  getLoggedInUser: vi.fn(async () => ({ uuid: currentUserId })),
+  getSessionStore: vi.fn(() => mockSessionStore),
 }));
 
 afterEach(async () => {
   // We want each test case to start fresh with a clean sync queue.
   await new OfflineDb().syncQueue.clear();
+  setCurrentUser(mockUserId);
+  getOfflineSynchronizationStore().setState({ synchronization: undefined });
 });
+
+function setCurrentUser(userId: string) {
+  currentUserId = userId;
+  sessionSubscribers.forEach((subscriber) => {
+    subscriber();
+  });
+}
+
+async function seedSynchronizationItemFor<T>(
+  userId: string,
+  type: string,
+  content: T,
+  descriptor: QueueItemDescriptor = {},
+) {
+  return await new OfflineDb().syncQueue.add({
+    userId,
+    type,
+    content,
+    descriptor,
+    createdOn: new Date(),
+  });
+}
 
 describe('Sync Queue', () => {
   beforeAll(() => {
@@ -76,6 +124,70 @@ describe('Sync Queue', () => {
     const queuedItems = await getFullSynchronizationItems();
     expect(queuedItems).toHaveLength(2);
   });
+
+  it('atomically replaces a current-user item with the same descriptor ID', async () => {
+    const descriptor = { id: 'replaceable-item' };
+    const originalId = await queueSynchronizationItem(mockSyncItemType, { value: 1 }, descriptor);
+
+    const replacementId = await queueSynchronizationItem(mockSyncItemType, { value: 2 }, descriptor);
+
+    expect(replacementId).not.toBe(originalId);
+    expect(await getSynchronizationItem(originalId)).toBeUndefined();
+    expect(await getSynchronizationItems<MockSyncItem>(mockSyncItemType)).toEqual([{ value: 2 }]);
+  });
+
+  it('atomically reconciles replacement content with the latest same-descriptor row', async () => {
+    const descriptor = { id: 'guarded-replacement-item' };
+    const originalContent = { value: 1, checkpoint: 'attempted' };
+    await queueSynchronizationItem(mockSyncItemType, originalContent, descriptor);
+    const reconcileContent = vi.fn(
+      (existing: typeof originalContent | undefined, proposed: typeof originalContent) => ({
+        ...proposed,
+        checkpoint: existing?.checkpoint ?? proposed.checkpoint,
+      }),
+    );
+
+    await queueSynchronizationItem(mockSyncItemType, { value: 2, checkpoint: 'caller-value' }, descriptor, {
+      reconcileContent,
+    });
+
+    expect(reconcileContent).toHaveBeenCalledOnce();
+    expect(reconcileContent).toHaveBeenCalledWith(originalContent, {
+      value: 2,
+      checkpoint: 'caller-value',
+    });
+    expect(await getSynchronizationItems(mockSyncItemType)).toEqual([{ value: 2, checkpoint: 'attempted' }]);
+  });
+
+  it('rolls back a guarded replacement and sanitizes a throwing reconciler', async () => {
+    const descriptor = { id: 'rejected-replacement-item' };
+    const originalContent = { value: 1, checkpoint: 'attempted' };
+    const originalId = await queueSynchronizationItem(mockSyncItemType, originalContent, descriptor);
+    const sensitiveDetails = 'Attempted checkpoint for private-patient-uuid';
+
+    const error = await queueSynchronizationItem(
+      mockSyncItemType,
+      { value: 2, checkpoint: 'caller-value' },
+      descriptor,
+      {
+        reconcileContent() {
+          throw new Error(sensitiveDetails);
+        },
+      },
+    ).catch((reason: unknown) => reason);
+
+    expect(error).toEqual(new Error(offlineQueueOperationUnavailableMessage));
+    expect(String(error)).not.toContain(sensitiveDetails);
+    expect(await getSynchronizationItem(originalId)).toEqual({
+      id: originalId,
+      type: mockSyncItemType,
+      userId: mockUserId,
+      content: originalContent,
+      descriptor,
+      createdOn: systemTime,
+    });
+    expect(await getSynchronizationItems(mockSyncItemType)).toEqual([originalContent]);
+  });
 });
 
 describe('Logged-in user specific functions', () => {
@@ -86,6 +198,41 @@ describe('Logged-in user specific functions', () => {
 
     expect(queuedItems).toHaveLength(1);
     expect(queuedItems[0].userId).toBe(loggedInUserId);
+  });
+
+  it("does not enqueue or replace another user's item", async () => {
+    const descriptor = { id: 'foreign-item' };
+    const otherUserItemId = await seedSynchronizationItemFor(
+      otherMockUserId,
+      mockSyncItemType,
+      defaultMockSyncItem,
+      descriptor,
+    );
+
+    await expect(
+      queueSynchronizationItemFor(otherMockUserId, mockSyncItemType, { value: 999 }, descriptor),
+    ).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+
+    setCurrentUser(otherMockUserId);
+    expect(await getSynchronizationItem<MockSyncItem>(otherUserItemId)).toMatchObject({
+      content: defaultMockSyncItem,
+      userId: otherMockUserId,
+    });
+  });
+
+  it('replaces session lookup failures with the fixed queue error', async () => {
+    const sensitiveDetails =
+      'GET https://clinical.example.test/openmrs/ws/rest/v1/session exposed a private response body';
+    vi.mocked(getLoggedInUser).mockRejectedValueOnce(new Error(sensitiveDetails));
+
+    const error = await getFullSynchronizationItems().catch((reason: unknown) => reason);
+
+    expect(error).toEqual(
+      expect.objectContaining({
+        message: offlineQueueOperationUnavailableMessage,
+      }),
+    );
+    expect(String(error)).not.toContain(sensitiveDetails);
   });
 });
 
@@ -124,6 +271,41 @@ describe('getSynchronizationItem', () => {
     const item = await getSynchronizationItem(404);
     expect(item).toBeUndefined();
   });
+
+  it("does not return another user's item even when its numeric ID is known", async () => {
+    const otherUserItemId = await seedSynchronizationItemFor(otherMockUserId, mockSyncItemType, defaultMockSyncItem);
+
+    const item = await getSynchronizationItem(otherUserItemId);
+
+    expect(item).toBeUndefined();
+    await expect(getFullSynchronizationItemsFor(otherMockUserId)).rejects.toThrow(
+      offlineQueueOperationUnavailableMessage,
+    );
+    await expect(getSynchronizationItemsFor(otherMockUserId)).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+
+    setCurrentUser(otherMockUserId);
+    expect(await getSynchronizationItem(otherUserItemId)).toMatchObject({
+      id: otherUserItemId,
+      userId: otherMockUserId,
+    });
+  });
+
+  it('replaces legacy persisted error details with a fixed safe error', async () => {
+    const id = await queueSynchronizationItem(mockSyncItemType, defaultMockSyncItem);
+    await new OfflineDb().syncQueue.update(id, {
+      lastError: {
+        name: 'Patient 00000000-0000-0000-0000-000000000001',
+        message: 'POST https://clinical.example.test/openmrs/ws/rest/v1/patient returned a private body',
+      },
+    });
+
+    const item = await getSynchronizationItem(id);
+
+    expect(item?.lastError).toEqual({
+      name: 'OfflineSynchronizationError',
+      message: 'Offline synchronization failed.',
+    });
+  });
 });
 
 describe('deleteSynchronizationItem', () => {
@@ -134,7 +316,396 @@ describe('deleteSynchronizationItem', () => {
     expect(items).toHaveLength(0);
   });
 
-  it('does not throw when no item with given ID exists', async () => {
-    await deleteSynchronizationItem(404);
+  it('fails generically when no item with given ID exists', async () => {
+    await expect(deleteSynchronizationItem(404)).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+  });
+
+  it("does not delete another user's item even when its numeric ID is known", async () => {
+    const otherUserItemId = await seedSynchronizationItemFor(otherMockUserId, mockSyncItemType, defaultMockSyncItem);
+
+    await expect(deleteSynchronizationItem(otherUserItemId)).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+
+    setCurrentUser(otherMockUserId);
+    expect(await getSynchronizationItem(otherUserItemId)).toBeDefined();
+  });
+});
+
+describe('beginEditSynchronizationItem', () => {
+  it("does not start editing another user's item and leaves that item unchanged", async () => {
+    const type = 'user-isolated-edit-item';
+    const onBeginEditSyncItem = vi.fn();
+    setupOfflineSync(
+      type,
+      [],
+      vi.fn(async () => undefined),
+      { onBeginEditSyncItem },
+    );
+    const otherUserItemId = await seedSynchronizationItemFor(otherMockUserId, type, defaultMockSyncItem);
+
+    await expect(beginEditSynchronizationItem(otherUserItemId)).rejects.toThrow(
+      offlineQueueOperationUnavailableMessage,
+    );
+    expect(onBeginEditSyncItem).not.toHaveBeenCalled();
+
+    setCurrentUser(otherMockUserId);
+    await beginEditSynchronizationItem(otherUserItemId);
+    expect(onBeginEditSyncItem).toHaveBeenCalledWith(
+      expect.objectContaining({ id: otherUserItemId, userId: otherMockUserId }),
+    );
+    expect(await getSynchronizationItem(otherUserItemId)).toBeDefined();
+  });
+
+  it('uses the same generic error for a missing item and an unsupported handler', async () => {
+    const id = await queueSynchronizationItem('unsupported-edit-item', defaultMockSyncItem);
+
+    await expect(beginEditSynchronizationItem(404)).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+    await expect(beginEditSynchronizationItem(id)).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+  });
+
+  it('replaces a throwing edit callback with the fixed queue error', async () => {
+    const type = 'throwing-edit-item';
+    const sensitiveDetails = 'Patient 00000000-0000-0000-0000-000000000001 could not be opened';
+    setupOfflineSync(
+      type,
+      [],
+      vi.fn(async () => undefined),
+      {
+        onBeginEditSyncItem: () => {
+          throw new Error(sensitiveDetails);
+        },
+      },
+    );
+    const id = await queueSynchronizationItem(type, defaultMockSyncItem);
+
+    const error = await beginEditSynchronizationItem(id).catch((reason: unknown) => reason);
+
+    expect(error).toEqual(
+      expect.objectContaining({
+        message: offlineQueueOperationUnavailableMessage,
+      }),
+    );
+    expect(String(error)).not.toContain(sensitiveDetails);
+  });
+});
+
+describe('runSynchronization', () => {
+  it('atomically merges concurrent handler checkpoints into the owned queue item', async () => {
+    const type = 'checkpointed-sync-item';
+    setupOfflineSync<MockSyncItem & { encounterCompleted?: true; personCompleted?: true }>(
+      type,
+      [],
+      async (_item, options) => {
+        if (!options.updateContent) {
+          throw new Error('Missing queue checkpoint capability');
+        }
+
+        await Promise.all([
+          options.updateContent((current) => ({ ...current, encounterCompleted: true })),
+          options.updateContent((current) => ({ ...current, personCompleted: true })),
+        ]);
+        throw new Error('Keep the item queued after its partial writes');
+      },
+    );
+    const id = await queueSynchronizationItem(type, defaultMockSyncItem);
+
+    await expect(runSynchronization()).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+
+    const queuedItem = await getSynchronizationItem(id);
+    expect(queuedItem?.content).toEqual({
+      ...defaultMockSyncItem,
+      encounterCompleted: true,
+      personCompleted: true,
+    });
+    expect(queuedItem).toMatchObject({
+      lastError: {
+        name: 'OfflineSynchronizationError',
+        message: 'Offline synchronization failed.',
+      },
+    });
+  });
+
+  it('does not let a same-descriptor replacement lose a concurrent checkpoint or start its write', async () => {
+    const type = 'replacement-race-item';
+    const descriptor = { id: 'replacement-race-descriptor' };
+    let releaseHandler: (() => void) | undefined;
+    const externalWrite = vi.fn();
+    setupOfflineSync<MockSyncItem & { attempted?: true }>(type, [], async (_item, options) => {
+      await new Promise<void>((resolve) => {
+        releaseHandler = resolve;
+      });
+      await options.updateContent?.((current) => ({ ...current, attempted: true }));
+      externalWrite();
+    });
+    const originalId = await queueSynchronizationItem(type, { value: 1 }, descriptor);
+
+    const synchronization = runSynchronization().catch((error: unknown) => error);
+    await vi.waitFor(() => expect(releaseHandler).toBeTypeOf('function'));
+    const replacementId = await queueSynchronizationItem(type, { value: 2 }, descriptor, {
+      reconcileContent: (_existing, proposed) => proposed,
+    });
+    releaseHandler?.();
+
+    await expect(synchronization).resolves.toEqual(new Error(offlineQueueOperationUnavailableMessage));
+    expect(externalWrite).not.toHaveBeenCalled();
+    expect(await getSynchronizationItem(originalId)).toBeUndefined();
+    const replacement = await getSynchronizationItem(replacementId);
+    expect(replacement?.content).toEqual({ value: 2 });
+    expect(replacement?.lastError).toBeUndefined();
+  });
+
+  it('rejects a checkpoint after session ownership is lost and preserves the queued content', async () => {
+    const type = 'owner-scoped-checkpoint-item';
+    let releaseHandler: (() => void) | undefined;
+    let checkpointError: unknown;
+    setupOfflineSync(type, [], async (_item, options) => {
+      await new Promise<void>((resolve) => {
+        releaseHandler = resolve;
+      });
+      try {
+        await options.updateContent?.((current) => ({ ...current, value: 999 }));
+      } catch (error) {
+        checkpointError = error;
+        throw error;
+      }
+    });
+    const id = await queueSynchronizationItem(type, defaultMockSyncItem);
+
+    const synchronization = runSynchronization();
+    const handledSynchronization = synchronization.catch((error: unknown) => error);
+    await vi.waitFor(() => expect(releaseHandler).toBeTypeOf('function'));
+
+    setCurrentUser(otherMockUserId);
+    releaseHandler?.();
+
+    await expect(handledSynchronization).resolves.toEqual(
+      expect.objectContaining({ message: offlineQueueOperationUnavailableMessage }),
+    );
+    expect(checkpointError).toEqual(new Error(offlineQueueOperationUnavailableMessage));
+    setCurrentUser(mockUserId);
+    const queuedItem = await getSynchronizationItem(id);
+    expect(queuedItem?.content).toEqual(defaultMockSyncItem);
+    expect(queuedItem?.lastError).toBeUndefined();
+  });
+
+  it('sanitizes a checkpoint updater failure and releases the next synchronization attempt', async () => {
+    const type = 'failed-checkpoint-item';
+    const sensitiveDetails = 'Checkpoint failed for private-patient-uuid at https://clinical.example.test';
+    let checkpointError: unknown;
+    setupOfflineSync(type, [], async (_item, options) => {
+      try {
+        await options.updateContent?.(() => {
+          throw new Error(sensitiveDetails);
+        });
+      } catch (error) {
+        checkpointError = error;
+        throw error;
+      }
+    });
+    const id = await queueSynchronizationItem(type, defaultMockSyncItem);
+
+    await expect(runSynchronization()).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+
+    expect(checkpointError).toEqual(new Error(offlineQueueOperationUnavailableMessage));
+    expect(String(checkpointError)).not.toContain(sensitiveDetails);
+    expect(await getSynchronizationItem(id)).toMatchObject({
+      content: defaultMockSyncItem,
+      lastError: {
+        name: 'OfflineSynchronizationError',
+        message: 'Offline synchronization failed.',
+      },
+    });
+
+    const retry = vi.fn(async () => undefined);
+    setupOfflineSync(type, [], retry);
+    await expect(runSynchronization()).resolves.toBeUndefined();
+    expect(retry).toHaveBeenCalledOnce();
+    expect(await getSynchronizationItem(id)).toBeUndefined();
+  });
+
+  it('rejects a concurrent attempt instead of reporting false completion', async () => {
+    const type = 'concurrent-sync-item';
+    let finishProcessing: (() => void) | undefined;
+    setupOfflineSync(
+      type,
+      [],
+      vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            finishProcessing = resolve;
+          }),
+      ),
+    );
+    await queueSynchronizationItem(type, defaultMockSyncItem);
+
+    const synchronization = runSynchronization();
+    await vi.waitFor(() => expect(finishProcessing).toBeTypeOf('function'));
+
+    await expect(runSynchronization()).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+
+    finishProcessing?.();
+    await expect(synchronization).resolves.toBeUndefined();
+  });
+
+  it('rejects when a new current-user item remains after the handler snapshot', async () => {
+    const type = 'queue-growth-sync-item';
+    let finishProcessing: (() => void) | undefined;
+    setupOfflineSync(
+      type,
+      [],
+      vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            finishProcessing = resolve;
+          }),
+      ),
+    );
+    await queueSynchronizationItem(type, { value: 1 });
+
+    const synchronization = runSynchronization();
+    const handledSynchronization = synchronization.catch((error: unknown) => error);
+    await vi.waitFor(() => expect(finishProcessing).toBeTypeOf('function'));
+    await queueSynchronizationItem(type, { value: 2 });
+
+    finishProcessing?.();
+    await expect(handledSynchronization).resolves.toEqual(
+      expect.objectContaining({
+        message: offlineQueueOperationUnavailableMessage,
+      }),
+    );
+    expect(await getSynchronizationItems<MockSyncItem>(type)).toEqual([{ value: 2 }]);
+  });
+
+  it('preserves current-user items when explicit cancellation occurs', async () => {
+    const type = 'canceled-sync-item';
+    let finishProcessing: (() => void) | undefined;
+    const process = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishProcessing = resolve;
+        }),
+    );
+    setupOfflineSync(type, [], process);
+    const firstItemId = await queueSynchronizationItem(type, { value: 1 });
+    const secondItemId = await queueSynchronizationItem(type, { value: 2 });
+
+    const synchronization = runSynchronization();
+    const handledSynchronization = synchronization.catch((error: unknown) => error);
+    await vi.waitFor(() => expect(process).toHaveBeenCalledTimes(1));
+
+    getOfflineSynchronizationStore().getState().synchronization?.abortController.abort();
+    finishProcessing?.();
+
+    await expect(handledSynchronization).resolves.toEqual(
+      expect.objectContaining({
+        message: offlineQueueOperationUnavailableMessage,
+      }),
+    );
+    expect(process).toHaveBeenCalledTimes(1);
+    expect((await getSynchronizationItem(firstItemId))?.lastError).toBeUndefined();
+    expect((await getSynchronizationItem(secondItemId))?.lastError).toBeUndefined();
+  });
+
+  it("processes and counts only the authenticated user's items", async () => {
+    const type = 'user-isolated-sync-item';
+    let finishProcessing: (() => void) | undefined;
+    const process = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishProcessing = resolve;
+        }),
+    );
+    setupOfflineSync(type, [], process);
+    await queueSynchronizationItemFor(mockUserId, type, { value: 1 });
+    await seedSynchronizationItemFor(otherMockUserId, type, { value: 2 });
+    setCurrentUser(otherMockUserId);
+
+    const synchronization = runSynchronization();
+    await vi.waitFor(() => expect(process).toHaveBeenCalledTimes(1));
+
+    expect(process).toHaveBeenCalledWith(
+      { value: 2 },
+      expect.objectContaining({
+        userId: otherMockUserId,
+        index: 0,
+        items: [{ value: 2 }],
+      }),
+    );
+    expect(getOfflineSynchronizationStore().getState().synchronization).toMatchObject({
+      totalCount: 1,
+      pendingCount: 1,
+    });
+
+    finishProcessing?.();
+    await synchronization;
+
+    expect(await getFullSynchronizationItems(type)).toHaveLength(0);
+    setCurrentUser(mockUserId);
+    expect(await getFullSynchronizationItems(type)).toHaveLength(1);
+  });
+
+  it('aborts visible progress and preserves the original queue when the authenticated user changes', async () => {
+    const type = 'session-change-sync-item';
+    let finishProcessing: (() => void) | undefined;
+    let observedAbortController: AbortController | undefined;
+    const process = vi.fn(
+      (_item: MockSyncItem, options: { abort: AbortController }) =>
+        new Promise<void>((resolve) => {
+          observedAbortController = options.abort;
+          finishProcessing = resolve;
+        }),
+    );
+    setupOfflineSync(type, [], process);
+    const originalItemId = await queueSynchronizationItem(type, defaultMockSyncItem);
+    const secondOriginalItemId = await queueSynchronizationItem(type, {
+      value: 456,
+    });
+
+    const synchronization = runSynchronization();
+    const handledSynchronization = synchronization.catch((error: unknown) => error);
+    await vi.waitFor(() => expect(process).toHaveBeenCalledTimes(1));
+    expect(getOfflineSynchronizationStore().getState().synchronization?.totalCount).toBe(2);
+
+    setCurrentUser(otherMockUserId);
+    expect(getOfflineSynchronizationStore().getState().synchronization).toBeUndefined();
+    expect(observedAbortController?.signal.aborted).toBe(true);
+
+    finishProcessing?.();
+    await expect(handledSynchronization).resolves.toEqual(
+      expect.objectContaining({
+        message: offlineQueueOperationUnavailableMessage,
+      }),
+    );
+    expect(process).toHaveBeenCalledTimes(1);
+
+    setCurrentUser(mockUserId);
+    expect(await getSynchronizationItem(originalItemId)).toMatchObject({
+      id: originalItemId,
+      userId: mockUserId,
+    });
+    expect(await getSynchronizationItem(secondOriginalItemId)).toMatchObject({
+      id: secondOriginalItemId,
+      userId: mockUserId,
+    });
+  });
+
+  it('persists only a fixed error when a handler exposes sensitive technical details', async () => {
+    const type = 'sanitized-sync-error-item';
+    const sensitiveDetails =
+      'POST https://clinical.example.test/openmrs/ws/rest/v1/patient/00000000-0000-0000-0000-000000000001 body: Patient Name';
+    setupOfflineSync(
+      type,
+      [],
+      vi.fn(async () => Promise.reject(new Error(sensitiveDetails))),
+    );
+    const id = await queueSynchronizationItem(type, defaultMockSyncItem);
+
+    await expect(runSynchronization()).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+
+    const persistedItem = await new OfflineDb().syncQueue.get(id);
+    expect(persistedItem?.lastError).toEqual({
+      name: 'OfflineSynchronizationError',
+      message: 'Offline synchronization failed.',
+    });
+    expect(JSON.stringify(persistedItem?.lastError)).not.toContain(sensitiveDetails);
   });
 });

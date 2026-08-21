@@ -30,6 +30,8 @@
   "loading": "Cargando",
   "notification": "Notificación",
   "nullMandatoryField": "Por favor, complete los campos obligatorios.",
+  "offlineFormDependenciesRefreshFailed": "No se pudieron actualizar las dependencias de formularios sin conexión",
+  "offlineFormDependenciesRefreshFailedSubtitle": "Las opciones de ubicación o proveedor pueden estar desactualizadas. Vuelva a intentarlo cuando esté en línea antes de usar formularios sin conexión.",
   "or": "o",
   "preview": "Vista Previa",
   "previousValue": "Valor anterior:",

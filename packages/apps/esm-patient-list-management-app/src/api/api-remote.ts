@@ -5,6 +5,7 @@ import {
   openmrsFetch,
   putDynamicOfflineData,
   refetchCurrentUser,
+  removeDynamicOfflineData,
   restBaseUrl,
   syncDynamicOfflineData,
   toOmrsIsoString,
@@ -32,6 +33,24 @@ import {
 } from './types';
 
 export const cohortUrl = `${restBaseUrl}/cohortm`;
+
+const offlinePatientMembershipLockName = 'openmrs-offline-patient-membership';
+let offlinePatientMembershipFallback = Promise.resolve();
+
+function serializeOfflinePatientMembershipUpdate<T>(operation: () => Promise<T>): Promise<T> {
+  const lockManager = globalThis.navigator?.locks;
+
+  if (lockManager) {
+    return lockManager.request(offlinePatientMembershipLockName, operation);
+  }
+
+  const result = offlinePatientMembershipFallback.then(operation, operation);
+  offlinePatientMembershipFallback = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
+}
 
 async function postData(url: string, data = {}, ac = new AbortController()) {
   const response = await openmrsFetch(url, {
@@ -266,8 +285,28 @@ export async function findFakePatientListsWithoutPatient(
           id: 'fake-offline-patient-list',
           displayName: t('offlinePatients', 'Offline patients'),
           async addPatient() {
-            await putDynamicOfflineData('patient', patientUuid);
-            await syncDynamicOfflineData('patient', patientUuid);
+            await serializeOfflinePatientMembershipUpdate(async () => {
+              const currentEntries = await getDynamicOfflineDataEntries('patient');
+              const wasAlreadyRegistered = currentEntries.some((entry) => entry.identifier === patientUuid);
+
+              if (!wasAlreadyRegistered) {
+                await putDynamicOfflineData('patient', patientUuid);
+              }
+
+              try {
+                await syncDynamicOfflineData('patient', patientUuid);
+              } catch (error: unknown) {
+                if (!wasAlreadyRegistered) {
+                  try {
+                    await removeDynamicOfflineData('patient', patientUuid);
+                  } catch {
+                    console.error('Failed to roll back an incomplete offline patient registration.');
+                  }
+                }
+
+                throw error;
+              }
+            });
           },
         },
       ];

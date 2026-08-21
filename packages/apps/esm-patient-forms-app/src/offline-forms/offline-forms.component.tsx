@@ -14,7 +14,7 @@ import {
 } from '@carbon/react';
 import {
   isDesktop,
-  syncDynamicOfflineData,
+  showSnackbar,
   useConnectivity,
   useLayoutType,
   userHasAccess,
@@ -26,11 +26,8 @@ import { useTranslation } from 'react-i18next';
 
 import { type Form } from '../types';
 
-import {
-  putDynamicFormDataEntryFor,
-  removeDynamicFormDataEntryFor,
-  useDynamicFormDataEntries,
-} from './offline-form-helpers';
+import { useDynamicFormDataEntries } from './offline-form-helpers';
+import { updateOfflineFormAvailability } from './offline-form-membership';
 import styles from './offline-forms.scss';
 import { useValidOfflineFormEncounters } from './use-offline-form-encounters';
 
@@ -138,7 +135,7 @@ const OfflineForms: React.FC<OfflineFormsProps> = () => {
   );
 };
 
-function OfflineFormToggle({ form, disabled }: { form: Form; disabled: boolean }) {
+export function OfflineFormToggle({ form, disabled }: { form: Form; disabled: boolean }) {
   const { t } = useTranslation();
   const session = useSession();
   const [isUpdating, setIsUpdating] = useState(false);
@@ -152,17 +149,36 @@ function OfflineFormToggle({ form, disabled }: { form: Form; disabled: boolean }
     }
 
     setIsUpdating(true);
+    let updateFailed = false;
 
     try {
-      if (checked) {
-        await putDynamicFormDataEntryFor(userId, form.uuid);
-        await syncDynamicOfflineData('form', form.uuid);
-      } else {
-        await removeDynamicFormDataEntryFor(userId, form.uuid);
-      }
+      await updateOfflineFormAvailability(userId, form.uuid, checked);
+    } catch {
+      updateFailed = true;
+      showSnackbar({
+        kind: 'error',
+        title: t('offlineFormUpdateFailed', 'Offline form update failed'),
+        subtitle: t(
+          'offlineFormUpdateFailedSubtitle',
+          "The form's offline availability could not be changed. Please try again.",
+        ),
+      });
     } finally {
+      try {
+        await dynamicFormEntriesSwr.mutate();
+      } catch {
+        if (!updateFailed) {
+          showSnackbar({
+            kind: 'warning',
+            title: t('offlineFormStatusRefreshFailed', 'Offline form status could not be refreshed'),
+            subtitle: t(
+              'offlineFormStatusRefreshFailedSubtitle',
+              'The update completed, but this page may be out of date. Reload it before taking another action.',
+            ),
+          });
+        }
+      }
       setIsUpdating(false);
-      dynamicFormEntriesSwr.mutate();
     }
   };
 

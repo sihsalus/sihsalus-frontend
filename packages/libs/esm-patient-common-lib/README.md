@@ -52,3 +52,10 @@ La función segura no revierte ni bloquea la atención si falla una escritura ad
 resultado para que cada flujo muestre recuperación visible. El inicio de consulta ofrece reintento sobre
 la misma visita únicamente ante fallos transitorios; 401/403 producen una derivación determinística sin
 un botón que volvería a fallar. Emergencia conserva su política no bloqueante.
+
+## Offline visit queue contract
+
+Automatic offline-visit creation refreshes local state only after a successful queue write, preventing rejected writes
+from becoming automatic retry loops. Queue write and refresh failures are consumed without rendering session, storage,
+endpoint, or patient details. Callers that explicitly create an offline visit remain responsible for handling the
+returned promise and presenting fixed, non-technical feedback.

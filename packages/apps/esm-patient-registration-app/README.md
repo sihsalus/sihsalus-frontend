@@ -128,6 +128,11 @@ curl -fsS -u "$E2E_USER_ADMIN_USERNAME:$E2E_USER_ADMIN_PASSWORD" \
 
 Patient registration depends on metadata loaded at runtime: address template, relationship types, and patient identifier types.
 
+Queued registration writes share the queue synchronization abort signal, including the patient-photo attachment fallback.
+An interrupted upload must remain associated with the original queue owner and must not start under a later session.
+Existing-patient offline refreshes require confirmed fresh network responses. A stale cached success cannot complete the
+refresh, and each stable cache entry is replaced only after its corresponding network response succeeds.
+
 - New registrations must wait for patient identifier types before submission, because the form cannot safely create the required identifiers without that metadata.
 - Editing an existing patient may continue when identifier types are temporarily unavailable, as long as the form already has existing identifiers. The existing identifiers remain visible, but adding or changing identifier types is disabled until the metadata loads.
 - Relationship controls are shown only after relationship types are available. If they cannot be loaded, the section shows an error state instead of an endless skeleton so the rest of the edit flow can still be used.

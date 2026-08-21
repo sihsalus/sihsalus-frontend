@@ -1,9 +1,9 @@
 /** @module @category Offline */
 
-import { getLoggedInUser } from '@openmrs/esm-api';
+import { getLoggedInUser, getSessionStore } from '@openmrs/esm-api';
 import { createGlobalStore } from '@openmrs/esm-state';
-import Dexie from 'dexie';
 import { OfflineDb } from './offline-db';
+import { offlineSynchronizationError } from './synchronization-error';
 
 /**
  * Defines an item queued up in the offline synchronization queue.
@@ -39,6 +39,14 @@ export interface QueueItemDescriptor {
   displayName?: string;
 }
 
+export interface QueueSynchronizationItemOptions<T> {
+  /**
+   * Atomically reconciles proposed content with the existing same-descriptor row before replacement.
+   * Throwing aborts the replacement and preserves the existing row.
+   */
+  reconcileContent?: (existingContent: T | undefined, proposedContent: T) => T;
+}
+
 /**
  * A function which, when invoked, performs the actual client-server synchronization of the given
  * `item` (which is the actual data to be synchronized).
@@ -56,6 +64,12 @@ export interface SyncProcessOptions<T> {
   index: number;
   items: Array<T>;
   dependencies: Array<any>;
+  /**
+   * Atomically replaces this item's content while the same authenticated synchronization still owns it.
+   * The updater receives the latest persisted content so concurrent checkpoints cannot overwrite one another.
+   * This capability is scoped to the item being processed and fails after cancellation or an owner change.
+   */
+  updateContent?: (update: (currentContent: T) => T) => Promise<T>;
 }
 
 /**
@@ -103,6 +117,8 @@ interface SyncResultBag {
 
 const db = new OfflineDb();
 const handlers: Record<string, SyncHandler> = {};
+const offlineQueueOperationUnavailableMessage = 'Offline queue operation is unavailable.';
+let synchronizationInProgress = false;
 
 const syncStore = createGlobalStore<OfflineSynchronizationStore>('offline-synchronization', {});
 
@@ -111,31 +127,75 @@ export function getOfflineSynchronizationStore() {
 }
 
 /**
- * Runs a full synchronization of **all** queued synchronization items.
+ * Runs a full synchronization of all queued synchronization items owned by the authenticated user.
+ * Visible counts and progress are limited to the same owner.
  */
 export async function runSynchronization() {
-  if (syncStore.getState().synchronization) {
-    return;
+  if (synchronizationInProgress) {
+    throw createOfflineQueueOperationError();
   }
 
-  const totalCount = await db.syncQueue.count();
+  synchronizationInProgress = true;
+
   const promises: Record<string, Promise<void>> = {};
   const handlerQueue = Object.entries(handlers);
   const maxIter = handlerQueue.length;
   const results: SyncResultBag = {};
   const abortController = new AbortController();
+  let unsubscribeFromSession: (() => void) | undefined;
+  let sessionOwnershipLost = false;
+  let synchronizationIncomplete = false;
+  let userId: string | undefined;
+  const ownsSession = () => userId !== undefined && !sessionOwnershipLost && isAuthenticatedSessionForUser(userId);
+  const markSynchronizationIncomplete = () => {
+    synchronizationIncomplete = true;
+  };
+  const handleAbort = () => markSynchronizationIncomplete();
+  abortController.signal.addEventListener('abort', handleAbort, { once: true });
   const notifySyncProgress = () => {
-    const synchronization = syncStore.getState().synchronization!;
+    if (!ownsSession()) {
+      abortController.abort();
+      syncStore.setState({ synchronization: undefined });
+      return;
+    }
+
+    const synchronization = syncStore.getState().synchronization;
+    if (!synchronization) {
+      return;
+    }
 
     syncStore.setState({
       synchronization: {
         ...synchronization,
-        pendingCount: synchronization!.pendingCount - 1,
+        pendingCount: Math.max(0, synchronization.pendingCount - 1),
       },
     });
   };
 
   try {
+    userId = await getUserId();
+    const sessionStore = getSessionStore();
+    const handleSessionChange = () => {
+      if (!userId || isAuthenticatedSessionForUser(userId)) {
+        return;
+      }
+
+      sessionOwnershipLost = true;
+      markSynchronizationIncomplete();
+      abortController.abort();
+      syncStore.setState({ synchronization: undefined });
+    };
+
+    unsubscribeFromSession = sessionStore.subscribe(handleSessionChange);
+    handleSessionChange();
+
+    if (!ownsSession()) {
+      throw createOfflineQueueOperationError();
+    }
+
+    const totalCount = await db.syncQueue.where('userId').equals(userId).count();
+    assertSessionOwnedBy(userId);
+
     syncStore.setState({
       synchronization: {
         totalCount,
@@ -154,14 +214,42 @@ export async function runSynchronization() {
           results[name] = {};
           await Promise.all(deps);
 
-          promises[name] = processHandler(handler, results, abortController, notifySyncProgress);
+          promises[name] = processHandler(
+            handler,
+            results,
+            abortController,
+            notifySyncProgress,
+            userId,
+            ownsSession,
+            markSynchronizationIncomplete,
+          );
           handlerQueue.splice(i, 1);
         }
       }
     }
 
-    await Promise.allSettled(Object.values(promises));
+    const handlerResults = await Promise.allSettled(Object.values(promises));
+    if (handlerResults.some((result) => result.status === 'rejected')) {
+      markSynchronizationIncomplete();
+    }
+
+    if (ownsSession()) {
+      const remainingCount = await db.syncQueue.where('userId').equals(userId).count();
+      assertSessionOwnedBy(userId);
+      if (remainingCount > 0) {
+        markSynchronizationIncomplete();
+      }
+    }
+
+    if (synchronizationIncomplete || sessionOwnershipLost || abortController.signal.aborted) {
+      throw createOfflineQueueOperationError();
+    }
+  } catch {
+    throw createOfflineQueueOperationError();
   } finally {
+    abortController.signal.removeEventListener('abort', handleAbort);
+    unsubscribeFromSession?.();
+    synchronizationInProgress = false;
     syncStore.setState({ synchronization: undefined });
   }
 }
@@ -171,50 +259,86 @@ async function processHandler(
   results: SyncResultBag,
   abortController: AbortController,
   notifySyncProgress: () => void,
+  userId: string,
+  ownsSession: () => boolean,
+  markSynchronizationIncomplete: () => void,
 ) {
   const items: Array<[number, unknown, QueueItemDescriptor]> = [];
   const contents: Array<unknown> = [];
-  const userId = await getUserId();
+  const ownsActiveSynchronization = () => !abortController.signal.aborted && ownsSession();
 
-  await db.syncQueue
-    .where('userId')
-    .equals(userId)
-    .and((item) => item.type === type)
-    .each((item, cursor) => {
-      items.push([cursor.primaryKey, item.content, item.descriptor]);
-      contents.push(item.content);
-    });
+  try {
+    if (!ownsActiveSynchronization()) {
+      throw createOfflineQueueOperationError();
+    }
+
+    await db.syncQueue
+      .where('userId')
+      .equals(userId)
+      .and((item) => item.type === type)
+      .each((item, cursor) => {
+        items.push([cursor.primaryKey, item.content, item.descriptor]);
+        contents.push(item.content);
+      });
+  } catch {
+    markSynchronizationIncomplete();
+    return;
+  }
 
   for (let i = 0; i < items.length; i++) {
+    if (!ownsActiveSynchronization()) {
+      markSynchronizationIncomplete();
+      break;
+    }
+
     const [key, item, { id, dependencies = [] }] = items[i];
 
     try {
+      if (!ownsActiveSynchronization()) {
+        throw createOfflineQueueOperationError();
+      }
+
       const result = await process(item, {
         abort: abortController,
         index: i,
         items: contents,
         userId,
         dependencies: dependencies.map(({ id, type }) => (dependsOn.includes(type) ? results[type][id] : undefined)),
+        async updateContent(update) {
+          try {
+            const updatedContent = await updateOwnedSynchronizationItemContent(
+              userId,
+              key,
+              update,
+              ownsActiveSynchronization,
+            );
+            items[i][1] = updatedContent;
+            contents[i] = updatedContent;
+            return updatedContent;
+          } catch {
+            throw createOfflineQueueOperationError();
+          }
+        },
       });
+
+      if (!ownsActiveSynchronization()) {
+        throw createOfflineQueueOperationError();
+      }
 
       if (id !== undefined) {
         results[type][id] = result;
       }
 
-      await db.syncQueue.delete(key);
-    } catch (e: unknown) {
-      const error =
-        e instanceof Error
-          ? e
-          : typeof e === 'object' && e && 'name' in e && 'message' in e
-            ? (e as { name?: string; message?: string })
-            : undefined;
-      await db.syncQueue.update(key, {
-        lastError: {
-          name: error?.name,
-          message: error?.message ?? (typeof e === 'string' ? e : String(e)),
-        },
-      });
+      await deleteOwnedSynchronizationItem(userId, key, ownsActiveSynchronization);
+    } catch {
+      markSynchronizationIncomplete();
+      if (ownsActiveSynchronization()) {
+        try {
+          await persistSanitizedSynchronizationError(userId, key, ownsActiveSynchronization);
+        } catch {
+          markSynchronizationIncomplete();
+        }
+      }
     } finally {
       notifySyncProgress();
     }
@@ -222,8 +346,114 @@ async function processHandler(
 }
 
 async function getUserId() {
-  const user = await getLoggedInUser();
-  return user?.uuid || '*';
+  try {
+    const user = await getLoggedInUser();
+    const userId = user?.uuid;
+
+    if (!userId) {
+      throw createOfflineQueueOperationError();
+    }
+
+    assertSessionOwnedBy(userId);
+    return userId;
+  } catch {
+    throw createOfflineQueueOperationError();
+  }
+}
+
+function createOfflineQueueOperationError() {
+  return new Error(offlineQueueOperationUnavailableMessage);
+}
+
+function isAuthenticatedSessionForUser(userId: string) {
+  try {
+    const sessionState = getSessionStore().getState();
+    return sessionState.loaded && sessionState.session.authenticated && sessionState.session.user?.uuid === userId;
+  } catch {
+    return false;
+  }
+}
+
+function assertSessionOwnedBy(userId: string) {
+  if (!isAuthenticatedSessionForUser(userId)) {
+    throw createOfflineQueueOperationError();
+  }
+}
+
+function getOwnedSynchronizationItemCollection(userId: string, id: number) {
+  return db.syncQueue
+    .where('userId')
+    .equals(userId)
+    .and((item) => item.id === id);
+}
+
+function sanitizeSynchronizationItem<T>(item: SyncItem<T>): SyncItem<T> {
+  return item.lastError
+    ? {
+        ...item,
+        lastError: offlineSynchronizationError,
+      }
+    : item;
+}
+
+async function deleteOwnedSynchronizationItem(userId: string, id: number, ownsSession: () => boolean) {
+  await db.transaction('rw', db.syncQueue, async () => {
+    if (!ownsSession()) {
+      throw createOfflineQueueOperationError();
+    }
+
+    const deletedCount = await getOwnedSynchronizationItemCollection(userId, id).delete();
+    if (!ownsSession() || deletedCount !== 1) {
+      throw createOfflineQueueOperationError();
+    }
+  });
+}
+
+async function updateOwnedSynchronizationItemContent<T>(
+  userId: string,
+  id: number,
+  update: (currentContent: T) => T,
+  ownsSession: () => boolean,
+): Promise<T> {
+  return await db.transaction('rw', db.syncQueue, async () => {
+    if (!ownsSession()) {
+      throw createOfflineQueueOperationError();
+    }
+
+    const collection = getOwnedSynchronizationItemCollection(userId, id);
+    const currentItem = (await collection.first()) as SyncItem<T> | undefined;
+    if (!currentItem || !ownsSession()) {
+      throw createOfflineQueueOperationError();
+    }
+
+    const updatedContent = update(currentItem.content);
+    if (!ownsSession()) {
+      throw createOfflineQueueOperationError();
+    }
+
+    const updatedCount = await collection.modify({ content: updatedContent });
+    if (!ownsSession() || updatedCount !== 1) {
+      throw createOfflineQueueOperationError();
+    }
+
+    return updatedContent;
+  });
+}
+
+async function persistSanitizedSynchronizationError(userId: string, id: number, ownsSession: () => boolean) {
+  await db.transaction('rw', db.syncQueue, async () => {
+    if (!ownsSession()) {
+      throw createOfflineQueueOperationError();
+    }
+
+    await getOwnedSynchronizationItemCollection(userId, id).modify({
+      lastError: offlineSynchronizationError,
+    });
+
+    if (!ownsSession()) {
+      throw createOfflineQueueOperationError();
+    }
+  });
 }
 
 /**
@@ -232,36 +462,62 @@ async function getUserId() {
  * @param type The identifying type of the synchronization item.
  * @param content The actual data to be synchronized.
  * @param descriptor An optional descriptor providing additional metadata about the sync item.
+ * @param options Optional atomic replacement reconciliation.
  */
 export async function queueSynchronizationItemFor<T>(
   userId: string,
   type: string,
   content: T,
   descriptor?: QueueItemDescriptor,
+  options: QueueSynchronizationItemOptions<T> = {},
 ) {
-  const targetId = descriptor && descriptor.id;
-
-  if (targetId !== undefined) {
-    // in case of replacement (i.e., used same ID) we just remove the existing item
-    await db.syncQueue
-      .where('userId')
-      .equals(userId)
-      .and((item) => item.type === type && item?.descriptor.id === targetId)
-      .delete()
-      .catch(Dexie.errnames.DatabaseClosed);
+  const authenticatedUserId = await getUserId();
+  if (userId !== authenticatedUserId) {
+    throw createOfflineQueueOperationError();
   }
 
-  const id = await db.syncQueue
-    .add({
-      type,
-      content,
-      userId,
-      descriptor: descriptor || {},
-      createdOn: new Date(),
-    })
-    .catch(Dexie.errnames.DatabaseClosed, () => -1);
+  const targetId = descriptor && descriptor.id;
 
-  return id;
+  try {
+    return await db.transaction('rw', db.syncQueue, async () => {
+      assertSessionOwnedBy(authenticatedUserId);
+
+      let contentToQueue = content;
+
+      if (targetId !== undefined) {
+        const existingItems = (await db.syncQueue
+          .where('userId')
+          .equals(authenticatedUserId)
+          .and((item) => item.type === type && item.descriptor?.id === targetId)
+          .toArray()) as Array<SyncItem<T>>;
+        if (options.reconcileContent && existingItems.length > 1) {
+          throw createOfflineQueueOperationError();
+        }
+        contentToQueue = options.reconcileContent?.(existingItems[0]?.content, content) ?? content;
+
+        // In case of replacement (i.e., the same descriptor ID), remove the existing
+        // item in the same transaction so a failed add cannot discard pending data.
+        await db.syncQueue
+          .where('userId')
+          .equals(authenticatedUserId)
+          .and((item) => item.type === type && item.descriptor?.id === targetId)
+          .delete();
+      }
+
+      const id = await db.syncQueue.add({
+        type,
+        content: contentToQueue,
+        userId: authenticatedUserId,
+        descriptor: descriptor || {},
+        createdOn: new Date(),
+      });
+
+      assertSessionOwnedBy(authenticatedUserId);
+      return id;
+    });
+  } catch {
+    throw createOfflineQueueOperationError();
+  }
 }
 
 /**
@@ -269,15 +525,21 @@ export async function queueSynchronizationItemFor<T>(
  * @param type The identifying type of the synchronization item.
  * @param content The actual data to be synchronized.
  * @param descriptor An optional descriptor providing additional metadata about the sync item.
+ * @param options Optional atomic replacement reconciliation.
  */
-export async function queueSynchronizationItem<T>(type: string, content: T, descriptor?: QueueItemDescriptor) {
+export async function queueSynchronizationItem<T>(
+  type: string,
+  content: T,
+  descriptor?: QueueItemDescriptor,
+  options?: QueueSynchronizationItemOptions<T>,
+) {
   const userId = await getUserId();
-  return await queueSynchronizationItemFor(userId, type, content, descriptor);
+  return await queueSynchronizationItemFor(userId, type, content, descriptor, options);
 }
 
 /**
- * Returns the content of all currently queued up sync items of a given user.
- * @param userId The ID of the user whose synchronization items should be returned.
+ * Returns the content of all currently queued up sync items of the authenticated user.
+ * @param userId The authenticated user's ID. Requests for any other user fail closed.
  * @param type The identifying type of the synchronization items to be returned..
  */
 export async function getSynchronizationItemsFor<T>(userId: string, type?: string) {
@@ -286,16 +548,27 @@ export async function getSynchronizationItemsFor<T>(userId: string, type?: strin
 }
 
 /**
- * Returns all currently queued up sync items of a given user.
- * @param userId The ID of the user whose synchronization items should be returned.
+ * Returns all currently queued up sync items of the authenticated user.
+ * @param userId The authenticated user's ID. Requests for any other user fail closed.
  * @param type The identifying type of the synchronization items to be returned..
  */
 export async function getFullSynchronizationItemsFor<T>(userId: string, type?: string): Promise<Array<SyncItem<T>>> {
+  const authenticatedUserId = await getUserId();
+  if (userId !== authenticatedUserId) {
+    throw createOfflineQueueOperationError();
+  }
+
   const collection = db.syncQueue.where('userId').equals(userId);
 
-  return await (type ? collection.and((item) => item.type === type) : collection)
-    .toArray()
-    .catch(Dexie.errnames.DatabaseClosed, () => []);
+  let items: Array<SyncItem<T>>;
+  try {
+    items = (await (type ? collection.and((item) => item.type === type) : collection).toArray()) as Array<SyncItem<T>>;
+  } catch {
+    throw createOfflineQueueOperationError();
+  }
+
+  assertSessionOwnedBy(authenticatedUserId);
+  return items.map((item) => sanitizeSynchronizationItem(item));
 }
 
 /**
@@ -317,11 +590,20 @@ export async function getFullSynchronizationItems<T>(type?: string) {
 }
 
 /**
- * Returns a queued sync item with the given ID or `undefined` if no such item exists.
+ * Returns an authenticated user's queued sync item with the given ID, or `undefined` if no accessible item exists.
  * @param id The ID of the requested sync item.
  */
 export async function getSynchronizationItem<T = any>(id: number): Promise<SyncItem<T> | undefined> {
-  return await db.syncQueue.get(id).catch(Dexie.errnames.DatabaseClosed, () => undefined);
+  const userId = await getUserId();
+  let item: SyncItem<T> | undefined;
+  try {
+    item = (await getOwnedSynchronizationItemCollection(userId, id).first()) as SyncItem<T> | undefined;
+  } catch {
+    throw createOfflineQueueOperationError();
+  }
+
+  assertSessionOwnedBy(userId);
+  return item ? sanitizeSynchronizationItem(item) : undefined;
 }
 
 /**
@@ -340,27 +622,43 @@ export function canBeginEditSynchronizationItemsOfType(type: string) {
  * @param id The ID of the synchronization item to be edited.
  */
 export async function beginEditSynchronizationItem(id: number) {
-  const item = await getSynchronizationItem(id);
+  const userId = await getUserId();
+  let item: SyncItem | undefined;
+  try {
+    item = await getOwnedSynchronizationItemCollection(userId, id).first();
+  } catch {
+    throw createOfflineQueueOperationError();
+  }
+
   if (!item) {
-    throw new Error(`No sync item with the ID ${id} exists.`);
+    throw createOfflineQueueOperationError();
   }
 
   const editCallback = handlers[item.type]?.options.onBeginEditSyncItem;
   if (!editCallback) {
-    throw new Error(
-      `A sync item with the ID ${id} exists, but the associated handler (if one exists) doesn't support editing the item. You can avoid this error by either verifying that sync items of this type can be edited via the "canEditSynchronizationItemsOfType(type: string)" function or alternatively ensure that the synchronizaton handler for sync items of type "${item.type}" supports editing items.`,
-    );
+    throw createOfflineQueueOperationError();
   }
 
-  editCallback(item);
+  assertSessionOwnedBy(userId);
+  try {
+    editCallback(sanitizeSynchronizationItem(item));
+  } catch {
+    throw createOfflineQueueOperationError();
+  }
 }
 
 /**
- * Deletes a queued up sync item with the given ID.
+ * Deletes an authenticated user's queued sync item with the given ID.
  * @param id The ID of the synchronization item to be deleted.
  */
 export async function deleteSynchronizationItem(id: number) {
-  await db.syncQueue.delete(id).catch(Dexie.errnames.DatabaseClosed);
+  const userId = await getUserId();
+
+  try {
+    await deleteOwnedSynchronizationItem(userId, id, () => isAuthenticatedSessionForUser(userId));
+  } catch {
+    throw createOfflineQueueOperationError();
+  }
 }
 
 /**

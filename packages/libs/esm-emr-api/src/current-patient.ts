@@ -47,24 +47,32 @@ export async function fetchCurrentPatient(
   includeOfflinePatients: boolean = true,
 ): Promise<fhir.Patient | null> {
   if (patientUuid) {
-    let err: Error | null = null;
-    const [onlinePatient, offlinePatient] = await Promise.all([
-      openmrsFetch<fhir.Patient>(`${fhirBaseUrl}/Patient/${patientUuid}`, fetchInit).catch<FetchResponse<fhir.Patient>>(
-        (e) => (err = e),
-      ),
+    const [onlinePatientResult, offlinePatientResult] = await Promise.allSettled([
+      openmrsFetch<fhir.Patient>(`${fhirBaseUrl}/Patient/${patientUuid}`, fetchInit),
       includeOfflinePatients ? getOfflineRegisteredPatientAsFhirPatient(patientUuid) : Promise.resolve(null),
     ]);
 
-    if (onlinePatient.ok) {
-      return onlinePatient.data;
+    // The server remains authoritative when it returned a valid patient. A local
+    // queue/session/storage failure must not turn an authorized online read into
+    // a patient-chart failure.
+    if (onlinePatientResult.status === 'fulfilled' && onlinePatientResult.value.ok) {
+      return onlinePatientResult.value.data;
     }
 
-    if (offlinePatient) {
-      return offlinePatient;
+    if (offlinePatientResult.status === 'fulfilled' && offlinePatientResult.value) {
+      return offlinePatientResult.value;
     }
 
-    if (err) {
-      throw err;
+    // Preserve the primary online error when neither source can provide a
+    // patient. If the online request completed without one, surface the local
+    // fallback failure instead of silently treating an unavailable queue as
+    // empty.
+    if (onlinePatientResult.status === 'rejected') {
+      throw onlinePatientResult.reason;
+    }
+
+    if (offlinePatientResult.status === 'rejected') {
+      throw offlinePatientResult.reason;
     }
   }
 

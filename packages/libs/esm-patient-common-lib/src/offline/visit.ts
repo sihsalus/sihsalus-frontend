@@ -123,11 +123,13 @@ export function useAutoCreatedOfflineVisit(
     // Waiting for isLoading avoids queueing a duplicate offline visit while the
     // IndexedDB read for an existing one is still in flight.
     if (!isOnline && operationalLocationUuid && !isLoading && !isValidating && !currentVisit && !error) {
-      void createOfflineVisitForPatient(patientUuid, operationalLocationUuid, offlineVisitTypeUuid, new Date()).finally(
-        () => {
-          void mutate();
-        },
-      );
+      void createOfflineVisitForPatient(patientUuid, operationalLocationUuid, offlineVisitTypeUuid, new Date())
+        // Refresh only after a successful write. Refreshing an empty queue after
+        // a rejected write would satisfy this effect again and create a retry loop.
+        .then(() => mutate())
+        // Queue and SWR-compatible refresh failures are fixed at their public
+        // boundaries; consume them here without rendering technical detail.
+        .catch(() => undefined);
     }
   }, [
     isOnline,

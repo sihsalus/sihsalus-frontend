@@ -88,7 +88,7 @@ export interface DynamicOfflineDataSyncState {
    */
   erroredHandlers: Array<string>;
   /**
-   * A collection of the errors caught while synchronizing, per handler.
+   * A collection of fixed, non-sensitive synchronization errors, per handler.
    */
   errors: Array<{
     handlerId: string;
@@ -97,6 +97,8 @@ export interface DynamicOfflineDataSyncState {
 }
 
 const dynamicOfflineDataHandlers: Record<string, DynamicOfflineDataHandler> = {};
+const persistedSyncErrorMessage = 'This offline data could not be synchronized.';
+const dynamicOfflineDataBatchSyncErrorMessage = 'Offline data synchronization failed.';
 
 /**
  * Returns all handlers which have been setup using the {@link setupDynamicOfflineDataHandler} function.
@@ -234,14 +236,25 @@ export async function removeDynamicOfflineDataFor(userId: string, type: string, 
 
 /**
  * Synchronizes all offline data entries of the given {@link type} for the currently logged in user.
+ * Every started entry settles before a failed batch rejects with a fixed, non-sensitive error.
  * @param type The type of the offline data. See {@link DynamicOfflineData} for details.
  * @param abortSignal An `AbortSignal` which can be used to cancel the operation.
  */
 export async function syncAllDynamicOfflineData(type: string, abortSignal?: AbortSignal): Promise<void> {
-  const dataEntriesToSync = await getDynamicOfflineDataEntries(type);
-  await Promise.all(
-    dataEntriesToSync.map(async (entry) => syncDynamicOfflineData(entry.type, entry.identifier, abortSignal)),
+  let dataEntriesToSync: Array<DynamicOfflineData>;
+  try {
+    dataEntriesToSync = await getDynamicOfflineDataEntries(type);
+  } catch {
+    throw new Error(dynamicOfflineDataBatchSyncErrorMessage);
+  }
+
+  const results = await Promise.allSettled(
+    dataEntriesToSync.map((entry) => syncDynamicOfflineData(entry.type, entry.identifier, abortSignal)),
   );
+
+  if (results.some((result) => result.status === 'rejected')) {
+    throw new Error(dynamicOfflineDataBatchSyncErrorMessage);
+  }
 }
 
 /**
@@ -249,6 +262,7 @@ export async function syncAllDynamicOfflineData(type: string, abortSignal?: Abor
  * @param type The type of the offline data. See {@link DynamicOfflineData} for details.
  * @param identifier The identifier of the offline data. See {@link DynamicOfflineData} for details.
  * @param abortSignal An `AbortSignal` which can be used to cancel the operation.
+ * @throws An `AggregateError` after persisting the sync state when one or more handlers fail.
  */
 export async function syncDynamicOfflineData(
   type: string,
@@ -275,18 +289,26 @@ export async function syncDynamicOfflineData(
   const results = await Promise.all(
     handlers.map(async (handler) => {
       try {
-        handler.sync(identifier, abortSignal);
-        return { id: handler.id, error: undefined };
-      } catch (e: any) {
-        const errorMessage: string = e['message']?.toString() ?? e.toString();
-        return { id: handler.id, error: errorMessage };
+        await handler.sync(identifier, abortSignal);
+        return { id: handler.id, status: 'fulfilled' as const };
+      } catch {
+        return {
+          id: handler.id,
+          status: 'rejected' as const,
+        };
       }
     }),
   );
 
-  const succeededHandlers = results.filter((x) => !x.error).map((x) => x.id);
-  const erroredHandlers = results.filter((x) => x.error).map((x) => x.id);
-  const errors = results.filter((x) => x.error).map((x) => ({ handlerId: x.id, message: x.error! }));
+  const succeededHandlers = results.filter((result) => result.status === 'fulfilled').map((result) => result.id);
+  const failedResults = results.filter((result) => result.status === 'rejected');
+  const erroredHandlers = failedResults.map((result) => result.id);
+  // Handler errors can contain URLs, UUIDs, or clinical data. Persist and reject
+  // with sanitized errors only; original handler exceptions stay inside this call.
+  const errors = failedResults.map((result) => ({
+    handlerId: result.id,
+    message: persistedSyncErrorMessage,
+  }));
   const newSyncState: DynamicOfflineDataSyncState = {
     syncedOn: new Date(),
     syncedBy: userId,
@@ -295,12 +317,20 @@ export async function syncDynamicOfflineData(
     errors,
   };
 
-  if (entry.id) {
+  const entryId = entry.id;
+  if (entryId !== undefined) {
     await db.dynamicOfflineData
-      .update(entry.id!, {
+      .update(entryId, {
         syncState: newSyncState,
       })
       .catch(Dexie.errnames.DatabaseClosed);
+  }
+
+  if (failedResults.length > 0) {
+    throw new AggregateError(
+      failedResults.map((result) => new Error(`Offline data handler "${result.id}" failed to synchronize.`)),
+      `${failedResults.length} of ${handlers.length} offline data handlers failed to synchronize.`,
+    );
   }
 }
 

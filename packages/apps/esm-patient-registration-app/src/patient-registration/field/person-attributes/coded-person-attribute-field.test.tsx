@@ -23,7 +23,7 @@ import { useConceptAnswers } from '../field.resource';
 const mockReportError = vi.mocked(reportError);
 const mockUseSession = vi.mocked(useSession);
 
-import { CodedPersonAttributeField } from './coded-person-attribute-field.component';
+import { CodedPersonAttributeField, formatCodedAnswerLabel } from './coded-person-attribute-field.component';
 
 const mockUseConceptAnswers = vi.mocked(useConceptAnswers);
 
@@ -62,6 +62,72 @@ describe('CodedPersonAttributeField', () => {
       isLoading: false,
       error: undefined,
     });
+  });
+
+  it('formats optional local codes without changing the persisted concept UUID', () => {
+    expect(formatCodedAnswerLabel({ code: 'SCL-01', label: 'Barrio Santa Rosa' })).toBe(
+      'SCL-01 - Barrio Santa Rosa',
+    );
+    expect(formatCodedAnswerLabel({ label: 'Sin código' })).toBe('Sin código');
+  });
+
+  it('renders configured codes and colors in a searchable coded selector', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <CodedPersonAttributeField
+            id="neighborhood"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label="Barrio"
+            customConceptAnswers={[
+              {
+                uuid: 'santa-rosa-concept',
+                code: 'SCL-01',
+                label: 'Barrio Santa Rosa',
+                color: '#B94A36',
+              },
+            ]}
+            required={false}
+            searchable
+          />
+        </Form>
+      </Formik>,
+    );
+
+    await user.click(screen.getByRole('combobox', { name: 'Barrio (optional)' }));
+
+    const optionLabel = await screen.findByText('SCL-01 - Barrio Santa Rosa');
+    expect(optionLabel.parentElement?.querySelector('[aria-hidden="true"]')).toHaveStyle({
+      backgroundColor: '#B94A36',
+    });
+  });
+
+  it('translates a required-field validation key into a descriptive message', () => {
+    render(
+      <Formik
+        initialValues={{ attributes: { [personAttributeType.uuid]: '' } }}
+        initialErrors={{ attributes: { [personAttributeType.uuid]: 'fieldRequired' } }}
+        initialTouched={{ attributes: { [personAttributeType.uuid]: true } }}
+        onSubmit={() => {}}
+      >
+        <Form>
+          <CodedPersonAttributeField
+            id="financer"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label="Financiador"
+            customConceptAnswers={[{ uuid: 'sis', label: 'SIS' }]}
+            required
+          />
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByText('Select an option for the Financiador field')).toBeInTheDocument();
+    expect(screen.queryByText('fieldRequired')).not.toBeInTheDocument();
   });
 
   function renderStatefulSearchableField(initialValue = '') {

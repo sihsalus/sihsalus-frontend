@@ -262,6 +262,20 @@
   }
 }
 
+.codedAnswerOption {
+  align-items: center;
+  display: inline-flex;
+  gap: layout.$spacing-03;
+  min-width: 0;
+}
+
+.codedAnswerSwatch {
+  border: 1px solid colors.$gray-40;
+  flex: 0 0 auto;
+  height: layout.$spacing-05;
+  width: layout.$spacing-05;
+}
+
 .locationAttributeFieldContainer {
   position: relative;
 

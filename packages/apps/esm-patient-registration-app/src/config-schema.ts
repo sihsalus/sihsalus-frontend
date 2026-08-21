@@ -39,6 +39,8 @@ export interface FieldDefinition {
 export interface CustomConceptAnswer {
   uuid: string;
   label?: string;
+  code?: string;
+  color?: string;
 }
 
 export interface Gender {
@@ -273,6 +275,19 @@ export const esmPatientRegistrationSchema = {
             _type: Type.String,
             _default: null,
             _description: 'The custom label for the answer concept.',
+          },
+          code: {
+            _type: Type.String,
+            _default: null,
+            _description: 'Optional local catalog code displayed before the answer label.',
+          },
+          color: {
+            _type: Type.String,
+            _default: null,
+            _description: 'Optional six-digit hexadecimal color used as a visual swatch for the answer.',
+            _validators: [
+              validator((value: string) => !value || /^#[0-9a-f]{6}$/i.test(value), 'Invalid hexadecimal color'),
+            ],
           },
         },
         _default: [],

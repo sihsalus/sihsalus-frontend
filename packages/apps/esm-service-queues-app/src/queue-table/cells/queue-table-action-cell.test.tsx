@@ -102,6 +102,31 @@ describe('QueueTableActionCell', () => {
     expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
   });
 
+  it('no pide Caja mientras la cobertura del paciente aun no se pudo leer', async () => {
+    // Regresion: con la cobertura sin resolver (carga inicial o fallo de red)
+    // sisState cae a 'notConsulted' y la fila mostraba "Derivar a Caja",
+    // mandando a Caja pacientes con SIS vigente.
+    const unresolvedEntry = {
+      ...mockQueueEntryAlice,
+      visit: {
+        ...mockQueueEntryAlice.visit,
+        uuid: 'visit-uuid',
+        location: { uuid: 'visit-location-uuid' },
+      },
+      workflow: {
+        isTriageQueue: true,
+        sisState: 'notConsulted' as const,
+        isSisStateResolved: false,
+        triageState: 'pending' as const,
+      },
+    };
+
+    render(<QueueTableActionCell queueEntry={unresolvedEntry} />);
+
+    expect(screen.queryByRole('button', { name: /Derivar a Caja|Requiere Caja/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Realizar triaje' })).toBeDisabled();
+  });
+
   it('opens the triage workspace for a patient waiting in the triage queue', async () => {
     const user = userEvent.setup();
     const triageQueueEntry = {
@@ -114,6 +139,7 @@ describe('QueueTableActionCell', () => {
       workflow: {
         isTriageQueue: true,
         sisState: 'active' as const,
+        isSisStateResolved: true,
         triageState: 'pending' as const,
       },
     };
@@ -151,6 +177,7 @@ describe('QueueTableActionCell', () => {
       workflow: {
         isTriageQueue: true,
         sisState: 'active' as const,
+        isSisStateResolved: true,
         triageState: 'pending' as const,
       },
     };
@@ -189,6 +216,7 @@ describe('QueueTableActionCell', () => {
       workflow: {
         isTriageQueue: true,
         sisState: 'active' as const,
+        isSisStateResolved: true,
         triageState: 'pending' as const,
       },
     };
@@ -226,6 +254,7 @@ describe('QueueTableActionCell', () => {
       workflow: {
         isTriageQueue: true,
         sisState: 'active' as const,
+        isSisStateResolved: true,
         triageState: 'pending' as const,
       },
     };
@@ -256,6 +285,7 @@ describe('QueueTableActionCell', () => {
       workflow: {
         isTriageQueue: true,
         sisState: 'active' as const,
+        isSisStateResolved: true,
         triageState: 'pending' as const,
       },
     };
@@ -297,6 +327,7 @@ describe('QueueTableActionCell', () => {
       workflow: {
         isTriageQueue: true,
         sisState: 'inactive' as const,
+        isSisStateResolved: true,
         triageState: 'pending' as const,
       },
     };
@@ -320,6 +351,7 @@ describe('QueueTableActionCell', () => {
       workflow: {
         isTriageQueue: true,
         sisState: 'active' as const,
+        isSisStateResolved: true,
         triageState: 'pending' as const,
       },
     };

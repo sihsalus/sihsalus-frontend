@@ -68,6 +68,8 @@ export interface QueueWorkflowMetadata {
   destinationQueueUuid?: string;
   isTriageQueue: boolean;
   sisState: SisState;
+  /** False mientras la cobertura del paciente no se pudo leer (carga o error). */
+  isSisStateResolved: boolean;
   triageState: TriageState;
 }
 
@@ -339,12 +341,21 @@ export function useQueueWorkflowMetadata(queueEntries: Array<QueueEntry>) {
   const patientSisStates = useSWR<Map<string, SisState>, Error>(
     patientUuids.length > 0 ? ['sihsalus-queue-patient-insurance', patientUuids.join(',')] : null,
     async () => {
-      const states = await Promise.all(
+      // allSettled y no all: si la afiliacion de UN paciente falla, el resto de
+      // la cola debe seguir resolviendo. Con Promise.all un solo 404/timeout
+      // dejaba el mapa entero vacio y toda la cola pedia Caja.
+      const settled = await Promise.allSettled(
         patientUuids.map(
           async (patientUuid) => [patientUuid, getPersonSisState(await fetchPersonInsurance(patientUuid))] as const,
         ),
       );
-      return new Map(states);
+      return new Map(
+        settled
+          .filter(
+            (result): result is PromiseFulfilledResult<readonly [string, SisState]> => result.status === 'fulfilled',
+          )
+          .map((result) => result.value),
+      );
     },
     { refreshInterval: 30_000, revalidateOnFocus: true },
   );
@@ -375,6 +386,7 @@ export function useQueueWorkflowMetadata(queueEntries: Array<QueueEntry>) {
       // coverage is loading or could not be read. This is intentionally
       // fail-closed because the value gates clinical triage.
       sisState: patientSisStates.data?.get(entry.patient?.uuid) ?? 'notConsulted',
+      isSisStateResolved: Boolean(entry.patient?.uuid && patientSisStates.data?.has(entry.patient.uuid)),
       triageState: getTriageState(entry, appointmentConfig.data, appointment),
     };
     return { ...entry, workflow };

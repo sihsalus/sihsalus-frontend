@@ -409,6 +409,7 @@
   "use12HourFormat": "Utilice el formato de 12 horas con AM/PM (01-12)",
   "useMidnightFormat": "Para medianoche use 12:00 AM, para mediodía use 12:00 PM",
   "useTodaysDate": "Utilizar la fecha de hoy",
+  "verifyingCoverage": "Verificando cobertura del paciente…",
   "visitFormNotCompleted": "El formulario de consulta no ha sido completado para esta consulta",
   "visitNote": "Resumen de la Consulta",
   "visitNoteForm": "Formulario de resumen de consulta",

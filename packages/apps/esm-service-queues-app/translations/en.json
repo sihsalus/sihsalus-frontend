@@ -407,6 +407,7 @@
   "use12HourFormat": "Please use 12-hour format with AM/PM (01-12)",
   "useMidnightFormat": "For midnight use 12:00 AM, for noon use 12:00 PM",
   "useTodaysDate": "Use today's date",
+  "verifyingCoverage": "Verifying patient coverage…",
   "visitFormNotCompleted": "Visit form has not been completed for this visit",
   "visitNote": "Visit note",
   "visitNoteForm": "Visit note form",

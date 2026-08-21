@@ -35,7 +35,12 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
   const isTriageQueue = Boolean(queueEntry.workflow?.isTriageQueue);
   const patientPerson = queueEntry.patient?.person as { dead?: boolean; deathDate?: string | null } | undefined;
   const isDeceasedPatient = Boolean(patientPerson?.dead || patientPerson?.deathDate);
-  const requiresCashier = isTriageQueue && queueEntry.workflow?.sisState !== 'active';
+  // Solo se pide Caja cuando la cobertura se pudo LEER y no es SIS vigente.
+  // Mientras carga o si la lectura falla, no se afirma que el paciente no
+  // tiene cobertura: se muestra el boton de triaje deshabilitado.
+  const isSisStateResolved = Boolean(queueEntry.workflow?.isSisStateResolved);
+  const requiresCashier = isTriageQueue && isSisStateResolved && queueEntry.workflow?.sisState !== 'active';
+  const isAwaitingSisState = isTriageQueue && !isSisStateResolved;
   const canOpenBilling = userHasAccess('app:home.facturacion', session?.user);
   const canPerformTriage =
     isTriageQueue && !isDeceasedPatient && !requiresCashier && canTriage && Boolean(queueEntry.visit?.uuid);
@@ -151,10 +156,11 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
         </Button>
       ) : isTriageQueue && !isDeceasedPatient && canPerformTriage ? (
         <Button
-          disabled={isSubmittingTriage}
+          disabled={isSubmittingTriage || isAwaitingSisState}
           kind="primary"
           onClick={handleTriage}
           size={isDesktop(layout) ? 'sm' : 'lg'}
+          title={isAwaitingSisState ? t('verifyingCoverage', 'Verificando cobertura del paciente…') : undefined}
         >
           {queueEntry.workflow.triageState === 'completed'
             ? t('sendToCare', 'Enviar a atención')

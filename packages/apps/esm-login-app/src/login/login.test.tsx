@@ -27,7 +27,11 @@ vi.mock('../navigation', async (importOriginal) => ({
   hardNavigate: vi.fn(),
 }));
 
-const mockBuildInfo = { version: '1.2.3', gitSha: 'abc1234', buildTime: '2026-06-04T00:00:00Z' };
+const mockBuildInfo = {
+  version: '1.2.3',
+  gitSha: 'abc1234def5678901234567890abcdef12345678',
+  buildTime: '2026-06-04T00:00:00Z',
+};
 const openmrsSpaBasePlaceholder = '$' + '{openmrsSpaBase}';
 
 const LocationSelectPage = () => {
@@ -89,8 +93,9 @@ describe('Login', () => {
     expect(openmrsLogo).toHaveAttribute('src', '/openmrs/spa/logos/logo-openmrs.svg');
     expect(screen.getByText(/Sihsalus/i)).toBeInTheDocument();
     expect(screen.queryByAltText(/^logo$/i)).not.toBeInTheDocument();
-    // Version + short SHA are fetched asynchronously from build-info.json
-    expect(await screen.findByText(/v1\.2\.3 · abc1234/)).toBeInTheDocument();
+    // build-info.json trae el SHA completo; la UI muestra solo los 7 primeros.
+    expect(await screen.findByText('v1.2.3 · abc1234')).toBeInTheDocument();
+    expect(screen.queryByText(/abc1234def5678/)).not.toBeInTheDocument();
     screen.getByRole('textbox', { name: /Username/i });
     screen.getByRole('button', { name: /Continue/i });
   });

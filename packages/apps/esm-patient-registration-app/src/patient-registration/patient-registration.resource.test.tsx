@@ -2,6 +2,7 @@ import { createAttachment, openmrsFetch, restBaseUrl } from '@openmrs/esm-framew
 
 import {
   fetchPersonRegistrationCopyData,
+  generateIdentifier,
   savePatient,
   savePatientPhoto,
   savePatientPhotoAsAttachment,
@@ -32,6 +33,22 @@ describe('savePatient', () => {
     mockOpenmrsFetch.mockImplementationOnce(() => {});
     savePatient(null);
     expect(mockOpenmrsFetch.mock.calls[0][0]).toEqual(`${restBaseUrl}/patient/`);
+  });
+
+  it('rejects authentication failures instead of leaving patient writes pending', () => {
+    savePatient(null);
+    generateIdentifier('synthetic-source-uuid');
+
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+      1,
+      `${restBaseUrl}/patient/`,
+      expect.objectContaining({ rejectOnAuthFailure: true }),
+    );
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+      2,
+      `${restBaseUrl}/idgen/identifiersource/synthetic-source-uuid/identifier`,
+      expect.objectContaining({ rejectOnAuthFailure: true }),
+    );
   });
 });
 

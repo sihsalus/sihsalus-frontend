@@ -37,6 +37,14 @@ export interface ParsedPatientImportRow {
   importMessage?: string;
 }
 
+export interface PatientImportManifest {
+  schemaVersion: 1;
+  fileName: string;
+  fileSize: number;
+  fileSha256: string;
+  rows: Array<ParsedPatientImportRow>;
+}
+
 export interface ImportSummary {
   total: number;
   valid: number;

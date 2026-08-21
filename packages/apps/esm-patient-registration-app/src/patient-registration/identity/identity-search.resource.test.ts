@@ -1,7 +1,17 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
 
 import { personDocumentNumberAttributeTypeUuid, personDocumentTypeAttributeTypeUuid } from './identity-documents';
-import { isPersonAlreadyPatient, searchLocalIdentityByDocument } from './identity-search.resource';
+import {
+  fetchFreshPatientIdentityByUuid,
+  freshPatientIdentityErrorMessage,
+  isPersonAlreadyPatient,
+  searchLocalIdentityByDocument,
+} from './identity-search.resource';
+
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  omrsOfflineCachingStrategyHttpHeaderName: 'x-omrs-offline-caching-strategy',
+}));
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
@@ -18,17 +28,17 @@ describe('searchLocalIdentityByDocument', () => {
             {
               uuid: 'patient-with-hce',
               display: 'HCE collision',
-              identifiers: [{ identifier: '12345678', identifierType: { uuid: 'hce-type' } }],
+              identifiers: [{ identifier: '11111111', identifierType: { uuid: 'hce-type' } }],
             },
             {
               uuid: 'patient-with-dni',
               display: 'DNI match',
-              identifiers: [{ identifier: '12345678', identifierType: { uuid: 'dni-type' } }],
+              identifiers: [{ identifier: '11111111', identifierType: { uuid: 'dni-type' } }],
             },
             {
               uuid: 'patient-with-person-dni',
               display: 'Patient with legacy document attributes',
-              identifiers: [{ identifier: '87654321', identifierType: { uuid: 'hce-type' } }],
+              identifiers: [{ identifier: '22222222', identifierType: { uuid: 'hce-type' } }],
             },
           ],
         },
@@ -40,20 +50,20 @@ describe('searchLocalIdentityByDocument', () => {
               uuid: 'person-with-passport',
               display: 'Passport collision',
               attributes: [
-                { attributeType: { uuid: personDocumentNumberAttributeTypeUuid }, value: '12345678' },
+                { attributeType: { uuid: personDocumentNumberAttributeTypeUuid }, value: '11111111' },
                 { attributeType: { uuid: personDocumentTypeAttributeTypeUuid }, value: { uuid: 'passport-concept' } },
               ],
             },
             {
               uuid: 'legacy-person-without-type',
               display: 'Legacy document match',
-              attributes: [{ attributeType: { uuid: personDocumentNumberAttributeTypeUuid }, value: '12345678' }],
+              attributes: [{ attributeType: { uuid: personDocumentNumberAttributeTypeUuid }, value: '11111111' }],
             },
             {
               uuid: 'patient-with-person-dni',
               display: 'Patient with legacy document attributes',
               attributes: [
-                { attributeType: { uuid: personDocumentNumberAttributeTypeUuid }, value: '12345678' },
+                { attributeType: { uuid: personDocumentNumberAttributeTypeUuid }, value: '11111111' },
                 { attributeType: { uuid: personDocumentTypeAttributeTypeUuid }, value: { uuid: 'dni-concept' } },
               ],
             },
@@ -61,7 +71,7 @@ describe('searchLocalIdentityByDocument', () => {
         },
       } as never);
 
-    const matches = await searchLocalIdentityByDocument('12345678', undefined, {
+    const matches = await searchLocalIdentityByDocument('11111111', undefined, {
       patientIdentifierTypeUuid: 'dni-type',
       personDocumentTypeConceptUuid: 'dni-concept',
     });
@@ -71,6 +81,133 @@ describe('searchLocalIdentityByDocument', () => {
       expect.objectContaining({ kind: 'person', uuid: 'legacy-person-without-type' }),
       expect.objectContaining({ kind: 'patient', uuid: 'patient-with-person-dni' }),
     ]);
+  });
+
+  it('requires fresh network responses for clinical creation preflight', async () => {
+    mockOpenmrsFetch.mockResolvedValue({ data: { results: [] }, ok: true } as never);
+
+    await searchLocalIdentityByDocument(
+      '11111111',
+      undefined,
+      { patientIdentifierTypeUuid: 'dni-type' },
+      { requireFreshNetwork: true },
+    );
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
+    for (const [url, options] of mockOpenmrsFetch.mock.calls) {
+      expect(url).toContain('_bulkPatientImportCheck=');
+      expect(options).toEqual(
+        expect.objectContaining({
+          cache: 'no-store',
+          headers: { 'x-omrs-offline-caching-strategy': 'network-only-or-cache-only' },
+          rejectOnAuthFailure: true,
+        }),
+      );
+    }
+  });
+
+  it('follows every fresh result page before deciding that a DNI is unused', async () => {
+    mockOpenmrsFetch.mockImplementation(async (url) => {
+      const requestUrl = new URL(String(url));
+      if (requestUrl.pathname.endsWith('/patient') && requestUrl.searchParams.get('startIndex') === '50') {
+        return {
+          data: {
+            results: [
+              {
+                uuid: 'synthetic-patient-uuid',
+                display: 'Synthetic patient',
+                identifiers: [{ identifier: '11111111', identifierType: { uuid: 'dni-type' } }],
+              },
+            ],
+          },
+          ok: true,
+        } as never;
+      }
+      if (requestUrl.pathname.endsWith('/patient')) {
+        requestUrl.searchParams.delete('_bulkPatientImportCheck');
+        requestUrl.searchParams.set('startIndex', '50');
+        return {
+          data: { results: [], links: [{ rel: 'next', uri: requestUrl.href }] },
+          ok: true,
+        } as never;
+      }
+      return { data: { results: [] }, ok: true } as never;
+    });
+
+    await expect(
+      searchLocalIdentityByDocument(
+        '11111111',
+        undefined,
+        { patientIdentifierTypeUuid: 'dni-type' },
+        { requireFreshNetwork: true },
+      ),
+    ).resolves.toEqual([
+      expect.objectContaining({ kind: 'patient', uuid: 'synthetic-patient-uuid', identifier: '11111111' }),
+    ]);
+    expect(mockOpenmrsFetch.mock.calls.filter(([url]) => String(url).includes('/patient?'))).toHaveLength(2);
+  });
+
+  it('fails closed when a fresh pagination link repeats instead of treating the result as complete', async () => {
+    mockOpenmrsFetch.mockImplementation(async (url) => {
+      const requestUrl = new URL(String(url));
+      requestUrl.searchParams.delete('_bulkPatientImportCheck');
+      return {
+        data: { results: [], links: [{ rel: 'next', uri: requestUrl.href }] },
+        ok: true,
+      } as never;
+    });
+
+    await expect(
+      searchLocalIdentityByDocument('11111111', undefined, {}, { requireFreshNetwork: true }),
+    ).rejects.toEqual(new Error(freshPatientIdentityErrorMessage));
+  });
+
+  it('rejects a non-2xx fresh search instead of treating it as an unused DNI', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: [] }, ok: false, status: 403 } as never)
+      .mockResolvedValueOnce({ data: { results: [] }, ok: true, status: 200 } as never);
+
+    await expect(
+      searchLocalIdentityByDocument('11111111', undefined, {}, { requireFreshNetwork: true }),
+    ).rejects.toEqual(new Error(freshPatientIdentityErrorMessage));
+  });
+});
+
+describe('fetchFreshPatientIdentityByUuid', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('reads the exact UUID resource through a cache-busted network request', async () => {
+    const patient = {
+      uuid: 'synthetic-patient-uuid',
+      person: { uuid: 'synthetic-patient-uuid' },
+    };
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: patient, ok: true } as never);
+
+    await expect(fetchFreshPatientIdentityByUuid('synthetic-patient-uuid')).resolves.toEqual(patient);
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/patient\/synthetic-patient-uuid\?v=.*&_bulkPatientImportCheck=/),
+      expect.objectContaining({
+        cache: 'no-store',
+        headers: { 'x-omrs-offline-caching-strategy': 'network-only-or-cache-only' },
+        rejectOnAuthFailure: true,
+      }),
+    );
+  });
+
+  it('returns absence only for a fresh 404', async () => {
+    mockOpenmrsFetch.mockRejectedValueOnce({ response: { status: 404 } });
+
+    await expect(fetchFreshPatientIdentityByUuid('synthetic-patient-uuid')).resolves.toBeNull();
+  });
+
+  it('uses a fixed data-free error for authorization and backend failures', async () => {
+    mockOpenmrsFetch.mockRejectedValueOnce(new Error('403 included private synthetic patient details'));
+
+    await expect(fetchFreshPatientIdentityByUuid('secret-uuid')).rejects.toEqual(
+      new Error(freshPatientIdentityErrorMessage),
+    );
   });
 });
 

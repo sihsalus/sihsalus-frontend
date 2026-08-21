@@ -1,4 +1,12 @@
-import { getConfig, messageOmrsServiceWorker, openmrsFetch, restBaseUrl, type Session } from '@openmrs/esm-framework';
+import {
+  type FetchResponse,
+  getConfig,
+  messageOmrsServiceWorker,
+  omrsOfflineCachingStrategyHttpHeaderName,
+  openmrsFetch,
+  restBaseUrl,
+  type Session,
+} from '@openmrs/esm-framework';
 import camelCase from 'lodash-es/camelCase';
 import escapeRegExp from 'lodash-es/escapeRegExp';
 import find from 'lodash-es/find';
@@ -14,7 +22,15 @@ import { getEffectiveRegistrationConfig } from './patient-registration/peru-regi
 
 const metadataFetchTimeoutMs = 10_000;
 const serviceWorkerMessageTimeoutMs = 1_000;
+const maxFreshMetadataPages = 20;
 let hasWarnedAboutOfflineRouteRegistration = false;
+
+const patientIdentifierTypesUrl =
+  `${restBaseUrl}/patientidentifiertype?` +
+  'v=custom:(display,uuid,name,description,format,required,uniquenessBehavior,locationBehavior)';
+const primaryIdentifierTypeUrl = `${restBaseUrl}/metadatamapping/termmapping?v=full&code=emr.primaryIdentifierType`;
+const identifierSourcesUrl = `${restBaseUrl}/idgen/identifiersource?v=default`;
+const autoGenerationOptionsUrl = `${restBaseUrl}/idgen/autogenerationoption?v=full`;
 
 interface PatientIdentifierTypeResponse {
   description?: string;
@@ -42,6 +58,11 @@ interface AutoGenerationOptionResponse {
   source: {
     uuid: string;
   };
+}
+
+interface MetadataPage<T> {
+  results?: Array<T>;
+  links?: Array<{ rel?: string; uri?: string }>;
 }
 
 export interface Resources {
@@ -123,9 +144,7 @@ async function fetchFieldDefinitionType(fieldDefinition) {
 
 export async function fetchPatientIdentifierTypesWithSources(): Promise<Array<PatientIdentifierType>> {
   const patientIdentifierTypes = await fetchPatientIdentifierTypes();
-
-  // @ts-expect-error Reason: The required props of the type are generated below.
-  const identifierTypes: Array<PatientIdentifierType> = patientIdentifierTypes.filter(Boolean);
+  const identifierTypes = patientIdentifierTypes.filter(Boolean);
 
   if (!identifierTypes.length) {
     return [];
@@ -151,21 +170,45 @@ export async function fetchPatientIdentifierTypesWithSources(): Promise<Array<Pa
     }));
   }
 
-  const allIdentifierSources = identifierSourcesResponse.value.data.results;
+  return addIdentifierSources(
+    identifierTypes,
+    identifierSourcesResponse.value.data.results,
+    autoGenOptions.value.data.results,
+  );
+}
 
-  for (let i = 0; i < identifierTypes?.length; i++) {
-    identifierTypes[i].identifierSources = allIdentifierSources
-      .filter((source) => source.identifierType.uuid === identifierTypes[i].uuid)
-      .map((source) => {
-        const option = find(autoGenOptions.value.data.results, {
-          source: { uuid: source.uuid },
-        });
-        source.autoGenerationOption = option;
-        return source;
-      });
+/**
+ * Fetches the identifier metadata used by the bulk-import safety preflight.
+ * Every URL has a nonce and uses a network-only request so a cached success can
+ * never be mistaken for the backend's current uniqueness or ID-generation rules.
+ */
+export async function fetchFreshPatientIdentifierTypesWithSources(
+  signal?: AbortSignal,
+): Promise<Array<PatientIdentifierType>> {
+  const abortController = new AbortController();
+  const abortForCaller = () => abortController.abort(signal?.reason);
+  const timeout = globalThis.setTimeout(() => abortController.abort(), metadataFetchTimeoutMs);
+
+  if (signal?.aborted) {
+    abortForCaller();
   }
+  signal?.addEventListener('abort', abortForCaller, { once: true });
 
-  return identifierTypes;
+  try {
+    const [patientIdentifierTypes, primaryIdentifierTypes, identifierSources, autoGenOptions] = await Promise.all([
+      fetchAllFreshMetadataResults<PatientIdentifierTypeResponse>(patientIdentifierTypesUrl, abortController.signal),
+      fetchAllFreshMetadataResults<{ metadataUuid?: string }>(primaryIdentifierTypeUrl, abortController.signal),
+      fetchAllFreshMetadataResults<IdentifierSourceResponse>(identifierSourcesUrl, abortController.signal),
+      fetchAllFreshMetadataResults<AutoGenerationOptionResponse>(autoGenerationOptionsUrl, abortController.signal),
+    ]);
+
+    const identifierTypes = mapPatientIdentifierTypes(patientIdentifierTypes, primaryIdentifierTypes[0]?.metadataUuid);
+
+    return addIdentifierSources(identifierTypes, identifierSources, autoGenOptions);
+  } finally {
+    globalThis.clearTimeout(timeout);
+    signal?.removeEventListener('abort', abortForCaller);
+  }
 }
 
 async function fetchPatientIdentifierTypes(): Promise<Array<FetchedPatientIdentifierType>> {
@@ -174,12 +217,10 @@ async function fetchPatientIdentifierTypes(): Promise<Array<FetchedPatientIdenti
   // and allow registering patients without their primary identifier.
   const patientIdentifierTypesResponse = await cacheAndFetch<{
     results: Array<PatientIdentifierTypeResponse>;
-  }>(
-    `${restBaseUrl}/patientidentifiertype?v=custom:(display,uuid,name,description,format,required,uniquenessBehavior,locationBehavior)`,
-  );
+  }>(patientIdentifierTypesUrl);
   const primaryIdentifierTypeResponse = await cacheAndFetch<{
     results: Array<{ metadataUuid?: string }>;
-  }>(`${restBaseUrl}/metadatamapping/termmapping?v=full&code=emr.primaryIdentifierType`, {
+  }>(primaryIdentifierTypeUrl, {
     required: false,
   }).catch((error) => {
     console.warn('Failed to load primary identifier mapping. Falling back to required identifier types.', error);
@@ -190,35 +231,68 @@ async function fetchPatientIdentifierTypes(): Promise<Array<FetchedPatientIdenti
     throw new Error(`Failed to load patient identifier types (HTTP ${patientIdentifierTypesResponse.status}).`);
   }
 
-  // Primary identifier type is to be kept at the top of the list.
-  const patientIdentifierTypes = patientIdentifierTypesResponse?.data?.results;
-
-  const primaryIdentifierTypeUuid = primaryIdentifierTypeResponse?.data?.results?.[0]?.metadataUuid;
-  const primaryIdentifierType = patientIdentifierTypes?.find((type) => type.uuid === primaryIdentifierTypeUuid);
-
-  const identifierTypes =
-    primaryIdentifierTypeResponse?.ok && primaryIdentifierType
-      ? [mapPatientIdentifierType(primaryIdentifierType, true)]
-      : [];
-
-  patientIdentifierTypes.forEach((type) => {
-    if (type.uuid !== primaryIdentifierTypeUuid) {
-      identifierTypes.push(mapPatientIdentifierType(type, false));
-    }
-  });
-  return identifierTypes;
+  return mapPatientIdentifierTypes(
+    patientIdentifierTypesResponse.data.results,
+    primaryIdentifierTypeResponse?.ok ? primaryIdentifierTypeResponse.data.results[0]?.metadataUuid : undefined,
+  );
 }
 
 async function fetchIdentifierSources() {
-  return await cacheAndFetch<{ results: Array<IdentifierSourceResponse> }>(
-    `${restBaseUrl}/idgen/identifiersource?v=default`,
-  );
+  return await cacheAndFetch<{ results: Array<IdentifierSourceResponse> }>(identifierSourcesUrl);
 }
 
 async function fetchAutoGenerationOptions() {
-  return await cacheAndFetch<{ results: Array<AutoGenerationOptionResponse> }>(
-    `${restBaseUrl}/idgen/autogenerationoption?v=full`,
-  );
+  return await cacheAndFetch<{ results: Array<AutoGenerationOptionResponse> }>(autoGenerationOptionsUrl);
+}
+
+async function fetchFreshMetadata<T>(url: string, signal: AbortSignal): Promise<FetchResponse<T>> {
+  const requestUrl = new URL(url, globalThis.location.origin);
+  requestUrl.searchParams.set('_bulkPatientImportMetadata', globalThis.crypto.randomUUID());
+
+  const response = await openmrsFetch<T>(requestUrl.href, {
+    cache: 'no-store',
+    headers: {
+      [omrsOfflineCachingStrategyHttpHeaderName]: 'network-only-or-cache-only',
+    },
+    rejectOnAuthFailure: true,
+    signal,
+  });
+
+  if (!response.ok || response.status < 200 || response.status >= 300) {
+    throw new Error(`Failed to load fresh patient identifier metadata (HTTP ${response.status}).`);
+  }
+
+  return response;
+}
+
+async function fetchAllFreshMetadataResults<T>(initialUrl: string, signal: AbortSignal): Promise<Array<T>> {
+  const results: Array<T> = [];
+  const visited = new Set<string>();
+  const restPath = `${new URL(restBaseUrl, globalThis.location.origin).pathname.replace(/\/$/, '')}/`;
+  let nextUrl: string | undefined = initialUrl;
+
+  for (let page = 0; nextUrl && page < maxFreshMetadataPages; page++) {
+    const linkedUrl = new URL(nextUrl, globalThis.location.origin);
+    if (!linkedUrl.pathname.startsWith(restPath)) {
+      throw new Error('Failed to load fresh patient identifier metadata.');
+    }
+    const canonicalUrl = new URL(`${linkedUrl.pathname}${linkedUrl.search}`, globalThis.location.origin);
+    canonicalUrl.searchParams.delete('_bulkPatientImportMetadata');
+    const pageKey = canonicalUrl.href;
+    if (visited.has(pageKey)) {
+      throw new Error('Failed to load fresh patient identifier metadata.');
+    }
+    visited.add(pageKey);
+
+    const response = await fetchFreshMetadata<MetadataPage<T>>(pageKey, signal);
+    results.push(...(response.data.results ?? []));
+    nextUrl = response.data.links?.find((link) => link.rel === 'next')?.uri;
+  }
+
+  if (nextUrl) {
+    throw new Error('Failed to load fresh patient identifier metadata.');
+  }
+  return results;
 }
 
 async function cacheAndFetch<T = unknown>(url?: string, options: { required?: boolean } = {}) {
@@ -278,4 +352,38 @@ function mapPatientIdentifierType(patientIdentifierType: PatientIdentifierTypeRe
     locationBehavior: patientIdentifierType.locationBehavior,
     uniquenessBehavior: patientIdentifierType.uniquenessBehavior,
   };
+}
+
+function mapPatientIdentifierTypes(
+  patientIdentifierTypes: Array<PatientIdentifierTypeResponse>,
+  primaryIdentifierTypeUuid?: string,
+): Array<FetchedPatientIdentifierType> {
+  const primaryIdentifierType = patientIdentifierTypes.find((type) => type.uuid === primaryIdentifierTypeUuid);
+  const identifierTypes = primaryIdentifierType ? [mapPatientIdentifierType(primaryIdentifierType, true)] : [];
+
+  patientIdentifierTypes.forEach((type) => {
+    if (type.uuid !== primaryIdentifierTypeUuid) {
+      identifierTypes.push(mapPatientIdentifierType(type, false));
+    }
+  });
+
+  return identifierTypes;
+}
+
+function addIdentifierSources(
+  identifierTypes: Array<FetchedPatientIdentifierType>,
+  allIdentifierSources: Array<IdentifierSourceResponse>,
+  autoGenerationOptions: Array<AutoGenerationOptionResponse>,
+): Array<PatientIdentifierType> {
+  return identifierTypes.map((identifierType) => ({
+    ...identifierType,
+    identifierSources: allIdentifierSources
+      .filter((source) => source.identifierType.uuid === identifierType.uuid)
+      .map((source) => ({
+        ...source,
+        autoGenerationOption: find(autoGenerationOptions, {
+          source: { uuid: source.uuid },
+        }),
+      })),
+  }));
 }

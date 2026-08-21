@@ -96,6 +96,7 @@ describe('DefaultQueueTable', () => {
         workflow: {
           isTriageQueue: false,
           sisState: 'notApplicable',
+          isSisStateResolved: true,
           triageState: 'notRequired',
         },
       })),

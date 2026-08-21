@@ -48,6 +48,11 @@ export const LEGACY_SIS_PRODUCT_CONCEPT_UUIDS: ReadonlyArray<string> = [
   'b61a9ff9-1485-4388-9f67-9c341f847f85', // SIS Gratuito
   'e43e0a71-0b5d-4fc2-b599-a76e4562ae5a', // SIS Semicontributivo
   'cc6958d9-7948-4f29-b244-4ff896c0b2ee', // SIS Emprendedor
+  // El catalogo «Tipo de seguro» sigue exponiendo «Plan de atencion SIS» como
+  // financiador de primer nivel y el registro de pacientes ya lo trata como SIS
+  // (isPeruSisFinancer). Sin esta entrada, un paciente admitido con esa opcion
+  // se leia como no-SIS en triaje y quedaba derivado a Caja pese a tener SIS.
+  'b76a9a24-4905-4132-a215-8a567281852a', // Plan de atencion SIS
 ];
 
 // ── Tipos REST ───────────────────────────────────────────────────────────────

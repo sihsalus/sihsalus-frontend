@@ -74,7 +74,8 @@ disabled except for one approved window. Never use production or real patient da
 ## Failure and resume
 
 - If a response is lost, first query the deterministic patient UUID and exact DNI from a fresh network response.
-- Exact UUID plus the approved identity payload is `reconciled-created`; it must not be POSTed again.
+- Exact UUID plus the approved identity payload is recorded as `reconciled`; it must not be POSTed again. The `created`
+  result is reserved for a successful Patient POST response confirmed during the current run.
 - A conflicting UUID, a different DNI/person, multiple matches, or an unverifiable response is `ambiguous`. Stop and
   escalate to the environment owner. Never automatically delete or merge a patient.
 - Resume only by re-selecting the byte-identical approved file, rerunning all live checks, and reacquiring the lock.

@@ -25,6 +25,7 @@ import {
   type ImportSummary,
   type ParsedPatientImportRow,
   type PatientImportManifest,
+  type PatientImportRowResult,
   type SantaClotildeHeader,
   santaClotildeHeaders,
 } from './bulk-patient-import.types';
@@ -263,7 +264,7 @@ export async function createPatientFromImportRow(
   identifierTypes: Array<PatientIdentifierType>,
   locationUuid: string,
   options: BulkPatientImportRowOptions,
-) {
+): Promise<PatientImportRowResult> {
   try {
     const operationSignal = withRequestTimeout(options.signal, 30_000);
     assertImportableRow(row);
@@ -279,7 +280,7 @@ export async function createPatientFromImportRow(
     );
 
     if (existingState === 'reconciled') {
-      return patientUuid;
+      return { patientUuid, outcome: 'reconciled' };
     }
 
     const identifiers = await buildPatientIdentifiers(row, identifierPlans, options.assertBeforeWrite, operationSignal);
@@ -300,7 +301,7 @@ export async function createPatientFromImportRow(
         (await inspectExistingPatient(row, options.domicilioTarget, identifierPlans, 'after-create', identifiers)) ===
         'reconciled'
       ) {
-        return patientUuid;
+        return { patientUuid, outcome: 'reconciled' };
       }
       throw new Error(bulkPatientImportRowErrorMessage);
     }
@@ -321,7 +322,7 @@ export async function createPatientFromImportRow(
     ) {
       throw new Error(bulkPatientImportRowErrorMessage);
     }
-    return patientUuid;
+    return { patientUuid, outcome: 'created' };
   } catch {
     throw new Error(bulkPatientImportRowErrorMessage);
   }
@@ -371,7 +372,9 @@ export function summarizeImportRows(rows: Array<ParsedPatientImportRow>): Import
     warnings: rows.filter((row) => row.warnings.length && !row.errors.length).length,
     errors: rows.filter((row) => row.errors.length).length,
     created: rows.filter((row) => row.status === 'created').length,
+    reconciled: rows.filter((row) => row.status === 'reconciled').length,
     failed: rows.filter((row) => row.status === 'failed').length,
+    skipped: rows.filter((row) => row.status === 'skipped').length,
   };
 }
 

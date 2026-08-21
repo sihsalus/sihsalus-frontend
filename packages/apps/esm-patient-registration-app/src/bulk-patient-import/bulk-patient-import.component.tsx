@@ -58,7 +58,9 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
   const rows = manifest?.rows ?? [];
   const summary = useMemo(() => summarizeImportRows(rows), [rows]);
   const rowsWithErrors = rows.filter((row) => row.errors.length > 0);
-  const pendingRows = rows.filter((row) => !row.errors.length && row.status !== 'created');
+  const pendingRows = rows.filter(
+    (row) => !row.errors.length && row.status !== 'created' && row.status !== 'reconciled',
+  );
   const isBusy = isParsing || isPreflighting || isImporting;
   const domicilioTarget =
     importConfig.domicilioTarget === 'address4' || importConfig.domicilioTarget === 'cityVillage'
@@ -173,15 +175,15 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
       if (operationToken !== operationTokenRef.current) {
         return;
       }
-      updateManifestRows(fileSha256, (row) =>
-        result.reconciledRowIds.has(row.id)
-          ? {
-              ...row,
-              status: 'created',
-              importMessage: t('bulkPatientImportReconciledMessage', 'Existing patient safely reconciled.'),
-            }
-          : { ...row, status: row.warnings.length ? 'warning' : 'valid', importMessage: '' },
-      );
+      updateManifestRows(fileSha256, (row) => {
+        if (result.reconciledRowIds.has(row.id)) {
+          return preserveCreatedOrMarkReconciled(
+            row,
+            t('bulkPatientImportReconciledMessage', 'Existing patient safely reconciled.'),
+          );
+        }
+        return { ...row, status: row.warnings.length ? 'warning' : 'valid', importMessage: '' };
+      });
       setPreflightFingerprint(getPreflightFingerprint(manifest, userUuid, locationUuid, importConfig));
       showSnackbar({
         title: t('bulkPatientImportPreflightPassedTitle', 'Safety preflight passed'),
@@ -235,11 +237,10 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
         );
         updateManifestRows(fileSha256, (row) =>
           secondPreflight.reconciledRowIds.has(row.id)
-            ? {
-                ...row,
-                status: 'created',
-                importMessage: t('bulkPatientImportReconciledMessage', 'Existing patient safely reconciled.'),
-              }
+            ? preserveCreatedOrMarkReconciled(
+                row,
+                t('bulkPatientImportReconciledMessage', 'Existing patient safely reconciled.'),
+              )
             : row,
         );
         const rowsToCreate = approvedRows.filter((row) => !secondPreflight.reconciledRowIds.has(row.id));
@@ -258,7 +259,7 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
               { config: importConfig, fileSha256, userUuid, locationUuid },
               abortController.signal,
             );
-            const patientUuid = await createPatientFromImportRow(row, lockedIdentifierTypes, locationUuid, {
+            const result = await createPatientFromImportRow(row, lockedIdentifierTypes, locationUuid, {
               domicilioTarget,
               signal: abortController.signal,
               assertBeforeWrite: () =>
@@ -271,9 +272,12 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
               throw new Error(bulkPatientImportRowErrorMessage);
             }
             updateRow(fileSha256, row.id, {
-              status: 'created',
-              patientUuid,
-              importMessage: t('bulkPatientImportCreatedMessage', 'Patient created and reconciled.'),
+              status: result.outcome,
+              patientUuid: result.patientUuid,
+              importMessage:
+                result.outcome === 'created'
+                  ? t('bulkPatientImportCreatedMessage', 'Patient created and reconciled.')
+                  : t('bulkPatientImportReconciledMessage', 'Existing patient safely reconciled.'),
             });
           } catch {
             if (operationToken === operationTokenRef.current) {
@@ -441,7 +445,9 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
                 <SummaryTile label={t('bulkPatientImportWarningRows', 'Warnings')} value={summary.warnings} />
                 <SummaryTile label={t('bulkPatientImportErrorRows', 'Errors')} value={summary.errors} />
                 <SummaryTile label={t('bulkPatientImportCreatedRows', 'Created')} value={summary.created} />
+                <SummaryTile label={t('bulkPatientImportReconciledRows', 'Reconciled')} value={summary.reconciled} />
                 <SummaryTile label={t('bulkPatientImportFailedRows', 'Failed')} value={summary.failed} />
+                <SummaryTile label={t('bulkPatientImportSkippedRows', 'Skipped')} value={summary.skipped} />
               </section>
 
               {rowsWithErrors.length ? (
@@ -493,6 +499,16 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
                   'Keep it only in the approved encrypted location and never attach it to a public ticket.',
                 )}
               />
+
+              {rows.length > previewLimit ? (
+                <p className={styles.previewLimit}>
+                  {t(
+                    'bulkPatientImportPreviewLimit',
+                    'Showing the first {{shown}} of {{total}} rows. The summary and protected report include all rows.',
+                    { shown: previewLimit, total: rows.length },
+                  )}
+                </p>
+              ) : null}
 
               <PatientImportPreview rows={rows.slice(0, previewLimit)} t={t} />
             </>
@@ -594,6 +610,16 @@ function SummaryTile({ label, value }: { label: string; value: number }) {
   );
 }
 
+function preserveCreatedOrMarkReconciled(row: ParsedPatientImportRow, reconciledMessage: string) {
+  return row.status === 'created'
+    ? row
+    : {
+        ...row,
+        status: 'reconciled' as const,
+        importMessage: reconciledMessage,
+      };
+}
+
 function PatientImportPreview({
   rows,
   t,
@@ -654,7 +680,7 @@ function StatusTag({
   t: (key: string, fallback: string) => string;
 }) {
   const tagType =
-    status === 'created'
+    status === 'created' || status === 'reconciled'
       ? 'green'
       : status === 'failed' || status === 'error'
         ? 'red'

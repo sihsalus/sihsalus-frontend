@@ -1,5 +1,5 @@
 import { logError, showSnackbar, useConfig } from '@openmrs/esm-framework';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 import type { RegistrationConfig } from '../config-schema';
 import { fetchFreshPatientIdentifierTypesWithSources, type Resources, ResourcesContext } from '../offline.resources';
@@ -8,6 +8,7 @@ import type { ParsedPatientImportRow, PatientImportManifest } from './bulk-patie
 import {
   calculateFileSha256,
   createPatientFromImportRow,
+  downloadImportReport,
   parseSantaClotildeWorkbook,
   preflightBulkPatientImportRows,
 } from './bulk-patient-import.utils';
@@ -45,6 +46,7 @@ vi.mock('./bulk-patient-import.utils', async (importOriginal) => {
 const mockAssertFreshContext = vi.mocked(assertFreshBulkPatientImportContext);
 const mockCalculateFileSha256 = vi.mocked(calculateFileSha256);
 const mockCreatePatientFromImportRow = vi.mocked(createPatientFromImportRow);
+const mockDownloadImportReport = vi.mocked(downloadImportReport);
 const mockFetchFreshIdentifierTypes = vi.mocked(fetchFreshPatientIdentifierTypesWithSources);
 const mockLogError = vi.mocked(logError);
 const mockParseSantaClotildeWorkbook = vi.mocked(parseSantaClotildeWorkbook);
@@ -55,6 +57,7 @@ const mockShowSnackbar = vi.mocked(showSnackbar);
 const approvedFileSha256 = 'a'.repeat(64);
 const approvedUserUuid = '11111111-1111-4111-8111-111111111111';
 const approvedLocationUuid = '22222222-2222-4222-8222-222222222222';
+const deterministicPatientUuid = '9b840936-a975-594c-9ff0-a7e9bffc7161';
 
 const validRow: ParsedPatientImportRow = {
   id: `${approvedFileSha256}:2`,
@@ -85,7 +88,7 @@ const validRow: ParsedPatientImportRow = {
   errors: [],
   warnings: [],
   status: 'valid',
-  patientUuid: '9b840936-a975-594c-9ff0-a7e9bffc7161',
+  patientUuid: deterministicPatientUuid,
 };
 
 const manifest: PatientImportManifest = {
@@ -127,7 +130,7 @@ describe('BulkPatientImport', () => {
     mockCalculateFileSha256.mockResolvedValue(approvedFileSha256);
     mockFetchFreshIdentifierTypes.mockResolvedValue(resources.identifierTypes);
     mockPreflightRows.mockResolvedValue({ reconciledRowIds: new Set() });
-    mockCreatePatientFromImportRow.mockResolvedValue(validRow.patientUuid);
+    mockCreatePatientFromImportRow.mockResolvedValue({ patientUuid: deterministicPatientUuid, outcome: 'created' });
   });
 
   it('fails closed on the direct route after the approval window expires', () => {
@@ -194,6 +197,41 @@ describe('BulkPatientImport', () => {
     expect(mockFetchFreshIdentifierTypes).toHaveBeenCalledOnce();
     expect(mockCreatePatientFromImportRow).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: /create patients/i })).toBeEnabled();
+    expect(screen.queryByText(/summary and protected report include all rows/i)).not.toBeInTheDocument();
+  });
+
+  it('discloses when the preview is truncated while keeping the full manifest total visible', async () => {
+    const rows = Array.from({ length: 101 }, (_, index) => ({
+      ...validRow,
+      id: `${approvedFileSha256}:${index + 2}`,
+      rowNumber: index + 2,
+    }));
+    mockParseSantaClotildeWorkbook.mockResolvedValue({ ...manifest, rows });
+
+    const { container } = renderBulkPatientImport();
+    uploadFile(container);
+
+    expect(
+      await screen.findByText('Showing the first 100 of 101 rows. The summary and protected report include all rows.'),
+    ).toBeInTheDocument();
+    expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(101);
+    fireEvent.click(screen.getByRole('button', { name: /download protected report/i }));
+    expect(mockDownloadImportReport).toHaveBeenCalledWith(rows);
+  });
+
+  it('marks a fully reconciled preflight separately and keeps creation disabled', async () => {
+    mockParseSantaClotildeWorkbook.mockResolvedValue(manifest);
+    mockPreflightRows.mockResolvedValue({ reconciledRowIds: new Set([validRow.id]) });
+
+    const { container } = renderBulkPatientImport();
+    uploadFile(container);
+    fireEvent.click(await screen.findByRole('button', { name: /run safety preflight/i }));
+
+    expect(await screen.findByText('Existing patient safely reconciled.')).toBeInTheDocument();
+    expectSummaryValue('Created', 0);
+    expectSummaryValue('Reconciled', 1);
+    expect(screen.getByRole('button', { name: /create patients/i })).toBeDisabled();
+    expect(mockCreatePatientFromImportRow).not.toHaveBeenCalled();
   });
 
   it('fails safely when current identifier metadata cannot be fetched', async () => {
@@ -237,6 +275,7 @@ describe('BulkPatientImport', () => {
     expect(mockAssertFreshContext).toHaveBeenCalledTimes(4);
     expect(await screen.findByText('Import stopped. Reconcile this row before any retry.')).toBeInTheDocument();
     expect(screen.getByText('Not attempted after an earlier failure.')).toBeInTheDocument();
+    expectSummaryValue('Skipped', 1);
     expect(screen.queryByText(/backend exposed/i)).not.toBeInTheDocument();
     expect(mockLogError).toHaveBeenCalledWith(
       expect.objectContaining({ message: bulkPatientImportSafetyErrorMessage }),
@@ -259,8 +298,56 @@ describe('BulkPatientImport', () => {
     fireEvent.click(confirmDialog.querySelector('button.cds--btn--danger') as HTMLButtonElement);
 
     expect(await screen.findByText('Existing patient safely reconciled.')).toBeInTheDocument();
+    expect(screen.getByText('reconciled')).toBeInTheDocument();
+    expectSummaryValue('Created', 0);
+    expectSummaryValue('Reconciled', 1);
     expect(mockPreflightRows).toHaveBeenCalledTimes(2);
     expect(mockCreatePatientFromImportRow).not.toHaveBeenCalled();
+  });
+
+  it('preserves the created result when a later preflight reconciles the same patient', async () => {
+    mockParseSantaClotildeWorkbook.mockResolvedValue(manifest);
+    mockPreflightRows
+      .mockResolvedValueOnce({ reconciledRowIds: new Set() })
+      .mockResolvedValueOnce({ reconciledRowIds: new Set() })
+      .mockResolvedValueOnce({ reconciledRowIds: new Set([validRow.id]) });
+
+    const { container } = renderBulkPatientImport();
+    uploadFile(container);
+    fireEvent.click(await screen.findByRole('button', { name: /run safety preflight/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /create patients/i })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: /create patients/i }));
+    const confirmDialog = await screen.findByRole('dialog', { name: /create patients/i });
+    fireEvent.click(confirmDialog.querySelector('button.cds--btn--danger') as HTMLButtonElement);
+
+    expect(await screen.findByText('Patient created and reconciled.')).toBeInTheDocument();
+    expectSummaryValue('Created', 1);
+    expectSummaryValue('Reconciled', 0);
+
+    fireEvent.click(screen.getByRole('button', { name: /run safety preflight/i }));
+    await waitFor(() => expect(mockPreflightRows).toHaveBeenCalledTimes(3));
+    expectSummaryValue('Created', 1);
+    expectSummaryValue('Reconciled', 0);
+  });
+
+  it('reports a conservatively reconciled row separately when creation could not be confirmed directly', async () => {
+    mockParseSantaClotildeWorkbook.mockResolvedValue(manifest);
+    mockCreatePatientFromImportRow.mockResolvedValue({
+      patientUuid: deterministicPatientUuid,
+      outcome: 'reconciled',
+    });
+
+    const { container } = renderBulkPatientImport();
+    uploadFile(container);
+    fireEvent.click(await screen.findByRole('button', { name: /run safety preflight/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /create patients/i })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: /create patients/i }));
+    const confirmDialog = await screen.findByRole('dialog', { name: /create patients/i });
+    fireEvent.click(confirmDialog.querySelector('button.cds--btn--danger') as HTMLButtonElement);
+
+    expect(await screen.findByText('Existing patient safely reconciled.')).toBeInTheDocument();
+    expectSummaryValue('Created', 0);
+    expectSummaryValue('Reconciled', 1);
   });
 
   it('aborts the active row request and suppresses stale updates when unmounted', async () => {
@@ -306,4 +393,12 @@ function renderBulkPatientImport() {
 function uploadFile(container: HTMLElement, file = new File(['synthetic'], 'approved.xlsx')) {
   const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
   fireEvent.change(fileInput, { target: { files: [file] } });
+}
+
+function expectSummaryValue(label: string, value: number) {
+  const summary = screen.getByText('Rows').closest('section');
+  if (!summary) {
+    throw new Error('Bulk patient import summary is missing.');
+  }
+  expect(within(summary).getByText(label).parentElement).toHaveTextContent(`${label}${value}`);
 }

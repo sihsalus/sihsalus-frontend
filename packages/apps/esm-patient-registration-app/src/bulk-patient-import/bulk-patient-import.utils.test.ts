@@ -22,6 +22,7 @@ import {
   normalizeDate,
   parseSantaClotildeWorkbook,
   preflightBulkPatientImportRows,
+  summarizeImportRows,
   validateBulkPatientImportMetadata,
 } from './bulk-patient-import.utils';
 
@@ -261,8 +262,11 @@ describe('bulk patient import safety checks', () => {
     mockSearchLocalIdentityByDocument.mockResolvedValue([buildExactSearchMatch(row)]);
     mockFetchFreshPatientIdentityByUuid.mockResolvedValue(buildFreshPatient(row));
 
-    await expect(createPatientFromImportRow(row, identifierTypes, 'location-uuid', buildRowOptions())).resolves.toBe(
-      row.patientUuid,
+    await expect(createPatientFromImportRow(row, identifierTypes, 'location-uuid', buildRowOptions())).resolves.toEqual(
+      {
+        patientUuid: row.patientUuid,
+        outcome: 'reconciled',
+      },
     );
     expect(mockSavePatient).not.toHaveBeenCalled();
   });
@@ -470,8 +474,11 @@ describe('bulk patient import safety checks', () => {
     mockFetchFreshPatientIdentityByUuid.mockResolvedValueOnce(null).mockResolvedValueOnce(buildFreshPatient(row));
     mockSavePatient.mockRejectedValueOnce(new Error('POST failed with private synthetic row details'));
 
-    await expect(createPatientFromImportRow(row, identifierTypes, 'location-uuid', buildRowOptions())).resolves.toBe(
-      row.patientUuid,
+    await expect(createPatientFromImportRow(row, identifierTypes, 'location-uuid', buildRowOptions())).resolves.toEqual(
+      {
+        patientUuid: row.patientUuid,
+        outcome: 'reconciled',
+      },
     );
     expect(mockSavePatient).toHaveBeenCalledTimes(1);
   });
@@ -533,8 +540,11 @@ describe('bulk patient import safety checks', () => {
     mockSearchLocalIdentityByDocument.mockResolvedValueOnce([]).mockResolvedValueOnce([buildExactSearchMatch(row)]);
     mockFetchFreshPatientIdentityByUuid.mockResolvedValueOnce(null).mockResolvedValueOnce(buildFreshPatient(row));
 
-    await expect(createPatientFromImportRow(row, identifierTypes, 'location-uuid', buildRowOptions())).resolves.toBe(
-      row.patientUuid,
+    await expect(createPatientFromImportRow(row, identifierTypes, 'location-uuid', buildRowOptions())).resolves.toEqual(
+      {
+        patientUuid: row.patientUuid,
+        outcome: 'created',
+      },
     );
 
     expect(mockSavePatient).toHaveBeenCalledWith(
@@ -643,7 +653,7 @@ describe('bulk patient import safety checks', () => {
 
   it('keeps raw demographics out of the downloaded reconciliation report', async () => {
     const row = buildImportRow();
-    row.status = 'created';
+    row.status = 'reconciled';
     const createObjectUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:synthetic-report');
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
@@ -655,9 +665,22 @@ describe('bulk patient import safety checks', () => {
     await reportWorkbook.xlsx.load(await reportBlob.arrayBuffer());
     const values = JSON.stringify(reportWorkbook.worksheets[0].getSheetValues());
     expect(values).toContain(row.patientUuid);
+    expect(values).toContain('reconciled');
     expect(values).not.toContain(row.normalized.dni);
     expect(values).not.toContain(row.normalized.givenName);
     expect(values).not.toContain(row.normalized.domicilio);
+  });
+
+  it('counts created and reconciled patients separately', () => {
+    const createdRow = { ...buildImportRow(), status: 'created' as const };
+    const reconciledRow = { ...buildImportRow(), id: 'approved-file-hash:3', status: 'reconciled' as const };
+    const skippedRow = { ...buildImportRow(), id: 'approved-file-hash:4', status: 'skipped' as const };
+
+    expect(summarizeImportRows([createdRow, reconciledRow, skippedRow])).toMatchObject({
+      created: 1,
+      reconciled: 1,
+      skipped: 1,
+    });
   });
 });
 

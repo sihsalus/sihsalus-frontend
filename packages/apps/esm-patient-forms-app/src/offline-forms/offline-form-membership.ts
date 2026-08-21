@@ -8,17 +8,21 @@ import {
 
 const offlineFormMembershipLockName = 'openmrs-offline-form-membership';
 const offlineFormAvailabilityUpdateErrorMessage = 'Offline form availability could not be changed.';
-let offlineFormMembershipFallback = Promise.resolve();
+let offlineFormOperationFallback = Promise.resolve();
 
-function serializeOfflineFormMembershipUpdate<T>(operation: () => Promise<T>): Promise<T> {
+/**
+ * Runs a complete form-membership or background-refresh operation inside the shared boundary.
+ * Callers must not nest serialized form operations.
+ */
+export function serializeOfflineFormOperation<T>(operation: () => Promise<T>): Promise<T> {
   const lockManager = globalThis.navigator?.locks;
 
   if (lockManager) {
     return lockManager.request(offlineFormMembershipLockName, operation);
   }
 
-  const result = offlineFormMembershipFallback.then(operation, operation);
-  offlineFormMembershipFallback = result.then(
+  const result = offlineFormOperationFallback.then(operation, operation);
+  offlineFormOperationFallback = result.then(
     () => undefined,
     () => undefined,
   );
@@ -29,7 +33,7 @@ export async function updateOfflineFormAvailability(userId: string, formUuid: st
   const fixedError = new Error(offlineFormAvailabilityUpdateErrorMessage);
 
   try {
-    await serializeOfflineFormMembershipUpdate(async () => {
+    await serializeOfflineFormOperation(async () => {
       if (!checked) {
         await removeDynamicFormDataEntryFor(userId, formUuid);
         return;

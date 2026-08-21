@@ -14,11 +14,13 @@ back a new selection, and produces fixed translated feedback without rendering t
 Form data refreshes require confirmed fresh network responses; a stale cached success cannot complete synchronization,
 and the previous stable cache entry remains available when the refresh fails.
 
-Form-membership updates use one identifier-free Web Lock across cooperating browser contexts, with a same-page FIFO
-fallback where Web Locks are unavailable. The membership is re-read inside that serialized operation, and a failed
-first download rolls back only the membership added by that attempt. The lock is not an authenticated-session owner
-epoch: an account transition during an in-flight download can still change the session used by downstream handlers.
-Until owner-epoch cancellation is implemented, let offline-form updates settle before switching accounts.
+Form-membership updates and background form-refresh batches use one identifier-free Web Lock across cooperating browser
+contexts, with a same-page FIFO fallback where Web Locks are unavailable. A background snapshot and all of its entry
+refreshes settle inside that boundary, so an earlier refresh cannot re-add membership after a serialized removal or
+first-download rollback. The membership is re-read inside each toggle operation, and a failed first download rolls back
+only the membership added by that attempt. The lock is not an authenticated-session owner epoch: an account transition
+during an in-flight download can still change the session used by downstream handlers. Until owner-epoch cancellation
+is implemented, let offline-form updates settle before switching accounts.
 
 Previously cached forms remain available when a background refresh fails, but the user is warned that they may be
 outdated. Clinical cache content remains origin-wide; shared devices require an isolated OS/browser profile per

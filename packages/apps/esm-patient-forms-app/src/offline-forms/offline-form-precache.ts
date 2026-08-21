@@ -1,5 +1,7 @@
 import { showSnackbar, subscribePrecacheStaticDependencies, syncAllDynamicOfflineData } from '@openmrs/esm-framework';
 
+import { serializeOfflineFormOperation } from './offline-form-membership';
+
 const moduleName = '@sihsalus/esm-patient-forms-app';
 
 function translate(key: string, defaultValue: string): string {
@@ -8,7 +10,7 @@ function translate(key: string, defaultValue: string): string {
 
 export function setupOfflineFormPrecache(): void {
   subscribePrecacheStaticDependencies(() => {
-    void syncAllDynamicOfflineData('form').catch(() => {
+    void serializeOfflineFormOperation(() => syncAllDynamicOfflineData('form')).catch(() => {
       showSnackbar({
         kind: 'error',
         title: translate('offlineFormsRefreshFailed', 'Offline forms could not be refreshed'),

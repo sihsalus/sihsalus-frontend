@@ -487,6 +487,12 @@ export interface QueueEntry {
     destinationQueueUuid?: string;
     isTriageQueue: boolean;
     sisState: 'active' | 'inactive' | 'pending' | 'notConsulted' | 'missing' | 'notApplicable';
+    /**
+     * False mientras la cobertura del paciente no se pudo leer todavía (carga
+     * inicial o error de red). Sin esto, `sisState` cae a `notConsulted` y la
+     * cola entera se muestra como "Derivar a Caja".
+     */
+    isSisStateResolved: boolean;
     triageState: 'pending' | 'completed' | 'notRequired';
   };
 }

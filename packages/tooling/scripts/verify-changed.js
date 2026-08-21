@@ -7,14 +7,16 @@ const { spawnSync } = require('node:child_process');
 const repoRoot = path.resolve(__dirname, '../../..');
 const rootPackageJsonPath = path.join(repoRoot, 'package.json');
 
-const repoWidePrefixes = ['.yarn/', 'config/', 'packages/tooling/'];
+const repoWidePrefixes = ['.yarn/', 'config/', 'packages/test-utils/', 'packages/tooling/', 'packages/types/'];
 
 const repoWideFiles = new Set([
   '.yarnrc.yml',
   'biome.json',
   'package.json',
   'turbo.json',
+  'tsconfig.base.json',
   'yarn.lock',
+  'packages/declarations.d.ts',
   'packages/tsconfig.json',
   'packages/vitest.config.js',
 ]);

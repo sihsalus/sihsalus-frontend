@@ -11,11 +11,11 @@ import {
   peruInsuranceAccreditationNotConsultedConceptUuid,
   peruInsuranceAccreditationStatusAttributeTypeUuid,
   peruInsuranceCodeAttributeTypeUuid,
-  peruLegacySisPlanConceptUuid,
   peruInsuranceSelfFinancingConceptUuid,
   peruInsuranceSisConceptUuid,
   peruInsuranceTypeAttributeTypeUuid,
   peruInsuranceVerificationMethodAttributeTypeUuid,
+  peruLegacySisPlanConceptUuid,
   replacePeruInsuranceCoverageInForm,
 } from '../../peru-registration-config';
 import { useConceptAnswers } from '../field.resource';

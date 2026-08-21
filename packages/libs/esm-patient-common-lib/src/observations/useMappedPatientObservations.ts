@@ -37,7 +37,6 @@ interface PatientObservationsSwrKey {
   page: number;
   pageSize: number;
   patientUuid: string;
-  prevPageData: PatientObservationsFetchResponse;
 }
 
 interface UseMappedPatientObservationsOptions<Row extends PatientObservationBaseRow> {
@@ -54,12 +53,7 @@ function fetchPatientObservations({
   conceptUuids,
   page,
   pageSize,
-  prevPageData,
 }: PatientObservationsSwrKey) {
-  if (prevPageData && !prevPageData?.data?.link?.some((link) => link.relation === 'next')) {
-    return null;
-  }
-
   const url = `${fhirBaseUrl}/Observation?subject:Patient=${patientUuid}&`;
   const urlSearchParams = new URLSearchParams();
 
@@ -86,8 +80,12 @@ export function useMappedPatientObservations<Row extends PatientObservationBaseR
   const conceptUuidList = useMemo(() => conceptUuids.filter(Boolean).join(','), [conceptUuids]);
 
   const getPage = useCallback(
-    (page: number, prevPageData: PatientObservationsFetchResponse): PatientObservationsSwrKey | null => {
+    (page: number, prevPageData: PatientObservationsFetchResponse | null): PatientObservationsSwrKey | null => {
       if (!patientUuid || !conceptUuidList) {
+        return null;
+      }
+
+      if (prevPageData && !prevPageData.data?.link?.some((link) => link.relation === 'next')) {
         return null;
       }
 
@@ -96,7 +94,6 @@ export function useMappedPatientObservations<Row extends PatientObservationBaseR
         page,
         pageSize,
         patientUuid,
-        prevPageData,
       };
     },
     [conceptUuidList, pageSize, patientUuid],

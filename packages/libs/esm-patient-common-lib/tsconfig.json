@@ -1,5 +1,5 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "../../tooling/tsconfig.strict.json",
   "include": ["declarations.d.ts", "src/**/*", "../../tooling/scripts/setup-tests.ts"],
   "compilerOptions": {
     "baseUrl": ".",

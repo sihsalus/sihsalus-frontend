@@ -122,6 +122,13 @@ yarn verify                                 # lint + typecheck + test
 yarn verify:changed --base origin/main      # Verify changed workspaces plus workspace dependents
 ```
 
+The strict TypeScript migration is incremental. A workspace opts in by extending
+`packages/tooling/tsconfig.strict.json`; it must not disable `strict`,
+`noImplicitAny`, or `strictNullChecks` locally. The first package in the chain is
+`@openmrs/esm-patient-common-lib`, because it owns the shared Workspace v1/v2
+contracts used by the clinical applications. `noUncheckedIndexedAccess` is a
+separate follow-up phase; it is not part of TypeScript's `strict` flag.
+
 Repository discipline and workspace ownership expectations should stay close to the touched package README and the relevant quality commands.
 
 ### TODO RBAC, auditoria y permisos

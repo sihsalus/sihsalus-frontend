@@ -31,7 +31,14 @@ export function launchFormEntryOrHtmlForms(
     const htmlForm = htmlFormEntryForms.find((form) => form.formUuid === formUuid);
 
     if (htmlForm) {
-      launchHtmlFormEntry(patientUuid, formName, encounterUuid, visitUuid, htmlForm, htmlFormEntryWorkspaceName);
+      launchHtmlFormEntry(
+        patientUuid,
+        formName ?? htmlForm.formName,
+        encounterUuid,
+        visitUuid,
+        htmlForm,
+        htmlFormEntryWorkspaceName,
+      );
     } else {
       launchFormEntry(
         formUuid,
@@ -89,7 +96,7 @@ export function launchFormEntry(
 export function launchHtmlFormEntry(
   patientUuid: string,
   formName: string,
-  encounterUuid: string,
+  encounterUuid: string | undefined,
   visitUuid: string,
   htmlForm: HtmlFormEntryForm,
   workspaceName = htmlFormEntryWorkspace,

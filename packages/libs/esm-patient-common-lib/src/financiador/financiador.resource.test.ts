@@ -1707,7 +1707,7 @@ describe('copyFinanciadorToVisit', () => {
         ],
         initialVisitAttributes: completeSisVisit(),
         failOnceWhen: ({ url, method, body }) =>
-          method === 'POST' && url.endsWith('/attribute/old-payer') && body.value === essaludConceptUuid,
+          method === 'POST' && url.endsWith('/attribute/old-payer') && body?.value === essaludConceptUuid,
       });
 
       await expect(
@@ -1800,7 +1800,7 @@ describe('copyFinanciadorToVisit', () => {
         ],
         initialVisitAttributes: completeSisVisit(),
         failOnceWhen: ({ url, method, body }) =>
-          method === 'POST' && url.endsWith('/attribute/old-payer') && body.value === SELF_FINANCED_CONCEPT_UUID,
+          method === 'POST' && url.endsWith('/attribute/old-payer') && body?.value === SELF_FINANCED_CONCEPT_UUID,
       });
 
       await expect(

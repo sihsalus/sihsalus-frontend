@@ -5,15 +5,23 @@ import { _resetOrderBasketStore } from './store';
 import { type OrderBasketItem, type PostDataPrepFunction } from './types';
 import { useOrderBasket } from './useOrderBasket';
 
-const mockDrugOrderBasketItem = {
+const mockDrugOrderBasketItem: OrderBasketItem = {
   action: 'NEW',
+  display: 'Mock drug',
   uuid: 'mock-drug-uuid',
-} as OrderBasketItem;
+};
 
-const mockLabOrderBasketItem = {
+const mockLabOrderBasketItem: OrderBasketItem = {
   action: 'NEW',
+  display: 'Mock lab',
   uuid: 'mock-lab-uuid',
-} as OrderBasketItem;
+};
+
+const preparePostData: PostDataPrepFunction = (order, patientUuid, encounterUuid) => ({
+  action: order.action,
+  encounter: encounterUuid ?? undefined,
+  patient: patientUuid,
+});
 
 const patientA = { id: 'patient-a' } as fhir.Patient;
 const patientB = { id: 'patient-b' } as fhir.Patient;
@@ -30,7 +38,7 @@ describe('useOrderBasket', () => {
   });
 
   it('returns the correct list of orders given a grouping', () => {
-    const { result } = renderHook(() => useOrderBasket('medications', ((x) => x) as unknown as PostDataPrepFunction));
+    const { result } = renderHook(() => useOrderBasket('medications', preparePostData));
     expect(result.current.orders).toEqual([]);
     act(() => {
       result.current.setOrders([mockDrugOrderBasketItem]);
@@ -39,12 +47,8 @@ describe('useOrderBasket', () => {
   });
 
   it('can modify items in one grouping without affecting the other', () => {
-    const { result: drugResult } = renderHook(() =>
-      useOrderBasket('medications', ((x) => x) as unknown as PostDataPrepFunction),
-    );
-    const { result: labResult } = renderHook(() =>
-      useOrderBasket('labs', ((x) => x) as unknown as PostDataPrepFunction),
-    );
+    const { result: drugResult } = renderHook(() => useOrderBasket('medications', preparePostData));
+    const { result: labResult } = renderHook(() => useOrderBasket('labs', preparePostData));
     expect(drugResult.current.orders).toEqual([]);
     expect(labResult.current.orders).toEqual([]);
     act(() => {
@@ -60,7 +64,6 @@ describe('useOrderBasket', () => {
   });
 
   it('keeps reads, writes, and clears scoped to an explicitly supplied patient', () => {
-    const preparePostData = ((x) => x) as unknown as PostDataPrepFunction;
     const { result: patientAResult } = renderHook(() => useOrderBasket(patientA, 'medications', preparePostData));
     const { result: patientBResult } = renderHook(() => useOrderBasket(patientB, 'medications', preparePostData));
 

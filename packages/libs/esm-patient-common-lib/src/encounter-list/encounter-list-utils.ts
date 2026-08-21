@@ -44,7 +44,7 @@ export function obsArrayDateComparator(left: { obsDatetime?: string }, right: { 
   return new Date(right.obsDatetime ?? 0).getTime() - new Date(left.obsDatetime ?? 0).getTime();
 }
 
-export function findObs(encounter: EncounterWithObservations, obsConcept: string): Observation | undefined {
+export function findObs(encounter: EncounterWithObservations | undefined, obsConcept: string): Observation | undefined {
   const allObs = encounter?.obs?.filter((observation) => observation.concept?.uuid === obsConcept) || [];
   return allObs?.length === 1 ? allObs[0] : allObs?.sort(obsArrayDateComparator)[0];
 }
@@ -70,7 +70,7 @@ export function getMultipleObsFromEncounter(encounter: EncounterWithObservations
 }
 
 export function getObsFromEncounter(
-  encounter: EncounterWithObservations,
+  encounter: EncounterWithObservations | undefined,
   obsConcept: string,
   isDate?: boolean,
   isTrueFalseConcept?: boolean,
@@ -121,7 +121,7 @@ export function mapObsValueToFormLabel(
     } else if (answerConceptUuid === OPENMRS_LEGACY_BOOLEAN_TRUE_CONCEPT_UUID) {
       answerConceptUuid = '1';
     }
-    const theDisplay = formConceptMap[conceptUuid]?.answers[answerConceptUuid];
+    const theDisplay = formConceptMap[conceptUuid]?.answers?.[answerConceptUuid];
 
     if (typeof theDisplay !== 'undefined') {
       return theDisplay;
@@ -171,9 +171,7 @@ export function mapConceptToFormLabel(
     return defaultValue;
   }
 
-  const theDisplay = formConceptMap[conceptUuid] ? formConceptMap[conceptUuid].display : defaultValue;
-
-  return theDisplay;
+  return formConceptMap[conceptUuid]?.display ?? defaultValue;
 }
 
 /**

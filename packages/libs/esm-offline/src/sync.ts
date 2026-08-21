@@ -39,6 +39,14 @@ export interface QueueItemDescriptor {
   displayName?: string;
 }
 
+export interface QueueSynchronizationItemOptions<T> {
+  /**
+   * Atomically reconciles proposed content with the existing same-descriptor row before replacement.
+   * Throwing aborts the replacement and preserves the existing row.
+   */
+  reconcileContent?: (existingContent: T | undefined, proposedContent: T) => T;
+}
+
 /**
  * A function which, when invoked, performs the actual client-server synchronization of the given
  * `item` (which is the actual data to be synchronized).
@@ -56,6 +64,12 @@ export interface SyncProcessOptions<T> {
   index: number;
   items: Array<T>;
   dependencies: Array<any>;
+  /**
+   * Atomically replaces this item's content while the same authenticated synchronization still owns it.
+   * The updater receives the latest persisted content so concurrent checkpoints cannot overwrite one another.
+   * This capability is scoped to the item being processed and fails after cancellation or an owner change.
+   */
+  updateContent?: (update: (currentContent: T) => T) => Promise<T>;
 }
 
 /**
@@ -290,6 +304,21 @@ async function processHandler(
         items: contents,
         userId,
         dependencies: dependencies.map(({ id, type }) => (dependsOn.includes(type) ? results[type][id] : undefined)),
+        async updateContent(update) {
+          try {
+            const updatedContent = await updateOwnedSynchronizationItemContent(
+              userId,
+              key,
+              update,
+              ownsActiveSynchronization,
+            );
+            items[i][1] = updatedContent;
+            contents[i] = updatedContent;
+            return updatedContent;
+          } catch {
+            throw createOfflineQueueOperationError();
+          }
+        },
       });
 
       if (!ownsActiveSynchronization()) {
@@ -380,6 +409,37 @@ async function deleteOwnedSynchronizationItem(userId: string, id: number, ownsSe
   });
 }
 
+async function updateOwnedSynchronizationItemContent<T>(
+  userId: string,
+  id: number,
+  update: (currentContent: T) => T,
+  ownsSession: () => boolean,
+): Promise<T> {
+  return await db.transaction('rw', db.syncQueue, async () => {
+    if (!ownsSession()) {
+      throw createOfflineQueueOperationError();
+    }
+
+    const collection = getOwnedSynchronizationItemCollection(userId, id);
+    const currentItem = (await collection.first()) as SyncItem<T> | undefined;
+    if (!currentItem || !ownsSession()) {
+      throw createOfflineQueueOperationError();
+    }
+
+    const updatedContent = update(currentItem.content);
+    if (!ownsSession()) {
+      throw createOfflineQueueOperationError();
+    }
+
+    const updatedCount = await collection.modify({ content: updatedContent });
+    if (!ownsSession() || updatedCount !== 1) {
+      throw createOfflineQueueOperationError();
+    }
+
+    return updatedContent;
+  });
+}
+
 async function persistSanitizedSynchronizationError(userId: string, id: number, ownsSession: () => boolean) {
   await db.transaction('rw', db.syncQueue, async () => {
     if (!ownsSession()) {
@@ -402,12 +462,14 @@ async function persistSanitizedSynchronizationError(userId: string, id: number, 
  * @param type The identifying type of the synchronization item.
  * @param content The actual data to be synchronized.
  * @param descriptor An optional descriptor providing additional metadata about the sync item.
+ * @param options Optional atomic replacement reconciliation.
  */
 export async function queueSynchronizationItemFor<T>(
   userId: string,
   type: string,
   content: T,
   descriptor?: QueueItemDescriptor,
+  options: QueueSynchronizationItemOptions<T> = {},
 ) {
   const authenticatedUserId = await getUserId();
   if (userId !== authenticatedUserId) {
@@ -420,7 +482,19 @@ export async function queueSynchronizationItemFor<T>(
     return await db.transaction('rw', db.syncQueue, async () => {
       assertSessionOwnedBy(authenticatedUserId);
 
+      let contentToQueue = content;
+
       if (targetId !== undefined) {
+        const existingItems = (await db.syncQueue
+          .where('userId')
+          .equals(authenticatedUserId)
+          .and((item) => item.type === type && item.descriptor?.id === targetId)
+          .toArray()) as Array<SyncItem<T>>;
+        if (options.reconcileContent && existingItems.length > 1) {
+          throw createOfflineQueueOperationError();
+        }
+        contentToQueue = options.reconcileContent?.(existingItems[0]?.content, content) ?? content;
+
         // In case of replacement (i.e., the same descriptor ID), remove the existing
         // item in the same transaction so a failed add cannot discard pending data.
         await db.syncQueue
@@ -432,7 +506,7 @@ export async function queueSynchronizationItemFor<T>(
 
       const id = await db.syncQueue.add({
         type,
-        content,
+        content: contentToQueue,
         userId: authenticatedUserId,
         descriptor: descriptor || {},
         createdOn: new Date(),
@@ -451,10 +525,16 @@ export async function queueSynchronizationItemFor<T>(
  * @param type The identifying type of the synchronization item.
  * @param content The actual data to be synchronized.
  * @param descriptor An optional descriptor providing additional metadata about the sync item.
+ * @param options Optional atomic replacement reconciliation.
  */
-export async function queueSynchronizationItem<T>(type: string, content: T, descriptor?: QueueItemDescriptor) {
+export async function queueSynchronizationItem<T>(
+  type: string,
+  content: T,
+  descriptor?: QueueItemDescriptor,
+  options?: QueueSynchronizationItemOptions<T>,
+) {
   const userId = await getUserId();
-  return await queueSynchronizationItemFor(userId, type, content, descriptor);
+  return await queueSynchronizationItemFor(userId, type, content, descriptor, options);
 }
 
 /**

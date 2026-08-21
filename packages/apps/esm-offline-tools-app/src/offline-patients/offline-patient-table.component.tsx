@@ -31,17 +31,17 @@ import {
   removeDynamicOfflineData,
   showModal,
   showSnackbar,
-  syncDynamicOfflineData,
   useLayoutType,
 } from '@openmrs/esm-framework';
 import { capitalize } from 'lodash-es';
-import React, { type ChangeEvent, useMemo, useState } from 'react';
+import React, { type ChangeEvent, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useOfflinePatientsWithEntries, useOfflineRegisteredPatients } from '../hooks/offline-patient-data-hooks';
 
 import EmptyState from './empty-state.component';
 import LastUpdatedTableCell from './last-updated-table-cell.component';
+import { syncSelectedOfflinePatients } from './offline-patient-sync';
 import styles from './offline-patient-table.scss';
 import PatientNameTableCell from './patient-name-table-cell.component';
 
@@ -76,65 +76,106 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
   const offlineRegisteredPatientsSwr = useOfflineRegisteredPatients();
   const toolbarItemSize = isDesktop(layout) ? 'sm' : undefined;
   const [syncingPatientUuids, setSyncingPatientUuids] = useState<Array<string>>([]);
+  const [isPatientListOperationPending, setIsPatientListOperationPending] = useState(false);
+  const patientListOperationPendingRef = useRef(false);
   const headers = useOfflinePatientTableHeaders();
   const rows = useOfflinePatientTableRows(syncingPatientUuids);
 
+  const tryBeginPatientListOperation = () => {
+    if (patientListOperationPendingRef.current) {
+      return false;
+    }
+
+    patientListOperationPendingRef.current = true;
+    setIsPatientListOperationPending(true);
+    return true;
+  };
+
+  const finishPatientListOperation = () => {
+    patientListOperationPendingRef.current = false;
+    setIsPatientListOperationPending(false);
+  };
+
   const handleUpdateSelectedPatientsClick = async (selectedRows: Array<OfflinePatientDataTableRow>) => {
+    if (!tryBeginPatientListOperation()) {
+      return;
+    }
+
     const selectedPatientUuids = selectedRows.map((row) => row.id);
-    let updateFailed = false;
+    let synchronizationIssueReported = false;
     setSyncingPatientUuids(selectedPatientUuids);
 
     try {
-      const failedCount = await syncSelectedOfflinePatients(selectedPatientUuids);
+      try {
+        const { failedCount, skippedCount } = await syncSelectedOfflinePatients(selectedPatientUuids);
 
-      if (failedCount > 0) {
-        updateFailed = true;
+        if (failedCount > 0) {
+          synchronizationIssueReported = true;
+          showSnackbar({
+            kind: 'error',
+            title: t('offlinePatientsSyncFailed', 'Some patients could not be synchronized'),
+            subtitle: t(
+              'offlinePatientsSyncFailedSubtitle',
+              '{{count}} patient(s) could not be updated for offline use. Previously downloaded data may be out of date. Please try again.',
+              { count: failedCount },
+            ),
+          });
+        }
+
+        if (skippedCount > 0) {
+          synchronizationIssueReported = true;
+          showSnackbar({
+            kind: 'warning',
+            title: t('offlinePatientsSyncSkipped', 'Pending registrations cannot be updated'),
+            subtitle: t(
+              'offlinePatientsSyncSkippedSubtitle',
+              '{{count}} selected patient(s) still have pending offline registrations. Synchronize pending actions before updating them.',
+              { count: skippedCount },
+            ),
+          });
+        }
+      } catch (error) {
+        synchronizationIssueReported = true;
         showSnackbar({
           kind: 'error',
           title: t('offlinePatientsSyncFailed', 'Some patients could not be synchronized'),
-          subtitle: t(
-            'offlinePatientsSyncFailedSubtitle',
-            '{{count}} patient(s) failed to download and will not be available offline. Please try again.',
-            { count: failedCount },
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t(
+              'offlinePatientsSyncFailedGenericSubtitle',
+              'The selected patients could not be updated for offline use. Please try again.',
+            ),
+            { logContext: 'Sync offline patients' },
           ),
         });
       }
-    } catch (error) {
-      updateFailed = true;
-      showSnackbar({
-        kind: 'error',
-        title: t('offlinePatientsSyncFailed', 'Some patients could not be synchronized'),
-        subtitle: getUserFacingErrorMessage(
-          error,
-          t(
-            'offlinePatientsSyncFailedGenericSubtitle',
-            'The selected patients could not be downloaded for offline use. Please try again.',
+
+      const refreshResults = await Promise.allSettled([
+        Promise.resolve().then(() => offlinePatientsSwr.mutate()),
+        Promise.resolve().then(() => offlineRegisteredPatientsSwr.mutate()),
+      ]);
+
+      if (!synchronizationIssueReported && refreshResults.some((result) => result.status === 'rejected')) {
+        showSnackbar({
+          kind: 'warning',
+          title: t('offlinePatientsTableRefreshFailed', 'Offline patient list could not be refreshed'),
+          subtitle: t(
+            'offlinePatientsTableUpdateRefreshFailedSubtitle',
+            'The update attempt ended, but this page may be out of date. Reload it before taking another action.',
           ),
-          { logContext: 'Sync offline patients' },
-        ),
-      });
+        });
+      }
     } finally {
       setSyncingPatientUuids([]);
-    }
-
-    const refreshResults = await Promise.allSettled([
-      Promise.resolve().then(() => offlinePatientsSwr.mutate()),
-      Promise.resolve().then(() => offlineRegisteredPatientsSwr.mutate()),
-    ]);
-
-    if (!updateFailed && refreshResults.some((result) => result.status === 'rejected')) {
-      showSnackbar({
-        kind: 'warning',
-        title: t('offlinePatientsTableRefreshFailed', 'Offline patient list could not be refreshed'),
-        subtitle: t(
-          'offlinePatientsTableUpdateRefreshFailedSubtitle',
-          'The update attempt ended, but this page may be out of date. Reload it before taking another action.',
-        ),
-      });
+      finishPatientListOperation();
     }
   };
 
   const handleRemovePatientsFromOfflineListClick = (selectedRows: Array<OfflinePatientDataTableRow>) => {
+    if (patientListOperationPendingRef.current) {
+      return;
+    }
+
     const closeModal = showModal('offline-tools-confirmation-modal', {
       title: t('offlinePatientsTableDeleteConfirmationModalTitle', 'Remove offline patients'),
       children: t(
@@ -145,40 +186,48 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
       cancelText: t('offlinePatientsTableDeleteConfirmationModalCancel', 'Cancel'),
       closeModal: () => closeModal(),
       onConfirm: () => {
+        if (!tryBeginPatientListOperation()) {
+          return;
+        }
+
         void (async () => {
-          let removalFailed = false;
-
           try {
-            removalFailed = !(await removeSelectedOfflinePatients(selectedRows.map((row) => row.id)));
-          } catch {
-            removalFailed = true;
-          }
+            let removalFailed = false;
 
-          const refreshResults = await Promise.allSettled([
-            Promise.resolve().then(() => offlinePatientsSwr.mutate()),
-            Promise.resolve().then(() => offlineRegisteredPatientsSwr.mutate()),
-          ]);
-          const refreshFailed = refreshResults.some((result) => result.status === 'rejected');
+            try {
+              removalFailed = !(await removeSelectedOfflinePatients(selectedRows.map((row) => row.id)));
+            } catch {
+              removalFailed = true;
+            }
 
-          // Removal failure takes precedence so one action produces only one, actionable notification.
-          if (removalFailed) {
-            showSnackbar({
-              kind: 'error',
-              title: t('offlinePatientsTableRemovalFailed', 'Offline patient removal was incomplete'),
-              subtitle: t(
-                'offlinePatientsTableRemovalFailedSubtitle',
-                'The local list may have changed. Review it, verify your session, and try again.',
-              ),
-            });
-          } else if (refreshFailed) {
-            showSnackbar({
-              kind: 'warning',
-              title: t('offlinePatientsTableRefreshFailed', 'Offline patient list could not be refreshed'),
-              subtitle: t(
-                'offlinePatientsTableRefreshFailedSubtitle',
-                'The removal request completed, but this page may be out of date. Reload it before taking another action.',
-              ),
-            });
+            const refreshResults = await Promise.allSettled([
+              Promise.resolve().then(() => offlinePatientsSwr.mutate()),
+              Promise.resolve().then(() => offlineRegisteredPatientsSwr.mutate()),
+            ]);
+            const refreshFailed = refreshResults.some((result) => result.status === 'rejected');
+
+            // Removal failure takes precedence so one action produces only one, actionable notification.
+            if (removalFailed) {
+              showSnackbar({
+                kind: 'error',
+                title: t('offlinePatientsTableRemovalFailed', 'Offline patient removal was incomplete'),
+                subtitle: t(
+                  'offlinePatientsTableRemovalFailedSubtitle',
+                  'The local list may have changed. Review it, verify your session, and try again.',
+                ),
+              });
+            } else if (refreshFailed) {
+              showSnackbar({
+                kind: 'warning',
+                title: t('offlinePatientsTableRefreshFailed', 'Offline patient list could not be refreshed'),
+                subtitle: t(
+                  'offlinePatientsTableRefreshFailedSubtitle',
+                  'The removal request completed, but this page may be out of date. Reload it before taking another action.',
+                ),
+              });
+            }
+          } finally {
+            finishPatientListOperation();
           }
         })();
       },
@@ -239,6 +288,7 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
                     kind="ghost"
                     size={toolbarItemSize}
                     renderIcon={(props) => <Renew size={32} {...props} />}
+                    disabled={isPatientListOperationPending}
                     onClick={() => handleUpdateSelectedPatientsClick(selectedRows)}
                   >
                     {selectedRows.length === 1
@@ -249,6 +299,7 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
                     className={styles.tablePrimaryAction}
                     kind="danger"
                     size={toolbarItemSize}
+                    disabled={isPatientListOperationPending}
                     onClick={() => handleRemovePatientsFromOfflineListClick(selectedRows)}
                   >
                     {t('offlinePatientsTableRemoveFromOfflineList', 'Remove from list')}
@@ -383,23 +434,6 @@ function useOfflinePatientTableRows(syncingPatientUuids: Array<string>): Array<O
 
     return result;
   }, [syncingPatientUuids, offlinePatientsSwr.data, offlineRegisteredPatientsSwr.data]);
-}
-
-/**
- * Synchronizes the selected patients, tolerating individual failures so one failed
- * patient doesn't abort (or silently hide) the rest of the batch.
- * @returns The number of patients that failed to synchronize.
- */
-async function syncSelectedOfflinePatients(selectedPatientUuids: Array<string>): Promise<number> {
-  const offlinePatientEntries = await getDynamicOfflineDataEntries('patient-registration');
-  const syncablePatientUuids = offlinePatientEntries.map((entry) => entry.identifier);
-  const offlinePatientUuidsToSync = selectedPatientUuids.filter((id) => syncablePatientUuids.includes(id));
-
-  const results = await Promise.allSettled(
-    offlinePatientUuidsToSync.map((patientUuid) => syncDynamicOfflineData('patient', patientUuid)),
-  );
-
-  return results.filter((result) => result.status === 'rejected').length;
 }
 
 async function removeSelectedOfflinePatients(selectedPatientUuids: Array<string>): Promise<boolean> {

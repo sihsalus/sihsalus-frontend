@@ -11,13 +11,31 @@ export interface PatientFormSyncItemForm {
 }
 
 interface BasePatientFormSyncItemContent {
+  /** Stable client-generated OpenMRS UUID and queue replacement key for this new encounter. */
   _id: string;
   encounter: Partial<Encounter>;
+  /** Durable checkpoints written by the offline queue consumer. Absent on legacy queued items. */
+  _syncState?: {
+    encounter?: PatientFormWriteCheckpoint<EncounterCreate>;
+    person?: PatientFormWriteCheckpoint<PersonUpdate>;
+  };
   _payloads: {
     encounterCreate?: EncounterCreate;
     personUpdate?: PersonUpdate;
   };
 }
+
+export type PatientFormWriteCheckpoint<T> =
+  | {
+      status: 'attempted';
+      payload: T;
+      attemptId: string;
+    }
+  | {
+      status: 'completed';
+      payload: T;
+      attemptId?: string;
+    };
 
 export interface LegacyPatientFormSyncItemContent extends BasePatientFormSyncItemContent {
   formSchemaUuid: string;

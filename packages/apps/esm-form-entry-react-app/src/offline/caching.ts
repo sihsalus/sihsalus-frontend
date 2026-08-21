@@ -1,33 +1,59 @@
 import {
   makeUrl,
   messageOmrsServiceWorker,
-  omrsOfflineCachingStrategyHttpHeaderName,
-  openmrsFetch,
+  refreshOfflineCacheEntry,
   restBaseUrl,
   setupDynamicOfflineDataHandler,
+  showSnackbar,
   subscribePrecacheStaticDependencies,
+  translateFrom,
 } from '@openmrs/esm-framework';
 import escapeRegExp from 'lodash-es/escapeRegExp';
 
+const moduleName = '@sihsalus/esm-form-entry-react-app';
+
 export function setupStaticDataOfflinePrecaching() {
   subscribePrecacheStaticDependencies(() => {
-    void (async () => {
-      const urlsToCache = [
-        `${restBaseUrl}/location?q=&v=custom:(uuid,display)`,
-        `${restBaseUrl}/provider?q=&v=custom:(uuid,display,person:(uuid))`,
-      ];
-
-      await Promise.all(
-        urlsToCache.map(async (url) => {
-          await messageOmrsServiceWorker({
-            type: 'registerDynamicRoute',
-            pattern: '.+' + url,
-          });
-          await openmrsFetch(url);
-        }),
-      );
-    })();
+    void precacheStaticFormDependencies().catch(() => {
+      showSnackbar({
+        kind: 'error',
+        title: translateFrom(
+          moduleName,
+          'offlineFormDependenciesRefreshFailed',
+          'Offline form dependencies could not be refreshed',
+        ),
+        subtitle: translateFrom(
+          moduleName,
+          'offlineFormDependenciesRefreshFailedSubtitle',
+          'Location or provider options may be out of date. Try again when online before using forms offline.',
+        ),
+      });
+    });
   });
+}
+
+async function precacheStaticFormDependencies(): Promise<void> {
+  const urlsToCache = [
+    `${restBaseUrl}/location?q=&v=custom:(uuid,display)`,
+    `${restBaseUrl}/provider?q=&v=custom:(uuid,display,person:(uuid))`,
+  ];
+  const results = await Promise.allSettled(
+    urlsToCache.map(async (url) => {
+      const routeRegistration = await messageOmrsServiceWorker({
+        type: 'registerDynamicRoute',
+        pattern: escapeRegExp(url),
+      });
+      if (!routeRegistration.success) {
+        throw new Error('A required offline form route could not be registered.');
+      }
+
+      await refreshOfflineCacheEntry(url);
+    }),
+  );
+
+  if (results.some((result) => result.status === 'rejected')) {
+    throw new Error('Required offline form dependencies could not be refreshed.');
+  }
 }
 
 export function setupDynamicOfflineFormDataHandler() {
@@ -42,38 +68,31 @@ export function setupDynamicOfflineFormDataHandler() {
       const keys = (await cache.keys()).map((key) => key.url);
       return absoluteExpectedUrls.every((url) => keys.includes(url));
     },
-    async sync(identifier) {
-      const urlsToCache = await getCacheableFormUrls(identifier);
+    async sync(identifier, abortSignal) {
+      const urlsToCache = getCacheableFormUrls(identifier);
       const cacheResults = await Promise.allSettled(
         urlsToCache.map(async (urlToCache) => {
-          await messageOmrsServiceWorker({
+          const routeRegistration = await messageOmrsServiceWorker({
             type: 'registerDynamicRoute',
             pattern: escapeRegExp(urlToCache),
             strategy: 'network-first',
           });
 
-          await openmrsFetch(urlToCache, {
-            headers: {
-              [omrsOfflineCachingStrategyHttpHeaderName]: 'network-first',
-            },
-          });
+          if (!routeRegistration.success) {
+            throw new Error(routeRegistration.error ?? 'The offline form cache route could not be registered.');
+          }
+
+          await refreshOfflineCacheEntry(urlToCache, abortSignal);
         }),
       );
 
       if (cacheResults.some((x) => x.status === 'rejected')) {
-        throw new Error(`Some form data could not be properly downloaded. (Form UUID: ${identifier})`);
+        throw new Error('Some form data could not be properly downloaded.');
       }
     },
   });
 }
 
-async function getCacheableFormUrls(formUuid: string) {
-  const getFormRes = await openmrsFetch<{ uuid: string }>(`${restBaseUrl}/o3/forms/${formUuid}`);
-  const form = getFormRes.data;
-
-  if (!form) {
-    throw new Error(`The form data could not be loaded from the server. (Form UUID: ${formUuid})`);
-  }
-
-  return [`${restBaseUrl}/form/${formUuid}?v=full`, `${restBaseUrl}/o3/forms/${formUuid}`].filter(Boolean);
+function getCacheableFormUrls(formUuid: string) {
+  return [`${restBaseUrl}/form/${formUuid}?v=full`, `${restBaseUrl}/o3/forms/${formUuid}`];
 }

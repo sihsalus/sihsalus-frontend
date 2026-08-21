@@ -183,4 +183,47 @@ describe('offline patient data hooks', () => {
       expect(String(outcome.error)).not.toContain(sensitiveRefreshError);
     }
   });
+
+  it('waits for every successful refresh without invoking the merge outside render', async () => {
+    const pendingRefresh = createDeferred<undefined>();
+    const immediateMutate = vi.fn().mockResolvedValue(undefined);
+    const pendingMutate = vi.fn(() => pendingRefresh.promise);
+    const sensitiveMergeError =
+      'Merge failed for patient 00000000-0000-0000-0000-000000000001 at https://clinical.example.test';
+    const mergeResponses = vi.fn(() => {
+      throw new Error(sensitiveMergeError);
+    });
+    const swrResponses = [
+      {
+        data: undefined,
+        error: undefined,
+        isLoading: false,
+        isValidating: false,
+        mutate: immediateMutate,
+      },
+      {
+        data: undefined,
+        error: undefined,
+        isLoading: false,
+        isValidating: false,
+        mutate: pendingMutate,
+      },
+    ] as unknown as Array<SWRResponse>;
+    const { result } = renderHook(() => useMergedSwr(mergeResponses, swrResponses));
+
+    let refreshSettled = false;
+    const refreshOutcome = result.current.mutate().finally(() => {
+      refreshSettled = true;
+    });
+
+    await waitFor(() => expect(immediateMutate).toHaveBeenCalledTimes(1));
+    expect(pendingMutate).toHaveBeenCalledTimes(1);
+    expect(refreshSettled).toBe(false);
+    expect(mergeResponses).not.toHaveBeenCalled();
+
+    pendingRefresh.resolve(undefined);
+
+    await expect(refreshOutcome).resolves.toBeUndefined();
+    expect(mergeResponses).not.toHaveBeenCalled();
+  });
 });

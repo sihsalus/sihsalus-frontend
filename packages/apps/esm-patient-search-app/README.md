@@ -47,6 +47,13 @@ El filtro de atributos textuales usa coincidencia parcial para facilitar búsque
 - Contexto compartido para interoperar con otros flujos del frontend.
 - Person attributes definidos en `sihsalus-content` para pacientes no identificados y responsable.
 
+## Offline contract
+
+Patient synchronization succeeds only after the service worker accepts the patient route and a confirmed fresh
+network response replaces the stable cache entry. A failed or canceled refresh preserves any previously cached
+response and reports one fixed, non-sensitive failure; stale cache or locally queued data never count as a successful
+refresh.
+
 ## Metadata esperada
 
 | Uso                                     | Person attribute type                  |

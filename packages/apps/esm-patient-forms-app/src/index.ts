@@ -1,14 +1,9 @@
-import {
-  defineConfigSchema,
-  getAsyncLifecycle,
-  getSyncLifecycle,
-  subscribePrecacheStaticDependencies,
-  syncAllDynamicOfflineData,
-} from '@openmrs/esm-framework';
+import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 
 import clinicalFormActionMenuComponent from './clinical-form-action-menu.component';
 import { configSchema } from './config-schema';
 import { setupDynamicFormDataHandler, setupPatientFormSync } from './offline';
+import { setupOfflineFormPrecache } from './offline-forms/offline-form-precache';
 import OfflineForms from './offline-forms/offline-forms.component';
 import OfflineToolsNavLink from './offline-forms/offline-tools-nav-link.component';
 
@@ -35,7 +30,7 @@ export function startupApp() {
 
   setupPatientFormSync();
   setupDynamicFormDataHandler();
-  subscribePrecacheStaticDependencies(() => syncAllDynamicOfflineData('form'));
+  setupOfflineFormPrecache();
 }
 
 // t('clinicalForm', 'Clinical form')

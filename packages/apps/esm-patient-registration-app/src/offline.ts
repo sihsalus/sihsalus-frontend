@@ -4,6 +4,7 @@ import {
   makeUrl,
   messageOmrsServiceWorker,
   navigate,
+  refreshOfflineCacheEntry,
   restBaseUrl,
   type SyncProcessOptions,
   setupDynamicOfflineDataHandler,
@@ -47,20 +48,40 @@ export function setupOffline() {
       const keys = (await cache.keys()).map((key) => key.url);
       return expectedUrls.every((url) => keys.includes(url));
     },
-    async sync(patientUuid) {
+    async sync(patientUuid, abortSignal) {
       const urlsToCache = await getPatientUrlsToBeCached(patientUuid);
-      await Promise.allSettled(
-        urlsToCache.map(async (url) => {
-          await messageOmrsServiceWorker({
-            type: 'registerDynamicRoute',
-            url,
-          });
-
-          await fetch(url);
-        }),
-      );
+      await cachePatientUrlsForOfflineUse(urlsToCache, abortSignal);
     },
   });
+}
+
+export async function cachePatientUrlsForOfflineUse(
+  urlsToCache: Array<string>,
+  abortSignal?: AbortSignal,
+): Promise<void> {
+  const results = await Promise.allSettled(
+    urlsToCache.map(async (url) => {
+      const routeRegistration = await messageOmrsServiceWorker({
+        type: 'registerDynamicRoute',
+        url,
+        strategy: 'network-first',
+      });
+
+      if (!routeRegistration.success) {
+        throw new Error(routeRegistration.error ?? 'The offline cache route could not be registered.');
+      }
+
+      await refreshOfflineCacheEntry(url, abortSignal);
+    }),
+  );
+  const failures = results.filter((result) => result.status === 'rejected');
+
+  if (failures.length > 0) {
+    throw new AggregateError(
+      failures.map(() => new Error('A patient offline resource could not be refreshed.')),
+      `Failed to cache ${failures.length} of ${urlsToCache.length} patient resources for offline use.`,
+    );
+  }
 }
 
 export async function getPatientUrlsToBeCached(patientUuid: string) {

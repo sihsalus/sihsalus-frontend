@@ -21,6 +21,15 @@ the authenticated user's UUID even when a caller knows another row's numeric ID.
   queue-operation error after the started handlers settle; consumers must handle that rejection and refresh the queue.
   Registered handlers must pass `options.abort.signal` to every network request; the queue checks ownership before and
   after a handler but cannot preempt arbitrary handler code that ignores its abort controller.
+- A handler may use its item-scoped `options.updateContent(updater)` capability to persist a durable partial-progress
+  checkpoint. The update runs atomically against the latest stored content, so concurrent suboperations merge instead
+  of overwriting one another. The capability can modify only the row currently owned by that synchronization and
+  rejects with the fixed queue error after cancellation or an owner-session change. Consumers that require durable
+  checkpoints must fail closed before external writes when the capability is unavailable.
+- A producer that replaces same-descriptor rows may pass `reconcileContent(existing, proposed)`. The callback runs in
+  the same IndexedDB transaction as replacement, receives the latest stored content, and may preserve checkpoints or
+  throw to keep the existing row unchanged. Errors are exposed only as the fixed queue-operation error. This is the
+  supported guard for edits that must not erase an in-flight or ambiguous clinical-write state.
 - Database schema version 5 transactionally replaces every legacy `lastError` during upgrade. New failures persist only
   a fixed non-identifying error, and reads also mask malformed details defensively. Consumers must treat the field as an
   opaque status and must not depend on backend messages, URLs, UUIDs, response bodies, names, or exception causes.
@@ -31,8 +40,8 @@ requirement for one managed browser/OS profile per clinical user while broader o
 
 ## Consumer compatibility
 
-The public function signatures are unchanged, but the failure contract is stricter. Consumers already using the
-current-user helpers require no data migration. Code using `getFullSynchronizationItemsFor` or the internal
+Existing arguments remain compatible; `SyncProcessOptions.updateContent` is additive and optional. Consumers already
+using the current-user helpers require no database migration. Code using `getFullSynchronizationItemsFor` or the internal
 `queueSynchronizationItemFor` helper must request only the authenticated user. Callers of `runSynchronization` must
 handle its fixed rejection and refresh the current-user list. UIs should also refresh after a generic edit/delete
 failure instead of using local IDs to infer whether another row exists.

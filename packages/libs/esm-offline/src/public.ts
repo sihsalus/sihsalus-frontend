@@ -14,6 +14,7 @@ export {
   getSynchronizationItem,
   getSynchronizationItems,
   type QueueItemDescriptor,
+  type QueueSynchronizationItemOptions,
   queueSynchronizationItem,
   type SyncItem,
   type SyncProcessOptions,

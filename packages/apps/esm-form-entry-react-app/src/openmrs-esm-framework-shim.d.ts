@@ -77,7 +77,14 @@ declare module '@openmrs/esm-framework' {
   export function messageOmrsServiceWorker(
     message: Record<string, unknown>,
   ): Promise<MessageServiceWorkerResult>;
-  export function queueSynchronizationItem<T>(type: string, content: T, meta: Record<string, unknown>): Promise<void>;
+  export function queueSynchronizationItem<T>(
+    type: string,
+    content: T,
+    meta: Record<string, unknown>,
+    options?: {
+      reconcileContent?: (existingContent: T | undefined, proposedContent: T) => T;
+    },
+  ): Promise<number>;
   export function getFullSynchronizationItems<T>(type: string): Promise<Array<SyncItem<T>>>;
 
   export const ExtensionSlot: React.ComponentType<Record<string, unknown>>;

@@ -135,6 +135,59 @@ describe('Sync Queue', () => {
     expect(await getSynchronizationItem(originalId)).toBeUndefined();
     expect(await getSynchronizationItems<MockSyncItem>(mockSyncItemType)).toEqual([{ value: 2 }]);
   });
+
+  it('atomically reconciles replacement content with the latest same-descriptor row', async () => {
+    const descriptor = { id: 'guarded-replacement-item' };
+    const originalContent = { value: 1, checkpoint: 'attempted' };
+    await queueSynchronizationItem(mockSyncItemType, originalContent, descriptor);
+    const reconcileContent = vi.fn(
+      (existing: typeof originalContent | undefined, proposed: typeof originalContent) => ({
+        ...proposed,
+        checkpoint: existing?.checkpoint ?? proposed.checkpoint,
+      }),
+    );
+
+    await queueSynchronizationItem(mockSyncItemType, { value: 2, checkpoint: 'caller-value' }, descriptor, {
+      reconcileContent,
+    });
+
+    expect(reconcileContent).toHaveBeenCalledOnce();
+    expect(reconcileContent).toHaveBeenCalledWith(originalContent, {
+      value: 2,
+      checkpoint: 'caller-value',
+    });
+    expect(await getSynchronizationItems(mockSyncItemType)).toEqual([{ value: 2, checkpoint: 'attempted' }]);
+  });
+
+  it('rolls back a guarded replacement and sanitizes a throwing reconciler', async () => {
+    const descriptor = { id: 'rejected-replacement-item' };
+    const originalContent = { value: 1, checkpoint: 'attempted' };
+    const originalId = await queueSynchronizationItem(mockSyncItemType, originalContent, descriptor);
+    const sensitiveDetails = 'Attempted checkpoint for private-patient-uuid';
+
+    const error = await queueSynchronizationItem(
+      mockSyncItemType,
+      { value: 2, checkpoint: 'caller-value' },
+      descriptor,
+      {
+        reconcileContent() {
+          throw new Error(sensitiveDetails);
+        },
+      },
+    ).catch((reason: unknown) => reason);
+
+    expect(error).toEqual(new Error(offlineQueueOperationUnavailableMessage));
+    expect(String(error)).not.toContain(sensitiveDetails);
+    expect(await getSynchronizationItem(originalId)).toEqual({
+      id: originalId,
+      type: mockSyncItemType,
+      userId: mockUserId,
+      content: originalContent,
+      descriptor,
+      createdOn: systemTime,
+    });
+    expect(await getSynchronizationItems(mockSyncItemType)).toEqual([originalContent]);
+  });
 });
 
 describe('Logged-in user specific functions', () => {
@@ -336,6 +389,139 @@ describe('beginEditSynchronizationItem', () => {
 });
 
 describe('runSynchronization', () => {
+  it('atomically merges concurrent handler checkpoints into the owned queue item', async () => {
+    const type = 'checkpointed-sync-item';
+    setupOfflineSync<MockSyncItem & { encounterCompleted?: true; personCompleted?: true }>(
+      type,
+      [],
+      async (_item, options) => {
+        if (!options.updateContent) {
+          throw new Error('Missing queue checkpoint capability');
+        }
+
+        await Promise.all([
+          options.updateContent((current) => ({ ...current, encounterCompleted: true })),
+          options.updateContent((current) => ({ ...current, personCompleted: true })),
+        ]);
+        throw new Error('Keep the item queued after its partial writes');
+      },
+    );
+    const id = await queueSynchronizationItem(type, defaultMockSyncItem);
+
+    await expect(runSynchronization()).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+
+    const queuedItem = await getSynchronizationItem(id);
+    expect(queuedItem?.content).toEqual({
+      ...defaultMockSyncItem,
+      encounterCompleted: true,
+      personCompleted: true,
+    });
+    expect(queuedItem).toMatchObject({
+      lastError: {
+        name: 'OfflineSynchronizationError',
+        message: 'Offline synchronization failed.',
+      },
+    });
+  });
+
+  it('does not let a same-descriptor replacement lose a concurrent checkpoint or start its write', async () => {
+    const type = 'replacement-race-item';
+    const descriptor = { id: 'replacement-race-descriptor' };
+    let releaseHandler: (() => void) | undefined;
+    const externalWrite = vi.fn();
+    setupOfflineSync<MockSyncItem & { attempted?: true }>(type, [], async (_item, options) => {
+      await new Promise<void>((resolve) => {
+        releaseHandler = resolve;
+      });
+      await options.updateContent?.((current) => ({ ...current, attempted: true }));
+      externalWrite();
+    });
+    const originalId = await queueSynchronizationItem(type, { value: 1 }, descriptor);
+
+    const synchronization = runSynchronization().catch((error: unknown) => error);
+    await vi.waitFor(() => expect(releaseHandler).toBeTypeOf('function'));
+    const replacementId = await queueSynchronizationItem(type, { value: 2 }, descriptor, {
+      reconcileContent: (_existing, proposed) => proposed,
+    });
+    releaseHandler?.();
+
+    await expect(synchronization).resolves.toEqual(new Error(offlineQueueOperationUnavailableMessage));
+    expect(externalWrite).not.toHaveBeenCalled();
+    expect(await getSynchronizationItem(originalId)).toBeUndefined();
+    const replacement = await getSynchronizationItem(replacementId);
+    expect(replacement?.content).toEqual({ value: 2 });
+    expect(replacement?.lastError).toBeUndefined();
+  });
+
+  it('rejects a checkpoint after session ownership is lost and preserves the queued content', async () => {
+    const type = 'owner-scoped-checkpoint-item';
+    let releaseHandler: (() => void) | undefined;
+    let checkpointError: unknown;
+    setupOfflineSync(type, [], async (_item, options) => {
+      await new Promise<void>((resolve) => {
+        releaseHandler = resolve;
+      });
+      try {
+        await options.updateContent?.((current) => ({ ...current, value: 999 }));
+      } catch (error) {
+        checkpointError = error;
+        throw error;
+      }
+    });
+    const id = await queueSynchronizationItem(type, defaultMockSyncItem);
+
+    const synchronization = runSynchronization();
+    const handledSynchronization = synchronization.catch((error: unknown) => error);
+    await vi.waitFor(() => expect(releaseHandler).toBeTypeOf('function'));
+
+    setCurrentUser(otherMockUserId);
+    releaseHandler?.();
+
+    await expect(handledSynchronization).resolves.toEqual(
+      expect.objectContaining({ message: offlineQueueOperationUnavailableMessage }),
+    );
+    expect(checkpointError).toEqual(new Error(offlineQueueOperationUnavailableMessage));
+    setCurrentUser(mockUserId);
+    const queuedItem = await getSynchronizationItem(id);
+    expect(queuedItem?.content).toEqual(defaultMockSyncItem);
+    expect(queuedItem?.lastError).toBeUndefined();
+  });
+
+  it('sanitizes a checkpoint updater failure and releases the next synchronization attempt', async () => {
+    const type = 'failed-checkpoint-item';
+    const sensitiveDetails = 'Checkpoint failed for private-patient-uuid at https://clinical.example.test';
+    let checkpointError: unknown;
+    setupOfflineSync(type, [], async (_item, options) => {
+      try {
+        await options.updateContent?.(() => {
+          throw new Error(sensitiveDetails);
+        });
+      } catch (error) {
+        checkpointError = error;
+        throw error;
+      }
+    });
+    const id = await queueSynchronizationItem(type, defaultMockSyncItem);
+
+    await expect(runSynchronization()).rejects.toThrow(offlineQueueOperationUnavailableMessage);
+
+    expect(checkpointError).toEqual(new Error(offlineQueueOperationUnavailableMessage));
+    expect(String(checkpointError)).not.toContain(sensitiveDetails);
+    expect(await getSynchronizationItem(id)).toMatchObject({
+      content: defaultMockSyncItem,
+      lastError: {
+        name: 'OfflineSynchronizationError',
+        message: 'Offline synchronization failed.',
+      },
+    });
+
+    const retry = vi.fn(async () => undefined);
+    setupOfflineSync(type, [], retry);
+    await expect(runSynchronization()).resolves.toBeUndefined();
+    expect(retry).toHaveBeenCalledOnce();
+    expect(await getSynchronizationItem(id)).toBeUndefined();
+  });
+
   it('rejects a concurrent attempt instead of reporting false completion', async () => {
     const type = 'concurrent-sync-item';
     let finishProcessing: (() => void) | undefined;

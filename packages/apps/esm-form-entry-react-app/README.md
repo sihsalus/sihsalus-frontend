@@ -23,6 +23,18 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 
 ## Offline contract
 
+Before a new encounter payload is queued, the producer copies the client-generated, stable queue content UUID into the
+encounter create payload and persists both as part of the same queue insertion. Concurrent replacements of the same
+queue item therefore retain the same recovery key. A matching UUID already supplied by the form pipeline is preserved;
+a conflicting or non-canonical UUID is rejected before queue mutation. The producer does not mutate its caller's
+object. This identifier is the consumer's recovery key after an interrupted create or a lost response and must never
+change after the first possible encounter POST.
+
+Same-ID replacement is guarded inside the queue transaction. Durable attempt/completion checkpoints are preserved and
+their clinical payloads cannot be changed. An existing row without a checkpoint is also immutable because older code
+did not record whether a write had already started. In particular, an ambiguous historical encounter without the
+stable recovery UUID cannot be converted into a new create by editing or requeueing it.
+
 Form schemas and definitions are considered synchronized only when service-worker route registration and a confirmed
 fresh network fetch both succeed. Refresh requests cannot fall back to an existing cached response; the stable cache
 entry is replaced only after a successful response, and a failed refresh preserves the previous offline copy. The

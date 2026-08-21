@@ -1,5 +1,5 @@
 import { showSnackbar } from '@openmrs/esm-framework';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Composition from './composition.component';
 
@@ -105,24 +105,38 @@ describe('Composition', () => {
 
   it('should handle reset functionality', async () => {
     const user = userEvent.setup();
-    const mockSubmit = vi.fn().mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)));
+    let resolveSubmit: (value: boolean) => void = () => {};
+    const submitPromise = new Promise<boolean>((resolve) => {
+      resolveSubmit = resolve;
+    });
+    const mockSubmit = vi.fn().mockReturnValue(submitPromise);
     render(<Composition onSubmit={mockSubmit} />);
 
     // Test loading state
     const compositionInput = screen.getByRole('textbox', { name: /composition/i });
     await user.click(compositionInput);
     await user.type(compositionInput, '1 and 2');
-    await user.click(screen.getByRole('button', { name: /search/i }));
+    const searchButton = screen.getByRole('button', { name: /search/i });
+    await user.click(searchButton);
 
-    // Wait for submit to complete
     await waitFor(() => {
-      expect(mockSubmit).toHaveBeenCalled();
+      expect(mockSubmit).toHaveBeenCalledWith(mockCompositionQuery, 'Composition of 1 and 2');
     });
+    expect(screen.getByRole('button', { name: /loading/i })).toBeDisabled();
 
-    // Test reset functionality
-    await user.click(screen.getByRole('button', { name: /reset/i }));
+    // Reset remains available while the search is pending.
+    const resetButton = screen.getByRole('button', { name: /reset/i });
+    expect(resetButton).toBeEnabled();
+    await user.click(resetButton);
     expect(compositionInput).toHaveValue('');
     expect(screen.getByRole('textbox', { name: /description/i })).toHaveValue('');
+
+    // Settle the controlled request before the test environment is torn down.
+    await act(async () => {
+      resolveSubmit(true);
+      await submitPromise;
+    });
+    await waitFor(() => expect(searchButton).toBeEnabled());
   });
 
   it('should automatically update the description when composition changes', async () => {

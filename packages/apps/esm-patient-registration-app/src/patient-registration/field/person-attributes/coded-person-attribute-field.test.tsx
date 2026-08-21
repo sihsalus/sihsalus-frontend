@@ -393,6 +393,35 @@ describe('CodedPersonAttributeField', () => {
     expect(screen.getAllByRole('option', { name: /ESSALUD/i })).toHaveLength(1);
   });
 
+  it('prefers uppercase financer labels containing accented letters', () => {
+    mockUseConceptAnswers.mockReturnValue({
+      data: [
+        { uuid: 'lowercase-accented', display: 'áéíóúñ' },
+        { uuid: 'uppercase-accented', display: 'ÁÉÍÓÚÑ' },
+      ],
+      isLoading: false,
+      error: undefined,
+    });
+
+    render(
+      <Formik initialValues={{ attributes: {} }} onSubmit={() => {}}>
+        <Form>
+          <CodedPersonAttributeField
+            id="insuranceType"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label="Financiador"
+            customConceptAnswers={[]}
+            required={false}
+          />
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByRole('option', { name: 'ÁÉÍÓÚÑ' })).toHaveValue('uppercase-accented');
+    expect(screen.queryByRole('option', { name: 'áéíóúñ' })).not.toBeInTheDocument();
+  });
+
   it('clears SIS data across payer changes and restores No consultada when SIS is selected again', async () => {
     const user = userEvent.setup();
     const insuranceType = { ...personAttributeType, uuid: peruInsuranceTypeAttributeTypeUuid };

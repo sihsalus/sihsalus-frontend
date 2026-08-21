@@ -49,7 +49,7 @@ function normalizeFinancerAnswers<T extends { uuid: string; label?: string }>(an
   const getLabelQuality = (answer: T) => {
     const label = answer.label ?? '';
     const trimmedLabel = label.trim();
-    const lettersOnly = trimmedLabel.replace(/[^a-zÃ¡Ã©Ã­Ã³ÃºÃ±]/gi, '');
+    const lettersOnly = trimmedLabel.replace(/[^\p{L}]/gu, '');
 
     return Number(label === trimmedLabel) + Number(Boolean(lettersOnly) && lettersOnly === lettersOnly.toUpperCase());
   };

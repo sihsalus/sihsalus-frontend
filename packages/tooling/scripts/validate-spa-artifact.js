@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const chalk = require('chalk');
+const { assertCompatibleServiceWorkerArtifact } = require('./build-app-shell');
 const { getContentAddressedBuildManifestIssues } = require('./content-addressed-entry');
 const {
   findInvalidWebpackShareScopeReferences,
@@ -219,6 +220,12 @@ const serviceWorker = invalidRequiredArtifacts.has('service-worker.js')
   : fs.readFileSync(serviceWorkerPath, 'utf8');
 const workboxEntries = parseWorkboxPrecacheEntries(serviceWorker);
 const requiredRevisionFiles = getSpaArtifactFiles('precacheRevision');
+
+try {
+  assertCompatibleServiceWorkerArtifact(serviceWorker);
+} catch (error) {
+  fail(error.message);
+}
 
 if (workboxEntries.length === 0) {
   fail('service-worker.js does not contain a recognizable Workbox precache manifest');

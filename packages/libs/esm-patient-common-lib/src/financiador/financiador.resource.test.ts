@@ -182,6 +182,22 @@ describe('normalizeFinanciadorConceptUuid', () => {
     expect(normalizeFinanciadorConceptUuid(legacyUuid)).toBe(SIS_CONCEPT_UUID);
   });
 
+  it('reconoce «Plan de atención SIS» como SIS para el gating clínico', () => {
+    // El catálogo lo ofrece como financiador de primer nivel y el registro de
+    // pacientes ya lo acepta como SIS. Si el gating no lo normaliza, un
+    // paciente asegurado queda bloqueado en triaje y derivado a Caja.
+    const planDeAtencionSis = 'b76a9a24-4905-4132-a215-8a567281852a';
+    expect(normalizeFinanciadorConceptUuid(planDeAtencionSis)).toBe(SIS_CONCEPT_UUID);
+    expect(
+      getSisFinancingState({
+        financiadorUuid: planDeAtencionSis,
+        insuranceNumber: 'SIS-12345',
+        accreditationStatusUuid: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+        accreditationCheckedAt: '2026-08-01T10:00:00.000Z',
+      }),
+    ).toBe('active');
+  });
+
   it('keeps non-SIS financiadores untouched', () => {
     expect(normalizeFinanciadorConceptUuid(essaludConceptUuid)).toBe(essaludConceptUuid);
     expect(normalizeFinanciadorConceptUuid(SIS_CONCEPT_UUID)).toBe(SIS_CONCEPT_UUID);

@@ -159,6 +159,54 @@ describe('OfflineDb opening scrub', () => {
     expect(JSON.stringify(await currentDb.syncQueue.toArray())).not.toContain('rollback private');
   });
 
+  it('finishes the scrub before an auto-open operation can read the queue', async () => {
+    const legacyDb = trackDatabase(new Dexie(databaseName));
+    legacyDb.version(4).stores(legacySchema);
+    const id = await legacyDb.table<SyncItem, number>('syncQueue').add(createUnsafeSyncItem('auto-open'));
+    legacyDb.close();
+
+    const currentDb = trackDatabase(new OfflineDb());
+    const item = await currentDb.syncQueue.get(id);
+
+    expect(currentDb.verno).toBe(4);
+    expect(item?.lastError).toEqual(fixedSynchronizationError);
+    expect(JSON.stringify(item)).not.toContain('auto-open private');
+  });
+
+  it('fails the open and rolls back every scrubbed row when the transaction fails', async () => {
+    const legacyDb = trackDatabase(new Dexie(databaseName));
+    legacyDb.version(4).stores(legacySchema);
+    const legacyQueue = legacyDb.table<SyncItem, number>('syncQueue');
+    await legacyQueue.add(createUnsafeSyncItem('first'));
+    await legacyQueue.add(createUnsafeSyncItem('second'));
+    legacyDb.close();
+
+    const currentDb = trackDatabase(new OfflineDb());
+    let updateCount = 0;
+    currentDb.syncQueue.hook('updating', () => {
+      updateCount += 1;
+      if (updateCount === 2) {
+        throw new Error('Synthetic scrub failure');
+      }
+    });
+
+    await expect(currentDb.open()).rejects.toThrow();
+    currentDb.close();
+
+    const inspectionDb = trackDatabase(new RollbackOfflineDb());
+    await inspectionDb.open();
+    expect((await inspectionDb.syncQueue.toArray()).map((item) => item.lastError)).toEqual([
+      {
+        name: 'first private name',
+        message: 'first private response',
+      },
+      {
+        name: 'second private name',
+        message: 'second private response',
+      },
+    ]);
+  });
+
   it('serializes concurrent opening scrubs and remains idempotent', async () => {
     const legacyDb = trackDatabase(new Dexie(databaseName));
     legacyDb.version(4).stores(legacySchema);

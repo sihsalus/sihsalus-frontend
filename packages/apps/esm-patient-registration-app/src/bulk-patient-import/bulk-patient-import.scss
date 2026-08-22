@@ -1,22 +1,27 @@
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
+
 .page {
-  padding: 1rem 0 2rem;
+  min-width: 0;
+  padding: layout.$spacing-05 0 layout.$spacing-07;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  gap: layout.$spacing-05;
 
   h1 {
-    margin: 0 0 0.5rem;
-    font-size: 1.75rem;
-    line-height: 2rem;
+    @include type.type-style("heading-04");
+    margin: 0 0 layout.$spacing-03;
   }
 
   p {
-    max-width: 52rem;
+    @include type.type-style("body-01");
+    max-width: 52 * layout.$spacing-05;
     margin: 0;
-    color: #525252;
+    color: $text-02;
   }
 }
 
@@ -24,11 +29,12 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.75rem;
+  min-width: 0;
+  gap: layout.$spacing-04;
 
   p {
     margin: 0;
-    color: #525252;
+    color: $text-02;
   }
 }
 
@@ -36,29 +42,35 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
+  min-width: 0;
+  gap: layout.$spacing-05;
 
   p {
     margin: 0;
-    color: #525252;
+    color: $text-02;
   }
 }
 
-.fileInput {
-  display: none;
+.toolbar,
+.actions {
+  :global(.cds--btn-set) {
+    max-width: 100%;
+  }
 }
 
 .summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(9 * layout.$spacing-05, 1fr));
+  min-width: 0;
+  gap: layout.$spacing-04;
 }
 
 .summaryTile {
-  min-height: 5rem;
-  padding: 1rem;
-  border: 1px solid #e0e0e0;
-  background: #f4f4f4;
+  min-width: 0;
+  min-height: layout.$spacing-09 + layout.$spacing-05;
+  padding: layout.$spacing-05;
+  border: 1px solid $ui-03;
+  background: $ui-01;
 
   span,
   strong {
@@ -66,47 +78,115 @@
   }
 
   span {
-    margin-bottom: 0.5rem;
-    color: #525252;
-    font-size: 0.875rem;
+    @include type.type-style("label-01");
+    margin-bottom: layout.$spacing-03;
+    color: $text-02;
   }
 
   strong {
-    font-size: 1.75rem;
-    line-height: 2rem;
+    @include type.type-style("heading-04");
   }
 }
 
 .tableWrapper {
-  overflow-x: auto;
-  border: 1px solid #e0e0e0;
+  max-width: 100%;
+  border: 1px solid $ui-03;
 }
 
 .table {
   width: 100%;
-  min-width: 72rem;
+  min-width: 72 * layout.$spacing-05;
   border-collapse: collapse;
+
+  &:focus-visible {
+    outline: 2px solid $interactive-01;
+    outline-offset: -2px;
+  }
 
   th,
   td {
-    padding: 0.75rem;
-    border-bottom: 1px solid #e0e0e0;
+    padding: layout.$spacing-04;
+    border-bottom: 1px solid $ui-03;
     text-align: left;
     vertical-align: top;
   }
 
   th {
-    background: #f4f4f4;
-    font-weight: 600;
+    @include type.type-style("heading-compact-01");
+    background: $ui-01;
   }
 
   td {
-    max-width: 22rem;
+    @include type.type-style("body-compact-01");
+    max-width: 22 * layout.$spacing-05;
     overflow-wrap: anywhere;
   }
 }
 
 .previewLimit {
   margin: 0;
-  color: #525252;
+  color: $text-02;
+}
+
+.modalHash {
+  margin-top: layout.$spacing-05;
+  color: $text-02;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+
+  code {
+    @include type.type-style("code-01");
+  }
+}
+
+@media (max-width: $breakpoint-phone-max) {
+  .toolbar,
+  .actions {
+    width: 100%;
+    align-items: stretch;
+
+    :global(.cds--btn-set) {
+      flex-direction: column;
+      width: 100%;
+    }
+
+    :global(.cds--btn) {
+      width: 100%;
+      max-inline-size: none;
+    }
+
+    :global(.cds--btn:not(:focus)) {
+      box-shadow: 0 -1px 0 0 var(--cds-button-separator);
+    }
+
+    :global(.cds--btn:first-of-type:not(:focus)) {
+      box-shadow: inherit;
+    }
+
+    :global(.cds--btn.cds--btn--disabled:not(:focus)) {
+      box-shadow: 0 -1px 0 0 var(--cds-layer-selected-disabled);
+    }
+
+    :global(.cds--btn.cds--btn--disabled:first-of-type:not(:focus)) {
+      box-shadow: none;
+    }
+  }
+
+  .summary {
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(8 * layout.$spacing-05, 1fr)
+    );
+  }
+}
+
+@media (forced-colors: active) {
+  .summaryTile,
+  .tableWrapper {
+    border-color: CanvasText;
+  }
+
+  .table:focus-visible {
+    outline-color: Highlight;
+  }
 }

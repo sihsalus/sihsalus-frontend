@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig, useSession } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../config-schema';
 import BulkPatientImportAdminCardLink from './bulk-patient-import-admin-card-link.component';
@@ -75,6 +75,15 @@ describe('BulkPatientImportAdminCardLink', () => {
     render(<BulkPatientImportAdminCardLink />);
 
     expect(screen.getByRole('link', { name: /import patients/i })).toHaveAttribute('href', '/spa/patient-import');
+  });
+
+  it('hides the card when the active one-time approval expires', () => {
+    render(<BulkPatientImportAdminCardLink />);
+    expect(screen.getByRole('link', { name: /import patients/i })).toBeInTheDocument();
+
+    act(() => vi.advanceTimersByTime(30 * 60 * 1000 + 1));
+
+    expect(screen.queryByRole('link', { name: /import patients/i })).not.toBeInTheDocument();
   });
 
   it.each([

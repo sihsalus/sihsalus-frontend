@@ -95,4 +95,15 @@ describe('Patient registration root', () => {
     );
     expect(screen.getByText('Bulk patient import page')).toBeInTheDocument();
   }, 15000);
+
+  it('does not render bulk import when the Manage Patients guard blocks access', async () => {
+    window.history.pushState({}, 'Bulk patient import', '/openmrs/spa/patient-import');
+    mockRequirePrivilege.mockImplementation(() => null);
+    const { default: Root } = await import('./root.component');
+
+    render(<Root />);
+
+    expect(mockRequirePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'Manage Patients' }));
+    expect(screen.queryByText('Bulk patient import page')).not.toBeInTheDocument();
+  }, 15000);
 });

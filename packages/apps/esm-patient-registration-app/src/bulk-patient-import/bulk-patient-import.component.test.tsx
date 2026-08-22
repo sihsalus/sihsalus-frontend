@@ -1,6 +1,8 @@
 import { logError, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
+import enTranslations from '../../translations/en.json';
+import esTranslations from '../../translations/es.json';
 import type { RegistrationConfig } from '../config-schema';
 import { fetchFreshPatientIdentifierTypesWithSources, type Resources, ResourcesContext } from '../offline.resources';
 import BulkPatientImport from './bulk-patient-import.component';
@@ -9,6 +11,7 @@ import {
   calculateFileSha256,
   createPatientFromImportRow,
   downloadImportReport,
+  downloadSantaClotildeTemplate,
   parseSantaClotildeWorkbook,
   preflightBulkPatientImportRows,
 } from './bulk-patient-import.utils';
@@ -47,6 +50,7 @@ const mockAssertFreshContext = vi.mocked(assertFreshBulkPatientImportContext);
 const mockCalculateFileSha256 = vi.mocked(calculateFileSha256);
 const mockCreatePatientFromImportRow = vi.mocked(createPatientFromImportRow);
 const mockDownloadImportReport = vi.mocked(downloadImportReport);
+const mockDownloadTemplate = vi.mocked(downloadSantaClotildeTemplate);
 const mockFetchFreshIdentifierTypes = vi.mocked(fetchFreshPatientIdentifierTypesWithSources);
 const mockLogError = vi.mocked(logError);
 const mockParseSantaClotildeWorkbook = vi.mocked(parseSantaClotildeWorkbook);
@@ -131,6 +135,8 @@ describe('BulkPatientImport', () => {
     mockFetchFreshIdentifierTypes.mockResolvedValue(resources.identifierTypes);
     mockPreflightRows.mockResolvedValue({ reconciledRowIds: new Set() });
     mockCreatePatientFromImportRow.mockResolvedValue({ patientUuid: deterministicPatientUuid, outcome: 'created' });
+    mockDownloadImportReport.mockResolvedValue(undefined);
+    mockDownloadTemplate.mockResolvedValue(undefined);
   });
 
   it('fails closed on the direct route after the approval window expires', () => {
@@ -146,6 +152,36 @@ describe('BulkPatientImport', () => {
     expect(mockAssertFreshContext).not.toHaveBeenCalled();
   });
 
+  it('hides and clears a loaded manifest when the one-time approval expires on the open page', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-08-21T12:00:00.000Z'));
+      mockUseConfig.mockReturnValue({
+        ...config,
+        bulkPatientImport: { ...config.bulkPatientImport, approvalExpiresAt: '2026-08-21T12:00:01.000Z' },
+      });
+      mockParseSantaClotildeWorkbook.mockResolvedValue(manifest);
+
+      const rendered = renderBulkPatientImport();
+      await act(async () => {
+        uploadFile(rendered.container);
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(screen.getByText(validRow.normalized.dni)).toBeInTheDocument();
+
+      act(() => vi.advanceTimersByTime(1001));
+
+      expect(screen.getByText('This import context is not approved')).toBeInTheDocument();
+      expect(screen.queryByRole('table', { name: /patient import preview/i })).not.toBeInTheDocument();
+      expect(screen.queryByText(validRow.normalized.dni)).not.toBeInTheDocument();
+      rendered.unmount();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('shows only a fixed safe fallback when workbook parsing fails', async () => {
     mockParseSantaClotildeWorkbook.mockRejectedValue(new Error('private workbook XML and identifier'));
 
@@ -153,6 +189,7 @@ describe('BulkPatientImport', () => {
     uploadFile(container);
 
     expect(await screen.findByText(bulkPatientImportSafetyErrorMessage)).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent(bulkPatientImportSafetyErrorMessage);
     expect(screen.queryByText(/private workbook XML/i)).not.toBeInTheDocument();
     expect(mockLogError).toHaveBeenCalledWith(
       expect.objectContaining({ message: bulkPatientImportSafetyErrorMessage }),
@@ -176,11 +213,40 @@ describe('BulkPatientImport', () => {
     uploadFile(container);
 
     expect(await screen.findByText('This file is not approved')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('This file is not approved');
     expect(screen.queryByRole('button', { name: /run safety preflight/i })).not.toBeInTheDocument();
     expect(mockAssertFreshContext).not.toHaveBeenCalled();
     expect(mockParseSantaClotildeWorkbook).not.toHaveBeenCalled();
     expect(mockPreflightRows).not.toHaveBeenCalled();
     expect(mockCreatePatientFromImportRow).not.toHaveBeenCalled();
+  });
+
+  it('handles a template download rejection with fixed PHI-safe feedback and disables actions while pending', async () => {
+    const templateDownload = deferred<void>();
+    mockDownloadTemplate.mockReturnValueOnce(templateDownload.promise);
+
+    renderBulkPatientImport();
+    fireEvent.click(screen.getByRole('button', { name: /download template/i }));
+
+    expect(await screen.findByRole('button', { name: /preparing template/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /upload excel/i })).toBeDisabled();
+    await act(async () => templateDownload.reject(new Error('private template generation details')));
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'error',
+          title: 'Template download failed',
+          subtitle: 'No file was downloaded. Try again; if the problem continues, contact your system administrator.',
+        }),
+      ),
+    );
+    expect(mockLogError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'The requested bulk patient import file could not be downloaded.' }),
+      'Bulk patient import template download failed',
+    );
+    expect(screen.queryByText(/private template/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /download template/i })).toBeEnabled();
   });
 
   it('requires a read-only preflight before enabling creation', async () => {
@@ -197,7 +263,100 @@ describe('BulkPatientImport', () => {
     expect(mockFetchFreshIdentifierTypes).toHaveBeenCalledOnce();
     expect(mockCreatePatientFromImportRow).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: /create patients/i })).toBeEnabled();
+    const previewTable = screen.getByRole('table', { name: 'Patient import preview' });
+    expect([previewTable, previewTable.parentElement].some((element) => element?.tabIndex === 0)).toBe(true);
+    expect(screen.getByRole('region', { name: 'Patient import summary' })).toBeInTheDocument();
     expect(screen.queryByText(/summary and protected report include all rows/i)).not.toBeInTheDocument();
+  });
+
+  it('uses fresh identifier metadata even when the cached registration metadata is unavailable', async () => {
+    mockParseSantaClotildeWorkbook.mockResolvedValue(manifest);
+    const cachedMetadataFailure = {
+      ...resources,
+      identifierTypes: [],
+      identifierTypesError: new Error('stale cached metadata failure'),
+    } as Resources;
+
+    const rendered = render(renderBulkPatientImportTree(cachedMetadataFailure));
+    uploadFile(rendered.container);
+    fireEvent.click(await screen.findByRole('button', { name: /run safety preflight/i }));
+
+    await waitFor(() => expect(mockFetchFreshIdentifierTypes).toHaveBeenCalledOnce());
+    expect(mockPreflightRows).toHaveBeenCalledWith(
+      manifest.rows,
+      resources.identifierTypes,
+      approvedLocationUuid,
+      expect.objectContaining({ domicilioTarget: 'address4' }),
+    );
+    expect(screen.getByRole('button', { name: /create patients/i })).toBeEnabled();
+    expect(screen.queryByText(/stale cached metadata/i)).not.toBeInTheDocument();
+  });
+
+  it('hides and clears the loaded manifest when the approved session identity changes', async () => {
+    mockParseSantaClotildeWorkbook.mockResolvedValue(manifest);
+
+    const rendered = renderBulkPatientImport();
+    uploadFile(rendered.container);
+    expect(await screen.findByText(validRow.normalized.dni)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /run safety preflight/i }));
+    const createButton = await screen.findByRole('button', { name: /create patients/i });
+    await waitFor(() => expect(createButton).toBeEnabled());
+    fireEvent.click(createButton);
+    expect(await screen.findByRole('dialog', { name: /create patients/i })).toBeInTheDocument();
+
+    const changedSessionResources = {
+      ...resources,
+      currentSession: {
+        ...resources.currentSession,
+        user: { uuid: '33333333-3333-4333-8333-333333333333' },
+      },
+    } as Resources;
+    rendered.rerender(renderBulkPatientImportTree(changedSessionResources));
+
+    expect(screen.getByText('This import context is not approved')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /create patients/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('table', { name: /patient import preview/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /download protected report/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(validRow.normalized.dni)).not.toBeInTheDocument();
+
+    rendered.rerender(renderBulkPatientImportTree(resources));
+    expect(screen.getByRole('button', { name: /upload excel/i })).toBeEnabled();
+    expect(screen.queryByRole('table', { name: /patient import preview/i })).not.toBeInTheDocument();
+  });
+
+  it('renders row validation feedback through the translation layer', async () => {
+    const rawValidationMessage =
+      'Los pacientes menores de edad deben registrarse manualmente junto con su responsable.';
+    mockParseSantaClotildeWorkbook.mockResolvedValue({
+      ...manifest,
+      rows: [{ ...validRow, errors: [rawValidationMessage], status: 'error' }],
+    });
+
+    const { container } = renderBulkPatientImport();
+    uploadFile(container);
+
+    expect(
+      await screen.findByText('Patients younger than 18 must be registered manually with their responsible adult.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(rawValidationMessage)).not.toBeInTheDocument();
+  });
+
+  it('defines the new safety and validation feedback in both language catalogs', () => {
+    const requiredKeys = [
+      'bulkPatientImportDownloadFailedSubtitle',
+      'bulkPatientImportPreflightFailedSubtitle',
+      'bulkPatientImportRevalidating',
+      'bulkPatientImportValidationMinor',
+      'bulkPatientImportPrivilegeRequired',
+    ] as const;
+
+    for (const key of requiredKeys) {
+      expect(enTranslations[key]).toBeTruthy();
+      expect(esTranslations[key]).toBeTruthy();
+    }
+    expect(esTranslations.bulkPatientImportValidationMinor).toBe(
+      'Los pacientes menores de 18 años deben registrarse manualmente junto con su responsable.',
+    );
   });
 
   it('discloses when the preview is truncated while keeping the full manifest total visible', async () => {
@@ -215,8 +374,39 @@ describe('BulkPatientImport', () => {
       await screen.findByText('Showing the first 100 of 101 rows. The summary and protected report include all rows.'),
     ).toBeInTheDocument();
     expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(101);
-    fireEvent.click(screen.getByRole('button', { name: /download protected report/i }));
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /download protected report/i })));
     expect(mockDownloadImportReport).toHaveBeenCalledWith(rows);
+  });
+
+  it('handles a protected report rejection with fixed PHI-safe feedback and disables actions while pending', async () => {
+    const reportDownload = deferred<void>();
+    mockParseSantaClotildeWorkbook.mockResolvedValue(manifest);
+    mockDownloadImportReport.mockReturnValueOnce(reportDownload.promise);
+
+    const { container } = renderBulkPatientImport();
+    uploadFile(container);
+    const reportButton = await screen.findByRole('button', { name: /download protected report/i });
+    fireEvent.click(reportButton);
+
+    expect(await screen.findByRole('button', { name: /preparing report/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /run safety preflight/i })).toBeDisabled();
+    await act(async () => reportDownload.reject(new Error('private report rows and identifiers')));
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'error',
+          title: 'Protected report download failed',
+          subtitle: 'No file was downloaded. Try again; if the problem continues, contact your system administrator.',
+        }),
+      ),
+    );
+    expect(mockLogError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'The requested bulk patient import file could not be downloaded.' }),
+      'Bulk patient import protected report download failed',
+    );
+    expect(screen.queryByText(/private report/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /download protected report/i })).toBeEnabled();
   });
 
   it('marks a fully reconciled preflight separately and keeps creation disabled', async () => {
@@ -244,12 +434,98 @@ describe('BulkPatientImport', () => {
 
     await waitFor(() =>
       expect(mockShowSnackbar).toHaveBeenCalledWith(
-        expect.objectContaining({ kind: 'error', title: 'Safety preflight failed' }),
+        expect.objectContaining({
+          kind: 'error',
+          title: 'Safety preflight failed',
+          subtitle:
+            'No write was performed. Verify your connection, session, and approved configuration before retrying.',
+        }),
       ),
+    );
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(
+      expect.objectContaining({ subtitle: expect.stringMatching(/reconcile the current row/i) }),
     );
     expect(screen.queryByText(/private metadata/i)).not.toBeInTheDocument();
     expect(mockPreflightRows).not.toHaveBeenCalled();
     expect(mockCreatePatientFromImportRow).not.toHaveBeenCalled();
+  });
+
+  it('labels the approved hash and restores focus to the modal launcher after canceling', async () => {
+    mockParseSantaClotildeWorkbook.mockResolvedValue(manifest);
+
+    const { container } = renderBulkPatientImport();
+    uploadFile(container);
+    fireEvent.click(await screen.findByRole('button', { name: /run safety preflight/i }));
+    const createButton = await screen.findByRole('button', { name: /create patients/i });
+    await waitFor(() => expect(createButton).toBeEnabled());
+    createButton.focus();
+    fireEvent.click(createButton);
+
+    const dialog = await screen.findByRole('dialog', { name: /create patients/i });
+    expect(within(dialog).getByText('Approved file SHA-256:')).toBeInTheDocument();
+    expect(within(dialog).getByText(approvedFileSha256)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: /close/i }));
+
+    await waitFor(() => expect(createButton).toHaveFocus());
+  });
+
+  it('shows revalidation before row creation and never announces a zero-of-zero creation phase', async () => {
+    const lockedPreflight = deferred<{ reconciledRowIds: Set<string> }>();
+    const rowCreation = deferred<{ patientUuid: string; outcome: 'created' }>();
+    mockParseSantaClotildeWorkbook.mockResolvedValue(manifest);
+    mockPreflightRows
+      .mockResolvedValueOnce({ reconciledRowIds: new Set() })
+      .mockReturnValueOnce(lockedPreflight.promise);
+    mockCreatePatientFromImportRow.mockReturnValueOnce(rowCreation.promise);
+
+    const { container } = renderBulkPatientImport();
+    uploadFile(container);
+    fireEvent.click(await screen.findByRole('button', { name: /run safety preflight/i }));
+    const createButton = await screen.findByRole('button', { name: /create patients/i });
+    await waitFor(() => expect(createButton).toBeEnabled());
+    fireEvent.click(createButton);
+    const dialog = await screen.findByRole('dialog', { name: /create patients/i });
+    fireEvent.click(within(dialog).getByRole('button', { name: /create/i }));
+
+    expect(await screen.findByText('Re-running safety checks before creating patients...')).toBeInTheDocument();
+    expect(screen.queryByText(/Creating 0 of 0 patients/i)).not.toBeInTheDocument();
+
+    await act(async () => lockedPreflight.resolve({ reconciledRowIds: new Set() }));
+    expect(await screen.findByText('Creating 1 of 1 patients...')).toBeInTheDocument();
+    await act(async () => rowCreation.resolve({ patientUuid: deterministicPatientUuid, outcome: 'created' }));
+    await waitFor(() => expect(screen.queryByText(/Creating 1 of 1 patients/i)).not.toBeInTheDocument());
+  });
+
+  it('reports a locked preflight rejection as a no-write failure instead of asking to reconcile a row', async () => {
+    mockParseSantaClotildeWorkbook.mockResolvedValue(manifest);
+    mockPreflightRows
+      .mockResolvedValueOnce({ reconciledRowIds: new Set() })
+      .mockRejectedValueOnce(new Error('private locked metadata response'));
+
+    const { container } = renderBulkPatientImport();
+    uploadFile(container);
+    fireEvent.click(await screen.findByRole('button', { name: /run safety preflight/i }));
+    const createButton = await screen.findByRole('button', { name: /create patients/i });
+    await waitFor(() => expect(createButton).toBeEnabled());
+    fireEvent.click(createButton);
+    const dialog = await screen.findByRole('dialog', { name: /create patients/i });
+    fireEvent.click(within(dialog).getByRole('button', { name: /create$/i }));
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'error',
+          title: 'Safety preflight failed',
+          subtitle:
+            'No write was performed. Verify your connection, session, and approved configuration before retrying.',
+        }),
+      ),
+    );
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(
+      expect.objectContaining({ subtitle: expect.stringMatching(/reconcile the current row/i) }),
+    );
+    expect(mockCreatePatientFromImportRow).not.toHaveBeenCalled();
+    expect(screen.queryByText(/private locked metadata/i)).not.toBeInTheDocument();
   });
 
   it('reruns preflight under the lock and stops after the first fixed row failure', async () => {
@@ -370,9 +646,21 @@ describe('BulkPatientImport', () => {
     fireEvent.click(confirmDialog.querySelector('button.cds--btn--danger') as HTMLButtonElement);
     await waitFor(() => expect(mockCreatePatientFromImportRow).toHaveBeenCalledOnce());
 
+    const cancelNavigation = vi.fn();
+    const dispatchNavigation = () =>
+      globalThis.dispatchEvent(
+        new CustomEvent('single-spa:before-routing-event', {
+          detail: { navigationIsCanceled: false, cancelNavigation },
+        }),
+      );
+    act(dispatchNavigation);
+    expect(cancelNavigation).toHaveBeenCalledOnce();
+
     act(() => rendered.unmount());
 
     expect(rowSignal?.aborted).toBe(true);
+    act(dispatchNavigation);
+    expect(cancelNavigation).toHaveBeenCalledOnce();
     await waitFor(() =>
       expect(mockLogError).not.toHaveBeenCalledWith(
         expect.anything(),
@@ -383,10 +671,14 @@ describe('BulkPatientImport', () => {
 });
 
 function renderBulkPatientImport() {
-  return render(
-    <ResourcesContext.Provider value={resources}>
+  return render(renderBulkPatientImportTree(resources));
+}
+
+function renderBulkPatientImportTree(resourceValue: Resources) {
+  return (
+    <ResourcesContext.Provider value={resourceValue}>
       <BulkPatientImport isOffline={false} />
-    </ResourcesContext.Provider>,
+    </ResourcesContext.Provider>
   );
 }
 
@@ -401,4 +693,14 @@ function expectSummaryValue(label: string, value: number) {
     throw new Error('Bulk patient import summary is missing.');
   }
   expect(within(summary).getByText(label).parentElement).toHaveTextContent(`${label}${value}`);
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+  return { promise, reject, resolve };
 }

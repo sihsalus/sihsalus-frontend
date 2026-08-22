@@ -1,5 +1,24 @@
-import { Button, ButtonSet, Column, Grid, InlineLoading, InlineNotification, Modal, Stack, Tag } from '@carbon/react';
-import { Download, Upload } from '@carbon/react/icons';
+import {
+  Button,
+  ButtonSet,
+  Column,
+  FileUploaderButton,
+  Grid,
+  InlineLoading,
+  InlineNotification,
+  Modal,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Tag,
+  Tile,
+} from '@carbon/react';
+import { Download } from '@carbon/react/icons';
 import { logError, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import type { TFunction } from 'i18next';
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -33,15 +52,64 @@ interface BulkPatientImportProps {
 
 const previewLimit = 100;
 const fixedImportLogMessage = 'Bulk patient import stopped at a safety boundary';
+const fixedDownloadErrorMessage = 'The requested bulk patient import file could not be downloaded.';
+
+const validationMessageTranslations: Record<string, readonly [key: string, fallback: string]> = {
+  'ORDEN is empty.': ['bulkPatientImportValidationOrderEmpty', 'ORDEN is empty.'],
+  'ORDEN exceeds the maximum length of 100 characters.': [
+    'bulkPatientImportValidationOrderTooLong',
+    'ORDEN exceeds the maximum length of 100 characters.',
+  ],
+  'DNI must have exactly 8 digits.': ['bulkPatientImportValidationDniLength', 'DNI must have exactly 8 digits.'],
+  'DNI 00000000 is reserved for the synthetic template and cannot be imported.': [
+    'bulkPatientImportValidationSyntheticDni',
+    'DNI 00000000 is reserved for the synthetic template and cannot be imported.',
+  ],
+  'SEXO must be M, F, O, or D.': ['bulkPatientImportValidationGender', 'SEXO must be M, F, O, or D.'],
+  'F.N. must use DD/MM/YYYY format and be a valid date.': [
+    'bulkPatientImportValidationBirthdate',
+    'F.N. must use DD/MM/YYYY format and be a valid date.',
+  ],
+  'A.PATERNO is required.': ['bulkPatientImportValidationPaternalNameRequired', 'A.PATERNO is required.'],
+  'A.MATERNO is required.': ['bulkPatientImportValidationMaternalNameRequired', 'A.MATERNO is required.'],
+  'NOMBRES is required.': ['bulkPatientImportValidationGivenNameRequired', 'NOMBRES is required.'],
+  'Los pacientes menores de edad deben registrarse manualmente junto con su responsable.': [
+    'bulkPatientImportValidationMinor',
+    'Patients younger than 18 must be registered manually with their responsible adult.',
+  ],
+  'DOMICILIO is empty.': ['bulkPatientImportValidationAddressEmpty', 'DOMICILIO is empty.'],
+  'DOMICILIO exceeds the maximum length of 255 characters.': [
+    'bulkPatientImportValidationAddressTooLong',
+    'DOMICILIO exceeds the maximum length of 255 characters.',
+  ],
+  'PARENTESCO is not saved; retain it only in the separately controlled approved workbook.': [
+    'bulkPatientImportValidationRelationshipNotSaved',
+    'PARENTESCO is not saved; retain it only in the separately controlled approved workbook.',
+  ],
+  'PARENTESCO exceeds the maximum length of 100 characters.': [
+    'bulkPatientImportValidationRelationshipTooLong',
+    'PARENTESCO exceeds the maximum length of 100 characters.',
+  ],
+  'Duplicate DNI within the file.': ['bulkPatientImportValidationDuplicateDni', 'Duplicate DNI within the file.'],
+  'Duplicate patient within the file: same name, birthdate, and sex.': [
+    'bulkPatientImportValidationDuplicateDemographics',
+    'Duplicate patient within the file: same name, birthdate, and sex.',
+  ],
+};
+
+type ImportPhase = 'idle' | 'revalidating' | 'creating';
+type DownloadKind = 'template' | 'report';
+type LauncherButtonRef = React.RefCallback<HTMLButtonElement> & { current: HTMLButtonElement | null };
 
 const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
   const { t } = useTranslation(moduleName);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const createPatientsButtonRef = useMemo(createLauncherButtonRef, []);
+  const activeDownloadRef = useRef<DownloadKind | null>(null);
   const operationTokenRef = useRef(0);
   const importAbortControllerRef = useRef<AbortController | null>(null);
   const { bulkPatientImport: importConfig } = useConfig<RegistrationConfig>();
-  const { currentSession, identifierTypes, identifierTypesError, isLoadingIdentifierTypes } =
-    useContext(ResourcesContext);
+  const { currentSession } = useContext(ResourcesContext);
+  const approvalCheckTime = useApprovalCheckTime(importConfig.approvalExpiresAt);
   const userUuid = currentSession?.user?.uuid;
   const locationUuid = currentSession?.sessionLocation?.uuid;
   const [manifest, setManifest] = useState<PatientImportManifest | null>(null);
@@ -51,6 +119,8 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
   const [isPreflighting, setIsPreflighting] = useState(false);
   const [preflightFingerprint, setPreflightFingerprint] = useState('');
   const [isImporting, setIsImporting] = useState(false);
+  const [importPhase, setImportPhase] = useState<ImportPhase>('idle');
+  const [activeDownload, setActiveDownload] = useState<DownloadKind | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [currentImportRow, setCurrentImportRow] = useState(0);
   const [currentImportTotal, setCurrentImportTotal] = useState(0);
@@ -61,30 +131,31 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
   const pendingRows = rows.filter(
     (row) => !row.errors.length && row.status !== 'created' && row.status !== 'reconciled',
   );
-  const isBusy = isParsing || isPreflighting || isImporting;
+  const isBusy = isParsing || isPreflighting || isImporting || activeDownload !== null;
   const domicilioTarget =
     importConfig.domicilioTarget === 'address4' || importConfig.domicilioTarget === 'cityVillage'
       ? importConfig.domicilioTarget
       : null;
   const expectedFingerprint =
     manifest && userUuid && locationUuid ? getPreflightFingerprint(manifest, userUuid, locationUuid, importConfig) : '';
+  const approvalContextFingerprint = getApprovalContextFingerprint(
+    importConfig,
+    currentSession?.authenticated,
+    userUuid,
+    locationUuid,
+  );
+  const previousApprovalContextFingerprintRef = useRef(approvalContextFingerprint);
   const initialContextApproved =
+    currentSession?.authenticated === true &&
     importConfig.enabled &&
     Boolean(domicilioTarget) &&
     isCanonicalUtcInstant(importConfig.approvalExpiresAt) &&
-    Date.parse(importConfig.approvalExpiresAt) > Date.now() &&
+    Date.parse(importConfig.approvalExpiresAt) > approvalCheckTime &&
     importConfig.approvedOrigin === globalThis.location.origin &&
     importConfig.approvedUserUuid === userUuid &&
     importConfig.approvedLocationUuid === locationUuid;
   const canPreflight =
-    initialContextApproved &&
-    !isOffline &&
-    !isBusy &&
-    Boolean(manifest) &&
-    !hasApprovalError &&
-    !summary.errors &&
-    Boolean(identifierTypes.length) &&
-    !identifierTypesError;
+    initialContextApproved && !isOffline && !isBusy && Boolean(manifest) && !hasApprovalError && !summary.errors;
   const canImport =
     canPreflight && preflightFingerprint === expectedFingerprint && Boolean(pendingRows.length) && !isPreflighting;
 
@@ -98,6 +169,29 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
     },
     [],
   );
+
+  useEffect(() => {
+    const approvalContextChanged = previousApprovalContextFingerprintRef.current !== approvalContextFingerprint;
+    previousApprovalContextFingerprintRef.current = approvalContextFingerprint;
+    if (!approvalContextChanged && initialContextApproved) {
+      return;
+    }
+
+    operationTokenRef.current += 1;
+    importAbortControllerRef.current?.abort();
+    importAbortControllerRef.current = null;
+    setManifest(null);
+    setHasParseError(false);
+    setHasApprovalError(false);
+    setIsParsing(false);
+    setIsPreflighting(false);
+    setPreflightFingerprint('');
+    setIsImporting(false);
+    setImportPhase('idle');
+    setIsConfirmOpen(false);
+    setCurrentImportRow(0);
+    setCurrentImportTotal(0);
+  }, [approvalContextFingerprint, initialContextApproved]);
 
   const updateManifestRows = (fileSha256: string, update: (row: ParsedPatientImportRow) => ParsedPatientImportRow) => {
     setManifest((current) =>
@@ -156,6 +250,46 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
     }
   };
 
+  const downloadTemplate = async () => {
+    if (isBusy || activeDownloadRef.current) {
+      return;
+    }
+
+    activeDownloadRef.current = 'template';
+    setActiveDownload('template');
+    try {
+      await downloadSantaClotildeTemplate();
+    } catch {
+      logFixedDownloadFailure('Bulk patient import template download failed');
+      showFixedDownloadFailureSnackbar(t, 'bulkPatientImportTemplateDownloadFailedTitle', 'Template download failed');
+    } finally {
+      activeDownloadRef.current = null;
+      setActiveDownload(null);
+    }
+  };
+
+  const downloadReport = async () => {
+    if (isBusy || activeDownloadRef.current) {
+      return;
+    }
+
+    activeDownloadRef.current = 'report';
+    setActiveDownload('report');
+    try {
+      await downloadImportReport(rows);
+    } catch {
+      logFixedDownloadFailure('Bulk patient import protected report download failed');
+      showFixedDownloadFailureSnackbar(
+        t,
+        'bulkPatientImportReportDownloadFailedTitle',
+        'Protected report download failed',
+      );
+    } finally {
+      activeDownloadRef.current = null;
+      setActiveDownload(null);
+    }
+  };
+
   const runPreflight = async () => {
     if (!manifest || !userUuid || !locationUuid || !domicilioTarget || !canPreflight) {
       return;
@@ -196,7 +330,13 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
     } catch {
       if (operationToken === operationTokenRef.current) {
         logFixedImportFailure('Bulk patient import preflight failed');
-        showFixedFailureSnackbar(t, 'bulkPatientImportPreflightFailedTitle', 'Safety preflight failed');
+        showFixedFailureSnackbar(
+          t,
+          'bulkPatientImportPreflightFailedTitle',
+          'Safety preflight failed',
+          'bulkPatientImportPreflightFailedSubtitle',
+          'No write was performed. Verify your connection, session, and approved configuration before retrying.',
+        );
       }
     } finally {
       if (operationToken === operationTokenRef.current) {
@@ -217,7 +357,10 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
     const fileSha256 = manifest.fileSha256;
     const approvedRows = manifest.rows.map((row) => ({ ...row }));
     setIsImporting(true);
+    setImportPhase('revalidating');
     setCurrentImportRow(0);
+    setCurrentImportTotal(0);
+    let rowOperationStarted = false;
 
     try {
       await withBulkPatientImportLock(async () => {
@@ -245,12 +388,16 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
         );
         const rowsToCreate = approvedRows.filter((row) => !secondPreflight.reconciledRowIds.has(row.id));
         setCurrentImportTotal(rowsToCreate.length);
+        if (rowsToCreate.length) {
+          setImportPhase('creating');
+        }
 
         for (let index = 0; index < rowsToCreate.length; index++) {
           if (operationToken !== operationTokenRef.current || abortController.signal.aborted) {
             throw new Error(bulkPatientImportRowErrorMessage);
           }
           const row = rowsToCreate[index];
+          rowOperationStarted = true;
           setCurrentImportRow(index + 1);
           updateRow(fileSha256, row.id, { status: 'creating', importMessage: '' });
 
@@ -310,11 +457,22 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
     } catch {
       if (operationToken === operationTokenRef.current) {
         logFixedImportFailure(fixedImportLogMessage);
-        showFixedFailureSnackbar(t, 'bulkPatientImportStoppedTitle', 'Import stopped safely');
+        if (rowOperationStarted) {
+          showFixedFailureSnackbar(t, 'bulkPatientImportStoppedTitle', 'Import stopped safely');
+        } else {
+          showFixedFailureSnackbar(
+            t,
+            'bulkPatientImportPreflightFailedTitle',
+            'Safety preflight failed',
+            'bulkPatientImportPreflightFailedSubtitle',
+            'No write was performed. Verify your connection, session, and approved configuration before retrying.',
+          );
+        }
       }
     } finally {
       if (operationToken === operationTokenRef.current) {
         setIsImporting(false);
+        setImportPhase('idle');
       }
       if (importAbortControllerRef.current === abortController) {
         importAbortControllerRef.current = null;
@@ -329,7 +487,12 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
           <header className={styles.header}>
             <div>
               <h1>{t('bulkPatientImportTitle', 'Import patients')}</h1>
-              <p>{t('bulkPatientImportSubtitle', 'One-time, fail-closed import of an approved Excel workbook.')}</p>
+              <p>
+                {t(
+                  'bulkPatientImportSubtitle',
+                  'One-time import of an approved Excel workbook that stops on any unsafe result.',
+                )}
+              </p>
             </div>
           </header>
 
@@ -337,16 +500,18 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
             <InlineNotification
               kind="error"
               lowContrast
+              hideCloseButton
               title={t('bulkPatientImportDisabledTitle', 'Bulk import is disabled')}
               subtitle={t(
                 'bulkPatientImportDisabledSubtitle',
-                'An administrator must approve one exact file, build, operator, location, origin, and address mapping.',
+                'An administrator must approve one exact file, application version, operator, location, origin, and address mapping.',
               )}
             />
           ) : !initialContextApproved ? (
             <InlineNotification
               kind="error"
               lowContrast
+              hideCloseButton
               title={t('bulkPatientImportContextBlockedTitle', 'This import context is not approved')}
               subtitle={t(
                 'bulkPatientImportContextBlockedSubtitle',
@@ -359,6 +524,7 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
             <InlineNotification
               kind="error"
               lowContrast
+              hideCloseButton
               title={t('bulkPatientImportOfflineTitle', 'Import is unavailable while offline')}
               subtitle={t('bulkPatientImportOfflineSubtitle', 'Connect before running clinical safety checks.')}
             />
@@ -367,31 +533,21 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
           {initialContextApproved ? (
             <section className={styles.toolbar} aria-label={t('bulkPatientImportActions', 'Import actions')}>
               <ButtonSet>
-                <Button
-                  kind="secondary"
-                  renderIcon={Download}
-                  disabled={isBusy}
-                  onClick={downloadSantaClotildeTemplate}
-                >
-                  {t('bulkPatientImportDownloadTemplate', 'Download template')}
+                <Button kind="secondary" renderIcon={Download} disabled={isBusy} onClick={downloadTemplate}>
+                  {activeDownload === 'template'
+                    ? t('bulkPatientImportPreparingTemplate', 'Preparing template...')
+                    : t('bulkPatientImportDownloadTemplate', 'Download template')}
                 </Button>
-                <Button
-                  kind="primary"
-                  renderIcon={Upload}
+                <FileUploaderButton
+                  accept={['.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']}
+                  buttonKind="primary"
                   disabled={isBusy || isOffline}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {t('bulkPatientImportUploadTemplate', 'Upload Excel')}
-                </Button>
+                  disableLabelChanges
+                  labelText={t('bulkPatientImportUploadTemplate', 'Upload Excel')}
+                  multiple={false}
+                  onChange={handleFileChange}
+                />
               </ButtonSet>
-              <input
-                ref={fileInputRef}
-                className={styles.fileInput}
-                type="file"
-                disabled={isBusy}
-                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                onChange={handleFileChange}
-              />
               <p>
                 {t('bulkPatientImportLimits', 'Limits: {{rows}} rows and {{mb}} MB per file.', {
                   rows: limits.maxRows,
@@ -410,6 +566,8 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
             <InlineNotification
               kind="error"
               lowContrast
+              hideCloseButton
+              role="alert"
               title={t('bulkPatientImportParseErrorTitle', 'Could not read the file')}
               subtitle={t('bulkPatientImportFixedError', bulkPatientImportSafetyErrorMessage)}
             />
@@ -419,6 +577,8 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
             <InlineNotification
               kind="error"
               lowContrast
+              hideCloseButton
+              role="alert"
               title={t('bulkPatientImportFileNotApprovedTitle', 'This file is not approved')}
               subtitle={t(
                 'bulkPatientImportFileNotApprovedSubtitle',
@@ -427,7 +587,7 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
             />
           ) : null}
 
-          {manifest ? (
+          {initialContextApproved && manifest ? (
             <>
               <InlineNotification
                 kind="info"
@@ -439,7 +599,10 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
                 })}
               />
 
-              <section className={styles.summary}>
+              <section
+                className={styles.summary}
+                aria-label={t('bulkPatientImportSummaryLabel', 'Patient import summary')}
+              >
                 <SummaryTile label={t('bulkPatientImportTotalRows', 'Rows')} value={summary.total} />
                 <SummaryTile label={t('bulkPatientImportValidRows', 'Valid')} value={summary.valid} />
                 <SummaryTile label={t('bulkPatientImportWarningRows', 'Warnings')} value={summary.warnings} />
@@ -454,33 +617,44 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
                 <InlineNotification
                   kind="error"
                   lowContrast
+                  hideCloseButton
+                  role="alert"
                   title={t('bulkPatientImportRowsBlockedTitle', 'Some rows have errors')}
                   subtitle={t('bulkPatientImportRowsBlockedSubtitle', 'Correct and reapprove the exact workbook.')}
                 />
               ) : null}
 
-              {!identifierTypes.length && !isLoadingIdentifierTypes ? (
-                <InlineNotification
-                  kind="error"
-                  lowContrast
-                  title={t('bulkPatientImportNoIdentifierTypesTitle', 'Identifier types unavailable')}
-                  subtitle={t('bulkPatientImportNoIdentifierTypesSubtitle', 'No patient can be created safely.')}
-                />
-              ) : null}
-
-              <section className={styles.actions}>
+              <section
+                className={styles.actions}
+                aria-label={t('bulkPatientImportPatientActionsLabel', 'Patient import controls')}
+              >
                 <ButtonSet>
                   <Button kind="secondary" disabled={!canPreflight} onClick={runPreflight}>
                     {t('bulkPatientImportRunPreflight', 'Run safety preflight')}
                   </Button>
-                  <Button kind="danger" disabled={!canImport} onClick={() => setIsConfirmOpen(true)}>
+                  <Button
+                    ref={createPatientsButtonRef}
+                    kind="danger"
+                    disabled={!canImport}
+                    onClick={() => setIsConfirmOpen(true)}
+                  >
                     {t('bulkPatientImportCreatePatients', 'Create patients')}
                   </Button>
-                  <Button kind="ghost" disabled={isBusy} onClick={() => downloadImportReport(rows)}>
-                    {t('bulkPatientImportDownloadReport', 'Download protected report')}
+                  <Button kind="ghost" disabled={isBusy} onClick={downloadReport}>
+                    {activeDownload === 'report'
+                      ? t('bulkPatientImportPreparingReport', 'Preparing report...')
+                      : t('bulkPatientImportDownloadReport', 'Download protected report')}
                   </Button>
                 </ButtonSet>
-                {isImporting ? (
+                {isImporting && importPhase === 'revalidating' ? (
+                  <InlineLoading
+                    description={t(
+                      'bulkPatientImportRevalidating',
+                      'Re-running safety checks before creating patients...',
+                    )}
+                  />
+                ) : null}
+                {isImporting && importPhase === 'creating' && currentImportRow > 0 && currentImportTotal > 0 ? (
                   <InlineLoading
                     description={t('bulkPatientImportProgress', 'Creating {{current}} of {{total}} patients...', {
                       current: currentImportRow,
@@ -493,6 +667,7 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
               <InlineNotification
                 kind="warning"
                 lowContrast
+                hideCloseButton
                 title={t('bulkPatientImportReportPrivacyTitle', 'The report contains clinical identifiers')}
                 subtitle={t(
                   'bulkPatientImportReportPrivacySubtitle',
@@ -516,28 +691,73 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
         </Stack>
       </Column>
 
-      <Modal
-        open={isConfirmOpen}
-        modalHeading={t('bulkPatientImportConfirmTitle', 'Create patients')}
-        primaryButtonText={t('bulkPatientImportConfirmPrimary', 'Create')}
-        secondaryButtonText={t('bulkPatientImportConfirmSecondary', 'Cancel')}
-        danger
-        onRequestClose={() => setIsConfirmOpen(false)}
-        onSecondarySubmit={() => setIsConfirmOpen(false)}
-        onRequestSubmit={importRows}
-      >
-        <p>
-          {t(
-            'bulkPatientImportConfirmBody',
-            'The live preflight will run again under an exclusive lock before creating {{count}} patients. The batch stops on the first uncertain result and has no automatic rollback.',
-            { count: pendingRows.length },
-          )}
-        </p>
-        <p>{manifest?.fileSha256}</p>
-      </Modal>
+      {initialContextApproved ? (
+        <Modal
+          open={isConfirmOpen}
+          closeButtonLabel={t('bulkPatientImportCloseDialog', 'Close')}
+          launcherButtonRef={createPatientsButtonRef}
+          modalHeading={t('bulkPatientImportConfirmTitle', 'Create patients')}
+          primaryButtonText={t('bulkPatientImportConfirmPrimary', 'Create')}
+          primaryButtonDisabled={!canImport || isBusy}
+          secondaryButtonText={t('bulkPatientImportConfirmSecondary', 'Cancel')}
+          danger
+          onRequestClose={() => setIsConfirmOpen(false)}
+          onSecondarySubmit={() => setIsConfirmOpen(false)}
+          onRequestSubmit={importRows}
+        >
+          <p>
+            {t(
+              'bulkPatientImportConfirmBody',
+              'The live safety check will run again under an exclusive lock before creating up to {{count}} patients. The batch stops on the first uncertain result and cannot be rolled back automatically.',
+              { count: pendingRows.length },
+            )}
+          </p>
+          <p className={styles.modalHash}>
+            <strong>{t('bulkPatientImportConfirmHashLabel', 'Approved file SHA-256')}:</strong>{' '}
+            <code>{manifest?.fileSha256}</code>
+          </p>
+        </Modal>
+      ) : null}
     </Grid>
   );
 };
+
+function createLauncherButtonRef(): LauncherButtonRef {
+  const launcherButtonRef = ((node: HTMLButtonElement | null) => {
+    launcherButtonRef.current = node;
+  }) as LauncherButtonRef;
+  launcherButtonRef.current = null;
+  return launcherButtonRef;
+}
+
+function useApprovalCheckTime(approvalExpiresAt: string) {
+  const [approvalCheckTime, setApprovalCheckTime] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!isCanonicalUtcInstant(approvalExpiresAt)) {
+      setApprovalCheckTime(Date.now());
+      return;
+    }
+
+    let timeout: ReturnType<typeof globalThis.setTimeout> | undefined;
+    const scheduleExpirationCheck = () => {
+      const remainingMilliseconds = Date.parse(approvalExpiresAt) - Date.now();
+      if (remainingMilliseconds <= 0) {
+        setApprovalCheckTime(Date.now());
+        return;
+      }
+      timeout = globalThis.setTimeout(scheduleExpirationCheck, Math.min(remainingMilliseconds + 1, 2_147_483_647));
+    };
+    scheduleExpirationCheck();
+    return () => {
+      if (timeout !== undefined) {
+        globalThis.clearTimeout(timeout);
+      }
+    };
+  }, [approvalExpiresAt]);
+
+  return approvalCheckTime;
+}
 
 function useImportNavigationGuard(when: boolean, message: string) {
   useEffect(() => {
@@ -566,6 +786,28 @@ function useImportNavigationGuard(when: boolean, message: string) {
   }, [message, when]);
 }
 
+function getApprovalContextFingerprint(
+  config: RegistrationConfig['bulkPatientImport'],
+  authenticated: boolean | undefined,
+  userUuid: string | undefined,
+  locationUuid: string | undefined,
+) {
+  return JSON.stringify([
+    authenticated,
+    userUuid,
+    locationUuid,
+    globalThis.location.origin,
+    config.enabled,
+    config.approvedFileSha256,
+    config.approvedBuildSha,
+    config.approvedOrigin,
+    config.approvalExpiresAt,
+    config.approvedUserUuid,
+    config.approvedLocationUuid,
+    config.domicilioTarget,
+  ]);
+}
+
 function getPreflightFingerprint(
   manifest: PatientImportManifest,
   userUuid: string,
@@ -590,12 +832,30 @@ function logFixedImportFailure(context: string) {
   logError(new Error(bulkPatientImportSafetyErrorMessage), context);
 }
 
-function showFixedFailureSnackbar(t: TFunction, key: string, title: string) {
+function showFixedFailureSnackbar(
+  t: TFunction,
+  key: string,
+  title: string,
+  subtitleKey = 'bulkPatientImportStoppedSubtitle',
+  subtitle = 'No further rows were attempted. Reconcile the current row before retrying.',
+) {
   showSnackbar({
     title: t(key, title),
+    subtitle: t(subtitleKey, subtitle),
+    kind: 'error',
+  });
+}
+
+function logFixedDownloadFailure(context: string) {
+  logError(new Error(fixedDownloadErrorMessage), context);
+}
+
+function showFixedDownloadFailureSnackbar(t: TFunction, titleKey: string, title: string) {
+  showSnackbar({
+    title: t(titleKey, title),
     subtitle: t(
-      'bulkPatientImportStoppedSubtitle',
-      'No further rows were attempted. Reconcile the current row before retrying.',
+      'bulkPatientImportDownloadFailedSubtitle',
+      'No file was downloaded. Try again; if the problem continues, contact your system administrator.',
     ),
     kind: 'error',
   });
@@ -603,10 +863,10 @@ function showFixedFailureSnackbar(t: TFunction, key: string, title: string) {
 
 function SummaryTile({ label, value }: { label: string; value: number }) {
   return (
-    <div className={styles.summaryTile}>
+    <Tile className={styles.summaryTile}>
       <span>{label}</span>
       <strong>{value}</strong>
-    </div>
+    </Tile>
   );
 }
 
@@ -620,37 +880,37 @@ function preserveCreatedOrMarkReconciled(row: ParsedPatientImportRow, reconciled
       };
 }
 
-function PatientImportPreview({
-  rows,
-  t,
-}: {
-  rows: Array<ParsedPatientImportRow>;
-  t: (key: string, fallback: string) => string;
-}) {
+function PatientImportPreview({ rows, t }: { rows: Array<ParsedPatientImportRow>; t: TFunction }) {
   return (
-    <div className={styles.tableWrapper}>
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            <th>{t('bulkPatientImportRowHeader', 'Row')}</th>
-            <th>{t('bulkPatientImportStatusHeader', 'Status')}</th>
-            <th>DNI</th>
-            <th>{t('bulkPatientImportPatientHeader', 'Patient')}</th>
-            <th>{t('bulkPatientImportBirthdateHeader', 'Birthdate')}</th>
-            <th>{t('bulkPatientImportSexHeader', 'Sex')}</th>
-            <th>{t('bulkPatientImportAddressHeader', 'Address')}</th>
-            <th>{t('bulkPatientImportMessagesHeader', 'Messages')}</th>
-          </tr>
-        </thead>
-        <tbody>
+    <TableContainer className={styles.tableWrapper}>
+      <Table
+        {...{
+          'aria-label': t('bulkPatientImportPreviewTableLabel', 'Patient import preview'),
+        }}
+        className={styles.table}
+        tabIndex={0}
+      >
+        <TableHead>
+          <TableRow>
+            <TableHeader>{t('bulkPatientImportRowHeader', 'Row')}</TableHeader>
+            <TableHeader>{t('bulkPatientImportStatusHeader', 'Status')}</TableHeader>
+            <TableHeader>DNI</TableHeader>
+            <TableHeader>{t('bulkPatientImportPatientHeader', 'Patient')}</TableHeader>
+            <TableHeader>{t('bulkPatientImportBirthdateHeader', 'Birthdate')}</TableHeader>
+            <TableHeader>{t('bulkPatientImportSexHeader', 'Sex')}</TableHeader>
+            <TableHeader>{t('bulkPatientImportAddressHeader', 'Address')}</TableHeader>
+            <TableHeader>{t('bulkPatientImportMessagesHeader', 'Messages')}</TableHeader>
+          </TableRow>
+        </TableHead>
+        <TableBody>
           {rows.map((row) => (
-            <tr key={row.id}>
-              <td>{row.rowNumber}</td>
-              <td>
+            <TableRow key={row.id}>
+              <TableCell>{row.rowNumber}</TableCell>
+              <TableCell>
                 <StatusTag status={row.status} t={t} />
-              </td>
-              <td>{row.normalized.dni}</td>
-              <td>
+              </TableCell>
+              <TableCell>{row.normalized.dni}</TableCell>
+              <TableCell>
                 {[
                   row.normalized.givenName,
                   row.normalized.middleName,
@@ -659,36 +919,70 @@ function PatientImportPreview({
                 ]
                   .filter(Boolean)
                   .join(' ')}
-              </td>
-              <td>{row.normalized.birthdate}</td>
-              <td>{row.normalized.gender}</td>
-              <td>{row.normalized.domicilio}</td>
-              <td>{[...row.errors, ...row.warnings, row.importMessage].filter(Boolean).join(' | ')}</td>
-            </tr>
+              </TableCell>
+              <TableCell>{row.normalized.birthdate}</TableCell>
+              <TableCell>{row.normalized.gender}</TableCell>
+              <TableCell>{row.normalized.domicilio}</TableCell>
+              <TableCell>
+                {[...row.errors, ...row.warnings, row.importMessage]
+                  .filter(Boolean)
+                  .map((message) => translatePatientImportMessage(message, t))
+                  .join(' | ')}
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
 }
 
-function StatusTag({
-  status,
-  t,
-}: {
-  status: ParsedPatientImportRow['status'];
-  t: (key: string, fallback: string) => string;
-}) {
+function translatePatientImportMessage(message: string, t: TFunction): string {
+  const exactTranslation = validationMessageTranslations[message];
+  if (exactTranslation) {
+    return t(exactTranslation[0], exactTranslation[1]);
+  }
+
+  const minimumLengthMatch = /^(NOMBRES|A\.PATERNO|A\.MATERNO) must have at least 2 characters\.$/.exec(message);
+  if (minimumLengthMatch) {
+    return t('bulkPatientImportValidationNameTooShort', '{{field}} must have at least 2 characters.', {
+      field: minimumLengthMatch[1],
+    });
+  }
+
+  const maximumLengthMatch = /^(NOMBRES|A\.PATERNO|A\.MATERNO) exceeds the maximum length of (\d+) characters\.$/.exec(
+    message,
+  );
+  if (maximumLengthMatch) {
+    return t('bulkPatientImportValidationNameTooLong', '{{field}} exceeds the maximum length of {{max}} characters.', {
+      field: maximumLengthMatch[1],
+      max: maximumLengthMatch[2],
+    });
+  }
+
+  const invalidCharactersMatch = /^(NOMBRES|A\.PATERNO|A\.MATERNO) contains invalid characters\.$/.exec(message);
+  if (invalidCharactersMatch) {
+    return t('bulkPatientImportValidationNameCharacters', '{{field}} contains invalid characters.', {
+      field: invalidCharactersMatch[1],
+    });
+  }
+
+  return message;
+}
+
+function StatusTag({ status, t }: { status: ParsedPatientImportRow['status']; t: TFunction }) {
   const tagType =
-    status === 'created' || status === 'reconciled'
+    status === 'created'
       ? 'green'
-      : status === 'failed' || status === 'error'
-        ? 'red'
-        : status === 'warning'
-          ? 'warm-gray'
-          : status === 'creating'
-            ? 'blue'
-            : 'gray';
+      : status === 'reconciled'
+        ? 'teal'
+        : status === 'failed' || status === 'error'
+          ? 'red'
+          : status === 'warning'
+            ? 'warm-gray'
+            : status === 'creating'
+              ? 'blue'
+              : 'gray';
 
   return (
     <Tag type={tagType} size="sm">

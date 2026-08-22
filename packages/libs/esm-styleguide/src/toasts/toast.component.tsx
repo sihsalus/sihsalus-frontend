@@ -1,7 +1,30 @@
 /** @module @category UI */
 
-import { ActionableNotification } from '@carbon/react';
-import React, { useCallback } from 'react';
+import { ActionableNotification, Button } from '@carbon/react';
+import { getCoreTranslation } from '@openmrs/esm-translations';
+import React, { useCallback, useState } from 'react';
+import styles from './toast.module.scss';
+import {
+  NotificationDetailsModal,
+  type NotificationDetailsSection,
+} from './notification-details.modal';
+
+const toastPreviewCharacterLimit = 160;
+
+function getToastPreview(description: React.ReactNode) {
+  if (typeof description !== 'string' || description.length <= toastPreviewCharacterLimit) {
+    return { isTruncated: false, preview: description };
+  }
+
+  const candidate = description.slice(0, toastPreviewCharacterLimit + 1);
+  const lastSpace = candidate.lastIndexOf(' ');
+  const cutoff = lastSpace > toastPreviewCharacterLimit * 0.75 ? lastSpace : toastPreviewCharacterLimit;
+
+  return {
+    isTruncated: true,
+    preview: `${description.slice(0, cutoff).trimEnd()}…`,
+  };
+}
 
 export interface ToastProps {
   toast: ToastNotificationMeta;
@@ -10,6 +33,7 @@ export interface ToastProps {
 
 export interface ToastDescriptor {
   description: React.ReactNode;
+  details?: Array<NotificationDetailsSection>;
   onActionButtonClick?: () => void;
   actionButtonLabel?: string;
   kind?: ToastType;
@@ -24,11 +48,24 @@ export interface ToastNotificationMeta extends ToastDescriptor {
 export type ToastType = 'error' | 'info' | 'info-square' | 'success' | 'warning' | 'warning-alt';
 
 export const Toast: React.FC<ToastProps> = ({ toast, closeToast }) => {
-  const { description, kind, critical, title, actionButtonLabel, onActionButtonClick = () => {} } = toast;
+  const { description, details, kind, critical, title, actionButtonLabel, onActionButtonClick = () => {} } = toast;
+  const [showDetails, setShowDetails] = useState(false);
+  const { isTruncated, preview } = getToastPreview(description);
   const handleActionClick = useCallback(() => {
     onActionButtonClick();
     closeToast();
   }, [closeToast, onActionButtonClick]);
+
+  const previewContent = isTruncated ? (
+    <div className={styles.preview}>
+      <span>{preview}</span>
+      <Button className={styles.detailsButton} kind="ghost" size="sm" onClick={() => setShowDetails(true)}>
+        {getCoreTranslation('showMore', 'Show more')}
+      </Button>
+    </div>
+  ) : (
+    description
+  );
 
   return (
     <div>
@@ -36,11 +73,21 @@ export const Toast: React.FC<ToastProps> = ({ toast, closeToast }) => {
         actionButtonLabel={actionButtonLabel}
         kind={kind || 'info'}
         lowContrast={critical}
-        subtitle={description}
+        subtitle={previewContent}
         title={title || ''}
         onActionButtonClick={handleActionClick}
         onClose={closeToast}
       />
+      {isTruncated && showDetails ? (
+        <NotificationDetailsModal
+          description={description}
+          sections={details}
+          kind={kind}
+          open
+          title={title || getCoreTranslation('additionalDetails', 'Additional details')}
+          onClose={() => setShowDetails(false)}
+        />
+      ) : null}
     </div>
   );
 };

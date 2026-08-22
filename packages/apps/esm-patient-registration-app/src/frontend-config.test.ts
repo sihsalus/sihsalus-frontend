@@ -8,13 +8,24 @@ const neighborhoodAttributeTypeUuid = '4a182c6e-9a19-4db8-8042-4bbf3b4308c2';
 const neighborhoodConceptSetUuid = '0fd3e744-6d2c-4cb3-9b7e-1f88899635d9';
 
 describe('SIH Salus frontend configuration', () => {
-  it('adds the coded Barrio field to contact without carrying unrelated content overrides', () => {
+  it('adds the coded Barrio field while preserving the disabled bulk import approval boundary', () => {
     const runtimeOverride = frontendConfig['@sihsalus/esm-patient-registration-app'];
     const effectiveConfig = getEffectiveRegistrationConfig({
       ...getDefaultsFromConfigSchema<RegistrationConfig>(esmPatientRegistrationSchema),
       ...runtimeOverride,
     } as RegistrationConfig);
 
+    expect(runtimeOverride.bulkPatientImport).toEqual({
+      enabled: false,
+      maxRows: 1000,
+      approvedFileSha256: '',
+      approvedBuildSha: '',
+      approvedOrigin: '',
+      approvalExpiresAt: '',
+      approvedUserUuid: '',
+      approvedLocationUuid: '',
+      domicilioTarget: '',
+    });
     expect(runtimeOverride).not.toHaveProperty('hiddenPatientIdentifierTypeUuids');
     expect(effectiveConfig.sectionDefinitions.find(({ id }) => id === 'contact')?.fields).toEqual([
       'address',

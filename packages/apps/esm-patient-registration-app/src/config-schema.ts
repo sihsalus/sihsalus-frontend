@@ -55,6 +55,7 @@ export interface BulkPatientImportConfig {
   approvedUserUuid: string;
   approvedLocationUuid: string;
   domicilioTarget: '' | 'address4' | 'cityVillage';
+  maxRows: number;
 }
 
 export interface RegistrationConfig {
@@ -233,6 +234,18 @@ export const esmPatientRegistrationSchema = {
       _default: '',
       _description: 'Explicit OpenMRS address field represented by the source DOMICILIO column.',
       _validators: [validators.oneOf(['', 'address4', 'cityVillage'])],
+    },
+    maxRows: {
+      _type: Type.Number,
+      _default: 250,
+      _description:
+        'Maximum number of non-empty data rows accepted per import file. The padron is loaded in batches of this size; raising it increases the number of sequential patient writes a single run performs.',
+      _validators: [
+        validator(
+          (value: number) => Number.isInteger(value) && value >= 1 && value <= 5000,
+          'must be an integer between 1 and 5000',
+        ),
+      ],
     },
   },
   sections: {

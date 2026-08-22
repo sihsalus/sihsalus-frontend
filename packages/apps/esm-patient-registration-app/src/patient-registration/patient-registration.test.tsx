@@ -253,6 +253,7 @@ const mockOpenmrsConfig: RegistrationConfig = {
     approvedUserUuid: '',
     approvedLocationUuid: '',
     domicilioTarget: '',
+    maxRows: 250,
   },
 };
 const configWithObs = JSON.parse(JSON.stringify(mockOpenmrsConfig));

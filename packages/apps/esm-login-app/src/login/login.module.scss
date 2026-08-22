@@ -415,6 +415,73 @@
   }
 }
 
+// Laptop browsers often leave considerably less vertical space than the
+// physical screen resolution after accounting for browser chrome.
+@media (min-width: 48.0625rem) and (max-height: 48rem) {
+  .loginLayout {
+    height: 100vh;
+    min-height: 0;
+  }
+
+  .imagePanel {
+    min-height: 0;
+  }
+
+  .formPanel {
+    display: flex;
+    flex-direction: column;
+    justify-content: safe center;
+    gap: layout.$spacing-05;
+    height: 100vh;
+    min-height: 0;
+    padding: layout.$spacing-05 layout.$spacing-10;
+    overflow-y: auto;
+  }
+
+  .announcements {
+    margin-bottom: 0;
+  }
+
+  .logoImg {
+    width: auto;
+    max-height: 6rem;
+    margin-bottom: layout.$spacing-06;
+  }
+
+  .logoText {
+    margin-bottom: layout.$spacing-06;
+  }
+
+  .inputGroup {
+    gap: layout.$spacing-04;
+  }
+
+  .continueButton {
+    margin-top: layout.$spacing-05;
+  }
+
+  .partnerSubtitle {
+    margin-bottom: layout.$spacing-03;
+  }
+
+  .partnerLinks {
+    gap: layout.$spacing-04;
+    min-height: layout.$spacing-07;
+
+    a {
+      min-height: layout.$spacing-07;
+    }
+
+    img {
+      height: 1.75rem;
+    }
+  }
+
+  .frontendVersion {
+    margin-top: layout.$spacing-06;
+  }
+}
+
 @media (max-width: 48rem) {
   .container {
     padding: 0;

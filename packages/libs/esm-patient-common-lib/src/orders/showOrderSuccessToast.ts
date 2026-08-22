@@ -56,8 +56,23 @@ export function showOrderSuccessToast(moduleName: string, patientOrderItems: Arr
     updatedString && `${translateFrom(moduleName, 'updated', 'Updated')} ${updatedString}.`,
     discontinuedString && `${translateFrom(moduleName, 'discontinued', 'Discontinued')} ${discontinuedString}.`,
   ].filter(Boolean);
+  const details = [
+    placedOrders.length && {
+      title: translateFrom(moduleName, 'orderedFor', 'Placed order for'),
+      items: placedOrders.map((item) => item.display),
+    },
+    updatedOrders.length && {
+      title: translateFrom(moduleName, 'updated', 'Updated'),
+      items: updatedOrders.map((item) => item.display),
+    },
+    discontinuedOrders.length && {
+      title: translateFrom(moduleName, 'discontinued', 'Discontinued'),
+      items: discontinuedOrders.map((item) => item.display),
+    },
+  ].filter(Boolean) as Array<{ title: string; items: Array<string> }>;
 
   showSnackbar({
+    details,
     isLowContrast: true,
     kind: 'success',
     title: getNotificationTitle(moduleName, placedOrders, updatedOrders, discontinuedOrders, activeActions),

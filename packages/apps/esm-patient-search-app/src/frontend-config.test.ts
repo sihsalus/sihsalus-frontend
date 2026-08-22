@@ -17,11 +17,13 @@ describe('SIH Salus frontend configuration', () => {
       {
         attributeTypeUuid: neighborhoodAttributeTypeUuid,
         answerConceptSetUuid: neighborhoodConceptSetUuid,
-        placeholder: 'Seleccione un barrio',
       },
     ]);
     expect(
       configuredAttributes.filter(({ attributeTypeUuid }) => attributeTypeUuid === neighborhoodAttributeTypeUuid),
     ).toHaveLength(1);
+    expect(
+      configuredAttributes.find(({ attributeTypeUuid }) => attributeTypeUuid === neighborhoodAttributeTypeUuid),
+    ).not.toHaveProperty('placeholder');
   });
 });

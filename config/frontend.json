@@ -212,7 +212,6 @@
         "id": "neighborhood",
         "type": "person attribute",
         "uuid": "4a182c6e-9a19-4db8-8042-4bbf3b4308c2",
-        "label": "Barrio",
         "showHeading": false,
         "answerConceptSetUuid": "0fd3e744-6d2c-4cb3-9b7e-1f88899635d9",
         "codedInputType": "select",
@@ -237,8 +236,7 @@
           },
           {
             "attributeTypeUuid": "4a182c6e-9a19-4db8-8042-4bbf3b4308c2",
-            "answerConceptSetUuid": "0fd3e744-6d2c-4cb3-9b7e-1f88899635d9",
-            "placeholder": "Seleccione un barrio"
+            "answerConceptSetUuid": "0fd3e744-6d2c-4cb3-9b7e-1f88899635d9"
           }
         ]
       }

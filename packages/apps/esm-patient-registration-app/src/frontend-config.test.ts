@@ -27,11 +27,11 @@ describe('SIH Salus frontend configuration', () => {
     expect(effectiveConfig.fieldDefinitions.find(({ id }) => id === 'neighborhood')).toMatchObject({
       type: 'person attribute',
       uuid: neighborhoodAttributeTypeUuid,
-      label: 'Barrio',
       answerConceptSetUuid: neighborhoodConceptSetUuid,
       codedInputType: 'select',
       searchable: true,
       validation: { required: false },
     });
+    expect(effectiveConfig.fieldDefinitions.find(({ id }) => id === 'neighborhood')).not.toHaveProperty('label');
   });
 });

@@ -233,6 +233,13 @@ export function CodedPersonAttributeField({
           <Field name={fieldName} validate={validateAnswerSetMembership}>
             {({ field, form: { setFieldValue, touched, errors } }) => {
               const selectedAnswer = answers.find((answer) => answer.uuid === field.value) ?? null;
+              // Los mensajes del esquema Yup llegan como CLAVE sin resolver:
+              // patient-registration-validation.ts declara `const t = (key) => key`
+              // para que el extractor de traducciones encuentre las claves, asi que
+              // aqui aterriza «fieldRequired» en vez de un texto legible. Se traduce
+              // al pintarlo, igual que en identifier-input.component.tsx. El segundo
+              // argumento devuelve el texto intacto cuando ya viene traducido, como
+              // el de validateAnswerSetMembership.
               const errorMessage = getIn(errors, fieldName);
               const invalid = Boolean(errorMessage && getIn(touched, fieldName));
               const translatedErrorMessage =

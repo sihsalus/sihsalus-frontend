@@ -27,6 +27,31 @@ import { CodedPersonAttributeField } from './coded-person-attribute-field.compon
 
 const mockUseConceptAnswers = vi.mocked(useConceptAnswers);
 
+// Sin instancia de i18n, react-i18next devuelve el texto por defecto, asi que un
+// test no podria distinguir una clave traducida de una sin traducir. Este mock
+// resuelve solo las claves del diccionario y deja intacto el resto, de modo que
+// los demas tests siguen afirmando los textos por defecto en ingles.
+const translations: Record<string, string> = {
+  invalidInput: 'Entrada inválida',
+};
+
+vi.mock('react-i18next', async () => {
+  const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
+  return {
+    ...actual,
+    useTranslation: () => ({
+      t: (key: string, defaultValue?: string, options?: Record<string, unknown>) => {
+        const template = translations[key] ?? defaultValue ?? key;
+        // react-i18next interpola {{var}}; sin esto los mensajes con marcador
+        // llegarian crudos y romperian los tests que ya existian.
+        return options
+          ? template.replace(/\{\{(\w+)\}\}/g, (match, name) => String(options[name] ?? match))
+          : template;
+      },
+    }),
+  };
+});
+
 vi.mock('../field.resource', async () => ({
   ...(await vi.importActual('../field.resource')),
   useConceptAnswers: vi.fn(),
@@ -772,6 +797,35 @@ describe('CodedPersonAttributeField', () => {
 
     await waitFor(() => expect(handleSubmit).not.toHaveBeenCalled());
     expect(screen.getByText('Select a valid option from the configured catalog')).toBeInTheDocument();
+  });
+
+  it('translates a validation error that arrives as a raw translation key', async () => {
+    // patient-registration-validation.ts construye el esquema Yup con un stub
+    // `const t = (key) => key`, asi que sus mensajes llegan aqui como clave. Es
+    // el mismo origen que hacia ver literalmente «fieldRequired» en el hospital,
+    // pero afecta a las 43 claves del esquema, no solo a la de campo obligatorio.
+    render(
+      <Formik
+        initialValues={{ attributes: { [personAttributeType.uuid]: '' } }}
+        initialErrors={{ attributes: { [personAttributeType.uuid]: 'invalidInput' } }}
+        initialTouched={{ attributes: { [personAttributeType.uuid]: true } }}
+        onSubmit={() => {}}
+      >
+        <Form>
+          <CodedPersonAttributeField
+            id="attributeId"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label={personAttributeType.display}
+            customConceptAnswers={[]}
+            required
+          />
+        </Form>
+      </Formik>,
+    );
+
+    await waitFor(() => expect(screen.getByText('Entrada inválida')).toBeInTheDocument());
+    expect(screen.queryByText('invalidInput')).not.toBeInTheDocument();
   });
 
   it('shows an inline warning without reporting a forbidden response as an invalid answer set', () => {

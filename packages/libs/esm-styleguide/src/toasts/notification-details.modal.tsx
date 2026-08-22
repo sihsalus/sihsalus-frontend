@@ -60,6 +60,10 @@ export function NotificationDetailsModal({
 
   return (
     <Modal
+      // Carbon deriva el nombre accesible de modalHeading solo cuando es texto.
+      // Aqui es JSX -icono + titulo-, asi que sin aria-label explicito el modal
+      // se anuncia sin nombre a los lectores de pantalla.
+      aria-label={title}
       className={classnames(styles.modal, statusStyle)}
       open={open}
       passiveModal

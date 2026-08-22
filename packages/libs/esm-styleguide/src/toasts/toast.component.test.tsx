@@ -22,7 +22,12 @@ describe('Toast', () => {
 
     const dialog = screen.getByRole('dialog', { name: 'Orders completed' });
     expect(dialog).toBeInTheDocument();
-    expect(within(dialog).getByText(description)).toBeInTheDocument();
+    // El modal parte a proposito una descripcion separada por comas en una
+    // lista, asi que la cadena unida no existe como un solo nodo de texto.
+    const items = within(dialog).getAllByRole('listitem');
+    expect(items).toHaveLength(30);
+    expect(items[0]).toHaveTextContent('Laboratory order 1');
+    expect(items[29]).toHaveTextContent('Laboratory order 30');
   });
 
   it('preserves an existing toast action when details are available', () => {

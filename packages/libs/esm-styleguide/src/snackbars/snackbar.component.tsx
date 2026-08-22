@@ -1,6 +1,6 @@
 /** @module @category UI */
 
-import { ActionableNotification } from '@carbon/react';
+import { ActionableNotification, Button, Modal } from '@carbon/react';
 import { getCoreTranslation } from '@openmrs/esm-translations';
 import classnames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -30,6 +30,20 @@ export interface SnackbarMeta extends SnackbarDescriptor {
 
 export type SnackbarType = 'error' | 'info' | 'info-square' | 'success' | 'warning' | 'warning-alt';
 
+const snackbarPreviewCharacterLimit = 160;
+
+function getSnackbarPreview(subtitle: React.ReactNode) {
+  if (typeof subtitle !== 'string' || subtitle.length <= snackbarPreviewCharacterLimit) {
+    return { isTruncated: false, preview: subtitle };
+  }
+
+  const candidate = subtitle.slice(0, snackbarPreviewCharacterLimit + 1);
+  const lastSpace = candidate.lastIndexOf(' ');
+  const cutoff = lastSpace > snackbarPreviewCharacterLimit * 0.75 ? lastSpace : snackbarPreviewCharacterLimit;
+
+  return { isTruncated: true, preview: `${subtitle.slice(0, cutoff).trimEnd()}...` };
+}
+
 export const Snackbar: React.FC<SnackbarProps> = ({ snackbar, closeSnackbar: removeSnackBarFromDom }) => {
   const {
     actionButtonLabel = '',
@@ -49,6 +63,8 @@ export const Snackbar: React.FC<SnackbarProps> = ({ snackbar, closeSnackbar: rem
   const [actionText, setActionText] = useState(actionButtonLabel);
   const [applyAnimation, setApplyAnimation] = useState(true);
   const [isClosing, setIsClosing] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const { isTruncated, preview } = getSnackbarPreview(subtitle);
   const removeSnackBarFromDomRef = useRef(removeSnackBarFromDom);
 
   useEffect(() => {
@@ -85,11 +101,11 @@ export const Snackbar: React.FC<SnackbarProps> = ({ snackbar, closeSnackbar: rem
   };
 
   useEffect(() => {
-    if (autoClose) {
+    if (autoClose && !showDetails) {
       const timeoutId = setTimeout(onCloseSnackbar, effectiveTimeoutInMs);
       return () => clearTimeout(timeoutId);
     }
-  }, [effectiveTimeoutInMs, autoClose, onCloseSnackbar]);
+  }, [effectiveTimeoutInMs, autoClose, onCloseSnackbar, showDetails]);
 
   useEffect(() => {
     setApplyAnimation(false);
@@ -99,22 +115,47 @@ export const Snackbar: React.FC<SnackbarProps> = ({ snackbar, closeSnackbar: rem
     }, 0);
   }, []);
 
+  const previewContent = isTruncated ? (
+    <div className={styles.preview}>
+      <span>{preview}</span>
+      <Button className={styles.detailsButton} kind="ghost" size="sm" onClick={() => setShowDetails(true)}>
+        {getCoreTranslation('showMore', 'Show more')}
+      </Button>
+    </div>
+  ) : (
+    subtitle
+  );
+
   return (
-    <ActionableNotification
-      actionButtonLabel={actionText}
-      aria-label={getCoreTranslation('closeSnackbar', 'Close snackbar')}
-      className={classnames(styles.slideIn, {
-        [styles.animated]: applyAnimation,
-        [styles.slideOut]: isClosing,
-      })}
-      kind={kind as SnackbarType}
-      lowContrast={isLowContrast}
-      onActionButtonClick={handleActionClick}
-      onClose={onCloseSnackbar}
-      statusIconDescription={getCoreTranslation('snackbarNotification', 'Snackbar notification')}
-      subtitle={subtitle}
-      title={title}
-      {...props}
-    />
+    <>
+      <ActionableNotification
+        actionButtonLabel={actionText}
+        aria-label={getCoreTranslation('closeSnackbar', 'Close snackbar')}
+        className={classnames(styles.slideIn, {
+          [styles.animated]: applyAnimation,
+          [styles.slideOut]: isClosing,
+        })}
+        kind={kind as SnackbarType}
+        lowContrast={isLowContrast}
+        onActionButtonClick={handleActionClick}
+        onClose={onCloseSnackbar}
+        statusIconDescription={getCoreTranslation('snackbarNotification', 'Snackbar notification')}
+        subtitle={previewContent}
+        title={title}
+        {...props}
+      />
+      {isTruncated && showDetails ? (
+        <Modal
+          open
+          passiveModal
+          closeButtonLabel={getCoreTranslation('close', 'Close')}
+          modalHeading={title}
+          onRequestClose={() => setShowDetails(false)}
+          size="sm"
+        >
+          <div className={styles.fullDescription}>{subtitle}</div>
+        </Modal>
+      ) : null}
+    </>
   );
 };

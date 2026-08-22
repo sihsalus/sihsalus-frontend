@@ -133,6 +133,17 @@ describe('Snackbar component', () => {
     expect(snackbar).toBeInTheDocument();
     expect(actionButton).toBeInTheDocument();
   });
+
+  it('truncates a long subtitle and shows its full content in a modal', async () => {
+    const longSubtitle = 'A long laboratory order description '.repeat(10);
+    renderSnackbar({ snackbar: { autoClose: false, title: 'Orders placed', subtitle: longSubtitle } });
+
+    expect(screen.queryByText(longSubtitle)).not.toBeInTheDocument();
+    screen.getByRole('button', { name: /show more/i }).click();
+
+    expect(await screen.findByRole('dialog', { name: /orders placed/i })).toBeInTheDocument();
+    expect(screen.getByText(longSubtitle)).toBeInTheDocument();
+  });
 });
 
 function renderSnackbar(overrides = {}) {

@@ -1,3 +1,5 @@
+@use '@carbon/layout';
+
 @keyframes slideInFromLeft {
   0% {
     transform: translateX(-100%);
@@ -27,4 +29,24 @@
 
 .slideOut {
   animation-name: slideOutToLeft;
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.detailsButton {
+  min-height: layout.$spacing-07;
+  margin-top: layout.$spacing-02;
+  padding-inline: 0;
+}
+
+.fullDescription {
+  max-height: min(60vh, 32rem);
+  overflow-y: auto;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }

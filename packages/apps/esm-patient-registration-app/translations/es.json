@@ -95,6 +95,7 @@
   "codedPersonAttributeAnswerSetEmpty": "El campo de atributo de persona codificado '{{codedPersonAttributeFieldId}}' se ha definido con un conjunto de conceptos de respuesta con UUID '{{answerConceptSetUuid}}' que no tiene ninguna respuesta de concepto.",
   "codedPersonAttributeAnswerSetInvalid": "El campo de atributo de persona codificado '{{codedPersonAttributeFieldId}}' se ha definido con un conjunto de conceptos de respuesta con UUID '{{answerConceptSetUuid}}' inválido.",
   "codedPersonAttributeNoAnswerSet": "El campo de atributo de persona '{{codedPersonAttributeFieldId}}' es de tipo 'codificado', pero se ha definido sin un UUID para el conjunto de conceptos de respuesta. La clave 'answerConceptSetUuid' es obligatoria.",
+  "codedPersonAttributeRequired": "Debe seleccionar una opción para el campo {{field}}",
   "codedPersonAttributeUnavailableOptional": "Este campo opcional no está disponible por configuración. Puede continuar con el registro.",
   "codedPersonAttributeUnavailableRequired": "Este campo obligatorio no está disponible. Contacte al administrador del sistema.",
   "codedPersonAttributeUnavailableTitle": "No se pudo cargar {{field}}",

@@ -235,6 +235,14 @@ export function CodedPersonAttributeField({
               const selectedAnswer = answers.find((answer) => answer.uuid === field.value) ?? null;
               const errorMessage = getIn(errors, fieldName);
               const invalid = Boolean(errorMessage && getIn(touched, fieldName));
+              const translatedErrorMessage =
+                typeof errorMessage === 'string'
+                  ? errorMessage === 'fieldRequired'
+                    ? t('codedPersonAttributeRequired', 'Select an option for the {{field}} field', {
+                        field: displayLabel,
+                      })
+                    : t(errorMessage, errorMessage)
+                  : undefined;
               const setCodedValue = (nextValue: string) => {
                 if (nextValue === (field.value ?? '')) {
                   return;
@@ -258,7 +266,7 @@ export function CodedPersonAttributeField({
                     titleText={labelText}
                     placeholder={t('searchSelectAnOption', 'Search and select an option')}
                     invalid={invalid}
-                    invalidText={typeof errorMessage === 'string' ? errorMessage : undefined}
+                    invalidText={translatedErrorMessage}
                     disabled={readOnly}
                     onChange={({ selectedItem }) => setCodedValue(selectedItem?.uuid ?? '')}
                   />
@@ -273,7 +281,7 @@ export function CodedPersonAttributeField({
                     legendText={labelText}
                     valueSelected={field.value ?? ''}
                     invalid={invalid}
-                    invalidText={typeof errorMessage === 'string' ? errorMessage : undefined}
+                    invalidText={translatedErrorMessage}
                     required={required}
                     readOnly={readOnly}
                     orientation="horizontal"
@@ -300,7 +308,7 @@ export function CodedPersonAttributeField({
                   name={`person-attribute-${personAttributeType.uuid}`}
                   labelText={labelText}
                   invalid={invalid}
-                  invalidText={typeof errorMessage === 'string' ? errorMessage : undefined}
+                  invalidText={translatedErrorMessage}
                   required={required}
                   disabled={readOnly}
                   {...field}

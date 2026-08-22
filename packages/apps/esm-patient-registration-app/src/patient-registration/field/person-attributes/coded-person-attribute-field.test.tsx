@@ -64,6 +64,31 @@ describe('CodedPersonAttributeField', () => {
     });
   });
 
+  it('translates a required-field validation key into a descriptive message', () => {
+    render(
+      <Formik
+        initialValues={{ attributes: { [personAttributeType.uuid]: '' } }}
+        initialErrors={{ attributes: { [personAttributeType.uuid]: 'fieldRequired' } }}
+        initialTouched={{ attributes: { [personAttributeType.uuid]: true } }}
+        onSubmit={() => {}}
+      >
+        <Form>
+          <CodedPersonAttributeField
+            id="financer"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label="Financiador"
+            customConceptAnswers={[{ uuid: 'sis', label: 'SIS' }]}
+            required
+          />
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByText('Select an option for the Financiador field')).toBeInTheDocument();
+    expect(screen.queryByText('fieldRequired')).not.toBeInTheDocument();
+  });
+
   function renderStatefulSearchableField(initialValue = '') {
     const onSetFieldValue = vi.fn();
     const fieldName = `attributes.${personAttributeType.uuid}`;

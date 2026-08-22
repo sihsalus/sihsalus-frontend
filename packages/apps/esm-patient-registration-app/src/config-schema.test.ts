@@ -11,6 +11,7 @@ const approvedBulkImportConfig: RegistrationConfig['bulkPatientImport'] = {
   approvedUserUuid: '11111111-1111-4111-8111-111111111111',
   approvedLocationUuid: '22222222-2222-4222-8222-222222222222',
   domicilioTarget: 'address4',
+    maxRows: 250,
 };
 
 function getRootValidationErrors(config: RegistrationConfig): Array<string> {
@@ -32,6 +33,7 @@ describe('bulk patient import configuration', () => {
       approvedUserUuid: '',
       approvedLocationUuid: '',
       domicilioTarget: '',
+      maxRows: 250,
     });
     expect(getRootValidationErrors(config)).toEqual([]);
   });

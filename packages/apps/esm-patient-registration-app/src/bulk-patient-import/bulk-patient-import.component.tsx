@@ -124,7 +124,7 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [currentImportRow, setCurrentImportRow] = useState(0);
   const [currentImportTotal, setCurrentImportTotal] = useState(0);
-  const limits = getImportLimits();
+  const limits = getImportLimits(importConfig.maxRows);
   const rows = manifest?.rows ?? [];
   const summary = useMemo(() => summarizeImportRows(rows), [rows]);
   const rowsWithErrors = rows.filter((row) => row.errors.length > 0);
@@ -229,7 +229,7 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
         setHasApprovalError(true);
         return;
       }
-      const parsedManifest = await parseSantaClotildeWorkbook(file);
+      const parsedManifest = await parseSantaClotildeWorkbook(file, importConfig.maxRows);
       if (operationToken !== operationTokenRef.current || parsedManifest.fileSha256 !== fileSha256) {
         if (operationToken === operationTokenRef.current) {
           throw new Error(bulkPatientImportSafetyErrorMessage);
@@ -258,7 +258,7 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
     activeDownloadRef.current = 'template';
     setActiveDownload('template');
     try {
-      await downloadSantaClotildeTemplate();
+      await downloadSantaClotildeTemplate(importConfig.maxRows);
     } catch {
       logFixedDownloadFailure('Bulk patient import template download failed');
       showFixedDownloadFailureSnackbar(t, 'bulkPatientImportTemplateDownloadFailedTitle', 'Template download failed');

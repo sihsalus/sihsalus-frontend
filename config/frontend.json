@@ -182,6 +182,19 @@
       }
     ]
   },
+  "@sihsalus/esm-patient-registration-app": {
+    "bulkPatientImport": {
+      "enabled": false,
+      "maxRows": 1000,
+      "approvedFileSha256": "",
+      "approvedBuildSha": "",
+      "approvedOrigin": "",
+      "approvalExpiresAt": "",
+      "approvedUserUuid": "",
+      "approvedLocationUuid": "",
+      "domicilioTarget": ""
+    }
+  },
   "@openmrs/esm-styleguide": {
     "preferredDateLocale": {
       "en": "es-ES",

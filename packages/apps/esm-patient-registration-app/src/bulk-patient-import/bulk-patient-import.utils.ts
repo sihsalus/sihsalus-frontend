@@ -30,7 +30,11 @@ import {
   santaClotildeHeaders,
 } from './bulk-patient-import.types';
 
-const maxRows = 250;
+// Tope por defecto de filas por fichero. Es solo el respaldo cuando la
+// configuracion no lo fija: el valor efectivo llega por
+// bulkPatientImport.maxRows y se propaga explicitamente a cada funcion que
+// lee o valida el libro, para que plantilla y validacion no puedan divergir.
+export const defaultMaxRows = 250;
 const maxFileSizeBytes = 5 * 1024 * 1024;
 const dangerousSpreadsheetFormulaStart = /^[=+\-@\t\r]/;
 // This namespace is part of the import manifest contract. Do not change it:
@@ -65,14 +69,14 @@ const headerAliases: Record<SantaClotildeHeader, Array<string>> = {
   DOMICILIO: ['DOMICILIO', 'DIRECCION', 'DIRECCIÓN'],
 };
 
-export function getImportLimits() {
+export function getImportLimits(maxRows: number = defaultMaxRows) {
   return {
     maxRows,
     maxFileSizeBytes,
   };
 }
 
-export async function downloadSantaClotildeTemplate() {
+export async function downloadSantaClotildeTemplate(maxRows: number = defaultMaxRows) {
   const workbook = await createWorkbook();
   const worksheet = workbook.addWorksheet('Patients');
 
@@ -150,7 +154,10 @@ export async function calculateFileSha256(file: File): Promise<string> {
   return calculateSha256(await file.arrayBuffer());
 }
 
-export async function parseSantaClotildeWorkbook(file: File): Promise<PatientImportManifest> {
+export async function parseSantaClotildeWorkbook(
+  file: File,
+  maxRows: number = defaultMaxRows,
+): Promise<PatientImportManifest> {
   if (!file.name.toLowerCase().endsWith('.xlsx')) {
     throw new Error('Only .xlsx Excel files are supported.');
   }

@@ -118,6 +118,35 @@ curl -fsS -u "$E2E_USER_ADMIN_USERNAME:$E2E_USER_ADMIN_PASSWORD" \
   "$E2E_API_BASE_URL/ws/rest/v1/systemsetting?q=layout.address.format&v=full"
 ```
 
+## Carga masiva única de pacientes
+
+La ruta administrativa `patient-import` no es un flujo ordinario de admisión. Permanece desactivada por defecto y
+solo puede habilitarse para una ventana aprobada con el SHA-256 exacto del Excel, SHA completo del frontend, origen,
+UUID del operador, UUID de la ubicación de sesión, vencimiento UTC y el significado explícito de `DOMICILIO`
+(`address4` para dirección o `cityVillage` para centro poblado). La tarjeta se oculta fuera de ese contexto o después
+del vencimiento, y la ruta directa falla cerrada.
+
+El alcance clínico es exclusivamente pacientes adultos con DNI de ocho dígitos. Menores, personas ya existentes por
+DNI, duplicados de DNI o de nombre/fecha/sexo dentro del Excel, metadata de identificadores incompleta y cualquier
+resultado ambiguo se bloquean para registro o reconciliación manual. El tipo DNI debe ser `UNIQUE`; todos los identificadores
+obligatorios/primarios deben tener una fuente automática válida, y todas las políticas de ubicación se validan antes
+de consumir un valor IdGen.
+
+El importador calcula el hash de los bytes exactos y deriva un UUID v5 estable por hash/fila/DNI. Antes de cualquier
+escritura ejecuta un preflight completo con lecturas frescas, y lo repite dentro de un Web Lock exclusivo. Usuario,
+ubicación, build y archivo se vuelven a comprobar antes de cada paciente. Cada alta se reconcilia con una lectura
+fresca antes de avanzar; el primer fallo o resultado incierto detiene el lote y marca las filas restantes como no
+intentadas. No existe rollback automático del lote ni una degradación sin Web Locks.
+
+El reporte omite nombres, DNI, fecha de nacimiento y domicilio del Excel; conserva fila, estado y UUID para
+reconciliación. Aun así contiene identificadores clínicos y debe mantenerse en el almacenamiento cifrado aprobado,
+nunca en tickets/PR públicos. La plantilla usa solo un ejemplo inequívocamente sintético y su DNI reservado no es
+importable.
+
+La preparación, ejecución sintética, reconciliación, cierre y desactivación se describen en
+[el runbook de carga masiva](../../../docs/runbooks/bulk-patient-import.md). Ninguna validación local sustituye el smoke
+coordinado en DEV/QLTY; nunca ejecutar este flujo contra PROD ni con datos reales durante pruebas.
+
 ## Configuring the Registration App to collect custom observations
 
 [PR-221](https://github.com/openmrs/openmrs-esm-patient-management/pull/221) made it possible to configure the registration app to include obs, as demoed in the gif video below, using fieldDefinitions:

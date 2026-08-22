@@ -244,6 +244,16 @@ const mockOpenmrsConfig: RegistrationConfig = {
   sisVerification: {
     productConceptUuid: '72b9edbf-1ec8-4b1a-8957-b1597aab8757',
   },
+  bulkPatientImport: {
+    enabled: false,
+    approvedFileSha256: '',
+    approvedBuildSha: '',
+    approvedOrigin: '',
+    approvalExpiresAt: '',
+    approvedUserUuid: '',
+    approvedLocationUuid: '',
+    domicilioTarget: '',
+  },
 };
 const configWithObs = JSON.parse(JSON.stringify(mockOpenmrsConfig));
 

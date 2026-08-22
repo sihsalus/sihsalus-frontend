@@ -1,26 +1,31 @@
 import { getLocalCalendarDate, validatePatientBirthdate } from '@openmrs/esm-utils';
-import type { Workbook } from 'exceljs';
-import { v4 } from 'uuid';
-
-import { generateIdentifier, savePatient } from '../patient-registration/patient-registration.resource';
-import { searchLocalIdentityByDocument } from '../patient-registration/identity/identity-search.resource';
+import type { Row, Workbook } from 'exceljs';
+import { v5 } from 'uuid';
+import { getIdentifierLocationPayload } from '../patient-registration/identifier-location-behavior';
 import { documentTypeConceptUuids } from '../patient-registration/identity/identity-documents';
+import {
+  type FreshPatientIdentity,
+  fetchFreshPatientIdentityByUuid,
+  searchLocalIdentityByDocument,
+} from '../patient-registration/identity/identity-search.resource';
 import {
   patientFamilyNameMaxLength,
   patientGivenNameMaxLength,
   patientNamePattern,
 } from '../patient-registration/patient-name-limits';
+import { generateIdentifier, savePatient } from '../patient-registration/patient-registration.resource';
 import type {
   Patient,
   PatientIdentifier,
   PatientIdentifierType,
 } from '../patient-registration/patient-registration.types';
 import { peruDniPatientIdentifierTypeUuid } from '../patient-registration/peru-registration-config';
-import { getIdentifierLocationPayload } from '../patient-registration/identifier-location-behavior';
 
 import {
   type ImportSummary,
   type ParsedPatientImportRow,
+  type PatientImportManifest,
+  type PatientImportRowResult,
   type SantaClotildeHeader,
   santaClotildeHeaders,
 } from './bulk-patient-import.types';
@@ -28,6 +33,25 @@ import {
 const maxRows = 250;
 const maxFileSizeBytes = 5 * 1024 * 1024;
 const dangerousSpreadsheetFormulaStart = /^[=+\-@\t\r]/;
+// This namespace is part of the import manifest contract. Do not change it:
+// the same exact workbook row must keep the same patient UUID across retries.
+const patientImportUuidNamespace = 'a56257d4-7d7b-4f6b-946e-c28fc970c916';
+export const bulkPatientImportRowErrorMessage = 'The patient row could not be safely imported.';
+
+export interface BulkPatientImportRowOptions {
+  domicilioTarget: 'address4' | 'cityVillage';
+  signal?: AbortSignal;
+  assertBeforeWrite: () => Promise<void>;
+}
+
+export interface BulkPatientImportPreflightResult {
+  reconciledRowIds: Set<string>;
+}
+
+export interface BulkPatientImportPreflightOptions {
+  domicilioTarget: BulkPatientImportRowOptions['domicilioTarget'];
+  signal?: AbortSignal;
+}
 
 const headerAliases: Record<SantaClotildeHeader, Array<string>> = {
   ORDEN: ['ORDEN'],
@@ -71,7 +95,7 @@ export async function downloadSantaClotildeTemplate() {
   }
   worksheet.views = [{ state: 'frozen', ySplit: 1 }];
 
-  const exampleSheet = workbook.addWorksheet('Example');
+  const exampleSheet = workbook.addWorksheet('Synthetic example');
   exampleSheet.columns = santaClotildeHeaders.map((header) => ({
     header,
     key: header,
@@ -79,15 +103,15 @@ export async function downloadSantaClotildeTemplate() {
   }));
   exampleSheet.getRow(1).font = { bold: true };
   exampleSheet.addRow({
-    ORDEN: 'V.1.1.1',
-    DNI: '44708773',
+    ORDEN: 'EJEMPLO-NO-IMPORTAR',
+    DNI: '00000000',
     SEXO: 'M',
-    'F.N.': '12/10/1985',
-    'A.PATERNO': 'SANDI',
-    'A.MATERNO': 'ROMAÑOL',
-    NOMBRES: 'AHIBAR',
-    PARENTESCO: 'JEFE',
-    DOMICILIO: 'SAN ANTONIO',
+    'F.N.': '01/01/1990',
+    'A.PATERNO': 'SINTETICO',
+    'A.MATERNO': 'PRUEBA',
+    NOMBRES: 'PACIENTE FICTICIO',
+    PARENTESCO: 'NO IMPORTAR',
+    DOMICILIO: 'DATO SINTETICO',
   });
 
   await downloadWorkbook(workbook, 'santa-clotilde-patient-import-template.xlsx');
@@ -95,8 +119,11 @@ export async function downloadSantaClotildeTemplate() {
 
 export async function downloadImportReport(rows: Array<ParsedPatientImportRow>) {
   const workbook = await createWorkbook();
-  const worksheet = workbook.addWorksheet('Report');
-  const reportHeaders = ['ROW', ...santaClotildeHeaders, 'STATUS', 'PATIENT UUID', 'ERRORS', 'WARNINGS', 'MESSAGE'];
+  const worksheet = workbook.addWorksheet('Protected report');
+  // Do not duplicate the source workbook's names, DNI, birthdates, or address.
+  // The row number joins this reconciliation report back to the separately
+  // controlled approved workbook when an authorized operator needs it.
+  const reportHeaders = ['ROW', 'STATUS', 'PATIENT UUID', 'ERRORS', 'WARNINGS', 'MESSAGE'];
 
   worksheet.columns = reportHeaders.map((header) => ({
     header,
@@ -108,7 +135,6 @@ export async function downloadImportReport(rows: Array<ParsedPatientImportRow>) 
   rows.forEach((row) => {
     worksheet.addRow({
       ROW: row.rowNumber,
-      ...Object.fromEntries(santaClotildeHeaders.map((header) => [header, sanitizeSpreadsheetText(row.raw[header])])),
       STATUS: row.status,
       'PATIENT UUID': row.patientUuid ?? '',
       ERRORS: sanitizeSpreadsheetText(row.errors.join(' | ')),
@@ -120,28 +146,51 @@ export async function downloadImportReport(rows: Array<ParsedPatientImportRow>) 
   await downloadWorkbook(workbook, 'patient-import-report.xlsx');
 }
 
-export async function parseSantaClotildeWorkbook(file: File): Promise<Array<ParsedPatientImportRow>> {
+export async function calculateFileSha256(file: File): Promise<string> {
+  return calculateSha256(await file.arrayBuffer());
+}
+
+export async function parseSantaClotildeWorkbook(file: File): Promise<PatientImportManifest> {
   if (!file.name.toLowerCase().endsWith('.xlsx')) {
     throw new Error('Only .xlsx Excel files are supported.');
+  }
+
+  if (!file.size) {
+    throw new Error('The file is empty.');
   }
 
   if (file.size > maxFileSizeBytes) {
     throw new Error('The file exceeds the maximum size allowed.');
   }
 
+  const fileBytes = await file.arrayBuffer();
+  const fileSha256 = await calculateSha256(fileBytes);
   const workbook = await createWorkbook();
-  await workbook.xlsx.load(await file.arrayBuffer());
+  await workbook.xlsx.load(fileBytes);
   const worksheet = workbook.worksheets[0];
 
   if (!worksheet) {
     throw new Error('The file does not contain any worksheets.');
   }
+  if (worksheet.state !== 'visible') {
+    throw new Error('The patient worksheet must be visible.');
+  }
 
-  const headerMap = readHeaderMap(worksheet.getRow(1));
+  const headerRow = worksheet.getRow(1);
+  if (headerRow.hidden) {
+    throw new Error('The header row cannot be hidden.');
+  }
+
+  const headerMap = readHeaderMap(headerRow);
   const missingHeaders = santaClotildeHeaders.filter((header) => !headerMap[header]);
 
   if (missingHeaders.length) {
     throw new Error(`Missing required columns: ${missingHeaders.join(', ')}.`);
+  }
+
+  const hiddenHeaders = santaClotildeHeaders.filter((header) => worksheet.getColumn(headerMap[header]).hidden);
+  if (hiddenHeaders.length) {
+    throw new Error(`Required columns cannot be hidden: ${hiddenHeaders.join(', ')}.`);
   }
 
   const rows: Array<ParsedPatientImportRow> = [];
@@ -149,8 +198,12 @@ export async function parseSantaClotildeWorkbook(file: File): Promise<Array<Pars
   const duplicateDemographicRows = new Map<string, Array<number>>();
 
   worksheet.eachRow((excelRow, rowNumber) => {
-    if (rowNumber === 1 || rows.length >= maxRows) {
+    if (rowNumber === 1) {
       return;
+    }
+
+    if (excelRow.hidden && rowContainsAnyValue(excelRow)) {
+      throw new Error(`Row ${rowNumber} is hidden and contains data.`);
     }
 
     const raw = Object.fromEntries(
@@ -161,7 +214,13 @@ export async function parseSantaClotildeWorkbook(file: File): Promise<Array<Pars
       return;
     }
 
+    if (rows.length >= maxRows) {
+      throw new Error(`The template allows a maximum of ${maxRows} non-empty rows per file.`);
+    }
+
     const row = normalizeAndValidateImportRow(raw, rowNumber);
+    row.id = `${fileSha256}:${rowNumber}`;
+    row.patientUuid = v5(`${fileSha256}:${rowNumber}:${row.normalized.dni}`, patientImportUuidNamespace);
     rows.push(row);
 
     if (row.normalized.dni) {
@@ -176,55 +235,134 @@ export async function parseSantaClotildeWorkbook(file: File): Promise<Array<Pars
     }
   });
 
-  if (worksheet.actualRowCount - 1 > maxRows) {
-    throw new Error(`The template allows a maximum of ${maxRows} rows per file.`);
+  if (!rows.length) {
+    throw new Error('The file does not contain any patient rows.');
   }
 
   applyDuplicateMessages(rows, duplicateDniRows, 'Duplicate DNI within the file.', 'error');
   applyDuplicateMessages(
     rows,
     duplicateDemographicRows,
-    'Possible duplicate patient within the file: same name, birthdate, and sex.',
-    'warning',
+    'Duplicate patient within the file: same name, birthdate, and sex.',
+    'error',
   );
 
-  return rows.map((row) => ({
-    ...row,
-    status: row.errors.length ? 'error' : row.warnings.length ? 'warning' : 'valid',
-  }));
+  return {
+    schemaVersion: 1,
+    fileName: file.name,
+    fileSize: file.size,
+    fileSha256,
+    rows: rows.map((row) => ({
+      ...row,
+      status: row.errors.length ? 'error' : row.warnings.length ? 'warning' : 'valid',
+    })),
+  };
 }
 
 export async function createPatientFromImportRow(
   row: ParsedPatientImportRow,
   identifierTypes: Array<PatientIdentifierType>,
   locationUuid: string,
-) {
-  row.patientUuid ??= v4();
-  const existingMatches = await searchLocalIdentityByDocument(row.normalized.dni, undefined, {
-    patientIdentifierTypeUuid: peruDniPatientIdentifierTypeUuid,
-    personDocumentTypeConceptUuid: documentTypeConceptUuids.dni,
-  });
-  const existingPatient = existingMatches.find((match) => match.kind === 'patient');
-  const existingPerson = existingMatches.find((match) => match.kind === 'person');
-
-  if (existingPatient?.uuid === row.patientUuid) {
-    return row.patientUuid;
-  }
-
-  if (existingPatient) {
-    throw new Error(`Ya existe un paciente con DNI ${row.normalized.dni}.`);
-  }
-
-  if (existingPerson) {
-    throw new Error(
-      `Ya existe una persona con DNI ${row.normalized.dni}. Regístrela mediante el flujo manual para evitar duplicados.`,
+  options: BulkPatientImportRowOptions,
+): Promise<PatientImportRowResult> {
+  try {
+    const operationSignal = withRequestTimeout(options.signal, 30_000);
+    assertImportableRow(row);
+    const patientUuid = requireDeterministicPatientUuid(row);
+    const identifierPlans = validateBulkPatientImportMetadata(identifierTypes, locationUuid);
+    const existingState = await inspectExistingPatient(
+      row,
+      options.domicilioTarget,
+      identifierPlans,
+      'before-create',
+      undefined,
+      operationSignal,
     );
-  }
 
-  const identifiers = await buildPatientIdentifiers(row, identifierTypes, locationUuid);
-  const patient = buildPatientPayload(row, identifiers, row.patientUuid);
-  const response = await savePatient(patient);
-  return response.data.uuid as string;
+    if (existingState === 'reconciled') {
+      return { patientUuid, outcome: 'reconciled' };
+    }
+
+    const identifiers = await buildPatientIdentifiers(row, identifierPlans, options.assertBeforeWrite, operationSignal);
+    const patient = buildPatientPayload(row, identifiers, patientUuid, options.domicilioTarget);
+
+    let responseUuid: string | undefined;
+    await options.assertBeforeWrite();
+    try {
+      const response = await savePatient(patient, undefined, operationSignal);
+      if (!response.ok) {
+        throw new Error(bulkPatientImportRowErrorMessage);
+      }
+      responseUuid = response.data?.uuid;
+    } catch {
+      // A lost POST response is ambiguous. Reconcile the deterministic UUID/DNI
+      // from a new network request before deciding whether it actually failed.
+      if (
+        (await inspectExistingPatient(row, options.domicilioTarget, identifierPlans, 'after-create', identifiers)) ===
+        'reconciled'
+      ) {
+        return { patientUuid, outcome: 'reconciled' };
+      }
+      throw new Error(bulkPatientImportRowErrorMessage);
+    }
+
+    if (responseUuid !== patientUuid) {
+      throw new Error(bulkPatientImportRowErrorMessage);
+    }
+
+    if (
+      (await inspectExistingPatient(
+        row,
+        options.domicilioTarget,
+        identifierPlans,
+        'after-create',
+        identifiers,
+        operationSignal,
+      )) !== 'reconciled'
+    ) {
+      throw new Error(bulkPatientImportRowErrorMessage);
+    }
+    return { patientUuid, outcome: 'created' };
+  } catch {
+    throw new Error(bulkPatientImportRowErrorMessage);
+  }
+}
+
+/**
+ * Performs the complete live duplicate/metadata pass before the first IdGen or
+ * Patient POST. Any one unsafe row blocks the whole file.
+ */
+export async function preflightBulkPatientImportRows(
+  rows: Array<ParsedPatientImportRow>,
+  identifierTypes: Array<PatientIdentifierType>,
+  locationUuid: string,
+  options: BulkPatientImportPreflightOptions,
+): Promise<BulkPatientImportPreflightResult> {
+  try {
+    const identifierPlans = validateBulkPatientImportMetadata(identifierTypes, locationUuid);
+    const reconciledRowIds = new Set<string>();
+
+    for (const row of rows) {
+      assertImportableRow(row);
+      requireDeterministicPatientUuid(row);
+      if (
+        (await inspectExistingPatient(
+          row,
+          options.domicilioTarget,
+          identifierPlans,
+          'before-create',
+          undefined,
+          options.signal,
+        )) === 'reconciled'
+      ) {
+        reconciledRowIds.add(row.id);
+      }
+    }
+
+    return { reconciledRowIds };
+  } catch {
+    throw new Error(bulkPatientImportRowErrorMessage);
+  }
 }
 
 export function summarizeImportRows(rows: Array<ParsedPatientImportRow>): ImportSummary {
@@ -234,7 +372,9 @@ export function summarizeImportRows(rows: Array<ParsedPatientImportRow>): Import
     warnings: rows.filter((row) => row.warnings.length && !row.errors.length).length,
     errors: rows.filter((row) => row.errors.length).length,
     created: rows.filter((row) => row.status === 'created').length,
+    reconciled: rows.filter((row) => row.status === 'reconciled').length,
     failed: rows.filter((row) => row.status === 'failed').length,
+    skipped: rows.filter((row) => row.status === 'skipped').length,
   };
 }
 
@@ -265,6 +405,7 @@ async function downloadWorkbook(workbook: Workbook, fileName: string): Promise<v
 
 function readHeaderMap(row): Record<SantaClotildeHeader, number> {
   const map = {} as Record<SantaClotildeHeader, number>;
+  const duplicateHeaders = new Set<SantaClotildeHeader>();
 
   row.eachCell((cell, columnNumber) => {
     const normalizedHeader = normalizeHeader(getCellText(cell));
@@ -272,10 +413,20 @@ function readHeaderMap(row): Record<SantaClotildeHeader, number> {
       headerAliases[header].some((alias) => normalizeHeader(alias) === normalizedHeader),
     );
 
-    if (matchingHeader && !map[matchingHeader]) {
+    if (!matchingHeader) {
+      return;
+    }
+
+    if (map[matchingHeader]) {
+      duplicateHeaders.add(matchingHeader);
+    } else {
       map[matchingHeader] = columnNumber;
     }
   });
+
+  if (duplicateHeaders.size) {
+    throw new Error(`Duplicate logical columns: ${Array.from(duplicateHeaders).join(', ')}.`);
+  }
 
   return map;
 }
@@ -305,10 +456,14 @@ export function normalizeAndValidateImportRow(
 
   if (!normalized.orden) {
     warnings.push('ORDEN is empty.');
+  } else if (normalized.orden.length > 100) {
+    errors.push('ORDEN exceeds the maximum length of 100 characters.');
   }
 
   if (!/^\d{8}$/.test(dni)) {
     errors.push('DNI must have exactly 8 digits.');
+  } else if (dni === '00000000') {
+    errors.push('DNI 00000000 is reserved for the synthetic template and cannot be imported.');
   }
 
   if (!gender) {
@@ -342,10 +497,15 @@ export function normalizeAndValidateImportRow(
 
   if (!normalized.domicilio) {
     warnings.push('DOMICILIO is empty.');
+  } else if (normalized.domicilio.length > 255) {
+    errors.push('DOMICILIO exceeds the maximum length of 255 characters.');
   }
 
   if (raw.PARENTESCO.trim()) {
-    warnings.push('PARENTESCO is kept only in the report; it is not saved to the patient record.');
+    warnings.push('PARENTESCO is not saved; retain it only in the separately controlled approved workbook.');
+    if (normalized.parentesco.length > 100) {
+      errors.push('PARENTESCO exceeds the maximum length of 100 characters.');
+    }
   }
 
   return {
@@ -359,42 +519,89 @@ export function normalizeAndValidateImportRow(
   };
 }
 
-async function buildPatientIdentifiers(
-  row: ParsedPatientImportRow,
+interface IdentifierPlan {
+  identifierType: PatientIdentifierType;
+  locationPayload: Pick<PatientIdentifier, 'location'>;
+  sourceUuid?: string;
+}
+
+export function validateBulkPatientImportMetadata(
   identifierTypes: Array<PatientIdentifierType>,
   locationUuid: string,
+): Array<IdentifierPlan> {
+  try {
+    const dniType = identifierTypes.find((type) => type.uuid === peruDniPatientIdentifierTypeUuid);
+    if (!dniType || dniType.uniquenessBehavior !== 'UNIQUE') {
+      throw new Error(bulkPatientImportRowErrorMessage);
+    }
+
+    const generatedTypes = identifierTypes
+      .filter((type) => type.uuid !== peruDniPatientIdentifierTypeUuid)
+      .filter((type) => type.isPrimary || type.required)
+      .sort((left, right) => Number(right.isPrimary) - Number(left.isPrimary) || left.uuid.localeCompare(right.uuid));
+    if ([...generatedTypes, dniType].filter((identifierType) => identifierType.isPrimary).length !== 1) {
+      throw new Error(bulkPatientImportRowErrorMessage);
+    }
+    const plans = generatedTypes.map((identifierType) => {
+      const source = identifierType.identifierSources?.find(
+        (candidate) => candidate.autoGenerationOption?.automaticGenerationEnabled,
+      );
+      if (!source) {
+        throw new Error(bulkPatientImportRowErrorMessage);
+      }
+      return {
+        identifierType,
+        locationPayload: getIdentifierLocationPayload(identifierType.uuid, identifierTypes, locationUuid),
+        sourceUuid: source.uuid,
+      };
+    });
+
+    return [
+      ...plans,
+      {
+        identifierType: dniType,
+        locationPayload: getIdentifierLocationPayload(dniType.uuid, identifierTypes, locationUuid),
+      },
+    ];
+  } catch {
+    throw new Error(bulkPatientImportRowErrorMessage);
+  }
+}
+
+async function buildPatientIdentifiers(
+  row: ParsedPatientImportRow,
+  plans: Array<IdentifierPlan>,
+  assertBeforeWrite: () => Promise<void>,
+  signal?: AbortSignal,
 ): Promise<Array<PatientIdentifier>> {
   const identifiers: Array<PatientIdentifier> = [];
 
-  const generatedIdentifierTypes = identifierTypes
-    .filter((type) => type.uuid !== peruDniPatientIdentifierTypeUuid)
-    .filter((type) => type.isPrimary || type.required)
-    .sort((left, right) => Number(right.isPrimary) - Number(left.isPrimary));
-
-  for (const identifierType of generatedIdentifierTypes) {
-    const source =
-      identifierType.identifierSources?.find((source) => source.autoGenerationOption?.automaticGenerationEnabled) ??
-      identifierType.identifierSources?.[0];
-
-    if (!source) {
-      throw new Error(`No generation source is configured for ${identifierType.name}.`);
+  for (const plan of plans) {
+    if (plan.identifierType.uuid === peruDniPatientIdentifierTypeUuid) {
+      identifiers.push({
+        identifier: row.normalized.dni,
+        identifierType: plan.identifierType.uuid,
+        ...plan.locationPayload,
+        preferred: Boolean(plan.identifierType.isPrimary),
+      });
+      continue;
     }
 
-    const generated = await generateIdentifier(source.uuid);
+    if (!plan.sourceUuid) {
+      throw new Error(bulkPatientImportRowErrorMessage);
+    }
+    await assertBeforeWrite();
+    const generated = await generateIdentifier(plan.sourceUuid, signal);
+    if (!generated.ok || typeof generated.data?.identifier !== 'string' || !generated.data.identifier.trim()) {
+      throw new Error(bulkPatientImportRowErrorMessage);
+    }
     identifiers.push({
       identifier: generated.data.identifier,
-      identifierType: identifierType.uuid,
-      ...getIdentifierLocationPayload(identifierType.uuid, identifierTypes, locationUuid),
-      preferred: identifierType.isPrimary,
+      identifierType: plan.identifierType.uuid,
+      ...plan.locationPayload,
+      preferred: plan.identifierType.isPrimary,
     });
   }
-
-  identifiers.push({
-    identifier: row.normalized.dni,
-    identifierType: peruDniPatientIdentifierTypeUuid,
-    ...getIdentifierLocationPayload(peruDniPatientIdentifierTypeUuid, identifierTypes, locationUuid),
-    preferred: !identifiers.length,
-  });
 
   return identifiers;
 }
@@ -403,6 +610,7 @@ function buildPatientPayload(
   row: ParsedPatientImportRow,
   identifiers: Array<PatientIdentifier>,
   patientUuid: string,
+  domicilioTarget: BulkPatientImportRowOptions['domicilioTarget'],
 ): Patient {
   return {
     uuid: patientUuid,
@@ -425,7 +633,7 @@ function buildPatientPayload(
       addresses: row.normalized.domicilio
         ? [
             {
-              address1: row.normalized.domicilio,
+              [domicilioTarget]: row.normalized.domicilio,
               preferred: true,
             },
           ]
@@ -433,6 +641,163 @@ function buildPatientPayload(
       dead: false,
     },
   } as Patient;
+}
+
+function assertImportableRow(row: ParsedPatientImportRow) {
+  if (row.errors.length || !row.normalized.dni || !row.normalized.birthdate || !row.normalized.gender) {
+    throw new Error(bulkPatientImportRowErrorMessage);
+  }
+}
+
+function requireDeterministicPatientUuid(row: ParsedPatientImportRow): string {
+  if (
+    !row.patientUuid ||
+    !/^[a-f0-9]{8}-[a-f0-9]{4}-5[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(row.patientUuid)
+  ) {
+    throw new Error(bulkPatientImportRowErrorMessage);
+  }
+  return row.patientUuid;
+}
+
+async function inspectExistingPatient(
+  row: ParsedPatientImportRow,
+  domicilioTarget: BulkPatientImportRowOptions['domicilioTarget'],
+  identifierPlans: Array<IdentifierPlan>,
+  phase: 'before-create' | 'after-create',
+  expectedIdentifiers?: Array<PatientIdentifier>,
+  signal?: AbortSignal,
+): Promise<'ready' | 'reconciled'> {
+  const requestSignal = withRequestTimeout(signal, 15_000);
+  const [matches, patient] = await Promise.all([
+    searchLocalIdentityByDocument(
+      row.normalized.dni,
+      undefined,
+      {
+        patientIdentifierTypeUuid: peruDniPatientIdentifierTypeUuid,
+        personDocumentTypeConceptUuid: documentTypeConceptUuids.dni,
+      },
+      { requireFreshNetwork: true, signal: requestSignal },
+    ),
+    fetchFreshPatientIdentityByUuid(requireDeterministicPatientUuid(row), requestSignal),
+  ]);
+
+  if (phase === 'before-create' && matches.length === 0 && patient === null) {
+    return 'ready';
+  }
+
+  if (
+    matches.length === 1 &&
+    matches[0].kind === 'patient' &&
+    matches[0].uuid === row.patientUuid &&
+    matches[0].identifier === row.normalized.dni &&
+    matches[0].identifierTypeUuid === peruDniPatientIdentifierTypeUuid &&
+    patient !== null &&
+    isExactImportedPatient(row, patient, domicilioTarget, identifierPlans, expectedIdentifiers)
+  ) {
+    return 'reconciled';
+  }
+
+  throw new Error(bulkPatientImportRowErrorMessage);
+}
+
+function isExactImportedPatient(
+  row: ParsedPatientImportRow,
+  patient: FreshPatientIdentity,
+  domicilioTarget: BulkPatientImportRowOptions['domicilioTarget'],
+  identifierPlans: Array<IdentifierPlan>,
+  expectedIdentifiers?: Array<PatientIdentifier>,
+) {
+  const person = patient.person;
+  if (
+    patient.voided ||
+    patient.uuid !== row.patientUuid ||
+    !person ||
+    person.voided ||
+    person.uuid !== row.patientUuid ||
+    person.gender !== row.normalized.gender ||
+    person.birthdateEstimated !== false ||
+    person.dead !== false ||
+    (person.attributes ?? []).some((attribute) => !attribute.voided) ||
+    getResponseCalendarDate(person.birthdate) !== row.normalized.birthdate
+  ) {
+    return false;
+  }
+
+  const activeIdentifiers = (patient.identifiers ?? []).filter((identifier) => !identifier.voided);
+  if (activeIdentifiers.length !== identifierPlans.length) {
+    return false;
+  }
+
+  for (const plan of identifierPlans) {
+    const matchingIdentifiers = activeIdentifiers.filter(
+      (identifier) => identifier.identifierType?.uuid === plan.identifierType.uuid,
+    );
+    const identifier = matchingIdentifiers[0];
+    const expectedIdentifier = expectedIdentifiers?.find(
+      (candidate) => candidate.identifierType === plan.identifierType.uuid,
+    );
+    const expectedLocation = plan.locationPayload.location;
+
+    if (
+      matchingIdentifiers.length !== 1 ||
+      !identifier?.identifier?.trim() ||
+      identifier.preferred !== Boolean(plan.identifierType.isPrimary) ||
+      getResponseIdentifierLocation(identifier.location) !== (expectedLocation ?? '') ||
+      (plan.identifierType.uuid === peruDniPatientIdentifierTypeUuid && identifier.identifier !== row.normalized.dni) ||
+      (expectedIdentifier && identifier.identifier !== expectedIdentifier.identifier)
+    ) {
+      return false;
+    }
+  }
+
+  const activeNames = (person.names ?? []).filter((name) => !name.voided);
+  if (
+    activeNames.length !== 1 ||
+    !activeNames[0].preferred ||
+    (activeNames[0].givenName ?? '') !== row.normalized.givenName ||
+    (activeNames[0].middleName ?? '') !== row.normalized.middleName ||
+    (activeNames[0].familyName ?? '') !== row.normalized.familyName ||
+    (activeNames[0].familyName2 ?? '') !== row.normalized.familyName2
+  ) {
+    return false;
+  }
+
+  const activeAddresses = (person.addresses ?? []).filter((address) => !address.voided);
+  if (!row.normalized.domicilio) {
+    return activeAddresses.length === 0;
+  }
+
+  return (
+    activeAddresses.length === 1 &&
+    activeAddresses[0].preferred === true &&
+    (activeAddresses[0][domicilioTarget] ?? '') === row.normalized.domicilio
+  );
+}
+
+function getResponseIdentifierLocation(value: NonNullable<FreshPatientIdentity['identifiers']>[number]['location']) {
+  if (typeof value === 'string') {
+    return value;
+  }
+  return value?.uuid ?? '';
+}
+
+function getResponseCalendarDate(value?: string) {
+  return /^(\d{4}-\d{2}-\d{2})(?:T.*)?$/.exec(value ?? '')?.[1] ?? '';
+}
+
+function rowContainsAnyValue(row: Row) {
+  let containsValue = false;
+  row.eachCell({ includeEmpty: false }, (cell) => {
+    if (cell.value !== null && cell.value !== undefined && String(cell.value).trim() !== '') {
+      containsValue = true;
+    }
+  });
+  return containsValue;
+}
+
+function withRequestTimeout(signal: AbortSignal | undefined, milliseconds: number) {
+  const timeoutSignal = AbortSignal.timeout(milliseconds);
+  return signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
 }
 
 function validateImportedName(
@@ -550,7 +915,7 @@ function getCellText(cell): string {
   }
 
   if (value instanceof Date) {
-    return `${String(value.getDate()).padStart(2, '0')}/${String(value.getMonth() + 1).padStart(2, '0')}/${value.getFullYear()}`;
+    return `${String(value.getUTCDate()).padStart(2, '0')}/${String(value.getUTCMonth() + 1).padStart(2, '0')}/${value.getUTCFullYear()}`;
   }
 
   if (typeof value === 'object' && 'text' in value) {
@@ -584,4 +949,9 @@ function sanitizeSpreadsheetText(value: string) {
   }
 
   return value;
+}
+
+async function calculateSha256(bytes: ArrayBuffer): Promise<string> {
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }

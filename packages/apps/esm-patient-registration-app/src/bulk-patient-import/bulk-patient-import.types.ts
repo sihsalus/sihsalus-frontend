@@ -12,7 +12,16 @@ export const santaClotildeHeaders = [
 
 export type SantaClotildeHeader = (typeof santaClotildeHeaders)[number];
 
-export type ImportStatus = 'pending' | 'valid' | 'warning' | 'error' | 'creating' | 'created' | 'failed' | 'skipped';
+export type ImportStatus =
+  | 'pending'
+  | 'valid'
+  | 'warning'
+  | 'error'
+  | 'creating'
+  | 'created'
+  | 'reconciled'
+  | 'failed'
+  | 'skipped';
 
 export interface ParsedPatientImportRow {
   id: string;
@@ -37,11 +46,26 @@ export interface ParsedPatientImportRow {
   importMessage?: string;
 }
 
+export interface PatientImportManifest {
+  schemaVersion: 1;
+  fileName: string;
+  fileSize: number;
+  fileSha256: string;
+  rows: Array<ParsedPatientImportRow>;
+}
+
+export interface PatientImportRowResult {
+  patientUuid: string;
+  outcome: 'created' | 'reconciled';
+}
+
 export interface ImportSummary {
   total: number;
   valid: number;
   warnings: number;
   errors: number;
   created: number;
+  reconciled: number;
   failed: number;
+  skipped: number;
 }

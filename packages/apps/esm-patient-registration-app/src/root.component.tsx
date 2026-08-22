@@ -3,9 +3,11 @@ import { ExtensionSlot, useConnectivity, useSession } from '@openmrs/esm-framewo
 import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
 import classNames from 'classnames';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import useSWRImmutable from 'swr/immutable';
 import BulkPatientImport from './bulk-patient-import/bulk-patient-import.component';
+import { moduleName } from './constants';
 import {
   fetchAddressTemplate,
   fetchAllRelationshipTypes,
@@ -21,6 +23,7 @@ const registerPatientPrivilege = 'app:opciones.registrarPaciente';
 const bulkPatientImportPrivilege = 'Manage Patients';
 
 export default function Root() {
+  const { t } = useTranslation(moduleName);
   const isOnline = useConnectivity();
   const currentSession = useSession();
   const {
@@ -93,7 +96,10 @@ export default function Root() {
                   element={
                     <RequirePrivilege
                       privilege={bulkPatientImportPrivilege}
-                      description="Necesita permisos de administración de pacientes para realizar una importación masiva."
+                      description={t(
+                        'bulkPatientImportPrivilegeRequired',
+                        'Patient administration permission is required to run a bulk import.',
+                      )}
                     >
                       <BulkPatientImport isOffline={!isOnline} />
                     </RequirePrivilege>

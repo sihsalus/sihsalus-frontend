@@ -29,6 +29,7 @@ const approvedConfig: BulkPatientImportConfig = {
   approvedUserUuid: '11111111-1111-4111-8111-111111111111',
   approvedLocationUuid: '22222222-2222-4222-8222-222222222222',
   domicilioTarget: 'address4',
+    maxRows: 250,
 };
 
 function setNavigatorLocks(lockManager?: LockManager) {

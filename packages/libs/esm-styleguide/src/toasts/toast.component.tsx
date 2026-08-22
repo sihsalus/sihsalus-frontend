@@ -1,9 +1,13 @@
 /** @module @category UI */
 
-import { ActionableNotification, Button, Modal } from '@carbon/react';
+import { ActionableNotification, Button } from '@carbon/react';
 import { getCoreTranslation } from '@openmrs/esm-translations';
 import React, { useCallback, useState } from 'react';
 import styles from './toast.module.scss';
+import {
+  NotificationDetailsModal,
+  type NotificationDetailsSection,
+} from './notification-details.modal';
 
 const toastPreviewCharacterLimit = 160;
 
@@ -29,6 +33,7 @@ export interface ToastProps {
 
 export interface ToastDescriptor {
   description: React.ReactNode;
+  details?: Array<NotificationDetailsSection>;
   onActionButtonClick?: () => void;
   actionButtonLabel?: string;
   kind?: ToastType;
@@ -43,7 +48,7 @@ export interface ToastNotificationMeta extends ToastDescriptor {
 export type ToastType = 'error' | 'info' | 'info-square' | 'success' | 'warning' | 'warning-alt';
 
 export const Toast: React.FC<ToastProps> = ({ toast, closeToast }) => {
-  const { description, kind, critical, title, actionButtonLabel, onActionButtonClick = () => {} } = toast;
+  const { description, details, kind, critical, title, actionButtonLabel, onActionButtonClick = () => {} } = toast;
   const [showDetails, setShowDetails] = useState(false);
   const { isTruncated, preview } = getToastPreview(description);
   const handleActionClick = useCallback(() => {
@@ -74,16 +79,14 @@ export const Toast: React.FC<ToastProps> = ({ toast, closeToast }) => {
         onClose={closeToast}
       />
       {isTruncated && showDetails ? (
-        <Modal
+        <NotificationDetailsModal
+          description={description}
+          sections={details}
+          kind={kind}
           open
-          passiveModal
-          closeButtonLabel={getCoreTranslation('close', 'Close')}
-          modalHeading={title || getCoreTranslation('additionalDetails', 'Additional details')}
-          onRequestClose={() => setShowDetails(false)}
-          size="sm"
-        >
-          <div className={styles.fullDescription}>{description}</div>
-        </Modal>
+          title={title || getCoreTranslation('additionalDetails', 'Additional details')}
+          onClose={() => setShowDetails(false)}
+        />
       ) : null}
     </div>
   );

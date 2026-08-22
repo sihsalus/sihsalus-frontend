@@ -1,10 +1,14 @@
 /** @module @category UI */
 
-import { ActionableNotification, Button, Modal } from '@carbon/react';
+import { ActionableNotification, Button } from '@carbon/react';
 import { getCoreTranslation } from '@openmrs/esm-translations';
 import classnames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './snackbar.module.scss';
+import {
+  NotificationDetailsModal,
+  type NotificationDetailsSection,
+} from '../toasts/notification-details.modal';
 
 // Design documentation for Snackbars https://zeroheight.com/23a080e38/p/683580-notifications/t/468baf
 export interface SnackbarProps {
@@ -21,6 +25,7 @@ export interface SnackbarDescriptor {
   subtitle?: React.ReactNode;
   timeoutInMs?: number;
   autoClose?: boolean;
+  details?: Array<NotificationDetailsSection>;
   title: string;
 }
 
@@ -54,6 +59,7 @@ export const Snackbar: React.FC<SnackbarProps> = ({ snackbar, closeSnackbar: rem
     subtitle = '',
     timeoutInMs,
     autoClose = true,
+    details,
     title,
     id,
     ...props
@@ -145,16 +151,14 @@ export const Snackbar: React.FC<SnackbarProps> = ({ snackbar, closeSnackbar: rem
         {...props}
       />
       {isTruncated && showDetails ? (
-        <Modal
+        <NotificationDetailsModal
+          description={subtitle}
+          sections={details}
+          kind={kind}
           open
-          passiveModal
-          closeButtonLabel={getCoreTranslation('close', 'Close')}
-          modalHeading={title}
-          onRequestClose={() => setShowDetails(false)}
-          size="sm"
-        >
-          <div className={styles.fullDescription}>{subtitle}</div>
-        </Modal>
+          title={title}
+          onClose={() => setShowDetails(false)}
+        />
       ) : null}
     </>
   );

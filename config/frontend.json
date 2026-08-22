@@ -132,6 +132,24 @@
       }
     ]
   },
+  "@sihsalus/esm-patient-banner-app": {
+    "additionalAttributeTypes": [
+      "9b3df0a1-0c58-4f55-9868-9c38f1db1007",
+      "8d8718c2-c2cc-11de-8d13-0010c6dffd0f",
+      "8d871f2a-c2cc-11de-8d13-0010c6dffd0f",
+      "8d871386-c2cc-11de-8d13-0010c6dffd0f",
+      "8d872150-c2cc-11de-8d13-0010c6dffd0f",
+      "8d871afc-c2cc-11de-8d13-0010c6dffd0f",
+      "8d87236c-c2cc-11de-8d13-0010c6dffd0f",
+      "77bbb234-2312-4644-99d0-fa894d438817",
+      "9b3df0a1-0c58-4f55-9868-9c38f1db1001",
+      "9b3df0a1-0c58-4f55-9868-9c38f1db1002",
+      "56188294-b42c-481d-a987-4b495116c580",
+      "374b130f-7457-476f-87b1-f182aa77c434",
+      "9b3df0a1-0c58-4f55-9868-9c38f1db1005",
+      "4a182c6e-9a19-4db8-8042-4bbf3b4308c2"
+    ]
+  },
   "@sihsalus/esm-patient-chart-app": {
     "companionVisitAttributeTypeUuid": "710da0b9-e15f-47f0-827a-e97f1937c81d",
     "visitPersistenceTokenAttributeTypeUuid": "eb8b793b-f259-451d-9c09-53aa0ffd0d3f",
@@ -181,6 +199,50 @@
         "visitTypeUuids": ["b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09"]
       }
     ]
+  },
+  "@sihsalus/esm-patient-registration-app": {
+    "sectionDefinitions": [
+      {
+        "id": "contact",
+        "fields": ["neighborhood"]
+      }
+    ],
+    "fieldDefinitions": [
+      {
+        "id": "neighborhood",
+        "type": "person attribute",
+        "uuid": "4a182c6e-9a19-4db8-8042-4bbf3b4308c2",
+        "label": "Barrio",
+        "showHeading": false,
+        "answerConceptSetUuid": "0fd3e744-6d2c-4cb3-9b7e-1f88899635d9",
+        "codedInputType": "select",
+        "searchable": true,
+        "validation": {
+          "required": false
+        }
+      }
+    ]
+  },
+  "@sihsalus/esm-patient-search-app": {
+    "search": {
+      "searchFilterFields": {
+        "personAttributes": [
+          {
+            "attributeTypeUuid": "a7e3f8c1-2d4b-4f9a-8c6e-1b2d3f4a5c6e",
+            "answerConceptSetUuid": "eae30f8f-02f7-497a-a9e6-5b6516301a6d"
+          },
+          {
+            "attributeTypeUuid": "787f1ea9-1792-45e5-9076-699b1a0638cb",
+            "answerConceptSetUuid": "e47c3ef7-c7e2-4d35-b2fa-934df43df2a5"
+          },
+          {
+            "attributeTypeUuid": "4a182c6e-9a19-4db8-8042-4bbf3b4308c2",
+            "answerConceptSetUuid": "0fd3e744-6d2c-4cb3-9b7e-1f88899635d9",
+            "placeholder": "Seleccione un barrio"
+          }
+        ]
+      }
+    }
   },
   "@openmrs/esm-styleguide": {
     "preferredDateLocale": {

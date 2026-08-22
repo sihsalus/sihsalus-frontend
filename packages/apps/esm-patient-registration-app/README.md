@@ -81,7 +81,6 @@ Contrato canónico de campos territoriales:
 | `stateProvince`  | Provincia                                |
 | `countyDistrict` | Distrito                                 |
 | `cityVillage`    | Centro poblado                           |
-| `address3`       | Barrio                                   |
 | `address4`       | Dirección                                |
 | `address13`      | Path jerárquico interno                  |
 | `address14`      | Código UBIGEO interno                    |
@@ -94,6 +93,7 @@ La terminología sigue la [consulta oficial de centros poblados del INEI](https:
 La persistencia sigue separada:
 
 - La residencia se guarda en `person.addresses` como dirección preferida (`preferred: true`) usando la plantilla de dirección activa del backend.
+- El barrio se guarda como atributo de persona codificado `4a182c6e-9a19-4db8-8042-4bbf3b4308c2`, con respuestas del set `0fd3e744-6d2c-4cb3-9b7e-1f88899635d9`; no se duplica en `address3`.
 - El lugar de nacimiento se guarda como una segunda dirección no preferida (`preferred: false`) dentro de `person.addresses`.
 - Cuando el usuario selecciona una entrada del Address Hierarchy, el `userGeneratedId` del último nivel seleccionado se guarda por detrás como UBIGEO en `address14`. El path validado seleccionado se guarda en `address13` con separador técnico `|` (`PERU|UCAYALI|ATALAYA|RAYMONDI|AGUAJAL`) para detectar cambios manuales sin depender del texto visible. Estos campos no deben agregarse al template visible de dirección en `sihsalus-content`.
 - La dirección de nacimiento se identifica con la marca interna `address15 = SIHSALUS_BIRTH_ADDRESS`. `address15` no debe agregarse al template visible de dirección en `sihsalus-content`; se usa solo para distinguir el tipo de dirección al hidratar edición/FHIR.

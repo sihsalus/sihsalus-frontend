@@ -340,6 +340,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
   // Repetitivo. OpenMRS patientdiagnoses only stores certainty, so SIH.SALUS
   // keeps the exact MINSA type as an obs keyed by the diagnosis concept UUID.
   const [diagnosisTipos, setDiagnosisTipos] = useState<Record<string, string>>({});
+  const [hasDiagnosisChanges, setHasDiagnosisChanges] = useState(false);
 
   const visitNoteFormSchema = useMemo(() => createSchema(t), [t]);
   const encounterObs = (encounter?.obs ?? []) as Array<EncounterFormObs>;
@@ -691,6 +692,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
       setCombinedDiagnoses((combinedDiagnoses) => [...combinedDiagnoses, newDiagnosis]);
       // Default tipo = Presuntivo for every newly added diagnosis
       setDiagnosisTipos((prev) => ({ ...prev, [conceptDiagnosisToAdd.uuid]: diagnosisTypePresuntivoUuid }));
+      setHasDiagnosisChanges(true);
     },
     [createDiagnosis, setValue, clearErrors, diagnosisTypePresuntivoUuid],
   );
@@ -718,9 +720,15 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
         delete next[diagnosisToRemove.diagnosis.coded];
         return next;
       });
+      setHasDiagnosisChanges(true);
     },
     [combinedDiagnoses, selectedPrimaryDiagnoses, selectedSecondaryDiagnoses],
   );
+
+  const handleDiagnosisTypeChange = useCallback((diagnosisUuid: string, value: string) => {
+    setDiagnosisTipos((prev) => ({ ...prev, [diagnosisUuid]: value }));
+    setHasDiagnosisChanges(true);
+  }, []);
 
   const isDiagnosisNotSelected = (diagnosis: Concept) => {
     const isPrimaryDiagnosisSelected = selectedPrimaryDiagnoses.some(
@@ -1028,7 +1036,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
 
   const onError = () => undefined;
 
-  const hasUserUnsavedChanges = Object.keys(dirtyFields).length > 0;
+  const hasUserUnsavedChanges = Object.keys(dirtyFields).length > 0 || hasDiagnosisChanges;
 
   return (
     <Workspace2 title={t('visitNoteWorkspaceTitle', 'Visit note')} hasUnsavedChanges={hasUserUnsavedChanges}>
@@ -1108,8 +1116,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
                         name={`tipo-primary-${index}`}
                         valueSelected={diagnosisTipos[diagnosis.diagnosis.coded] ?? diagnosisTypePresuntivoUuid}
                         onChange={(value) =>
-                          value != null &&
-                          setDiagnosisTipos((prev) => ({ ...prev, [diagnosis.diagnosis.coded]: String(value) }))
+                          value != null && handleDiagnosisTypeChange(diagnosis.diagnosis.coded, String(value))
                         }
                         orientation="horizontal"
                       >
@@ -1147,8 +1154,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
                         name={`tipo-secondary-${index}`}
                         valueSelected={diagnosisTipos[diagnosis.diagnosis.coded] ?? diagnosisTypePresuntivoUuid}
                         onChange={(value) =>
-                          value != null &&
-                          setDiagnosisTipos((prev) => ({ ...prev, [diagnosis.diagnosis.coded]: String(value) }))
+                          value != null && handleDiagnosisTypeChange(diagnosis.diagnosis.coded, String(value))
                         }
                         orientation="horizontal"
                       >

@@ -261,6 +261,22 @@ test('typing in the diagnosis search input triggers a search', async () => {
   expect(screen.getByText(/No diagnosis selected — Enter a diagnosis below/i)).toBeInTheDocument();
 });
 
+test('enables saving when a diagnosis is added without editing another clinical field', async () => {
+  const user = userEvent.setup();
+  mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
+
+  renderVisitNotesForm();
+
+  const submitButton = screen.getByRole('button', { name: /Save and close/i });
+  expect(submitButton).toBeDisabled();
+
+  const searchBox = screen.getByPlaceholderText('Choose a primary diagnosis');
+  await user.type(searchBox, 'Diabetes Mellitus');
+  await user.click(await screen.findByRole('button', { name: 'Diabetes Mellitus' }));
+
+  expect(submitButton).toBeEnabled();
+});
+
 test('formats CIE-10 diagnosis search results and selected tags for readability', async () => {
   const user = userEvent.setup();
 
@@ -665,6 +681,9 @@ test('handles existing diagnoses correctly when in edit mode', async () => {
     encounter: mockEncounter as unknown as EditableVisitNoteEncounter,
   });
 
+  const submitButton = screen.getByRole('button', { name: /Save and close/i });
+  expect(submitButton).toBeDisabled();
+
   // Verify existing diagnosis is displayed
   expect(screen.getByTitle('Diabetes Mellitus')).toBeInTheDocument();
 
@@ -674,6 +693,7 @@ test('handles existing diagnoses correctly when in edit mode', async () => {
 
   // Verify no diagnoses are selected
   expect(screen.getByText(/No diagnosis selected — Enter a diagnosis below/i)).toBeInTheDocument();
+  expect(submitButton).toBeEnabled();
 
   // Add new diagnosis
   const searchBox = screen.getByPlaceholderText('Choose a primary diagnosis');
@@ -683,6 +703,39 @@ test('handles existing diagnoses correctly when in edit mode', async () => {
 
   // Verify new diagnosis is displayed
   expect(screen.getByTitle('Diabetes Mellitus')).toBeInTheDocument();
+});
+
+test('enables saving when only the diagnosis type changes', async () => {
+  const user = userEvent.setup();
+  const mockEncounter = {
+    id: '123',
+    uuid: '123',
+    datetime: '20/03/2024',
+    rawDatetime: '2024-03-20T10:00:00.000Z',
+    diagnoses: [
+      {
+        uuid: '456',
+        diagnosis: {
+          coded: { uuid: '789', display: 'Diabetes Mellitus' },
+        },
+        certainty: 'PROVISIONAL',
+        rank: 1,
+        display: 'Diabetes Mellitus',
+      },
+    ],
+  };
+
+  renderVisitNotesForm({
+    formContext: 'editing',
+    encounter: mockEncounter as unknown as EditableVisitNoteEncounter,
+  });
+
+  const submitButton = screen.getByRole('button', { name: /Save and close/i });
+  expect(submitButton).toBeDisabled();
+
+  await user.click(screen.getByRole('radio', { name: /D - Definitivo/i }));
+
+  expect(submitButton).toBeEnabled();
 });
 
 test('allows saving visit note without primary diagnosis when isPrimaryDiagnosisRequired is false', async () => {

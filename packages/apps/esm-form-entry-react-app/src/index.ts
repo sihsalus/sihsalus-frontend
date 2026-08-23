@@ -4,24 +4,36 @@ import {
   getAsyncLifecycle,
   messageOmrsServiceWorker,
   restBaseUrl,
-} from '@openmrs/esm-framework';
+} from "@openmrs/esm-framework";
 
-import { configSchema } from './config-schema';
-import { setupDynamicOfflineFormDataHandler, setupStaticDataOfflinePrecaching } from './offline/caching';
+import { configSchema } from "./config-schema";
+import {
+  setupDynamicOfflineFormDataHandler,
+  setupStaticDataOfflinePrecaching,
+} from "./offline/caching";
 
-const moduleName = '@sihsalus/esm-form-entry-react-app';
+const moduleName = "@sihsalus/esm-form-entry-react-app";
 
 const options = {
-  featureName: 'form-entry-react',
+  featureName: "form-entry-react",
   moduleName,
 };
 
-export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
+export const importTranslation = require.context(
+  "../translations",
+  false,
+  /.json$/,
+  "lazy",
+);
 
-const startupKey = Symbol.for('sihsalus.esm-form-entry-react-app.startup-complete');
+const startupKey = Symbol.for(
+  "sihsalus.esm-form-entry-react-app.startup-complete",
+);
 
 export function startupApp() {
-  const globalScope = globalThis as typeof globalThis & { [startupKey]?: boolean };
+  const globalScope = globalThis as typeof globalThis & {
+    [startupKey]?: boolean;
+  };
   if (globalScope[startupKey]) {
     return;
   }
@@ -32,40 +44,43 @@ export function startupApp() {
   setupStaticDataOfflinePrecaching();
   setupDynamicOfflineFormDataHandler();
   void messageOmrsServiceWorker({
-    type: 'registerDynamicRoute',
+    type: "registerDynamicRoute",
     pattern: `.+${fhirBaseUrl}/Observation.+`,
   });
   void messageOmrsServiceWorker({
-    type: 'registerDynamicRoute',
+    type: "registerDynamicRoute",
     pattern: `.+${restBaseUrl}/obs.+`,
   });
   void messageOmrsServiceWorker({
-    type: 'registerDynamicRoute',
+    type: "registerDynamicRoute",
     pattern: `.+${restBaseUrl}/session.*`,
   });
   void messageOmrsServiceWorker({
-    type: 'registerDynamicRoute',
+    type: "registerDynamicRoute",
     pattern: `.+${restBaseUrl}/provider.*`,
   });
   void messageOmrsServiceWorker({
-    type: 'registerDynamicRoute',
+    type: "registerDynamicRoute",
     pattern: `.+${restBaseUrl}/location.*`,
   });
   void messageOmrsServiceWorker({
-    type: 'registerDynamicRoute',
+    type: "registerDynamicRoute",
     pattern: `.+${restBaseUrl}/person.*`,
   });
   void messageOmrsServiceWorker({
-    type: 'registerDynamicRoute',
+    type: "registerDynamicRoute",
     pattern: `.+${restBaseUrl}/form.*`,
   });
   void messageOmrsServiceWorker({
-    type: 'registerDynamicRoute',
+    type: "registerDynamicRoute",
     pattern: `.+${restBaseUrl}/o3/forms.*`,
   });
 }
 
-export const formWidget = getAsyncLifecycle(() => import('./form-renderer/form-renderer.component'), options);
+export const formWidget = getAsyncLifecycle(
+  () => import("./form-renderer/form-renderer.component"),
+  options,
+);
 
 /**
  * DO NOT REMOVE THIS COMMENT
@@ -86,6 +101,8 @@ export const formWidget = getAsyncLifecycle(() => import('./form-renderer/form-r
  * t('deleteQuestion', 'Delete question');
  * t('deleteQuestionConfirmation', 'Are you sure you want to delete this question?');
  * t('deleteQuestionExplainerText', 'This action cannot be undone.');
+ * t('errorLoadingEncounter', 'The existing clinical record could not be loaded');
+ * t('errorLoadingEncounterDescription', 'This form cannot be edited or saved. Close it and try again.');
  * t('errorLoadingFormSchema', 'Error loading form schema');
  * t('errorLoadingInitialValues', 'Error loading initial values');
  * t('errorRenderingField', 'Error rendering field');

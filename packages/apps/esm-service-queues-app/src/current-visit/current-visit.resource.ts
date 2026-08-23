@@ -1,28 +1,30 @@
-import { openmrsFetch, restBaseUrl, type Visit } from '@openmrs/esm-framework';
-import useSWR from 'swr';
+import { openmrsFetch, restBaseUrl, type Visit } from "@openmrs/esm-framework";
+import useSWR from "swr";
 
-import { type ObsMetaInfo } from '../types/index';
+import { type ObsMetaInfo } from "../types/index";
 
-import { type ConceptMetadata } from './hooks/useVitalsConceptMetadata';
+import { type ConceptMetadata } from "./hooks/useVitalsConceptMetadata";
 
 export function useVisit(visitUuid?: string) {
   const customRepresentation =
-    'custom:(uuid,encounters:(uuid,encounterDatetime,' +
+    "custom:(uuid,location:(uuid,display),encounters:(uuid,encounterDatetime," +
     // Use default representation for orders to safely include subclass-specific fields (e.g., DrugOrder)
     // without requesting properties that are not present on other subclasses (e.g., TestOrder).
-    'orders,' +
-    'obs:(uuid,concept:(uuid,display,conceptClass:(uuid,display)),' +
-    'display,groupMembers:(uuid,concept:(uuid,display),' +
-    'value:(uuid,display)),value),encounterType:(uuid,display),' +
-    'encounterProviders:(uuid,display,encounterRole:(uuid,display),' +
-    'provider:(uuid,person:(uuid,display)))),visitType:(uuid,name,display),startDatetime';
+    "orders," +
+    "diagnoses:(uuid,display,certainty,rank,voided,diagnosis:(coded:(uuid,display)))," +
+    "obs:(uuid,obsDatetime,voided,formFieldNamespace,formFieldPath," +
+    "concept:(uuid,display,conceptClass:(uuid,display))," +
+    "display,groupMembers:(uuid,concept:(uuid,display)," +
+    "value:(uuid,display)),value),encounterType:(uuid,display)," +
+    "encounterProviders:(uuid,display,encounterRole:(uuid,display)," +
+    "provider:(uuid,person:(uuid,display)))),visitType:(uuid,name,display),startDatetime,stopDatetime,patient:(uuid))";
 
   const apiUrl = `${restBaseUrl}/visit/${visitUuid}?v=${customRepresentation}`;
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: Visit }, Error>(
-    visitUuid ? apiUrl : null,
-    openmrsFetch,
-  );
+  const { data, error, isLoading, isValidating, mutate } = useSWR<
+    { data: Visit },
+    Error
+  >(visitUuid ? apiUrl : null, openmrsFetch);
 
   return {
     visit: data ? data.data : null,
@@ -43,35 +45,43 @@ export function calculateBMI(weight: number, height: number): number {
   }
 }
 
-export function assessValue(value: number, range: ObsMetaInfo): ObservationInterpretation {
+export function assessValue(
+  value: number,
+  range: ObsMetaInfo,
+): ObservationInterpretation {
   if (range?.hiCritical && value >= range.hiCritical) {
-    return 'critically_high';
+    return "critically_high";
   }
 
   if (range?.hiAbsolute && value >= range.hiAbsolute) {
-    return 'critically_high';
+    return "critically_high";
   }
 
   if (range?.hiNormal && value > range.hiNormal) {
-    return 'high';
+    return "high";
   }
 
   if (range?.lowCritical && value <= range.lowCritical) {
-    return 'critically_low';
+    return "critically_low";
   }
 
   if (range?.lowAbsolute && value <= range.lowAbsolute) {
-    return 'critically_low';
+    return "critically_low";
   }
 
   if (range?.lowNormal && value < range.lowNormal) {
-    return 'low';
+    return "low";
   }
 
-  return 'normal';
+  return "normal";
 }
 
-export type ObservationInterpretation = 'critically_low' | 'critically_high' | 'high' | 'low' | 'normal';
+export type ObservationInterpretation =
+  | "critically_low"
+  | "critically_high"
+  | "high"
+  | "low"
+  | "normal";
 
 export function getReferenceRangesForConcept(
   conceptUuid: string,

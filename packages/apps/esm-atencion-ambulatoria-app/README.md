@@ -6,12 +6,12 @@ Microfrontend de atención ambulatoria y consulta externa para SIH Salus, una di
 
 Los permisos de lectura protegen los puntos de entrada y mantienen visibles los datos clínicos. Los permisos de edición ocultan las acciones de registro o modificación cuando el usuario solo puede consultar.
 
-| Superficie                                | Lectura / entrada                  | Modificación                                                                   |
-| ----------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------ |
-| Consulta externa e historia médica        | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar`                                      |
-| Diagnóstico CIE-10 desde Consulta Externa | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.resumenConsulta` |
-| Historia social                           | `app:hoja.clinica.historiaSocial`  | `app:hoja.clinica.historiaSocial.editar`                                       |
-| Prescripción desde el plan de tratamiento | Entrada por Consulta Externa       | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.ordenes.editar`  |
+| Superficie                                | Lectura / entrada                  | Modificación                                                                          |
+| ----------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------- |
+| Consulta externa e historia médica        | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar`                                             |
+| Diagnóstico y plan desde Consulta Externa | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.resumenConsulta.editar` |
+| Historia social                           | `app:hoja.clinica.historiaSocial`  | `app:hoja.clinica.historiaSocial.editar`                                              |
+| Prescripción desde el plan de tratamiento | Entrada por Consulta Externa       | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.ordenes.editar`         |
 
 En la navegación normal, los guards se acumulan: primero se entra al dashboard con lectura y después se habilita la acción con edición. Los workspaces y modales registrados declaran directamente el privilegio de edición, sin inferir el permiso base; OpenMRS no implementa herencia padre/hijo por el nombre del privilegio.
 
@@ -34,9 +34,12 @@ Con `showSisFinancingWarning: true` (apagada por defecto), el dashboard de consu
 - Revisar que `conditionConceptClassUuid`, `conditionConceptSets` y `conditionFreeTextFallbackConceptUuid` resuelvan conceptos válidos para antecedentes y diagnósticos.
 - Validar conceptos de anamnesis compartidos desde `ANAMNESIS_DEFAULT_CONCEPT_UUIDS` y los conceptos locales de diagnóstico, tratamiento, financiador, pertenencia étnica y referencia/contrarreferencia.
 - Confirmar que los datos de triaje provengan del encounter type correcto y no se mezclen con vitales de otros flujos.
-- Documentar qué formularios de consulta externa crean encounter nuevo y cuáles deben editar el encounter clínico actual.
 
 Los valores de `formsList` para consulta externa usan los nombres estables publicados por content (`CE-001-CONSULTA EXTERNA`, `CE-ANAM-001-ANAMNESIS`, `CE-SOAP-001-NOTA SOAP` y `CE-REF-001-REFERENCIA-CONTRARREFERENCIA`). No deben reemplazarse por los UUID de los archivos de esquema, porque esos UUID pueden variar entre entornos.
+
+Anamnesis, SOAP y referencia se abren únicamente con una visita activa cuyo tipo coincide con `visitTypes.ambulatory`; el launcher resuelve el nombre estable a la versión publicada y adjunta explícitamente esa visita. Anamnesis y SOAP admiten como máximo un encounter del mismo formulario por visita: si existe uno se edita y si hay más de uno el flujo se bloquea para no escoger silenciosamente. Una referencia es un evento repetible y cada apertura crea un encounter nuevo de `encounterTypes.referralCounterReferral`, siempre dentro de la visita ambulatoria verificada.
+
+Diagnóstico y Plan abren el resumen estructurado nativo `visit-notes-form-workspace`, no el formulario histórico CE-001. Consulta Externa exige primero una visita activa de `visitTypes.ambulatory` y entrega al workspace el paciente y esa visita verificados. La resolución canónica de crear, editar o bloquear resúmenes duplicados pertenece al propio workspace, de modo que todos sus puntos de entrada aplican la misma regla; las prescripciones permanecen en Order Basket como una acción separada.
 
 ## TODO QA/QLTY
 

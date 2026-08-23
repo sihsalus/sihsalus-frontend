@@ -1,5 +1,7 @@
 {
+  "activeProviderRequired": "An active clinical provider is required to save this visit note.",
   "activeVisitLocationRequired": "An active visit with an operational UPSS is required.",
+  "activeVisitRequired": "An active visit is required to save this visit note.",
   "add": "Add",
   "addImage": "Add image",
   "addVisitNote": "Add a visit note",
@@ -91,10 +93,17 @@
   "subjectivePlaceholder": "Symptoms and relevant illness story",
   "visitDate": "Visit date",
   "visitNote": "Visit note",
+  "visitNoteAttachmentSaveWarning": "The visit note was saved, but one or more attachments could not be uploaded.",
   "visitNoteNowVisible": "It is now visible on the Encounters page",
   "visitNotes": "Visit notes",
   "visitNoteSaved": "Visit note saved",
   "visitNoteSaveError": "Error saving visit note",
+  "visitNoteSaveRejected": "The visit note could not be saved.",
+  "visitNoteVisitMismatch": "This visit note belongs to a different visit and cannot be edited from the active visit.",
   "visitNoteWorkspaceTitle": "Visit Note",
+  "resolvingVisitNote": "Checking the active visit summary...",
+  "visitNoteResolutionError": "The visit summary cannot be opened",
+  "visitNoteDuplicateEncounterError": "More than one summary exists for the active visit. Resolve the duplicate before editing.",
+  "visitNoteVerificationError": "The active visit summary could not be verified. Reload and try again.",
   "workPlan": "Orders and continuity of care"
 }

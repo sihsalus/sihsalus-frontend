@@ -1,6 +1,6 @@
 <div id="top"></div>
 
-:wave: *New to O3? Be sure to review the [OpenMRS 3 Frontend Developer Documentation](https://o3-docs.openmrs.org/).* :teacher:
+:wave: _New to O3? Be sure to review the [OpenMRS 3 Frontend Developer Documentation](https://o3-docs.openmrs.org/)._ :teacher:
 
 # OpenMRS ESM Form Engine Library
 
@@ -35,6 +35,13 @@ Key features of the Form Engine include:
   - **View Mode** - This mode allows the user to view data that has already been entered into the form. The form is rendered in a read-only mode.
   - **Embedded View** - This mode is a condensed version of the `view mode` without the section headers and form actions. It can be used to display entered form data within a widget.
 
+### Fail-closed encounter editing
+
+An edit session must load the encounter selected by `encounterUUID` before rendering editable values or accepting a
+submission. If that load is forbidden or fails, the engine shows a generic error without backend details and removes
+the submission workflow. The encounter processor independently rejects edit submissions that do not contain a loaded
+encounter UUID, so a failed update cannot degrade into creation of a second encounter.
+
 ## Documentation
 
 Read the full docs in the OpenMRS Wiki [here](https://openmrs.atlassian.net/wiki/spaces/projects/pages/68747273/O3+Form+Docs).
@@ -50,7 +57,7 @@ You can read more about translations in the [OpenMRS Wiki](https://openmrs.atlas
 
 ## Getting started
 
-*NB: The Form Engine is a React library, not a standalone [O3 frontend module](https://openmrs.atlassian.net/wiki/spaces/docs/pages/151093806/Overview+of+Frontend+Modules). It can only be consumed by bundling it within a frontend module that incorporates it within a UI workflow.*
+_NB: The Form Engine is a React library, not a standalone [O3 frontend module](https://openmrs.atlassian.net/wiki/spaces/docs/pages/151093806/Overview+of+Frontend+Modules). It can only be consumed by bundling it within a frontend module that incorporates it within a UI workflow._
 
 ### Prerequisites
 
@@ -184,7 +191,7 @@ To use this library as the default form engine in your O3 instance, you will nee
 }
 ```
 
-**NB**: *If you are currently using the Angular Form Engine (@openmrs/esm-form-entry-app), you will need to remove it from your importmap and replace it with the Form Engine App (@openmrs/esm-form-engine-app). The two libraries are not compatible.*
+**NB**: _If you are currently using the Angular Form Engine (@openmrs/esm-form-entry-app), you will need to remove it from your importmap and replace it with the Form Engine App (@openmrs/esm-form-engine-app). The two libraries are not compatible._
 
 ### Report an issue
 

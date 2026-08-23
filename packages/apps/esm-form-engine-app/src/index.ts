@@ -1,21 +1,32 @@
-import { defineConfigSchema, getAsyncLifecycle, getConfig } from '@openmrs/esm-framework';
-import { registerExpressionHelper } from '@sihsalus/esm-form-engine-lib';
+import {
+  defineConfigSchema,
+  getAsyncLifecycle,
+  getConfig,
+} from "@openmrs/esm-framework";
+import { registerExpressionHelper } from "@sihsalus/esm-form-engine-lib";
 
-import { type ConfigObject, configSchema } from './config-schema';
+import { type ConfigObject, configSchema } from "./config-schema";
 
-const moduleName = '@openmrs/esm-form-engine-app';
+const moduleName = "@openmrs/esm-form-engine-app";
 
 const options = {
-  featureName: 'form-engine',
+  featureName: "form-engine",
   moduleName,
 };
 
-export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
+export const importTranslation = require.context(
+  "../translations",
+  false,
+  /.json$/,
+  "lazy",
+);
 
-const startupKey = Symbol.for('sihsalus.esm-form-engine-app.startup-complete');
+const startupKey = Symbol.for("sihsalus.esm-form-engine-app.startup-complete");
 
 export async function startupApp() {
-  const globalScope = globalThis as typeof globalThis & { [startupKey]?: boolean };
+  const globalScope = globalThis as typeof globalThis & {
+    [startupKey]?: boolean;
+  };
   if (globalScope[startupKey]) {
     return;
   }
@@ -28,45 +39,51 @@ export async function startupApp() {
     const config = await getConfig<ConfigObject>(moduleName);
     const { phq9Concepts } = config;
 
-    registerExpressionHelper('calcPHQ9Score', (...answers: Array<string | null | undefined>) => {
-      const scoreMap = {
-        [phq9Concepts.notAtAll]: 0,
-        [phq9Concepts.severalDays]: 1,
-        [phq9Concepts.moreThanHalf]: 2,
-        [phq9Concepts.nearlyEveryDay]: 3,
-      };
+    registerExpressionHelper(
+      "calcPHQ9Score",
+      (...answers: Array<string | null | undefined>) => {
+        const scoreMap = {
+          [phq9Concepts.notAtAll]: 0,
+          [phq9Concepts.severalDays]: 1,
+          [phq9Concepts.moreThanHalf]: 2,
+          [phq9Concepts.nearlyEveryDay]: 3,
+        };
 
-      return answers.reduce((sum, answer) => {
-        if (!answer) {
-          return sum;
-        }
+        return answers.reduce((sum, answer) => {
+          if (!answer) {
+            return sum;
+          }
 
-        const score = scoreMap[answer];
-        if (score === undefined) {
-          console.warn(`Unknown PHQ-9 response concept: ${answer}`);
-          return sum;
-        }
+          const score = scoreMap[answer];
+          if (score === undefined) {
+            console.warn(`Unknown PHQ-9 response concept: ${answer}`);
+            return sum;
+          }
 
-        return sum + score;
-      }, 0);
-    });
+          return sum + score;
+        }, 0);
+      },
+    );
   } catch (error) {
-    console.error('Failed to load PHQ-9 config, using defaults:', error);
+    console.error("Failed to load PHQ-9 config, using defaults:", error);
   }
 }
 
-export const formRenderer = getAsyncLifecycle(() => import('./form-renderer/form-renderer.component'), options);
+export const formRenderer = getAsyncLifecycle(
+  () => import("./form-renderer/form-renderer.component"),
+  options,
+);
 
 export const formCollapseToggle = getAsyncLifecycle(
-  () => import('./form-collapse-toggle/form-collapse-toggle.component'),
+  () => import("./form-collapse-toggle/form-collapse-toggle.component"),
   {
-    featureName: 'rfe-form-collapse-toggle',
+    featureName: "rfe-form-collapse-toggle",
     moduleName,
   },
 );
 
 export const deleteQuestionModal = getAsyncLifecycle(
-  () => import('./form-renderer/repeat/delete-question.modal'),
+  () => import("./form-renderer/repeat/delete-question.modal"),
   options,
 );
 
@@ -89,6 +106,8 @@ export const deleteQuestionModal = getAsyncLifecycle(
  * t('deleteQuestion', 'Delete question');
  * t('deleteQuestionConfirmation', 'Are you sure you want to delete this question?');
  * t('deleteQuestionExplainerText', 'This action cannot be undone.');
+ * t('errorLoadingEncounter', 'The existing clinical record could not be loaded');
+ * t('errorLoadingEncounterDescription', 'This form cannot be edited or saved. Close it and try again.');
  * t('errorLoadingFormSchema', 'Error loading form schema');
  * t('errorLoadingInitialValues', 'Error loading initial values');
  * t('errorRenderingField', 'Error rendering field');

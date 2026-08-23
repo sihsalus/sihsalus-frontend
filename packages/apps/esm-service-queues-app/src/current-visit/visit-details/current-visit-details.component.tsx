@@ -4,7 +4,7 @@ import {
   StructuredListHead,
   StructuredListRow,
   StructuredListWrapper,
-} from '@carbon/react';
+} from "@carbon/react";
 import {
   formatTime,
   type OpenmrsResource,
@@ -13,18 +13,23 @@ import {
   useConfig,
   useSession,
   type Visit,
-} from '@openmrs/esm-framework';
-import React, { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+} from "@openmrs/esm-framework";
+import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 
-import { type ConfigObject } from '../../config-schema';
-import { visitNotesPrivilege, vitalsPrivilege } from '../../constants';
-import { type DiagnosisItem, type Encounter, type Note, type Observation } from '../../types/index';
-import styles from '../current-visit.scss';
-import { useVitalsFromObs } from '../hooks/useVitalsConceptMetadata';
+import { type ConfigObject } from "../../config-schema";
+import { visitNotesViewPrivilege, vitalsPrivilege } from "../../constants";
+import {
+  type DiagnosisItem,
+  type Encounter,
+  type Note,
+  type Observation,
+} from "../../types/index";
+import styles from "../current-visit.scss";
+import { useVitalsFromObs } from "../hooks/useVitalsConceptMetadata";
 
-import VisitNote from './visit-note.component';
-import Vitals from './vitals.component';
+import VisitNote from "./visit-note.component";
+import Vitals from "./vitals.component";
 
 interface CurrentVisitProps {
   patientUuid: string;
@@ -33,18 +38,29 @@ interface CurrentVisitProps {
 }
 
 enum visitTypes {
-  CURRENT = 'currentVisit',
-  PAST = 'pastVisit',
+  CURRENT = "currentVisit",
+  PAST = "pastVisit",
 }
 
-const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encounters, visit }) => {
+const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({
+  patientUuid,
+  encounters,
+  visit,
+}) => {
   const { t } = useTranslation();
   const { concepts, visitNoteEncounterTypeUuid } = useConfig<ConfigObject>();
   const session = useSession();
-  const canViewVisitSummary = userHasAccess(visitNotesPrivilege, session?.user);
+  const canViewVisitSummary = userHasAccess(
+    visitNotesViewPrivilege,
+    session?.user,
+  );
   const canViewVitals = userHasAccess(vitalsPrivilege, session?.user);
 
-  const [diagnoses, notes, vitalsToRetrieve]: [Array<DiagnosisItem>, Array<Note>, Array<Encounter>] = useMemo(() => {
+  const [diagnoses, notes, vitalsToRetrieve]: [
+    Array<DiagnosisItem>,
+    Array<Note>,
+    Array<Encounter>,
+  ] = useMemo(() => {
     const notes: Array<Note> = [];
     const vitalsToRetrieve: Array<Encounter> = [];
     const diagnoses: Array<DiagnosisItem> = [];
@@ -53,19 +69,54 @@ const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encount
     encounters?.forEach((enc: Encounter) => {
       // Check for Visit Diagnoses and Notes
       if (enc.encounterType?.uuid === visitNoteEncounterTypeUuid) {
+        const structuredDiagnoses = (enc.diagnoses ?? []).filter(
+          (diagnosis) =>
+            !diagnosis.voided && Boolean(diagnosis.diagnosis?.coded?.uuid),
+        );
+        const diagnosisDisplays = new Set<string>();
+        structuredDiagnoses.forEach((diagnosis) => {
+          const display =
+            diagnosis.display || diagnosis.diagnosis?.coded?.display;
+          if (display && !diagnosisDisplays.has(display)) {
+            diagnosisDisplays.add(display);
+            diagnoses.push({ diagnosis: display });
+          }
+        });
+
         enc.obs?.forEach((obs: Observation) => {
-          if (obs.concept?.uuid === concepts.visitDiagnosesConceptUuid) {
-            const problemList = obs.groupMembers?.find((mem) => mem.concept?.uuid === concepts.problemListConceptUuid);
-            if (problemList?.value?.display) {
+          if (obs.voided) {
+            return;
+          }
+
+          // Legacy grouped diagnoses remain a read-only fallback for encounters
+          // written before EncounterDiagnosis became canonical.
+          if (
+            structuredDiagnoses.length === 0 &&
+            obs.concept?.uuid === concepts.visitDiagnosesConceptUuid
+          ) {
+            const problemList = obs.groupMembers?.find(
+              (mem) => mem.concept?.uuid === concepts.problemListConceptUuid,
+            );
+            if (
+              problemList?.value?.display &&
+              !diagnosisDisplays.has(problemList.value.display)
+            ) {
+              diagnosisDisplays.add(problemList.value.display);
               diagnoses.push({ diagnosis: problemList.value.display });
             }
-          } else if (obs.concept?.uuid === concepts.generalPatientNoteConceptUuid) {
+          } else if (
+            obs.concept?.uuid === concepts.generalPatientNoteConceptUuid &&
+            !obs.formFieldPath &&
+            typeof obs.value === "string" &&
+            obs.value.trim()
+          ) {
             // Putting all notes in a single array.
             notes.push({
-              note: obs.value,
+              note: obs.value.trim(),
               provider: {
-                name: enc.encounterProviders.length ? enc.encounterProviders[0].provider.person.display : '',
-                role: enc.encounterProviders.length ? enc.encounterProviders[0].encounterRole.display : '',
+                name:
+                  enc.encounterProviders?.[0]?.provider?.person?.display ?? "",
+                role: enc.encounterProviders?.[0]?.encounterRole?.display ?? "",
               },
               time: formatTime(parseDate(obs.obsDatetime)),
               concept: obs.concept,
@@ -94,19 +145,31 @@ const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encount
           <StructuredListBody>
             {canViewVisitSummary ? (
               <StructuredListRow className={styles.structuredListRow}>
-                <StructuredListCell>{t('visitNote', 'Visit note')}</StructuredListCell>
                 <StructuredListCell>
-                  <VisitNote notes={notes} diagnoses={diagnoses} patientUuid={patientUuid} />
+                  {t("visitNote", "Visit note")}
+                </StructuredListCell>
+                <StructuredListCell>
+                  <VisitNote
+                    notes={notes}
+                    diagnoses={diagnoses}
+                    patientUuid={patientUuid}
+                    visitContext={visit}
+                  />
                 </StructuredListCell>
               </StructuredListRow>
             ) : null}
 
             {canViewVitals ? (
               <StructuredListRow className={styles.structuredListRow}>
-                <StructuredListCell>{t('vitals', 'Vitals')}</StructuredListCell>
+                <StructuredListCell>{t("vitals", "Vitals")}</StructuredListCell>
                 <StructuredListCell>
-                  {' '}
-                  <Vitals vitals={vitals} patientUuid={patientUuid} visitType={visitTypes.CURRENT} visit={visit} />
+                  {" "}
+                  <Vitals
+                    vitals={vitals}
+                    patientUuid={patientUuid}
+                    visitType={visitTypes.CURRENT}
+                    visit={visit}
+                  />
                 </StructuredListCell>
               </StructuredListRow>
             ) : null}

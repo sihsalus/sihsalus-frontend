@@ -1,7 +1,12 @@
-import { type Location, type OpenmrsResource, type Patient, type Visit } from '@openmrs/esm-framework';
-import type React from 'react';
+import {
+  type Location,
+  type OpenmrsResource,
+  type Patient,
+  type Visit,
+} from "@openmrs/esm-framework";
+import type React from "react";
 
-import { type ColumnConfig } from '../config-schema';
+import { type ColumnConfig } from "../config-schema";
 
 export interface Attribute {
   attributeType: OpenmrsResource;
@@ -76,7 +81,9 @@ export interface Order {
   dateStopped?: Date | null;
   dose: number;
   dosingInstructions: string | null;
-  dosingType?: 'org.openmrs.FreeTextDosingInstructions' | 'org.openmrs.SimpleDosingInstructions';
+  dosingType?:
+    | "org.openmrs.FreeTextDosingInstructions"
+    | "org.openmrs.SimpleDosingInstructions";
   doseUnits: {
     uuid: string;
     display: string;
@@ -153,6 +160,19 @@ export interface Encounter {
     uuid: string;
     display: string;
   };
+  diagnoses?: Array<{
+    uuid: string;
+    display: string;
+    certainty?: string;
+    rank?: number;
+    voided?: boolean;
+    diagnosis?: {
+      coded?: {
+        uuid: string;
+        display: string;
+      };
+    };
+  }>;
   obs: Array<Observation>;
   form: OpenmrsResource;
   patient: OpenmrsResource;
@@ -184,6 +204,9 @@ export interface Observation {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   value: any;
   obsDatetime: string;
+  formFieldNamespace?: string;
+  formFieldPath?: string;
+  voided?: boolean;
 }
 
 export interface PatientVitals {
@@ -231,14 +254,14 @@ export interface ObsMetaInfo {
 }
 
 export type OBSERVATION_INTERPRETATION =
-  | 'NORMAL'
-  | 'HIGH'
-  | 'CRITICALLY_HIGH'
-  | 'OFF_SCALE_HIGH'
-  | 'LOW'
-  | 'CRITICALLY_LOW'
-  | 'OFF_SCALE_LOW'
-  | '--';
+  | "NORMAL"
+  | "HIGH"
+  | "CRITICALLY_HIGH"
+  | "OFF_SCALE_HIGH"
+  | "LOW"
+  | "CRITICALLY_LOW"
+  | "OFF_SCALE_LOW"
+  | "--";
 
 export interface PatientProgram {
   uuid: string;
@@ -363,7 +386,7 @@ export interface Resource {
   id: string;
   name: string;
   resourceType: string;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
   meta?: {
     tag?: Array<{
       code: string;
@@ -486,14 +509,20 @@ export interface QueueEntry {
     appointmentUuid?: string;
     destinationQueueUuid?: string;
     isTriageQueue: boolean;
-    sisState: 'active' | 'inactive' | 'pending' | 'notConsulted' | 'missing' | 'notApplicable';
+    sisState:
+      | "active"
+      | "inactive"
+      | "pending"
+      | "notConsulted"
+      | "missing"
+      | "notApplicable";
     /**
      * False mientras la cobertura del paciente no se pudo leer todavía (carga
      * inicial o error de red). Sin esto, `sisState` cae a `notConsulted` y la
      * cola entera se muestra como "Derivar a Caja".
      */
     isSisStateResolved: boolean;
-    triageState: 'pending' | 'completed' | 'notRequired';
+    triageState: "pending" | "completed" | "notRequired";
   };
 }
 

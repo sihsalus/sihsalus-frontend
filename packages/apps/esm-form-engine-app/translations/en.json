@@ -16,6 +16,8 @@
   "deleteQuestion": "Delete question",
   "deleteQuestionConfirmation": "Are you sure you want to delete this question?",
   "deleteQuestionExplainerText": "This action cannot be undone.",
+  "errorLoadingEncounter": "The existing clinical record could not be loaded",
+  "errorLoadingEncounterDescription": "This form cannot be edited or saved. Close it and try again.",
   "errorLoadingFormSchema": "Error loading form schema",
   "errorLoadingInitialValues": "Error loading initial values",
   "errorRenderingField": "Error rendering field",

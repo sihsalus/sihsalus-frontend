@@ -413,6 +413,7 @@
   "visitFormNotCompleted": "El formulario de consulta no ha sido completado para esta consulta",
   "visitNote": "Resumen de la Consulta",
   "visitNoteForm": "Formulario de resumen de consulta",
+  "openVisitSummary": "Abrir resumen de consulta",
   "visitStartTime": "Hora de inicio de la consulta",
   "visitTabs": "Pestañas de consulta",
   "visitType": "Tipo de atención",

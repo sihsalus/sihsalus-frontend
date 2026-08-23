@@ -116,6 +116,8 @@
   "diagnosis": "Diagnóstico",
   "diagnosisClassification": "Diagnóstico",
   "diagnosisHistory": "Historial de Diagnósticos",
+  "diagnosisRequiresAmbulatoryVisit": "Se requiere una visita ambulatoria",
+  "diagnosisRequiresAmbulatoryVisitSubtitle": "Inicie o seleccione una visita ambulatoria antes de registrar un diagnóstico.",
   "diagnosisOnAdmission": "Diagnóstico al ingreso",
   "diagnosisPriority": "Prioridad",
   "diagnosisTypeDefinitivo": "Definitivo",

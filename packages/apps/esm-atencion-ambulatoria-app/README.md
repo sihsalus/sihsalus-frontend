@@ -6,15 +6,23 @@ Microfrontend de atención ambulatoria y consulta externa para SIH Salus, una di
 
 Los permisos de lectura protegen los puntos de entrada y mantienen visibles los datos clínicos. Los permisos de edición ocultan las acciones de registro o modificación cuando el usuario solo puede consultar.
 
-| Superficie | Lectura / entrada | Modificación |
-| --- | --- | --- |
-| Consulta externa e historia médica | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar` |
-| Historia social | `app:hoja.clinica.historiaSocial` | `app:hoja.clinica.historiaSocial.editar` |
-| Prescripción desde el plan de tratamiento | Entrada por Consulta Externa | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.ordenes.editar` |
+| Superficie                                | Lectura / entrada                  | Modificación                                                                   |
+| ----------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------ |
+| Consulta externa e historia médica        | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar`                                      |
+| Diagnóstico CIE-10 desde Consulta Externa | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.resumenConsulta` |
+| Historia social                           | `app:hoja.clinica.historiaSocial`  | `app:hoja.clinica.historiaSocial.editar`                                       |
+| Prescripción desde el plan de tratamiento | Entrada por Consulta Externa       | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.ordenes.editar`  |
 
 En la navegación normal, los guards se acumulan: primero se entra al dashboard con lectura y después se habilita la acción con edición. Los workspaces y modales registrados declaran directamente el privilegio de edición, sin inferir el permiso base; OpenMRS no implementa herencia padre/hijo por el nombre del privilegio.
 
 Las listas y estados vacíos siguen visibles en modo de solo lectura, pero sin botones de registro. Los controles heredados de antecedentes todavía delegan el bloqueo final al workspace o modal registrado. Estos guards frontend no sustituyen los permisos del backend para leer o guardar encounters, condiciones, observaciones u órdenes.
+
+## Contrato de diagnóstico de Consulta Externa
+
+La acción **Registrar Diagnóstico** abre el workspace de Visit Notes, que persiste diagnósticos CIE-10
+como diagnósticos nativos del encounter. Requiere una visita ambulatoria actual o seleccionada y los
+dos privilegios de modificación indicados en la tabla. `CE-001-CONSULTA EXTERNA` conserva la captura
+del plan y demás datos de consulta, pero no debe volver a capturar diagnósticos mediante observaciones.
 
 ## Advertencia de financiamiento SIS (opcional)
 

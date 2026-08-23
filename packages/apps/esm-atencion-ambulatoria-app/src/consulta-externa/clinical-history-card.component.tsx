@@ -27,7 +27,7 @@ interface ClinicalHistoryCardProps {
   children?: React.ReactNode;
   empty?: boolean;
   emptyDisplayText: string;
-  editPrivilege?: string;
+  editPrivilege?: string | Array<string>;
   error?: unknown;
   isLoading?: boolean;
   isValidating?: boolean;

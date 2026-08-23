@@ -23,8 +23,6 @@
   "errorDescriptionTitle": "",
   "errorLaunchingWorkspace": "Error al iniciar el espacio de trabajo",
   "errorLaunchingWorkspaceSubtitle": "Ocurrió un error inesperado al iniciar el espacio de trabajo.",
-  "errorLoadingEncounter": "No se pudo cargar la atención clínica existente",
-  "errorLoadingEncounterDescription": "Este formulario no se puede editar ni guardar. Ciérrelo y vuelva a intentarlo.",
   "errorLoadingFormSchema": "Error al cargar el esquema del formulario",
   "errorLoadingInitialValues": "Error al cargar los valores iniciales",
   "errorMarkingAsDeceased": "Error al marcar al paciente como fallecido",

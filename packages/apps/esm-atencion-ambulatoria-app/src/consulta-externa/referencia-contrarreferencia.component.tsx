@@ -7,35 +7,25 @@ import {
   StructuredListRow,
   StructuredListWrapper,
   Tag,
-} from "@carbon/react";
-import { formatDate, useConfig } from "@openmrs/esm-framework";
-import React from "react";
-import { useTranslation } from "react-i18next";
-import type { ConfigObject } from "../config-schema";
-import { useConsultaExternaFormLauncher } from "../hooks/useConsultaExternaFormLauncher";
-import { useReferralCounterReferral } from "../hooks/useReferralCounterReferral";
-import { consultaExternaEditPrivilege } from "../utils/constants";
-import ClinicalHistoryCard from "./clinical-history-card.component";
+} from '@carbon/react';
+import { formatDate, useConfig } from '@openmrs/esm-framework';
+import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import type { ConfigObject } from '../config-schema';
+import { useReferralCounterReferral } from '../hooks/useReferralCounterReferral';
+import { consultaExternaEditPrivilege, patientFormEntryWorkspace } from '../utils/constants';
+import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface ReferenciaContraReferenciaProps {
   patientUuid: string;
 }
 
-const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
-  patientUuid,
-}) => {
+const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
 
-  const {
-    entries,
-    isLoading,
-    isValidating,
-    error,
-    mutate,
-    pagination,
-    sourceErrors,
-  } = useReferralCounterReferral(
+  const { entries, isLoading, isValidating, error, mutate, pagination, sourceErrors } = useReferralCounterReferral(
     patientUuid,
     config.encounterTypes?.referralCounterReferral,
     [
@@ -55,27 +45,22 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
     },
   );
 
-  const handleLaunchForm = useConsultaExternaFormLauncher({
-    patientUuid,
-    formIdentifier: config.formsList?.referralForm,
-    encounterTypeUuid: config.encounterTypes?.referralCounterReferral,
-    ambulatoryVisitTypeUuid: config.visitTypes?.ambulatory,
-    mutate,
-    entryMode: "repeatable",
-  });
+  const handleLaunchForm = () => {
+    launchPatientWorkspace(patientFormEntryWorkspace, {
+      mutateForm: mutate,
+      formInfo: {
+        patientUuid,
+        formUuid: config.formsList?.referralForm,
+      },
+    });
+  };
 
   return (
     <ClinicalHistoryCard
-      title={t(
-        "referralHistory",
-        "Historial de Referencias y Contrarreferencias",
-      )}
-      actionLabel={t("addReferral", "Registrar Referencia")}
+      title={t('referralHistory', 'Historial de Referencias y Contrarreferencias')}
+      actionLabel={t('addReferral', 'Registrar Referencia')}
       empty={entries.length === 0}
-      emptyDisplayText={t(
-        "referralsAndCounterReferrals",
-        "referencias y contrarreferencias",
-      )}
+      emptyDisplayText={t('referralsAndCounterReferrals', 'referencias y contrarreferencias')}
       editPrivilege={consultaExternaEditPrivilege}
       error={error}
       isLoading={isLoading}
@@ -93,33 +78,19 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
               key={entry.uuid}
               title={
                 <span>
-                  {formatDate(new Date(entry.encounterDatetime), {
-                    time: true,
-                  })}
-                  {" — "}
+                  {formatDate(new Date(entry.encounterDatetime), { time: true })}
+                  {' — '}
                   <Tag type="outline" size="sm">
-                    {entry.provider ??
-                      t("unknownProvider", "Proveedor desconocido")}
+                    {entry.provider ?? t('unknownProvider', 'Proveedor desconocido')}
                   </Tag>
                   {hasCounterReferral && (
-                    <Tag
-                      type="green"
-                      size="sm"
-                      style={{ marginLeft: "0.5rem" }}
-                    >
-                      {t(
-                        "counterReferralReceived",
-                        "Contrarreferencia recibida",
-                      )}
+                    <Tag type="green" size="sm" style={{ marginLeft: '0.5rem' }}>
+                      {t('counterReferralReceived', 'Contrarreferencia recibida')}
                     </Tag>
                   )}
-                  {entry.source === "interconsultationOrder" && (
-                    <Tag
-                      type="purple"
-                      size="sm"
-                      style={{ marginLeft: "0.5rem" }}
-                    >
-                      {t("interconsultationOrder", "Orden de interconsulta")}
+                  {entry.source === 'interconsultationOrder' && (
+                    <Tag type="purple" size="sm" style={{ marginLeft: '0.5rem' }}>
+                      {t('interconsultationOrder', 'Orden de interconsulta')}
                     </Tag>
                   )}
                 </span>
@@ -128,12 +99,8 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
               <StructuredListWrapper isCondensed>
                 <StructuredListHead>
                   <StructuredListRow head>
-                    <StructuredListCell head>
-                      {t("field", "Campo")}
-                    </StructuredListCell>
-                    <StructuredListCell head>
-                      {t("value", "Valor")}
-                    </StructuredListCell>
+                    <StructuredListCell head>{t('field', 'Campo')}</StructuredListCell>
+                    <StructuredListCell head>{t('value', 'Valor')}</StructuredListCell>
                   </StructuredListRow>
                 </StructuredListHead>
                 <StructuredListBody>
@@ -141,66 +108,50 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
                     <StructuredListRow>
                       <StructuredListCell>
                         <Tag type="purple" size="sm">
-                          {t(
-                            "interconsultationOrder",
-                            "Orden de interconsulta",
-                          )}
+                          {t('interconsultationOrder', 'Orden de interconsulta')}
                         </Tag>
                       </StructuredListCell>
-                      <StructuredListCell>
-                        {entry.interconsultationOrder}
-                      </StructuredListCell>
+                      <StructuredListCell>{entry.interconsultationOrder}</StructuredListCell>
                     </StructuredListRow>
                   )}
                   {entry.referralType && (
                     <StructuredListRow>
                       <StructuredListCell>
                         <Tag type="magenta" size="sm">
-                          {t("referralType", "Tipo de Referencia")}
+                          {t('referralType', 'Tipo de Referencia')}
                         </Tag>
                       </StructuredListCell>
-                      <StructuredListCell>
-                        {entry.referralType}
-                      </StructuredListCell>
+                      <StructuredListCell>{entry.referralType}</StructuredListCell>
                     </StructuredListRow>
                   )}
                   {entry.referralDestination && (
                     <StructuredListRow>
                       <StructuredListCell>
                         <Tag type="blue" size="sm">
-                          {t("referralDestination", "Establecimiento Destino")}
+                          {t('referralDestination', 'Establecimiento Destino')}
                         </Tag>
                       </StructuredListCell>
-                      <StructuredListCell>
-                        {entry.referralDestination}
-                      </StructuredListCell>
+                      <StructuredListCell>{entry.referralDestination}</StructuredListCell>
                     </StructuredListRow>
                   )}
                   {entry.referralReason && (
                     <StructuredListRow>
                       <StructuredListCell>
                         <Tag type="cyan" size="sm">
-                          {t("referralReason", "Motivo de Referencia")}
+                          {t('referralReason', 'Motivo de Referencia')}
                         </Tag>
                       </StructuredListCell>
-                      <StructuredListCell>
-                        {entry.referralReason}
-                      </StructuredListCell>
+                      <StructuredListCell>{entry.referralReason}</StructuredListCell>
                     </StructuredListRow>
                   )}
                   {entry.counterReferralResponse && (
                     <StructuredListRow>
                       <StructuredListCell>
                         <Tag type="green" size="sm">
-                          {t(
-                            "counterReferralResponse",
-                            "Respuesta Contrarreferencia",
-                          )}
+                          {t('counterReferralResponse', 'Respuesta Contrarreferencia')}
                         </Tag>
                       </StructuredListCell>
-                      <StructuredListCell>
-                        {entry.counterReferralResponse}
-                      </StructuredListCell>
+                      <StructuredListCell>{entry.counterReferralResponse}</StructuredListCell>
                     </StructuredListRow>
                   )}
                   {!entry.referralType &&
@@ -210,10 +161,7 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
                     !entry.interconsultationOrder && (
                       <StructuredListRow>
                         <StructuredListCell>
-                          {t(
-                            "referralFormPending",
-                            "Datos pendientes — formulario de referencia no configurado aún.",
-                          )}
+                          {t('referralFormPending', 'Datos pendientes — formulario de referencia no configurado aún.')}
                         </StructuredListCell>
                         <StructuredListCell>—</StructuredListCell>
                       </StructuredListRow>

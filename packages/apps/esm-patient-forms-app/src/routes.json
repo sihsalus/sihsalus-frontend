@@ -40,26 +40,22 @@
     {
       "name": "clinical-forms-workspace",
       "component": "clinicalFormsWorkspace",
-      "window": "patient-chart-clinical-forms",
-      "privileges": "app:hoja.clinica.formulariosClinicos"
+      "window": "patient-chart-clinical-forms"
     },
     {
       "name": "patient-form-entry-workspace",
       "component": "patientFormEntryWorkspace",
-      "window": "patient-chart-clinical-forms",
-      "privileges": "app:hoja.clinica.formulariosClinicos"
+      "window": "patient-chart-clinical-forms"
     },
     {
       "name": "patient-form-entry-workspace-v2",
       "component": "patientFormEntryWorkspace",
-      "window": "patient-chart-clinical-forms",
-      "privileges": "app:hoja.clinica.formulariosClinicos"
+      "window": "patient-chart-clinical-forms"
     },
     {
       "name": "patient-html-form-entry-workspace",
       "component": "patientHtmlFormEntryWorkspace",
-      "window": "patient-chart-clinical-forms",
-      "privileges": "app:hoja.clinica.formulariosClinicos"
+      "window": "patient-chart-clinical-forms"
     }
   ],
   "workspaceWindows2": [

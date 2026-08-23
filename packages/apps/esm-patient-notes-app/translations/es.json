@@ -1,7 +1,5 @@
 {
-  "activeProviderRequired": "Se requiere un proveedor clínico activo para guardar este resumen de consulta.",
   "activeVisitLocationRequired": "Se requiere una visita activa con una UPSS asistencial.",
-  "activeVisitRequired": "Se requiere una visita activa para guardar este resumen de consulta.",
   "add": "Agregar",
   "addImage": "Agregar imagen",
   "addVisitNote": "Agregar un resumen de consulta",
@@ -93,17 +91,10 @@
   "subjectivePlaceholder": "Síntomas y relato cronológico relevante",
   "visitDate": "Fecha de consulta",
   "visitNote": "Resumen de consulta",
-  "visitNoteAttachmentSaveWarning": "El resumen se guardó, pero no se pudo cargar uno o más adjuntos.",
   "visitNoteNowVisible": "Ahora es visible en la página de Atenciones",
   "visitNotes": "Resúmenes de consulta",
   "visitNoteSaved": "Resumen de consulta guardado",
   "visitNoteSaveError": "Error al guardar el resumen de consulta",
-  "visitNoteSaveRejected": "No se pudo guardar el resumen de consulta.",
-  "visitNoteVisitMismatch": "Este resumen pertenece a otra visita y no se puede editar desde la visita activa.",
   "visitNoteWorkspaceTitle": "Resumen de consulta",
-  "resolvingVisitNote": "Verificando el resumen de la consulta activa...",
-  "visitNoteResolutionError": "No se puede abrir el resumen de consulta",
-  "visitNoteDuplicateEncounterError": "Existe más de un resumen para la consulta activa. Resuelva el duplicado antes de editar.",
-  "visitNoteVerificationError": "No se pudo verificar el resumen de la consulta activa. Recargue e intente nuevamente.",
   "workPlan": "Órdenes y continuidad de atención"
 }

@@ -7,16 +7,8 @@ export interface RESTPatientNote {
   uuid: string;
   display: string;
   encounterDatetime: string;
-  patient?: { uuid: string };
-  visit?: { uuid: string };
-  form?: { uuid: string };
   encounterType: { name: string; uuid: string };
-  encounterProviders: [
-    {
-      encounterRole: { uuid: string; display: string };
-      provider: { person: { display: string } };
-    },
-  ];
+  encounterProviders: [{ encounterRole: { uuid: string; display: string }; provider: { person: { display: string } } }];
   location: { uuid: string; display: string; name: string };
   auditInfo: {
     creator: any;
@@ -207,46 +199,26 @@ export interface DiagnosisPayload {
   rank: number;
 }
 
-export type EncounterDiagnosisPayload =
-  | (Omit<DiagnosisPayload, "encounter"> & {
-      encounter?: string;
-      uuid?: string;
-    })
-  | {
-      uuid: string;
-      voided: true;
-    };
-
 export interface VisitNotePayload {
   encounterDatetime?: string; // explicit clinical datetime; omit for the server's current time
   encounterType: string; // uuid of the encounter type - initial visit, return visit etc. (REQUIRED)
   patient: string; // the patient to whom the encounter applies
   location: string; // the location at which the encounter occurred (REQUIRED)
-  encounterProviders: Array<{
-    uuid?: string;
-    encounterRole: string;
-    provider: string;
-  }>; // array of providers and their role within the encounter. At least 1 provider is required
+  encounterProviders: Array<{ encounterRole: string; provider: string }>; // array of providers and their role within the encounter. At least 1 provider is required
   obs: Array<ObsPayload>; // array of observations and values for the encounter
-  diagnoses: Array<EncounterDiagnosisPayload>; // diagnoses are created, updated, or voided atomically with the encounter
   form: string; // target form uuid to be filled for the encounter
   orders?: Array<any>; // list of orders created during the encounter
   visit?: string; // when creating an encounter for a specific visit, this specifies the visit
 }
 
-export type ObsPayload =
-  | {
-      concept: Concept;
-      value?: string;
-      uuid?: string;
-      groupMembers?: Array<{
-        concept: Concept;
-        value: string;
-      }>;
-      formFieldNamespace?: string;
-      formFieldPath?: string;
-    }
-  | {
-      uuid: string;
-      voided: true;
-    };
+export interface ObsPayload {
+  concept: Concept;
+  value?: string;
+  uuid?: string;
+  groupMembers?: Array<{
+    concept: Concept;
+    value: string;
+  }>;
+  formFieldNamespace?: string;
+  formFieldPath?: string;
+}

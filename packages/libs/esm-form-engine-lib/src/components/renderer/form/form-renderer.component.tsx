@@ -1,21 +1,26 @@
-import React, { useEffect, useMemo, useReducer } from 'react';
-import { useForm } from 'react-hook-form';
-import { useEvaluateFormFieldExpressions } from '../../../hooks/useEvaluateFormFieldExpressions';
-import { useFormStateHelpers } from '../../../hooks/useFormStateHelpers';
-import { useFormFactory } from '../../../provider/form-factory-provider';
-import { type FormContextProps, FormProvider, type FormValues } from '../../../provider/form-provider';
-import { type FormProcessorContextProps } from '../../../types';
-import { isPageContentVisible } from '../../../utils/form-helper';
-import FormProcessorFactory from '../../processor-factory/form-processor-factory.component';
-import { pageObserver } from '../../sidebar/page-observer';
-import PageRenderer from '../page/page.renderer.component';
-import { formStateReducer, initialState } from './state';
+import React, { useEffect, useMemo, useReducer } from "react";
+import { useForm } from "react-hook-form";
+import { useEvaluateFormFieldExpressions } from "../../../hooks/useEvaluateFormFieldExpressions";
+import { useFormStateHelpers } from "../../../hooks/useFormStateHelpers";
+import { useFormFactory } from "../../../provider/form-factory-provider";
+import {
+  type FormContextProps,
+  FormProvider,
+  type FormValues,
+} from "../../../provider/form-provider";
+import { type FormProcessorContextProps } from "../../../types";
+import { isPageContentVisible } from "../../../utils/form-helper";
+import FormProcessorFactory from "../../processor-factory/form-processor-factory.component";
+import { pageObserver } from "../../sidebar/page-observer";
+import PageRenderer from "../page/page.renderer.component";
+import { formStateReducer, initialState } from "./state";
 
 export type FormRendererProps = {
   processorContext: FormProcessorContextProps;
   initialValues: Record<string, unknown>;
   isSubForm: boolean;
   setIsLoadingFormDependencies: (isLoading: boolean) => void;
+  onDependencyError: (error: unknown) => void;
 };
 
 export const FormRenderer = ({
@@ -23,28 +28,29 @@ export const FormRenderer = ({
   initialValues,
   isSubForm,
   setIsLoadingFormDependencies,
+  onDependencyError,
 }: FormRendererProps): React.JSX.Element => {
-  const { evaluatedFields, evaluatedFormJson, evaluatedPagesVisibility } = useEvaluateFormFieldExpressions(
-    initialValues,
-    processorContext,
-  );
-  const { registerForm, setIsFormDirty, workspaceLayout, isFormExpanded } = useFormFactory();
+  const { evaluatedFields, evaluatedFormJson, evaluatedPagesVisibility } =
+    useEvaluateFormFieldExpressions(initialValues, processorContext);
+  const { registerForm, setIsFormDirty, workspaceLayout, isFormExpanded } =
+    useFormFactory();
   const methods = useForm<FormValues>({
     defaultValues: initialValues,
-    mode: 'onChange',
-    reValidateMode: 'onChange',
-    criteriaMode: 'all',
+    mode: "onChange",
+    reValidateMode: "onChange",
+    criteriaMode: "all",
   });
 
   const {
     formState: { isDirty },
   } = methods;
 
-  const [{ formFields, invalidFields, formJson, deletedFields }, dispatch] = useReducer(formStateReducer, {
-    ...initialState,
-    formFields: evaluatedFields,
-    formJson: evaluatedFormJson,
-  });
+  const [{ formFields, invalidFields, formJson, deletedFields }, dispatch] =
+    useReducer(formStateReducer, {
+      ...initialState,
+      formFields: evaluatedFields,
+      formJson: evaluatedFormJson,
+    });
 
   const {
     addFormField,
@@ -59,7 +65,9 @@ export const FormRenderer = ({
   } = useFormStateHelpers(dispatch, formFields);
 
   useEffect(() => {
-    const scrollablePages = formJson.pages.filter((page) => !page.isSubform).map((page) => page);
+    const scrollablePages = formJson.pages
+      .filter((page) => !page.isSubform)
+      .map((page) => page);
     pageObserver.updateScrollablePages(scrollablePages);
   }, [formJson.pages]);
 
@@ -68,7 +76,9 @@ export const FormRenderer = ({
   }, [evaluatedPagesVisibility]);
 
   useEffect(() => {
-    pageObserver.updatePagesWithErrors(invalidFields.map((field) => field.meta.pageId));
+    pageObserver.updatePagesWithErrors(
+      invalidFields.map((field) => field.meta.pageId),
+    );
   }, [invalidFields]);
 
   const context: FormContextProps = useMemo(() => {
@@ -130,10 +140,17 @@ export const FormRenderer = ({
               formJson={page.subform.form}
               isSubForm={true}
               setIsLoadingFormDependencies={setIsLoadingFormDependencies}
+              onDependencyError={onDependencyError}
             />
           );
         }
-        return <PageRenderer key={page.label} page={page} isFormExpanded={isFormExpanded} />;
+        return (
+          <PageRenderer
+            key={page.label}
+            page={page}
+            isFormExpanded={isFormExpanded}
+          />
+        );
       })}
     </FormProvider>
   );

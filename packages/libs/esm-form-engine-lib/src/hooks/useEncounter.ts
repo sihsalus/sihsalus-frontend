@@ -1,9 +1,9 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework/src/internal';
-import isString from 'lodash-es/isString';
-import { useEffect, useState } from 'react';
-import { encounterRepresentation } from '../constants';
-import { type FormSchema, type OpenmrsEncounter } from '../types';
-import { isEmpty } from '../validators/form-validator';
+import { openmrsFetch, restBaseUrl } from "@openmrs/esm-framework/src/internal";
+import isString from "lodash-es/isString";
+import { useEffect, useState } from "react";
+import { encounterRepresentation } from "../constants";
+import { type FormSchema, type OpenmrsEncounter } from "../types";
+import { isEmpty } from "../validators/form-validator";
 
 export function useEncounter(formJson: FormSchema): {
   encounter: OpenmrsEncounter | null;
@@ -17,6 +17,10 @@ export function useEncounter(formJson: FormSchema): {
   useEffect(() => {
     const abortController = new AbortController();
     let disposed = false;
+
+    setEncounter(null);
+    setError(null);
+    setIsLoading(true);
 
     if (!isEmpty(formJson.encounter) && isString(formJson.encounter)) {
       void openmrsFetch<OpenmrsEncounter>(
@@ -33,7 +37,11 @@ export function useEncounter(formJson: FormSchema): {
         })
         .catch((error) => {
           if (!disposed) {
-            setError(error instanceof Error ? error : new Error('Failed to load encounter'));
+            setError(
+              error instanceof Error
+                ? error
+                : new Error("Failed to load encounter"),
+            );
             setIsLoading(false);
           }
         });

@@ -18,7 +18,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../config-schema';
-import { visitNotesPrivilege, vitalsPrivilege } from '../../constants';
+import { visitNotesViewPrivilege, vitalsPrivilege } from '../../constants';
 import { type DiagnosisItem, type Encounter, type Note, type Observation } from '../../types/index';
 import styles from '../current-visit.scss';
 import { useVitalsFromObs } from '../hooks/useVitalsConceptMetadata';
@@ -39,9 +39,9 @@ enum visitTypes {
 
 const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encounters, visit }) => {
   const { t } = useTranslation();
-  const { concepts, visitNoteEncounterTypeUuid } = useConfig<ConfigObject>();
+  const { concepts, visitNoteEncounterTypeUuid, visitNoteFormUuid } = useConfig<ConfigObject>();
   const session = useSession();
-  const canViewVisitSummary = userHasAccess(visitNotesPrivilege, session?.user);
+  const canViewVisitSummary = userHasAccess(visitNotesViewPrivilege, session?.user);
   const canViewVitals = userHasAccess(vitalsPrivilege, session?.user);
 
   const [diagnoses, notes, vitalsToRetrieve]: [Array<DiagnosisItem>, Array<Note>, Array<Encounter>] = useMemo(() => {
@@ -52,7 +52,7 @@ const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encount
     // Iterating through every Encounter
     encounters?.forEach((enc: Encounter) => {
       // Check for Visit Diagnoses and Notes
-      if (enc.encounterType?.uuid === visitNoteEncounterTypeUuid) {
+      if (enc.encounterType?.uuid === visitNoteEncounterTypeUuid && enc.form?.uuid === visitNoteFormUuid) {
         enc.obs?.forEach((obs: Observation) => {
           if (obs.concept?.uuid === concepts.visitDiagnosesConceptUuid) {
             const problemList = obs.groupMembers?.find((mem) => mem.concept?.uuid === concepts.problemListConceptUuid);
@@ -80,6 +80,7 @@ const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encount
   }, [
     encounters,
     visitNoteEncounterTypeUuid,
+    visitNoteFormUuid,
     concepts.generalPatientNoteConceptUuid,
     concepts.problemListConceptUuid,
     concepts.visitDiagnosesConceptUuid,

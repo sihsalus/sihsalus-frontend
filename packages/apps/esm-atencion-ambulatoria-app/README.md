@@ -9,9 +9,10 @@ Los permisos de lectura protegen los puntos de entrada y mantienen visibles los 
 | Superficie                                | Lectura / entrada                  | Modificación                                                                   |
 | ----------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------ |
 | Consulta externa e historia médica        | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar`                                      |
-| Diagnóstico CIE-10 desde Consulta Externa | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.resumenConsulta` |
+| Formularios AMPATH de Consulta Externa    | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.formulariosClinicos` |
+| Diagnóstico/plan desde Consulta Externa   | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.resumenConsulta.editar` |
 | Historia social                           | `app:hoja.clinica.historiaSocial`  | `app:hoja.clinica.historiaSocial.editar`                                       |
-| Prescripción desde el plan de tratamiento | Entrada por Consulta Externa       | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.ordenes.editar`  |
+| Prescripción desde el plan de tratamiento | Entrada por Consulta Externa       | `app:hoja.clinica.canastaOrdenes` + `app:hoja.clinica.ordenes.editar`  |
 
 En la navegación normal, los guards se acumulan: primero se entra al dashboard con lectura y después se habilita la acción con edición. Los workspaces y modales registrados declaran directamente el privilegio de edición, sin inferir el permiso base; OpenMRS no implementa herencia padre/hijo por el nombre del privilegio.
 
@@ -37,6 +38,8 @@ Con `showSisFinancingWarning: true` (apagada por defecto), el dashboard de consu
 - Documentar qué formularios de consulta externa crean encounter nuevo y cuáles deben editar el encounter clínico actual.
 
 Los valores de `formsList` para consulta externa usan los nombres estables publicados por content (`CE-001-CONSULTA EXTERNA`, `CE-ANAM-001-ANAMNESIS`, `CE-SOAP-001-NOTA SOAP` y `CE-REF-001-REFERENCIA-CONTRARREFERENCIA`). No deben reemplazarse por los UUID de los archivos de esquema, porque esos UUID pueden variar entre entornos.
+
+Anamnesis y SOAP son únicos por visita ambulatoria: cero coincidencias crea, una edita y más de una bloquea. Referencia es repetible porque cada derivación es un evento clínico independiente; siempre crea un encounter nuevo, pero siempre adjunto a la visita ambulatoria verificada.
 
 ## TODO QA/QLTY
 

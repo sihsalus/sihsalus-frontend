@@ -2,12 +2,13 @@
   "$schema": "https://json.openmrs.org/routes.schema.json",
   "backendDependencies": {
     "fhir2": ">=1.2",
-    "webservices.rest": ">=2.2.0"
+    "webservices.rest": ">=3.5.0"
   },
   "extensions": [
     {
       "name": "notes-overview-widget",
       "component": "notesOverview",
+      "privileges": "app:hoja.clinica.resumenConsulta",
       "meta": {
         "fullWidth": false
       },
@@ -35,7 +36,7 @@
       "name": "visit-notes-form-workspace",
       "component": "visitNotesFormWorkspace",
       "window": "visit-note",
-      "privileges": "app:hoja.clinica.resumenConsulta"
+      "privileges": "app:hoja.clinica.resumenConsulta.editar"
     }
   ],
   "workspaceWindows2": [
@@ -43,7 +44,7 @@
       "name": "visit-note",
       "icon": "visitNotesActionButton",
       "group": "patient-chart",
-      "privileges": "app:hoja.clinica.resumenConsulta",
+      "privileges": "app:hoja.clinica.resumenConsulta.editar",
       "order": 1
     }
   ]

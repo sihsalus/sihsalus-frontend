@@ -1,8 +1,14 @@
-import { useConfig } from '@openmrs/esm-framework';
-import { screen, within } from '@testing-library/react';
-import { ConfigMock, mockFhirPatient, mockVisitNotes, patientChartBasePath, renderWithSwr } from 'test-utils';
-import NotesOverview from './notes-overview.extension';
-import { useVisitNotes } from './visit-notes.resource';
+import { userHasAccess, useConfig } from "@openmrs/esm-framework";
+import { screen, within } from "@testing-library/react";
+import {
+  ConfigMock,
+  mockFhirPatient,
+  mockVisitNotes,
+  patientChartBasePath,
+  renderWithSwr,
+} from "test-utils";
+import NotesOverview from "./notes-overview.extension";
+import { useVisitNotes } from "./visit-notes.resource";
 
 const testProps = {
   basePath: patientChartBasePath,
@@ -12,17 +18,29 @@ const testProps = {
 
 const mockUseVisitNotes = vi.mocked(useVisitNotes);
 const mockUseConfig = vi.mocked(useConfig);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 
-vi.mock('./visit-notes.resource', () => {
+vi.mock("./visit-notes.resource", () => {
   return { useVisitNotes: vi.fn().mockReturnValue([{}]) };
 });
 
-describe('NotesOverview', () => {
+describe("NotesOverview", () => {
   beforeEach(() => {
     mockUseConfig.mockReturnValue(ConfigMock);
+    mockUserHasAccess.mockReturnValue(true);
   });
 
-  test('renders an empty state view if visit note data is unavailable', async () => {
+  test("does not fetch notes without the view privilege", () => {
+    mockUserHasAccess.mockReturnValue(false);
+    mockUseVisitNotes.mockClear();
+
+    renderWithSwr(<NotesOverview {...testProps} />);
+
+    expect(mockUseVisitNotes).not.toHaveBeenCalled();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  });
+
+  test("renders an empty state view if visit note data is unavailable", async () => {
     mockUseVisitNotes.mockReturnValueOnce({
       visitNotes: [],
       error: null,
@@ -33,19 +51,21 @@ describe('NotesOverview', () => {
 
     renderWithSwr(<NotesOverview {...testProps} />);
 
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /notes/i })).toBeInTheDocument();
-    expect(screen.getByText(/There are no visit notes to display for this patient/i)).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /notes/i })).toBeInTheDocument();
+    expect(
+      screen.getByText(/There are no visit notes to display for this patient/i),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Record visit notes/i)).toBeInTheDocument();
   });
 
-  test('renders an error state view if there is a problem fetching visit note data', async () => {
+  test("renders an error state view if there is a problem fetching visit note data", async () => {
     const error = {
-      name: 'Error',
-      message: 'You are not logged in',
+      name: "Error",
+      message: "You are not logged in",
       response: {
         status: 401,
-        statusText: 'Unauthorized',
+        statusText: "Unauthorized",
       },
     };
 
@@ -59,10 +79,14 @@ describe('NotesOverview', () => {
 
     renderWithSwr(<NotesOverview {...testProps} />);
 
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /notes/i })).toBeInTheDocument();
-    expect(screen.queryByText(/Error 401: Unauthorized/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/there was a problem displaying this information/i)).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /notes/i })).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Error 401: Unauthorized/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/there was a problem displaying this information/i),
+    ).toBeInTheDocument();
   });
 
   test("renders a tabular overview of the patient's visit notes when present", async () => {
@@ -76,14 +100,16 @@ describe('NotesOverview', () => {
 
     renderWithSwr(<NotesOverview {...testProps} />);
 
-    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /notes/i })).toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /notes/i })).toBeInTheDocument();
 
-    const table = screen.getByRole('table');
+    const table = screen.getByRole("table");
 
     const expectedColumnHeaders = [/Date/, /Diagnoses/];
     expectedColumnHeaders.forEach((header) => {
-      expect(screen.getByRole('columnheader', { name: new RegExp(header, 'i') })).toBeInTheDocument();
+      expect(
+        screen.getByRole("columnheader", { name: new RegExp(header, "i") }),
+      ).toBeInTheDocument();
     });
 
     const expectedTableRows = [
@@ -93,7 +119,9 @@ describe('NotesOverview', () => {
     ];
 
     expectedTableRows.map((row) =>
-      expect(within(table).getByRole('row', { name: new RegExp(row, 'i') })).toBeInTheDocument(),
+      expect(
+        within(table).getByRole("row", { name: new RegExp(row, "i") }),
+      ).toBeInTheDocument(),
     );
   });
 });

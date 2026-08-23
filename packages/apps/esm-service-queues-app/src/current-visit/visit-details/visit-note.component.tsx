@@ -4,7 +4,7 @@ import { launchWorkspace2, userHasAccess, usePatient, useSession } from '@openmr
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { serviceQueuesVisitNotesWorkspace, visitNotesPrivilege } from '../../constants';
+import { serviceQueuesVisitNotesWorkspace, visitNotesEditPrivilege } from '../../constants';
 import { type DiagnosisItem, type Note } from '../../types/index';
 
 import styles from './triage-note.scss';
@@ -19,7 +19,7 @@ const VisitNote: React.FC<VisitNoteProps> = ({ notes, patientUuid, diagnoses }) 
   const { t } = useTranslation();
   const { patient } = usePatient(patientUuid);
   const session = useSession();
-  const canEditVisitNotes = userHasAccess(visitNotesPrivilege, session?.user);
+  const canEditVisitNotes = userHasAccess(visitNotesEditPrivilege, session?.user);
 
   return (
     <div>

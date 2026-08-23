@@ -1,28 +1,45 @@
-import { Button, ButtonSet, InlineLoading } from '@carbon/react';
-import { type OpenmrsResource, useSession, type Visit } from '@openmrs/esm-framework/src/internal';
-import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { I18nextProvider, useTranslation } from 'react-i18next';
-import { isEmpty, useFormJson } from '.';
-import MarkdownWrapper from './components/inputs/markdown/markdown-wrapper.component';
-import Loader from './components/loaders/loader.component';
-import PatientBanner from './components/patient-banner/patient-banner.component';
-import FormProcessorFactory from './components/processor-factory/form-processor-factory.component';
-import Sidebar from './components/sidebar/sidebar.component';
-import { usePageObserver } from './components/sidebar/usePageObserver';
-import styles from './form-engine.scss';
-import { formEngineAppName } from './globals';
-import { useFormCollapse } from './hooks/useFormCollapse';
-import { useFormWorkspaceSize } from './hooks/useFormWorkspaceSize';
-import { usePatientData } from './hooks/usePatientData';
-import { init, teardown } from './lifecycle';
-import { FormFactoryProvider } from './provider/form-factory-provider';
-import type { FormField, FormSchema, OpenmrsEncounter, PreFilledQuestions, SessionMode } from './types';
-import { reportError } from './utils/error-utils';
-import { resolveFormLocation } from './utils/form-location';
+import { Button, ButtonSet, InlineLoading } from "@carbon/react";
+import {
+  type OpenmrsResource,
+  useSession,
+  type Visit,
+} from "@openmrs/esm-framework/src/internal";
+import classNames from "classnames";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { I18nextProvider, useTranslation } from "react-i18next";
+import { isEmpty, useFormJson } from ".";
+import FormLoadError from "./components/error/form-load-error.component";
+import MarkdownWrapper from "./components/inputs/markdown/markdown-wrapper.component";
+import Loader from "./components/loaders/loader.component";
+import PatientBanner from "./components/patient-banner/patient-banner.component";
+import FormProcessorFactory from "./components/processor-factory/form-processor-factory.component";
+import Sidebar from "./components/sidebar/sidebar.component";
+import { usePageObserver } from "./components/sidebar/usePageObserver";
+import styles from "./form-engine.scss";
+import { formEngineAppName } from "./globals";
+import { useFormCollapse } from "./hooks/useFormCollapse";
+import { useFormWorkspaceSize } from "./hooks/useFormWorkspaceSize";
+import { usePatientData } from "./hooks/usePatientData";
+import { init, teardown } from "./lifecycle";
+import { FormFactoryProvider } from "./provider/form-factory-provider";
+import type {
+  FormField,
+  FormSchema,
+  OpenmrsEncounter,
+  PreFilledQuestions,
+  SessionMode,
+} from "./types";
+import { reportError } from "./utils/error-utils";
+import { resolveFormLocation } from "./utils/form-location";
 
-const getMarkdownString = (markdown: FormSchema['markdown']): string | null => {
-  return typeof markdown === 'string' ? markdown : null;
+const getMarkdownString = (markdown: FormSchema["markdown"]): string | null => {
+  return typeof markdown === "string" ? markdown : null;
 };
 
 interface FormEngineProps {
@@ -36,10 +53,14 @@ interface FormEngineProps {
   onSubmit?: (data: Array<OpenmrsResource>) => void;
   onCancel?: () => void;
   handleClose?: () => void;
-  handleConfirmQuestionDeletion?: (question: Readonly<FormField>) => Promise<void>;
+  handleConfirmQuestionDeletion?: (
+    question: Readonly<FormField>,
+  ) => Promise<void>;
   markFormAsDirty?: (isDirty: boolean) => void;
   handleOnValidate?: (valid: boolean) => void;
-  handleEncounterCreate?: (encounter: OpenmrsEncounter) => OpenmrsEncounter | void | Promise<OpenmrsEncounter | void>;
+  handleEncounterCreate?: (
+    encounter: OpenmrsEncounter,
+  ) => OpenmrsEncounter | void | Promise<OpenmrsEncounter | void>;
   onBeforeEncounterSave?: (encounter: OpenmrsEncounter) => void | Promise<void>;
   hideControls?: boolean;
   hidePatientBanner?: boolean;
@@ -71,31 +92,60 @@ const FormEngine = ({
   const ref = useRef<HTMLFormElement | null>(null);
   const sessionDate = useMemo<Date>(() => new Date(), []);
   const workspaceSize = useFormWorkspaceSize(ref);
-  const { patient, isLoadingPatient } = usePatientData(patientUUID);
+  const { patient, isLoadingPatient, patientError } = usePatientData(patientUUID);
   const [isLoadingDependencies, setIsLoadingDependencies] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFormDirty, setIsFormDirty] = useState(false);
-  const sessionMode = !isEmpty(mode) ? mode : !isEmpty(encounterUUID) ? 'edit' : 'enter';
-  const { isFormExpanded, hideFormCollapseToggle } = useFormCollapse(sessionMode);
+  const formSessionKey = `${patientUUID}:${formUUID ?? formJson?.uuid ?? ""}:${encounterUUID ?? ""}`;
+  const [failedFormSessionKey, setFailedFormSessionKey] = useState<
+    string | null
+  >(null);
+  const sessionMode = !isEmpty(mode)
+    ? mode
+    : !isEmpty(encounterUUID)
+      ? "edit"
+      : "enter";
+  const { isFormExpanded, hideFormCollapseToggle } =
+    useFormCollapse(sessionMode);
   const { hasMultiplePages } = usePageObserver();
 
   const {
     formJson: refinedFormJson,
     isLoading: isLoadingFormJson,
     formError,
-  } = useFormJson(formUUID, formJson, encounterUUID, formSessionIntent, preFilledQuestions);
+  } = useFormJson(
+    formUUID,
+    formJson,
+    encounterUUID,
+    formSessionIntent,
+    preFilledQuestions,
+  );
+  const hasPatientIdentityError =
+    !isLoadingPatient &&
+    (Boolean(patientError) || !patient?.id || patient.id.toLowerCase() !== patientUUID.toLowerCase());
+  const hasFormLoadError =
+    failedFormSessionKey === formSessionKey || hasPatientIdentityError || Boolean(formError);
 
   const showPatientBanner = useMemo<boolean>(() => {
     if (hidePatientBanner) {
       return false;
     }
-    return Boolean(patient && workspaceSize === 'ultra-wide' && mode !== 'embedded-view');
+    return Boolean(
+      patient && workspaceSize === "ultra-wide" && mode !== "embedded-view",
+    );
   }, [patient, mode, workspaceSize, hidePatientBanner]);
 
-  const isFormWorkspaceTooNarrow = useMemo(() => ['narrow'].includes(workspaceSize), [workspaceSize]);
+  const isFormWorkspaceTooNarrow = useMemo(
+    () => ["narrow"].includes(workspaceSize),
+    [workspaceSize],
+  );
 
   const showBottomButtonSet = useMemo(() => {
-    if (mode === 'embedded-view' || isLoadingDependencies || hasMultiplePages === null) {
+    if (
+      mode === "embedded-view" ||
+      isLoadingDependencies ||
+      hasMultiplePages === null
+    ) {
       return false;
     }
 
@@ -103,7 +153,11 @@ const FormEngine = ({
   }, [mode, isFormWorkspaceTooNarrow, isLoadingDependencies, hasMultiplePages]);
 
   const showSidebar = useMemo<boolean>(() => {
-    if (mode === 'embedded-view' || isLoadingDependencies || hasMultiplePages === null) {
+    if (
+      mode === "embedded-view" ||
+      isLoadingDependencies ||
+      hasMultiplePages === null
+    ) {
       return false;
     }
 
@@ -111,7 +165,10 @@ const FormEngine = ({
   }, [mode, isFormWorkspaceTooNarrow, isLoadingDependencies, hasMultiplePages]);
 
   useEffect(() => {
-    reportError(formError, t('errorLoadingFormSchema', 'Error loading form schema'));
+    reportError(
+      formError,
+      t("errorLoadingFormSchema", "Error loading form schema"),
+    );
   }, [formError, t]);
 
   useEffect(() => {
@@ -125,17 +182,44 @@ const FormEngine = ({
     markFormAsDirty?.(isFormDirty);
   }, [isFormDirty, markFormAsDirty]);
 
-  const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-  }, []);
+  const handleDependencyError = useCallback(
+    (_error: unknown) => {
+      console.error("Failed to load data required by the form.");
+      setIsLoadingDependencies(false);
+      setIsSubmitting(false);
+      setFailedFormSessionKey(formSessionKey);
+    },
+    [formSessionKey],
+  );
 
-  const isLoadingFormDefinition = isLoadingPatient || isLoadingFormJson || !refinedFormJson;
-  const markdown: string | null = refinedFormJson ? getMarkdownString(refinedFormJson.markdown) : null;
+  const handleSubmit = useCallback(
+    (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      if (!hasFormLoadError) {
+        setIsSubmitting(true);
+      }
+    },
+    [hasFormLoadError],
+  );
+
+  const isLoadingFormDefinition =
+    isLoadingPatient || isLoadingFormJson || !refinedFormJson;
+  const markdown: string | null = refinedFormJson
+    ? getMarkdownString(refinedFormJson.markdown)
+    : null;
 
   return (
-    <form ref={ref} noValidate className={classNames('cds--form', styles.form)} onSubmit={handleSubmit}>
-      {isLoadingFormDefinition ? (
+    <form
+      ref={ref}
+      noValidate
+      className={classNames("cds--form", styles.form)}
+      onSubmit={handleSubmit}
+    >
+      {hasFormLoadError ? (
+        <div className={styles.formLoadError}>
+          <FormLoadError />
+        </div>
+      ) : isLoadingFormDefinition ? (
         <Loader />
       ) : (
         <FormFactoryProvider
@@ -144,7 +228,9 @@ const FormEngine = ({
           sessionMode={sessionMode}
           sessionDate={sessionDate}
           formJson={refinedFormJson}
-          workspaceLayout={workspaceSize === 'ultra-wide' ? 'maximized' : 'minimized'}
+          workspaceLayout={
+            workspaceSize === "ultra-wide" ? "maximized" : "minimized"
+          }
           location={resolveFormLocation(visit, session?.sessionLocation)}
           provider={session?.currentProvider}
           visit={visit}
@@ -182,7 +268,9 @@ const FormEngine = ({
                 />
               )}
               <div className={styles.formContentInner}>
-                {showPatientBanner && <PatientBanner patient={patient} hideActionsOverflow />}
+                {showPatientBanner && (
+                  <PatientBanner patient={patient} hideActionsOverflow />
+                )}
                 {markdown && (
                   <div className={styles.markdownContainer}>
                     <MarkdownWrapper markdown={markdown} />
@@ -192,6 +280,7 @@ const FormEngine = ({
                   <FormProcessorFactory
                     formJson={refinedFormJson}
                     setIsLoadingFormDependencies={setIsLoadingDependencies}
+                    onDependencyError={handleDependencyError}
                   />
                 </div>
                 {showBottomButtonSet && !hideControls && (
@@ -208,18 +297,24 @@ const FormEngine = ({
                         hideFormCollapseToggle();
                       }}
                     >
-                      {mode === 'view' ? t('close', 'Close') : t('cancel', 'Cancel')}
+                      {mode === "view"
+                        ? t("close", "Close")
+                        : t("cancel", "Cancel")}
                     </Button>
                     <Button
                       className={styles.saveButton}
-                      disabled={isLoadingDependencies || isSubmitting || mode === 'view'}
+                      disabled={
+                        isLoadingDependencies || isSubmitting || mode === "view"
+                      }
                       kind="primary"
                       type="submit"
                     >
                       {isSubmitting ? (
-                        <InlineLoading description={t('submitting', 'Submitting') + '...'} />
+                        <InlineLoading
+                          description={t("submitting", "Submitting") + "..."}
+                        />
                       ) : (
-                        <span>{`${t('save', 'Save')}`}</span>
+                        <span>{`${t("save", "Save")}`}</span>
                       )}
                     </Button>
                   </ButtonSet>

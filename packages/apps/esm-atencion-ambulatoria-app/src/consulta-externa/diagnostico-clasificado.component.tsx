@@ -9,13 +9,13 @@ import {
   TableRow,
   Tag,
 } from '@carbon/react';
-import { formatDate, showSnackbar, useConfig, useLayoutType, useVisit } from '@openmrs/esm-framework';
-import { launchPatientWorkspace, launchStartVisitPrompt } from '@openmrs/esm-patient-common-lib';
+import { formatDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { useDiagnosisHistory } from '../hooks/useDiagnosisHistory';
-import { consultaExternaEditPrivilege, visitNotesFormWorkspace, visitNotesPrivilege } from '../utils/constants';
+import { useConsultaExternaVisitNoteLauncher } from '../hooks/useConsultaExternaVisitNoteLauncher';
+import { consultaExternaEditPrivilege, visitNotesEditPrivilege } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface DiagnosticoClasificadoProps {
@@ -26,8 +26,7 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const isTablet = useLayoutType() === 'tablet';
-  const { currentVisit } = useVisit(patientUuid);
-  const { diagnoses, isLoading, isValidating, error, pagination, sourceErrors } = useDiagnosisHistory(patientUuid, [
+  const { diagnoses, isLoading, isValidating, error, mutate, pagination, sourceErrors } = useDiagnosisHistory(patientUuid, [
     config.encounterTypes?.externalConsultation,
     {
       encounterTypeUuid: config.encounterTypes?.visitNote,
@@ -35,6 +34,11 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
       visitTypeUuid: config.visitTypes?.ambulatory,
     },
   ]);
+  const launchVisitNote = useConsultaExternaVisitNoteLauncher({
+    patientUuid,
+    ambulatoryVisitTypeUuid: config.visitTypes?.ambulatory,
+    mutate,
+  });
 
   const headers = [
     { key: 'date', header: t('dateAndTime', 'Fecha y hora') },
@@ -75,39 +79,17 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
       ),
   }));
 
-  const handleLaunchForm = () => {
-    if (!currentVisit) {
-      launchStartVisitPrompt();
-      return;
-    }
-
-    const ambulatoryVisitTypeUuid = config.visitTypes?.ambulatory;
-    if (!ambulatoryVisitTypeUuid || currentVisit.visitType?.uuid !== ambulatoryVisitTypeUuid) {
-      showSnackbar({
-        kind: 'error',
-        title: t('diagnosisRequiresAmbulatoryVisit', 'An ambulatory visit is required'),
-        subtitle: t(
-          'diagnosisRequiresAmbulatoryVisitSubtitle',
-          'Start or select an ambulatory visit before recording a diagnosis.',
-        ),
-      });
-      return;
-    }
-
-    launchPatientWorkspace(visitNotesFormWorkspace, { formContext: 'creating' });
-  };
-
   return (
     <ClinicalHistoryCard
       title={t('diagnosisHistory', 'Historial de Diagnósticos')}
       actionLabel={t('addDiagnosis', 'Registrar Diagnóstico')}
       empty={rows.length === 0}
       emptyDisplayText={t('diagnoses', 'diagnósticos')}
-      editPrivilege={[consultaExternaEditPrivilege, visitNotesPrivilege]}
+      editPrivilege={[consultaExternaEditPrivilege, visitNotesEditPrivilege]}
       error={error}
       isLoading={isLoading}
       isValidating={isValidating}
-      onAction={handleLaunchForm}
+      onAction={launchVisitNote}
       pagination={pagination}
       sourceErrors={sourceErrors}
       skeletonHeaders={headers}

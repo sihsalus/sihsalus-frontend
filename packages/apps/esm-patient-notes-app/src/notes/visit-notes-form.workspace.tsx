@@ -15,9 +15,9 @@ import {
   Stack,
   TextArea,
   Tile,
-} from '@carbon/react';
-import { Add, CloseFilled, WarningFilled } from '@carbon/react/icons';
-import { zodResolver } from '@hookform/resolvers/zod';
+} from "@carbon/react";
+import { Add, CloseFilled, WarningFilled } from "@carbon/react/icons";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   createAttachment,
   createErrorHandler,
@@ -34,62 +34,86 @@ import {
   useLayoutType,
   useSession,
   Workspace2,
-} from '@openmrs/esm-framework';
+} from "@openmrs/esm-framework";
 import {
   invalidateVisitAndEncounterData,
   type PatientWorkspace2DefinitionProps,
   useAllowedFileExtensions,
-} from '@openmrs/esm-patient-common-lib';
-import classnames from 'classnames';
-import dayjs from 'dayjs';
-import type { TFunction } from 'i18next';
-import { debounce } from 'lodash-es';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type Control, Controller, useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
-import { useSWRConfig } from 'swr';
-import { z } from 'zod';
-import type { ConfigObject } from '../config-schema';
-import { visitNotesPrivilege } from '../constants';
-import type { Concept, Diagnosis, DiagnosisPayload, VisitNotePayload } from '../types';
-import { defaultVisitNoteClinicalConceptUuids } from './visit-note-config-schema';
+} from "@openmrs/esm-patient-common-lib";
+import classnames from "classnames";
+import dayjs from "dayjs";
+import type { TFunction } from "i18next";
+import { debounce } from "lodash-es";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { type Control, Controller, useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { useSWRConfig } from "swr";
+import { z } from "zod";
+import type { ConfigObject } from "../config-schema";
+import { visitNotesEditPrivilege } from "../constants";
+import type {
+  Concept,
+  Diagnosis,
+  ObsPayload,
+  VisitNotePayload,
+} from "../types";
+import { defaultVisitNoteClinicalConceptUuids } from "./visit-note-config-schema";
 import {
-  buildTipoDxObs,
-  deletePatientDiagnosis,
+  findActiveObservation,
+  getReferenceUuid,
+  reconcileDiagnosisTypeObservations,
+  reconcileEncounterDiagnoses,
+  reconcileEncounterProviders,
+  reconcileObservation,
+  type ExistingEncounterDiagnosis,
+  type ExistingEncounterProvider,
+} from "./visit-note-submission";
+import {
+  AmbiguousVisitNoteSaveError,
+  assertCanonicalVisitNoteCanBeCreated,
   fetchDiagnosisConceptsByName,
   fetchPrestacionalConceptsByName,
-  getCertaintyForTipo,
+  getCanonicalVisitNoteEncounterUuid,
+  legacyNextAppointmentConceptUuid,
   legacyProceduresConceptUuids,
   legacyStructuredVisitNoteConceptUuids,
   parseTipoDxObs,
-  savePatientDiagnosis,
-  saveVisitNote,
+  saveCanonicalVisitNote,
   updateVisitNote,
+  useCanonicalVisitNoteEncounter,
   useProviderSignatureDetails,
   useVisitNoteClinicalContext,
   useVisitNotes,
-} from './visit-notes.resource';
-import styles from './visit-notes-form.scss';
+} from "./visit-notes.resource";
+import styles from "./visit-notes-form.scss";
 
-type VisitNotesFormData = Omit<z.infer<ReturnType<typeof createSchema>>, 'images'> & {
+type VisitNotesFormData = Omit<
+  z.infer<ReturnType<typeof createSchema>>,
+  "images"
+> & {
   images?: UploadedFile[];
 };
 
 type VisitNoteTextFieldName =
-  | 'codigoPrestacional'
-  | 'chiefComplaint'
-  | 'illnessDuration'
-  | 'biologicalFunctions'
-  | 'subjective'
-  | 'objective'
-  | 'assessment'
-  | 'plan'
-  | 'auxiliaryExams'
-  | 'procedures'
-  | 'prescriptions'
-  | 'referral'
-  | 'nextAppointment'
-  | 'clinicalNote';
+  | "codigoPrestacional"
+  | "chiefComplaint"
+  | "illnessDuration"
+  | "biologicalFunctions"
+  | "subjective"
+  | "objective"
+  | "assessment"
+  | "plan"
+  | "auxiliaryExams"
+  | "procedures"
+  | "prescriptions"
+  | "referral"
+  | "clinicalNote";
 
 interface VisitContextWithUuid {
   uuid?: string;
@@ -104,7 +128,11 @@ interface VisitContextWithUuid {
   };
 }
 
-type EncounterObsValue = string | number | boolean | { uuid?: string; display?: string };
+type EncounterObsValue =
+  | string
+  | number
+  | boolean
+  | { uuid?: string; display?: string };
 
 interface EncounterFormObs {
   concept?: {
@@ -114,6 +142,7 @@ interface EncounterFormObs {
   formFieldPath?: string;
   uuid?: string;
   value?: EncounterObsValue;
+  voided?: boolean;
 }
 
 interface DiagnosesDisplayProps {
@@ -130,9 +159,11 @@ interface DiagnosesDisplayProps {
 interface DiagnosisSearchProps {
   control: Control<VisitNotesFormData>;
   error?: object;
-  handleSearch: (fieldName: 'primaryDiagnosisSearch' | 'secondaryDiagnosisSearch') => void;
+  handleSearch: (
+    fieldName: "primaryDiagnosisSearch" | "secondaryDiagnosisSearch",
+  ) => void;
   labelText: string;
-  name: 'primaryDiagnosisSearch' | 'secondaryDiagnosisSearch';
+  name: "primaryDiagnosisSearch" | "secondaryDiagnosisSearch";
   placeholder: string;
   setIsSearching: (isSearching: boolean) => void;
 }
@@ -160,12 +191,13 @@ interface PrestacionalSearchProps {
 
 interface SelectedDiagnosisProps {
   diagnosis: Diagnosis;
-  kind: 'primary' | 'secondary';
+  kind: "primary" | "secondary";
   onRemove: () => void;
   t: TFunction;
 }
 
-const cie10DisplayPattern = /^(?<name>.+?)\s*\((?<code>[A-Z][0-9][A-Z0-9.]{1,5})\)\s*$/i;
+const cie10DisplayPattern =
+  /^(?<name>.+?)\s*\((?<code>[A-Z][0-9][A-Z0-9.]{1,5})\)\s*$/i;
 
 function isMostlyUpperCase(value: string) {
   const letters: Array<string> = value.match(/\p{L}/gu) ?? [];
@@ -173,37 +205,45 @@ function isMostlyUpperCase(value: string) {
     return false;
   }
 
-  const upperCaseLetters = letters.filter((letter) => letter === letter.toLocaleUpperCase('es-PE'));
+  const upperCaseLetters = letters.filter(
+    (letter) => letter === letter.toLocaleUpperCase("es-PE"),
+  );
   return upperCaseLetters.length / letters.length > 0.8;
 }
 
 function toReadableDiagnosisName(value: string) {
-  const normalizedValue = value.trim().replace(/\s+/g, ' ');
+  const normalizedValue = value.trim().replace(/\s+/g, " ");
 
   if (!isMostlyUpperCase(normalizedValue)) {
-    return normalizedValue.replace(/\b[ivxlcdm]+\b/gi, (romanNumber) => romanNumber.toLocaleUpperCase('es-PE'));
+    return normalizedValue.replace(/\b[ivxlcdm]+\b/gi, (romanNumber) =>
+      romanNumber.toLocaleUpperCase("es-PE"),
+    );
   }
 
   return normalizedValue
-    .toLocaleLowerCase('es-PE')
-    .split(' ')
+    .toLocaleLowerCase("es-PE")
+    .split(" ")
     .map((word, index) => {
-      const normalizedWord = word.replace(/[^\p{L}]/gu, '');
+      const normalizedWord = word.replace(/[^\p{L}]/gu, "");
 
       if (/^[ivxlcdm]+$/i.test(normalizedWord)) {
-        return word.toLocaleUpperCase('es-PE');
+        return word.toLocaleUpperCase("es-PE");
       }
 
-      return index === 0 ? word.replace(/^\p{L}/u, (letter) => letter.toLocaleUpperCase('es-PE')) : word;
+      return index === 0
+        ? word.replace(/^\p{L}/u, (letter) => letter.toLocaleUpperCase("es-PE"))
+        : word;
     })
-    .join(' ');
+    .join(" ");
 }
 
 function getConceptMappingCode(concept: Concept) {
   const mappings = concept.conceptMappings ?? concept.mappings ?? [];
   const cie10Mapping = mappings.find((mapping) => {
     const sourceName =
-      mapping.conceptReferenceTerm?.conceptSource?.name ?? mapping.conceptReferenceTerm?.conceptSource?.display ?? '';
+      mapping.conceptReferenceTerm?.conceptSource?.name ??
+      mapping.conceptReferenceTerm?.conceptSource?.display ??
+      "";
     return /icd[-\s]?10|cie[-\s]?10/i.test(sourceName);
   });
 
@@ -211,14 +251,19 @@ function getConceptMappingCode(concept: Concept) {
 }
 
 function formatDiagnosisDisplay(conceptOrDiagnosis: Concept | Diagnosis) {
-  const display = conceptOrDiagnosis.display?.trim() ?? '';
-  const codeFromMapping = 'uuid' in conceptOrDiagnosis ? getConceptMappingCode(conceptOrDiagnosis) : undefined;
+  const display = conceptOrDiagnosis.display?.trim() ?? "";
+  const codeFromMapping =
+    "uuid" in conceptOrDiagnosis
+      ? getConceptMappingCode(conceptOrDiagnosis)
+      : undefined;
   const match = display.match(cie10DisplayPattern);
   const code = codeFromMapping ?? match?.groups?.code;
   const rawName = match?.groups?.name ?? display;
   const readableName = toReadableDiagnosisName(rawName);
 
-  return code ? `${code.toLocaleUpperCase('es-PE')} - ${readableName}` : readableName;
+  return code
+    ? `${code.toLocaleUpperCase("es-PE")} - ${readableName}`
+    : readableName;
 }
 
 const createSchema = (_t: TFunction) => {
@@ -238,11 +283,23 @@ const createSchema = (_t: TFunction) => {
     procedures: z.string().optional(),
     prescriptions: z.string().optional(),
     referral: z.string().optional(),
-    nextAppointment: z.string().optional(),
+    nextAppointment: z.date().nullable().optional(),
     clinicalNote: z.string().optional(),
     images: z.array(z.any()).optional(),
   });
 };
+
+export function parseOpenmrsDateValue(value: unknown): Date | null {
+  if (value == null || value === "") return null;
+  const parsed = dayjs(value instanceof Date ? value : String(value));
+  return parsed.isValid() ? parsed.startOf("day").toDate() : null;
+}
+
+export function toOpenmrsDateValue(value?: Date | null): string | undefined {
+  return value && dayjs(value).isValid()
+    ? dayjs(value).format("YYYY-MM-DD")
+    : undefined;
+}
 
 export function getSubmittedEncounterDatetime(
   noteDate: Date,
@@ -272,25 +329,33 @@ export type EditableVisitNoteEncounter = Encounter & {
 
 export interface VisitNotesFormProps {
   encounter?: EditableVisitNoteEncounter;
-  formContext: 'creating' | 'editing';
+  formContext?: "creating" | "editing";
+  onAfterSave?: () => unknown;
 }
 
-const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}>> = ({
+const VisitNotesFormContent: React.FC<
+  PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}>
+> = ({
   closeWorkspace,
-  workspaceProps: { formContext, encounter },
+  workspaceProps: { formContext, encounter, onAfterSave },
   groupProps: { patientUuid, patient, visitContext },
 }) => {
-  const isEditing: boolean = Boolean(formContext === 'editing' && encounter?.id);
+  const isEditing: boolean = Boolean(
+    formContext === "editing" && encounter?.id,
+  );
   const searchTimeoutInMs = 500;
   const { t } = useTranslation();
-  const isTablet = useLayoutType() === 'tablet';
+  const isTablet = useLayoutType() === "tablet";
   const session = useSession();
   const { isPrimaryDiagnosisRequired, ...config } = useConfig<ConfigObject>();
   const visitNoteConfig = {
     ...defaultVisitNoteClinicalConceptUuids,
     ...config.visitNoteConfig,
   };
-  const memoizedState = useMemo(() => ({ patientUuid, patient }), [patientUuid, patient]);
+  const memoizedState = useMemo(
+    () => ({ patientUuid, patient }),
+    [patientUuid, patient],
+  );
   const {
     clinicianEncounterRole,
     encounterNoteTextConceptUuid,
@@ -315,23 +380,53 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
     diagnosisTypeDefinitivoUuid,
     diagnosisTypeRepetitivoUuid,
   } = visitNoteConfig;
-  const currentVisitContext = visitContext as VisitContextWithUuid | null | undefined;
-  const visitUuid = currentVisitContext?.visit?.uuid ?? currentVisitContext?.uuid;
+  const currentVisitContext = visitContext as
+    | VisitContextWithUuid
+    | null
+    | undefined;
+  const visitUuid =
+    currentVisitContext?.visit?.uuid ?? currentVisitContext?.uuid;
+  const encounterVisitUuid = getReferenceUuid(
+    (
+      encounter as
+        | (EditableVisitNoteEncounter & { visit?: string | { uuid?: string } })
+        | undefined
+    )?.visit,
+  );
   const locationUuid =
-    encounter?.location?.uuid ?? currentVisitContext?.visit?.location?.uuid ?? currentVisitContext?.location?.uuid;
-  const { clinicalContext } = useVisitNoteClinicalContext(patientUuid, visitUuid);
-  const [isLoadingPrimaryDiagnoses, setIsLoadingPrimaryDiagnoses] = useState(false);
-  const [isLoadingSecondaryDiagnoses, setIsLoadingSecondaryDiagnoses] = useState(false);
+    getReferenceUuid(encounter?.location) ??
+    currentVisitContext?.visit?.location?.uuid ??
+    currentVisitContext?.location?.uuid;
+  const { clinicalContext } = useVisitNoteClinicalContext(
+    patientUuid,
+    visitUuid,
+  );
+  const [isLoadingPrimaryDiagnoses, setIsLoadingPrimaryDiagnoses] =
+    useState(false);
+  const [isLoadingSecondaryDiagnoses, setIsLoadingSecondaryDiagnoses] =
+    useState(false);
   const [isLoadingPrestacionales, setIsLoadingPrestacionales] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [selectedPrimaryDiagnoses, setSelectedPrimaryDiagnoses] = useState<Array<Diagnosis>>([]);
-  const [selectedSecondaryDiagnoses, setSelectedSecondaryDiagnoses] = useState<Array<Diagnosis>>([]);
-  const [searchPrimaryResults, setSearchPrimaryResults] = useState<Array<Concept>>(null);
-  const [searchSecondaryResults, setSearchSecondaryResults] = useState<Array<Concept>>(null);
-  const [searchPrestacionalResults, setSearchPrestacionalResults] = useState<Array<Concept>>([]);
-  const [selectedCodigoPrestacional, setSelectedCodigoPrestacional] = useState<Concept | null>(null);
-  const [codigoPrestacionalSearchValue, setCodigoPrestacionalSearchValue] = useState('');
-  const [combinedDiagnoses, setCombinedDiagnoses] = useState<Array<Diagnosis>>([]);
+  const [selectedPrimaryDiagnoses, setSelectedPrimaryDiagnoses] = useState<
+    Array<Diagnosis>
+  >([]);
+  const [selectedSecondaryDiagnoses, setSelectedSecondaryDiagnoses] = useState<
+    Array<Diagnosis>
+  >([]);
+  const [searchPrimaryResults, setSearchPrimaryResults] =
+    useState<Array<Concept>>(null);
+  const [searchSecondaryResults, setSearchSecondaryResults] =
+    useState<Array<Concept>>(null);
+  const [searchPrestacionalResults, setSearchPrestacionalResults] = useState<
+    Array<Concept>
+  >([]);
+  const [selectedCodigoPrestacional, setSelectedCodigoPrestacional] =
+    useState<Concept | null>(null);
+  const [codigoPrestacionalSearchValue, setCodigoPrestacionalSearchValue] =
+    useState("");
+  const [combinedDiagnoses, setCombinedDiagnoses] = useState<Array<Diagnosis>>(
+    [],
+  );
   const [rows, setRows] = useState<number>();
   const [error, setError] = useState<Error>(null);
   const { allowedFileExtensions } = useAllowedFileExtensions();
@@ -339,26 +434,32 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
   // MINSA/NTS-139 records each diagnosis as Presuntivo, Definitivo or
   // Repetitivo. OpenMRS patientdiagnoses only stores certainty, so SIH.SALUS
   // keeps the exact MINSA type as an obs keyed by the diagnosis concept UUID.
-  const [diagnosisTipos, setDiagnosisTipos] = useState<Record<string, string>>({});
+  const [diagnosisTipos, setDiagnosisTipos] = useState<Record<string, string>>(
+    {},
+  );
   const [hasDiagnosisChanges, setHasDiagnosisChanges] = useState(false);
+  const submitInProgressRef = useRef(false);
 
   const visitNoteFormSchema = useMemo(() => createSchema(t), [t]);
-  const encounterObs = (encounter?.obs ?? []) as Array<EncounterFormObs>;
+  const encounterObs = useMemo(
+    () => (encounter?.obs ?? []) as Array<EncounterFormObs>,
+    [encounter?.obs],
+  );
   const getEncounterObs = useCallback(
     (conceptUuid: string, formFieldPath?: string) =>
-      encounterObs.find(
-        (obs) => obs.concept?.uuid === conceptUuid && (!formFieldPath || obs.formFieldPath === formFieldPath),
-      ),
+      findActiveObservation(encounterObs, conceptUuid, formFieldPath) as
+        | EncounterFormObs
+        | undefined,
     [encounterObs],
   );
   const getEncounterObsValue = useCallback(
     (conceptUuid: string, formFieldPath?: string) => {
       const obs = getEncounterObs(conceptUuid, formFieldPath);
       if (obs?.value == null) {
-        return '';
+        return "";
       }
-      if (typeof obs.value === 'object') {
-        return String(obs.value.display ?? obs.value.uuid ?? '');
+      if (typeof obs.value === "object") {
+        return String(obs.value.display ?? obs.value.uuid ?? "");
       }
       return String(obs.value);
     },
@@ -367,65 +468,116 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
   const getEncounterObsConceptValue = useCallback(
     (conceptUuid: string, formFieldPath?: string): Concept | null => {
       const obs = getEncounterObs(conceptUuid, formFieldPath);
-      if (!obs?.value || typeof obs.value !== 'object') {
+      if (!obs?.value || typeof obs.value !== "object") {
         return null;
       }
 
       const value = obs.value as { display?: string; uuid?: string };
-      return value.uuid ? { uuid: value.uuid, display: value.display ?? value.uuid } : null;
+      return value.uuid
+        ? { uuid: value.uuid, display: value.display ?? value.uuid }
+        : null;
     },
     [getEncounterObs],
   );
   const getEncounterProceduresValue = useCallback(
     () =>
-      getEncounterObsValue(proceduresConceptUuid, 'procedures') ||
-      getEncounterObsValue(legacyProceduresConceptUuids.textWithProceduresPath, 'procedures') ||
-      getEncounterObsValue(legacyProceduresConceptUuids.procedure, 'procedures') ||
+      getEncounterObsValue(proceduresConceptUuid, "procedures") ||
+      getEncounterObsValue(
+        legacyProceduresConceptUuids.textWithProceduresPath,
+        "procedures",
+      ) ||
+      getEncounterObsValue(
+        legacyProceduresConceptUuids.procedure,
+        "procedures",
+      ) ||
       getEncounterObsValue(proceduresConceptUuid) ||
       getEncounterObsValue(legacyProceduresConceptUuids.procedure),
     [getEncounterObsValue, proceduresConceptUuid],
   );
   const getEncounterCodigoPrestacionalValue = useCallback(
     () =>
-      getEncounterObsConceptValue(codigoPrestacionalConceptUuid, 'codigo-prestacional')?.display ||
-      getEncounterObsValue(codigoPrestacionalConceptUuid, 'codigo-prestacional') ||
-      getEncounterObsValue(legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath, 'codigo-prestacional'),
-    [codigoPrestacionalConceptUuid, getEncounterObsConceptValue, getEncounterObsValue],
+      getEncounterObsConceptValue(
+        codigoPrestacionalConceptUuid,
+        "codigo-prestacional",
+      )?.display ||
+      getEncounterObsValue(
+        codigoPrestacionalConceptUuid,
+        "codigo-prestacional",
+      ) ||
+      getEncounterObsValue(
+        legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath,
+        "codigo-prestacional",
+      ),
+    [
+      codigoPrestacionalConceptUuid,
+      getEncounterObsConceptValue,
+      getEncounterObsValue,
+    ],
   );
   const getEncounterBiologicalFunctionsValue = useCallback(
     () =>
-      getEncounterObsValue(biologicalFunctionsConceptUuid, 'biological-functions') ||
-      getEncounterObsValue(legacyStructuredVisitNoteConceptUuids.anamnesisText, 'biological-functions'),
+      getEncounterObsValue(
+        biologicalFunctionsConceptUuid,
+        "biological-functions",
+      ) ||
+      getEncounterObsValue(
+        legacyStructuredVisitNoteConceptUuids.anamnesisText,
+        "biological-functions",
+      ),
     [biologicalFunctionsConceptUuid, getEncounterObsValue],
   );
   const getEncounterSubjectiveValue = useCallback(
-    () => getEncounterObsValue(soapSubjectiveConceptUuid) || getEncounterObsValue(anamnesisConceptUuid),
+    () =>
+      getEncounterObsValue(soapSubjectiveConceptUuid) ||
+      getEncounterObsValue(anamnesisConceptUuid),
     [anamnesisConceptUuid, getEncounterObsValue, soapSubjectiveConceptUuid],
   );
   const getEncounterPlanValue = useCallback(
     () =>
-      getEncounterObsValue(soapPlanConceptUuid, 'soap-plan') ||
-      getEncounterObsValue(legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath, 'soap-plan'),
+      getEncounterObsValue(soapPlanConceptUuid, "soap-plan") ||
+      getEncounterObsValue(
+        legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath,
+        "soap-plan",
+      ),
     [getEncounterObsValue, soapPlanConceptUuid],
+  );
+  const getEncounterNextAppointmentValue = useCallback(
+    () =>
+      parseOpenmrsDateValue(getEncounterObsValue(nextAppointmentConceptUuid)) ??
+      parseOpenmrsDateValue(
+        getEncounterObsValue(legacyNextAppointmentConceptUuid),
+      ),
+    [getEncounterObsValue, nextAppointmentConceptUuid],
   );
 
   const customResolver = useCallback(
     async (data, context, options) => {
-      const zodResult = await zodResolver(visitNoteFormSchema)(data, context, options);
+      const zodResult = await zodResolver(visitNoteFormSchema)(
+        data,
+        context,
+        options,
+      );
 
-      const requiredErrors: Record<string, { type: string; message: string }> = {};
+      const requiredErrors: Record<string, { type: string; message: string }> =
+        {};
       if (isPrimaryDiagnosisRequired && selectedPrimaryDiagnoses.length === 0) {
         requiredErrors.primaryDiagnosisSearch = {
-          type: 'custom',
-          message: t('primaryDiagnosisRequired', 'Choose at least one primary diagnosis'),
+          type: "custom",
+          message: t(
+            "primaryDiagnosisRequired",
+            "Choose at least one primary diagnosis",
+          ),
         };
       }
       // The benefit code feeds FUA/HIS reporting, so free text without a catalog
       // selection is not a valid value.
       if (!selectedCodigoPrestacional) {
         requiredErrors.codigoPrestacional = {
-          type: 'custom',
-          message: t('codigoPrestacionalRequired', 'Seleccione un código prestacional del catálogo'),
+          type: "custom",
+          message: t(
+            "codigoPrestacionalRequired",
+            "Seleccione un código prestacional del catálogo",
+          ),
         };
       }
 
@@ -441,7 +593,13 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
 
       return zodResult;
     },
-    [visitNoteFormSchema, isPrimaryDiagnosisRequired, selectedPrimaryDiagnoses, selectedCodigoPrestacional, t],
+    [
+      visitNoteFormSchema,
+      isPrimaryDiagnosisRequired,
+      selectedPrimaryDiagnoses,
+      selectedCodigoPrestacional,
+      t,
+    ],
   );
 
   const {
@@ -452,33 +610,54 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
     setValue,
     watch,
   } = useForm<VisitNotesFormData>({
-    mode: 'onSubmit',
+    mode: "onSubmit",
     resolver: customResolver,
     defaultValues: {
-      primaryDiagnosisSearch: '',
+      primaryDiagnosisSearch: "",
       noteDate: isEditing ? new Date(encounter.rawDatetime) : new Date(),
-      codigoPrestacional: isEditing ? getEncounterCodigoPrestacionalValue() : '',
-      chiefComplaint: isEditing ? getEncounterObsValue(chiefComplaintConceptUuid) : '',
-      illnessDuration: isEditing ? getEncounterObsValue(illnessDurationConceptUuid) : '',
-      biologicalFunctions: isEditing ? getEncounterBiologicalFunctionsValue() : '',
-      subjective: isEditing ? getEncounterSubjectiveValue() : '',
-      objective: isEditing ? getEncounterObsValue(soapObjectiveConceptUuid) : '',
-      assessment: isEditing ? getEncounterObsValue(soapAssessmentConceptUuid) : '',
-      plan: isEditing ? getEncounterPlanValue() : '',
-      auxiliaryExams: isEditing ? getEncounterObsValue(labOrdersConceptUuid) : '',
-      procedures: isEditing ? getEncounterProceduresValue() : '',
-      prescriptions: isEditing ? getEncounterObsValue(prescriptionsConceptUuid) : '',
-      referral: isEditing ? getEncounterObsValue(referralConceptUuid) : '',
-      nextAppointment: isEditing ? getEncounterObsValue(nextAppointmentConceptUuid) : '',
+      codigoPrestacional: isEditing
+        ? getEncounterCodigoPrestacionalValue()
+        : "",
+      chiefComplaint: isEditing
+        ? getEncounterObsValue(chiefComplaintConceptUuid)
+        : "",
+      illnessDuration: isEditing
+        ? getEncounterObsValue(illnessDurationConceptUuid)
+        : "",
+      biologicalFunctions: isEditing
+        ? getEncounterBiologicalFunctionsValue()
+        : "",
+      subjective: isEditing ? getEncounterSubjectiveValue() : "",
+      objective: isEditing
+        ? getEncounterObsValue(soapObjectiveConceptUuid)
+        : "",
+      assessment: isEditing
+        ? getEncounterObsValue(soapAssessmentConceptUuid)
+        : "",
+      plan: isEditing ? getEncounterPlanValue() : "",
+      auxiliaryExams: isEditing
+        ? getEncounterObsValue(labOrdersConceptUuid)
+        : "",
+      procedures: isEditing ? getEncounterProceduresValue() : "",
+      prescriptions: isEditing
+        ? getEncounterObsValue(prescriptionsConceptUuid)
+        : "",
+      referral: isEditing ? getEncounterObsValue(referralConceptUuid) : "",
+      nextAppointment: isEditing ? getEncounterNextAppointmentValue() : null,
       clinicalNote: isEditing
-        ? String(encounter?.obs?.find((obs) => obs.concept.uuid === encounterNoteTextConceptUuid)?.value || '')
-        : '',
+        ? getEncounterObsValue(encounterNoteTextConceptUuid)
+        : "",
     },
   });
 
   const prefillTextField = useCallback(
     (fieldName: VisitNoteTextFieldName, value?: string) => {
-      if (isEditing || !value?.trim() || dirtyFields[fieldName] || watch(fieldName)) {
+      if (
+        isEditing ||
+        !value?.trim() ||
+        dirtyFields[fieldName] ||
+        watch(fieldName)
+      ) {
         return;
       }
       setValue(fieldName, value, { shouldDirty: true });
@@ -489,7 +668,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
   useEffect(() => {
     const existingCodigoPrestacional = getEncounterObsConceptValue(
       codigoPrestacionalConceptUuid,
-      'codigo-prestacional',
+      "codigo-prestacional",
     );
     if (isEditing && existingCodigoPrestacional) {
       setSelectedCodigoPrestacional(existingCodigoPrestacional);
@@ -497,39 +676,69 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
   }, [codigoPrestacionalConceptUuid, getEncounterObsConceptValue, isEditing]);
 
   useEffect(() => {
-    prefillTextField('codigoPrestacional', clinicalContext?.codigoPrestacional);
+    prefillTextField("codigoPrestacional", clinicalContext?.codigoPrestacional);
     // Legacy notes carry the code as text only; seeding the search box lets the
     // operator confirm the catalog concept the mandatory validation now demands.
     if (clinicalContext?.codigoPrestacional && !selectedCodigoPrestacional) {
-      setCodigoPrestacionalSearchValue((current) => current || clinicalContext.codigoPrestacional);
+      setCodigoPrestacionalSearchValue(
+        (current) => current || clinicalContext.codigoPrestacional,
+      );
     }
-    prefillTextField('chiefComplaint', clinicalContext?.chiefComplaint);
-    prefillTextField('illnessDuration', clinicalContext?.illnessDuration);
-    prefillTextField('biologicalFunctions', clinicalContext?.biologicalFunctions);
-    prefillTextField('subjective', clinicalContext?.subjective);
-    prefillTextField('objective', clinicalContext?.objective);
-    prefillTextField('assessment', clinicalContext?.assessment);
-    prefillTextField('plan', clinicalContext?.plan);
-    prefillTextField('auxiliaryExams', clinicalContext?.auxiliaryExams);
-    prefillTextField('procedures', clinicalContext?.procedures);
-    prefillTextField('prescriptions', clinicalContext?.prescriptions);
-    prefillTextField('referral', clinicalContext?.referral);
-    prefillTextField('nextAppointment', clinicalContext?.nextAppointment);
+    prefillTextField("chiefComplaint", clinicalContext?.chiefComplaint);
+    prefillTextField("illnessDuration", clinicalContext?.illnessDuration);
+    prefillTextField(
+      "biologicalFunctions",
+      clinicalContext?.biologicalFunctions,
+    );
+    prefillTextField("subjective", clinicalContext?.subjective);
+    prefillTextField("objective", clinicalContext?.objective);
+    prefillTextField("assessment", clinicalContext?.assessment);
+    prefillTextField("plan", clinicalContext?.plan);
+    prefillTextField("auxiliaryExams", clinicalContext?.auxiliaryExams);
+    prefillTextField("procedures", clinicalContext?.procedures);
+    prefillTextField("prescriptions", clinicalContext?.prescriptions);
+    prefillTextField("referral", clinicalContext?.referral);
   }, [clinicalContext, prefillTextField, selectedCodigoPrestacional]);
+
+  useEffect(() => {
+    const nextAppointment = parseOpenmrsDateValue(
+      clinicalContext?.nextAppointment,
+    );
+    if (
+      !isEditing &&
+      nextAppointment &&
+      !dirtyFields.nextAppointment &&
+      !watch("nextAppointment")
+    ) {
+      setValue("nextAppointment", nextAppointment, { shouldDirty: true });
+    }
+  }, [
+    clinicalContext?.nextAppointment,
+    dirtyFields.nextAppointment,
+    isEditing,
+    setValue,
+    watch,
+  ]);
 
   useEffect(() => {
     if (encounter?.diagnoses?.length) {
       try {
-        const transformedDiagnoses = encounter.diagnoses.map((d) => ({
-          patient: patientUuid,
-          diagnosis: { coded: d.diagnosis.coded?.uuid },
-          certainty: d.certainty,
-          rank: d.rank,
-          display: d.display,
-        }));
+        const transformedDiagnoses = encounter.diagnoses
+          .filter((diagnosis) => !diagnosis.voided)
+          .map((d) => ({
+            patient: patientUuid,
+            diagnosis: { coded: d.diagnosis.coded?.uuid },
+            certainty: d.certainty,
+            rank: d.rank,
+            display: d.display,
+          }));
 
-        const primaryDiagnoses = transformedDiagnoses.filter((d) => d.rank === 1);
-        const secondaryDiagnoses = transformedDiagnoses.filter((d) => d.rank === 2);
+        const primaryDiagnoses = transformedDiagnoses.filter(
+          (d) => d.rank === 1,
+        );
+        const secondaryDiagnoses = transformedDiagnoses.filter(
+          (d) => d.rank === 2,
+        );
 
         setSelectedPrimaryDiagnoses(primaryDiagnoses);
         setSelectedSecondaryDiagnoses(secondaryDiagnoses);
@@ -537,63 +746,97 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
 
         // Restore the exact MINSA diagnosis type (P/D/R) saved alongside the
         // encounter, keyed back to its coded diagnosis via the formFieldPath.
-        const restored = parseTipoDxObs((encounter.obs ?? []) as Array<EncounterFormObs>);
+        const restored = parseTipoDxObs(
+          (encounter.obs ?? []) as Array<EncounterFormObs>,
+        );
         if (Object.keys(restored).length) {
           setDiagnosisTipos(restored);
         }
-      } catch {
-        setError(new Error(t('errorTransformingDiagnoses', 'Error transforming diagnoses')));
-        createErrorHandler();
+      } catch (caughtError) {
+        const transformedError = new Error(
+          t("errorTransformingDiagnoses", "Error transforming diagnoses"),
+          {
+            cause: caughtError,
+          },
+        );
+        setError(transformedError);
+        createErrorHandler()(transformedError);
       }
     }
   }, [encounter, patientUuid, t]);
 
-  const currentImages = watch('images');
+  const currentImages = watch("images");
 
   const { mutateVisitNotes } = useVisitNotes(patientUuid);
   const { mutate: globalMutate } = useSWRConfig();
 
   const mutateAttachments = useCallback(
-    () => globalMutate((key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/attachment`)),
+    () =>
+      globalMutate(
+        (key) =>
+          typeof key === "string" &&
+          key.startsWith(`${restBaseUrl}/attachment`),
+      ),
     [globalMutate],
   );
 
   const providerUuid = session?.currentProvider?.uuid;
   const encounterProvider = encounter?.encounterProviders?.[0]?.provider;
-  const registeredProviderUuid = isEditing ? encounterProvider?.uuid : providerUuid;
-  const { providerSignatureDetails } = useProviderSignatureDetails(registeredProviderUuid);
+  const encounterProvidersPayload = useMemo(
+    () =>
+      reconcileEncounterProviders(
+        isEditing,
+        (encounter?.encounterProviders ??
+          []) as Array<ExistingEncounterProvider>,
+        providerUuid,
+        clinicianEncounterRole,
+      ),
+    [
+      clinicianEncounterRole,
+      encounter?.encounterProviders,
+      isEditing,
+      providerUuid,
+    ],
+  );
+  const registeredProviderUuid = isEditing
+    ? (getReferenceUuid(encounterProvider) ?? providerUuid)
+    : providerUuid;
+  const { providerSignatureDetails } = useProviderSignatureDetails(
+    registeredProviderUuid,
+  );
   const registeredProviderName =
     providerSignatureDetails.name ??
     encounterProvider?.person?.display ??
     encounterProvider?.display ??
     session?.currentProvider?.identifier;
   const registeredProviderCode =
-    providerSignatureDetails.professionalRegistration ?? providerSignatureDetails.identifier;
+    providerSignatureDetails.professionalRegistration ??
+    providerSignatureDetails.identifier;
 
   const debouncedSearch = useMemo(
     () =>
       debounce((fieldQuery, fieldName) => {
-        clearErrors('primaryDiagnosisSearch');
+        clearErrors("primaryDiagnosisSearch");
         if (fieldQuery) {
-          if (fieldName === 'primaryDiagnosisSearch') {
+          if (fieldName === "primaryDiagnosisSearch") {
             setIsLoadingPrimaryDiagnoses(true);
-          } else if (fieldName === 'secondaryDiagnosisSearch') {
+          } else if (fieldName === "secondaryDiagnosisSearch") {
             setIsLoadingSecondaryDiagnoses(true);
           }
 
           fetchDiagnosisConceptsByName(fieldQuery, config.diagnosisConceptClass)
             .then((matchingConceptDiagnoses: Array<Concept>) => {
-              if (fieldName === 'primaryDiagnosisSearch') {
+              if (fieldName === "primaryDiagnosisSearch") {
                 setSearchPrimaryResults(matchingConceptDiagnoses);
                 setIsLoadingPrimaryDiagnoses(false);
-              } else if (fieldName === 'secondaryDiagnosisSearch') {
+              } else if (fieldName === "secondaryDiagnosisSearch") {
                 setSearchSecondaryResults(matchingConceptDiagnoses);
                 setIsLoadingSecondaryDiagnoses(false);
               }
             })
             .catch((e) => {
               setError(e);
-              createErrorHandler();
+              createErrorHandler()(e);
             });
         }
       }, searchTimeoutInMs),
@@ -611,7 +854,10 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
         }
 
         setIsLoadingPrestacionales(true);
-        fetchPrestacionalConceptsByName(trimmedQuery, config.prestacionalConceptSourceName)
+        fetchPrestacionalConceptsByName(
+          trimmedQuery,
+          config.prestacionalConceptSourceName,
+        )
           .then((matchingPrestacionales) => {
             setSearchPrestacionalResults(matchingPrestacionales);
             setIsLoadingPrestacionales(false);
@@ -619,14 +865,14 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
           .catch((e) => {
             setError(e);
             setIsLoadingPrestacionales(false);
-            createErrorHandler();
+            createErrorHandler()(e);
           });
       }, searchTimeoutInMs),
     [config.prestacionalConceptSourceName],
   );
 
   const handleSearch = useCallback(
-    (fieldName: 'primaryDiagnosisSearch' | 'secondaryDiagnosisSearch') => {
+    (fieldName: "primaryDiagnosisSearch" | "secondaryDiagnosisSearch") => {
       const fieldQuery = watch(fieldName);
       if (fieldQuery) {
         debouncedSearch(fieldQuery, fieldName);
@@ -640,7 +886,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
     (value: string) => {
       setCodigoPrestacionalSearchValue(value);
       setSelectedCodigoPrestacional(null);
-      setValue('codigoPrestacional', '');
+      setValue("codigoPrestacional", "");
       debouncedPrestacionalSearch(value);
     },
     [debouncedPrestacionalSearch, setValue],
@@ -649,22 +895,22 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
   const handleAddPrestacional = useCallback(
     (concept: Concept) => {
       setSelectedCodigoPrestacional(concept);
-      setCodigoPrestacionalSearchValue('');
+      setCodigoPrestacionalSearchValue("");
       setSearchPrestacionalResults([]);
-      setValue('codigoPrestacional', concept.display, { shouldDirty: true });
-      clearErrors('codigoPrestacional');
+      setValue("codigoPrestacional", concept.display, { shouldDirty: true });
+      clearErrors("codigoPrestacional");
     },
     [clearErrors, setValue],
   );
 
   const handleRemovePrestacional = useCallback(() => {
     setSelectedCodigoPrestacional(null);
-    setValue('codigoPrestacional', '', { shouldDirty: true });
+    setValue("codigoPrestacional", "", { shouldDirty: true });
   }, [setValue]);
 
   const createDiagnosis = useCallback(
     (concept: Concept) => ({
-      certainty: 'PROVISIONAL',
+      certainty: "PROVISIONAL",
       display: concept.display,
       diagnosis: {
         coded: concept.uuid,
@@ -678,20 +924,32 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
   const handleAddDiagnosis = useCallback(
     (conceptDiagnosisToAdd: Concept, searchInputField: string) => {
       const newDiagnosis = createDiagnosis(conceptDiagnosisToAdd);
-      if (searchInputField === 'primaryDiagnosisSearch') {
+      if (searchInputField === "primaryDiagnosisSearch") {
         newDiagnosis.rank = 1;
-        setValue('primaryDiagnosisSearch', '');
+        setValue("primaryDiagnosisSearch", "");
         setSearchPrimaryResults([]);
-        setSelectedPrimaryDiagnoses((selectedDiagnoses) => [...selectedDiagnoses, newDiagnosis]);
-        clearErrors('primaryDiagnosisSearch');
-      } else if (searchInputField === 'secondaryDiagnosisSearch') {
-        setValue('secondaryDiagnosisSearch', '');
+        setSelectedPrimaryDiagnoses((selectedDiagnoses) => [
+          ...selectedDiagnoses,
+          newDiagnosis,
+        ]);
+        clearErrors("primaryDiagnosisSearch");
+      } else if (searchInputField === "secondaryDiagnosisSearch") {
+        setValue("secondaryDiagnosisSearch", "");
         setSearchSecondaryResults([]);
-        setSelectedSecondaryDiagnoses((selectedDiagnoses) => [...selectedDiagnoses, newDiagnosis]);
+        setSelectedSecondaryDiagnoses((selectedDiagnoses) => [
+          ...selectedDiagnoses,
+          newDiagnosis,
+        ]);
       }
-      setCombinedDiagnoses((combinedDiagnoses) => [...combinedDiagnoses, newDiagnosis]);
+      setCombinedDiagnoses((combinedDiagnoses) => [
+        ...combinedDiagnoses,
+        newDiagnosis,
+      ]);
       // Default tipo = Presuntivo for every newly added diagnosis
-      setDiagnosisTipos((prev) => ({ ...prev, [conceptDiagnosisToAdd.uuid]: diagnosisTypePresuntivoUuid }));
+      setDiagnosisTipos((prev) => ({
+        ...prev,
+        [conceptDiagnosisToAdd.uuid]: diagnosisTypePresuntivoUuid,
+      }));
       setHasDiagnosisChanges(true);
     },
     [createDiagnosis, setValue, clearErrors, diagnosisTypePresuntivoUuid],
@@ -699,21 +957,26 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
 
   const handleRemoveDiagnosis = useCallback(
     (diagnosisToRemove: Diagnosis, searchInputField: string) => {
-      if (searchInputField === 'primaryInputSearch') {
+      if (searchInputField === "primaryInputSearch") {
         setSelectedPrimaryDiagnoses(
           selectedPrimaryDiagnoses.filter(
-            (diagnosis) => diagnosis.diagnosis.coded !== diagnosisToRemove.diagnosis.coded,
+            (diagnosis) =>
+              diagnosis.diagnosis.coded !== diagnosisToRemove.diagnosis.coded,
           ),
         );
-      } else if (searchInputField === 'secondaryInputSearch') {
+      } else if (searchInputField === "secondaryInputSearch") {
         setSelectedSecondaryDiagnoses(
           selectedSecondaryDiagnoses.filter(
-            (diagnosis) => diagnosis.diagnosis.coded !== diagnosisToRemove.diagnosis.coded,
+            (diagnosis) =>
+              diagnosis.diagnosis.coded !== diagnosisToRemove.diagnosis.coded,
           ),
         );
       }
       setCombinedDiagnoses(
-        combinedDiagnoses.filter((diagnosis) => diagnosis.diagnosis.coded !== diagnosisToRemove.diagnosis.coded),
+        combinedDiagnoses.filter(
+          (diagnosis) =>
+            diagnosis.diagnosis.coded !== diagnosisToRemove.diagnosis.coded,
+        ),
       );
       setDiagnosisTipos((prev) => {
         const next = { ...prev };
@@ -725,30 +988,35 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
     [combinedDiagnoses, selectedPrimaryDiagnoses, selectedSecondaryDiagnoses],
   );
 
-  const handleDiagnosisTypeChange = useCallback((diagnosisUuid: string, value: string) => {
-    setDiagnosisTipos((prev) => ({ ...prev, [diagnosisUuid]: value }));
-    setHasDiagnosisChanges(true);
-  }, []);
+  const handleDiagnosisTypeChange = useCallback(
+    (diagnosisUuid: string, value: string) => {
+      setDiagnosisTipos((prev) => ({ ...prev, [diagnosisUuid]: value }));
+      setHasDiagnosisChanges(true);
+    },
+    [],
+  );
 
   const isDiagnosisNotSelected = (diagnosis: Concept) => {
     const isPrimaryDiagnosisSelected = selectedPrimaryDiagnoses.some(
-      (selectedDiagnosis) => diagnosis.uuid === selectedDiagnosis.diagnosis.coded,
+      (selectedDiagnosis) =>
+        diagnosis.uuid === selectedDiagnosis.diagnosis.coded,
     );
     const isSecondaryDiagnosisSelected = selectedSecondaryDiagnoses.some(
-      (selectedDiagnosis) => diagnosis.uuid === selectedDiagnosis.diagnosis.coded,
+      (selectedDiagnosis) =>
+        diagnosis.uuid === selectedDiagnosis.diagnosis.coded,
     );
 
     return !isPrimaryDiagnosisSelected && !isSecondaryDiagnosisSelected;
   };
 
   const showImageCaptureModal = useCallback(() => {
-    const close = showModal('capture-photo-modal', {
+    const close = showModal("capture-photo-modal", {
       saveFile: (file: UploadedFile) => {
-        if (file.capturedFromWebcam && !file.fileName.includes('.')) {
+        if (file.capturedFromWebcam && !file.fileName.includes(".")) {
           file.fileName = `${file.fileName}.png`;
         }
 
-        setValue('images', currentImages ? [...currentImages, file] : [file]);
+        setValue("images", currentImages ? [...currentImages, file] : [file]);
         close();
         return;
       },
@@ -767,17 +1035,20 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
   const handleRemoveImage = (index: number) => {
     const updatedImages = [...currentImages];
     updatedImages.splice(index, 1);
-    setValue('images', updatedImages);
+    setValue("images", updatedImages);
 
     showSnackbar({
-      title: t('imageRemoved', 'Image removed'),
-      kind: 'success',
+      title: t("imageRemoved", "Image removed"),
+      kind: "success",
       isLowContrast: true,
     });
   };
 
   const onSubmit = useCallback(
-    (data: VisitNotesFormData) => {
+    async (data: VisitNotesFormData) => {
+      if (submitInProgressRef.current) return;
+      submitInProgressRef.current = true;
+
       const {
         noteDate,
         chiefComplaint,
@@ -796,203 +1067,304 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
         images,
       } = data;
 
-      if (isPrimaryDiagnosisRequired && !selectedPrimaryDiagnoses.length) {
-        return;
-      }
-
-      if (!locationUuid) {
-        showSnackbar({
-          title: t('visitNoteSaveError', 'Error saving visit note'),
-          subtitle: t('activeVisitLocationRequired', 'An active visit with an operational UPSS is required.'),
-          kind: 'error',
-          isLowContrast: false,
-        });
-        return;
-      }
-
-      const encounterDatetime = getSubmittedEncounterDatetime(noteDate, Boolean(dirtyFields.noteDate));
-
-      const buildTextObs = (conceptUuid: string, value?: string, formFieldPath?: string) => {
-        const trimmedValue = value?.trim();
-        if (!trimmedValue) {
-          return null;
+      try {
+        if (isPrimaryDiagnosisRequired && !selectedPrimaryDiagnoses.length)
+          return;
+        if (!visitUuid) {
+          showSnackbar({
+            title: t("visitNoteSaveError", "Error saving visit note"),
+            subtitle: t(
+              "activeVisitRequired",
+              "An active visit is required to save this visit note.",
+            ),
+            kind: "error",
+            isLowContrast: false,
+          });
+          return;
         }
-        const existingObs = getEncounterObs(conceptUuid, formFieldPath);
-        return {
-          concept: { uuid: conceptUuid, display: '' },
-          value: trimmedValue,
-          ...(formFieldPath && { formFieldNamespace: 'visit-notes', formFieldPath }),
-          ...(existingObs && { uuid: existingObs.uuid }),
-        };
-      };
-
-      // The código prestacional is a concept picked from the MINSA catalog, so it is
-      // persisted as valueCoded. A text obs would need a Text question concept, and
-      // sending any value against the catalog ConvSet (datatype N/A) makes the
-      // backend reject the whole encounter with "Don't know how to handle ZZ".
-      const buildCodedObs = (conceptUuid: string, valueConceptUuid?: string, formFieldPath?: string) => {
-        if (!valueConceptUuid) {
-          return null;
+        if (isEditing && encounterVisitUuid !== visitUuid) {
+          showSnackbar({
+            title: t("visitNoteSaveError", "Error saving visit note"),
+            subtitle: t(
+              "visitNoteVisitMismatch",
+              "This visit note belongs to a different visit and cannot be edited from the active visit.",
+            ),
+            kind: "error",
+            isLowContrast: false,
+          });
+          return;
         }
-        const existingObs = getEncounterObs(conceptUuid, formFieldPath);
-        return {
-          concept: { uuid: conceptUuid, display: '' },
-          value: valueConceptUuid,
-          ...(formFieldPath && { formFieldNamespace: 'visit-notes', formFieldPath }),
-          ...(existingObs && { uuid: existingObs.uuid }),
-        };
-      };
+        if (!locationUuid) {
+          showSnackbar({
+            title: t("visitNoteSaveError", "Error saving visit note"),
+            subtitle: t(
+              "activeVisitLocationRequired",
+              "An active visit with an operational UPSS is required.",
+            ),
+            kind: "error",
+            isLowContrast: false,
+          });
+          return;
+        }
+        if (!encounterProvidersPayload.length) {
+          showSnackbar({
+            title: t("visitNoteSaveError", "Error saving visit note"),
+            subtitle: t(
+              "activeProviderRequired",
+              "An active clinical provider is required to save this visit note.",
+            ),
+            kind: "error",
+            isLowContrast: false,
+          });
+          return;
+        }
 
-      const structuredObsList = [
-        buildCodedObs(codigoPrestacionalConceptUuid, selectedCodigoPrestacional?.uuid, 'codigo-prestacional'),
-        buildTextObs(chiefComplaintConceptUuid, chiefComplaint),
-        buildTextObs(illnessDurationConceptUuid, illnessDuration),
-        buildTextObs(biologicalFunctionsConceptUuid, biologicalFunctions, 'biological-functions'),
-        buildTextObs(soapSubjectiveConceptUuid, subjective),
-        buildTextObs(soapObjectiveConceptUuid, objective),
-        buildTextObs(soapAssessmentConceptUuid, assessment),
-        buildTextObs(soapPlanConceptUuid, plan, 'soap-plan'),
-        buildTextObs(labOrdersConceptUuid, auxiliaryExams),
-        buildTextObs(proceduresConceptUuid, procedures, 'procedures'),
-        buildTextObs(prescriptionsConceptUuid, prescriptions),
-        buildTextObs(referralConceptUuid, referral),
-        buildTextObs(nextAppointmentConceptUuid, nextAppointment),
-      ].filter((obs): obs is NonNullable<ReturnType<typeof buildTextObs>> => Boolean(obs));
-
-      // Persist the exact MINSA diagnosis type for each CIE-10 diagnosis.
-      // This complements patientdiagnoses.certainty, which cannot represent
-      // "Repetitivo" without losing information.
-      const tipoObsList = combinedDiagnoses.map((dx) =>
-        buildTipoDxObs(
-          diagnosisTypeConceptUuid,
-          dx.diagnosis.coded,
-          diagnosisTipos[dx.diagnosis.coded] ?? diagnosisTypePresuntivoUuid,
-        ),
-      );
-
-      const obsPayload = [
-        ...(clinicalNote?.trim()
-          ? [
+        const encounterDatetime = getSubmittedEncounterDatetime(
+          noteDate,
+          Boolean(dirtyFields.noteDate),
+        );
+        const structuredObsList: Array<ObsPayload> = [
+          ...reconcileObservation(
+            encounterObs,
+            codigoPrestacionalConceptUuid,
+            selectedCodigoPrestacional?.uuid,
+            "codigo-prestacional",
+            [
               {
-                concept: { uuid: encounterNoteTextConceptUuid, display: '' },
-                value: clinicalNote.trim(),
-                ...(getEncounterObs(encounterNoteTextConceptUuid) && {
-                  uuid: getEncounterObs(encounterNoteTextConceptUuid).uuid,
-                }),
+                conceptUuid:
+                  legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath,
+                formFieldPath: "codigo-prestacional",
               },
-            ]
-          : []),
-        ...structuredObsList,
-        ...tipoObsList,
-      ];
+            ],
+          ),
+          ...reconcileObservation(
+            encounterObs,
+            chiefComplaintConceptUuid,
+            chiefComplaint,
+          ),
+          ...reconcileObservation(
+            encounterObs,
+            illnessDurationConceptUuid,
+            illnessDuration,
+          ),
+          ...reconcileObservation(
+            encounterObs,
+            biologicalFunctionsConceptUuid,
+            biologicalFunctions,
+            "biological-functions",
+            [
+              {
+                conceptUuid:
+                  legacyStructuredVisitNoteConceptUuids.anamnesisText,
+                formFieldPath: "biological-functions",
+              },
+            ],
+          ),
+          ...reconcileObservation(
+            encounterObs,
+            soapSubjectiveConceptUuid,
+            subjective,
+          ),
+          ...reconcileObservation(
+            encounterObs,
+            soapObjectiveConceptUuid,
+            objective,
+          ),
+          ...reconcileObservation(
+            encounterObs,
+            soapAssessmentConceptUuid,
+            assessment,
+          ),
+          ...reconcileObservation(
+            encounterObs,
+            soapPlanConceptUuid,
+            plan,
+            "soap-plan",
+            [
+              {
+                conceptUuid:
+                  legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath,
+                formFieldPath: "soap-plan",
+              },
+            ],
+          ),
+          ...reconcileObservation(
+            encounterObs,
+            labOrdersConceptUuid,
+            auxiliaryExams,
+          ),
+          ...reconcileObservation(
+            encounterObs,
+            proceduresConceptUuid,
+            procedures,
+            "procedures",
+            [
+              {
+                conceptUuid:
+                  legacyProceduresConceptUuids.textWithProceduresPath,
+                formFieldPath: "procedures",
+              },
+              {
+                conceptUuid: legacyProceduresConceptUuids.procedure,
+                formFieldPath: "procedures",
+              },
+              { conceptUuid: legacyProceduresConceptUuids.procedure },
+            ],
+          ),
+          ...reconcileObservation(
+            encounterObs,
+            prescriptionsConceptUuid,
+            prescriptions,
+          ),
+          ...reconcileObservation(encounterObs, referralConceptUuid, referral),
+          ...reconcileObservation(
+            encounterObs,
+            nextAppointmentConceptUuid,
+            toOpenmrsDateValue(nextAppointment),
+            undefined,
+            [{ conceptUuid: legacyNextAppointmentConceptUuid }],
+          ),
+        ];
+        const tipoObsList = reconcileDiagnosisTypeObservations(
+          combinedDiagnoses,
+          encounterObs,
+          diagnosisTipos,
+          diagnosisTypeConceptUuid,
+          diagnosisTypePresuntivoUuid,
+        );
+        const obsPayload: Array<ObsPayload> = [
+          ...reconcileObservation(
+            encounterObs,
+            encounterNoteTextConceptUuid,
+            clinicalNote,
+          ),
+          ...structuredObsList,
+          ...tipoObsList,
+        ];
+        const diagnosesPayload = reconcileEncounterDiagnoses(
+          combinedDiagnoses,
+          (encounter?.diagnoses ?? []) as Array<ExistingEncounterDiagnosis>,
+          diagnosisTipos,
+          diagnosisTypePresuntivoUuid,
+          diagnosisTypeDefinitivoUuid,
+          patientUuid,
+        );
+        const visitNotePayload: VisitNotePayload = {
+          ...(encounterDatetime ? { encounterDatetime } : {}),
+          ...(!isEditing && {
+            uuid: getCanonicalVisitNoteEncounterUuid(
+              patientUuid,
+              visitUuid,
+              encounterTypeUuid,
+              formConceptUuid,
+            ),
+            visit: visitUuid,
+          }),
+          form: formConceptUuid,
+          patient: patientUuid,
+          location: locationUuid,
+          encounterProviders: encounterProvidersPayload,
+          encounterType: encounterTypeUuid,
+          obs: obsPayload,
+          diagnoses: diagnosesPayload,
+        };
+        const abortController = new AbortController();
 
-      const visitNotePayload: VisitNotePayload = {
-        ...(encounterDatetime ? { encounterDatetime } : {}),
-        form: formConceptUuid,
-        patient: patientUuid,
-        location: locationUuid,
-        encounterProviders: [
-          {
-            encounterRole: clinicianEncounterRole,
-            provider: providerUuid,
-          },
-        ],
-        encounterType: encounterTypeUuid,
-        obs: obsPayload,
-        // Only attach the visit when creating a note. On edit, omitting `visit`
-        // leaves the encounter's existing visit untouched.
-        ...(!isEditing && visitUuid && { visit: visitUuid }),
-      };
+        if (!isEditing) {
+          await assertCanonicalVisitNoteCanBeCreated(
+            patientUuid,
+            visitUuid,
+            encounterTypeUuid,
+            formConceptUuid,
+          );
+        }
+        const response = isEditing
+          ? await updateVisitNote(
+              abortController,
+              encounter.id,
+              visitNotePayload,
+            )
+          : await saveCanonicalVisitNote(abortController, visitNotePayload);
+        if (response.status !== 200 && response.status !== 201) {
+          throw new Error("The visit note save was rejected.");
+        }
 
-      const abortController = new AbortController();
+        try {
+          await onAfterSave?.();
+        } catch (callbackError) {
+          createErrorHandler()(callbackError);
+        }
 
-      const savePromise = isEditing
-        ? updateVisitNote(abortController, encounter.id, visitNotePayload)
-        : saveVisitNote(abortController, visitNotePayload);
-
-      savePromise
-        .then((response) => {
-          if (response.status === 201 || response.status === 200) {
-            const encounterUuid = encounter?.id || response.data.uuid;
-
-            // If editing, first delete existing diagnoses
-            if (isEditing && encounter?.diagnoses?.length) {
-              return Promise.all(
-                encounter.diagnoses.map((diagnosis) => deletePatientDiagnosis(abortController, diagnosis.uuid)),
-              ).then(() => encounterUuid);
-            }
-
-            return encounterUuid;
-          }
-        })
-        .then((encounterUuid) => {
-          return Promise.all(
-            combinedDiagnoses.map((diagnosis) => {
-              const tipoUuid = diagnosisTipos[diagnosis.diagnosis.coded] ?? diagnosisTypePresuntivoUuid;
-              const diagnosesPayload: DiagnosisPayload = {
-                encounter: encounterUuid,
-                patient: patientUuid,
-                condition: null,
-                diagnosis: {
-                  coded: diagnosis.diagnosis.coded,
-                },
-                certainty: getCertaintyForTipo(tipoUuid, diagnosisTypeDefinitivoUuid),
-                rank: diagnosis.rank,
+        let hasAttachmentFailures = false;
+        if (images?.length) {
+          const attachmentResults = await Promise.allSettled(
+            images.map((image) => {
+              const imageToUpload: UploadedFile = {
+                base64Content: image.base64Content,
+                file: image.file,
+                fileName: image.fileName,
+                fileType: image.fileType,
+                fileDescription: image.fileDescription || "",
               };
-              return savePatientDiagnosis(abortController, diagnosesPayload);
+              return createAttachment(patientUuid, imageToUpload);
             }),
           );
-        })
-        .then(() => {
-          if (images?.length) {
-            return Promise.all(
-              images.map((image) => {
-                const imageToUpload: UploadedFile = {
-                  base64Content: image.base64Content,
-                  file: image.file,
-                  fileName: image.fileName,
-                  fileType: image.fileType,
-                  fileDescription: image.fileDescription || '',
-                };
-                return createAttachment(patientUuid, imageToUpload);
-              }),
-            );
-          } else {
-            return [];
-          }
-        })
-        .then(() => {
-          // Invalidate encounter and notes data since we created a new encounter with notes
-          // Also invalidate visit history table since the visit now has new encounters
-          invalidateVisitAndEncounterData(globalMutate, patientUuid);
-          mutateVisitNotes();
-
-          if (images?.length) {
-            mutateAttachments();
-          }
-
-          closeWorkspace({ discardUnsavedChanges: true });
-
-          showSnackbar({
-            isLowContrast: true,
-            subtitle: t('visitNoteNowVisible', 'It is now visible on the Visits page'),
-            kind: 'success',
-            title: t('visitNoteSaved', 'Visit note saved'),
+          hasAttachmentFailures = attachmentResults.some(
+            (result) => result.status === "rejected",
+          );
+          attachmentResults.forEach((result) => {
+            if (result.status === "rejected")
+              createErrorHandler()(result.reason);
           });
-        })
-        .catch((err) => {
-          createErrorHandler();
+        }
 
-          showSnackbar({
-            title: t('visitNoteSaveError', 'Error saving visit note'),
-            kind: 'error',
-            isLowContrast: false,
-            subtitle: err?.responseBody?.error?.message ?? err.message,
-          });
+        invalidateVisitAndEncounterData(globalMutate, patientUuid);
+        mutateVisitNotes();
+        if (images?.length) mutateAttachments();
+        closeWorkspace({ discardUnsavedChanges: true });
+        showSnackbar(
+          hasAttachmentFailures
+            ? {
+                isLowContrast: false,
+                subtitle: t(
+                  "visitNoteAttachmentSaveWarning",
+                  "The visit note was saved, but one or more attachments could not be uploaded.",
+                ),
+                kind: "warning",
+                title: t("visitNoteSaved", "Visit note saved"),
+              }
+            : {
+                isLowContrast: true,
+                subtitle: t(
+                  "visitNoteNowVisible",
+                  "It is now visible on the Visits page",
+                ),
+                kind: "success",
+                title: t("visitNoteSaved", "Visit note saved"),
+              },
+        );
+      } catch (caughtError) {
+        createErrorHandler()(caughtError);
+        showSnackbar({
+          title: t("visitNoteSaveError", "Error saving visit note"),
+          kind: "error",
+          isLowContrast: false,
+          subtitle:
+            caughtError instanceof AmbiguousVisitNoteSaveError
+              ? t(
+                  "visitNoteSaveAmbiguous",
+                  "The visit note may already have been saved. Reload before trying again.",
+                )
+              : t(
+                  "visitNoteSaveRejected",
+                  "The visit note could not be saved.",
+                ),
         });
+      } finally {
+        submitInProgressRef.current = false;
+      }
     },
     [
-      clinicianEncounterRole,
       chiefComplaintConceptUuid,
       closeWorkspace,
       combinedDiagnoses,
@@ -1003,12 +1375,14 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
       diagnosisTypeDefinitivoUuid,
       diagnosisTypePresuntivoUuid,
       dirtyFields.noteDate,
+      encounterProvidersPayload,
+      encounterVisitUuid,
+      encounterObs,
       encounter?.diagnoses,
       encounter?.id,
       encounterNoteTextConceptUuid,
       encounterTypeUuid,
       formConceptUuid,
-      getEncounterObs,
       globalMutate,
       illnessDurationConceptUuid,
       isEditing,
@@ -1018,10 +1392,10 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
       mutateAttachments,
       mutateVisitNotes,
       nextAppointmentConceptUuid,
+      onAfterSave,
       patientUuid,
       prescriptionsConceptUuid,
       proceduresConceptUuid,
-      providerUuid,
       referralConceptUuid,
       selectedCodigoPrestacional?.uuid,
       selectedPrimaryDiagnoses.length,
@@ -1036,25 +1410,40 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
 
   const onError = () => undefined;
 
-  const hasUserUnsavedChanges = Object.keys(dirtyFields).length > 0 || hasDiagnosisChanges;
+  const hasUserUnsavedChanges =
+    Object.keys(dirtyFields).length > 0 || hasDiagnosisChanges;
 
   return (
-    <Workspace2 title={t('visitNoteWorkspaceTitle', 'Visit note')} hasUnsavedChanges={hasUserUnsavedChanges}>
+    <Workspace2
+      title={t("visitNoteWorkspaceTitle", "Visit note")}
+      hasUnsavedChanges={hasUserUnsavedChanges}
+    >
       <Form className={styles.form} onSubmit={handleSubmit(onSubmit, onError)}>
-        <ExtensionSlot name="visit-context-header-slot" state={{ patientUuid }} />
+        <ExtensionSlot
+          name="visit-context-header-slot"
+          state={{ patientUuid }}
+        />
 
         {isTablet && (
           <Row className={styles.headerGridRow}>
-            <ExtensionSlot name="visit-form-header-slot" className={styles.dataGridRow} state={memoizedState} />
+            <ExtensionSlot
+              name="visit-form-header-slot"
+              className={styles.dataGridRow}
+              state={memoizedState}
+            />
           </Row>
         )}
 
         <div className={styles.formContainer}>
           <Stack gap={2}>
-            {isTablet ? <h2 className={styles.heading}>{t('addVisitNote', 'Add a visit note')}</h2> : null}
+            {isTablet ? (
+              <h2 className={styles.heading}>
+                {t("addVisitNote", "Add a visit note")}
+              </h2>
+            ) : null}
             <Row className={styles.row}>
               <Column sm={1}>
-                <span className={styles.columnLabel}>{t('date', 'Date')}</span>
+                <span className={styles.columnLabel}>{t("date", "Date")}</span>
               </Column>
               <Column sm={3}>
                 <Controller
@@ -1069,7 +1458,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
                         invalid={Boolean(fieldState?.error?.message)}
                         invalidText={fieldState?.error?.message}
                         isDisabled={isEditing}
-                        labelText={t('visitDate', 'Visit date')}
+                        labelText={t("visitDate", "Visit date")}
                         maxDate={new Date()}
                       />
                     </ResponsiveWrapper>
@@ -1079,22 +1468,31 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
             </Row>
             <Row className={styles.row}>
               <Column sm={1}>
-                <span className={styles.columnLabel}>{t('responsibleProvider', 'Responsible provider')}</span>
+                <span className={styles.columnLabel}>
+                  {t("responsibleProvider", "Responsible provider")}
+                </span>
               </Column>
               <Column sm={3}>
                 <Tile>
                   <p>
-                    <strong>{registeredProviderName ?? t('providerNotConfigured', 'Provider not configured')}</strong>
+                    <strong>
+                      {registeredProviderName ??
+                        t("providerNotConfigured", "Provider not configured")}
+                    </strong>
                   </p>
                   <p>
-                    {t('professionalRegistration', 'Professional registration')}:{' '}
+                    {t("professionalRegistration", "Professional registration")}
+                    :{" "}
                     {registeredProviderCode ??
-                      t('professionalRegistrationMissing', 'Not registered in provider profile')}
+                      t(
+                        "professionalRegistrationMissing",
+                        "Not registered in provider profile",
+                      )}
                   </p>
                   <p>
                     {t(
-                      'providerSignatureSource',
-                      'Signature, seal and registration are resolved from the provider profile that records this encounter.',
+                      "providerSignatureSource",
+                      "Signature, seal and registration are resolved from the provider profile that records this encounter.",
                     )}
                   </p>
                 </Tile>
@@ -1107,32 +1505,41 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
                     <SelectedDiagnosis
                       diagnosis={diagnosis}
                       kind="primary"
-                      onRemove={() => handleRemoveDiagnosis(diagnosis, 'primaryInputSearch')}
+                      onRemove={() =>
+                        handleRemoveDiagnosis(diagnosis, "primaryInputSearch")
+                      }
                       t={t}
                     />
                     <div className={styles.tipoSelector}>
                       <RadioButtonGroup
                         legendText=""
                         name={`tipo-primary-${index}`}
-                        valueSelected={diagnosisTipos[diagnosis.diagnosis.coded] ?? diagnosisTypePresuntivoUuid}
+                        valueSelected={
+                          diagnosisTipos[diagnosis.diagnosis.coded] ??
+                          diagnosisTypePresuntivoUuid
+                        }
                         onChange={(value) =>
-                          value != null && handleDiagnosisTypeChange(diagnosis.diagnosis.coded, String(value))
+                          value != null &&
+                          handleDiagnosisTypeChange(
+                            diagnosis.diagnosis.coded,
+                            String(value),
+                          )
                         }
                         orientation="horizontal"
                       >
                         <RadioButton
                           id={`tipo-primary-${index}-p`}
-                          labelText={t('presuntivo', 'P - Presuntivo')}
+                          labelText={t("presuntivo", "P - Presuntivo")}
                           value={diagnosisTypePresuntivoUuid}
                         />
                         <RadioButton
                           id={`tipo-primary-${index}-d`}
-                          labelText={t('definitivo', 'D - Definitivo')}
+                          labelText={t("definitivo", "D - Definitivo")}
                           value={diagnosisTypeDefinitivoUuid}
                         />
                         <RadioButton
                           id={`tipo-primary-${index}-r`}
-                          labelText={t('repetitivo', 'R - Repetido')}
+                          labelText={t("repetitivo", "R - Repetido")}
                           value={diagnosisTypeRepetitivoUuid}
                         />
                       </RadioButtonGroup>
@@ -1145,57 +1552,86 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
                     <SelectedDiagnosis
                       diagnosis={diagnosis}
                       kind="secondary"
-                      onRemove={() => handleRemoveDiagnosis(diagnosis, 'secondaryInputSearch')}
+                      onRemove={() =>
+                        handleRemoveDiagnosis(diagnosis, "secondaryInputSearch")
+                      }
                       t={t}
                     />
                     <div className={styles.tipoSelector}>
                       <RadioButtonGroup
                         legendText=""
                         name={`tipo-secondary-${index}`}
-                        valueSelected={diagnosisTipos[diagnosis.diagnosis.coded] ?? diagnosisTypePresuntivoUuid}
+                        valueSelected={
+                          diagnosisTipos[diagnosis.diagnosis.coded] ??
+                          diagnosisTypePresuntivoUuid
+                        }
                         onChange={(value) =>
-                          value != null && handleDiagnosisTypeChange(diagnosis.diagnosis.coded, String(value))
+                          value != null &&
+                          handleDiagnosisTypeChange(
+                            diagnosis.diagnosis.coded,
+                            String(value),
+                          )
                         }
                         orientation="horizontal"
                       >
                         <RadioButton
                           id={`tipo-secondary-${index}-p`}
-                          labelText={t('presuntivo', 'P - Presuntivo')}
+                          labelText={t("presuntivo", "P - Presuntivo")}
                           value={diagnosisTypePresuntivoUuid}
                         />
                         <RadioButton
                           id={`tipo-secondary-${index}-d`}
-                          labelText={t('definitivo', 'D - Definitivo')}
+                          labelText={t("definitivo", "D - Definitivo")}
                           value={diagnosisTypeDefinitivoUuid}
                         />
                         <RadioButton
                           id={`tipo-secondary-${index}-r`}
-                          labelText={t('repetitivo', 'R - Repetido')}
+                          labelText={t("repetitivo", "R - Repetido")}
                           value={diagnosisTypeRepetitivoUuid}
                         />
                       </RadioButtonGroup>
                     </div>
                   </div>
                 ))}
-              {!selectedPrimaryDiagnoses?.length && !selectedSecondaryDiagnoses?.length && (
-                <span>{t('emptyDiagnosisText', 'No diagnosis selected — Enter a diagnosis below')}</span>
-              )}
+              {!selectedPrimaryDiagnoses?.length &&
+                !selectedSecondaryDiagnoses?.length && (
+                  <span>
+                    {t(
+                      "emptyDiagnosisText",
+                      "No diagnosis selected — Enter a diagnosis below",
+                    )}
+                  </span>
+                )}
             </div>
             <Row className={styles.row}>
               <Column sm={1}>
                 <span className={styles.columnLabel}>
                   <RequiredFieldLabel
-                    label={t('primaryDiagnosisRequiredLabel', 'Diagnóstico principal (Obligatorio)')}
+                    label={t(
+                      "primaryDiagnosisRequiredLabel",
+                      "Diagnóstico principal (Obligatorio)",
+                    )}
                   />
                 </span>
               </Column>
               <Column sm={3}>
-                <FormGroup legendText={t('searchForPrimaryDiagnosis', 'Search for a primary diagnosis')}>
+                <FormGroup
+                  legendText={t(
+                    "searchForPrimaryDiagnosis",
+                    "Search for a primary diagnosis",
+                  )}
+                >
                   <DiagnosisSearch
                     name="primaryDiagnosisSearch"
                     control={control}
-                    labelText={t('enterPrimaryDiagnoses', 'Enter Primary diagnoses')}
-                    placeholder={t('primaryDiagnosisInputPlaceholder', 'Choose a primary diagnosis')}
+                    labelText={t(
+                      "enterPrimaryDiagnoses",
+                      "Enter Primary diagnoses",
+                    )}
+                    placeholder={t(
+                      "primaryDiagnosisInputPlaceholder",
+                      "Choose a primary diagnosis",
+                    )}
                     handleSearch={handleSearch}
                     error={errors?.primaryDiagnosisSearch}
                     setIsSearching={setIsSearching}
@@ -1204,35 +1640,53 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
                     <InlineNotification
                       className={styles.errorNotification}
                       lowContrast
-                      title={t('error', 'Error')}
-                      subtitle={t('errorFetchingConcepts', 'There was a problem fetching concepts') + '.'}
+                      title={t("error", "Error")}
+                      subtitle={
+                        t(
+                          "errorFetchingConcepts",
+                          "There was a problem fetching concepts",
+                        ) + "."
+                      }
                       onClose={() => setError(null)}
                     />
                   ) : null}
                   <DiagnosesDisplay
-                    fieldName={'primaryDiagnosisSearch'}
+                    fieldName={"primaryDiagnosisSearch"}
                     isDiagnosisNotSelected={isDiagnosisNotSelected}
                     isLoading={isLoadingPrimaryDiagnoses}
                     isSearching={isSearching}
                     onAddDiagnosis={handleAddDiagnosis}
                     searchResults={searchPrimaryResults}
                     t={t}
-                    value={watch('primaryDiagnosisSearch')}
+                    value={watch("primaryDiagnosisSearch")}
                   />
                 </FormGroup>
               </Column>
             </Row>
             <Row className={styles.row}>
               <Column sm={1}>
-                <span className={styles.columnLabel}>{t('secondaryDiagnosis', 'Secondary diagnosis')}</span>
+                <span className={styles.columnLabel}>
+                  {t("secondaryDiagnosis", "Secondary diagnosis")}
+                </span>
               </Column>
               <Column sm={3}>
-                <FormGroup legendText={t('searchForSecondaryDiagnosis', 'Search for a secondary diagnosis')}>
+                <FormGroup
+                  legendText={t(
+                    "searchForSecondaryDiagnosis",
+                    "Search for a secondary diagnosis",
+                  )}
+                >
                   <DiagnosisSearch
                     name="secondaryDiagnosisSearch"
                     control={control}
-                    labelText={t('enterSecondaryDiagnoses', 'Enter Secondary diagnoses')}
-                    placeholder={t('secondaryDiagnosisInputPlaceholder', 'Choose a secondary diagnosis')}
+                    labelText={t(
+                      "enterSecondaryDiagnoses",
+                      "Enter Secondary diagnoses",
+                    )}
+                    placeholder={t(
+                      "secondaryDiagnosisInputPlaceholder",
+                      "Choose a secondary diagnosis",
+                    )}
                     handleSearch={handleSearch}
                     setIsSearching={setIsSearching}
                   />
@@ -1240,20 +1694,25 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
                     <InlineNotification
                       className={styles.errorNotification}
                       lowContrast
-                      title={t('error', 'Error')}
-                      subtitle={t('errorFetchingConcepts', 'There was a problem fetching concepts') + '.'}
+                      title={t("error", "Error")}
+                      subtitle={
+                        t(
+                          "errorFetchingConcepts",
+                          "There was a problem fetching concepts",
+                        ) + "."
+                      }
                       onClose={() => setError(null)}
                     />
                   ) : null}
                   <DiagnosesDisplay
-                    fieldName={'secondaryDiagnosisSearch'}
+                    fieldName={"secondaryDiagnosisSearch"}
                     isDiagnosisNotSelected={isDiagnosisNotSelected}
                     isLoading={isLoadingSecondaryDiagnoses}
                     isSearching={isSearching}
                     onAddDiagnosis={handleAddDiagnosis}
                     searchResults={searchSecondaryResults}
                     t={t}
-                    value={watch('secondaryDiagnosisSearch')}
+                    value={watch("secondaryDiagnosisSearch")}
                   />
                 </FormGroup>
               </Column>
@@ -1262,14 +1721,19 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
               <Column sm={1}>
                 <span className={styles.columnLabel}>
                   <RequiredFieldLabel
-                    label={t('codigoPrestacionalRequiredLabel', 'Código Prestacional (Obligatorio)')}
+                    label={t(
+                      "codigoPrestacionalRequiredLabel",
+                      "Código Prestacional (Obligatorio)",
+                    )}
                   />
                 </span>
               </Column>
               <Column sm={3}>
                 <PrestacionalSearch
                   error={error}
-                  requiredError={errors?.codigoPrestacional?.message as string | undefined}
+                  requiredError={
+                    errors?.codigoPrestacional?.message as string | undefined
+                  }
                   isLoading={isLoadingPrestacionales}
                   onAddPrestacional={handleAddPrestacional}
                   onSearch={handlePrestacionalSearch}
@@ -1282,23 +1746,24 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
                   <div className={styles.prestacionalTagContainer}>
                     <DismissibleTag
                       className={styles.tag}
-                      dismissTooltipLabel={t('clearFilter', 'Clear filter')}
+                      dismissTooltipLabel={t("clearFilter", "Clear filter")}
                       onClose={handleRemovePrestacional}
                       tagTitle={selectedCodigoPrestacional.display}
                       text={selectedCodigoPrestacional.display}
-                      title={t('clearFilter', 'Clear filter')}
+                      title={t("clearFilter", "Clear filter")}
                       type="cyan"
                     />
                   </div>
-                ) : watch('codigoPrestacional') && !codigoPrestacionalSearchValue ? (
+                ) : watch("codigoPrestacional") &&
+                  !codigoPrestacionalSearchValue ? (
                   <div className={styles.prestacionalTagContainer}>
                     <DismissibleTag
                       className={styles.tag}
-                      dismissTooltipLabel={t('clearFilter', 'Clear filter')}
+                      dismissTooltipLabel={t("clearFilter", "Clear filter")}
                       onClose={handleRemovePrestacional}
-                      tagTitle={watch('codigoPrestacional')}
-                      text={watch('codigoPrestacional')}
-                      title={t('clearFilter', 'Clear filter')}
+                      tagTitle={watch("codigoPrestacional")}
+                      text={watch("codigoPrestacional")}
+                      title={t("clearFilter", "Clear filter")}
                       type="gray"
                     />
                   </div>
@@ -1307,96 +1772,147 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
             </Row>
             <Row className={styles.row}>
               <Column sm={4}>
-                <h3>{t('clinicalSummary', 'Clinical summary')}</h3>
+                <h3>{t("clinicalSummary", "Clinical summary")}</h3>
               </Column>
             </Row>
             <VisitNoteTextAreaRow
               control={control}
               name="chiefComplaint"
-              labelText={t('chiefComplaint', 'Chief complaint')}
-              placeholder={t('chiefComplaintPlaceholder', 'Main reason for the consultation')}
+              labelText={t("chiefComplaint", "Chief complaint")}
+              placeholder={t(
+                "chiefComplaintPlaceholder",
+                "Main reason for the consultation",
+              )}
             />
             <VisitNoteTextAreaRow
               control={control}
               name="illnessDuration"
-              labelText={t('illnessDuration', 'Illness duration')}
-              placeholder={t('illnessDurationPlaceholder', 'For example: 3 days, 2 weeks')}
+              labelText={t("illnessDuration", "Illness duration")}
+              placeholder={t(
+                "illnessDurationPlaceholder",
+                "For example: 3 days, 2 weeks",
+              )}
               rows={2}
             />
             <VisitNoteTextAreaRow
               control={control}
               name="biologicalFunctions"
-              labelText={t('biologicalFunctions', 'Biological functions')}
-              placeholder={t('biologicalFunctionsPlaceholder', 'Appetite, thirst, sleep, mood, urine, bowel movements')}
+              labelText={t("biologicalFunctions", "Biological functions")}
+              placeholder={t(
+                "biologicalFunctionsPlaceholder",
+                "Appetite, thirst, sleep, mood, urine, bowel movements",
+              )}
             />
             <Row className={styles.row}>
               <Column sm={4}>
-                <h3>{t('soapSection', 'SOAP assessment')}</h3>
+                <h3>{t("soapSection", "SOAP assessment")}</h3>
               </Column>
             </Row>
             <VisitNoteTextAreaRow
               control={control}
               name="subjective"
-              labelText={t('subjective', 'Subjective')}
-              placeholder={t('subjectivePlaceholder', 'Symptoms and relevant illness story')}
+              labelText={t("subjective", "Subjective")}
+              placeholder={t(
+                "subjectivePlaceholder",
+                "Symptoms and relevant illness story",
+              )}
             />
             <VisitNoteTextAreaRow
               control={control}
               name="objective"
-              labelText={t('objective', 'Objective / physical exam')}
-              placeholder={t('objectivePlaceholder', 'Physical exam, vital findings and objective data')}
+              labelText={t("objective", "Objective / physical exam")}
+              placeholder={t(
+                "objectivePlaceholder",
+                "Physical exam, vital findings and objective data",
+              )}
             />
             <VisitNoteTextAreaRow
               control={control}
               name="assessment"
-              labelText={t('assessment', 'Assessment')}
-              placeholder={t('assessmentPlaceholder', 'Clinical impression and interpretation of findings')}
+              labelText={t("assessment", "Assessment")}
+              placeholder={t(
+                "assessmentPlaceholder",
+                "Clinical impression and interpretation of findings",
+              )}
             />
             <VisitNoteTextAreaRow
               control={control}
               name="plan"
-              labelText={t('plan', 'Treatment plan')}
-              placeholder={t('planPlaceholder', 'Therapeutic plan, indications and follow-up')}
+              labelText={t("plan", "Treatment plan")}
+              placeholder={t(
+                "planPlaceholder",
+                "Therapeutic plan, indications and follow-up",
+              )}
             />
             <Row className={styles.row}>
               <Column sm={4}>
-                <h3>{t('workPlan', 'Orders and continuity of care')}</h3>
+                <h3>{t("workPlan", "Orders and continuity of care")}</h3>
               </Column>
             </Row>
             <VisitNoteTextAreaRow
               control={control}
               name="auxiliaryExams"
-              labelText={t('auxiliaryExams', 'Auxiliary exams')}
-              placeholder={t('auxiliaryExamsPlaceholder', 'Requested or reviewed lab and imaging exams')}
+              labelText={t("auxiliaryExams", "Auxiliary exams")}
+              placeholder={t(
+                "auxiliaryExamsPlaceholder",
+                "Requested or reviewed lab and imaging exams",
+              )}
             />
             <VisitNoteTextAreaRow
               control={control}
               name="procedures"
-              labelText={t('procedures', 'Procedures')}
-              placeholder={t('proceduresPlaceholder', 'Procedures performed or requested')}
+              labelText={t("procedures", "Procedures")}
+              placeholder={t(
+                "proceduresPlaceholder",
+                "Procedures performed or requested",
+              )}
             />
             <VisitNoteTextAreaRow
               control={control}
               name="prescriptions"
-              labelText={t('prescriptions', 'Prescriptions')}
-              placeholder={t('prescriptionsPlaceholder', 'Medication and dosage indications')}
+              labelText={t("prescriptions", "Prescriptions")}
+              placeholder={t(
+                "prescriptionsPlaceholder",
+                "Medication and dosage indications",
+              )}
             />
             <VisitNoteTextAreaRow
               control={control}
               name="referral"
-              labelText={t('referral', 'Referral / interconsultation')}
-              placeholder={t('referralPlaceholder', 'Destination service, reason and priority')}
-            />
-            <VisitNoteTextAreaRow
-              control={control}
-              name="nextAppointment"
-              labelText={t('nextAppointment', 'Next appointment')}
-              placeholder={t('nextAppointmentPlaceholder', 'Date or follow-up instruction')}
-              rows={2}
+              labelText={t("referral", "Referral / interconsultation")}
+              placeholder={t(
+                "referralPlaceholder",
+                "Destination service, reason and priority",
+              )}
             />
             <Row className={styles.row}>
               <Column sm={1}>
-                <span className={styles.columnLabel}>{t('note', 'Note')}</span>
+                <span className={styles.columnLabel}>
+                  {t("nextAppointment", "Next appointment")}
+                </span>
+              </Column>
+              <Column sm={3}>
+                <Controller
+                  name="nextAppointment"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <ResponsiveWrapper>
+                      <OpenmrsDatePicker
+                        {...field}
+                        id="nextAppointment"
+                        labelText={t("nextAppointment", "Next appointment")}
+                        minDate={new Date()}
+                        invalid={Boolean(fieldState.error?.message)}
+                        invalidText={fieldState.error?.message}
+                      />
+                    </ResponsiveWrapper>
+                  )}
+                />
+              </Column>
+            </Row>
+            <Row className={styles.row}>
+              <Column sm={1}>
+                <span className={styles.columnLabel}>{t("note", "Note")}</span>
               </Column>
               <Column sm={3}>
                 <Controller
@@ -1407,14 +1923,19 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
                       <TextArea
                         id="additionalNote"
                         rows={rows}
-                        labelText={t('clinicalNoteLabel', 'Additional notes')}
-                        placeholder={t('clinicalNotePlaceholder', 'Add observations that do not fit the fields above')}
-                        value={value ?? ''}
+                        labelText={t("clinicalNoteLabel", "Additional notes")}
+                        placeholder={t(
+                          "clinicalNotePlaceholder",
+                          "Add observations that do not fit the fields above",
+                        )}
+                        value={value ?? ""}
                         onBlur={onBlur}
                         onChange={(event) => {
                           onChange(event);
                           const textareaLineHeight = 24; // This is the default line height for Carbon's TextArea component
-                          const newRows = Math.ceil(event.target.scrollHeight / textareaLineHeight);
+                          const newRows = Math.ceil(
+                            event.target.scrollHeight / textareaLineHeight,
+                          );
                           setRows(newRows);
                         }}
                       />
@@ -1425,20 +1946,25 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
             </Row>
             <Row className={styles.row}>
               <Column sm={1}>
-                <span className={styles.columnLabel}>{t('image', 'Image')}</span>
+                <span className={styles.columnLabel}>
+                  {t("image", "Image")}
+                </span>
               </Column>
               <Column sm={3}>
                 <FormGroup legendText="">
                   <p className={styles.imgUploadHelperText}>
-                    {t('imageUploadHelperText', "Upload images or use this device's camera to capture images")}
+                    {t(
+                      "imageUploadHelperText",
+                      "Upload images or use this device's camera to capture images",
+                    )}
                   </p>
                   <Button
                     className={styles.uploadButton}
-                    kind={isTablet ? 'ghost' : 'tertiary'}
+                    kind={isTablet ? "ghost" : "tertiary"}
                     onClick={showImageCaptureModal}
                     renderIcon={(props) => <Add size={16} {...props} />}
                   >
-                    {t('addImage', 'Add image')}
+                    {t("addImage", "Add image")}
                   </Button>
                   <div className={styles.imgThumbnailGrid}>
                     {currentImages?.map((image, index) => (
@@ -1450,7 +1976,11 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
                             alt={image.fileDescription ?? image.fileName}
                           />
                         </div>
-                        <Button kind="ghost" className={styles.removeButton} onClick={() => handleRemoveImage(index)}>
+                        <Button
+                          kind="ghost"
+                          className={styles.removeButton}
+                          onClick={() => handleRemoveImage(index)}
+                        >
                           <CloseFilled size={16} className={styles.closeIcon} />
                         </Button>
                       </div>
@@ -1461,9 +1991,18 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
             </Row>
           </Stack>
         </div>
-        <ButtonSet className={classnames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
-            {t('discard', 'Discard')}
+        <ButtonSet
+          className={classnames({
+            [styles.tablet]: isTablet,
+            [styles.desktop]: !isTablet,
+          })}
+        >
+          <Button
+            className={styles.button}
+            kind="secondary"
+            onClick={() => closeWorkspace()}
+          >
+            {t("discard", "Discard")}
           </Button>
           <Button
             className={styles.button}
@@ -1473,9 +2012,9 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
             type="submit"
           >
             {isSubmitting ? (
-              <InlineLoading description={t('saving', 'Saving') + '...'} />
+              <InlineLoading description={t("saving", "Saving") + "..."} />
             ) : (
-              <span>{t('saveAndClose', 'Save and close')}</span>
+              <span>{t("saveAndClose", "Save and close")}</span>
             )}
           </Button>
         </ButtonSet>
@@ -1508,7 +2047,7 @@ function VisitNoteTextAreaRow({
                 rows={rows}
                 labelText={inputLabelText ?? labelText}
                 placeholder={placeholder}
-                value={value ?? ''}
+                value={value ?? ""}
                 onBlur={onBlur}
                 onChange={onChange}
               />
@@ -1520,14 +2059,19 @@ function VisitNoteTextAreaRow({
   );
 }
 
-function SelectedDiagnosis({ diagnosis, kind, onRemove, t }: SelectedDiagnosisProps) {
+function SelectedDiagnosis({
+  diagnosis,
+  kind,
+  onRemove,
+  t,
+}: SelectedDiagnosisProps) {
   const formattedDiagnosis = formatDiagnosisDisplay(diagnosis);
 
   return (
     <div
       className={classnames(styles.selectedDiagnosis, {
-        [styles.selectedPrimaryDiagnosis]: kind === 'primary',
-        [styles.selectedSecondaryDiagnosis]: kind === 'secondary',
+        [styles.selectedPrimaryDiagnosis]: kind === "primary",
+        [styles.selectedSecondaryDiagnosis]: kind === "secondary",
       })}
       title={formattedDiagnosis}
     >
@@ -1536,8 +2080,8 @@ function SelectedDiagnosis({ diagnosis, kind, onRemove, t }: SelectedDiagnosisPr
         type="button"
         className={styles.removeDiagnosisButton}
         onClick={onRemove}
-        aria-label={t('clearFilter', 'Clear filter')}
-        title={t('clearFilter', 'Clear filter')}
+        aria-label={t("clearFilter", "Clear filter")}
+        title={t("clearFilter", "Clear filter")}
       >
         <CloseFilled size={16} />
       </button>
@@ -1554,7 +2098,7 @@ function DiagnosisSearch({
   error,
   setIsSearching,
 }: DiagnosisSearchProps) {
-  const isTablet = useLayoutType() === 'tablet';
+  const isTablet = useLayoutType() === "tablet";
   const inputRef = useRef(null);
 
   const searchInputFocus = useCallback(() => {
@@ -1576,22 +2120,26 @@ function DiagnosisSearch({
           <ResponsiveWrapper>
             <Search
               ref={inputRef}
-              size={isTablet ? 'lg' : 'md'}
+              size={isTablet ? "lg" : "md"}
               id={name}
               labelText={labelText}
               className={error && styles.diagnoserrorOutline}
               placeholder={placeholder}
-              renderIcon={error && ((props) => <WarningFilled fill="red" {...props} />)}
+              renderIcon={
+                error && ((props) => <WarningFilled fill="red" {...props} />)
+              }
               onChange={(e) => {
                 setIsSearching(true);
                 onChange(e);
                 handleSearch(name);
               }}
-              value={value ?? ''}
+              value={value ?? ""}
               onBlur={onBlur}
             />
           </ResponsiveWrapper>
-          {fieldState?.error?.message && <p className={styles.errorMessage}>{fieldState?.error?.message}</p>}
+          {fieldState?.error?.message && (
+            <p className={styles.errorMessage}>{fieldState?.error?.message}</p>
+          )}
         </>
       )}
     />
@@ -1609,18 +2157,26 @@ function PrestacionalSearch({
   t,
   value,
 }: PrestacionalSearchProps) {
-  const isTablet = useLayoutType() === 'tablet';
+  const isTablet = useLayoutType() === "tablet";
 
   return (
     <>
       <ResponsiveWrapper>
         <Search
-          size={isTablet ? 'lg' : 'md'}
+          size={isTablet ? "lg" : "md"}
           id="codigoPrestacionalSearch"
-          labelText={t('codigoPrestacionalInputLabel', 'Indique el Código Prestacional')}
-          placeholder={t('codigoPrestacionalPlaceholder', 'Buscar Código Prestacional')}
+          labelText={t(
+            "codigoPrestacionalInputLabel",
+            "Indique el Código Prestacional",
+          )}
+          placeholder={t(
+            "codigoPrestacionalPlaceholder",
+            "Buscar Código Prestacional",
+          )}
           disabled={Boolean(selectedConcept)}
-          renderIcon={error && ((props) => <WarningFilled fill="red" {...props} />)}
+          renderIcon={
+            error && ((props) => <WarningFilled fill="red" {...props} />)
+          }
           onChange={(event) => onSearch(event.target.value)}
           value={value}
         />
@@ -1637,10 +2193,15 @@ function PrestacionalSearch({
             <li className={styles.diagnosis} key={prestacional.uuid}>
               <button
                 type="button"
-                className={classnames(styles.diagnosisButton, styles.diagnosisButtonSingle)}
+                className={classnames(
+                  styles.diagnosisButton,
+                  styles.diagnosisButtonSingle,
+                )}
                 onClick={() => onAddPrestacional(prestacional)}
               >
-                <span className={styles.diagnosisName}>{prestacional.display}</span>
+                <span className={styles.diagnosisName}>
+                  {prestacional.display}
+                </span>
               </button>
             </li>
           ))}
@@ -1650,7 +2211,10 @@ function PrestacionalSearch({
         <ResponsiveWrapper>
           <Tile className={styles.emptyResults}>
             <span>
-              {t('noMatchingPrestacionales', 'No se encontraron códigos prestacionales coincidentes')}{' '}
+              {t(
+                "noMatchingPrestacionales",
+                "No se encontraron códigos prestacionales coincidentes",
+              )}{" "}
               <strong>"{value}"</strong>
             </span>
           </Tile>
@@ -1660,8 +2224,13 @@ function PrestacionalSearch({
         <InlineNotification
           className={styles.errorNotification}
           lowContrast
-          title={t('error', 'Error')}
-          subtitle={t('errorFetchingConcepts', 'There was a problem fetching concepts') + '.'}
+          title={t("error", "Error")}
+          subtitle={
+            t(
+              "errorFetchingConcepts",
+              "There was a problem fetching concepts",
+            ) + "."
+          }
         />
       ) : null}
     </>
@@ -1674,7 +2243,7 @@ function RequiredFieldLabel({ label }: { label: string }) {
   return (
     <>
       {label}
-      <span title={t('required', 'Required')} className={styles.required}>
+      <span title={t("required", "Required")} className={styles.required}>
         *
       </span>
     </>
@@ -1705,8 +2274,8 @@ function DiagnosesDisplay({
         {searchResults.map((diagnosis, index) => {
           if (isDiagnosisNotSelected(diagnosis)) {
             const formattedDiagnosis = formatDiagnosisDisplay(diagnosis);
-            const [code, ...nameParts] = formattedDiagnosis.split(' - ');
-            const diagnosisName = nameParts.join(' - ');
+            const [code, ...nameParts] = formattedDiagnosis.split(" - ");
+            const diagnosisName = nameParts.join(" - ");
 
             return (
               <li className={styles.diagnosis} key={index}>
@@ -1719,10 +2288,14 @@ function DiagnosesDisplay({
                     <>
                       <span className={styles.diagnosisCode}>{code}</span>
                       <span className={styles.diagnosisSeparator}>-</span>
-                      <span className={styles.diagnosisName}>{diagnosisName}</span>
+                      <span className={styles.diagnosisName}>
+                        {diagnosisName}
+                      </span>
                     </>
                   ) : (
-                    <span className={styles.diagnosisName}>{formattedDiagnosis}</span>
+                    <span className={styles.diagnosisName}>
+                      {formattedDiagnosis}
+                    </span>
                   )}
                 </button>
               </li>
@@ -1740,7 +2313,8 @@ function DiagnosesDisplay({
       <ResponsiveWrapper>
         <Tile className={styles.emptyResults}>
           <span>
-            {t('noMatchingDiagnoses', 'No diagnoses found matching')} <strong>"{value}"</strong>
+            {t("noMatchingDiagnoses", "No diagnoses found matching")}{" "}
+            <strong>"{value}"</strong>
           </span>
         </Tile>
       </ResponsiveWrapper>
@@ -1758,13 +2332,46 @@ function Loader() {
   );
 }
 
-const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}>> = (props) => {
+const VisitNotesForm: React.FC<
+  PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}>
+> = (props) => {
+  const { t } = useTranslation();
   const session = useSession();
-  const canEditVisitNotes = userHasAccess(visitNotesPrivilege, session?.user);
+  const canEditVisitNotes = userHasAccess(
+    visitNotesEditPrivilege,
+    session?.user,
+  );
+  const config = useConfig<ConfigObject>();
+  const visitNoteConfig = {
+    ...defaultVisitNoteClinicalConceptUuids,
+    ...config.visitNoteConfig,
+  };
+  const currentVisitContext = props.groupProps.visitContext as
+    | VisitContextWithUuid
+    | null
+    | undefined;
+  const visitUuid =
+    currentVisitContext?.visit?.uuid ?? currentVisitContext?.uuid;
+  const resolution = useCanonicalVisitNoteEncounter(
+    canEditVisitNotes ? props.groupProps.patientUuid : null,
+    canEditVisitNotes ? visitUuid : null,
+    canEditVisitNotes ? visitNoteConfig.encounterTypeUuid : null,
+    canEditVisitNotes ? visitNoteConfig.formConceptUuid : null,
+  );
+  const requestedOnAfterSave = props.workspaceProps?.onAfterSave;
+  const handleAfterSave = useCallback(async () => {
+    await Promise.allSettled([
+      Promise.resolve().then(() => resolution.mutate()),
+      Promise.resolve().then(() => requestedOnAfterSave?.()),
+    ]);
+  }, [requestedOnAfterSave, resolution]);
 
   useEffect(() => {
     if (!canEditVisitNotes) {
-      void props.closeWorkspace({ closeWindow: true, discardUnsavedChanges: true });
+      void props.closeWorkspace({
+        closeWindow: true,
+        discardUnsavedChanges: true,
+      });
     }
   }, [canEditVisitNotes, props.closeWorkspace]);
 
@@ -1772,7 +2379,66 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     return null;
   }
 
-  return <VisitNotesFormContent {...props} />;
+  if (resolution.status === "loading") {
+    return (
+      <Workspace2 title={t("visitNoteWorkspaceTitle", "Visit note")}>
+        <InlineLoading
+          description={t(
+            "resolvingVisitNote",
+            "Checking the active visit summary...",
+          )}
+          status="active"
+        />
+      </Workspace2>
+    );
+  }
+
+  if (resolution.status !== "ready") {
+    return (
+      <Workspace2 title={t("visitNoteWorkspaceTitle", "Visit note")}>
+        <InlineNotification
+          hideCloseButton
+          kind="error"
+          lowContrast
+          title={t(
+            "visitNoteResolutionError",
+            "The visit summary cannot be opened",
+          )}
+          subtitle={
+            resolution.status === "ambiguous"
+              ? t(
+                  "visitNoteDuplicateEncounterError",
+                  "More than one summary exists for the active visit. Resolve the duplicate before editing.",
+                )
+              : t(
+                  "visitNoteVerificationError",
+                  "The active visit summary could not be verified. Reload and try again.",
+                )
+          }
+        />
+      </Workspace2>
+    );
+  }
+
+  const encounter = resolution.encounter
+    ? ({
+        ...resolution.encounter,
+        id: resolution.encounter.uuid,
+        rawDatetime: resolution.encounter.encounterDatetime,
+      } as EditableVisitNoteEncounter)
+    : undefined;
+
+  return (
+    <VisitNotesFormContent
+      {...props}
+      workspaceProps={{
+        ...props.workspaceProps,
+        encounter,
+        formContext: encounter ? "editing" : "creating",
+        onAfterSave: handleAfterSave,
+      }}
+    />
+  );
 };
 
 export default VisitNotesForm;

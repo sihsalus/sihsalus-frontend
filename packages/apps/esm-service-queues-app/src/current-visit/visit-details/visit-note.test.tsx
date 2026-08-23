@@ -2,7 +2,7 @@ import { launchWorkspace2, usePatient, useSession } from '@openmrs/esm-framework
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPatient, mockSession } from 'test-utils';
-import { serviceQueuesVisitNotesWorkspace, visitNotesPrivilege } from '../../constants';
+import { serviceQueuesVisitNotesWorkspace, visitNotesEditPrivilege } from '../../constants';
 import VisitNote from './visit-note.component';
 
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
@@ -25,7 +25,7 @@ describe('VisitNote', () => {
       ...mockSession.data,
       user: {
         ...mockSession.data.user,
-        privileges: [privilege(visitNotesPrivilege)],
+        privileges: [privilege(visitNotesEditPrivilege)],
       },
     } as ReturnType<typeof useSession>);
   });
@@ -43,7 +43,7 @@ describe('VisitNote', () => {
       ...mockSession.data,
       user: {
         ...mockSession.data.user,
-        privileges: [privilege(visitNotesPrivilege)],
+        privileges: [privilege(visitNotesEditPrivilege)],
       },
     } as ReturnType<typeof useSession>);
 

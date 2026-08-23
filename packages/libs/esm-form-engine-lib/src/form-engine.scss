@@ -1,4 +1,4 @@
-@use '@carbon/layout';
+@use "@carbon/layout";
 
 // replaces .formEngine
 .form {
@@ -45,6 +45,10 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+}
+
+.formLoadError {
+  padding: layout.$spacing-05;
 }
 
 .minifiedButtons {
@@ -104,7 +108,7 @@
 }
 
 .indeterminate:before {
-  content: '';
+  content: "";
   position: absolute;
   height: 100%;
   background-color: var(--brand-02);
@@ -112,7 +116,7 @@
 }
 
 .indeterminate:after {
-  content: '';
+  content: "";
   position: absolute;
   height: 100%;
   background-color: var(--brand-01);

@@ -81,6 +81,35 @@ describe('CurrentVisitDetails', () => {
     expect(screen.queryByText('wrong-form')).not.toBeInTheDocument();
   });
 
+  it('shows native encounter diagnoses and deduplicates their legacy obs fallback', () => {
+    const encounter = {
+      uuid: 'canonical',
+      encounterDatetime: '2026-08-23T10:00:00.000-0500',
+      encounterType: { uuid: 'visit-note-encounter', display: 'Visit Note' },
+      form: { uuid: 'visit-note-form' },
+      encounterProviders: [],
+      diagnoses: [
+        {
+          uuid: 'diagnosis-uuid',
+          voided: false,
+          diagnosis: { coded: { uuid: 'cie10-uuid', display: 'A00 - Cólera' } },
+        },
+      ],
+      obs: [
+        {
+          uuid: 'legacy-diagnosis-obs',
+          concept: { uuid: 'visit-diagnoses' },
+          groupMembers: [{ concept: { uuid: 'problem-list' }, value: { display: 'A00 - Cólera' } }],
+        },
+      ],
+      orders: [],
+    };
+
+    render(<CurrentVisitDetails patientUuid="patient-uuid" encounters={[encounter] as never} />);
+
+    expect(screen.getAllByText('A00 - Cólera')).toHaveLength(1);
+  });
+
   it('hides the visit summary without its privilege while retaining authorized vitals', () => {
     mockUseSession.mockReturnValue({
       ...mockSession.data,

@@ -22,6 +22,8 @@ describe('useVisit clinical representation', () => {
     const key = mockUseSWR.mock.calls[0][0] as string;
     const representation = new URL(key, 'https://openmrs.test').searchParams.get('v');
     expect(representation).toContain('form:(uuid,display)');
+    expect(representation).toContain('diagnoses:(uuid,display,certainty,rank,voided');
+    expect(representation.match(/\(/g)).toHaveLength(representation.match(/\)/g).length);
   });
 
   it('does not request an unscoped visit without a UUID', () => {

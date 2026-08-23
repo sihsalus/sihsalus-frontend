@@ -1,6 +1,6 @@
 import { Button, Tag } from '@carbon/react';
 import { ArrowRight } from '@carbon/react/icons';
-import { launchWorkspace2, userHasAccess, usePatient, useSession } from '@openmrs/esm-framework';
+import { launchWorkspace2, userHasAccess, usePatient, useSession, type Visit } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -13,9 +13,10 @@ interface VisitNoteProps {
   notes: Array<Note>;
   diagnoses: Array<DiagnosisItem>;
   patientUuid: string;
+  visit?: Visit;
 }
 
-const VisitNote: React.FC<VisitNoteProps> = ({ notes, patientUuid, diagnoses }) => {
+const VisitNote: React.FC<VisitNoteProps> = ({ notes, patientUuid, diagnoses, visit }) => {
   const { t } = useTranslation();
   const { patient } = usePatient(patientUuid);
   const session = useSession();
@@ -45,16 +46,17 @@ const VisitNote: React.FC<VisitNoteProps> = ({ notes, patientUuid, diagnoses }) 
           <p className={styles.emptyText}>
             {t('visitFormNotCompleted', 'Visit form has not been completed for this visit')}
           </p>
-          {canEditVisitNotes ? (
+          {canEditVisitNotes && visit?.uuid ? (
             <Button
               size="sm"
               kind="ghost"
               disabled={!patient}
               renderIcon={(props) => <ArrowRight size={16} {...props} />}
               onClick={() =>
-                launchWorkspace2(serviceQueuesVisitNotesWorkspace, { formContext: 'creating' }, null, {
+                launchWorkspace2(serviceQueuesVisitNotesWorkspace, {}, null, {
                   patient,
                   patientUuid,
+                  visitContext: visit,
                 })
               }
               iconDescription={t('visitNoteForm', 'Visit note form')}

@@ -48,15 +48,28 @@ const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encount
     const notes: Array<Note> = [];
     const vitalsToRetrieve: Array<Encounter> = [];
     const diagnoses: Array<DiagnosisItem> = [];
+    const diagnosisNames = new Set<string>();
 
     // Iterating through every Encounter
     encounters?.forEach((enc: Encounter) => {
       // Check for Visit Diagnoses and Notes
       if (enc.encounterType?.uuid === visitNoteEncounterTypeUuid && enc.form?.uuid === visitNoteFormUuid) {
+        enc.diagnoses
+          ?.filter((diagnosis) => !diagnosis.voided)
+          .forEach((diagnosis) => {
+            const display =
+              diagnosis.diagnosis?.coded?.display ?? diagnosis.diagnosis?.nonCoded ?? diagnosis.display;
+            if (display && !diagnosisNames.has(display)) {
+              diagnosisNames.add(display);
+              diagnoses.push({ diagnosis: display });
+            }
+          });
+
         enc.obs?.forEach((obs: Observation) => {
           if (obs.concept?.uuid === concepts.visitDiagnosesConceptUuid) {
             const problemList = obs.groupMembers?.find((mem) => mem.concept?.uuid === concepts.problemListConceptUuid);
-            if (problemList?.value?.display) {
+            if (problemList?.value?.display && !diagnosisNames.has(problemList.value.display)) {
+              diagnosisNames.add(problemList.value.display);
               diagnoses.push({ diagnosis: problemList.value.display });
             }
           } else if (obs.concept?.uuid === concepts.generalPatientNoteConceptUuid) {
@@ -97,7 +110,7 @@ const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encount
               <StructuredListRow className={styles.structuredListRow}>
                 <StructuredListCell>{t('visitNote', 'Visit note')}</StructuredListCell>
                 <StructuredListCell>
-                  <VisitNote notes={notes} diagnoses={diagnoses} patientUuid={patientUuid} />
+                  <VisitNote notes={notes} diagnoses={diagnoses} patientUuid={patientUuid} visit={visit} />
                 </StructuredListCell>
               </StructuredListRow>
             ) : null}

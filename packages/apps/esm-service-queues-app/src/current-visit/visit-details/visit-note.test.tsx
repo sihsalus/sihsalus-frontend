@@ -16,6 +16,7 @@ const note = {
   provider: { name: 'Test Provider', role: 'Clinician' },
   time: '10:30',
 };
+const visit = { uuid: 'visit-uuid', location: { uuid: 'location-uuid' } };
 
 describe('VisitNote', () => {
   beforeEach(() => {
@@ -31,7 +32,7 @@ describe('VisitNote', () => {
   });
 
   it('shows an existing note without exposing duplicate creation', () => {
-    render(<VisitNote diagnoses={[]} notes={[note]} patientUuid={mockPatient.id} />);
+    render(<VisitNote diagnoses={[]} notes={[note]} patientUuid={mockPatient.id} visit={visit as never} />);
 
     expect(screen.getByText('Clinical summary')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Visit note form' })).not.toBeInTheDocument();
@@ -47,14 +48,20 @@ describe('VisitNote', () => {
       },
     } as ReturnType<typeof useSession>);
 
-    render(<VisitNote diagnoses={[]} notes={[]} patientUuid={mockPatient.id} />);
+    render(<VisitNote diagnoses={[]} notes={[]} patientUuid={mockPatient.id} visit={visit as never} />);
     await user.click(screen.getByRole('button', { name: 'Visit note form' }));
 
     expect(mockLaunchWorkspace2).toHaveBeenCalledWith(
       serviceQueuesVisitNotesWorkspace,
-      { formContext: 'creating' },
+      {},
       null,
-      expect.objectContaining({ patientUuid: mockPatient.id }),
+      expect.objectContaining({ patientUuid: mockPatient.id, visitContext: visit }),
     );
+  });
+
+  it('does not offer creation without a verified visit context', () => {
+    render(<VisitNote diagnoses={[]} notes={[]} patientUuid={mockPatient.id} />);
+
+    expect(screen.queryByRole('button', { name: 'Visit note form' })).not.toBeInTheDocument();
   });
 });

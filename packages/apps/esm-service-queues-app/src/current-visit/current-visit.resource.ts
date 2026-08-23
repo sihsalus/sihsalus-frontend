@@ -13,9 +13,10 @@ export function useVisit(visitUuid?: string) {
     'orders,' +
     'obs:(uuid,concept:(uuid,display,conceptClass:(uuid,display)),' +
     'display,groupMembers:(uuid,concept:(uuid,display),' +
-    'value:(uuid,display)),value),encounterType:(uuid,display),form:(uuid,display),' +
+    'value:(uuid,display)),value),diagnoses:(uuid,display,certainty,rank,voided,' +
+    'diagnosis:(coded:(uuid,display),nonCoded)),encounterType:(uuid,display),form:(uuid,display),' +
     'encounterProviders:(uuid,display,encounterRole:(uuid,display),' +
-    'provider:(uuid,person:(uuid,display)))),visitType:(uuid,name,display),startDatetime';
+    'provider:(uuid,person:(uuid,display)))),visitType:(uuid,name,display),startDatetime)';
 
   const apiUrl = `${restBaseUrl}/visit/${visitUuid}?v=${customRepresentation}`;
 

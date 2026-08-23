@@ -46,11 +46,12 @@ describe('DiagnosticoClasificado', () => {
     });
     expect(mockLaunch).toHaveBeenCalledOnce();
     expect(
-      vi.mocked(UserHasAccess).mock.calls.some(
-        ([props]) =>
-          JSON.stringify(props.privilege) ===
-          JSON.stringify([consultaExternaEditPrivilege, visitNotesEditPrivilege]),
-      ),
+      vi
+        .mocked(UserHasAccess)
+        .mock.calls.some(
+          ([props]) =>
+            JSON.stringify(props.privilege) === JSON.stringify([consultaExternaEditPrivilege, visitNotesEditPrivilege]),
+        ),
     ).toBe(true);
   });
 });

@@ -1,16 +1,12 @@
-import {
-  type OpenmrsResource,
-  showSnackbar,
-  translateFrom,
-} from "@openmrs/esm-framework";
-import { type TOptions } from "i18next";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { getPreviousEncounter, saveEncounter } from "../../api";
-import { formEngineAppName } from "../../globals";
-import { useEncounter } from "../../hooks/useEncounter";
-import { useEncounterRole } from "../../hooks/useEncounterRole";
-import { usePatientPrograms } from "../../hooks/usePatientPrograms";
-import { type FormContextProps } from "../../provider/form-provider";
+import { type OpenmrsResource, showSnackbar, translateFrom } from '@openmrs/esm-framework';
+import { type TOptions } from 'i18next';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getPreviousEncounter, saveEncounter } from '../../api';
+import { formEngineAppName } from '../../globals';
+import { useEncounter } from '../../hooks/useEncounter';
+import { useEncounterRole } from '../../hooks/useEncounterRole';
+import { usePatientPrograms } from '../../hooks/usePatientPrograms';
+import { type FormContextProps } from '../../provider/form-provider';
 import {
   type FormField,
   type FormPage,
@@ -20,23 +16,13 @@ import {
   type OpenmrsEncounter,
   type PatientProgram,
   type ValueAndDisplay,
-} from "../../types";
-import {
-  hasRendering,
-  isPlainObject,
-  isStringValue,
-} from "../../utils/common-utils";
-import {
-  extractErrorMessagesFromResponse,
-  FormSubmissionError,
-} from "../../utils/error-utils";
-import {
-  evaluateAsyncExpression,
-  type FormNode,
-} from "../../utils/expression-runner";
-import { extractObsValueAndDisplay } from "../../utils/form-helper";
-import { isEmpty } from "../../validators/form-validator";
-import { FormProcessor, type GetCustomHooksResponse } from "../form-processor";
+} from '../../types';
+import { hasRendering, isPlainObject, isStringValue } from '../../utils/common-utils';
+import { extractErrorMessagesFromResponse, FormSubmissionError } from '../../utils/error-utils';
+import { evaluateAsyncExpression, type FormNode } from '../../utils/expression-runner';
+import { extractObsValueAndDisplay } from '../../utils/form-helper';
+import { isEmpty } from '../../validators/form-validator';
+import { FormProcessor, type GetCustomHooksResponse } from '../form-processor';
 import {
   getMutableSessionProps,
   hasDuplicatePatientIdentifiers,
@@ -50,11 +36,11 @@ import {
   savePatientIdentifiers,
   savePatientPrograms,
   savePersonAttributes,
-} from "./encounter-processor-helper";
+} from './encounter-processor-helper';
 
 type FormValues = Record<string, unknown>;
 
-type CustomHooksResult = ReturnType<GetCustomHooksResponse["useCustomHooks"]>;
+type CustomHooksResult = ReturnType<GetCustomHooksResponse['useCustomHooks']>;
 
 interface ExpectedEncounterIdentity {
   encounterUuid?: string;
@@ -64,7 +50,7 @@ interface ExpectedEncounterIdentity {
 }
 
 function resourceUuid(value: unknown): string | undefined {
-  if (typeof value === "string") return value;
+  if (typeof value === 'string') return value;
   if (isPlainObject(value) && isStringValue(value.uuid)) return value.uuid;
   return undefined;
 }
@@ -89,33 +75,23 @@ export function hasExpectedEncounterIdentity(
 
 function getExpectedEncounterIdentity(context: Partial<FormProcessorContextProps>): ExpectedEncounterIdentity {
   return {
-    encounterUuid: typeof context.formJson?.encounter === "string" ? context.formJson.encounter : undefined,
+    encounterUuid: typeof context.formJson?.encounter === 'string' ? context.formJson.encounter : undefined,
     patientUuid: context.patient?.id,
     formUuid: context.formJson?.uuid,
     visitUuid: context.visit?.uuid,
   };
 }
 
-function useCustomHooks(
-  context: Partial<FormProcessorContextProps>,
-): CustomHooksResult {
+function useCustomHooks(context: Partial<FormProcessorContextProps>): CustomHooksResult {
   const [isLoading, setIsLoading] = useState(true);
-  const {
-    encounter,
-    error: encounterError,
-    isLoading: isLoadingEncounter,
-  } = useEncounter(context.formJson);
-  const { encounterRole, isLoading: isLoadingEncounterRole } =
-    useEncounterRole();
-  const { isLoadingPatientPrograms, patientPrograms } = usePatientPrograms(
-    context.patient?.id,
-    context.formJson,
-  );
+  const { encounter, error: encounterError, isLoading: isLoadingEncounter } = useEncounter(context.formJson);
+  const { encounterRole, isLoading: isLoadingEncounterRole } = useEncounterRole();
+  const { isLoadingPatientPrograms, patientPrograms } = usePatientPrograms(context.patient?.id, context.formJson);
   const encounterIdentityError = useMemo(() => {
     if (isLoadingEncounter || encounterError || isEmpty(context.formJson?.encounter)) return null;
     return hasExpectedEncounterIdentity(encounter, getExpectedEncounterIdentity(context))
       ? null
-      : new Error("Encounter identity verification failed");
+      : new Error('Encounter identity verification failed');
   }, [context, encounter, encounterError, isLoadingEncounter]);
   const encounterResource = useMemo(
     () => (encounterIdentityError ? null : getEncounterResource(encounter)),
@@ -126,42 +102,30 @@ function useCustomHooks(
       (patientPrograms ?? [])
         .map((program) => program.uuid)
         .sort((a, b) => a.localeCompare(b))
-        .join(","),
+        .join(','),
     [patientPrograms],
   );
 
   useEffect(() => {
-    setIsLoading(
-      isLoadingPatientPrograms || isLoadingEncounter || isLoadingEncounterRole,
-    );
+    setIsLoading(isLoadingPatientPrograms || isLoadingEncounter || isLoadingEncounterRole);
   }, [isLoadingPatientPrograms, isLoadingEncounter, isLoadingEncounterRole]);
 
   const updateContext = useCallback(
-    (
-      setContext: React.Dispatch<
-        React.SetStateAction<FormProcessorContextProps>
-      >,
-    ): void => {
+    (setContext: React.Dispatch<React.SetStateAction<FormProcessorContextProps>>): void => {
       setContext((context) => {
-        const previousEncounterUuid = isOpenmrsEncounter(
-          context.domainObjectValue,
-        )
+        const previousEncounterUuid = isOpenmrsEncounter(context.domainObjectValue)
           ? context.domainObjectValue.uuid
           : null;
         const nextEncounterUuid = encounterResource?.uuid ?? null;
-        const previousEncounterRoleUuid = isPlainObject(
-          context.customDependencies?.defaultEncounterRole,
-        )
+        const previousEncounterRoleUuid = isPlainObject(context.customDependencies?.defaultEncounterRole)
           ? context.customDependencies?.defaultEncounterRole?.uuid
           : undefined;
         const nextEncounterRoleUuid = encounterRole?.uuid;
-        const previousPatientPrograms = asPatientPrograms(
-          context.customDependencies?.patientPrograms,
-        );
+        const previousPatientPrograms = asPatientPrograms(context.customDependencies?.patientPrograms);
         const previousPatientProgramUuids = previousPatientPrograms
           .map((program) => program.uuid)
           .sort((a, b) => a.localeCompare(b))
-          .join(",");
+          .join(',');
 
         if (
           previousEncounterUuid === nextEncounterUuid &&
@@ -197,17 +161,17 @@ function useCustomHooks(
 const emptyValues: Record<string, unknown> = {
   checkbox: [],
   toggle: false,
-  text: "",
+  text: '',
 };
 
 const contextInitializableTypes = new Set([
-  "encounterProvider",
-  "encounterDatetime",
-  "encounterLocation",
-  "patientIdentifier",
-  "encounterRole",
-  "programState",
-  "personAttribute",
+  'encounterProvider',
+  'encounterDatetime',
+  'encounterLocation',
+  'patientIdentifier',
+  'encounterRole',
+  'programState',
+  'personAttribute',
 ]);
 
 export class EncounterFormProcessor extends FormProcessor {
@@ -222,12 +186,7 @@ export class EncounterFormProcessor extends FormProcessor {
       });
     });
 
-    function prepareFormField(
-      field: FormField,
-      section: FormSection,
-      page: FormPage,
-      schema: FormSchema,
-    ): void {
+    function prepareFormField(field: FormField, section: FormSection, page: FormPage, schema: FormSchema): void {
       // Collect field ID
       if (field.id) {
         allFieldIds.add(field.id);
@@ -235,23 +194,13 @@ export class EncounterFormProcessor extends FormProcessor {
 
       // inherit inlineRendering and readonly from parent section and page if not set
       field.inlineRendering =
-        field.inlineRendering ??
-        section.inlineRendering ??
-        page.inlineRendering ??
-        schema.inlineRendering;
-      field.readonly =
-        field.readonly ?? section.readonly ?? page.readonly ?? schema.readonly;
-      if (
-        field.questionOptions?.rendering === "fixed-value" &&
-        !field.meta.fixedValue
-      ) {
+        field.inlineRendering ?? section.inlineRendering ?? page.inlineRendering ?? schema.inlineRendering;
+      field.readonly = field.readonly ?? section.readonly ?? page.readonly ?? schema.readonly;
+      if (field.questionOptions?.rendering === 'fixed-value' && !field.meta.fixedValue) {
         field.meta.fixedValue = field.value;
         delete field.value;
       }
-      if (
-        field.questionOptions?.rendering === "group" ||
-        field.type === "obsGroup"
-      ) {
+      if (field.questionOptions?.rendering === 'group' || field.type === 'obsGroup') {
         field.questions?.forEach((child) => {
           child.readonly = child.readonly ?? field.readonly;
           prepareFormField(child, section, page, schema);
@@ -265,80 +214,48 @@ export class EncounterFormProcessor extends FormProcessor {
     return schema;
   }
 
-  async processSubmission(
-    context: FormContextProps,
-    abortController: AbortController,
-  ): Promise<OpenmrsResource> {
-    const t = (
-      key: string,
-      defaultValue: string,
-      options?: Omit<TOptions, "ns" | "defaultValue">,
-    ): string => translateFrom(formEngineAppName, key, defaultValue, options);
+  async processSubmission(context: FormContextProps, abortController: AbortController): Promise<OpenmrsResource> {
+    const t = (key: string, defaultValue: string, options?: Omit<TOptions, 'ns' | 'defaultValue'>): string =>
+      translateFrom(formEngineAppName, key, defaultValue, options);
     const requestedEncounterUuid = context.formJson?.encounter;
     if (
-      context.sessionMode === "edit" &&
+      context.sessionMode === 'edit' &&
       (!isStringValue(requestedEncounterUuid) ||
         !hasExpectedEncounterIdentity(context.domainObjectValue, getExpectedEncounterIdentity(context)))
     ) {
       throw new FormSubmissionError({
-        title: t(
-          "errorLoadingEncounter",
-          "The existing clinical record could not be loaded",
-        ),
-        subtitle: t(
-          "errorLoadingEncounterDescription",
-          "This form cannot be edited or saved. Close it and try again.",
-        ),
-        kind: "error",
+        title: t('errorLoadingEncounter', 'The existing clinical record could not be loaded'),
+        subtitle: t('errorLoadingEncounterDescription', 'This form cannot be edited or saved. Close it and try again.'),
+        kind: 'error',
         isLowContrast: false,
       });
     }
 
-    const {
-      encounterRole,
-      encounterProvider,
-      encounterDate,
-      encounterLocation,
-    } = getMutableSessionProps(context);
-    const patientIdentifiers = preparePatientIdentifiers(
-      context.formFields,
-      encounterLocation,
-    );
+    const { encounterRole, encounterProvider, encounterDate, encounterLocation } = getMutableSessionProps(context);
+    const patientIdentifiers = preparePatientIdentifiers(context.formFields, encounterLocation);
     let hasDuplicateIdentifiers: boolean;
     try {
-      hasDuplicateIdentifiers = await hasDuplicatePatientIdentifiers(
-        context.patient,
-        patientIdentifiers,
-      );
+      hasDuplicateIdentifiers = await hasDuplicatePatientIdentifiers(context.patient, patientIdentifiers);
     } catch (error) {
-      console.error(
-        "Failed to check duplicate patient identifiers before submission.",
-        error,
-      );
+      console.error('Failed to check duplicate patient identifiers before submission.', error);
       throw new FormSubmissionError({
-        title: t(
-          "patientIdentifierValidationFailed",
-          "Could not validate patient identifiers",
-        ),
+        title: t('patientIdentifierValidationFailed', 'Could not validate patient identifiers'),
         subtitle: t(
-          "patientIdentifierValidationFailedDescription",
-          "The duplicate identifier check could not be completed. Please check your connection and try again.",
+          'patientIdentifierValidationFailedDescription',
+          'The duplicate identifier check could not be completed. Please check your connection and try again.',
         ),
-        kind: "error",
+        kind: 'error',
         isLowContrast: false,
       });
     }
     if (hasDuplicateIdentifiers) {
       throw new FormSubmissionError({
-        title: t(
-          "patientIdentifierDuplication",
-          "Patient identifier duplication",
-        ),
+        title: t('patientIdentifierDuplication', 'Patient identifier duplication'),
         subtitle: t(
-          "patientIdentifierDuplicationDescription",
-          "The identifier provided is already associated with an existing patient. Please check the identifier and try again.",
+          'patientIdentifierDuplicationDescription',
+          'The identifier provided is already associated with an existing patient. Please check the identifier and try again.',
         ),
-        kind: "error",
+        kind: 'error',
         isLowContrast: false,
       });
     }
@@ -349,34 +266,24 @@ export class EncounterFormProcessor extends FormProcessor {
       encounterProvider,
       encounterLocation,
     );
-    const currentPatientPrograms = asPatientPrograms(
-      context.customDependencies?.patientPrograms,
-    );
+    const currentPatientPrograms = asPatientPrograms(context.customDependencies?.patientPrograms);
 
     // save patient identifiers
     try {
-      await Promise.all(
-        savePatientIdentifiers(context.patient, patientIdentifiers),
-      );
+      await Promise.all(savePatientIdentifiers(context.patient, patientIdentifiers));
       if (patientIdentifiers?.length) {
         showSnackbar({
-          title: t(
-            "patientIdentifiersSaved",
-            "Patient identifier(s) saved successfully",
-          ),
-          kind: "success",
+          title: t('patientIdentifiersSaved', 'Patient identifier(s) saved successfully'),
+          kind: 'success',
           isLowContrast: true,
         });
       }
     } catch (error) {
       const errorMessages = extractErrorMessagesFromResponse(error);
       throw new FormSubmissionError({
-        title: t(
-          "errorSavingPatientIdentifiers",
-          "Error saving patient identifiers",
-        ),
-        subtitle: errorMessages.join(", "),
-        kind: "error",
+        title: t('errorSavingPatientIdentifiers', 'Error saving patient identifiers'),
+        subtitle: errorMessages.join(', '),
+        kind: 'error',
         isLowContrast: false,
       });
     }
@@ -384,59 +291,41 @@ export class EncounterFormProcessor extends FormProcessor {
     // save person attributes
     try {
       const personAttributes = preparePersonAttributes(context.formFields);
-      await Promise.all(
-        savePersonAttributes(context.patient, personAttributes),
-      );
+      await Promise.all(savePersonAttributes(context.patient, personAttributes));
       if (personAttributes?.length) {
         showSnackbar({
-          title: t(
-            "personAttributesSaved",
-            "Person attribute(s) saved successfully",
-          ),
-          kind: "success",
+          title: t('personAttributesSaved', 'Person attribute(s) saved successfully'),
+          kind: 'success',
           isLowContrast: true,
         });
       }
     } catch (error) {
       const errorMessages = extractErrorMessagesFromResponse(error);
       throw new FormSubmissionError({
-        title: t(
-          "errorSavingPersonAttributes",
-          "Error saving person attributes",
-        ),
-        subtitle: errorMessages.join(", "),
-        kind: "error",
+        title: t('errorSavingPersonAttributes', 'Error saving person attributes'),
+        subtitle: errorMessages.join(', '),
+        kind: 'error',
         isLowContrast: false,
       });
     }
 
     // save patient programs
     try {
-      const programs = preparePatientPrograms(
-        context.formFields,
-        context.patient,
-        currentPatientPrograms,
-      );
+      const programs = preparePatientPrograms(context.formFields, context.patient, currentPatientPrograms);
       const savedPrograms = await savePatientPrograms(programs);
       if (savedPrograms?.length) {
         showSnackbar({
-          title: t(
-            "patientProgramsSaved",
-            "Patient program(s) saved successfully",
-          ),
-          kind: "success",
+          title: t('patientProgramsSaved', 'Patient program(s) saved successfully'),
+          kind: 'success',
           isLowContrast: true,
         });
       }
     } catch (error) {
       const errorMessages = extractErrorMessagesFromResponse(error);
       throw new FormSubmissionError({
-        title: t(
-          "errorSavingPatientPrograms",
-          "Error saving patient program(s)",
-        ),
-        subtitle: errorMessages.join(", "),
-        kind: "error",
+        title: t('errorSavingPatientPrograms', 'Error saving patient program(s)'),
+        subtitle: errorMessages.join(', '),
+        kind: 'error',
         isLowContrast: false,
       });
     }
@@ -444,63 +333,55 @@ export class EncounterFormProcessor extends FormProcessor {
     // save encounter
     try {
       await context.onBeforeEncounterSave?.(encounter);
-      const { data: savedEncounter } = await saveEncounter(
-        abortController,
-        encounter,
-        encounter.uuid,
-      );
+      const { data: savedEncounter } = await saveEncounter(abortController, encounter, encounter.uuid);
       const savedOrders = getSavedOrderNumbers(savedEncounter);
       const savedDiagnoses = getSavedDiagnosisLabels(savedEncounter);
       if (savedOrders.length) {
         showSnackbar({
-          title: t("ordersSaved", "Order(s) saved successfully"),
-          subtitle: savedOrders.join(", "),
-          kind: "success",
+          title: t('ordersSaved', 'Order(s) saved successfully'),
+          subtitle: savedOrders.join(', '),
+          kind: 'success',
           isLowContrast: true,
         });
       }
       // handle diagnoses
       if (savedDiagnoses.length) {
         showSnackbar({
-          title: t("diagnosisSaved", "Diagnosis(es) saved successfully"),
-          subtitle: savedDiagnoses.join(", "),
-          kind: "success",
+          title: t('diagnosisSaved', 'Diagnosis(es) saved successfully'),
+          subtitle: savedDiagnoses.join(', '),
+          kind: 'success',
           isLowContrast: true,
         });
       }
       // handle attachments
       try {
-        const attachmentsResponse = await saveAttachments(
-          context.formFields,
-          savedEncounter,
-          abortController,
-        );
+        const attachmentsResponse = await saveAttachments(context.formFields, savedEncounter, abortController);
 
         if (attachmentsResponse?.length) {
           showSnackbar({
-            title: t("attachmentsSaved", "Attachment(s) saved successfully"),
-            kind: "success",
+            title: t('attachmentsSaved', 'Attachment(s) saved successfully'),
+            kind: 'success',
             isLowContrast: true,
           });
         }
       } catch (error) {
-        console.error("Error saving attachments", error);
+        console.error('Error saving attachments', error);
         const errorMessages = extractErrorMessagesFromResponse(error);
         throw new FormSubmissionError({
-          title: t("errorSavingAttachments", "Error saving attachment(s)"),
-          subtitle: errorMessages.join(", "),
-          kind: "error",
+          title: t('errorSavingAttachments', 'Error saving attachment(s)'),
+          subtitle: errorMessages.join(', '),
+          kind: 'error',
           isLowContrast: false,
         });
       }
       return savedEncounter as OpenmrsResource;
     } catch (error) {
-      console.error("Error saving encounter", error);
+      console.error('Error saving encounter', error);
       const errorMessages = extractErrorMessagesFromResponse(error);
       throw new FormSubmissionError({
-        title: t("errorSavingEncounter", "Error saving encounter"),
-        subtitle: errorMessages.join(", "),
-        kind: "error",
+        title: t('errorSavingEncounter', 'Error saving encounter'),
+        subtitle: errorMessages.join(', '),
+        kind: 'error',
         isLowContrast: false,
       });
     }
@@ -510,65 +391,44 @@ export class EncounterFormProcessor extends FormProcessor {
     return { useCustomHooks };
   }
 
-  async getInitialValues(
-    context: FormProcessorContextProps,
-  ): Promise<FormValues> {
+  async getInitialValues(context: FormProcessorContextProps): Promise<FormValues> {
     const formFields = context.formFields ?? [];
     const formFieldAdapters = context.formFieldAdapters ?? {};
-    const encounter = isOpenmrsEncounter(context.domainObjectValue)
-      ? context.domainObjectValue
-      : null;
+    const encounter = isOpenmrsEncounter(context.domainObjectValue) ? context.domainObjectValue : null;
     const initialValues: FormValues = {};
     const repeatableFields: FormField[] = [];
     if (encounter) {
       await Promise.all(
         formFields.map(async (field) => {
           const adapter = formFieldAdapters[field.type];
-          if (
-            field.meta.initialValue?.omrsObject &&
-            !isEmpty(field.meta.initialValue.refinedValue)
-          ) {
+          if (field.meta.initialValue?.omrsObject && !isEmpty(field.meta.initialValue.refinedValue)) {
             initialValues[field.id] = field.meta.initialValue.refinedValue;
             return;
           }
           if (adapter) {
-            if (
-              hasRendering(field, "repeating") &&
-              !field.meta?.repeat?.isClone
-            ) {
+            if (hasRendering(field, 'repeating') && !field.meta?.repeat?.isClone) {
               repeatableFields.push(field);
             }
             let value: unknown = null;
             try {
-              value = await adapter.getInitialValue(
-                field,
-                getEncounterResource(encounter),
-                context,
-              );
-              field.meta.initialValue.refinedValue =
-                value as FormField["questionOptions"]["defaultValue"];
+              value = await adapter.getInitialValue(field, getEncounterResource(encounter), context);
+              field.meta.initialValue.refinedValue = value as FormField['questionOptions']['defaultValue'];
             } catch (error) {
               console.error(error);
             }
-            if (field.type === "obsGroup") {
+            if (field.type === 'obsGroup') {
               return;
             }
             if (!isEmpty(value)) {
               initialValues[field.id] = value;
             } else if (!isEmpty(field.questionOptions.defaultValue)) {
-              initialValues[field.id] =
-                inferInitialValueFromDefaultFieldValue(field);
+              initialValues[field.id] = inferInitialValueFromDefaultFieldValue(field);
             } else {
-              initialValues[field.id] =
-                emptyValues[field.questionOptions.rendering] ?? "";
+              initialValues[field.id] = emptyValues[field.questionOptions.rendering] ?? '';
             }
             if (field.questionOptions.calculate?.calculateExpression) {
               try {
-                await evaluateCalculateExpression(
-                  field,
-                  initialValues,
-                  context,
-                );
+                await evaluateCalculateExpression(field, initialValues, context);
               } catch (error) {
                 console.error(error);
               }
@@ -579,42 +439,28 @@ export class EncounterFormProcessor extends FormProcessor {
         }),
       );
       const flattenedRepeatableFields = await Promise.all(
-        repeatableFields.flatMap((field) =>
-          hydrateRepeatField(field, encounter, initialValues, context),
-        ),
+        repeatableFields.flatMap((field) => hydrateRepeatField(field, encounter, initialValues, context)),
       ).then((results) => results.flat());
       formFields.push(...flattenedRepeatableFields);
     } else {
       const filteredFields = formFields.filter(
-        (field) =>
-          field.questionOptions.rendering !== "group" &&
-          field.type !== "obsGroup",
+        (field) => field.questionOptions.rendering !== 'group' && field.type !== 'obsGroup',
       );
       const fieldsWithCalculateExpressions: FormField[] = [];
       await Promise.all(
         filteredFields.map(async (field) => {
           const adapter = formFieldAdapters[field.type];
-          initialValues[field.id] =
-            emptyValues[field.questionOptions.rendering] ?? null;
-          if (
-            adapter &&
-            isEmpty(initialValues[field.id]) &&
-            contextInitializableTypes.has(field.type)
-          ) {
+          initialValues[field.id] = emptyValues[field.questionOptions.rendering] ?? null;
+          if (adapter && isEmpty(initialValues[field.id]) && contextInitializableTypes.has(field.type)) {
             try {
-              const initialValue: unknown = await adapter.getInitialValue(
-                field,
-                getEmptySourceObject(),
-                context,
-              );
+              const initialValue: unknown = await adapter.getInitialValue(field, getEmptySourceObject(), context);
               initialValues[field.id] = initialValue;
             } catch (error) {
               console.error(error);
             }
           }
           if (field.questionOptions.defaultValue) {
-            initialValues[field.id] =
-              inferInitialValueFromDefaultFieldValue(field);
+            initialValues[field.id] = inferInitialValueFromDefaultFieldValue(field);
           }
           if (field.questionOptions.calculate?.calculateExpression) {
             fieldsWithCalculateExpressions.push(field);
@@ -640,13 +486,8 @@ export class EncounterFormProcessor extends FormProcessor {
   ): Promise<Record<string, unknown>> {
     const patientId = context.patient?.id;
     const encounterType = context.formJson?.encounterType;
-    const encounter =
-      patientId && encounterType
-        ? await getPreviousEncounter(patientId, encounterType)
-        : null;
-    const previousEncounterUuid = isOpenmrsEncounter(
-      context.previousDomainObjectValue,
-    )
+    const encounter = patientId && encounterType ? await getPreviousEncounter(patientId, encounterType) : null;
+    const previousEncounterUuid = isOpenmrsEncounter(context.previousDomainObjectValue)
       ? context.previousDomainObjectValue.uuid
       : null;
     const nextEncounterUuid = encounter?.uuid ?? null;
@@ -656,9 +497,7 @@ export class EncounterFormProcessor extends FormProcessor {
     }
 
     setContext((context) => {
-      const currentPreviousEncounterUuid = isOpenmrsEncounter(
-        context.previousDomainObjectValue,
-      )
+      const currentPreviousEncounterUuid = isOpenmrsEncounter(context.previousDomainObjectValue)
         ? context.previousDomainObjectValue.uuid
         : null;
 
@@ -668,18 +507,13 @@ export class EncounterFormProcessor extends FormProcessor {
 
       return {
         ...context,
-        previousDomainObjectValue: encounter
-          ? (encounter as unknown as OpenmrsResource)
-          : undefined,
+        previousDomainObjectValue: encounter ? (encounter as unknown as OpenmrsResource) : undefined,
       };
     });
     return {};
   }
 
-  async getHistoricalValue(
-    field: FormField,
-    context: FormContextProps,
-  ): Promise<ValueAndDisplay> {
+  async getHistoricalValue(field: FormField, context: FormContextProps): Promise<ValueAndDisplay> {
     const {
       formFields,
       sessionMode,
@@ -689,7 +523,7 @@ export class EncounterFormProcessor extends FormProcessor {
       previousDomainObjectValue,
       visit,
     } = context;
-    const node: FormNode = { value: field, type: "field" };
+    const node: FormNode = { value: field, type: 'field' };
     const adapter = formFieldAdapters[field.type];
     if (field.historicalExpression) {
       const value: unknown = await evaluateAsyncExpression(
@@ -704,19 +538,10 @@ export class EncounterFormProcessor extends FormProcessor {
           visit,
         },
       );
-      return isHistoricalValue(value)
-        ? extractObsValueAndDisplay(field, value)
-        : null;
+      return isHistoricalValue(value) ? extractObsValueAndDisplay(field, value) : null;
     }
-    if (
-      previousDomainObjectValue &&
-      field.questionOptions.enablePreviousValue
-    ) {
-      return await adapter.getPreviousValue(
-        field,
-        previousDomainObjectValue,
-        context,
-      );
+    if (previousDomainObjectValue && field.questionOptions.enablePreviousValue) {
+      return await adapter.getPreviousValue(field, previousDomainObjectValue, context);
     }
     return null;
   }
@@ -729,19 +554,13 @@ async function evaluateCalculateExpression(
 ): Promise<void> {
   const { formFields, sessionMode, patient, visit } = formContext;
   const expression = field.questionOptions.calculate.calculateExpression;
-  const node: FormNode = { value: field, type: "field" };
+  const node: FormNode = { value: field, type: 'field' };
   const context = {
     mode: sessionMode,
     patient: patient,
     visit,
   };
-  const value: unknown = await evaluateAsyncExpression(
-    expression,
-    node,
-    formFields,
-    values,
-    context,
-  );
+  const value: unknown = await evaluateAsyncExpression(expression, node, formFields, values, context);
   if (!isEmpty(value)) {
     values[field.id] = value;
   }
@@ -754,10 +573,7 @@ async function evaluateCalculateExpression(
  *
  * For example: calcEDD('lmp') should be calcEDD(lmp)
  */
-function validateCalculateExpressions(
-  schema: FormSchema,
-  allFieldIds: Set<string>,
-): void {
+function validateCalculateExpressions(schema: FormSchema, allFieldIds: Set<string>): void {
   const stringLiteralPattern = /(['"])([a-zA-Z_][a-zA-Z0-9_]*)\1/g;
 
   function checkExpression(expression: string, fieldId: string): void {
@@ -775,10 +591,7 @@ function validateCalculateExpressions(
 
   function processField(field: FormField): void {
     if (field.questionOptions?.calculate?.calculateExpression) {
-      checkExpression(
-        field.questionOptions.calculate.calculateExpression,
-        field.id,
-      );
+      checkExpression(field.questionOptions.calculate.calculateExpression, field.id);
     }
     // Process nested questions (for obsGroups)
     if (field.questions) {
@@ -801,11 +614,7 @@ function getSavedOrderNumbers(encounter: OpenmrsEncounter): string[] {
 
 function getSavedDiagnosisLabels(encounter: OpenmrsEncounter): string[] {
   return (encounter.diagnoses ?? [])
-    .map((diagnosis) =>
-      "display" in diagnosis && isStringValue(diagnosis.display)
-        ? diagnosis.display
-        : null,
-    )
+    .map((diagnosis) => ('display' in diagnosis && isStringValue(diagnosis.display) ? diagnosis.display : null))
     .filter((display): display is string => isStringValue(display));
 }
 
@@ -825,15 +634,8 @@ function getFormValues(value: unknown): FormValues {
   return isPlainObject(value) ? value : {};
 }
 
-function isHistoricalValue(
-  value: unknown,
-): value is Parameters<typeof extractObsValueAndDisplay>[1] {
-  return (
-    value == null ||
-    typeof value === "string" ||
-    typeof value === "number" ||
-    isPlainObject(value)
-  );
+function isHistoricalValue(value: unknown): value is Parameters<typeof extractObsValueAndDisplay>[1] {
+  return value == null || typeof value === 'string' || typeof value === 'number' || isPlainObject(value);
 }
 
 function getEncounterResource(encounter: OpenmrsEncounter): OpenmrsResource {

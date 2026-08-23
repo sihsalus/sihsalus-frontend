@@ -7,26 +7,17 @@ import {
   StructuredListRow,
   StructuredListWrapper,
   Tag,
-} from "@carbon/react";
-import { ShoppingCart } from "@carbon/react/icons";
-import {
-  formatDate,
-  useConfig,
-  useSession,
-  userHasAccess,
-} from "@openmrs/esm-framework";
-import { useLaunchWorkspaceRequiringVisit } from "@openmrs/esm-patient-common-lib";
-import React from "react";
-import { useTranslation } from "react-i18next";
-import type { ConfigObject } from "../config-schema";
-import { useConsultaExternaVisitNoteLauncher } from "../hooks/useConsultaExternaVisitNoteLauncher";
-import { useTreatmentPlan } from "../hooks/useTreatmentPlan";
-import {
-  consultaExternaEditPrivilege,
-  orderBasketPrivileges,
-  visitNotesEditPrivilege,
-} from "../utils/constants";
-import ClinicalHistoryCard from "./clinical-history-card.component";
+} from '@carbon/react';
+import { ShoppingCart } from '@carbon/react/icons';
+import { formatDate, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import type { ConfigObject } from '../config-schema';
+import { useConsultaExternaVisitNoteLauncher } from '../hooks/useConsultaExternaVisitNoteLauncher';
+import { useTreatmentPlan } from '../hooks/useTreatmentPlan';
+import { consultaExternaEditPrivilege, orderBasketPrivileges, visitNotesEditPrivilege } from '../utils/constants';
+import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface PlanTratamientoProps {
   patientUuid: string;
@@ -35,15 +26,7 @@ interface PlanTratamientoProps {
 const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const {
-    treatmentPlans,
-    isLoading,
-    isValidating,
-    error,
-    mutate,
-    pagination,
-    sourceErrors,
-  } = useTreatmentPlan(
+  const { treatmentPlans, isLoading, isValidating, error, mutate, pagination, sourceErrors } = useTreatmentPlan(
     patientUuid,
     [
       config.encounterTypes?.externalConsultation,
@@ -61,10 +44,7 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
   // Without this check the button would start a real visit and then silently fail
   // to open the (privilege-gated) order basket, leaving a spurious visit behind.
   const canPrescribe = userHasAccess(orderBasketPrivileges, session?.user);
-  const launchOrderBasket = useLaunchWorkspaceRequiringVisit(
-    patientUuid,
-    "order-basket",
-  );
+  const launchOrderBasket = useLaunchWorkspaceRequiringVisit(patientUuid, 'order-basket');
   const launchVisitNote = useConsultaExternaVisitNoteLauncher({
     patientUuid,
     ambulatoryVisitTypeUuid: config.visitTypes?.ambulatory,
@@ -73,43 +53,43 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
 
   const sections = [
     {
-      key: "labOrders",
-      label: t("labOrders", "Exámenes Auxiliares"),
-      tagType: "blue" as const,
+      key: 'labOrders',
+      label: t('labOrders', 'Exámenes Auxiliares'),
+      tagType: 'blue' as const,
     },
     {
-      key: "procedures",
-      label: t("procedures", "Procedimientos"),
-      tagType: "teal" as const,
+      key: 'procedures',
+      label: t('procedures', 'Procedimientos'),
+      tagType: 'teal' as const,
     },
     {
-      key: "prescriptions",
-      label: t("prescriptions", "Receta Médica"),
-      tagType: "green" as const,
+      key: 'prescriptions',
+      label: t('prescriptions', 'Receta Médica'),
+      tagType: 'green' as const,
     },
     {
-      key: "therapeuticIndications",
-      label: t("therapeuticIndications", "Indicaciones Terapéuticas"),
-      tagType: "purple" as const,
+      key: 'therapeuticIndications',
+      label: t('therapeuticIndications', 'Indicaciones Terapéuticas'),
+      tagType: 'purple' as const,
     },
     {
-      key: "referral",
-      label: t("referral", "Interconsulta / Referencia"),
-      tagType: "magenta" as const,
+      key: 'referral',
+      label: t('referral', 'Interconsulta / Referencia'),
+      tagType: 'magenta' as const,
     },
     {
-      key: "nextAppointment",
-      label: t("nextAppointment", "Próxima Cita"),
-      tagType: "cyan" as const,
+      key: 'nextAppointment',
+      label: t('nextAppointment', 'Próxima Cita'),
+      tagType: 'cyan' as const,
     },
   ];
 
   return (
     <ClinicalHistoryCard
-      title={t("treatmentPlanHistory", "Historial de Planes de Tratamiento")}
-      actionLabel={t("addTreatmentPlan", "Registrar Plan")}
+      title={t('treatmentPlanHistory', 'Historial de Planes de Tratamiento')}
+      actionLabel={t('addTreatmentPlan', 'Registrar Plan')}
       empty={treatmentPlans.length === 0}
-      emptyDisplayText={t("treatmentPlans", "planes de tratamiento")}
+      emptyDisplayText={t('treatmentPlans', 'planes de tratamiento')}
       editPrivilege={[consultaExternaEditPrivilege, visitNotesEditPrivilege]}
       error={error}
       isLoading={isLoading}
@@ -120,11 +100,7 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
       pagination={pagination}
       sourceErrors={sourceErrors}
       secondaryActionIcon={ShoppingCart}
-      secondaryActionLabel={
-        canPrescribe
-          ? t("prescribeInOrderBasket", "Prescribir medicamentos")
-          : undefined
-      }
+      secondaryActionLabel={canPrescribe ? t('prescribeInOrderBasket', 'Prescribir medicamentos') : undefined}
       secondaryActionPrivilege={orderBasketPrivileges}
     >
       <Accordion>
@@ -134,10 +110,9 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
             title={
               <span>
                 {formatDate(new Date(plan.encounterDatetime), { time: true })}
-                {" — "}
+                {' — '}
                 <Tag type="outline" size="sm">
-                  {plan.provider ||
-                    t("unknownProvider", "Proveedor desconocido")}
+                  {plan.provider || t('unknownProvider', 'Proveedor desconocido')}
                 </Tag>
               </span>
             }
@@ -145,12 +120,8 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
             <StructuredListWrapper isCondensed>
               <StructuredListHead>
                 <StructuredListRow head>
-                  <StructuredListCell head>
-                    {t("section", "Sección")}
-                  </StructuredListCell>
-                  <StructuredListCell head>
-                    {t("details", "Detalles")}
-                  </StructuredListCell>
+                  <StructuredListCell head>{t('section', 'Sección')}</StructuredListCell>
+                  <StructuredListCell head>{t('details', 'Detalles')}</StructuredListCell>
                 </StructuredListRow>
               </StructuredListHead>
               <StructuredListBody>

@@ -13,8 +13,8 @@ import { formatDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
-import { useDiagnosisHistory } from '../hooks/useDiagnosisHistory';
 import { useConsultaExternaVisitNoteLauncher } from '../hooks/useConsultaExternaVisitNoteLauncher';
+import { useDiagnosisHistory } from '../hooks/useDiagnosisHistory';
 import { consultaExternaEditPrivilege, visitNotesEditPrivilege } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 
@@ -26,14 +26,17 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const isTablet = useLayoutType() === 'tablet';
-  const { diagnoses, isLoading, isValidating, error, mutate, pagination, sourceErrors } = useDiagnosisHistory(patientUuid, [
-    config.encounterTypes?.externalConsultation,
-    {
-      encounterTypeUuid: config.encounterTypes?.visitNote,
-      formUuid: config.formsList?.visitNoteFormUuid,
-      visitTypeUuid: config.visitTypes?.ambulatory,
-    },
-  ]);
+  const { diagnoses, isLoading, isValidating, error, mutate, pagination, sourceErrors } = useDiagnosisHistory(
+    patientUuid,
+    [
+      config.encounterTypes?.externalConsultation,
+      {
+        encounterTypeUuid: config.encounterTypes?.visitNote,
+        formUuid: config.formsList?.visitNoteFormUuid,
+        visitTypeUuid: config.visitTypes?.ambulatory,
+      },
+    ],
+  );
   const launchVisitNote = useConsultaExternaVisitNoteLauncher({
     patientUuid,
     ambulatoryVisitTypeUuid: config.visitTypes?.ambulatory,

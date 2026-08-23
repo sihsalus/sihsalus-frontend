@@ -16,7 +16,9 @@ vi.mock('./visit-note.component', () => ({
   default: ({ diagnoses }: { diagnoses: Array<{ diagnosis: string }> }) => (
     <div>
       Clinical visit summary
-      {diagnoses.map(({ diagnosis }) => <span key={diagnosis}>{diagnosis}</span>)}
+      {diagnoses.map(({ diagnosis }) => (
+        <span key={diagnosis}>{diagnosis}</span>
+      ))}
     </div>
   ),
 }));

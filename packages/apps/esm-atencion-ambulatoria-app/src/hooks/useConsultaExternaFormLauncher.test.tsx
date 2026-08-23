@@ -1,15 +1,11 @@
-import { launchWorkspace2, openmrsFetch, showSnackbar } from "@openmrs/esm-framework";
-import {
-  launchStartVisitPrompt,
-  usePatientChartStore,
-  useVisitOrOfflineVisit,
-} from "@openmrs/esm-patient-common-lib";
-import { act, renderHook, waitFor } from "@testing-library/react";
-import { patientFormEntryWorkspace } from "../utils/constants";
-import { useConsultaExternaFormLauncher } from "./useConsultaExternaFormLauncher";
+import { launchWorkspace2, openmrsFetch, showSnackbar } from '@openmrs/esm-framework';
+import { launchStartVisitPrompt, usePatientChartStore, useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { patientFormEntryWorkspace } from '../utils/constants';
+import { useConsultaExternaFormLauncher } from './useConsultaExternaFormLauncher';
 
-vi.mock("@openmrs/esm-patient-common-lib", async () => {
-  const actual = await vi.importActual("@openmrs/esm-patient-common-lib");
+vi.mock('@openmrs/esm-patient-common-lib', async () => {
+  const actual = await vi.importActual('@openmrs/esm-patient-common-lib');
   return {
     ...actual,
     launchStartVisitPrompt: vi.fn(),
@@ -18,8 +14,8 @@ vi.mock("@openmrs/esm-patient-common-lib", async () => {
   };
 });
 
-vi.mock("react-i18next", async () => {
-  const actual = await vi.importActual("react-i18next");
+vi.mock('react-i18next', async () => {
+  const actual = await vi.importActual('react-i18next');
   return {
     ...actual,
     useTranslation: () => ({
@@ -35,13 +31,13 @@ const mockLaunchStartVisitPrompt = vi.mocked(launchStartVisitPrompt);
 const mockUseVisitOrOfflineVisit = vi.mocked(useVisitOrOfflineVisit);
 const mockUsePatientChartStore = vi.mocked(usePatientChartStore);
 
-const patientUuid = "patient-synthetic-uuid";
-const visitUuid = "visit-synthetic-uuid";
-const ambulatoryVisitTypeUuid = "b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09";
-const encounterTypeUuid = "186c1e78-a99f-4cd0-86de-b8c4ee27a2b5";
-const formIdentifier = "CE-ANAM-001-ANAMNESIS";
-const formUuid = "0a6f1037-9f41-4d31-876a-1d43df62f99c";
-const visitStartDatetime = "2026-08-23T14:00:00.000-05:00";
+const patientUuid = 'patient-synthetic-uuid';
+const visitUuid = 'visit-synthetic-uuid';
+const ambulatoryVisitTypeUuid = 'b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09';
+const encounterTypeUuid = '186c1e78-a99f-4cd0-86de-b8c4ee27a2b5';
+const formIdentifier = 'CE-ANAM-001-ANAMNESIS';
+const formUuid = '0a6f1037-9f41-4d31-876a-1d43df62f99c';
+const visitStartDatetime = '2026-08-23T14:00:00.000-05:00';
 
 function matchingEncounter(uuid: string) {
   return {
@@ -59,7 +55,7 @@ const activeVisit = {
   stopDatetime: null,
   visitType: {
     uuid: ambulatoryVisitTypeUuid,
-    display: "Atención Ambulatoria",
+    display: 'Atención Ambulatoria',
   },
   encounters: [],
 };
@@ -84,7 +80,7 @@ function mockPublishedFormResponse() {
         {
           uuid: formUuid,
           name: formIdentifier,
-          display: "Anamnesis",
+          display: 'Anamnesis',
           published: true,
           retired: false,
           encounterType: { uuid: encounterTypeUuid },
@@ -95,11 +91,11 @@ function mockPublishedFormResponse() {
 }
 
 function renderLauncher({
-  entryMode = "one-per-visit",
+  entryMode = 'one-per-visit',
   mutate = vi.fn(),
   configuredForm = formIdentifier,
 }: {
-  entryMode?: "one-per-visit" | "repeatable";
+  entryMode?: 'one-per-visit' | 'repeatable';
   mutate?: () => unknown;
   configuredForm?: string | null;
 } = {}) {
@@ -118,13 +114,10 @@ function renderLauncher({
 }
 
 function getRequestedUrl(callIndex: number): URL {
-  return new URL(
-    String(mockOpenmrsFetch.mock.calls[callIndex][0]),
-    "https://synthetic.test",
-  );
+  return new URL(String(mockOpenmrsFetch.mock.calls[callIndex][0]), 'https://synthetic.test');
 }
 
-describe("useConsultaExternaFormLauncher", () => {
+describe('useConsultaExternaFormLauncher', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockLaunchWorkspace2.mockResolvedValue(true);
@@ -137,7 +130,7 @@ describe("useConsultaExternaFormLauncher", () => {
     mockVisitState();
   });
 
-  it("opens the existing start-visit prompt when no visit is active", () => {
+  it('opens the existing start-visit prompt when no visit is active', () => {
     mockVisitState({ activeVisit: null, currentVisit: null });
     const { result } = renderLauncher();
 
@@ -150,79 +143,69 @@ describe("useConsultaExternaFormLauncher", () => {
 
   it.each([
     {
-      name: "a visit lookup error",
-      overrides: { error: new Error("synthetic request failure") },
-      expectedSubtitle:
-        "The active outpatient visit could not be verified. Reload and try again.",
+      name: 'a visit lookup error',
+      overrides: { error: new Error('synthetic request failure') },
+      expectedSubtitle: 'The active outpatient visit could not be verified. Reload and try again.',
     },
     {
-      name: "a visit lookup still loading",
+      name: 'a visit lookup still loading',
       overrides: { isLoading: true },
-      expectedSubtitle:
-        "The active outpatient visit is still being verified. Please try again in a moment.",
+      expectedSubtitle: 'The active outpatient visit is still being verified. Please try again in a moment.',
     },
     {
-      name: "an active visit of another type",
+      name: 'an active visit of another type',
       overrides: {
         activeVisit: {
           ...activeVisit,
-          visitType: { uuid: "emergency-visit", display: "Emergencia" },
+          visitType: { uuid: 'emergency-visit', display: 'Emergencia' },
         },
         currentVisit: {
           ...activeVisit,
-          visitType: { uuid: "emergency-visit", display: "Emergencia" },
+          visitType: { uuid: 'emergency-visit', display: 'Emergencia' },
         },
       },
-      expectedSubtitle:
-        "An active Outpatient Care visit is required to record this information.",
+      expectedSubtitle: 'An active Outpatient Care visit is required to record this information.',
     },
-  ])(
-    "fails closed with a translated message for $name",
-    ({ overrides, expectedSubtitle }) => {
-      mockVisitState(overrides);
-      const { result } = renderLauncher();
+  ])('fails closed with a translated message for $name', ({ overrides, expectedSubtitle }) => {
+    mockVisitState(overrides);
+    const { result } = renderLauncher();
 
-      act(() => result.current());
+    act(() => result.current());
 
-      expect(mockShowSnackbar).toHaveBeenCalledWith(
-        expect.objectContaining({
-          kind: "error",
-          subtitle: expectedSubtitle,
-        }),
-      );
-      expect(mockOpenmrsFetch).not.toHaveBeenCalled();
-      expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
-    },
-  );
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        subtitle: expectedSubtitle,
+      }),
+    );
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+    expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
+  });
 
-  it("creates the sole-per-visit form when no matching encounter exists and attaches the verified visit", async () => {
+  it('creates the sole-per-visit form when no matching encounter exists and attaches the verified visit', async () => {
     mockPublishedFormResponse();
     mockOpenmrsFetch.mockResolvedValueOnce({ data: { results: [] } } as never);
     const { result, mutate } = renderLauncher();
 
     act(() => result.current());
 
-    await waitFor(() =>
-      expect(mockLaunchWorkspace2).toHaveBeenCalledOnce(),
-    );
+    await waitFor(() => expect(mockLaunchWorkspace2).toHaveBeenCalledOnce());
 
     const formQuery = getRequestedUrl(0);
-    expect(formQuery.pathname).toContain("/form");
-    expect(formQuery.searchParams.get("q")).toBe(formIdentifier);
+    expect(formQuery.pathname).toContain('/form');
+    expect(formQuery.searchParams.get('q')).toBe(formIdentifier);
 
     const encounterQuery = getRequestedUrl(1);
-    expect(encounterQuery.searchParams.get("patient")).toBe(patientUuid);
-    expect(encounterQuery.searchParams.get("visit")).toBe(visitUuid);
-    expect(encounterQuery.searchParams.get("encounterType")).toBe(
-      encounterTypeUuid,
-    );
-    expect(encounterQuery.searchParams.has("form")).toBe(false);
-    expect(encounterQuery.searchParams.get("limit")).toBe("100");
+    expect(encounterQuery.searchParams.get('patient')).toBe(patientUuid);
+    expect(encounterQuery.searchParams.get('visit')).toBe(visitUuid);
+    expect(encounterQuery.searchParams.get('encounterType')).toBe(encounterTypeUuid);
+    expect(encounterQuery.searchParams.has('form')).toBe(false);
+    expect(encounterQuery.searchParams.get('limit')).toBe('100');
 
     expect(mockLaunchWorkspace2).toHaveBeenCalledWith(
       patientFormEntryWorkspace,
       {
-        workspaceTitle: "Anamnesis",
+        workspaceTitle: 'Anamnesis',
         mutateForm: expect.any(Function),
         formInfo: {
           patientUuid,
@@ -245,10 +228,10 @@ describe("useConsultaExternaFormLauncher", () => {
     expect(mutate).toHaveBeenCalledOnce();
   });
 
-  it("edits the one matching Anamnesis or SOAP encounter instead of creating a duplicate", async () => {
+  it('edits the one matching Anamnesis or SOAP encounter instead of creating a duplicate', async () => {
     mockPublishedFormResponse();
     mockOpenmrsFetch.mockResolvedValueOnce({
-      data: { results: [matchingEncounter("existing-encounter")] },
+      data: { results: [matchingEncounter('existing-encounter')] },
     } as never);
     const { result } = renderLauncher();
 
@@ -259,7 +242,7 @@ describe("useConsultaExternaFormLauncher", () => {
         patientFormEntryWorkspace,
         expect.objectContaining({
           formInfo: expect.objectContaining({
-            encounterUuid: "existing-encounter",
+            encounterUuid: 'existing-encounter',
             visitUuid,
           }),
         }),
@@ -269,14 +252,11 @@ describe("useConsultaExternaFormLauncher", () => {
     );
   });
 
-  it("blocks ambiguous duplicate encounters without silently choosing one", async () => {
+  it('blocks ambiguous duplicate encounters without silently choosing one', async () => {
     mockPublishedFormResponse();
     mockOpenmrsFetch.mockResolvedValueOnce({
       data: {
-        results: [
-          matchingEncounter("encounter-one"),
-          matchingEncounter("encounter-two"),
-        ],
+        results: [matchingEncounter('encounter-one'), matchingEncounter('encounter-two')],
       },
     } as never);
     const { result } = renderLauncher();
@@ -287,21 +267,21 @@ describe("useConsultaExternaFormLauncher", () => {
       expect(mockShowSnackbar).toHaveBeenCalledWith(
         expect.objectContaining({
           subtitle:
-            "More than one record of this form exists in the active visit. Resolve the duplicate before editing.",
+            'More than one record of this form exists in the active visit. Resolve the duplicate before editing.',
         }),
       ),
     );
     expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
   });
 
-  it("rejects an encounter whose returned clinical identity does not match every requested filter", async () => {
+  it('rejects an encounter whose returned clinical identity does not match every requested filter', async () => {
     mockPublishedFormResponse();
     mockOpenmrsFetch.mockResolvedValueOnce({
       data: {
         results: [
           {
-            ...matchingEncounter("mismatched-encounter"),
-            visit: { uuid: "another-visit" },
+            ...matchingEncounter('mismatched-encounter'),
+            visit: { uuid: 'another-visit' },
           },
         ],
       },
@@ -313,18 +293,15 @@ describe("useConsultaExternaFormLauncher", () => {
     await waitFor(() =>
       expect(mockShowSnackbar).toHaveBeenCalledWith(
         expect.objectContaining({
-          subtitle:
-            "The existing clinical record could not be verified. Reload and try again.",
+          subtitle: 'The existing clinical record could not be verified. Reload and try again.',
         }),
       ),
     );
     expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
   });
 
-  it("fails closed when the form or existing encounter cannot be verified", async () => {
-    mockOpenmrsFetch.mockRejectedValueOnce(
-      new Error("synthetic backend failure"),
-    );
+  it('fails closed when the form or existing encounter cannot be verified', async () => {
+    mockOpenmrsFetch.mockRejectedValueOnce(new Error('synthetic backend failure'));
     const { result } = renderLauncher();
 
     act(() => result.current());
@@ -332,23 +309,20 @@ describe("useConsultaExternaFormLauncher", () => {
     await waitFor(() =>
       expect(mockShowSnackbar).toHaveBeenCalledWith(
         expect.objectContaining({
-          subtitle:
-            "The existing clinical record could not be verified. Reload and try again.",
+          subtitle: 'The existing clinical record could not be verified. Reload and try again.',
         }),
       ),
     );
     expect(mockLaunchWorkspace2).not.toHaveBeenCalled();
   });
 
-  it("creates each referral as a repeatable encounter but still attaches it to the visit", async () => {
+  it('creates each referral as a repeatable encounter but still attaches it to the visit', async () => {
     mockPublishedFormResponse();
-    const { result } = renderLauncher({ entryMode: "repeatable" });
+    const { result } = renderLauncher({ entryMode: 'repeatable' });
 
     act(() => result.current());
 
-    await waitFor(() =>
-      expect(mockLaunchWorkspace2).toHaveBeenCalledOnce(),
-    );
+    await waitFor(() => expect(mockLaunchWorkspace2).toHaveBeenCalledOnce());
     expect(mockOpenmrsFetch).toHaveBeenCalledOnce();
     expect(mockLaunchWorkspace2).toHaveBeenCalledWith(
       patientFormEntryWorkspace,
@@ -364,29 +338,29 @@ describe("useConsultaExternaFormLauncher", () => {
     );
   });
 
-  it("paginates supported filters and selects only the exact form client-side", async () => {
+  it('paginates supported filters and selects only the exact form client-side', async () => {
     mockPublishedFormResponse();
     mockOpenmrsFetch
       .mockResolvedValueOnce({
         data: {
-          results: [{ ...matchingEncounter("other-form"), form: { uuid: "different-form" } }],
-          links: [{ rel: "next" }],
+          results: [{ ...matchingEncounter('other-form'), form: { uuid: 'different-form' } }],
+          links: [{ rel: 'next' }],
         },
       } as never)
-      .mockResolvedValueOnce({ data: { results: [matchingEncounter("exact-form")], links: [] } } as never);
+      .mockResolvedValueOnce({ data: { results: [matchingEncounter('exact-form')], links: [] } } as never);
     const { result } = renderLauncher();
 
     act(() => result.current());
 
     await waitFor(() => expect(mockLaunchWorkspace2).toHaveBeenCalledOnce());
-    expect(getRequestedUrl(1).searchParams.has("form")).toBe(false);
-    expect(getRequestedUrl(2).searchParams.get("startIndex")).toBe("1");
+    expect(getRequestedUrl(1).searchParams.has('form')).toBe(false);
+    expect(getRequestedUrl(2).searchParams.get('startIndex')).toBe('1');
     expect(mockLaunchWorkspace2.mock.calls[0][1]).toEqual(
-      expect.objectContaining({ formInfo: expect.objectContaining({ encounterUuid: "exact-form" }) }),
+      expect.objectContaining({ formInfo: expect.objectContaining({ encounterUuid: 'exact-form' }) }),
     );
   });
 
-  it("releases the click guard when the workspace launch is denied", async () => {
+  it('releases the click guard when the workspace launch is denied', async () => {
     mockLaunchWorkspace2.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
     mockPublishedFormResponse();
     mockOpenmrsFetch.mockResolvedValueOnce({ data: { results: [] } } as never);
@@ -401,7 +375,7 @@ describe("useConsultaExternaFormLauncher", () => {
     await waitFor(() => expect(mockLaunchWorkspace2).toHaveBeenCalledTimes(2));
   });
 
-  it("suppresses concurrent clicks while resolving and while the workspace remains open", async () => {
+  it('suppresses concurrent clicks while resolving and while the workspace remains open', async () => {
     let resolveFormRequest: (value: unknown) => void = () => undefined;
     mockOpenmrsFetch.mockImplementationOnce(
       () =>
@@ -425,7 +399,7 @@ describe("useConsultaExternaFormLauncher", () => {
             {
               uuid: formUuid,
               name: formIdentifier,
-              display: "Anamnesis",
+              display: 'Anamnesis',
               published: true,
               retired: false,
               encounterType: { uuid: encounterTypeUuid },
@@ -435,9 +409,7 @@ describe("useConsultaExternaFormLauncher", () => {
       });
     });
 
-    await waitFor(() =>
-      expect(mockLaunchWorkspace2).toHaveBeenCalledOnce(),
-    );
+    await waitFor(() => expect(mockLaunchWorkspace2).toHaveBeenCalledOnce());
     act(() => result.current());
     expect(mockLaunchWorkspace2).toHaveBeenCalledOnce();
   });

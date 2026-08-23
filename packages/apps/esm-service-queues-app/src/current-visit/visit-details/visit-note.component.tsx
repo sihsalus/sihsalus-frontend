@@ -1,6 +1,6 @@
 import { Button, Tag } from '@carbon/react';
 import { ArrowRight } from '@carbon/react/icons';
-import { launchWorkspace2, userHasAccess, usePatient, useSession, type Visit } from '@openmrs/esm-framework';
+import { launchWorkspace2, usePatient, userHasAccess, useSession, type Visit } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 

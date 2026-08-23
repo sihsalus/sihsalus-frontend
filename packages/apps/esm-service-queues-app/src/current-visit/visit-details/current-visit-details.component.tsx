@@ -9,8 +9,8 @@ import {
   formatTime,
   type OpenmrsResource,
   parseDate,
-  userHasAccess,
   useConfig,
+  userHasAccess,
   useSession,
   type Visit,
 } from '@openmrs/esm-framework';
@@ -57,8 +57,7 @@ const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encount
         enc.diagnoses
           ?.filter((diagnosis) => !diagnosis.voided)
           .forEach((diagnosis) => {
-            const display =
-              diagnosis.diagnosis?.coded?.display ?? diagnosis.diagnosis?.nonCoded ?? diagnosis.display;
+            const display = diagnosis.diagnosis?.coded?.display ?? diagnosis.diagnosis?.nonCoded ?? diagnosis.display;
             if (display && !diagnosisNames.has(display)) {
               diagnosisNames.add(display);
               diagnoses.push({ diagnosis: display });

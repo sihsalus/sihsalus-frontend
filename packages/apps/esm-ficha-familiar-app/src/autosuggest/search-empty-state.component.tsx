@@ -21,7 +21,7 @@ const SearchEmptyState: React.FC<SearchEmptyStateProps> = ({ searchValue: _searc
       <p>{t(message)}</p>
       {typeof onAdd === 'function' && (
         <Button kind="ghost" renderIcon={Add} onClick={onAdd}>
-          {t('createPatient', 'Crear Paciente')}
+          {t('createRelative', 'Crear familiar')}
         </Button>
       )}
     </Tile>

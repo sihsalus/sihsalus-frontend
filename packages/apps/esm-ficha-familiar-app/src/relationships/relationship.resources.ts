@@ -1,11 +1,67 @@
-import type { Session } from '@openmrs/esm-framework';
 import { openmrsFetch, restBaseUrl, showModal, showSnackbar } from '@openmrs/esm-framework';
 import omit from 'lodash-es/omit';
 import { mutate } from 'swr';
 import { z } from 'zod';
 
 import type { ConfigObject } from '../config-schema';
-import type { Patient } from '../types';
+
+interface PatientSearchApiResult {
+  uuid: string;
+  identifiers?: PersonSearchResult['identifiers'];
+  person?: {
+    uuid?: string;
+    display?: string;
+    gender?: string;
+    age?: number;
+    birthdate?: string;
+  };
+}
+
+interface PersonSearchApiResult {
+  uuid: string;
+  display?: string;
+  gender?: string;
+  age?: number;
+  birthdate?: string;
+}
+
+export interface PersonSearchResult {
+  uuid: string;
+  display: string;
+  gender?: string;
+  age?: number;
+  birthdate?: string;
+  isPatient: boolean;
+  identifiers: Array<{
+    identifier: string;
+    preferred?: boolean;
+    identifierType: {
+      display: string;
+    };
+  }>;
+}
+
+type RelationshipSaveOperation = 'create-person' | 'select-person' | 'create-relationship';
+
+export class RelationshipSaveError extends Error {
+  readonly operation: RelationshipSaveOperation;
+  readonly personUuid?: string;
+  readonly originalError: unknown;
+
+  constructor(operation: RelationshipSaveOperation, originalError: unknown, personUuid?: string) {
+    super(`Unable to complete relationship operation: ${operation}`);
+    this.name = 'RelationshipSaveError';
+    this.operation = operation;
+    this.originalError = originalError;
+    this.personUuid = personUuid;
+  }
+}
+
+export function getRelationshipRetryPersonUuid(error: unknown) {
+  return error instanceof RelationshipSaveError && error.operation === 'create-relationship'
+    ? error.personUuid
+    : undefined;
+}
 
 const t = (key: string, defaultValue: string) => {
   const i18next = (
@@ -75,14 +131,44 @@ export const deleteRelationship = async (relationshipUuid: string) => {
 };
 
 export async function fetchPerson(query: string, abortController: AbortController) {
-  const customREp = 'custom:(uuid,identifiers,person:(uuid,display,gender,age,birthdate,attributes))';
-  const patientsRes = await openmrsFetch<{ results: Array<Patient> }>(
-    `${restBaseUrl}/patient?q=${query}&v=${customREp}`,
-    {
-      signal: abortController.signal,
-    },
-  );
-  return patientsRes?.data?.results ?? [];
+  const encodedQuery = encodeURIComponent(query);
+  const patientRepresentation =
+    'custom:(uuid,identifiers:(identifier,preferred,identifierType:(display)),person:(uuid,display,gender,age,birthdate))';
+  const personRepresentation = 'custom:(uuid,display,gender,age,birthdate)';
+  const [patientsResponse, personsResponse] = await Promise.all([
+    openmrsFetch<{ results: Array<PatientSearchApiResult> }>(
+      `${restBaseUrl}/patient?q=${encodedQuery}&v=${patientRepresentation}`,
+      { signal: abortController.signal },
+    ),
+    openmrsFetch<{ results: Array<PersonSearchApiResult> }>(
+      `${restBaseUrl}/person?q=${encodedQuery}&v=${personRepresentation}`,
+      { signal: abortController.signal },
+    ),
+  ]);
+
+  const results: Array<PersonSearchResult> = (patientsResponse.data?.results ?? []).map((patient) => ({
+    uuid: patient.person?.uuid ?? patient.uuid,
+    display: patient.person?.display ?? '',
+    gender: patient.person?.gender,
+    age: patient.person?.age,
+    birthdate: patient.person?.birthdate,
+    isPatient: true,
+    identifiers: patient.identifiers ?? [],
+  }));
+  const knownPersonUuids = new Set(results.map((person) => person.uuid));
+
+  for (const person of personsResponse.data?.results ?? []) {
+    if (!knownPersonUuids.has(person.uuid)) {
+      results.push({
+        ...person,
+        display: person.display ?? '',
+        isPatient: false,
+        identifiers: [],
+      });
+    }
+  }
+
+  return results;
 }
 
 export const relationshipFormSchema = z.object({
@@ -101,6 +187,7 @@ export const relationshipFormSchema = z.object({
       familyName2: z.string().min(1, 'Family name required'),
       gender: z.enum(['M', 'F']),
       birthdate: z.date({ coerce: true }).max(new Date(), 'Must not be a future date'),
+      birthdateEstimated: z.boolean().optional(),
       maritalStatus: z.string().optional(),
       address: z.string().optional(),
       phoneNumber: z.string().optional(),
@@ -108,98 +195,101 @@ export const relationshipFormSchema = z.object({
     .optional(),
 });
 
-export function generateOpenmrsIdentifier(source: string) {
-  const abortController = new AbortController();
-  return openmrsFetch(`${restBaseUrl}/idgen/identifiersource/${source}/identifier`, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    method: 'POST',
-    body: {},
-    signal: abortController.signal,
-  });
-}
-
 export const saveRelationship = async (
   data: z.infer<typeof relationshipFormSchema>,
   config: ConfigObject,
-  session: Session,
   extraAttributes: Array<{ attributeType: string; value: string }> = [],
 ) => {
-  // Handle patient creation
-  let patient: string = data.personB;
-  if (data.mode === 'create') {
-    try {
-      const identifier = await generateOpenmrsIdentifier(config.defaultIdentifierSourceUuid);
+  let relativePersonUuid = data.personB;
+  let personCreated = false;
 
+  // A relative is a Person until an explicit patient-registration workflow promotes them.
+  // Reuse personB after a partial failure so retrying cannot create a duplicate Person.
+  if (data.mode === 'create' && !relativePersonUuid) {
+    try {
       const {
         address,
         birthdate,
+        birthdateEstimated,
         familyName,
-        familyName2, // ← Agregado aquí
+        familyName2,
         gender,
         givenName,
+        maritalStatus,
         middleName,
         phoneNumber,
       } = data.personBInfo;
 
-      const response = await openmrsFetch<Patient>(`/ws/rest/v1/patient`, {
+      const response = await openmrsFetch<{ uuid: string }>(`${restBaseUrl}/person`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          identifiers: [
+          names: [
             {
-              identifier: identifier.data.identifier,
-              identifierType: config.defaultIDUuid,
-              location: session.sessionLocation.uuid,
+              givenName,
+              middleName,
+              familyName,
+              familyName2,
+              preferred: true,
             },
           ],
-          person: {
-            names: [
-              {
-                givenName,
-                middleName,
-                familyName,
-                familyName2,
-              },
-            ],
-            gender,
-            birthdate,
-            addresses: address ? [{ preferred: true, address1: address }] : undefined,
-            dead: false,
-            attributes: [
-              ...(phoneNumber
-                ? [
-                    {
-                      attributeType: config.contactPersonAttributesUuid.telephone,
-                      value: phoneNumber,
-                    },
-                  ]
-                : []),
-              ...extraAttributes,
-            ],
-          },
+          gender,
+          birthdate,
+          birthdateEstimated: birthdateEstimated ?? false,
+          addresses: address ? [{ preferred: true, address1: address }] : undefined,
+          dead: false,
+          attributes: [
+            ...(phoneNumber
+              ? [
+                  {
+                    attributeType: config.contactPersonAttributesUuid.telephone,
+                    value: phoneNumber,
+                  },
+                ]
+              : []),
+            ...(maritalStatus
+              ? [
+                  {
+                    attributeType: config.maritalStatusPersonAttributeTypeUuid,
+                    value: maritalStatus,
+                  },
+                ]
+              : []),
+            ...extraAttributes,
+          ],
         }),
       });
-      patient = response.data?.uuid;
-      // No success toast yet: the flow isn't done until the relationship is saved.
+
+      if (!response.data?.uuid) {
+        throw new Error('The backend did not return the new person UUID');
+      }
+
+      relativePersonUuid = response.data.uuid;
+      personCreated = true;
     } catch (error) {
       showSnackbar({
-        title: t('errorCreatingPatient', 'Error al crear el paciente'),
+        title: t('errorCreatingPerson', 'Error al crear la persona'),
         kind: 'error',
-        subtitle: error?.message,
+        subtitle: t(
+          'errorCreatingPersonMessage',
+          'No se pudo crear el familiar. Revise los datos e intente nuevamente.',
+        ),
       });
-      throw error; // Don't contunue if an erro ocuures
+      throw new RelationshipSaveError('create-person', error);
     }
   }
 
-  // Hanldle add personB attributes if search mode
+  if (!relativePersonUuid) {
+    throw new RelationshipSaveError('select-person', new Error('A related person is required'));
+  }
+
+  // Add attributes to a Person selected through search mode.
   if (data.mode === 'search' && extraAttributes.length > 0) {
     const results = await Promise.allSettled(
       extraAttributes.map((attr) =>
-        openmrsFetch(`${restBaseUrl}/person/${patient}/attribute`, {
+        openmrsFetch(`${restBaseUrl}/person/${relativePersonUuid}/attribute`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -213,58 +303,26 @@ export const saveRelationship = async (
         showSnackbar({
           title: t('error', 'Error'),
           kind: 'error',
-          subtitle: t('errorCreatingPatientAttribute', 'Error al crear el atributo del paciente'),
+          subtitle: t('errorCreatingPersonAttribute', 'Error al crear el atributo de la persona'),
         });
       }
     });
   }
 
-  // Handle storage of patient demographics in obs
-  if (data.mode === 'create' && data.personBInfo?.maritalStatus) {
-    try {
-      await openmrsFetch(`/ws/rest/v1/encounter`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          location: session.sessionLocation.uuid,
-          encounterProviders: [
-            {
-              provider: session.currentProvider.uuid,
-              encounterRole: config.registrationObs.encounterProviderRoleUuid,
-            },
-          ],
-          form: config.registrationObs.registrationFormUuid,
-          encounterType: config.registrationEncounterUuid,
-          patient: patient,
-          obs: [{ concept: config.maritalStatusUuid, value: data.personBInfo.maritalStatus }],
-        }),
-      });
-    } catch (error) {
-      showSnackbar({
-        title: t('errorSavingPatientDemographics', 'Error al guardar los datos demográficos'),
-        kind: 'error',
-        subtitle: error?.message,
-      });
-    }
-  }
-
-  // Handle Relationship Creation
   try {
     const relationshipPayload =
       data.relationshipDirection === 'aIsToB'
         ? {
             ...omit(data, ['personBInfo', 'mode', 'relationshipDirection', 'personA', 'personB']),
-            personA: patient,
+            personA: relativePersonUuid,
             personB: data.personA,
           }
         : {
             ...omit(data, ['personBInfo', 'mode', 'relationshipDirection']),
-            personB: patient,
+            personB: relativePersonUuid,
           };
 
-    await openmrsFetch(`/ws/rest/v1/relationship`, {
+    await openmrsFetch(`${restBaseUrl}/relationship`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -276,10 +334,12 @@ export const saveRelationship = async (
       kind: 'success',
       subtitle:
         data.mode === 'create'
-          ? t('patientAndRelationshipSaved', 'Paciente creado y relación familiar guardada exitosamente')
+          ? t('personAndRelationshipSaved', 'Persona creada y relación familiar guardada exitosamente')
           : t('relationshipSavedSuccessfully', 'La relación familiar se guardó exitosamente'),
     });
-    mutate((key) => typeof key === 'string' && key.startsWith('/ws/rest/v1/relationship'));
+    mutate((key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/relationship`));
+
+    return { personUuid: relativePersonUuid, personCreated };
   } catch (error) {
     showSnackbar({
       title: t('errorSavingRelationship', 'Error al guardar la relación'),
@@ -287,11 +347,15 @@ export const saveRelationship = async (
       subtitle:
         data.mode === 'create'
           ? t(
-              'relationshipFailedPatientCreated',
-              'El paciente fue creado pero la relación no se pudo guardar. Búsquelo e intente registrar la relación nuevamente.',
+              'relationshipFailedPersonCreated',
+              'La persona fue creada, pero la relación no se pudo guardar. Intente guardar nuevamente; no se creará otra persona.',
             )
-          : error?.message,
+          : t('relationshipSaveFailedMessage', 'No se pudo guardar la relación. Intente nuevamente.'),
     });
-    throw error;
+    throw new RelationshipSaveError(
+      'create-relationship',
+      error,
+      data.mode === 'create' ? relativePersonUuid : undefined,
+    );
   }
 };

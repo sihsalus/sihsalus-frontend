@@ -5,13 +5,14 @@ import {
   DatePicker,
   DatePickerInput,
   Dropdown,
+  InlineNotification,
   RadioButton,
   RadioButtonGroup,
   Switch,
   TextInput,
 } from '@carbon/react';
 import { Calculator } from '@carbon/react/icons';
-import { type Patient, showModal, useConfig } from '@openmrs/esm-framework';
+import { showModal, useConfig } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +23,7 @@ import PatientSearchInfo from '../../autosuggest/patient-search-info.component';
 import SearchEmptyState from '../../autosuggest/search-empty-state.component';
 import type { ConfigObject } from '../../config-schema';
 import type { relationshipFormSchema } from '../relationship.resources';
-import { fetchPerson } from '../relationship.resources';
+import { fetchPerson, type PersonSearchResult } from '../relationship.resources';
 
 import styles from './form.scss';
 
@@ -33,12 +34,15 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
   const { t } = useTranslation(); // Usar el hook t para las traducciones
   const config = useConfig<ConfigObject>();
 
-  const searchPatient = async (query: string) => {
+  const searchPerson = async (query: string) => {
     const abortController = new AbortController();
     return await fetchPerson(query, abortController);
   };
 
-  const handleAdd = () => form.setValue('mode', 'create');
+  const handleAdd = () => {
+    form.setValue('personB', undefined);
+    form.setValue('mode', 'create');
+  };
   const maritalStatus = useMemo(
     () =>
       Object.entries(config.contactListConceptMap[config.concepts.maritalStatusConceptUuid]?.answers ?? {}).map(
@@ -53,11 +57,18 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
   const handleCalculateBirthDate = () => {
     const dispose = showModal('birth-date-calculator', {
       onClose: () => dispose(),
-      props: { date: new Date(), onBirthDateChange: (date) => form.setValue('personBInfo.birthdate', date) },
+      props: {
+        date: new Date(),
+        onBirthDateChange: (date) => {
+          form.setValue('personBInfo.birthdate', date, { shouldDirty: true, shouldValidate: true });
+          form.setValue('personBInfo.birthdateEstimated', true, { shouldDirty: true });
+        },
+      },
     });
   };
 
   const mode = form.watch('mode');
+  const isRelationshipRetry = mode === 'create' && Boolean(form.watch('personB'));
 
   return (
     <>
@@ -70,11 +81,14 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
               selectedIndex={field.value === 'search' ? 0 : 1}
               onChange={(value) => {
                 const { name } = value;
+                if (name !== field.value) {
+                  form.setValue('personB', undefined);
+                }
                 field.onChange(name);
               }}
             >
-              <Switch name="search" text={t('searchPatient', 'Search patient')} />
-              <Switch name="create" text={t('createPatient', 'Create patient')} />
+              <Switch name="search" text={t('searchPerson', 'Search person')} />
+              <Switch name="create" text={t('createRelative', 'Create relative')} />
             </ContentSwitcher>
           )}
         />
@@ -87,18 +101,18 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
             render={({ field, fieldState: { error } }) => (
               <Autosuggest
                 className={styles.input}
-                labelText={t('patient', 'Patient')}
-                placeholder={t('patientPlaceHolder', 'Search patient')}
+                labelText={t('person', 'Person')}
+                placeholder={t('personPlaceHolder', 'Search person')}
                 invalid={Boolean(error?.message)}
                 invalidText={error?.message}
-                getDisplayValue={(item) => (item as Patient).person.display}
-                renderSuggestionItem={(item) => <PatientSearchInfo patient={item as unknown as Patient} />}
-                getFieldValue={(item) => (item as Patient).uuid}
-                getSearchResults={searchPatient}
+                getDisplayValue={(item) => (item as PersonSearchResult).display}
+                renderSuggestionItem={(item) => <PatientSearchInfo person={item as PersonSearchResult} />}
+                getFieldValue={(item) => (item as PersonSearchResult).uuid}
+                getSearchResults={searchPerson}
                 renderEmptyState={(value) => (
                   <SearchEmptyState
                     searchValue={value}
-                    message={t('patientNotFound', 'Patient Not Found')}
+                    message={t('personNotFound', 'Person not found')}
                     onAdd={handleAdd}
                   />
                 )}
@@ -113,7 +127,21 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
           />
         </Column>
       )}
-      {mode === 'create' && (
+      {isRelationshipRetry && (
+        <Column>
+          <InlineNotification
+            kind="warning"
+            lowContrast
+            hideCloseButton
+            title={t('personAlreadyCreated', 'Person already created')}
+            subtitle={t(
+              'personAlreadyCreatedRetry',
+              'Only the relationship is pending. Save again to reuse this person without creating a duplicate.',
+            )}
+          />
+        </Column>
+      )}
+      {mode === 'create' && !isRelationshipRetry && (
         <>
           <span className={styles.sectionHeader}>{t('demographics', 'Demographics')}</span>
           <Column>
@@ -208,6 +236,10 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
                 <DatePicker
                   datePickerType="single"
                   {...field}
+                  onChange={([date]) => {
+                    field.onChange(date);
+                    form.setValue('personBInfo.birthdateEstimated', false, { shouldDirty: true });
+                  }}
                   invalid={!!error?.message}
                   invalidText={error?.message}
                   className={styles.datePickerInput}

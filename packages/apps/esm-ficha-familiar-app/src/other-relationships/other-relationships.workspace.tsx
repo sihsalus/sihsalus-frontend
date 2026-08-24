@@ -1,6 +1,6 @@
 import { Button, ButtonSet, Column, ComboBox, DatePicker, DatePickerInput, Form, Stack } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useConfig, useSession, Workspace2 } from '@openmrs/esm-framework';
+import { useConfig, Workspace2 } from '@openmrs/esm-framework';
 import React from 'react';
 import type { SubmitHandler } from 'react-hook-form';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
@@ -10,7 +10,11 @@ import type { z } from 'zod';
 import type { ConfigObject } from '../config-schema';
 import { useMappedRelationshipTypes } from '../family-partner-history/relationships.resource';
 import PatientSearchCreate from '../relationships/forms/patient-search-create-form.component';
-import { relationshipFormSchema, saveRelationship } from '../relationships/relationship.resources';
+import {
+  getRelationshipRetryPersonUuid,
+  relationshipFormSchema,
+  saveRelationship,
+} from '../relationships/relationship.resources';
 import { uppercaseText } from '../utils/expression-helper';
 import type { FichaFamiliarWorkspaceComponentProps } from '../workspace-utils';
 
@@ -27,7 +31,7 @@ const schema = relationshipFormSchema
     (data) => {
       return !(data.mode === 'create' && !data.personBInfo);
     },
-    { path: ['personBInfo'], message: 'Please provide patient information' },
+    { path: ['personBInfo'], message: 'Please provide person information' },
   );
 type FormData = z.infer<typeof schema>;
 
@@ -44,7 +48,6 @@ export const OtherRelationshipsForm: React.FC<FichaFamiliarWorkspaceComponentPro
   const { familyRelationshipsTypeList } = config;
   const familyRelationshipTypesUUIDs = new Set(familyRelationshipsTypeList.map((r) => r.uuid));
   const otherRelationshipTypes = mappedRelationshipTypes.filter((type) => !familyRelationshipTypesUUIDs.has(type.uuid));
-  const session = useSession();
   const relationshipTypes = otherRelationshipTypes.map((relationship) => ({
     id: `${relationship.uuid}:${relationship.direction}`,
     direction: relationship.direction,
@@ -65,10 +68,13 @@ export const OtherRelationshipsForm: React.FC<FichaFamiliarWorkspaceComponentPro
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     try {
-      await saveRelationship(data, config, session, []);
+      await saveRelationship(data, config);
       closeWorkspace();
     } catch (error) {
-      console.error('Failed to save relationship:', error);
+      const retryPersonUuid = getRelationshipRetryPersonUuid(error);
+      if (retryPersonUuid) {
+        form.setValue('personB', retryPersonUuid, { shouldDirty: true });
+      }
     }
   };
 

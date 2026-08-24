@@ -6,6 +6,7 @@ import {
   OverflowMenu,
   OverflowMenuItem,
   Pagination,
+  Search,
   Table,
   TableBody,
   TableCell,
@@ -18,7 +19,6 @@ import {
   TableRow,
   TableToolbar,
   TableToolbarContent,
-  TableToolbarSearch,
   Tile,
 } from '@carbon/react';
 import {
@@ -499,7 +499,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
         <TableContainer className={styles.tableContainer}>
           <TableToolbar>
             <TableToolbarContent className={styles.tableToolBar}>
-              <Layer className={styles.toolbarItem}>
+              <Layer className={`${styles.toolbarItem} ${styles.filterGroup}`}>
                 {props.useFilter && (
                   <Dropdown
                     id="orderStatusFilter"
@@ -511,7 +511,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
                     label=""
                     onChange={handleOrderStatusChange}
                     titleText={t('filterOrdersByStatus', 'Filter orders by status') + ':'}
-                    type="inline"
+                    type="default"
                   />
                 )}
                 <Dropdown
@@ -524,7 +524,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
                   label=""
                   onChange={({ selectedItem }) => setPriorityFilter(selectedItem?.value)}
                   titleText={t('filterOrdersByPriority', 'Filter orders by priority') + ':'}
-                  type="inline"
+                  type="default"
                 />
                 <Dropdown
                   id="orderLabsetFilter"
@@ -536,7 +536,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
                   label=""
                   onChange={({ selectedItem }) => setSelectedLabsetUuid(selectedItem?.value)}
                   titleText={t('filterOrdersByLabset', 'Filter by lab set') + ':'}
-                  type="inline"
+                  type="default"
                 />
                 <Dropdown
                   id="orderInstructionsFilter"
@@ -550,13 +550,14 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
                   label=""
                   onChange={({ selectedItem }) => setInstructionsFilter(selectedItem?.value)}
                   titleText={t('filterByInstructions', 'Filter by instructions') + ':'}
-                  type="inline"
+                  type="default"
                 />
                 <OrdersDateRangePicker />
               </Layer>
-              <Layer className={styles.toolbarItem}>
-                <TableToolbarSearch
-                  expanded
+              <Layer className={`${styles.toolbarItem} ${styles.searchGroup}`}>
+                <Search
+                  id="laboratory-orders-search"
+                  labelText={t('searchThisList', 'Search this list')}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchString(e.target.value)}
                   placeholder={t('searchThisList', 'Search this list')}
                   size="sm"

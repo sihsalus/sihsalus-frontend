@@ -26,9 +26,16 @@ describe('appointments configuration', () => {
     expect(configSchema.appointmentServiceGenderRules._default).toEqual([]);
   });
 
-  it('filters responsible providers by the selected service category', () => {
+  // Estuvo en 'strict' hasta el 2026-08-22. En Santa Clotilde ningun proveedor
+  // tenia asignada la categoria de agenda, asi que el filtro dejaba la lista
+  // vacia y el formulario de citas era inusable: no se podia agendar a nadie.
+  // 'warn' mantiene el aviso visible pero no bloquea. Es un desbloqueo
+  // temporal: la correccion de fondo es asignar el atributo
+  // «Categorias de agenda habilitadas» a cada profesional, y entonces esto
+  // debe volver a 'strict'.
+  it('warns instead of blocking when the provider category does not match the service', () => {
     expect(appointmentsConfig.providerSchedulingCategoryValidation).toEqual({
-      mode: 'strict',
+      mode: 'warn',
       providerAttributeTypeUuid: '3961cbdd-3240-4b70-99ca-5f63af488b15',
     });
   });

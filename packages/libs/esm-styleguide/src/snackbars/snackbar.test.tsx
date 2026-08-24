@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import { Snackbar } from './snackbar.component';
 
 const mockCloseSnackbar = vi.fn();
@@ -132,6 +132,24 @@ describe('Snackbar component', () => {
     const actionButton = screen.getByRole('button', { name: /undo/i });
     expect(snackbar).toBeInTheDocument();
     expect(actionButton).toBeInTheDocument();
+  });
+
+  it('truncates a long subtitle and shows its full content in a modal', async () => {
+    const longSubtitle = 'A long laboratory order description '.repeat(10);
+    renderSnackbar({ snackbar: { autoClose: false, title: 'Orders placed', subtitle: longSubtitle } });
+
+    expect(screen.queryByText(longSubtitle)).not.toBeInTheDocument();
+    screen.getByRole('button', { name: /show more/i }).click();
+
+    const dialog = await screen.findByRole('dialog', { name: /orders placed/i });
+    expect(dialog).toBeInTheDocument();
+    // El subtitulo no lleva comas, asi que el modal lo pinta como un unico
+    // parrafo. Se ancla al parrafo para no coincidir tambien con sus ancestros.
+    expect(
+      within(dialog).getByText(
+        (_, element) => element?.tagName === 'P' && element.textContent?.trim() === longSubtitle.trim(),
+      ),
+    ).toBeInTheDocument();
   });
 });
 

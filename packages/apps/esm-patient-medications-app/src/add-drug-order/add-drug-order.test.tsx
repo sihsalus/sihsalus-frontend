@@ -86,6 +86,7 @@ vi.mock('../api/api', async () => ({
 describe('AddDrugOrderWorkspace drug search', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseSession.mockReturnValue(mockSessionDataResponse.data);
     mockPostOrder.mockReset();
     _resetOrderBasketStore();
     getPatientChartStore().setState({
@@ -113,6 +114,18 @@ describe('AddDrugOrderWorkspace drug search', () => {
       isLoading: false,
       data: [],
     });
+  });
+
+  test('fails closed when the session has no clinical provider', () => {
+    mockUseSession.mockReturnValue({
+      ...mockSessionDataResponse.data,
+      currentProvider: undefined,
+    });
+
+    renderAddDrugOrderWorkspace();
+
+    expect(screen.getByText('Clinical provider required')).toBeInTheDocument();
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
   });
 
   test('looks ok', async () => {

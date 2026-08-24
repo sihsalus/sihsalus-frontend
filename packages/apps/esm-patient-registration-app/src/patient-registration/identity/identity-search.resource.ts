@@ -1,4 +1,4 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { omrsOfflineCachingStrategyHttpHeaderName, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
 import { personDocumentNumberAttributeTypeUuid, personDocumentTypeAttributeTypeUuid } from './identity-documents';
 
@@ -25,12 +25,64 @@ export interface LocalIdentityDocumentFilter {
   personDocumentTypeConceptUuid?: string;
 }
 
+export interface LocalIdentitySearchOptions {
+  /**
+   * Clinical creation preflights must never accept a service-worker or HTTP
+   * cache hit as evidence that an identifier is unused.
+   */
+  requireFreshNetwork?: boolean;
+  signal?: AbortSignal;
+}
+
 interface PatientIdentitySearchResult {
   uuid: string;
   display: string;
   person?: { uuid: string; display: string };
   identifiers?: Array<{ identifier: string; identifierType: { uuid: string } }>;
 }
+
+interface IdentitySearchPage<T> {
+  results?: Array<T>;
+  links?: Array<{ rel?: string; uri?: string }>;
+}
+
+export interface FreshPatientIdentity {
+  uuid: string;
+  voided?: boolean;
+  identifiers?: Array<{
+    identifier?: string;
+    location?: string | { uuid?: string } | null;
+    preferred?: boolean;
+    voided?: boolean;
+    identifierType?: { uuid?: string };
+  }>;
+  person?: {
+    uuid?: string;
+    voided?: boolean;
+    gender?: string;
+    birthdate?: string;
+    birthdateEstimated?: boolean;
+    dead?: boolean;
+    names?: Array<{
+      preferred?: boolean;
+      voided?: boolean;
+      givenName?: string;
+      middleName?: string;
+      familyName?: string;
+      familyName2?: string;
+    }>;
+    addresses?: Array<{
+      preferred?: boolean;
+      voided?: boolean;
+      address4?: string;
+      cityVillage?: string;
+    }>;
+    attributes?: Array<{ voided?: boolean }>;
+  };
+}
+
+export const freshPatientIdentityErrorMessage = 'The patient identity could not be verified.';
+const maxFreshIdentityPages = 20;
 
 interface PersonIdentitySearchResult {
   uuid: string;
@@ -71,29 +123,44 @@ export async function searchLocalIdentityByDocument(
   normalizedDocumentNumber: string,
   abortController?: AbortController,
   filter: LocalIdentityDocumentFilter = {},
+  options: LocalIdentitySearchOptions = {},
 ): Promise<Array<LocalIdentityMatch>> {
   const encodedNumber = encodeURIComponent(normalizedDocumentNumber);
   const patientRepresentation =
     'custom:(uuid,display,person:(uuid,display),identifiers:(identifier,identifierType:(uuid)))';
   const personRepresentation = 'custom:(uuid,display,attributes:(value,attributeType:(uuid)))';
 
-  const [patientsRes, personsRes] = await Promise.all([
-    openmrsFetch<{ results: Array<PatientIdentitySearchResult> }>(
-      `${restBaseUrl}/patient?q=${encodedNumber}&v=${patientRepresentation}`,
-      { signal: abortController?.signal },
-    ),
-    openmrsFetch<{ results: Array<PersonIdentitySearchResult> }>(
-      `${restBaseUrl}/person?q=${encodedNumber}&v=${personRepresentation}`,
-      { signal: abortController?.signal },
-    ),
-  ]);
+  const patientUrl = `${restBaseUrl}/patient?q=${encodedNumber}&v=${patientRepresentation}`;
+  const personUrl = `${restBaseUrl}/person?q=${encodedNumber}&v=${personRepresentation}`;
+  const requestOptions = options.requireFreshNetwork
+    ? {
+        cache: 'no-store' as const,
+        headers: {
+          [omrsOfflineCachingStrategyHttpHeaderName]: 'network-only-or-cache-only' as const,
+        },
+        rejectOnAuthFailure: true,
+        signal: options.signal ?? abortController?.signal,
+      }
+    : { signal: options.signal ?? abortController?.signal };
+
+  const [patients, persons] = options.requireFreshNetwork
+    ? await Promise.all([
+        fetchAllFreshIdentityPages<PatientIdentitySearchResult>(patientUrl, requestOptions),
+        fetchAllFreshIdentityPages<PersonIdentitySearchResult>(personUrl, requestOptions),
+      ])
+    : await Promise.all([
+        openmrsFetch<IdentitySearchPage<PatientIdentitySearchResult>>(patientUrl, requestOptions).then(
+          (response) => response.data.results ?? [],
+        ),
+        openmrsFetch<IdentitySearchPage<PersonIdentitySearchResult>>(personUrl, requestOptions).then(
+          (response) => response.data.results ?? [],
+        ),
+      ]);
 
   const matches: Array<LocalIdentityMatch> = [];
-  const patientsByPersonUuid = new Map(
-    (patientsRes.data.results ?? []).map((patient) => [patient.person?.uuid ?? patient.uuid, patient]),
-  );
+  const patientsByPersonUuid = new Map(patients.map((patient) => [patient.person?.uuid ?? patient.uuid, patient]));
 
-  for (const patient of patientsRes.data.results ?? []) {
+  for (const patient of patients) {
     const exactIdentifier = patient.identifiers?.find(
       (identifier) =>
         identifier.identifier?.toUpperCase() === normalizedDocumentNumber.toUpperCase() &&
@@ -113,7 +180,7 @@ export async function searchLocalIdentityByDocument(
 
   const matchedPersonUuids = new Set(matches.map((match) => match.uuid));
 
-  for (const person of personsRes.data.results ?? []) {
+  for (const person of persons) {
     if (matchedPersonUuids.has(person.uuid)) {
       continue;
     }
@@ -153,6 +220,105 @@ export async function searchLocalIdentityByDocument(
   return matches;
 }
 
+function getIdentitySearchUrl(url: string, requireFreshNetwork = false) {
+  if (!requireFreshNetwork) {
+    return url;
+  }
+
+  const requestUrl = new URL(url, globalThis.location.origin);
+  requestUrl.searchParams.set('_bulkPatientImportCheck', globalThis.crypto.randomUUID());
+  return requestUrl.href;
+}
+
+async function fetchAllFreshIdentityPages<T>(
+  initialUrl: string,
+  requestOptions: Parameters<typeof openmrsFetch>[1],
+): Promise<Array<T>> {
+  const results: Array<T> = [];
+  const visited = new Set<string>();
+  let nextUrl: string | undefined = initialUrl;
+  const restPath = `${new URL(restBaseUrl, globalThis.location.origin).pathname.replace(/\/$/, '')}/`;
+
+  for (let page = 0; nextUrl && page < maxFreshIdentityPages; page++) {
+    const linkedUrl = new URL(nextUrl, globalThis.location.origin);
+    if (!linkedUrl.pathname.startsWith(restPath)) {
+      throw new Error(freshPatientIdentityErrorMessage);
+    }
+    const canonicalUrl = new URL(`${linkedUrl.pathname}${linkedUrl.search}`, globalThis.location.origin);
+    canonicalUrl.searchParams.delete('_bulkPatientImportCheck');
+    const pageKey = canonicalUrl.href;
+    if (visited.has(pageKey)) {
+      throw new Error(freshPatientIdentityErrorMessage);
+    }
+    visited.add(pageKey);
+
+    const response = await openmrsFetch<IdentitySearchPage<T>>(getIdentitySearchUrl(pageKey, true), requestOptions);
+    if (response.ok !== true) {
+      throw new Error(freshPatientIdentityErrorMessage);
+    }
+    results.push(...(response.data.results ?? []));
+    nextUrl = response.data.links?.find((link) => link.rel === 'next')?.uri;
+  }
+
+  if (nextUrl) {
+    throw new Error(freshPatientIdentityErrorMessage);
+  }
+  return results;
+}
+
+/**
+ * Reads a patient directly by UUID without accepting cached state. A 404 is a
+ * useful absence result during preflight; every other failure remains fatal.
+ */
+export async function fetchFreshPatientIdentityByUuid(
+  patientUuid: string,
+  signal?: AbortSignal,
+): Promise<FreshPatientIdentity | null> {
+  const representation =
+    'custom:(uuid,voided,identifiers:(identifier,preferred,voided,identifierType:(uuid),location:(uuid)),' +
+    'person:(uuid,voided,gender,birthdate,' +
+    'birthdateEstimated,dead,attributes:(voided),' +
+    'names:(preferred,voided,givenName,middleName,familyName,familyName2),' +
+    'addresses:(preferred,voided,address4,cityVillage)))';
+  const url = getIdentitySearchUrl(
+    `${restBaseUrl}/patient/${encodeURIComponent(patientUuid)}?v=${representation}`,
+    true,
+  );
+
+  try {
+    const response = await openmrsFetch<FreshPatientIdentity>(url, {
+      cache: 'no-store',
+      headers: {
+        [omrsOfflineCachingStrategyHttpHeaderName]: 'network-only-or-cache-only',
+      },
+      rejectOnAuthFailure: true,
+      signal,
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      throw new Error(freshPatientIdentityErrorMessage);
+    }
+
+    return response.data;
+  } catch (error) {
+    if (getHttpStatus(error) === 404) {
+      return null;
+    }
+
+    throw new Error(freshPatientIdentityErrorMessage);
+  }
+}
+
+function getHttpStatus(error: unknown) {
+  return typeof error === 'object' && error !== null
+    ? ((error as { response?: { status?: number }; status?: number }).response?.status ??
+        (error as { status?: number }).status)
+    : undefined;
+}
+
 /**
  * The backend does NOT reject promoting a person who is already a patient: a second
  * `POST /patient` silently appends duplicate identifiers. Callers must run this check
@@ -163,11 +329,7 @@ export async function isPersonAlreadyPatient(personUuid: string): Promise<boolea
     const response = await openmrsFetch(`${restBaseUrl}/patient/${personUuid}?v=custom:(uuid)`);
     return response.ok;
   } catch (error) {
-    const status =
-      typeof error === 'object' && error !== null
-        ? ((error as { response?: { status?: number }; status?: number }).response?.status ??
-          (error as { status?: number }).status)
-        : undefined;
+    const status = getHttpStatus(error);
 
     if (status === 404 || (error instanceof Error && /\b404\b/.test(error.message))) {
       return false;

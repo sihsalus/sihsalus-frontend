@@ -65,6 +65,7 @@ export function LabOrderForm({
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
+  const orderingProviderUuid = session?.currentProvider?.uuid;
   const config = useConfig<ConfigObject>();
   const { priorityConfigs } = config;
 
@@ -162,11 +163,15 @@ export function LabOrderForm({
 
   const handleFormSubmission = useCallback(
     (data: TestOrderBasketItem) => {
+      if (!orderingProviderUuid) {
+        setShowErrorNotification(true);
+        return;
+      }
       const finalizedOrder: TestOrderBasketItem = {
         ...initialOrder,
         ...data,
       };
-      finalizedOrder.orderer = session.currentProvider.uuid;
+      finalizedOrder.orderer = orderingProviderUuid;
       // `data.urgency` holds the selected priority conceptUuid; resolve the core OpenMRS
       // urgency enum the order POST requires (Order.urgency rejects concept UUIDs).
       const selectedPriority = priorityConfigs?.find((priority) => priority.conceptUuid === data.urgency);
@@ -197,7 +202,7 @@ export function LabOrderForm({
     [
       orders,
       setOrders,
-      session?.currentProvider?.uuid,
+      orderingProviderUuid,
       closeWorkspaceWithSavedChanges,
       initialOrder,
       orderBasketWorkspaceName,
@@ -380,7 +385,14 @@ export function LabOrderForm({
             <InlineNotification
               lowContrast
               onClose={() => setShowErrorNotification(false)}
-              subtitle={t('pleaseRequiredFields', 'Please fill all required fields') + '.'}
+              subtitle={
+                orderingProviderUuid
+                  ? t('pleaseRequiredFields', 'Please fill all required fields') + '.'
+                  : t(
+                      'orderingProviderRequiredMessage',
+                      'This account is not linked to a clinical provider. Use a clinical account or request the association.',
+                    )
+              }
               title={t('error', 'Error')}
             />
           </Column>
@@ -391,7 +403,7 @@ export function LabOrderForm({
           <Button className={styles.button} kind="secondary" onClick={cancelOrder} size="xl">
             {t('discard', 'Discard')}
           </Button>
-          <Button className={styles.button} kind="primary" size="xl" type="submit">
+          <Button className={styles.button} disabled={!orderingProviderUuid} kind="primary" size="xl" type="submit">
             {t('saveOrder', 'Save order')}
           </Button>
         </ButtonSet>

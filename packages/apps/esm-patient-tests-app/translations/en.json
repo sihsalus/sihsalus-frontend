@@ -59,6 +59,8 @@
   "orderReason": "Order reason",
   "orderReasonRequired": "Order reason is required",
   "orderNumber": "Order number",
+  "orderingProviderRequiredMessage": "This account is not linked to a clinical provider. Use a clinical account or request the association.",
+  "orderingProviderRequiredTitle": "Clinical provider required",
   "other": "Other",
   "overlayHeader": "Overlay",
   "overTime": "Over time",

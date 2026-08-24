@@ -81,7 +81,6 @@ Contrato canónico de campos territoriales:
 | `stateProvince`  | Provincia                                |
 | `countyDistrict` | Distrito                                 |
 | `cityVillage`    | Centro poblado                           |
-| `address3`       | Barrio                                   |
 | `address4`       | Dirección                                |
 | `address13`      | Path jerárquico interno                  |
 | `address14`      | Código UBIGEO interno                    |
@@ -94,6 +93,7 @@ La terminología sigue la [consulta oficial de centros poblados del INEI](https:
 La persistencia sigue separada:
 
 - La residencia se guarda en `person.addresses` como dirección preferida (`preferred: true`) usando la plantilla de dirección activa del backend.
+- El barrio se guarda como atributo de persona codificado `4a182c6e-9a19-4db8-8042-4bbf3b4308c2`, con respuestas del set `0fd3e744-6d2c-4cb3-9b7e-1f88899635d9`; no se duplica en `address3`.
 - El lugar de nacimiento se guarda como una segunda dirección no preferida (`preferred: false`) dentro de `person.addresses`.
 - Cuando el usuario selecciona una entrada del Address Hierarchy, el `userGeneratedId` del último nivel seleccionado se guarda por detrás como UBIGEO en `address14`. El path validado seleccionado se guarda en `address13` con separador técnico `|` (`PERU|UCAYALI|ATALAYA|RAYMONDI|AGUAJAL`) para detectar cambios manuales sin depender del texto visible. Estos campos no deben agregarse al template visible de dirección en `sihsalus-content`.
 - La dirección de nacimiento se identifica con la marca interna `address15 = SIHSALUS_BIRTH_ADDRESS`. `address15` no debe agregarse al template visible de dirección en `sihsalus-content`; se usa solo para distinguir el tipo de dirección al hidratar edición/FHIR.
@@ -117,6 +117,35 @@ curl -fsS -u "$E2E_USER_ADMIN_USERNAME:$E2E_USER_ADMIN_PASSWORD" \
 curl -fsS -u "$E2E_USER_ADMIN_USERNAME:$E2E_USER_ADMIN_PASSWORD" \
   "$E2E_API_BASE_URL/ws/rest/v1/systemsetting?q=layout.address.format&v=full"
 ```
+
+## Carga masiva única de pacientes
+
+La ruta administrativa `patient-import` no es un flujo ordinario de admisión. Permanece desactivada por defecto y
+solo puede habilitarse para una ventana aprobada con el SHA-256 exacto del Excel, SHA completo del frontend, origen,
+UUID del operador, UUID de la ubicación de sesión, vencimiento UTC y el significado explícito de `DOMICILIO`
+(`address4` para dirección o `cityVillage` para centro poblado). La tarjeta se oculta fuera de ese contexto o después
+del vencimiento, y la ruta directa falla cerrada.
+
+El alcance clínico es exclusivamente pacientes adultos con DNI de ocho dígitos. Menores, personas ya existentes por
+DNI, duplicados de DNI o de nombre/fecha/sexo dentro del Excel, metadata de identificadores incompleta y cualquier
+resultado ambiguo se bloquean para registro o reconciliación manual. El tipo DNI debe ser `UNIQUE`; todos los identificadores
+obligatorios/primarios deben tener una fuente automática válida, y todas las políticas de ubicación se validan antes
+de consumir un valor IdGen.
+
+El importador calcula el hash de los bytes exactos y deriva un UUID v5 estable por hash/fila/DNI. Antes de cualquier
+escritura ejecuta un preflight completo con lecturas frescas, y lo repite dentro de un Web Lock exclusivo. Usuario,
+ubicación, build y archivo se vuelven a comprobar antes de cada paciente. Cada alta se reconcilia con una lectura
+fresca antes de avanzar; el primer fallo o resultado incierto detiene el lote y marca las filas restantes como no
+intentadas. No existe rollback automático del lote ni una degradación sin Web Locks.
+
+El reporte omite nombres, DNI, fecha de nacimiento y domicilio del Excel; conserva fila, estado y UUID para
+reconciliación. Aun así contiene identificadores clínicos y debe mantenerse en el almacenamiento cifrado aprobado,
+nunca en tickets/PR públicos. La plantilla usa solo un ejemplo inequívocamente sintético y su DNI reservado no es
+importable.
+
+La preparación, ejecución sintética, reconciliación, cierre y desactivación se describen en
+[el runbook de carga masiva](../../../docs/runbooks/bulk-patient-import.md). Ninguna validación local sustituye el smoke
+coordinado en DEV/QLTY; nunca ejecutar este flujo contra PROD ni con datos reales durante pruebas.
 
 ## Configuring the Registration App to collect custom observations
 

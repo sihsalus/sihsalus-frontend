@@ -132,6 +132,19 @@ mockUseOrderType.mockReturnValue({
 describe('AddLabOrder', () => {
   beforeEach(() => {
     _resetOrderBasketStore();
+    mockUseSession.mockReturnValue(mockSessionDataResponse.data);
+  });
+
+  test('fails closed when the session has no clinical provider', () => {
+    mockUseSession.mockReturnValue({
+      ...mockSessionDataResponse.data,
+      currentProvider: undefined,
+    });
+
+    renderAddLabOrderWorkspace();
+
+    expect(screen.getByText('Clinical provider required')).toBeInTheDocument();
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
   });
 
   test('happy path fill and submit form', async () => {

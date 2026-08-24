@@ -69,6 +69,7 @@ export function savePatient(patient: Patient | null, updatePatientUuid?: string,
     },
     method: 'POST',
     body: patient,
+    rejectOnAuthFailure: true,
     signal,
   });
 }
@@ -114,6 +115,7 @@ export function generateIdentifier(source: string, signal?: AbortSignal) {
     },
     method: 'POST',
     body: {},
+    rejectOnAuthFailure: true,
     signal,
   });
 }

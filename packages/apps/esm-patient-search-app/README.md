@@ -60,5 +60,6 @@ refresh.
 | --------------------------------------- | -------------------------------------- |
 | Estado de verificación civil            | `Estado de Verificación de Identidad`  |
 | Estado administrativo de identificación | `Estado de Identificación en Admisión` |
+| Barrio de residencia                    | `Barrio`                               |
 
 Si alguno de estos person attribute types no existe en el backend objetivo, el filtro se oculta para no bloquear ni ensuciar la búsqueda.

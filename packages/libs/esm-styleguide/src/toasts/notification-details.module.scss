@@ -1,0 +1,101 @@
+@use '@carbon/layout';
+
+.modal {
+  --notification-detail-accent: var(--cds-support-info, #0043ce);
+  --notification-detail-background: var(--cds-notification-background-info, #edf5ff);
+
+  :global(.cds--modal-container) {
+    border-inline-start: layout.$spacing-02 solid var(--notification-detail-accent);
+  }
+
+  :global(.cds--modal-header),
+  :global(.cds--modal-content),
+  :global(.cds--modal-close) {
+    background: var(--notification-detail-background);
+  }
+}
+
+.success {
+  --notification-detail-accent: var(--cds-support-success, #198038);
+
+  :global(.cds--modal-container),
+  :global(.cds--modal-header),
+  :global(.cds--modal-content),
+  :global(.cds--modal-close) {
+    background-color: #d6f5df;
+  }
+}
+
+.error {
+  --notification-detail-accent: var(--cds-support-error, #da1e28);
+
+  :global(.cds--modal-container),
+  :global(.cds--modal-header),
+  :global(.cds--modal-content),
+  :global(.cds--modal-close) {
+    background-color: #ffe0e0;
+  }
+}
+
+.warning {
+  --notification-detail-accent: var(--cds-support-warning, #f1c21b);
+
+  :global(.cds--modal-container),
+  :global(.cds--modal-header),
+  :global(.cds--modal-content),
+  :global(.cds--modal-close) {
+    background-color: #fff0b8;
+  }
+}
+
+.info {
+  --notification-detail-accent: var(--cds-support-info, #0043ce);
+
+  :global(.cds--modal-container),
+  :global(.cds--modal-header),
+  :global(.cds--modal-content),
+  :global(.cds--modal-close) {
+    background-color: #dbeafe;
+  }
+}
+
+.heading {
+  display: flex;
+  gap: layout.$spacing-03;
+  align-items: center;
+
+  svg {
+    flex: none;
+    fill: var(--notification-detail-accent);
+  }
+}
+
+.sections {
+  display: grid;
+  gap: layout.$spacing-06;
+  max-height: min(60vh, 32rem);
+  overflow-y: auto;
+}
+
+.sectionTitle {
+  margin: 0 0 layout.$spacing-03;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.list {
+  display: grid;
+  gap: layout.$spacing-03;
+  margin: 0;
+  padding-inline-start: layout.$spacing-06;
+  line-height: 1.45;
+}
+
+.description {
+  max-height: min(60vh, 32rem);
+  margin: 0;
+  overflow-y: auto;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}

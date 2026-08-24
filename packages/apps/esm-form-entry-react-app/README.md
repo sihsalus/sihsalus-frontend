@@ -42,7 +42,8 @@ service worker reports controlled failures as `{ success: false }`; callers must
 rather than as a fulfilled synchronization.
 
 The location and provider metadata required by offline form entry is refreshed as one all-settled batch. Every route
-registration is checked, every resource attempt finishes, and any incomplete batch produces fixed translated feedback
-without exposing URLs, identifiers, or backend error details.
+registration is checked and every resource attempt finishes. An expected offline transition neither starts a refresh
+nor produces a global error notification; the previous cache remains available. An incomplete batch while the client
+is still online produces fixed translated warning feedback without exposing URLs, identifiers, or backend error details.
 
 Clinical cache content remains origin-wide. Shared devices require an isolated OS/browser profile per authorized user until cache partitioning or verified logout/removal purging is implemented.

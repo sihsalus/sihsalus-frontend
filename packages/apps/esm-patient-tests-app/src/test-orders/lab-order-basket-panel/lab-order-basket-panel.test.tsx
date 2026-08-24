@@ -45,6 +45,18 @@ describe('LabOrderBasketPanel', () => {
     expect(screen.getByRole('button', { name: /Add/i })).toBeInTheDocument();
   });
 
+  test('disables adding laboratory orders when clinical ordering is unavailable', async () => {
+    const user = userEvent.setup();
+    const launchAddLabOrder = vi.fn();
+    mockUseOrderBasket.mockReturnValue({ orders: [] });
+    render(<LabOrderBasketPanel canCreateOrders={false} launchAddLabOrder={launchAddLabOrder} />);
+
+    const addButton = screen.getByRole('button', { name: /Add/i });
+    expect(addButton).toBeDisabled();
+    await user.click(addButton);
+    expect(launchAddLabOrder).not.toHaveBeenCalled();
+  });
+
   test('renders a tile-based layout of lab orders', async () => {
     const user = userEvent.setup();
     const labs: Array<TestOrderBasketItem> = [

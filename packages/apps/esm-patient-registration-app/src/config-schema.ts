@@ -48,6 +48,18 @@ export interface Gender {
   value: string;
 }
 
+export interface BulkPatientImportConfig {
+  enabled: boolean;
+  approvedFileSha256: string;
+  approvedBuildSha: string;
+  approvedOrigin: string;
+  approvalExpiresAt: string;
+  approvedUserUuid: string;
+  approvedLocationUuid: string;
+  domicilioTarget: '' | 'address4' | 'cityVillage';
+  maxRows: number;
+}
+
 export interface RegistrationConfig {
   sections: Array<string>;
   sectionDefinitions: Array<SectionDefinition>;
@@ -111,6 +123,7 @@ export interface RegistrationConfig {
   sisVerification: {
     productConceptUuid: string;
   };
+  bulkPatientImport: BulkPatientImportConfig;
 }
 
 export const builtInSections: Array<SectionDefinition> = [
@@ -140,7 +153,103 @@ export const builtInFields = [
   'dateAndTimeOfDeath',
 ] as const;
 
+const sha256Pattern = /^[0-9a-f]{64}$/;
+const gitShaPattern = /^[0-9a-f]{40}$/;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isCanonicalWebOrigin(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (url.protocol === 'https:' || url.protocol === 'http:') && value === url.origin;
+  } catch {
+    return false;
+  }
+}
+
+export function isCanonicalUtcInstant(value: string): boolean {
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) && new Date(timestamp).toISOString() === value;
+}
+
 export const esmPatientRegistrationSchema = {
+  bulkPatientImport: {
+    enabled: {
+      _type: Type.Boolean,
+      _default: false,
+      _description: 'Enables the one-time bulk patient import only when every approval constraint is configured.',
+    },
+    approvedFileSha256: {
+      _type: Type.String,
+      _default: '',
+      _description: 'Lowercase SHA-256 digest of the only Excel file approved for import.',
+      _validators: [
+        validator(
+          (value: string) => value === '' || sha256Pattern.test(value),
+          'must be 64 lowercase hexadecimal characters',
+        ),
+      ],
+    },
+    approvedBuildSha: {
+      _type: Type.String,
+      _default: '',
+      _description: 'Lowercase 40-character Git commit SHA of the only frontend build approved to run the import.',
+      _validators: [
+        validator(
+          (value: string) => value === '' || gitShaPattern.test(value),
+          'must be 40 lowercase hexadecimal characters',
+        ),
+      ],
+    },
+    approvedOrigin: {
+      _type: Type.String,
+      _default: '',
+      _description: 'Exact HTTP(S) origin on which the import is approved to run, without a trailing slash or path.',
+      _validators: [
+        validator((value: string) => value === '' || isCanonicalWebOrigin(value), 'must be a canonical HTTP(S) origin'),
+      ],
+    },
+    approvalExpiresAt: {
+      _type: Type.String,
+      _default: '',
+      _description: 'Canonical UTC instant after which the one-time import approval is no longer valid.',
+      _validators: [
+        validator(
+          (value: string) => value === '' || isCanonicalUtcInstant(value),
+          'must be a canonical ISO-8601 UTC instant',
+        ),
+      ],
+    },
+    approvedUserUuid: {
+      _type: Type.String,
+      _default: '',
+      _description: 'UUID of the only user approved to run the import.',
+      _validators: [validator((value: string) => value === '' || uuidPattern.test(value), 'must be a valid UUID')],
+    },
+    approvedLocationUuid: {
+      _type: Type.String,
+      _default: '',
+      _description: 'UUID of the only session location approved for the import.',
+      _validators: [validator((value: string) => value === '' || uuidPattern.test(value), 'must be a valid UUID')],
+    },
+    domicilioTarget: {
+      _type: Type.String,
+      _default: '',
+      _description: 'Explicit OpenMRS address field represented by the source DOMICILIO column.',
+      _validators: [validators.oneOf(['', 'address4', 'cityVillage'])],
+    },
+    maxRows: {
+      _type: Type.Number,
+      _default: 250,
+      _description:
+        'Maximum number of non-empty data rows accepted per import file. The padron is loaded in batches of this size; raising it increases the number of sequential patient writes a single run performs.',
+      _validators: [
+        validator(
+          (value: number) => Number.isInteger(value) && value >= 1 && value <= 5000,
+          'must be an integer between 1 and 5000',
+        ),
+      ],
+    },
+  },
   sections: {
     _type: Type.Array,
     _default: ['demographics', 'contact', 'relationships'],
@@ -550,6 +659,42 @@ export const esmPatientRegistrationSchema = {
     },
   },
   _validators: [
+    validator(
+      (config: RegistrationConfig) =>
+        !config.bulkPatientImport.enabled || sha256Pattern.test(config.bulkPatientImport.approvedFileSha256),
+      'When bulkPatientImport.enabled is true, `bulkPatientImport.approvedFileSha256` must be a 64-character lowercase SHA-256 digest.',
+    ),
+    validator(
+      (config: RegistrationConfig) =>
+        !config.bulkPatientImport.enabled || gitShaPattern.test(config.bulkPatientImport.approvedBuildSha),
+      'When bulkPatientImport.enabled is true, `bulkPatientImport.approvedBuildSha` must be a 40-character lowercase Git SHA.',
+    ),
+    validator(
+      (config: RegistrationConfig) =>
+        !config.bulkPatientImport.enabled || isCanonicalWebOrigin(config.bulkPatientImport.approvedOrigin),
+      'When bulkPatientImport.enabled is true, `bulkPatientImport.approvedOrigin` must be an exact HTTP(S) origin.',
+    ),
+    validator(
+      (config: RegistrationConfig) =>
+        !config.bulkPatientImport.enabled || isCanonicalUtcInstant(config.bulkPatientImport.approvalExpiresAt),
+      'When bulkPatientImport.enabled is true, `bulkPatientImport.approvalExpiresAt` must be a canonical ISO-8601 UTC instant.',
+    ),
+    validator(
+      (config: RegistrationConfig) =>
+        !config.bulkPatientImport.enabled || uuidPattern.test(config.bulkPatientImport.approvedUserUuid),
+      'When bulkPatientImport.enabled is true, `bulkPatientImport.approvedUserUuid` must be a valid UUID.',
+    ),
+    validator(
+      (config: RegistrationConfig) =>
+        !config.bulkPatientImport.enabled || uuidPattern.test(config.bulkPatientImport.approvedLocationUuid),
+      'When bulkPatientImport.enabled is true, `bulkPatientImport.approvedLocationUuid` must be a valid UUID.',
+    ),
+    validator(
+      (config: RegistrationConfig) =>
+        !config.bulkPatientImport.enabled ||
+        ['address4', 'cityVillage'].includes(config.bulkPatientImport.domicilioTarget),
+      'When bulkPatientImport.enabled is true, `bulkPatientImport.domicilioTarget` must be `address4` or `cityVillage`.',
+    ),
     validator(
       (config: RegistrationConfig) =>
         !config.fieldDefinitions.some((d) => d.type === 'obs') || config.registrationObs.encounterTypeUuid != null,

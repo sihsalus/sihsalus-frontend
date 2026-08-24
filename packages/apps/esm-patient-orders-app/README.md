@@ -13,7 +13,7 @@ Este modulo es el punto de entrada de ordenes clinicas dentro del patient chart.
 - ordenes de inmunizacion;
 - ordenes de interconsulta.
 
-Las ordenes son datos clinicos y deben asociarse a una visita/consulta activa. Si no hay visita activa, la UI debe bloquear la accion de forma clara y ofrecer iniciar consulta cuando corresponda.
+Las ordenes son datos clinicos y deben asociarse a una visita/consulta activa y a un proveedor clinico vinculado a la sesion. Si falta cualquiera de los dos, la UI debe bloquear la accion y explicar el requisito sin intentar atribuir la orden a otra persona.
 
 ## Contratos de UI
 
@@ -28,18 +28,19 @@ Las ordenes son datos clinicos y deben asociarse a una visita/consulta activa. S
 - Conceptos/tipos de orden configurados para cada familia de orden.
 - Care settings y order types configurables desde `config-schema`.
 - Visita activa disponible desde patient chart.
+- Exactamente un Provider activo vinculado a la persona de la cuenta clinica que firma la orden.
 - Laboratorio, farmacia, radiologia, inmunizacion e interconsulta pueden depender de modulos backend distintos.
 - Integraciones opcionales con stock/billing/FHIR deben degradar sin romper el workspace.
 
 ## Contrato RBAC actual
 
-| Capacidad | Privilegio frontend |
-| --- | --- |
-| Ver el dashboard y el historial de órdenes | `app:hoja.clinica.ordenes` |
-| Abrir los workspaces para crear o modificar órdenes | `app:hoja.clinica.ordenes.editar` |
-| Mostrar y abrir la ventana v2 de la canasta | `app:hoja.clinica.canastaOrdenes` |
-| Mostrar la acción Modificar para una orden de medicamento | `app:hoja.clinica.medicamentos.editar` |
-| Modificar una orden general/laboratorio o cancelar una orden | `app:hoja.clinica.ordenes.editar` |
+| Capacidad                                                    | Privilegio frontend                    |
+| ------------------------------------------------------------ | -------------------------------------- |
+| Ver el dashboard y el historial de órdenes                   | `app:hoja.clinica.ordenes`             |
+| Abrir los workspaces para crear o modificar órdenes          | `app:hoja.clinica.ordenes.editar`      |
+| Mostrar y abrir la ventana v2 de la canasta                  | `app:hoja.clinica.canastaOrdenes`      |
+| Mostrar la acción Modificar para una orden de medicamento    | `app:hoja.clinica.medicamentos.editar` |
+| Modificar una orden general/laboratorio o cancelar una orden | `app:hoja.clinica.ordenes.editar`      |
 
 El workspace `test-results-form-workspace` ya no está registrado por este paquete. La captura de resultados no debe documentarse ni asignarse mediante `app:hoja.clinica.resultados.editar` como si fuera una capacidad activa de Patient Orders.
 

@@ -214,7 +214,7 @@ export const IdentityLookupField = () => {
         kind: 'warning',
         title: t(
           'identityLookupNoDocument',
-          'Ingrese un número de documento (DNI, CE, pasaporte, cédula de identidad o CNV)',
+          'Ingrese un identificador (DNI, CE, pasaporte, cédula de identidad, CNV o afiliación temporal SIS)',
         ),
       });
       return;

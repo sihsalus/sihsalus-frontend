@@ -7,7 +7,9 @@ import {
   openmrsFetch,
   restBaseUrl,
   showModal,
+  showSnackbar,
   useConfig,
+  useSession,
   Workspace2,
 } from '@openmrs/esm-framework';
 import {
@@ -60,8 +62,11 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
     : props.patientUuid;
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
+  const session = useSession();
   const { activeVisit } = useVisitOrOfflineVisit(patientUuid);
-  const canCreateOrders = Boolean(activeVisit);
+  const hasActiveVisit = Boolean(activeVisit);
+  const hasOrderingProvider = Boolean(session?.currentProvider?.uuid);
+  const canCreateOrders = hasActiveVisit && hasOrderingProvider;
   const { orders, clearOrders } = useOrderBasket();
   const [ordersWithErrors, setOrdersWithErrors] = useState<OrderBasketItem[]>([]);
   const {
@@ -120,15 +125,49 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
     });
   }, [patientUuid]);
 
+  const handleMissingActiveVisit = useCallback(() => {
+    if (!hasActiveVisit) {
+      openStartVisitDialog();
+    }
+  }, [hasActiveVisit, openStartVisitDialog]);
+
+  const showOrderWorkspaceUnavailable = useCallback(
+    (error?: unknown) => {
+      const fallbackMessage = t(
+        'orderWorkspaceUnavailableMessage',
+        'The order form could not be opened. Verify your permissions and try again.',
+      );
+      showSnackbar({
+        isLowContrast: true,
+        kind: 'error',
+        title: t('orderWorkspaceUnavailableTitle', 'Order form unavailable'),
+        subtitle: error
+          ? getUserFacingErrorMessage(error, fallbackMessage, { logContext: 'Launch child order workspace' })
+          : fallbackMessage,
+      });
+    },
+    [t],
+  );
+
   const openOrderWorkspace = useCallback(
     async (workspaceName: string, workspaceProps?: object) => {
-      if (!canCreateOrders) {
+      if (!hasActiveVisit) {
         openStartVisitDialog();
+        return;
+      }
+      if (!hasOrderingProvider) {
         return;
       }
 
       if (isWorkspace2Props(props)) {
-        await props.launchChildWorkspace(workspaceName, workspaceProps);
+        try {
+          const didLaunch = await props.launchChildWorkspace(workspaceName, workspaceProps);
+          if (didLaunch === false) {
+            showOrderWorkspaceUnavailable();
+          }
+        } catch (error) {
+          showOrderWorkspaceUnavailable(error);
+        }
         return;
       }
 
@@ -138,7 +177,7 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
         closeWorkspaceGroup: false,
       });
     },
-    [canCreateOrders, openStartVisitDialog, props],
+    [hasActiveVisit, hasOrderingProvider, openStartVisitDialog, props, showOrderWorkspaceUnavailable],
   );
 
   useEffect(() => {
@@ -175,6 +214,15 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
     if (!activeVisit) {
       setCreatingEncounterError(t('activeVisitRequired', 'An active visit is required to make orders'));
       openStartVisitDialog();
+      return;
+    }
+    if (!hasOrderingProvider) {
+      setCreatingEncounterError(
+        t(
+          'orderingProviderRequiredMessage',
+          'This account is not linked to a clinical provider. Use a clinical account or request the association.',
+        ),
+      );
       return;
     }
 
@@ -245,6 +293,7 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
     openStartVisitDialog,
     orders,
     patientUuid,
+    hasOrderingProvider,
     t,
   ]);
 
@@ -256,24 +305,36 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
     <>
       <div className={styles.container}>
         <div className={styles.orderBasketContainer}>
-          {!canCreateOrders && (
-            <ActionableNotification
-              kind="error"
-              actionButtonLabel={t('startVisit', 'Start visit')}
-              onActionButtonClick={openStartVisitDialog}
-              title={t('startAVisitToRecordOrders', 'Start a visit to order')}
-              subtitle={t('activeVisitRequired', 'An active visit is required to make orders')}
-              lowContrast={true}
-              inline
-              className={styles.actionNotification}
-            />
-          )}
+          {!canCreateOrders &&
+            (hasActiveVisit ? (
+              <InlineNotification
+                kind="error"
+                title={t('orderingProviderRequiredTitle', 'Clinical provider required')}
+                subtitle={t(
+                  'orderingProviderRequiredMessage',
+                  'This account is not linked to a clinical provider. Use a clinical account or request the association.',
+                )}
+                lowContrast
+                className={styles.actionNotification}
+              />
+            ) : (
+              <ActionableNotification
+                kind="error"
+                actionButtonLabel={t('startVisit', 'Start visit')}
+                onActionButtonClick={openStartVisitDialog}
+                title={t('startAVisitToRecordOrders', 'Start a visit to order')}
+                subtitle={t('activeVisitRequired', 'An active visit is required to make orders')}
+                lowContrast={true}
+                inline
+                className={styles.actionNotification}
+              />
+            ))}
           <ExtensionSlot
             className={styles.orderBasketSlot}
             name="order-basket-slot"
             state={{
               canCreateOrders,
-              onMissingActiveVisit: openStartVisitDialog,
+              onMissingActiveVisit: handleMissingActiveVisit,
               launchAddDrugOrder: (order?: OrderBasketItem) =>
                 openOrderWorkspace(orderWorkspaceNames.drug, order ? { order } : {}),
               launchDrugOrderForm: (order?: OrderBasketItem) =>
@@ -294,7 +355,7 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
                   label={orderType.label}
                   orderableConceptSets={orderType.orderableConceptSets}
                   canCreateOrders={canCreateOrders}
-                  onMissingActiveVisit={openStartVisitDialog}
+                  onMissingActiveVisit={handleMissingActiveVisit}
                   launchOrderableConceptWorkspace={(orderTypeUuid, order) =>
                     void openOrderWorkspace(orderWorkspaceNames.general, {
                       orderTypeUuid,

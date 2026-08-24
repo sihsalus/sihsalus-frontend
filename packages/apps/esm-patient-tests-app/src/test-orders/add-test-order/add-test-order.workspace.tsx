@@ -1,4 +1,4 @@
-import { Button } from '@carbon/react';
+import { Button, InlineNotification } from '@carbon/react';
 import {
   ArrowLeftIcon,
   age,
@@ -8,6 +8,7 @@ import {
   useConfig,
   useLayoutType,
   usePatient,
+  useSession,
   Workspace2,
 } from '@openmrs/esm-framework';
 import {
@@ -57,6 +58,8 @@ export default function AddLabOrderWorkspace(props: AddLabOrderWorkspaceComponen
     : (props.orderBasketWorkspaceName ?? 'order-basket');
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
+  const session = useSession();
+  const hasOrderingProvider = Boolean(session?.currentProvider?.uuid);
   const { patientUuid } = usePatientChartStore(isWorkspace2Props(props) ? props.groupProps.patientUuid : undefined);
   const { patient, isLoading: isLoadingPatient } = usePatient(patientUuid);
   const [currentLabOrder, setCurrentLabOrder] = useState(initialOrder as TestOrderBasketItem);
@@ -142,7 +145,17 @@ export default function AddLabOrderWorkspace(props: AddLabOrderWorkspaceComponen
           </Button>
         </div>
       )}
-      {currentLabOrder ? (
+      {!hasOrderingProvider ? (
+        <InlineNotification
+          kind="error"
+          title={t('orderingProviderRequiredTitle', 'Clinical provider required')}
+          subtitle={t(
+            'orderingProviderRequiredMessage',
+            'This account is not linked to a clinical provider. Use a clinical account or request the association.',
+          )}
+          lowContrast
+        />
+      ) : currentLabOrder ? (
         <LabOrderForm
           initialOrder={currentLabOrder}
           patientUuid={patientUuid}

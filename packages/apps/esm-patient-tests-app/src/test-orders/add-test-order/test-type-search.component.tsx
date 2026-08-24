@@ -188,6 +188,9 @@ function TestTypeSearchResults({
   );
 
   const addAllToBasket = useCallback(() => {
+    if (!session.currentProvider?.uuid) {
+      return;
+    }
     const testsToAdd = testTypes.filter(
       (testType) => !orders?.some((order) => order.testType.conceptUuid === testType.conceptUuid),
     );
@@ -209,7 +212,7 @@ function TestTypeSearchResults({
 
     setOrders([...orders, ...newLabOrders]);
     cancelOrder();
-  }, [testTypes, orders, setOrders, createLabOrder, cancelOrder, priorityConfigs]);
+  }, [testTypes, orders, setOrders, createLabOrder, cancelOrder, priorityConfigs, session.currentProvider?.uuid]);
 
   const resultsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -378,10 +381,13 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
     (orderableConcept: TestType) => {
       return createEmptyLabOrder(orderableConcept, session.currentProvider?.uuid);
     },
-    [session.currentProvider.uuid],
+    [session.currentProvider?.uuid],
   );
 
   const addToBasket = useCallback(() => {
+    if (!session.currentProvider?.uuid) {
+      return;
+    }
     const labOrder = createLabOrder(testType);
 
     const selectedPriority = getSavedPriorityConfig(priorityConfigs);
@@ -395,7 +401,15 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
 
     setOrders([...orders, labOrder]);
     returnToOrderBasket();
-  }, [orders, setOrders, createLabOrder, returnToOrderBasket, testType, priorityConfigs]);
+  }, [
+    orders,
+    setOrders,
+    createLabOrder,
+    returnToOrderBasket,
+    testType,
+    priorityConfigs,
+    session.currentProvider?.uuid,
+  ]);
 
   const removeFromBasket = useCallback(() => {
     setOrders(orders.filter((order) => order.testType.conceptUuid !== testType.conceptUuid));

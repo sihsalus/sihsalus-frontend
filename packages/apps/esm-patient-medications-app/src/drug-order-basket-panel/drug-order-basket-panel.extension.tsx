@@ -35,6 +35,7 @@ function DrugOrderBasketPanelExtension({
   const config = useConfig<ConfigObject>();
   const session = useSession();
   const orderingProviderUuid = session?.currentProvider?.uuid;
+  const canAddOrders = canCreateOrders && Boolean(orderingProviderUuid);
   const isTablet = useLayoutType() === 'tablet';
 
   const responsiveSize = isTablet ? 'md' : 'sm';
@@ -110,11 +111,14 @@ function DrugOrderBasketPanelExtension({
         onMissingActiveVisit?.();
         return;
       }
+      if (!orderingProviderUuid) {
+        return;
+      }
 
       const launchOrderForm = launchDrugOrderForm ?? launchAddDrugOrder;
       launchOrderForm?.(order);
     },
-    [canCreateOrders, launchAddDrugOrder, launchDrugOrderForm, onMissingActiveVisit],
+    [canCreateOrders, launchAddDrugOrder, launchDrugOrderForm, onMissingActiveVisit, orderingProviderUuid],
   );
 
   return (
@@ -133,7 +137,7 @@ function DrugOrderBasketPanelExtension({
             renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
             iconDescription="Add medication"
             onClick={() => openDrugOrderForm()}
-            disabled={!canCreateOrders}
+            disabled={!canAddOrders}
             size={responsiveSize}
           >
             {t('add', 'Add')}

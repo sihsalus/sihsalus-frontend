@@ -11,7 +11,7 @@ export interface ContactSectionProps {
   sectionDefinition: SectionDefinition;
 }
 
-const residenceFieldIds = new Set(['address']);
+const residenceFieldIds = new Set(['address', 'neighborhood']);
 const birthplaceFieldIds = new Set(['birthAddress']);
 
 /**
@@ -23,6 +23,8 @@ export const ContactSection = ({ sectionDefinition }: ContactSectionProps) => {
   const { t } = useTranslation(moduleName);
 
   const residenceFields = sectionDefinition.fields.filter((field) => residenceFieldIds.has(field));
+  const structuredResidenceFields = residenceFields.filter((field) => field === 'address');
+  const localResidenceFields = residenceFields.filter((field) => field !== 'address');
   const birthplaceFields = sectionDefinition.fields.filter((field) => birthplaceFieldIds.has(field));
   const contactFields = sectionDefinition.fields.filter(
     (field) => !residenceFieldIds.has(field) && !birthplaceFieldIds.has(field),
@@ -33,9 +35,26 @@ export const ContactSection = ({ sectionDefinition }: ContactSectionProps) => {
       {residenceFields.length > 0 && (
         <div className={styles.subsection}>
           <CopyResponsibleDataButton mode="residenceContact" />
-          {residenceFields.map((name) => (
-            <Field key={`contact-${name}`} name={name} />
+          {structuredResidenceFields.map((name) => (
+            <Field
+              additionalFields={
+                localResidenceFields.length > 0
+                  ? localResidenceFields.map((localFieldName) => (
+                      <Field key={`contact-${localFieldName}`} name={localFieldName} />
+                    ))
+                  : undefined
+              }
+              key={`contact-${name}`}
+              name={name}
+            />
           ))}
+          {structuredResidenceFields.length === 0 && localResidenceFields.length > 0 && (
+            <div className={fieldStyles.addressFieldGrid}>
+              {localResidenceFields.map((name) => (
+                <Field key={`contact-${name}`} name={name} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 

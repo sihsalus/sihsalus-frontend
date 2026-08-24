@@ -4,6 +4,7 @@ import classNames from 'classnames';
 import { Field, getIn } from 'formik';
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { type CustomConceptAnswer } from '../../../config-schema';
 import { moduleName } from '../../../constants';
 import { type PersonAttributeTypeResponse } from '../../patient-registration.types';
 import {
@@ -82,12 +83,27 @@ function normalizeFinancerAnswers<T extends { uuid: string; label?: string }>(an
   });
 }
 
+export function formatCodedAnswerLabel(answer?: Pick<CustomConceptAnswer, 'code' | 'label'>) {
+  return [answer?.code, answer?.label].filter(Boolean).join(' - ');
+}
+
+function CodedAnswerOption({ answer }: { answer: CustomConceptAnswer }) {
+  return (
+    <span className={styles.codedAnswerOption}>
+      {answer.color ? (
+        <span aria-hidden="true" className={styles.codedAnswerSwatch} style={{ backgroundColor: answer.color }} />
+      ) : null}
+      <span>{formatCodedAnswerLabel(answer)}</span>
+    </span>
+  );
+}
+
 export interface CodedPersonAttributeFieldProps {
   id: string;
   personAttributeType: PersonAttributeTypeResponse;
   answerConceptSetUuid: string;
   label?: string;
-  customConceptAnswers: Array<{ uuid: string; label?: string }>;
+  customConceptAnswers: Array<CustomConceptAnswer>;
   codedInputType?: 'select' | 'radio';
   required: boolean;
   searchable?: boolean;
@@ -261,7 +277,8 @@ export function CodedPersonAttributeField({
                   <ComboBox
                     id={id}
                     items={answers}
-                    itemToString={(answer) => answer?.label ?? ''}
+                    itemToString={formatCodedAnswerLabel}
+                    itemToElement={(answer) => <CodedAnswerOption answer={answer} />}
                     selectedItem={selectedAnswer}
                     titleText={labelText}
                     placeholder={t('searchSelectAnOption', 'Search and select an option')}
@@ -294,7 +311,7 @@ export function CodedPersonAttributeField({
                       <RadioButton
                         key={answer.uuid}
                         id={`${id}-${answer.uuid}`}
-                        labelText={answer.label ?? ''}
+                        labelText={formatCodedAnswerLabel(answer)}
                         value={answer.uuid}
                       />
                     ))}
@@ -317,7 +334,7 @@ export function CodedPersonAttributeField({
                 >
                   <SelectItem value={''} text={t('selectAnOption', 'Select an option')} />
                   {answers.map((answer) => (
-                    <SelectItem key={answer.uuid} value={answer.uuid} text={answer.label} />
+                    <SelectItem key={answer.uuid} value={answer.uuid} text={formatCodedAnswerLabel(answer)} />
                   ))}
                 </Select>
               );

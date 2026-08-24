@@ -1,4 +1,5 @@
 import { reportError, useConfig } from '@openmrs/esm-framework';
+import { type ReactNode } from 'react';
 
 import { builtInFields, type RegistrationConfig } from '../../config-schema';
 import { getEffectiveRegistrationConfig } from '../peru-registration-config';
@@ -16,11 +17,12 @@ import { NameField } from './name/name-field.component';
 import { PhoneField } from './phone/phone-field.component';
 
 export interface FieldProps {
+  additionalFields?: ReactNode;
   name: string;
   requiredOverride?: boolean;
 }
 
-export function Field({ name, requiredOverride }: FieldProps) {
+export function Field({ additionalFields, name, requiredOverride }: FieldProps) {
   const config = getEffectiveRegistrationConfig(useConfig() as RegistrationConfig);
   if (
     !(builtInFields as ReadonlyArray<string>).includes(name) &&
@@ -54,7 +56,7 @@ export function Field({ name, requiredOverride }: FieldProps) {
     case 'causeOfDeath':
       return <CauseOfDeathField />;
     case 'address':
-      return <AddressComponent />;
+      return <AddressComponent additionalFields={additionalFields} />;
     case 'birthAddress':
       return (
         <AddressComponent

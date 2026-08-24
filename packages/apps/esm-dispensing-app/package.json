@@ -47,7 +47,7 @@
     "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.5.1",
-    "react-to-print": "^2.14.13"
+    "react-to-print": "^3.3.0"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",

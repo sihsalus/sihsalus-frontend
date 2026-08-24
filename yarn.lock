@@ -7873,7 +7873,7 @@ __metadata:
     react-hook-form: "npm:^7.49.3"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
-    react-to-print: "npm:^3.1.1"
+    react-to-print: "npm:^3.3.0"
     rxjs: "npm:^6.6.7"
     sass: "npm:^1.70.0"
     swr: "npm:^2.2.4"
@@ -8109,7 +8109,7 @@ __metadata:
     react-dom: "npm:^18.3.1"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
-    react-to-print: "npm:^2.14.13"
+    react-to-print: "npm:^3.3.0"
     rxjs: "npm:^6.6.7"
     swr: "npm:^2.2.5"
     turbo: "npm:^2.9.14"
@@ -8786,7 +8786,7 @@ __metadata:
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"
     react-barcode: "npm:^1.5.3"
-    react-to-print: "npm:^3.1.1"
+    react-to-print: "npm:^3.3.0"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.7"
   peerDependencies:
@@ -9584,7 +9584,7 @@ __metadata:
     react-hook-form: "npm:^7.45.4"
     react-i18next: "npm:^17.0.11"
     react-router-dom: "npm:7.18.2"
-    react-to-print: "npm:^2.14.13"
+    react-to-print: "npm:^3.3.0"
     rxjs: "npm:^6.6.7"
     swc-loader: "npm:^0.2.3"
     swr: "npm:^2.2.4"
@@ -22031,17 +22031,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-to-print@npm:^2.14.13":
-  version: 2.15.1
-  resolution: "react-to-print@npm:2.15.1"
-  peerDependencies:
-    react: ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0
-    react-dom: ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0
-  checksum: 10c0/26ee1eb3a30031c58ae45cdc8db11f86150509a1dcb190d703333b5df65deb1eb0bc9f856261466909b2a9567cee7894fcd71e637a1a722be2bbf93740349c61
-  languageName: node
-  linkType: hard
-
-"react-to-print@npm:^3.1.1":
+"react-to-print@npm:^3.3.0":
   version: 3.3.0
   resolution: "react-to-print@npm:3.3.0"
   peerDependencies:

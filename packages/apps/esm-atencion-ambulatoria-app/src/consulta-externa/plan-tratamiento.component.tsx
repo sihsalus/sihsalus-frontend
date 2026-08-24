@@ -74,7 +74,7 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
     },
     {
       key: 'referral',
-      label: t('referral', 'Interconsulta / Referencia'),
+      label: t('referral', 'Referencia'),
       tagType: 'magenta' as const,
     },
     {

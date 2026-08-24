@@ -3,6 +3,7 @@ import {
   peruCarnetExtranjeriaPatientIdentifierTypeUuid,
   peruDiePatientIdentifierTypeUuid,
   peruPassportPatientIdentifierTypeUuid,
+  peruTemporaryAffiliationPatientIdentifierTypeUuid,
 } from './peru-registration-config';
 
 describe('Peru identifier validation', () => {
@@ -32,6 +33,19 @@ describe('Peru identifier validation', () => {
     expect(rule?.pattern.test('AB12345678')).toBe(false);
     expect(rule?.sanitize('ab-123456789')).toBe('AB1234567');
     expect(rule?.maxLength).toBe(9);
+  });
+
+  it('aligns temporary SIS affiliation with the official E-######## format', () => {
+    const rule = getPeruIdentifierRule({
+      uuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
+      name: 'Afiliación temporal SIS',
+    });
+
+    expect(rule?.pattern.test('E-41267525')).toBe(true);
+    expect(rule?.pattern.test('E41267525')).toBe(false);
+    expect(rule?.pattern.test('E-4126752')).toBe(false);
+    expect(rule?.sanitize('e 4126-7525')).toBe('E-41267525');
+    expect(rule?.maxLength).toBe(10);
   });
 
   it('does not invent a country-independent format for foreign identity cards', () => {

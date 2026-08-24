@@ -16,6 +16,7 @@ export type FormRendererProps = {
   initialValues: Record<string, unknown>;
   isSubForm: boolean;
   setIsLoadingFormDependencies: (isLoading: boolean) => void;
+  onDependencyError: (error: unknown) => void;
 };
 
 export const FormRenderer = ({
@@ -23,6 +24,7 @@ export const FormRenderer = ({
   initialValues,
   isSubForm,
   setIsLoadingFormDependencies,
+  onDependencyError,
 }: FormRendererProps): React.JSX.Element => {
   const { evaluatedFields, evaluatedFormJson, evaluatedPagesVisibility } = useEvaluateFormFieldExpressions(
     initialValues,
@@ -130,6 +132,7 @@ export const FormRenderer = ({
               formJson={page.subform.form}
               isSubForm={true}
               setIsLoadingFormDependencies={setIsLoadingFormDependencies}
+              onDependencyError={onDependencyError}
             />
           );
         }

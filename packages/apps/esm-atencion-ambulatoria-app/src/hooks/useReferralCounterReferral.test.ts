@@ -4,8 +4,6 @@ import { useReferralCounterReferral } from './useReferralCounterReferral';
 
 vi.mock('./useClinicalHistoryPagination', () => ({
   useMergedClinicalHistoryPagination: vi.fn(),
-  toEncounterTypeSources: (value: string | Array<string> | undefined | null) =>
-    (Array.isArray(value) ? value : [value]).filter(Boolean).map((encounterTypeUuid) => ({ encounterTypeUuid })),
 }));
 
 interface EncounterFixture {
@@ -27,26 +25,25 @@ describe('useReferralCounterReferral', () => {
     vi.clearAllMocks();
   });
 
-  it('maps structured referrals and consultation orders from one globally paginated history', () => {
+  it('queries and maps only referral/counter-referral encounters', () => {
     const onPageChange = vi.fn();
     const mutate = vi.fn();
+    const referralEncounter: EncounterFixture = {
+      uuid: 'referral-11',
+      encounterDatetime: '2026-07-09T15:30:00.000Z',
+      encounterType: { uuid: 'referral-encounter' },
+      encounterProviders: [{ display: 'Dra. Perez - Clinician' }],
+      obs: [{ concept: { uuid: 'referral-reason' }, value: 'Evaluación especializada' }],
+    };
+    const externalConsultationEncounter: EncounterFixture = {
+      uuid: 'external-consultation-10',
+      encounterDatetime: '2026-07-08T10:00:00.000Z',
+      encounterType: { uuid: 'external-consultation' },
+      encounterProviders: [{ display: 'Dr. Ramos - Clinician' }],
+      obs: [{ concept: { uuid: 'referral-order' }, value: 'Cardiología' }],
+    };
     mockUseMergedClinicalHistoryPagination.mockReturnValue({
-      data: [
-        {
-          uuid: 'referral-11',
-          encounterDatetime: '2026-07-09T15:30:00.000Z',
-          encounterType: { uuid: 'referral-encounter' },
-          encounterProviders: [{ display: 'Dra. Perez - Clinician' }],
-          obs: [{ concept: { uuid: 'referral-reason' }, value: 'Evaluación especializada' }],
-        },
-        {
-          uuid: 'order-10',
-          encounterDatetime: '2026-07-08T10:00:00.000Z',
-          encounterType: { uuid: 'external-consultation' },
-          encounterProviders: [{ display: 'Dr. Ramos - Clinician' }],
-          obs: [{ concept: { uuid: 'referral-order' }, value: 'Cardiología' }],
-        },
-      ],
+      data: [referralEncounter],
       error: undefined,
       isLoading: false,
       isValidating: false,
@@ -57,9 +54,8 @@ describe('useReferralCounterReferral', () => {
     });
 
     const { result } = renderHook(() =>
-      useReferralCounterReferral('patient-uuid', 'referral-encounter', 'external-consultation', {
+      useReferralCounterReferral('patient-uuid', 'referral-encounter', {
         referralReasonUuid: 'referral-reason',
-        referralUuid: 'referral-order',
       }),
     );
 
@@ -67,45 +63,28 @@ describe('useReferralCounterReferral', () => {
       expect.objectContaining({
         uuid: 'referral-11',
         referralReason: 'Evaluación especializada',
-        source: 'referralCounterReferral',
-      }),
-      expect.objectContaining({
-        uuid: 'order-10-interconsultation-order',
-        interconsultationOrder: 'Cardiología',
-        source: 'interconsultationOrder',
       }),
     ]);
     expect(result.current.pagination).toEqual({ currentPage: 2, totalPages: 3, onPageChange });
     expect(result.current.mutate).toBe(mutate);
+
+    const [sources, isRelevant] = mockUseMergedClinicalHistoryPagination.mock.calls[0];
+    expect(sources).toHaveLength(1);
+    expect(sources?.[0]?.url).toContain('encounterType=referral-encounter');
+    expect(sources?.[0]?.url).not.toContain('external-consultation');
+    expect(isRelevant?.(referralEncounter)).toBe(true);
+    expect(isRelevant?.(externalConsultationEncounter)).toBe(false);
   });
 
-  it('reads current and compatibility CE-001 referral observations', () => {
+  it('does not interpret referral-like observations from external consultations as referrals', () => {
     mockUseMergedClinicalHistoryPagination.mockReturnValue({
       data: [
         {
-          uuid: 'current-ce001',
+          uuid: 'external-consultation-10',
           encounterDatetime: '2026-07-09T15:30:00.000Z',
           encounterType: { uuid: 'external-consultation' },
           encounterProviders: [],
-          obs: [
-            {
-              concept: { uuid: 'f0000205-0000-4000-8000-000000000205' },
-              value: 'Neurología',
-            },
-          ],
-        },
-        {
-          uuid: 'legacy-ce001',
-          encounterDatetime: '2026-07-08T10:00:00.000Z',
-          encounterType: { uuid: 'external-consultation' },
-          encounterProviders: [],
-          obs: [
-            {
-              concept: { uuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
-              value: 'Endocrinología',
-              formFieldPath: 'rfe-forms-referencia',
-            },
-          ],
+          obs: [{ concept: { uuid: 'f0000205-0000-4000-8000-000000000205' }, value: 'Neurología' }],
         },
       ],
       error: undefined,
@@ -118,12 +97,9 @@ describe('useReferralCounterReferral', () => {
     });
 
     const { result } = renderHook(() =>
-      useReferralCounterReferral('patient-uuid', 'referral-encounter', 'external-consultation', {}),
+      useReferralCounterReferral('patient-uuid', 'referral-encounter', {}),
     );
 
-    expect(result.current.entries.map((entry) => entry.interconsultationOrder)).toEqual([
-      'Neurología',
-      'Endocrinología',
-    ]);
+    expect(result.current.entries).toEqual([]);
   });
 });

@@ -14,6 +14,8 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 - Centraliza la experiencia de captura para otros módulos que reutilizan el motor de formularios.
 - No define reglas clínicas específicas de un dominio ni casos de negocio de alto nivel.
 - No implementa flujos del paciente por sí misma; actúa como capa de presentación y entrada.
+- Las ediciones fallan de forma cerrada si la atención indicada no puede cargarse: se muestra un error genérico y no
+  se habilita el guardado ni se crea una atención nueva como alternativa.
 
 ## Integraciones
 

@@ -86,6 +86,10 @@ export const formWidget = getAsyncLifecycle(() => import('./form-renderer/form-r
  * t('deleteQuestion', 'Delete question');
  * t('deleteQuestionConfirmation', 'Are you sure you want to delete this question?');
  * t('deleteQuestionExplainerText', 'This action cannot be undone.');
+ * t('errorLoadingClinicalForm', 'The clinical form could not be loaded');
+ * t('errorLoadingClinicalFormDescription', 'This form cannot be opened or saved. Close it and try again.');
+ * t('errorLoadingEncounter', 'The existing clinical record could not be loaded');
+ * t('errorLoadingEncounterDescription', 'This form cannot be edited or saved. Close it and try again.');
  * t('errorLoadingFormSchema', 'Error loading form schema');
  * t('errorLoadingInitialValues', 'Error loading initial values');
  * t('errorRenderingField', 'Error rendering field');

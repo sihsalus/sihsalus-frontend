@@ -47,11 +47,12 @@ You should now be able to leverage the service queues module 🎉
 | Limpiar todas las entradas                                                         | Los anteriores + `app:home.colasAtencion.limpiar`                                                                                                                                             |
 | Administrar servicios de cola                                                      | `app:home.colasAtencion.editar` + `Get Queues` + `Manage Queues`                                                                                                                              |
 | Administrar ambientes/rooms                                                        | `app:home.colasAtencion.editar` + `Get Queue Rooms` + `Get Queues` + `Manage Queue Rooms`                                                                                                     |
-| Mostrar la acción de triaje y registrar signos vitales                             | `app:home.colasAtencion` + `app:hoja.clinica.signosVitales.editar`; no requiere `app:home.colasAtencion.editar`                                                                          |
-| Mover automáticamente el triaje guardado a la cola clínica                         | El backend valida `Manage Queue Entries`; este permiso debe formar parte del rol operativo de triaje                                                                                      |
-| Crear el resumen de consulta desde Colas                                           | `app:home.colasAtencion` + `app:hoja.clinica.resumenConsulta`                                                                                                                                 |
+| Mostrar la acción de triaje y registrar signos vitales                             | `app:home.colasAtencion` + `app:hoja.clinica.signosVitales.editar`; no requiere `app:home.colasAtencion.editar`                                                                               |
+| Mover automáticamente el triaje guardado a la cola clínica                         | El backend valida `Manage Queue Entries`; este permiso debe formar parte del rol operativo de triaje                                                                                          |
+| Ver el resumen de consulta desde Colas                                             | `app:home.colasAtencion` + `app:hoja.clinica.resumenConsulta`                                                                                                                                 |
+| Crear o editar el resumen de consulta desde Colas                                  | `app:home.colasAtencion` + `app:hoja.clinica.resumenConsulta.editar`                                                                                                                          |
 
-Los arreglos anteriores tienen semántica AND. El resumen de consulta usa actualmente el mismo privilegio `app:hoja.clinica.resumenConsulta` para mostrar la sección y abrir el workspace de creación; no existe una separación frontend de escritura para esta acción. Si la política exige distinguir lectura y edición, debe implementarse y probarse un privilegio específico en Patient Notes y en esta integración.
+Los arreglos anteriores tienen semántica AND. La lectura y la modificación del resumen de consulta están separadas: el usuario puede ver los datos con el privilegio de lectura, pero la acción de crear o editar y el workspace requieren el privilegio de edición.
 
 Los privilegios nativos de Queue/Visit siguen siendo obligatorios donde aparecen en `src/routes.json`; el RBAC de la UI no reemplaza las validaciones del backend.
 
@@ -63,6 +64,8 @@ Excepción actual: la extensión `visit-form-queue-fields` declara únicamente p
 
 ## Contratos de UI
 
+- El resumen de consulta se identifica por la combinación exacta de Encounter Type y Form configurados. Colas muestra primero los diagnósticos nativos activos y usa las observaciones históricas solo como fallback sin duplicarlas.
+- La visita obtenida para el panel debe incluir UUID y ubicación verificables antes de habilitar la creación o edición. Al cerrar el workspace, el panel vuelve a consultar la visita.
 - La pantalla de colas no debe quedar en blanco si faltan rooms o servicios; debe mostrar una configuracion pendiente accionable.
 - Si no hay camas, rooms o servicios configurados, el mensaje debe decir que falta configuracion de ubicacion/servicio, no lanzar error generico.
 - Las acciones de cambiar estado/prioridad deben fallar de forma visible si no hay conceptos configurados.

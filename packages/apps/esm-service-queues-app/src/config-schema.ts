@@ -429,6 +429,11 @@ export const configSchema = {
       'The UUID of the visit note encounter type, used to source diagnoses and notes shown in the visit summary.',
     _default: 'd7151f82-c1f3-4152-a605-2f9ea7414a79',
   },
+  visitNoteFormUuid: {
+    _type: Type.UUID,
+    _description: 'The canonical Visit Notes form UUID used to source the visit summary.',
+    _default: 'c75f120a-04ec-11e3-8780-2b40bef9a44b',
+  },
   visitQueueNumberAttributeUuid: {
     _type: Type.String,
     _description: 'The UUID of the visit attribute that contains the visit queue number.',
@@ -495,6 +500,7 @@ export interface ConfigObject {
   queueTables: TablesConfig;
   showRecommendedVisitTypeTab: boolean;
   visitNoteEncounterTypeUuid: string;
+  visitNoteFormUuid: string;
   visitQueueNumberAttributeUuid: string | null;
   visitTypeResourceUrl: string;
   vitals: VitalsConfigObject;

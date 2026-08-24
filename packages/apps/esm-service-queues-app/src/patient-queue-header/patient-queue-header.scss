@@ -8,19 +8,24 @@
   border-left: 0px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding-right: layout.$spacing-03;
 }
 
 .dropdownContainer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(14rem, 20rem));
+  align-items: end;
   gap: layout.$spacing-03;
-  margin-top: layout.$spacing-03;
+  margin: 0;
+
+  > * {
+    min-width: 0;
+  }
 }
 
 .dropdownSkeletonContainer {
-  width: 14rem;
+  width: 100%;
 }
 
 .errorContainer {
@@ -32,13 +37,61 @@
 }
 
 .dropdown {
+  width: 100%;
+
+  :global(.cds--dropdown__wrapper),
+  :global(.cds--dropdown),
+  :global(.cds--list-box) {
+    width: 100%;
+  }
+
   :global(.cds--list-box__field) {
-    width: 14rem;
+    width: 100%;
     overflow: hidden;
   }
 
-  :global(.cds--dropdown--inline .cds--list-box__menu) {
-    left: -(layout.$spacing-10);
+  :global(.cds--list-box__menu) {
+    width: min(24rem, calc(100vw - 2rem));
+  }
+}
+
+.actions {
+  min-width: 0;
+}
+
+@media (max-width: 1279px) {
+  .header {
+    flex-wrap: wrap;
+    height: auto;
+    padding-block: layout.$spacing-05;
+    row-gap: layout.$spacing-05;
+  }
+
+  .dropdownContainer {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    box-sizing: border-box;
+    padding-inline: layout.$spacing-05;
+  }
+
+  .actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: $breakpoint-tablet-max) {
+  .header {
+    align-items: stretch;
+    padding: layout.$spacing-05 layout.$spacing-03;
+  }
+
+  .dropdownContainer {
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline: 0;
+  }
+
+  .actions {
+    grid-column: auto;
   }
 }
 

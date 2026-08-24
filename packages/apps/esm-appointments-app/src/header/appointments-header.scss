@@ -14,43 +14,51 @@
 }
 
 .rightJustifiedItems {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(14rem, 20rem));
+  align-items: end;
   margin: 0;
-  column-gap: layout.$spacing-05;
+  gap: layout.$spacing-05;
+
+  > * {
+    min-width: 0;
+  }
 }
 
 .dateFilter {
-  flex: 0 0 auto;
+  width: 100%;
 
   :global(.cds--date-picker-container) {
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    column-gap: layout.$spacing-05;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
   }
 
-  :global(.cds--label) {
-    @include type.type-style("body-compact-01");
+  :global(.cds--form-item),
+  :global(.cds--date-picker),
+  :global([role="group"]) {
+    width: 100%;
+  }
 
-    margin: 0;
-    white-space: nowrap;
+  :global([role="group"] > button:last-child) {
+    margin-left: auto;
+    cursor: pointer;
   }
 }
 
 .serviceFilter {
-  flex: 0 0 auto;
+  width: 100%;
 
-  :global(.cds--multi-select__wrapper--inline) {
-    column-gap: layout.$spacing-06;
+  :global(.cds--multi-select__wrapper),
+  :global(.cds--list-box) {
+    width: 100%;
   }
 }
 
 .serviceTypeFilter {
   :global(.cds--list-box__field) {
-    inline-size: 16rem;
+    inline-size: 100%;
     overflow: hidden;
   }
 
@@ -88,21 +96,24 @@
   }
 }
 
-@media (max-width: 1056px) {
+@media (max-width: 1279px) {
   .header {
     flex-wrap: wrap;
     height: auto;
     padding-block: layout.$spacing-05;
-    row-gap: layout.$spacing-03;
+    row-gap: layout.$spacing-05;
   }
 
   .rightJustifiedItems {
     flex: 1 0 100%;
-    justify-content: flex-end;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    box-sizing: border-box;
+    padding-inline: layout.$spacing-05;
   }
 }
 
-@media (max-width: 672px) {
+@media (max-width: $breakpoint-tablet-max) {
   .header {
     flex-direction: column;
     align-items: stretch;
@@ -113,22 +124,18 @@
   }
 
   .rightJustifiedItems {
-    flex-direction: column;
-    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr);
     margin: 0;
-    row-gap: layout.$spacing-05;
+    gap: layout.$spacing-05;
+    padding-inline: 0;
   }
 
   .serviceFilter {
     inline-size: 100%;
     max-inline-size: 100%;
 
-    :global(.cds--multi-select__wrapper--inline) {
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
+    :global(.cds--multi-select__wrapper) {
       inline-size: 100%;
-      row-gap: layout.$spacing-03;
     }
   }
 
@@ -146,9 +153,7 @@
     inline-size: 100%;
 
     :global(.cds--date-picker-container) {
-      flex-direction: column;
-      align-items: stretch;
-      row-gap: layout.$spacing-03;
+      inline-size: 100%;
     }
   }
 }

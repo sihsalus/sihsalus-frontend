@@ -5,7 +5,13 @@
 .leftNav {
   border-inline-end: 1px solid $color-gray-30;
   padding-top: layout.$spacing-05;
-  overflow: visible;
+  height: calc(100vh - var(--omrs-navbar-height));
+  height: calc(100dvh - var(--omrs-navbar-height));
+  max-height: calc(100vh - var(--omrs-navbar-height));
+  max-height: calc(100dvh - var(--omrs-navbar-height));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
   z-index: 8000;
   transition:
     inline-size 300ms ease,

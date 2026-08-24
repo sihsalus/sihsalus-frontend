@@ -37,13 +37,13 @@
     "url": "https://github.com/openmrs/openmrs-esm-patient-management/issues"
   },
   "dependencies": {
-    "@carbon/react": "^1.71.0",
+    "@carbon/react": "^1.114.0",
     "@hookform/resolvers": "^3.9.1",
     "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.3.2",
     "lodash-es": "^4.17.15",
-    "react-hook-form": "^7.54.0",
+    "react-hook-form": "^7.85.0",
     "zod": "^3.24.1"
   },
   "peerDependencies": {
@@ -55,7 +55,7 @@
   },
   "devDependencies": {
     "@rspack/cli": "1.7.11",
-    "i18next": "^26.3.6",
+    "i18next": "^26.4.0",
     "openmrs": "*",
     "typescript": "6.0.3",
     "vitest": "^4.1.7"

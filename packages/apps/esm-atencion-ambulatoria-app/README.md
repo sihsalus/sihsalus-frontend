@@ -6,11 +6,11 @@ Microfrontend de atención ambulatoria y consulta externa para SIH Salus, una di
 
 Los permisos de lectura protegen los puntos de entrada y mantienen visibles los datos clínicos. Los permisos de edición ocultan las acciones de registro o modificación cuando el usuario solo puede consultar.
 
-| Superficie | Lectura / entrada | Modificación |
-| --- | --- | --- |
-| Consulta externa e historia médica | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar` |
-| Historia social | `app:hoja.clinica.historiaSocial` | `app:hoja.clinica.historiaSocial.editar` |
-| Prescripción desde el plan de tratamiento | Entrada por Consulta Externa | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.ordenes.editar` |
+| Superficie                                | Lectura / entrada                  | Modificación                                                                  |
+| ----------------------------------------- | ---------------------------------- | ----------------------------------------------------------------------------- |
+| Consulta externa e historia médica        | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar`                                     |
+| Historia social                           | `app:hoja.clinica.historiaSocial`  | `app:hoja.clinica.historiaSocial.editar`                                      |
+| Prescripción desde el plan de tratamiento | Entrada por Consulta Externa       | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.ordenes.editar` |
 
 En la navegación normal, los guards se acumulan: primero se entra al dashboard con lectura y después se habilita la acción con edición. Los workspaces y modales registrados declaran directamente el privilegio de edición, sin inferir el permiso base; OpenMRS no implementa herencia padre/hijo por el nombre del privilegio.
 
@@ -29,6 +29,12 @@ Con `showSisFinancingWarning: true` (apagada por defecto), el dashboard de consu
 - Documentar qué formularios de consulta externa crean encounter nuevo y cuáles deben editar el encounter clínico actual.
 
 Los valores de `formsList` para consulta externa usan los nombres estables publicados por content (`CE-001-CONSULTA EXTERNA`, `CE-ANAM-001-ANAMNESIS`, `CE-SOAP-001-NOTA SOAP` y `CE-REF-001-REFERENCIA-CONTRARREFERENCIA`). No deben reemplazarse por los UUID de los archivos de esquema, porque esos UUID pueden variar entre entornos.
+
+## Ubicación de Epicrisis
+
+Por decisión operativa del flujo médico, Epicrisis debe exponerse en Consulta Externa como etapa final, después de Referencia / Contrarreferencia. La implementación debe usar el formulario clínico publicado `Formulario Epicrisis Médica`; no debe enlazar `(Página 16) Epicrisis`, porque ese esquema corresponde al control del recién nacido.
+
+Los cambios posteriores al contenido de Epicrisis o de `CE-SOAP-001-NOTA SOAP` deben crear una nueva versión del JSON para preservar las versiones históricas; no se debe sobrescribir una versión publicada.
 
 ## TODO QA/QLTY
 

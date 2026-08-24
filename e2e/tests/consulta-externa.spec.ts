@@ -8,16 +8,16 @@ if (!patientUuid) {
 const consultaExternaTabs = [
   /Triajes previos/i,
   /Anamnesis/i,
-  /Diagn[oó]stico/i,
   /Examen f[ií]sico \/ SOAP/i,
+  /Diagn[oó]stico/i,
   /Plan de Tratamiento/i,
   /Referencia \/ Contrarreferencia/i,
 ];
 
 const historySections = [
   { tab: /Anamnesis/i, region: /Historial de Anamnesis/i },
-  { tab: /Diagn[oó]stico/i, region: /Historial de Diagn[oó]sticos/i },
   { tab: /Examen f[ií]sico \/ SOAP/i, region: /Historial de examen f[ií]sico \/ SOAP/i },
+  { tab: /Diagn[oó]stico/i, region: /Historial de Diagn[oó]sticos/i },
   { tab: /Plan de Tratamiento/i, region: /Historial de Planes de Tratamiento/i },
   { tab: /Referencia \/ Contrarreferencia/i, region: /Historial de referencias y contrarreferencias/i },
 ];
@@ -45,6 +45,15 @@ test.describe('Consulta externa - hoja clínica', () => {
     for (const tabName of consultaExternaTabs) {
       await expect(tabList.getByRole('tab', { name: tabName })).toBeVisible();
     }
+
+    await expect(tabList.getByRole('tab')).toHaveText([
+      'Triajes previos',
+      'Anamnesis',
+      'Examen físico / SOAP',
+      'Diagnóstico',
+      'Plan de Tratamiento',
+      'Referencia / Contrarreferencia',
+    ]);
   });
 
   test('cada pestaña clínica muestra su historial', async ({ page }, testInfo) => {

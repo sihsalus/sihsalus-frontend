@@ -75,6 +75,22 @@ describe('outpatient visit summary PDF', () => {
     expect(bytes.byteLength).toBeGreaterThan(1_000);
   });
 
+  it('paginates a single long clinical field instead of drawing it below the page', async () => {
+    const longSummary: OutpatientVisitSummary = {
+      ...summary,
+      anamnesis: {
+        ...summary.anamnesis,
+        narrative: Array.from({ length: 180 }, (_, index) => `Línea clínica sintética ${index + 1}`).join('\n'),
+      },
+    };
+
+    const bytes = await createOutpatientVisitSummaryPdf(longSummary, labels, 'es-PE');
+    const { PDFDocument } = await import('pdf-lib');
+    const document = await PDFDocument.load(bytes);
+
+    expect(document.getPageCount()).toBeGreaterThanOrEqual(5);
+  });
+
   it('uses only visit metadata in the filename, never patient identifiers', () => {
     const fileName = createOutpatientVisitSummaryFileName(summary.visitUuid, summary.visitStart);
     expect(fileName).toBe('informe-consulta-externa-2026-08-23-12345678.pdf');

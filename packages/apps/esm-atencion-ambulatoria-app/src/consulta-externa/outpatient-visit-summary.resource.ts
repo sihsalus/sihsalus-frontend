@@ -243,6 +243,34 @@ function getNumericObservation(encounters: VisitSummaryEncounter[], conceptUuid:
   return Number.isFinite(number) ? number : null;
 }
 
+function getLatestNumericObservationWithEncounter(
+  encounters: VisitSummaryEncounter[],
+  conceptUuid: string | undefined,
+): { encounterUuid: string; value: number } | null {
+  for (const encounter of [...encounters].sort(
+    (a, b) => new Date(b.encounterDatetime).getTime() - new Date(a.encounterDatetime).getTime(),
+  )) {
+    const value = getNumericObservation([encounter], conceptUuid);
+    if (value !== null) return { encounterUuid: encounter.uuid, value };
+  }
+  return null;
+}
+
+function getLatestNumericObservationPair(
+  encounters: VisitSummaryEncounter[],
+  firstConceptUuid: string | undefined,
+  secondConceptUuid: string | undefined,
+): [number | null, number | null] {
+  for (const encounter of [...encounters].sort(
+    (a, b) => new Date(b.encounterDatetime).getTime() - new Date(a.encounterDatetime).getTime(),
+  )) {
+    const first = getNumericObservation([encounter], firstConceptUuid);
+    const second = getNumericObservation([encounter], secondConceptUuid);
+    if (first !== null && second !== null) return [first, second];
+  }
+  return [null, null];
+}
+
 function formatNumber(value: number | null, unit: string): string | null {
   return value === null ? null : `${Number.isInteger(value) ? value : value.toFixed(1)} ${unit}`;
 }
@@ -382,12 +410,20 @@ export function buildOutpatientVisitSummary({
       encounter.encounterDatetime &&
       !Number.isNaN(new Date(encounter.encounterDatetime).getTime()),
   );
-  const weight = getNumericObservation(encounters, concepts.weightUuid);
-  const height = getNumericObservation(encounters, concepts.heightUuid);
+  const weightObservation = getLatestNumericObservationWithEncounter(encounters, concepts.weightUuid);
+  const heightObservation = getLatestNumericObservationWithEncounter(encounters, concepts.heightUuid);
+  const weight = weightObservation?.value ?? null;
+  const height = heightObservation?.value ?? null;
   const heightMetres = height && height > 0 ? height / 100 : null;
-  const bmi = weight && heightMetres ? weight / (heightMetres * heightMetres) : null;
-  const systolic = getNumericObservation(encounters, concepts.systolicBloodPressureUuid);
-  const diastolic = getNumericObservation(encounters, concepts.diastolicBloodPressureUuid);
+  const bmi =
+    weight && heightMetres && weightObservation?.encounterUuid === heightObservation?.encounterUuid
+      ? weight / (heightMetres * heightMetres)
+      : null;
+  const [systolic, diastolic] = getLatestNumericObservationPair(
+    encounters,
+    concepts.systolicBloodPressureUuid,
+    concepts.diastolicBloodPressureUuid,
+  );
   const biologicalFunctions = {
     summary: getObservationText(encounters, concepts.biologicalFunctionsSummaryUuid),
     appetite: getObservationText(encounters, concepts.appetiteUuid),

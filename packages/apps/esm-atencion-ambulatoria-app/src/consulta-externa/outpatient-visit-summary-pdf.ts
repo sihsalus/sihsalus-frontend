@@ -196,24 +196,26 @@ function drawField(state: PdfState, label: string, value: string | null | undefi
   const prefixWidth = state.fonts.bold.widthOfTextAtSize(prefix, BODY_SIZE);
   const availableWidth = CONTENT_WIDTH - prefixWidth;
   const valueLines = wrapText(value, state.fonts.regular, BODY_SIZE, Math.max(availableWidth, CONTENT_WIDTH * 0.55));
-  ensureSpace(state, Math.max(1, valueLines.length) * LINE_HEIGHT);
-  state.page.drawText(prefix, {
-    x: PAGE_MARGIN,
-    y: state.y,
-    size: BODY_SIZE,
-    font: state.fonts.bold,
-    color: state.colors.text,
-  });
   valueLines.forEach((line, index) => {
+    ensureSpace(state, LINE_HEIGHT);
+    if (index === 0) {
+      state.page.drawText(prefix, {
+        x: PAGE_MARGIN,
+        y: state.y,
+        size: BODY_SIZE,
+        font: state.fonts.bold,
+        color: state.colors.text,
+      });
+    }
     state.page.drawText(line, {
       x: index === 0 ? PAGE_MARGIN + prefixWidth : PAGE_MARGIN,
-      y: state.y - index * LINE_HEIGHT,
+      y: state.y,
       size: BODY_SIZE,
       font: state.fonts.regular,
       color: state.colors.text,
     });
+    state.y -= LINE_HEIGHT;
   });
-  state.y -= Math.max(1, valueLines.length) * LINE_HEIGHT;
 }
 
 function drawOrderList(state: PdfState, title: string, orders: OutpatientSummaryOrder[]): void {

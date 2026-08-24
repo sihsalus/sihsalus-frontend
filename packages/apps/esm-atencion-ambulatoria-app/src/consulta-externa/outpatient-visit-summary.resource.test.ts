@@ -175,4 +175,34 @@ describe('outpatient visit summary contract', () => {
     const emptySummary = build({ source: { ...source, encounters: [] } });
     expect(emptySummary.hasClinicalContent).toBe(false);
   });
+
+  it('does not combine blood pressure or BMI values recorded in different encounters', () => {
+    const originalEncounter = source.encounters?.[0];
+    if (!originalEncounter) throw new Error('The synthetic fixture requires an encounter.');
+    const summary = build({
+      source: {
+        ...source,
+        encounters: [
+          originalEncounter,
+          {
+            uuid: 'newer-partial-vitals',
+            encounterDatetime: '2026-08-23T15:00:00.000-05:00',
+            obs: [
+              {
+                uuid: 'newer-systolic',
+                concept: { uuid: 'systolic' },
+                value: 140,
+              },
+              { uuid: 'newer-weight', concept: { uuid: 'weight' }, value: 80 },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(summary.vitals.bloodPressure).toBe('110/70 mmHg');
+    expect(summary.vitals.weight).toBe('80 kg');
+    expect(summary.vitals.height).toBe('160 cm');
+    expect(summary.vitals.bmi).toBeNull();
+  });
 });

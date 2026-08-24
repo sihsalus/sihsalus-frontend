@@ -35,16 +35,17 @@ export const useOrderStockInfo = (orderItemUuid: string) => {
   const { data, isLoading, error } = useSWR<FetchResponse<StockInventoryResponse>>(query, openmrsFetch);
 
   return useMemo(() => {
-    const inventory = data?.data?.results;
-    const availableQuantity = inventory?.reduce(
-      (total, item) => total + (Number.isFinite(item.quantity) ? item.quantity : 0),
-      0,
-    );
-    const status = !inventory?.length
-      ? 'untracked'
-      : typeof availableQuantity === 'number' && availableQuantity > 0
-        ? 'in-stock'
-        : 'out-of-stock';
+    const inventory = Array.isArray(data?.data?.results) ? data.data.results : [];
+    const quantities = inventory.map((item) => item.quantity);
+    const availableQuantity = quantities.every(isFiniteNumber)
+      ? quantities.reduce((total, quantity) => total + quantity, 0)
+      : null;
+    const status =
+      inventory.length === 0 || availableQuantity === null
+        ? 'untracked'
+        : availableQuantity > 0
+          ? 'in-stock'
+          : 'out-of-stock';
 
     return {
       status: data ? status : null,
@@ -55,5 +56,9 @@ export const useOrderStockInfo = (orderItemUuid: string) => {
 };
 
 interface StockInventoryResponse {
-  results: Array<{ quantity: number }>;
+  results?: Array<{ quantity: unknown }>;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
 }

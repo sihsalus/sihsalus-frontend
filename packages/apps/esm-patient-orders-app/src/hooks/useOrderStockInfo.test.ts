@@ -82,6 +82,16 @@ describe('useOrderStockInfo', () => {
     await waitFor(() => expect(result.current.status).toBe('untracked'));
   });
 
+  it('returns untracked instead of a false zero when an inventory quantity is malformed', async () => {
+    mockedOpenmrsFetch.mockResolvedValue({
+      data: { results: [{ quantity: 'not-a-number' }] },
+    } as FetchResponse<{ results: Array<{ quantity: unknown }> }>);
+
+    const { result } = renderHook(() => useOrderStockInfo('malformed-balance-drug-uuid'));
+
+    await waitFor(() => expect(result.current.status).toBe('untracked'));
+  });
+
   it('does not query when Stock Management is unavailable', () => {
     mockUseAreBackendModuleInstalled.mockReturnValue({
       areModulesInstalled: false,

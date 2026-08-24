@@ -2,6 +2,29 @@
 
 .datePickerWrapper {
   display: flex;
+  flex-direction: column;
   gap: layout.$spacing-03;
-  align-items: center;
+  align-items: stretch;
+
+  :global([data-testid='ordersDateRangePicker'] [aria-hidden='true'][data-readonly='true']:not([data-type])) {
+    display: inline-flex;
+    height: 100%;
+    align-items: center;
+  }
+
+  :global([data-testid='ordersDateRangePicker'] > .cds--date-picker-container),
+  :global([data-testid='ordersDateRangePicker'] > .cds--date-picker-container > [role='group']) {
+    width: 100%;
+  }
+
+  :global([data-testid='ordersDateRangePicker'] > .cds--date-picker-container > [role='group'] > button:last-child) {
+    margin-left: auto;
+    cursor: pointer;
+  }
+
+  :global(.cds--form-item),
+  :global(.cds--date-picker),
+  :global([data-testid='ordersDateRangePicker']) {
+    width: 100%;
+  }
 }

@@ -1,6 +1,7 @@
 @use '@carbon/colors';
 @use '@carbon/layout';
 @use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
 
 .tableContainer {
   border: 1px solid colors.$gray-20;
@@ -109,11 +110,61 @@
 }
 
 .tableToolBar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, 20rem);
+  gap: layout.$spacing-05;
   height: auto;
   align-items: flex-end;
+  padding: layout.$spacing-05;
 
-  :global(.cds--toolbar-search-container-expandable) {
-    align-self: flex-end;
+  .filterGroup {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(10rem, 1fr)) minmax(18rem, 1.25fr);
+    gap: layout.$spacing-05;
+    align-items: end;
+    margin-left: 0;
+
+    > * {
+      min-width: 0;
+    }
+
+    :global(.cds--dropdown__wrapper),
+    :global(.cds--dropdown),
+    :global(.cds--list-box) {
+      width: 100%;
+    }
+  }
+
+  .searchGroup {
+    width: 100%;
+    margin-left: 0;
+
+    :global(.cds--search) {
+      width: 100%;
+    }
+  }
+}
+
+@media (max-width: $breakpoint-small-desktop-max) {
+  .tableContainer {
+    :global(.cds--data-table-content) {
+      overflow-x: auto;
+    }
+  }
+
+  .tableToolBar {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .tableToolBar .filterGroup {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: $breakpoint-tablet-max) {
+  .tableToolBar .filterGroup {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

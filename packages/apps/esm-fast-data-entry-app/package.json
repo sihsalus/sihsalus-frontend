@@ -76,7 +76,7 @@
   },
   "dependencies": {
     "@sihsalus/esm-rbac": "workspace:*",
-    "dotenv": "^16.4.7",
+    "dotenv": "^17.4.2",
     "playwright": "^1.50.1",
     "react-hook-form": "^7.34.2",
     "uuid": "^14.0.0"

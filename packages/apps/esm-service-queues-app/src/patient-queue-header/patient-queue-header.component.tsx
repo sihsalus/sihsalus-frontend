@@ -192,7 +192,7 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
               }
               itemToString={(item: QueueLocationOption | null) => item?.name ?? ''}
               titleText={t('location', 'UPSS')}
-              type="inline"
+              type="default"
               onChange={handleQueueLocationChange}
             />
           )
@@ -208,11 +208,11 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
             itemToString={(item) => item?.name ?? ''}
             selectedItem={selectedService}
             titleText={t('service', 'Service')}
-            type="inline"
+            type="default"
             onChange={handleServiceChange}
           />
         )}
-        {actions}
+        {actions ? <div className={styles.actions}>{actions}</div> : null}
       </div>
     </PageHeader>
   );

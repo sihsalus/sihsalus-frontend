@@ -16,11 +16,11 @@ export const defaultVisitNoteClinicalConceptUuids = {
   soapObjectiveConceptUuid: '160532AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   soapAssessmentConceptUuid: '160533AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   soapPlanConceptUuid: 'f0000201-0000-4000-8000-000000000201',
-  labOrdersConceptUuid: '01fe9e3c-7150-42ca-87db-8813fa630129',
+  labOrdersConceptUuid: 'f0000204-0000-4000-8000-000000000204',
   proceduresConceptUuid: 'f0000206-0000-4000-8000-000000000206',
-  prescriptionsConceptUuid: '1e9c5e02-b09f-41c6-83aa-dfed81bd0df5',
+  prescriptionsConceptUuid: 'f0000215-0000-4000-8000-000000000215',
   referralConceptUuid: '3f573194-bade-46bc-b5fd-59c36f5f697a',
-  nextAppointmentConceptUuid: '47ce3ee6-ee9f-4037-901b-2a6381c4b340',
+  nextAppointmentConceptUuid: 'f0000004-0000-4000-8000-000000000004',
 } as const;
 
 export default {
@@ -118,7 +118,7 @@ export default {
   labOrdersConceptUuid: {
     _type: Type.ConceptUuid,
     _default: defaultVisitNoteClinicalConceptUuids.labOrdersConceptUuid,
-    _description: 'Auxiliary exams / lab orders concept used by outpatient forms',
+    _description: 'Text question used to persist auxiliary exams / laboratory orders from outpatient forms',
   },
   proceduresConceptUuid: {
     _type: Type.ConceptUuid,
@@ -128,7 +128,7 @@ export default {
   prescriptionsConceptUuid: {
     _type: Type.ConceptUuid,
     _default: defaultVisitNoteClinicalConceptUuids.prescriptionsConceptUuid,
-    _description: 'Prescriptions concept used by outpatient forms',
+    _description: 'Text question used to persist prescription instructions from outpatient forms',
   },
   referralConceptUuid: {
     _type: Type.ConceptUuid,
@@ -138,7 +138,7 @@ export default {
   nextAppointmentConceptUuid: {
     _type: Type.ConceptUuid,
     _default: defaultVisitNoteClinicalConceptUuids.nextAppointmentConceptUuid,
-    _description: 'Next appointment concept used by outpatient forms',
+    _description: 'Date question used to persist the next appointment as an OpenMRS Date observation',
   },
   encounterTypeUuid: {
     _type: Type.UUID,

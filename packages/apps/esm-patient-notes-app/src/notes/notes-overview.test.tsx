@@ -1,4 +1,4 @@
-import { useConfig } from '@openmrs/esm-framework';
+import { userHasAccess, useConfig } from '@openmrs/esm-framework';
 import { screen, within } from '@testing-library/react';
 import { ConfigMock, mockFhirPatient, mockVisitNotes, patientChartBasePath, renderWithSwr } from 'test-utils';
 import NotesOverview from './notes-overview.extension';
@@ -12,6 +12,7 @@ const testProps = {
 
 const mockUseVisitNotes = vi.mocked(useVisitNotes);
 const mockUseConfig = vi.mocked(useConfig);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 
 vi.mock('./visit-notes.resource', () => {
   return { useVisitNotes: vi.fn().mockReturnValue([{}]) };
@@ -20,6 +21,17 @@ vi.mock('./visit-notes.resource', () => {
 describe('NotesOverview', () => {
   beforeEach(() => {
     mockUseConfig.mockReturnValue(ConfigMock);
+    mockUserHasAccess.mockReturnValue(true);
+  });
+
+  test('does not fetch notes without the view privilege', () => {
+    mockUserHasAccess.mockReturnValue(false);
+    mockUseVisitNotes.mockClear();
+
+    renderWithSwr(<NotesOverview {...testProps} />);
+
+    expect(mockUseVisitNotes).not.toHaveBeenCalled();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
   test('renders an empty state view if visit note data is unavailable', async () => {

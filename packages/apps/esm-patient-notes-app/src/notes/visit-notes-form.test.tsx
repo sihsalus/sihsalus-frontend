@@ -7,7 +7,7 @@ import {
 } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   ConfigMock,
@@ -21,18 +21,20 @@ import {
 import { type ConfigObject, configSchema } from '../config-schema';
 import { defaultVisitNoteClinicalConceptUuids } from './visit-note-config-schema';
 import {
-  deletePatientDiagnosis,
+  assertCanonicalVisitNoteCanBeCreated,
   fetchDiagnosisConceptsByName,
   fetchPrestacionalConceptsByName,
-  savePatientDiagnosis,
-  saveVisitNote,
+  saveCanonicalVisitNote,
   updateVisitNote,
+  useCanonicalVisitNoteEncounter,
   useProviderSignatureDetails,
   useVisitNoteClinicalContext,
 } from './visit-notes.resource';
 import VisitNotesForm, {
   type EditableVisitNoteEncounter,
   getSubmittedEncounterDatetime,
+  parseOpenmrsDateValue,
+  toOpenmrsDateValue,
   type VisitNotesFormProps,
 } from './visit-notes-form.workspace';
 
@@ -46,7 +48,10 @@ const defaultProps: PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}> = 
     patientUuid: mockPatient.id,
     visitContext: {
       uuid: 'active-visit-uuid',
-      location: { uuid: 'operational-location-uuid', display: 'UPSS - CONSULTA EXTERNA' },
+      location: {
+        uuid: 'operational-location-uuid',
+        display: 'UPSS - CONSULTA EXTERNA',
+      },
     } as never,
     mutateVisitContext: null,
   },
@@ -62,6 +67,21 @@ function renderVisitNotesForm(
   workspaceProps: Partial<VisitNotesFormProps> = {},
   groupProps: Partial<typeof defaultProps.groupProps> = {},
 ) {
+  mockUseCanonicalVisitNoteEncounter.mockReturnValue({
+    status: 'ready',
+    encounter: workspaceProps.encounter
+      ? ({
+          ...workspaceProps.encounter,
+          encounterDatetime: workspaceProps.encounter.rawDatetime,
+          visit: {
+            uuid: groupProps.visitContext?.uuid ?? defaultProps.groupProps.visitContext?.uuid,
+          },
+        } as never)
+      : null,
+    isValidating: false,
+    mutate: vi.fn(),
+    revalidationError: null,
+  });
   const props = {
     ...defaultProps,
     workspaceProps: { ...defaultProps.workspaceProps, ...workspaceProps },
@@ -72,13 +92,13 @@ function renderVisitNotesForm(
 
 const mockFetchDiagnosisConceptsByName = vi.mocked(fetchDiagnosisConceptsByName);
 const mockFetchPrestacionalConceptsByName = vi.mocked(fetchPrestacionalConceptsByName);
-const mockDeletePatientDiagnosis = vi.mocked(deletePatientDiagnosis);
-const mockSavePatientDiagnosis = vi.mocked(savePatientDiagnosis);
-const mockSaveVisitNote = vi.mocked(saveVisitNote);
+const mockAssertCanonicalVisitNoteCanBeCreated = vi.mocked(assertCanonicalVisitNoteCanBeCreated);
+const mockSaveCanonicalVisitNote = vi.mocked(saveCanonicalVisitNote);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUpdateVisitNote = vi.mocked(updateVisitNote);
 const mockUseProviderSignatureDetails = vi.mocked(useProviderSignatureDetails);
 const mockUseVisitNoteClinicalContext = vi.mocked(useVisitNoteClinicalContext);
+const mockUseCanonicalVisitNoteEncounter = vi.mocked(useCanonicalVisitNoteEncounter);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
@@ -105,8 +125,7 @@ vi.mock('./visit-notes.resource', async () => ({
   ...(await vi.importActual<typeof import('./visit-notes.resource')>('./visit-notes.resource')),
   fetchDiagnosisConceptsByName: vi.fn(),
   fetchPrestacionalConceptsByName: vi.fn(),
-  deletePatientDiagnosis: vi.fn(),
-  savePatientDiagnosis: vi.fn(),
+  assertCanonicalVisitNoteCanBeCreated: vi.fn(),
   updateVisitNote: vi.fn(),
   useLocationUuid: vi.fn().mockImplementation(() => ({
     data: mockFetchLocationByUuidResponse.data.uuid,
@@ -114,7 +133,8 @@ vi.mock('./visit-notes.resource', async () => ({
   useProviderUuid: vi.fn().mockImplementation(() => ({
     data: mockFetchProviderByUuidResponse.data.uuid,
   })),
-  saveVisitNote: vi.fn(),
+  saveCanonicalVisitNote: vi.fn(),
+  useCanonicalVisitNoteEncounter: vi.fn(),
   useProviderSignatureDetails: vi.fn().mockImplementation(() => ({
     providerSignatureDetails: {
       name: 'Test Provider',
@@ -139,6 +159,14 @@ beforeEach(() => {
   mockUseConfig.mockReturnValue(getMockConfig());
   mockFetchDiagnosisConceptsByName.mockResolvedValue([]);
   mockFetchPrestacionalConceptsByName.mockResolvedValue([]);
+  mockAssertCanonicalVisitNoteCanBeCreated.mockResolvedValue();
+  mockUseCanonicalVisitNoteEncounter.mockReturnValue({
+    status: 'ready',
+    encounter: null,
+    isValidating: false,
+    mutate: vi.fn(),
+    revalidationError: null,
+  });
   mockUseProviderSignatureDetails.mockReturnValue({
     providerSignatureDetails: {
       name: 'Test Provider',
@@ -160,6 +188,14 @@ test('delegates the default current encounter time to the server and preserves a
 
   expect(getSubmittedEncounterDatetime(selectedDate, false)).toBeUndefined();
   expect(getSubmittedEncounterDatetime(selectedDate, true)).toContain('2026-07-01');
+});
+
+test('normalizes the next appointment Date value for the OpenMRS REST payload', () => {
+  const date = parseOpenmrsDateValue('2026-08-23T14:30:00.000-05:00');
+
+  expect(date).toBeInstanceOf(Date);
+  expect(toOpenmrsDateValue(date)).toBe('2026-08-23');
+  expect(toOpenmrsDateValue(null)).toBeUndefined();
 });
 
 test('keeps the time of day when the date-only picker resolves to midnight', () => {
@@ -191,8 +227,13 @@ test('closes the visit summary workspace when its edit privilege is denied', asy
   render(<VisitNotesForm {...defaultProps} closeWorkspace={closeWorkspace} />);
 
   expect(screen.queryByText(/visit note/i)).not.toBeInTheDocument();
-  await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ closeWindow: true, discardUnsavedChanges: true }));
-  expect(mockUserHasAccess).toHaveBeenCalledWith('app:hoja.clinica.resumenConsulta', expect.anything());
+  await waitFor(() =>
+    expect(closeWorkspace).toHaveBeenCalledWith({
+      closeWindow: true,
+      discardUnsavedChanges: true,
+    }),
+  );
+  expect(mockUserHasAccess).toHaveBeenCalledWith('app:hoja.clinica.resumenConsulta.editar', expect.anything());
 });
 
 test('renders the visit notes form with all the relevant fields and values', () => {
@@ -212,6 +253,41 @@ test('renders the visit notes form with all the relevant fields and values', () 
   expect(screen.getByRole('button', { name: /add image/i })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /discard/i })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /save and close/i })).toBeInTheDocument();
+});
+
+test('keeps the resolved form visible but blocks saving when background verification fails', async () => {
+  const user = userEvent.setup();
+  mockUseCanonicalVisitNoteEncounter.mockReturnValue({
+    status: 'ready',
+    encounter: null,
+    isValidating: false,
+    mutate: vi.fn(),
+    revalidationError: new Error('network unavailable'),
+  });
+
+  render(<VisitNotesForm {...defaultProps} />);
+
+  await user.type(screen.getByRole('textbox', { name: /chief complaint/i }), 'Synthetic complaint');
+  expect(screen.getByText('The visit summary could not be refreshed')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /save and close/i })).toBeDisabled();
+  expect(mockSaveCanonicalVisitNote).not.toHaveBeenCalled();
+});
+
+test('keeps the resolved form mounted while revalidating and blocks saving until verification completes', async () => {
+  const user = userEvent.setup();
+  mockUseCanonicalVisitNoteEncounter.mockReturnValue({
+    status: 'ready',
+    encounter: null,
+    isValidating: true,
+    mutate: vi.fn(),
+    revalidationError: null,
+  });
+
+  render(<VisitNotesForm {...defaultProps} />);
+
+  await user.type(screen.getByRole('textbox', { name: /chief complaint/i }), 'Synthetic complaint');
+  expect(screen.getByText('Verifying the visit summary')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /save and close/i })).toBeDisabled();
 });
 
 test('prefills normative fields from saved clinical context', async () => {
@@ -244,7 +320,9 @@ test('typing in the diagnosis search input triggers a search', async () => {
   await user.type(searchBox, 'Diabetes Mellitus');
 
   // Wait for the search results to appear
-  const targetSearchResult = await screen.findByRole('button', { name: 'Diabetes Mellitus' });
+  const targetSearchResult = await screen.findByRole('button', {
+    name: 'Diabetes Mellitus',
+  });
   expect(targetSearchResult).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Diabetes Mellitus, Type II' })).toBeInTheDocument();
 
@@ -259,6 +337,22 @@ test('typing in the diagnosis search input triggers a search', async () => {
   await user.click(closeTagButton);
   // no selected diagnoses left
   expect(screen.getByText(/No diagnosis selected — Enter a diagnosis below/i)).toBeInTheDocument();
+});
+
+test('enables saving when a diagnosis is added without editing another clinical field', async () => {
+  const user = userEvent.setup();
+  mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
+
+  renderVisitNotesForm();
+
+  const submitButton = screen.getByRole('button', { name: /Save and close/i });
+  expect(submitButton).toBeDisabled();
+
+  const searchBox = screen.getByPlaceholderText('Choose a primary diagnosis');
+  await user.type(searchBox, 'Diabetes Mellitus');
+  await user.click(await screen.findByRole('button', { name: 'Diabetes Mellitus' }));
+
+  expect(submitButton).toBeEnabled();
 });
 
 test('formats CIE-10 diagnosis search results and selected tags for readability', async () => {
@@ -278,7 +372,9 @@ test('formats CIE-10 diagnosis search results and selected tags for readability'
 
   const formattedDiagnosis =
     'F155 - Trastornos mentales y del comportamiento debidos al uso de otros estimulantes incluida';
-  const diagnosisOption = await screen.findByRole('button', { name: formattedDiagnosis });
+  const diagnosisOption = await screen.findByRole('button', {
+    name: formattedDiagnosis,
+  });
   expect(diagnosisOption).toBeInTheDocument();
 
   await user.click(diagnosisOption);
@@ -308,10 +404,10 @@ test('searches and saves one selected codigo prestacional concept', async () => 
     { uuid: 'prestacional-001', display: '001 - Consulta externa' },
     { uuid: 'prestacional-002', display: '002 - Control ambulatorio' },
   ]);
-  mockSaveVisitNote.mockResolvedValueOnce({
+  mockSaveCanonicalVisitNote.mockResolvedValueOnce({
     status: 201,
     data: { uuid: 'new-visit-note-encounter-uuid' },
-  } as Awaited<ReturnType<typeof saveVisitNote>>);
+  } as Awaited<ReturnType<typeof saveCanonicalVisitNote>>);
 
   renderVisitNotesForm();
 
@@ -319,7 +415,9 @@ test('searches and saves one selected codigo prestacional concept', async () => 
   await user.type(diagnosisSearchBox, 'Diabetes Mellitus');
   await user.click(await screen.findByRole('button', { name: 'Diabetes Mellitus' }));
 
-  const codigoPrestacionalSearchBox = screen.getByRole('searchbox', { name: /indique el código prestacional/i });
+  const codigoPrestacionalSearchBox = screen.getByRole('searchbox', {
+    name: /indique el código prestacional/i,
+  });
   await user.type(codigoPrestacionalSearchBox, 'consulta');
 
   await waitFor(() =>
@@ -334,13 +432,16 @@ test('searches and saves one selected codigo prestacional concept', async () => 
   const submitButton = screen.getByRole('button', { name: /Save and close/i });
   await user.click(submitButton);
 
-  await waitFor(() => expect(mockSaveVisitNote).toHaveBeenCalledTimes(1));
-  expect(mockSaveVisitNote).toHaveBeenCalledWith(
+  await waitFor(() => expect(mockSaveCanonicalVisitNote).toHaveBeenCalledTimes(1));
+  expect(mockSaveCanonicalVisitNote).toHaveBeenCalledWith(
     expect.any(AbortController),
     expect.objectContaining({
       obs: expect.arrayContaining([
         expect.objectContaining({
-          concept: { display: '', uuid: defaultVisitNoteClinicalConceptUuids.codigoPrestacionalConceptUuid },
+          concept: {
+            display: '',
+            uuid: defaultVisitNoteClinicalConceptUuids.codigoPrestacionalConceptUuid,
+          },
           formFieldNamespace: 'visit-notes',
           formFieldPath: 'codigo-prestacional',
           // The selected catalog concept goes out as valueCoded. Sending its display
@@ -352,6 +453,27 @@ test('searches and saves one selected codigo prestacional concept', async () => 
       ]),
     }),
   );
+});
+
+test('allows only one in-flight create when submit is triggered twice synchronously', async () => {
+  const user = userEvent.setup();
+  let resolveSave: (value: Awaited<ReturnType<typeof saveCanonicalVisitNote>>) => void;
+  mockSaveCanonicalVisitNote.mockImplementationOnce(
+    () => new Promise((resolve) => (resolveSave = resolve)) as ReturnType<typeof saveCanonicalVisitNote>,
+  );
+  mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
+
+  renderVisitNotesForm();
+  await user.type(screen.getByPlaceholderText('Choose a primary diagnosis'), 'Diabetes Mellitus');
+  await user.click(await screen.findByRole('button', { name: 'Diabetes Mellitus' }));
+  await selectCodigoPrestacional(user);
+
+  const submitButton = screen.getByRole('button', { name: /Save and close/i });
+  fireEvent.click(submitButton);
+  fireEvent.click(submitButton);
+
+  await waitFor(() => expect(mockSaveCanonicalVisitNote).toHaveBeenCalledTimes(1));
+  resolveSave({ status: 201, data: { uuid: 'created' } } as Awaited<ReturnType<typeof saveCanonicalVisitNote>>);
 });
 
 test('blocks saving until a catalog concept backs the mandatory codigo prestacional', async () => {
@@ -370,7 +492,7 @@ test('blocks saving until a catalog concept backs the mandatory codigo prestacio
   // The label says "Obligatorio", so free text without a catalog selection must
   // not produce an encounter at all.
   expect(await screen.findByText('Seleccione un código prestacional del catálogo')).toBeInTheDocument();
-  expect(mockSaveVisitNote).not.toHaveBeenCalled();
+  expect(mockSaveCanonicalVisitNote).not.toHaveBeenCalled();
 });
 
 test('closes the form and the workspace when the cancel button is clicked', async () => {
@@ -388,7 +510,9 @@ async function selectCodigoPrestacional(user: ReturnType<typeof userEvent.setup>
   mockFetchPrestacionalConceptsByName.mockResolvedValue([
     { uuid: 'prestacional-001', display: '001 - Consulta externa' },
   ]);
-  const searchBox = screen.getByRole('searchbox', { name: /indique el código prestacional/i });
+  const searchBox = screen.getByRole('searchbox', {
+    name: /indique el código prestacional/i,
+  });
   await user.type(searchBox, 'consulta');
   await user.click(await screen.findByRole('button', { name: '001 - Consulta externa' }));
 }
@@ -421,10 +545,10 @@ test('renders a success snackbar upon successfully recording a visit note', asyn
     visit: 'active-visit-uuid',
   };
 
-  mockSaveVisitNote.mockResolvedValueOnce({
+  mockSaveCanonicalVisitNote.mockResolvedValueOnce({
     status: 201,
     data: { uuid: 'new-visit-note-encounter-uuid' },
-  } as Awaited<ReturnType<typeof saveVisitNote>>);
+  } as Awaited<ReturnType<typeof saveCanonicalVisitNote>>);
   mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
 
   renderVisitNotesForm(
@@ -432,13 +556,20 @@ test('renders a success snackbar upon successfully recording a visit note', asyn
     {
       visitContext: {
         uuid: 'active-visit-uuid',
-        location: { uuid: 'operational-location-uuid', display: 'UPSS - CONSULTA EXTERNA' },
+        location: {
+          uuid: 'operational-location-uuid',
+          display: 'UPSS - CONSULTA EXTERNA',
+        },
       } as never,
     },
   );
 
-  const chiefComplaint = screen.getByRole('textbox', { name: /Chief complaint/i });
-  const clinicalNote = screen.getByRole('textbox', { name: /Additional notes/i });
+  const chiefComplaint = screen.getByRole('textbox', {
+    name: /Chief complaint/i,
+  });
+  const clinicalNote = screen.getByRole('textbox', {
+    name: /Additional notes/i,
+  });
   const searchBox = screen.getByPlaceholderText('Choose a primary diagnosis');
   await user.type(searchBox, 'Diabetes Mellitus');
   const targetSearchResult = await screen.findByText('Diabetes Mellitus');
@@ -455,8 +586,11 @@ test('renders a success snackbar upon successfully recording a visit note', asyn
   await selectCodigoPrestacional(user);
   await user.click(submitButton);
 
-  await waitFor(() => expect(mockSaveVisitNote).toHaveBeenCalledTimes(1));
-  expect(mockSaveVisitNote).toHaveBeenCalledWith(expect.any(AbortController), expect.objectContaining(successPayload));
+  await waitFor(() => expect(mockSaveCanonicalVisitNote).toHaveBeenCalledTimes(1));
+  expect(mockSaveCanonicalVisitNote).toHaveBeenCalledWith(
+    expect.any(AbortController),
+    expect.objectContaining(successPayload),
+  );
   await waitFor(() =>
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: true,
@@ -479,7 +613,7 @@ test('renders an error snackbar if there was a problem recording a condition', a
     },
   };
 
-  mockSaveVisitNote.mockRejectedValueOnce(error);
+  mockSaveCanonicalVisitNote.mockRejectedValueOnce(error);
   mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
 
   renderVisitNotesForm();
@@ -493,7 +627,9 @@ test('renders an error snackbar if there was a problem recording a condition', a
 
   await user.click(targetSearchResult);
 
-  const clinicalNote = screen.getByRole('textbox', { name: /Additional notes/i });
+  const clinicalNote = screen.getByRole('textbox', {
+    name: /Additional notes/i,
+  });
   await user.clear(clinicalNote);
   await user.type(clinicalNote, 'Sample clinical note');
   expect(clinicalNote).toHaveValue('Sample clinical note');
@@ -505,7 +641,7 @@ test('renders an error snackbar if there was a problem recording a condition', a
   expect(mockShowSnackbar).toHaveBeenCalledWith({
     isLowContrast: false,
     kind: 'error',
-    subtitle: 'Internal Server Error',
+    subtitle: 'The visit note could not be saved.',
     title: 'Error saving visit note',
   });
 });
@@ -590,10 +726,12 @@ test('updates existing visit note when in edit mode', async () => {
       expect.objectContaining({
         concept: { display: '', uuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
         value: 'Updated clinical note',
-        uuid: undefined,
       }),
       expect.objectContaining({
-        concept: { display: '', uuid: ConfigMock.visitNoteConfig.diagnosisTypeConceptUuid },
+        concept: {
+          display: '',
+          uuid: ConfigMock.visitNoteConfig.diagnosisTypeConceptUuid,
+        },
         formFieldNamespace: 'visit-notes',
         formFieldPath: 'tipo-dx-789',
         value: ConfigMock.visitNoteConfig.diagnosisTypePresuntivoUuid,
@@ -607,12 +745,6 @@ test('updates existing visit note when in edit mode', async () => {
     status: 200,
     body: 'Visit note updated',
   } as unknown as Awaited<ReturnType<typeof updateVisitNote>>);
-  mockDeletePatientDiagnosis.mockResolvedValue({
-    status: 204,
-  } as Awaited<ReturnType<typeof deletePatientDiagnosis>>);
-  mockSavePatientDiagnosis.mockResolvedValue({
-    status: 201,
-  } as Awaited<ReturnType<typeof savePatientDiagnosis>>);
 
   renderVisitNotesForm({
     formContext: 'editing',
@@ -620,7 +752,9 @@ test('updates existing visit note when in edit mode', async () => {
   });
 
   // Update clinical note
-  const clinicalNote = screen.getByRole('textbox', { name: /Additional notes/i });
+  const clinicalNote = screen.getByRole('textbox', {
+    name: /Additional notes/i,
+  });
   await user.clear(clinicalNote);
   await user.type(clinicalNote, 'Updated clinical note');
   expect(clinicalNote).toHaveValue('Updated clinical note');
@@ -665,6 +799,9 @@ test('handles existing diagnoses correctly when in edit mode', async () => {
     encounter: mockEncounter as unknown as EditableVisitNoteEncounter,
   });
 
+  const submitButton = screen.getByRole('button', { name: /Save and close/i });
+  expect(submitButton).toBeDisabled();
+
   // Verify existing diagnosis is displayed
   expect(screen.getByTitle('Diabetes Mellitus')).toBeInTheDocument();
 
@@ -674,6 +811,7 @@ test('handles existing diagnoses correctly when in edit mode', async () => {
 
   // Verify no diagnoses are selected
   expect(screen.getByText(/No diagnosis selected — Enter a diagnosis below/i)).toBeInTheDocument();
+  expect(submitButton).toBeEnabled();
 
   // Add new diagnosis
   const searchBox = screen.getByPlaceholderText('Choose a primary diagnosis');
@@ -683,6 +821,39 @@ test('handles existing diagnoses correctly when in edit mode', async () => {
 
   // Verify new diagnosis is displayed
   expect(screen.getByTitle('Diabetes Mellitus')).toBeInTheDocument();
+});
+
+test('enables saving when only the diagnosis type changes', async () => {
+  const user = userEvent.setup();
+  const mockEncounter = {
+    id: '123',
+    uuid: '123',
+    datetime: '20/03/2024',
+    rawDatetime: '2024-03-20T10:00:00.000Z',
+    diagnoses: [
+      {
+        uuid: '456',
+        diagnosis: {
+          coded: { uuid: '789', display: 'Diabetes Mellitus' },
+        },
+        certainty: 'PROVISIONAL',
+        rank: 1,
+        display: 'Diabetes Mellitus',
+      },
+    ],
+  };
+
+  renderVisitNotesForm({
+    formContext: 'editing',
+    encounter: mockEncounter as unknown as EditableVisitNoteEncounter,
+  });
+
+  const submitButton = screen.getByRole('button', { name: /Save and close/i });
+  expect(submitButton).toBeDisabled();
+
+  await user.click(screen.getByRole('radio', { name: /D - Definitivo/i }));
+
+  expect(submitButton).toBeEnabled();
 });
 
 test('allows saving visit note without primary diagnosis when isPrimaryDiagnosisRequired is false', async () => {
@@ -709,15 +880,17 @@ test('allows saving visit note without primary diagnosis when isPrimaryDiagnosis
     patient: mockPatient.id,
   };
 
-  mockSaveVisitNote.mockResolvedValueOnce({
+  mockSaveCanonicalVisitNote.mockResolvedValueOnce({
     status: 201,
     body: 'Visit note created',
-  } as unknown as Awaited<ReturnType<typeof saveVisitNote>>);
+  } as unknown as Awaited<ReturnType<typeof saveCanonicalVisitNote>>);
   mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
 
   renderVisitNotesForm();
 
-  const clinicalNote = screen.getByRole('textbox', { name: /Additional notes/i });
+  const clinicalNote = screen.getByRole('textbox', {
+    name: /Additional notes/i,
+  });
   await user.clear(clinicalNote);
   await user.type(clinicalNote, 'Clinical note without diagnosis');
   expect(clinicalNote).toHaveValue('Clinical note without diagnosis');
@@ -730,8 +903,11 @@ test('allows saving visit note without primary diagnosis when isPrimaryDiagnosis
   expect(screen.queryByText(/choose at least one primary diagnosis/i)).not.toBeInTheDocument();
 
   // Should successfully save the visit note
-  expect(mockSaveVisitNote).toHaveBeenCalledTimes(1);
-  expect(mockSaveVisitNote).toHaveBeenCalledWith(expect.any(AbortController), expect.objectContaining(successPayload));
+  expect(mockSaveCanonicalVisitNote).toHaveBeenCalledTimes(1);
+  expect(mockSaveCanonicalVisitNote).toHaveBeenCalledWith(
+    expect.any(AbortController),
+    expect.objectContaining(successPayload),
+  );
 
   // Reset mock for other tests
   mockUseConfig.mockReturnValue(getMockConfig());
@@ -746,7 +922,9 @@ test('requires primary diagnosis when isPrimaryDiagnosisRequired is true', async
 
   renderVisitNotesForm();
 
-  const clinicalNote = screen.getByRole('textbox', { name: /Additional notes/i });
+  const clinicalNote = screen.getByRole('textbox', {
+    name: /Additional notes/i,
+  });
   await user.clear(clinicalNote);
   await user.type(clinicalNote, 'Clinical note without diagnosis');
 
@@ -757,7 +935,7 @@ test('requires primary diagnosis when isPrimaryDiagnosisRequired is true', async
   expect(screen.getByText(/choose at least one primary diagnosis/i)).toBeInTheDocument();
 
   // Should not attempt to save
-  expect(mockSaveVisitNote).not.toHaveBeenCalled();
+  expect(mockSaveCanonicalVisitNote).not.toHaveBeenCalled();
 
   // Reset mock for other tests
   mockUseConfig.mockReturnValue(getMockConfig());

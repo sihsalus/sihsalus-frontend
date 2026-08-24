@@ -14,11 +14,15 @@ vi.mock('@openmrs/esm-framework', async () => ({
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockUseConfig = vi.mocked(useConfig);
 
-function buildEncounter(obs: Array<{ conceptUuid: string; value: string; formFieldPath?: string }>) {
+function buildEncounter(
+  patientUuid: string,
+  obs: Array<{ conceptUuid: string; value: string; formFieldPath?: string }>,
+) {
   return {
     uuid: 'encounter-1',
     display: 'Consulta externa',
     encounterDatetime: '2026-07-01T10:00:00.000+0000',
+    patient: { uuid: patientUuid },
     obs: obs.map((observation, index) => ({
       uuid: `obs-${index}`,
       obsDatetime: '2026-07-01T10:00:00.000+0000',
@@ -26,6 +30,7 @@ function buildEncounter(obs: Array<{ conceptUuid: string; value: string; formFie
       concept: { uuid: observation.conceptUuid, display: 'concept' },
       value: observation.value,
       formFieldPath: observation.formFieldPath,
+      formFieldNamespace: observation.formFieldPath ? 'visit-notes' : undefined,
     })),
   };
 }
@@ -39,7 +44,12 @@ describe('useVisitNoteClinicalContext procedures fallback', () => {
     mockOpenmrsFetch.mockResolvedValue({
       data: {
         results: [
-          buildEncounter([{ conceptUuid: legacyProceduresConceptUuids.procedure, value: 'Curación de herida' }]),
+          buildEncounter('patient-legacy-procedure', [
+            {
+              conceptUuid: legacyProceduresConceptUuids.procedure,
+              value: 'Curación de herida',
+            },
+          ]),
         ],
       },
     } as never);
@@ -54,7 +64,7 @@ describe('useVisitNoteClinicalContext procedures fallback', () => {
     mockOpenmrsFetch.mockResolvedValue({
       data: {
         results: [
-          buildEncounter([
+          buildEncounter('patient-shared-concept', [
             // SOAP plan stored under the same shared concept, but with another path:
             // it must NOT bleed into procedures.
             {
@@ -83,8 +93,11 @@ describe('useVisitNoteClinicalContext procedures fallback', () => {
     mockOpenmrsFetch.mockResolvedValue({
       data: {
         results: [
-          buildEncounter([
-            { conceptUuid: legacyProceduresConceptUuids.procedure, value: 'Procedimiento antiguo' },
+          buildEncounter('patient-current-concept', [
+            {
+              conceptUuid: legacyProceduresConceptUuids.procedure,
+              value: 'Procedimiento antiguo',
+            },
             {
               conceptUuid: defaultVisitNoteClinicalConceptUuids.proceduresConceptUuid,
               value: 'Procedimiento actual',

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { type RegistrationConfig } from '../../../config-schema';
 import { moduleName } from '../../../constants';
 import { ResourcesContext } from '../../../offline.resources';
+import { getDocumentTypeDefinitionByIdentifierType } from '../../identity/identity-documents';
 import IdentifierInput from '../../input/custom-input/identifier/identifier-input.component';
 import type {
   FormValues,
@@ -14,8 +15,11 @@ import type {
   PatientIdentifierValue,
 } from '../../patient-registration.types';
 import { PatientRegistrationContext } from '../../patient-registration-context';
-import { getDocumentTypeDefinitionByIdentifierType } from '../../identity/identity-documents';
-import { getEffectiveRegistrationConfig, peruOtherPatientIdentifierTypeUuid } from '../../peru-registration-config';
+import {
+  getEffectiveRegistrationConfig,
+  peruOtherPatientIdentifierTypeUuid,
+  peruTemporaryAffiliationPatientIdentifierTypeUuid,
+} from '../../peru-registration-config';
 import styles from '../field.scss';
 import IdentifierSelectionOverlay from './identifier-selection-overlay.component';
 
@@ -77,6 +81,7 @@ export function isIdentityDocumentIdentifier(
   if (usesPeruIdentityDocuments && identifierType) {
     return (
       identifierType.uuid === peruOtherPatientIdentifierTypeUuid ||
+      identifierType.uuid === peruTemporaryAffiliationPatientIdentifierTypeUuid ||
       !!getDocumentTypeDefinitionByIdentifierType(identifierType.uuid)
     );
   }

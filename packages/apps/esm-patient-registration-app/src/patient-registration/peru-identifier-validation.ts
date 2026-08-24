@@ -3,6 +3,7 @@ import {
   peruCarnetExtranjeriaPatientIdentifierTypeUuid,
   peruDniPatientIdentifierTypeUuid,
   peruPassportPatientIdentifierTypeUuid,
+  peruTemporaryAffiliationPatientIdentifierTypeUuid,
 } from './peru-registration-config';
 
 export const peruDniPattern = /^\d{8}$/;
@@ -42,6 +43,22 @@ export function getPeruIdentifierRule(
       message: 'DNI must have 8 digits',
       helperKey: 'dniIdentifierHelperText',
       helper: '8 digits',
+    };
+  }
+
+  if (uuid === peruTemporaryAffiliationPatientIdentifierTypeUuid || name.includes('AFILIACION TEMPORAL')) {
+    return {
+      pattern: /^E-\d{8}$/,
+      maxLength: 10,
+      inputMode: 'text',
+      sanitize: (value) => {
+        const digits = value.toUpperCase().replace(/^E-?/, '').replace(/\D/g, '').slice(0, 8);
+        return digits || /^E-?/i.test(value) ? `E-${digits}` : '';
+      },
+      messageKey: 'temporaryAffiliationIdentifierInvalid',
+      message: 'Temporary affiliation number must use E- followed by 8 digits',
+      helperKey: 'temporaryAffiliationIdentifierHelperText',
+      helper: 'E- followed by 8 digits',
     };
   }
 

@@ -20,6 +20,7 @@ export const peruDiePatientIdentifierTypeUuid = '8d793bee-c2cc-11de-8d13-0010c6d
 export const peruSisIdnumregPatientIdentifierTypeUuid = '6ff8b876-0aea-4219-b03f-dfc428ae05f4';
 export const peruSisContractPatientIdentifierTypeUuid = '406574d4-396a-4787-9c4e-0bbfa30de39f';
 export const peruSisTemporaryPatientIdentifierTypeUuid = '97d1a1f2-6b38-4319-9ea2-46a8763ad671';
+export const peruTemporaryAffiliationPatientIdentifierTypeUuid = '68a90c20-eec8-433a-aa92-83e549d801db';
 export const peruInsuranceTypeAttributeTypeUuid = INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID;
 export const peruInsuranceCodeAttributeTypeUuid = INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID;
 export const peruInsuranceAccreditationStatusAttributeTypeUuid = ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID;
@@ -187,12 +188,7 @@ const peruPreRegistrationSections = ['identityLookup'];
 const peruSections = ['filiation', 'bloodData', 'insurance', 'responsiblePerson', 'medicalRecord'];
 const peruResponsiblePersonSection = 'responsiblePerson';
 const peruIdentityLookupFieldOrder = ['id', 'reniecLookup'];
-const peruInsuranceFieldOrder = [
-  'insuranceType',
-  'sisLookup',
-  'insuranceCode',
-  'insuranceAccreditationCheckedAt',
-];
+const peruInsuranceFieldOrder = ['insuranceType', 'sisLookup', 'insuranceCode', 'insuranceAccreditationCheckedAt'];
 const peruDemographicsFieldOrder = ['name', 'dob', 'gender', 'nationality'];
 const peruContactFieldOrder = ['address', 'birthAddress', 'phone', 'mobilePhone', 'email'];
 const peruLandlinePhoneValidationRegex = '^(?:(?:\\+51)?[1-8][0-9]{7}|0[1-8][0-9]{7})$';

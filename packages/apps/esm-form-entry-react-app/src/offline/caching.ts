@@ -1,4 +1,5 @@
 import {
+  isOnline,
   makeUrl,
   messageOmrsServiceWorker,
   refreshOfflineCacheEntry,
@@ -14,18 +15,26 @@ const moduleName = '@sihsalus/esm-form-entry-react-app';
 
 export function setupStaticDataOfflinePrecaching() {
   subscribePrecacheStaticDependencies(() => {
+    if (!isOnline()) {
+      return;
+    }
+
     void precacheStaticFormDependencies().catch(() => {
+      if (!isOnline()) {
+        return;
+      }
+
       showSnackbar({
-        kind: 'error',
+        kind: 'warning',
         title: translateFrom(
           moduleName,
           'offlineFormDependenciesRefreshFailed',
-          'Offline form dependencies could not be refreshed',
+          'Information for offline use could not be updated',
         ),
         subtitle: translateFrom(
           moduleName,
           'offlineFormDependenciesRefreshFailedSubtitle',
-          'Location or provider options may be out of date. Try again when online before using forms offline.',
+          'Location or clinical provider options may be out of date. Try again before working offline.',
         ),
       });
     });

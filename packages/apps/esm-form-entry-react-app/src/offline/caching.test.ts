@@ -1,4 +1,5 @@
 import {
+  isOnline,
   messageOmrsServiceWorker,
   openmrsFetch,
   setupDynamicOfflineDataHandler,
@@ -16,6 +17,7 @@ vi.mock('@openmrs/esm-framework', async () => {
   return {
     ...(await vi.importActual('@openmrs/esm-framework')),
     makeUrl: vi.fn((url: string) => `/openmrs${url}`),
+    isOnline: vi.fn(() => true),
     messageOmrsServiceWorker: vi.fn(),
     openmrsFetch: vi.fn(),
     refreshOfflineCacheEntry,
@@ -28,6 +30,7 @@ vi.mock('@openmrs/esm-framework', async () => {
 });
 
 const mockMessageOmrsServiceWorker = vi.mocked(messageOmrsServiceWorker);
+const mockIsOnline = vi.mocked(isOnline);
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockSetupDynamicOfflineDataHandler = vi.mocked(setupDynamicOfflineDataHandler);
@@ -37,10 +40,45 @@ const mockTranslateFrom = vi.mocked(translateFrom);
 describe('offline form caching', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockIsOnline.mockReturnValue(true);
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('does not refresh or notify when static dependencies are requested while offline', async () => {
+    mockIsOnline.mockReturnValue(false);
+
+    setupStaticDataOfflinePrecaching();
+
+    const callback = mockSubscribePrecacheStaticDependencies.mock.calls[0]?.[0];
+    expect(callback).toBeDefined();
+    expect(callback?.()).toBeUndefined();
+    await Promise.resolve();
+
+    expect(mockMessageOmrsServiceWorker).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).not.toHaveBeenCalled();
+    expect(mockTranslateFrom).not.toHaveBeenCalled();
+  });
+
+  it('does not notify when connectivity is lost during a static dependency refresh', async () => {
+    mockIsOnline.mockReturnValueOnce(true).mockReturnValue(false);
+    mockMessageOmrsServiceWorker.mockResolvedValue({
+      success: false,
+      error: 'The service worker is unavailable.',
+    });
+
+    setupStaticDataOfflinePrecaching();
+
+    const callback = mockSubscribePrecacheStaticDependencies.mock.calls[0]?.[0];
+    expect(callback).toBeDefined();
+    expect(callback?.()).toBeUndefined();
+    await vi.waitFor(() => expect(mockMessageOmrsServiceWorker).toHaveBeenCalledTimes(2));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(mockShowSnackbar).not.toHaveBeenCalled();
+    expect(mockTranslateFrom).not.toHaveBeenCalled();
   });
 
   it('settles static dependencies and reports a route registration failure safely', async () => {
@@ -80,21 +118,21 @@ describe('offline form caching', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(cachePut).toHaveBeenCalledTimes(1);
     expect(mockShowSnackbar).toHaveBeenCalledWith({
-      kind: 'error',
-      title: 'Offline form dependencies could not be refreshed',
-      subtitle: 'Location or provider options may be out of date. Try again when online before using forms offline.',
+      kind: 'warning',
+      title: 'Information for offline use could not be updated',
+      subtitle: 'Location or clinical provider options may be out of date. Try again before working offline.',
     });
     expect(mockTranslateFrom).toHaveBeenNthCalledWith(
       1,
       '@sihsalus/esm-form-entry-react-app',
       'offlineFormDependenciesRefreshFailed',
-      'Offline form dependencies could not be refreshed',
+      'Information for offline use could not be updated',
     );
     expect(mockTranslateFrom).toHaveBeenNthCalledWith(
       2,
       '@sihsalus/esm-form-entry-react-app',
       'offlineFormDependenciesRefreshFailedSubtitle',
-      'Location or provider options may be out of date. Try again when online before using forms offline.',
+      'Location or clinical provider options may be out of date. Try again before working offline.',
     );
     expect(JSON.stringify(mockShowSnackbar.mock.calls)).not.toContain('private-provider-uuid');
     expect(JSON.stringify(mockShowSnackbar.mock.calls)).not.toContain('/ws/rest/v1/location');
@@ -139,9 +177,9 @@ describe('offline form caching', () => {
     expect(notificationsBeforeProviderSettles).toBe(0);
     expect(cachePut).toHaveBeenCalledTimes(1);
     expect(mockShowSnackbar).toHaveBeenCalledWith({
-      kind: 'error',
-      title: 'Offline form dependencies could not be refreshed',
-      subtitle: 'Location or provider options may be out of date. Try again when online before using forms offline.',
+      kind: 'warning',
+      title: 'Information for offline use could not be updated',
+      subtitle: 'Location or clinical provider options may be out of date. Try again before working offline.',
     });
   });
 

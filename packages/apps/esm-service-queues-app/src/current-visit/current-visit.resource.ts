@@ -7,15 +7,16 @@ import { type ConceptMetadata } from './hooks/useVitalsConceptMetadata';
 
 export function useVisit(visitUuid?: string) {
   const customRepresentation =
-    'custom:(uuid,encounters:(uuid,encounterDatetime,' +
+    'custom:(uuid,location:(uuid,display),encounters:(uuid,encounterDatetime,' +
     // Use default representation for orders to safely include subclass-specific fields (e.g., DrugOrder)
     // without requesting properties that are not present on other subclasses (e.g., TestOrder).
     'orders,' +
     'obs:(uuid,concept:(uuid,display,conceptClass:(uuid,display)),' +
     'display,groupMembers:(uuid,concept:(uuid,display),' +
-    'value:(uuid,display)),value),encounterType:(uuid,display),' +
+    'value:(uuid,display)),value),diagnoses:(uuid,display,certainty,rank,voided,' +
+    'diagnosis:(coded:(uuid,display),nonCoded)),encounterType:(uuid,display),form:(uuid,display),' +
     'encounterProviders:(uuid,display,encounterRole:(uuid,display),' +
-    'provider:(uuid,person:(uuid,display)))),visitType:(uuid,name,display),startDatetime';
+    'provider:(uuid,person:(uuid,display)))),visitType:(uuid,name,display),startDatetime)';
 
   const apiUrl = `${restBaseUrl}/visit/${visitUuid}?v=${customRepresentation}`;
 

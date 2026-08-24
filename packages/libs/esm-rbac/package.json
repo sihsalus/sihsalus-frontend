@@ -23,7 +23,7 @@
     "@carbon/react": "^1.102.0",
     "@openmrs/esm-framework": "workspace:*",
     "@sihsalus/esm-audit-logger": "workspace:*",
-    "react": "^18.3.1",
+    "react": "^19.2.8",
     "typescript": "6.0.3",
     "vitest": "^4.1.7"
   }

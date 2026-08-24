@@ -18,7 +18,7 @@
   },
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
-    "react": "^18.3.1",
+    "react": "^19.2.8",
     "typescript": "6.0.3",
     "vitest": "^4.1.7"
   }

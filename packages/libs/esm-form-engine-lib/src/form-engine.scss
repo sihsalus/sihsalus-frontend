@@ -47,6 +47,10 @@
   justify-content: flex-start;
 }
 
+.formLoadError {
+  padding: layout.$spacing-05;
+}
+
 .minifiedButtons {
   button {
     height: 4rem;

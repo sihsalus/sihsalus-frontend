@@ -4,6 +4,7 @@ import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { I18nextProvider, useTranslation } from 'react-i18next';
 import { isEmpty, useFormJson } from '.';
+import FormLoadError from './components/error/form-load-error.component';
 import MarkdownWrapper from './components/inputs/markdown/markdown-wrapper.component';
 import Loader from './components/loaders/loader.component';
 import PatientBanner from './components/patient-banner/patient-banner.component';
@@ -71,10 +72,12 @@ const FormEngine = ({
   const ref = useRef<HTMLFormElement | null>(null);
   const sessionDate = useMemo<Date>(() => new Date(), []);
   const workspaceSize = useFormWorkspaceSize(ref);
-  const { patient, isLoadingPatient } = usePatientData(patientUUID);
+  const { patient, isLoadingPatient, patientError } = usePatientData(patientUUID);
   const [isLoadingDependencies, setIsLoadingDependencies] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFormDirty, setIsFormDirty] = useState(false);
+  const formSessionKey = `${patientUUID}:${formUUID ?? formJson?.uuid ?? ''}:${encounterUUID ?? ''}`;
+  const [failedFormSessionKey, setFailedFormSessionKey] = useState<string | null>(null);
   const sessionMode = !isEmpty(mode) ? mode : !isEmpty(encounterUUID) ? 'edit' : 'enter';
   const { isFormExpanded, hideFormCollapseToggle } = useFormCollapse(sessionMode);
   const { hasMultiplePages } = usePageObserver();
@@ -84,6 +87,10 @@ const FormEngine = ({
     isLoading: isLoadingFormJson,
     formError,
   } = useFormJson(formUUID, formJson, encounterUUID, formSessionIntent, preFilledQuestions);
+  const hasPatientIdentityError =
+    !isLoadingPatient &&
+    (Boolean(patientError) || !patient?.id || patient.id.toLowerCase() !== patientUUID.toLowerCase());
+  const hasFormLoadError = failedFormSessionKey === formSessionKey || hasPatientIdentityError || Boolean(formError);
 
   const showPatientBanner = useMemo<boolean>(() => {
     if (hidePatientBanner) {
@@ -125,17 +132,36 @@ const FormEngine = ({
     markFormAsDirty?.(isFormDirty);
   }, [isFormDirty, markFormAsDirty]);
 
-  const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-  }, []);
+  const handleDependencyError = useCallback(
+    (_error: unknown) => {
+      console.error('Failed to load data required by the form.');
+      setIsLoadingDependencies(false);
+      setIsSubmitting(false);
+      setFailedFormSessionKey(formSessionKey);
+    },
+    [formSessionKey],
+  );
+
+  const handleSubmit = useCallback(
+    (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      if (!hasFormLoadError) {
+        setIsSubmitting(true);
+      }
+    },
+    [hasFormLoadError],
+  );
 
   const isLoadingFormDefinition = isLoadingPatient || isLoadingFormJson || !refinedFormJson;
   const markdown: string | null = refinedFormJson ? getMarkdownString(refinedFormJson.markdown) : null;
 
   return (
     <form ref={ref} noValidate className={classNames('cds--form', styles.form)} onSubmit={handleSubmit}>
-      {isLoadingFormDefinition ? (
+      {hasFormLoadError ? (
+        <div className={styles.formLoadError}>
+          <FormLoadError />
+        </div>
+      ) : isLoadingFormDefinition ? (
         <Loader />
       ) : (
         <FormFactoryProvider
@@ -192,6 +218,7 @@ const FormEngine = ({
                   <FormProcessorFactory
                     formJson={refinedFormJson}
                     setIsLoadingFormDependencies={setIsLoadingDependencies}
+                    onDependencyError={handleDependencyError}
                   />
                 </div>
                 {showBottomButtonSet && !hideControls && (

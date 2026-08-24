@@ -1,4 +1,4 @@
-import { Button, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
+import { Button, InlineNotification, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import {
   ArrowLeftIcon,
   ListCheckedIcon,
@@ -128,6 +128,18 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
 
   const saveDrugOrderToBasket = useCallback(
     async (finalizedOrder: DrugOrderBasketItem) => {
+      if (!orderingProviderUuid) {
+        showSnackbar({
+          isLowContrast: false,
+          kind: 'error',
+          title: t('orderingProviderRequiredTitle', 'Clinical provider required'),
+          subtitle: t(
+            'orderingProviderRequiredMessage',
+            'This account is not linked to a clinical provider. Use a clinical account or request the association.',
+          ),
+        });
+        return;
+      }
       finalizedOrder.action ??= 'NEW';
       finalizedOrder.orderer ??= orderingProviderUuid;
       const newOrders = [...orders];
@@ -148,13 +160,25 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
       setOrders(newOrders);
       closeWorkspace({ discardUnsavedChanges: true });
     },
-    [orders, setOrders, closeWorkspace, orderingProviderUuid],
+    [orders, setOrders, closeWorkspace, orderingProviderUuid, t],
   );
 
   // Backend orders are identified by their original orderer. Draft REVISE orders do not have
   // that prop and remain local to the order basket until the basket itself is submitted.
   const submitDrugOrderToServer = useCallback(
     (finalizedOrder: DrugOrderBasketItem) => {
+      if (!orderingProviderUuid) {
+        showSnackbar({
+          isLowContrast: false,
+          kind: 'error',
+          title: t('orderingProviderRequiredTitle', 'Clinical provider required'),
+          subtitle: t(
+            'orderingProviderRequiredMessage',
+            'This account is not linked to a clinical provider. Use a clinical account or request the association.',
+          ),
+        });
+        return Promise.resolve();
+      }
       const submissionGeneration = backendSubmissionGenerationRef.current;
       const isCurrentSubmission = () =>
         isMountedRef.current &&
@@ -244,6 +268,22 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
     initialOrder?.action === 'REVISE'
       ? t('editDrugOrderWorkspaceTitle', 'Edit drug order')
       : t('addDrugOrderWorkspaceTitle', 'Add drug order');
+
+  if (!orderingProviderUuid) {
+    return (
+      <Workspace2 title={workspaceTitle}>
+        <InlineNotification
+          kind="error"
+          title={t('orderingProviderRequiredTitle', 'Clinical provider required')}
+          subtitle={t(
+            'orderingProviderRequiredMessage',
+            'This account is not linked to a clinical provider. Use a clinical account or request the association.',
+          )}
+          lowContrast
+        />
+      </Workspace2>
+    );
+  }
 
   if (!currentOrder) {
     return (

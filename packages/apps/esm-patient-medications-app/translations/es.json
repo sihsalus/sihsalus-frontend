@@ -78,6 +78,8 @@
   "orderDiscontinued": "Orden descontinuada",
   "orderedFor": "Orden realizada para",
   "orderForm": "Formulario de Orden",
+  "orderingProviderRequiredMessage": "Esta cuenta no está asociada a un proveedor clínico. Use una cuenta clínica o solicite la asociación.",
+  "orderingProviderRequiredTitle": "Se requiere proveedor clínico",
   "orderPlaced": "Orden realizada",
   "ordersCompleted": "Órdenes completadas",
   "ordersDiscontinued": "Órdenes discontinuadas",

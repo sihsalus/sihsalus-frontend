@@ -24,9 +24,13 @@ import styles from './lab-order-basket-panel.scss';
  */
 interface LabOrderBasketPanelExtensionProps {
   launchAddLabOrder?: (orderTypeUuid: string, order?: OrderBasketItem) => void;
+  canCreateOrders?: boolean;
 }
 
-export default function LabOrderBasketPanelExtension({ launchAddLabOrder }: LabOrderBasketPanelExtensionProps) {
+export default function LabOrderBasketPanelExtension({
+  launchAddLabOrder,
+  canCreateOrders = true,
+}: LabOrderBasketPanelExtensionProps) {
   const { orders, additionalTestOrderTypes } = useConfig<ConfigObject>();
   const { t } = useTranslation();
   const allOrderTypes: ConfigObject['additionalTestOrderTypes'] = [
@@ -46,6 +50,7 @@ export default function LabOrderBasketPanelExtension({ launchAddLabOrder }: LabO
           key={orderTypeConfig.orderTypeUuid}
           {...orderTypeConfig}
           launchAddLabOrder={launchAddLabOrder}
+          canCreateOrders={canCreateOrders}
         />
       ))}
     </>
@@ -56,6 +61,7 @@ type OrderTypeConfig = ConfigObject['additionalTestOrderTypes'][0];
 
 interface LabOrderBasketPanelProps extends OrderTypeConfig {
   launchAddLabOrder?: (orderTypeUuid: string, order?: OrderBasketItem) => void;
+  canCreateOrders?: boolean;
 }
 
 const priorityOrder: Record<string, number> = {
@@ -67,7 +73,13 @@ const priorityOrder: Record<string, number> = {
 };
 const priorityStorageKey = 'sihsalus-lab-order-basket-priority';
 
-function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: LabOrderBasketPanelProps) {
+function LabOrderBasketPanel({
+  orderTypeUuid,
+  label,
+  icon,
+  launchAddLabOrder,
+  canCreateOrders = true,
+}: LabOrderBasketPanelProps) {
   const { t } = useTranslation();
   const { orderType, isLoadingOrderType } = useOrderType(orderTypeUuid);
   const config = useConfig<ConfigObject>();
@@ -395,14 +407,20 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
   }, [orders]);
 
   const openNewLabForm = useCallback(() => {
+    if (!canCreateOrders) {
+      return;
+    }
     launchAddLabOrder?.(orderTypeUuid);
-  }, [launchAddLabOrder, orderTypeUuid]);
+  }, [canCreateOrders, launchAddLabOrder, orderTypeUuid]);
 
   const openEditLabForm = useCallback(
     (order: OrderBasketItem) => {
+      if (!canCreateOrders) {
+        return;
+      }
       launchAddLabOrder?.(orderTypeUuid, order);
     },
-    [launchAddLabOrder, orderTypeUuid],
+    [canCreateOrders, launchAddLabOrder, orderTypeUuid],
   );
 
   const removeLabOrder = useCallback(
@@ -439,6 +457,7 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
             iconDescription="Add lab order"
             kind="ghost"
             onClick={openNewLabForm}
+            disabled={!canCreateOrders}
             renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
             size="sm"
           >

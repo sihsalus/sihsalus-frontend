@@ -59,6 +59,8 @@
   "orderReason": "Motivo de la orden",
   "orderReasonRequired": "El motivo de la orden es requerido",
   "orderNumber": "N° de orden",
+  "orderingProviderRequiredMessage": "Esta cuenta no está asociada a un proveedor clínico. Use una cuenta clínica o solicite la asociación.",
+  "orderingProviderRequiredTitle": "Se requiere proveedor clínico",
   "other": "Otro",
   "overlayHeader": "Superposición",
   "overTime": "Con el tiempo",

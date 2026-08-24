@@ -1,3 +1,4 @@
+import { useSession } from '@openmrs/esm-framework';
 import { type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -6,11 +7,13 @@ import {
   mockDrugSearchResultApiData,
   mockFhirPatient,
   mockPatientDrugOrdersApiData,
+  mockSessionDataResponse,
 } from 'test-utils';
 import { getTemplateOrderBasketItem } from '../add-drug-order/drug-search/drug-search.resource';
 import DrugOrderBasketPanel, { type DrugOrderBasketPanelExtensionProps } from './drug-order-basket-panel.extension';
 
 const mockUseOrderBasket = vi.fn();
+const mockUseSession = vi.mocked(useSession);
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
@@ -23,6 +26,10 @@ const testProps: DrugOrderBasketPanelExtensionProps = {
 };
 
 describe('OrderBasketPanel', () => {
+  beforeEach(() => {
+    mockUseSession.mockReturnValue(mockSessionDataResponse.data);
+  });
+
   test('renders an empty state when no items are selected in the order basket', () => {
     mockUseOrderBasket.mockReturnValue({ orders: [] });
     render(<DrugOrderBasketPanel {...testProps} />);
@@ -39,6 +46,22 @@ describe('OrderBasketPanel', () => {
     await user.click(screen.getByRole('button', { name: /Add/i }));
 
     expect(launchAddDrugOrder).toHaveBeenCalledWith(undefined);
+  });
+
+  test('disables adding medication orders when the session has no clinical provider', async () => {
+    const user = userEvent.setup();
+    const launchAddDrugOrder = vi.fn();
+    mockUseSession.mockReturnValue({
+      ...mockSessionDataResponse.data,
+      currentProvider: undefined,
+    });
+    mockUseOrderBasket.mockReturnValue({ orders: [] });
+    render(<DrugOrderBasketPanel patient={mockFhirPatient} launchAddDrugOrder={launchAddDrugOrder} />);
+
+    const addButton = screen.getByRole('button', { name: /Add/i });
+    expect(addButton).toBeDisabled();
+    await user.click(addButton);
+    expect(launchAddDrugOrder).not.toHaveBeenCalled();
   });
 
   test('renders a tile-based layout of orders, including new, renewing, modifying, and discontinuing', async () => {

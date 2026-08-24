@@ -2,6 +2,8 @@
 
 Functionality for viewing test results and ordering tests, whether lab tests, radiology, or otherwise.
 
+Creating or editing a test order requires an active clinical Provider linked to the current session. The order UI must fail closed and must not construct an order with a missing orderer.
+
 ## Test Results
 
 It provides tabular and chart-based overviews of the test results available for a patient.
@@ -22,38 +24,38 @@ Below, we will walk through the steps taken to set up [**this OpenMRS Example La
 
 In this example, we wanted a layout like:
 
-* Bloodwork
-  * Hematology
-    * CBC
-      * Lymphocytes (%)
-      * Neutrophils (%)
-      * Hemoglobin
-      * Mean corpuscular volume (MCV)
-      * Hematocrit
-      * Red blood cells
-      * Platelets
-      * White blood cells
-  * Chemistry
-    * Serum Electrolytes
-      * Serum calcium
-      * Serum carbon dioxide
-      * Serum chloride
-      * Serum potassium
-      * Serum sodium
+- Bloodwork
+  - Hematology
+    - CBC
+      - Lymphocytes (%)
+      - Neutrophils (%)
+      - Hemoglobin
+      - Mean corpuscular volume (MCV)
+      - Hematocrit
+      - Red blood cells
+      - Platelets
+      - White blood cells
+  - Chemistry
+    - Serum Electrolytes
+      - Serum calcium
+      - Serum carbon dioxide
+      - Serum chloride
+      - Serum potassium
+      - Serum sodium
 
 ### 2. Create the "parents" as concepts with type = ConvSet
 
-* Bloodwork --> Create as a custom concept, type = ConvSet
-  * Hematology --> Create as a custom concept, type = ConvSet
-  * Chemistry --> Create as a custom concept, type = ConvSet
+- Bloodwork --> Create as a custom concept, type = ConvSet
+  - Hematology --> Create as a custom concept, type = ConvSet
+  - Chemistry --> Create as a custom concept, type = ConvSet
 
 ### 3. Add the "children" Set Members to each parent
 
-* Bloodwork
-  * Hematology --> Add concept as a Set Member to "Bloodwork"
-    * CBC --> Add concept as a Set Member to "Hematology"
-  * Chemistry --> Add concept as a Set Member to "Bloodwork"
-    * Serum Electrolytes --> Add concept as a Set Member to "Chemistry"
+- Bloodwork
+  - Hematology --> Add concept as a Set Member to "Bloodwork"
+    - CBC --> Add concept as a Set Member to "Hematology"
+  - Chemistry --> Add concept as a Set Member to "Bloodwork"
+    - Serum Electrolytes --> Add concept as a Set Member to "Chemistry"
 
 _Note1: As of March 2022, Set Members cannot be added to concepts through the Term Browser, but you can either use your EMR directly or the OpenMRS Dictionary Manager._
 

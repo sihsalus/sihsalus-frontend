@@ -78,6 +78,8 @@
   "orderDiscontinued": "Order discontinued",
   "orderedFor": "Placed order for",
   "orderForm": "Order Form",
+  "orderingProviderRequiredMessage": "This account is not linked to a clinical provider. Use a clinical account or request the association.",
+  "orderingProviderRequiredTitle": "Clinical provider required",
   "orderPlaced": "Order placed",
   "ordersCompleted": "Orders completed",
   "ordersDiscontinued": "Orders discontinued",

@@ -174,7 +174,8 @@ export const configSchema = {
     },
   },
 
-  // Patient registration config — used when creating a new relative during relationship form
+  // Legacy patient-registration config retained for backwards compatibility with deployed configuration.
+  // Relationship creation no longer consumes these fields or creates a Patient.
   defaultIDUuid: {
     _type: Type.String,
     _description: 'Patient identifier type UUID',
@@ -216,6 +217,13 @@ export const configSchema = {
       _description: 'Form UUID to associate with the registration encounter.',
     },
   },
+
+  // Person metadata used when creating a non-patient relative.
+  maritalStatusPersonAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Coded Person Attribute Type used to persist civil status without creating a patient encounter.',
+    _default: '8d871f2a-c2cc-11de-8d13-0010c6dffd0f',
+  },
 };
 
 export interface ConfigObject {
@@ -256,4 +264,5 @@ export interface ConfigObject {
     encounterProviderRoleUuid: string;
     registrationFormUuid: string | null;
   };
+  maritalStatusPersonAttributeTypeUuid: string;
 }

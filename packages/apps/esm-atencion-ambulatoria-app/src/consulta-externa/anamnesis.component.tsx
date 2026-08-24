@@ -1,11 +1,11 @@
 import { Accordion, AccordionItem, Tag } from '@carbon/react';
 import { formatDate, useConfig } from '@openmrs/esm-framework';
-import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { useAnamnesis } from '../hooks/useAnamnesis';
-import { consultaExternaEditPrivilege, patientFormEntryWorkspace } from '../utils/constants';
+import { useConsultaExternaFormLauncher } from '../hooks/useConsultaExternaFormLauncher';
+import { clinicalFormsPrivilege, consultaExternaEditPrivilege } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 import styles from './consulta-externa-dashboard.scss';
 
@@ -29,15 +29,14 @@ const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
     config.concepts,
   );
 
-  const handleLaunchForm = () => {
-    launchPatientWorkspace(patientFormEntryWorkspace, {
-      mutateForm: mutate,
-      formInfo: {
-        patientUuid,
-        formUuid: config.formsList?.anamnesisForm ?? config.formsList?.consultaExternaForm,
-      },
-    });
-  };
+  const handleLaunchForm = useConsultaExternaFormLauncher({
+    patientUuid,
+    formIdentifier: config.formsList?.anamnesisForm ?? config.formsList?.consultaExternaForm,
+    encounterTypeUuid: config.encounterTypes?.externalConsultation,
+    ambulatoryVisitTypeUuid: config.visitTypes?.ambulatory,
+    mutate,
+    entryMode: 'one-per-visit',
+  });
 
   return (
     <ClinicalHistoryCard
@@ -45,7 +44,7 @@ const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
       actionLabel={t('addAnamnesis', 'Registrar Anamnesis')}
       empty={anamnesisEntries.length === 0}
       emptyDisplayText={t('anamnesis', 'anamnesis')}
-      editPrivilege={consultaExternaEditPrivilege}
+      editPrivilege={[consultaExternaEditPrivilege, clinicalFormsPrivilege]}
       error={error}
       isLoading={isLoading}
       isValidating={isValidating}

@@ -9,13 +9,14 @@ import {
   Tag,
 } from '@carbon/react';
 import { ShoppingCart } from '@carbon/react/icons';
-import { formatDate, useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
-import { launchPatientWorkspace, useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
+import { formatDate, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
+import { useConsultaExternaVisitNoteLauncher } from '../hooks/useConsultaExternaVisitNoteLauncher';
 import { useTreatmentPlan } from '../hooks/useTreatmentPlan';
-import { consultaExternaEditPrivilege, orderBasketEditPrivilege, patientFormEntryWorkspace } from '../utils/constants';
+import { consultaExternaEditPrivilege, orderBasketPrivileges, visitNotesEditPrivilege } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface PlanTratamientoProps {
@@ -42,30 +43,45 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
   const session = useSession();
   // Without this check the button would start a real visit and then silently fail
   // to open the (privilege-gated) order basket, leaving a spurious visit behind.
-  const canPrescribe = userHasAccess(orderBasketEditPrivilege, session?.user);
+  const canPrescribe = userHasAccess(orderBasketPrivileges, session?.user);
   const launchOrderBasket = useLaunchWorkspaceRequiringVisit(patientUuid, 'order-basket');
-
-  const handleLaunchForm = () => {
-    launchPatientWorkspace(patientFormEntryWorkspace, {
-      mutateForm: mutate,
-      formInfo: {
-        patientUuid,
-        formUuid: config.formsList?.consultaExternaForm,
-      },
-    });
-  };
+  const launchVisitNote = useConsultaExternaVisitNoteLauncher({
+    patientUuid,
+    ambulatoryVisitTypeUuid: config.visitTypes?.ambulatory,
+    mutate,
+  });
 
   const sections = [
-    { key: 'labOrders', label: t('labOrders', 'Exámenes Auxiliares'), tagType: 'blue' as const },
-    { key: 'procedures', label: t('procedures', 'Procedimientos'), tagType: 'teal' as const },
-    { key: 'prescriptions', label: t('prescriptions', 'Receta Médica'), tagType: 'green' as const },
+    {
+      key: 'labOrders',
+      label: t('labOrders', 'Exámenes Auxiliares'),
+      tagType: 'blue' as const,
+    },
+    {
+      key: 'procedures',
+      label: t('procedures', 'Procedimientos'),
+      tagType: 'teal' as const,
+    },
+    {
+      key: 'prescriptions',
+      label: t('prescriptions', 'Receta Médica'),
+      tagType: 'green' as const,
+    },
     {
       key: 'therapeuticIndications',
       label: t('therapeuticIndications', 'Indicaciones Terapéuticas'),
       tagType: 'purple' as const,
     },
-    { key: 'referral', label: t('referral', 'Referencia'), tagType: 'magenta' as const },
-    { key: 'nextAppointment', label: t('nextAppointment', 'Próxima Cita'), tagType: 'cyan' as const },
+    {
+      key: 'referral',
+      label: t('referral', 'Referencia'),
+      tagType: 'magenta' as const,
+    },
+    {
+      key: 'nextAppointment',
+      label: t('nextAppointment', 'Próxima Cita'),
+      tagType: 'cyan' as const,
+    },
   ];
 
   return (
@@ -74,17 +90,18 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
       actionLabel={t('addTreatmentPlan', 'Registrar Plan')}
       empty={treatmentPlans.length === 0}
       emptyDisplayText={t('treatmentPlans', 'planes de tratamiento')}
-      editPrivilege={consultaExternaEditPrivilege}
+      editPrivilege={[consultaExternaEditPrivilege, visitNotesEditPrivilege]}
       error={error}
       isLoading={isLoading}
       isValidating={isValidating}
       loadingVariant="accordion"
-      onAction={handleLaunchForm}
+      onAction={launchVisitNote}
       onSecondaryAction={canPrescribe ? () => launchOrderBasket() : undefined}
       pagination={pagination}
       sourceErrors={sourceErrors}
       secondaryActionIcon={ShoppingCart}
       secondaryActionLabel={canPrescribe ? t('prescribeInOrderBasket', 'Prescribir medicamentos') : undefined}
+      secondaryActionPrivilege={orderBasketPrivileges}
     >
       <Accordion>
         {treatmentPlans.map((plan) => (

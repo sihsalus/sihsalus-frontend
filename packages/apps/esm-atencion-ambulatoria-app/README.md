@@ -6,15 +6,21 @@ Microfrontend de atención ambulatoria y consulta externa para SIH Salus, una di
 
 Los permisos de lectura protegen los puntos de entrada y mantienen visibles los datos clínicos. Los permisos de edición ocultan las acciones de registro o modificación cuando el usuario solo puede consultar.
 
-| Superficie                                | Lectura / entrada                  | Modificación                                                                  |
-| ----------------------------------------- | ---------------------------------- | ----------------------------------------------------------------------------- |
-| Consulta externa e historia médica        | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar`                                     |
-| Historia social                           | `app:hoja.clinica.historiaSocial`  | `app:hoja.clinica.historiaSocial.editar`                                      |
-| Prescripción desde el plan de tratamiento | Entrada por Consulta Externa       | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.ordenes.editar` |
+| Superficie                                | Lectura / entrada                  | Modificación                                                                          |
+| ----------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------- |
+| Consulta externa e historia médica        | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar`                                             |
+| Formularios AMPATH de Consulta Externa    | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.formulariosClinicos`    |
+| Diagnóstico/plan desde Consulta Externa   | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.resumenConsulta.editar` |
+| Historia social                           | `app:hoja.clinica.historiaSocial`  | `app:hoja.clinica.historiaSocial.editar`                                              |
+| Prescripción desde el plan de tratamiento | Entrada por Consulta Externa       | `app:hoja.clinica.canastaOrdenes` + `app:hoja.clinica.ordenes.editar`                 |
 
 En la navegación normal, los guards se acumulan: primero se entra al dashboard con lectura y después se habilita la acción con edición. Los workspaces y modales registrados declaran directamente el privilegio de edición, sin inferir el permiso base; OpenMRS no implementa herencia padre/hijo por el nombre del privilegio.
 
 Las listas y estados vacíos siguen visibles en modo de solo lectura, pero sin botones de registro. Los controles heredados de antecedentes todavía delegan el bloqueo final al workspace o modal registrado. Estos guards frontend no sustituyen los permisos del backend para leer o guardar encounters, condiciones, observaciones u órdenes.
+
+## Contrato de diagnóstico de Consulta Externa
+
+La acción **Registrar Diagnóstico** abre el workspace de Visit Notes, que persiste diagnósticos CIE-10 como diagnósticos nativos del encounter. Requiere una visita ambulatoria activa verificada y los dos privilegios de modificación indicados en la tabla. `CE-001-CONSULTA EXTERNA` no debe volver a capturar diagnósticos mediante observaciones.
 
 ## Advertencia de financiamiento SIS (opcional)
 
@@ -32,11 +38,15 @@ La pestaña **Referencia / Contrarreferencia** lee exclusivamente encounters de 
 
 Los valores de `formsList` para consulta externa usan los nombres estables publicados por content (`CE-001-CONSULTA EXTERNA`, `CE-ANAM-001-ANAMNESIS`, `CE-SOAP-001-NOTA SOAP` y `CE-REF-001-REFERENCIA-CONTRARREFERENCIA`). No deben reemplazarse por los UUID de los archivos de esquema, porque esos UUID pueden variar entre entornos.
 
-## Ubicación de Epicrisis
+Anamnesis y SOAP son únicos por visita ambulatoria: cero coincidencias crea, una edita y más de una bloquea. Referencia es repetible porque cada derivación es un evento clínico independiente; siempre crea un encounter nuevo, pero siempre adjunto a la visita ambulatoria verificada.
 
-Por decisión operativa del flujo médico, Epicrisis debe exponerse en Consulta Externa como etapa final, después de Referencia / Contrarreferencia. La implementación debe usar el formulario clínico publicado `Formulario Epicrisis Médica`; no debe enlazar `(Página 16) Epicrisis`, porque ese esquema corresponde al control del recién nacido.
+## Informe de Atención de Consulta Externa
 
-Los cambios posteriores al contenido de Epicrisis o de `CE-SOAP-001-NOTA SOAP` deben crear una nueva versión del JSON para preservar las versiones históricas; no se debe sobrescribir una versión publicada.
+Consulta Externa ofrece una descarga PDF de la visita ambulatoria activa con identificación del paciente, establecimiento, profesional, signos vitales, anamnesis/SOAP, diagnósticos nativos CIE-10, plan y órdenes asociadas a los encounters de esa visita. El documento se genera íntegramente en el navegador; los datos no se envían a un servicio de PDF externo.
+
+Este documento es un **Informe de Atención de Consulta Externa**, no una Epicrisis. La NTS 139 define la Epicrisis en el contexto del ingreso/hospitalización; el Manual de Usuario SIHCE Primer Nivel denomina al documento ambulatorio “Resumen de Consulta Externa” e “Informe de la atención”. Por ello este flujo no usa `Formulario Epicrisis Médica` ni `(Página 16) Epicrisis`.
+
+La descarga falla cerrada si no se puede verificar que la visita, su tipo ambulatorio y el paciente coincidan. La primera versión se limita intencionalmente a la visita activa: debe descargarse antes de finalizarla. Una futura descarga histórica necesitará un selector explícito de visita; nunca debe elegir silenciosamente “la última” del paciente.
 
 ## TODO QA/QLTY
 

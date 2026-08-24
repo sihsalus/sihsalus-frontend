@@ -11,6 +11,9 @@ vi.mock('@sihsalus/esm-rbac', () => ({
 vi.mock('./anamnesis.component', () => ({ default: () => <div>Anamnesis panel</div> }));
 vi.mock('./diagnostico-clasificado.component', () => ({ default: () => <div>Diagnosis panel</div> }));
 vi.mock('./notas-soap.component', () => ({ default: () => <div>SOAP panel</div> }));
+vi.mock('./outpatient-visit-summary-download.component', () => ({
+  default: () => <button type="button">Download report</button>,
+}));
 vi.mock('./plan-tratamiento.component', () => ({ default: () => <div>Treatment plan panel</div> }));
 vi.mock('./referencia-contrarreferencia.component', () => ({ default: () => <div>Referral panel</div> }));
 vi.mock('./sis-financing-warning.component', () => ({ default: () => null }));

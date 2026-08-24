@@ -10,12 +10,12 @@ import {
   Tag,
 } from '@carbon/react';
 import { formatDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
-import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
+import { useConsultaExternaVisitNoteLauncher } from '../hooks/useConsultaExternaVisitNoteLauncher';
 import { useDiagnosisHistory } from '../hooks/useDiagnosisHistory';
-import { consultaExternaEditPrivilege, patientFormEntryWorkspace } from '../utils/constants';
+import { consultaExternaEditPrivilege, visitNotesEditPrivilege } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface DiagnosticoClasificadoProps {
@@ -37,6 +37,11 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
       },
     ],
   );
+  const launchVisitNote = useConsultaExternaVisitNoteLauncher({
+    patientUuid,
+    ambulatoryVisitTypeUuid: config.visitTypes?.ambulatory,
+    mutate,
+  });
 
   const headers = [
     { key: 'date', header: t('dateAndTime', 'Fecha y hora') },
@@ -77,27 +82,17 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
       ),
   }));
 
-  const handleLaunchForm = () => {
-    launchPatientWorkspace(patientFormEntryWorkspace, {
-      mutateForm: mutate,
-      formInfo: {
-        patientUuid,
-        formUuid: config.formsList?.consultaExternaForm,
-      },
-    });
-  };
-
   return (
     <ClinicalHistoryCard
       title={t('diagnosisHistory', 'Historial de Diagnósticos')}
       actionLabel={t('addDiagnosis', 'Registrar Diagnóstico')}
       empty={rows.length === 0}
       emptyDisplayText={t('diagnoses', 'diagnósticos')}
-      editPrivilege={consultaExternaEditPrivilege}
+      editPrivilege={[consultaExternaEditPrivilege, visitNotesEditPrivilege]}
       error={error}
       isLoading={isLoading}
       isValidating={isValidating}
-      onAction={handleLaunchForm}
+      onAction={launchVisitNote}
       pagination={pagination}
       sourceErrors={sourceErrors}
       skeletonHeaders={headers}

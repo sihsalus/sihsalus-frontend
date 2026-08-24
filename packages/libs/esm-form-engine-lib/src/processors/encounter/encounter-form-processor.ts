@@ -42,12 +42,61 @@ type FormValues = Record<string, unknown>;
 
 type CustomHooksResult = ReturnType<GetCustomHooksResponse['useCustomHooks']>;
 
+interface ExpectedEncounterIdentity {
+  encounterUuid?: string;
+  patientUuid?: string;
+  formUuid?: string;
+  visitUuid?: string;
+}
+
+function resourceUuid(value: unknown): string | undefined {
+  if (typeof value === 'string') return value;
+  if (isPlainObject(value) && isStringValue(value.uuid)) return value.uuid;
+  return undefined;
+}
+
+function sameUuid(actual?: string, expected?: string): boolean {
+  return Boolean(actual && expected && actual.toLowerCase() === expected.toLowerCase());
+}
+
+/** Fails closed unless every requested encounter identity is present and exact. */
+export function hasExpectedEncounterIdentity(
+  encounter: unknown,
+  expected: ExpectedEncounterIdentity,
+): encounter is OpenmrsEncounter {
+  if (!isOpenmrsEncounter(encounter) || !isStringValue(encounter.uuid)) return false;
+  return (
+    (!expected.encounterUuid || sameUuid(encounter.uuid, expected.encounterUuid)) &&
+    (!expected.patientUuid || sameUuid(resourceUuid(encounter.patient), expected.patientUuid)) &&
+    (!expected.formUuid || sameUuid(resourceUuid(encounter.form), expected.formUuid)) &&
+    (!expected.visitUuid || sameUuid(resourceUuid(encounter.visit), expected.visitUuid))
+  );
+}
+
+function getExpectedEncounterIdentity(context: Partial<FormProcessorContextProps>): ExpectedEncounterIdentity {
+  return {
+    encounterUuid: typeof context.formJson?.encounter === 'string' ? context.formJson.encounter : undefined,
+    patientUuid: context.patient?.id,
+    formUuid: context.formJson?.uuid,
+    visitUuid: context.visit?.uuid,
+  };
+}
+
 function useCustomHooks(context: Partial<FormProcessorContextProps>): CustomHooksResult {
   const [isLoading, setIsLoading] = useState(true);
-  const { encounter, isLoading: isLoadingEncounter } = useEncounter(context.formJson);
+  const { encounter, error: encounterError, isLoading: isLoadingEncounter } = useEncounter(context.formJson);
   const { encounterRole, isLoading: isLoadingEncounterRole } = useEncounterRole();
   const { isLoadingPatientPrograms, patientPrograms } = usePatientPrograms(context.patient?.id, context.formJson);
-  const encounterResource = useMemo(() => getEncounterResource(encounter), [encounter]);
+  const encounterIdentityError = useMemo(() => {
+    if (isLoadingEncounter || encounterError || isEmpty(context.formJson?.encounter)) return null;
+    return hasExpectedEncounterIdentity(encounter, getExpectedEncounterIdentity(context))
+      ? null
+      : new Error('Encounter identity verification failed');
+  }, [context, encounter, encounterError, isLoadingEncounter]);
+  const encounterResource = useMemo(
+    () => (encounterIdentityError ? null : getEncounterResource(encounter)),
+    [encounter, encounterIdentityError],
+  );
   const patientProgramUuids = useMemo(
     () =>
       (patientPrograms ?? [])
@@ -104,7 +153,7 @@ function useCustomHooks(context: Partial<FormProcessorContextProps>): CustomHook
   return {
     data: { encounter, patientPrograms, encounterRole },
     isLoading,
-    error: null,
+    error: encounterError ?? encounterIdentityError,
     updateContext,
   };
 }
@@ -166,9 +215,23 @@ export class EncounterFormProcessor extends FormProcessor {
   }
 
   async processSubmission(context: FormContextProps, abortController: AbortController): Promise<OpenmrsResource> {
-    const { encounterRole, encounterProvider, encounterDate, encounterLocation } = getMutableSessionProps(context);
     const t = (key: string, defaultValue: string, options?: Omit<TOptions, 'ns' | 'defaultValue'>): string =>
       translateFrom(formEngineAppName, key, defaultValue, options);
+    const requestedEncounterUuid = context.formJson?.encounter;
+    if (
+      context.sessionMode === 'edit' &&
+      (!isStringValue(requestedEncounterUuid) ||
+        !hasExpectedEncounterIdentity(context.domainObjectValue, getExpectedEncounterIdentity(context)))
+    ) {
+      throw new FormSubmissionError({
+        title: t('errorLoadingEncounter', 'The existing clinical record could not be loaded'),
+        subtitle: t('errorLoadingEncounterDescription', 'This form cannot be edited or saved. Close it and try again.'),
+        kind: 'error',
+        isLowContrast: false,
+      });
+    }
+
+    const { encounterRole, encounterProvider, encounterDate, encounterLocation } = getMutableSessionProps(context);
     const patientIdentifiers = preparePatientIdentifiers(context.formFields, encounterLocation);
     let hasDuplicateIdentifiers: boolean;
     try {

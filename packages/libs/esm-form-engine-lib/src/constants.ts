@@ -7,7 +7,7 @@ export const encounterRepresentation =
   'orders:(uuid,display,concept:(uuid,display),voided),' +
   'diagnoses:(uuid,certainty,condition,formFieldPath,formFieldNamespace,display,rank,voided,diagnosis:(coded:(uuid,display))),' +
   'obs:(uuid,obsDatetime,comment,voided,groupMembers,formFieldNamespace,formFieldPath,concept:(uuid,name:(uuid,name)),value:(uuid,name:(uuid,name),' +
-  'names:(uuid,conceptNameType,name))))';
+  'names:(uuid,conceptNameType,name))),form:(uuid,name),visit:(uuid))';
 export const FormsStore = 'forms-engine-store';
 export const PatientChartWorkspaceHeaderSlot = 'patient-chart-workspace-header-slot';
 export const codedTypes = ['radio', 'checkbox', 'select', 'content-switcher'];

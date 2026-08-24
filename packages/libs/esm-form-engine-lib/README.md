@@ -35,6 +35,13 @@ Key features of the Form Engine include:
   - **View Mode** - This mode allows the user to view data that has already been entered into the form. The form is rendered in a read-only mode.
   - **Embedded View** - This mode is a condensed version of the `view mode` without the section headers and form actions. It can be used to display entered form data within a widget.
 
+### Fail-closed encounter editing
+
+An edit session must load the encounter selected by `encounterUUID` before rendering editable values or accepting a
+submission. If that load is forbidden or fails, the engine shows a generic error without backend details and removes
+the submission workflow. The encounter processor independently rejects edit submissions that do not contain the
+expected encounter identity, so a failed update cannot degrade into creating or editing a different encounter.
+
 ## Documentation
 
 Read the full docs in the OpenMRS Wiki [here](https://openmrs.atlassian.net/wiki/spaces/projects/pages/68747273/O3+Form+Docs).

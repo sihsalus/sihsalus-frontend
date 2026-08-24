@@ -15,11 +15,25 @@ export function invalidateVisitHistory(mutate: KeyedMutator<unknown>, patientUui
   });
 }
 
+function keyContainsPatientEncounter(key: unknown, patientUuid: string): boolean {
+  if (typeof key === 'string') {
+    const [path, query = ''] = key.split('?', 2);
+    return path.includes(`${restBaseUrl}/encounter`) && new URLSearchParams(query).get('patient') === patientUuid;
+  }
+
+  if (Array.isArray(key)) {
+    return key.some((entry) => keyContainsPatientEncounter(entry, patientUuid));
+  }
+
+  if (key && typeof key === 'object') {
+    return Object.values(key).some((entry) => keyContainsPatientEncounter(entry, patientUuid));
+  }
+
+  return false;
+}
+
 export function invalidatePatientEncounters(mutate: KeyedMutator<unknown>, patientUuid: string): void {
-  void mutate(
-    (key: string | null) =>
-      typeof key === 'string' && key.includes(`${restBaseUrl}/encounter`) && key.includes(`patient=${patientUuid}`),
-  );
+  void mutate((key: unknown) => keyContainsPatientEncounter(key, patientUuid));
 }
 
 export function invalidateCurrentVisit(mutate: KeyedMutator<unknown>, patientUuid: string): void {

@@ -9057,6 +9057,7 @@ __metadata:
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
+    uuid: "npm:^14.0.0"
     vitest: "npm:^4.1.7"
   peerDependencies:
     "@openmrs/esm-framework": "*"

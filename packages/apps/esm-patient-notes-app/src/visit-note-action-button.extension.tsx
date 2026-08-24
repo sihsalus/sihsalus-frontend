@@ -6,7 +6,7 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import React, { type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
-import { visitNotesPrivilege } from './constants';
+import { visitNotesEditPrivilege } from './constants';
 
 /**
  * This button uses the patient chart store and MUST only be used
@@ -30,7 +30,7 @@ const VisitNoteActionButton: React.FC<PatientChartWorkspaceActionButtonProps> = 
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid ?? undefined);
 
   return (
-    <UserHasAccess privilege={visitNotesPrivilege}>
+    <UserHasAccess privilege={visitNotesEditPrivilege}>
       <ActionMenuButton2
         icon={(props: ComponentProps<typeof PenIcon>) => <PenIcon {...props} />}
         label={t('visitNote', 'Visit note')}

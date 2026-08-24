@@ -38,11 +38,13 @@ Los valores de `formsList` para consulta externa usan los nombres estables publi
 
 Anamnesis y SOAP son únicos por visita ambulatoria: cero coincidencias crea, una edita y más de una bloquea. Referencia es repetible porque cada derivación es un evento clínico independiente; siempre crea un encounter nuevo, pero siempre adjunto a la visita ambulatoria verificada.
 
-## Ubicación de Epicrisis
+## Informe de Atención de Consulta Externa
 
-Por decisión operativa del flujo médico, Epicrisis debe exponerse en Consulta Externa como etapa final, después de Referencia / Contrarreferencia. La implementación debe usar el formulario clínico publicado `Formulario Epicrisis Médica`; no debe enlazar `(Página 16) Epicrisis`, porque ese esquema corresponde al control del recién nacido.
+Consulta Externa ofrece una descarga PDF de la visita ambulatoria activa con identificación del paciente, establecimiento, profesional, signos vitales, anamnesis/SOAP, diagnósticos nativos CIE-10, plan y órdenes asociadas a los encounters de esa visita. El documento se genera íntegramente en el navegador; los datos no se envían a un servicio de PDF externo.
 
-Los cambios posteriores al contenido de Epicrisis o de `CE-SOAP-001-NOTA SOAP` deben crear una nueva versión del JSON para preservar las versiones históricas; no se debe sobrescribir una versión publicada.
+Este documento es un **Informe de Atención de Consulta Externa**, no una Epicrisis. La NTS 139 define la Epicrisis en el contexto del ingreso/hospitalización; el Manual de Usuario SIHCE Primer Nivel denomina al documento ambulatorio “Resumen de Consulta Externa” e “Informe de la atención”. Por ello este flujo no usa `Formulario Epicrisis Médica` ni `(Página 16) Epicrisis`.
+
+La descarga falla cerrada si no se puede verificar que la visita, su tipo ambulatorio y el paciente coincidan. La primera versión se limita intencionalmente a la visita activa: debe descargarse antes de finalizarla. Una futura descarga histórica necesitará un selector explícito de visita; nunca debe elegir silenciosamente “la última” del paciente.
 
 ## TODO QA/QLTY
 

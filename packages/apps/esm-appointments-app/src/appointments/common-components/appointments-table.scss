@@ -79,6 +79,8 @@
 }
 
 .searchbar {
+  width: 100%;
+
   input {
     background-color: colors.$gray-10;
   }
@@ -90,9 +92,35 @@
 }
 
 .toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: layout.$spacing-05;
+}
+
+@media (max-width: $breakpoint-small-desktop-max) {
+  .container {
+    overflow-x: auto;
+  }
+
+  .toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+
+    .searchbar {
+      grid-column: 1 / -1;
+    }
+  }
+}
+
+@media (max-width: $breakpoint-tablet-max) {
+  .toolbar {
+    grid-template-columns: minmax(0, 1fr);
+
+    > * {
+      width: 100%;
+      max-width: none;
+    }
+  }
 }
 
 .menuItem {

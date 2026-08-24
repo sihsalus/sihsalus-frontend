@@ -59,7 +59,7 @@ const AppointmentsHeader: React.FC<AppointmentHeaderProps> = ({ appointmentServi
               onChange={handleMultiSelectChange}
               selectedItems={selectedServiceTypes}
               titleText={t('service', 'Service')}
-              type="inline"
+              type="default"
               useTitleInItem
             />
           </div>

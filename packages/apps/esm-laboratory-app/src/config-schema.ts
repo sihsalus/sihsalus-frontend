@@ -1,6 +1,15 @@
 import { Type, validators } from '@openmrs/esm-framework';
 
-const allowedLabTableColumns = ['name', 'age', 'dob', 'sex', 'totalOrders', 'action', 'patientId'] as const;
+const allowedLabTableColumns = [
+  'name',
+  'age',
+  'dob',
+  'sex',
+  'sisCoverage',
+  'totalOrders',
+  'action',
+  'patientId',
+] as const;
 type LabTableColumnName = (typeof allowedLabTableColumns)[number];
 
 export const configSchema = {
@@ -11,7 +20,7 @@ export const configSchema = {
   },
   labTableColumns: {
     _type: Type.Array,
-    _default: ['name', 'age', 'sex', 'totalOrders', 'action'] as Array<LabTableColumnName>,
+    _default: ['name', 'age', 'sex', 'sisCoverage', 'totalOrders', 'action'] as Array<LabTableColumnName>,
     _description: 'The columns to display in the lab table. Allowed values: ' + allowedLabTableColumns.join(', '),
     _elements: {
       _type: Type.String,

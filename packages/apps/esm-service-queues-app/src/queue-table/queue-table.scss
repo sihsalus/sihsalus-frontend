@@ -101,24 +101,34 @@
   }
 
   .toolbar {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(14rem, 20rem);
     width: 100%;
-    align-items: center;
+    align-items: end;
     gap: layout.$spacing-05;
-    padding: 0 layout.$spacing-05 layout.$spacing-04 0;
+    padding: 0 layout.$spacing-05 layout.$spacing-04;
+  }
+
+  :global(.cds--data-table-content) {
+    overflow-x: auto;
   }
 }
 
 .triageFilter {
-  flex: 0 0 16rem;
+  width: 100%;
   min-width: 0;
+
+  :global(.cds--dropdown__wrapper),
+  :global(.cds--dropdown),
+  :global(.cds--list-box) {
+    width: 100%;
+  }
 }
 
-@media (max-width: 672px) {
+@media (max-width: $breakpoint-tablet-max) {
   .tableContainer .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    padding-right: 0;
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline: layout.$spacing-05;
   }
 
   .triageFilter {

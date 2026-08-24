@@ -26,6 +26,24 @@
   padding: 0 layout.$spacing-05;
 }
 
+.dashboardHeader {
+  align-items: center;
+  background-color: $ui-01;
+  border-bottom: 1px solid $ui-03;
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-04;
+  justify-content: space-between;
+  min-height: 3rem;
+  padding: layout.$spacing-03 layout.$spacing-05;
+}
+
+.dashboardHeading {
+  @include type.type-style("heading-03");
+  color: $text-02;
+  margin: 0;
+}
+
 .widgetContainer {
   padding: layout.$spacing-05 0;
 }

@@ -153,6 +153,20 @@ export interface Encounter {
     uuid: string;
     display: string;
   };
+  diagnoses?: Array<{
+    uuid: string;
+    display?: string;
+    certainty?: string;
+    rank?: number;
+    voided?: boolean;
+    diagnosis?: {
+      coded?: {
+        uuid: string;
+        display: string;
+      };
+      nonCoded?: string;
+    };
+  }>;
   obs: Array<Observation>;
   form: OpenmrsResource;
   patient: OpenmrsResource;

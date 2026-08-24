@@ -4,9 +4,9 @@ Microfrontend de notas del paciente. Muestra las notas registradas y proporciona
 
 ## Dependencias y acceso
 
-El manifest `src/routes.json` declara `fhir2 >= 1.2` y `webservices.rest >= 2.2.0`. El registro de una nota requiere una consulta activa y una sesión con provider.
+El manifest `src/routes.json` declara `fhir2 >= 1.2` y `webservices.rest >= 3.5.0`. Esta versión REST admite el UUID de cliente usado para la unicidad de creación. El registro de una nota requiere una consulta activa y una sesión con provider.
 
-El botón, la ventana y el workspace del resumen de consulta usan actualmente el privilegio `app:hoja.clinica.resumenConsulta`. Este guard frontend no reemplaza los privilegios del backend para leer o crear encounters, diagnósticos y observaciones.
+La lectura usa `app:hoja.clinica.resumenConsulta`; el botón, la ventana y el workspace de edición usan `app:hoja.clinica.resumenConsulta.editar`. El componente de lectura no ejecuta el fetch sin el primer privilegio. Estos guards frontend no reemplazan los privilegios REST del backend.
 
 ## Código prestacional
 
@@ -36,13 +36,31 @@ Al guardar, el UUID del miembro seleccionado se persiste como `valueCoded`:
 
 Los despliegues que sobrescribían `visitNoteConfig.codigoPrestacionalConceptUuid` con el UUID del ConvSet deben retirar o corregir ese override. Un override externo prevalece sobre el nuevo valor por defecto y mantendría el error de persistencia.
 
-La validación actual permite guardar sin seleccionar un código prestacional; en ese caso no se emite esta observación. La etiqueta de la interfaz todavía lo presenta como obligatorio, por lo que no se debe depender de esa indicación hasta alinear la validación y la UI.
+La validación exige seleccionar un miembro real del catálogo; el texto libre no genera un encounter.
 
 ## Configuración clínica
 
 Los conceptos usados para motivo de consulta, anamnesis, funciones biológicas, SOAP, órdenes, procedimientos, prescripciones, referencia y próxima cita viven bajo `visitNoteConfig`. Deben resolverse contra el content package del ambiente; no se deben sustituir con UUIDs hardcodeados dentro de componentes.
 
+Los defaults con contrato de datatype son:
+
+| Campo               | UUID                                   | Datatype REST         |
+| ------------------- | -------------------------------------- | --------------------- |
+| Exámenes auxiliares | `f0000204-0000-4000-8000-000000000204` | `Text`                |
+| Prescripciones      | `f0000215-0000-4000-8000-000000000215` | `Text`                |
+| Próxima cita        | `f0000004-0000-4000-8000-000000000004` | `Date` (`YYYY-MM-DD`) |
+
+Se usa `f0000004` para próxima cita porque es la pregunta `Date` de CE-001. El UUID histórico `47ce3ee6-ee9f-4037-901b-2a6381c4b340` se lee y se limpia como alias de migración, pero no recibe observaciones nuevas. El formulario `c75f120a-04ec-11e3-8780-2b40bef9a44b` conserva su UUID y debe ser provisionado por el paquete de content coordinado.
+
 `visitNoteConfig.encounterTypeUuid`, `formConceptUuid`, `clinicianEncounterRole` y `visitDiagnosesConceptUuid` también deben corresponder al modelo de encounters y diagnósticos del backend desplegado.
+
+## Unicidad y guardado
+
+La identidad canónica es paciente + atención + tipo de encounter + formulario. Las búsquedas REST solo envían filtros soportados (`patient`, `visit`, `encounterType`), recorren todas las páginas y verifican también `form` en cliente. Cero coincidencias crea, una edita y más de una falla cerrado.
+
+La creación asigna un UUID v5 determinista a esa identidad y el submit tiene un mutex síncrono. Un timeout o conflicto se consulta por UUID; aunque coincida la identidad, la UI exige recargar porque otro dispositivo pudo haber guardado contenido clínico distinto. Diagnósticos y observaciones se reconcilian dentro del mismo payload del encounter.
+
+Una revalidación en segundo plano mantiene el formulario montado para no perder cambios locales, pero bloquea el guardado mientras está en curso. Si la revalidación falla, muestra un aviso persistente y exige recargar antes de escribir sobre una versión que ya no pudo verificarse.
 
 ## Desarrollo
 

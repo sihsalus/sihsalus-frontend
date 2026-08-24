@@ -50,21 +50,32 @@ import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
 import { z } from 'zod';
 import type { ConfigObject } from '../config-schema';
-import { visitNotesPrivilege } from '../constants';
-import type { Concept, Diagnosis, DiagnosisPayload, VisitNotePayload } from '../types';
+import { visitNotesEditPrivilege } from '../constants';
+import type { Concept, Diagnosis, ObsPayload, VisitNotePayload } from '../types';
 import { defaultVisitNoteClinicalConceptUuids } from './visit-note-config-schema';
 import {
-  buildTipoDxObs,
-  deletePatientDiagnosis,
+  findActiveObservation,
+  getReferenceUuid,
+  reconcileDiagnosisTypeObservations,
+  reconcileEncounterDiagnoses,
+  reconcileEncounterProviders,
+  reconcileObservation,
+  type ExistingEncounterDiagnosis,
+  type ExistingEncounterProvider,
+} from './visit-note-submission';
+import {
+  AmbiguousVisitNoteSaveError,
+  assertCanonicalVisitNoteCanBeCreated,
   fetchDiagnosisConceptsByName,
   fetchPrestacionalConceptsByName,
-  getCertaintyForTipo,
+  getCanonicalVisitNoteEncounterUuid,
+  legacyNextAppointmentConceptUuid,
   legacyProceduresConceptUuids,
   legacyStructuredVisitNoteConceptUuids,
   parseTipoDxObs,
-  savePatientDiagnosis,
-  saveVisitNote,
+  saveCanonicalVisitNote,
   updateVisitNote,
+  useCanonicalVisitNoteEncounter,
   useProviderSignatureDetails,
   useVisitNoteClinicalContext,
   useVisitNotes,
@@ -88,7 +99,6 @@ type VisitNoteTextFieldName =
   | 'procedures'
   | 'prescriptions'
   | 'referral'
-  | 'nextAppointment'
   | 'clinicalNote';
 
 interface VisitContextWithUuid {
@@ -114,6 +124,7 @@ interface EncounterFormObs {
   formFieldPath?: string;
   uuid?: string;
   value?: EncounterObsValue;
+  voided?: boolean;
 }
 
 interface DiagnosesDisplayProps {
@@ -238,11 +249,21 @@ const createSchema = (_t: TFunction) => {
     procedures: z.string().optional(),
     prescriptions: z.string().optional(),
     referral: z.string().optional(),
-    nextAppointment: z.string().optional(),
+    nextAppointment: z.date().nullable().optional(),
     clinicalNote: z.string().optional(),
     images: z.array(z.any()).optional(),
   });
 };
+
+export function parseOpenmrsDateValue(value: unknown): Date | null {
+  if (value == null || value === '') return null;
+  const parsed = dayjs(value instanceof Date ? value : String(value));
+  return parsed.isValid() ? parsed.startOf('day').toDate() : null;
+}
+
+export function toOpenmrsDateValue(value?: Date | null): string | undefined {
+  return value && dayjs(value).isValid() ? dayjs(value).format('YYYY-MM-DD') : undefined;
+}
 
 export function getSubmittedEncounterDatetime(
   noteDate: Date,
@@ -271,13 +292,15 @@ export type EditableVisitNoteEncounter = Encounter & {
 };
 
 export interface VisitNotesFormProps {
+  canonicalVerificationStatus?: 'error' | 'validating' | 'verified';
   encounter?: EditableVisitNoteEncounter;
-  formContext: 'creating' | 'editing';
+  formContext?: 'creating' | 'editing';
+  onAfterSave?: () => unknown;
 }
 
 const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}>> = ({
   closeWorkspace,
-  workspaceProps: { formContext, encounter },
+  workspaceProps: { canonicalVerificationStatus = 'verified', formContext, encounter, onAfterSave },
   groupProps: { patientUuid, patient, visitContext },
 }) => {
   const isEditing: boolean = Boolean(formContext === 'editing' && encounter?.id);
@@ -317,8 +340,13 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
   } = visitNoteConfig;
   const currentVisitContext = visitContext as VisitContextWithUuid | null | undefined;
   const visitUuid = currentVisitContext?.visit?.uuid ?? currentVisitContext?.uuid;
+  const encounterVisitUuid = getReferenceUuid(
+    (encounter as (EditableVisitNoteEncounter & { visit?: string | { uuid?: string } }) | undefined)?.visit,
+  );
   const locationUuid =
-    encounter?.location?.uuid ?? currentVisitContext?.visit?.location?.uuid ?? currentVisitContext?.location?.uuid;
+    getReferenceUuid(encounter?.location) ??
+    currentVisitContext?.visit?.location?.uuid ??
+    currentVisitContext?.location?.uuid;
   const { clinicalContext } = useVisitNoteClinicalContext(patientUuid, visitUuid);
   const [isLoadingPrimaryDiagnoses, setIsLoadingPrimaryDiagnoses] = useState(false);
   const [isLoadingSecondaryDiagnoses, setIsLoadingSecondaryDiagnoses] = useState(false);
@@ -340,14 +368,15 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
   // Repetitivo. OpenMRS patientdiagnoses only stores certainty, so SIH.SALUS
   // keeps the exact MINSA type as an obs keyed by the diagnosis concept UUID.
   const [diagnosisTipos, setDiagnosisTipos] = useState<Record<string, string>>({});
+  const [hasDiagnosisChanges, setHasDiagnosisChanges] = useState(false);
+  const submitInProgressRef = useRef(false);
+  const isCanonicalVerificationBlocked = canonicalVerificationStatus !== 'verified';
 
   const visitNoteFormSchema = useMemo(() => createSchema(t), [t]);
-  const encounterObs = (encounter?.obs ?? []) as Array<EncounterFormObs>;
+  const encounterObs = useMemo(() => (encounter?.obs ?? []) as Array<EncounterFormObs>, [encounter?.obs]);
   const getEncounterObs = useCallback(
     (conceptUuid: string, formFieldPath?: string) =>
-      encounterObs.find(
-        (obs) => obs.concept?.uuid === conceptUuid && (!formFieldPath || obs.formFieldPath === formFieldPath),
-      ),
+      findActiveObservation(encounterObs, conceptUuid, formFieldPath) as EncounterFormObs | undefined,
     [encounterObs],
   );
   const getEncounterObsValue = useCallback(
@@ -406,6 +435,12 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
       getEncounterObsValue(soapPlanConceptUuid, 'soap-plan') ||
       getEncounterObsValue(legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath, 'soap-plan'),
     [getEncounterObsValue, soapPlanConceptUuid],
+  );
+  const getEncounterNextAppointmentValue = useCallback(
+    () =>
+      parseOpenmrsDateValue(getEncounterObsValue(nextAppointmentConceptUuid)) ??
+      parseOpenmrsDateValue(getEncounterObsValue(legacyNextAppointmentConceptUuid)),
+    [getEncounterObsValue, nextAppointmentConceptUuid],
   );
 
   const customResolver = useCallback(
@@ -468,10 +503,8 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
       procedures: isEditing ? getEncounterProceduresValue() : '',
       prescriptions: isEditing ? getEncounterObsValue(prescriptionsConceptUuid) : '',
       referral: isEditing ? getEncounterObsValue(referralConceptUuid) : '',
-      nextAppointment: isEditing ? getEncounterObsValue(nextAppointmentConceptUuid) : '',
-      clinicalNote: isEditing
-        ? String(encounter?.obs?.find((obs) => obs.concept.uuid === encounterNoteTextConceptUuid)?.value || '')
-        : '',
+      nextAppointment: isEditing ? getEncounterNextAppointmentValue() : null,
+      clinicalNote: isEditing ? getEncounterObsValue(encounterNoteTextConceptUuid) : '',
     },
   });
 
@@ -513,19 +546,27 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
     prefillTextField('procedures', clinicalContext?.procedures);
     prefillTextField('prescriptions', clinicalContext?.prescriptions);
     prefillTextField('referral', clinicalContext?.referral);
-    prefillTextField('nextAppointment', clinicalContext?.nextAppointment);
   }, [clinicalContext, prefillTextField, selectedCodigoPrestacional]);
+
+  useEffect(() => {
+    const nextAppointment = parseOpenmrsDateValue(clinicalContext?.nextAppointment);
+    if (!isEditing && nextAppointment && !dirtyFields.nextAppointment && !watch('nextAppointment')) {
+      setValue('nextAppointment', nextAppointment, { shouldDirty: true });
+    }
+  }, [clinicalContext?.nextAppointment, dirtyFields.nextAppointment, isEditing, setValue, watch]);
 
   useEffect(() => {
     if (encounter?.diagnoses?.length) {
       try {
-        const transformedDiagnoses = encounter.diagnoses.map((d) => ({
-          patient: patientUuid,
-          diagnosis: { coded: d.diagnosis.coded?.uuid },
-          certainty: d.certainty,
-          rank: d.rank,
-          display: d.display,
-        }));
+        const transformedDiagnoses = encounter.diagnoses
+          .filter((diagnosis) => !diagnosis.voided)
+          .map((d) => ({
+            patient: patientUuid,
+            diagnosis: { coded: d.diagnosis.coded?.uuid },
+            certainty: d.certainty,
+            rank: d.rank,
+            display: d.display,
+          }));
 
         const primaryDiagnoses = transformedDiagnoses.filter((d) => d.rank === 1);
         const secondaryDiagnoses = transformedDiagnoses.filter((d) => d.rank === 2);
@@ -540,9 +581,12 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
         if (Object.keys(restored).length) {
           setDiagnosisTipos(restored);
         }
-      } catch {
-        setError(new Error(t('errorTransformingDiagnoses', 'Error transforming diagnoses')));
-        createErrorHandler();
+      } catch (caughtError) {
+        const transformedError = new Error(t('errorTransformingDiagnoses', 'Error transforming diagnoses'), {
+          cause: caughtError,
+        });
+        setError(transformedError);
+        createErrorHandler()(transformedError);
       }
     }
   }, [encounter, patientUuid, t]);
@@ -559,7 +603,17 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
 
   const providerUuid = session?.currentProvider?.uuid;
   const encounterProvider = encounter?.encounterProviders?.[0]?.provider;
-  const registeredProviderUuid = isEditing ? encounterProvider?.uuid : providerUuid;
+  const encounterProvidersPayload = useMemo(
+    () =>
+      reconcileEncounterProviders(
+        isEditing,
+        (encounter?.encounterProviders ?? []) as Array<ExistingEncounterProvider>,
+        providerUuid,
+        clinicianEncounterRole,
+      ),
+    [clinicianEncounterRole, encounter?.encounterProviders, isEditing, providerUuid],
+  );
+  const registeredProviderUuid = isEditing ? (getReferenceUuid(encounterProvider) ?? providerUuid) : providerUuid;
   const { providerSignatureDetails } = useProviderSignatureDetails(registeredProviderUuid);
   const registeredProviderName =
     providerSignatureDetails.name ??
@@ -592,7 +646,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
             })
             .catch((e) => {
               setError(e);
-              createErrorHandler();
+              createErrorHandler()(e);
             });
         }
       }, searchTimeoutInMs),
@@ -618,7 +672,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
           .catch((e) => {
             setError(e);
             setIsLoadingPrestacionales(false);
-            createErrorHandler();
+            createErrorHandler()(e);
           });
       }, searchTimeoutInMs),
     [config.prestacionalConceptSourceName],
@@ -690,7 +744,11 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
       }
       setCombinedDiagnoses((combinedDiagnoses) => [...combinedDiagnoses, newDiagnosis]);
       // Default tipo = Presuntivo for every newly added diagnosis
-      setDiagnosisTipos((prev) => ({ ...prev, [conceptDiagnosisToAdd.uuid]: diagnosisTypePresuntivoUuid }));
+      setDiagnosisTipos((prev) => ({
+        ...prev,
+        [conceptDiagnosisToAdd.uuid]: diagnosisTypePresuntivoUuid,
+      }));
+      setHasDiagnosisChanges(true);
     },
     [createDiagnosis, setValue, clearErrors, diagnosisTypePresuntivoUuid],
   );
@@ -718,9 +776,15 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
         delete next[diagnosisToRemove.diagnosis.coded];
         return next;
       });
+      setHasDiagnosisChanges(true);
     },
     [combinedDiagnoses, selectedPrimaryDiagnoses, selectedSecondaryDiagnoses],
   );
+
+  const handleDiagnosisTypeChange = useCallback((diagnosisUuid: string, value: string) => {
+    setDiagnosisTipos((prev) => ({ ...prev, [diagnosisUuid]: value }));
+    setHasDiagnosisChanges(true);
+  }, []);
 
   const isDiagnosisNotSelected = (diagnosis: Concept) => {
     const isPrimaryDiagnosisSelected = selectedPrimaryDiagnoses.some(
@@ -769,7 +833,10 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
   };
 
   const onSubmit = useCallback(
-    (data: VisitNotesFormData) => {
+    async (data: VisitNotesFormData) => {
+      if (submitInProgressRef.current) return;
+      submitInProgressRef.current = true;
+
       const {
         noteDate,
         chiefComplaint,
@@ -788,221 +855,254 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
         images,
       } = data;
 
-      if (isPrimaryDiagnosisRequired && !selectedPrimaryDiagnoses.length) {
-        return;
-      }
-
-      if (!locationUuid) {
-        showSnackbar({
-          title: t('visitNoteSaveError', 'Error saving visit note'),
-          subtitle: t('activeVisitLocationRequired', 'An active visit with an operational UPSS is required.'),
-          kind: 'error',
-          isLowContrast: false,
-        });
-        return;
-      }
-
-      const encounterDatetime = getSubmittedEncounterDatetime(noteDate, Boolean(dirtyFields.noteDate));
-
-      const buildTextObs = (conceptUuid: string, value?: string, formFieldPath?: string) => {
-        const trimmedValue = value?.trim();
-        if (!trimmedValue) {
-          return null;
-        }
-        const existingObs = getEncounterObs(conceptUuid, formFieldPath);
-        return {
-          concept: { uuid: conceptUuid, display: '' },
-          value: trimmedValue,
-          ...(formFieldPath && { formFieldNamespace: 'visit-notes', formFieldPath }),
-          ...(existingObs && { uuid: existingObs.uuid }),
-        };
-      };
-
-      // The código prestacional is a concept picked from the MINSA catalog, so it is
-      // persisted as valueCoded. A text obs would need a Text question concept, and
-      // sending any value against the catalog ConvSet (datatype N/A) makes the
-      // backend reject the whole encounter with "Don't know how to handle ZZ".
-      const buildCodedObs = (conceptUuid: string, valueConceptUuid?: string, formFieldPath?: string) => {
-        if (!valueConceptUuid) {
-          return null;
-        }
-        const existingObs = getEncounterObs(conceptUuid, formFieldPath);
-        return {
-          concept: { uuid: conceptUuid, display: '' },
-          value: valueConceptUuid,
-          ...(formFieldPath && { formFieldNamespace: 'visit-notes', formFieldPath }),
-          ...(existingObs && { uuid: existingObs.uuid }),
-        };
-      };
-
-      const structuredObsList = [
-        buildCodedObs(codigoPrestacionalConceptUuid, selectedCodigoPrestacional?.uuid, 'codigo-prestacional'),
-        buildTextObs(chiefComplaintConceptUuid, chiefComplaint),
-        buildTextObs(illnessDurationConceptUuid, illnessDuration),
-        buildTextObs(biologicalFunctionsConceptUuid, biologicalFunctions, 'biological-functions'),
-        buildTextObs(soapSubjectiveConceptUuid, subjective),
-        buildTextObs(soapObjectiveConceptUuid, objective),
-        buildTextObs(soapAssessmentConceptUuid, assessment),
-        buildTextObs(soapPlanConceptUuid, plan, 'soap-plan'),
-        buildTextObs(labOrdersConceptUuid, auxiliaryExams),
-        buildTextObs(proceduresConceptUuid, procedures, 'procedures'),
-        buildTextObs(prescriptionsConceptUuid, prescriptions),
-        buildTextObs(referralConceptUuid, referral),
-        buildTextObs(nextAppointmentConceptUuid, nextAppointment),
-      ].filter((obs): obs is NonNullable<ReturnType<typeof buildTextObs>> => Boolean(obs));
-
-      // Persist the exact MINSA diagnosis type for each CIE-10 diagnosis.
-      // This complements patientdiagnoses.certainty, which cannot represent
-      // "Repetitivo" without losing information.
-      const tipoObsList = combinedDiagnoses.map((dx) =>
-        buildTipoDxObs(
-          diagnosisTypeConceptUuid,
-          dx.diagnosis.coded,
-          diagnosisTipos[dx.diagnosis.coded] ?? diagnosisTypePresuntivoUuid,
-        ),
-      );
-
-      const obsPayload = [
-        ...(clinicalNote?.trim()
-          ? [
-              {
-                concept: { uuid: encounterNoteTextConceptUuid, display: '' },
-                value: clinicalNote.trim(),
-                ...(getEncounterObs(encounterNoteTextConceptUuid) && {
-                  uuid: getEncounterObs(encounterNoteTextConceptUuid).uuid,
-                }),
-              },
-            ]
-          : []),
-        ...structuredObsList,
-        ...tipoObsList,
-      ];
-
-      const visitNotePayload: VisitNotePayload = {
-        ...(encounterDatetime ? { encounterDatetime } : {}),
-        form: formConceptUuid,
-        patient: patientUuid,
-        location: locationUuid,
-        encounterProviders: [
-          {
-            encounterRole: clinicianEncounterRole,
-            provider: providerUuid,
-          },
-        ],
-        encounterType: encounterTypeUuid,
-        obs: obsPayload,
-        // Only attach the visit when creating a note. On edit, omitting `visit`
-        // leaves the encounter's existing visit untouched.
-        ...(!isEditing && visitUuid && { visit: visitUuid }),
-      };
-
-      const abortController = new AbortController();
-
-      const savePromise = isEditing
-        ? updateVisitNote(abortController, encounter.id, visitNotePayload)
-        : saveVisitNote(abortController, visitNotePayload);
-
-      savePromise
-        .then((response) => {
-          if (response.status === 201 || response.status === 200) {
-            const encounterUuid = encounter?.id || response.data.uuid;
-
-            // If editing, first delete existing diagnoses
-            if (isEditing && encounter?.diagnoses?.length) {
-              return Promise.all(
-                encounter.diagnoses.map((diagnosis) => deletePatientDiagnosis(abortController, diagnosis.uuid)),
-              ).then(() => encounterUuid);
-            }
-
-            return encounterUuid;
-          }
-        })
-        .then((encounterUuid) => {
-          return Promise.all(
-            combinedDiagnoses.map((diagnosis) => {
-              const tipoUuid = diagnosisTipos[diagnosis.diagnosis.coded] ?? diagnosisTypePresuntivoUuid;
-              const diagnosesPayload: DiagnosisPayload = {
-                encounter: encounterUuid,
-                patient: patientUuid,
-                condition: null,
-                diagnosis: {
-                  coded: diagnosis.diagnosis.coded,
-                },
-                certainty: getCertaintyForTipo(tipoUuid, diagnosisTypeDefinitivoUuid),
-                rank: diagnosis.rank,
-              };
-              return savePatientDiagnosis(abortController, diagnosesPayload);
-            }),
-          );
-        })
-        .then(() => {
-          if (images?.length) {
-            return Promise.all(
-              images.map((image) => {
-                const imageToUpload: UploadedFile = {
-                  base64Content: image.base64Content,
-                  file: image.file,
-                  fileName: image.fileName,
-                  fileType: image.fileType,
-                  fileDescription: image.fileDescription || '',
-                };
-                return createAttachment(patientUuid, imageToUpload);
-              }),
-            );
-          } else {
-            return [];
-          }
-        })
-        .then(() => {
-          // Invalidate encounter and notes data since we created a new encounter with notes
-          // Also invalidate visit history table since the visit now has new encounters
-          invalidateVisitAndEncounterData(globalMutate, patientUuid);
-          mutateVisitNotes();
-
-          if (images?.length) {
-            mutateAttachments();
-          }
-
-          closeWorkspace({ discardUnsavedChanges: true });
-
-          showSnackbar({
-            isLowContrast: true,
-            subtitle: t('visitNoteNowVisible', 'It is now visible on the Visits page'),
-            kind: 'success',
-            title: t('visitNoteSaved', 'Visit note saved'),
-          });
-        })
-        .catch((err) => {
-          createErrorHandler();
-
+      try {
+        if (isCanonicalVerificationBlocked) {
           showSnackbar({
             title: t('visitNoteSaveError', 'Error saving visit note'),
+            subtitle:
+              canonicalVerificationStatus === 'validating'
+                ? t('visitNoteRevalidationInProgress', 'Wait while the active visit summary is verified.')
+                : t(
+                    'visitNoteRevalidationErrorDescription',
+                    'The latest visit summary could not be verified. Reload before saving.',
+                  ),
             kind: 'error',
             isLowContrast: false,
-            subtitle: err?.responseBody?.error?.message ?? err.message,
           });
+          return;
+        }
+        if (isPrimaryDiagnosisRequired && !selectedPrimaryDiagnoses.length) return;
+        if (!visitUuid) {
+          showSnackbar({
+            title: t('visitNoteSaveError', 'Error saving visit note'),
+            subtitle: t('activeVisitRequired', 'An active visit is required to save this visit note.'),
+            kind: 'error',
+            isLowContrast: false,
+          });
+          return;
+        }
+        if (isEditing && encounterVisitUuid !== visitUuid) {
+          showSnackbar({
+            title: t('visitNoteSaveError', 'Error saving visit note'),
+            subtitle: t(
+              'visitNoteVisitMismatch',
+              'This visit note belongs to a different visit and cannot be edited from the active visit.',
+            ),
+            kind: 'error',
+            isLowContrast: false,
+          });
+          return;
+        }
+        if (!locationUuid) {
+          showSnackbar({
+            title: t('visitNoteSaveError', 'Error saving visit note'),
+            subtitle: t('activeVisitLocationRequired', 'An active visit with an operational UPSS is required.'),
+            kind: 'error',
+            isLowContrast: false,
+          });
+          return;
+        }
+        if (!encounterProvidersPayload.length) {
+          showSnackbar({
+            title: t('visitNoteSaveError', 'Error saving visit note'),
+            subtitle: t('activeProviderRequired', 'An active clinical provider is required to save this visit note.'),
+            kind: 'error',
+            isLowContrast: false,
+          });
+          return;
+        }
+
+        const encounterDatetime = getSubmittedEncounterDatetime(noteDate, Boolean(dirtyFields.noteDate));
+        const structuredObsList: Array<ObsPayload> = [
+          ...reconcileObservation(
+            encounterObs,
+            codigoPrestacionalConceptUuid,
+            selectedCodigoPrestacional?.uuid,
+            'codigo-prestacional',
+            [
+              {
+                conceptUuid: legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath,
+                formFieldPath: 'codigo-prestacional',
+              },
+            ],
+          ),
+          ...reconcileObservation(encounterObs, chiefComplaintConceptUuid, chiefComplaint),
+          ...reconcileObservation(encounterObs, illnessDurationConceptUuid, illnessDuration),
+          ...reconcileObservation(
+            encounterObs,
+            biologicalFunctionsConceptUuid,
+            biologicalFunctions,
+            'biological-functions',
+            [
+              {
+                conceptUuid: legacyStructuredVisitNoteConceptUuids.anamnesisText,
+                formFieldPath: 'biological-functions',
+              },
+            ],
+          ),
+          ...reconcileObservation(encounterObs, soapSubjectiveConceptUuid, subjective),
+          ...reconcileObservation(encounterObs, soapObjectiveConceptUuid, objective),
+          ...reconcileObservation(encounterObs, soapAssessmentConceptUuid, assessment),
+          ...reconcileObservation(encounterObs, soapPlanConceptUuid, plan, 'soap-plan', [
+            {
+              conceptUuid: legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath,
+              formFieldPath: 'soap-plan',
+            },
+          ]),
+          ...reconcileObservation(encounterObs, labOrdersConceptUuid, auxiliaryExams),
+          ...reconcileObservation(encounterObs, proceduresConceptUuid, procedures, 'procedures', [
+            {
+              conceptUuid: legacyProceduresConceptUuids.textWithProceduresPath,
+              formFieldPath: 'procedures',
+            },
+            {
+              conceptUuid: legacyProceduresConceptUuids.procedure,
+              formFieldPath: 'procedures',
+            },
+            { conceptUuid: legacyProceduresConceptUuids.procedure },
+          ]),
+          ...reconcileObservation(encounterObs, prescriptionsConceptUuid, prescriptions),
+          ...reconcileObservation(encounterObs, referralConceptUuid, referral),
+          ...reconcileObservation(
+            encounterObs,
+            nextAppointmentConceptUuid,
+            toOpenmrsDateValue(nextAppointment),
+            undefined,
+            [{ conceptUuid: legacyNextAppointmentConceptUuid }],
+          ),
+        ];
+        const tipoObsList = reconcileDiagnosisTypeObservations(
+          combinedDiagnoses,
+          encounterObs,
+          diagnosisTipos,
+          diagnosisTypeConceptUuid,
+          diagnosisTypePresuntivoUuid,
+        );
+        const obsPayload: Array<ObsPayload> = [
+          ...reconcileObservation(encounterObs, encounterNoteTextConceptUuid, clinicalNote),
+          ...structuredObsList,
+          ...tipoObsList,
+        ];
+        const diagnosesPayload = reconcileEncounterDiagnoses(
+          combinedDiagnoses,
+          (encounter?.diagnoses ?? []) as Array<ExistingEncounterDiagnosis>,
+          diagnosisTipos,
+          diagnosisTypePresuntivoUuid,
+          diagnosisTypeDefinitivoUuid,
+          patientUuid,
+        );
+        const visitNotePayload: VisitNotePayload = {
+          ...(encounterDatetime ? { encounterDatetime } : {}),
+          ...(!isEditing && {
+            uuid: getCanonicalVisitNoteEncounterUuid(patientUuid, visitUuid, encounterTypeUuid, formConceptUuid),
+            visit: visitUuid,
+          }),
+          form: formConceptUuid,
+          patient: patientUuid,
+          location: locationUuid,
+          encounterProviders: encounterProvidersPayload,
+          encounterType: encounterTypeUuid,
+          obs: obsPayload,
+          diagnoses: diagnosesPayload,
+        };
+        const abortController = new AbortController();
+
+        if (!isEditing) {
+          await assertCanonicalVisitNoteCanBeCreated(patientUuid, visitUuid, encounterTypeUuid, formConceptUuid);
+        }
+        const response = isEditing
+          ? await updateVisitNote(abortController, encounter.id, visitNotePayload)
+          : await saveCanonicalVisitNote(abortController, visitNotePayload);
+        if (response.status !== 200 && response.status !== 201) {
+          throw new Error('The visit note save was rejected.');
+        }
+
+        try {
+          await onAfterSave?.();
+        } catch (callbackError) {
+          createErrorHandler()(callbackError);
+        }
+
+        let hasAttachmentFailures = false;
+        if (images?.length) {
+          const attachmentResults = await Promise.allSettled(
+            images.map((image) => {
+              const imageToUpload: UploadedFile = {
+                base64Content: image.base64Content,
+                file: image.file,
+                fileName: image.fileName,
+                fileType: image.fileType,
+                fileDescription: image.fileDescription || '',
+              };
+              return createAttachment(patientUuid, imageToUpload);
+            }),
+          );
+          hasAttachmentFailures = attachmentResults.some((result) => result.status === 'rejected');
+          attachmentResults.forEach((result) => {
+            if (result.status === 'rejected') createErrorHandler()(result.reason);
+          });
+        }
+
+        invalidateVisitAndEncounterData(globalMutate, patientUuid);
+        mutateVisitNotes();
+        if (images?.length) mutateAttachments();
+        closeWorkspace({ discardUnsavedChanges: true });
+        showSnackbar(
+          hasAttachmentFailures
+            ? {
+                isLowContrast: false,
+                subtitle: t(
+                  'visitNoteAttachmentSaveWarning',
+                  'The visit note was saved, but one or more attachments could not be uploaded.',
+                ),
+                kind: 'warning',
+                title: t('visitNoteSaved', 'Visit note saved'),
+              }
+            : {
+                isLowContrast: true,
+                subtitle: t('visitNoteNowVisible', 'It is now visible on the Visits page'),
+                kind: 'success',
+                title: t('visitNoteSaved', 'Visit note saved'),
+              },
+        );
+      } catch (caughtError) {
+        createErrorHandler()(caughtError);
+        showSnackbar({
+          title: t('visitNoteSaveError', 'Error saving visit note'),
+          kind: 'error',
+          isLowContrast: false,
+          subtitle:
+            caughtError instanceof AmbiguousVisitNoteSaveError
+              ? t('visitNoteSaveAmbiguous', 'The visit note may already have been saved. Reload before trying again.')
+              : t('visitNoteSaveRejected', 'The visit note could not be saved.'),
         });
+      } finally {
+        submitInProgressRef.current = false;
+      }
     },
     [
-      clinicianEncounterRole,
       chiefComplaintConceptUuid,
       closeWorkspace,
       combinedDiagnoses,
       biologicalFunctionsConceptUuid,
       codigoPrestacionalConceptUuid,
+      canonicalVerificationStatus,
       diagnosisTipos,
       diagnosisTypeConceptUuid,
       diagnosisTypeDefinitivoUuid,
       diagnosisTypePresuntivoUuid,
       dirtyFields.noteDate,
+      encounterProvidersPayload,
+      encounterVisitUuid,
+      encounterObs,
       encounter?.diagnoses,
       encounter?.id,
       encounterNoteTextConceptUuid,
       encounterTypeUuid,
       formConceptUuid,
-      getEncounterObs,
       globalMutate,
       illnessDurationConceptUuid,
+      isCanonicalVerificationBlocked,
       isEditing,
       isPrimaryDiagnosisRequired,
       labOrdersConceptUuid,
@@ -1010,10 +1110,10 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
       mutateAttachments,
       mutateVisitNotes,
       nextAppointmentConceptUuid,
+      onAfterSave,
       patientUuid,
       prescriptionsConceptUuid,
       proceduresConceptUuid,
-      providerUuid,
       referralConceptUuid,
       selectedCodigoPrestacional?.uuid,
       selectedPrimaryDiagnoses.length,
@@ -1028,7 +1128,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
 
   const onError = () => undefined;
 
-  const hasUserUnsavedChanges = Object.keys(dirtyFields).length > 0;
+  const hasUserUnsavedChanges = Object.keys(dirtyFields).length > 0 || hasDiagnosisChanges;
 
   return (
     <Workspace2 title={t('visitNoteWorkspaceTitle', 'Visit note')} hasUnsavedChanges={hasUserUnsavedChanges}>
@@ -1108,8 +1208,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
                         name={`tipo-primary-${index}`}
                         valueSelected={diagnosisTipos[diagnosis.diagnosis.coded] ?? diagnosisTypePresuntivoUuid}
                         onChange={(value) =>
-                          value != null &&
-                          setDiagnosisTipos((prev) => ({ ...prev, [diagnosis.diagnosis.coded]: String(value) }))
+                          value != null && handleDiagnosisTypeChange(diagnosis.diagnosis.coded, String(value))
                         }
                         orientation="horizontal"
                       >
@@ -1147,8 +1246,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
                         name={`tipo-secondary-${index}`}
                         valueSelected={diagnosisTipos[diagnosis.diagnosis.coded] ?? diagnosisTypePresuntivoUuid}
                         onChange={(value) =>
-                          value != null &&
-                          setDiagnosisTipos((prev) => ({ ...prev, [diagnosis.diagnosis.coded]: String(value) }))
+                          value != null && handleDiagnosisTypeChange(diagnosis.diagnosis.coded, String(value))
                         }
                         orientation="horizontal"
                       >
@@ -1381,13 +1479,29 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
               labelText={t('referral', 'Referral / interconsultation')}
               placeholder={t('referralPlaceholder', 'Destination service, reason and priority')}
             />
-            <VisitNoteTextAreaRow
-              control={control}
-              name="nextAppointment"
-              labelText={t('nextAppointment', 'Next appointment')}
-              placeholder={t('nextAppointmentPlaceholder', 'Date or follow-up instruction')}
-              rows={2}
-            />
+            <Row className={styles.row}>
+              <Column sm={1}>
+                <span className={styles.columnLabel}>{t('nextAppointment', 'Next appointment')}</span>
+              </Column>
+              <Column sm={3}>
+                <Controller
+                  name="nextAppointment"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <ResponsiveWrapper>
+                      <OpenmrsDatePicker
+                        {...field}
+                        id="nextAppointment"
+                        labelText={t('nextAppointment', 'Next appointment')}
+                        minDate={new Date()}
+                        invalid={Boolean(fieldState.error?.message)}
+                        invalidText={fieldState.error?.message}
+                      />
+                    </ResponsiveWrapper>
+                  )}
+                />
+              </Column>
+            </Row>
             <Row className={styles.row}>
               <Column sm={1}>
                 <span className={styles.columnLabel}>{t('note', 'Note')}</span>
@@ -1455,7 +1569,33 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
             </Row>
           </Stack>
         </div>
-        <ButtonSet className={classnames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
+        {canonicalVerificationStatus === 'error' && (
+          <InlineNotification
+            hideCloseButton
+            kind="error"
+            lowContrast
+            title={t('visitNoteRevalidationError', 'The visit summary could not be refreshed')}
+            subtitle={t(
+              'visitNoteRevalidationErrorDescription',
+              'The latest visit summary could not be verified. Reload before saving.',
+            )}
+          />
+        )}
+        {canonicalVerificationStatus === 'validating' && (
+          <InlineNotification
+            hideCloseButton
+            kind="info"
+            lowContrast
+            title={t('visitNoteRevalidationInProgressTitle', 'Verifying the visit summary')}
+            subtitle={t('visitNoteRevalidationInProgress', 'Wait while the active visit summary is verified.')}
+          />
+        )}
+        <ButtonSet
+          className={classnames({
+            [styles.tablet]: isTablet,
+            [styles.desktop]: !isTablet,
+          })}
+        >
           <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
             {t('discard', 'Discard')}
           </Button>
@@ -1463,7 +1603,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
             className={styles.button}
             kind="primary"
             onClick={() => handleSubmit}
-            disabled={!hasUserUnsavedChanges || isSubmitting}
+            disabled={!hasUserUnsavedChanges || isSubmitting || isCanonicalVerificationBlocked}
             type="submit"
           >
             {isSubmitting ? (
@@ -1753,12 +1893,36 @@ function Loader() {
 }
 
 const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}>> = (props) => {
+  const { t } = useTranslation();
   const session = useSession();
-  const canEditVisitNotes = userHasAccess(visitNotesPrivilege, session?.user);
+  const canEditVisitNotes = userHasAccess(visitNotesEditPrivilege, session?.user);
+  const config = useConfig<ConfigObject>();
+  const visitNoteConfig = {
+    ...defaultVisitNoteClinicalConceptUuids,
+    ...config.visitNoteConfig,
+  };
+  const currentVisitContext = props.groupProps.visitContext as VisitContextWithUuid | null | undefined;
+  const visitUuid = currentVisitContext?.visit?.uuid ?? currentVisitContext?.uuid;
+  const resolution = useCanonicalVisitNoteEncounter(
+    canEditVisitNotes ? props.groupProps.patientUuid : null,
+    canEditVisitNotes ? visitUuid : null,
+    canEditVisitNotes ? visitNoteConfig.encounterTypeUuid : null,
+    canEditVisitNotes ? visitNoteConfig.formConceptUuid : null,
+  );
+  const requestedOnAfterSave = props.workspaceProps?.onAfterSave;
+  const handleAfterSave = useCallback(async () => {
+    await Promise.allSettled([
+      Promise.resolve().then(() => resolution.mutate()),
+      Promise.resolve().then(() => requestedOnAfterSave?.()),
+    ]);
+  }, [requestedOnAfterSave, resolution]);
 
   useEffect(() => {
     if (!canEditVisitNotes) {
-      void props.closeWorkspace({ closeWindow: true, discardUnsavedChanges: true });
+      void props.closeWorkspace({
+        closeWindow: true,
+        discardUnsavedChanges: true,
+      });
     }
   }, [canEditVisitNotes, props.closeWorkspace]);
 
@@ -1766,7 +1930,59 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     return null;
   }
 
-  return <VisitNotesFormContent {...props} />;
+  if (resolution.status === 'loading') {
+    return (
+      <Workspace2 title={t('visitNoteWorkspaceTitle', 'Visit note')}>
+        <InlineLoading description={t('resolvingVisitNote', 'Checking the active visit summary...')} status="active" />
+      </Workspace2>
+    );
+  }
+
+  if (resolution.status !== 'ready') {
+    return (
+      <Workspace2 title={t('visitNoteWorkspaceTitle', 'Visit note')}>
+        <InlineNotification
+          hideCloseButton
+          kind="error"
+          lowContrast
+          title={t('visitNoteResolutionError', 'The visit summary cannot be opened')}
+          subtitle={
+            resolution.status === 'ambiguous'
+              ? t(
+                  'visitNoteDuplicateEncounterError',
+                  'More than one summary exists for the active visit. Resolve the duplicate before editing.',
+                )
+              : t('visitNoteVerificationError', 'The active visit summary could not be verified. Reload and try again.')
+          }
+        />
+      </Workspace2>
+    );
+  }
+
+  const encounter = resolution.encounter
+    ? ({
+        ...resolution.encounter,
+        id: resolution.encounter.uuid,
+        rawDatetime: resolution.encounter.encounterDatetime,
+      } as EditableVisitNoteEncounter)
+    : undefined;
+
+  return (
+    <VisitNotesFormContent
+      {...props}
+      workspaceProps={{
+        ...props.workspaceProps,
+        canonicalVerificationStatus: resolution.revalidationError
+          ? 'error'
+          : resolution.isValidating
+            ? 'validating'
+            : 'verified',
+        encounter,
+        formContext: encounter ? 'editing' : 'creating',
+        onAfterSave: handleAfterSave,
+      }}
+    />
+  );
 };
 
 export default VisitNotesForm;

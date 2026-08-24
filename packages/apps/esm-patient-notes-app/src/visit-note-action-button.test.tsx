@@ -25,7 +25,12 @@ describe('VisitNoteActionButton', () => {
 
     render(
       <VisitNoteActionButton
-        groupProps={{ patientUuid: 'patient-uuid', mutateVisitContext: null, patient: null, visitContext: null }}
+        groupProps={{
+          patientUuid: 'patient-uuid',
+          mutateVisitContext: null,
+          patient: null,
+          visitContext: null,
+        }}
       />,
     );
 
@@ -33,7 +38,7 @@ describe('VisitNoteActionButton', () => {
     // tablet too, and gated by the same privilege.
     expect(screen.getByRole('button', { name: /Note/i })).toBeInTheDocument();
     expect(mockUserHasAccess.mock.calls.at(-1)?.[0]).toMatchObject({
-      privilege: 'app:hoja.clinica.resumenConsulta',
+      privilege: 'app:hoja.clinica.resumenConsulta.editar',
     });
   });
 
@@ -54,7 +59,7 @@ describe('VisitNoteActionButton', () => {
     const visitNoteButton = screen.getByRole('button', { name: /Note/i });
     expect(visitNoteButton).toBeInTheDocument();
     expect(mockUserHasAccess.mock.calls.at(-1)?.[0]).toMatchObject({
-      privilege: 'app:hoja.clinica.resumenConsulta',
+      privilege: 'app:hoja.clinica.resumenConsulta.editar',
     });
   });
 
@@ -63,7 +68,12 @@ describe('VisitNoteActionButton', () => {
 
     render(
       <VisitNoteActionButton
-        groupProps={{ patientUuid: 'patient-uuid', mutateVisitContext: null, patient: null, visitContext: null }}
+        groupProps={{
+          patientUuid: 'patient-uuid',
+          mutateVisitContext: null,
+          patient: null,
+          visitContext: null,
+        }}
       />,
     );
 

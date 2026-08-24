@@ -1,6 +1,6 @@
 import { Button, ButtonSet, Column, ComboBox, Form, Stack } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { showSnackbar, useConfig, useSession, Workspace2 } from '@openmrs/esm-framework';
+import { showSnackbar, useConfig, Workspace2 } from '@openmrs/esm-framework';
 import React from 'react';
 import type { SubmitHandler } from 'react-hook-form';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
@@ -9,7 +9,12 @@ import type { z } from 'zod';
 
 import type { ConfigObject } from '../config-schema';
 import PatientSearchCreate from '../relationships/forms/patient-search-create-form.component';
-import { relationshipFormSchema, saveRelationship } from '../relationships/relationship.resources';
+import {
+  getRelationshipRetryPersonUuid,
+  RelationshipSaveError,
+  relationshipFormSchema,
+  saveRelationship,
+} from '../relationships/relationship.resources';
 import { uppercaseText } from '../utils/expression-helper';
 import type { FichaFamiliarWorkspaceComponentProps } from '../workspace-utils';
 
@@ -29,7 +34,6 @@ const FamilyRelationshipForm: React.FC<FichaFamiliarWorkspaceComponentProps> = (
   const { familyRelationshipsTypeList } = config;
   const familyRelationshipTypesUUIDs = new Set(familyRelationshipsTypeList.map((r) => r.uuid));
   const familyRelationshipTypes = mappedRelationshipTypes.filter((type) => familyRelationshipTypesUUIDs.has(type.uuid));
-  const session = useSession();
   const relationshipTypes = familyRelationshipTypes.map((relationship) => ({
     id: `${relationship.uuid}:${relationship.direction}`,
     direction: relationship.direction,
@@ -46,7 +50,7 @@ const FamilyRelationshipForm: React.FC<FichaFamiliarWorkspaceComponentProps> = (
     })
     .refine((data) => !(data.mode === 'create' && !data.personBInfo), {
       path: ['personBInfo'],
-      message: t('patientInformationRequired', 'Por favor proporcione la información del paciente'),
+      message: t('personInformationRequired', 'Por favor proporcione la información de la persona'),
     })
     .refine(
       (data) => {
@@ -90,18 +94,17 @@ const FamilyRelationshipForm: React.FC<FichaFamiliarWorkspaceComponentProps> = (
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     try {
-      await saveRelationship(data, config, session, []);
-
-      showSnackbar({
-        isLowContrast: true,
-        title: t('success', 'Éxito'),
-        subtitle: t('relationshipSavedSuccessfully', 'La relación familiar se guardó exitosamente'),
-        kind: 'success',
-      });
-
+      await saveRelationship(data, config);
       closeWorkspace();
     } catch (error) {
-      console.error('Failed to save relationship:', error);
+      const retryPersonUuid = getRelationshipRetryPersonUuid(error);
+      if (retryPersonUuid) {
+        form.setValue('personB', retryPersonUuid, { shouldDirty: true });
+      }
+
+      if (error instanceof RelationshipSaveError) {
+        return;
+      }
 
       showSnackbar({
         isLowContrast: false,
@@ -120,7 +123,6 @@ const FamilyRelationshipForm: React.FC<FichaFamiliarWorkspaceComponentProps> = (
         onInvalid={(event) => {
           event.preventDefault();
           const fieldsWithError = Object.keys(form.formState.errors).join(', ');
-          console.warn('Validation errors:', form.formState.errors);
 
           showSnackbar({
             title: t('validationError', 'Error de validación'),

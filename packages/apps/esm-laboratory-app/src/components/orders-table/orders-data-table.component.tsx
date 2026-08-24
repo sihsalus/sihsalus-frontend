@@ -7,6 +7,7 @@ import {
   OverflowMenuItem,
   Pagination,
   Search,
+  Tag,
   Table,
   TableBody,
   TableCell,
@@ -21,6 +22,7 @@ import {
   TableToolbarContent,
   Tile,
 } from '@carbon/react';
+import { fetchVisitInsurance, getSisFinancingState, type SisFinancingState } from '@openmrs/esm-patient-common-lib';
 import {
   age,
   ExtensionSlot,
@@ -73,6 +75,12 @@ const labTableColumnSpec = {
     headerLabelDefault: 'Sex',
     key: 'patientSex',
   },
+  sisCoverage: {
+    // t('sisCoverage', 'SIS coverage')
+    headerLabelKey: 'sisCoverage',
+    headerLabelDefault: 'SIS coverage',
+    key: 'sisCoverage',
+  },
   totalOrders: {
     // t('totalOrders', 'Total Orders')
     headerLabelKey: 'totalOrders',
@@ -91,6 +99,43 @@ const labTableColumnSpec = {
     headerLabelDefault: 'Patient ID',
     key: 'patientId',
   },
+};
+
+type SisCoverageDisplayState = 'active' | 'inactive' | 'none' | 'review' | 'loading';
+type VisitCoverageLookup = Record<string, SisFinancingState | 'error'>;
+
+const getSisCoverageDisplayState = (
+  visitUuids: Array<string>,
+  visitCoverage: VisitCoverageLookup | undefined,
+  isLoading: boolean,
+): SisCoverageDisplayState => {
+  if (!visitUuids.length) {
+    return 'review';
+  }
+
+  const states = visitUuids.map((visitUuid) => visitCoverage?.[visitUuid]);
+  if (isLoading && states.some((state) => !state)) {
+    return 'loading';
+  }
+  if (states.some((state) => !state || state === 'error')) {
+    return 'review';
+  }
+
+  const uniqueStates = new Set(states);
+  if (uniqueStates.size !== 1) {
+    return 'review';
+  }
+
+  switch (states[0]) {
+    case 'active':
+      return 'active';
+    case 'inactive':
+      return 'inactive';
+    case 'notApplicable':
+      return 'none';
+    default:
+      return 'review';
+  }
 };
 
 export interface OrdersDataTableProps {
@@ -348,6 +393,13 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
                   : undefined,
               patientDob: patient?.person?.birthdate ? formatDate(parseDate(patient.person.birthdate)) : undefined,
               patientSex: patient?.person?.gender,
+              visitUuids: [
+                ...new Set(
+                  labOrdersForPatient
+                    .map((order) => order.encounter?.visit?.uuid)
+                    .filter((visitUuid): visitUuid is string => Boolean(visitUuid)),
+                ),
+              ],
               totalOrders: flattenedLabOrdersForPatient.length,
               orders: flattenedLabOrdersForPatient,
               originalOrders: labOrdersForPatient,
@@ -431,6 +483,25 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   const [currentPageSize, setPageSize] = useState(10);
   const { goTo, results: paginatedLabOrders, currentPage } = usePagination(searchResults, currentPageSize);
 
+  const visibleVisitUuids = useMemo(
+    () => [...new Set(paginatedLabOrders.flatMap((groupedOrder) => groupedOrder.visitUuids))].sort(),
+    [paginatedLabOrders],
+  );
+  const { data: visibleVisitCoverage, isLoading: isVisitCoverageLoading } = useSWR<VisitCoverageLookup>(
+    visibleVisitUuids.length ? ['laboratory-sis-coverage', ...visibleVisitUuids] : null,
+    async (key: Array<string>) => {
+      const visitUuids = key.slice(1);
+      const results = await Promise.allSettled(visitUuids.map((visitUuid) => fetchVisitInsurance(visitUuid)));
+
+      return Object.fromEntries(
+        results.map((result, index) => [
+          visitUuids[index],
+          result.status === 'fulfilled' ? getSisFinancingState(result.value) : 'error',
+        ]),
+      );
+    },
+  );
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset page to 1 when filters change
   useEffect(() => {
     goTo(1);
@@ -458,36 +529,60 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   }, []);
 
   const tableRows = useMemo(() => {
-    return paginatedLabOrders.map((groupedOrder) => ({
-      ...groupedOrder,
-      id: groupedOrder.patientUuid,
-      action: groupedOrder.orders.some((o) => o.fulfillerStatus === 'COMPLETED') ? (
-        <div className={styles.actionCell}>
-          <OverflowMenu aria-label="Actions" flipped iconDescription="Actions">
-            <ExtensionSlot
-              className={styles.transitionOverflowMenuItemSlot}
-              name="transition-overflow-menu-item-slot"
-              state={{ patientUuid: groupedOrder.patientUuid }}
-              // Without tabIndex={0} here, the overflow menu incorrectly sets initial focus to the second item instead of the first.
-              tabIndex={0}
-            />
-            {canEdit ? (
+    return paginatedLabOrders.map((groupedOrder) => {
+      const sisCoverageState = getSisCoverageDisplayState(
+        groupedOrder.visitUuids,
+        visibleVisitCoverage,
+        isVisitCoverageLoading,
+      );
+      const sisCoverage = {
+        active: <Tag type="green">{t('activeSis', 'Active SIS')}</Tag>,
+        inactive: <Tag type="red">{t('inactiveSis', 'Inactive SIS')}</Tag>,
+        none: <Tag type="red">{t('noSis', 'No SIS')}</Tag>,
+        review: <Tag type="cool-gray">{t('verifySis', 'Verify SIS')}</Tag>,
+        loading: <Tag type="gray">{t('checkingSis', 'Checking SIS')}</Tag>,
+      }[sisCoverageState];
+
+      return {
+        ...groupedOrder,
+        id: groupedOrder.patientUuid,
+        sisCoverage,
+        action: groupedOrder.orders.some((o) => o.fulfillerStatus === 'COMPLETED') ? (
+          <div className={styles.actionCell}>
+            <OverflowMenu aria-label="Actions" flipped iconDescription="Actions">
+              <ExtensionSlot
+                className={styles.transitionOverflowMenuItemSlot}
+                name="transition-overflow-menu-item-slot"
+                state={{ patientUuid: groupedOrder.patientUuid }}
+                // Without tabIndex={0} here, the overflow menu incorrectly sets initial focus to the second item instead of the first.
+                tabIndex={0}
+              />
+              {canEdit ? (
+                <OverflowMenuItem
+                  className={styles.menuitem}
+                  itemText={t('editResults', 'Edit results')}
+                  onClick={() => handleLaunchModal(groupedOrder.originalOrders)}
+                />
+              ) : null}
               <OverflowMenuItem
                 className={styles.menuitem}
-                itemText={t('editResults', 'Edit results')}
-                onClick={() => handleLaunchModal(groupedOrder.originalOrders)}
+                itemText={t('printTestResults', 'Print test results')}
+                onClick={() => handlePrintModal(groupedOrder.originalOrders)}
               />
-            ) : null}
-            <OverflowMenuItem
-              className={styles.menuitem}
-              itemText={t('printTestResults', 'Print test results')}
-              onClick={() => handlePrintModal(groupedOrder.originalOrders)}
-            />
-          </OverflowMenu>
-        </div>
-      ) : null,
-    }));
-  }, [canEdit, handleLaunchModal, handlePrintModal, paginatedLabOrders, t]);
+            </OverflowMenu>
+          </div>
+        ) : null,
+      };
+    });
+  }, [
+    canEdit,
+    handleLaunchModal,
+    handlePrintModal,
+    isVisitCoverageLoading,
+    paginatedLabOrders,
+    t,
+    visibleVisitCoverage,
+  ]);
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" showHeader={false} showToolbar={false} />;

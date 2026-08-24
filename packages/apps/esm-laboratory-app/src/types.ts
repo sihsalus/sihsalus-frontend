@@ -3,7 +3,12 @@ import { type Order as FrameworkOrder, type OrderUrgency } from '@openmrs/esm-fr
 type FrameworkFulfillerStatus = FrameworkOrder['fulfillerStatus'];
 export type FulfillerStatus = FrameworkFulfillerStatus | 'DRAFT' | null;
 
-export type Order = Omit<FrameworkOrder, 'fulfillerStatus' | 'fulfillerComment'> & {
+export type Order = Omit<FrameworkOrder, 'encounter' | 'fulfillerStatus' | 'fulfillerComment'> & {
+  encounter?: FrameworkOrder['encounter'] & {
+    visit?: {
+      uuid?: string;
+    };
+  };
   fulfillerStatus?: FulfillerStatus;
   fulfillerComment?: string | null;
 };
@@ -30,6 +35,7 @@ export interface GroupedOrders {
   patientAge?: string;
   patientDob?: string;
   patientSex?: string;
+  visitUuids: Array<string>;
   totalOrders: number;
   orders: Array<FlattenedOrder>;
   originalOrders: Array<Order>;

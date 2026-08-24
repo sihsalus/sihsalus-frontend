@@ -4,6 +4,7 @@ export const consultaExternaDashboardMeta = {
   columns: 1,
   title: 'consultaExterna',
   path: 'consulta-externa',
+  hideDashboardTitle: true,
   config: {},
 } as const;
 

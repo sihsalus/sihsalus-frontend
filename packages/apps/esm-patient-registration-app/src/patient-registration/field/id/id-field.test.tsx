@@ -13,6 +13,7 @@ import {
   peruSisContractPatientIdentifierTypeUuid,
   peruSisIdnumregPatientIdentifierTypeUuid,
   peruSisTemporaryPatientIdentifierTypeUuid,
+  peruTemporaryAffiliationPatientIdentifierTypeUuid,
 } from '../../peru-registration-config';
 
 import { countIdentityDocumentIdentifiers, Identifiers, setIdentifierSource } from './id-field.component';
@@ -80,6 +81,18 @@ const cnvIdentifierType = {
   identifierSources: [],
 };
 
+const temporaryAffiliationIdentifierType = {
+  name: 'Afiliación temporal SIS',
+  description: 'Número de afiliación temporal asignado por el SIS a una persona sin DNI',
+  fieldName: 'afiliacionTemporalSis',
+  required: false,
+  uuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
+  format: '^E-[0-9]{8}$',
+  isPrimary: false,
+  uniquenessBehavior: 'UNIQUE' as const,
+  identifierSources: [],
+};
+
 const sisContractIdentifierType = {
   name: 'SIS Contrato',
   fieldName: 'sisContrato',
@@ -141,6 +154,7 @@ const peruIdentifierTypes = [
   passportIdentifierType,
   dieIdentifierType,
   cnvIdentifierType,
+  temporaryAffiliationIdentifierType,
   otherIdentifierType,
   sisTemporaryIdentifierType,
   sisContractIdentifierType,
@@ -673,6 +687,15 @@ describe('Identifiers', () => {
     expect(countIdentityDocumentIdentifiers({ otros: buildIdentifier(otherIdentifierType) }, peruIdentifierTypes)).toBe(
       1,
     );
+  });
+
+  it('accepts temporary SIS affiliation as the only identity reference', () => {
+    expect(
+      countIdentityDocumentIdentifiers(
+        { afiliacionTemporalSis: buildIdentifier(temporaryAffiliationIdentifierType, 'E-41267525') },
+        peruIdentifierTypes,
+      ),
+    ).toBe(1);
   });
 });
 

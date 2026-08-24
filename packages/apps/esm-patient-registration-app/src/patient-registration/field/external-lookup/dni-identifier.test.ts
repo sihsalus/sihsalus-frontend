@@ -2,6 +2,7 @@ import type { PatientIdentifierType, PatientIdentifierValue } from '../../patien
 import {
   peruDniPatientIdentifierTypeUuid,
   peruPassportPatientIdentifierTypeUuid,
+  peruTemporaryAffiliationPatientIdentifierTypeUuid,
 } from '../../peru-registration-config';
 import { getDocumentIdentifierEntries, getDocumentIdentifierEntry } from './dni-identifier';
 
@@ -19,6 +20,10 @@ describe('civil document identifiers', () => {
       identifierTypeUuid: peruPassportPatientIdentifierTypeUuid,
       identifierValue: 'PA-1234',
     },
+    temporaryAffiliation: {
+      identifierTypeUuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
+      identifierValue: 'E-41267525',
+    },
     systemId: {
       identifierTypeUuid: '05a29f94-c0ed-11e2-94be-8c13b969e334',
       identifierValue: '10000001',
@@ -35,6 +40,7 @@ describe('civil document identifiers', () => {
     expect(getDocumentIdentifierEntries(identifiers, identifierTypes).map(([fieldName]) => fieldName)).toEqual([
       'dni',
       'passport',
+      'temporaryAffiliation',
     ]);
   });
 

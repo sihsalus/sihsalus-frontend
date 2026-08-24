@@ -1,4 +1,9 @@
 import { getDefaultsFromConfigSchema, type Order, type Patient, useConfig } from '@openmrs/esm-framework';
+import {
+  fetchVisitInsurance,
+  SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+  SIS_CONCEPT_UUID,
+} from '@openmrs/esm-patient-common-lib';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type Config, configSchema } from '../../config-schema';
@@ -9,8 +14,14 @@ vi.mock('../../laboratory.resource', () => ({
   useLabOrders: vi.fn(),
 }));
 
+vi.mock('@openmrs/esm-patient-common-lib', async (importOriginal) => ({
+  ...(await importOriginal()),
+  fetchVisitInsurance: vi.fn(),
+}));
+
 const mockUseConfig = vi.mocked(useConfig<Config>);
 const mockUseLabOrders = vi.mocked(useLabOrders);
+const mockFetchVisitInsurance = vi.mocked(fetchVisitInsurance);
 
 function mockUseLabOrdersImplementation(props: Parameters<typeof useLabOrders>[0]) {
   const mockPatient1: Partial<Patient> = {
@@ -98,6 +109,7 @@ function mockUseLabOrdersImplementation(props: Parameters<typeof useLabOrders>[0
       instructions: 'Inspect banjo & check tuning',
       fulfillerComment: null,
       display: 'Banjo Inspection',
+      encounter: { visit: { uuid: 'visit-uuid-1' } },
     },
     {
       uuid: 'order-uuid-2',
@@ -110,6 +122,7 @@ function mockUseLabOrdersImplementation(props: Parameters<typeof useLabOrders>[0
       instructions: 'Give it a strum',
       fulfillerComment: null,
       display: 'Guitar Inspection',
+      encounter: { visit: { uuid: 'visit-uuid-1' } },
     },
     {
       uuid: 'order-uuid-3',
@@ -122,10 +135,11 @@ function mockUseLabOrdersImplementation(props: Parameters<typeof useLabOrders>[0
       instructions: 'Make some noise',
       fulfillerComment: null,
       display: 'Sound Check',
+      encounter: { visit: { uuid: 'visit-uuid-2' } },
     },
   ]
     .filter((order) => !props.status || order.fulfillerStatus === props.status)
-    .filter((order) => !props.excludeCanceled || order.fulfillerStatus !== 'CANCELLED') as Array<Order>;
+    .filter((order) => !props.excludeCanceled || order.fulfillerStatus !== 'CANCELLED') as unknown as Array<Order>;
   return {
     labOrders,
     isLoading: false,
@@ -138,6 +152,21 @@ function mockUseLabOrdersImplementation(props: Parameters<typeof useLabOrders>[0
 describe('OrdersDataTable', () => {
   beforeEach(() => {
     mockUseLabOrders.mockImplementation(mockUseLabOrdersImplementation);
+    mockFetchVisitInsurance.mockImplementation(async (visitUuid) =>
+      visitUuid === 'visit-uuid-1'
+        ? {
+            financiadorUuid: SIS_CONCEPT_UUID,
+            insuranceNumber: 'SIS-001',
+            accreditationStatusUuid: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+            accreditationCheckedAt: '2026-08-24',
+          }
+        : {
+            financiadorUuid: null,
+            insuranceNumber: null,
+            accreditationStatusUuid: null,
+            accreditationCheckedAt: null,
+          },
+    );
   });
 
   it('should render one row per patient and show lab details', async () => {
@@ -156,6 +185,7 @@ describe('OrdersDataTable', () => {
     expect(headerRow).toHaveTextContent('Patient');
     expect(headerRow).toHaveTextContent('Age');
     expect(headerRow).toHaveTextContent('Sex');
+    expect(headerRow).toHaveTextContent('SIS coverage');
     expect(headerRow).toHaveTextContent('Total Orders');
     const row1 = dataRows[0];
     expect(row1).toHaveTextContent('Pete Seeger');
@@ -167,6 +197,8 @@ describe('OrdersDataTable', () => {
     expect(row2).toHaveTextContent('60');
     expect(row2).toHaveTextContent('M');
     expect(row2).toHaveTextContent('1');
+    expect(await within(row1).findByText('Active SIS')).toBeInTheDocument();
+    expect(await within(row2).findByText('No SIS')).toBeInTheDocument();
 
     const user = userEvent.setup();
     await user.click(within(row1).getByLabelText('Expand current row'));

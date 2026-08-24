@@ -40,7 +40,7 @@
   "dependencies": {
     "@carbon/charts": "^1.23.7",
     "@carbon/charts-react": "^1.23.7",
-    "@hookform/resolvers": "^3.3.1",
+    "@hookform/resolvers": "^5.9.1",
     "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.5.1",
     "exceljs": "^4.4.0",

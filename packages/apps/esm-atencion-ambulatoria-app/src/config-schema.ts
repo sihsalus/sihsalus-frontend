@@ -439,7 +439,7 @@ export const configSchema = {
     },
     referralUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Referral / interconsultation concept',
+      _description: 'Referral concept used by the outpatient treatment plan',
       _default: 'f0000205-0000-4000-8000-000000000205',
     },
     nextAppointmentUuid: {

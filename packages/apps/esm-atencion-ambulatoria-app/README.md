@@ -30,6 +30,8 @@ Con `showSisFinancingWarning: true` (apagada por defecto), el dashboard de consu
 
 Los valores de `formsList` para consulta externa usan los nombres estables publicados por content (`CE-001-CONSULTA EXTERNA`, `CE-ANAM-001-ANAMNESIS`, `CE-SOAP-001-NOTA SOAP` y `CE-REF-001-REFERENCIA-CONTRARREFERENCIA`). No deben reemplazarse por los UUID de los archivos de esquema, porque esos UUID pueden variar entre entornos.
 
+La pestaña **Referencia / Contrarreferencia** lee exclusivamente encounters de `encounterTypes.referralCounterReferral`. Las interconsultas basadas en órdenes no pertenecen a ese historial; se solicitan y consultan desde `esm-interconsultas-app`.
+
 ## Ubicación de Epicrisis
 
 Por decisión operativa del flujo médico, Epicrisis debe exponerse en Consulta Externa como etapa final, después de Referencia / Contrarreferencia. La implementación debe usar el formulario clínico publicado `Formulario Epicrisis Médica`; no debe enlazar `(Página 16) Epicrisis`, porque ese esquema corresponde al control del recién nacido.

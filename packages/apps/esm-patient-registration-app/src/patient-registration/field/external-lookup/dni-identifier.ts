@@ -1,11 +1,14 @@
 import { getDocumentTypeDefinitionByIdentifierType } from '../../identity/identity-documents';
 import type { PatientIdentifierType, PatientIdentifierValue } from '../../patient-registration.types';
 import { peruDniPattern } from '../../peru-identifier-validation';
-import { peruDniPatientIdentifierTypeUuid } from '../../peru-registration-config';
+import {
+  peruDniPatientIdentifierTypeUuid,
+  peruTemporaryAffiliationPatientIdentifierTypeUuid,
+} from '../../peru-registration-config';
 
 export const dniPattern = peruDniPattern;
 
-/** Returns every populated civil-document identifier (DNI, CE, passport, foreign identity card or CNV). */
+/** Returns every populated identifier accepted as the patient's primary identity reference. */
 export function getDocumentIdentifierEntries(
   identifiers: Record<string, PatientIdentifierValue> = {},
   identifierTypes: Array<PatientIdentifierType> = [],
@@ -20,7 +23,10 @@ export function getDocumentIdentifierEntries(
     );
     const identifierTypeUuid = identifier.identifierTypeUuid ?? identifierType?.uuid;
 
-    return !!getDocumentTypeDefinitionByIdentifierType(identifierTypeUuid);
+    return (
+      identifierTypeUuid === peruTemporaryAffiliationPatientIdentifierTypeUuid ||
+      !!getDocumentTypeDefinitionByIdentifierType(identifierTypeUuid)
+    );
   });
 }
 

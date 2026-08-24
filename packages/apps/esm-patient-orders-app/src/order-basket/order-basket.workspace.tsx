@@ -142,7 +142,9 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
         kind: 'error',
         title: t('orderWorkspaceUnavailableTitle', 'Order form unavailable'),
         subtitle: error
-          ? getUserFacingErrorMessage(error, fallbackMessage, { logContext: 'Launch child order workspace' })
+          ? getUserFacingErrorMessage(error, fallbackMessage, {
+              logContext: 'Launch child order workspace',
+            })
           : fallbackMessage,
       });
     },
@@ -267,7 +269,9 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
       const erroredItems = await postOrders(orderEncounterUuid, abortController);
       const succeededItems = orders.filter((o) => !erroredItems.some((e) => e.display === o.display));
       await declinePreviousOrders(succeededItems);
-      clearOrders({ exceptThoseMatching: (item) => erroredItems.map((e) => e.display).includes(item.display) });
+      clearOrders({
+        exceptThoseMatching: (item) => erroredItems.map((e) => e.display).includes(item.display),
+      });
       await mutateOrders();
       if (erroredItems.length === 0) {
         await closeWorkspaceWithSavedChanges();
@@ -357,10 +361,20 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
                   canCreateOrders={canCreateOrders}
                   onMissingActiveVisit={handleMissingActiveVisit}
                   launchOrderableConceptWorkspace={(orderTypeUuid, order) =>
-                    void openOrderWorkspace(orderWorkspaceNames.general, {
-                      orderTypeUuid,
-                      ...(order ? { order } : {}),
-                    })
+                    void openOrderWorkspace(
+                      orderType.formWorkspaceName || orderWorkspaceNames.general,
+                      orderType.formWorkspaceName
+                        ? {
+                            patientUuid,
+                            orderTypeUuid,
+                            submissionMode: 'order-basket',
+                            ...(order ? { order } : {}),
+                          }
+                        : {
+                            orderTypeUuid,
+                            ...(order ? { order } : {}),
+                          },
+                    )
                   }
                 />
               </div>
@@ -382,7 +396,9 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
               key={order.uuid}
               lowContrast
               kind="error"
-              title={t('saveDrugOrderFailed', 'Error ordering {{orderName}}', { orderName: order.display })}
+              title={t('saveDrugOrderFailed', 'Error ordering {{orderName}}', {
+                orderName: order.display,
+              })}
               subtitle={order.extractedOrderError?.fieldErrors?.join(', ')}
               className={styles.inlineNotification}
             />

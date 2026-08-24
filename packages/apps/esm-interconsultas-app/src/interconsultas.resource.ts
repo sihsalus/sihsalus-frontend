@@ -78,10 +78,9 @@ export function useInterconsultas(filter: InterconsultaTrayFilter) {
   const { interconsultaOrderTypeUuid } = useConfig<ConfigObject>();
   const url = interconsultaOrdersUrl(interconsultaOrderTypeUuid);
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: { results: Array<InterconsultaOrder> } }>(
-    url,
-    openmrsFetch,
-  );
+  const { data, error, isLoading, isValidating, mutate } = useSWR<{
+    data: { results: Array<InterconsultaOrder> };
+  }>(url, openmrsFetch);
 
   const interconsultas = useMemo(
     () => (data?.data?.results ?? []).filter((order) => matchesTrayFilter(order, filter)),
@@ -96,10 +95,9 @@ export function usePatientInterconsultas(patientUuid: string) {
   const { interconsultaOrderTypeUuid } = useConfig<ConfigObject>();
   const url = patientUuid ? interconsultaOrdersUrl(interconsultaOrderTypeUuid, patientUuid) : null;
 
-  const { data, error, isLoading, mutate } = useSWR<{ data: { results: Array<InterconsultaOrder> } }>(
-    url,
-    openmrsFetch,
-  );
+  const { data, error, isLoading, mutate } = useSWR<{
+    data: { results: Array<InterconsultaOrder> };
+  }>(url, openmrsFetch);
 
   const interconsultas = useMemo(
     () => (data?.data?.results ?? []).filter((order) => order.action !== 'DISCONTINUE'),
@@ -134,7 +132,11 @@ export function setInterconsultaFulfillerStatus(
     signal: abortController?.signal,
     body: {
       fulfillerStatus,
-      ...(fulfillerComment ? { fulfillerComment: fulfillerComment.slice(0, FULFILLER_COMMENT_MAX_LENGTH) } : {}),
+      ...(fulfillerComment
+        ? {
+            fulfillerComment: fulfillerComment.slice(0, FULFILLER_COMMENT_MAX_LENGTH),
+          }
+        : {}),
     },
   });
 }
@@ -290,10 +292,9 @@ export function useInterconsultaResponse(order: InterconsultaOrder | null) {
       'concept:(uuid,display),order:(uuid),auditInfo:(creator:(display))))'
     : null;
 
-  const { data, error, isLoading, mutate } = useSWR<{ data: { obs: Array<InterconsultaResponseObs> } }>(
-    url,
-    openmrsFetch,
-  );
+  const { data, error, isLoading, mutate } = useSWR<{
+    data: { obs: Array<InterconsultaResponseObs> };
+  }>(url, openmrsFetch);
 
   const responseObs = useMemo(
     () => (data?.data?.obs ?? []).filter((obs) => obs.order?.uuid === order?.uuid),
@@ -308,25 +309,27 @@ export function useInterconsultaResponse(order: InterconsultaOrder | null) {
  * configurados se usan sus miembros; si no, búsqueda libre de concepts.
  */
 export function useDestinationServices(searchTerm: string) {
-  const { orderableConceptSets } = useConfig<ConfigObject>();
+  const { orderableConceptSets, excludedDestinationConceptUuids = [] } = useConfig<ConfigObject>();
   const hasSets = orderableConceptSets.length > 0;
 
   const setsUrl = hasSets
-    ? `${restBaseUrl}/concept?references=${orderableConceptSets.join(',')}&v=custom:(uuid,display,setMembers:(uuid,display))`
+    ? `${restBaseUrl}/concept?references=${orderableConceptSets.join(',')}&v=custom:(uuid,display,setMembers:(uuid,display,retired))`
     : null;
   const searchUrl =
     !hasSets && searchTerm?.trim().length >= 2
-      ? `${restBaseUrl}/concept?q=${encodeURIComponent(searchTerm.trim())}&searchType=fuzzy&v=custom:(uuid,display)&limit=25`
+      ? `${restBaseUrl}/concept?q=${encodeURIComponent(searchTerm.trim())}&searchType=fuzzy&v=custom:(uuid,display,retired)&limit=25`
       : null;
 
   const { data, error, isLoading } = useSWR<{
-    data: { results: Array<OrderableService & { setMembers?: Array<OrderableService> }> };
+    data: {
+      results: Array<OrderableService & { setMembers?: Array<OrderableService> }>;
+    };
   }>(setsUrl ?? searchUrl, openmrsFetch);
 
   const services = useMemo(() => {
     const results = data?.data?.results ?? [];
-    return getDestinationServicesFromConceptResults(results, hasSets, searchTerm);
-  }, [data, hasSets, searchTerm]);
+    return getDestinationServicesFromConceptResults(results, hasSets, searchTerm, excludedDestinationConceptUuids);
+  }, [data, excludedDestinationConceptUuids, hasSets, searchTerm]);
 
   return { services, isLoading, error };
 }
@@ -346,23 +349,38 @@ export function useAvailableProviders(searchTerm: string, enabled = true) {
 }
 
 export function getDestinationServicesFromConceptResults(
-  results: Array<OrderableService & { setMembers?: Array<OrderableService> }>,
+  results: Array<
+    OrderableService & {
+      retired?: boolean;
+      setMembers?: Array<OrderableService & { retired?: boolean }>;
+    }
+  >,
   hasSets: boolean,
   searchTerm: string,
+  excludedDestinationConceptUuids: Array<string> = [],
 ) {
-  const lowerTerm = searchTerm?.trim().toLowerCase();
+  const normalizeSearchText = (value: string) =>
+    value
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .toLocaleLowerCase();
+  const normalizedTerm = normalizeSearchText(searchTerm?.trim() ?? '');
+  const excludedUuids = new Set(excludedDestinationConceptUuids);
   const sourceServices = hasSets ? results.flatMap((set) => set.setMembers ?? []) : results;
   const servicesByUuid = new Map<string, OrderableService>();
 
   for (const service of sourceServices) {
-    if (!service.uuid || !service.display) {
+    if (!service.uuid || !service.display || service.retired || excludedUuids.has(service.uuid)) {
       continue;
     }
-    if (lowerTerm && !service.display.toLowerCase().includes(lowerTerm)) {
+    if (normalizedTerm && !normalizeSearchText(service.display).includes(normalizedTerm)) {
       continue;
     }
     if (!servicesByUuid.has(service.uuid)) {
-      servicesByUuid.set(service.uuid, { uuid: service.uuid, display: service.display });
+      servicesByUuid.set(service.uuid, {
+        uuid: service.uuid,
+        display: service.display,
+      });
     }
   }
 

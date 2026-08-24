@@ -36,7 +36,8 @@ export const configSchema = {
         orderTypeUuid: 'f3c2e4b6-8b5a-11e5-8e9b-12345678901b',
         label: 'Órdenes de interconsulta',
         icon: 'omrs-icon-referral-order',
-        orderableConceptSets: [],
+        orderableConceptSets: ['4bf3f465-ac91-44fa-9b1f-173daf0c89a0'],
+        formWorkspaceName: 'request-interconsulta-workspace',
       },
     ],
     _description: 'List of various order types, each associated with the Java class name `org.openmrs.Order`.',
@@ -61,6 +62,12 @@ export const configSchema = {
       icon: {
         _type: Type.String,
         _description: 'Icon to be shown for the order type. Icons are from the OpenMRS icon library.',
+        _default: '',
+      },
+      formWorkspaceName: {
+        _type: Type.String,
+        _description:
+          'Optional Workspace2 name used instead of the generic orderable concept form for this order type.',
         _default: '',
       },
     },
@@ -135,6 +142,7 @@ export interface OrderTypeDefinition {
   orderTypeUuid: string;
   orderableConceptSets: Array<string>;
   icon?: string;
+  formWorkspaceName?: string;
 }
 
 export interface PriorityConfig {

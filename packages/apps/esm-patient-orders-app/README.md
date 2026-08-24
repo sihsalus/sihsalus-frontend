@@ -22,6 +22,8 @@ Las ordenes son datos clinicos y deben asociarse a una visita/consulta activa y 
 - Los iconos deben estar presentes o, si se deshabilitan, debe hacerse de forma consistente para todas las ordenes.
 - No debe aparecer `t is not a function`; los helpers y componentes que renderizan mensajes deben recibir `t` o usar `useTranslation` localmente.
 - Los nombres de orden deben ser consistentes en plural: `Ordenes de laboratorio`, `Ordenes de radiologia`, etc.
+- La tarjeta de interconsultas abre `request-interconsulta-workspace` como child workspace de la canasta. El formulario agrega la solicitud a la canasta; no la publica antes de que el profesional use `Firmar y cerrar`.
+- El formulario de interconsulta distingue un consultorio/servicio local de un especialista externo o remoto. La segunda opción sigue siendo una orden de interconsulta y no inicia referencia, contrarreferencia ni traslado.
 
 ## Dependencias backend/content
 
@@ -30,17 +32,19 @@ Las ordenes son datos clinicos y deben asociarse a una visita/consulta activa y 
 - Visita activa disponible desde patient chart.
 - Exactamente un Provider activo vinculado a la persona de la cuenta clinica que firma la orden.
 - Laboratorio, farmacia, radiologia, inmunizacion e interconsulta pueden depender de modulos backend distintos.
+- La interconsulta usa por defecto el concept set `Tipo de Servicio` (`4bf3f465-…`) y el workspace de `esm-interconsultas-app`; ambos siguen siendo configurables.
 - Integraciones opcionales con stock/billing/FHIR deben degradar sin romper el workspace.
 
 ## Contrato RBAC actual
 
-| Capacidad                                                    | Privilegio frontend                    |
-| ------------------------------------------------------------ | -------------------------------------- |
-| Ver el dashboard y el historial de órdenes                   | `app:hoja.clinica.ordenes`             |
-| Abrir los workspaces para crear o modificar órdenes          | `app:hoja.clinica.ordenes.editar`      |
-| Mostrar y abrir la ventana v2 de la canasta                  | `app:hoja.clinica.canastaOrdenes`      |
-| Mostrar la acción Modificar para una orden de medicamento    | `app:hoja.clinica.medicamentos.editar` |
-| Modificar una orden general/laboratorio o cancelar una orden | `app:hoja.clinica.ordenes.editar`      |
+| Capacidad                                                    | Privilegio frontend                      |
+| ------------------------------------------------------------ | ---------------------------------------- |
+| Ver el dashboard y el historial de órdenes                   | `app:hoja.clinica.ordenes`               |
+| Abrir los workspaces para crear o modificar órdenes          | `app:hoja.clinica.ordenes.editar`        |
+| Mostrar y abrir la ventana v2 de la canasta                  | `app:hoja.clinica.canastaOrdenes`        |
+| Mostrar la acción Modificar para una orden de medicamento    | `app:hoja.clinica.medicamentos.editar`   |
+| Modificar una orden general/laboratorio o cancelar una orden | `app:hoja.clinica.ordenes.editar`        |
+| Completar el formulario específico de interconsulta          | `app:hoja.clinica.interconsultas.editar` |
 
 El workspace `test-results-form-workspace` ya no está registrado por este paquete. La captura de resultados no debe documentarse ni asignarse mediante `app:hoja.clinica.resultados.editar` como si fuera una capacidad activa de Patient Orders.
 

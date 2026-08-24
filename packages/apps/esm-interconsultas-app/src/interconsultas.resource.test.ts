@@ -49,18 +49,33 @@ describe('deriveStatus', () => {
 
   it('deriva Cancelada cuando la orden fue descontinuada sin respuesta', () => {
     expect(deriveStatus(makeOrder({ dateStopped: '2026-06-02T10:00:00.000Z' }))).toBe('CANCELLED');
-    expect(deriveStatus(makeOrder({ dateStopped: '2026-06-02T10:00:00.000Z', fulfillerStatus: 'RECEIVED' }))).toBe(
-      'CANCELLED',
-    );
+    expect(
+      deriveStatus(
+        makeOrder({
+          dateStopped: '2026-06-02T10:00:00.000Z',
+          fulfillerStatus: 'RECEIVED',
+        }),
+      ),
+    ).toBe('CANCELLED');
   });
 
   it('mantiene Respondida/Rechazada aunque la orden esté detenida', () => {
-    expect(deriveStatus(makeOrder({ dateStopped: '2026-06-02T10:00:00.000Z', fulfillerStatus: 'COMPLETED' }))).toBe(
-      'COMPLETED',
-    );
-    expect(deriveStatus(makeOrder({ dateStopped: '2026-06-02T10:00:00.000Z', fulfillerStatus: 'DECLINED' }))).toBe(
-      'DECLINED',
-    );
+    expect(
+      deriveStatus(
+        makeOrder({
+          dateStopped: '2026-06-02T10:00:00.000Z',
+          fulfillerStatus: 'COMPLETED',
+        }),
+      ),
+    ).toBe('COMPLETED');
+    expect(
+      deriveStatus(
+        makeOrder({
+          dateStopped: '2026-06-02T10:00:00.000Z',
+          fulfillerStatus: 'DECLINED',
+        }),
+      ),
+    ).toBe('DECLINED');
   });
 });
 
@@ -197,41 +212,60 @@ describe('getDestinationServicesFromConceptResults', () => {
     ]);
   });
 
-  it('[AC-02][brecha] encuentra servicios aunque el usuario omita tildes', async () => {
-    await expectKnownGap(() => {
-      const services = getDestinationServicesFromConceptResults(
-        [
-          {
-            uuid: 'set-uuid',
-            display: 'Servicios destino',
-            setMembers: [{ uuid: 'odontologia-uuid', display: 'Odontología General' }],
-          },
-        ],
-        true,
-        'odontologia',
-      );
-
-      expect(services).toEqual([{ uuid: 'odontologia-uuid', display: 'Odontología General' }]);
-    });
-  });
-
-  it('[AC-02][brecha] excluye servicios retirados del catálogo de destinos', async () => {
-    await expectKnownGap(() => {
-      const results = [
+  it('[AC-02] encuentra servicios aunque el usuario omita tildes', () => {
+    const services = getDestinationServicesFromConceptResults(
+      [
         {
           uuid: 'set-uuid',
           display: 'Servicios destino',
+          setMembers: [{ uuid: 'odontologia-uuid', display: 'Odontología General' }],
+        },
+      ],
+      true,
+      'odontologia',
+    );
+
+    expect(services).toEqual([{ uuid: 'odontologia-uuid', display: 'Odontología General' }]);
+  });
+
+  it('[AC-02] excluye servicios retirados del catálogo de destinos', () => {
+    const results = [
+      {
+        uuid: 'set-uuid',
+        display: 'Servicios destino',
+        setMembers: [
+          { uuid: 'active-uuid', display: 'Cardiología', retired: false },
+          { uuid: 'retired-uuid', display: 'Servicio retirado', retired: true },
+        ],
+      },
+    ];
+
+    expect(getDestinationServicesFromConceptResults(results, true, '')).toEqual([
+      { uuid: 'active-uuid', display: 'Cardiología' },
+    ]);
+  });
+
+  it('excluye conceptos técnicos de colas del selector clínico', () => {
+    const services = getDestinationServicesFromConceptResults(
+      [
+        {
+          uuid: 'set-uuid',
+          display: 'Tipo de Servicio',
           setMembers: [
-            { uuid: 'active-uuid', display: 'Cardiología', retired: false },
-            { uuid: 'retired-uuid', display: 'Servicio retirado', retired: true },
+            { uuid: 'consulting-room-uuid', display: 'Atención Obstétrica' },
+            {
+              uuid: 'queue-service-uuid',
+              display: 'Servicio de cola de centro obstétrico SIH.SALUS',
+            },
           ],
         },
-      ];
+      ],
+      true,
+      '',
+      ['queue-service-uuid'],
+    );
 
-      expect(getDestinationServicesFromConceptResults(results, true, '')).toEqual([
-        { uuid: 'active-uuid', display: 'Cardiología' },
-      ]);
-    });
+    expect(services).toEqual([{ uuid: 'consulting-room-uuid', display: 'Atención Obstétrica' }]);
   });
 });
 
@@ -240,7 +274,11 @@ describe('getAvailableProvidersFromResults', () => {
     expect(
       getAvailableProvidersFromResults([
         { uuid: 'unknown-provider', display: 'UNKNOWN - Unknown Provider' },
-        { uuid: 'retired-provider', display: 'Retired Provider', retired: true },
+        {
+          uuid: 'retired-provider',
+          display: 'Retired Provider',
+          retired: true,
+        },
         { uuid: 'provider-uuid', display: 'Axel Mendoza' },
       ]),
     ).toEqual([{ uuid: 'provider-uuid', display: 'Axel Mendoza' }]);

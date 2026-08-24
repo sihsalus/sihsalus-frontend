@@ -23,6 +23,22 @@ vi.mock('../api/api', () => ({
   useOrderEncounter: vi.fn(),
 }));
 
+vi.mock('./general-order-type/general-order-type.component', () => ({
+  default: ({
+    label,
+    orderTypeUuid,
+    launchOrderableConceptWorkspace,
+  }: {
+    label: string;
+    orderTypeUuid: string;
+    launchOrderableConceptWorkspace: (orderTypeUuid: string) => void;
+  }) => (
+    <button type="button" onClick={() => launchOrderableConceptWorkspace(orderTypeUuid)}>
+      {label}
+    </button>
+  ),
+}));
+
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseSession = vi.mocked(useSession);
 const mockExtensionSlot = vi.mocked(ExtensionSlot);
@@ -124,6 +140,31 @@ describe('OrderBasket provider guard', () => {
       kind: 'error',
       title: 'Order form unavailable',
       subtitle: 'The order form could not be opened. Verify your permissions and try again.',
+    });
+  });
+
+  it('opens the dedicated interconsultation form inside the order basket window', async () => {
+    const user = userEvent.setup();
+    mockUseConfig.mockReturnValue({
+      orderEncounterType: 'order-encounter-type-uuid',
+      orderTypes: [
+        {
+          orderTypeUuid: 'interconsultation-order-type-uuid',
+          label: 'Órdenes de interconsulta',
+          icon: 'omrs-icon-referral-order',
+          orderableConceptSets: ['destination-services-set-uuid'],
+          formWorkspaceName: 'request-interconsulta-workspace',
+        },
+      ],
+    } as unknown as ConfigObject);
+    const { launchChildWorkspace } = renderOrderBasket();
+
+    await user.click(screen.getByRole('button', { name: 'Órdenes de interconsulta' }));
+
+    expect(launchChildWorkspace).toHaveBeenCalledWith('request-interconsulta-workspace', {
+      patientUuid: 'patient-uuid',
+      orderTypeUuid: 'interconsultation-order-type-uuid',
+      submissionMode: 'order-basket',
     });
   });
 });

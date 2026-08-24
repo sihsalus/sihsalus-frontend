@@ -9,6 +9,7 @@ import Anamnesis from './anamnesis.component';
 import styles from './consulta-externa-dashboard.scss';
 import DiagnosticoClasificado from './diagnostico-clasificado.component';
 import NotasSoap from './notas-soap.component';
+import OutpatientVisitSummaryDownload from './outpatient-visit-summary-download.component';
 import PlanTratamiento from './plan-tratamiento.component';
 import ReferenciaContraReferencia from './referencia-contrarreferencia.component';
 import SisFinancingWarning from './sis-financing-warning.component';
@@ -25,6 +26,9 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
     <RequirePrivilege privilege={consultaExternaPrivilege}>
       <div>
         <SisFinancingWarning patientUuid={patientUuid} />
+        <div className={styles.reportActions}>
+          <OutpatientVisitSummaryDownload patientUuid={patientUuid} />
+        </div>
         <Layer className={styles.tabsContainer}>
           <Tabs selectedIndex={selectedTab} onChange={({ selectedIndex }) => setSelectedTab(selectedIndex)}>
             <TabList contained activation="manual" aria-label={t('consultaExternaTabs', 'Consulta Externa tabs')}>

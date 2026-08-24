@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { interconsultasChartEditPrivilege } from '../constants';
 import { deriveStatus, useInterconsultaResponse, usePatientInterconsultas } from '../interconsultas.resource';
 import type { InterconsultaOrder } from '../types';
+import { getInterconsultaDestinationDisplay, getInterconsultaReason } from '../utils/interconsulta-details';
 import { getStatusDisplay, getStatusTagType, getUrgencyDisplay } from '../utils/status';
 import styles from './interconsultas-chart-widget.scss';
 
@@ -80,7 +81,7 @@ function InterconsultaAccordionItem({ order }: { order: InterconsultaOrder }) {
         <span className={styles.accordionTitle}>
           {order.dateActivated ? formatDate(parseDate(order.dateActivated)) : '—'}
           {' — '}
-          {order.concept?.display}
+          {getInterconsultaDestinationDisplay(order)}
           {'  '}
           <Tag type={getStatusTagType(status)} size="sm">
             {getStatusDisplay(status, t)}
@@ -94,7 +95,7 @@ function InterconsultaAccordionItem({ order }: { order: InterconsultaOrder }) {
         <dt>{t('requestedBy', 'Solicitante')}</dt>
         <dd>{order.orderer?.display ?? '—'}</dd>
         <dt>{t('reasonForRequest', 'Motivo')}</dt>
-        <dd>{order.instructions || '—'}</dd>
+        <dd>{getInterconsultaReason(order)}</dd>
         {order.fulfillerComment && status === 'DECLINED' && (
           <>
             <dt>{t('rejectionReason', 'Motivo del rechazo')}</dt>

@@ -21,12 +21,14 @@ interface FormProcessorFactoryProps {
   formJson: FormSchema;
   isSubForm?: boolean;
   setIsLoadingFormDependencies: (isLoading: boolean) => void;
+  onDependencyError: (error: unknown) => void;
 }
 
 const FormProcessorFactory = ({
   formJson,
   isSubForm = false,
   setIsLoadingFormDependencies,
+  onDependencyError,
 }: FormProcessorFactoryProps): React.JSX.Element => {
   const {
     patient,
@@ -137,6 +139,7 @@ const FormProcessorFactory = ({
           setContext={setProcessorContext}
           useCustomHooks={useCustomHooks}
           setIsLoadingCustomHooks={setIsLoadingCustomHooks}
+          onError={onDependencyError}
         />
       )}
       {isLoadingProcessorDependencies && !isSubForm ? (
@@ -147,6 +150,7 @@ const FormProcessorFactory = ({
           initialValues={initialValues}
           isSubForm={isSubForm}
           setIsLoadingFormDependencies={setIsLoadingFormDependencies}
+          onDependencyError={onDependencyError}
         />
       )}
     </>

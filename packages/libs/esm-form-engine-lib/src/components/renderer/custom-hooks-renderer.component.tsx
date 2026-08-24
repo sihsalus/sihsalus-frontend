@@ -7,20 +7,26 @@ export const CustomHooksRenderer = ({
   setContext,
   useCustomHooks,
   setIsLoadingCustomHooks,
+  onError,
 }: {
   context: FormProcessorContextProps;
   setContext: React.Dispatch<React.SetStateAction<FormProcessorContextProps>>;
   useCustomHooks: GetCustomHooksResponse['useCustomHooks'];
   setIsLoadingCustomHooks: (isLoading: boolean) => void;
+  onError: (error: unknown) => void;
 }): null => {
-  const { isLoading = false, updateContext } = useCustomHooks(context);
+  const { error, isLoading = false, updateContext } = useCustomHooks(context);
 
   useEffect(() => {
-    if (!isLoading && updateContext) {
-      updateContext(setContext);
+    if (!isLoading) {
       setIsLoadingCustomHooks(false);
+      if (error) {
+        onError(error);
+        return;
+      }
+      updateContext?.(setContext);
     }
-  }, [isLoading, setContext, setIsLoadingCustomHooks, updateContext]);
+  }, [error, isLoading, onError, setContext, setIsLoadingCustomHooks, updateContext]);
 
   return null;
 };

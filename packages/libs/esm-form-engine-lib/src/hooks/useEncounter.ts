@@ -18,6 +18,10 @@ export function useEncounter(formJson: FormSchema): {
     const abortController = new AbortController();
     let disposed = false;
 
+    setEncounter(null);
+    setError(null);
+    setIsLoading(true);
+
     if (!isEmpty(formJson.encounter) && isString(formJson.encounter)) {
       void openmrsFetch<OpenmrsEncounter>(
         `${restBaseUrl}/encounter/${formJson.encounter}?v=${encounterRepresentation}`,

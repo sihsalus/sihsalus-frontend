@@ -45,6 +45,11 @@ export const configSchema = {
     _description: 'Person attribute type UUID that stores the patient nationality',
     _default: '9b3df0a1-0c58-4f55-9868-9c38f1db1007',
   },
+  neighborhoodAttributeTypeUuid: {
+    _type: Type.String,
+    _description: 'Person attribute type UUID that stores the neighborhood shown with the residence address',
+    _default: '',
+  },
   familyRelationshipTypeUuids: {
     _type: Type.Array,
     _description:
@@ -152,6 +157,7 @@ export interface ConfigObject {
   contactAttributeTypes: Array<string>;
   additionalAttributeTypes: Array<string>;
   nationalityAttributeTypeUuid: string;
+  neighborhoodAttributeTypeUuid: string;
   familyRelationshipTypeUuids: Array<string>;
   birthplaceAttributeTypeUuid: string;
   ethnicIdentityConceptUuid: string;

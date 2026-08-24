@@ -44,6 +44,7 @@ function getStoredUbigeoPathSegments(storedUbigeoPath: string) {
 }
 
 interface AddressComponentProps {
+  additionalFields?: React.ReactNode;
   applyDefaults?: boolean;
   fieldPrefix?: 'address' | 'birthAddress';
   forceOptionalFields?: boolean;
@@ -54,6 +55,7 @@ interface AddressComponentProps {
 }
 
 export const AddressComponent: React.FC<AddressComponentProps> = ({
+  additionalFields,
   applyDefaults = true,
   fieldPrefix = 'address',
   forceOptionalFields = false,
@@ -185,7 +187,11 @@ export const AddressComponent: React.FC<AddressComponentProps> = ({
 
   if (isAddressTemplateLoading) {
     return (
-      <AddressComponentContainer headingDefault={headingDefault} headingKey={headingKey}>
+      <AddressComponentContainer
+        additionalFields={additionalFields}
+        headingDefault={headingDefault}
+        headingKey={headingKey}
+      >
         <div role="progressbar">
           <SkeletonText />
         </div>
@@ -195,7 +201,11 @@ export const AddressComponent: React.FC<AddressComponentProps> = ({
 
   if (!hasAddressTemplate) {
     return (
-      <AddressComponentContainer headingDefault={headingDefault} headingKey={headingKey}>
+      <AddressComponentContainer
+        additionalFields={additionalFields}
+        headingDefault={headingDefault}
+        headingKey={headingKey}
+      >
         <InlineNotification
           style={{ margin: '0', minWidth: '100%' }}
           kind={addressTemplateError ? 'error' : 'warning'}
@@ -212,7 +222,11 @@ export const AddressComponent: React.FC<AddressComponentProps> = ({
 
   if (!addressHierarchyEnabled || !isOnline) {
     return (
-      <AddressComponentContainer headingDefault={headingDefault} headingKey={headingKey}>
+      <AddressComponentContainer
+        additionalFields={additionalFields}
+        headingDefault={headingDefault}
+        headingKey={headingKey}
+      >
         {addressFields.map((attributes) => (
           <Input
             key={`${fieldPrefix}_input_${attributes.name}`}
@@ -230,7 +244,11 @@ export const AddressComponent: React.FC<AddressComponentProps> = ({
 
   if (isLoadingFieldOrder) {
     return (
-      <AddressComponentContainer headingDefault={headingDefault} headingKey={headingKey}>
+      <AddressComponentContainer
+        additionalFields={additionalFields}
+        headingDefault={headingDefault}
+        headingKey={headingKey}
+      >
         <SkeletonText />
       </AddressComponentContainer>
     );
@@ -238,7 +256,11 @@ export const AddressComponent: React.FC<AddressComponentProps> = ({
 
   if (errorFetchingFieldOrder) {
     return (
-      <AddressComponentContainer headingDefault={headingDefault} headingKey={headingKey}>
+      <AddressComponentContainer
+        additionalFields={additionalFields}
+        headingDefault={headingDefault}
+        headingKey={headingKey}
+      >
         <InlineNotification
           style={{ margin: '0', minWidth: '100%' }}
           kind="error"
@@ -250,7 +272,11 @@ export const AddressComponent: React.FC<AddressComponentProps> = ({
   }
 
   return (
-    <AddressComponentContainer headingDefault={headingDefault} headingKey={headingKey}>
+    <AddressComponentContainer
+      additionalFields={additionalFields}
+      headingDefault={headingDefault}
+      headingKey={headingKey}
+    >
       {useQuickSearch && (
         <AddressSearchComponent
           addressLayout={orderedAddressFields}
@@ -279,15 +305,19 @@ export const AddressComponent: React.FC<AddressComponentProps> = ({
 };
 
 const AddressComponentContainer: React.FC<{
+  additionalFields?: React.ReactNode;
   children: React.ReactNode;
   headingDefault: string;
   headingKey: string;
-}> = ({ children, headingDefault, headingKey }) => {
+}> = ({ additionalFields, children, headingDefault, headingKey }) => {
   const { t } = useTranslation(moduleName);
   return (
     <div className={styles.fullWidthInDesktopView}>
       <h4 className={styles.productiveHeading02Light}>{t(headingKey, headingDefault)}</h4>
-      <div className={styles.addressFieldGrid}>{children}</div>
+      <div className={styles.addressFieldGrid}>
+        {children}
+        {additionalFields}
+      </div>
     </div>
   );
 };

@@ -178,11 +178,16 @@ const PatientLists: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
 
 const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
   const { t } = useTranslation();
+  const { neighborhoodAttributeTypeUuid } = useConfig<ConfigObject>();
   const { patient, isLoading } = usePatient(patientId);
+  const { additionalAttributes, isLoading: isLoadingAttributes } = usePatientAdditionalAttributes(patientId);
   const address = patient?.address?.find((entry) => entry.use === 'home');
+  const neighborhood = getDisplayValue(
+    getAttributeByTypeUuid(additionalAttributes, neighborhoodAttributeTypeUuid)?.value,
+  );
   const getAddressKey = (url: string) => url.split('#')[1];
   const hiddenAddressExtensionFields = new Set(['address13', 'address14', 'address15']);
-  const showLoading = useBoundedLoading(isLoading);
+  const showLoading = useBoundedLoading(isLoading || isLoadingAttributes);
 
   if (showLoading) {
     return <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />;
@@ -191,9 +196,9 @@ const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
   return (
     <>
       <p className={styles.heading}>{t('residence', 'Place of residence')}</p>
-      {address ? (
+      {address || neighborhood ? (
         <ul className={styles.detailList}>
-          {Object.entries(address)
+          {Object.entries(address ?? {})
             .filter(([key]) => key !== 'id' && key !== 'use')
             .map(([key, value]) =>
               key === 'extension' ? (
@@ -210,6 +215,7 @@ const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
                 <DetailItem key={`address-${key}`} label={getAddressFieldLabel(key)} value={value} />
               ),
             )}
+          <DetailItem label={t('neighborhood', 'Neighborhood')} value={neighborhood} />
         </ul>
       ) : (
         <EmptyState message={t('noResidence', 'No residence recorded')} />
@@ -288,6 +294,7 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
     ethnicIdentityConceptUuid,
     occupationAttributeTypeUuid,
     nationalityAttributeTypeUuid,
+    neighborhoodAttributeTypeUuid,
   } = useConfig<ConfigObject>();
   const { additionalAttributes, identifiers, isLoading, person } = usePatientAdditionalAttributes(patientUuid);
   const { currentValue: ethnicIdentity, isLoading: isLoadingEthnicIdentity } = useEthnicIdentity(
@@ -306,6 +313,7 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
     birthplaceAttributeTypeUuid,
     ethnicIdentityAttributeTypeUuid,
     occupationAttributeTypeUuid,
+    neighborhoodAttributeTypeUuid,
   ]);
   const remainingAdditionalAttributes = additionalAttributes.filter(
     ({ attributeType }) => !reservedAttributeTypeUuids.has(attributeType?.uuid),

@@ -182,6 +182,110 @@
       }
     ]
   },
+  "@sihsalus/esm-patient-banner-app": {
+    "neighborhoodAttributeTypeUuid": "4a182c6e-9a19-4db8-8042-4bbf3b4308c2",
+    "additionalAttributeTypes": [
+      "9b3df0a1-0c58-4f55-9868-9c38f1db1007",
+      "8d8718c2-c2cc-11de-8d13-0010c6dffd0f",
+      "8d871f2a-c2cc-11de-8d13-0010c6dffd0f",
+      "8d871386-c2cc-11de-8d13-0010c6dffd0f",
+      "8d872150-c2cc-11de-8d13-0010c6dffd0f",
+      "8d871afc-c2cc-11de-8d13-0010c6dffd0f",
+      "8d87236c-c2cc-11de-8d13-0010c6dffd0f",
+      "77bbb234-2312-4644-99d0-fa894d438817",
+      "9b3df0a1-0c58-4f55-9868-9c38f1db1001",
+      "9b3df0a1-0c58-4f55-9868-9c38f1db1002",
+      "56188294-b42c-481d-a987-4b495116c580",
+      "374b130f-7457-476f-87b1-f182aa77c434",
+      "9b3df0a1-0c58-4f55-9868-9c38f1db1005",
+      "4a182c6e-9a19-4db8-8042-4bbf3b4308c2"
+    ]
+  },
+  "@sihsalus/esm-patient-registration-app": {
+    "sectionDefinitions": [
+      {
+        "id": "contact",
+        "fields": ["neighborhood"]
+      }
+    ],
+    "fieldDefinitions": [
+      {
+        "id": "neighborhood",
+        "type": "person attribute",
+        "uuid": "4a182c6e-9a19-4db8-8042-4bbf3b4308c2",
+        "label": "Barrio",
+        "showHeading": false,
+        "answerConceptSetUuid": "0fd3e744-6d2c-4cb3-9b7e-1f88899635d9",
+        "codedInputType": "select",
+        "searchable": true,
+        "validation": {
+          "required": false
+        },
+        "customConceptAnswers": [
+          {
+            "uuid": "1975805f-a096-4583-aacc-ab439c79e1cd",
+            "code": "SCL-01",
+            "label": "Barrio Santa Rosa",
+            "color": "#B94A36"
+          },
+          {
+            "uuid": "6db9db1a-b772-4cc7-b261-41ea0957e0f7",
+            "code": "SCL-02",
+            "label": "Barrio San Juan Bautista",
+            "color": "#4F6128"
+          },
+          {
+            "uuid": "d31430ca-4892-43b9-aba5-0f0c51aea497",
+            "code": "SCL-03",
+            "label": "Barrio Fray Martin",
+            "color": "#304238"
+          },
+          {
+            "uuid": "4f0c3fd5-100f-4d2e-9478-100169d952da",
+            "code": "SCL-04",
+            "label": "Barrio Jorge Chavez",
+            "color": "#4E8C24"
+          },
+          {
+            "uuid": "30a01fac-2c8e-4313-b675-3c389a255db5",
+            "code": "SCL-05",
+            "label": "Barrio San Antonio",
+            "color": "#B47A16"
+          },
+          {
+            "uuid": "4bc7352e-f2b1-4e4b-a625-ca1d043e10a9",
+            "code": "SCL-06",
+            "label": "Barrio Senor de los Milagros",
+            "color": "#642C35"
+          },
+          {
+            "uuid": "a65d66bd-b0a6-4ada-9270-e55ba200e4ca",
+            "code": "SCL-07",
+            "label": "Barrio Jaime Carranza",
+            "color": "#D45A1F"
+          },
+          {
+            "uuid": "b77b4e56-64c7-427f-9d6b-87ce54291653",
+            "code": "SCL-08",
+            "label": "Barrio Santa Elisa",
+            "color": "#A5B51D"
+          },
+          {
+            "uuid": "81fc260c-9a5f-4182-b7ac-d50f0960370b",
+            "code": "SCL-09",
+            "label": "Barrio 28 de Julio",
+            "color": "#B98A16"
+          },
+          {
+            "uuid": "ef33a561-cdea-4218-a360-723d16ccdd08",
+            "code": "SCL-10",
+            "label": "Barrio Nueva Primavera",
+            "color": "#D94B3D"
+          }
+        ]
+      }
+    ]
+  },
   "@openmrs/esm-styleguide": {
     "preferredDateLocale": {
       "en": "es-ES",

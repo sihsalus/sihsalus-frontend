@@ -15,6 +15,15 @@ export {
 } from '@openmrs/esm-patient-common-lib';
 
 // ── App-specific hooks ───────────────────────────────────────────────────────
+export {
+  useAmbulatoryVisitGuard,
+  type VerifiedAmbulatoryVisit,
+} from './useAmbulatoryVisitGuard';
+export {
+  type ConsultaExternaFormEntryMode,
+  useConsultaExternaFormLauncher,
+} from './useConsultaExternaFormLauncher';
+export { useConsultaExternaVisitNoteLauncher } from './useConsultaExternaVisitNoteLauncher';
 export { useDiagnosisHistory } from './useDiagnosisHistory';
 export { useEthnicIdentity } from './useEthnicIdentity';
 export { useInsuranceProvider } from './useInsuranceProvider';

@@ -1,11 +1,11 @@
 import { Accordion, AccordionItem, Tag } from '@carbon/react';
 import { formatDate, useConfig } from '@openmrs/esm-framework';
-import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
+import { useConsultaExternaFormLauncher } from '../hooks/useConsultaExternaFormLauncher';
 import { useSoapNotes } from '../hooks/useSoapNotes';
-import { consultaExternaEditPrivilege, patientFormEntryWorkspace } from '../utils/constants';
+import { clinicalFormsPrivilege, consultaExternaEditPrivilege } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 import styles from './consulta-externa-dashboard.scss';
 
@@ -29,15 +29,14 @@ const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
     config.concepts,
   );
 
-  const handleLaunchForm = () => {
-    launchPatientWorkspace(patientFormEntryWorkspace, {
-      mutateForm: mutate,
-      formInfo: {
-        patientUuid,
-        formUuid: config.formsList?.soapNoteForm ?? config.formsList?.consultaExternaForm,
-      },
-    });
-  };
+  const handleLaunchForm = useConsultaExternaFormLauncher({
+    patientUuid,
+    formIdentifier: config.formsList?.soapNoteForm ?? config.formsList?.consultaExternaForm,
+    encounterTypeUuid: config.encounterTypes?.externalConsultation,
+    ambulatoryVisitTypeUuid: config.visitTypes?.ambulatory,
+    mutate,
+    entryMode: 'one-per-visit',
+  });
 
   return (
     <ClinicalHistoryCard
@@ -45,7 +44,7 @@ const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
       actionLabel={t('addSoapNote', 'Registrar examen físico / SOAP')}
       empty={soapEntries.length === 0}
       emptyDisplayText={t('physicalExamAndSoapNotes', 'registros de examen físico / SOAP')}
-      editPrivilege={consultaExternaEditPrivilege}
+      editPrivilege={[consultaExternaEditPrivilege, clinicalFormsPrivilege]}
       error={error}
       isLoading={isLoading}
       isValidating={isValidating}

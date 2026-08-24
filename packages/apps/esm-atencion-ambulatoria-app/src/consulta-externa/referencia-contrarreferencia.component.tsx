@@ -9,12 +9,12 @@ import {
   Tag,
 } from '@carbon/react';
 import { formatDate, useConfig } from '@openmrs/esm-framework';
-import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
+import { useConsultaExternaFormLauncher } from '../hooks/useConsultaExternaFormLauncher';
 import { useReferralCounterReferral } from '../hooks/useReferralCounterReferral';
-import { consultaExternaEditPrivilege, patientFormEntryWorkspace } from '../utils/constants';
+import { clinicalFormsPrivilege, consultaExternaEditPrivilege } from '../utils/constants';
 import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface ReferenciaContraReferenciaProps {
@@ -45,15 +45,14 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
     },
   );
 
-  const handleLaunchForm = () => {
-    launchPatientWorkspace(patientFormEntryWorkspace, {
-      mutateForm: mutate,
-      formInfo: {
-        patientUuid,
-        formUuid: config.formsList?.referralForm,
-      },
-    });
-  };
+  const handleLaunchForm = useConsultaExternaFormLauncher({
+    patientUuid,
+    formIdentifier: config.formsList?.referralForm,
+    encounterTypeUuid: config.encounterTypes?.referralCounterReferral,
+    ambulatoryVisitTypeUuid: config.visitTypes?.ambulatory,
+    mutate,
+    entryMode: 'repeatable',
+  });
 
   return (
     <ClinicalHistoryCard
@@ -61,7 +60,7 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
       actionLabel={t('addReferral', 'Registrar Referencia')}
       empty={entries.length === 0}
       emptyDisplayText={t('referralsAndCounterReferrals', 'referencias y contrarreferencias')}
-      editPrivilege={consultaExternaEditPrivilege}
+      editPrivilege={[consultaExternaEditPrivilege, clinicalFormsPrivilege]}
       error={error}
       isLoading={isLoading}
       isValidating={isValidating}
@@ -78,7 +77,9 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
               key={entry.uuid}
               title={
                 <span>
-                  {formatDate(new Date(entry.encounterDatetime), { time: true })}
+                  {formatDate(new Date(entry.encounterDatetime), {
+                    time: true,
+                  })}
                   {' — '}
                   <Tag type="outline" size="sm">
                     {entry.provider ?? t('unknownProvider', 'Proveedor desconocido')}

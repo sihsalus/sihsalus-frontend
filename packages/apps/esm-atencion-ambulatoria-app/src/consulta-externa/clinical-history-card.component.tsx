@@ -27,7 +27,7 @@ interface ClinicalHistoryCardProps {
   children?: React.ReactNode;
   empty?: boolean;
   emptyDisplayText: string;
-  editPrivilege?: string;
+  editPrivilege?: string | Array<string>;
   error?: unknown;
   isLoading?: boolean;
   isValidating?: boolean;
@@ -37,6 +37,7 @@ interface ClinicalHistoryCardProps {
   pagination?: ClinicalHistoryPagination;
   secondaryActionIcon?: React.ComponentType;
   secondaryActionLabel?: string;
+  secondaryActionPrivilege?: string | Array<string>;
   skeletonHeaders?: DataTableSkeletonProps['headers'];
   /** Sources that failed while others succeeded; the history shown is partial. */
   sourceErrors?: Array<Error>;
@@ -58,6 +59,7 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
   pagination,
   secondaryActionIcon,
   secondaryActionLabel,
+  secondaryActionPrivilege,
   skeletonHeaders,
   sourceErrors,
 }) => {
@@ -66,6 +68,7 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
   const hasPagination = pagination && pagination.totalPages > 1;
   const hasSecondaryAction = Boolean(onSecondaryAction && secondaryActionLabel);
   const hasEditingActions = Boolean(hasSecondaryAction || (onAction && actionLabel));
+  const usesSeparatePrivileges = Boolean(hasSecondaryAction && secondaryActionPrivilege);
 
   if (isLoading) {
     return (
@@ -126,7 +129,18 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
     >
       <span className={styles.clinicalEntryToolbarLabel}>{t('clinicalEntryActions', 'Clinical entry actions')}</span>
       <div className={styles.historyHeaderActionItems}>
-        {hasSecondaryAction ? (
+        {hasSecondaryAction && secondaryActionPrivilege ? (
+          <RequirePrivilege privilege={secondaryActionPrivilege} hideUnauthorized>
+            <Button
+              kind="ghost"
+              size={isTablet ? 'lg' : 'sm'}
+              renderIcon={secondaryActionIcon}
+              onClick={onSecondaryAction}
+            >
+              {secondaryActionLabel}
+            </Button>
+          </RequirePrivilege>
+        ) : hasSecondaryAction ? (
           <Button
             kind="ghost"
             size={isTablet ? 'lg' : 'sm'}
@@ -136,7 +150,13 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
             {secondaryActionLabel}
           </Button>
         ) : null}
-        {onAction && actionLabel ? (
+        {onAction && actionLabel && usesSeparatePrivileges && editPrivilege ? (
+          <RequirePrivilege privilege={editPrivilege} hideUnauthorized>
+            <Button kind="tertiary" size={isTablet ? 'lg' : 'sm'} renderIcon={Add} onClick={onAction}>
+              {actionLabel}
+            </Button>
+          </RequirePrivilege>
+        ) : onAction && actionLabel ? (
           <Button kind="tertiary" size={isTablet ? 'lg' : 'sm'} renderIcon={Add} onClick={onAction}>
             {actionLabel}
           </Button>
@@ -145,7 +165,7 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
     </div>
   ) : null;
   const visibleEditingToolbar =
-    editingToolbar && editPrivilege ? (
+    editingToolbar && editPrivilege && !usesSeparatePrivileges ? (
       <RequirePrivilege privilege={editPrivilege} hideUnauthorized>
         {editingToolbar}
       </RequirePrivilege>

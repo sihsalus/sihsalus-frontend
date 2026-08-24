@@ -71,6 +71,20 @@ export const configSchema = {
     _description:
       'Whether to display the Reference number field in the Order form. This field maps to the accesion_number property in the Order data model',
   },
+  stockAvailability: {
+    enabled: {
+      _type: Type.Boolean,
+      _default: false,
+      _description:
+        'Shows read-only medicine availability from Stock Management. This does not reserve or deduct inventory.',
+    },
+    dispensingLocationUuid: {
+      _type: Type.UUID,
+      _default: null,
+      _description:
+        'Stock dispensing location used for the availability indicator. The indicator stays disabled when this is not configured.',
+    },
+  },
   priorityConfigs: {
     _type: Type.Array,
     _description:
@@ -151,5 +165,9 @@ export interface ConfigObject {
   showPrintButton: boolean;
   orderTypes: Array<OrderTypeDefinition>;
   showReferenceNumberField: boolean;
+  stockAvailability: {
+    enabled: boolean;
+    dispensingLocationUuid: string | null;
+  };
   priorityConfigs: Array<PriorityConfig>;
 }

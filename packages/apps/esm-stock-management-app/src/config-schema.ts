@@ -8,7 +8,7 @@ export const configSchema = {
   dispensingUnitsUUID: {
     _type: Type.ConceptUuid,
     _description: 'UUID for the stock dispensing units',
-    _default: '62985ffa-b5c9-4e14-ad31-bbfa657dd87a',
+    _default: '162402AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   },
   enablePrintButton: {
     _type: Type.Boolean,
@@ -35,7 +35,7 @@ export const configSchema = {
   packingUnitsUUID: {
     _type: Type.ConceptUuid,
     _description: 'UUID for the packaging unit',
-    _default: '62985ffa-b5c9-4e14-ad31-bbfa657dd87a',
+    _default: 'bce2b1af-98b1-48a2-98a2-3e4ffb3c79c2',
   },
   printBalanceOnHand: {
     _type: Type.Boolean,
@@ -50,22 +50,22 @@ export const configSchema = {
   stockAdjustmentReasonUUID: {
     _type: Type.ConceptUuid,
     _description: 'UUID for the stock adjustment reasons',
-    _default: 'a8658733-4f9e-4c23-89b5-106d9315114d',
+    _default: '3bbfaa44-d5b8-404d-b4c1-2bf49ad8ce25',
   },
   stockItemCategoryUUID: {
     _type: Type.ConceptUuid,
     _description: 'UUID for the stock item category',
-    _default: '8ccf6066-9297-4d76-aaf3-00aa3714d198',
+    _default: '6d24eb6e-b42f-4706-ab2d-ae4472161f6a',
   },
   stockSourceTypeUUID: {
     _type: Type.ConceptUuid,
     _description: 'UUID for the stock source types',
-    _default: '3ec42d39-8e50-4131-88a7-c5889af7abda',
+    _default: '2e1e8049-9cbe-4a2d-b1e5-8a91e5d7d97d',
   },
   stockTakeReasonUUID: {
     _type: Type.ConceptUuid,
     _description: 'UUID for the stock take reasons',
-    _default: '3ec42d39-8e50-4131-88a7-c5889af7abda',
+    _default: '47f0825e-8648-47c2-b847-d3197ed6bb72',
   },
   useItemCommonNameAsDisplay: {
     _type: Type.Boolean,

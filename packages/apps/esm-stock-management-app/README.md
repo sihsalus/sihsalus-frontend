@@ -101,12 +101,17 @@ These must be configured to match your OpenMRS concept dictionary. These UUIDs l
 {
   "packingUnitsUUID": "bce2b1af-98b1-48a2-98a2-3e4ffb3c79c2",
   "dispensingUnitsUUID": "162402AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-  "stockAdjustmentReasonUUID": "47f0825e-8648-47c2-b847-d3197ed6bb72",
+  "stockAdjustmentReasonUUID": "3bbfaa44-d5b8-404d-b4c1-2bf49ad8ce25",
   "stockTakeReasonUUID": "47f0825e-8648-47c2-b847-d3197ed6bb72",
   "stockSourceTypeUUID": "2e1e8049-9cbe-4a2d-b1e5-8a91e5d7d97d",
   "stockItemCategoryUUID": "6d24eb6e-b42f-4706-ab2d-ae4472161f6a"
 }
 ```
+
+The SIH Salus content package provisions these concept sets and their controlled members. This only makes the
+catalog configuration reproducible: it does not create stock items, batches, suppliers, user location scopes, or
+opening balances. Those records must be loaded explicitly from an approved physical inventory. Never seed a
+synthetic positive balance in a clinical environment.
 
 ### Display & Behavior Options
 

@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { SkeletonText } from '@carbon/react';
 import { CheckmarkFilledIcon, CloseFilledIcon } from '@openmrs/esm-framework';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useOrderStockInfo } from '../hooks/useOrderStockInfo';
@@ -14,29 +13,19 @@ interface OrderStockDetailsComponentProps {
 
 const OrderStockDetailsComponent: React.FC<OrderStockDetailsComponentProps> = ({ orderItemUuid }) => {
   const { t } = useTranslation();
-  const { data: stockData, isLoading, error } = useOrderStockInfo(orderItemUuid);
-
-  const isInStock = useMemo(() => {
-    if (!stockData?.entry?.length) {
-      return false;
-    }
-    const resource = stockData.entry[0]?.resource;
-    return (
-      resource?.status === 'active' && typeof resource?.netContent?.value === 'number' && resource.netContent.value > 0
-    );
-  }, [stockData]);
+  const { status, isLoading, error } = useOrderStockInfo(orderItemUuid);
 
   if (isLoading) {
     return <SkeletonText width="100px" />;
   }
 
-  if (!stockData?.entry || error) {
+  if (!status || status === 'untracked' || error) {
     return null;
   }
 
   return (
     <div>
-      {isInStock ? (
+      {status === 'in-stock' ? (
         <div className={styles.itemInStock}>
           <CheckmarkFilledIcon size={16} className={styles.itemInStockIcon} /> {t('inStock', 'In stock')}
         </div>

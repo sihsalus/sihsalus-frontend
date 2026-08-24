@@ -32,6 +32,21 @@ Las ordenes son datos clinicos y deben asociarse a una visita/consulta activa y 
 - Laboratorio, farmacia, radiologia, inmunizacion e interconsulta pueden depender de modulos backend distintos.
 - Integraciones opcionales con stock/billing/FHIR deben degradar sin romper el workspace.
 
+### Disponibilidad de medicamentos
+
+`stockAvailability.enabled` habilita un indicador de solo lectura para medicamentos usando directamente el endpoint
+de inventario de `stockmanagement`. `stockAvailability.dispensingLocationUuid` es obligatorio y delimita la farmacia
+consultada. El flujo no depende de `fhirproxy`, no reserva unidades y no descuenta existencias.
+
+- Una fila administrada con saldo positivo muestra `Disponible en inventario`.
+- Una fila administrada con saldo cero muestra `Agotado`.
+- Un medicamento aún no incorporado a Stock, un módulo ausente o un error de consulta no se presentan como agotado;
+  el indicador se oculta para evitar una conclusión clínica falsa.
+- Los lotes vencidos se excluyen de la disponibilidad.
+
+El usuario clínico necesita los privilegios backend de lectura de artículos y de cantidades en ubicaciones de
+dispensación. La UI nunca debe ampliar ese acceso ni mostrar saldos de otra ubicación.
+
 ## Contrato RBAC actual
 
 | Capacidad                                                    | Privilegio frontend                    |
@@ -50,11 +65,11 @@ Los guards de UI no autorizan la mutación en el backend. Los roles todavía nec
 
 ## TODO backend/permisos/auditoria
 
-- Validar `InventoryItem` y `ChargeItemDefinition` contra el `fhir2 >= 1.2` ya declarado cuando los hooks de stock y precio estén habilitados.
+- Validar `ChargeItemDefinition` contra el `fhir2 >= 1.2` ya declarado cuando el hook de precio esté habilitado.
 - Probar Order Basket contra backend actualizado con medicamentos, laboratorios y ordenes generales reales.
 - Validar que los nombres de child workspaces sigan siendo configurables para integraciones externas como Ward y Dispensing.
 - Granularizar, si la política lo requiere, creación, modificación y descontinuación/cancelación; actualmente comparten `app:hoja.clinica.ordenes.editar`.
 - Alinear el guard de modificación de medicamentos con el privilegio del workspace de canasta y cubrir el flujo completo con una prueba de autorización.
 - Proteger explícitamente las extensiones de precio, stock y resultado de laboratorio, y retirar cualquier resto de código del workspace de resultados eliminado.
 - Agregar eventos auditables para crear/modificar/cancelar orden y para consultar precio/stock de insumos.
-- Definir fallback cuando `billing`, `stockmanagement` o `fhirproxy` no estén instalados: ocultar extensiones, mostrar dato no disponible o desactivar accion.
+- Definir fallback cuando `billing` no esté instalado: ocultar la extensión, mostrar dato no disponible o desactivar la acción.

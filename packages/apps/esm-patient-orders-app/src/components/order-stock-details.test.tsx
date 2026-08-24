@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react';
 import { useTranslation } from 'react-i18next';
-import { mockOrderStockData, renderWithSwr } from 'test-utils';
+import { renderWithSwr } from 'test-utils';
 
 import { useOrderStockInfo } from '../hooks/useOrderStockInfo';
 
@@ -19,8 +19,6 @@ vi.mock('react-i18next', () => ({
 const mockUseTranslation = useTranslation as vi.Mock;
 
 describe('OrderStockDetailsComponent', () => {
-  const mockOrderItemUuid = 'test-uuid';
-
   beforeEach(() => {
     vi.resetAllMocks();
     mockUseTranslation.mockImplementation(() => ({
@@ -28,111 +26,49 @@ describe('OrderStockDetailsComponent', () => {
     }));
   });
 
-  it('renders loading skeleton when data is loading', () => {
-    mockUseOrderStockInfo.mockReturnValue({
-      data: null,
-      isLoading: true,
-      error: null,
-    });
+  it('renders a loading skeleton', () => {
+    mockUseOrderStockInfo.mockReturnValue({ status: null, isLoading: true, error: undefined });
 
-    const { container } = renderWithSwr(<OrderStockDetailsComponent orderItemUuid={mockOrderItemUuid} />);
+    const { container } = renderWithSwr(<OrderStockDetailsComponent orderItemUuid="drug-uuid" />);
+
     expect(container.querySelector('.cds--skeleton__text')).toBeInTheDocument();
   });
 
-  it('renders nothing when stock data is null', () => {
-    mockUseOrderStockInfo.mockReturnValue({
-      data: null,
-      isLoading: false,
-      error: null,
-    });
+  it.each([null, 'untracked'] as const)('renders nothing for status %s', (status) => {
+    mockUseOrderStockInfo.mockReturnValue({ status, isLoading: false, error: undefined });
 
-    const { container } = renderWithSwr(<OrderStockDetailsComponent orderItemUuid={mockOrderItemUuid} />);
+    const { container } = renderWithSwr(<OrderStockDetailsComponent orderItemUuid="drug-uuid" />);
+
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('renders "In Stock" when item is active and has positive quantity', () => {
-    mockUseOrderStockInfo.mockReturnValue({
-      data: mockOrderStockData,
-      isLoading: false,
-      error: null,
-    });
+  it('renders in-stock for a positive balance', () => {
+    mockUseOrderStockInfo.mockReturnValue({ status: 'in-stock', isLoading: false, error: undefined });
 
-    renderWithSwr(<OrderStockDetailsComponent orderItemUuid={mockOrderItemUuid} />);
+    renderWithSwr(<OrderStockDetailsComponent orderItemUuid="drug-uuid" />);
 
     expect(screen.getByText(/In stock/i)).toBeInTheDocument();
     expect(screen.getByText('CheckmarkFilledIcon')).toBeInTheDocument();
   });
 
-  it('renders "Out of Stock" when item has zero quantity', () => {
-    const outOfStockData = {
-      ...mockOrderStockData,
-      entry: [
-        {
-          ...mockOrderStockData.entry[0],
-          resource: {
-            ...mockOrderStockData.entry[0].resource,
-            netContent: {
-              value: 0,
-              unit: 'units',
-            },
-          },
-        },
-      ],
-    };
+  it('renders out-of-stock only for a tracked zero balance', () => {
+    mockUseOrderStockInfo.mockReturnValue({ status: 'out-of-stock', isLoading: false, error: undefined });
 
-    mockUseOrderStockInfo.mockReturnValue({
-      data: outOfStockData,
-      isLoading: false,
-      error: null,
-    });
-
-    renderWithSwr(<OrderStockDetailsComponent orderItemUuid={mockOrderItemUuid} />);
+    renderWithSwr(<OrderStockDetailsComponent orderItemUuid="drug-uuid" />);
 
     expect(screen.getByText(/Out of stock/i)).toBeInTheDocument();
     expect(screen.getByText('CloseFilledIcon')).toBeInTheDocument();
   });
 
-  it('renders "Out of Stock" when item is inactive', () => {
-    const inactiveData = {
-      ...mockOrderStockData,
-      entry: [
-        {
-          ...mockOrderStockData.entry[0],
-          resource: {
-            ...mockOrderStockData.entry[0].resource,
-            status: 'inactive',
-          },
-        },
-      ],
-    };
-
+  it('hides availability when the request fails', () => {
     mockUseOrderStockInfo.mockReturnValue({
-      data: inactiveData,
+      status: null,
       isLoading: false,
-      error: null,
+      error: new Error('Stock unavailable'),
     });
 
-    renderWithSwr(<OrderStockDetailsComponent orderItemUuid={mockOrderItemUuid} />);
+    const { container } = renderWithSwr(<OrderStockDetailsComponent orderItemUuid="drug-uuid" />);
 
-    expect(screen.getByText(/Out of stock/i)).toBeInTheDocument();
-    expect(screen.getByText('CloseFilledIcon')).toBeInTheDocument();
-  });
-
-  it('renders "Out of Stock" when entry array is empty', () => {
-    const emptyData = {
-      ...mockOrderStockData,
-      entry: [],
-    };
-
-    mockUseOrderStockInfo.mockReturnValue({
-      data: emptyData,
-      isLoading: false,
-      error: null,
-    });
-
-    renderWithSwr(<OrderStockDetailsComponent orderItemUuid={mockOrderItemUuid} />);
-
-    expect(screen.getByText(/Out of stock/i)).toBeInTheDocument();
-    expect(screen.getByText('CloseFilledIcon')).toBeInTheDocument();
+    expect(container).toBeEmptyDOMElement();
   });
 });

@@ -428,7 +428,8 @@ export function downloadOutpatientVisitSummaryPdf(bytes: Uint8Array, fileName: s
 
 export function createOutpatientVisitSummaryFileName(visitUuid: string, visitStart: string): string {
   const date = new Date(visitStart);
-  const safeDate = Number.isNaN(date.getTime()) ? 'sin-fecha' : date.toISOString().slice(0, 10);
+  const sourceDate = /^(\d{4}-\d{2}-\d{2})(?:T|$)/.exec(visitStart)?.[1];
+  const safeDate = Number.isNaN(date.getTime()) ? 'sin-fecha' : (sourceDate ?? date.toISOString().slice(0, 10));
   const safeVisitSuffix = visitUuid.replace(/[^a-zA-Z0-9]/g, '').slice(-8) || 'visita';
   return `informe-consulta-externa-${safeDate}-${safeVisitSuffix}.pdf`;
 }

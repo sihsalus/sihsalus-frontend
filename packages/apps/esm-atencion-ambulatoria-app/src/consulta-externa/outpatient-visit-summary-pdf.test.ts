@@ -98,6 +98,12 @@ describe('outpatient visit summary PDF', () => {
     expect(fileName).not.toContain('Paciente');
   });
 
+  it('keeps the visit local date in the filename instead of shifting it to UTC', () => {
+    expect(createOutpatientVisitSummaryFileName('visit-uuid-12345678', '2026-08-23T23:30:00.000-05:00')).toBe(
+      'informe-consulta-externa-2026-08-23-12345678.pdf',
+    );
+  });
+
   it('downloads and always revokes the local object URL', () => {
     const anchor = document.createElement('a');
     const click = vi.spyOn(anchor, 'click').mockImplementation(() => undefined);

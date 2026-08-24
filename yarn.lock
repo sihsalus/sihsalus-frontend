@@ -8589,6 +8589,7 @@ __metadata:
   dependencies:
     "@carbon/react": "npm:^1.83.0"
     "@openmrs/esm-framework": "workspace:*"
+    "@openmrs/esm-patient-common-lib": "workspace:*"
     "@playwright/test": "npm:^1.52.0"
     "@sihsalus/esm-rbac": "workspace:*"
     "@swc/cli": "npm:0.8.1"
@@ -8609,6 +8610,7 @@ __metadata:
     vitest: "npm:^4.1.7"
   peerDependencies:
     "@openmrs/esm-framework": "*"
+    "@openmrs/esm-patient-common-lib": "*"
     dayjs: 1.x
     react: 18.x
     react-i18next: 16.x

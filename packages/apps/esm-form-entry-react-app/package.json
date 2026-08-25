@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-form-entry-react-app",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "license": "MPL-2.0",
   "description": "React replacement for the Angular form entry app, wrapping @sihsalus/esm-form-engine-lib",
   "browser": "dist/openmrs-esm-form-entry-react-app.js",

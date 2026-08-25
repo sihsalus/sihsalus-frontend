@@ -48,11 +48,8 @@ export interface OutpatientVisitSummaryPdfLabels {
   plan: string;
   physicalExam: string;
   generalCondition: string;
-  hydrationStatus: string;
-  nutritionStatus: string;
   consciousnessStatus: string;
   skinAndAppendages: string;
-  regionalExamSummary: string;
   headAndNeck: string;
   respiratorySystem: string;
   cardiovascularSystem: string;
@@ -348,11 +345,8 @@ export async function createOutpatientVisitSummaryPdf(
   if (Object.values(summary.physicalExam).some(Boolean)) {
     drawSectionTitle(state, labels.physicalExam);
     drawField(state, labels.generalCondition, summary.physicalExam.generalState);
-    drawField(state, labels.hydrationStatus, summary.physicalExam.hydration);
-    drawField(state, labels.nutritionStatus, summary.physicalExam.nutrition);
     drawField(state, labels.consciousnessStatus, summary.physicalExam.consciousness);
     drawField(state, labels.skinAndAppendages, summary.physicalExam.skinAndAppendages);
-    drawField(state, labels.regionalExamSummary, summary.physicalExam.regionalSummary);
     drawField(state, labels.headAndNeck, summary.physicalExam.headAndNeck);
     drawField(state, labels.respiratorySystem, summary.physicalExam.respiratory);
     drawField(state, labels.cardiovascularSystem, summary.physicalExam.cardiovascular);

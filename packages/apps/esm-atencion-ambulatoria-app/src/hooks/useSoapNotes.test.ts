@@ -22,11 +22,11 @@ describe('mapSoapEntry', () => {
           formFieldPath: 'rfe-forms-estadoGeneral',
         },
         {
-          uuid: 'regional-summary',
-          concept: { uuid: 'objective', display: 'Physical examination findings' },
-          value: 'Sin hallazgos regionales de alarma',
-          display: 'Sin hallazgos regionales de alarma',
-          formFieldPath: 'rfe-forms-resumenExamenRegional',
+          uuid: 'head-and-neck',
+          concept: { uuid: 'head-and-neck-concept', display: 'Head and neck' },
+          value: 'Sin hallazgos de alarma',
+          display: 'Sin hallazgos de alarma',
+          formFieldPath: 'rfe-forms-cabezaCuello',
         },
         {
           uuid: 'other-findings',
@@ -43,7 +43,7 @@ describe('mapSoapEntry', () => {
     expect(entry.provider).toBe('Dra. Sintética');
     expect(entry.objective).toBe('Hallazgo adicional sintético');
     expect(entry.physicalExam.generalState).toBe('Buen estado general');
-    expect(entry.physicalExam.regionalSummary).toBe('Sin hallazgos regionales de alarma');
+    expect(entry.physicalExam.headAndNeck).toBe('Sin hallazgos de alarma');
   });
 
   it('keeps the legacy unsegmented objective readable', () => {

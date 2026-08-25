@@ -218,14 +218,14 @@ function getLatestObservation(
   conceptUuid: string | undefined,
   fieldPath?: string | null,
 ): VisitSummaryObservation | null {
-  if (!conceptUuid) return null;
+  if (!conceptUuid && fieldPath === undefined) return null;
   for (const encounter of [...encounters].sort(
     (a, b) => new Date(b.encounterDatetime).getTime() - new Date(a.encounterDatetime).getTime(),
   )) {
     const match = encounter.obs?.find(
       (obs) =>
         !obs.voided &&
-        obs.concept?.uuid === conceptUuid &&
+        (conceptUuid === undefined || obs.concept?.uuid === conceptUuid) &&
         (fieldPath === undefined
           ? true
           : fieldPath === null
@@ -462,7 +462,7 @@ export function buildOutpatientVisitSummary({
   const physicalExam = physicalExamFields.reduce((values, field) => {
     values[field.key] = getObservationText(
       encounters,
-      concepts.soapObjectiveUuid,
+      undefined,
       getFormEngineFieldPath(field.questionId),
     );
     return values;

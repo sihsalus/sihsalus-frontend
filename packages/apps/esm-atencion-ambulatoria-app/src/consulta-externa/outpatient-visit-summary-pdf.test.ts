@@ -57,11 +57,8 @@ const summary: OutpatientVisitSummary = {
   soap: { subjective: 'Subjetivo', objective: 'Objetivo', assessment: 'Apreciación', plan: 'Plan' },
   physicalExam: {
     generalState: 'Paciente en buen estado general',
-    hydration: 'Hidratado',
-    nutrition: null,
     consciousness: 'Alerta y orientado',
     skinAndAppendages: null,
-    regionalSummary: 'Examen regional sin hallazgos de alarma',
     headAndNeck: null,
     respiratory: null,
     cardiovascular: null,

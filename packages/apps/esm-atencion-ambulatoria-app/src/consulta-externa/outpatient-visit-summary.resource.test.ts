@@ -81,10 +81,10 @@ const source: VisitSummarySource = {
           formFieldPath: 'rfe-forms-estadoGeneral',
         },
         {
-          uuid: 'regional-summary-obs',
-          concept: { uuid: 'soap-objective' },
-          value: 'Examen regional sin hallazgos de alarma',
-          formFieldPath: 'rfe-forms-resumenExamenRegional',
+          uuid: 'head-and-neck-obs',
+          concept: { uuid: 'head-and-neck-concept' },
+          value: 'Sin hallazgos de alarma',
+          formFieldPath: 'rfe-forms-cabezaCuello',
         },
         { uuid: 'plan-obs', concept: { uuid: 'therapeutic-indications' }, value: 'Hidratación y reposo' },
         {
@@ -170,7 +170,7 @@ describe('outpatient visit summary contract', () => {
     expect(summary.soap.objective).toBeNull();
     expect(summary.physicalExam).toMatchObject({
       generalState: 'Paciente en buen estado general',
-      regionalSummary: 'Examen regional sin hallazgos de alarma',
+      headAndNeck: 'Sin hallazgos de alarma',
     });
     expect(summary.diagnoses).toEqual([expect.objectContaining({ display: 'Cefalea', cie10Code: 'R51', type: 'D' })]);
     expect(summary.orders).toEqual([

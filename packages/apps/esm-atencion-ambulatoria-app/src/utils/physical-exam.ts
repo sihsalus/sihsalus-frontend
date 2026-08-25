@@ -8,34 +8,16 @@ export const physicalExamFields = [
     defaultLabel: 'Estado general',
   },
   {
-    key: 'hydration',
-    questionId: 'estadoHidratacion',
-    translationKey: 'hydrationStatus',
-    defaultLabel: 'Estado de hidratación',
-  },
-  {
-    key: 'nutrition',
-    questionId: 'estadoNutricion',
-    translationKey: 'nutritionStatus',
-    defaultLabel: 'Estado de nutrición',
-  },
-  {
     key: 'consciousness',
     questionId: 'estadoConciencia',
     translationKey: 'consciousnessStatus',
-    defaultLabel: 'Estado de conciencia',
+    defaultLabel: 'Conciencia y orientación',
   },
   {
     key: 'skinAndAppendages',
     questionId: 'pielAnexos',
     translationKey: 'skinAndAppendages',
-    defaultLabel: 'Piel y anexos',
-  },
-  {
-    key: 'regionalSummary',
-    questionId: 'resumenExamenRegional',
-    translationKey: 'regionalExamSummary',
-    defaultLabel: 'Resumen del examen regional',
+    defaultLabel: 'Piel y faneras',
   },
   {
     key: 'headAndNeck',
@@ -59,19 +41,19 @@ export const physicalExamFields = [
     key: 'abdomenAndDigestive',
     questionId: 'abdomenDigestivo',
     translationKey: 'abdomenAndDigestiveSystem',
-    defaultLabel: 'Abdomen y aparato digestivo',
+    defaultLabel: 'Abdomen',
   },
   {
     key: 'genitourinary',
     questionId: 'genitourinario',
     translationKey: 'genitourinarySystem',
-    defaultLabel: 'Genitourinario',
+    defaultLabel: 'Genito urinario',
   },
   {
     key: 'musculoskeletal',
     questionId: 'musculoesqueleticoExtremidades',
     translationKey: 'musculoskeletalAndExtremities',
-    defaultLabel: 'Musculoesquelético y extremidades',
+    defaultLabel: 'Aparato locomotor y extremidades',
   },
   {
     key: 'neurological',
@@ -83,7 +65,7 @@ export const physicalExamFields = [
     key: 'otherFindings',
     questionId: 'soapObjetivo',
     translationKey: 'otherObjectiveFindings',
-    defaultLabel: 'Otros hallazgos objetivos',
+    defaultLabel: 'Resumen regional y otros hallazgos objetivos',
   },
 ] as const;
 

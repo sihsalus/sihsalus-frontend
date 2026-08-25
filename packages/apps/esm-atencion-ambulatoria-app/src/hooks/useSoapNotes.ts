@@ -42,10 +42,10 @@ function getObsValue(
   conceptUuid: string | undefined,
   formFieldPath?: string,
 ): string | null {
-  if (!obs || !conceptUuid) return null;
+  if (!obs || (!conceptUuid && !formFieldPath)) return null;
   const match = obs.find(
     (observation) =>
-      observation.concept?.uuid === conceptUuid &&
+      (conceptUuid === undefined || observation.concept?.uuid === conceptUuid) &&
       (formFieldPath === undefined || observation.formFieldPath === formFieldPath),
   );
   if (!match) return null;
@@ -55,7 +55,7 @@ function getObsValue(
 export function mapSoapEntry(encounter: SoapEncounter, concepts: Record<string, string>): SoapEntry {
   const objectiveUuid = concepts?.soapObjectiveUuid;
   const physicalExam = physicalExamFields.reduce((values, field) => {
-    values[field.key] = getObsValue(encounter.obs, objectiveUuid, getFormEngineFieldPath(field.questionId));
+    values[field.key] = getObsValue(encounter.obs, undefined, getFormEngineFieldPath(field.questionId));
     return values;
   }, {} as PhysicalExamValues);
 
@@ -93,8 +93,12 @@ export function useSoapNotes(
 
   const isRelevant = useCallback(
     (encounter: SoapEncounter) =>
-      encounter.obs?.some((obs) =>
-        [subjectiveUuid, objectiveUuid, assessmentUuid, planUuid].filter(Boolean).includes(obs.concept?.uuid),
+      encounter.obs?.some(
+        (obs) =>
+          [subjectiveUuid, objectiveUuid, assessmentUuid, planUuid].filter(Boolean).includes(obs.concept?.uuid) ||
+          physicalExamFields.some(
+            ({ questionId }) => obs.formFieldPath === getFormEngineFieldPath(questionId),
+          ),
       ),
     [assessmentUuid, objectiveUuid, planUuid, subjectiveUuid],
   );

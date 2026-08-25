@@ -60,8 +60,8 @@ export const BackendDependencies: React.FC<BackendDependenciesProps> = ({
       : isAuthorizationError
         ? t('backendAuthorizationProblem', 'Insufficient permissions')
         : isTemporaryBackendError
-          ? t('backendTemporarilyUnavailable', 'Backend temporarily unavailable')
-          : t('backendConnectionProblem', 'Backend Connection Problem');
+          ? t('backendTemporarilyUnavailable', 'The check could not be completed')
+          : t('backendConnectionProblem', 'The check could not be completed');
     const errorHint = isAuthenticationError
       ? t('backendAuthenticationHint', 'Your session expired or is not authenticated. Sign in again and retry.')
       : isAuthorizationError
@@ -70,13 +70,10 @@ export const BackendDependencies: React.FC<BackendDependenciesProps> = ({
             'Your account is not allowed to view the installed backend modules. Contact an administrator.',
           )
         : isTemporaryBackendError
-          ? t(
-              'backendTemporaryHint',
-              'The backend returned a temporary gateway error. The automatic retries were exhausted.',
-            )
+          ? t('backendTemporaryHint', 'The service is temporarily unavailable. Check your connection and try again.')
           : t(
               'backendConnectionHint',
-              'The frontend was unable to connect to the backend to fetch installed modules. This could mean:',
+              'The system configuration could not be checked. Check your connection and try again.',
             );
     const showGenericHints = !isAuthenticationError && !isAuthorizationError && !isTemporaryBackendError;
 
@@ -85,11 +82,9 @@ export const BackendDependencies: React.FC<BackendDependenciesProps> = ({
         <InlineNotification
           kind="error"
           title={notificationTitle}
-          subtitle={error}
+          subtitle={errorHint}
           className={styles.errorNotification}
         />
-        {/* error-exposure-guard-ignore -- implementer-only diagnostics panel with controlled translated text */}
-        <p className={styles.errorHint}>{errorHint}</p>
         {showGenericHints ? (
           <ul className={styles.errorHintList}>
             <li>{t('hint1', 'The backend server is not running or not reachable')}</li>

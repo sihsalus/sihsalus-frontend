@@ -34,34 +34,12 @@ function PopupHandler() {
   );
   const dependencyExamples = [...missingDependencies, ...versionMismatches].slice(0, 3).join(', ');
   const dependencyExamplesDescription = `${t('examples', 'Examples')}: ${dependencyExamples || t('none', 'None')}`;
-  const backendErrorTitle =
-    backendErrorStatus === 401
-      ? t('backendAuthenticationProblem', 'Authentication required')
-      : backendErrorStatus === 403
-        ? t('backendAuthorizationProblem', 'Insufficient permissions')
-        : backendErrorStatus === 502 || backendErrorStatus === 503 || backendErrorStatus === 504
-          ? t('backendTemporarilyUnavailable', 'Backend temporarily unavailable')
-          : t('backendConnectionProblem', 'Backend Connection Problem');
-  const backendErrorDescription =
-    backendErrorStatus === 401
-      ? t('backendAuthenticationHint', 'Your session expired or is not authenticated. Sign in again and retry.')
-      : backendErrorStatus === 403
-        ? t(
-            'backendAuthorizationHint',
-            'Your account is not allowed to view the installed backend modules. Contact an administrator.',
-          )
-        : backendErrorStatus === 502 || backendErrorStatus === 503 || backendErrorStatus === 504
-          ? t(
-              'backendTemporaryHint',
-              'The backend returned a temporary gateway error. The automatic retries were exhausted.',
-            )
-          : t(
-              'backendConnectionError',
-              'Could not connect to backend to fetch module list. Check the Implementer Tools for details.',
-            );
 
   useEffect(() => {
-    const shouldShowNotification = Boolean(backendError) || hasInvalidDependencies(backendDependencies);
+    // This inventory is an implementer-only background diagnostic. A transient
+    // fetch failure must not interrupt the user's active workflow with a global
+    // toast; the error remains available inside the Backend Modules tab.
+    const shouldShowNotification = !backendError && hasInvalidDependencies(backendDependencies);
     if (!shouldShowNotification || hasShownNotification.current) {
       return;
     }
@@ -70,17 +48,13 @@ function PopupHandler() {
     showToast({
       critical: false,
       kind: 'error',
-      description: backendError
-        ? backendErrorDescription
-        : `${t('missingBackendDependenciesMessage', {
-            defaultValue:
-              '{{missingCount}} backend module(s) are missing and {{versionMismatchCount}} have incompatible versions. Check the Backend Modules tab in the Implementer Tools for details.',
-            missingCount: missingDependencies.length,
-            versionMismatchCount: versionMismatches.length,
-          })} ${dependencyExamplesDescription}`,
-      title: backendError
-        ? backendErrorTitle
-        : t('modulesWithMissingDependenciesWarning', 'Some modules have unresolved backend dependencies'),
+      description: `${t('missingBackendDependenciesMessage', {
+        defaultValue:
+          '{{missingCount}} backend module(s) are missing and {{versionMismatchCount}} have incompatible versions. Check the Backend Modules tab in the Implementer Tools for details.',
+        missingCount: missingDependencies.length,
+        versionMismatchCount: versionMismatches.length,
+      })} ${dependencyExamplesDescription}`,
+      title: t('modulesWithMissingDependenciesWarning', 'Some modules have unresolved backend dependencies'),
       actionButtonLabel: t('viewModules', 'View modules'),
       onActionButtonClick: showModuleDiagnostics,
     });
@@ -88,8 +62,6 @@ function PopupHandler() {
     t,
     backendDependencies,
     backendError,
-    backendErrorDescription,
-    backendErrorTitle,
     missingDependencies.length,
     versionMismatches.length,
     dependencyExamplesDescription,

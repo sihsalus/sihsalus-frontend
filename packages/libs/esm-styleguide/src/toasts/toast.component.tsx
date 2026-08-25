@@ -1,13 +1,10 @@
 /** @module @category UI */
 
-import { ActionableNotification, Button } from '@carbon/react';
+import { ActionableNotification, Button, FeatureFlags } from '@carbon/react';
 import { getCoreTranslation } from '@openmrs/esm-translations';
 import React, { useCallback, useState } from 'react';
+import { NotificationDetailsModal, type NotificationDetailsSection } from './notification-details.modal';
 import styles from './toast.module.scss';
-import {
-  NotificationDetailsModal,
-  type NotificationDetailsSection,
-} from './notification-details.modal';
 
 const toastPreviewCharacterLimit = 160;
 
@@ -68,26 +65,28 @@ export const Toast: React.FC<ToastProps> = ({ toast, closeToast }) => {
   );
 
   return (
-    <div>
-      <ActionableNotification
-        actionButtonLabel={actionButtonLabel}
-        kind={kind || 'info'}
-        lowContrast={critical}
-        subtitle={previewContent}
-        title={title || ''}
-        onActionButtonClick={handleActionClick}
-        onClose={closeToast}
-      />
-      {isTruncated && showDetails ? (
-        <NotificationDetailsModal
-          description={description}
-          sections={details}
-          kind={kind}
-          open
-          title={title || getCoreTranslation('additionalDetails', 'Additional details')}
-          onClose={() => setShowDetails(false)}
+    <FeatureFlags enableFocusWrapWithoutSentinels>
+      <div>
+        <ActionableNotification
+          actionButtonLabel={actionButtonLabel}
+          kind={kind || 'info'}
+          lowContrast={critical}
+          subtitle={previewContent}
+          title={title || ''}
+          onActionButtonClick={handleActionClick}
+          onClose={closeToast}
         />
-      ) : null}
-    </div>
+        {isTruncated && showDetails ? (
+          <NotificationDetailsModal
+            description={description}
+            sections={details}
+            kind={kind}
+            open
+            title={title || getCoreTranslation('additionalDetails', 'Additional details')}
+            onClose={() => setShowDetails(false)}
+          />
+        ) : null}
+      </div>
+    </FeatureFlags>
   );
 };

@@ -9,6 +9,7 @@ describe('Toast', () => {
 
     expect(screen.getByText('The order was saved.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /show more/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('Focus sentinel')).not.toBeInTheDocument();
   });
 
   it('truncates long descriptions and shows the complete content in a modal', () => {
@@ -22,6 +23,7 @@ describe('Toast', () => {
 
     const dialog = screen.getByRole('dialog', { name: 'Orders completed' });
     expect(dialog).toBeInTheDocument();
+    expect(screen.queryByText('Focus sentinel')).not.toBeInTheDocument();
     // El modal parte a proposito una descripcion separada por comas en una
     // lista, asi que la cadena unida no existe como un solo nodo de texto.
     const items = within(dialog).getAllByRole('listitem');

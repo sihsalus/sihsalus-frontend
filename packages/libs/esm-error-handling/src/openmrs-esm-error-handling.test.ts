@@ -189,7 +189,7 @@ describe('getUserFacingErrorMessage', () => {
     new Error("Shared module single-spa-react doesn't exist in shared scope default"),
   ])('preserves the dedicated microfrontend loading message %#', (error) => {
     expect(getUserFacingErrorMessage(error, 'Fallback', { log: false })).toBe(
-      'No se pudo cargar un módulo de la aplicación. Recargue la página. Si el problema continúa, contacte a soporte.',
+      'Compruebe su conexión y recargue la página. Si el problema continúa, contacte a soporte.',
     );
   });
 
@@ -203,7 +203,7 @@ describe('getUserFacingErrorMessage', () => {
       getUserFacingErrorMessage(new Error('application died in status LOADING_SOURCE_CODE'), 'Fallback', {
         log: false,
       }),
-    ).toBe('An application module could not be loaded. Reload the page. If the problem continues, contact support.');
+    ).toBe('Check your connection and reload the page. If the problem continues, contact support.');
   });
 });
 
@@ -255,10 +255,9 @@ describe('global error handler', () => {
     window.onerror?.(errorMessage, '', 0, 0, undefined);
 
     expect(dispatchToastShown).toHaveBeenCalledWith({
-      description:
-        'No se pudo cargar un módulo de la aplicación. Recargue la página. Si el problema continúa, contacte a soporte.',
+      description: 'Compruebe su conexión y recargue la página. Si el problema continúa, contacte a soporte.',
       kind: 'error',
-      title: 'No se pudo cargar la página',
+      title: 'No pudimos cargar esta pantalla',
     });
     expect(consoleErrorSpy).toHaveBeenCalledWith('Unexpected error:', errorMessage);
   });

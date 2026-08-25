@@ -1,4 +1,5 @@
 import {
+  Button,
   DataTable,
   DataTableSkeleton,
   Dropdown,
@@ -22,6 +23,7 @@ import {
   TableToolbarContent,
   Tile,
 } from '@carbon/react';
+import { Download } from '@carbon/react/icons';
 import { fetchVisitInsurance, getSisFinancingState, type SisFinancingState } from '@openmrs/esm-patient-common-lib';
 import {
   age,
@@ -145,7 +147,13 @@ export interface OrdersDataTableProps {
   fulfillerStatus?: FulfillerStatus;
   newOrdersOnly?: boolean;
   excludeCanceledAndDiscontinuedOrders?: boolean;
+  showCompletedReportDownload?: boolean;
 }
+
+const escapeCsvCell = (value: unknown): string => {
+  const text = String(value ?? '').replaceAll('"', '""');
+  return `"${text}"`;
+};
 
 const getPriorityRank = (urgency: string | undefined): number => {
   if (!urgency) return 6;
@@ -441,6 +449,36 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
     return groupedOrdersByPatient;
   }, [searchString, groupedOrdersByPatient, labTableColumns]);
 
+  const handleDownloadCompletedReport = useCallback(() => {
+    const header = [
+      t('patient', 'Patient'),
+      t('orderNumbers', 'Order number'),
+      t('testType', 'Test type'),
+      t('orderDate', 'Order date'),
+      t('orderedBy', 'Ordered by'),
+      t('orderStatus', 'Status'),
+      t('resultOrComment', 'Result or comment'),
+    ];
+    const rows = searchResults.flatMap((group) =>
+      group.originalOrders.map((order) => [
+        group.patientName,
+        order.orderNumber,
+        order.concept?.display ?? order.display,
+        order.dateActivated ? formatDate(parseDate(order.dateActivated)) : '',
+        order.orderer?.display,
+        getFulfillerStatusDisplay(order.fulfillerStatus, t),
+        order.fulfillerComment,
+      ]),
+    );
+    const csv = [header, ...rows].map((row) => row.map(escapeCsvCell).join(';')).join('\r\n');
+    const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `informe-examenes-realizados-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [searchResults, t]);
+
   const orderStatuses = [
     { value: null, display: t('all', 'All') },
     { value: 'RECEIVED', display: getFulfillerStatusDisplay('RECEIVED', t) },
@@ -657,6 +695,17 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
                   placeholder={t('searchThisList', 'Search this list')}
                   size="sm"
                 />
+                {props.showCompletedReportDownload ? (
+                  <Button
+                    disabled={searchResults.length === 0}
+                    kind="tertiary"
+                    onClick={handleDownloadCompletedReport}
+                    renderIcon={Download}
+                    size="sm"
+                  >
+                    {t('downloadCompletedExamsReport', 'Download completed exams report')}
+                  </Button>
+                ) : null}
               </Layer>
             </TableToolbarContent>
           </TableToolbar>

@@ -23,36 +23,10 @@ export const configSchema = {
         'Disable the default "keyup search" for instant patient search as typing concludes on tablet devices',
     },
     searchFilterFields: {
-      _type: Type.Object,
+      // Keep this as a nested schema: a Type.Object leaf would let a partial
+      // personAttributes override replace the built-in gender/age/status fields.
       _description: 'Configuration for advanced search fields',
-      _default: {
-        gender: {
-          enabled: true,
-        },
-        age: {
-          enabled: true,
-          min: MIN_PATIENT_AGE_YEARS,
-          max: MAX_PATIENT_AGE_YEARS,
-        },
-        activeVisit: {
-          enabled: true,
-        },
-        postcode: {
-          enabled: false,
-        },
-        personAttributes: [
-          {
-            attributeTypeUuid: 'a7e3f8c1-2d4b-4f9a-8c6e-1b2d3f4a5c6e',
-            answerConceptSetUuid: 'eae30f8f-02f7-497a-a9e6-5b6516301a6d',
-          },
-          {
-            attributeTypeUuid: '787f1ea9-1792-45e5-9076-699b1a0638cb',
-            answerConceptSetUuid: 'e47c3ef7-c7e2-4d35-b2fa-934df43df2a5',
-          },
-        ],
-      },
       gender: {
-        _type: Type.Object,
         _description: 'Configuration for gender field',
         enabled: {
           _type: Type.Boolean,
@@ -61,7 +35,6 @@ export const configSchema = {
         },
       },
       age: {
-        _type: Type.Object,
         _description: 'Configuration for the age field',
         enabled: {
           _type: Type.Boolean,
@@ -82,7 +55,6 @@ export const configSchema = {
         },
       },
       activeVisit: {
-        _type: Type.Object,
         _description: 'Configuration for the active consultation filter',
         enabled: {
           _type: Type.Boolean,
@@ -91,7 +63,6 @@ export const configSchema = {
         },
       },
       postcode: {
-        _type: Type.Object,
         _description: 'Configuration for the postcode field',
         enabled: {
           _type: Type.Boolean,
@@ -154,7 +125,16 @@ export const configSchema = {
             _default: false,
           },
         },
-        _default: [],
+        _default: [
+          {
+            attributeTypeUuid: 'a7e3f8c1-2d4b-4f9a-8c6e-1b2d3f4a5c6e',
+            answerConceptSetUuid: 'eae30f8f-02f7-497a-a9e6-5b6516301a6d',
+          },
+          {
+            attributeTypeUuid: '787f1ea9-1792-45e5-9076-699b1a0638cb',
+            answerConceptSetUuid: 'e47c3ef7-c7e2-4d35-b2fa-934df43df2a5',
+          },
+        ],
       },
     },
   },

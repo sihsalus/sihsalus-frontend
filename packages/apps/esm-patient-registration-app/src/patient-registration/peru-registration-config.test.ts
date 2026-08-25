@@ -24,9 +24,7 @@ describe('getEffectiveRegistrationConfig', () => {
     const overriddenConfig = {
       ...baseConfig,
       fieldDefinitions: baseConfig.fieldDefinitions.map((field) =>
-        field.id === 'insuranceType'
-          ? { ...field, validation: { ...field.validation, required: false } }
-          : field,
+        field.id === 'insuranceType' ? { ...field, validation: { ...field.validation, required: false } } : field,
       ),
     };
 
@@ -188,7 +186,7 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.fields[0]).toBe('insuranceType');
     expect(config.fieldConfigurations.phone.personAttributeUuid).toBe(peruPhoneAttributeTypeUuid);
     expect(config.fieldConfigurations.phone.placeholder).toBe('012345678');
-    expect(config.fieldConfigurations.phone.validation?.matches).toBe('^(?:(?:\\+51)?[1-8][0-9]{7}|0[1-8][0-9]{7})$');
+    expect(config.fieldConfigurations.phone.validation?.matches).toBe('^(?:[1-8][0-9]{7}|0[1-8][0-9]{7})$');
     expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).toContain('birthAddress');
     expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).toContain('email');
     expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).not.toContain('birthplace');

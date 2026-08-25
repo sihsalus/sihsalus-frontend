@@ -197,9 +197,12 @@ export interface NewResponsiblePersonValues {
   familyName: string;
   familyName2: string;
   gender: string;
+  birthdate?: Date | string;
+  birthdateEstimated?: boolean;
   estimatedAge: string;
   phone: string;
-  address: string;
+  mobilePhone?: string;
+  address: Partial<Record<AddressProperties, string>> | string;
   relationshipType: string;
 }
 

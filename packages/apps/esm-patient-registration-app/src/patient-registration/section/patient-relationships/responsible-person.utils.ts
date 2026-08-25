@@ -1,8 +1,18 @@
-import { estimatePatientBirthdateFromAge, MAX_PATIENT_AGE_YEARS, validatePlainNumberInput } from '@openmrs/esm-utils';
-import type { NewResponsiblePersonValues } from '../../patient-registration.types';
+import {
+  calculatePatientAge,
+  estimatePatientBirthdateFromAge,
+  formatCalendarDate,
+  getLocalCalendarDate,
+  MAX_PATIENT_AGE_YEARS,
+  parsePatientBirthdate,
+  validatePatientBirthdate,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
 import { patientFamilyNameMaxLength, patientGivenNameMaxLength, patientNamePattern } from '../../patient-name-limits';
+import type { NewResponsiblePersonValues } from '../../patient-registration.types';
 
-const peruContactPhoneRegex = /^(?:(?:\+51)?9[0-9]{8}|(?:\+51)?[1-8][0-9]{7}|0[1-8][0-9]{7})$/;
+const peruLandlinePhoneRegex = /^(?:[1-8][0-9]{7}|0[1-8][0-9]{7})$/;
+const peruMobilePhoneRegex = /^(?:\+51)?9[0-9]{8}$/;
 
 export type ResponsiblePersonFormValues = NewResponsiblePersonValues;
 
@@ -59,12 +69,21 @@ function validateOptionalName(value: string, maxLength: number, maxLengthMessage
   return undefined;
 }
 
+function getBirthdateParts(value?: Date | string) {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : getLocalCalendarDate(value);
+  }
+
+  return typeof value === 'string' ? parsePatientBirthdate(value) : null;
+}
+
 export function validateResponsiblePersonForm(
   values: ResponsiblePersonFormValues,
   options: ResponsiblePersonValidationOptions = {},
 ): ResponsiblePersonValidationErrors {
   const errors: ResponsiblePersonValidationErrors = {};
   const estimatedAge = values.estimatedAge.trim();
+  const usesEstimatedBirthdate = values.birthdateEstimated ?? !values.birthdate;
 
   const givenNameError = validateRequiredName(values.givenName, 'givenNameRequired');
   if (givenNameError) {
@@ -94,24 +113,43 @@ export function validateResponsiblePersonForm(
     errors.gender = 'genderRequired';
   }
 
-  if (
-    estimatedAge &&
-    validatePlainNumberInput(estimatedAge, {
-      integer: true,
-      max: MAX_PATIENT_AGE_YEARS,
-      min: 0,
-      nonNegative: true,
-    }).isInvalid
-  ) {
-    errors.estimatedAge = 'estimatedAgeInvalid';
-  } else if (options.requireAdult && !estimatedAge) {
-    errors.estimatedAge = 'responsibleEstimatedAgeRequired';
-  } else if (options.requireAdult && Number(estimatedAge) < 18) {
-    errors.estimatedAge = 'responsiblePersonMustBeAdult';
+  if (usesEstimatedBirthdate) {
+    if (
+      !estimatedAge ||
+      validatePlainNumberInput(estimatedAge, {
+        integer: true,
+        max: MAX_PATIENT_AGE_YEARS,
+        min: 0,
+        nonNegative: true,
+      }).isInvalid
+    ) {
+      errors.estimatedAge = estimatedAge ? 'estimatedAgeInvalid' : 'responsibleEstimatedAgeRequired';
+    } else if (options.requireAdult && Number(estimatedAge) < 18) {
+      errors.estimatedAge = 'responsiblePersonMustBeAdult';
+    }
+  } else {
+    const birthdate = getBirthdateParts(values.birthdate);
+    const birthdateValidation = birthdate ? validatePatientBirthdate(birthdate) : 'invalid';
+
+    if (!values.birthdate) {
+      errors.birthdate = 'birthdayRequired';
+    } else if (birthdateValidation === 'future') {
+      errors.birthdate = 'birthdayNotInTheFuture';
+    } else if (birthdateValidation === 'too-old') {
+      errors.birthdate = 'birthdayNotOver140YearsAgo';
+    } else if (birthdateValidation !== 'valid' || !birthdate) {
+      errors.birthdate = 'birthdayInvalid';
+    } else if (options.requireAdult && (calculatePatientAge(birthdate) ?? -1) < 18) {
+      errors.birthdate = 'responsiblePersonMustBeAdult';
+    }
   }
 
-  if (values.phone.trim() && !peruContactPhoneRegex.test(values.phone.trim())) {
+  if (values.phone.trim() && !peruLandlinePhoneRegex.test(values.phone.trim())) {
     errors.phone = 'phoneInvalid';
+  }
+
+  if (values.mobilePhone?.trim() && !peruMobilePhoneRegex.test(values.mobilePhone.trim())) {
+    errors.mobilePhone = 'mobilePhoneInvalid';
   }
 
   if (!values.relationshipType?.trim()) {
@@ -134,12 +172,27 @@ export function getResponsiblePersonDisplayName(values: ResponsiblePersonFormVal
 
 export function buildResponsiblePersonPayload(
   values: ResponsiblePersonFormValues,
-  options: { phoneAttributeTypeUuid?: string } = {},
+  options: { mobilePhoneAttributeTypeUuid?: string; phoneAttributeTypeUuid?: string } = {},
 ) {
   const estimatedAge = values.estimatedAge.trim();
   const phone = values.phone.trim();
-  const address = values.address.trim();
-  const estimatedBirthdate = estimatedAge ? estimatePatientBirthdateFromAge(Number(estimatedAge)) : null;
+  const mobilePhone = values.mobilePhone?.trim() ?? '';
+  const address =
+    typeof values.address === 'string'
+      ? values.address.trim()
+        ? { address4: values.address.trim() }
+        : {}
+      : Object.fromEntries(
+          Object.entries(values.address ?? {}).filter(([, value]) => typeof value === 'string' && value.trim()),
+        );
+  const usesEstimatedBirthdate = values.birthdateEstimated ?? !values.birthdate;
+  const birthdate = usesEstimatedBirthdate
+    ? estimatedAge
+      ? estimatePatientBirthdateFromAge(Number(estimatedAge))
+      : null
+    : getBirthdateParts(values.birthdate);
+  const normalizedBirthdate =
+    typeof birthdate === 'string' ? birthdate : birthdate ? formatCalendarDate(birthdate) : null;
 
   return {
     names: [
@@ -152,27 +205,29 @@ export function buildResponsiblePersonPayload(
       },
     ],
     gender: genderToOpenmrsCode[values.gender],
-    ...(estimatedBirthdate
+    ...(normalizedBirthdate
       ? {
-          birthdate: estimatedBirthdate,
-          birthdateEstimated: true,
+          birthdate: normalizedBirthdate,
+          birthdateEstimated: usesEstimatedBirthdate,
         }
       : {}),
-    ...(phone && options.phoneAttributeTypeUuid
+    ...((phone && options.phoneAttributeTypeUuid) || (mobilePhone && options.mobilePhoneAttributeTypeUuid)
       ? {
           attributes: [
-            {
-              attributeType: options.phoneAttributeTypeUuid,
-              value: phone,
-            },
+            ...(phone && options.phoneAttributeTypeUuid
+              ? [{ attributeType: options.phoneAttributeTypeUuid, value: phone }]
+              : []),
+            ...(mobilePhone && options.mobilePhoneAttributeTypeUuid
+              ? [{ attributeType: options.mobilePhoneAttributeTypeUuid, value: mobilePhone }]
+              : []),
           ],
         }
       : {}),
-    ...(address
+    ...(Object.keys(address).length
       ? {
           addresses: [
             {
-              address1: address,
+              ...address,
               preferred: true,
             },
           ],

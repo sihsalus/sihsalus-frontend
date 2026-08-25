@@ -1,6 +1,7 @@
 import {
   calculatePatientAge,
   calendarDateToLocalDate,
+  formatCalendarDate,
   getLocalCalendarDate,
   MAX_PATIENT_AGE_MONTHS_REMAINDER,
   MAX_PATIENT_AGE_YEARS,
@@ -328,6 +329,16 @@ export function isAdultResponsibleRelationship(
     return false;
   }
 
+  const newPersonBirthdate = relationship.newPerson?.birthdate;
+  if (relationship.newPerson?.birthdateEstimated === false && newPersonBirthdate) {
+    const age = getAgeFromBirthdate(
+      newPersonBirthdate instanceof Date
+        ? formatCalendarDate(getLocalCalendarDate(newPersonBirthdate))
+        : newPersonBirthdate,
+    );
+    return typeof age === 'number' && age >= 18;
+  }
+
   const newPersonAge = relationship.newPerson?.estimatedAge?.trim();
   if (newPersonAge) {
     return Number(newPersonAge) >= 18;
@@ -348,6 +359,16 @@ export function isUnderageResponsibleRelationship(
     !minorResponsibleRelationshipTypes.includes(relationship.relationshipType)
   ) {
     return false;
+  }
+
+  const newPersonBirthdate = relationship.newPerson?.birthdate;
+  if (relationship.newPerson?.birthdateEstimated === false && newPersonBirthdate) {
+    const age = getAgeFromBirthdate(
+      newPersonBirthdate instanceof Date
+        ? formatCalendarDate(getLocalCalendarDate(newPersonBirthdate))
+        : newPersonBirthdate,
+    );
+    return typeof age === 'number' && age < 18;
   }
 
   const newPersonAge = relationship.newPerson?.estimatedAge?.trim();

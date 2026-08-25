@@ -53,6 +53,28 @@ describe('TextPersonAttributeField', () => {
     expect(screen.getByPlaceholderText('012345678')).toBeInTheDocument();
   });
 
+  it('shows distinct guidance for landline and mobile phone fields', () => {
+    const { rerender } = render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <TextPersonAttributeField id="phone" personAttributeType={mockPersonAttributeType} />
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByText('Enter digits only.')).toBeInTheDocument();
+
+    rerender(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <TextPersonAttributeField id="mobilePhone" personAttributeType={mockPersonAttributeType} />
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByText(/use \+51 when including the country code/i)).toBeInTheDocument();
+  });
+
   it('allows phone field clipboard shortcuts and blocks plain invalid keystrokes', () => {
     render(
       <Formik initialValues={{}} onSubmit={() => {}}>
@@ -88,6 +110,22 @@ describe('TextPersonAttributeField', () => {
     await waitFor(() => expect(textbox).toHaveValue('+51918273645'));
   });
 
+  it('does not retain a country prefix in the landline field', async () => {
+    render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <TextPersonAttributeField id="phone" personAttributeType={mockPersonAttributeType} />
+        </Form>
+      </Formik>,
+    );
+
+    const textbox = screen.getByRole('textbox', { name: /referred by \(optional\)/i });
+    fireEvent.paste(textbox, { clipboardData: { getData: () => '+51 066-123-456' } });
+
+    await waitFor(() => expect(textbox).toHaveValue('51066123456'));
+    expect(fireEvent.keyDown(textbox, { key: '+', target: { selectionStart: 0, selectionEnd: 0 } })).toBe(false);
+  });
+
   it('keeps regex validation for pasted phone values', async () => {
     render(
       <Formik initialValues={{}} onSubmit={() => {}}>
@@ -95,7 +133,7 @@ describe('TextPersonAttributeField', () => {
           <TextPersonAttributeField
             id="phone"
             personAttributeType={mockPersonAttributeType}
-            validationRegex="^(?:(?:\\+51)?[1-8][0-9]{7}|0[1-8][0-9]{7})$"
+            validationRegex="^(?:[1-8][0-9]{7}|0[1-8][0-9]{7})$"
           />
         </Form>
       </Formik>,

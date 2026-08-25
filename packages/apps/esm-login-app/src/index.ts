@@ -3,6 +3,7 @@ import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmr
 import changeLocationLinkComponent from './change-location-link/change-location-link.extension';
 import changePasswordLinkComponent from './change-password/change-password-link.extension';
 import { configSchema } from './config-schema';
+import forcedPasswordChangeGateComponent from './forced-password-change/forced-password-change-gate.component';
 import locationPickerComponent from './location-picker/location-picker-view.component';
 import logoutButtonComponent from './logout/logout.extension';
 import rootComponent from './root.component';
@@ -21,6 +22,7 @@ export function startupApp() {
 }
 
 export const root = getSyncLifecycle(rootComponent, options);
+export const forcedPasswordChangeGate = getSyncLifecycle(forcedPasswordChangeGateComponent, options);
 export const locationPicker = getSyncLifecycle(locationPickerComponent, options);
 export const logoutButton = getSyncLifecycle(logoutButtonComponent, options);
 export const changeLocationLink = getSyncLifecycle(changeLocationLinkComponent, options);

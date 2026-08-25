@@ -130,6 +130,10 @@
   "vitalsAndBiometricsUnavailable": "Signos vitales y datos biométricos no disponibles",
   "vitalsChartFileName": "grafico-de-signos-vitales",
   "vitalsHistory": "Historial de signos vitales",
+  "vitalsPendingSynchronization": "Quedan pendientes de sincronización y todavía no forman parte de la historia clínica. Mantenga este perfil del navegador y sincronice desde Herramientas sin conexión.",
+  "vitalsPendingSynchronizationWorkspaceOpen": "Quedaron en cola en este equipo, pero no se pudo cerrar el formulario. No los guarde otra vez; use Descartar para cerrar, mantenga este perfil del navegador y sincronice desde Herramientas sin conexión.",
+  "vitalsSavedFollowUpIncomplete": "Ya están en la historia clínica, pero no terminó la siguiente acción de pantalla. No los guarde otra vez; actualice o use la acción disponible del flujo.",
+  "vitalsSavedOnThisDevice": "Signos vitales guardados en este equipo",
   "vitalSignDisplayed": "Signo vital mostrado",
   "vitalSigns": "Signos vitales",
   "weight": "Peso"

@@ -39,10 +39,10 @@ import {
   getReferenceRangesForConcept,
   interpretBloodPressure,
   invalidateCachedVitalsAndBiometrics,
-  saveVitalsAndBiometrics as savePatientVitals,
   useVitalsConceptMetadata,
 } from '../common';
 import type { ConfigObject, GlasgowComaScaleAnswerUuids } from '../config-schema';
+import { buildVitalsEncounter, persistVitalsEncounter, type VitalsPersistenceResult } from '../offline';
 
 import styles from './vitals-biometrics-form.scss';
 import {
@@ -64,6 +64,7 @@ import VitalsAndBiometricsInput from './vitals-biometrics-input.component';
 
 const glasgowFieldKeys = ['glasgowEyeOpening', 'glasgowVerbalResponse', 'glasgowMotorResponse'] as const;
 const DECEASED_PATIENT_VITALS_BLOCKED = 'DECEASED_PATIENT_VITALS_BLOCKED';
+const DECEASED_PATIENT_OPERATION_BLOCKED = 'DECEASED_PATIENT_OPERATION_BLOCKED';
 
 type FormEngineEncounter = Parameters<NonNullable<FormRendererProps['handleEncounterCreate']>>[0];
 
@@ -217,9 +218,6 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
     isLoading,
     error: conceptMetadataError,
   } = useVitalsConceptMetadata();
-  // With no concept metadata every range check silently passes; the form still
-  // allows saving, but the user must know the values are not being validated.
-  const referenceRangesUnavailable = Boolean(conceptMetadataError) || (!isLoading && !conceptMetadata?.length);
   const referenceRangeConceptUuids = useMemo(
     () => [
       config.concepts.temperatureUuid,
@@ -250,12 +248,27 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       config.concepts.oxygenSaturationUuid,
     ],
   );
-  const { ranges: patientReferenceRanges, isLoading: isLoadingReferenceRanges } = useReferenceRanges(
-    patientUuid,
-    referenceRangeConceptUuids,
-  );
+  const {
+    ranges: patientReferenceRanges,
+    isLoading: isLoadingReferenceRanges,
+    error: referenceRangesError,
+  } = useReferenceRanges(patientUuid, referenceRangeConceptUuids);
+  const hasRenderedInteractiveFormRef = useRef(false);
+  const isInitialFormDataLoading = Boolean(isLoading || isLoadingReferenceRanges);
+  if (!isInitialFormDataLoading) {
+    hasRenderedInteractiveFormRef.current = true;
+  }
+  const showInitialFormSkeleton = isInitialFormDataLoading && !hasRenderedInteractiveFormRef.current;
+  // With no concept metadata every range check silently passes; the form still
+  // allows saving, but the user must know the values are not being validated.
+  const referenceRangesUnavailable =
+    Boolean(conceptMetadataError || referenceRangesError || isLoading || isLoadingReferenceRanges) ||
+    (!isLoading && !conceptMetadata?.length);
   const [outOfRangeFieldKeys, setOutOfRangeFieldKeys] = useState<Array<string>>([]);
   const confirmedOutOfRangeTokenRef = useRef<string | null>(null);
+  const saveAttemptInFlightRef = useRef(false);
+  const persistedVitalsRef = useRef<VitalsPersistenceResult | null>(null);
+  const [hasPersistedVitals, setHasPersistedVitals] = useState(false);
   const [muacColorCode, setMuacColorCode] = useState('');
   const [showErrorNotification, setShowErrorNotification] = useState(false);
   const [showErrorMessage, setShowErrorMessage] = useState(false);
@@ -276,7 +289,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
         error &&
         typeof error === 'object' &&
         'code' in error &&
-        error.code === DECEASED_PATIENT_VITALS_BLOCKED;
+        (error.code === DECEASED_PATIENT_VITALS_BLOCKED || error.code === DECEASED_PATIENT_OPERATION_BLOCKED);
       showSnackbar({
         title: isDeceasedError
           ? t('vitalsAndBiometricsSaveBlocked', 'Vitals and biometrics cannot be saved')
@@ -341,7 +354,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       return;
     }
 
-    props.closeWorkspaceWithSavedChanges();
+    await props.closeWorkspaceWithSavedChanges();
   }, [props]);
 
   const renderWorkspace = useCallback(
@@ -541,6 +554,12 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
 
   const savePatientVitalsAndBiometrics = useCallback(
     async (data: VitalsBiometricsFormData) => {
+      // A confirmed or locally queued encounter must never be submitted again
+      // just because a post-save UI action failed to close the workspace.
+      if (persistedVitalsRef.current || saveAttemptInFlightRef.current) {
+        return;
+      }
+
       const { computedBodyMassIndex: _bmi, glasgowTotal: _glasgowTotal, ...rawFormData } = data;
       const computedGlasgowTotal = calculateGlasgowComaScaleTotal(
         getGlasgowScore(rawFormData.glasgowEyeOpening),
@@ -570,13 +589,6 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
             : t('muacAgeNotApplicable', 'El MUAC solo se registra en pacientes de 0 a 59 meses.'),
         );
         setShowErrorNotification(true);
-        return;
-      }
-
-      try {
-        await assertPatientCanRecordVitals();
-      } catch (error) {
-        showPatientVitalStatusError(error);
         return;
       }
 
@@ -630,40 +642,35 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
         return;
       }
 
-      const abortController = new AbortController();
-
+      saveAttemptInFlightRef.current = true;
+      let persistenceResult: VitalsPersistenceResult;
       try {
-        const response = await savePatientVitals(
+        const abortController = new AbortController();
+        const encounter = buildVitalsEncounter({
+          concepts: config.concepts,
+          encounterDatetime: new Date(),
+          encounterRoleUuid: config.vitals.encounterRoleUuid,
           encounterTypeUuid,
-          config.concepts,
-          patientUuid,
-          formData,
-          abortController,
           locationUuid,
-          currentVisit.uuid,
-          {
-            providerUuid: session?.currentProvider?.uuid,
-            encounterRoleUuid: config.vitals.encounterRoleUuid,
-          },
-        );
-
-        if (response.status === 201 || response.status === 200) {
-          await workspaceOverrides.onVitalsSaved?.({
-            encounterTypeUuid,
-            formData,
-            patientUuid,
-            visitUuid: currentVisit.uuid,
-          });
-          invalidateCachedVitalsAndBiometrics();
-          await closeCurrentWorkspaceWithSavedChanges();
-          showSnackbar({
-            isLowContrast: true,
-            kind: 'success',
-            title: t('vitalsAndBiometricsRecorded', 'Vitals and Biometrics saved'),
-            subtitle: t('vitalsAndBiometricsNowAvailable', 'They are now visible on the Vitals and Biometrics page'),
-          });
-        }
+          patientUuid,
+          providerUuid: session?.currentProvider?.uuid,
+          visitUuid: currentVisit.uuid,
+          vitals: formData,
+        });
+        persistenceResult = await persistVitalsEncounter(encounter, {
+          abortController,
+          displayName: t('vitalsAndBiometrics', 'Vitals and biometrics'),
+        });
       } catch (error) {
+        saveAttemptInFlightRef.current = false;
+        const errorCode =
+          error && typeof error === 'object' && 'code' in error && typeof error.code === 'string'
+            ? error.code
+            : undefined;
+        if (errorCode === DECEASED_PATIENT_VITALS_BLOCKED || errorCode === DECEASED_PATIENT_OPERATION_BLOCKED) {
+          showPatientVitalStatusError(error);
+          return;
+        }
         showSnackbar({
           title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
           kind: 'error',
@@ -675,10 +682,82 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
             frameworkGetUserFacingErrorMessage,
           ),
         });
+        return;
       }
+
+      persistedVitalsRef.current = persistenceResult;
+      setHasPersistedVitals(true);
+
+      if (persistenceResult.status === 'confirmed') {
+        let postSaveActionFailed = false;
+        try {
+          await workspaceOverrides.onVitalsSaved?.({
+            encounterTypeUuid,
+            formData,
+            patientUuid,
+            visitUuid: currentVisit.uuid,
+          });
+        } catch {
+          postSaveActionFailed = true;
+        }
+
+        try {
+          invalidateCachedVitalsAndBiometrics();
+        } catch {
+          postSaveActionFailed = true;
+        }
+
+        try {
+          await closeCurrentWorkspaceWithSavedChanges();
+        } catch {
+          postSaveActionFailed = true;
+        }
+
+        if (postSaveActionFailed) {
+          showSnackbar({
+            isLowContrast: false,
+            kind: 'warning',
+            title: t('vitalsAndBiometricsRecorded', 'Vitals and Biometrics saved'),
+            subtitle: t(
+              'vitalsSavedFollowUpIncomplete',
+              'They are already in the clinical record, but the next screen action did not finish. Do not save them again; refresh or use the available workflow action.',
+            ),
+          });
+          return;
+        }
+
+        showSnackbar({
+          isLowContrast: true,
+          kind: 'success',
+          title: t('vitalsAndBiometricsRecorded', 'Vitals and Biometrics saved'),
+          subtitle: t('vitalsAndBiometricsNowAvailable', 'They are now visible on the Vitals and Biometrics page'),
+        });
+        return;
+      }
+
+      let workspaceCloseFailed = false;
+      try {
+        await closeCurrentWorkspaceWithSavedChanges();
+      } catch {
+        workspaceCloseFailed = true;
+      }
+
+      showSnackbar({
+        isLowContrast: false,
+        kind: 'warning',
+        title: t('vitalsSavedOnThisDevice', 'Vitals saved on this device'),
+        subtitle: workspaceCloseFailed
+          ? t(
+              'vitalsPendingSynchronizationWorkspaceOpen',
+              'They are queued on this device, but the workspace could not close. Do not save them again; use Discard to close, keep this browser profile, and synchronize from Offline Tools.',
+            )
+          : t(
+              'vitalsPendingSynchronization',
+              'They are pending synchronization and are not yet part of the clinical record. Keep this browser profile and synchronize from Offline Tools.',
+            ),
+      });
     },
     [
-      assertPatientCanRecordVitals,
       closeCurrentWorkspaceWithSavedChanges,
       conceptMetadata,
       config.concepts,
@@ -854,7 +933,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
     );
   }
 
-  if (isLoading || isLoadingReferenceRanges) {
+  if (showInitialFormSkeleton) {
     return renderWorkspace(
       <Form className={styles.form}>
         <div className={styles.grid}>
@@ -1403,10 +1482,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                       name: t('muac', 'MUAC'),
                       type: 'number',
                       min: Math.max(concepts.midUpperArmCircumferenceRange?.lowAbsolute ?? MUAC_MIN_CM, MUAC_MIN_CM),
-                      max: Math.min(
-                        concepts.midUpperArmCircumferenceRange?.highAbsolute ?? MUAC_MAX_CM,
-                        MUAC_MAX_CM,
-                      ),
+                      max: Math.min(concepts.midUpperArmCircumferenceRange?.highAbsolute ?? MUAC_MAX_CM, MUAC_MAX_CM),
                       id: 'midUpperArmCircumference',
                     },
                   ]}
@@ -1473,7 +1549,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
           className={styles.button}
           kind="primary"
           onClick={handleSubmit(savePatientVitalsAndBiometrics, onError)}
-          disabled={isSubmitting}
+          disabled={isSubmitting || hasPersistedVitals}
           type="submit"
         >
           {t('saveAndClose', 'Save and close')}

@@ -65,6 +65,7 @@ Excepción actual: la extensión `visit-form-queue-fields` declara únicamente p
 ## Contratos de UI
 
 - El resumen de consulta se identifica por la combinación exacta de Encounter Type y Form configurados. Colas muestra primero los diagnósticos nativos activos y usa las observaciones históricas solo como fallback sin duplicarlas.
+- El guardado de triaje que queda pendiente en el equipo no mueve al paciente. La transición automática solo se ejecuta después de una respuesta confirmada del encounter; después de sincronizar un triaje offline, refrescar la cola y usar `Enviar a atención`. No borrar la acción offline para forzar el cambio de cola.
 - La visita obtenida para el panel debe incluir UUID y ubicación verificables antes de habilitar la creación o edición. Al cerrar el workspace, el panel vuelve a consultar la visita.
 - La pantalla de colas no debe quedar en blanco si faltan rooms o servicios; debe mostrar una configuracion pendiente accionable.
 - Si no hay camas, rooms o servicios configurados, el mensaje debe decir que falta configuracion de ubicacion/servicio, no lanzar error generico.

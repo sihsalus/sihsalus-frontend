@@ -12,6 +12,7 @@ import biometricsDetailedSummaryComponent from './biometrics/biometrics-main.com
 import biometricsOverviewComponent from './biometrics/biometrics-overview.component';
 import { configSchema } from './config-schema';
 import dashboardMeta from './dashboard.meta';
+import { setupVitalsSync } from './offline';
 import vitalsMainComponent from './vitals/vitals-main.component';
 import vitalsSummaryComponent from './vitals/vitals-summary.component';
 import vitalsHeaderComponent from './vitals-and-biometrics-header/vitals-header.component';
@@ -26,6 +27,8 @@ const options = {
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 
 export function startupApp() {
+  setupVitalsSync();
+
   messageOmrsServiceWorker({
     type: 'registerDynamicRoute',
     pattern: `${fhirBaseUrl}/Observation.+`,

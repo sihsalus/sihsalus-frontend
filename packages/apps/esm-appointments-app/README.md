@@ -22,6 +22,11 @@ El manifest `src/routes.json` requiere:
 
 La llegada reutiliza el workspace de inicio de consulta de `esm-patient-chart-app` y el workspace de creación de entradas de `esm-service-queues-app`. El inicio de consulta y los workspaces de búsqueda o registro de acompañante deben permanecer en `appointments-window`; así el workspace hijo no reemplaza el flujo de llegada que lo abrió.
 
+Colas consume el contrato `triageRouting` de este módulo. Para usuarios que solo tienen
+`app:home.colasAtencion`, `esm-service-queues-app` monta el inicializador no visual
+`queueTriageConfigInitializer`: este carga el esquema de configuración, pero no habilita ninguna ruta, acción ni
+pantalla protegida por `app:home.citas`.
+
 ## Contrato de privilegios
 
 Los arreglos de privilegios se evalúan con semántica **AND**: el usuario debe tener todos los privilegios enumerados. Los privilegios de edición y finalización son capacidades independientes y no conceden por sí solos el privilegio base de lectura.

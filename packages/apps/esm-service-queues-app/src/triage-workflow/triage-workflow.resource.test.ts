@@ -42,7 +42,7 @@ const appointmentAttributeTypeUuid = 'appointment-attribute-type-uuid';
 const triageEncounterTypeUuid = 'triage-encounter-type-uuid';
 const triageQueueUuid = 'triage-queue-uuid';
 const destinationQueueUuid = 'destination-queue-uuid';
-const waitingStatusUuid = 'waiting-status-uuid';
+const finishedServiceStatusUuid = 'finished-service-status-uuid';
 
 function mockFetchResponse<T>(data: T): FetchResponse<T> {
   return { data } as unknown as FetchResponse<T>;
@@ -122,7 +122,7 @@ describe('outpatient triage workflow', () => {
       if (moduleName === '@sihsalus/esm-appointments-app') {
         return appointmentConfig;
       }
-      return { concepts: { defaultStatusConceptUuid: waitingStatusUuid } };
+      return { concepts: { finishedServiceStatusConceptUuid: finishedServiceStatusUuid } };
     });
   });
 
@@ -237,7 +237,7 @@ describe('outpatient triage workflow', () => {
     expect(fetchVisitInsurance).not.toHaveBeenCalled();
   });
 
-  it('transitions a triaged patient to the exact queue configured for the appointment', async () => {
+  it('transitions a triaged patient to the configured clinical queue with the service finished status', async () => {
     vi.mocked(openmrsFetch).mockResolvedValue(
       mockFetchResponse({
         uuid: 'appointment-uuid',
@@ -253,7 +253,7 @@ describe('outpatient triage workflow', () => {
       queueEntryToTransition: 'queue-entry-uuid',
       newQueue: destinationQueueUuid,
       newPriority: 'priority-uuid',
-      newStatus: waitingStatusUuid,
+      newStatus: finishedServiceStatusUuid,
     });
   });
 });

@@ -46,7 +46,7 @@ export interface AppointmentTriageConfig {
 
 interface ServiceQueuesRoutingConfig {
   concepts: {
-    defaultStatusConceptUuid: string;
+    finishedServiceStatusConceptUuid: string;
   };
 }
 
@@ -59,7 +59,7 @@ interface AppointmentSummary {
   status?: string;
 }
 
-export type TriageState = 'pending' | 'completed' | 'notRequired';
+export type TriageState = 'loading' | 'pending' | 'completed' | 'notRequired';
 export type SisState = 'active' | 'inactive' | 'pending' | 'notConsulted' | 'missing' | 'notApplicable';
 
 export interface QueueWorkflowMetadata {
@@ -369,6 +369,7 @@ export function useQueueWorkflowMetadata(queueEntries: Array<QueueEntry>) {
   }, [patientSisStates.mutate]);
 
   const entries = queueEntries.map((entry) => {
+    const isTriageConfigLoading = !appointmentConfig.data && appointmentConfig.isLoading;
     const appointmentUuid = getLinkedAppointmentUuid(entry, appointmentConfig.data) ?? undefined;
     const fallbackDate = getQueueEntryReferenceDate(entry)?.tz(timeZone).format('YYYY-MM-DD');
     const appointment = appointmentUuid
@@ -387,7 +388,7 @@ export function useQueueWorkflowMetadata(queueEntries: Array<QueueEntry>) {
       // fail-closed because the value gates clinical triage.
       sisState: patientSisStates.data?.get(entry.patient?.uuid) ?? 'notConsulted',
       isSisStateResolved: Boolean(entry.patient?.uuid && patientSisStates.data?.has(entry.patient.uuid)),
-      triageState: getTriageState(entry, appointmentConfig.data, appointment),
+      triageState: isTriageConfigLoading ? 'loading' : getTriageState(entry, appointmentConfig.data, appointment),
     };
     return { ...entry, workflow };
   });
@@ -421,6 +422,6 @@ export async function transitionTriagedPatient(queueEntry: QueueEntry): Promise<
     queueEntryToTransition: queueEntry.uuid,
     newQueue: destinationQueueUuid,
     newPriority: queueEntry.priority?.uuid,
-    newStatus: serviceQueuesConfig.concepts.defaultStatusConceptUuid,
+    newStatus: serviceQueuesConfig.concepts.finishedServiceStatusConceptUuid,
   });
 }

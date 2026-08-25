@@ -102,6 +102,23 @@ describe('QueueTableActionCell', () => {
     expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
   });
 
+  it('does not expose a generic queue action while the triage contract is loading', () => {
+    const loadingEntry = {
+      ...mockQueueEntryAlice,
+      workflow: {
+        isTriageQueue: false,
+        sisState: 'notConsulted' as const,
+        isSisStateResolved: false,
+        triageState: 'loading' as const,
+      },
+    };
+
+    render(<QueueTableActionCell queueEntry={loadingEntry} />);
+
+    expect(screen.queryByRole('button', { name: 'Transition' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
+  });
+
   it('no pide Caja mientras la cobertura del paciente aun no se pudo leer', async () => {
     // Regresion: con la cobertura sin resolver (carga inicial o fallo de red)
     // sisState cae a 'notConsulted' y la fila mostraba "Derivar a Caja",

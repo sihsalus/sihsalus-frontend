@@ -3,6 +3,22 @@ import routes from './routes.json';
 const visitMutationPrivileges = ['Edit Visits', 'Get Visit Attribute Types'];
 
 describe('service queue route privilege contract', () => {
+  it('initializes the appointment triage contract for queue readers without granting appointment UI access', () => {
+    const initializer = routes.extensions.find(
+      ({ name }) => name === 'service-queues-appointment-triage-config-initializer',
+    );
+
+    expect(routes.backendDependencies.appointments).toBe('>=2.1.0');
+    expect(initializer).toMatchObject({
+      component: '@sihsalus/esm-appointments-app#queueTriageConfigInitializer',
+      slot: 'service-queues-dashboard-slot',
+      privileges: 'app:home.colasAtencion',
+    });
+    expect(Array.isArray(initializer?.privileges) ? initializer.privileges : [initializer?.privileges]).not.toContain(
+      'app:home.citas',
+    );
+  });
+
   it('exposes the active queue count on the home metrics slot', () => {
     expect(routes.extensions.find(({ name }) => name === 'patients-in-queue-tile')).toMatchObject({
       component: 'homePatientsInQueueTile',

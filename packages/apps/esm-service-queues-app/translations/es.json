@@ -383,6 +383,7 @@
   "transitionPatientAction": "Cambiar estado del paciente",
   "transitionPatientStatusOrQueue": "Seleccione el nuevo estado o la nueva cola del paciente",
   "triageBlockedByFinancing": "Triaje bloqueado por financiamiento",
+  "triageChecking": "Verificando",
   "triageCompleted": "Triaje realizado",
   "triageForm": "Formulario de triaje",
   "triageNote": "Nota de triaje",

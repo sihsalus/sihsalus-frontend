@@ -11,4 +11,10 @@ describe('service queues configuration defaults', () => {
       expect.arrayContaining(['patient-name', 'appointment-time', 'triage-status', 'sis-status', 'actions']),
     );
   });
+
+  it('uses the provisioned service finished concept for completed triage routing', () => {
+    expect(configSchema.concepts.finishedServiceStatusConceptUuid._default).toBe(
+      '707b1d1e-d7f7-4dad-a382-3734e35933c3',
+    );
+  });
 });

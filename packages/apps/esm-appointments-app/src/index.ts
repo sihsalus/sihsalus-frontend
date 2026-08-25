@@ -25,6 +25,10 @@ const options = {
   moduleName,
 };
 
+function QueueTriageConfigInitializer() {
+  return null;
+}
+
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 
 export function startupApp() {
@@ -54,6 +58,13 @@ export function startupApp() {
 }
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
+
+// This non-visual lifecycle lets the queue dashboard initialize the shared
+// appointment/triage configuration without granting access to appointment UI.
+export const queueTriageConfigInitializer = getSyncLifecycle(QueueTriageConfigInitializer, {
+  featureName: 'queue-triage-config-initializer',
+  moduleName,
+});
 
 export const appointmentsDashboardLink = getSyncLifecycle(createDashboardLink(dashboardMeta), options);
 

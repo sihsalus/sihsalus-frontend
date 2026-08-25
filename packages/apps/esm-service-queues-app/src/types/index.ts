@@ -493,7 +493,7 @@ export interface QueueEntry {
      * cola entera se muestra como "Derivar a Caja".
      */
     isSisStateResolved: boolean;
-    triageState: 'pending' | 'completed' | 'notRequired';
+    triageState: 'loading' | 'pending' | 'completed' | 'notRequired';
   };
 }
 

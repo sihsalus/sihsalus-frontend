@@ -12,6 +12,7 @@ Amend the following concepts in the configuration schema to get started using th
 
 - `defaultPriorityConceptUuid` - concept UUID for `not urgent`.
 - `defaultStatusConceptUuid` - concept UUID for `waiting`.
+- `finishedServiceStatusConceptUuid` - concept UUID for `service finished`; se usa al completar y derivar el triaje.
 - `emergencyPriorityConcept` - concept UUID for `emergency`.
 
 After configuring the concepts, add the services according to the facility setup by clicking the `Add new service` button.
@@ -30,10 +31,21 @@ You should now be able to leverage the service queues module 🎉
 
 ## Dependencias backend/content
 
+- `appointments >= 2.1.0` para resolver la cita vinculada y el contrato de enrutamiento del triaje.
 - Conceptos de prioridad y estado configurados en `config-schema`.
 - Servicios, rooms y ubicaciones configurados para el establecimiento.
 - Visitas activas para pacientes en cola.
 - Providers/usuarios asociados cuando se usa asignacion por prestador o room.
+
+Al montar el dashboard, Colas carga el inicializador no visual `queueTriageConfigInitializer` de
+`esm-appointments-app` con `app:home.colasAtencion`. Esto inicializa el esquema compartido que determina la cola de
+triaje, su tipo de encounter y el destino clínico, pero no muestra ni concede acceso a la interfaz de Citas. Por ello,
+el estado de triaje y la acción correspondiente no dependen de `app:home.citas`. Mientras el contrato termina de
+cargar, la fila muestra `Verificando` y no ofrece una acción genérica que pueda confundirse con el triaje.
+
+Al guardar el triaje, la entrada se deriva a la cola clínica configurada para la cita conservando su prioridad y usando
+`finishedServiceStatusConceptUuid` como nuevo estado. El valor predeterminado corresponde a `Servicio Finalizado`; ya no
+se reutiliza `defaultStatusConceptUuid` (`Esperando`) para esta transición.
 
 ## Contrato RBAC actual
 
@@ -47,8 +59,8 @@ You should now be able to leverage the service queues module 🎉
 | Limpiar todas las entradas                                                         | Los anteriores + `app:home.colasAtencion.limpiar`                                                                                                                                             |
 | Administrar servicios de cola                                                      | `app:home.colasAtencion.editar` + `Get Queues` + `Manage Queues`                                                                                                                              |
 | Administrar ambientes/rooms                                                        | `app:home.colasAtencion.editar` + `Get Queue Rooms` + `Get Queues` + `Manage Queue Rooms`                                                                                                     |
-| Mostrar la acción de triaje y registrar signos vitales                             | `app:home.colasAtencion` + `app:hoja.clinica.signosVitales.editar`; no requiere `app:home.colasAtencion.editar`                                                                          |
-| Mover automáticamente el triaje guardado a la cola clínica                         | El backend valida `Manage Queue Entries`; este permiso debe formar parte del rol operativo de triaje                                                                                      |
+| Mostrar la acción de triaje y registrar signos vitales                             | `app:home.colasAtencion` + `app:hoja.clinica.signosVitales.editar`; no requiere `app:home.colasAtencion.editar`                                                                               |
+| Mover automáticamente el triaje guardado a la cola clínica                         | El backend valida `Manage Queue Entries`; este permiso debe formar parte del rol operativo de triaje                                                                                          |
 | Crear el resumen de consulta desde Colas                                           | `app:home.colasAtencion` + `app:hoja.clinica.resumenConsulta`                                                                                                                                 |
 
 Los arreglos anteriores tienen semántica AND. El resumen de consulta usa actualmente el mismo privilegio `app:hoja.clinica.resumenConsulta` para mostrar la sección y abrir el workspace de creación; no existe una separación frontend de escritura para esta acción. Si la política exige distinguir lectura y edición, debe implementarse y probarse un privilegio específico en Patient Notes y en esta integración.

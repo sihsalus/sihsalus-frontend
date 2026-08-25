@@ -92,6 +92,8 @@
   "overOneWeekOldVitals": "<0>Estos signos vitales tienen <1>más de una semana de antigüedad</1></0>",
   "oxygenSaturation": "Saturación de oxígeno",
   "patientVitalStatusCheckFailed": "No se pudo verificar el estado vital actual del paciente. Intente nuevamente antes de guardar.",
+  "pediatricWeightWarningSubtitle": "El peso está muy por encima del valor esperado para esta edad. Verifique que la unidad sea kg, revise el punto decimal y repita la medición.",
+  "pediatricWeightWarningTitle": "Revise el peso registrado",
   "pleaseFillField": "Por favor, llene al menos un campo",
   "points": "puntos",
   "print": "Imprimir",

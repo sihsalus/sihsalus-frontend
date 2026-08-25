@@ -88,6 +88,8 @@
   "overOneWeekOldVitals": "<0>These vitals are <1>over one week old</1></0>",
   "oxygenSaturation": "Oxygen saturation",
   "patientVitalStatusCheckFailed": "The patient's current vital status could not be verified. Try again before saving.",
+  "pediatricWeightWarningSubtitle": "The weight is far above the expected value for this age. Verify that the unit is kg, check the decimal point, and repeat the measurement.",
+  "pediatricWeightWarningTitle": "Review the recorded weight",
   "pleaseFillField": "Please fill at least one field",
   "points": "points",
   "print": "Print",

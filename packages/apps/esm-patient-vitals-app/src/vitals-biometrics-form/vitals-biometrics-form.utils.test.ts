@@ -6,6 +6,7 @@ import {
   getMuacColorCode,
   isConditionalFieldVisible,
   isMuacApplicableAge,
+  isPediatricWeightAboveWhoReference,
   mergeReferenceRanges,
   validateClinicalNumberInput,
 } from './vitals-biometrics-form.utils';
@@ -117,6 +118,18 @@ describe('MUAC age applicability', () => {
     expect(isMuacApplicableAge(undefined, asOf)).toBe(false);
     expect(isMuacApplicableAge('invalid', asOf)).toBe(false);
     expect(isMuacApplicableAge('2026-09-17', asOf)).toBe(false);
+  });
+});
+
+describe('pediatric weight review warning', () => {
+  it('flags an extreme infant weight without classifying it as a diagnosis', () => {
+    expect(isPediatricWeightAboveWhoReference(90, 6, 'male')).toBe(true);
+    expect(isPediatricWeightAboveWhoReference(9, 6, 'male')).toBe(false);
+  });
+
+  it('uses a conservative reference when sex is unavailable and does not apply to adults', () => {
+    expect(isPediatricWeightAboveWhoReference(14, 12, undefined)).toBe(true);
+    expect(isPediatricWeightAboveWhoReference(90, 60, 'female')).toBe(false);
   });
 });
 

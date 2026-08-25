@@ -54,6 +54,7 @@ import {
   getMuacColorCode,
   isConditionalFieldVisible,
   isMuacApplicableAge,
+  isPediatricWeightAboveWhoReference,
   isValueWithinReferenceRange,
   mergeReferenceRanges,
   MUAC_MAX_CM,
@@ -420,6 +421,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
     (workspaceProfile === 'emergency-triage' || Boolean(fieldOverrides.showFields?.includes('glasgowComaScale')));
   const ageInDays = getAgeInDays(patient?.patient?.birthDate);
   const ageInMonths = getAgeInCompletedMonths(patient?.patient?.birthDate);
+  const pediatricWeightNeedsReview = isPediatricWeightAboveWhoReference(weight, ageInMonths, patient?.patient?.gender);
   const showMuac = isMuacApplicableAge(patient?.patient?.birthDate);
   const showHeadCircumference = isConditionalFieldVisible(
     'headCircumference',
@@ -1315,6 +1317,19 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                 label={t('weight', 'Weight')}
                 unitSymbol={conceptUnits.get(config.concepts.weightUuid) ?? ''}
               />
+              {pediatricWeightNeedsReview && (
+                <InlineNotification
+                  className={styles.pediatricWeightWarning}
+                  hideCloseButton
+                  kind="warning"
+                  lowContrast={false}
+                  title={t('pediatricWeightWarningTitle', 'Review the recorded weight')}
+                  subtitle={t(
+                    'pediatricWeightWarningSubtitle',
+                    'The weight is far above the expected value for this age. Verify that the unit is kg, check the decimal point, and repeat the measurement.',
+                  )}
+                />
+              )}
             </Column>
             <Column>
               <VitalsAndBiometricsInput

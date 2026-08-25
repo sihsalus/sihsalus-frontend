@@ -15,6 +15,7 @@ import AppMenuButton from './components/navbar/app-menu-button.component';
 import UserMenuButton from './components/navbar/user-menu-button.component';
 import userPanelComponent from './components/user-panel-switcher-item/user-panel-switcher.component';
 import { configSchema } from './config-schema';
+import { setupClinicalActivityHeartbeat } from './clinical-activity-heartbeat';
 import { moduleName } from './constants';
 import primaryNavRootComponent from './root.component';
 
@@ -26,6 +27,7 @@ const options = {
 };
 
 export function startupApp() {
+  setupClinicalActivityHeartbeat();
   defineConfigSchema(moduleName, configSchema);
   defineExtensionConfigSchema('link', genericLinkConfigSchema);
   defineExtensionConfigSchema('nav-group', navGroupConfigSchema);

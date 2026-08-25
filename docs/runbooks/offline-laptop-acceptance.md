@@ -12,8 +12,10 @@ This is not a production test, a general clinical sign-off, or proof that every
 offline workflow works. It covers the cached chart for a patient created online
 and one supported queued action: a closed offline visit created through the
 patient chart's deployed offline API and synchronized through the real Offline
-Tools UI. It does not cover offline patient registration, forms, vital signs,
-orders, or every field in the interactive start-visit form.
+Tools UI. This automated gate does not cover offline patient registration,
+forms, vital signs, triage, orders, or every field in the interactive
+start-visit form; a workflow having queue support does not add it to this gate
+without an explicit synthetic test and cleanup contract.
 
 ## Browser policy
 

@@ -1,8 +1,4 @@
-import {
-  omrsOfflineCachingStrategyHttpHeaderName,
-  openmrsFetch,
-  restBaseUrl,
-} from '@openmrs/esm-framework';
+import { omrsOfflineCachingStrategyHttpHeaderName, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
 export const PATIENT_VITAL_STATUS_UNAVAILABLE = 'PATIENT_VITAL_STATUS_UNAVAILABLE';
 export const DECEASED_PATIENT_OPERATION_BLOCKED = 'DECEASED_PATIENT_OPERATION_BLOCKED';
@@ -35,7 +31,10 @@ function getFreshRequestNonce() {
  * dynamically registered cache route; the explicit strategy then fails closed
  * when the network request cannot be completed.
  */
-export async function fetchFreshPatientVitalStatus(patientUuid: string): Promise<PatientVitalStatus> {
+export async function fetchFreshPatientVitalStatus(
+  patientUuid: string,
+  signal?: AbortSignal,
+): Promise<PatientVitalStatus> {
   const searchParams = new URLSearchParams({
     v: patientVitalStatusRepresentation,
     _: getFreshRequestNonce(),
@@ -47,6 +46,7 @@ export async function fetchFreshPatientVitalStatus(patientUuid: string): Promise
         'Cache-Control': 'no-store',
         [omrsOfflineCachingStrategyHttpHeaderName]: 'network-only-or-cache-only',
       },
+      ...(signal ? { signal } : {}),
     },
   );
   const person = response.data?.person;
@@ -65,8 +65,11 @@ export async function fetchFreshPatientVitalStatus(patientUuid: string): Promise
 }
 
 /** Fails closed unless a unique authoritative read confirms the patient is alive. */
-export async function assertFreshPatientIsAlive(patientUuid: string): Promise<PatientVitalStatus> {
-  const vitalStatus = await fetchFreshPatientVitalStatus(patientUuid);
+export async function assertFreshPatientIsAlive(
+  patientUuid: string,
+  signal?: AbortSignal,
+): Promise<PatientVitalStatus> {
+  const vitalStatus = await fetchFreshPatientVitalStatus(patientUuid, signal);
   if (vitalStatus.isDeceased) {
     throw Object.assign(new Error('The operation is not permitted for a deceased patient.'), {
       code: DECEASED_PATIENT_OPERATION_BLOCKED,

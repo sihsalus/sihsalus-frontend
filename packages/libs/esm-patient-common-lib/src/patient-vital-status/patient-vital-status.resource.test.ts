@@ -67,12 +67,19 @@ describe('fetchFreshPatientVitalStatus', () => {
 
     const requestUrls = mockOpenmrsFetch.mock.calls.map(([url]) => String(url));
     expect(requestUrls[0]).not.toBe(requestUrls[1]);
-    expect(new URL(requestUrls[0], 'https://example.test').searchParams.get('_')).toMatch(
-      /^1786554000001-\d+$/,
-    );
-    expect(new URL(requestUrls[1], 'https://example.test').searchParams.get('_')).toMatch(
-      /^1786554000001-\d+$/,
-    );
+    expect(new URL(requestUrls[0], 'https://example.test').searchParams.get('_')).toMatch(/^1786554000001-\d+$/);
+    expect(new URL(requestUrls[1], 'https://example.test').searchParams.get('_')).toMatch(/^1786554000001-\d+$/);
+  });
+
+  it('passes the synchronization abort signal to the authoritative request', async () => {
+    const abortController = new AbortController();
+    mockOpenmrsFetch.mockResolvedValue({
+      data: { person: { uuid: 'person-uuid', dead: false, deathDate: null } },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    await assertFreshPatientIsAlive('patient-uuid', abortController.signal);
+
+    expect(mockOpenmrsFetch.mock.calls[0]?.[1]).toEqual(expect.objectContaining({ signal: abortController.signal }));
   });
 
   it('fails closed when the network-only request cannot be completed', async () => {

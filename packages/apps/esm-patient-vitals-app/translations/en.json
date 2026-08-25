@@ -126,6 +126,10 @@
   "vitalsAndBiometricsUnavailable": "Vitals and biometrics unavailable",
   "vitalsChartFileName": "vitals-chart",
   "vitalsHistory": "Vitals history",
+  "vitalsPendingSynchronization": "They are pending synchronization and are not yet part of the clinical record. Keep this browser profile and synchronize from Offline Tools.",
+  "vitalsPendingSynchronizationWorkspaceOpen": "They are queued on this device, but the workspace could not close. Do not save them again; use Discard to close, keep this browser profile, and synchronize from Offline Tools.",
+  "vitalsSavedFollowUpIncomplete": "They are already in the clinical record, but the next screen action did not finish. Do not save them again; refresh or use the available workflow action.",
+  "vitalsSavedOnThisDevice": "Vitals saved on this device",
   "vitalSignDisplayed": "Vital sign displayed",
   "vitalSigns": "Vital signs",
   "weight": "Weight"

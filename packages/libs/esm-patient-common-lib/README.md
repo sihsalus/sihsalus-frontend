@@ -59,3 +59,11 @@ Automatic offline-visit creation refreshes local state only after a successful q
 from becoming automatic retry loops. Queue write and refresh failures are consumed without rendering session, storage,
 endpoint, or patient details. Callers that explicitly create an offline visit remain responsible for handling the
 returned promise and presenting fixed, non-technical feedback.
+
+## Fresh patient vital-status guard
+
+`fetchFreshPatientVitalStatus` and `assertFreshPatientIsAlive` always use a
+unique, network-only REST request so a service-worker patient cache cannot
+authorize a clinical write. Both accept an optional `AbortSignal`; offline
+synchronization handlers must pass their item-scoped signal so an owner/session
+change or cancellation cannot leave an untracked guard request running.

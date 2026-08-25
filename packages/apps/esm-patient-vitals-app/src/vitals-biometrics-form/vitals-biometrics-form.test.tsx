@@ -16,8 +16,9 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockConceptMetadata, mockConceptRanges, mockConceptUnits, mockPatient, mockVitalsConfig } from 'test-utils';
 
-import { saveVitalsAndBiometrics } from '../common';
+import { saveVitalsAndBiometrics, useVitalsConceptMetadata } from '../common';
 import { type ConfigObject, configSchema } from '../config-schema';
+import { buildVitalsEncounter, persistVitalsEncounter } from '../offline';
 
 import VitalsAndBiometricsForm from './vitals-biometrics-form.workspace';
 
@@ -72,11 +73,14 @@ const testWorkspace2Props: PatientWorkspace2DefinitionProps<
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockExtensionSlot = vi.mocked(ExtensionSlot);
 const mockFetchFreshPatientVitalStatus = vi.mocked(fetchFreshPatientVitalStatus);
+const mockBuildVitalsEncounter = vi.mocked(buildVitalsEncounter);
+const mockPersistVitalsEncounter = vi.mocked(persistVitalsEncounter);
 const mockSavePatientVitals = vi.mocked(saveVitalsAndBiometrics);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUsePatient = vi.mocked(usePatient);
 const mockUseReferenceRanges = vi.mocked(useReferenceRanges);
 const mockUseVisitOrOfflineVisit = vi.mocked(useVisitOrOfflineVisit);
+const mockUseVitalsConceptMetadata = vi.mocked(useVitalsConceptMetadata);
 
 function mockPatientAgeInMonths(months: number) {
   const birthDate = new Date();
@@ -118,6 +122,11 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => {
   };
 });
 
+vi.mock('../offline', () => ({
+  buildVitalsEncounter: vi.fn(),
+  persistVitalsEncounter: vi.fn(),
+}));
+
 mockUseConfig.mockReturnValue({
   ...getDefaultsFromConfigSchema(configSchema),
   ...mockVitalsConfig,
@@ -149,6 +158,35 @@ describe('VitalsBiometricsForm', () => {
       },
     } as ReturnType<typeof usePatient>);
     mockFetchFreshPatientVitalStatus.mockResolvedValue({ dead: false, deathDate: null, isDeceased: false });
+    mockUseVitalsConceptMetadata.mockReturnValue({
+      data: mockConceptUnits,
+      conceptMetadata: mockConceptMetadata,
+      conceptRanges: mockConceptRanges,
+      error: undefined,
+      isLoading: false,
+    } as ReturnType<typeof useVitalsConceptMetadata>);
+    mockBuildVitalsEncounter.mockImplementation((args) => args as never);
+    mockPersistVitalsEncounter.mockImplementation(async (encounter, { abortController }) => {
+      const testEncounter = encounter as unknown as Parameters<typeof buildVitalsEncounter>[0];
+      const vitalStatus = await mockFetchFreshPatientVitalStatus(testEncounter.patientUuid, abortController.signal);
+      if (vitalStatus.isDeceased) {
+        throw Object.assign(new Error('Blocked'), { code: 'DECEASED_PATIENT_OPERATION_BLOCKED' });
+      }
+      await mockSavePatientVitals(
+        testEncounter.encounterTypeUuid,
+        testEncounter.concepts,
+        testEncounter.patientUuid,
+        testEncounter.vitals,
+        abortController,
+        testEncounter.locationUuid,
+        testEncounter.visitUuid,
+        {
+          providerUuid: testEncounter.providerUuid,
+          encounterRoleUuid: testEncounter.encounterRoleUuid,
+        },
+      );
+      return { status: 'confirmed', encounterUuid: 'synthetic-encounter-uuid' };
+    });
     mockUseReferenceRanges.mockReturnValue({
       ranges: new Map(),
       isLoading: false,
@@ -244,7 +282,7 @@ describe('VitalsBiometricsForm', () => {
         }),
       ),
     );
-    expect(mockFetchFreshPatientVitalStatus).toHaveBeenCalledWith(mockPatient.id);
+    expect(mockFetchFreshPatientVitalStatus).toHaveBeenCalledWith(mockPatient.id, expect.any(AbortSignal));
     expect(mockSavePatientVitals).not.toHaveBeenCalled();
   });
 
@@ -452,6 +490,106 @@ describe('VitalsBiometricsForm', () => {
         title: 'Vitals and Biometrics saved',
       }),
     );
+  });
+
+  it('closes with an explicit pending state without running the post-save transition when the backend is unavailable', async () => {
+    const user = userEvent.setup();
+    const onVitalsSaved = vi.fn();
+    mockPersistVitalsEncounter.mockResolvedValue({
+      status: 'queued',
+      encounterUuid: '11111111-1111-4111-8111-111111111111',
+    });
+
+    render(<VitalsAndBiometricsForm {...testProps} onVitalsSaved={onVitalsSaved} />);
+
+    await user.type(screen.getByRole('spinbutton', { name: /pulse/i }), pulseValue.toString());
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockPersistVitalsEncounter).toHaveBeenCalledOnce());
+    expect(onVitalsSaved).not.toHaveBeenCalled();
+    expect(testProps.closeWorkspaceWithSavedChanges).toHaveBeenCalledOnce();
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'Vitals saved on this device',
+        subtitle: expect.stringContaining('not yet part of the clinical record'),
+      }),
+    );
+  });
+
+  it('does not allow a second submission when queued vitals were saved but the workspace could not close', async () => {
+    const user = userEvent.setup();
+    const closeWorkspaceWithSavedChanges = vi.fn().mockRejectedValue(new Error('Synthetic close failure'));
+    mockPersistVitalsEncounter.mockResolvedValue({
+      status: 'queued',
+      encounterUuid: '11111111-1111-4111-8111-111111111111',
+    });
+
+    render(<VitalsAndBiometricsForm {...testProps} closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges} />);
+
+    await user.type(screen.getByRole('spinbutton', { name: /pulse/i }), pulseValue.toString());
+    const saveButton = screen.getByRole('button', { name: /save and close/i });
+    await user.click(saveButton);
+
+    await waitFor(() => expect(saveButton).toBeDisabled());
+    expect(mockPersistVitalsEncounter).toHaveBeenCalledOnce();
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'warning',
+        subtitle: expect.stringMatching(/workspace could not close.*do not save them again/i),
+      }),
+    );
+
+    await user.click(saveButton);
+    expect(mockPersistVitalsEncounter).toHaveBeenCalledOnce();
+  });
+
+  it('keeps a confirmed write terminal when a post-save workflow action fails', async () => {
+    const user = userEvent.setup();
+    const onVitalsSaved = vi.fn().mockRejectedValue(new Error('Synthetic routing failure'));
+
+    render(<VitalsAndBiometricsForm {...testProps} onVitalsSaved={onVitalsSaved} />);
+
+    await user.type(screen.getByRole('spinbutton', { name: /pulse/i }), pulseValue.toString());
+    const saveButton = screen.getByRole('button', { name: /save and close/i });
+    await user.click(saveButton);
+
+    await waitFor(() => expect(saveButton).toBeDisabled());
+    expect(mockPersistVitalsEncounter).toHaveBeenCalledOnce();
+    expect(testProps.closeWorkspaceWithSavedChanges).toHaveBeenCalledOnce();
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'Vitals and Biometrics saved',
+        subtitle: expect.stringMatching(/already in the clinical record.*do not save them again/i),
+      }),
+    );
+  });
+
+  it('keeps entered measurements visible when metadata revalidates during a backend outage', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<VitalsAndBiometricsForm {...testProps} />);
+    const pulse = screen.getByRole('spinbutton', { name: /pulse/i });
+    await user.type(pulse, pulseValue.toString());
+
+    mockUseVitalsConceptMetadata.mockReturnValue({
+      data: new Map(),
+      conceptMetadata: undefined,
+      conceptRanges: new Map(),
+      error: undefined,
+      isLoading: true,
+    } as ReturnType<typeof useVitalsConceptMetadata>);
+    mockUseReferenceRanges.mockReturnValue({
+      ranges: new Map(),
+      isLoading: true,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+    rerender(<VitalsAndBiometricsForm {...testProps} />);
+
+    expect(screen.getByRole('spinbutton', { name: /pulse/i })).toHaveValue(pulseValue);
+    expect(screen.getByRole('button', { name: /save and close/i })).toBeInTheDocument();
+    expect(screen.getByText('Reference ranges could not be loaded')).toBeInTheDocument();
   });
 
   it('uses the workspace encounter type override when saving from Workspace 2', async () => {

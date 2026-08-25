@@ -17,6 +17,23 @@ de la persona a la cobertura efectiva de una visita. El contrato es:
 | Autofinanciamiento   | solo financiador                                                           |
 | Ausente              | ningún atributo dependiente; se devuelve una razón de revisión             |
 
+La clasificación compartida distingue la ausencia de financiador de un
+financiador no-SIS registrado explícitamente. El contrato de elegibilidad para
+triaje es:
+
+| Estado SIS      | Significado                                 | Triaje       | FUA            |
+| --------------- | ------------------------------------------- | ------------ | -------------- |
+| `active`        | SIS vigente con bundle completo             | permitido    | candidato      |
+| `notApplicable` | Financiador explícito distinto de SIS       | permitido    | no corresponde |
+| `missing`       | Financiador ausente o bundle SIS incompleto | revisar/Caja | no corresponde |
+| `inactive`      | SIS no vigente                              | revisar/Caja | no corresponde |
+| `pending`       | Acreditación SIS pendiente                  | revisar/Caja | no corresponde |
+| `notConsulted`  | Acreditación SIS todavía no consultada      | revisar/Caja | no corresponde |
+
+`notApplicable` nunca representa un financiador nulo o vacío. La función
+`isTriageFinancingEligible` centraliza este criterio para Citas, Hoja Clínica y
+Colas; no modifica la barrera propia de FUA, que continúa exigiendo SIS vigente.
+
 La copia normaliza productos SIS legacy al concepto SIS, nunca usa DNI/CE/pasaporte como afiliación,
 elimina complementos incompatibles y es idempotente para poder reparar una escritura parcial sobre la
 misma visita. Con `onlyFillMissing`, el financiador elegido manualmente en la visita prevalece y no se

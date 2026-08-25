@@ -150,7 +150,12 @@ export function getSisFinancingState({
   accreditationStatusUuid,
   accreditationCheckedAt,
 }: VisitInsurance): SisFinancingState {
-  if (normalizeFinanciadorConceptUuid(financiadorUuid) !== SIS_CONCEPT_UUID) {
+  const normalizedFinanciadorUuid = normalizeFinanciadorConceptUuid(financiadorUuid);
+  if (!normalizedFinanciadorUuid) {
+    return 'missing';
+  }
+
+  if (normalizedFinanciadorUuid !== SIS_CONCEPT_UUID) {
     return 'notApplicable';
   }
 
@@ -168,6 +173,16 @@ export function getSisFinancingState({
     default:
       return 'missing';
   }
+}
+
+/**
+ * El triaje requiere un financiador identificado. SIS debe estar vigente y
+ * completo; una IAFAS no-SIS o el autofinanciamiento no requieren
+ * acreditación SIS. Este criterio no se aplica al FUA, que conserva su barrera
+ * exclusiva de SIS vigente.
+ */
+export function isTriageFinancingEligible(state: SisFinancingState | null | undefined): boolean {
+  return state === 'active' || state === 'notApplicable';
 }
 
 // ── Lectura de la afiliación de la persona ───────────────────────────────────

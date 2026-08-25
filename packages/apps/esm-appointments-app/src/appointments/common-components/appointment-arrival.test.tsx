@@ -591,6 +591,49 @@ describe('AppointmentArrivalModal', () => {
     });
   });
 
+  it('allows explicitly non-SIS financing through arrival and active-visit queue validation', async () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentArrivalRules: [{ ...appointmentArrivalRule, requiresTriage: true }],
+      triageRouting: {
+        enabled: true,
+        encounterTypeUuid: 'triage-encounter-type-uuid',
+        queueLocationUuid: 'triage-location-uuid',
+        queueUuid: 'triage-queue-uuid',
+      },
+      checkInButton: { enabled: true, showIfActiveVisit: true, customUrl: '' },
+    });
+    mockGetActiveVisitsForPatient.mockResolvedValue(visitsResponse([activeVisit]));
+    mockFetchPersonInsurance.mockResolvedValue({
+      insuranceTypeUuid: 'essalud-concept-uuid',
+      insuranceCode: 'ESSALUD-123',
+      accreditationStatusUuid: null,
+      accreditationCheckedAt: null,
+    });
+    mockFetchVisitInsurance.mockResolvedValue({
+      financiadorUuid: 'essalud-concept-uuid',
+      insuranceNumber: 'ESSALUD-123',
+      accreditationStatusUuid: null,
+      accreditationCheckedAt: null,
+    });
+    mockGetSisFinancingState.mockReturnValue('notApplicable');
+
+    renderModal();
+    await userEvent.click(getQueueButton());
+
+    const launchOptions = mockLaunchWorkspace2.mock.calls[0][1] as {
+      onBeforeQueueEntrySave: (visit: typeof activeVisit) => Promise<boolean>;
+    };
+    await expect(launchOptions.onBeforeQueueEntrySave(activeVisit)).resolves.toBe(true);
+    expect(mockFetchPersonInsurance).toHaveBeenCalledWith(appointment.patient.uuid);
+    expect(mockFetchVisitInsurance).toHaveBeenCalledWith(activeVisit.uuid);
+    expect(mockEnsureAppointmentVisitLink).toHaveBeenCalledWith(
+      activeVisit.uuid,
+      appointment.uuid,
+      appointmentVisitAttributeTypeUuid,
+    );
+  });
+
   it('blocks enqueuing with an active visit from another location', async () => {
     mockGetActiveVisitsForPatient.mockResolvedValue(
       visitsResponse([

@@ -1206,38 +1206,26 @@ describe('Visit form', () => {
     expect(mockOnVisitCreatedOrUpdatedCallback).toHaveBeenCalledTimes(1);
   });
 
-  it('does not use self-financing as an active SIS triage fast path', async () => {
+  it.each([
+    ['self-financing', SELF_FINANCED_CONCEPT_UUID],
+    ['another IAFAS', essaludConceptUuid],
+  ])('uses explicitly known %s as an eligible triage fast path', async (_label, financiadorUuid) => {
     const user = userEvent.setup();
-    mockSafeCopyFinanciadorToVisit.mockResolvedValueOnce({
-      ok: true,
-      skipped: false,
-      created: 0,
-      updated: 0,
-      reviewReason: 'incomplete-coverage',
-    });
-    mockOnVisitCreatedOrUpdatedCallback.mockRejectedValueOnce(
-      Object.assign(new Error('The visit does not have active SIS financing.'), {
-        code: 'TRIAGE_SIS_FINANCING_REQUIRED',
-      }),
-    );
 
     renderVisitForm(undefined, {
       requireActiveSisFinancing: true,
       additionalVisitAttributes: [
-        { attributeType: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID, value: SELF_FINANCED_CONCEPT_UUID },
+        { attributeType: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID, value: financiadorUuid },
       ],
     });
     await selectVisitType(user);
     await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
     await user.click(screen.getByRole('button', { name: /Start visit/i }));
 
-    await waitFor(() => expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledTimes(1));
-    expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledWith(
-      expect.objectContaining({ onlyFillMissing: false, patientUuid: mockPatient.id, visitUuid }),
-    );
+    await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
     expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+    expect(mockSafeCopyFinanciadorToVisit).not.toHaveBeenCalled();
     expect(mockOnVisitCreatedOrUpdatedCallback).toHaveBeenCalledTimes(1);
-    expect(mockCloseWorkspace).not.toHaveBeenCalled();
   });
 
   it('does not treat an unknown SIS payload as complete in a non-triage flow', async () => {

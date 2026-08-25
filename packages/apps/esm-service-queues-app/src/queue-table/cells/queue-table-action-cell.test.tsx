@@ -169,6 +169,40 @@ describe('QueueTableActionCell', () => {
     );
   });
 
+  it('opens triage for explicitly known non-SIS financing without sending the patient to cashier', async () => {
+    const user = userEvent.setup();
+    const triageQueueEntry = {
+      ...mockQueueEntryAlice,
+      visit: { ...mockQueueEntryAlice.visit, uuid: 'visit-uuid' },
+      workflow: {
+        isTriageQueue: true,
+        sisState: 'notApplicable' as const,
+        isSisStateResolved: true,
+        triageState: 'pending' as const,
+      },
+    };
+    mockRevalidateCurrentSisState.mockResolvedValue('notApplicable');
+    mockGetAppointmentTriageConfig.mockResolvedValue({
+      appointmentArrivalRules: [],
+      appointmentVisitAttributeTypeUuid: 'appointment-attribute-type-uuid',
+      triageRouting: {
+        enabled: true,
+        encounterTypeUuid: 'triage-encounter-type-uuid',
+        queueLocationUuid: 'triage-location-uuid',
+        queueUuid: 'triage-queue-uuid',
+      },
+    });
+
+    render(<QueueTableActionCell queueEntry={triageQueueEntry} />);
+
+    expect(screen.queryByRole('button', { name: /Derivar a Caja|Requiere Caja/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Realizar triaje' }));
+
+    expect(mockRevalidateCurrentSisState).toHaveBeenCalledWith(triageQueueEntry, true);
+    expect(mockLaunchWorkspace2).toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
   it('allows a nurse to perform triage without exposing administrative queue actions', async () => {
     const user = userEvent.setup();
     const triageQueueEntry = {

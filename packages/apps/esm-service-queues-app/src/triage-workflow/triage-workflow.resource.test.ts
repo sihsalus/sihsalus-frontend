@@ -138,10 +138,17 @@ describe('outpatient triage workflow', () => {
   it('derives the appointment, SIS, and triage states from the active visit', () => {
     const pendingEntry = makeQueueEntry();
     const completedEntry = makeQueueEntry({ triaged: true });
+    const nonSisEntry = makeQueueEntry({ sis: false });
+    nonSisEntry.visit.attributes.push({
+      uuid: 'non-sis-financiador-attribute-uuid',
+      attributeType: { uuid: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID },
+      value: 'essalud-concept-uuid',
+    });
 
     expect(getLinkedAppointmentUuid(pendingEntry, appointmentConfig)).toBe('appointment-uuid');
     expect(getSisState(pendingEntry)).toBe('active');
-    expect(getSisState(makeQueueEntry({ sis: false }))).toBe('notApplicable');
+    expect(getSisState(makeQueueEntry({ sis: false }))).toBe('missing');
+    expect(getSisState(nonSisEntry)).toBe('notApplicable');
     expect(getTriageState(pendingEntry, appointmentConfig)).toBe('pending');
     expect(getTriageState(completedEntry, appointmentConfig)).toBe('completed');
   });

@@ -3,8 +3,8 @@ import { isDesktop, showModal, useLayoutType, useSession } from '@openmrs/esm-fr
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { canEditServiceQueues } from '../permissions';
 import { useQueueEntries } from '../hooks/useQueueEntries';
+import { canEditServiceQueues } from '../permissions';
 import { useQueueWorkflowMetadata } from '../triage-workflow/triage-workflow.resource';
 
 import styles from './patient-banner-queue-entry-status.scss';
@@ -20,16 +20,25 @@ interface PatientBannerQueueEntryStatusProps {
  * queue entry status, with a quick link to transition them to q new queue / status
  */
 const PatientBannerQueueEntryStatus: React.FC<PatientBannerQueueEntryStatusProps> = ({ patientUuid, renderedFrom }) => {
+  if (renderedFrom !== 'patient-chart') {
+    return null;
+  }
+
+  return <PatientChartQueueEntryStatus patientUuid={patientUuid} />;
+};
+
+const PatientChartQueueEntryStatus: React.FC<Pick<PatientBannerQueueEntryStatusProps, 'patientUuid'>> = ({
+  patientUuid,
+}) => {
   const { queueEntries } = useQueueEntries({ patient: patientUuid, isEnded: false });
   const { entries: operationalQueueEntries } = useQueueWorkflowMetadata(queueEntries ?? []);
   const layout = useLayoutType();
   const queueEntry = operationalQueueEntries[0];
   const { t } = useTranslation();
-  const isPatientChart = renderedFrom === 'patient-chart';
   const session = useSession();
   const canEdit = canEditServiceQueues(session?.user);
-  if (!isPatientChart || !queueEntry) {
-    return <></>;
+  if (!queueEntry) {
+    return null;
   }
 
   const mappedPriority = queueEntry.priority.display === 'Urgent' ? 'Priority' : queueEntry.priority.display;

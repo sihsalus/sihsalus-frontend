@@ -128,6 +128,14 @@ const DETERMINISTIC_VISIT_CREATE_REJECTION_STATUSES = new Set([
   400, 401, 403, 404, 405, 406, 409, 410, 412, 413, 414, 415, 416, 417, 422,
 ]);
 
+function combineVisitDateAndTimeAtMinute(date: Date, hours: number, minutes: number): Date {
+  // The form only exposes minute precision, so hidden seconds must not affect
+  // validation or the value persisted by OpenMRS.
+  const datetime = new Date(date);
+  datetime.setHours(hours, minutes, 0, 0);
+  return datetime;
+}
+
 function isDefinitiveClientRejection(error: unknown) {
   const candidate = error as {
     status?: unknown;
@@ -711,8 +719,12 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     // Validates that the start time is not in the future
     const validateStartTime = (data: z.infer<typeof visitFormSchema>) => {
       const [visitStartHours, visitStartMinutes] = convertTime12to24(data.visitStartTime, data.visitStartTimeFormat);
-      const visitStartDatetime = new Date(data.visitStartDate).setHours(visitStartHours, visitStartMinutes);
-      return new Date(visitStartDatetime) <= new Date();
+      const visitStartDatetime = combineVisitDateAndTimeAtMinute(
+        data.visitStartDate,
+        visitStartHours,
+        visitStartMinutes,
+      );
+      return visitStartDatetime.getTime() <= Date.now();
     };
 
     const hadPreviousStopDateTime = Boolean(visitToEdit?.stopDatetime);
@@ -932,7 +944,11 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
     const [visitStartHours, visitStartMinutes] = convertTime12to24(visitStartTime, visitStartTimeFormat);
 
-    const visitStartDatetime = visitStartDate.setHours(visitStartHours, visitStartMinutes);
+    const visitStartDatetime = combineVisitDateAndTimeAtMinute(
+      visitStartDate,
+      visitStartHours,
+      visitStartMinutes,
+    ).getTime();
 
     let validSubmission = true;
 
@@ -956,7 +972,11 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     if (visitStopDate && visitStopTime && visitStopTimeFormat) {
       const [visitStopHours, visitStopMinutes] = convertTime12to24(visitStopTime, visitStopTimeFormat);
 
-      const visitStopDatetime = visitStopDate.setHours(visitStopHours, visitStopMinutes);
+      const visitStopDatetime = combineVisitDateAndTimeAtMinute(
+        visitStopDate,
+        visitStopHours,
+        visitStopMinutes,
+      ).getTime();
 
       if (minVisitStopDatetime && visitStopDatetime <= minVisitStopDatetime) {
         validSubmission = false;
@@ -1363,17 +1383,9 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
       const [hours, minutes] = convertTime12to24(visitStartTime, visitStartTimeFormat);
       const submissionDatetime = new Date();
-      const currentSeconds = submissionDatetime.getSeconds();
       const startDatetime = isQueueRegistration
         ? submissionDatetime
-        : new Date(
-            dayjs(visitStartDate).year(),
-            dayjs(visitStartDate).month(),
-            dayjs(visitStartDate).date(),
-            hours,
-            minutes,
-            currentSeconds,
-          );
+        : combineVisitDateAndTimeAtMinute(visitStartDate, hours, minutes);
       const sanitizedVisitAttributes = sanitizeVisitCoverageAttributes(
         visitAttributes,
         patientIdentifierValues ?? [],
@@ -1423,14 +1435,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
         payload.stopDatetime = toDateObjectStrict(
           toOmrsIsoString(
-            new Date(
-              dayjs(visitStopDate).year(),
-              dayjs(visitStopDate).month(),
-              dayjs(visitStopDate).date(),
-              visitStopHours,
-              visitStopMinutes,
-              currentSeconds,
-            ),
+            combineVisitDateAndTimeAtMinute(visitStopDate, visitStopHours, visitStopMinutes),
           ),
         );
       }

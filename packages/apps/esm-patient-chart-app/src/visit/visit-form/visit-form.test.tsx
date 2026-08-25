@@ -799,6 +799,32 @@ describe('Visit form', () => {
     await selectVisitType(user);
   });
 
+  it('accepts the current minute without carrying hidden seconds from when the form opened', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date(2026, 7, 25, 10, 45, 59, 900));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    try {
+      renderVisitForm();
+
+      vi.setSystemTime(new Date(2026, 7, 25, 10, 46, 5));
+      fireEvent.change(screen.getByRole('textbox', { name: /hora/i }), {
+        target: { value: '10:46' },
+      });
+      await user.selectOptions(screen.getByRole('combobox', { name: /select a UPSS/i }), 'Inpatient Ward');
+      await selectVisitType(user);
+      await user.click(screen.getByRole('button', { name: /start visit/i }));
+
+      await waitFor(() => expect(mockSaveVisit).toHaveBeenCalledTimes(1));
+      expect(screen.queryByText(/start time cannot be in the future/i)).not.toBeInTheDocument();
+
+      const payload = mockSaveVisit.mock.calls[0][0];
+      expect(payload.startDatetime).toEqual(new Date(2026, 7, 25, 10, 46, 0, 0));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('displays an error message when the visit start time is in the future', async () => {
     const user = userEvent.setup();
 

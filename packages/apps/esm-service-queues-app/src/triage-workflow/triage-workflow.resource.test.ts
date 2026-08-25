@@ -17,6 +17,7 @@ import { transitionQueueEntry } from '../modals/queue-entry-actions.resource';
 import { type QueueEntry } from '../types';
 import {
   type AppointmentTriageConfig,
+  getAppointmentTriageConfig,
   getLinkedAppointmentUuid,
   getPersonSisState,
   getSisState,
@@ -61,7 +62,6 @@ const appointmentConfig: AppointmentTriageConfig = {
       appointmentLocationUuid: 'appointment-location-uuid',
       appointmentServiceUuid: 'appointment-service-uuid',
       queueUuid: destinationQueueUuid,
-      requiresTriage: true,
     },
   ],
 };
@@ -119,11 +119,20 @@ describe('outpatient triage workflow', () => {
       accreditationCheckedAt: '2026-08-13T10:00:00.000-05:00',
     });
     vi.mocked(getConfig).mockImplementation(async (moduleName) => {
-      if (moduleName === '@sihsalus/esm-appointments-app') {
-        return appointmentConfig;
+      if (moduleName === '@sihsalus/esm-service-queues-app') {
+        return {
+          appointmentTriage: appointmentConfig,
+          concepts: { defaultStatusConceptUuid: waitingStatusUuid },
+        };
       }
-      return { concepts: { defaultStatusConceptUuid: waitingStatusUuid } };
+      throw new Error(`Unexpected config request: ${moduleName}`);
     });
+  });
+
+  it('loads triage routing from the queue module without requiring the appointments module', async () => {
+    await expect(getAppointmentTriageConfig()).resolves.toEqual(appointmentConfig);
+    expect(getConfig).toHaveBeenCalledWith('@sihsalus/esm-service-queues-app');
+    expect(getConfig).not.toHaveBeenCalledWith('@sihsalus/esm-appointments-app');
   });
 
   it('derives the appointment, SIS, and triage states from the active visit', () => {

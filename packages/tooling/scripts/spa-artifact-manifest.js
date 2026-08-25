@@ -32,6 +32,44 @@ function getSpaArtifactFiles(role) {
   return spaArtifactManifest.filter(({ roles }) => roles.includes(role)).map(({ file }) => file);
 }
 
+function getHtmlAttribute(tag, attributeName) {
+  const pattern = new RegExp(`\\b${attributeName}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, 'i');
+  const match = tag.match(pattern);
+  return match?.[1] ?? match?.[2] ?? match?.[3] ?? '';
+}
+
+/**
+ * Returns root-level local stylesheets linked by the assembled index. The app
+ * shell emits these files beside index.html, even when the public href contains
+ * the full SPA path.
+ */
+function getLinkedLocalStylesheetFiles(indexHtml) {
+  if (typeof indexHtml !== 'string' || indexHtml.length === 0) {
+    return [];
+  }
+
+  const files = [];
+  for (const [tag] of indexHtml.matchAll(/<link\b[^>]*>/gi)) {
+    const rel = getHtmlAttribute(tag, 'rel');
+    if (!rel.split(/\s+/).some((value) => value.toLowerCase() === 'stylesheet')) {
+      continue;
+    }
+
+    const href = getHtmlAttribute(tag, 'href');
+    if (!href || /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(href)) {
+      continue;
+    }
+
+    const pathname = href.split(/[?#]/, 1)[0].replace(/\\/g, '/');
+    const file = path.posix.basename(pathname);
+    if (file && file.toLowerCase().endsWith('.css')) {
+      files.push(file);
+    }
+  }
+
+  return [...new Set(files)];
+}
+
 function inspectSpaArtifacts(outDir, role, fileSystem = fs) {
   const issues = [];
 
@@ -87,6 +125,7 @@ function formatSpaArtifactIssue({ filePath, reason, detail }) {
 
 module.exports = {
   formatSpaArtifactIssue,
+  getLinkedLocalStylesheetFiles,
   getSpaArtifactFiles,
   inspectSpaArtifacts,
   spaArtifactManifest,

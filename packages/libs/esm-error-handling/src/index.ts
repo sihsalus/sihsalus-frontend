@@ -3,15 +3,13 @@ import { dispatchToastShown } from '@openmrs/esm-globals';
 
 const localizedErrorMessages = {
   en: {
-    microfrontendLoad:
-      'An application module could not be loaded. Reload the page. If the problem continues, contact support.',
-    microfrontendLoadTitle: 'The page could not be loaded',
+    microfrontendLoad: 'Check your connection and reload the page. If the problem continues, contact support.',
+    microfrontendLoadTitle: "We couldn't load this screen",
     unexpected: 'An unexpected error occurred.',
   },
   es: {
-    microfrontendLoad:
-      'No se pudo cargar un módulo de la aplicación. Recargue la página. Si el problema continúa, contacte a soporte.',
-    microfrontendLoadTitle: 'No se pudo cargar la página',
+    microfrontendLoad: 'Compruebe su conexión y recargue la página. Si el problema continúa, contacte a soporte.',
+    microfrontendLoadTitle: 'No pudimos cargar esta pantalla',
     unexpected: 'Ocurrió un error inesperado.',
   },
 } as const;

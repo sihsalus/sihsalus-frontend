@@ -103,6 +103,28 @@ index 5d35660053b7543a164ee1432a37d594ee3f339f..6b7928ab1d797796559778f9f501703b
    getCurrentUser,
    integrateBreakpoints,
    interpolateUrl,
+@@ -191,8 +192,19 @@ function connectivityChanged() {
+   dispatchConnectivityChanged(online);
++  const isSpanish = document.documentElement.lang.toLowerCase().startsWith('es');
++  const title = isSpanish
++    ? getCoreTranslation('connectionStatusTitle', 'Estado de conexión', { lng: 'es' })
++    : getCoreTranslation('connectionStatusTitle');
++  const description = online
++    ? isSpanish
++      ? getCoreTranslation('connectionOnline', 'Conexión restablecida.', { lng: 'es' })
++      : getCoreTranslation('connectionOnline')
++    : isSpanish
++      ? getCoreTranslation('connectionOffline', 'Sin conexión a internet.', { lng: 'es' })
++      : getCoreTranslation('connectionOffline');
+   showToast({
+     critical: true,
+-    description: `Connection: ${online ? 'online' : 'offline'}`,
+-    title: 'App',
++    description,
++    title,
+     kind: online ? 'success' : 'warning',
+   });
+ }
 @@ -229 +230 @@ function renderFatalErrorPage(e?: Error) {
 -      messageContainer.textContent = e?.message || 'No additional information available.';
 +      messageContainer.textContent = getCoreTranslation('fatalErrorMessage');

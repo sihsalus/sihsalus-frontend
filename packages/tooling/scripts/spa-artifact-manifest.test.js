@@ -6,10 +6,29 @@ const test = require('node:test');
 
 const {
   formatSpaArtifactIssue,
+  getLinkedLocalStylesheetFiles,
   getSpaArtifactFiles,
   inspectSpaArtifacts,
   spaArtifactManifest,
 } = require('./spa-artifact-manifest');
+
+test('finds each local stylesheet linked by the assembled index', () => {
+  const indexHtml = `
+    <link href="/openmrs/spa/openmrs.123.css" rel="stylesheet">
+    <link rel='stylesheet theme' href='./theme.css?v=2#current'>
+    <link rel="stylesheet" href="/openmrs/spa/openmrs.123.css">
+    <link rel="preload" href="ignored.css">
+    <link rel="stylesheet" href="https://cdn.example.test/external.css">
+    <link rel="stylesheet" href="//cdn.example.test/external.css">
+  `;
+
+  assert.deepEqual(getLinkedLocalStylesheetFiles(indexHtml), ['openmrs.123.css', 'theme.css']);
+});
+
+test('returns no linked stylesheets for missing or unrelated markup', () => {
+  assert.deepEqual(getLinkedLocalStylesheetFiles(), []);
+  assert.deepEqual(getLinkedLocalStylesheetFiles('<script src="openmrs.js"></script>'), []);
+});
 
 test('defines the startup, complete, and precache artifact contracts centrally', () => {
   assert.deepEqual(getSpaArtifactFiles('startup'), [

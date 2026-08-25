@@ -5,7 +5,7 @@ const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const chalk = require('chalk');
 const { copyContentAddressedBuildManifest, copyContentAddressedEntry } = require('./content-addressed-entry');
-const { getSpaArtifactFiles } = require('./spa-artifact-manifest');
+const { getLinkedLocalStylesheetFiles, getSpaArtifactFiles } = require('./spa-artifact-manifest');
 const { getAppShellBuildEnvironment } = require('./build-app-shell');
 const {
   applySocialPreview,
@@ -396,7 +396,8 @@ function revisionAssembledPrecacheFiles() {
   }
 
   let serviceWorker = fs.readFileSync(serviceWorkerPath, 'utf8');
-  const files = getSpaArtifactFiles('precacheRevision');
+  const indexHtml = fs.readFileSync(path.join(outDir, 'index.html'), 'utf8');
+  const files = [...new Set([...getSpaArtifactFiles('precacheRevision'), ...getLinkedLocalStylesheetFiles(indexHtml)])];
 
   for (const file of files) {
     if (!fs.existsSync(path.join(outDir, file))) {
@@ -638,11 +639,11 @@ function patchIndexHtml() {
       new CustomEvent('openmrs:toast-shown', {
         detail: {
           kind: 'error',
-          title: isSpanishLocale() ? 'No se pudo cargar la página' : 'The page could not be loaded',
+          title: isSpanishLocale() ? 'No pudimos cargar esta pantalla' : "We couldn't load this screen",
           description:
             isSpanishLocale()
-              ? 'No se pudo cargar un módulo de la aplicación. Recargue la página. Si el problema continúa, contacte a soporte.'
-              : 'An application module could not be loaded. Reload the page. If the problem continues, contact support.',
+              ? 'Compruebe su conexión y recargue la página. Si el problema continúa, contacte a soporte.'
+              : 'Check your connection and reload the page. If the problem continues, contact support.',
         },
       }),
     );

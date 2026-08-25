@@ -11,7 +11,12 @@ const {
   findPrereleaseIncompatibleFrameworkRanges,
   findUnboundReactReferences,
 } = require('./javascript-runtime-contract');
-const { formatSpaArtifactIssue, getSpaArtifactFiles, inspectSpaArtifacts } = require('./spa-artifact-manifest');
+const {
+  formatSpaArtifactIssue,
+  getLinkedLocalStylesheetFiles,
+  getSpaArtifactFiles,
+  inspectSpaArtifacts,
+} = require('./spa-artifact-manifest');
 const {
   SOCIAL_PREVIEW_END,
   SOCIAL_PREVIEW_IMAGE_FILE,
@@ -171,6 +176,8 @@ for (const { name, source } of appShellJavaScriptFiles) {
 }
 
 const forbiddenAppShellCopy = [
+  'Connection: offline',
+  'Connection: online',
   'Offline Setup Error',
   'Oops! An unexpected error occurred.',
   'Oops! An unhandled promise rejection occurred.',
@@ -183,11 +190,17 @@ for (const text of forbiddenAppShellCopy) {
 }
 
 const requiredSafeAppShellMarkers = [
+  'Conexión restablecida.',
+  'Connection restored.',
+  'Connection status',
+  'Estado de conexión',
   'Modo sin conexión no disponible',
+  'No internet connection.',
   'Offline setup unavailable',
   'Ocurrió un error inesperado.',
   'An unexpected error occurred.',
   'No se pudo iniciar la aplicación. Intente recargar la página o contacte a soporte.',
+  'Sin conexión a internet.',
   'The application could not start. Try reloading the page or contact support.',
 ];
 for (const marker of requiredSafeAppShellMarkers) {
@@ -212,6 +225,8 @@ function getPrecacheFileName(url) {
 
 const revisionManifestPath = path.join(outDir, 'assembled-precache-revisions.json');
 const serviceWorkerPath = path.join(outDir, 'service-worker.js');
+const indexHtmlPath = path.join(outDir, 'index.html');
+const indexHtml = invalidRequiredArtifacts.has('index.html') ? '' : fs.readFileSync(indexHtmlPath, 'utf8');
 const revisionManifest = invalidRequiredArtifacts.has('assembled-precache-revisions.json')
   ? null
   : readJson(revisionManifestPath);
@@ -219,7 +234,9 @@ const serviceWorker = invalidRequiredArtifacts.has('service-worker.js')
   ? ''
   : fs.readFileSync(serviceWorkerPath, 'utf8');
 const workboxEntries = parseWorkboxPrecacheEntries(serviceWorker);
-const requiredRevisionFiles = getSpaArtifactFiles('precacheRevision');
+const requiredRevisionFiles = [
+  ...new Set([...getSpaArtifactFiles('precacheRevision'), ...getLinkedLocalStylesheetFiles(indexHtml)]),
+];
 
 try {
   assertCompatibleServiceWorkerArtifact(serviceWorker);
@@ -332,7 +349,6 @@ if (
   fail('manifest.webmanifest does not contain the required SIHSALUS branding');
 }
 
-const indexHtmlPath = path.join(outDir, 'index.html');
 const errorUiPath = path.join(outDir, 'sihsalus-error-ui.js');
 const spaBootstrapPath = path.join(outDir, 'sihsalus-spa-bootstrap.js');
 const errorUiJavaScript = invalidRequiredArtifacts.has('sihsalus-error-ui.js')
@@ -343,16 +359,15 @@ const spaBootstrapJavaScript = invalidRequiredArtifacts.has('sihsalus-spa-bootst
   : fs.readFileSync(spaBootstrapPath, 'utf8');
 
 if (fs.existsSync(indexHtmlPath)) {
-  const indexHtml = fs.readFileSync(indexHtmlPath, 'utf8');
   if (/Application Error|Something went wrong\. Please try reloading\./.test(indexHtml)) {
     fail('Fatal app-shell error template was not localized');
   }
 
   const requiredLocalizedLoadErrorCopy = [
-    'No se pudo cargar la página',
-    'No se pudo cargar un módulo de la aplicación.',
-    'The page could not be loaded',
-    'An application module could not be loaded.',
+    'No pudimos cargar esta pantalla',
+    'Compruebe su conexión y recargue la página.',
+    "We couldn't load this screen",
+    'Check your connection and reload the page.',
   ];
   for (const text of requiredLocalizedLoadErrorCopy) {
     if (!errorUiJavaScript.includes(text)) {
@@ -362,10 +377,10 @@ if (fs.existsSync(indexHtmlPath)) {
 
   if (
     !errorUiJavaScript.includes("return document.documentElement.lang.toLowerCase().indexOf('es') === 0;") ||
-    !/title:\s*isSpanishLocale\(\)\s*\?\s*'No se pudo cargar la página'\s*:\s*'The page could not be loaded'/.test(
+    !/title:\s*isSpanishLocale\(\)\s*\?\s*'No pudimos cargar esta pantalla'\s*:\s*"We couldn't load this screen"/.test(
       errorUiJavaScript,
     ) ||
-    !/description:\s*isSpanishLocale\(\)\s*\?\s*'No se pudo cargar un módulo de la aplicación\.[^']*'\s*:\s*'An application module could not be loaded\.[^']*'/s.test(
+    !/description:\s*isSpanishLocale\(\)\s*\?\s*'Compruebe su conexión y recargue la página\.[^']*'\s*:\s*'Check your connection and reload the page\.[^']*'/s.test(
       errorUiJavaScript,
     )
   ) {

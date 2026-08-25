@@ -87,6 +87,47 @@ test('installed app-shell source contains the required source-level fixes', () =
   assert.doesNotThrow(() => assertSafeAppShellSource(getAppShellPackageRoot()));
 });
 
+test('core translations localize app-shell connectivity status', () => {
+  const translationsDirectory = path.join(repositoryRoot, 'packages', 'libs', 'esm-translations', 'translations');
+  const english = JSON.parse(fs.readFileSync(path.join(translationsDirectory, 'en.json'), 'utf8'));
+  const englishUnitedStates = JSON.parse(fs.readFileSync(path.join(translationsDirectory, 'en_US.json'), 'utf8'));
+  const spanish = JSON.parse(fs.readFileSync(path.join(translationsDirectory, 'es.json'), 'utf8'));
+
+  const expectedEnglish = {
+    connectionOffline: 'No internet connection.',
+    connectionOnline: 'Connection restored.',
+    connectionStatusTitle: 'Connection status',
+  };
+  assert.deepEqual(
+    {
+      connectionOffline: english.connectionOffline,
+      connectionOnline: english.connectionOnline,
+      connectionStatusTitle: english.connectionStatusTitle,
+    },
+    expectedEnglish,
+  );
+  assert.deepEqual(
+    {
+      connectionOffline: englishUnitedStates.connectionOffline,
+      connectionOnline: englishUnitedStates.connectionOnline,
+      connectionStatusTitle: englishUnitedStates.connectionStatusTitle,
+    },
+    expectedEnglish,
+  );
+  assert.deepEqual(
+    {
+      connectionOffline: spanish.connectionOffline,
+      connectionOnline: spanish.connectionOnline,
+      connectionStatusTitle: spanish.connectionStatusTitle,
+    },
+    {
+      connectionOffline: 'Sin conexión a internet.',
+      connectionOnline: 'Conexión restablecida.',
+      connectionStatusTitle: 'Estado de conexión',
+    },
+  );
+});
+
 test('repository worker entry initially delegates to the controlled upstream alias', () => {
   const source = fs.readFileSync(assertRepoOwnedServiceWorkerSource(), 'utf8');
 

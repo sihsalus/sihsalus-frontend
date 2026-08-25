@@ -163,22 +163,28 @@ test.describe('Critical User Journeys', () => {
     // 1. Start normal navigation
     await page.goto('home').catch(() => null);
     await page.waitForLoadState('networkidle').catch(() => null);
+    const connectivityToasts = page.locator('.omrs-toasts-container');
 
     // 2. Go offline
     await page.context().setOffline(true);
+    await expect(connectivityToasts.getByText('Estado de conexión', { exact: true }).last()).toBeVisible();
+    await expect(connectivityToasts.getByText('Sin conexión a internet.', { exact: true }).last()).toBeVisible();
+    await expect(connectivityToasts.getByText(/^App$/)).toHaveCount(0);
+    await expect(connectivityToasts.getByText(/^Connection: (?:offline|online)$/)).toHaveCount(0);
+    await expect(connectivityToasts.getByText('Focus sentinel', { exact: true })).toHaveCount(0);
 
-    // 3. Try to navigate
-    await page.goto('patient-search').catch(() => null);
-    await page.waitForTimeout(1000);
-
-    // 4. Go back online
+    // 3. Go back online
     await page.context().setOffline(false);
+    await expect(connectivityToasts.getByText('Conexión restablecida.', { exact: true }).last()).toBeVisible();
+    await expect(connectivityToasts.getByText(/^Connection: (?:offline|online)$/)).toHaveCount(0);
+    await expect(connectivityToasts.getByText('Focus sentinel', { exact: true })).toHaveCount(0);
 
-    // 5. Try again
+    // 4. Verify navigation still recovers
+    await page.goto('patient-search').catch(() => null);
     await page.reload().catch(() => null);
     await page.waitForLoadState('networkidle').catch(() => null);
 
-    // 6. Verify app is responsive
+    // 5. Verify app is responsive
     const appContainer = page.locator('[data-openmrs-spa], #root, body').first();
     expect(await appContainer.isVisible().catch(() => false)).toBeTruthy();
   });

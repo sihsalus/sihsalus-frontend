@@ -33,12 +33,15 @@ export function TextPersonAttributeField({
 }: TextPersonAttributeFieldProps) {
   const { t } = useTranslation(moduleName);
   const isPhoneField = id === 'phone' || id === 'mobilePhone';
-  const sanitizePhoneInput = useCallback((value: string) => {
-    const startsWithPlus = value.startsWith('+');
-    const digits = value.replace(/\D/g, '');
+  const sanitizePhoneInput = useCallback(
+    (value: string) => {
+      const startsWithPlus = id === 'mobilePhone' && value.startsWith('+');
+      const digits = value.replace(/\D/g, '');
 
-    return `${startsWithPlus ? '+' : ''}${digits}`.slice(0, 20);
-  }, []);
+      return `${startsWithPlus ? '+' : ''}${digits}`.slice(0, 20);
+    },
+    [id],
+  );
 
   // Phone numbers are already capped while typing, so they never reach this.
   const effectiveMaxLength = isPhoneField
@@ -109,10 +112,14 @@ export function TextPersonAttributeField({
             }
 
             const input = event.currentTarget;
-            const isLeadingPlus =
-              event.key === '+' && input.selectionStart === 0 && input.selectionEnd === 0 && !input.value.includes('+');
+            const isLeadingMobilePlus =
+              id === 'mobilePhone' &&
+              event.key === '+' &&
+              input.selectionStart === 0 &&
+              input.selectionEnd === 0 &&
+              !input.value.includes('+');
 
-            if (!isLeadingPlus) {
+            if (!isLeadingMobilePlus) {
               event.preventDefault();
             }
           };
@@ -126,7 +133,12 @@ export function TextPersonAttributeField({
           const showCounter =
             !!effectiveMaxLength && !readOnly && currentLength >= effectiveMaxLength * counterVisibilityRatio;
           const counterText = showCounter ? `${currentLength}/${effectiveMaxLength}` : undefined;
-          const phoneHelperText = isPhoneField ? t('phoneHelperText', 'Use digits, spaces or hyphens') : undefined;
+          const phoneHelperText =
+            id === 'mobilePhone'
+              ? t('mobilePhoneHelperText', 'Enter digits only. Use +51 when including the country code.')
+              : id === 'phone'
+                ? t('phoneHelperText', 'Enter digits only.')
+                : undefined;
 
           return (
             <Input

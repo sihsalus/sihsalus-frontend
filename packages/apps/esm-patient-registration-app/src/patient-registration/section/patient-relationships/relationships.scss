@@ -103,6 +103,36 @@
   row-gap: layout.$spacing-05;
 }
 
+.responsibleBirthField,
+.responsibleGenderField {
+  min-width: 0;
+}
+
+.formSubheading,
+.responsibleAddressFields {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.formSubheading {
+  margin-bottom: 0;
+}
+
+.birthdateMode {
+  margin-bottom: layout.$spacing-05;
+
+  > span {
+    display: block;
+    margin-bottom: layout.$spacing-03;
+  }
+
+  :global(.cds--content-switcher) {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    width: max-content;
+  }
+}
+
 .createPersonActions {
   display: flex;
   flex-wrap: wrap;

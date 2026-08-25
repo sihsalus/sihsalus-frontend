@@ -126,6 +126,11 @@ describe('RelationshipsSection', () => {
     } as Awaited<ReturnType<typeof savePerson>>);
     mockUseConfig.mockReturnValue({
       fieldConfigurations: {
+        address: {
+          useAddressHierarchy: {
+            enabled: false,
+          },
+        },
         phone: {
           personAttributeUuid: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
         },
@@ -789,6 +794,7 @@ describe('RelationshipsSection', () => {
     expect(screen.getByRole('textbox', { name: /middle name/i })).toHaveAttribute('maxLength', '150');
     expect(screen.getByRole('textbox', { name: /^family name$/i })).toHaveAttribute('maxLength', '100');
     expect(screen.getByRole('textbox', { name: /second family name/i })).toHaveAttribute('maxLength', '100');
+    await user.click(screen.getByRole('tab', { name: /^no$/i }));
     expect(screen.getByRole('spinbutton', { name: /approximate age/i })).toHaveAttribute('min', '0');
     expect(screen.getByRole('spinbutton', { name: /approximate age/i })).toHaveAttribute('max', '140');
   });
@@ -978,10 +984,11 @@ describe('RelationshipsSection', () => {
     );
     await user.type(screen.getByRole('textbox', { name: /first name/i }), 'María');
     await user.type(screen.getByRole('textbox', { name: /^family name/i }), 'Quispe');
-    await user.selectOptions(screen.getByRole('combobox', { name: /sex/i }), 'female');
+    await user.click(screen.getByRole('radio', { name: /female/i }));
+    await user.click(screen.getByRole('tab', { name: /^no$/i }));
     await user.type(screen.getByRole('spinbutton', { name: /approximate age/i }), '35');
-    await user.type(screen.getByRole('textbox', { name: /phone or mobile phone/i }), '987 654-321');
-    await user.type(screen.getByRole('textbox', { name: /address/i }), 'Av. Peru 123');
+    await user.type(screen.getByRole('textbox', { name: /^phone number/i }), '066 123-456');
+    await user.type(screen.getByRole('textbox', { name: /mobile phone number/i }), '+51 987-654-321');
     await user.click(screen.getByRole('button', { name: /save companion or responsible person/i }));
 
     // The person must NOT be created here: it is persisted at form submit, right before
@@ -995,9 +1002,12 @@ describe('RelationshipsSection', () => {
         familyName: 'Quispe',
         familyName2: '',
         gender: 'female',
+        birthdate: '',
+        birthdateEstimated: true,
         estimatedAge: '35',
-        phone: '987654321',
-        address: 'Av. Peru 123',
+        phone: '066123456',
+        mobilePhone: '+51987654321',
+        address: {},
         relationshipType: '057de23f-3d9c-4314-9391-4452970739c6/aIsToB',
       }),
     );
@@ -1035,7 +1045,8 @@ describe('RelationshipsSection', () => {
     );
     await user.type(screen.getByRole('textbox', { name: /first name/i }), 'Luis');
     await user.type(screen.getByRole('textbox', { name: /^family name/i }), 'Quispe');
-    await user.selectOptions(screen.getByRole('combobox', { name: /sex/i }), 'male');
+    await user.click(screen.getByRole('radio', { name: /^male$/i }));
+    await user.click(screen.getByRole('tab', { name: /^no$/i }));
     const estimatedAgeInput = screen.getByRole('spinbutton', { name: /^approximate age$/i });
     expect(estimatedAgeInput).toHaveAttribute('min', '18');
     await user.type(estimatedAgeInput, '16');
@@ -1072,6 +1083,7 @@ describe('RelationshipsSection', () => {
     );
 
     await user.click(screen.getByRole('tab', { name: /register new person/i }));
+    await user.click(screen.getByRole('tab', { name: /^no$/i }));
     await user.type(screen.getByRole('spinbutton', { name: /approximate age/i }), 'abc12');
 
     expect(screen.getByRole('spinbutton', { name: /approximate age/i })).toHaveValue(12);
@@ -1110,6 +1122,6 @@ describe('RelationshipsSection', () => {
     );
     expect(screen.getByRole('textbox', { name: /first name/i })).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByRole('textbox', { name: /^family name$/i })).toHaveAttribute('aria-invalid', 'true');
-    expect(screen.getByRole('combobox', { name: /sex/i })).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('genderRequired')).toBeInTheDocument();
   });
 });

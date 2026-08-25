@@ -12,9 +12,11 @@ const validResponsiblePerson: ResponsiblePersonFormValues = {
   familyName: 'De la Cruz',
   familyName2: 'Quispe',
   gender: 'female',
+  birthdateEstimated: true,
   estimatedAge: '35',
   phone: '',
-  address: '',
+  mobilePhone: '',
+  address: {},
   relationshipType: '057de23f-3d9c-4314-9391-4452970739c6/aIsToB',
 };
 
@@ -41,24 +43,48 @@ describe('responsible person utilities', () => {
     expect(payload).not.toHaveProperty('identifiers');
   });
 
-  it('adds optional phone and address to the OpenMRS Person payload', () => {
+  it('adds optional landline, mobile phone, and structured address to the OpenMRS Person payload', () => {
     const payload = buildResponsiblePersonPayload(
       {
         ...validResponsiblePerson,
-        phone: '987654321',
-        address: 'Av. Peru 123',
+        phone: '066123456',
+        mobilePhone: '+51987654321',
+        address: {
+          country: 'PERU',
+          address1: 'LORETO',
+          stateProvince: 'MAYNAS',
+          countyDistrict: 'NAPO',
+          cityVillage: 'SANTA CLOTILDE',
+          address4: 'Av. Peru 123',
+        },
       },
-      { phoneAttributeTypeUuid: 'phone-attribute-uuid' },
+      {
+        phoneAttributeTypeUuid: 'phone-attribute-uuid',
+        mobilePhoneAttributeTypeUuid: 'mobile-phone-attribute-uuid',
+      },
     );
 
     expect(payload).toMatchObject({
-      attributes: [{ attributeType: 'phone-attribute-uuid', value: '987654321' }],
-      addresses: [{ address1: 'Av. Peru 123', preferred: true }],
+      attributes: [
+        { attributeType: 'phone-attribute-uuid', value: '066123456' },
+        { attributeType: 'mobile-phone-attribute-uuid', value: '+51987654321' },
+      ],
+      addresses: [
+        {
+          country: 'PERU',
+          address1: 'LORETO',
+          stateProvince: 'MAYNAS',
+          countyDistrict: 'NAPO',
+          cityVillage: 'SANTA CLOTILDE',
+          address4: 'Av. Peru 123',
+          preferred: true,
+        },
+      ],
     });
     expect(payload).not.toHaveProperty('identifiers');
   });
 
-  it('allows optional middle name, second family name, and approximate age', () => {
+  it('requires approximate age when the date of birth is unknown', () => {
     const errors = validateResponsiblePersonForm({
       ...validResponsiblePerson,
       middleName: '',
@@ -66,7 +92,22 @@ describe('responsible person utilities', () => {
       estimatedAge: '',
     });
 
-    expect(hasResponsiblePersonFormErrors(errors)).toBe(false);
+    expect(errors.estimatedAge).toBe('responsibleEstimatedAgeRequired');
+  });
+
+  it('accepts and preserves a known date of birth without an approximate age', () => {
+    const values: ResponsiblePersonFormValues = {
+      ...validResponsiblePerson,
+      birthdate: new Date(1990, 4, 14),
+      birthdateEstimated: false,
+      estimatedAge: '',
+    };
+
+    expect(hasResponsiblePersonFormErrors(validateResponsiblePersonForm(values))).toBe(false);
+    expect(buildResponsiblePersonPayload(values)).toMatchObject({
+      birthdate: '1990-05-14',
+      birthdateEstimated: false,
+    });
   });
 
   it('rejects digits and symbols in person names', () => {
@@ -118,6 +159,15 @@ describe('responsible person utilities', () => {
 
   it('rejects invalid responsible person phone numbers', () => {
     expect(validateResponsiblePersonForm({ ...validResponsiblePerson, phone: 'e100' }).phone).toBe('phoneInvalid');
+    expect(validateResponsiblePersonForm({ ...validResponsiblePerson, phone: '+51066123456' }).phone).toBe(
+      'phoneInvalid',
+    );
+    expect(
+      validateResponsiblePersonForm({ ...validResponsiblePerson, mobilePhone: '+51987654321' }).mobilePhone,
+    ).toBeUndefined();
+    expect(validateResponsiblePersonForm({ ...validResponsiblePerson, mobilePhone: '066123456' }).mobilePhone).toBe(
+      'mobilePhoneInvalid',
+    );
   });
 
   it('requires an adult age when the related person must be responsible for a minor', () => {

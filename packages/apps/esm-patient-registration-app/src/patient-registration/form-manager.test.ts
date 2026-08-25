@@ -1345,15 +1345,27 @@ describe('FormManager', () => {
               familyName: 'Quispe',
               familyName2: '',
               gender: 'female',
+              birthdateEstimated: true,
               estimatedAge: '35',
-              phone: '987654321',
-              address: 'Av. Peru 123',
+              phone: '066123456',
+              mobilePhone: '987654321',
+              address: {
+                country: 'PERU',
+                address1: 'LORETO',
+                stateProvince: 'MAYNAS',
+                countyDistrict: 'NAPO',
+                cityVillage: 'SANTA CLOTILDE',
+                address4: 'Av. Peru 123',
+              },
               relationshipType: 'rel-type-uuid/aIsToB',
             },
           },
         ],
         { data: { uuid: 'patient-uuid' } } as never,
-        { phoneAttributeTypeUuid: 'phone-attr-uuid' },
+        {
+          phoneAttributeTypeUuid: 'phone-attr-uuid',
+          mobilePhoneAttributeTypeUuid: 'mobile-phone-attr-uuid',
+        },
       );
 
       expect(mockSavePerson).toHaveBeenCalledTimes(1);
@@ -1367,7 +1379,21 @@ describe('FormManager', () => {
             }),
           ],
           gender: 'F',
-          attributes: [{ attributeType: 'phone-attr-uuid', value: '987654321' }],
+          attributes: [
+            { attributeType: 'phone-attr-uuid', value: '066123456' },
+            { attributeType: 'mobile-phone-attr-uuid', value: '987654321' },
+          ],
+          addresses: [
+            expect.objectContaining({
+              country: 'PERU',
+              address1: 'LORETO',
+              stateProvince: 'MAYNAS',
+              countyDistrict: 'NAPO',
+              cityVillage: 'SANTA CLOTILDE',
+              address4: 'Av. Peru 123',
+              preferred: true,
+            }),
+          ],
         }),
       );
       expect(mockSaveRelationship).toHaveBeenCalledWith({

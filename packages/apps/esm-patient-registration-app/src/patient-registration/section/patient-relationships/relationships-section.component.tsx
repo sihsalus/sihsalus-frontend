@@ -5,6 +5,8 @@ import {
   InlineNotification,
   Layer,
   NotificationActionButton,
+  RadioButton,
+  RadioButtonGroup,
   Select,
   SelectItem,
   SkeletonText,
@@ -12,22 +14,26 @@ import {
   TextInput,
 } from '@carbon/react';
 import { TrashCan } from '@carbon/react/icons';
-import { useConfig } from '@openmrs/esm-framework';
+import { OpenmrsDatePicker, useConfig } from '@openmrs/esm-framework';
 import {
   calculatePatientAge,
+  calendarDateToLocalDate,
   formatPersonName,
   formatSentenceCase,
+  getLocalCalendarDate,
+  getOldestAllowedPatientBirthdate,
   MAX_PATIENT_AGE_YEARS,
   parsePatientBirthdate,
   shouldPreventPlainNumberKey,
   shouldPreventPlainNumberPaste,
 } from '@openmrs/esm-utils';
-import { FieldArray, useField } from 'formik';
+import { FieldArray, Formik, useField, useFormikContext } from 'formik';
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type RegistrationConfig } from '../../../config-schema';
 import { moduleName } from '../../../constants';
 import { ResourcesContext } from '../../../offline.resources';
+import { AddressComponent } from '../../field/address/address-field.component';
 import fieldStyles from '../../field/field.scss';
 import { Autosuggest } from '../../input/custom-input/autosuggest/autosuggest.component';
 import { patientFamilyNameMaxLength, patientGivenNameMaxLength } from '../../patient-name-limits';
@@ -145,9 +151,12 @@ const initialResponsiblePersonValues: ResponsiblePersonFormValues = {
   familyName: '',
   familyName2: '',
   gender: '',
+  birthdate: '',
+  birthdateEstimated: false,
   estimatedAge: '',
   phone: '',
-  address: '',
+  mobilePhone: '',
+  address: {},
   relationshipType: '',
 };
 
@@ -315,12 +324,57 @@ function isMinorPersonSearchResult(person?: PersonSearchResult | null) {
   return typeof age === 'number' && age < 18;
 }
 
-function sanitizePhoneInput(value: string) {
-  const startsWithPlus = value.startsWith('+');
+function sanitizePhoneInput(value: string, allowCountryCode = false) {
+  const startsWithPlus = allowCountryCode && value.startsWith('+');
   const digits = value.replace(/\D/g, '');
 
   return `${startsWithPlus ? '+' : ''}${digits}`.slice(0, 20);
 }
+
+interface ResponsiblePersonAddressEditorProps {
+  address: FormValues['address'] | string;
+  onChange: (address: FormValues['address']) => void;
+}
+
+const ResponsiblePersonAddressFields: React.FC<{ onChange: (address: FormValues['address']) => void }> = ({
+  onChange,
+}) => {
+  const patientRegistrationContext = useContext(PatientRegistrationContext);
+  const { setFieldTouched, setFieldValue, values } = useFormikContext<{ address: FormValues['address'] }>();
+
+  useEffect(() => {
+    onChange(values.address);
+  }, [onChange, values.address]);
+
+  const addressContext = useMemo(
+    () => ({
+      ...patientRegistrationContext,
+      setFieldTouched,
+      setFieldValue,
+      values: { ...patientRegistrationContext.values, address: values.address },
+    }),
+    [patientRegistrationContext, setFieldTouched, setFieldValue, values.address],
+  );
+
+  return (
+    <PatientRegistrationContext.Provider value={addressContext}>
+      <AddressComponent forceOptionalFields />
+    </PatientRegistrationContext.Provider>
+  );
+};
+
+const ResponsiblePersonAddressEditor: React.FC<ResponsiblePersonAddressEditorProps> = ({ address, onChange }) => {
+  const initialAddress = useMemo<FormValues['address']>(
+    () => (typeof address === 'string' ? (address.trim() ? { address4: address.trim() } : {}) : address),
+    [address],
+  );
+
+  return (
+    <Formik initialValues={{ address: initialAddress }} onSubmit={() => undefined}>
+      <ResponsiblePersonAddressFields onChange={onChange} />
+    </Formik>
+  );
+};
 
 function sanitizeEstimatedAgeInput(value: string) {
   return value.replace(/\D/g, '').slice(0, 3);
@@ -353,6 +407,11 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
     personEntryMode === 'search' && requiresRelatedPerson && showMissingPersonSelectionError;
   const isPendingNewPerson = !relationship.relatedPersonUuid && !!relationship.newPerson;
   const genderOptions = config?.fieldConfigurations?.gender ?? defaultGenderOptions;
+  const today = new Date();
+  const oldestAllowedBirthdate = getOldestAllowedPatientBirthdate(getLocalCalendarDate(today));
+  const minimumBirthdate = oldestAllowedBirthdate
+    ? (calendarDateToLocalDate(oldestAllowedBirthdate) ?? undefined)
+    : undefined;
   const minorResponsibleRelationshipTypes =
     effectiveConfig?.relationshipOptions?.minorResponsibleRelationshipTypes ?? [];
   const personFormValues = useMemo(
@@ -475,8 +534,8 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
       setNewPersonValues((currentValues) => ({
         ...currentValues,
         [field]:
-          field === 'phone'
-            ? sanitizePhoneInput(event.target.value)
+          field === 'phone' || field === 'mobilePhone'
+            ? sanitizePhoneInput(event.target.value, field === 'mobilePhone')
             : field === 'estimatedAge'
               ? sanitizeEstimatedAgeInput(event.target.value)
               : event.target.value,
@@ -484,6 +543,35 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
     },
     [],
   );
+
+  const handleBirthdateModeChange = useCallback((event: { name?: string | number }) => {
+    const birthdateEstimated = event.name === 'unknown';
+    setNewPersonValues((currentValues) => ({
+      ...currentValues,
+      birthdate: '',
+      birthdateEstimated,
+      estimatedAge: '',
+    }));
+    setTouchedFields((currentFields) => ({
+      ...currentFields,
+      birthdate: false,
+      estimatedAge: false,
+    }));
+  }, []);
+
+  const handleResponsibleBirthdateChange = useCallback((birthdate: Date) => {
+    setNewPersonValues((currentValues) => ({ ...currentValues, birthdate }));
+    setTouchedFields((currentFields) => ({ ...currentFields, birthdate: true }));
+  }, []);
+
+  const handleResponsibleGenderChange = useCallback((gender: string | number | undefined) => {
+    setNewPersonValues((currentValues) => ({ ...currentValues, gender: String(gender ?? '') }));
+    setTouchedFields((currentFields) => ({ ...currentFields, gender: true }));
+  }, []);
+
+  const handleResponsibleAddressChange = useCallback((address: FormValues['address']) => {
+    setNewPersonValues((currentValues) => ({ ...currentValues, address }));
+  }, []);
 
   const markNewPersonFieldTouched = useCallback(
     (field: ResponsiblePersonField) => () => {
@@ -502,8 +590,11 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
       familyName: true,
       familyName2: true,
       gender: true,
+      birthdate: true,
+      birthdateEstimated: true,
       estimatedAge: true,
       phone: true,
+      mobilePhone: true,
       address: true,
       relationshipType: true,
     });
@@ -537,7 +628,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
 
   const handleEditPendingPerson = useCallback(() => {
     if (relationship.newPerson) {
-      setNewPersonValues(relationship.newPerson);
+      setNewPersonValues({ ...initialResponsiblePersonValues, ...relationship.newPerson });
     }
     setFieldValue(`relationships[${index}].newPerson`, undefined);
     setFieldValue(`relationships[${index}].relatedPersonName`, '');
@@ -617,6 +708,9 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
           ) : (
             <div className={styles.responsiblePersonForm}>
               <div className={styles.responsiblePersonGrid}>
+                <h4 className={`${fieldStyles.productiveHeading02Light} ${styles.formSubheading}`}>
+                  {t('fullNameLabelText', 'Full Name')}
+                </h4>
                 <Layer>
                   <TextInput
                     id={`relationships[${index}].newPerson.givenName`}
@@ -667,56 +761,87 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                     invalidText={getFieldError('familyName2', personFormErrors)}
                   />
                 </Layer>
-                <Layer>
-                  <Select
-                    id={`relationships[${index}].newPerson.gender`}
-                    labelText={t('sexFieldLabelText', 'Sex')}
-                    value={newPersonValues.gender}
-                    onChange={handleNewPersonFieldChange('gender')}
-                    onBlur={markNewPersonFieldTouched('gender')}
-                    invalid={!!getFieldError('gender', personFormErrors)}
-                    invalidText={getFieldError('gender', personFormErrors)}
-                    required
+                <div className={styles.responsibleBirthField}>
+                  <h4 className={`${fieldStyles.productiveHeading02Light} ${fieldStyles.requiredHeading}`}>
+                    {t('birthFieldLabelText', 'Birth')}
+                  </h4>
+                  <div className={styles.birthdateMode}>
+                    <span className={fieldStyles.label01}>{t('dobToggleLabelText', 'Date of birth known?')}</span>
+                    <ContentSwitcher
+                      size="sm"
+                      selectedIndex={newPersonValues.birthdateEstimated ? 1 : 0}
+                      onChange={handleBirthdateModeChange}
+                    >
+                      <Switch name="known" text={t('yes', 'Yes')} />
+                      <Switch name="unknown" text={t('no', 'No')} />
+                    </ContentSwitcher>
+                  </div>
+                  <Layer>
+                    {newPersonValues.birthdateEstimated ? (
+                      <TextInput
+                        id={`relationships[${index}].newPerson.estimatedAge`}
+                        type="number"
+                        labelText={t('responsibleEstimatedAgeRequiredLabel', 'Approximate age')}
+                        value={newPersonValues.estimatedAge}
+                        min={requiresAdultResponsible ? 18 : 0}
+                        max={MAX_PATIENT_AGE_YEARS}
+                        onKeyDown={preventInvalidResponsibleAgeKey}
+                        onPaste={preventInvalidResponsibleAgePaste}
+                        onChange={handleNewPersonFieldChange('estimatedAge')}
+                        onBlur={markNewPersonFieldTouched('estimatedAge')}
+                        invalid={!!getFieldError('estimatedAge', personFormErrors)}
+                        invalidText={getFieldError('estimatedAge', personFormErrors)}
+                        required
+                      />
+                    ) : (
+                      <OpenmrsDatePicker
+                        id={`relationships[${index}].newPerson.birthdate`}
+                        labelText={t('dateOfBirthLabelText', 'Date of birth')}
+                        value={newPersonValues.birthdate}
+                        minDate={minimumBirthdate}
+                        maxDate={today}
+                        onChange={handleResponsibleBirthdateChange}
+                        onBlur={markNewPersonFieldTouched('birthdate')}
+                        isInvalid={!!getFieldError('birthdate', personFormErrors)}
+                        invalidText={getFieldError('birthdate', personFormErrors)}
+                        isRequired
+                      />
+                    )}
+                  </Layer>
+                </div>
+                <div className={styles.responsibleGenderField}>
+                  <h4 className={`${fieldStyles.productiveHeading02Light} ${fieldStyles.requiredHeading}`}>
+                    {t('sexFieldLabelText', 'Sex')}
+                  </h4>
+                  <RadioButtonGroup
+                    name={`relationships[${index}].newPerson.gender`}
+                    legendText={t('genderLabelText', 'Sex')}
+                    orientation="vertical"
+                    onChange={handleResponsibleGenderChange}
+                    valueSelected={newPersonValues.gender}
                   >
-                    <SelectItem disabled hidden value="" text={t('selectAnOption', 'Select an option')} />
                     {genderOptions.map((option) => (
-                      <SelectItem
-                        key={option.value}
+                      <RadioButton
+                        key={option.label ?? option.value}
+                        id={`relationships-${index}-gender-${option.value}`}
                         value={option.value}
-                        text={t(option.label ?? option.value, option.label ?? option.value)}
+                        labelText={t(option.label ?? option.value, option.label ?? option.value)}
                       />
                     ))}
-                  </Select>
-                </Layer>
-                <Layer>
-                  <TextInput
-                    id={`relationships[${index}].newPerson.estimatedAge`}
-                    type="number"
-                    labelText={
-                      requiresAdultResponsible
-                        ? t('responsibleEstimatedAgeRequiredLabel', 'Approximate age')
-                        : t('responsibleEstimatedAge', 'Approximate age (optional)')
-                    }
-                    value={newPersonValues.estimatedAge}
-                    min={requiresAdultResponsible ? 18 : 0}
-                    max={MAX_PATIENT_AGE_YEARS}
-                    onKeyDown={preventInvalidResponsibleAgeKey}
-                    onPaste={preventInvalidResponsibleAgePaste}
-                    onChange={handleNewPersonFieldChange('estimatedAge')}
-                    onBlur={markNewPersonFieldTouched('estimatedAge')}
-                    invalid={!!getFieldError('estimatedAge', personFormErrors)}
-                    invalidText={getFieldError('estimatedAge', personFormErrors)}
-                    required={requiresAdultResponsible}
-                  />
-                </Layer>
+                  </RadioButtonGroup>
+                  {getFieldError('gender', personFormErrors) ? (
+                    <div className={fieldStyles.radioFieldError}>{getFieldError('gender', personFormErrors)}</div>
+                  ) : null}
+                </div>
                 <Layer>
                   <TextInput
                     id={`relationships[${index}].newPerson.phone`}
-                    labelText={t('responsiblePhone', 'Phone or mobile phone (optional)')}
+                    labelText={`${t('phoneFieldLabel', 'Phone number')} (${t('optional', 'optional')})`}
                     value={newPersonValues.phone}
                     inputMode="tel"
                     maxLength={20}
-                    helperText={t('phoneHelperText', 'Enter digits only. Use +51 when including the country code.')}
+                    placeholder="012345678"
+                    helperText={t('phoneHelperText', 'Enter digits only.')}
                     onChange={handleNewPersonFieldChange('phone')}
                     onBlur={markNewPersonFieldTouched('phone')}
                     invalid={!!getFieldError('phone', personFormErrors)}
@@ -725,14 +850,28 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                 </Layer>
                 <Layer>
                   <TextInput
-                    id={`relationships[${index}].newPerson.address`}
-                    labelText={t('responsibleAddress', 'Address (optional)')}
-                    value={newPersonValues.address}
-                    maxLength={255}
-                    onChange={handleNewPersonFieldChange('address')}
-                    onBlur={markNewPersonFieldTouched('address')}
+                    id={`relationships[${index}].newPerson.mobilePhone`}
+                    labelText={`${t('mobilePhoneFieldLabel', 'Mobile phone number')} (${t('optional', 'optional')})`}
+                    value={newPersonValues.mobilePhone}
+                    inputMode="tel"
+                    maxLength={20}
+                    placeholder="987654321"
+                    helperText={t(
+                      'mobilePhoneHelperText',
+                      'Enter digits only. Use +51 when including the country code.',
+                    )}
+                    onChange={handleNewPersonFieldChange('mobilePhone')}
+                    onBlur={markNewPersonFieldTouched('mobilePhone')}
+                    invalid={!!getFieldError('mobilePhone', personFormErrors)}
+                    invalidText={getFieldError('mobilePhone', personFormErrors)}
                   />
                 </Layer>
+                <div className={styles.responsibleAddressFields}>
+                  <ResponsiblePersonAddressEditor
+                    address={newPersonValues.address}
+                    onChange={handleResponsibleAddressChange}
+                  />
+                </div>
               </div>
               <div className={styles.createPersonActions}>
                 <Button type="button" kind="tertiary" size="md" onClick={handleConfirmNewPerson}>
@@ -825,9 +964,7 @@ const PrimaryResponsibleSection: React.FC<PrimaryResponsibleSectionProps> = ({ r
               relationship.relatedPersonName ||
                 (relationship.newPerson ? getResponsiblePersonDisplayName(relationship.newPerson) : ''),
             );
-            const relationshipLabel = relationship.relation
-              ? ` · ${formatSentenceCase(relationship.relation)}`
-              : '';
+            const relationshipLabel = relationship.relation ? ` · ${formatSentenceCase(relationship.relation)}` : '';
 
             return (
               <Checkbox

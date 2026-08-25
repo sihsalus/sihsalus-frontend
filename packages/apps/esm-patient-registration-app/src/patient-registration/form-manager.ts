@@ -4,14 +4,19 @@ import {
   queueSynchronizationItem,
   restBaseUrl,
   type Session,
-  showSnackbar,
   type StyleguideConfigObject,
+  showSnackbar,
   toOmrsIsoString,
   translateFrom,
 } from '@openmrs/esm-framework';
-
+import { formatCalendarDate, parsePatientBirthdate } from '@openmrs/esm-utils';
 import { type RegistrationConfig } from '../config-schema';
 import { moduleName, patientRegistration } from '../constants';
+import {
+  assertIdentifierLocationPolicies,
+  getActiveIdentifierEntries,
+  getIdentifierLocationPayload,
+} from './identifier-location-behavior';
 import {
   identityVerificationSourceConceptUuids,
   identityVerificationStatusConceptUuids,
@@ -60,11 +65,6 @@ import {
   type RelationshipValue,
 } from './patient-registration.types';
 import {
-  assertIdentifierLocationPolicies,
-  getActiveIdentifierEntries,
-  getIdentifierLocationPayload,
-} from './identifier-location-behavior';
-import {
   addressUbigeoField,
   addressUbigeoPathField,
   birthAddressMarker,
@@ -78,7 +78,6 @@ import {
 } from './peru-registration-config';
 import { isRegistrationDomainError, RegistrationDomainError, registrationErrorCodes } from './registration-errors';
 import { buildResponsiblePersonPayload } from './section/patient-relationships/responsible-person.utils';
-import { formatCalendarDate, parsePatientBirthdate } from '@openmrs/esm-utils';
 
 const familyName2ExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/patient-family-name2';
 const addressExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/address';
@@ -469,6 +468,7 @@ export class FormManager {
         savePatientResponse,
         {
           companionRelationshipType: config.relationshipOptions?.companionRelationshipType,
+          mobilePhoneAttributeTypeUuid: config.fieldDefinitions?.find((field) => field.id === 'mobilePhone')?.uuid,
           phoneAttributeTypeUuid: config.fieldConfigurations?.phone?.personAttributeUuid,
         },
         savePatientTransactionManager,
@@ -646,6 +646,7 @@ export class FormManager {
     savePatientResponse: FetchResponse,
     options: {
       companionRelationshipType?: string;
+      mobilePhoneAttributeTypeUuid?: string;
       phoneAttributeTypeUuid?: string;
     } = {},
     transactionManager: SavePatientTransactionManager = new SavePatientTransactionManager(),
@@ -670,6 +671,7 @@ export class FormManager {
     thisPatientUuid: string,
     options: {
       companionRelationshipType?: string;
+      mobilePhoneAttributeTypeUuid?: string;
       phoneAttributeTypeUuid?: string;
     },
     transactionManager: SavePatientTransactionManager = new SavePatientTransactionManager(),
@@ -686,6 +688,7 @@ export class FormManager {
     // abandoned registration never leaves an orphaned person in the database.
     if (!relatedPersonUuid && action === 'ADD' && relationship.newPerson) {
       const responsiblePerson = buildResponsiblePersonPayload(relationship.newPerson, {
+        mobilePhoneAttributeTypeUuid: options.mobilePhoneAttributeTypeUuid,
         phoneAttributeTypeUuid: options.phoneAttributeTypeUuid,
       });
       const savePersonResponse = signal

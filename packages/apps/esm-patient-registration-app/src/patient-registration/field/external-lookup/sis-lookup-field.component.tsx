@@ -161,6 +161,7 @@ export const SisLookupField = () => {
   const [affiliateCode, setAffiliateCode] = useState('');
   const [eessName, setEessName] = useState('');
 
+  const onlineVerificationUrl = config?.sisVerification?.onlineVerificationUrl ?? sisOnlineVerificationUrl;
   const productConceptUuid = config?.sisVerification?.productConceptUuid ?? peruSisProductConceptUuid;
   const { answers: productAnswers, isLoading: isLoadingProducts } = useSisProductAnswers(productConceptUuid);
 
@@ -206,7 +207,7 @@ export const SisLookupField = () => {
 
     setStatus(null);
     // Synchronously within the user gesture so popup blockers allow the tab.
-    window.open(sisOnlineVerificationUrl, '_blank', 'noopener');
+    window.open(onlineVerificationUrl, '_blank', 'noopener');
     openManualForm();
 
     const copied = await copyTextToClipboard(normalizedDni);

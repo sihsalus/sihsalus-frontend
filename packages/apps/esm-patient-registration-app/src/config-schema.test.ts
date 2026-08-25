@@ -1,6 +1,7 @@
 import { getDefaultsFromConfigSchema } from '@openmrs/esm-framework';
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from './config-schema';
+import { defaultSisOnlineVerificationUrl } from './constants';
 
 const approvedBulkImportConfig: RegistrationConfig['bulkPatientImport'] = {
   enabled: true,
@@ -11,7 +12,7 @@ const approvedBulkImportConfig: RegistrationConfig['bulkPatientImport'] = {
   approvedUserUuid: '11111111-1111-4111-8111-111111111111',
   approvedLocationUuid: '22222222-2222-4222-8222-222222222222',
   domicilioTarget: 'address4',
-    maxRows: 250,
+  maxRows: 250,
 };
 
 function getRootValidationErrors(config: RegistrationConfig): Array<string> {
@@ -19,6 +20,30 @@ function getRootValidationErrors(config: RegistrationConfig): Array<string> {
     .map((validate) => validate(config))
     .filter((result): result is string => typeof result === 'string');
 }
+
+describe('SIS verification configuration', () => {
+  it('uses the SUSALUD portal by default', () => {
+    const config = getDefaultsFromConfigSchema(esmPatientRegistrationSchema) as RegistrationConfig;
+
+    expect(config.sisVerification.onlineVerificationUrl).toBe(defaultSisOnlineVerificationUrl);
+    expect(getRootValidationErrors(config)).toEqual([]);
+  });
+
+  it('rejects non-HTTPS and malformed verification URLs', () => {
+    const defaults = getDefaultsFromConfigSchema(esmPatientRegistrationSchema) as RegistrationConfig;
+
+    for (const onlineVerificationUrl of ['http://example.com/sis', 'not-a-url']) {
+      const config = {
+        ...defaults,
+        sisVerification: { ...defaults.sisVerification, onlineVerificationUrl },
+      };
+
+      expect(getRootValidationErrors(config)).toContain(
+        '`sisVerification.onlineVerificationUrl` must be a valid HTTPS URL.',
+      );
+    }
+  });
+});
 
 describe('bulk patient import configuration', () => {
   it('is disabled and has no approvals by default', () => {

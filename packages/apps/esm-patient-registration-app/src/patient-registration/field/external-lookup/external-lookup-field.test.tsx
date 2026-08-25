@@ -1,9 +1,10 @@
-import { navigate, openmrsFetch, showSnackbar, useFeatureFlag } from '@openmrs/esm-framework';
+import { navigate, openmrsFetch, showSnackbar, useConfig, useFeatureFlag } from '@openmrs/esm-framework';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Form, Formik } from 'formik';
 import type React from 'react';
 
+import { type RegistrationConfig } from '../../../config-schema';
 import {
   identityVerificationSourceConceptUuids,
   identityVerificationStatusConceptUuids,
@@ -29,6 +30,7 @@ import {
   peruInsuranceTypeAttributeTypeUuid,
   peruInsuranceVerificationMethodAttributeTypeUuid,
   peruSisEessNameAttributeTypeUuid,
+  peruSisProductConceptUuid,
   peruSisTypeDescriptionAttributeTypeUuid,
 } from '../../peru-registration-config';
 import { IdentityLookupField } from './identity-lookup-field.component';
@@ -47,6 +49,7 @@ const mockNavigate = vi.mocked(navigate);
 const mockUseFeatureFlag = vi.mocked(useFeatureFlag);
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
 
 function deferred<T>() {
   let resolve: (value: T) => void = () => {
@@ -448,6 +451,12 @@ describe('SisLookupField', () => {
   let windowOpenSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
+    mockUseConfig.mockReturnValue({
+      sisVerification: {
+        onlineVerificationUrl: sisOnlineVerificationUrl,
+        productConceptUuid: peruSisProductConceptUuid,
+      },
+    } as RegistrationConfig);
     windowOpenSpy = vi.spyOn(window, 'open').mockReturnValue(null);
     mockOpenmrsFetch.mockResolvedValue({
       data: { answers: [{ uuid: 'sis-para-todos-uuid', display: 'SIS Para Todos' }] },
@@ -471,6 +480,22 @@ describe('SisLookupField', () => {
     await expect(window.navigator.clipboard.readText()).resolves.toBe('12345678');
     expect(screen.getByRole('radio', { name: 'Vigente' })).toBeInTheDocument();
     expect(setFieldValue).not.toHaveBeenCalled();
+  });
+
+  it('opens the SIS verification URL supplied by the OpenMRS frontend configuration', async () => {
+    const user = userEvent.setup();
+    const configuredUrl = 'https://example.org/custom-sis-verification';
+    mockUseConfig.mockReturnValue({
+      sisVerification: {
+        onlineVerificationUrl: configuredUrl,
+        productConceptUuid: peruSisProductConceptUuid,
+      },
+    } as RegistrationConfig);
+    renderLookup(<SisLookupField />);
+
+    await user.click(screen.getByRole('button', { name: /verificar sis/i }));
+
+    expect(windowOpenSpy).toHaveBeenCalledWith(configuredUrl, '_blank', 'noopener');
   });
 
   it('validates the DNI before opening the online verification', async () => {

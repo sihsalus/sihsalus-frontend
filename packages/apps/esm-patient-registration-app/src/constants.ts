@@ -7,6 +7,7 @@ export const personRelationshipRepresentation =
   'relationshipType:(uuid,display,description,aIsToB,bIsToA))';
 
 export const moduleName = '@sihsalus/esm-patient-registration-app';
+export const defaultSisOnlineVerificationUrl = 'https://app1.susalud.gob.pe/registro/Account/LogOn';
 export const patientRegistration = 'patient-registration';
 export const patientImport = 'patient-import';
 

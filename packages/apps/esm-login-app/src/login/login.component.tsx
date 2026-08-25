@@ -5,6 +5,7 @@ import {
   interpolateUrl,
   navigate as openmrsNavigate,
   refetchCurrentUser,
+  type Session,
   useConfig,
   useConnectivity,
   useSession,
@@ -14,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { type ConfigSchema } from '../config-schema';
+import { requiresForcedPasswordChange } from '../forced-password-change/forced-password-change';
 import { LoginArtwork } from '../login-artwork.component';
 import Logo from '../logo.component';
 import { buildSpaNavigationTarget, hardNavigate, isSafePostLoginTarget } from '../navigation';
@@ -113,7 +115,8 @@ const Login: React.FC = () => {
   } = useConfig<ConfigSchema>();
   const isLoginEnabled = useConnectivity();
   const { t } = useTranslation();
-  const { authenticated, sessionLocation, user } = useSession();
+  const session = useSession();
+  const { authenticated, user } = session;
   const buildInfo = useBuildInfo();
   const location = useLocation() as unknown as Omit<Location, 'state'> & {
     state: LoginReferrer;
@@ -147,13 +150,19 @@ const Login: React.FC = () => {
   const santaClotildeLogoSrc = `${globalThis.getOpenmrsSpaBase()}logos/logo-santa-clotilde.png`;
 
   const redirectAuthenticatedSession = useCallback(
-    (hasSessionLocation: boolean) => {
+    (authenticatedSession: Session) => {
       if (authenticatedNavigationStartedRef.current) {
         return;
       }
 
       authenticatedNavigationStartedRef.current = true;
-      if (hasSessionLocation) {
+      if (requiresForcedPasswordChange(authenticatedSession, loginProvider.type)) {
+        // The co-mounted global guard moves to an isolated login route and
+        // verifies the Legacy destination before leaving the SPA.
+        return;
+      }
+
+      if (authenticatedSession.sessionLocation) {
         const referrer = location.state?.referrer;
         const target = isSafePostLoginTarget(referrer)
           ? buildSpaNavigationTarget(referrer)
@@ -163,13 +172,13 @@ const Login: React.FC = () => {
         navigate('/login/location', { replace: true, state: location.state });
       }
     },
-    [location.state, loginLinks?.loginSuccess, navigate],
+    [location.state, loginLinks?.loginSuccess, loginProvider.type, navigate],
   );
 
   useEffect(() => {
     if (authenticated && user) {
       if (!isLoggingIn) {
-        redirectAuthenticatedSession(Boolean(sessionLocation));
+        redirectAuthenticatedSession(session);
       }
       return;
     }
@@ -186,7 +195,7 @@ const Login: React.FC = () => {
     loginProvider,
     navigate,
     redirectAuthenticatedSession,
-    sessionLocation,
+    session,
     user,
     username,
   ]);
@@ -343,7 +352,7 @@ const Login: React.FC = () => {
 
         if (authenticated) {
           failedAttemptsRef.current = 0;
-          redirectAuthenticatedSession(Boolean(session.sessionLocation));
+          redirectAuthenticatedSession(session);
         } else {
           setErrorMessage(resolveFailureKey(getLoginErrorKey({ session })));
           clearInputsAfterFailure();

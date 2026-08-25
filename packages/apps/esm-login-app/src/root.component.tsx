@@ -15,6 +15,7 @@ const Root: React.FC = () => {
           <Route path="login" element={<Login />} />
           <Route path="login/confirm" element={<Login />} />
           <Route path="login/location" element={<LocationPickerView />} />
+          <Route path="login/forced-password" element={null} />
           <Route path="logout" element={<RedirectLogout />} />
           <Route path="change-password" element={<ChangePassword />} />
         </Routes>

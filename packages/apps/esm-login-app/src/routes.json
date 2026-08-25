@@ -21,6 +21,12 @@
       "component": "root",
       "route": "change-password",
       "online": true,
+      "offline": false
+    },
+    {
+      "component": "forcedPasswordChangeGate",
+      "routeRegex": "^(?!logout(?:/|$)).*",
+      "online": true,
       "offline": true
     }
   ],
@@ -44,7 +50,7 @@
       "slot": "user-panel-slot",
       "component": "changePasswordLink",
       "online": true,
-      "offline": true
+      "offline": false
     },
     {
       "name": "location-changer",

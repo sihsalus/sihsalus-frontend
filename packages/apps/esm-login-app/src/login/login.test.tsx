@@ -209,6 +209,31 @@ describe('Login', () => {
     expect(mockHardNavigate).toHaveBeenCalledWith(mockConfig.links.loginSuccess);
   });
 
+  it('delegates the mandatory change to the global guard before restoring the route', async () => {
+    mockLogin.mockResolvedValue({
+      session: {
+        authenticated: true,
+        sessionId: 'active-session',
+        sessionLocation: { uuid: 'location-uuid' },
+        user: {
+          uuid: 'user-uuid',
+          username: 'synthetic-user',
+          userProperties: { forcePassword: 'true' },
+        },
+      },
+    } as never);
+    const user = userEvent.setup();
+
+    renderWithRouter(Login, {}, { route: '/login' });
+    await user.type(screen.getByRole('textbox', { name: /username/i }), 'synthetic-user');
+    await user.click(screen.getByRole('button', { name: /continue/i }));
+    await user.type(await screen.findByLabelText(/^password$/i), 'temporary-password');
+    await user.click(screen.getByRole('button', { name: /log in/i }));
+
+    await waitFor(() => expect(mockLogin).toHaveBeenCalledTimes(1));
+    expect(mockHardNavigate).not.toHaveBeenCalled();
+  });
+
   it('renders a configurable logo', () => {
     const customLogoConfig = {
       src: 'https://some-image-host.com/foo.png',

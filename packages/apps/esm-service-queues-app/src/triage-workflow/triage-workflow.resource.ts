@@ -20,7 +20,6 @@ import { omrsDateFormat, timeZone } from '../constants';
 import { transitionQueueEntry } from '../modals/queue-entry-actions.resource';
 import { type Appointment, type QueueEntry } from '../types';
 
-const appointmentsModuleName = '@sihsalus/esm-appointments-app';
 const serviceQueuesModuleName = '@sihsalus/esm-service-queues-app';
 
 type AttributeValue = string | { uuid?: string; display?: string } | null | undefined;
@@ -28,9 +27,7 @@ type AttributeValue = string | { uuid?: string; display?: string } | null | unde
 interface AppointmentRoutingRule {
   appointmentLocationUuid: string;
   appointmentServiceUuid: string;
-  queueLocationUuid?: string;
-  queueUuid?: string;
-  requiresTriage?: boolean;
+  queueUuid: string;
 }
 
 export interface AppointmentTriageConfig {
@@ -260,7 +257,10 @@ export function getTriageState(
 }
 
 export async function getAppointmentTriageConfig(): Promise<AppointmentTriageConfig> {
-  return (await getConfig(appointmentsModuleName)) as unknown as AppointmentTriageConfig;
+  const config = (await getConfig(serviceQueuesModuleName)) as unknown as {
+    appointmentTriage: AppointmentTriageConfig;
+  };
+  return config.appointmentTriage;
 }
 
 async function fetchAppointment(appointmentUuid: string): Promise<AppointmentSummary> {
@@ -288,7 +288,6 @@ function getDestinationQueueUuid(
   }
   const matchingRules = config.appointmentArrivalRules.filter(
     (rule) =>
-      rule.requiresTriage &&
       rule.appointmentServiceUuid === appointment.service?.uuid &&
       rule.appointmentLocationUuid === appointment.location?.uuid,
   );

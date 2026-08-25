@@ -31,6 +31,7 @@ You should now be able to leverage the service queues module 🎉
 ## Dependencias backend/content
 
 - Conceptos de prioridad y estado configurados en `config-schema`.
+- `appointmentTriage` replica únicamente el contrato de enrutamiento que Colas necesita para operar sin cargar el microfrontend de Citas. `config-schema.test.ts` exige que permanezca idéntico al contrato canónico de `@sihsalus/esm-appointments-app`.
 - Servicios, rooms y ubicaciones configurados para el establecimiento.
 - Visitas activas para pacientes en cola.
 - Providers/usuarios asociados cuando se usa asignacion por prestador o room.

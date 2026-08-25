@@ -138,9 +138,16 @@
   .searchGroup {
     width: 100%;
     margin-left: 0;
+    gap: layout.$spacing-03;
 
     :global(.cds--search) {
+      flex: 1 1 auto;
       width: 100%;
+    }
+
+    :global(.cds--btn) {
+      flex: 0 0 auto;
+      white-space: nowrap;
     }
   }
 }
@@ -155,6 +162,15 @@
   .tableToolBar {
     grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
+  }
+
+  .tableToolBar .searchGroup {
+    flex-wrap: wrap;
+
+    :global(.cds--btn) {
+      width: 100%;
+      max-width: none;
+    }
   }
 
   .tableToolBar .filterGroup {

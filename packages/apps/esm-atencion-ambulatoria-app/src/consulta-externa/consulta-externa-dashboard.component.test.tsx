@@ -43,9 +43,9 @@ describe('ConsultaExternaDashboard', () => {
       'Triajes previos',
       'Anamnesis',
       'Examen físico / SOAP',
+      'Diagnóstico',
       'Plan de Tratamiento',
       'Referencia / Contrarreferencia',
-      'Diagnóstico',
     ]);
     expect(screen.getByRole('heading', { level: 1, name: 'Consulta Externa' })).toBeVisible();
     expect(screen.queryByText('consultaExterna')).not.toBeInTheDocument();
@@ -55,16 +55,17 @@ describe('ConsultaExternaDashboard', () => {
     expect(screen.getByText('SOAP panel')).toBeVisible();
     expect(screen.queryByText('Diagnosis panel')).not.toBeInTheDocument();
 
+    await user.click(screen.getByRole('tab', { name: 'Diagnóstico' }));
+    expect(screen.getByText('Diagnosis panel')).toBeVisible();
+    expect(screen.queryByText('SOAP panel')).not.toBeInTheDocument();
+
     await user.click(screen.getByRole('tab', { name: 'Plan de Tratamiento' }));
     expect(screen.getByText('Treatment plan panel')).toBeVisible();
-    expect(screen.queryByText('SOAP panel')).not.toBeInTheDocument();
+    expect(screen.queryByText('Diagnosis panel')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Referencia / Contrarreferencia' }));
     expect(screen.getByText('Referral panel')).toBeVisible();
     expect(screen.queryByText('Treatment plan panel')).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: 'Diagnóstico' }));
-    expect(screen.getByText('Diagnosis panel')).toBeVisible();
-    expect(screen.queryByText('Referral panel')).not.toBeInTheDocument();
   });
 });

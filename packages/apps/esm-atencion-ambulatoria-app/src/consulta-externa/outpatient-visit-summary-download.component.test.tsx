@@ -67,7 +67,7 @@ describe('OutpatientVisitSummaryDownload', () => {
     const user = userEvent.setup();
     render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" />);
 
-    await user.click(screen.getByRole('button', { name: 'Descargar informe de esta visita' }));
+    await user.click(screen.getByRole('button', { name: 'Descargar resumen de esta atención' }));
 
     await waitFor(() => expect(mockDownloadPdf).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]), 'visit-report.pdf'));
     expect(mockFetchSource).toHaveBeenCalledWith('visit-uuid');
@@ -88,7 +88,7 @@ describe('OutpatientVisitSummaryDownload', () => {
     mockUseAmbulatoryVisitGuard.mockReturnValue({ requireAmbulatoryVisit: () => null });
     render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" />);
 
-    await user.click(screen.getByRole('button', { name: 'Descargar informe de esta visita' }));
+    await user.click(screen.getByRole('button', { name: 'Descargar resumen de esta atención' }));
 
     expect(mockFetchSource).not.toHaveBeenCalled();
     expect(mockCreatePdf).not.toHaveBeenCalled();
@@ -99,7 +99,7 @@ describe('OutpatientVisitSummaryDownload', () => {
     let resolvePdf: (bytes: Uint8Array) => void = () => undefined;
     mockCreatePdf.mockReturnValueOnce(new Promise((resolve) => (resolvePdf = resolve)));
     render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" />);
-    const button = screen.getByRole('button', { name: 'Descargar informe de esta visita' });
+    const button = screen.getByRole('button', { name: 'Descargar resumen de esta atención' });
 
     await Promise.all([user.click(button), user.click(button)]);
     expect(mockFetchSource).toHaveBeenCalledOnce();
@@ -112,7 +112,7 @@ describe('OutpatientVisitSummaryDownload', () => {
     mockFetchSource.mockRejectedValueOnce(new Error('synthetic backend details'));
     render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" />);
 
-    await user.click(screen.getByRole('button', { name: 'Descargar informe de esta visita' }));
+    await user.click(screen.getByRole('button', { name: 'Descargar resumen de esta atención' }));
 
     await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' })));
     expect(screen.queryByText(/synthetic backend details/i)).not.toBeInTheDocument();

@@ -46,6 +46,18 @@ export interface OutpatientVisitSummaryPdfLabels {
   objective: string;
   assessment: string;
   plan: string;
+  physicalExam: string;
+  generalCondition: string;
+  consciousnessStatus: string;
+  skinAndAppendages: string;
+  headAndNeck: string;
+  respiratorySystem: string;
+  cardiovascularSystem: string;
+  abdomenAndDigestiveSystem: string;
+  genitourinarySystem: string;
+  musculoskeletalAndExtremities: string;
+  neurologicalExam: string;
+  otherObjectiveFindings: string;
   diagnoses: string;
   diagnosisType: string;
   presumptive: string;
@@ -330,6 +342,21 @@ export async function createOutpatientVisitSummaryPdf(
     drawField(state, labels.plan, summary.soap.plan);
   }
 
+  if (Object.values(summary.physicalExam).some(Boolean)) {
+    drawSectionTitle(state, labels.physicalExam);
+    drawField(state, labels.generalCondition, summary.physicalExam.generalState);
+    drawField(state, labels.consciousnessStatus, summary.physicalExam.consciousness);
+    drawField(state, labels.skinAndAppendages, summary.physicalExam.skinAndAppendages);
+    drawField(state, labels.headAndNeck, summary.physicalExam.headAndNeck);
+    drawField(state, labels.respiratorySystem, summary.physicalExam.respiratory);
+    drawField(state, labels.cardiovascularSystem, summary.physicalExam.cardiovascular);
+    drawField(state, labels.abdomenAndDigestiveSystem, summary.physicalExam.abdomenAndDigestive);
+    drawField(state, labels.genitourinarySystem, summary.physicalExam.genitourinary);
+    drawField(state, labels.musculoskeletalAndExtremities, summary.physicalExam.musculoskeletal);
+    drawField(state, labels.neurologicalExam, summary.physicalExam.neurological);
+    drawField(state, labels.otherObjectiveFindings, summary.physicalExam.otherFindings);
+  }
+
   if (summary.diagnoses.length) {
     drawSectionTitle(state, labels.diagnoses);
     summary.diagnoses.forEach((diagnosis) => {
@@ -431,5 +458,5 @@ export function createOutpatientVisitSummaryFileName(visitUuid: string, visitSta
   const sourceDate = /^(\d{4}-\d{2}-\d{2})(?:T|$)/.exec(visitStart)?.[1];
   const safeDate = Number.isNaN(date.getTime()) ? 'sin-fecha' : (sourceDate ?? date.toISOString().slice(0, 10));
   const safeVisitSuffix = visitUuid.replace(/[^a-zA-Z0-9]/g, '').slice(-8) || 'visita';
-  return `informe-consulta-externa-${safeDate}-${safeVisitSuffix}.pdf`;
+  return `resumen-atencion-ambulatoria-${safeDate}-${safeVisitSuffix}.pdf`;
 }

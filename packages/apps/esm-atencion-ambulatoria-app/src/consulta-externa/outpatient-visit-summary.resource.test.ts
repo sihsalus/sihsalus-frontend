@@ -74,6 +74,18 @@ const source: VisitSummarySource = {
         { uuid: 'diastolic-obs', concept: { uuid: 'diastolic' }, value: 70 },
         { uuid: 'chief-obs', concept: { uuid: 'chief-complaint' }, value: 'Dolor de cabeza' },
         { uuid: 'subjective-obs', concept: { uuid: 'soap-subjective' }, value: 'Cefalea de dos días' },
+        {
+          uuid: 'general-state-obs',
+          concept: { uuid: 'soap-objective' },
+          value: 'Paciente en buen estado general',
+          formFieldPath: 'rfe-forms-estadoGeneral',
+        },
+        {
+          uuid: 'head-and-neck-obs',
+          concept: { uuid: 'head-and-neck-concept' },
+          value: 'Sin hallazgos de alarma',
+          formFieldPath: 'rfe-forms-cabezaCuello',
+        },
         { uuid: 'plan-obs', concept: { uuid: 'therapeutic-indications' }, value: 'Hidratación y reposo' },
         {
           uuid: 'diagnosis-type-obs',
@@ -155,6 +167,11 @@ describe('outpatient visit summary contract', () => {
     expect(summary.anamnesis.chiefComplaint).toBe('Dolor de cabeza');
     expect(summary.anamnesis.biologicalFunctions.summary).toBeNull();
     expect(summary.soap.subjective).toBe('Cefalea de dos días');
+    expect(summary.soap.objective).toBeNull();
+    expect(summary.physicalExam).toMatchObject({
+      generalState: 'Paciente en buen estado general',
+      headAndNeck: 'Sin hallazgos de alarma',
+    });
     expect(summary.diagnoses).toEqual([expect.objectContaining({ display: 'Cefalea', cie10Code: 'R51', type: 'D' })]);
     expect(summary.orders).toEqual([
       expect.objectContaining({ uuid: 'medication-order', category: 'medication' }),

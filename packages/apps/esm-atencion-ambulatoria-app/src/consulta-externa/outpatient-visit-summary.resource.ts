@@ -1,5 +1,10 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import type { ConfigObject } from '../config-schema';
+import {
+  getFormEngineFieldPath,
+  physicalExamFields,
+  type PhysicalExamValues,
+} from '../utils/physical-exam';
 
 const TIPO_DX_FORM_FIELD_NAMESPACE = 'visit-notes';
 const TIPO_DX_FIELD_PREFIX = 'tipo-dx-';
@@ -153,6 +158,7 @@ export interface OutpatientVisitSummary {
     assessment: string | null;
     plan: string | null;
   };
+  physicalExam: PhysicalExamValues;
   diagnoses: OutpatientSummaryDiagnosis[];
   treatment: {
     therapeuticIndications: string | null;
@@ -210,17 +216,21 @@ function valueUuid(value: unknown): string | null {
 function getLatestObservation(
   encounters: VisitSummaryEncounter[],
   conceptUuid: string | undefined,
-  fieldPath?: string,
+  fieldPath?: string | null,
 ): VisitSummaryObservation | null {
-  if (!conceptUuid) return null;
+  if (!conceptUuid && fieldPath === undefined) return null;
   for (const encounter of [...encounters].sort(
     (a, b) => new Date(b.encounterDatetime).getTime() - new Date(a.encounterDatetime).getTime(),
   )) {
     const match = encounter.obs?.find(
       (obs) =>
         !obs.voided &&
-        obs.concept?.uuid === conceptUuid &&
-        (fieldPath === undefined || obs.formFieldPath === fieldPath),
+        (conceptUuid === undefined || obs.concept?.uuid === conceptUuid) &&
+        (fieldPath === undefined
+          ? true
+          : fieldPath === null
+            ? !obs.formFieldPath
+            : obs.formFieldPath === fieldPath),
     );
     if (match) return match;
   }
@@ -230,7 +240,7 @@ function getLatestObservation(
 function getObservationText(
   encounters: VisitSummaryEncounter[],
   conceptUuid: string | undefined,
-  fieldPath?: string,
+  fieldPath?: string | null,
 ): string | null {
   const observation = getLatestObservation(encounters, conceptUuid, fieldPath);
   return observation ? asText(observation.value, observation.display) : null;
@@ -445,10 +455,19 @@ export function buildOutpatientVisitSummary({
   };
   const soap = {
     subjective: getObservationText(encounters, concepts.soapSubjectiveUuid),
-    objective: getObservationText(encounters, concepts.soapObjectiveUuid),
+    objective: null as string | null,
     assessment: getObservationText(encounters, concepts.soapAssessmentUuid),
     plan: getObservationText(encounters, concepts.soapPlanUuid),
   };
+  const physicalExam = physicalExamFields.reduce((values, field) => {
+    values[field.key] = getObservationText(
+      encounters,
+      undefined,
+      getFormEngineFieldPath(field.questionId),
+    );
+    return values;
+  }, {} as PhysicalExamValues);
+  soap.objective = getObservationText(encounters, concepts.soapObjectiveUuid, null);
   const treatment = {
     therapeuticIndications: getObservationText(encounters, concepts.therapeuticIndicationsUuid),
     procedures: getObservationText(encounters, concepts.proceduresUuid),
@@ -473,6 +492,7 @@ export function buildOutpatientVisitSummary({
         Object.values({ ...anamnesis, biologicalFunctions: null }).some(Boolean) ||
         Object.values(biologicalFunctions).some(Boolean) ||
         Object.values(soap).some(Boolean) ||
+        Object.values(physicalExam).some(Boolean) ||
         diagnoses.length ||
         Object.values(treatment).some(Boolean) ||
         orders.length),
@@ -493,6 +513,7 @@ export function buildOutpatientVisitSummary({
     vitals,
     anamnesis,
     soap,
+    physicalExam,
     diagnoses,
     treatment,
     orders,

@@ -219,11 +219,22 @@ function assertSafeAppShellSource(appShellRoot = getAppShellPackageRoot()) {
   const webpackSource = fs.readFileSync(path.join(appShellRoot, 'webpack.config.js'), 'utf8');
 
   const requiredRunMarkers = [
+    "getCoreTranslation('connectionOffline'",
+    "getCoreTranslation('connectionOnline'",
+    "getCoreTranslation('connectionStatusTitle'",
     "getCoreTranslation('fatalErrorMessage')",
     "getCoreTranslation('offlineSetupErrorTitle')",
     "getCoreTranslation('offlineSetupGenericError')",
+    'Conexión restablecida.',
+    'Estado de conexión',
+    'Sin conexión a internet.',
   ];
-  const forbiddenRunMarkers = ['Offline Setup Error', 'No additional information available.'];
+  const forbiddenRunMarkers = [
+    'Offline Setup Error',
+    'No additional information available.',
+    "title: 'App'",
+    'description: `Connection:',
+  ];
 
   for (const marker of requiredRunMarkers) {
     if (!runSource.includes(marker)) {

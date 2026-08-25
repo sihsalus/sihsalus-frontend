@@ -176,6 +176,8 @@ for (const { name, source } of appShellJavaScriptFiles) {
 }
 
 const forbiddenAppShellCopy = [
+  'Connection: offline',
+  'Connection: online',
   'Offline Setup Error',
   'Oops! An unexpected error occurred.',
   'Oops! An unhandled promise rejection occurred.',
@@ -188,11 +190,17 @@ for (const text of forbiddenAppShellCopy) {
 }
 
 const requiredSafeAppShellMarkers = [
+  'Conexión restablecida.',
+  'Connection restored.',
+  'Connection status',
+  'Estado de conexión',
   'Modo sin conexión no disponible',
+  'No internet connection.',
   'Offline setup unavailable',
   'Ocurrió un error inesperado.',
   'An unexpected error occurred.',
   'No se pudo iniciar la aplicación. Intente recargar la página o contacte a soporte.',
+  'Sin conexión a internet.',
   'The application could not start. Try reloading the page or contact support.',
 ];
 for (const marker of requiredSafeAppShellMarkers) {

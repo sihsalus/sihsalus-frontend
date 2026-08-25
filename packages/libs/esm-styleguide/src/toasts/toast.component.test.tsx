@@ -8,8 +8,22 @@ describe('Toast', () => {
     renderToast('The order was saved.');
 
     expect(screen.getByText('The order was saved.')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /show more/i })).not.toBeInTheDocument();
     expect(screen.queryByText('Focus sentinel')).not.toBeInTheDocument();
+  });
+
+  it('does not move focus for a passive connectivity toast', () => {
+    render(<button type="button">Continue working</button>);
+    const focusTarget = screen.getByRole('button', { name: 'Continue working' });
+    focusTarget.focus();
+
+    renderToast('No internet connection.');
+
+    expect(document.activeElement).toBe(focusTarget);
+    expect(screen.getByRole('status')).toHaveTextContent('No internet connection.');
+    expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument();
   });
 
   it('truncates long descriptions and shows the complete content in a modal', () => {
@@ -17,6 +31,7 @@ describe('Toast', () => {
     renderToast(description);
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     expect(screen.getByText((content) => content.endsWith('…'))).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /show more/i }));

@@ -1,6 +1,6 @@
 /** @module @category UI */
 
-import { ActionableNotification, Button, FeatureFlags } from '@carbon/react';
+import { ActionableNotification, Button, FeatureFlags, ToastNotification } from '@carbon/react';
 import { getCoreTranslation } from '@openmrs/esm-translations';
 import React, { useCallback, useState } from 'react';
 import { NotificationDetailsModal, type NotificationDetailsSection } from './notification-details.modal';
@@ -48,6 +48,7 @@ export const Toast: React.FC<ToastProps> = ({ toast, closeToast }) => {
   const { description, details, kind, critical, title, actionButtonLabel, onActionButtonClick = () => {} } = toast;
   const [showDetails, setShowDetails] = useState(false);
   const { isTruncated, preview } = getToastPreview(description);
+  const isPassiveTextToast = typeof description === 'string' && !actionButtonLabel && !isTruncated;
   const handleActionClick = useCallback(() => {
     onActionButtonClick();
     closeToast();
@@ -67,15 +68,26 @@ export const Toast: React.FC<ToastProps> = ({ toast, closeToast }) => {
   return (
     <FeatureFlags enableFocusWrapWithoutSentinels>
       <div>
-        <ActionableNotification
-          actionButtonLabel={actionButtonLabel}
-          kind={kind || 'info'}
-          lowContrast={critical}
-          subtitle={previewContent}
-          title={title || ''}
-          onActionButtonClick={handleActionClick}
-          onClose={closeToast}
-        />
+        {isPassiveTextToast ? (
+          <ToastNotification
+            aria-label={getCoreTranslation('close', 'Close')}
+            kind={kind || 'info'}
+            lowContrast={critical}
+            subtitle={description}
+            title={title || ''}
+            onClose={closeToast}
+          />
+        ) : (
+          <ActionableNotification
+            actionButtonLabel={actionButtonLabel}
+            kind={kind || 'info'}
+            lowContrast={critical}
+            subtitle={previewContent}
+            title={title || ''}
+            onActionButtonClick={handleActionClick}
+            onClose={closeToast}
+          />
+        )}
         {isTruncated && showDetails ? (
           <NotificationDetailsModal
             description={description}

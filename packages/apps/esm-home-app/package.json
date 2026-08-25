@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-home-app",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Homepage microfrontend for the Sihsalus SPA",
   "browser": "dist/openmrs-esm-home-app.js",
   "main": "src/index.ts",

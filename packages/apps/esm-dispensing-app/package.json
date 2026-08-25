@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-dispensing-app",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "license": "MPL-2.0",
   "description": "Medication dispensing application",
   "browser": "dist/openmrs-esm-dispensing-app.js",

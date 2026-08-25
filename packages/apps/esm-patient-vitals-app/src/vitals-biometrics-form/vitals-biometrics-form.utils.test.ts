@@ -123,13 +123,35 @@ describe('MUAC age applicability', () => {
 
 describe('pediatric weight review warning', () => {
   it('flags an extreme infant weight without classifying it as a diagnosis', () => {
-    expect(isPediatricWeightAboveWhoReference(90, 6, 'male')).toBe(true);
-    expect(isPediatricWeightAboveWhoReference(9, 6, 'male')).toBe(false);
+    const asOf = new Date(2026, 6, 1, 12);
+    expect(isPediatricWeightAboveWhoReference(90, '2026-01-01', 'male', asOf)).toBe(true);
+    expect(isPediatricWeightAboveWhoReference(9, '2026-01-01', 'male', asOf)).toBe(false);
   });
 
-  it('uses a conservative reference when sex is unavailable and does not apply to adults', () => {
-    expect(isPediatricWeightAboveWhoReference(14, 12, undefined)).toBe(true);
-    expect(isPediatricWeightAboveWhoReference(90, 60, 'female')).toBe(false);
+  it('uses weekly interpolation for newborns and does not warn at the reference boundary', () => {
+    const birthDate = '2026-01-01';
+    expect(isPediatricWeightAboveWhoReference(5, birthDate, 'male', new Date(2026, 0, 1, 12))).toBe(false);
+    expect(isPediatricWeightAboveWhoReference(5.01, birthDate, 'male', new Date(2026, 0, 1, 12))).toBe(true);
+    expect(isPediatricWeightAboveWhoReference(5.5, birthDate, 'male', new Date(2026, 0, 22, 12))).toBe(false);
+    expect(isPediatricWeightAboveWhoReference(6, birthDate, 'male', new Date(2026, 0, 22, 12))).toBe(false);
+    expect(isPediatricWeightAboveWhoReference(6.01, birthDate, 'male', new Date(2026, 0, 22, 12))).toBe(true);
+  });
+
+  it('switches from the weekly to the monthly reference at 13 weeks', () => {
+    const asOf = new Date(2026, 3, 2, 12);
+    expect(isPediatricWeightAboveWhoReference(8.9, '2026-01-01', 'male', asOf)).toBe(false);
+    expect(isPediatricWeightAboveWhoReference(9.1, '2026-01-01', 'male', asOf)).toBe(true);
+  });
+
+  it('interpolates through month 60 but excludes children on their fifth birthday', () => {
+    const birthDate = '2021-01-01';
+    expect(isPediatricWeightAboveWhoReference(27.8, birthDate, 'male', new Date(2025, 11, 31, 12))).toBe(false);
+    expect(isPediatricWeightAboveWhoReference(28, birthDate, 'male', new Date(2025, 11, 31, 12))).toBe(true);
+    expect(isPediatricWeightAboveWhoReference(90, birthDate, 'female', new Date(2026, 0, 1, 12))).toBe(false);
+  });
+
+  it('uses a conservative reference when sex is unavailable', () => {
+    expect(isPediatricWeightAboveWhoReference(14, '2025-01-01', undefined, new Date(2026, 0, 1, 12))).toBe(true);
   });
 });
 

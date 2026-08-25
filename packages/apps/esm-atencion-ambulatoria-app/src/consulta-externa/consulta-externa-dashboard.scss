@@ -197,6 +197,32 @@
   border-left-color: $interactive-01;
 }
 
+.physicalExamGrid {
+  display: grid;
+  gap: layout.$spacing-04;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  margin: 0;
+  padding: 0 layout.$spacing-05;
+
+  div {
+    min-width: 0;
+  }
+
+  dt {
+    @include type.type-style("label-01");
+    color: $text-02;
+    margin-bottom: layout.$spacing-02;
+  }
+
+  dd {
+    @include type.type-style("body-compact-01");
+    color: $text-01;
+    margin: 0;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+}
+
 .soapAssessment h5 {
   border-left-color: $text-02;
 }

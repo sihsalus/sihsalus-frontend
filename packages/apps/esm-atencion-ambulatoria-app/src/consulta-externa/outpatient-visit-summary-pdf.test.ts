@@ -55,6 +55,22 @@ const summary: OutpatientVisitSummary = {
     },
   },
   soap: { subjective: 'Subjetivo', objective: 'Objetivo', assessment: 'Apreciación', plan: 'Plan' },
+  physicalExam: {
+    generalState: 'Paciente en buen estado general',
+    hydration: 'Hidratado',
+    nutrition: null,
+    consciousness: 'Alerta y orientado',
+    skinAndAppendages: null,
+    regionalSummary: 'Examen regional sin hallazgos de alarma',
+    headAndNeck: null,
+    respiratory: null,
+    cardiovascular: null,
+    abdomenAndDigestive: null,
+    genitourinary: null,
+    musculoskeletal: null,
+    neurological: null,
+    otherFindings: null,
+  },
   diagnoses: [{ uuid: 'diagnosis', display: 'Cefalea', cie10Code: 'R51', rank: 1, type: 'D' }],
   treatment: {
     therapeuticIndications: 'Hidratación',
@@ -93,14 +109,14 @@ describe('outpatient visit summary PDF', () => {
 
   it('uses only visit metadata in the filename, never patient identifiers', () => {
     const fileName = createOutpatientVisitSummaryFileName(summary.visitUuid, summary.visitStart);
-    expect(fileName).toBe('informe-consulta-externa-2026-08-23-12345678.pdf');
+    expect(fileName).toBe('resumen-atencion-ambulatoria-2026-08-23-12345678.pdf');
     expect(fileName).not.toContain('00000000');
     expect(fileName).not.toContain('Paciente');
   });
 
   it('keeps the visit local date in the filename instead of shifting it to UTC', () => {
     expect(createOutpatientVisitSummaryFileName('visit-uuid-12345678', '2026-08-23T23:30:00.000-05:00')).toBe(
-      'informe-consulta-externa-2026-08-23-12345678.pdf',
+      'resumen-atencion-ambulatoria-2026-08-23-12345678.pdf',
     );
   });
 

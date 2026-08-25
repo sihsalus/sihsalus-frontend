@@ -365,7 +365,7 @@ export const configSchema = {
       _default: anamnesisConceptDefaults.bowelMovementsUuid,
     },
 
-    // SOAP Notes (CE-5)
+    // Segmented physical examination and legacy SOAP notes (CE-5)
     soapSubjectiveUuid: {
       _type: Type.ConceptUuid,
       _description: 'SOAP Subjective concept',
@@ -373,7 +373,8 @@ export const configSchema = {
     },
     soapObjectiveUuid: {
       _type: Type.ConceptUuid,
-      _description: 'SOAP Objective concept (CIEL 160532)',
+      _description:
+        'Physical examination findings (CIEL 160532). Segmented CE-SOAP fields share this concept and are distinguished by formFieldPath.',
       _default: '160532AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
     soapAssessmentUuid: {

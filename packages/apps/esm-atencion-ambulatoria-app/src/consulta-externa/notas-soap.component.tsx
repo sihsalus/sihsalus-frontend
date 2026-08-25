@@ -6,6 +6,7 @@ import type { ConfigObject } from '../config-schema';
 import { useConsultaExternaFormLauncher } from '../hooks/useConsultaExternaFormLauncher';
 import { useSoapNotes } from '../hooks/useSoapNotes';
 import { clinicalFormsPrivilege, consultaExternaEditPrivilege } from '../utils/constants';
+import { hasSegmentedPhysicalExam, physicalExamFields } from '../utils/physical-exam';
 import ClinicalHistoryCard from './clinical-history-card.component';
 import styles from './consulta-externa-dashboard.scss';
 
@@ -41,7 +42,7 @@ const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
   return (
     <ClinicalHistoryCard
       title={t('soapNotesHistory', 'Historial de examen físico / SOAP')}
-      actionLabel={t('addSoapNote', 'Registrar examen físico / SOAP')}
+      actionLabel={t('addSoapNote', 'Registrar examen físico segmentado')}
       empty={soapEntries.length === 0}
       emptyDisplayText={t('physicalExamAndSoapNotes', 'registros de examen físico / SOAP')}
       editPrivilege={[consultaExternaEditPrivilege, clinicalFormsPrivilege]}
@@ -71,10 +72,26 @@ const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
               <h5>{t('subjective', 'Subjetivo (S)')}</h5>
               <p>{entry.subjective || t('noData', 'Sin datos')}</p>
             </div>
-            <div className={`${styles.soapSection} ${styles.soapObjective}`}>
-              <h5>{t('objective', 'Objetivo (O)')}</h5>
-              <p>{entry.objective || t('noData', 'Sin datos')}</p>
-            </div>
+            {hasSegmentedPhysicalExam(entry.physicalExam) ? (
+              <div className={`${styles.soapSection} ${styles.soapObjective}`}>
+                <h5>{t('segmentedPhysicalExam', 'Examen físico segmentado')}</h5>
+                <dl className={styles.physicalExamGrid}>
+                  {physicalExamFields.map((field) =>
+                    entry.physicalExam[field.key] ? (
+                      <div key={field.key}>
+                        <dt>{t(field.translationKey, field.defaultLabel)}</dt>
+                        <dd>{entry.physicalExam[field.key]}</dd>
+                      </div>
+                    ) : null,
+                  )}
+                </dl>
+              </div>
+            ) : (
+              <div className={`${styles.soapSection} ${styles.soapObjective}`}>
+                <h5>{t('objective', 'Objetivo (O)')}</h5>
+                <p>{entry.objective || t('noData', 'Sin datos')}</p>
+              </div>
+            )}
             <div className={`${styles.soapSection} ${styles.soapAssessment}`}>
               <h5>{t('assessment', 'Apreciación (A)')}</h5>
               <p>{entry.assessment || t('noData', 'Sin datos')}</p>

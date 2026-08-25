@@ -38,15 +38,17 @@ La pestaña **Referencia / Contrarreferencia** lee exclusivamente encounters de 
 
 Los valores de `formsList` para consulta externa usan los nombres estables publicados por content (`CE-001-CONSULTA EXTERNA`, `CE-ANAM-001-ANAMNESIS`, `CE-SOAP-001-NOTA SOAP` y `CE-REF-001-REFERENCIA-CONTRARREFERENCIA`). No deben reemplazarse por los UUID de los archivos de esquema, porque esos UUID pueden variar entre entornos.
 
-El dashboard muestra una cabecera compacta propia para garantizar que `Consulta Externa` se traduzca en el namespace del módulo. El orden operativo de las pestañas es Triajes previos, Anamnesis, Examen físico / SOAP, Plan de Tratamiento, Referencia / Contrarreferencia y Diagnóstico.
+El dashboard muestra una cabecera compacta propia para garantizar que `Consulta Externa` se traduzca en el namespace del módulo. El orden operativo de las pestañas sigue el flujo clínico: Triajes previos, Anamnesis, Examen físico / SOAP, Diagnóstico, Plan de Tratamiento y Referencia / Contrarreferencia.
 
 Anamnesis y SOAP son únicos por visita ambulatoria: cero coincidencias crea, una edita y más de una bloquea. Referencia es repetible porque cada derivación es un evento clínico independiente; siempre crea un encounter nuevo, pero siempre adjunto a la visita ambulatoria verificada.
 
-## Informe de Atención de Consulta Externa
+## Resumen de atención ambulatoria
 
-Consulta Externa ofrece una descarga PDF de la visita ambulatoria activa con identificación del paciente, establecimiento, profesional, signos vitales, anamnesis/SOAP, diagnósticos nativos CIE-10, plan y órdenes asociadas a los encounters de esa visita. El documento se genera íntegramente en el navegador; los datos no se envían a un servicio de PDF externo.
+Consulta Externa ofrece una descarga PDF denominada **Resumen de atención ambulatoria** para la visita activa, con identificación del paciente, establecimiento, profesional, signos vitales, anamnesis, examen físico segmentado, diagnósticos nativos CIE-10, plan y órdenes asociadas a los encounters de esa visita. El documento se genera íntegramente en el navegador; los datos no se envían a un servicio de PDF externo.
 
-Este documento es un **Informe de Atención de Consulta Externa**, no una Epicrisis. La NTS 139 define la Epicrisis en el contexto del ingreso/hospitalización; el Manual de Usuario SIHCE Primer Nivel denomina al documento ambulatorio “Resumen de Consulta Externa” e “Informe de la atención”. Por ello este flujo no usa `Formulario Epicrisis Médica` ni `(Página 16) Epicrisis`.
+La Epicrisis pertenece al egreso de hospitalización según la NTS 139. Consulta Externa no abre ni reutiliza `Formulario Epicrisis Médica` ni `(Página 16) Epicrisis`; su documento es únicamente el resumen de la atención ambulatoria.
+
+`CE-SOAP-001-NOTA SOAP` versión `1.1.0` registra el examen general y el examen regional por sistemas mediante campos diferenciados por `formFieldPath`. Ningún campo se completa como “normal” automáticamente. La lectura conserva compatibilidad con las notas SOAP históricas `1.0.0`.
 
 La descarga falla cerrada si no se puede verificar que la visita, su tipo ambulatorio y el paciente coincidan. La primera versión se limita intencionalmente a la visita activa: debe descargarse antes de finalizarla. Una futura descarga histórica necesitará un selector explícito de visita; nunca debe elegir silenciosamente “la última” del paciente.
 

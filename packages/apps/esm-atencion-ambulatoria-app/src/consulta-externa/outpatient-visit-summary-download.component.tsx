@@ -65,7 +65,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       showSnackbar({
         isLowContrast: false,
         kind: 'error',
-        title: t('outpatientSummaryDownloadError', 'No se pudo descargar el informe de atención'),
+        title: t('outpatientSummaryDownloadError', 'No se pudo descargar el resumen de atención'),
         subtitle,
       });
     },
@@ -114,14 +114,14 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         showError(
           t(
             'outpatientSummaryNoClinicalData',
-            'Esta visita todavía no tiene información clínica suficiente para generar el informe.',
+            'Esta atención todavía no tiene información clínica suficiente para generar el resumen.',
           ),
         );
         return;
       }
 
       const labels: OutpatientVisitSummaryPdfLabels = {
-        title: t('outpatientCareReport', 'Informe de Atención de Consulta Externa'),
+        title: t('outpatientCareReport', 'Resumen de atención ambulatoria'),
         patient: t('patient', 'Paciente'),
         identifiers: t('identifiers', 'Identificadores'),
         birthDate: t('birthDate', 'Fecha de nacimiento'),
@@ -158,6 +158,24 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         objective: t('objective', 'Objetivo'),
         assessment: t('assessment', 'Apreciación'),
         plan: t('plan', 'Plan'),
+        physicalExam: t('physicalExam', 'Examen físico'),
+        generalCondition: t('generalCondition', 'Estado general'),
+        hydrationStatus: t('hydrationStatus', 'Estado de hidratación'),
+        nutritionStatus: t('nutritionStatus', 'Estado de nutrición'),
+        consciousnessStatus: t('consciousnessStatus', 'Estado de conciencia'),
+        skinAndAppendages: t('skinAndAppendages', 'Piel y anexos'),
+        regionalExamSummary: t('regionalExamSummary', 'Resumen del examen regional'),
+        headAndNeck: t('headAndNeck', 'Cabeza y cuello'),
+        respiratorySystem: t('respiratorySystem', 'Aparato respiratorio'),
+        cardiovascularSystem: t('cardiovascularSystem', 'Aparato cardiovascular'),
+        abdomenAndDigestiveSystem: t('abdomenAndDigestiveSystem', 'Abdomen y aparato digestivo'),
+        genitourinarySystem: t('genitourinarySystem', 'Genitourinario'),
+        musculoskeletalAndExtremities: t(
+          'musculoskeletalAndExtremities',
+          'Musculoesquelético y extremidades',
+        ),
+        neurologicalExam: t('neurologicalExam', 'Neurológico'),
+        otherObjectiveFindings: t('otherObjectiveFindings', 'Otros hallazgos objetivos'),
         diagnoses: t('diagnosesTitle', 'Diagnósticos'),
         diagnosisType: t('diagnosisType', 'Tipo'),
         presumptive: t('presumptive', 'Presuntivo'),
@@ -177,7 +195,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         page: t('page', 'Página'),
         disclaimer: t(
           'outpatientSummaryDisclaimer',
-          'Documento generado desde el registro clínico electrónico. No constituye una epicrisis hospitalaria ni reemplaza la firma o certificación institucional cuando corresponda.',
+          'Resumen de una atención ambulatoria generado desde el registro clínico electrónico. No es un documento de alta hospitalaria ni reemplaza la firma o certificación institucional cuando corresponda.',
         ),
       };
       const bytes = await createOutpatientVisitSummaryPdf(summary, labels, i18n.language || 'es-PE');
@@ -188,10 +206,10 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       showSnackbar({
         isLowContrast: true,
         kind: 'success',
-        title: t('outpatientSummaryDownloaded', 'Informe descargado'),
+        title: t('outpatientSummaryDownloaded', 'Resumen descargado'),
         subtitle: t(
           'outpatientSummaryDownloadedSubtitle',
-          'El informe de esta visita se generó localmente en formato PDF.',
+          'El resumen de esta atención se generó localmente en formato PDF.',
         ),
       });
     } catch (error) {
@@ -199,7 +217,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       showError(
         t(
           'outpatientSummaryGenerationError',
-          'No se pudo verificar o generar el informe de esta visita. Recargue e intente nuevamente.',
+          'No se pudo verificar o generar el resumen de esta atención. Recargue e intente nuevamente.',
         ),
       );
     } finally {
@@ -227,11 +245,11 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       renderIcon={Download}
       disabled={isGenerating}
       onClick={handleDownload}
-      aria-label={t('downloadOutpatientCareReport', 'Descargar informe de esta visita')}
+      aria-label={t('downloadOutpatientCareReport', 'Descargar resumen de esta atención')}
     >
       {isGenerating
-        ? t('generatingOutpatientCareReport', 'Generando informe…')
-        : t('downloadOutpatientCareReport', 'Descargar informe de esta visita')}
+        ? t('generatingOutpatientCareReport', 'Generando resumen…')
+        : t('downloadOutpatientCareReport', 'Descargar resumen de esta atención')}
     </Button>
   );
 };

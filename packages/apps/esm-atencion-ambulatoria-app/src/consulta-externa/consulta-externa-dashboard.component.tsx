@@ -36,9 +36,9 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
               <Tab renderIcon={Activity}>{t('triageAndChiefComplaint', 'Triajes previos')}</Tab>
               <Tab renderIcon={DocumentMultiple_01}>{t('anamnesis', 'Anamnesis')}</Tab>
               <Tab renderIcon={DocumentMultiple_01}>{t('soapNotes', 'Examen físico / SOAP')}</Tab>
+              <Tab renderIcon={Catalog}>{t('diagnosisClassification', 'Diagnóstico')}</Tab>
               <Tab renderIcon={ListChecked}>{t('treatmentPlan', 'Plan de Tratamiento')}</Tab>
               <Tab renderIcon={ArrowRight}>{t('referralCounterReferral', 'Referencia / Contrarreferencia')}</Tab>
-              <Tab renderIcon={Catalog}>{t('diagnosisClassification', 'Diagnóstico')}</Tab>
             </TabList>
 
             <TabPanels>
@@ -51,9 +51,9 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
               </TabPanel>
               <TabPanel>{selectedTab === 1 ? <Anamnesis patientUuid={patientUuid} /> : null}</TabPanel>
               <TabPanel>{selectedTab === 2 ? <NotasSoap patientUuid={patientUuid} /> : null}</TabPanel>
-              <TabPanel>{selectedTab === 3 ? <PlanTratamiento patientUuid={patientUuid} /> : null}</TabPanel>
-              <TabPanel>{selectedTab === 4 ? <ReferenciaContraReferencia patientUuid={patientUuid} /> : null}</TabPanel>
-              <TabPanel>{selectedTab === 5 ? <DiagnosticoClasificado patientUuid={patientUuid} /> : null}</TabPanel>
+              <TabPanel>{selectedTab === 3 ? <DiagnosticoClasificado patientUuid={patientUuid} /> : null}</TabPanel>
+              <TabPanel>{selectedTab === 4 ? <PlanTratamiento patientUuid={patientUuid} /> : null}</TabPanel>
+              <TabPanel>{selectedTab === 5 ? <ReferenciaContraReferencia patientUuid={patientUuid} /> : null}</TabPanel>
             </TabPanels>
           </Tabs>
         </Layer>

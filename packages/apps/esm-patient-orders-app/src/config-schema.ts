@@ -36,7 +36,8 @@ export const configSchema = {
         orderTypeUuid: 'f3c2e4b6-8b5a-11e5-8e9b-12345678901b',
         label: 'Órdenes de interconsulta',
         icon: 'omrs-icon-referral-order',
-        orderableConceptSets: [],
+        orderableConceptSets: ['4bf3f465-ac91-44fa-9b1f-173daf0c89a0'],
+        formWorkspaceName: 'request-interconsulta-workspace',
       },
     ],
     _description: 'List of various order types, each associated with the Java class name `org.openmrs.Order`.',
@@ -63,6 +64,12 @@ export const configSchema = {
         _description: 'Icon to be shown for the order type. Icons are from the OpenMRS icon library.',
         _default: '',
       },
+      formWorkspaceName: {
+        _type: Type.String,
+        _description:
+          'Optional Workspace2 name used instead of the generic orderable concept form for this order type.',
+        _default: '',
+      },
     },
   },
   showReferenceNumberField: {
@@ -70,6 +77,20 @@ export const configSchema = {
     _default: false,
     _description:
       'Whether to display the Reference number field in the Order form. This field maps to the accesion_number property in the Order data model',
+  },
+  stockAvailability: {
+    enabled: {
+      _type: Type.Boolean,
+      _default: false,
+      _description:
+        'Shows read-only medicine availability from Stock Management. This does not reserve or deduct inventory.',
+    },
+    dispensingLocationUuid: {
+      _type: Type.UUID,
+      _default: null,
+      _description:
+        'Stock dispensing location used for the availability indicator. The indicator stays disabled when this is not configured.',
+    },
   },
   priorityConfigs: {
     _type: Type.Array,
@@ -135,6 +156,7 @@ export interface OrderTypeDefinition {
   orderTypeUuid: string;
   orderableConceptSets: Array<string>;
   icon?: string;
+  formWorkspaceName?: string;
 }
 
 export interface PriorityConfig {
@@ -151,5 +173,9 @@ export interface ConfigObject {
   showPrintButton: boolean;
   orderTypes: Array<OrderTypeDefinition>;
   showReferenceNumberField: boolean;
+  stockAvailability: {
+    enabled: boolean;
+    dispensingLocationUuid: string | null;
+  };
   priorityConfigs: Array<PriorityConfig>;
 }

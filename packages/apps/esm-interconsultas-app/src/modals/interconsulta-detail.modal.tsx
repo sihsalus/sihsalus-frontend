@@ -15,6 +15,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { deriveStatus, useInterconsultaResponse } from '../interconsultas.resource';
 import type { InterconsultaOrder } from '../types';
+import { getInterconsultaDestinationDisplay, getInterconsultaReason } from '../utils/interconsulta-details';
 import { getStatusDisplay, getStatusTagType, getUrgencyDisplay } from '../utils/status';
 
 interface InterconsultaDetailModalProps {
@@ -46,8 +47,14 @@ const InterconsultaDetailModal: React.FC<InterconsultaDetailModalProps> = ({ clo
       label: t('status', 'Estado'),
       value: <Tag type={getStatusTagType(status)}>{getStatusDisplay(status, t)}</Tag>,
     },
-    { label: t('destinationService', 'Servicio destino'), value: order.concept?.display ?? '—' },
-    { label: t('priority', 'Prioridad'), value: getUrgencyDisplay(order.urgency, t) },
+    {
+      label: t('destinationService', 'Servicio destino'),
+      value: getInterconsultaDestinationDisplay(order),
+    },
+    {
+      label: t('priority', 'Prioridad'),
+      value: getUrgencyDisplay(order.urgency, t),
+    },
     {
       label: t('requestDate', 'Fecha solicitud'),
       value: order.dateActivated ? formatDatetime(parseDate(order.dateActivated)) : '—',
@@ -60,9 +67,18 @@ const InterconsultaDetailModal: React.FC<InterconsultaDetailModalProps> = ({ clo
           },
         ]
       : []),
-    { label: t('requestedBy', 'Solicitante'), value: order.orderer?.display ?? '—' },
-    { label: t('originLocation', 'Origin UPSS'), value: order.encounter?.location?.display ?? '—' },
-    { label: t('reasonForRequest', 'Motivo'), value: order.instructions || '—' },
+    {
+      label: t('requestedBy', 'Solicitante'),
+      value: order.orderer?.display ?? '—',
+    },
+    {
+      label: t('originLocation', 'Origin UPSS'),
+      value: order.encounter?.location?.display ?? '—',
+    },
+    {
+      label: t('reasonForRequest', 'Motivo'),
+      value: getInterconsultaReason(order),
+    },
     ...(order.fulfillerComment
       ? [
           {

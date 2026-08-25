@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-generic-patient-widgets-app",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "license": "MPL-2.0",
   "description": "Generic widgets for the patient chart",
   "browser": "dist/openmrs-esm-generic-patient-widgets-app.js",

@@ -3,7 +3,6 @@ import {
   DataTable,
   DataTableSkeleton,
   Dropdown,
-  InlineNotification,
   Layer,
   OverflowMenu,
   OverflowMenuItem,
@@ -34,6 +33,7 @@ import { useTranslation } from 'react-i18next';
 import { interconsultasHomeEditPrivilege } from '../constants';
 import { deriveStatus, useInterconsultas } from '../interconsultas.resource';
 import type { InterconsultaOrder, InterconsultaTrayFilter } from '../types';
+import { getInterconsultaDestinationDisplay, getInterconsultaReason } from '../utils/interconsulta-details';
 import { getStatusDisplay, getStatusTagType, getUrgencyDisplay } from '../utils/status';
 import InterconsultasEmptyState from './interconsultas-empty-state.component';
 import styles from './interconsultas-table.scss';
@@ -66,7 +66,10 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
     const seen = new Map<string, FilterOption>();
     for (const order of interconsultas) {
       if (order.concept?.uuid && !seen.has(order.concept.uuid)) {
-        seen.set(order.concept.uuid, { uuid: order.concept.uuid, display: order.concept.display ?? '' });
+        seen.set(order.concept.uuid, {
+          uuid: order.concept.uuid,
+          display: getInterconsultaDestinationDisplay(order),
+        });
       }
     }
     return [allOption, ...[...seen.values()].sort((a, b) => a.display.localeCompare(b.display))];
@@ -77,7 +80,10 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
     for (const order of interconsultas) {
       const location = order.encounter?.location;
       if (location?.uuid && !seen.has(location.uuid)) {
-        seen.set(location.uuid, { uuid: location.uuid, display: location.display ?? '' });
+        seen.set(location.uuid, {
+          uuid: location.uuid,
+          display: location.display ?? '',
+        });
       }
     }
     return [allOption, ...[...seen.values()].sort((a, b) => a.display.localeCompare(b.display))];
@@ -96,7 +102,9 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
         return (
           order.patient?.display?.toLowerCase().includes(lowerSearch) ||
           order.orderNumber?.toLowerCase().includes(lowerSearch) ||
-          order.orderer?.display?.toLowerCase().includes(lowerSearch)
+          order.orderer?.display?.toLowerCase().includes(lowerSearch) ||
+          getInterconsultaDestinationDisplay(order).toLowerCase().includes(lowerSearch) ||
+          getInterconsultaReason(order).toLowerCase().includes(lowerSearch)
         );
       }
       return true;
@@ -114,13 +122,33 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
 
   const headers = useMemo(
     () => [
-      { id: 'dateActivated', key: 'dateActivated', header: t('requestDate', 'Fecha solicitud') },
-      { id: 'orderNumber', key: 'orderNumber', header: t('orderNumber', 'N° orden') },
+      {
+        id: 'dateActivated',
+        key: 'dateActivated',
+        header: t('requestDate', 'Fecha solicitud'),
+      },
+      {
+        id: 'orderNumber',
+        key: 'orderNumber',
+        header: t('orderNumber', 'N° orden'),
+      },
       { id: 'patient', key: 'patient', header: t('patient', 'Paciente') },
-      { id: 'service', key: 'service', header: t('destinationService', 'Servicio destino') },
+      {
+        id: 'service',
+        key: 'service',
+        header: t('destinationService', 'Servicio destino'),
+      },
       { id: 'urgency', key: 'urgency', header: t('priority', 'Prioridad') },
-      { id: 'orderer', key: 'orderer', header: t('requestedBy', 'Solicitante') },
-      { id: 'location', key: 'location', header: t('originLocation', 'Origin UPSS') },
+      {
+        id: 'orderer',
+        key: 'orderer',
+        header: t('requestedBy', 'Solicitante'),
+      },
+      {
+        id: 'location',
+        key: 'location',
+        header: t('originLocation', 'Origin UPSS'),
+      },
       { id: 'status', key: 'status', header: t('status', 'Estado') },
       { id: 'actions', key: 'actions', header: t('actions', 'Acciones') },
     ],
@@ -132,7 +160,9 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
       const status = deriveStatus(order);
       return (
         <OverflowMenu
-          aria-label={t('actionsForPatient', 'Acciones para {{patient}}', { patient: order.patient?.display ?? '' })}
+          aria-label={t('actionsForPatient', 'Acciones para {{patient}}', {
+            patient: order.patient?.display ?? '',
+          })}
           iconDescription={t('actionsForPatient', 'Acciones para {{patient}}', {
             patient: order.patient?.display ?? '',
           })}
@@ -189,7 +219,7 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
               {order.patient?.display}
             </ConfigurableLink>
           ),
-          service: order.concept?.display ?? '—',
+          service: getInterconsultaDestinationDisplay(order),
           urgency: getUrgencyDisplay(order.urgency, t),
           orderer: order.orderer?.display?.split(' - ').pop() ?? '—',
           location: order.encounter?.location?.display ?? '—',

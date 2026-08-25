@@ -7,7 +7,7 @@ Este documento define el contrato funcional que debe cumplir el flujo de interco
 - El paciente tiene una visita activa y una ubicacion de atencion.
 - El solicitante tiene un `currentProvider` asociado a su usuario.
 - El receptor pertenece al servicio destino y tiene permisos para gestionar interconsultas.
-- El catalogo de destinos usa un concept set dedicado y contiene los servicios habilitados, incluida Odontologia General.
+- El catalogo de destinos contiene los consultorios/servicios habilitados, incluida Odontologia General, y excluye los conceptos tecnicos de colas.
 - Los privilegios configurados en frontend existen con el mismo nombre en el backend desplegado.
 
 ## AC-01 - Solicitar una interconsulta
@@ -25,6 +25,8 @@ Este documento define el contrato funcional que debe cumplir el flujo de interco
 - El encuentro y la orden se guardan de forma atomica: nunca queda un encuentro huerfano.
 - Reintentar despues de una respuesta incierta del servidor no duplica la solicitud.
 - Un usuario sin `currentProvider` no puede atribuir la orden a otro profesional.
+- Desde la canasta, confirmar el formulario agrega una sola orden y no la publica hasta `Firmar y cerrar`.
+- Un destino externo o remoto exige especialidad/profesional y queda como interconsulta; no crea referencia, contrarreferencia ni traslado.
 
 ## AC-02 - Enrutar y proteger la solicitud
 
@@ -103,14 +105,14 @@ Este documento define el contrato funcional que debe cumplir el flujo de interco
 
 ## Matriz de automatizacion
 
-| Caso | Unitarias/componentes | E2E con backend | Estado inicial |
-| --- | --- | --- | --- |
-| AC-01 | Payload, validacion, errores y atomicidad | Crear desde el workspace | Parcial |
-| AC-02 | Privilegios y catalogo visible | Solicitante y receptor con roles distintos | Parcial |
-| AC-03 | Maquina de estados y concurrencia | Recibir y recoger con receptor | Parcial |
-| AC-04 | Payload, orden de operaciones e idempotencia | Responder y validar procedencia | Parcial |
-| AC-05 | Clasificacion y acciones permitidas | Rechazar y cancelar | Parcial |
-| AC-06 | Ordenamiento, paginacion y errores | Volumen y recuperacion | Pendiente |
+| Caso  | Unitarias/componentes                        | E2E con backend                            | Estado inicial |
+| ----- | -------------------------------------------- | ------------------------------------------ | -------------- |
+| AC-01 | Payload, validacion, errores y atomicidad    | Crear desde el workspace                   | Parcial        |
+| AC-02 | Privilegios y catalogo visible               | Solicitante y receptor con roles distintos | Parcial        |
+| AC-03 | Maquina de estados y concurrencia            | Recibir y recoger con receptor             | Parcial        |
+| AC-04 | Payload, orden de operaciones e idempotencia | Responder y validar procedencia            | Parcial        |
+| AC-05 | Clasificacion y acciones permitidas          | Rechazar y cancelar                        | Parcial        |
+| AC-06 | Ordenamiento, paginacion y errores           | Volumen y recuperacion                     | Pendiente      |
 
 ## Baseline DEV - 2026-07-10
 

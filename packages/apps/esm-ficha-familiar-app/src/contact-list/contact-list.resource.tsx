@@ -1,4 +1,3 @@
-import type { Session } from '@openmrs/esm-framework';
 import omit from 'lodash-es/omit';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -47,7 +46,7 @@ export const useContactListFormSchema = () => {
       },
       {
         path: ['personBInfo'],
-        message: t('patientInformationRequired', 'Por favor proporcione la información del paciente'),
+        message: t('personInformationRequired', 'Por favor proporcione la información de la persona'),
       },
     );
 };
@@ -76,7 +75,7 @@ export const ContactListFormSchema = relationshipFormSchema
     (data) => {
       return !(data.mode === 'create' && !data.personBInfo);
     },
-    { path: ['personBInfo'], message: 'Por favor proporcione la información del paciente' },
+    { path: ['personBInfo'], message: 'Por favor proporcione la información de la persona' },
   );
 
 // Hook to get localized IPV outcome options
@@ -186,11 +185,7 @@ export const useLocalizedHivStatus = (encounters: HTSEncounter[], enrollment: En
   };
 };
 
-export const saveContact = async (
-  data: z.infer<typeof ContactListFormSchema>,
-  config: ConfigObject,
-  session: Session,
-) => {
+export const saveContact = async (data: z.infer<typeof ContactListFormSchema>, config: ConfigObject) => {
   const { baselineStatus, ipvOutcome, preferedPNSAproach, livingWithClient, dataConsent } = data;
 
   // Save contact with relationship
@@ -206,7 +201,6 @@ export const saveContact = async (
       'dataConsent',
     ]),
     config,
-    session,
     [
       // Add optional baseline HIV Status attribute
       ...(baselineStatus

@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-patient-chart-app",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "license": "MPL-2.0",
   "description": "Patient dashboard microfrontend for the OpenMRS SPA",
   "browser": "dist/openmrs-esm-patient-chart-app.js",

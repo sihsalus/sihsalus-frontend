@@ -14,7 +14,7 @@ import {
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { DefaultWorkspaceProps } from '@openmrs/esm-framework';
-import { getUserFacingErrorMessage, showSnackbar, useConfig, useSession, Workspace2 } from '@openmrs/esm-framework';
+import { showSnackbar, useConfig, Workspace2 } from '@openmrs/esm-framework';
 import React, { useEffect, useMemo } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +23,7 @@ import type { z } from 'zod';
 import type { ConfigObject } from '../config-schema';
 import { useMappedRelationshipTypes } from '../family-partner-history/relationships.resource';
 import PatientSearchCreate from '../relationships/forms/patient-search-create-form.component';
+import { getRelationshipRetryPersonUuid, RelationshipSaveError } from '../relationships/relationship.resources';
 import type { FichaFamiliarWorkspaceProps } from '../workspace-utils';
 import {
   BOOLEAN_NO,
@@ -62,8 +63,6 @@ const ContactListForm: React.FC<ContactListFormProps> = ({
     resolver: zodResolver(ContactListFormSchema),
   });
   const { t } = useTranslation();
-  const session = useSession();
-
   const config = useConfig<ConfigObject>();
   const { data } = useMappedRelationshipTypes();
   const pnsRelationshipTypes = data
@@ -79,17 +78,22 @@ const ContactListForm: React.FC<ContactListFormProps> = ({
 
   const onSubmit = async (values: ContactListFormType) => {
     try {
-      await saveContact(values, config, session);
+      await saveContact(values, config);
       closeWorkspace();
     } catch (error) {
+      const retryPersonUuid = getRelationshipRetryPersonUuid(error);
+      if (retryPersonUuid) {
+        form.setValue('personB', retryPersonUuid, { shouldDirty: true });
+      }
+
+      if (error instanceof RelationshipSaveError) {
+        return;
+      }
+
       showSnackbar({
         title: t('errorSavingContact', 'Error al guardar el contacto'),
         kind: 'error',
-        subtitle: getUserFacingErrorMessage(
-          error,
-          t('errorSavingContactMessage', 'No se pudo guardar el contacto. Intente nuevamente.'),
-          { logContext: 'Save contact' },
-        ),
+        subtitle: t('errorSavingContactMessage', 'No se pudo guardar el contacto. Intente nuevamente.'),
       });
     }
   };

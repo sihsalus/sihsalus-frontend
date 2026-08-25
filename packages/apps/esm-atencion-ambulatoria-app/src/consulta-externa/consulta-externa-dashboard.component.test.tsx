@@ -8,14 +8,24 @@ vi.mock('@sihsalus/esm-rbac', () => ({
   RequirePrivilege: ({ children }: PropsWithChildren) => children,
 }));
 
-vi.mock('./anamnesis.component', () => ({ default: () => <div>Anamnesis panel</div> }));
-vi.mock('./diagnostico-clasificado.component', () => ({ default: () => <div>Diagnosis panel</div> }));
-vi.mock('./notas-soap.component', () => ({ default: () => <div>SOAP panel</div> }));
+vi.mock('./anamnesis.component', () => ({
+  default: () => <div>Anamnesis panel</div>,
+}));
+vi.mock('./diagnostico-clasificado.component', () => ({
+  default: () => <div>Diagnosis panel</div>,
+}));
+vi.mock('./notas-soap.component', () => ({
+  default: () => <div>SOAP panel</div>,
+}));
 vi.mock('./outpatient-visit-summary-download.component', () => ({
   default: () => <button type="button">Download report</button>,
 }));
-vi.mock('./plan-tratamiento.component', () => ({ default: () => <div>Treatment plan panel</div> }));
-vi.mock('./referencia-contrarreferencia.component', () => ({ default: () => <div>Referral panel</div> }));
+vi.mock('./plan-tratamiento.component', () => ({
+  default: () => <div>Treatment plan panel</div>,
+}));
+vi.mock('./referencia-contrarreferencia.component', () => ({
+  default: () => <div>Referral panel</div>,
+}));
 vi.mock('./sis-financing-warning.component', () => ({ default: () => null }));
 
 const mockExtensionSlot = vi.mocked(ExtensionSlot);
@@ -33,18 +43,28 @@ describe('ConsultaExternaDashboard', () => {
       'Triajes previos',
       'Anamnesis',
       'Examen físico / SOAP',
-      'Diagnóstico',
       'Plan de Tratamiento',
       'Referencia / Contrarreferencia',
+      'Diagnóstico',
     ]);
+    expect(screen.getByRole('heading', { level: 1, name: 'Consulta Externa' })).toBeVisible();
+    expect(screen.queryByText('consultaExterna')).not.toBeInTheDocument();
     expect(screen.getByText('Triage panel')).toBeVisible();
 
     await user.click(screen.getByRole('tab', { name: 'Examen físico / SOAP' }));
     expect(screen.getByText('SOAP panel')).toBeVisible();
     expect(screen.queryByText('Diagnosis panel')).not.toBeInTheDocument();
 
+    await user.click(screen.getByRole('tab', { name: 'Plan de Tratamiento' }));
+    expect(screen.getByText('Treatment plan panel')).toBeVisible();
+    expect(screen.queryByText('SOAP panel')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: 'Referencia / Contrarreferencia' }));
+    expect(screen.getByText('Referral panel')).toBeVisible();
+    expect(screen.queryByText('Treatment plan panel')).not.toBeInTheDocument();
+
     await user.click(screen.getByRole('tab', { name: 'Diagnóstico' }));
     expect(screen.getByText('Diagnosis panel')).toBeVisible();
-    expect(screen.queryByText('SOAP panel')).not.toBeInTheDocument();
+    expect(screen.queryByText('Referral panel')).not.toBeInTheDocument();
   });
 });

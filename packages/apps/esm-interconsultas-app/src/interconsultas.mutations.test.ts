@@ -17,6 +17,8 @@ const config: ConfigObject = {
   requestEncounterTypeUuid: 'interconsulta-encounter-type',
   clinicianEncounterRoleUuid: 'clinician-role',
   orderableConceptSets: ['destination-set'],
+  excludedDestinationConceptUuids: [],
+  externalSpecialistConceptUuid: 'external-specialist-concept',
   concepts: {
     respuestaConceptUuid: 'response-concept',
     recomendacionesConceptUuid: '',
@@ -48,7 +50,10 @@ const order: InterconsultaOrder = {
   fulfillerComment: null,
   concept: { uuid: 'destination-service-uuid', display: 'Odontologia General' },
   patient: { uuid: 'patient-uuid', display: 'Paciente Prueba' },
-  orderer: { uuid: 'requester-provider-uuid', display: 'Profesional Solicitante' },
+  orderer: {
+    uuid: 'requester-provider-uuid',
+    display: 'Profesional Solicitante',
+  },
   encounter: {
     uuid: 'request-encounter-uuid',
     location: { uuid: 'location-uuid', display: 'Consulta externa' },
@@ -57,7 +62,11 @@ const order: InterconsultaOrder = {
 };
 
 function fetchResponse<T>(data: T, status = 200): FetchResponse<T> {
-  return { data, ok: status >= 200 && status < 300, status } as FetchResponse<T>;
+  return {
+    data,
+    ok: status >= 200 && status < 300,
+    status,
+  } as FetchResponse<T>;
 }
 
 describe('interconsultation mutation contract', () => {
@@ -261,7 +270,11 @@ describe('interconsultation mutation contract', () => {
         '/ws/rest/v1/encounter',
         expect.objectContaining({
           body: expect.objectContaining({
-            orders: [expect.objectContaining({ orderType: 'interconsulta-order-type' })],
+            orders: [
+              expect.objectContaining({
+                orderType: 'interconsulta-order-type',
+              }),
+            ],
           }),
         }),
       );

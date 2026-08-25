@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-patient-notes-app",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "license": "MPL-2.0",
   "description": "Patient notes microfrontend for the OpenMRS SPA",
   "browser": "dist/openmrs-esm-patient-notes-app.js",

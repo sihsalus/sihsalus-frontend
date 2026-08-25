@@ -18,6 +18,10 @@ recording vitals and biometrics, and a header with the most recent values.
 - Values outside configured clinical ranges remain recordable after explicit
   confirmation; failure to load ranges is visible and never silently presented
   as validated.
+- For patients under five, the custom form shows a temporary WHO
+  weight-for-age +3 SD data-quality warning for extreme weights. It asks the
+  user to verify the unit, decimal point, and measurement without diagnosing
+  overweight or blocking a verified value.
 
 ## Offline contract
 
@@ -67,3 +71,6 @@ to hide a failed item.
 - The Form Engine path keeps its own `patient-form` offline contract; the
   queue-first contract above describes the custom vitals form used when
   `vitals.useFormEngine=false`.
+- Pediatric reference ranges still need to be regularized in
+  `sihsalus-content`; that coordinated follow-up is tracked in
+  `docs/clinical/vitals-triage-encounter-contracts.md`.

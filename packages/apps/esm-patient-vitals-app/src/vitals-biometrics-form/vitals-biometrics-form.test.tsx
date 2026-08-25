@@ -87,7 +87,7 @@ function mockPatientAgeInMonths(months: number) {
   birthDate.setHours(12, 0, 0, 0);
   birthDate.setMonth(birthDate.getMonth() - months);
   mockUsePatient.mockReturnValue({
-    patient: { birthDate: birthDate.toISOString().slice(0, 10), deceasedBoolean: false },
+    patient: { birthDate: birthDate.toISOString().slice(0, 10), deceasedBoolean: false, gender: 'male' },
   } as ReturnType<typeof usePatient>);
 }
 
@@ -366,6 +366,38 @@ describe('VitalsBiometricsForm', () => {
     } as FetchResponse<unknown>);
     await user.click(saveButton);
     await waitFor(() => expect(mockSavePatientVitals).toHaveBeenCalledTimes(1));
+  });
+
+  it('warns about an extreme infant weight without blocking the save', async () => {
+    const user = userEvent.setup();
+    mockPatientAgeInMonths(6);
+    mockSavePatientVitals.mockResolvedValue({
+      statusText: 'created',
+      status: 201,
+      data: [],
+    } as FetchResponse<unknown>);
+
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    const weightInput = screen.getByRole('spinbutton', { name: /weight/i });
+    await user.type(weightInput, '90');
+
+    expect(screen.getByText(/review the recorded weight/i)).toBeInTheDocument();
+    expect(screen.getByText(/verify that the unit is kg/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSavePatientVitals).toHaveBeenCalledTimes(1));
+    expect(mockSavePatientVitals).toHaveBeenCalledWith(
+      mockVitalsConfig.vitals.encounterTypeUuid,
+      mockVitalsConfig.concepts,
+      mockPatient.id,
+      expect.objectContaining({ weight: 90 }),
+      expect.any(AbortController),
+      'test-visit-location',
+      'test-visit-uuid',
+      expect.any(Object),
+    );
   });
 
   it("computes a patient's BMI from the given height and weight values", async () => {

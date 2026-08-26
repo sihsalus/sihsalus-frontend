@@ -261,19 +261,9 @@ export function hasRelatedPerson(relationship: RelationshipValue) {
 
 export function hasResponsibleRelationship(
   relationships: Array<RelationshipValue> | undefined,
-  minorResponsibleRelationshipTypes: Array<string> = [],
+  _minorResponsibleRelationshipTypes: Array<string> = [],
 ) {
-  return (
-    relationships?.some(
-      (relationship) =>
-        relationship.action !== 'DELETE' &&
-        hasRelatedPerson(relationship) &&
-        relationship.isCompanion &&
-        !!relationship.relationshipType &&
-        minorResponsibleRelationshipTypes.includes(relationship.relationshipType) &&
-        isAdultResponsibleRelationship(relationship, minorResponsibleRelationshipTypes),
-    ) ?? false
-  );
+  return relationships?.some((relationship) => isAdultResponsibleRelationship(relationship)) ?? false;
 }
 
 const fatherRelationshipTypeUuid = '8d91a210-c2cc-11de-8d13-0010c6dffd0f';
@@ -289,6 +279,10 @@ function normalizeRelationshipLabel(value?: string) {
 
 function isActiveCompleteRelationship(relationship: RelationshipValue) {
   return relationship.action !== 'DELETE' && !!relationship.relationshipType && hasRelatedPerson(relationship);
+}
+
+function isSelectedResponsibleRelationship(relationship: RelationshipValue) {
+  return isActiveCompleteRelationship(relationship) && relationship.isCompanion;
 }
 
 function hasMultipleRelationshipsOfType(
@@ -329,13 +323,9 @@ export function hasMultiplePrimaryResponsiblePersons(relationships: Array<Relati
 
 export function isAdultResponsibleRelationship(
   relationship: RelationshipValue,
-  minorResponsibleRelationshipTypes: Array<string> = [],
+  _minorResponsibleRelationshipTypes: Array<string> = [],
 ) {
-  if (
-    relationship.action === 'DELETE' ||
-    !relationship.relationshipType ||
-    !minorResponsibleRelationshipTypes.includes(relationship.relationshipType)
-  ) {
+  if (!isSelectedResponsibleRelationship(relationship)) {
     return false;
   }
 
@@ -360,14 +350,9 @@ export function isAdultResponsibleRelationship(
 
 export function isUnderageResponsibleRelationship(
   relationship: RelationshipValue,
-  minorResponsibleRelationshipTypes: Array<string> = [],
+  _minorResponsibleRelationshipTypes: Array<string> = [],
 ) {
-  if (
-    relationship.action === 'DELETE' ||
-    !relationship.isCompanion ||
-    !relationship.relationshipType ||
-    !minorResponsibleRelationshipTypes.includes(relationship.relationshipType)
-  ) {
+  if (!isSelectedResponsibleRelationship(relationship)) {
     return false;
   }
 
@@ -403,18 +388,14 @@ export function hasUnderageResponsibleRelationship(
 
 export function hasResponsibleRelationshipWithUnknownAge(
   relationships: Array<RelationshipValue> | undefined,
-  minorResponsibleRelationshipTypes: Array<string> = [],
+  _minorResponsibleRelationshipTypes: Array<string> = [],
 ) {
   return (
     relationships?.some(
       (relationship) =>
-        relationship.action !== 'DELETE' &&
-        hasRelatedPerson(relationship) &&
-        relationship.isCompanion &&
-        !!relationship.relationshipType &&
-        minorResponsibleRelationshipTypes.includes(relationship.relationshipType) &&
-        !isAdultResponsibleRelationship(relationship, minorResponsibleRelationshipTypes) &&
-        !isUnderageResponsibleRelationship(relationship, minorResponsibleRelationshipTypes),
+        isSelectedResponsibleRelationship(relationship) &&
+        !isAdultResponsibleRelationship(relationship) &&
+        !isUnderageResponsibleRelationship(relationship),
     ) ?? false
   );
 }

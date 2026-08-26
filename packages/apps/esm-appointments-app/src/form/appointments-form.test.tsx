@@ -80,6 +80,13 @@ async function selectLocationAndService(
   await user.selectOptions(serviceSelect, serviceUuid);
 }
 
+async function enableResponsibleProvider(user: ReturnType<typeof userEvent.setup>) {
+  const providerSwitch = screen.getByRole('switch', { name: /responsible provider/i });
+  if (providerSwitch.getAttribute('aria-checked') !== 'true') {
+    await user.click(providerSwitch);
+  }
+}
+
 async function fillRequiredAppointmentFields(user: ReturnType<typeof userEvent.setup>, allDay = false) {
   const locationSelect = screen.getByRole('combobox', { name: /select a UPSS/i }) as HTMLSelectElement;
   if (!locationSelect.value) {
@@ -90,6 +97,7 @@ async function fillRequiredAppointmentFields(user: ReturnType<typeof userEvent.s
     ]);
   }
   await user.selectOptions(screen.getByRole('combobox', { name: /select the type of appointment/i }), ['Scheduled']);
+  await enableResponsibleProvider(user);
   await user.selectOptions(
     screen.getByRole('combobox', { name: /select a provider/i }),
     mockProviders.data[0].uuid,
@@ -571,6 +579,7 @@ describe('AppointmentForm', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: /select a UPSS/i }), firstLocation.uuid);
     await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), unroutedService.uuid);
     await user.selectOptions(screen.getByRole('combobox', { name: /select the type of appointment/i }), ['Scheduled']);
+    await enableResponsibleProvider(user);
     await user.selectOptions(
       screen.getByRole('combobox', { name: /select a provider/i }),
       mockProviders.data[0].uuid,
@@ -1398,7 +1407,7 @@ describe('AppointmentForm', () => {
     expect(mockSaveAppointment).not.toHaveBeenCalled();
   });
 
-  it('leaves the optional responsible provider empty by default', async () => {
+  it('keeps responsible provider assignment disabled by default and toggles it without losing the form', async () => {
     const user = userEvent.setup();
     mockUseSession.mockReturnValue({
       ...mockSession.data,
@@ -1411,8 +1420,16 @@ describe('AppointmentForm', () => {
     await waitForLoadingToFinish();
     await selectLocationAndService(user);
 
-    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    const providerSwitch = screen.getByRole('switch', { name: /responsible provider/i });
+    expect(providerSwitch).toHaveAttribute('type', 'button');
+    expect(providerSwitch).toHaveAttribute('aria-checked', 'false');
+    expect(screen.queryByRole('combobox', { name: /select a provider/i })).not.toBeInTheDocument();
+
+    await user.click(providerSwitch);
+
+    expect(providerSwitch).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByRole('combobox', { name: /select a provider/i })).toHaveValue('');
+    expect(screen.getByRole('button', { name: /save and close/i })).toBeInTheDocument();
   });
 
   it('warns a provider when they select another responsible provider', async () => {
@@ -1429,6 +1446,7 @@ describe('AppointmentForm', () => {
     await selectLocationAndService(user);
 
     expect(screen.queryByText('Otro personal de salud seleccionado')).not.toBeInTheDocument();
+    await enableResponsibleProvider(user);
     await user.selectOptions(
       screen.getByRole('combobox', { name: /select a provider/i }),
       mockProviders.data[1].uuid,
@@ -1455,7 +1473,8 @@ describe('AppointmentForm', () => {
     await waitForLoadingToFinish();
     await selectLocationAndService(user);
 
-    expect(screen.getByRole('combobox', { name: /select a provider/i })).toHaveValue('');
+    expect(screen.getByRole('switch', { name: /responsible provider/i })).toHaveAttribute('aria-checked', 'false');
+    expect(screen.queryByRole('combobox', { name: /select a provider/i })).not.toBeInTheDocument();
   });
 
   it('filters appointment services using configured patient gender rules', async () => {
@@ -1513,6 +1532,7 @@ describe('AppointmentForm', () => {
 
     await waitForLoadingToFinish();
     await selectLocationAndService(user);
+    await enableResponsibleProvider(user);
 
     expect(screen.getByRole('option', { name: 'doctor - Amstrong Neil' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'doctor - James Cook' })).toBeInTheDocument();

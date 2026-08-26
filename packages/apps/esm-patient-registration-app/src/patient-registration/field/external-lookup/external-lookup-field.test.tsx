@@ -21,6 +21,7 @@ import { type FormValues } from '../../patient-registration.types';
 import { PatientRegistrationContext, type PatientRegistrationContextProps } from '../../patient-registration-context';
 import {
   peruDniPatientIdentifierTypeUuid,
+  peruTemporaryAffiliationPatientIdentifierTypeUuid,
   peruInsuranceAccreditationActiveConceptUuid,
   peruInsuranceAccreditationCheckedAtAttributeTypeUuid,
   peruInsuranceAccreditationPendingConceptUuid,
@@ -475,11 +476,42 @@ describe('SisLookupField', () => {
 
     expect(windowOpenSpy).toHaveBeenCalledWith(sisOnlineVerificationUrl, '_blank', 'noopener');
     await waitFor(() =>
-      expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ title: 'DNI copiado' })),
+      expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ title: 'Identificador copiado' })),
     );
     await expect(window.navigator.clipboard.readText()).resolves.toBe('12345678');
     expect(screen.getByRole('radio', { name: 'Vigente' })).toBeInTheDocument();
     expect(setFieldValue).not.toHaveBeenCalled();
+  });
+
+  it('accepts Temporary Affiliation for online SIS verification', async () => {
+    const user = userEvent.setup();
+    const values = buildFormValues();
+    values.identifiers = {
+      afiliacionTemporalSis: {
+        identifierTypeUuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
+        identifierName: 'Afiliación Temporal',
+        identifierValue: 'E-41267525',
+        initialValue: '',
+        preferred: false,
+        required: false,
+        selectedSource: undefined,
+      },
+    };
+    renderLookup(<SisLookupField />, values, {
+      identifierTypes: [
+        {
+          fieldName: 'afiliacionTemporalSis',
+          name: 'Afiliación Temporal',
+          uuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
+        },
+      ],
+    });
+
+    await user.click(screen.getByRole('button', { name: /verificar sis \(en línea\)/i }));
+
+    expect(windowOpenSpy).toHaveBeenCalledWith(sisOnlineVerificationUrl, '_blank', 'noopener');
+    await expect(window.navigator.clipboard.readText()).resolves.toBe('E-41267525');
+    expect(screen.getByText('Afiliación Temporal E-41267525')).toBeInTheDocument();
   });
 
   it('opens the SIS verification URL supplied by the OpenMRS frontend configuration', async () => {
@@ -553,6 +585,26 @@ describe('SisLookupField', () => {
     );
     expect(setFieldTouched).toHaveBeenCalledWith(`attributes.${peruInsuranceTypeAttributeTypeUuid}`, true, false);
     expect(screen.getByText('Verificación SIS aplicada al formulario')).toBeInTheDocument();
+  });
+
+  it('preserves an existing SIS affiliation code when applying a manual verification result', async () => {
+    const user = userEvent.setup();
+    const values = buildFormValues();
+    values.attributes = {
+      [peruInsuranceTypeAttributeTypeUuid]: peruInsuranceSisConceptUuid,
+      [peruInsuranceCodeAttributeTypeUuid]: 'SIS-EXISTENTE',
+    };
+    const { setFieldValue } = renderLookup(<SisLookupField />, values);
+
+    await user.click(screen.getByRole('button', { name: /registrar resultado de verificación/i }));
+    await user.click(screen.getByRole('radio', { name: 'Vigente' }));
+    await user.click(screen.getByRole('button', { name: /aplicar al formulario/i }));
+
+    expect(setFieldValue).toHaveBeenCalledWith(
+      `attributes.${peruInsuranceCodeAttributeTypeUuid}`,
+      'SIS-EXISTENTE',
+      false,
+    );
   });
 
   it('disables the online link, preselects pendiente, and applies the pending status when offline', async () => {

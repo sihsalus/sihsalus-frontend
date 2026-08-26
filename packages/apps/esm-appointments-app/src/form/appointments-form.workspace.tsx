@@ -43,7 +43,7 @@ import {
   validatePlainNumberInput,
 } from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useId, useState } from 'react';
 import { Controller, useController, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -380,6 +380,11 @@ const AppointmentsForm: React.FC<
   const [isAllDayAppointment, setIsAllDayAppointment] = useState(false);
   const [isSuccessful, setIsSuccessful] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProviderAssignmentEnabled, setIsProviderAssignmentEnabled] = useState(
+    context === 'editing' && Boolean(appointment?.providers?.some(({ response }) => response === 'ACCEPTED')),
+  );
+  const providerAssignmentLabelId = useId();
+  const providerAssignmentDescriptionId = useId();
 
   // TODO can we clean this all up to be more consistent between using Date and dayjs?
   const {
@@ -1550,40 +1555,67 @@ const AppointmentsForm: React.FC<
           )}
 
           <section className={styles.formGroup}>
-            <span className={styles.heading}>{t('responsibleProvider', 'Responsible provider')}</span>
-            <ResponsiveWrapper>
-              <Controller
-                name="provider"
-                control={control}
-                render={({ field: { onChange, value, onBlur } }) => (
-                  <Select
-                    disabled={!selectedService}
-                    id="provider"
-                    invalid={!!errors?.provider}
-                    invalidText={errors?.provider?.message}
-                    labelText={t('selectProviderOptional', 'Select a provider (optional)')}
-                    onChange={(event) => onChange(event.target.value)}
-                    onBlur={onBlur}
-                    value={value}
-                  >
-                    <SelectItem
-                      text={
-                        !selectedService
-                          ? t('chooseServiceFirst', 'Select a service first')
-                          : eligibleProviders.length === 0
-                            ? t('noProvidersForService', 'No providers are enabled for this service')
-                            : t('noProviderAssigned', 'No provider assigned')
-                      }
-                      value=""
-                    />
-                    {eligibleProviders.map((provider) => (
-                      <SelectItem key={provider.uuid} text={provider.display} value={provider.uuid} />
-                    ))}
-                  </Select>
-                )}
-              />
-            </ResponsiveWrapper>
-            {selectedService && !providers.isLoading && eligibleProviders.length === 0 ? (
+            <span className={styles.heading} id={providerAssignmentLabelId}>
+              {t('responsibleProvider', 'Responsible provider')}
+            </span>
+            <p className={styles.providerAssignmentDescription} id={providerAssignmentDescriptionId}>
+              {t('assignResponsibleProvider', 'Assign a responsible healthcare provider')}
+            </p>
+            <div className={styles.providerSwitchRow}>
+              <button
+                aria-checked={isProviderAssignmentEnabled}
+                aria-describedby={providerAssignmentDescriptionId}
+                aria-labelledby={providerAssignmentLabelId}
+                className={styles.providerSwitch}
+                onClick={() => {
+                  const nextValue = !isProviderAssignmentEnabled;
+                  setIsProviderAssignmentEnabled(nextValue);
+                  if (!nextValue) {
+                    setValue('provider', '', { shouldDirty: true, shouldValidate: isSubmitted });
+                  }
+                }}
+                role="switch"
+                type="button"
+              >
+                <span className={styles.providerSwitchThumb} />
+              </button>
+              <span>{isProviderAssignmentEnabled ? t('yes', 'Yes') : t('no', 'No')}</span>
+            </div>
+            {isProviderAssignmentEnabled ? (
+              <ResponsiveWrapper>
+                <Controller
+                  name="provider"
+                  control={control}
+                  render={({ field: { onChange, value, onBlur } }) => (
+                    <Select
+                      disabled={!selectedService}
+                      id="provider"
+                      invalid={!!errors?.provider}
+                      invalidText={errors?.provider?.message}
+                      labelText={t('selectProviderOptional', 'Select a provider (optional)')}
+                      onChange={(event) => onChange(event.target.value)}
+                      onBlur={onBlur}
+                      value={value}
+                    >
+                      <SelectItem
+                        text={
+                          !selectedService
+                            ? t('chooseServiceFirst', 'Select a service first')
+                            : eligibleProviders.length === 0
+                              ? t('noProvidersForService', 'No providers are enabled for this service')
+                              : t('noProviderAssigned', 'No provider assigned')
+                        }
+                        value=""
+                      />
+                      {eligibleProviders.map((provider) => (
+                        <SelectItem key={provider.uuid} text={provider.display} value={provider.uuid} />
+                      ))}
+                    </Select>
+                  )}
+                />
+              </ResponsiveWrapper>
+            ) : null}
+            {isProviderAssignmentEnabled && selectedService && !providers.isLoading && eligibleProviders.length === 0 ? (
               <InlineNotification
                 className={styles.providerNotice}
                 hideCloseButton
@@ -1596,7 +1628,7 @@ const AppointmentsForm: React.FC<
                 )}
               />
             ) : null}
-            {isDifferentProviderSelected ? (
+            {isProviderAssignmentEnabled && isDifferentProviderSelected ? (
               <InlineNotification
                 className={styles.providerNotice}
                 hideCloseButton

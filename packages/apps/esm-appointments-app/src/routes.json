@@ -205,7 +205,8 @@
     {
       "name": "patient-chart-appointments-window",
       "group": "patient-chart",
-      "width": "wider"
+      "width": "wider",
+      "showActionMenu": false
     },
     {
       "name": "patient-search-appointments-window",

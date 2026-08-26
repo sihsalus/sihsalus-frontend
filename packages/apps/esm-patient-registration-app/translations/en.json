@@ -164,6 +164,21 @@
   "copyResponsibleData": {
     "error": "Could not copy the responsible person's data",
     "noResponsible": "Select a responsible person before copying data",
+    "birthAddress": {
+      "button": "Copy residence as place of birth",
+      "success": "Place of birth copied from the patient's residence",
+      "empty": "Enter the patient's residence first"
+    },
+    "insurance": {
+      "button": "Copy insurance from responsible person",
+      "success": "Insurance copied from responsible person",
+      "empty": "The responsible person has no registered insurance"
+    },
+    "residenceContact": {
+      "button": "Copy residence and contact from responsible person",
+      "success": "Residence and contact copied from responsible person",
+      "empty": "The responsible person has no registered residence or contact details"
+    },
     "sourceLabel": "Source responsible person",
     "sourcePlaceholder": "Select a responsible person"
   },
@@ -216,6 +231,7 @@
   "errorFetchingOrderedFields": "Error occured fetching ordered fields for address hierarchy",
   "errorFetchingResults": "Error fetching results",
   "estimatedAgeInMonthsLabelText": "Estimated age in months",
+  "estimatedAgeInMonthsHelperText": "Optional; enter 0 to 11 additional months",
   "estimatedAgeInvalid": "Approximate age must be a number between 0 and 140",
   "estimatedAgeInYearsLabelText": "Estimated age in years",
   "estimatedAgeOverMaximum": "Estimated age cannot be more than 140 years",
@@ -399,7 +415,7 @@
   "responsibleExistingPersonMustBeAdult": "Responsible person must be an adult",
   "responsibleExistingPersonRequired": "Select an existing person",
   "responsibleFamilyName": "Family name",
-  "responsibleFamilyName2": "Second family name (optional)",
+  "responsibleFamilyName2": "Second family name",
   "responsibleGivenName": "First name",
   "responsibleMiddleName": "Middle name (optional)",
   "responsiblePersonAgeUnknown": "The responsible person must have a known age or date of birth",
@@ -431,6 +447,8 @@
   "sisLookupButton": "Query SIS",
   "sisLookupError": "Could not query SIS",
   "sisLookupInvalidDni": "DNI must have 8 digits",
+  "sisLookupInvalidTemporaryAffiliation": "Temporary Affiliation must use E- followed by 8 digits",
+  "sisLookupNoIdentifier": "Select DNI or Temporary Affiliation to query SIS",
   "sisLookupLoading": "Querying SIS",
   "sisLookupNoDniIdentifier": "Select DNI to query SIS",
   "sisLookupNoResults": "No SIS data found",
@@ -444,6 +462,8 @@
   "sisManualClose": "Close",
   "sisManualDniCopied": "DNI copied",
   "sisManualDniCopyFailed": "Could not copy the DNI; copy it manually",
+  "sisManualIdentifierCopied": "Identifier copied",
+  "sisManualIdentifierCopyFailed": "Could not copy the identifier; copy it manually",
   "sisManualEess": "Assigned SIS facility (optional)",
   "sisManualOffline": "Offline: the online SIS lookup cannot be opened. Record the result manually; it will remain as pending accreditation.",
   "sisManualProductLabel": "SIS product",

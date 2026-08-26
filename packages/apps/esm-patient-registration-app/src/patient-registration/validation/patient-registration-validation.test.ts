@@ -2,7 +2,11 @@ import { getConfig } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 
 import { type RegistrationConfig } from '../../config-schema';
-import { peruNationalityConceptUuid } from '../peru-registration-config';
+import {
+  peruDniPatientIdentifierTypeUuid,
+  peruNationalityConceptUuid,
+  peruTemporaryAffiliationPatientIdentifierTypeUuid,
+} from '../peru-registration-config';
 
 import { getValidationSchema, isMinorPatient } from './patient-registration-validation';
 
@@ -418,6 +422,44 @@ describe('Patient registration validation', () => {
     expect(validationError.inner).toContainEqual(
       expect.objectContaining({ path: 'identifiers.dni.identifierValue', message: 'identifierValueRequired' }),
     );
+  });
+
+  it('should accept temporary SIS affiliation instead of the default DNI', async () => {
+    const config = (await getConfig('@openmrs/esm-patient-registration-app')) as unknown as RegistrationConfig;
+    mockGetConfig.mockResolvedValueOnce({
+      ...config,
+      defaultPatientIdentifierTypes: [peruDniPatientIdentifierTypeUuid],
+    });
+    const identifierTypes = [
+      {
+        fieldName: 'afiliacionTemporalSis',
+        format: '^E-[0-9]{8}$',
+        isPrimary: false,
+        name: 'Afiliación temporal SIS',
+        required: false,
+        uuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
+      },
+    ];
+
+    const validationError = await validateFormValues(
+      {
+        ...validFormValues,
+        identifiers: {
+          afiliacionTemporalSis: {
+            required: true,
+            identifierValue: 'E-41267525',
+            identifierTypeUuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
+          },
+        },
+        attributes: {
+          [insuranceTypeAttributeUuid]: sisConceptUuid,
+          [insuranceCodeAttributeUuid]: '41267525',
+        },
+      },
+      identifierTypes,
+    );
+
+    expect(validationError).toBeFalsy();
   });
 
   it('should enforce the Peru DNI length even when the backend format is absent', async () => {

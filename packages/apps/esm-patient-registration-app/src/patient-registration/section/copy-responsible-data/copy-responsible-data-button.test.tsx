@@ -204,11 +204,17 @@ describe('CopyResponsibleDataButton', () => {
         expect.any(AbortSignal),
       ),
     );
-    expect(setFieldValue).toHaveBeenCalledWith('address.country', 'PERU', false);
-    expect(setFieldValue).toHaveBeenCalledWith('address.stateProvince', 'HUANCAVELICA', false);
-    expect(setFieldValue).toHaveBeenCalledWith('address.countyDistrict', 'CHURCAMPA', false);
-    expect(setFieldValue).toHaveBeenCalledWith('address.cityVillage', 'PAUCARBAMBA', false);
-    expect(setFieldValue).toHaveBeenCalledWith('address.address1', 'Jr. Principal 123', false);
+    expect(setFieldValue).toHaveBeenCalledWith(
+      'address',
+      expect.objectContaining({
+        country: 'PERU',
+        stateProvince: 'HUANCAVELICA',
+        countyDistrict: 'CHURCAMPA',
+        cityVillage: 'PAUCARBAMBA',
+        address1: 'Jr. Principal 123',
+      }),
+      false,
+    );
     expect(setFieldValue).toHaveBeenCalledWith(`attributes.${peruPhoneAttributeTypeUuid}`, '066123456', false);
     expect(setFieldValue).toHaveBeenCalledWith(`attributes.${peruMobilePhoneAttributeTypeUuid}`, '999888777', false);
     expect(setFieldValue).toHaveBeenCalledWith(
@@ -216,35 +222,60 @@ describe('CopyResponsibleDataButton', () => {
       'responsable@example.org',
       false,
     );
-    expect(setFieldTouched).toHaveBeenCalledWith('address.address1', true, false);
+    expect(setFieldTouched).toHaveBeenCalledWith('address.address1', false, false);
+    expect(setFieldTouched).toHaveBeenCalledWith('address.countyDistrict', false, false);
     expect(screen.getByText('Residencia y contacto copiados del responsable')).toBeInTheDocument();
   });
 
-  it('copies the responsible residence into the birthplace address when explicitly requested', async () => {
+  it("copies the patient's residence into the birthplace address without reading the responsible person", async () => {
     const user = userEvent.setup();
-    const { setFieldValue } = renderCopyButton('birthAddress');
+    const { setFieldValue } = renderCopyButton('birthAddress', {
+      ...baseValues,
+      address: {
+        country: 'PERU',
+        stateProvince: 'LORETO',
+        countyDistrict: 'NAPO',
+        cityVillage: 'SANTA CLOTILDE',
+        address1: 'Jr. Principal 123',
+      },
+      birthAddress: {
+        country: 'COLOMBIA',
+        address2: 'Valor anterior',
+      },
+    });
 
-    await user.click(
-      screen.getByRole('button', { name: /copiar residencia del responsable como lugar de nacimiento/i }),
-    );
+    await user.click(screen.getByRole('button', { name: /copiar residencia como lugar de nacimiento/i }));
 
-    await waitFor(() =>
-      expect(mockFetchPersonRegistrationCopyData).toHaveBeenCalledWith(
-        'responsible-person-uuid',
-        expect.any(AbortSignal),
-      ),
+    expect(mockFetchPersonRegistrationCopyData).not.toHaveBeenCalled();
+    expect(setFieldValue).toHaveBeenCalledWith(
+      'birthAddress',
+      expect.objectContaining({
+        country: 'PERU',
+        stateProvince: 'LORETO',
+        countyDistrict: 'NAPO',
+        cityVillage: 'SANTA CLOTILDE',
+        address1: 'Jr. Principal 123',
+        address2: '',
+      }),
+      false,
     );
-    expect(setFieldValue).toHaveBeenCalledWith('birthAddress.country', 'PERU', false);
-    expect(setFieldValue).toHaveBeenCalledWith('birthAddress.stateProvince', 'HUANCAVELICA', false);
-    expect(setFieldValue).toHaveBeenCalledWith('birthAddress.countyDistrict', 'CHURCAMPA', false);
-    expect(setFieldValue).toHaveBeenCalledWith('birthAddress.cityVillage', 'PAUCARBAMBA', false);
-    expect(setFieldValue).toHaveBeenCalledWith('birthAddress.address1', 'Jr. Principal 123', false);
     expect(setFieldValue).not.toHaveBeenCalledWith(
       `birthAddress.${birthAddressMarkerField}`,
       birthAddressMarker,
       false,
     );
-    expect(screen.getByText('Lugar de nacimiento copiado desde la residencia del responsable')).toBeInTheDocument();
+    expect(screen.getByText('Lugar de nacimiento copiado desde la residencia del paciente')).toBeInTheDocument();
+  });
+
+  it("asks for the patient's residence instead of a responsible person when the residence is empty", async () => {
+    const user = userEvent.setup();
+    renderCopyButton('birthAddress', { ...baseValues, relationships: [] });
+
+    await user.click(screen.getByRole('button', { name: /copiar residencia como lugar de nacimiento/i }));
+
+    expect(mockFetchPersonRegistrationCopyData).not.toHaveBeenCalled();
+    expect(screen.getByText('Primero registre la residencia del paciente')).toBeInTheDocument();
+    expect(screen.queryByText('Seleccione un responsable antes de copiar datos')).not.toBeInTheDocument();
   });
 
   it('copies insurance fields from the responsible person', async () => {
@@ -337,6 +368,52 @@ describe('CopyResponsibleDataButton', () => {
 
     expect(mockFetchPersonRegistrationCopyData).not.toHaveBeenCalled();
     expect(screen.getByText('Seleccione un responsable antes de copiar datos')).toBeInTheDocument();
+  });
+
+  it('copies local data from a newly registered primary responsible person before the patient is saved', async () => {
+    const user = userEvent.setup();
+    const { setFieldTouched, setFieldValue } = renderCopyButton('residenceContact', {
+      ...baseValues,
+      relationships: [
+        {
+          action: 'ADD',
+          clientId: 'pending-responsible',
+          isCompanion: true,
+          relatedPersonName: 'Ana Perez',
+          relatedPersonUuid: '',
+          relationshipType: 'unlisted-family-relationship/aIsToB',
+          newPerson: {
+            givenName: 'Ana',
+            middleName: '',
+            familyName: 'Perez',
+            familyName2: '',
+            gender: 'F',
+            estimatedAge: '35',
+            phone: '065123456',
+            mobilePhone: '987654321',
+            address: {
+              country: 'PERU',
+              stateProvince: 'LORETO',
+              address1: 'Calle Nueva 45',
+            },
+            relationshipType: 'unlisted-family-relationship/aIsToB',
+          },
+        },
+      ],
+    });
+
+    await user.click(screen.getByRole('button', { name: /copiar residencia y contacto del responsable/i }));
+
+    expect(mockFetchPersonRegistrationCopyData).not.toHaveBeenCalled();
+    expect(setFieldValue).toHaveBeenCalledWith(
+      'address',
+      expect.objectContaining({ country: 'PERU', stateProvince: 'LORETO', address1: 'Calle Nueva 45' }),
+      false,
+    );
+    expect(setFieldValue).toHaveBeenCalledWith(`attributes.${peruPhoneAttributeTypeUuid}`, '065123456', false);
+    expect(setFieldValue).toHaveBeenCalledWith(`attributes.${peruMobilePhoneAttributeTypeUuid}`, '987654321', false);
+    expect(setFieldTouched).toHaveBeenCalledWith(`attributes.${peruPhoneAttributeTypeUuid}`, true, false);
+    expect(screen.getByText('Residencia y contacto copiados del responsable')).toBeInTheDocument();
   });
 
   it('requires an explicit source when more than one responsible person is available', async () => {
@@ -494,5 +571,11 @@ describe('CopyResponsibleDataButton', () => {
       screen.queryByRole('button', { name: /copiar residencia y contacto del responsable/i }),
     ).not.toBeInTheDocument();
     expect(mockFetchPersonRegistrationCopyData).not.toHaveBeenCalled();
+  });
+
+  it("shows the patient's residence copy action for adult patients", () => {
+    renderCopyButton('birthAddress', { ...baseValues, birthdate: '1990-01-01' });
+
+    expect(screen.getByRole('button', { name: /copiar residencia como lugar de nacimiento/i })).toBeInTheDocument();
   });
 });

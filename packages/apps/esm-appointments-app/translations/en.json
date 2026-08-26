@@ -144,6 +144,7 @@
   "chooseLocation": "Choose a UPSS",
   "chooseLocationFirst": "Select a UPSS first",
   "chooseProvider": "Choose a provider",
+  "assignResponsibleProvider": "Assign a responsible healthcare provider",
   "noProviderAssigned": "No provider assigned",
   "selectProviderOptional": "Select a provider (optional)",
   "chooseService": "Select service",

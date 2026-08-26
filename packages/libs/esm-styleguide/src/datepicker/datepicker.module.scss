@@ -253,6 +253,10 @@
     display: inline-flex;
   }
 
+  &:not(:disabled) {
+    cursor: pointer;
+  }
+
   &:hover:not(:disabled) {
     background-color: theme.$layer-hover;
   }

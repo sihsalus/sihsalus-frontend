@@ -339,6 +339,8 @@ export interface WorkspaceGroupDefinition2 {
 export interface WorkspaceWindowDefinition2 {
   name: string;
   icon?: string;
+  /** Whether the workspace group's action menu should remain visible while this window is focused. */
+  showActionMenu?: boolean;
   /** Privilege or privileges required to display this window's action-menu icon. */
   privileges?: string | Array<string>;
   canMaximize?: boolean;

@@ -1,12 +1,12 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
 
 $openmrs-background-grey: #ededed;
 
 // Same required-field marker used by patient registration.
 .requiredLabel::after {
-  content: ' *';
+  content: " *";
   color: colors.$red-60;
 }
 
@@ -26,6 +26,7 @@ $openmrs-background-grey: #ededed;
   max-width: 100%;
   box-sizing: border-box;
   overflow-x: hidden;
+  overflow-anchor: none;
 
   :global(.cds--stack-vertical) {
     width: 100%;
@@ -84,8 +85,12 @@ $openmrs-background-grey: #ededed;
 
 .heading {
   color: colors.$gray-70;
-  @include type.type-style('heading-compact-02');
+  @include type.type-style("heading-compact-02");
   margin-bottom: layout.$spacing-03;
+}
+
+.providerNotice {
+  margin-top: layout.$spacing-03;
 }
 
 .inputContainer {

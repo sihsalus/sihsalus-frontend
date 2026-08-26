@@ -144,6 +144,8 @@
   "chooseLocation": "Choose a UPSS",
   "chooseLocationFirst": "Select a UPSS first",
   "chooseProvider": "Choose a provider",
+  "noProviderAssigned": "No provider assigned",
+  "selectProviderOptional": "Select a provider (optional)",
   "chooseService": "Select service",
   "chooseServiceFirst": "Select a service first",
   "clinicalChartCapabilityMissing": "Direct care requires access to the patient's chart. Request that access or use the queue when available.",

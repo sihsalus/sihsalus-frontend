@@ -92,7 +92,7 @@ function useCreateMedicationOrderFormSchema() {
           },
         )
         .passthrough(),
-      freeTextDosage: z.string().refine((value) => !!value, {
+      freeTextDosage: z.string().refine((value) => value.trim().length > 0, {
         message: t('freeDosageErrorMessage', 'Add free dosage note'),
       }),
       dosage: z
@@ -135,7 +135,7 @@ function useCreateMedicationOrderFormSchema() {
           message: t('durationUnitRequiredErrorMessage', 'Duration unit is required'),
         }),
       indication: requireIndication
-        ? z.string().refine((value) => value !== '', {
+        ? z.string().refine((value) => value.trim().length > 0, {
             message: t('indicationErrorMessage', 'Indication is required'),
           })
         : z.string().nullish(),

@@ -748,6 +748,7 @@ export function DrugOrderForm({
                           <RequiredFieldLabel label={t('duration', 'Duration')} required={requireOutpatientQuantity} />
                         }
                         min={1}
+                        required={requireOutpatientQuantity}
                       />
                     )}
                   </InputWrapper>
@@ -869,6 +870,7 @@ export function DrugOrderForm({
                         }
                         max={99}
                         min={0}
+                        required={requireOutpatientQuantity}
                       />
                     )}
                   </InputWrapper>
@@ -939,6 +941,7 @@ interface CustomNumberInputProps {
   max?: number;
   min?: number;
   integer?: boolean;
+  required?: boolean;
   inputProps?: Partial<ComponentProps<typeof TextInput>>;
 }
 
@@ -951,6 +954,7 @@ const CustomNumberInput = ({
   max,
   min = 0,
   integer = true,
+  required = false,
   ...inputProps
 }: CustomNumberInputProps) => {
   const { t } = useTranslation();
@@ -967,6 +971,7 @@ const CustomNumberInput = ({
 
   const {
     field: { onBlur, onChange, value, ref },
+    fieldState: { error },
   } = useController<MedicationOrderFormData>({ name, control });
 
   const handleChange = useCallback(
@@ -1030,6 +1035,9 @@ const CustomNumberInput = ({
           id={name}
           labelText=""
           aria-labelledby={`${name}-label`}
+          aria-required={required || undefined}
+          invalid={Boolean(error?.message)}
+          invalidText={error?.message}
           {...inputProps}
         />
         <IconButton onClick={increment} label={t('increment', 'Increment')} size={responsiveSize}>

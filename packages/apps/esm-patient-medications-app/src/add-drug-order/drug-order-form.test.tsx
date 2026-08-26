@@ -1,4 +1,4 @@
-import { getDefaultsFromConfigSchema, useConfig, useSession } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -14,6 +14,7 @@ vi.mock('@openmrs/esm-framework', async () => {
 
   return {
     ...actual,
+    useLayoutType: vi.fn(() => 'desktop'),
     OpenmrsDatePicker: React.forwardRef(
       (props: Record<string, unknown>, ref: import('react').ForwardedRef<HTMLSpanElement>) =>
         React.createElement('span', { ref }, props.labelText as import('react').ReactNode),
@@ -22,6 +23,7 @@ vi.mock('@openmrs/esm-framework', async () => {
 });
 
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockUseLayoutType = vi.mocked(useLayoutType);
 const mockUseSession = vi.mocked(useSession);
 const defaultConfig = getDefaultsFromConfigSchema(configSchema) as ConfigObject;
 
@@ -65,6 +67,7 @@ vi.mock('../api/api', async () => ({
 
 afterEach(() => {
   mockUseConfig.mockReturnValue(defaultConfig);
+  mockUseLayoutType.mockReturnValue('desktop');
   (useRequireOutpatientQuantity as vi.Mock).mockReturnValue({
     requireOutpatientQuantity: true,
     error: null,
@@ -779,6 +782,52 @@ describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
 
     expect(await screen.findByText('Treatment duration is required')).toBeInTheDocument();
     expect(screen.getByText('Duration unit is required')).toBeInTheDocument();
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('shows the required duration error on tablet', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    mockUseLayoutType.mockReturnValue('tablet');
+    renderDrugOrderForm(createNewOrderBasketItem(), onSave);
+
+    const durationInput = screen.getByRole('textbox', { name: /duration/i });
+    expect(durationInput).toHaveAttribute('aria-required', 'true');
+
+    await user.click(screen.getByRole('button', { name: /save order/i }));
+
+    expect(await screen.findByText('Treatment duration is required')).toBeInTheDocument();
+    expect(durationInput).toHaveAttribute('aria-invalid', 'true');
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('rejects an indication containing only whitespace', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    renderDrugOrderForm(createNewOrderBasketItem(), onSave);
+
+    await user.type(screen.getByRole('textbox', { name: /diagnosis or reason for prescription/i }), '   ');
+    await user.click(screen.getByRole('button', { name: /save order/i }));
+
+    expect(await screen.findByText('Indication is required')).toBeInTheDocument();
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('rejects legacy free-text dosage containing only whitespace', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    renderDrugOrderForm(
+      createNewOrderBasketItem({
+        isFreeTextDosage: true,
+        freeTextDosage: '',
+      }),
+      onSave,
+    );
+
+    await user.type(screen.getByPlaceholderText(/free-text dosage/i), '   ');
+    await user.click(screen.getByRole('button', { name: /save order/i }));
+
+    expect(await screen.findByText('Add free dosage note')).toBeInTheDocument();
     expect(onSave).not.toHaveBeenCalled();
   });
 

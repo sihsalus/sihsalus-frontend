@@ -8,7 +8,11 @@ recording vitals and biometrics, and a header with the most recent values.
 - A new record requires an active visit, its verified location, a configured
   encounter type, and at least one measurement. A note alone is not a record.
 - Every custom-form submission receives a client-generated encounter UUID and
-  measurement datetime before it can leave the browser.
+  provisional local measurement datetime before it can leave the browser.
+  After queueing, an online submission uses a fresh network-only visit read and
+  its HTTP `Date` header to atomically canonicalize only that datetime before
+  the first POST. A missing or contradictory authority leaves the item queued
+  and unattempted.
 - The session provider is attributed only when both provider and configured
   encounter-role UUIDs are available. The visit location always wins over the
   login location unless a workspace supplies an explicit clinical override.
@@ -26,10 +30,14 @@ recording vitals and biometrics, and a header with the most recent values.
 ## Offline contract
 
 The custom vitals form is queue-first. Pressing **Save and close** writes an
-immutable encounter intent to the authenticated user's IndexedDB queue before
-any REST request. The queue row contains a stable UUID, visit dependency,
-effective datetime, observations, provider attribution, and monotonic
-attempt/completion checkpoints.
+encounter intent with a provisional local datetime to the authenticated user's
+IndexedDB queue before any REST request. The queue row contains a stable UUID,
+visit dependency, observations, provider attribution, and monotonic
+attempt/completion checkpoints. Online, a fresh network-only visit read must
+confirm the visit identity and bounds and provide an HTTP `Date`; only the
+datetime may then be replaced atomically before the first attempt. If that
+authority is missing or contradictory, the original item remains queued and no
+encounter POST is sent.
 
 When the backend is reachable, the same queued intent is attempted immediately.
 An exact response removes it. An unavailable or ambiguous response leaves the
@@ -39,9 +47,12 @@ device and are not yet part of the clinical record. A later synchronization:
 1. waits for any queued visit;
 2. revalidates that the patient is alive using a fresh network-only request;
 3. reads the stable encounter UUID without cache fallback;
-4. accepts an existing encounter only when patient, type, location, visit,
+4. validates an unattempted offline capture against a fresh visit read and
+   server HTTP `Date`, preserving its exact original datetime rather than
+   redating it to the reconnection time;
+5. accepts an existing encounter only when patient, type, location, visit,
    datetime, observations, and providers match exactly; and
-5. never blindly replays an attempted write whose outcome remains ambiguous.
+6. never blindly replays an attempted write whose outcome remains ambiguous.
 
 Transient concept/reference-range revalidation no longer replaces an already
 interactive form with a skeleton, so entered values remain mounted during a
@@ -66,6 +77,9 @@ to hide a failed item.
   triage; coordinated DEV/QLTY validation must use a synthetic patient.
 - An ambiguous attempted write that cannot be matched exactly requires manual
   reconciliation; deleting its queue row is not reconciliation.
+- A device that captured vitals offline with an incorrect clock cannot be
+  silently corrected later. If the original datetime falls outside the fresh
+  server/visit bounds, the item remains queued and requires reconciliation.
 - Editing, voiding, retrospective measurement time entry, and durable autosave
   before submission are separate clinical workflows.
 - The Form Engine path keeps its own `patient-form` offline contract; the

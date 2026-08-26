@@ -351,7 +351,10 @@ export function useRequireOutpatientQuantity(): {
 
   const results = useMemo(
     () => ({
-      requireOutpatientQuantity: data?.data?.value && data.data.value === 'true',
+      // OpenMRS defaults this safety policy to true. Keep the form stable and
+      // fail closed while the setting loads or when the current clinical role
+      // cannot read global properties; only an explicit false relaxes it.
+      requireOutpatientQuantity: data?.data?.value !== 'false',
       error,
       isLoading,
     }),

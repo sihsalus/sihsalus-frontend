@@ -124,6 +124,33 @@ export const configSchema = {
     _description: 'Institutional origin name printed on referral sheets',
     _default: 'Hospital Santa Clotilde',
   },
+  outpatientDocumentFacilityAddress: {
+    _type: Type.String,
+    _description:
+      'Verified facility location printed on outpatient documents. Do not replace it with an unverified street address.',
+    _default: 'Distrito de Napo, provincia de Maynas, Loreto',
+  },
+  outpatientDocumentFacilityPhone: {
+    _type: Type.String,
+    _description: 'Official facility telephone printed on outpatient documents',
+    _default: '965 336 199',
+  },
+  outpatientDocumentFacilityLocationUuid: {
+    _type: Type.UUID,
+    _description:
+      'Location UUID whose verified legacy contact values may be used as a deployment-order fallback on outpatient documents',
+    _default: '35d2234e-129a-4c40-abb2-1ae0b72c1602',
+  },
+  outpatientDocumentFacilityPhoneAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Location attribute type UUID containing the institutional telephone for outpatient documents',
+    _default: '07c79e2a-b4e8-4100-9210-6f87bc9b77c9',
+  },
+  outpatientDocumentFacilityIpressCodeAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Location attribute type UUID containing the unique IPRESS code for outpatient documents',
+    _default: '5fd2b028-5b40-4c85-9a65-01a7ea2cde2b',
+  },
   referralDestinations: {
     _type: Type.Array,
     _description:
@@ -878,6 +905,11 @@ export interface ConfigObject {
   referralEncounterRoleUuid: string;
   referralOriginRenaesCode: string;
   referralOriginFacilityName: string;
+  outpatientDocumentFacilityAddress: string;
+  outpatientDocumentFacilityPhone: string;
+  outpatientDocumentFacilityLocationUuid: string;
+  outpatientDocumentFacilityPhoneAttributeTypeUuid: string;
+  outpatientDocumentFacilityIpressCodeAttributeTypeUuid: string;
   referralDestinations: Array<{
     renaesCode: string;
     name: string;

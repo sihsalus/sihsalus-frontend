@@ -12,7 +12,14 @@ const CONTENT_WIDTH = PAGE_WIDTH - PAGE_MARGIN * 2;
 const BODY_SIZE = 9;
 const LINE_HEIGHT = 13;
 
-export interface OutpatientVisitSummaryPdfLabels {
+interface OutpatientMedicationOrderPdfLabels {
+  medicationAsNeeded: string;
+  medicationAsNeededReasonMissing: string;
+  medicationIndication: string;
+  medicationNumberOfRefills: string;
+}
+
+export interface OutpatientVisitSummaryPdfLabels extends OutpatientMedicationOrderPdfLabels {
   title: string;
   patient: string;
   identifiers: string;
@@ -82,7 +89,7 @@ export interface OutpatientVisitSummaryPdfLabels {
   disclaimer: string;
 }
 
-export interface OutpatientPatientInstructionsPdfLabels {
+export interface OutpatientPatientInstructionsPdfLabels extends OutpatientMedicationOrderPdfLabels {
   title: string;
   patient: string;
   identifiers: string;
@@ -123,6 +130,8 @@ interface PdfState {
     line: import('pdf-lib').RGB;
   };
 }
+
+type FacilityContact = Pick<OutpatientVisitSummary, 'facilityAddress' | 'facilityPhone' | 'facilityIpressCode'>;
 
 export class OutpatientPdfUnsupportedCharacterError extends Error {
   constructor() {
@@ -270,11 +279,32 @@ function drawField(state: PdfState, label: string, value: string | null | undefi
   });
 }
 
-function drawOrderList(state: PdfState, title: string, orders: OutpatientSummaryOrder[]): void {
+function drawOrderList(
+  state: PdfState,
+  title: string,
+  orders: OutpatientSummaryOrder[],
+  medicationLabels?: OutpatientMedicationOrderPdfLabels,
+): void {
   if (!orders.length) return;
   drawSectionTitle(state, title);
   orders.forEach((order) => {
-    const details = [order.name, order.details, order.orderer].filter(Boolean).join(' — ');
+    const asNeededDetails =
+      order.asNeeded && medicationLabels
+        ? order.asNeededCondition
+          ? `${medicationLabels.medicationAsNeeded}: ${order.asNeededCondition}`
+          : medicationLabels.medicationAsNeededReasonMissing
+        : null;
+    const indicationDetails =
+      medicationLabels && order.orderReasonNonCoded
+        ? `${medicationLabels.medicationIndication}: ${order.orderReasonNonCoded}`
+        : null;
+    const refillDetails =
+      medicationLabels && typeof order.numRefills === 'number'
+        ? `${medicationLabels.medicationNumberOfRefills}: ${order.numRefills}`
+        : null;
+    const details = [order.name, order.details, indicationDetails, asNeededDetails, refillDetails, order.orderer]
+      .filter(Boolean)
+      .join(' — ');
     drawLines(state, wrapText(`• ${details}`, state.fonts.regular, BODY_SIZE, CONTENT_WIDTH), { indent: 4 });
   });
 }
@@ -312,7 +342,11 @@ function formatDate(value: string | null | undefined, locale: string): string {
   }).format(parsed);
 }
 
-async function createPdfState(title: string, facilityName: string): Promise<PdfState> {
+async function createPdfState(
+  title: string,
+  facilityName: string,
+  facilityContact?: FacilityContact,
+): Promise<PdfState> {
   const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
   const document = await PDFDocument.create();
   const fonts = {
@@ -345,7 +379,21 @@ async function createPdfState(title: string, facilityName: string): Promise<PdfS
     font: fonts.bold,
     color: state.colors.primary,
   });
-  state.y -= 22;
+  state.y -= 14;
+  const contactLine = [
+    facilityContact?.facilityPhone ? `Tel. ${facilityContact.facilityPhone}` : null,
+    facilityContact?.facilityIpressCode ? `IPRESS ${facilityContact.facilityIpressCode}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  [facilityContact?.facilityAddress, contactLine].filter(Boolean).forEach((detail) => {
+    drawLines(state, wrapText(detail as string, fonts.regular, 8, CONTENT_WIDTH), {
+      font: fonts.regular,
+      size: 8,
+      color: state.colors.muted,
+    });
+  });
+  state.y -= 8;
   drawLines(state, wrapText(title, fonts.bold, 16, CONTENT_WIDTH), {
     font: fonts.bold,
     size: 16,
@@ -429,7 +477,7 @@ export async function createOutpatientVisitSummaryPdf(
   labels: OutpatientVisitSummaryPdfLabels,
   locale: string,
 ): Promise<Uint8Array> {
-  const state = await createPdfState(labels.title, summary.facilityName);
+  const state = await createPdfState(labels.title, summary.facilityName, summary);
   const { document } = state;
 
   drawSectionTitle(state, labels.patient);
@@ -538,6 +586,7 @@ export async function createOutpatientVisitSummaryPdf(
     state,
     labels.medications,
     summary.orders.filter((order) => order.category === 'medication'),
+    labels,
   );
   drawOrderList(
     state,
@@ -561,7 +610,7 @@ export async function createOutpatientPatientInstructionsPdf(
   locale: string,
   scheduledAppointment?: OutpatientScheduledAppointment | null,
 ): Promise<Uint8Array> {
-  const state = await createPdfState(labels.title, summary.facilityName);
+  const state = await createPdfState(labels.title, summary.facilityName, summary);
   const printableScheduledAppointment = isUpcomingScheduledAppointment(scheduledAppointment)
     ? scheduledAppointment
     : null;
@@ -597,7 +646,7 @@ export async function createOutpatientPatientInstructionsPdf(
 
   const medicationOrders = getCanonicalMedicationOrders(summary);
   if (medicationOrders.length) {
-    drawOrderList(state, labels.medications, medicationOrders);
+    drawOrderList(state, labels.medications, medicationOrders, labels);
   } else if (!hasRecordedCanonicalMedicationOrders(summary) && hasText(summary.treatment.legacyPrescriptions)) {
     drawSectionTitle(state, labels.legacyPrescriptions);
     drawLines(

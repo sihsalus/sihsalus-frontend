@@ -2,6 +2,7 @@ import { showSnackbar, useConfig, usePatient, useSession } from '@openmrs/esm-fr
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useAmbulatoryVisitGuard } from '../hooks';
+import { useOutpatientFacilityIdentity } from './outpatient-facility.resource';
 import { fetchNextScheduledAppointment, isUpcomingScheduledAppointment } from './outpatient-next-appointment.resource';
 import { printPdfBytes } from './outpatient-pdf-print';
 import {
@@ -20,6 +21,9 @@ import {
 } from './outpatient-visit-summary-pdf';
 
 vi.mock('../hooks', () => ({ useAmbulatoryVisitGuard: vi.fn() }));
+vi.mock('./outpatient-facility.resource', () => ({
+  useOutpatientFacilityIdentity: vi.fn(),
+}));
 vi.mock('./outpatient-next-appointment.resource', () => ({
   fetchNextScheduledAppointment: vi.fn(),
   isUpcomingScheduledAppointment: vi.fn((appointment) => Boolean(appointment)),
@@ -51,6 +55,7 @@ const mockUseConfig = vi.mocked(useConfig);
 const mockUsePatient = vi.mocked(usePatient);
 const mockUseSession = vi.mocked(useSession);
 const mockUseAmbulatoryVisitGuard = vi.mocked(useAmbulatoryVisitGuard);
+const mockUseOutpatientFacilityIdentity = vi.mocked(useOutpatientFacilityIdentity);
 const mockFetchNextScheduledAppointment = vi.mocked(fetchNextScheduledAppointment);
 const mockIsUpcomingScheduledAppointment = vi.mocked(isUpcomingScheduledAppointment);
 const mockBuildSummary = vi.mocked(buildOutpatientVisitSummary);
@@ -96,11 +101,23 @@ describe('OutpatientVisitSummaryDownload', () => {
     mockUseConfig.mockReturnValue({
       appointmentVisitAttributeTypeUuid: 'appointment-link-type-uuid',
       visitTypes: { ambulatory: 'ambulatory-type' },
+      outpatientDocumentFacilityAddress: 'Distrito de prueba, provincia de prueba, Loreto',
+      outpatientDocumentFacilityPhone: '900 000 000',
+      outpatientDocumentFacilityLocationUuid: 'hsc-location-uuid',
+      outpatientDocumentFacilityPhoneAttributeTypeUuid: 'phone-attribute-type-uuid',
+      outpatientDocumentFacilityIpressCodeAttributeTypeUuid: 'ipress-attribute-type-uuid',
+      referralOriginRenaesCode: '00000000',
       concepts: {},
     });
     mockUsePatient.mockReturnValue({ patient, isLoading: false, error: null });
     mockUseSession.mockReturnValue({
-      sessionLocation: { display: 'IPRESS Sintética' },
+      sessionLocation: { uuid: 'hsc-location-uuid', display: 'IPRESS Sintética' },
+    });
+    mockUseOutpatientFacilityIdentity.mockReturnValue({
+      facilityAddress: 'Dirección vigente desde Location',
+      facilityPhone: '911 111 111',
+      facilityIpressCode: '00001111',
+      isLoading: false,
     });
     mockUseAmbulatoryVisitGuard.mockReturnValue({
       verifiedAmbulatoryVisitUuid: 'visit-uuid',
@@ -146,8 +163,20 @@ describe('OutpatientVisitSummaryDownload', () => {
         expectedVisitUuid: 'visit-uuid',
         expectedVisitTypeUuid: 'ambulatory-type',
         facilityName: 'IPRESS Sintética',
+        facilityAddress: 'Dirección vigente desde Location',
+        facilityPhone: '911 111 111',
+        facilityIpressCode: '00001111',
       }),
     );
+    expect(mockUseOutpatientFacilityIdentity).toHaveBeenCalledWith({
+      sessionLocationUuid: 'hsc-location-uuid',
+      fallbackLocationUuid: 'hsc-location-uuid',
+      phoneAttributeTypeUuid: 'phone-attribute-type-uuid',
+      ipressCodeAttributeTypeUuid: 'ipress-attribute-type-uuid',
+      fallbackAddress: 'Distrito de prueba, provincia de prueba, Loreto',
+      fallbackPhone: '900 000 000',
+      fallbackIpressCode: '00000000',
+    });
     expect(mockCreateVisitFileName).toHaveBeenCalledWith('visit-uuid', '2026-08-23T14:00:00.000-05:00');
     expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
   });
@@ -181,7 +210,13 @@ describe('OutpatientVisitSummaryDownload', () => {
       expect.objectContaining({
         indicatedFollowUpDate: 'Fecha de control indicada',
         medications: 'Medicamentos indicados',
-        signatureAndStamp: 'Firma y sello del profesional responsable',
+        medicationAsNeeded: 'Según necesidad (PRN)',
+        medicationAsNeededReasonMissing: 'Según necesidad (PRN; motivo no registrado)',
+        medicationIndication: 'Indicación',
+        medicationNumberOfRefills: 'Número de renovaciones',
+        followUpDateDisclaimer:
+          'Hoja informativa generada desde el registro clínico electrónico de esta atención ambulatoria. Debe ser revisada, firmada y sellada por el profesional responsable antes de entregarla al paciente. No sustituye una receta médica o electrónica válida para dispensación.',
+        signatureAndStamp: 'Firma, sello y N.° de colegiatura del profesional responsable',
         therapeuticIndications: 'Indicaciones terapéuticas',
       }),
       expect.any(String),
@@ -246,6 +281,44 @@ describe('OutpatientVisitSummaryDownload', () => {
 
     expect(mockFetchSource).not.toHaveBeenCalled();
     expect(mockCreateInstructionsPdf).not.toHaveBeenCalled();
+  });
+
+  it('waits for the active Location metadata before enabling document generation', () => {
+    mockUseOutpatientFacilityIdentity.mockReturnValue({
+      facilityAddress: 'Distrito de prueba, provincia de prueba, Loreto',
+      facilityPhone: '900 000 000',
+      facilityIpressCode: '00000000',
+      isLoading: true,
+    });
+    const { rerender } = render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" />);
+
+    const group = screen.getByRole('group', {
+      name: 'Documentos de la atención ambulatoria',
+    });
+    const printButton = screen.getByRole('button', {
+      name: 'Imprimir indicaciones',
+    });
+    const downloadButton = screen.getByRole('button', {
+      name: 'Descargar resumen de esta atención',
+    });
+    expect(group).toHaveAttribute('aria-busy', 'true');
+    expect(printButton).toBeDisabled();
+    expect(downloadButton).toBeDisabled();
+    fireEvent.click(printButton);
+    fireEvent.click(downloadButton);
+    expect(mockFetchSource).not.toHaveBeenCalled();
+
+    mockUseOutpatientFacilityIdentity.mockReturnValue({
+      facilityAddress: 'Dirección vigente desde Location',
+      facilityPhone: '911 111 111',
+      facilityIpressCode: '00001111',
+      isLoading: false,
+    });
+    rerender(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" />);
+
+    expect(group).toHaveAttribute('aria-busy', 'false');
+    expect(printButton).toBeEnabled();
+    expect(downloadButton).toBeEnabled();
   });
 
   it('serializes generation across the print and download actions', async () => {
@@ -480,6 +553,66 @@ describe('OutpatientVisitSummaryDownload', () => {
           startDatetime: '2026-08-25T15:00:00.000-05:00',
           visitType: { uuid: 'ambulatory-type' },
         }) as ReturnType<ReturnType<typeof useAmbulatoryVisitGuard>['requireAmbulatoryVisit']>,
+    });
+    rerender(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" />);
+    await act(async () => {
+      appointmentRequest.resolve(scheduledAppointment);
+      await appointmentRequest.promise;
+    });
+
+    expect(mockCreateInstructionsPdf).not.toHaveBeenCalled();
+    expect(mockPrintPdf).not.toHaveBeenCalled();
+    expect(mockDownloadPdf).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
+  });
+
+  it('does not print a stale PDF after the active session Location changes', async () => {
+    const user = userEvent.setup();
+    const appointmentRequest = createDeferred<typeof scheduledAppointment | null>();
+    mockFetchNextScheduledAppointment.mockReturnValueOnce(appointmentRequest.promise);
+    const { rerender } = render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" />);
+
+    await user.click(screen.getByRole('button', { name: 'Imprimir indicaciones' }));
+    await waitFor(() => expect(mockFetchNextScheduledAppointment).toHaveBeenCalledOnce());
+
+    mockUseSession.mockReturnValue({
+      sessionLocation: {
+        uuid: 'other-location-uuid',
+        display: 'Otra IPRESS sintética',
+      },
+    });
+    mockUseOutpatientFacilityIdentity.mockReturnValue({
+      facilityAddress: 'Otra dirección sintética',
+      facilityPhone: '922 222 222',
+      facilityIpressCode: '00002222',
+      isLoading: false,
+    });
+    rerender(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" />);
+    await act(async () => {
+      appointmentRequest.resolve(scheduledAppointment);
+      await appointmentRequest.promise;
+    });
+
+    expect(mockCreateInstructionsPdf).not.toHaveBeenCalled();
+    expect(mockPrintPdf).not.toHaveBeenCalled();
+    expect(mockDownloadPdf).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
+  });
+
+  it('does not print stale facility metadata after the active Location details refresh', async () => {
+    const user = userEvent.setup();
+    const appointmentRequest = createDeferred<typeof scheduledAppointment | null>();
+    mockFetchNextScheduledAppointment.mockReturnValueOnce(appointmentRequest.promise);
+    const { rerender } = render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" />);
+
+    await user.click(screen.getByRole('button', { name: 'Imprimir indicaciones' }));
+    await waitFor(() => expect(mockFetchNextScheduledAppointment).toHaveBeenCalledOnce());
+
+    mockUseOutpatientFacilityIdentity.mockReturnValue({
+      facilityAddress: 'Dirección actualizada desde Location',
+      facilityPhone: '933 333 333',
+      facilityIpressCode: '00003333',
+      isLoading: false,
     });
     rerender(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" />);
     await act(async () => {

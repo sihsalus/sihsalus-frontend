@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { useLayoutType, openmrsFetch } from '@openmrs/esm-framework';
+import { ExtensionSlot, openmrsFetch, useLayoutType } from '@openmrs/esm-framework';
 import { type Order } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +23,7 @@ import styles from './test-order.scss';
 interface TestOrderProps {
   testOrder: Order;
   hideInstructions?: boolean;
+  hideSupplementalPdf?: boolean;
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: generic value display mapping
@@ -84,7 +85,7 @@ const extractRangesFromFhirObs = (fhirObs: any) => {
   return result;
 };
 
-const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions }) => {
+const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions, hideSupplementalPdf }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const { concept, isLoading: isLoadingTestConcepts } = useOrderConceptByUuid(testOrder.concept.uuid);
@@ -160,6 +161,7 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions }) =>
           <span className={styles.detailLabel}>{t('reasonForDecline', 'Reason for decline')}:</span>
           <span className={styles.detailValue}>{testOrder.fulfillerComment || '--'}</span>
         </div>
+        {!hideSupplementalPdf && <ExtensionSlot name="lab-order-pdf-attachments-slot" state={{ order: testOrder }} />}
       </div>
     );
   }
@@ -219,6 +221,7 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions }) =>
           )}
         </DataTable>
       )}
+      {!hideSupplementalPdf && <ExtensionSlot name="lab-order-pdf-attachments-slot" state={{ order: testOrder }} />}
     </div>
   );
 };

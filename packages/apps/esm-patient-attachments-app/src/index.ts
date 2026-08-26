@@ -45,3 +45,8 @@ export const deleteAttachmentModal = getAsyncLifecycle(() => import('./attachmen
   featureName: 'delete-attachment-modal',
   moduleName,
 });
+
+export const labOrderPdfAttachments = getAsyncLifecycle(() => import('./lab-order-pdf/lab-order-pdf.component'), {
+  featureName: 'lab-order-pdf-attachments',
+  moduleName,
+});

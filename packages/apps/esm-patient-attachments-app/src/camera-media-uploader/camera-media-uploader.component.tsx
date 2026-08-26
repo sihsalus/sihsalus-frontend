@@ -1,6 +1,6 @@
 import { InlineNotification, ModalBody, ModalHeader, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import { type FetchResponse, type UploadedFile } from '@openmrs/esm-framework';
-import { useAllowedFileExtensions } from '@openmrs/esm-patient-common-lib';
+import { parseAllowedFileExtensions, useAllowedFileExtensions } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../constants';
@@ -20,8 +20,11 @@ interface CameraMediaUploaderModalProps {
   multipleFiles?: boolean;
   onCompletion?: () => void;
   saveFile: (file: UploadedFile) => Promise<FetchResponse<unknown>>;
+  /** Requires an explicit workflow allowlist backed by scoped server validation. */
+  skipConfiguredAllowlistLookup?: boolean;
   title?: string;
   initialView?: CameraMediaUploadView;
+  maxFileSizeMb?: number;
 }
 
 interface CameraMediaUploadTabsProps {
@@ -36,24 +39,39 @@ const CameraMediaUploaderModal: React.FC<CameraMediaUploaderModalProps> = ({
   multipleFiles,
   onCompletion,
   saveFile,
+  skipConfiguredAllowlistLookup,
   title,
   initialView,
+  maxFileSizeMb,
 }) => {
   const { t } = useTranslation(moduleName);
-  const { allowedFileExtensions, error: configurationError, isConfigured, isLoading } = useAllowedFileExtensions();
+  const hasExplicitAllowlist = allowedExtensions !== undefined;
+  const usesWorkflowAllowlistOnly = Boolean(skipConfiguredAllowlistLookup && hasExplicitAllowlist);
+  const {
+    allowedFileExtensions,
+    error: configurationError,
+    isConfigured,
+    isLoading,
+  } = useAllowedFileExtensions(!usesWorkflowAllowlistOnly);
   const [error, setError] = useState<Error | null>(null);
   const [filesToUpload, setFilesToUpload] = useState<Array<UploadedFile>>([]);
   const [uploadFilesToServer, setUploadFilesToServer] = useState(false);
-  const effectiveAllowedExtensions = useMemo(
-    () =>
-      allowedExtensions
-        ? allowedFileExtensions.filter((extension) => allowedExtensions.includes(extension))
-        : allowedFileExtensions,
-    [allowedExtensions, allowedFileExtensions],
-  );
+  const effectiveAllowedExtensions = useMemo(() => {
+    if (!hasExplicitAllowlist) {
+      return allowedFileExtensions;
+    }
+
+    const workflowAllowlist = parseAllowedFileExtensions(allowedExtensions?.join(',') ?? '');
+    return usesWorkflowAllowlistOnly
+      ? workflowAllowlist
+      : allowedFileExtensions.filter((extension) => workflowAllowlist.includes(extension));
+  }, [allowedExtensions, allowedFileExtensions, hasExplicitAllowlist, usesWorkflowAllowlistOnly]);
   const canCapturePhoto = effectiveAllowedExtensions.includes('png');
   const uploadConfigurationUnavailable =
-    !isLoading && (!isConfigured || effectiveAllowedExtensions.length === 0 || (cameraOnly && !canCapturePhoto));
+    !isLoading &&
+    ((!usesWorkflowAllowlistOnly && !isConfigured) ||
+      effectiveAllowedExtensions.length === 0 ||
+      (cameraOnly && !canCapturePhoto));
 
   const handleTakePhoto = useCallback(
     (file: string) => {
@@ -114,7 +132,7 @@ const CameraMediaUploaderModal: React.FC<CameraMediaUploaderModalProps> = ({
     );
   }
 
-  if (configurationError || uploadConfigurationUnavailable) {
+  if ((!usesWorkflowAllowlistOnly && configurationError) || uploadConfigurationUnavailable) {
     return (
       <div className={styles.cameraSection}>
         <ModalHeader closeModal={closeModal} title={title || t('addAttachment_title', 'Add attachment')} />
@@ -145,6 +163,7 @@ const CameraMediaUploaderModal: React.FC<CameraMediaUploaderModalProps> = ({
         filesToUpload,
         handleTakePhoto,
         initialView,
+        maxFileSizeMb,
         multipleFiles,
         onCompletion,
         saveFile,

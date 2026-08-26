@@ -124,6 +124,17 @@ export const configSchema = {
     _description: 'Institutional origin name printed on referral sheets',
     _default: 'Hospital Santa Clotilde',
   },
+  outpatientDocumentFacilityAddress: {
+    _type: Type.String,
+    _description:
+      'Verified facility location printed on outpatient documents. Do not replace it with an unverified street address.',
+    _default: 'Distrito de Napo, provincia de Maynas, Loreto',
+  },
+  outpatientDocumentFacilityPhone: {
+    _type: Type.String,
+    _description: 'Official facility telephone printed on outpatient documents',
+    _default: '965 336 199',
+  },
   referralDestinations: {
     _type: Type.Array,
     _description:
@@ -878,6 +889,8 @@ export interface ConfigObject {
   referralEncounterRoleUuid: string;
   referralOriginRenaesCode: string;
   referralOriginFacilityName: string;
+  outpatientDocumentFacilityAddress: string;
+  outpatientDocumentFacilityPhone: string;
   referralDestinations: Array<{
     renaesCode: string;
     name: string;

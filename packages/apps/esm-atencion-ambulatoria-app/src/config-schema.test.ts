@@ -30,6 +30,10 @@ describe('Atencion Ambulatoria configuration', () => {
 
   it('configures verified institutional referral destinations and transport choices', () => {
     expect(configSchema.referralOriginRenaesCode._default).toBe('00000066');
+    expect(configSchema.outpatientDocumentFacilityAddress._default).toBe(
+      'Distrito de Napo, provincia de Maynas, Loreto',
+    );
+    expect(configSchema.outpatientDocumentFacilityPhone._default).toBe('965 336 199');
     expect(configSchema.referralDestinations._default).toEqual([
       expect.objectContaining({ renaesCode: '00000001', name: expect.stringContaining('Hospital Iquitos') }),
       expect.objectContaining({ renaesCode: '00000003', name: expect.stringContaining('Hospital Regional de Loreto') }),

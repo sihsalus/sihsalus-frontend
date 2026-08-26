@@ -124,6 +124,8 @@ interface PdfState {
   };
 }
 
+type FacilityContact = Pick<OutpatientVisitSummary, 'facilityAddress' | 'facilityPhone' | 'facilityIpressCode'>;
+
 export class OutpatientPdfUnsupportedCharacterError extends Error {
   constructor() {
     super('The PDF contains text that cannot be represented by the embedded font.');
@@ -312,7 +314,11 @@ function formatDate(value: string | null | undefined, locale: string): string {
   }).format(parsed);
 }
 
-async function createPdfState(title: string, facilityName: string): Promise<PdfState> {
+async function createPdfState(
+  title: string,
+  facilityName: string,
+  facilityContact?: FacilityContact,
+): Promise<PdfState> {
   const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
   const document = await PDFDocument.create();
   const fonts = {
@@ -345,7 +351,21 @@ async function createPdfState(title: string, facilityName: string): Promise<PdfS
     font: fonts.bold,
     color: state.colors.primary,
   });
-  state.y -= 22;
+  state.y -= 14;
+  const contactLine = [
+    facilityContact?.facilityPhone ? `Tel. ${facilityContact.facilityPhone}` : null,
+    facilityContact?.facilityIpressCode ? `IPRESS ${facilityContact.facilityIpressCode}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  [facilityContact?.facilityAddress, contactLine].filter(Boolean).forEach((detail) => {
+    drawLines(state, wrapText(detail as string, fonts.regular, 8, CONTENT_WIDTH), {
+      font: fonts.regular,
+      size: 8,
+      color: state.colors.muted,
+    });
+  });
+  state.y -= 8;
   drawLines(state, wrapText(title, fonts.bold, 16, CONTENT_WIDTH), {
     font: fonts.bold,
     size: 16,
@@ -429,7 +449,7 @@ export async function createOutpatientVisitSummaryPdf(
   labels: OutpatientVisitSummaryPdfLabels,
   locale: string,
 ): Promise<Uint8Array> {
-  const state = await createPdfState(labels.title, summary.facilityName);
+  const state = await createPdfState(labels.title, summary.facilityName, summary);
   const { document } = state;
 
   drawSectionTitle(state, labels.patient);
@@ -561,7 +581,7 @@ export async function createOutpatientPatientInstructionsPdf(
   locale: string,
   scheduledAppointment?: OutpatientScheduledAppointment | null,
 ): Promise<Uint8Array> {
-  const state = await createPdfState(labels.title, summary.facilityName);
+  const state = await createPdfState(labels.title, summary.facilityName, summary);
   const printableScheduledAppointment = isUpcomingScheduledAppointment(scheduledAppointment)
     ? scheduledAppointment
     : null;

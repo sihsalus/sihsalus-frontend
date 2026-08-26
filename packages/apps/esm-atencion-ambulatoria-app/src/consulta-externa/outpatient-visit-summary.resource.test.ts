@@ -171,6 +171,20 @@ function build(overrides: Partial<Parameters<typeof buildOutpatientVisitSummary>
 }
 
 describe('outpatient visit summary contract', () => {
+  it('preserves verified facility contact details for printable documents', () => {
+    const summary = build({
+      facilityAddress: 'Distrito de prueba, provincia de prueba, Loreto',
+      facilityPhone: '900 000 000',
+      facilityIpressCode: '00000000',
+    });
+
+    expect(summary).toMatchObject({
+      facilityAddress: 'Distrito de prueba, provincia de prueba, Loreto',
+      facilityPhone: '900 000 000',
+      facilityIpressCode: '00000000',
+    });
+  });
+
   it('uses a balanced exact-visit representation with diagnoses and encounter orders', () => {
     const representation = getVisitSummaryRepresentationForTesting();
     expect(representation.split('(')).toHaveLength(representation.split(')').length);

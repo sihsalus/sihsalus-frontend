@@ -182,6 +182,30 @@ describe('outpatient visit summary PDF', () => {
     expect(document.getPageCount()).toBe(1);
   });
 
+  it('prints the configured facility location, telephone, and IPRESS code in the header', async () => {
+    const { PDFPage } = await import('pdf-lib');
+    const drawText = vi.spyOn(PDFPage.prototype, 'drawText');
+
+    try {
+      await createOutpatientPatientInstructionsPdf(
+        {
+          ...summary,
+          facilityAddress: 'Distrito de prueba, provincia de prueba, Loreto',
+          facilityPhone: '900 000 000',
+          facilityIpressCode: '00000000',
+        },
+        patientInstructionsLabels,
+        'es-PE',
+      );
+      const renderedText = drawText.mock.calls.map(([text]) => text).join('\n');
+
+      expect(renderedText).toContain('Distrito de prueba, provincia de prueba, Loreto');
+      expect(renderedText).toContain('Tel. 900 000 000 · IPRESS 00000000');
+    } finally {
+      drawText.mockRestore();
+    }
+  });
+
   it('omits an appointment that is no longer upcoming when the PDF is rendered', async () => {
     const { PDFPage } = await import('pdf-lib');
     const drawText = vi.spyOn(PDFPage.prototype, 'drawText');

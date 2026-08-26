@@ -288,6 +288,9 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         expectedVisitTypeUuid: config.visitTypes.ambulatory,
         patient: summaryPatient,
         facilityName: session?.sessionLocation?.display ?? t('healthFacility', 'Establecimiento de salud'),
+        facilityAddress: config.outpatientDocumentFacilityAddress,
+        facilityPhone: config.outpatientDocumentFacilityPhone,
+        facilityIpressCode: config.referralOriginRenaesCode,
         concepts: config.concepts,
       });
       return {
@@ -298,6 +301,9 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
     [
       config.appointmentVisitAttributeTypeUuid,
       config.concepts,
+      config.outpatientDocumentFacilityAddress,
+      config.outpatientDocumentFacilityPhone,
+      config.referralOriginRenaesCode,
       config.visitTypes.ambulatory,
       getErrorTitle,
       isPatientLoading,

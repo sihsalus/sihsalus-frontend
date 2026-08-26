@@ -96,6 +96,9 @@ describe('OutpatientVisitSummaryDownload', () => {
     mockUseConfig.mockReturnValue({
       appointmentVisitAttributeTypeUuid: 'appointment-link-type-uuid',
       visitTypes: { ambulatory: 'ambulatory-type' },
+      outpatientDocumentFacilityAddress: 'Distrito de prueba, provincia de prueba, Loreto',
+      outpatientDocumentFacilityPhone: '900 000 000',
+      referralOriginRenaesCode: '00000000',
       concepts: {},
     });
     mockUsePatient.mockReturnValue({ patient, isLoading: false, error: null });
@@ -146,6 +149,9 @@ describe('OutpatientVisitSummaryDownload', () => {
         expectedVisitUuid: 'visit-uuid',
         expectedVisitTypeUuid: 'ambulatory-type',
         facilityName: 'IPRESS Sintética',
+        facilityAddress: 'Distrito de prueba, provincia de prueba, Loreto',
+        facilityPhone: '900 000 000',
+        facilityIpressCode: '00000000',
       }),
     );
     expect(mockCreateVisitFileName).toHaveBeenCalledWith('visit-uuid', '2026-08-23T14:00:00.000-05:00');

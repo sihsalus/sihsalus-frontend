@@ -130,6 +130,9 @@ export interface OutpatientVisitSummary {
   visitUuid: string;
   patient: OutpatientSummaryPatient;
   facilityName: string;
+  facilityAddress?: string | null;
+  facilityPhone?: string | null;
+  facilityIpressCode?: string | null;
   visitType: string;
   visitStart: string;
   visitEnd: string | null;
@@ -189,6 +192,9 @@ export interface BuildOutpatientVisitSummaryOptions {
   expectedVisitTypeUuid: string;
   patient: OutpatientSummaryPatient;
   facilityName: string;
+  facilityAddress?: string | null;
+  facilityPhone?: string | null;
+  facilityIpressCode?: string | null;
   concepts: ConfigObject['concepts'];
 }
 
@@ -425,6 +431,9 @@ export function buildOutpatientVisitSummary({
   expectedVisitTypeUuid,
   patient,
   facilityName,
+  facilityAddress,
+  facilityPhone,
+  facilityIpressCode,
   concepts,
 }: BuildOutpatientVisitSummaryOptions): OutpatientVisitSummary {
   if (source.uuid?.toLowerCase() !== expectedVisitUuid.toLowerCase()) {
@@ -530,6 +539,9 @@ export function buildOutpatientVisitSummary({
     visitUuid: source.uuid,
     patient,
     facilityName,
+    facilityAddress: facilityAddress?.trim() || null,
+    facilityPhone: facilityPhone?.trim() || null,
+    facilityIpressCode: facilityIpressCode?.trim() || null,
     visitType: source.visitType.display ?? '',
     visitStart: source.startDatetime,
     visitEnd: source.stopDatetime ?? null,

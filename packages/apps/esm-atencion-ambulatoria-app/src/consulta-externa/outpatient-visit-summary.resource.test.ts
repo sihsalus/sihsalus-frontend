@@ -1,12 +1,16 @@
+import { openmrsFetch } from '@openmrs/esm-framework';
 import type { ConfigObject } from '../config-schema';
 import {
   buildOutpatientVisitSummary,
+  fetchOutpatientVisitSummarySource,
   getLinkedAppointmentUuids,
   getVisitSummaryRepresentationForTesting,
   type OutpatientSummaryPatient,
   OutpatientVisitSummaryContractError,
   type VisitSummarySource,
 } from './outpatient-visit-summary.resource';
+
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
 const patient: OutpatientSummaryPatient = {
   uuid: 'patient-uuid',
@@ -67,6 +71,7 @@ const source: VisitSummarySource = {
       encounterProviders: [
         {
           uuid: 'encounter-provider-uuid',
+          encounterRole: { uuid: 'clinician-role', display: 'Clinician' },
           provider: {
             uuid: 'provider-uuid',
             attributes: [
@@ -183,6 +188,7 @@ function build(overrides: Partial<Parameters<typeof buildOutpatientVisitSummary>
     patient,
     facilityName: 'IPRESS Sintética',
     professionalRegistrationProviderAttributeTypeUuid: 'professional-registration-type',
+    clinicianEncounterRoleUuid: 'clinician-role',
     responsibleEncounterTypeUuid: 'visit-note-type',
     responsibleFormUuid: 'visit-note-form',
     concepts,
@@ -191,6 +197,22 @@ function build(overrides: Partial<Parameters<typeof buildOutpatientVisitSummary>
 }
 
 describe('outpatient visit summary contract', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('propagates the server Date header from the verified visit read', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: { uuid: 'visit-uuid' },
+      headers: { get: (name: string) => (name.toLowerCase() === 'date' ? 'Tue, 26 Aug 2026 14:00:00 GMT' : null) },
+    } as unknown as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    await expect(fetchOutpatientVisitSummarySource('visit-uuid')).resolves.toMatchObject({
+      uuid: 'visit-uuid',
+      responseServerDatetime: '2026-08-26T14:00:00.000Z',
+    });
+  });
+
   it('preserves verified facility contact details for printable documents', () => {
     const summary = build({
       facilityAddress: 'Distrito de prueba, provincia de prueba, Loreto',
@@ -212,6 +234,7 @@ describe('outpatient visit summary contract', () => {
     expect(representation).toContain('attributes:(uuid,voided,value,attributeType:(uuid))');
     expect(representation).toContain('encounterType:(uuid),form:(uuid)');
     expect(representation).toContain('provider:(uuid,display,attributes:(');
+    expect(representation).toContain('encounterRole:(uuid,display)');
     expect(representation).toContain('conceptReferenceTerm:(code,conceptSource:(name,display))');
     expect(representation).toContain('diagnoses:(');
     expect(representation).toContain('orders:(');
@@ -268,6 +291,9 @@ describe('outpatient visit summary contract', () => {
     expect(summary.providers).toEqual(['Dra. Demo']);
     expect(summary).toMatchObject({
       clinicalEncounterDatetime: '2026-08-23T14:10:00.000-05:00',
+      clinicalRecordCompleteness: 'canonical-complete',
+      clinicalRecordIssues: [],
+      responsibleProviderUuid: 'provider-uuid',
       responsibleProvider: 'Dra. Demo',
       responsibleProfessionalRegistration: 'CMP-12345',
     });
@@ -477,7 +503,7 @@ describe('outpatient visit summary contract', () => {
     expect(emptySummary.hasClinicalContent).toBe(false);
   });
 
-  it('does not guess responsibility when the canonical encounter is ambiguous or lacks colegiatura', () => {
+  it('marks an ambiguous canonical encounter incomplete and keeps missing colegiatura manual', () => {
     const canonicalEncounter = source.encounters?.[0];
     if (!canonicalEncounter) throw new Error('The synthetic fixture requires an encounter.');
     const ambiguous = build({
@@ -503,12 +529,213 @@ describe('outpatient visit summary contract', () => {
 
     expect(ambiguous).toMatchObject({
       clinicalEncounterDatetime: null,
+      clinicalRecordCompleteness: 'canonical-incomplete',
+      clinicalRecordIssues: ['canonical-encounter-ambiguous'],
+      responsibleProviderUuid: null,
       responsibleProvider: null,
       responsibleProfessionalRegistration: null,
     });
     expect(withoutRegistration).toMatchObject({
+      clinicalRecordCompleteness: 'canonical-complete',
+      responsibleProviderUuid: 'provider-uuid',
       responsibleProvider: 'Dra. Demo',
       responsibleProfessionalRegistration: null,
+    });
+  });
+
+  it('marks a visit without the canonical encounter as legacy without inventing date or professional', () => {
+    const legacy = build({
+      source: {
+        ...source,
+        encounters: source.encounters?.map((encounter) => ({ ...encounter, form: { uuid: 'legacy-form' } })),
+      },
+    });
+
+    expect(legacy).toMatchObject({
+      clinicalEncounterDatetime: null,
+      clinicalRecordCompleteness: 'legacy',
+      clinicalRecordIssues: ['canonical-encounter-missing'],
+      responsibleProviderUuid: null,
+      responsibleProvider: null,
+    });
+  });
+
+  it('uses exactly one provider in the configured clinician role and ignores other roles', () => {
+    const canonicalEncounter = source.encounters?.[0];
+    const clinician = canonicalEncounter?.encounterProviders?.[0];
+    if (!canonicalEncounter || !clinician) throw new Error('The synthetic fixture requires a clinician.');
+    const summary = build({
+      source: {
+        ...source,
+        encounters: [
+          {
+            ...canonicalEncounter,
+            encounterProviders: [
+              clinician,
+              {
+                uuid: 'nurse-entry',
+                encounterRole: { uuid: 'nurse-role', display: 'Nurse' },
+                provider: {
+                  uuid: 'nurse-provider',
+                  person: { uuid: 'nurse-person', display: 'Enf. Apoyo' },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(summary).toMatchObject({
+      clinicalRecordCompleteness: 'canonical-complete',
+      responsibleProviderUuid: 'provider-uuid',
+      responsibleProvider: 'Dra. Demo',
+    });
+  });
+
+  it('does not let a provider from another encounter role sign as the responsible clinician', () => {
+    const canonicalEncounter = source.encounters?.[0];
+    const clinician = canonicalEncounter?.encounterProviders?.[0];
+    if (!canonicalEncounter || !clinician) throw new Error('The synthetic fixture requires a clinician.');
+    const summary = build({
+      source: {
+        ...source,
+        encounters: [
+          {
+            ...canonicalEncounter,
+            encounterProviders: [{ ...clinician, encounterRole: { uuid: 'nurse-role', display: 'Nurse' } }],
+          },
+        ],
+      },
+    });
+
+    expect(summary).toMatchObject({
+      clinicalRecordCompleteness: 'canonical-incomplete',
+      clinicalRecordIssues: ['responsible-provider-missing-or-ambiguous'],
+      responsibleProviderUuid: null,
+      responsibleProvider: null,
+    });
+  });
+
+  it.each([
+    ['zero', []],
+    [
+      'more than one',
+      [
+        {
+          uuid: 'second-clinician-entry',
+          encounterRole: { uuid: 'clinician-role', display: 'Clinician' },
+          provider: {
+            uuid: 'second-clinician-provider',
+            person: { uuid: 'second-clinician-person', display: 'Dr. Segundo' },
+          },
+        },
+      ],
+    ],
+  ] as const)('does not assign responsibility with %s active clinicians', (_label, additionalClinicians) => {
+    const canonicalEncounter = source.encounters?.[0];
+    const originalClinician = canonicalEncounter?.encounterProviders?.[0];
+    if (!canonicalEncounter || !originalClinician) throw new Error('The synthetic fixture requires a clinician.');
+    const encounterProviders = additionalClinicians.length === 0 ? [] : [originalClinician, ...additionalClinicians];
+    const summary = build({ source: { ...source, encounters: [{ ...canonicalEncounter, encounterProviders }] } });
+
+    expect(summary).toMatchObject({
+      clinicalRecordCompleteness: 'canonical-incomplete',
+      clinicalRecordIssues: ['responsible-provider-missing-or-ambiguous'],
+      responsibleProviderUuid: null,
+      responsibleProvider: null,
+    });
+  });
+
+  it('marks a canonical primary diagnosis without a structured CIE-10 mapping incomplete', () => {
+    const canonicalEncounter = source.encounters?.[0];
+    const primaryDiagnosis = canonicalEncounter?.diagnoses?.[0];
+    if (!canonicalEncounter || !primaryDiagnosis?.diagnosis?.coded) {
+      throw new Error('The synthetic fixture requires a coded primary diagnosis.');
+    }
+    const summary = build({
+      source: {
+        ...source,
+        encounters: [
+          {
+            ...canonicalEncounter,
+            diagnoses: [
+              {
+                ...primaryDiagnosis,
+                diagnosis: { coded: { ...primaryDiagnosis.diagnosis.coded, mappings: [] } },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(summary).toMatchObject({
+      clinicalEncounterDatetime: canonicalEncounter.encounterDatetime,
+      clinicalRecordCompleteness: 'canonical-incomplete',
+      clinicalRecordIssues: ['primary-diagnosis-cie10-mapping-missing'],
+      responsibleProvider: 'Dra. Demo',
+    });
+  });
+
+  it('accepts the structured CIE-10 source display when its source name is empty', () => {
+    const canonicalEncounter = source.encounters?.[0];
+    const primaryDiagnosis = canonicalEncounter?.diagnoses?.[0];
+    if (!canonicalEncounter || !primaryDiagnosis?.diagnosis?.coded) {
+      throw new Error('The synthetic fixture requires a coded primary diagnosis.');
+    }
+    const summary = build({
+      source: {
+        ...source,
+        encounters: [
+          {
+            ...canonicalEncounter,
+            diagnoses: [
+              {
+                ...primaryDiagnosis,
+                diagnosis: {
+                  coded: {
+                    ...primaryDiagnosis.diagnosis.coded,
+                    mappings: [
+                      {
+                        conceptReferenceTerm: {
+                          code: 'R51-MINSA',
+                          conceptSource: { name: '   ', display: 'CIE-10' },
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(summary).toMatchObject({ clinicalRecordCompleteness: 'canonical-complete' });
+    expect(summary.diagnoses[0].cie10Code).toBe('R51-MINSA');
+  });
+
+  it('marks more than one primary diagnosis in the canonical encounter incomplete', () => {
+    const canonicalEncounter = source.encounters?.[0];
+    const primaryDiagnosis = canonicalEncounter?.diagnoses?.[0];
+    if (!canonicalEncounter || !primaryDiagnosis) throw new Error('The synthetic fixture requires a diagnosis.');
+    const summary = build({
+      source: {
+        ...source,
+        encounters: [
+          {
+            ...canonicalEncounter,
+            diagnoses: [primaryDiagnosis, { ...primaryDiagnosis, uuid: 'second-primary-diagnosis' }],
+          },
+        ],
+      },
+    });
+
+    expect(summary).toMatchObject({
+      clinicalRecordCompleteness: 'canonical-incomplete',
+      clinicalRecordIssues: ['primary-diagnosis-missing-or-ambiguous'],
     });
   });
 

@@ -124,6 +124,8 @@ export interface VisitSummarySource {
     attributeType?: { uuid?: string };
   }>;
   encounters?: VisitSummaryEncounter[];
+  /** Fecha de la cabecera HTTP `Date` de la lectura REST; no proviene del navegador. */
+  responseServerDatetime?: string | null;
 }
 
 export interface OutpatientSummaryPatient {
@@ -149,6 +151,7 @@ export interface OutpatientSummaryOrder {
   name: string;
   details: string | null;
   orderer: string | null;
+  ordererUuid?: string | null;
   asNeeded: boolean;
   asNeededCondition: string | null;
   orderReasonNonCoded: string | null;
@@ -156,6 +159,13 @@ export interface OutpatientSummaryOrder {
   dateStopped?: string | null;
   autoExpireDate?: string | null;
 }
+
+export type OutpatientClinicalRecordIssue =
+  | 'canonical-encounter-missing'
+  | 'canonical-encounter-ambiguous'
+  | 'primary-diagnosis-missing-or-ambiguous'
+  | 'primary-diagnosis-cie10-mapping-missing'
+  | 'responsible-provider-missing-or-ambiguous';
 
 export interface OutpatientVisitSummary {
   visitUuid: string;
@@ -167,10 +177,14 @@ export interface OutpatientVisitSummary {
   visitType: string;
   visitStart: string;
   visitEnd: string | null;
+  sourceServerDatetime: string | null;
   location: string | null;
   clinicalEncounterDatetime: string | null;
+  responsibleProviderUuid: string | null;
   responsibleProvider: string | null;
   responsibleProfessionalRegistration: string | null;
+  clinicalRecordCompleteness: 'canonical-complete' | 'canonical-incomplete' | 'legacy';
+  clinicalRecordIssues: OutpatientClinicalRecordIssue[];
   /** @deprecated Use responsibleProvider. Kept for consumers that still render referral metadata. */
   providers: string[];
   vitals: {
@@ -231,6 +245,7 @@ export interface BuildOutpatientVisitSummaryOptions {
   facilityPhone?: string | null;
   facilityIpressCode?: string | null;
   professionalRegistrationProviderAttributeTypeUuid: string;
+  clinicianEncounterRoleUuid: string;
   responsibleEncounterTypeUuid: string;
   responsibleFormUuid: string;
   concepts: ConfigObject['concepts'];
@@ -247,7 +262,12 @@ export async function fetchOutpatientVisitSummarySource(visitUuid: string): Prom
   const response = await openmrsFetch<VisitSummarySource>(
     `${restBaseUrl}/visit/${visitUuid}?v=${VISIT_SUMMARY_REPRESENTATION}`,
   );
-  return response.data;
+  const serverDateHeader = response.headers?.get?.('date');
+  const serverDateMs = serverDateHeader ? Date.parse(serverDateHeader) : Number.NaN;
+  return {
+    ...response.data,
+    responseServerDatetime: Number.isNaN(serverDateMs) ? null : new Date(serverDateMs).toISOString(),
+  };
 }
 
 export function getLinkedAppointmentUuids(
@@ -375,6 +395,17 @@ function getDiagnosisType(
   return 'P';
 }
 
+function getCie10MappingCode(diagnosis: VisitSummaryDiagnosis): string | null {
+  const cie10Mapping = diagnosis.diagnosis?.coded?.mappings?.find((mapping) => {
+    const source =
+      mapping.conceptReferenceTerm?.conceptSource?.name?.trim() ||
+      mapping.conceptReferenceTerm?.conceptSource?.display?.trim() ||
+      '';
+    return /icd[-\s]?10|cie[-\s]?10/i.test(source) && mapping.conceptReferenceTerm?.code?.trim();
+  });
+  return cie10Mapping?.conceptReferenceTerm?.code?.trim() || null;
+}
+
 function mapDiagnoses(
   encounters: VisitSummaryEncounter[],
   concepts: ConfigObject['concepts'],
@@ -387,18 +418,11 @@ function mapDiagnoses(
       const coded = diagnosis.diagnosis?.coded;
       const display = coded?.display ?? diagnosis.diagnosis?.nonCoded ?? diagnosis.display;
       if (!display) return [];
-      const cie10Mapping = coded?.mappings?.find((mapping) => {
-        const source =
-          mapping.conceptReferenceTerm?.conceptSource?.name ??
-          mapping.conceptReferenceTerm?.conceptSource?.display ??
-          '';
-        return /icd[-\s]?10|cie[-\s]?10/i.test(source) && mapping.conceptReferenceTerm?.code?.trim();
-      });
       return [
         {
           uuid: diagnosis.uuid,
           display,
-          cie10Code: cie10Mapping?.conceptReferenceTerm?.code?.trim() || null,
+          cie10Code: getCie10MappingCode(diagnosis),
           rank: diagnosis.rank ?? null,
           type: getDiagnosisType(encounter, diagnosis, concepts),
         },
@@ -449,6 +473,7 @@ function mapOrders(encounters: VisitSummaryEncounter[]): OutpatientSummaryOrder[
         name,
         details: orderDetails(order),
         orderer: order.orderer?.person?.display ?? order.orderer?.display ?? null,
+        ordererUuid: order.orderer?.uuid ?? null,
         asNeeded: order.asNeeded === true,
         asNeededCondition: order.asNeeded === true ? order.asNeededCondition?.trim() || null : null,
         orderReasonNonCoded: order.orderReasonNonCoded?.trim() || null,
@@ -466,11 +491,18 @@ function mapOrders(encounters: VisitSummaryEncounter[]): OutpatientSummaryOrder[
 function resolveResponsibleClinicalEncounter(
   encounters: VisitSummaryEncounter[],
   professionalRegistrationProviderAttributeTypeUuid: string,
+  clinicianEncounterRoleUuid: string,
   responsibleEncounterTypeUuid: string,
   responsibleFormUuid: string,
 ): Pick<
   OutpatientVisitSummary,
-  'clinicalEncounterDatetime' | 'providers' | 'responsibleProfessionalRegistration' | 'responsibleProvider'
+  | 'clinicalEncounterDatetime'
+  | 'clinicalRecordCompleteness'
+  | 'clinicalRecordIssues'
+  | 'providers'
+  | 'responsibleProfessionalRegistration'
+  | 'responsibleProviderUuid'
+  | 'responsibleProvider'
 > {
   const canonicalEncounters = encounters.filter(
     (encounter) =>
@@ -480,6 +512,11 @@ function resolveResponsibleClinicalEncounter(
   if (canonicalEncounters.length !== 1) {
     return {
       clinicalEncounterDatetime: null,
+      clinicalRecordCompleteness: canonicalEncounters.length === 0 ? 'legacy' : 'canonical-incomplete',
+      clinicalRecordIssues: [
+        canonicalEncounters.length === 0 ? 'canonical-encounter-missing' : 'canonical-encounter-ambiguous',
+      ],
+      responsibleProviderUuid: null,
       responsibleProvider: null,
       responsibleProfessionalRegistration: null,
       providers: [],
@@ -487,27 +524,23 @@ function resolveResponsibleClinicalEncounter(
   }
 
   const encounter = canonicalEncounters[0];
+  const clinicalRecordIssues: OutpatientClinicalRecordIssue[] = [];
   const primaryDiagnoses = (encounter.diagnoses ?? []).filter((diagnosis) => !diagnosis.voided && diagnosis.rank === 1);
   if (primaryDiagnoses.length !== 1) {
-    return {
-      clinicalEncounterDatetime: encounter.encounterDatetime,
-      responsibleProvider: null,
-      responsibleProfessionalRegistration: null,
-      providers: [],
-    };
-  }
-  const activeProviders = (encounter.encounterProviders ?? []).filter((entry) => !entry.voided && entry.provider);
-  if (activeProviders.length !== 1) {
-    return {
-      clinicalEncounterDatetime: encounter.encounterDatetime,
-      responsibleProvider: null,
-      responsibleProfessionalRegistration: null,
-      providers: [],
-    };
+    clinicalRecordIssues.push('primary-diagnosis-missing-or-ambiguous');
+  } else if (!getCie10MappingCode(primaryDiagnoses[0])) {
+    clinicalRecordIssues.push('primary-diagnosis-cie10-mapping-missing');
   }
 
-  const provider = activeProviders[0].provider;
+  const expectedClinicianRoleUuid = clinicianEncounterRoleUuid.trim().toLowerCase();
+  const activeClinicianProviders = (encounter.encounterProviders ?? []).filter(
+    (entry) =>
+      !entry.voided && entry.provider && entry.encounterRole?.uuid?.toLowerCase() === expectedClinicianRoleUuid,
+  );
+  const provider = activeClinicianProviders.length === 1 ? activeClinicianProviders[0].provider : undefined;
   const name = provider?.person?.display?.trim() || provider?.display?.trim() || null;
+  if (!name) clinicalRecordIssues.push('responsible-provider-missing-or-ambiguous');
+
   const registrationAttribute = (provider?.attributes ?? []).find(
     (attribute) =>
       !attribute.voided &&
@@ -518,6 +551,9 @@ function resolveResponsibleClinicalEncounter(
 
   return {
     clinicalEncounterDatetime: encounter.encounterDatetime,
+    clinicalRecordCompleteness: clinicalRecordIssues.length ? 'canonical-incomplete' : 'canonical-complete',
+    clinicalRecordIssues,
+    responsibleProviderUuid: provider?.uuid ?? null,
     responsibleProvider: name,
     responsibleProfessionalRegistration: registration,
     providers: name ? [name] : [],
@@ -535,6 +571,7 @@ export function buildOutpatientVisitSummary({
   facilityPhone,
   facilityIpressCode,
   professionalRegistrationProviderAttributeTypeUuid,
+  clinicianEncounterRoleUuid,
   responsibleEncounterTypeUuid,
   responsibleFormUuid,
   concepts,
@@ -640,6 +677,7 @@ export function buildOutpatientVisitSummary({
   const responsibility = resolveResponsibleClinicalEncounter(
     encounters,
     professionalRegistrationProviderAttributeTypeUuid,
+    clinicianEncounterRoleUuid,
     responsibleEncounterTypeUuid,
     responsibleFormUuid,
   );
@@ -654,6 +692,7 @@ export function buildOutpatientVisitSummary({
     visitType: source.visitType.display ?? '',
     visitStart: source.startDatetime,
     visitEnd: source.stopDatetime ?? null,
+    sourceServerDatetime: source.responseServerDatetime ?? null,
     location:
       source.location?.display ??
       encounters.find((encounter) => encounter.location?.display)?.location?.display ??

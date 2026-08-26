@@ -105,6 +105,7 @@ const InstitutionalReferralDownload: React.FC<InstitutionalReferralDownloadProps
         patient: summaryPatient,
         facilityName: config.referralOriginFacilityName,
         professionalRegistrationProviderAttributeTypeUuid: config.professionalRegistrationProviderAttributeTypeUuid,
+        clinicianEncounterRoleUuid: config.clinicianEncounterRoleUuid,
         responsibleEncounterTypeUuid: config.encounterTypes.visitNote,
         responsibleFormUuid: config.formsList.visitNoteFormUuid,
         concepts: config.concepts,

@@ -109,6 +109,11 @@ export const configSchema = {
     _default: '193508ab-20c6-5291-9f23-0257335eaabd',
   },
 
+  clinicianEncounterRoleUuid: {
+    _type: Type.UUID,
+    _description: 'Encounter role assigned to the clinician responsible for the canonical outpatient encounter',
+    _default: '240b26f9-dd88-4172-823d-4a8bfeb7841f',
+  },
   referralEncounterRoleUuid: {
     _type: Type.UUID,
     _description: 'Encounter role assigned to the professional who records an institutional referral',
@@ -174,7 +179,7 @@ export const configSchema = {
       _type: Type.UUID,
       _description:
         'Provider attribute type con el número de colegiatura del prescriptor («Código de Colegio Profesional»). Si el profesional no lo tiene registrado, el espacio queda para completarse a mano.',
-      _default: 'ba8e90d1-3b9c-442e-b245-5b57ea34df64',
+      _default: '0da4d3db-4385-40de-a4b0-fd8d89c4ec10',
     },
   },
   referralDestinations: {
@@ -928,6 +933,7 @@ export interface ConfigObject {
     ambulatory: string;
   };
   appointmentVisitAttributeTypeUuid: string;
+  clinicianEncounterRoleUuid: string;
   referralEncounterRoleUuid: string;
   professionalRegistrationProviderAttributeTypeUuid: string;
   referralOriginRenaesCode: string;

@@ -41,11 +41,16 @@ export function OrderForm({ initialOrder, promptBeforeClosing, orderTypeUuid, re
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
-  const { orders, setOrders } = useOrderBasket<OrderBasketItem>(orderTypeUuid, prepOrderPostData);
+  const config = useConfig<ConfigObject>();
+  const { careSettingUuid, priorityConfigs } = config;
+  const prepareOrderPostData = useCallback(
+    (order: OrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
+      prepOrderPostData(order, patientUuid, encounterUuid, careSettingUuid),
+    [careSettingUuid],
+  );
+  const { orders, setOrders } = useOrderBasket<OrderBasketItem>(orderTypeUuid, prepareOrderPostData);
   const [showErrorNotification, setShowErrorNotification] = useState(false);
   const { orderType } = useOrderType(orderTypeUuid);
-  const config = useConfig<ConfigObject>();
-  const { priorityConfigs } = config;
 
   const OrderFormSchema = useMemo(
     () =>

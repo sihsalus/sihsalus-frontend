@@ -330,6 +330,7 @@ describe('RequestInterconsultaWorkspace acceptance contract', () => {
     expect(mockSetOrders).toHaveBeenCalledWith([
       expect.objectContaining({
         action: 'NEW',
+        careSetting: 'outpatient-care-setting',
         concept: {
           uuid: 'dental-service-uuid',
           display: 'Odontologia General',

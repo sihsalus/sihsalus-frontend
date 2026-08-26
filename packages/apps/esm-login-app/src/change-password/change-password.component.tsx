@@ -1,52 +1,48 @@
-import { Button, Form, InlineLoading, PasswordInput, Tile } from '@carbon/react';
+import { Button, Form, InlineLoading, Tile } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { showSnackbar } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { z } from 'zod';
 
 import Logo from '../logo.component';
 
 import { changeUserPassword } from './change-password.resource';
+import PasswordInput from './password-input.component';
 import styles from './change-password.scss';
+import {
+  type ChangePasswordFormData,
+  createChangePasswordFormSchema,
+  getPasswordRequirements,
+  INCORRECT_OLD_PASSWORD_ERROR_CODE,
+  normalizeChangePasswordError,
+} from './change-password.validation';
 
 const ChangePassword: React.FC = () => {
   const { t } = useTranslation();
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-
-  const oldPasswordValidation = z.string({
-    required_error: t('oldPasswordRequired', 'Old password is required'),
-  });
-
-  const newPasswordValidation = z.string({
-    required_error: t('newPasswordRequired', 'New password is required'),
-  });
-
-  const passwordConfirmationValidation = z.string({
-    required_error: t('passwordConfirmationRequired', 'Password confirmation is required'),
-  });
-
-  const changePasswordFormSchema = z
-    .object({
-      oldPassword: oldPasswordValidation,
-      newPassword: newPasswordValidation,
-      passwordConfirmation: passwordConfirmationValidation,
-    })
-    .refine((data) => data.newPassword === data.passwordConfirmation, {
-      message: t('passwordsDoNotMatch', 'Passwords do not match'),
-      path: ['passwordConfirmation'],
-    });
+  const changePasswordFormSchema = createChangePasswordFormSchema(t);
+  const passwordRequirements = getPasswordRequirements(t);
+  const passwordInputLabels = {
+    hidePasswordLabel: t('hidePassword', 'Hide password'),
+    showPasswordLabel: t('showPassword', 'Show password'),
+  };
 
   const {
     handleSubmit,
     control,
     formState: { errors },
-  } = useForm({
+  } = useForm<ChangePasswordFormData>({
     resolver: zodResolver(changePasswordFormSchema),
+    mode: 'all',
+    defaultValues: {
+      oldPassword: '',
+      newPassword: '',
+      passwordConfirmation: '',
+    },
   });
 
-  const onSubmit: SubmitHandler<z.infer<typeof changePasswordFormSchema>> = useCallback(
+  const onSubmit: SubmitHandler<ChangePasswordFormData> = useCallback(
     (data) => {
       setIsChangingPassword(true);
 
@@ -62,7 +58,16 @@ const ChangePassword: React.FC = () => {
         .catch((error) => {
           showSnackbar({
             kind: 'error',
-            subtitle: error?.message,
+            subtitle: getUserFacingErrorMessage(
+              normalizeChangePasswordError(error),
+              t('passwordChangeFailed', 'The password could not be changed. Please try again'),
+              {
+                codeMessages: {
+                  [INCORRECT_OLD_PASSWORD_ERROR_CODE]: t('oldPasswordIncorrect', 'The current password is incorrect'),
+                },
+                logContext: 'Changing password',
+              },
+            ),
             title: t('errorChangingPassword', 'Error changing password'),
           });
         })
@@ -85,8 +90,9 @@ const ChangePassword: React.FC = () => {
           <Controller
             name="oldPassword"
             control={control}
-            render={({ field: { onChange, value } }) => (
+            render={({ field: { onBlur, onChange, value } }) => (
               <PasswordInput
+                {...passwordInputLabels}
                 id="oldPassword"
                 invalid={!!errors?.oldPassword}
                 invalidText={
@@ -98,6 +104,7 @@ const ChangePassword: React.FC = () => {
                   ''
                 }
                 labelText={t('oldPassword', 'Old password')}
+                onBlur={onBlur}
                 onChange={onChange}
                 value={value}
               />
@@ -106,8 +113,10 @@ const ChangePassword: React.FC = () => {
           <Controller
             name="newPassword"
             control={control}
-            render={({ field: { onChange, value } }) => (
+            render={({ field: { onBlur, onChange, value } }) => (
               <PasswordInput
+                {...passwordInputLabels}
+                helperText={passwordRequirements}
                 id="newPassword"
                 invalid={!!errors?.newPassword}
                 invalidText={
@@ -119,6 +128,7 @@ const ChangePassword: React.FC = () => {
                   ''
                 }
                 labelText={t('newPassword', 'New password')}
+                onBlur={onBlur}
                 onChange={onChange}
                 value={value}
               />
@@ -127,8 +137,9 @@ const ChangePassword: React.FC = () => {
           <Controller
             name="passwordConfirmation"
             control={control}
-            render={({ field: { onChange, value } }) => (
+            render={({ field: { onBlur, onChange, value } }) => (
               <PasswordInput
+                {...passwordInputLabels}
                 id="passwordConfirmation"
                 invalid={!!errors?.passwordConfirmation}
                 invalidText={
@@ -140,6 +151,7 @@ const ChangePassword: React.FC = () => {
                   ''
                 }
                 labelText={t('confirmPassword', 'Confirm new password')}
+                onBlur={onBlur}
                 onChange={onChange}
                 value={value}
               />

@@ -49,7 +49,8 @@ describe('StickyNoteModal', () => {
     render(<StickyNoteModal {...defaultProps} />);
 
     const textarea = screen.getByRole('textbox');
-    await user.type(textarea, 'a'.repeat(301));
+    await user.click(textarea);
+    await user.paste('a'.repeat(301));
 
     expect(textarea).toHaveValue('a'.repeat(300));
     expect(screen.getByText('300/300')).toBeInTheDocument();

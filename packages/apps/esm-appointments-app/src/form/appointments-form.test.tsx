@@ -940,6 +940,7 @@ describe('AppointmentForm', () => {
     renderWithSwr(<AppointmentForm {...defaultProps} />);
     await waitForLoadingToFinish();
     await selectLocationAndService(user);
+    await enableResponsibleProvider(user);
     expect(screen.getByRole('option', { name: mockProviders.data[0].display })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: mockProviders.data[1].display })).not.toBeInTheDocument();
   });

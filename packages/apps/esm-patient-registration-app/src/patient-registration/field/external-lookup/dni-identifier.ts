@@ -27,21 +27,26 @@ function resolveIdentifierType(
  * separators instead.
  */
 export function normalizeIdentityIdentifier(
-  value: string,
+  value: string | null | undefined,
   identifierTypeUuid?: string,
   identifierName?: string,
   identifierType?: PatientIdentifierType,
 ) {
+  const normalizedInput = value?.trim() ?? '';
+
   const rule = getPeruIdentifierRule(
     identifierType ?? (identifierTypeUuid ? { uuid: identifierTypeUuid, name: identifierName ?? '' } : null),
     identifierTypeUuid ? { identifierTypeUuid, identifierName: identifierName ?? '' } : null,
   );
 
   if (rule) {
-    return rule.sanitize(value.trim());
+    return rule.sanitize(normalizedInput);
   }
 
-  return normalizeDocumentNumber(value, getDocumentTypeDefinitionByIdentifierType(identifierTypeUuid));
+  return normalizeDocumentNumber(
+    normalizedInput,
+    getDocumentTypeDefinitionByIdentifierType(identifierTypeUuid),
+  );
 }
 
 export function isValidIdentityIdentifier(

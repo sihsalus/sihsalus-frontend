@@ -30,6 +30,11 @@ export interface OutpatientVisitSummaryPdfLabels extends OutpatientMedicationOrd
   visitType: string;
   location: string;
   professional: string;
+  responsibleProfessionalMissing: string;
+  professionalRegistration: string;
+  professionalRegistrationMissing: string;
+  clinicalEncounterDateMissing: string;
+  incompleteClinicalRecordWarning: string;
   vitalSigns: string;
   bloodPressure: string;
   temperature: string;
@@ -84,6 +89,7 @@ export interface OutpatientVisitSummaryPdfLabels extends OutpatientMedicationOrd
   medications: string;
   laboratoryOrders: string;
   otherOrders: string;
+  signatureAndStamp: string;
   generatedAt: string;
   page: string;
   disclaimer: string;
@@ -97,6 +103,11 @@ export interface OutpatientPatientInstructionsPdfLabels extends OutpatientMedica
   visitDate: string;
   location: string;
   professional: string;
+  responsibleProfessionalMissing: string;
+  professionalRegistration: string;
+  professionalRegistrationMissing: string;
+  clinicalEncounterDateMissing: string;
+  incompleteClinicalRecordWarning: string;
   scheduledAppointment: string;
   scheduledAppointmentDate: string;
   scheduledAppointmentService: string;
@@ -148,8 +159,13 @@ export interface RecetaUnicaEmissionPrintData {
   issuedAt: string;
   /** Último día de vigencia. */
   validUntil: string;
-  /** Colegiatura registrada del prescriptor; null deja la línea manuscrita. */
-  collegiateNumber: string | null;
+}
+
+export class OutpatientRecetaUnicaClinicalContractError extends Error {
+  constructor() {
+    super('The standardized prescription requires a canonical clinician and a mapped primary CIE-10 diagnosis.');
+    this.name = 'OutpatientRecetaUnicaClinicalContractError';
+  }
 }
 
 interface PdfFonts {
@@ -318,6 +334,15 @@ function drawField(state: PdfState, label: string, value: string | null | undefi
   });
 }
 
+function drawIncompleteClinicalRecordWarning(state: PdfState, summary: OutpatientVisitSummary, warning: string): void {
+  if (summary.clinicalRecordCompleteness === 'canonical-complete') return;
+  drawLines(state, wrapText(warning, state.fonts.bold, BODY_SIZE, CONTENT_WIDTH), {
+    font: state.fonts.bold,
+    color: state.colors.muted,
+  });
+  state.y -= 4;
+}
+
 function drawOrderList(
   state: PdfState,
   title: string,
@@ -446,6 +471,7 @@ function drawPdfFooter(
   state: PdfState,
   labels: { disclaimer: string; generatedAt: string; page: string },
   locale: string,
+  generatedAt = new Date().toISOString(),
 ): void {
   ensureSpace(state, 42);
   state.y -= 10;
@@ -455,12 +481,7 @@ function drawPdfFooter(
   });
   drawLines(
     state,
-    wrapText(
-      `${labels.generatedAt}: ${formatDate(new Date().toISOString(), locale)}`,
-      state.fonts.regular,
-      7.5,
-      CONTENT_WIDTH,
-    ),
+    wrapText(`${labels.generatedAt}: ${formatDate(generatedAt, locale)}`, state.fonts.regular, 7.5, CONTENT_WIDTH),
     { size: 7.5, color: state.colors.muted },
   );
 
@@ -481,8 +502,12 @@ function hasText(value: string | null | undefined): boolean {
   return Boolean(value?.trim());
 }
 
-function getCanonicalMedicationOrders(summary: OutpatientVisitSummary): OutpatientSummaryOrder[] {
-  const generatedAt = Date.now();
+function getCanonicalMedicationOrders(
+  summary: OutpatientVisitSummary,
+  referenceDatetime = new Date().toISOString(),
+): OutpatientSummaryOrder[] {
+  const generatedAt = Date.parse(referenceDatetime);
+  if (Number.isNaN(generatedAt)) return [];
   return summary.orders.filter((order) => {
     if (order.category !== 'medication') return false;
     return ![order.dateStopped, order.autoExpireDate].some((value) => {
@@ -519,6 +544,8 @@ export async function createOutpatientVisitSummaryPdf(
   const state = await createPdfState(labels.title, summary.facilityName, summary);
   const { document } = state;
 
+  drawIncompleteClinicalRecordWarning(state, summary, labels.incompleteClinicalRecordWarning);
+
   drawSectionTitle(state, labels.patient);
   drawField(state, labels.patient, summary.patient.name);
   drawField(
@@ -530,10 +557,21 @@ export async function createOutpatientVisitSummaryPdf(
   drawField(state, labels.gender, summary.patient.gender);
 
   drawSectionTitle(state, labels.visit);
-  drawField(state, labels.visitDate, formatDate(summary.visitStart, locale));
+  drawField(
+    state,
+    labels.visitDate,
+    summary.clinicalEncounterDatetime
+      ? formatDate(summary.clinicalEncounterDatetime, locale)
+      : labels.clinicalEncounterDateMissing,
+  );
   drawField(state, labels.visitType, summary.visitType);
   drawField(state, labels.location, summary.location);
-  drawField(state, labels.professional, summary.providers.join(' · ') || null);
+  drawField(state, labels.professional, summary.responsibleProvider ?? labels.responsibleProfessionalMissing);
+  drawField(
+    state,
+    labels.professionalRegistration,
+    summary.responsibleProfessionalRegistration ?? labels.professionalRegistrationMissing,
+  );
 
   if (Object.values(summary.vitals).some(Boolean)) {
     drawSectionTitle(state, labels.vitalSigns);
@@ -638,6 +676,13 @@ export async function createOutpatientVisitSummaryPdf(
     summary.orders.filter((order) => order.category === 'other'),
   );
 
+  drawSignatureAndStampBlock(
+    state,
+    summary.responsibleProfessionalRegistration
+      ? labels.signatureAndStamp
+      : `${labels.signatureAndStamp} — ${labels.professionalRegistrationMissing}`,
+  );
+
   drawPdfFooter(state, labels, locale);
 
   return document.save();
@@ -654,6 +699,8 @@ export async function createOutpatientPatientInstructionsPdf(
     ? scheduledAppointment
     : null;
 
+  drawIncompleteClinicalRecordWarning(state, summary, labels.incompleteClinicalRecordWarning);
+
   drawSectionTitle(state, labels.patient);
   drawField(state, labels.patient, summary.patient.name);
   drawField(
@@ -665,9 +712,20 @@ export async function createOutpatientPatientInstructionsPdf(
   );
 
   drawSectionTitle(state, labels.careDetails);
-  drawField(state, labels.visitDate, formatDate(summary.visitStart, locale));
+  drawField(
+    state,
+    labels.visitDate,
+    summary.clinicalEncounterDatetime
+      ? formatDate(summary.clinicalEncounterDatetime, locale)
+      : labels.clinicalEncounterDateMissing,
+  );
   drawField(state, labels.location, summary.location);
-  drawField(state, labels.professional, summary.providers.join(' · ') || null);
+  drawField(state, labels.professional, summary.responsibleProvider ?? labels.responsibleProfessionalMissing);
+  drawField(
+    state,
+    labels.professionalRegistration,
+    summary.responsibleProfessionalRegistration ?? labels.professionalRegistrationMissing,
+  );
 
   if (printableScheduledAppointment) {
     drawSectionTitle(state, labels.scheduledAppointment);
@@ -694,7 +752,12 @@ export async function createOutpatientPatientInstructionsPdf(
     );
   }
 
-  drawSignatureAndStampBlock(state, labels.signatureAndStamp);
+  drawSignatureAndStampBlock(
+    state,
+    summary.responsibleProfessionalRegistration
+      ? labels.signatureAndStamp
+      : `${labels.signatureAndStamp} — ${labels.professionalRegistrationMissing}`,
+  );
 
   drawPdfFooter(
     state,
@@ -722,12 +785,20 @@ function drawRecetaUnicaHeaderFields(
   drawField(state, labels.validUntil, formatDate(receta.validUntil, locale));
 }
 
-function drawRecetaUnicaDiagnoses(state: PdfState, labels: OutpatientRecetaUnicaPdfLabels, summary: OutpatientVisitSummary): void {
+function drawRecetaUnicaDiagnoses(
+  state: PdfState,
+  labels: OutpatientRecetaUnicaPdfLabels,
+  summary: OutpatientVisitSummary,
+): void {
   if (!summary.diagnoses.length) return;
   drawSectionTitle(state, labels.diagnoses);
   summary.diagnoses.forEach((diagnosis) => {
     const code = diagnosis.cie10Code ? `${diagnosis.cie10Code} — ` : '';
-    const diagnosisType = { P: labels.presumptive, D: labels.definitive, R: labels.repeat }[diagnosis.type];
+    const diagnosisType = {
+      P: labels.presumptive,
+      D: labels.definitive,
+      R: labels.repeat,
+    }[diagnosis.type];
     drawLines(
       state,
       wrapText(`• ${code}${diagnosis.display} (${diagnosisType})`, state.fonts.regular, BODY_SIZE, CONTENT_WIDTH),
@@ -740,13 +811,12 @@ function drawRecetaUnicaPrescriber(
   state: PdfState,
   labels: OutpatientRecetaUnicaPdfLabels,
   summary: OutpatientVisitSummary,
-  receta: RecetaUnicaEmissionPrintData,
 ): void {
   drawSectionTitle(state, labels.professional);
-  drawField(state, labels.professional, summary.providers.join(' · ') || null);
+  drawField(state, labels.professional, summary.responsibleProvider);
   // Sin colegiatura registrada, la línea queda para el manuscrito: la firma y
   // el sello siguen siendo lo que valida el documento.
-  drawField(state, labels.collegiateNumber, receta.collegiateNumber ?? '________________');
+  drawField(state, labels.collegiateNumber, summary.responsibleProfessionalRegistration ?? '________________');
   drawSignatureAndStampBlock(state, labels.signatureAndStamp);
   drawLines(state, wrapText(labels.validOnlySignedLegend, state.fonts.bold, 8, CONTENT_WIDTH), {
     font: state.fonts.bold,
@@ -769,8 +839,11 @@ export async function createOutpatientRecetaUnicaPdf(
   locale: string,
   receta: RecetaUnicaEmissionPrintData,
 ): Promise<Uint8Array> {
+  if (!isOutpatientRecetaUnicaClinicallyReady(summary) || !hasOutpatientRecetaUnicaContent(summary, receta.issuedAt)) {
+    throw new OutpatientRecetaUnicaClinicalContractError();
+  }
   const state = await createPdfState(labels.title, summary.facilityName, summary);
-  const medicationOrders = getCanonicalMedicationOrders(summary);
+  const medicationOrders = getCanonicalMedicationOrders(summary, receta.issuedAt);
 
   // ── Cuerpo 1: ejemplar de farmacia ─────────────────────────────────────────
   drawRecetaUnicaHeaderFields(state, labels, receta, labels.pharmacyCopy, locale);
@@ -786,7 +859,7 @@ export async function createOutpatientRecetaUnicaPdf(
 
   drawRecetaUnicaDiagnoses(state, labels, summary);
   drawOrderList(state, labels.medications, medicationOrders, labels);
-  drawRecetaUnicaPrescriber(state, labels, summary, receta);
+  drawRecetaUnicaPrescriber(state, labels, summary);
 
   // ── Cuerpo 2: ejemplar del paciente ────────────────────────────────────────
   addPage(state);
@@ -794,7 +867,7 @@ export async function createOutpatientRecetaUnicaPdf(
 
   drawSectionTitle(state, labels.patient);
   drawField(state, labels.patient, summary.patient.name);
-  drawField(state, labels.visitDate, formatDate(summary.visitStart, locale));
+  drawField(state, labels.visitDate, formatDate(summary.clinicalEncounterDatetime, locale));
   drawField(state, labels.location, summary.location);
 
   drawOrderList(state, labels.medications, medicationOrders, labels);
@@ -803,16 +876,45 @@ export async function createOutpatientRecetaUnicaPdf(
     drawField(state, labels.indicatedFollowUpDate, summary.treatment.nextAppointment);
     drawField(state, labels.therapeuticIndications, summary.treatment.therapeuticIndications);
   }
-  drawRecetaUnicaPrescriber(state, labels, summary, receta);
+  drawRecetaUnicaPrescriber(state, labels, summary);
 
-  drawPdfFooter(state, { disclaimer: labels.disclaimer, generatedAt: labels.generatedAt, page: labels.page }, locale);
+  drawPdfFooter(
+    state,
+    {
+      disclaimer: labels.disclaimer,
+      generatedAt: labels.generatedAt,
+      page: labels.page,
+    },
+    locale,
+    receta.issuedAt,
+  );
 
   return state.document.save();
 }
 
-/** La receta exige al menos una orden canónica de medicación en la visita. */
-export function hasOutpatientRecetaUnicaContent(summary: OutpatientVisitSummary): boolean {
-  return getCanonicalMedicationOrders(summary).length > 0;
+/** La receta exige órdenes vigentes del mismo profesional canónico, verificadas contra hora de servidor. */
+export function hasOutpatientRecetaUnicaContent(
+  summary: OutpatientVisitSummary,
+  referenceServerDatetime = summary.sourceServerDatetime,
+): boolean {
+  if (!referenceServerDatetime || !summary.responsibleProviderUuid) return false;
+  const responsibleProviderUuid = summary.responsibleProviderUuid.toLowerCase();
+  const medicationOrders = getCanonicalMedicationOrders(summary, referenceServerDatetime);
+  return Boolean(
+    medicationOrders.length &&
+      medicationOrders.every((order) => order.ordererUuid?.toLowerCase() === responsibleProviderUuid),
+  );
+}
+
+/** The server correlativo must only be requested after this preflight passes. */
+export function isOutpatientRecetaUnicaClinicallyReady(summary: OutpatientVisitSummary): boolean {
+  return Boolean(
+    summary.clinicalRecordCompleteness === 'canonical-complete' &&
+      summary.clinicalEncounterDatetime &&
+      summary.responsibleProviderUuid &&
+      summary.responsibleProvider?.trim() &&
+      summary.diagnoses.some((diagnosis) => diagnosis.rank === 1 && diagnosis.cie10Code?.trim()),
+  );
 }
 
 export function createOutpatientRecetaUnicaFileName(recetaNumber: string, visitStart: string): string {

@@ -1,17 +1,19 @@
 import type { OutpatientScheduledAppointment } from './outpatient-next-appointment.resource';
 import type { OutpatientVisitSummary } from './outpatient-visit-summary.resource';
 import {
-  createOutpatientRecetaUnicaFileName,
-  createOutpatientRecetaUnicaPdf,
-  hasOutpatientRecetaUnicaContent,
-  type OutpatientRecetaUnicaPdfLabels,
   createOutpatientPatientInstructionsFileName,
   createOutpatientPatientInstructionsPdf,
+  createOutpatientRecetaUnicaFileName,
+  createOutpatientRecetaUnicaPdf,
   createOutpatientVisitSummaryFileName,
   createOutpatientVisitSummaryPdf,
   downloadOutpatientVisitSummaryPdf,
   hasOutpatientPatientInstructions,
+  hasOutpatientRecetaUnicaContent,
+  isOutpatientRecetaUnicaClinicallyReady,
   type OutpatientPatientInstructionsPdfLabels,
+  OutpatientRecetaUnicaClinicalContractError,
+  type OutpatientRecetaUnicaPdfLabels,
   type OutpatientVisitSummaryPdfLabels,
 } from './outpatient-visit-summary-pdf';
 
@@ -30,6 +32,11 @@ const patientInstructionsLabels: OutpatientPatientInstructionsPdfLabels = {
   visitDate: 'Fecha y hora de atención',
   location: 'Lugar de atención',
   professional: 'Personal de salud responsable',
+  responsibleProfessionalMissing: 'No registrado — completar manualmente',
+  professionalRegistration: 'N.° de colegiatura',
+  professionalRegistrationMissing: 'No registrado — completar manualmente',
+  clinicalEncounterDateMissing: 'No registrada — verificar historia clínica',
+  incompleteClinicalRecordWarning: 'ADVERTENCIA: registro clínico histórico o incompleto.',
   scheduledAppointment: 'Próxima cita programada',
   scheduledAppointmentDate: 'Fecha y hora',
   scheduledAppointmentService: 'Servicio',
@@ -75,7 +82,14 @@ const summary: OutpatientVisitSummary = {
   visitType: 'Atención Ambulatoria',
   visitStart: '2026-08-23T14:00:00.000-05:00',
   visitEnd: null,
+  sourceServerDatetime: '2026-08-26T14:00:00.000Z',
   location: 'Consulta Externa',
+  clinicalEncounterDatetime: '2026-08-23T14:10:00.000-05:00',
+  clinicalRecordCompleteness: 'canonical-complete',
+  clinicalRecordIssues: [],
+  responsibleProviderUuid: 'provider-uuid',
+  responsibleProvider: 'Dra. Demo',
+  responsibleProfessionalRegistration: 'CMP-12345',
   providers: ['Dra. Demo'],
   vitals: {
     bloodPressure: '110/70 mmHg',
@@ -146,6 +160,7 @@ const summary: OutpatientVisitSummary = {
       name: 'Paracetamol',
       details: '500 mg',
       orderer: 'Dra. Demo',
+      ordererUuid: 'provider-uuid',
       asNeeded: false,
       asNeededCondition: null,
       orderReasonNonCoded: null,
@@ -161,6 +176,78 @@ describe('outpatient visit summary PDF', () => {
     const bytes = await createOutpatientVisitSummaryPdf(summary, labels, 'es-PE');
     expect(new TextDecoder().decode(bytes.slice(0, 8))).toMatch(/^%PDF-/);
     expect(bytes.byteLength).toBeGreaterThan(1_000);
+  });
+
+  it('keeps the printable manual completion path when colegiatura is not yet recorded', async () => {
+    const incompleteResponsibility = {
+      ...summary,
+      responsibleProfessionalRegistration: null,
+    };
+
+    await expect(createOutpatientVisitSummaryPdf(incompleteResponsibility, labels, 'es-PE')).resolves.toBeInstanceOf(
+      Uint8Array,
+    );
+    await expect(
+      createOutpatientPatientInstructionsPdf(incompleteResponsibility, patientInstructionsLabels, 'es-PE'),
+    ).resolves.toBeInstanceOf(Uint8Array);
+  });
+
+  it('prints legacy summary and instructions with visible warnings and placeholders', async () => {
+    const legacySummary: OutpatientVisitSummary = {
+      ...summary,
+      clinicalEncounterDatetime: null,
+      clinicalRecordCompleteness: 'legacy',
+      clinicalRecordIssues: ['canonical-encounter-missing'],
+      responsibleProviderUuid: null,
+      responsibleProvider: null,
+      responsibleProfessionalRegistration: null,
+      providers: [],
+    };
+    const legacyLabelOverrides: Record<string, string> = {
+      incompleteClinicalRecordWarning: 'ADVERTENCIA RESUMEN HISTÓRICO',
+      clinicalEncounterDateMissing: 'FECHA CLÍNICA NO REGISTRADA',
+      responsibleProfessionalMissing: 'PROFESIONAL NO REGISTRADO',
+      professionalRegistrationMissing: 'CMP NO REGISTRADO',
+    };
+    const legacyLabels = new Proxy(
+      {},
+      {
+        get: (_target, property) => legacyLabelOverrides[String(property)] ?? String(property),
+      },
+    ) as OutpatientVisitSummaryPdfLabels;
+    const { PDFPage } = await import('pdf-lib');
+    const drawText = vi.spyOn(PDFPage.prototype, 'drawText');
+
+    try {
+      await expect(createOutpatientVisitSummaryPdf(legacySummary, legacyLabels, 'es-PE')).resolves.toBeInstanceOf(
+        Uint8Array,
+      );
+      await expect(
+        createOutpatientPatientInstructionsPdf(legacySummary, patientInstructionsLabels, 'es-PE'),
+      ).resolves.toBeInstanceOf(Uint8Array);
+      const renderedText = drawText.mock.calls.map(([text]) => text).join('\n');
+      expect(renderedText).toContain('ADVERTENCIA RESUMEN HISTÓRICO');
+      expect(renderedText).toContain('ADVERTENCIA: registro clínico histórico o incompleto.');
+      expect(renderedText).toContain('FECHA CLÍNICA NO REGISTRADA');
+      expect(renderedText).toContain('No registrada — verificar historia clínica');
+      expect(renderedText).toContain('PROFESIONAL NO REGISTRADO');
+      expect(renderedText).toContain('No registrado — completar manualmente');
+    } finally {
+      drawText.mockRestore();
+    }
+  });
+
+  it('renders the manual signature and stamp block in the full summary', async () => {
+    const labelsWithUnsupportedSignature = new Proxy(
+      {},
+      {
+        get: (_target, property) => (property === 'signatureAndStamp' ? 'Firma y sello manual 💊' : String(property)),
+      },
+    ) as OutpatientVisitSummaryPdfLabels;
+
+    await expect(
+      createOutpatientVisitSummaryPdf(summary, labelsWithUnsupportedSignature, 'es-PE'),
+    ).rejects.toHaveProperty('name', 'OutpatientPdfUnsupportedCharacterError');
   });
 
   it('paginates a single long clinical field instead of drawing it below the page', async () => {
@@ -606,7 +693,6 @@ describe('outpatient visit summary PDF', () => {
   });
 });
 
-
 describe('receta única estandarizada PDF', () => {
   const recetaLabels: OutpatientRecetaUnicaPdfLabels = {
     title: 'Receta Única Estandarizada',
@@ -644,7 +730,6 @@ describe('receta única estandarizada PDF', () => {
     number: 'RU-000123',
     issuedAt: '2026-08-26T14:00:00.000Z',
     validUntil: '2026-08-29T14:00:00.000Z',
-    collegiateNumber: 'CMP 12345',
   };
 
   const recetaSummary: OutpatientVisitSummary = {
@@ -656,6 +741,7 @@ describe('receta única estandarizada PDF', () => {
         name: 'Paracetamol 500 mg',
         details: '1 tableta · Oral · Cada 8 horas · 3 días · 9 Tableta(s)',
         orderer: 'Dra. Demo',
+        ordererUuid: 'provider-uuid',
         asNeeded: false,
         asNeededCondition: null,
         orderReasonNonCoded: null,
@@ -680,8 +766,11 @@ describe('receta única estandarizada PDF', () => {
       // Cuerpo de farmacia: diagnóstico CIE-10 y detalle con cantidad.
       expect(renderedText).toContain('R51');
       expect(renderedText).toContain('9 Tableta(s)');
-      expect(renderedText).toContain('CMP 12345');
-      expect(renderedText).toContain('Válida únicamente con la firma y el sello manuscritos del profesional prescriptor.');
+      expect(renderedText).toContain('Dra. Demo');
+      expect(renderedText).toContain('CMP-12345');
+      expect(renderedText).toContain(
+        'Válida únicamente con la firma y el sello manuscritos del profesional prescriptor.',
+      );
 
       const document = await PDFDocument.load(bytes);
       expect(document.getPageCount()).toBeGreaterThanOrEqual(2);
@@ -694,10 +783,12 @@ describe('receta única estandarizada PDF', () => {
     const { PDFPage } = await import('pdf-lib');
     const drawText = vi.spyOn(PDFPage.prototype, 'drawText');
     try {
-      await createOutpatientRecetaUnicaPdf(recetaSummary, recetaLabels, 'es-PE', {
-        ...emission,
-        collegiateNumber: null,
-      });
+      await createOutpatientRecetaUnicaPdf(
+        { ...recetaSummary, responsibleProfessionalRegistration: null },
+        recetaLabels,
+        'es-PE',
+        emission,
+      );
       const renderedText = drawText.mock.calls.map(([text]) => text).join('\n');
       expect(renderedText).toContain('________________');
     } finally {
@@ -710,6 +801,76 @@ describe('receta única estandarizada PDF', () => {
     expect(hasOutpatientRecetaUnicaContent({ ...recetaSummary, orders: [] })).toBe(false);
     expect(createOutpatientRecetaUnicaFileName('RU-000123', summary.visitStart)).toBe(
       'receta-unica-RU-000123-2026-08-23.pdf',
+    );
+  });
+
+  it('evalúa la vigencia con hora del servidor y no con el reloj del portátil', () => {
+    const expiringSummary: OutpatientVisitSummary = {
+      ...recetaSummary,
+      sourceServerDatetime: '2026-08-26T14:00:00.000Z',
+      orders: recetaSummary.orders.map((order) => ({
+        ...order,
+        autoExpireDate: '2026-08-26T15:00:00.000Z',
+      })),
+    };
+
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2099-01-01T00:00:00.000Z'));
+    try {
+      expect(hasOutpatientRecetaUnicaContent(expiringSummary)).toBe(true);
+      expect(hasOutpatientRecetaUnicaContent(expiringSummary, '2026-08-26T16:00:00.000Z')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('imprime en el pie la hora de emisión del servidor y no el reloj del portátil', async () => {
+    const { PDFPage } = await import('pdf-lib');
+    const drawText = vi.spyOn(PDFPage.prototype, 'drawText');
+
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2099-01-01T00:00:00.000Z'));
+    try {
+      await createOutpatientRecetaUnicaPdf(recetaSummary, recetaLabels, 'es-PE', emission);
+      const renderedText = drawText.mock.calls.map(([text]) => text).join('\n');
+
+      expect(renderedText).toMatch(/Generado:.*2026/);
+      expect(renderedText).not.toContain('2099');
+    } finally {
+      vi.useRealTimers();
+      drawText.mockRestore();
+    }
+  });
+
+  it('rechaza órdenes prescritas por un provider distinto del responsable canónico', async () => {
+    const mismatchedOrderer = {
+      ...recetaSummary,
+      orders: recetaSummary.orders.map((order) => ({
+        ...order,
+        ordererUuid: 'other-provider-uuid',
+      })),
+    };
+
+    expect(hasOutpatientRecetaUnicaContent(mismatchedOrderer)).toBe(false);
+    await expect(
+      createOutpatientRecetaUnicaPdf(mismatchedOrderer, recetaLabels, 'es-PE', emission),
+    ).rejects.toBeInstanceOf(OutpatientRecetaUnicaClinicalContractError);
+  });
+
+  it('rechaza una receta sin contrato clínico canónico antes de componer el PDF', async () => {
+    const incomplete = {
+      ...recetaSummary,
+      clinicalRecordCompleteness: 'canonical-incomplete' as const,
+      clinicalRecordIssues: ['primary-diagnosis-cie10-mapping-missing' as const],
+      diagnoses: recetaSummary.diagnoses.map((diagnosis) => ({
+        ...diagnosis,
+        cie10Code: null,
+      })),
+    };
+
+    expect(isOutpatientRecetaUnicaClinicallyReady(incomplete)).toBe(false);
+    await expect(createOutpatientRecetaUnicaPdf(incomplete, recetaLabels, 'es-PE', emission)).rejects.toBeInstanceOf(
+      OutpatientRecetaUnicaClinicalContractError,
     );
   });
 });

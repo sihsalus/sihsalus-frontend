@@ -70,6 +70,8 @@
   "primaryDiagnosis": "Diagnóstico principal",
   "primaryDiagnosisInputPlaceholder": "Elija un diagnóstico principal",
   "primaryDiagnosisRequired": "Elija al menos un diagnóstico principal",
+  "diagnosisCie10MappingRequired": "Cada diagnóstico debe tener un mapeo CIE-10 válido del catálogo",
+  "outpatientPrimaryDiagnosisExactlyOne": "Consulta Externa requiere exactamente un diagnóstico principal; registre los demás como secundarios",
   "primaryDiagnosisRequiredLabel": "Diagnóstico principal (Obligatorio)",
   "procedures": "Procedimientos",
   "proceduresPlaceholder": "Procedimientos realizados o solicitados",

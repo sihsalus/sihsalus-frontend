@@ -45,7 +45,7 @@ export type CanonicalVisitNoteResolution =
 
 const encounterPageSize = 100;
 const catalogConceptMappingsRepresentation =
-  "conceptMappings:(conceptReferenceTerm:(conceptSource:(name),code))";
+  "conceptMappings:(conceptReferenceTerm:(conceptSource:(name,display),code))";
 const canonicalEncounterUuidNamespace = uuidv5(
   "sihsalus:canonical-visit-note:v1",
   uuidv5.URL,
@@ -120,12 +120,14 @@ interface RestProviderAttribute {
     uuid?: string;
     display?: string;
   };
+  voided?: boolean;
 }
 
-interface RestProvider {
+export interface RestProvider {
   uuid?: string;
   display?: string;
   identifier?: string;
+  attributes?: Array<RestProviderAttribute>;
   person?: {
     uuid?: string;
     display?: string;
@@ -899,26 +901,35 @@ export function useVisitNoteClinicalContext(
   };
 }
 
-function getProviderAttributeValue(
+export function getProviderProfessionalRegistration(
   provider: RestProvider | undefined,
-  patterns: Array<RegExp>,
+  attributeTypeUuid?: string,
 ) {
-  const attributes = provider?.person?.attributes ?? [];
-  const matchingAttribute = attributes.find((attribute) => {
-    const label = `${attribute?.attributeType?.display ?? ""} ${attribute?.display ?? ""}`;
-    return patterns.some((pattern) => pattern.test(label));
-  });
+  if (!attributeTypeUuid) return undefined;
+  const matchingAttribute = (provider?.attributes ?? []).find(
+    (attribute) =>
+      !attribute?.voided &&
+      attribute?.attributeType?.uuid?.toLowerCase() ===
+        attributeTypeUuid.toLowerCase(),
+  );
+  const value =
+    matchingAttribute?.value == null
+      ? ""
+      : String(matchingAttribute.value).trim();
 
-  return matchingAttribute?.value ? String(matchingAttribute.value) : undefined;
+  return value || undefined;
 }
 
-export function useProviderSignatureDetails(providerUuid?: string): {
+export function useProviderSignatureDetails(
+  providerUuid?: string,
+  professionalRegistrationAttributeTypeUuid?: string,
+): {
   providerSignatureDetails: ProviderSignatureDetails;
   error: Error;
   isLoading: boolean;
 } {
   const customRepresentation =
-    "custom:(uuid,display,identifier,person:(uuid,display,attributes:(uuid,display,value,attributeType:(uuid,display))))";
+    "custom:(uuid,display,identifier,attributes:(uuid,display,value,voided,attributeType:(uuid,display)),person:(uuid,display))";
   const providerUrl = providerUuid
     ? `${restBaseUrl}/provider/${providerUuid}?v=${customRepresentation}`
     : null;
@@ -927,16 +938,10 @@ export function useProviderSignatureDetails(providerUuid?: string): {
     openmrsFetch,
   );
   const provider = data?.data;
-  const professionalRegistration =
-    provider?.identifier ??
-    getProviderAttributeValue(provider, [
-      /colegiatura/i,
-      /\bcmp\b/i,
-      /\brne\b/i,
-      /registro/i,
-      /colegio/i,
-      /licen[cs]/i,
-    ]);
+  const professionalRegistration = getProviderProfessionalRegistration(
+    provider,
+    professionalRegistrationAttributeTypeUuid,
+  );
 
   return {
     providerSignatureDetails: {

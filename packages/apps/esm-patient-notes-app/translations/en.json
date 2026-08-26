@@ -70,6 +70,8 @@
   "primaryDiagnosis": "Primary diagnosis",
   "primaryDiagnosisInputPlaceholder": "Choose a primary diagnosis",
   "primaryDiagnosisRequired": "Choose at least one primary diagnosis",
+  "diagnosisCie10MappingRequired": "Every diagnosis must have a valid CIE-10 catalog mapping",
+  "outpatientPrimaryDiagnosisExactlyOne": "Consulta Externa requires exactly one primary diagnosis; record any others as secondary",
   "primaryDiagnosisRequiredLabel": "Diagnóstico principal (Obligatorio)",
   "procedures": "Procedures",
   "proceduresPlaceholder": "Procedures performed or requested",

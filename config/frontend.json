@@ -290,6 +290,11 @@
       "4a182c6e-9a19-4db8-8042-4bbf3b4308c2"
     ]
   },
+  "@sihsalus/esm-atencion-ambulatoria-app": {
+    "recetaUnica": {
+      "identifierSourceUuid": "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d"
+    }
+  },
   "@sihsalus/esm-patient-registration-app": {
     "bulkPatientImport": {
       "enabled": false,

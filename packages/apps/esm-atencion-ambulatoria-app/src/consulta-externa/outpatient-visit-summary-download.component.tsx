@@ -11,6 +11,7 @@ import styles from './consulta-externa-dashboard.scss';
 import { useOutpatientFacilityIdentity } from './outpatient-facility.resource';
 import { fetchNextScheduledAppointment, isUpcomingScheduledAppointment } from './outpatient-next-appointment.resource';
 import { printPdfBytes } from './outpatient-pdf-print';
+import { fetchProviderCollegiateNumber, generateRecetaUnicaNumber } from './receta-unica.resource';
 import {
   buildOutpatientVisitSummary,
   fetchOutpatientVisitSummarySource,
@@ -19,6 +20,10 @@ import {
   type OutpatientVisitSummary,
 } from './outpatient-visit-summary.resource';
 import {
+  hasOutpatientRecetaUnicaContent,
+  type OutpatientRecetaUnicaPdfLabels,
+  createOutpatientRecetaUnicaFileName,
+  createOutpatientRecetaUnicaPdf,
   createOutpatientPatientInstructionsFileName,
   createOutpatientPatientInstructionsPdf,
   createOutpatientVisitSummaryFileName,
@@ -33,7 +38,7 @@ interface OutpatientVisitSummaryDownloadProps {
   patientUuid: string;
 }
 
-type GenerationTarget = 'patient-instructions' | 'visit-summary';
+type GenerationTarget = 'patient-instructions' | 'receta-unica' | 'visit-summary';
 type IsGenerationCurrent = () => boolean;
 
 interface VerifiedOutpatientSummary {
@@ -214,6 +219,49 @@ function getPatientInstructionsLabels(
   };
 }
 
+function getRecetaUnicaLabels(t: TFunction): OutpatientRecetaUnicaPdfLabels {
+  return {
+    title: t('recetaUnicaTitle', 'Receta Única Estandarizada'),
+    pharmacyCopy: t('recetaUnicaPharmacyCopy', 'Ejemplar para farmacia'),
+    patientCopy: t('recetaUnicaPatientCopy', 'Ejemplar para el paciente — Indicaciones'),
+    prescriptionNumber: t('recetaUnicaNumber', 'Receta N.º'),
+    issuedAt: t('recetaUnicaIssuedAt', 'Fecha de emisión'),
+    validUntil: t('recetaUnicaValidUntil', 'Válida hasta'),
+    patient: t('patient', 'Paciente'),
+    identifiers: t('identifiers', 'Identificadores'),
+    birthDate: t('birthDate', 'Fecha de nacimiento'),
+    diagnoses: t('recetaUnicaDiagnoses', 'Diagnósticos (CIE-10)'),
+    presumptive: t('presumptive', 'Presuntivo'),
+    definitive: t('definitive', 'Definitivo'),
+    repeat: t('repeat', 'Repetitivo'),
+    medications: t('recetaUnicaMedications', 'Medicamentos prescritos'),
+    visitDate: t('visitDate', 'Fecha y hora de atención'),
+    location: t('location', 'Lugar de atención'),
+    professional: t('responsibleProfessional', 'Personal de salud responsable'),
+    collegiateNumber: t('collegiateNumber', 'N.º de colegiatura'),
+    medicationAsNeeded: t('outpatientMedicationAsNeeded', 'Según necesidad (PRN)'),
+    medicationAsNeededReasonMissing: t('outpatientMedicationAsNeededReasonMissing', 'Según necesidad (PRN; motivo no registrado)'),
+    medicationIndication: t('outpatientMedicationIndication', 'Indicación'),
+    medicationNumberOfRefills: t('outpatientMedicationNumberOfRefills', 'Número de renovaciones'),
+    indicatedFollowUpDate: t('outpatientPatientInstructionsControlDate', 'Fecha de control indicada'),
+    therapeuticIndications: t('therapeuticIndications', 'Indicaciones terapéuticas'),
+    signatureAndStamp: t(
+      'outpatientPatientInstructionsSignatureAndStamp',
+      'Firma, sello y N.° de colegiatura del profesional responsable',
+    ),
+    validOnlySignedLegend: t(
+      'recetaUnicaValidOnlySigned',
+      'Válida únicamente con la firma y el sello manuscritos del profesional prescriptor.',
+    ),
+    generatedAt: t('generatedAt', 'Generado'),
+    page: t('page', 'Página'),
+    disclaimer: t(
+      'recetaUnicaDisclaimer',
+      'Documento numerado por el sistema del establecimiento; la emisión queda registrada en el servidor. No válido para sustancias controladas, que requieren recetario especial.',
+    ),
+  };
+}
+
 const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadProps> = ({ patientUuid }) => {
   const { t, i18n } = useTranslation();
   const config = useConfig<ConfigObject>();
@@ -281,7 +329,9 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
     (target: GenerationTarget) =>
       target === 'patient-instructions'
         ? t('outpatientPatientInstructionsError', 'No se pudo generar el PDF de indicaciones')
-        : t('outpatientSummaryDownloadError', 'No se pudo descargar el resumen de atención'),
+        : target === 'receta-unica'
+          ? t('recetaUnicaError', 'No se pudo emitir la Receta Única')
+          : t('outpatientSummaryDownloadError', 'No se pudo descargar el resumen de atención'),
     [t],
   );
 
@@ -579,6 +629,99 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
     });
   }, [getErrorTitle, i18n.language, patientUuid, runWithSummary, showError, t]);
 
+  // Un frontend nuevo puede convivir con una configuración desplegada que aún
+  // no declara el bloque: sin fuente configurada la emisión queda apagada.
+  const recetaUnicaConfig = config.recetaUnica ?? {
+    identifierSourceUuid: '',
+    validityDays: 3,
+    collegiateNumberProviderAttributeTypeUuid: '',
+  };
+  const handlePrintRecetaUnica = useCallback(() => {
+    return runWithSummary('receta-unica', async (summary, _linkedAppointmentUuids, isCurrent, signal) => {
+      if (!hasOutpatientRecetaUnicaContent(summary)) {
+        showError(
+          getErrorTitle('receta-unica'),
+          t('recetaUnicaNoMedications', 'Registre al menos un medicamento mediante órdenes antes de emitir la receta.'),
+        );
+        return;
+      }
+
+      // Numeración y fecha DEL SERVIDOR. Sin ellas no hay receta: se aborta y
+      // queda disponible la hoja informativa. Nunca degradar a numeración
+      // local: dos laptops sin red acuñarían duplicados.
+      let emission: Awaited<ReturnType<typeof generateRecetaUnicaNumber>>;
+      try {
+        emission = await generateRecetaUnicaNumber(
+          recetaUnicaConfig.identifierSourceUuid,
+          `receta-unica visita:${summary.visitUuid} paciente:${patientUuid}`,
+          recetaUnicaConfig.validityDays,
+          signal,
+        );
+      } catch (error) {
+        if (!isCurrent()) return;
+        createErrorHandler()(error);
+        showError(
+          getErrorTitle('receta-unica'),
+          t(
+            'recetaUnicaNumberUnavailable',
+            'El servidor no entregó la numeración. Sin correlativo auditado no se emite la Receta Única; entregue la hoja de indicaciones informativa.',
+          ),
+        );
+        return;
+      }
+      if (!isCurrent()) return;
+
+      // La colegiatura registrada es un mejor-esfuerzo: si falta o falla la
+      // lectura, la línea queda para completarse a mano junto a la firma.
+      let collegiateNumber: string | null = null;
+      const providerUuid = session?.currentProvider?.uuid;
+      if (providerUuid) {
+        try {
+          collegiateNumber = await fetchProviderCollegiateNumber(
+            providerUuid,
+            recetaUnicaConfig.collegiateNumberProviderAttributeTypeUuid,
+            signal,
+          );
+        } catch {
+          collegiateNumber = null;
+        }
+      }
+      if (!isCurrent()) return;
+
+      const bytes = await createOutpatientRecetaUnicaPdf(summary, getRecetaUnicaLabels(t), i18n.language || 'es-PE', {
+        number: emission.number,
+        issuedAt: emission.issuedAt,
+        validUntil: emission.validUntil,
+        collegiateNumber,
+      });
+      if (!isCurrent()) return;
+      const outcome = await printPdfBytes(bytes, createOutpatientRecetaUnicaFileName(emission.number, summary.visitStart), {
+        signal,
+      });
+      if (!isCurrent()) return;
+      if (outcome === 'cancelled' || outcome === 'content-stale') return;
+      showSnackbar({
+        isLowContrast: true,
+        kind: 'success',
+        title: t('recetaUnicaReady', 'Receta Única emitida'),
+        subtitle: t('recetaUnicaReadySubtitle', 'Receta N.º {{number}}. La emisión quedó registrada en el servidor.', {
+          number: emission.number,
+        }),
+      });
+    });
+  }, [
+    getErrorTitle,
+    i18n.language,
+    patientUuid,
+    recetaUnicaConfig.collegiateNumberProviderAttributeTypeUuid,
+    recetaUnicaConfig.identifierSourceUuid,
+    recetaUnicaConfig.validityDays,
+    runWithSummary,
+    session?.currentProvider?.uuid,
+    showError,
+    t,
+  ]);
+
   const printLabel = t('printOutpatientPatientInstructions', 'Imprimir indicaciones');
   const downloadLabel = t('downloadOutpatientCareReport', 'Descargar resumen de esta atención');
   const isGenerating = generationTarget !== null;
@@ -603,6 +746,20 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
           ? t('generatingOutpatientPatientInstructions', 'Generando indicaciones…')
           : printLabel}
       </Button>
+      {recetaUnicaConfig.identifierSourceUuid ? (
+        <Button
+          kind="tertiary"
+          size="sm"
+          renderIcon={Printer}
+          disabled={documentActionsDisabled}
+          onClick={handlePrintRecetaUnica}
+          aria-label={t('printRecetaUnica', 'Emitir Receta Única')}
+        >
+          {generationTarget === 'receta-unica'
+            ? t('generatingRecetaUnica', 'Emitiendo receta…')
+            : t('printRecetaUnica', 'Emitir Receta Única')}
+        </Button>
+      ) : null}
       <Button
         kind="ghost"
         size="sm"

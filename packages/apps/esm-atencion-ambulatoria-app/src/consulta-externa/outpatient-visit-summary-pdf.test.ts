@@ -1,6 +1,10 @@
 import type { OutpatientScheduledAppointment } from './outpatient-next-appointment.resource';
 import type { OutpatientVisitSummary } from './outpatient-visit-summary.resource';
 import {
+  createOutpatientRecetaUnicaFileName,
+  createOutpatientRecetaUnicaPdf,
+  hasOutpatientRecetaUnicaContent,
+  type OutpatientRecetaUnicaPdfLabels,
   createOutpatientPatientInstructionsFileName,
   createOutpatientPatientInstructionsPdf,
   createOutpatientVisitSummaryFileName,
@@ -599,5 +603,113 @@ describe('outpatient visit summary PDF', () => {
     expect(appendChild).toHaveBeenCalledOnce();
     expect(click).toHaveBeenCalledOnce();
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:synthetic');
+  });
+});
+
+
+describe('receta única estandarizada PDF', () => {
+  const recetaLabels: OutpatientRecetaUnicaPdfLabels = {
+    title: 'Receta Única Estandarizada',
+    pharmacyCopy: 'Ejemplar para farmacia',
+    patientCopy: 'Ejemplar para el paciente — Indicaciones',
+    prescriptionNumber: 'Receta N.º',
+    issuedAt: 'Fecha de emisión',
+    validUntil: 'Válida hasta',
+    patient: 'Paciente',
+    identifiers: 'Identificadores',
+    birthDate: 'Fecha de nacimiento',
+    diagnoses: 'Diagnósticos (CIE-10)',
+    presumptive: 'Presuntivo',
+    definitive: 'Definitivo',
+    repeat: 'Repetido',
+    medications: 'Medicamentos prescritos',
+    visitDate: 'Fecha y hora de atención',
+    location: 'Lugar de atención',
+    professional: 'Personal de salud responsable',
+    collegiateNumber: 'N.º de colegiatura',
+    medicationAsNeeded: 'Según necesidad (PRN)',
+    medicationAsNeededReasonMissing: 'Según necesidad (PRN; motivo no registrado)',
+    medicationIndication: 'Indicación',
+    medicationNumberOfRefills: 'Número de renovaciones',
+    indicatedFollowUpDate: 'Fecha de control indicada',
+    therapeuticIndications: 'Indicaciones terapéuticas',
+    signatureAndStamp: 'Firma, sello y N.° de colegiatura del profesional responsable',
+    validOnlySignedLegend: 'Válida únicamente con la firma y el sello manuscritos del profesional prescriptor.',
+    generatedAt: 'Generado',
+    page: 'Página',
+    disclaimer: 'Documento numerado por el sistema del establecimiento.',
+  };
+
+  const emission = {
+    number: 'RU-000123',
+    issuedAt: '2026-08-26T14:00:00.000Z',
+    validUntil: '2026-08-29T14:00:00.000Z',
+    collegiateNumber: 'CMP 12345',
+  };
+
+  const recetaSummary: OutpatientVisitSummary = {
+    ...summary,
+    orders: [
+      {
+        uuid: 'order',
+        category: 'medication',
+        name: 'Paracetamol 500 mg',
+        details: '1 tableta · Oral · Cada 8 horas · 3 días · 9 Tableta(s)',
+        orderer: 'Dra. Demo',
+        asNeeded: false,
+        asNeededCondition: null,
+        orderReasonNonCoded: null,
+        numRefills: 0,
+      },
+    ],
+  };
+
+  it('imprime dos cuerpos con el mismo correlativo, CIE-10, cantidad y colegiatura', async () => {
+    const { PDFDocument, PDFPage } = await import('pdf-lib');
+    const drawText = vi.spyOn(PDFPage.prototype, 'drawText');
+
+    try {
+      const bytes = await createOutpatientRecetaUnicaPdf(recetaSummary, recetaLabels, 'es-PE', emission);
+      const renderedText = drawText.mock.calls.map(([text]) => text).join('\n');
+
+      // Dos cuerpos, cada uno con su rótulo y el MISMO número.
+      expect(renderedText).toContain('Ejemplar para farmacia');
+      expect(renderedText).toContain('Ejemplar para el paciente — Indicaciones');
+      expect(renderedText.split('RU-000123').length - 1).toBeGreaterThanOrEqual(2);
+
+      // Cuerpo de farmacia: diagnóstico CIE-10 y detalle con cantidad.
+      expect(renderedText).toContain('R51');
+      expect(renderedText).toContain('9 Tableta(s)');
+      expect(renderedText).toContain('CMP 12345');
+      expect(renderedText).toContain('Válida únicamente con la firma y el sello manuscritos del profesional prescriptor.');
+
+      const document = await PDFDocument.load(bytes);
+      expect(document.getPageCount()).toBeGreaterThanOrEqual(2);
+    } finally {
+      drawText.mockRestore();
+    }
+  });
+
+  it('deja la línea de colegiatura manuscrita cuando el provider no la tiene registrada', async () => {
+    const { PDFPage } = await import('pdf-lib');
+    const drawText = vi.spyOn(PDFPage.prototype, 'drawText');
+    try {
+      await createOutpatientRecetaUnicaPdf(recetaSummary, recetaLabels, 'es-PE', {
+        ...emission,
+        collegiateNumber: null,
+      });
+      const renderedText = drawText.mock.calls.map(([text]) => text).join('\n');
+      expect(renderedText).toContain('________________');
+    } finally {
+      drawText.mockRestore();
+    }
+  });
+
+  it('exige órdenes canónicas de medicación y nombra el fichero con el correlativo', () => {
+    expect(hasOutpatientRecetaUnicaContent(recetaSummary)).toBe(true);
+    expect(hasOutpatientRecetaUnicaContent({ ...recetaSummary, orders: [] })).toBe(false);
+    expect(createOutpatientRecetaUnicaFileName('RU-000123', summary.visitStart)).toBe(
+      'receta-unica-RU-000123-2026-08-23.pdf',
+    );
   });
 });

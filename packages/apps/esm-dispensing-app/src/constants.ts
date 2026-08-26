@@ -12,6 +12,7 @@ export const OPENMRS_FHIR_EXT_DISPENSE_RECORDED = OPENMRS_FHIR_EXT_PREFIX + '/me
 export const OPENMRS_FHIR_EXT_REQUEST_FULFILLER_STATUS = OPENMRS_FHIR_EXT_PREFIX + '/medicationrequest/fulfillerstatus';
 
 export const PRIVILEGE_CREATE_DISPENSE = 'Task: dispensing.create.dispense';
+export const PRIVILEGE_ADD_ORDERS = 'Add Orders';
 export const PRIVILEGE_CREATE_DISPENSE_MODIFY_DETAILS = 'Task: dispensing.create.dispense.allowSubstitutions';
 export const PRIVILEGE_EDIT_DISPENSE = 'Task: dispensing.edit.dispense';
 export const PRIVILEGE_DELETE_DISPENSE = 'Task: dispensing.delete.dispense';

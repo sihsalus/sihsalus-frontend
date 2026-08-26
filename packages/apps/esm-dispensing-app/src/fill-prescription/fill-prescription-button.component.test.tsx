@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { dispensingEditPrivilege, PRIVILEGE_CREATE_DISPENSE } from '../constants';
+import { dispensingEditPrivilege, PRIVILEGE_ADD_ORDERS, PRIVILEGE_CREATE_DISPENSE } from '../constants';
 
 import FillPrescriptionButton from './fill-prescription-button.component';
 
@@ -42,7 +42,8 @@ describe('FillPrescriptionButton', () => {
       PRIVILEGE_CREATE_DISPENSE,
       expect.objectContaining({ uuid: 'user-1' }),
     );
-    expect(screen.getByRole('button', { name: 'Fill prescription' })).toBeInTheDocument();
+    expect(mockUserHasAccess).toHaveBeenCalledWith(PRIVILEGE_ADD_ORDERS, expect.objectContaining({ uuid: 'user-1' }));
+    expect(screen.getByRole('button', { name: 'Register prescription manually' })).toHaveClass('cds--btn--tertiary');
   });
 
   it('hides the action when the user lacks the frontend edit privilege', () => {
@@ -50,7 +51,7 @@ describe('FillPrescriptionButton', () => {
 
     render(<FillPrescriptionButton />);
 
-    expect(screen.queryByRole('button', { name: 'Fill prescription' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Register prescription manually' })).not.toBeInTheDocument();
   });
 
   it('hides the action when the user lacks the backend dispense privilege', () => {
@@ -62,6 +63,15 @@ describe('FillPrescriptionButton', () => {
       PRIVILEGE_CREATE_DISPENSE,
       expect.objectContaining({ uuid: 'user-1' }),
     );
-    expect(screen.queryByRole('button', { name: 'Fill prescription' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Register prescription manually' })).not.toBeInTheDocument();
+  });
+
+  it('hides the action when the user can dispense but cannot add orders', () => {
+    mockUserHasAccess.mockImplementation((privilege) => privilege !== PRIVILEGE_ADD_ORDERS);
+
+    render(<FillPrescriptionButton />);
+
+    expect(mockUserHasAccess).toHaveBeenCalledWith(PRIVILEGE_ADD_ORDERS, expect.objectContaining({ uuid: 'user-1' }));
+    expect(screen.queryByRole('button', { name: 'Register prescription manually' })).not.toBeInTheDocument();
   });
 });

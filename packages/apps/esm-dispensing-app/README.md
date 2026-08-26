@@ -15,7 +15,7 @@ References to the Iniz files that install these concept sources can be found her
 
 2. [FHIR Concept Sources Configuration](https://github.com/openmrs/openmrs-content-referenceapplication/blob/main/configuration/backend_configuration/fhirconceptsources/fhirconceptsources.csv#L5)
 
-You can also manually configure these concept sources in your OpenMRS instance by adding the fhirConceptSource Mapping in the fhir_concept_source table with url `http://terminology.hl7.org/CodeSystem/medicationdispense-status` and name as `HL7-MedicationDispenseStatus`.  Also make sure it relates to a similar mapping in the concept_reference_source table.
+You can also manually configure these concept sources in your OpenMRS instance by adding the fhirConceptSource Mapping in the fhir_concept_source table with url `http://terminology.hl7.org/CodeSystem/medicationdispense-status` and name as `HL7-MedicationDispenseStatus`. Also make sure it relates to a similar mapping in the concept_reference_source table.
 
 To manually configure the concept sources, you'll need to:
 
@@ -36,7 +36,7 @@ It also is bundled in the "DrugDispense" OCL package provided by the Reference A
 
 The "DrugDispense" also provides the default value sets for the "Substitution Type", "Substitution Reason", and "Medication Dispense Status Reason".
 
-The "Substitution Type" and "Substitution Reason" value sets define the valid answers for both the equivalent questions when substituting a drug.  The "Medication Dispense Status Reason" provides the default answers for both the "Reason for Pause" and "Reason for Close" questions.
+The "Substitution Type" and "Substitution Reason" value sets define the valid answers for both the equivalent questions when substituting a drug. The "Medication Dispense Status Reason" provides the default answers for both the "Reason for Pause" and "Reason for Close" questions.
 
 All of these can be customized via the config-schema, see: [config-schema](https://github.com/openmrs/openmrs-esm-dispensing-app/blob/main/src/config-schema.ts).
 
@@ -48,7 +48,15 @@ Note that following privileges need to be installed and assigned to roles:
 - `Task: dispensing.create.dispense.andModifyDetails` - Allows user to modify the Quantity, Drug, Formulation and Dose Instructions (from the values specified in the Order / Medication Request) when Dispensing
 - `Task: dispensing.edit.dispense` - Allows user to edit an existing Medication Dispense
 - `Task: dispensing.delete.dispense` - Allows user to delete an existing Medication Dispense
-- `Task: dispensing.delete.dispense.ifCreator` - Allows user to delete an existing Medication Dispense, *but only* if they created it originally
+- `Task: dispensing.delete.dispense.ifCreator` - Allows user to delete an existing Medication Dispense, _but only_ if they created it originally
+
+## SIHSALUS manual prescription workflow
+
+The pharmacy dashboard is primarily a dispensing queue. Its **Register prescription manually** action is an exceptional workflow for a medication prescription that does not yet exist in SIHSALUS; it is intentionally rendered as a tertiary action rather than the dashboard's main call to action.
+
+The action is shown only when the user has all of `app:home.farmacia.editar`, `Task: dispensing.create.dispense`, and `Add Orders`. The SIHSALUS `Farmacia` role currently carries those privileges. Registration also requires an active patient visit, and the current clinical provider is recorded as the orderer by the order basket.
+
+Submitting the basket persists the medication orders before the confirmation modal opens. Closing that modal or choosing **Leave pending for dispensing** does not undo the registered orders. The modal lists the saved medication orders and only then offers the separate **Dispense now** action. In the pharmacy table, each row groups orders from one encounter; medication names are listed individually, and expanding the row shows the order-level details and actions.
 
 ## TODO SIHSALUS hardening
 
@@ -81,9 +89,9 @@ Custom tabs have the following properties:
 
 ```ts
 export interface CustomTab {
-    title: string;
-    customPrescriptionsTableEndpoint: string;
-    associatedLocations: string[];
+  title: string;
+  customPrescriptionsTableEndpoint: string;
+  associatedLocations: string[];
 }
 ```
 

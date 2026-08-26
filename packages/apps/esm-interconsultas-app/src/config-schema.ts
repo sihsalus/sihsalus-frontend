@@ -51,6 +51,11 @@ export const configSchema = {
       '0e56ea09-42ea-4f66-ad53-76cbc770dcfa',
       'e771ce10-6edd-4d17-a54c-e5de0762b7c7',
       'c10289d4-0f22-4f0e-8242-1835259404d5',
+      // Duplicado LEGADO de la cola de consulta externa (concept 27857). El set
+      // desplegado lo conserva junto al nuevo (51ce03e2, ya excluido); sin esta
+      // entrada aparece como destino valido y una interconsulta dirigida ahi no
+      // la monitorea ningun servicio. Verificado contra produccion el 2026-08-26.
+      '7ba3aa21-cc56-47ca-bb4d-a60549f666c0',
     ],
   },
   externalSpecialistConceptUuid: {

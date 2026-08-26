@@ -365,7 +365,8 @@ describe('BillableServiceFormWorkspace', () => {
 
       const longName = 'A'.repeat(300); // Try to type 300 characters
       const input = screen.getByRole('textbox', { name: /Service name/i });
-      await user.type(input, longName);
+      await user.click(input);
+      await user.paste(longName);
 
       // Input should be truncated to 255 chars due to maxLength attribute
       expect(input).toHaveValue('A'.repeat(255));
@@ -377,7 +378,8 @@ describe('BillableServiceFormWorkspace', () => {
 
       const longShortName = 'B'.repeat(300); // Try to type 300 characters
       const input = screen.getByRole('textbox', { name: /Short name/i });
-      await user.type(input, longShortName);
+      await user.click(input);
+      await user.paste(longShortName);
 
       // Input should be truncated to 255 chars due to maxLength attribute
       expect(input).toHaveValue('B'.repeat(255));

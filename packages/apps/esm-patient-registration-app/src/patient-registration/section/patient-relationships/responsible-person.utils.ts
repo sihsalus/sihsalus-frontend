@@ -104,9 +104,11 @@ export function validateResponsiblePersonForm(
     errors.middleName = middleNameError;
   }
 
-  const familyName2Error = validateOptionalName(values.familyName2, patientFamilyNameMaxLength, 'familyNameTooLong');
+  const familyName2Error = validateRequiredName(values.familyName2, 'familyName2Required');
   if (familyName2Error) {
     errors.familyName2 = familyName2Error;
+  } else if (values.familyName2.trim().length > patientFamilyNameMaxLength) {
+    errors.familyName2 = 'familyNameTooLong';
   }
 
   if (!values.gender || !genderToOpenmrsCode[values.gender]) {

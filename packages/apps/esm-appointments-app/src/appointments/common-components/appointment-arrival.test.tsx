@@ -12,6 +12,7 @@ import {
   fetchPersonInsurance,
   fetchFreshPatientVitalStatus,
   fetchVisitInsurance,
+  getPersonSisFinancingState,
   getSisFinancingState,
   safeCopyFinanciadorToVisit,
 } from '@openmrs/esm-patient-common-lib';
@@ -54,6 +55,7 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   fetchPersonInsurance: vi.fn(),
   fetchFreshPatientVitalStatus: vi.fn(),
   fetchVisitInsurance: vi.fn(),
+  getPersonSisFinancingState: vi.fn(),
   getSisFinancingState: vi.fn(),
   safeCopyFinanciadorToVisit: vi.fn(),
 }));
@@ -72,6 +74,7 @@ const mockNavigate = vi.mocked(navigate);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockFetchVisitInsurance = vi.mocked(fetchVisitInsurance);
+const mockGetPersonSisFinancingState = vi.mocked(getPersonSisFinancingState);
 const mockGetSisFinancingState = vi.mocked(getSisFinancingState);
 const mockSafeCopyFinanciadorToVisit = vi.mocked(safeCopyFinanciadorToVisit);
 
@@ -218,7 +221,9 @@ describe('AppointmentArrivalModal', () => {
       insuranceCode: 'SIS-123',
       accreditationStatusUuid: 'active-status-uuid',
       accreditationCheckedAt: '2026-08-11T14:30:00.000-05:00',
+      verificationMethod: 'siasis-adt',
     });
+    mockGetPersonSisFinancingState.mockReturnValue('active');
     mockGetSisFinancingState.mockReturnValue('active');
     mockSafeCopyFinanciadorToVisit.mockResolvedValue({ ok: true, skipped: true, created: 0, updated: 0 });
     mockUseConfig.mockReturnValue({
@@ -574,6 +579,7 @@ describe('AppointmentArrivalModal', () => {
       insuranceCode: null,
       accreditationStatusUuid: null,
       accreditationCheckedAt: null,
+      verificationMethod: null,
     });
 
     renderModal();
@@ -609,6 +615,7 @@ describe('AppointmentArrivalModal', () => {
       insuranceCode: 'ESSALUD-123',
       accreditationStatusUuid: null,
       accreditationCheckedAt: null,
+      verificationMethod: null,
     });
     mockFetchVisitInsurance.mockResolvedValue({
       financiadorUuid: 'essalud-concept-uuid',
@@ -853,7 +860,8 @@ describe('AppointmentArrivalModal', () => {
       accreditationStatusUuid: 'inactive-status-uuid',
       accreditationCheckedAt: '2026-08-11T14:30:00.000-05:00',
     });
-    mockGetSisFinancingState.mockReturnValueOnce('active').mockReturnValueOnce('inactive');
+    mockGetPersonSisFinancingState.mockReturnValue('active');
+    mockGetSisFinancingState.mockReturnValue('inactive');
 
     renderModal();
     await userEvent.click(getQueueButton());

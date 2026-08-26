@@ -1,7 +1,6 @@
 import {
   Button,
   ButtonSet,
-  ComboBox,
   DatePicker,
   DatePickerInput,
   Form,
@@ -44,7 +43,7 @@ import {
   validatePlainNumberInput,
 } from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useId, useState } from 'react';
 import { Controller, useController, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -123,6 +122,7 @@ const preventInvalidIntegerPaste =
 
 const getIntegerValue = (value: string | number, constraints: PlainNumberInputConstraints) =>
   validatePlainNumberInput(value, constraints).parsedValue ?? null;
+
 
 function getConflictErrorMessage(
   responseData: Record<string, unknown> | null | undefined,
@@ -380,6 +380,11 @@ const AppointmentsForm: React.FC<
   const [isAllDayAppointment, setIsAllDayAppointment] = useState(false);
   const [isSuccessful, setIsSuccessful] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProviderAssignmentEnabled, setIsProviderAssignmentEnabled] = useState(
+    context === 'editing' && Boolean(appointment?.providers?.some(({ response }) => response === 'ACCEPTED')),
+  );
+  const providerAssignmentLabelId = useId();
+  const providerAssignmentDescriptionId = useId();
 
   // TODO can we clean this all up to be more consistent between using Date and dayjs?
   const {
@@ -407,9 +412,7 @@ const AppointmentsForm: React.FC<
       location: z.string().refine((value) => value !== '', {
         message: translateFrom(moduleName, 'locationRequired', 'UPSS is required'),
       }),
-      provider: z.string().refine((value) => value !== '', {
-        message: translateFrom(moduleName, 'providerRequired', 'Provider is required'),
-      }),
+      provider: z.string(),
       appointmentNote: z.string().max(appointmentNoteMaxLength, {
         message: t('appointmentNoteTooLong', `Appointment note cannot exceed ${appointmentNoteMaxLength} characters`, {
           maxLength: appointmentNoteMaxLength,
@@ -554,6 +557,9 @@ const AppointmentsForm: React.FC<
     })
     .refine(
       (formValues) => {
+        if (!formValues.provider) {
+          return true;
+        }
         const service = filterAppointmentServicesByLocation({
           enforceArrivalRouting: enforceAppointmentRouting,
           selectedLocationUuid: formValues.location,
@@ -589,7 +595,7 @@ const AppointmentsForm: React.FC<
     watch,
     handleSubmit,
     reset,
-    formState: { errors, isDirty },
+    formState: { errors, isDirty, isSubmitted },
   } = useForm<AppointmentFormData>({
     // Validate required fields on submit so opening an asynchronously populated
     // selector does not show an error before the user has attempted to save.
@@ -600,10 +606,7 @@ const AppointmentsForm: React.FC<
       location: isExternalConsultationProviderCreating
         ? session?.sessionLocation?.uuid
         : (appointment?.location?.uuid ?? ''),
-      provider:
-        appointment?.providers?.find((provider) => provider.response === 'ACCEPTED')?.uuid ??
-        session?.currentProvider?.uuid ??
-        '', // assumes only a single previously-scheduled provider with state "ACCEPTED", if multiple, just takes the first
+      provider: appointment?.providers?.find((provider) => provider.response === 'ACCEPTED')?.uuid ?? '',
       appointmentNote: appointment?.comments || '',
       appointmentType: getAppointmentTypeFromKind(appointment?.appointmentKind, mappedAppointmentTypes),
       appointmentStatus: appointment?.status ?? AppointmentStatus.SCHEDULED,
@@ -655,16 +658,10 @@ const AppointmentsForm: React.FC<
   });
   const isDifferentProviderSelected = Boolean(
     session?.currentProvider?.uuid &&
-      selectedProviderUuid &&
-      selectedProviderUuid !== session.currentProvider.uuid &&
-      selectedProvider,
+    selectedProviderUuid &&
+    selectedProviderUuid !== session.currentProvider.uuid &&
+    selectedProvider,
   );
-  const providerSchedulingCategoryAssessment = assessProviderSchedulingCategory({
-    mode: providerSchedulingCategoryValidation.mode,
-    provider: selectedProvider,
-    providerAttributeTypeUuid: providerSchedulingCategoryValidation.providerAttributeTypeUuid,
-    service: selectedService,
-  });
   const editableAppointmentStatuses = appointment?.status
     ? [
         appointment.status,
@@ -688,13 +685,15 @@ const AppointmentsForm: React.FC<
         startDate: now.toDate(),
         startDateText: now.format(dateFormat),
       },
-      { shouldValidate: true },
+      { shouldValidate: isSubmitted },
     );
-    setValue('startTime', now.format('hh:mm'), { shouldValidate: true });
-    setValue('timeFormat', now.hour() >= 12 ? 'PM' : 'AM', { shouldValidate: true });
+    setValue('startTime', now.format('hh:mm'), { shouldValidate: isSubmitted });
+    setValue('timeFormat', now.hour() >= 12 ? 'PM' : 'AM', {
+      shouldValidate: isSubmitted,
+    });
     setIsAllDayAppointment(false);
     setIsRecurringAppointment(false);
-  }, [context, getValues, isWalkInAppointment, setValue]);
+  }, [context, getValues, isSubmitted, isWalkInAppointment, setValue]);
 
   // Retrive ref callback for appointmentDateTime (startDate & recurringPatternEndDate)
   const {
@@ -1024,16 +1023,14 @@ const AppointmentsForm: React.FC<
       : useAllDayDuration
         ? dayjs(startDate).startOf('day')
         : dayjs(startDate).hour(hours).minute(minuteValue).second(0).millisecond(0);
-    const endDateTime = useAllDayDuration
-      ? dayjs(startDate).endOf('day')
-      : startDateTime.add(duration ?? 0, 'minutes');
+    const endDateTime = useAllDayDuration ? dayjs(startDate).endOf('day') : startDateTime.add(duration ?? 0, 'minutes');
     const payload: AppointmentPayload = {
       appointmentKind,
       serviceUuid: serviceUuid,
       startDateTime: startDateTime.format(),
       endDateTime: endDateTime.format(),
       locationUuid: location,
-      providers: [{ uuid: provider }],
+      providers: provider ? [{ uuid: provider }] : [],
       patientUuid: patientUuid,
       comments: appointmentNote,
       uuid: context === 'editing' ? appointment.uuid : undefined,
@@ -1161,8 +1158,14 @@ const AppointmentsForm: React.FC<
                       onChange(event);
 
                       if (locationChanged) {
-                        setValue('selectedServiceUuid', '', { shouldDirty: true, shouldValidate: true });
-                        setValue('provider', '', { shouldDirty: true, shouldValidate: true });
+                        setValue('selectedServiceUuid', '', {
+                          shouldDirty: true,
+                          shouldValidate: isSubmitted,
+                        });
+                        setValue('provider', '', {
+                          shouldDirty: true,
+                          shouldValidate: isSubmitted,
+                        });
                       }
                     }}
                     onBlur={onBlur}
@@ -1223,16 +1226,11 @@ const AppointmentsForm: React.FC<
                       const providerIsStillEligible = providersEligibleForNextService.some(
                         ({ uuid }) => uuid === getValues('provider'),
                       );
-                      const currentProviderIsEligible = providersEligibleForNextService.some(
-                        ({ uuid }) => uuid === session?.currentProvider?.uuid,
-                      );
-                      if (!providerIsStillEligible && context === 'creating' && currentProviderIsEligible) {
-                        setValue('provider', session.currentProvider.uuid, {
+                      if (!providerIsStillEligible) {
+                        setValue('provider', '', {
                           shouldDirty: true,
-                          shouldValidate: true,
+                          shouldValidate: isSubmitted,
                         });
-                      } else if (!providerIsStillEligible) {
-                        setValue('provider', '', { shouldDirty: true, shouldValidate: true });
                       }
                     }}
                     ref={ref}
@@ -1557,39 +1555,69 @@ const AppointmentsForm: React.FC<
           )}
 
           <section className={styles.formGroup}>
-            <span className={styles.heading}>{t('responsibleProvider', 'Responsible provider')}</span>
-            <ResponsiveWrapper>
-              <Controller
-                name="provider"
-                control={control}
-                render={({ field: { onChange, value, onBlur } }) => (
-                  <ComboBox
-                    disabled={!selectedService}
-                    id="provider"
-                    invalid={!!errors?.provider}
-                    invalidText={errors?.provider?.message}
-                    items={eligibleProviders}
-                    itemToString={(provider) => provider?.display ?? ''}
-                    onChange={({ selectedItem }) => onChange(selectedItem?.uuid ?? '')}
-                    onBlur={onBlur}
-                    placeholder={
-                      !selectedService
-                        ? t('chooseServiceFirst', 'Select a service first')
-                        : eligibleProviders.length === 0
-                          ? t('noProvidersForService', 'No providers are enabled for this service')
-                          : t('chooseProvider', 'Choose a provider')
-                    }
-                    selectedItem={eligibleProviders.find((provider) => provider.uuid === value) ?? null}
-                    shouldFilterItem={({ inputValue, item }) =>
-                      item.display.toLocaleLowerCase().includes((inputValue ?? '').toLocaleLowerCase())
-                    }
-                    titleText={<RequiredFieldLabel label={t('selectProvider', 'Select a provider')} />}
-                  />
-                )}
-              />
-            </ResponsiveWrapper>
-            {selectedService && !providers.isLoading && eligibleProviders.length === 0 ? (
+            <span className={styles.heading} id={providerAssignmentLabelId}>
+              {t('responsibleProvider', 'Responsible provider')}
+            </span>
+            <p className={styles.providerAssignmentDescription} id={providerAssignmentDescriptionId}>
+              {t('assignResponsibleProvider', 'Assign a responsible healthcare provider')}
+            </p>
+            <div className={styles.providerSwitchRow}>
+              <button
+                aria-checked={isProviderAssignmentEnabled}
+                aria-describedby={providerAssignmentDescriptionId}
+                aria-labelledby={providerAssignmentLabelId}
+                className={styles.providerSwitch}
+                onClick={() => {
+                  const nextValue = !isProviderAssignmentEnabled;
+                  setIsProviderAssignmentEnabled(nextValue);
+                  if (!nextValue) {
+                    setValue('provider', '', { shouldDirty: true, shouldValidate: isSubmitted });
+                  }
+                }}
+                role="switch"
+                type="button"
+              >
+                <span className={styles.providerSwitchThumb} />
+              </button>
+              <span>{isProviderAssignmentEnabled ? t('yes', 'Yes') : t('no', 'No')}</span>
+            </div>
+            {isProviderAssignmentEnabled ? (
+              <ResponsiveWrapper>
+                <Controller
+                  name="provider"
+                  control={control}
+                  render={({ field: { onChange, value, onBlur } }) => (
+                    <Select
+                      disabled={!selectedService}
+                      id="provider"
+                      invalid={!!errors?.provider}
+                      invalidText={errors?.provider?.message}
+                      labelText={t('selectProviderOptional', 'Select a provider (optional)')}
+                      onChange={(event) => onChange(event.target.value)}
+                      onBlur={onBlur}
+                      value={value}
+                    >
+                      <SelectItem
+                        text={
+                          !selectedService
+                            ? t('chooseServiceFirst', 'Select a service first')
+                            : eligibleProviders.length === 0
+                              ? t('noProvidersForService', 'No providers are enabled for this service')
+                              : t('noProviderAssigned', 'No provider assigned')
+                        }
+                        value=""
+                      />
+                      {eligibleProviders.map((provider) => (
+                        <SelectItem key={provider.uuid} text={provider.display} value={provider.uuid} />
+                      ))}
+                    </Select>
+                  )}
+                />
+              </ResponsiveWrapper>
+            ) : null}
+            {isProviderAssignmentEnabled && selectedService && !providers.isLoading && eligibleProviders.length === 0 ? (
               <InlineNotification
+                className={styles.providerNotice}
                 hideCloseButton
                 kind="warning"
                 lowContrast
@@ -1600,8 +1628,9 @@ const AppointmentsForm: React.FC<
                 )}
               />
             ) : null}
-            {isDifferentProviderSelected ? (
+            {isProviderAssignmentEnabled && isDifferentProviderSelected ? (
               <InlineNotification
+                className={styles.providerNotice}
                 hideCloseButton
                 kind="warning"
                 lowContrast
@@ -1611,25 +1640,6 @@ const AppointmentsForm: React.FC<
                   'Ha seleccionado a {{providerName}} en lugar de usted. Verifique el responsable antes de guardar la cita.',
                   { providerName: selectedProvider?.display },
                 )}
-              />
-            ) : null}
-            {providerSchedulingCategoryAssessment.shouldWarn ? (
-              <InlineNotification
-                hideCloseButton
-                kind="warning"
-                lowContrast
-                title={t('providerSchedulingCategoryWarningTitle', 'Categoría de agenda no confirmada')}
-                subtitle={
-                  providerSchedulingCategoryAssessment.reason === 'configuration-missing'
-                    ? t(
-                        'providerSchedulingCategoryConfigurationMissing',
-                        'No se pudo validar la categoría del personal porque falta configurar el atributo correspondiente.',
-                      )
-                    : t(
-                        'providerSchedulingCategoryWarning',
-                        'El personal de salud seleccionado no tiene habilitada la categoría de agenda de este servicio. Puede continuar mientras el hospital completa el catálogo.',
-                      )
-                }
               />
             ) : null}
           </section>

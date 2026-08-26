@@ -1,6 +1,7 @@
 import { omrsOfflineCachingStrategyHttpHeaderName, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
 import {
+  getPersonSisFinancingState,
   ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID,
   ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID,
   copyFinanciadorToVisit,
@@ -475,6 +476,53 @@ describe('SIS financing eligibility', () => {
       accreditationStatusUuid: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
       accreditationCheckedAt,
     });
+  });
+});
+
+describe('getPersonSisFinancingState', () => {
+  const trustedTemporaryPerson = {
+    insuranceTypeUuid: SIS_CONCEPT_UUID,
+    insuranceCode: 'E-11138562',
+    accreditationStatusUuid: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+    accreditationCheckedAt,
+    verificationMethod: 'siasis-adt',
+  };
+
+  it('acredita un E temporal solo con evidencia de verificación confiable', () => {
+    expect(getPersonSisFinancingState(trustedTemporaryPerson)).toBe('active');
+  });
+
+  it('trata un E temporal sin método confiable como cobertura incompleta', () => {
+    // El caso real de la marcha blanca: «Afiliación Temporal» E-11138562
+    // registrada a mano. La persona leía `active`, el copiado descartaba el
+    // código y la revalidación de triaje reventaba con «no pudo sincronizarse».
+    expect(getPersonSisFinancingState({ ...trustedTemporaryPerson, verificationMethod: null })).toBe('missing');
+    expect(getPersonSisFinancingState({ ...trustedTemporaryPerson, verificationMethod: 'manual' })).toBe('missing');
+    // Una fecha civil sin hora tampoco acredita.
+    expect(
+      getPersonSisFinancingState({ ...trustedTemporaryPerson, accreditationCheckedAt: '2026-08-11' }),
+    ).toBe('missing');
+  });
+
+  it('aplica la regla también a códigos con intención temporal malformada', () => {
+    expect(
+      getPersonSisFinancingState({ ...trustedTemporaryPerson, insuranceCode: 'E 111385', verificationMethod: null }),
+    ).toBe('missing');
+  });
+
+  it('no exige método de verificación a un carné SIS regular ni a una IAFAS no-SIS', () => {
+    expect(
+      getPersonSisFinancingState({ ...trustedTemporaryPerson, insuranceCode: 'SIS-123', verificationMethod: null }),
+    ).toBe('active');
+    expect(
+      getPersonSisFinancingState({
+        insuranceTypeUuid: essaludConceptUuid,
+        insuranceCode: 'ESSALUD-1',
+        accreditationStatusUuid: null,
+        accreditationCheckedAt: null,
+        verificationMethod: null,
+      }),
+    ).toBe('notApplicable');
   });
 });
 

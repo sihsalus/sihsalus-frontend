@@ -165,6 +165,21 @@
   "copyResponsibleData": {
     "error": "No se pudieron copiar los datos del responsable",
     "noResponsible": "Seleccione un responsable antes de copiar datos",
+    "birthAddress": {
+      "button": "Copiar residencia como lugar de nacimiento",
+      "success": "Lugar de nacimiento copiado desde la residencia del paciente",
+      "empty": "Primero registre la residencia del paciente"
+    },
+    "insurance": {
+      "button": "Copiar seguro del responsable",
+      "success": "Seguro copiado del responsable",
+      "empty": "El responsable no tiene seguro registrado"
+    },
+    "residenceContact": {
+      "button": "Copiar residencia y contacto del responsable",
+      "success": "Residencia y contacto copiados del responsable",
+      "empty": "El responsable no tiene residencia o contacto registrado"
+    },
     "sourceLabel": "Responsable de origen",
     "sourcePlaceholder": "Seleccione un responsable"
   },
@@ -217,6 +232,7 @@
   "errorFetchingOrderedFields": "Ocurrió un error al obtener campos ordenados para la jerarquía de direcciones",
   "errorFetchingResults": "Error al obtener resultados",
   "estimatedAgeInMonthsLabelText": "Edad estimada en meses",
+  "estimatedAgeInMonthsHelperText": "Opcional; ingrese de 0 a 11 meses adicionales",
   "estimatedAgeInvalid": "La edad aproximada debe ser un número entre 0 y 140",
   "estimatedAgeInYearsLabelText": "Edad estimada en años",
   "estimatedAgeOverMaximum": "La edad estimada no puede ser mayor de 140 años",
@@ -414,7 +430,7 @@
   "responsibleExistingPersonMustBeAdult": "El responsable del paciente debe ser mayor de edad",
   "responsibleExistingPersonRequired": "Debe seleccionar una persona existente",
   "responsibleFamilyName": "Apellido paterno",
-  "responsibleFamilyName2": "Apellido materno (opcional)",
+  "responsibleFamilyName2": "Apellido materno",
   "responsibleGivenName": "Primer nombre",
   "responsibleMiddleName": "Segundo nombre (opcional)",
   "responsiblePersonAgeUnknown": "El responsable debe tener edad o fecha de nacimiento registrada",
@@ -446,6 +462,8 @@
   "sisLookupButton": "Consultar SIS",
   "sisLookupError": "No se pudo consultar SIS",
   "sisLookupInvalidDni": "El DNI debe tener 8 dígitos",
+  "sisLookupInvalidTemporaryAffiliation": "La Afiliación Temporal debe tener el formato E- seguido de 8 dígitos",
+  "sisLookupNoIdentifier": "Seleccione DNI o Afiliación Temporal para consultar SIS",
   "sisLookupLoading": "Consultando SIS",
   "sisLookupNoDniIdentifier": "Seleccione DNI para consultar SIS",
   "sisLookupNoResults": "No se encontraron datos SIS",
@@ -459,6 +477,8 @@
   "sisManualClose": "Cerrar",
   "sisManualDniCopied": "DNI copiado",
   "sisManualDniCopyFailed": "No se pudo copiar el DNI; cópielo manualmente",
+  "sisManualIdentifierCopied": "Identificador copiado",
+  "sisManualIdentifierCopyFailed": "No se pudo copiar el identificador; cópielo manualmente",
   "sisManualEess": "EESS de adscripción (opcional)",
   "sisManualOffline": "Sin conexión: no se puede abrir la consulta SIS en línea. Registre el resultado manualmente; quedará como acreditación pendiente.",
   "sisManualProductLabel": "Producto SIS",

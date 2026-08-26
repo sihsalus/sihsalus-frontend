@@ -80,6 +80,13 @@ async function selectLocationAndService(
   await user.selectOptions(serviceSelect, serviceUuid);
 }
 
+async function enableResponsibleProvider(user: ReturnType<typeof userEvent.setup>) {
+  const providerSwitch = screen.getByRole('switch', { name: /responsible provider/i });
+  if (providerSwitch.getAttribute('aria-checked') !== 'true') {
+    await user.click(providerSwitch);
+  }
+}
+
 async function fillRequiredAppointmentFields(user: ReturnType<typeof userEvent.setup>, allDay = false) {
   const locationSelect = screen.getByRole('combobox', { name: /select a UPSS/i }) as HTMLSelectElement;
   if (!locationSelect.value) {
@@ -90,10 +97,11 @@ async function fillRequiredAppointmentFields(user: ReturnType<typeof userEvent.s
     ]);
   }
   await user.selectOptions(screen.getByRole('combobox', { name: /select the type of appointment/i }), ['Scheduled']);
-  const providerComboBox = screen.getByRole('combobox', { name: /select a provider/i });
-  await user.clear(providerComboBox);
-  await user.type(providerComboBox, 'James Cook');
-  await user.click(screen.getByRole('option', { name: 'doctor - James Cook' }));
+  await enableResponsibleProvider(user);
+  await user.selectOptions(
+    screen.getByRole('combobox', { name: /select a provider/i }),
+    mockProviders.data[0].uuid,
+  );
 
   if (allDay) {
     await user.click(screen.getByLabelText(/all day/i));
@@ -397,6 +405,31 @@ describe('AppointmentForm', () => {
     expect(screen.getByRole('option', { name: service.name })).toHaveValue(service.uuid);
   });
 
+  it('does not validate dependent fields while completing the form before submitting', async () => {
+    const user = userEvent.setup();
+    const serviceLocation = mockLocations.data.results.at(1);
+    const baseService = mockUseAppointmentServiceData.at(0);
+    if (!serviceLocation || !baseService) {
+      throw new Error('Appointment service and operational location fixtures are required');
+    }
+    mockOpenmrsFetch.mockResolvedValue({
+      data: [{ ...baseService, location: serviceLocation }],
+    } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+    await waitForLoadingToFinish();
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /select a UPSS/i }), serviceLocation.uuid);
+    expect(screen.getByRole('combobox', { name: /select a service/i })).toBeEnabled();
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), baseService.uuid);
+    await user.selectOptions(screen.getByRole('combobox', { name: /select the type of appointment/i }), ['WalkIn']);
+
+    expect(screen.queryByText('serviceRequired')).not.toBeInTheDocument();
+    expect(screen.queryByText('providerRequired')).not.toBeInTheDocument();
+    expect(mockShowSnackbar).not.toHaveBeenCalled();
+  });
+
   it('uses service UUIDs and filters duplicate service names by UPSS', async () => {
     const user = userEvent.setup();
     const firstLocation = mockLocations.data.results.at(0);
@@ -460,9 +493,7 @@ describe('AppointmentForm', () => {
 
     await waitForLoadingToFinish();
     expect(screen.getByRole('option', { name: serviceLocation.display })).toBeInTheDocument();
-    expect(
-      screen.queryByRole('option', { name: mockLocations.data.results[0].display }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: mockLocations.data.results[0].display })).not.toBeInTheDocument();
     await fillRequiredAppointmentFields(user);
 
     const locationSelect = screen.getByRole('combobox', { name: /select a UPSS/i });
@@ -548,9 +579,11 @@ describe('AppointmentForm', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: /select a UPSS/i }), firstLocation.uuid);
     await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), unroutedService.uuid);
     await user.selectOptions(screen.getByRole('combobox', { name: /select the type of appointment/i }), ['Scheduled']);
-    const providerComboBox = screen.getByRole('combobox', { name: /select a provider/i });
-    await user.type(providerComboBox, 'James Cook');
-    await user.click(screen.getByRole('option', { name: 'doctor - James Cook' }));
+    await enableResponsibleProvider(user);
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: /select a provider/i }),
+      mockProviders.data[0].uuid,
+    );
     await user.click(screen.getByRole('button', { name: /save and close/i }));
 
     expect(
@@ -822,7 +855,7 @@ describe('AppointmentForm', () => {
     expect(mockSaveAppointment).not.toHaveBeenCalled();
   });
 
-  it('warns but allows saving when the provider category is not confirmed in warn mode', async () => {
+  it('allows saving without showing a warning when the provider category is not confirmed in warn mode', async () => {
     const user = userEvent.setup();
     const categoryUuid = 'a0d4e64e-eb63-4271-bdf1-ffa10392c282';
     const categorizedService = {
@@ -846,7 +879,7 @@ describe('AppointmentForm', () => {
     await waitForLoadingToFinish();
     await fillRequiredAppointmentFields(user);
 
-    expect(screen.getByText('Categoría de agenda no confirmada')).toBeInTheDocument();
+    expect(screen.queryByText('Categoría de agenda no confirmada')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /save and close/i }));
 
     await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
@@ -907,9 +940,6 @@ describe('AppointmentForm', () => {
     renderWithSwr(<AppointmentForm {...defaultProps} />);
     await waitForLoadingToFinish();
     await selectLocationAndService(user);
-    const providerComboBox = screen.getByRole('combobox', { name: /select a provider/i });
-    await user.type(providerComboBox, 'doctor');
-
     expect(screen.getByRole('option', { name: mockProviders.data[0].display })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: mockProviders.data[1].display })).not.toBeInTheDocument();
   });
@@ -1377,7 +1407,7 @@ describe('AppointmentForm', () => {
     expect(mockSaveAppointment).not.toHaveBeenCalled();
   });
 
-  it('preselects the responsible provider from the session when the user has a provider account', async () => {
+  it('keeps responsible provider assignment disabled by default and toggles it without losing the form', async () => {
     const user = userEvent.setup();
     mockUseSession.mockReturnValue({
       ...mockSession.data,
@@ -1390,7 +1420,16 @@ describe('AppointmentForm', () => {
     await waitForLoadingToFinish();
     await selectLocationAndService(user);
 
-    expect(screen.getByRole('combobox', { name: /select a provider/i })).toHaveValue(mockProviders.data[0].display);
+    const providerSwitch = screen.getByRole('switch', { name: /responsible provider/i });
+    expect(providerSwitch).toHaveAttribute('type', 'button');
+    expect(providerSwitch).toHaveAttribute('aria-checked', 'false');
+    expect(screen.queryByRole('combobox', { name: /select a provider/i })).not.toBeInTheDocument();
+
+    await user.click(providerSwitch);
+
+    expect(providerSwitch).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('combobox', { name: /select a provider/i })).toHaveValue('');
+    expect(screen.getByRole('button', { name: /save and close/i })).toBeInTheDocument();
   });
 
   it('warns a provider when they select another responsible provider', async () => {
@@ -1407,10 +1446,11 @@ describe('AppointmentForm', () => {
     await selectLocationAndService(user);
 
     expect(screen.queryByText('Otro personal de salud seleccionado')).not.toBeInTheDocument();
-    const providerComboBox = screen.getByRole('combobox', { name: /select a provider/i });
-    await user.clear(providerComboBox);
-    await user.type(providerComboBox, 'Amstrong');
-    await user.click(screen.getByRole('option', { name: mockProviders.data[1].display }));
+    await enableResponsibleProvider(user);
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: /select a provider/i }),
+      mockProviders.data[1].uuid,
+    );
 
     expect(screen.getByText('Otro personal de salud seleccionado')).toBeInTheDocument();
     expect(
@@ -1433,7 +1473,8 @@ describe('AppointmentForm', () => {
     await waitForLoadingToFinish();
     await selectLocationAndService(user);
 
-    expect(screen.getByRole('combobox', { name: /select a provider/i })).toHaveValue('');
+    expect(screen.getByRole('switch', { name: /responsible provider/i })).toHaveAttribute('aria-checked', 'false');
+    expect(screen.queryByRole('combobox', { name: /select a provider/i })).not.toBeInTheDocument();
   });
 
   it('filters appointment services using configured patient gender rules', async () => {
@@ -1479,7 +1520,7 @@ describe('AppointmentForm', () => {
     expect(screen.getByRole('option', { name: unrestrictedService.name })).toBeInTheDocument();
   });
 
-  it('filters the responsible providers as the user types', async () => {
+  it('lists the available responsible providers', async () => {
     const user = userEvent.setup();
     mockUseSession.mockReturnValue({
       ...mockSession.data,
@@ -1491,12 +1532,10 @@ describe('AppointmentForm', () => {
 
     await waitForLoadingToFinish();
     await selectLocationAndService(user);
-
-    const providerComboBox = screen.getByRole('combobox', { name: /select a provider/i });
-    await user.type(providerComboBox, 'Amstrong');
+    await enableResponsibleProvider(user);
 
     expect(screen.getByRole('option', { name: 'doctor - Amstrong Neil' })).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: 'doctor - James Cook' })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'doctor - James Cook' })).toBeInTheDocument();
   });
 
   it('preserves the original issue date when a read-only form value is tampered with', async () => {

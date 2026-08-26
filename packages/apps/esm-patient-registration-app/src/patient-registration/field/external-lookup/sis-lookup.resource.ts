@@ -1,10 +1,11 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWRImmutable from 'swr/immutable';
+import { defaultSisOnlineVerificationUrl } from '../../../constants';
 
 // Portal oficial de consulta de asegurados SIS. No existe API pública del SIS
 // para IPRESS: la verificación interina es manual (el usuario consulta en línea
 // y registra el resultado en el mini-formulario).
-export const sisOnlineVerificationUrl = 'https://cel.sis.gob.pe/SisConsultaEnLinea';
+export const sisOnlineVerificationUrl = defaultSisOnlineVerificationUrl;
 
 export interface SisInsuranceLookupResult {
   documentNumber: string;

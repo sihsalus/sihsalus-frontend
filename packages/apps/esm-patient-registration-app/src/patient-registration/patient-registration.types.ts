@@ -236,7 +236,7 @@ export interface FormValues {
   };
   isDead: boolean;
   middleName: string;
-  monthsEstimated: number;
+  monthsEstimated: number | '';
   nonCodedCauseOfDeath: string;
   obs?: {
     [conceptUuid: string]: string;
@@ -250,7 +250,7 @@ export interface FormValues {
   personUuidToPromote?: string;
   relationships: Array<RelationshipValue>;
   telephoneNumber: string;
-  yearsEstimated: number;
+  yearsEstimated: number | '';
 }
 
 export interface PatientUuidMapType {

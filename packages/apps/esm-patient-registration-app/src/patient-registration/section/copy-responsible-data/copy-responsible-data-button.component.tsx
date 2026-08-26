@@ -11,6 +11,7 @@ import {
   type AddressProperties,
   type PatientAddress,
   type PersonAttributeResponse,
+  type RelationshipValue,
 } from '../../patient-registration.types';
 import { PatientRegistrationContext } from '../../patient-registration-context';
 import { birthAddressMarker, birthAddressMarkerField } from '../../patient-registration-utils';
@@ -61,9 +62,9 @@ const statusTextByMode: Record<CopyResponsibleDataMode, { button: string; succes
     empty: 'El responsable no tiene residencia o contacto registrado',
   },
   birthAddress: {
-    button: 'Copiar residencia del responsable como lugar de nacimiento',
-    success: 'Lugar de nacimiento copiado desde la residencia del responsable',
-    empty: 'El responsable no tiene residencia registrada',
+    button: 'Copiar residencia como lugar de nacimiento',
+    success: 'Lugar de nacimiento copiado desde la residencia del paciente',
+    empty: 'Primero registre la residencia del paciente',
   },
   insurance: {
     button: 'Copiar seguro del responsable',
@@ -82,6 +83,18 @@ function getResidenceAddress(addresses: Array<PatientAddress> = []) {
   return nonBirthAddresses.find((address) => address.preferred) ?? nonBirthAddresses[0] ?? addresses[0];
 }
 
+function getRelationshipSourceKey(relationship: RelationshipValue, index: number) {
+  return relationship.relatedPersonUuid || relationship.clientId || `pending-responsible-${index}`;
+}
+
+function getPendingResponsibleAddress(relationship: RelationshipValue): PatientAddress | undefined {
+  const address = relationship.newPerson?.address;
+  if (typeof address === 'string') {
+    return address.trim() ? { address1: address.trim() } : undefined;
+  }
+  return address;
+}
+
 export function CopyResponsibleDataButton({ mode }: CopyResponsibleDataButtonProps) {
   const { t } = useTranslation(moduleName);
   const configuredConfig = useConfig<RegistrationConfig>();
@@ -92,23 +105,25 @@ export function CopyResponsibleDataButton({ mode }: CopyResponsibleDataButtonPro
   const copyAbortControllerRef = useRef<AbortController | null>(null);
   const isMinor = registrationContext?.values ? isMinorPatient(registrationContext.values) : false;
 
-  const responsibleRelationships = useMemo(() => {
+  const responsibleSources = useMemo(() => {
     const relationships = registrationContext?.values?.relationships ?? [];
-    return relationships.filter(
-      (relationship) =>
-        relationship.action !== 'DELETE' &&
-        !!relationship.relatedPersonUuid &&
-        config.relationshipOptions?.minorResponsibleRelationshipTypes?.includes(relationship.relationshipType),
-    );
+    const candidates = relationships
+      .map((relationship, index) => ({ key: getRelationshipSourceKey(relationship, index), relationship }))
+      .filter(
+        ({ relationship }) =>
+          relationship.action !== 'DELETE' &&
+          (!!relationship.relatedPersonUuid || !!relationship.newPerson) &&
+          (relationship.isCompanion ||
+            config.relationshipOptions?.minorResponsibleRelationshipTypes?.includes(relationship.relationshipType)),
+      );
+    const primaryResponsibleSources = candidates.filter(({ relationship }) => relationship.isCompanion);
+    return primaryResponsibleSources.length > 0 ? primaryResponsibleSources : candidates;
   }, [config.relationshipOptions?.minorResponsibleRelationshipTypes, registrationContext?.values?.relationships]);
-  const responsiblePersonUuid =
-    responsibleRelationships.length === 1
-      ? responsibleRelationships[0].relatedPersonUuid
-      : responsibleRelationships.some(
-            (relationship) => relationship.relatedPersonUuid === selectedResponsiblePersonUuid,
-          )
-        ? selectedResponsiblePersonUuid
-        : '';
+  const responsibleSource =
+    responsibleSources.length === 1
+      ? responsibleSources[0]
+      : responsibleSources.find(({ key }) => key === selectedResponsiblePersonUuid);
+  const responsiblePersonUuid = responsibleSource?.relationship.relatedPersonUuid;
 
   const abortPendingCopy = useCallback(() => {
     copyAbortControllerRef.current?.abort();
@@ -117,21 +132,43 @@ export function CopyResponsibleDataButton({ mode }: CopyResponsibleDataButtonPro
 
   useEffect(() => {
     setStatus('idle');
-    if (responsiblePersonUuid) {
+    if (mode === 'birthAddress' || responsibleSource) {
       return abortPendingCopy;
     }
-  }, [abortPendingCopy, responsiblePersonUuid]);
+  }, [abortPendingCopy, mode, responsibleSource]);
 
-  const copyAddress = (fieldPrefix: 'address' | 'birthAddress', address?: PatientAddress) => {
+  const copyAddress = (
+    fieldPrefix: 'address' | 'birthAddress',
+    address?: PatientAddress,
+    replaceEmptyFields = false,
+  ) => {
     let copied = 0;
+    const currentAddress = registrationContext?.values?.[fieldPrefix] ?? {};
+    const copiedAddress: Partial<Record<AddressProperties, string>> = {};
+
     copyableAddressFields.forEach((field) => {
-      const value = address?.[field]?.trim();
+      const value = address?.[field]?.trim() ?? '';
+      if (value || replaceEmptyFields) {
+        copiedAddress[field] = value;
+        if (value) {
+          // Copying is a programmatic fill, not a user blur. Keeping these fields
+          // untouched prevents stale required errors from being shown while the
+          // complete address hierarchy is applied.
+          registrationContext?.setFieldTouched(`${fieldPrefix}.${field}`, false, false);
+        }
+      }
       if (value) {
-        registrationContext?.setFieldValue(`${fieldPrefix}.${field}`, value, false);
-        registrationContext?.setFieldTouched(`${fieldPrefix}.${field}`, true, false);
         copied += 1;
       }
     });
+
+    if (copied > 0) {
+      registrationContext?.setFieldValue(
+        fieldPrefix,
+        replaceEmptyFields ? copiedAddress : { ...currentAddress, ...copiedAddress },
+        false,
+      );
+    }
     return copied;
   };
 
@@ -149,6 +186,49 @@ export function CopyResponsibleDataButton({ mode }: CopyResponsibleDataButtonPro
   };
 
   const handleCopy = async () => {
+    if (mode === 'birthAddress') {
+      const copied = copyAddress('birthAddress', registrationContext?.values?.address, true);
+      setStatus(copied > 0 ? 'success' : 'warning');
+      return;
+    }
+
+    if (!responsibleSource) {
+      setStatus('warning');
+      return;
+    }
+
+    if (responsibleSource.relationship.newPerson && !responsiblePersonUuid) {
+      const responsiblePerson = responsibleSource.relationship.newPerson;
+      let copied = 0;
+      if (mode === 'residenceContact') {
+        copied += copyAddress('address', getPendingResponsibleAddress(responsibleSource.relationship));
+        if (responsiblePerson.phone) {
+          registrationContext?.setFieldValue(
+            `attributes.${config.fieldConfigurations.phone.personAttributeUuid}`,
+            responsiblePerson.phone,
+            false,
+          );
+          registrationContext?.setFieldTouched(
+            `attributes.${config.fieldConfigurations.phone.personAttributeUuid}`,
+            true,
+            false,
+          );
+          copied += 1;
+        }
+        if (responsiblePerson.mobilePhone) {
+          registrationContext?.setFieldValue(
+            `attributes.${peruMobilePhoneAttributeTypeUuid}`,
+            responsiblePerson.mobilePhone,
+            false,
+          );
+          registrationContext?.setFieldTouched(`attributes.${peruMobilePhoneAttributeTypeUuid}`, true, false);
+          copied += 1;
+        }
+      }
+      setStatus(copied > 0 ? 'success' : 'warning');
+      return;
+    }
+
     if (!responsiblePersonUuid) {
       setStatus('warning');
       return;
@@ -175,10 +255,6 @@ export function CopyResponsibleDataButton({ mode }: CopyResponsibleDataButtonPro
           peruMobilePhoneAttributeTypeUuid,
           peruEmailAttributeTypeUuid,
         ]);
-      }
-
-      if (mode === 'birthAddress') {
-        copied += copyAddress('birthAddress', residenceAddress);
       }
 
       if (mode === 'insurance') {
@@ -215,13 +291,13 @@ export function CopyResponsibleDataButton({ mode }: CopyResponsibleDataButtonPro
   const statusText = statusTextByMode[mode];
   const disabled = status === 'copying';
 
-  if (!isMinor) {
+  if (!isMinor && mode !== 'birthAddress') {
     return null;
   }
 
   return (
     <div className={styles.copyAction}>
-      {responsibleRelationships.length > 1 ? (
+      {mode !== 'birthAddress' && responsibleSources.length > 1 ? (
         <Select
           id={`copy-responsible-source-${mode}`}
           labelText={t('copyResponsibleData.sourceLabel', 'Responsable de origen')}
@@ -233,11 +309,16 @@ export function CopyResponsibleDataButton({ mode }: CopyResponsibleDataButtonPro
           }}
         >
           <SelectItem value="" text={t('copyResponsibleData.sourcePlaceholder', 'Seleccione un responsable')} />
-          {responsibleRelationships.map((relationship) => (
+          {responsibleSources.map(({ key, relationship }) => (
             <SelectItem
-              key={relationship.relatedPersonUuid}
-              value={relationship.relatedPersonUuid}
-              text={relationship.relatedPersonName ?? relationship.relatedPersonUuid}
+              key={key}
+              value={key}
+              text={
+                relationship.relatedPersonName ??
+                relationship.newPerson?.givenName ??
+                relationship.relatedPersonUuid ??
+                key
+              }
             />
           ))}
         </Select>
@@ -262,7 +343,7 @@ export function CopyResponsibleDataButton({ mode }: CopyResponsibleDataButtonPro
           kind="warning"
           lowContrast
           title={
-            responsiblePersonUuid
+            mode === 'birthAddress' || responsibleSource
               ? t(`copyResponsibleData.${mode}.empty`, statusText.empty)
               : t('copyResponsibleData.noResponsible', 'Seleccione un responsable antes de copiar datos')
           }

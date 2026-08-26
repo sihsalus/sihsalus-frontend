@@ -121,8 +121,8 @@ export const DobField: React.FC = () => {
     (e: { name?: string | number }) => {
       const birthdateEstimated = e.name === 'unknown';
       setFieldValue('birthdateEstimated', birthdateEstimated);
-      setFieldValue('birthdate', birthdateEstimated ? calcBirthdate(0, 0, dateOfBirth) : '');
-      setFieldValue('yearsEstimated', 0);
+      setFieldValue('birthdate', '');
+      setFieldValue('yearsEstimated', '');
       setFieldValue('monthsEstimated', '');
       setFieldTouched('birthdateEstimated', true, false);
     },
@@ -256,7 +256,7 @@ export const DobField: React.FC = () => {
                 value={monthsEstimated.value}
                 min={0}
                 max={estimatedMonthsConstraints.max}
-                required={!yearsEstimateMeta.value}
+                helperText={t('estimatedAgeInMonthsHelperText', 'Optional; enter 0 to 11 additional months')}
                 onBlur={(e) => {
                   monthsEstimated.onBlur(e);
                   setFieldTouched('monthsEstimated', true, false);

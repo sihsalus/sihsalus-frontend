@@ -1,4 +1,4 @@
-import { Type } from '@openmrs/esm-framework';
+import { Type, validators } from '@openmrs/esm-framework';
 
 const anamnesisConceptDefaults = {
   anamnesisUuid: '6d99603e-ae9d-4838-8a09-ba75e27ff1e9',
@@ -123,6 +123,54 @@ export const configSchema = {
     _type: Type.String,
     _description: 'Institutional origin name printed on referral sheets',
     _default: 'Hospital Santa Clotilde',
+  },
+  outpatientDocumentFacilityAddress: {
+    _type: Type.String,
+    _description:
+      'Verified facility location printed on outpatient documents. Do not replace it with an unverified street address.',
+    _default: 'Distrito de Napo, provincia de Maynas, Loreto',
+  },
+  outpatientDocumentFacilityPhone: {
+    _type: Type.String,
+    _description: 'Official facility telephone printed on outpatient documents',
+    _default: '965 336 199',
+  },
+  outpatientDocumentFacilityLocationUuid: {
+    _type: Type.UUID,
+    _description:
+      'Location UUID whose verified legacy contact values may be used as a deployment-order fallback on outpatient documents',
+    _default: '35d2234e-129a-4c40-abb2-1ae0b72c1602',
+  },
+  outpatientDocumentFacilityPhoneAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Location attribute type UUID containing the institutional telephone for outpatient documents',
+    _default: '07c79e2a-b4e8-4100-9210-6f87bc9b77c9',
+  },
+  outpatientDocumentFacilityIpressCodeAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Location attribute type UUID containing the unique IPRESS code for outpatient documents',
+    _default: '5fd2b028-5b40-4c85-9a65-01a7ea2cde2b',
+  },
+  recetaUnica: {
+    identifierSourceUuid: {
+      _type: Type.String,
+      _description:
+        'Fuente idgen (SequentialIdentifierGenerator) que emite el correlativo de la Receta Única. Vacío desactiva la emisión: sin numeración de servidor solo se imprime la hoja informativa. El log de idgen (fecha, usuario, comentario) es el registro de auditoría de emisión.',
+      _default: '',
+    },
+    validityDays: {
+      _type: Type.Number,
+      _description:
+        'Días de vigencia impresos en la receta a partir de la fecha de emisión del servidor. Confirmar el valor vigente con la dirección de farmacia según la directiva SISMED (RM 116-2018).',
+      _default: 3,
+      _validators: [validators.inRange(1, 30)],
+    },
+    collegiateNumberProviderAttributeTypeUuid: {
+      _type: Type.UUID,
+      _description:
+        'Provider attribute type con el número de colegiatura del prescriptor («Código de Colegio Profesional»). Si el profesional no lo tiene registrado, el espacio queda para completarse a mano.',
+      _default: 'ba8e90d1-3b9c-442e-b245-5b57ea34df64',
+    },
   },
   referralDestinations: {
     _type: Type.Array,
@@ -878,6 +926,16 @@ export interface ConfigObject {
   referralEncounterRoleUuid: string;
   referralOriginRenaesCode: string;
   referralOriginFacilityName: string;
+  outpatientDocumentFacilityAddress: string;
+  outpatientDocumentFacilityPhone: string;
+  outpatientDocumentFacilityLocationUuid: string;
+  outpatientDocumentFacilityPhoneAttributeTypeUuid: string;
+  outpatientDocumentFacilityIpressCodeAttributeTypeUuid: string;
+  recetaUnica: {
+    identifierSourceUuid: string;
+    validityDays: number;
+    collegiateNumberProviderAttributeTypeUuid: string;
+  };
   referralDestinations: Array<{
     renaesCode: string;
     name: string;

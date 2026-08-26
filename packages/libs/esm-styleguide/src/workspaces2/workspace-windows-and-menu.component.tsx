@@ -2,7 +2,7 @@ import { subscribeOpenmrsEvent } from '@openmrs/esm-emr-api';
 import { userHasAccess } from '@openmrs/esm-api';
 import { useSession } from '@openmrs/esm-react-utils';
 import classNames from 'classnames';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ActionMenu } from './action-menu2/action-menu2.component';
 import ActiveWorkspaceWindow from './active-workspace-window.component';
@@ -33,6 +33,10 @@ export function renderWorkspaceWindowsAndMenu(target: HTMLElement | null) {
 function WorkspaceWindowsAndMenu() {
   const { openedGroup, openedWindows, registeredGroupsByName, registeredWindowsByName } = useWorkspace2Store();
   const { user } = useSession();
+  const [hasRenderedActionMenu, setHasRenderedActionMenu] = useState(false);
+  const openedGroupName = openedGroup?.groupName;
+
+  useEffect(() => setHasRenderedActionMenu(false), [openedGroupName]);
 
   useEffect(() => {
     const unsubscribe = subscribeOpenmrsEvent('before-page-changed', (pageChangedEvent) => {
@@ -89,7 +93,16 @@ function WorkspaceWindowsAndMenu() {
         canDisplayWorkspaceWindow((window as typeof window & { privileges?: string | Array<string> }).privileges, user),
     )
     .sort((a, b) => (a.order ?? Number.MAX_VALUE) - (b.order ?? Number.MAX_VALUE));
-  const showActionMenu = windowsWithIcons.length > 0;
+  const hasActionMenuCandidates = windowsWithIcons.length > 0;
+  const focusedWindow = openedWindows.at(-1);
+  const focusedWindowDefinition = focusedWindow
+    ? (registeredWindowsByName[focusedWindow.windowName] as
+        | ((typeof registeredWindowsByName)[string] & { showActionMenu?: boolean })
+        | undefined)
+    : undefined;
+  const focusedWindowAllowsActionMenu = focusedWindowDefinition?.showActionMenu !== false;
+  const actionMenuCanRender = hasActionMenuCandidates && focusedWindowAllowsActionMenu;
+  const showActionMenu = actionMenuCanRender && hasRenderedActionMenu;
 
   return (
     <div
@@ -109,7 +122,13 @@ function WorkspaceWindowsAndMenu() {
           );
         })}
       </div>
-      {showActionMenu && <ActionMenu workspaceGroup={group} groupProps={openedGroup.props} />}
+      {actionMenuCanRender && (
+        <ActionMenu
+          workspaceGroup={group}
+          groupProps={openedGroup.props}
+          onVisibilityChange={setHasRenderedActionMenu}
+        />
+      )}
     </div>
   );
 }

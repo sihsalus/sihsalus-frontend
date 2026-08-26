@@ -28,7 +28,7 @@ import {
   shouldPreventPlainNumberPaste,
 } from '@openmrs/esm-utils';
 import { FieldArray, Formik, useField, useFormikContext } from 'formik';
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type RegistrationConfig } from '../../../config-schema';
 import { moduleName } from '../../../constants';
@@ -74,6 +74,7 @@ interface RelationshipViewProps {
   displayRelationshipTypes: RelationshipType[];
   showValidationErrors?: boolean;
   showMissingPersonSelectionError?: boolean;
+  onPersonConfirmed: (index: number) => void;
   remove: <T>(index: number) => T;
 }
 
@@ -386,6 +387,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
   displayRelationshipTypes,
   showValidationErrors = false,
   showMissingPersonSelectionError = false,
+  onPersonConfirmed,
   remove,
 }) => {
   const { t } = useTranslation(moduleName);
@@ -624,7 +626,8 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
     );
     setFieldValue(`relationships[${index}].relationshipType`, personFormValues.relationshipType);
     setFieldValue(`relationships[${index}].action`, 'ADD');
-  }, [index, markAllNewPersonFieldsTouched, personFormValues, requiresAdultResponsible, setFieldValue]);
+    onPersonConfirmed(index);
+  }, [index, markAllNewPersonFieldsTouched, onPersonConfirmed, personFormValues, requiresAdultResponsible, setFieldValue]);
 
   const handleEditPendingPerson = useCallback(() => {
     if (relationship.newPerson) {
@@ -752,13 +755,14 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                 <Layer>
                   <TextInput
                     id={`relationships[${index}].newPerson.familyName2`}
-                    labelText={t('responsibleFamilyName2', 'Second family name (optional)')}
+                    labelText={t('responsibleFamilyName2', 'Second family name')}
                     value={newPersonValues.familyName2}
                     maxLength={patientFamilyNameMaxLength}
                     onChange={handleNewPersonFieldChange('familyName2')}
                     onBlur={markNewPersonFieldTouched('familyName2')}
                     invalid={!!getFieldError('familyName2', personFormErrors)}
                     invalidText={getFieldError('familyName2', personFormErrors)}
+                    required
                   />
                 </Layer>
                 <div className={styles.responsibleBirthField}>
@@ -945,7 +949,7 @@ const PrimaryResponsibleSection: React.FC<PrimaryResponsibleSectionProps> = ({ r
   );
 
   return (
-    <div className={styles.relationshipSection}>
+    <div id="patient-responsible-section" className={styles.relationshipSection}>
       <div className={styles.sectionHeading}>
         <h3>{t('patientResponsibleSection', 'Patient responsible person')}</h3>
         <p>{t('patientResponsibleHelpText', 'Select only one person as the primary responsible person.')}</p>
@@ -998,6 +1002,7 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
   const configuredConfig = useConfig() as RegistrationConfig;
   const config = configuredConfig?.sections ? getEffectiveRegistrationConfig(configuredConfig) : configuredConfig;
   const [hasSeededDefaultRelationship, setHasSeededDefaultRelationship] = useState(false);
+  const [pendingResponsibleSelectionIndex, setPendingResponsibleSelectionIndex] = useState<number | null>(null);
   const previouslyRequiredResponsibleRelationship = useRef(false);
   const [, relationshipsMeta] = useField<Array<RelationshipValue>>('relationships');
   const { t } = useTranslation(moduleName);
@@ -1070,6 +1075,22 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
       ),
     [companionRelationshipTypeUuid, displayRelationshipTypes, requiresResponsibleRelationship],
   );
+
+  useLayoutEffect(() => {
+    if (pendingResponsibleSelectionIndex === null) {
+      return;
+    }
+
+    const responsibleSection = document.getElementById('patient-responsible-section');
+    const responsibleOption = document.getElementById(
+      `relationships[${pendingResponsibleSelectionIndex}].isCompanion`,
+    );
+    if (responsibleOption) {
+      responsibleSection?.scrollIntoView({ block: 'center', inline: 'nearest' });
+      responsibleOption.focus({ preventScroll: true });
+      setPendingResponsibleSelectionIndex(null);
+    }
+  }, [pendingResponsibleSelectionIndex, values.relationships]);
 
   useEffect(() => {
     const wasRequired = previouslyRequiredResponsibleRelationship.current;
@@ -1224,6 +1245,7 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
                         showMissingPersonSelectionError={
                           (submitCount > 0 || !!relationshipsMeta.touched) && !hasRelatedPerson(relationship)
                         }
+                        onPersonConfirmed={setPendingResponsibleSelectionIndex}
                         remove={remove}
                       />
                     </div>

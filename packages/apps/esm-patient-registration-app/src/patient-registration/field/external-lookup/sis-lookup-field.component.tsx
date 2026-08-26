@@ -32,7 +32,7 @@ import {
   replacePeruInsuranceCoverageInForm,
 } from '../../peru-registration-config';
 import styles from '../field.scss';
-import { dniPattern, getDniIdentifier } from './dni-identifier';
+import { dniPattern, getDniIdentifier, getTemporaryAffiliationIdentifier } from './dni-identifier';
 import {
   lookupSisInsuranceByDni,
   type SisInsuranceLookupResult,
@@ -161,6 +161,7 @@ export const SisLookupField = () => {
   const [affiliateCode, setAffiliateCode] = useState('');
   const [eessName, setEessName] = useState('');
 
+  const onlineVerificationUrl = config?.sisVerification?.onlineVerificationUrl ?? sisOnlineVerificationUrl;
   const productConceptUuid = config?.sisVerification?.productConceptUuid ?? peruSisProductConceptUuid;
   const { answers: productAnswers, isLoading: isLoadingProducts } = useSisProductAnswers(productConceptUuid);
 
@@ -170,26 +171,42 @@ export const SisLookupField = () => {
   );
   const dni = dniIdentifier?.[1]?.identifierValue?.trim() ?? '';
 
-  const validateDni = () => {
-    const normalizedDni = dni.replace(/\s+/g, '');
+  const temporaryAffiliationIdentifier = useMemo(
+    () => getTemporaryAffiliationIdentifier(values.identifiers ?? {}, identifierTypes ?? []),
+    [identifierTypes, values.identifiers],
+  );
+  const temporaryAffiliation = temporaryAffiliationIdentifier?.[1]?.identifierValue?.trim() ?? '';
+  const sisIdentifier = dni
+    ? { kind: 'dni' as const, value: dni }
+    : temporaryAffiliation
+      ? { kind: 'temporaryAffiliation' as const, value: temporaryAffiliation }
+      : null;
 
-    if (!dniIdentifier) {
+  const validateSisIdentifier = () => {
+    const normalizedIdentifier = sisIdentifier?.value.replace(/\s+/g, '').toUpperCase() ?? '';
+
+    if (!sisIdentifier) {
       setStatus({
         kind: 'warning',
-        title: t('sisLookupNoDniIdentifier', 'Seleccione DNI para consultar SIS'),
+        title: t('sisLookupNoIdentifier', 'Seleccione DNI o Afiliación Temporal para consultar SIS'),
       });
       return null;
     }
 
-    if (!dniPattern.test(normalizedDni)) {
+    const isValid =
+      sisIdentifier.kind === 'dni' ? dniPattern.test(normalizedIdentifier) : /^E-\d{8}$/.test(normalizedIdentifier);
+    if (!isValid) {
       setStatus({
         kind: 'warning',
-        title: t('sisLookupInvalidDni', 'El DNI debe tener 8 dígitos'),
+        title:
+          sisIdentifier.kind === 'dni'
+            ? t('sisLookupInvalidDni', 'El DNI debe tener 8 dígitos')
+            : t('sisLookupInvalidTemporaryAffiliation', 'La Afiliación Temporal debe tener el formato E- seguido de 8 dígitos'),
       });
       return null;
     }
 
-    return normalizedDni;
+    return normalizedIdentifier;
   };
 
   const openManualForm = () => {
@@ -199,35 +216,35 @@ export const SisLookupField = () => {
   };
 
   const handleOpenOnlineVerification = async () => {
-    const normalizedDni = validateDni();
-    if (!normalizedDni) {
+    const normalizedIdentifier = validateSisIdentifier();
+    if (!normalizedIdentifier) {
       return;
     }
 
     setStatus(null);
     // Synchronously within the user gesture so popup blockers allow the tab.
-    window.open(sisOnlineVerificationUrl, '_blank', 'noopener');
+    window.open(onlineVerificationUrl, '_blank', 'noopener');
     openManualForm();
 
-    const copied = await copyTextToClipboard(normalizedDni);
+    const copied = await copyTextToClipboard(normalizedIdentifier);
     if (copied) {
       showSnackbar({
         kind: 'success',
         isLowContrast: true,
-        title: t('sisManualDniCopied', 'DNI copiado'),
+        title: t('sisManualIdentifierCopied', 'Identificador copiado'),
       });
     } else {
       showSnackbar({
         kind: 'warning',
         isLowContrast: true,
-        title: t('sisManualDniCopyFailed', 'No se pudo copiar el DNI; cópielo manualmente'),
+        title: t('sisManualIdentifierCopyFailed', 'No se pudo copiar el identificador; cópielo manualmente'),
       });
     }
   };
 
   const handleAutoLookup = async () => {
-    const normalizedDni = validateDni();
-    if (!normalizedDni) {
+    const normalizedIdentifier = validateSisIdentifier();
+    if (!normalizedIdentifier) {
       return;
     }
 
@@ -235,7 +252,7 @@ export const SisLookupField = () => {
     setStatus(null);
 
     try {
-      const insurance = await lookupSisInsuranceByDni(normalizedDni);
+      const insurance = await lookupSisInsuranceByDni(normalizedIdentifier);
 
       if (!insurance) {
         setStatus({
@@ -273,11 +290,15 @@ export const SisLookupField = () => {
     }
 
     const product = productAnswers.find((answer) => answer.uuid === selectedProductUuid);
+    const currentInsuranceCode =
+      values.attributes?.[peruInsuranceTypeAttributeTypeUuid] === peruInsuranceSisConceptUuid
+        ? values.attributes?.[peruInsuranceCodeAttributeTypeUuid]?.trim()
+        : '';
     applySisVerificationToForm(
       {
         status: accreditation,
         method: verificationMethod,
-        insuranceCode: verificationMethod === 'setisis' ? affiliateCode.trim() || undefined : undefined,
+        insuranceCode: affiliateCode.trim() || currentInsuranceCode || undefined,
         productDisplay: product?.display,
         eessName: eessName.trim() || undefined,
         checkedAt: new Date().toISOString(),
@@ -300,7 +321,12 @@ export const SisLookupField = () => {
     <div className={styles.externalLookup}>
       <div className={styles.externalLookupHeader}>
         <h4 className={styles.productiveHeading02Light}>{t('sisLookupTitle', 'Verificación SIS')}</h4>
-        {dni ? <span className={styles.externalLookupDocument}>DNI {dni}</span> : null}
+        {sisIdentifier ? (
+          <span className={styles.externalLookupDocument}>
+            {sisIdentifier.kind === 'dni' ? 'DNI' : t('temporaryAffiliationShortLabel', 'Afiliación Temporal')}{' '}
+            {sisIdentifier.value}
+          </span>
+        ) : null}
       </div>
       <div className={styles.externalLookupAction}>
         <Button

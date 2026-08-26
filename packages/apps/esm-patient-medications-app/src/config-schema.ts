@@ -67,6 +67,19 @@ export const configSchema = {
       '1734AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 365, // Years
     },
   },
+  outpatientDurationUnitUuids: {
+    _type: Type.Array,
+    _description:
+      'Duration units offered for outpatient prescriptions. This keeps the clinical form focused while preserving the complete backend catalog for other care settings.',
+    _default: [
+      '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', // Days
+      '1073AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', // Weeks
+      '1074AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', // Months
+    ],
+    _elements: {
+      _type: Type.ConceptUuid,
+    },
+  },
   drugCategoryConceptSets: {
     _type: Type.Array,
     _description:
@@ -91,5 +104,6 @@ export interface ConfigObject {
   minimumCharacterLengthForDrugSearch: number;
   requireIndication: boolean;
   durationUnitsDaysMap: Record<string, number>;
+  outpatientDurationUnitUuids: Array<string>;
   drugCategoryConceptSets: Array<string>;
 }

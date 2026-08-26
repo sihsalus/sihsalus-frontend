@@ -1,6 +1,6 @@
 import { Type, validator, validators } from '@openmrs/esm-framework';
 
-import { personAttributeValueMaxLength } from './constants';
+import { defaultSisOnlineVerificationUrl, personAttributeValueMaxLength } from './constants';
 import { peruSisProductConceptUuid } from './patient-registration/peru-registration-config';
 
 export interface SectionDefinition {
@@ -121,6 +121,7 @@ export interface RegistrationConfig {
   };
   freeTextFieldConceptUuid: string;
   sisVerification: {
+    onlineVerificationUrl?: string;
     productConceptUuid: string;
   };
   bulkPatientImport: BulkPatientImportConfig;
@@ -651,6 +652,11 @@ export const esmPatientRegistrationSchema = {
     _type: Type.ConceptUuid,
   },
   sisVerification: {
+    onlineVerificationUrl: {
+      _type: Type.String,
+      _default: defaultSisOnlineVerificationUrl,
+      _description: 'URL HTTPS del portal externo que se abre para verificar la afiliación SIS.',
+    },
     productConceptUuid: {
       _type: Type.ConceptUuid,
       _default: peruSisProductConceptUuid,
@@ -659,6 +665,13 @@ export const esmPatientRegistrationSchema = {
     },
   },
   _validators: [
+    validator((config: RegistrationConfig) => {
+      try {
+        return new URL(config.sisVerification.onlineVerificationUrl).protocol === 'https:';
+      } catch {
+        return false;
+      }
+    }, '`sisVerification.onlineVerificationUrl` must be a valid HTTPS URL.'),
     validator(
       (config: RegistrationConfig) =>
         !config.bulkPatientImport.enabled || sha256Pattern.test(config.bulkPatientImport.approvedFileSha256),

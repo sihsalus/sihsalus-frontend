@@ -3,8 +3,8 @@ import { Download } from '@carbon/react/icons';
 import { createErrorHandler, showSnackbar, useConfig, usePatient } from '@openmrs/esm-framework';
 import {
   fetchVisitInsurance,
-  SIS_CONCEPT_UUID,
   SELF_FINANCED_CONCEPT_UUID,
+  SIS_CONCEPT_UUID,
   type VisitInsurance,
 } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useRef, useState } from 'react';
@@ -104,6 +104,9 @@ const InstitutionalReferralDownload: React.FC<InstitutionalReferralDownloadProps
         expectedVisitTypeUuid: config.visitTypes.ambulatory,
         patient: summaryPatient,
         facilityName: config.referralOriginFacilityName,
+        professionalRegistrationProviderAttributeTypeUuid: config.professionalRegistrationProviderAttributeTypeUuid,
+        responsibleEncounterTypeUuid: config.encounterTypes.visitNote,
+        responsibleFormUuid: config.formsList.visitNoteFormUuid,
         concepts: config.concepts,
       });
       const bytes = await createInstitutionalReferralPdf(

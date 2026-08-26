@@ -62,11 +62,20 @@ const source: VisitSummarySource = {
     {
       uuid: 'encounter-uuid',
       encounterDatetime: '2026-08-23T14:10:00.000-05:00',
+      encounterType: { uuid: 'visit-note-type' },
+      form: { uuid: 'visit-note-form' },
       encounterProviders: [
         {
           uuid: 'encounter-provider-uuid',
           provider: {
             uuid: 'provider-uuid',
+            attributes: [
+              {
+                uuid: 'registration-attribute',
+                value: 'CMP-12345',
+                attributeType: { uuid: 'professional-registration-type' },
+              },
+            ],
             person: { uuid: 'person-uuid', display: 'Dra. Demo' },
           },
         },
@@ -120,7 +129,15 @@ const source: VisitSummarySource = {
             coded: {
               uuid: 'coded-diagnosis',
               display: 'Cefalea',
-              mappings: [{ display: 'ICD-10: R51' }],
+              mappings: [
+                {
+                  display: 'ICD-10: R51',
+                  conceptReferenceTerm: {
+                    code: 'R51',
+                    conceptSource: { name: 'ICD-10' },
+                  },
+                },
+              ],
             },
           },
         },
@@ -165,6 +182,9 @@ function build(overrides: Partial<Parameters<typeof buildOutpatientVisitSummary>
     expectedVisitTypeUuid: 'ambulatory-type',
     patient,
     facilityName: 'IPRESS Sintética',
+    professionalRegistrationProviderAttributeTypeUuid: 'professional-registration-type',
+    responsibleEncounterTypeUuid: 'visit-note-type',
+    responsibleFormUuid: 'visit-note-form',
     concepts,
     ...overrides,
   });
@@ -190,6 +210,9 @@ describe('outpatient visit summary contract', () => {
     expect(representation.split('(')).toHaveLength(representation.split(')').length);
     expect(representation).toContain('patient:(uuid)');
     expect(representation).toContain('attributes:(uuid,voided,value,attributeType:(uuid))');
+    expect(representation).toContain('encounterType:(uuid),form:(uuid)');
+    expect(representation).toContain('provider:(uuid,display,attributes:(');
+    expect(representation).toContain('conceptReferenceTerm:(code,conceptSource:(name,display))');
     expect(representation).toContain('diagnoses:(');
     expect(representation).toContain('orders:(');
     expect(representation).toContain('previousOrder:(uuid)');
@@ -243,6 +266,11 @@ describe('outpatient visit summary contract', () => {
 
     expect(summary.patient.name).toBe('Paciente Sintético');
     expect(summary.providers).toEqual(['Dra. Demo']);
+    expect(summary).toMatchObject({
+      clinicalEncounterDatetime: '2026-08-23T14:10:00.000-05:00',
+      responsibleProvider: 'Dra. Demo',
+      responsibleProfessionalRegistration: 'CMP-12345',
+    });
     expect(summary.vitals).toMatchObject({
       bloodPressure: '110/70 mmHg',
       weight: '60 kg',
@@ -447,6 +475,41 @@ describe('outpatient visit summary contract', () => {
   it('does not claim a clinical report when the verified visit has no clinical data', () => {
     const emptySummary = build({ source: { ...source, encounters: [] } });
     expect(emptySummary.hasClinicalContent).toBe(false);
+  });
+
+  it('does not guess responsibility when the canonical encounter is ambiguous or lacks colegiatura', () => {
+    const canonicalEncounter = source.encounters?.[0];
+    if (!canonicalEncounter) throw new Error('The synthetic fixture requires an encounter.');
+    const ambiguous = build({
+      source: {
+        ...source,
+        encounters: [canonicalEncounter, { ...canonicalEncounter, uuid: 'duplicate-canonical-encounter' }],
+      },
+    });
+    const withoutRegistration = build({
+      source: {
+        ...source,
+        encounters: [
+          {
+            ...canonicalEncounter,
+            encounterProviders: canonicalEncounter.encounterProviders?.map((entry) => ({
+              ...entry,
+              provider: entry.provider ? { ...entry.provider, attributes: [] } : undefined,
+            })),
+          },
+        ],
+      },
+    });
+
+    expect(ambiguous).toMatchObject({
+      clinicalEncounterDatetime: null,
+      responsibleProvider: null,
+      responsibleProfessionalRegistration: null,
+    });
+    expect(withoutRegistration).toMatchObject({
+      responsibleProvider: 'Dra. Demo',
+      responsibleProfessionalRegistration: null,
+    });
   });
 
   it('does not combine blood pressure or BMI values recorded in different encounters', () => {

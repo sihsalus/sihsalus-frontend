@@ -30,6 +30,8 @@ export interface OutpatientVisitSummaryPdfLabels extends OutpatientMedicationOrd
   visitType: string;
   location: string;
   professional: string;
+  professionalRegistration: string;
+  professionalRegistrationMissing: string;
   vitalSigns: string;
   bloodPressure: string;
   temperature: string;
@@ -84,6 +86,7 @@ export interface OutpatientVisitSummaryPdfLabels extends OutpatientMedicationOrd
   medications: string;
   laboratoryOrders: string;
   otherOrders: string;
+  signatureAndStamp: string;
   generatedAt: string;
   page: string;
   disclaimer: string;
@@ -97,6 +100,8 @@ export interface OutpatientPatientInstructionsPdfLabels extends OutpatientMedica
   visitDate: string;
   location: string;
   professional: string;
+  professionalRegistration: string;
+  professionalRegistrationMissing: string;
   scheduledAppointment: string;
   scheduledAppointmentDate: string;
   scheduledAppointmentService: string;
@@ -176,6 +181,19 @@ export class OutpatientPdfUnsupportedCharacterError extends Error {
   constructor() {
     super('The PDF contains text that cannot be represented by the embedded font.');
     this.name = 'OutpatientPdfUnsupportedCharacterError';
+  }
+}
+
+export class OutpatientPdfClinicalResponsibilityError extends Error {
+  constructor() {
+    super('The clinical encounter must have one responsible professional.');
+    this.name = 'OutpatientPdfClinicalResponsibilityError';
+  }
+}
+
+function assertClinicalResponsibility(summary: OutpatientVisitSummary): void {
+  if (!summary.clinicalEncounterDatetime || !summary.responsibleProvider?.trim()) {
+    throw new OutpatientPdfClinicalResponsibilityError();
   }
 }
 
@@ -516,6 +534,7 @@ export async function createOutpatientVisitSummaryPdf(
   labels: OutpatientVisitSummaryPdfLabels,
   locale: string,
 ): Promise<Uint8Array> {
+  assertClinicalResponsibility(summary);
   const state = await createPdfState(labels.title, summary.facilityName, summary);
   const { document } = state;
 
@@ -530,10 +549,15 @@ export async function createOutpatientVisitSummaryPdf(
   drawField(state, labels.gender, summary.patient.gender);
 
   drawSectionTitle(state, labels.visit);
-  drawField(state, labels.visitDate, formatDate(summary.visitStart, locale));
+  drawField(state, labels.visitDate, formatDate(summary.clinicalEncounterDatetime, locale));
   drawField(state, labels.visitType, summary.visitType);
   drawField(state, labels.location, summary.location);
-  drawField(state, labels.professional, summary.providers.join(' · ') || null);
+  drawField(state, labels.professional, summary.responsibleProvider);
+  drawField(
+    state,
+    labels.professionalRegistration,
+    summary.responsibleProfessionalRegistration ?? labels.professionalRegistrationMissing,
+  );
 
   if (Object.values(summary.vitals).some(Boolean)) {
     drawSectionTitle(state, labels.vitalSigns);
@@ -638,6 +662,13 @@ export async function createOutpatientVisitSummaryPdf(
     summary.orders.filter((order) => order.category === 'other'),
   );
 
+  drawSignatureAndStampBlock(
+    state,
+    summary.responsibleProfessionalRegistration
+      ? labels.signatureAndStamp
+      : `${labels.signatureAndStamp} — ${labels.professionalRegistrationMissing}`,
+  );
+
   drawPdfFooter(state, labels, locale);
 
   return document.save();
@@ -649,6 +680,7 @@ export async function createOutpatientPatientInstructionsPdf(
   locale: string,
   scheduledAppointment?: OutpatientScheduledAppointment | null,
 ): Promise<Uint8Array> {
+  assertClinicalResponsibility(summary);
   const state = await createPdfState(labels.title, summary.facilityName, summary);
   const printableScheduledAppointment = isUpcomingScheduledAppointment(scheduledAppointment)
     ? scheduledAppointment
@@ -665,9 +697,14 @@ export async function createOutpatientPatientInstructionsPdf(
   );
 
   drawSectionTitle(state, labels.careDetails);
-  drawField(state, labels.visitDate, formatDate(summary.visitStart, locale));
+  drawField(state, labels.visitDate, formatDate(summary.clinicalEncounterDatetime, locale));
   drawField(state, labels.location, summary.location);
-  drawField(state, labels.professional, summary.providers.join(' · ') || null);
+  drawField(state, labels.professional, summary.responsibleProvider);
+  drawField(
+    state,
+    labels.professionalRegistration,
+    summary.responsibleProfessionalRegistration ?? labels.professionalRegistrationMissing,
+  );
 
   if (printableScheduledAppointment) {
     drawSectionTitle(state, labels.scheduledAppointment);
@@ -694,7 +731,12 @@ export async function createOutpatientPatientInstructionsPdf(
     );
   }
 
-  drawSignatureAndStampBlock(state, labels.signatureAndStamp);
+  drawSignatureAndStampBlock(
+    state,
+    summary.responsibleProfessionalRegistration
+      ? labels.signatureAndStamp
+      : `${labels.signatureAndStamp} — ${labels.professionalRegistrationMissing}`,
+  );
 
   drawPdfFooter(
     state,

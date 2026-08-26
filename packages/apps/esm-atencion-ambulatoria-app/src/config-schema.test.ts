@@ -74,4 +74,10 @@ describe('Atencion Ambulatoria configuration', () => {
   it('uses the canonical appointment-to-visit link attribute', () => {
     expect(configSchema.appointmentVisitAttributeTypeUuid._default).toBe('193508ab-20c6-5291-9f23-0257335eaabd');
   });
+
+  it('uses the provider colegiatura attribute provisioned by SIHSALUS content', () => {
+    expect(configSchema.professionalRegistrationProviderAttributeTypeUuid._default).toBe(
+      '0da4d3db-4385-40de-a4b0-fd8d89c4ec10',
+    );
+  });
 });

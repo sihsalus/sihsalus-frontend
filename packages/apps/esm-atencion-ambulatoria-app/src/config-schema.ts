@@ -114,6 +114,11 @@ export const configSchema = {
     _description: 'Encounter role assigned to the professional who records an institutional referral',
     _default: '240b26f9-dd88-4172-823d-4a8bfeb7841f',
   },
+  professionalRegistrationProviderAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Provider attribute type UUID containing the professional registration (CMP/colegiatura)',
+    _default: '0da4d3db-4385-40de-a4b0-fd8d89c4ec10',
+  },
   referralOriginRenaesCode: {
     _type: Type.String,
     _description: 'RENIPRESS code printed for the Santa Clotilde origin facility',
@@ -924,6 +929,7 @@ export interface ConfigObject {
   };
   appointmentVisitAttributeTypeUuid: string;
   referralEncounterRoleUuid: string;
+  professionalRegistrationProviderAttributeTypeUuid: string;
   referralOriginRenaesCode: string;
   referralOriginFacilityName: string;
   outpatientDocumentFacilityAddress: string;

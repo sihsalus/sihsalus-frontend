@@ -54,6 +54,8 @@ vi.mock('./outpatient-visit-summary.resource', () => ({
   buildOutpatientVisitSummary: vi.fn(() => ({
     visitUuid: 'visit-uuid',
     visitStart: '2026-08-23T14:00:00.000-05:00',
+    clinicalEncounterDatetime: '2026-08-24T00:10:00.000-05:00',
+    responsibleProfessionalRegistration: 'CMP-12345',
     hasClinicalContent: true,
   })),
   fetchOutpatientVisitSummarySource: vi.fn(async () => ({
@@ -112,6 +114,9 @@ describe('OutpatientVisitSummaryDownload', () => {
     mockUseConfig.mockReturnValue({
       appointmentVisitAttributeTypeUuid: 'appointment-link-type-uuid',
       visitTypes: { ambulatory: 'ambulatory-type' },
+      encounterTypes: { visitNote: 'visit-note-type' },
+      formsList: { visitNoteFormUuid: 'visit-note-form' },
+      professionalRegistrationProviderAttributeTypeUuid: 'professional-registration-type',
       outpatientDocumentFacilityAddress: 'Distrito de prueba, provincia de prueba, Loreto',
       outpatientDocumentFacilityPhone: '900 000 000',
       outpatientDocumentFacilityLocationUuid: 'hsc-location-uuid',
@@ -147,6 +152,8 @@ describe('OutpatientVisitSummaryDownload', () => {
     mockBuildSummary.mockReturnValue({
       visitUuid: 'visit-uuid',
       visitStart: '2026-08-23T14:00:00.000-05:00',
+      clinicalEncounterDatetime: '2026-08-24T00:10:00.000-05:00',
+      responsibleProfessionalRegistration: 'CMP-12345',
       hasClinicalContent: true,
     } as ReturnType<typeof buildOutpatientVisitSummary>);
     mockFetchSource.mockResolvedValue({
@@ -182,6 +189,9 @@ describe('OutpatientVisitSummaryDownload', () => {
         facilityAddress: 'Dirección vigente desde Location',
         facilityPhone: '911 111 111',
         facilityIpressCode: '00001111',
+        professionalRegistrationProviderAttributeTypeUuid: 'professional-registration-type',
+        responsibleEncounterTypeUuid: 'visit-note-type',
+        responsibleFormUuid: 'visit-note-form',
       }),
     );
     expect(mockUseOutpatientFacilityIdentity).toHaveBeenCalledWith({
@@ -193,8 +203,26 @@ describe('OutpatientVisitSummaryDownload', () => {
       fallbackPhone: '900 000 000',
       fallbackIpressCode: '00000000',
     });
-    expect(mockCreateVisitFileName).toHaveBeenCalledWith('visit-uuid', '2026-08-23T14:00:00.000-05:00');
+    expect(mockCreateVisitFileName).toHaveBeenCalledWith('visit-uuid', '2026-08-24T00:10:00.000-05:00');
     expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
+  });
+
+  it('warns but still generates the summary when colegiatura must be completed manually', async () => {
+    const user = userEvent.setup();
+    mockBuildSummary.mockReturnValue({
+      visitUuid: 'visit-uuid',
+      visitStart: '2026-08-23T14:00:00.000-05:00',
+      responsibleProfessionalRegistration: null,
+      hasClinicalContent: true,
+    } as ReturnType<typeof buildOutpatientVisitSummary>);
+
+    render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" />);
+    await user.click(screen.getByRole('button', { name: 'Descargar resumen de esta atención' }));
+
+    await waitFor(() => expect(mockCreateVisitPdf).toHaveBeenCalledOnce());
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'warning', title: 'Colegiatura no registrada' }),
+    );
   });
 
   it('generates the concise PDF and opens the browser print flow', async () => {
@@ -238,7 +266,7 @@ describe('OutpatientVisitSummaryDownload', () => {
       expect.any(String),
       scheduledAppointment,
     );
-    expect(mockCreateInstructionsFileName).toHaveBeenCalledWith('visit-uuid', '2026-08-23T14:00:00.000-05:00');
+    expect(mockCreateInstructionsFileName).toHaveBeenCalledWith('visit-uuid', '2026-08-24T00:10:00.000-05:00');
     expect(mockDownloadPdf).not.toHaveBeenCalled();
     expect(mockShowSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({

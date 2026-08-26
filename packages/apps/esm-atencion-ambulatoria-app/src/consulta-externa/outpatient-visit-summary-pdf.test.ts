@@ -12,6 +12,7 @@ import {
   downloadOutpatientVisitSummaryPdf,
   hasOutpatientPatientInstructions,
   type OutpatientPatientInstructionsPdfLabels,
+  OutpatientPdfClinicalResponsibilityError,
   type OutpatientVisitSummaryPdfLabels,
 } from './outpatient-visit-summary-pdf';
 
@@ -30,6 +31,8 @@ const patientInstructionsLabels: OutpatientPatientInstructionsPdfLabels = {
   visitDate: 'Fecha y hora de atención',
   location: 'Lugar de atención',
   professional: 'Personal de salud responsable',
+  professionalRegistration: 'N.° de colegiatura',
+  professionalRegistrationMissing: 'No registrado — completar manualmente',
   scheduledAppointment: 'Próxima cita programada',
   scheduledAppointmentDate: 'Fecha y hora',
   scheduledAppointmentService: 'Servicio',
@@ -76,6 +79,9 @@ const summary: OutpatientVisitSummary = {
   visitStart: '2026-08-23T14:00:00.000-05:00',
   visitEnd: null,
   location: 'Consulta Externa',
+  clinicalEncounterDatetime: '2026-08-23T14:10:00.000-05:00',
+  responsibleProvider: 'Dra. Demo',
+  responsibleProfessionalRegistration: 'CMP-12345',
   providers: ['Dra. Demo'],
   vitals: {
     bloodPressure: '110/70 mmHg',
@@ -161,6 +167,39 @@ describe('outpatient visit summary PDF', () => {
     const bytes = await createOutpatientVisitSummaryPdf(summary, labels, 'es-PE');
     expect(new TextDecoder().decode(bytes.slice(0, 8))).toMatch(/^%PDF-/);
     expect(bytes.byteLength).toBeGreaterThan(1_000);
+  });
+
+  it('keeps the printable manual completion path when colegiatura is not yet recorded', async () => {
+    const incompleteResponsibility = {
+      ...summary,
+      responsibleProfessionalRegistration: null,
+    };
+
+    await expect(createOutpatientVisitSummaryPdf(incompleteResponsibility, labels, 'es-PE')).resolves.toBeInstanceOf(
+      Uint8Array,
+    );
+    await expect(
+      createOutpatientPatientInstructionsPdf(incompleteResponsibility, patientInstructionsLabels, 'es-PE'),
+    ).resolves.toBeInstanceOf(Uint8Array);
+  });
+
+  it('fails closed when the canonical clinical encounter has no unique responsible professional', async () => {
+    await expect(
+      createOutpatientVisitSummaryPdf({ ...summary, responsibleProvider: null }, labels, 'es-PE'),
+    ).rejects.toBeInstanceOf(OutpatientPdfClinicalResponsibilityError);
+  });
+
+  it('renders the manual signature and stamp block in the full summary', async () => {
+    const labelsWithUnsupportedSignature = new Proxy(
+      {},
+      {
+        get: (_target, property) => (property === 'signatureAndStamp' ? 'Firma y sello manual 💊' : String(property)),
+      },
+    ) as OutpatientVisitSummaryPdfLabels;
+
+    await expect(
+      createOutpatientVisitSummaryPdf(summary, labelsWithUnsupportedSignature, 'es-PE'),
+    ).rejects.toHaveProperty('name', 'OutpatientPdfUnsupportedCharacterError');
   });
 
   it('paginates a single long clinical field instead of drawing it below the page', async () => {

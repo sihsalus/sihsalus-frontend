@@ -101,6 +101,11 @@ function getVisitSummaryLabels(t: TFunction): OutpatientVisitSummaryPdfLabels {
     visitType: t('visitType', 'Tipo de visita'),
     location: t('location', 'Lugar de atención'),
     professional: t('responsibleHealthProfessional', 'Personal de salud responsable'),
+    professionalRegistration: t('professionalRegistration', 'N.° de colegiatura'),
+    professionalRegistrationMissing: t(
+      'professionalRegistrationMissingForPrint',
+      'No registrado — completar manualmente',
+    ),
     vitalSigns: t('vitalSigns', 'Signos vitales y antropometría'),
     bloodPressure: t('bloodPressure', 'Presión arterial'),
     temperature: t('temperature', 'Temperatura'),
@@ -162,6 +167,7 @@ function getVisitSummaryLabels(t: TFunction): OutpatientVisitSummaryPdfLabels {
     medicationNumberOfRefills: t('outpatientMedicationNumberOfRefills', 'Número de renovaciones'),
     laboratoryOrders: t('laboratoryOrders', 'Órdenes de laboratorio'),
     otherOrders: t('otherOrders', 'Otras órdenes'),
+    signatureAndStamp: t('outpatientSummarySignatureAndStamp', 'Firma y sello manual del profesional responsable'),
     generatedAt: t('generatedAt', 'Generado'),
     page: t('page', 'Página'),
     disclaimer: t(
@@ -187,6 +193,11 @@ function getPatientInstructionsLabels(
     visitDate: t('visitDate', 'Fecha y hora de atención'),
     location: t('location', 'Lugar de atención'),
     professional: t('responsibleHealthProfessional', 'Personal de salud responsable'),
+    professionalRegistration: t('professionalRegistration', 'N.° de colegiatura'),
+    professionalRegistrationMissing: t(
+      'professionalRegistrationMissingForPrint',
+      'No registrado — completar manualmente',
+    ),
     instructions: t('outpatientPatientInstructionsSection', 'Indicaciones'),
     scheduledAppointment: t('outpatientPatientInstructionsScheduledAppointment', 'Próxima cita programada'),
     scheduledAppointmentDate: t('outpatientPatientInstructionsScheduledAppointmentDate', 'Fecha y hora'),
@@ -380,6 +391,9 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         facilityAddress: facilityIdentity.facilityAddress,
         facilityPhone: facilityIdentity.facilityPhone,
         facilityIpressCode: facilityIdentity.facilityIpressCode,
+        professionalRegistrationProviderAttributeTypeUuid: config.professionalRegistrationProviderAttributeTypeUuid,
+        responsibleEncounterTypeUuid: config.encounterTypes.visitNote,
+        responsibleFormUuid: config.formsList.visitNoteFormUuid,
         concepts: config.concepts,
       });
       return {
@@ -390,6 +404,9 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
     [
       config.appointmentVisitAttributeTypeUuid,
       config.concepts,
+      config.encounterTypes.visitNote,
+      config.formsList.visitNoteFormUuid,
+      config.professionalRegistrationProviderAttributeTypeUuid,
       config.visitTypes.ambulatory,
       facilityIdentity.facilityAddress,
       facilityIdentity.facilityIpressCode,
@@ -456,9 +473,17 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
                 'El documento contiene caracteres que no se pueden representar con seguridad. Revise el texto registrado o contacte a soporte.',
               )
             : null;
+        const missingResponsibleProfessionalMessage =
+          error instanceof Error && error.name === 'OutpatientPdfClinicalResponsibilityError'
+            ? t(
+                'outpatientPdfResponsibleProfessionalRequired',
+                'No se puede generar el documento: registre un único encuentro clínico con un diagnóstico principal y un profesional responsable.',
+              )
+            : null;
         showError(
           getErrorTitle(target),
           unsupportedCharacterMessage ??
+            missingResponsibleProfessionalMessage ??
             (target === 'patient-instructions'
               ? t(
                   'outpatientPatientInstructionsGenerationError',
@@ -502,11 +527,26 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         return;
       }
 
+      if (!summary.responsibleProfessionalRegistration) {
+        showSnackbar({
+          isLowContrast: false,
+          kind: 'warning',
+          title: t('professionalRegistrationMissing', 'Colegiatura no registrada'),
+          subtitle: t(
+            'professionalRegistrationMissingPrintWarning',
+            'El PDF se generará con la colegiatura pendiente para completarla manualmente antes de firmar y entregar.',
+          ),
+        });
+      }
+
       const bytes = await createOutpatientVisitSummaryPdf(summary, getVisitSummaryLabels(t), i18n.language || 'es-PE');
       if (!isCurrent()) return;
       downloadOutpatientVisitSummaryPdf(
         bytes,
-        createOutpatientVisitSummaryFileName(summary.visitUuid, summary.visitStart),
+        createOutpatientVisitSummaryFileName(
+          summary.visitUuid,
+          summary.clinicalEncounterDatetime ?? summary.visitStart,
+        ),
       );
       showSnackbar({
         isLowContrast: true,
@@ -555,7 +595,22 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         return;
       }
 
-      const fileName = createOutpatientPatientInstructionsFileName(summary.visitUuid, summary.visitStart);
+      if (!summary.responsibleProfessionalRegistration) {
+        showSnackbar({
+          isLowContrast: false,
+          kind: 'warning',
+          title: t('professionalRegistrationMissing', 'Colegiatura no registrada'),
+          subtitle: t(
+            'professionalRegistrationMissingPrintWarning',
+            'El PDF se generará con la colegiatura pendiente para completarla manualmente antes de firmar y entregar.',
+          ),
+        });
+      }
+
+      const fileName = createOutpatientPatientInstructionsFileName(
+        summary.visitUuid,
+        summary.clinicalEncounterDatetime ?? summary.visitStart,
+      );
       let bytes = await createOutpatientPatientInstructionsPdf(
         summary,
         getPatientInstructionsLabels(t, Boolean(summary.treatment?.nextAppointment?.trim())),

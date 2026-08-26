@@ -1,9 +1,9 @@
-import type { OutpatientVisitSummary } from './outpatient-visit-summary.resource';
 import {
   createInstitutionalReferralFileName,
   createInstitutionalReferralPdf,
   type InstitutionalReferralPdfData,
 } from './institutional-referral-pdf';
+import type { OutpatientVisitSummary } from './outpatient-visit-summary.resource';
 
 const summary: OutpatientVisitSummary = {
   visitUuid: 'visit-uuid',
@@ -20,6 +20,9 @@ const summary: OutpatientVisitSummary = {
   visitStart: '2026-08-25T09:00:00.000-05:00',
   visitEnd: null,
   location: 'Consulta Externa',
+  clinicalEncounterDatetime: '2026-08-25T09:10:00.000-05:00',
+  responsibleProvider: 'Dra. Sintética',
+  responsibleProfessionalRegistration: 'CMP-12345',
   providers: ['Dra. Sintética'],
   vitals: {
     bloodPressure: '110/70 mmHg',

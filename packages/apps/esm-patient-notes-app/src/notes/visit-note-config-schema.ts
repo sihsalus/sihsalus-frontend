@@ -172,6 +172,16 @@ export default {
     _description:
       "The UUID of the Visit Note form to be associated with visit note encounters",
   },
+  outpatientVisitTypeUuid: {
+    _type: Type.UUID,
+    _default: 'b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09',
+    _description: 'Visit type for Consulta Externa ambulatory encounters',
+  },
+  professionalRegistrationProviderAttributeTypeUuid: {
+    _type: Type.UUID,
+    _default: '0da4d3db-4385-40de-a4b0-fd8d89c4ec10',
+    _description: 'Provider attribute type that stores the professional registration (CMP/colegiatura)',
+  },
   // NTS-139: Tipo de diagnóstico — concepto con respuestas Presuntivo, Definitivo, Repetitivo
   diagnosisTypeConceptUuid: {
     _type: Type.UUID,
@@ -204,6 +214,8 @@ export interface VisitNoteConfigObject {
   encounterNoteTextConceptUuid: string;
   encounterTypeUuid: string;
   formConceptUuid: string;
+  outpatientVisitTypeUuid: string;
+  professionalRegistrationProviderAttributeTypeUuid: string;
   visitDiagnosesConceptUuid: string;
   codigoPrestacionalConceptUuid: string;
   chiefComplaintConceptUuid: string;

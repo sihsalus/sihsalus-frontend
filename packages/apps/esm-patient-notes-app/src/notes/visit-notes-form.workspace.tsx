@@ -35,9 +35,9 @@ import {
   showModal,
   showSnackbar,
   type UploadedFile,
-  userHasAccess,
   useConfig,
   useLayoutType,
+  userHasAccess,
   useSession,
   Workspace2,
 } from "@openmrs/esm-framework";
@@ -72,18 +72,19 @@ import type {
 import {
   formatPrestacionalDisplay,
   getCie10DisplayParts,
+  getCie10MappedCode,
   getPrestacionalDisplayParts,
 } from "./catalog-concept.utils";
 import { defaultVisitNoteClinicalConceptUuids } from "./visit-note-config-schema";
 import {
+  type ExistingEncounterDiagnosis,
+  type ExistingEncounterProvider,
   findActiveObservation,
   getReferenceUuid,
   reconcileDiagnosisTypeObservations,
   reconcileEncounterDiagnoses,
   reconcileEncounterProviders,
   reconcileObservation,
-  type ExistingEncounterDiagnosis,
-  type ExistingEncounterProvider,
 } from "./visit-note-submission";
 import {
   AmbiguousVisitNoteSaveError,
@@ -113,11 +114,13 @@ type VisitNotesFormData = Omit<
 
 interface VisitContextWithUuid {
   uuid?: string;
+  visitType?: { uuid?: string };
   location?: {
     uuid?: string;
   };
   visit?: {
     uuid?: string;
+    visitType?: { uuid?: string };
     location?: {
       uuid?: string;
     };
@@ -330,6 +333,8 @@ const VisitNotesFormContent: React.FC<
     diagnosisTypePresuntivoUuid,
     diagnosisTypeDefinitivoUuid,
     diagnosisTypeRepetitivoUuid,
+    outpatientVisitTypeUuid,
+    professionalRegistrationProviderAttributeTypeUuid,
   } = visitNoteConfig;
   const currentVisitContext = visitContext as
     | VisitContextWithUuid
@@ -337,6 +342,11 @@ const VisitNotesFormContent: React.FC<
     | undefined;
   const visitUuid =
     currentVisitContext?.visit?.uuid ?? currentVisitContext?.uuid;
+  const activeVisitTypeUuid =
+    currentVisitContext?.visit?.visitType?.uuid ??
+    currentVisitContext?.visitType?.uuid;
+  const isOutpatientVisit =
+    activeVisitTypeUuid?.toLowerCase() === outpatientVisitTypeUuid.toLowerCase();
   const encounterVisitUuid = getReferenceUuid(
     (
       encounter as
@@ -482,6 +492,43 @@ const VisitNotesFormContent: React.FC<
           ),
         };
       }
+      if (isOutpatientVisit && selectedPrimaryDiagnoses.length !== 1) {
+        requiredErrors.primaryDiagnosisSearch = {
+          type: "custom",
+          message: t(
+            "outpatientPrimaryDiagnosisExactlyOne",
+            "Consulta Externa requires exactly one primary diagnosis; record any others as secondary",
+          ),
+        };
+      }
+      if (
+        isOutpatientVisit &&
+        selectedPrimaryDiagnoses.some(
+          (diagnosis) => !getCie10MappedCode(diagnosis),
+        )
+      ) {
+        requiredErrors.primaryDiagnosisSearch = {
+          type: "custom",
+          message: t(
+            "diagnosisCie10MappingRequired",
+            "Every diagnosis must have a CIE-10 catalog mapping",
+          ),
+        };
+      }
+      if (
+        isOutpatientVisit &&
+        selectedSecondaryDiagnoses.some(
+          (diagnosis) => !getCie10MappedCode(diagnosis),
+        )
+      ) {
+        requiredErrors.secondaryDiagnosisSearch = {
+          type: "custom",
+          message: t(
+            "diagnosisCie10MappingRequired",
+            "Every diagnosis must have a CIE-10 catalog mapping",
+          ),
+        };
+      }
       // The benefit code feeds FUA/HIS reporting, so free text without a catalog
       // selection is not a valid value.
       if (!selectedCodigoPrestacional) {
@@ -509,7 +556,9 @@ const VisitNotesFormContent: React.FC<
     [
       visitNoteFormSchema,
       isPrimaryDiagnosisRequired,
+      isOutpatientVisit,
       selectedPrimaryDiagnoses,
+      selectedSecondaryDiagnoses,
       selectedCodigoPrestacional,
       t,
     ],
@@ -609,6 +658,8 @@ const VisitNotesFormContent: React.FC<
               display: codedConcept?.display
                 ? formatDiagnosisDisplay(codedConcept)
                 : d.display,
+              conceptMappings: codedConcept?.conceptMappings,
+              mappings: codedConcept?.mappings,
             };
           });
 
@@ -682,6 +733,7 @@ const VisitNotesFormContent: React.FC<
     : providerUuid;
   const { providerSignatureDetails } = useProviderSignatureDetails(
     registeredProviderUuid,
+    professionalRegistrationProviderAttributeTypeUuid,
   );
   const registeredProviderName =
     providerSignatureDetails.name ??
@@ -689,13 +741,12 @@ const VisitNotesFormContent: React.FC<
     encounterProvider?.display ??
     session?.currentProvider?.identifier;
   const registeredProviderCode =
-    providerSignatureDetails.professionalRegistration ??
-    providerSignatureDetails.identifier;
+    providerSignatureDetails.professionalRegistration;
 
   const debouncedSearch = useMemo(
     () =>
       debounce((fieldQuery, fieldName) => {
-        clearErrors("primaryDiagnosisSearch");
+        clearErrors(fieldName);
         if (fieldQuery) {
           if (fieldName === "primaryDiagnosisSearch") {
             setIsLoadingPrimaryDiagnoses(true);
@@ -798,6 +849,8 @@ const VisitNotesFormContent: React.FC<
       },
       patient: patientUuid,
       rank: 2,
+      conceptMappings: concept.conceptMappings,
+      mappings: concept.mappings,
     }),
     [patientUuid],
   );
@@ -953,6 +1006,35 @@ const VisitNotesFormContent: React.FC<
         }
         if (isPrimaryDiagnosisRequired && !selectedPrimaryDiagnoses.length)
           return;
+        if (isOutpatientVisit && selectedPrimaryDiagnoses.length !== 1) {
+          showSnackbar({
+            title: t("visitNoteSaveError", "Error saving visit note"),
+            subtitle: t(
+              "outpatientPrimaryDiagnosisExactlyOne",
+              "Consulta Externa requires exactly one primary diagnosis; record any others as secondary",
+            ),
+            kind: "error",
+            isLowContrast: false,
+          });
+          return;
+        }
+        if (
+          isOutpatientVisit &&
+          combinedDiagnoses.some(
+            (diagnosis) => !getCie10MappedCode(diagnosis),
+          )
+        ) {
+          showSnackbar({
+            title: t("visitNoteSaveError", "Error saving visit note"),
+            subtitle: t(
+              "diagnosisCie10MappingRequired",
+              "Every diagnosis must have a CIE-10 catalog mapping",
+            ),
+            kind: "error",
+            isLowContrast: false,
+          });
+          return;
+        }
         if (!visitUuid) {
           showSnackbar({
             title: t("visitNoteSaveError", "Error saving visit note"),
@@ -1189,6 +1271,7 @@ const VisitNotesFormContent: React.FC<
       isCanonicalVerificationBlocked,
       isEditing,
       isPrimaryDiagnosisRequired,
+      isOutpatientVisit,
       locationUuid,
       mutateAttachments,
       mutateVisitNotes,
@@ -1495,6 +1578,7 @@ const VisitNotesFormContent: React.FC<
                       "Choose a secondary diagnosis",
                     )}
                     handleSearch={handleSearch}
+                    error={errors?.secondaryDiagnosisSearch}
                     setIsSearching={setIsSearching}
                   />
                   {error ? (

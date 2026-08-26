@@ -106,6 +106,26 @@ export function getCie10DisplayParts(
   };
 }
 
+/**
+ * Returns only a code backed by an explicit CIE-10/ICD-10 concept mapping.
+ * Display text and code shape are intentionally not treated as authority:
+ * MINSA catalogs can contain valid local code variants, while legacy displays
+ * can merely look like a CIE-10 code.
+ */
+export function getCie10MappedCode(
+  concept: CatalogConcept,
+): string | undefined {
+  const mappings = concept.conceptMappings ?? concept.mappings ?? [];
+  const mappedCode = mappings.find(
+    (mapping) =>
+      cie10SourcePattern.test(getMappingSource(mapping)) &&
+      getMappingCode(mapping),
+  );
+  const code = mappedCode ? getMappingCode(mappedCode)?.trim() : undefined;
+
+  return code ? code.toLocaleUpperCase("es-PE") : undefined;
+}
+
 export function getPrestacionalDisplayParts(
   concept: CatalogConcept,
 ): CatalogDisplayParts {
@@ -121,7 +141,6 @@ export function getPrestacionalDisplayParts(
       prestacionalSourcePattern,
       prestacionalCodePattern,
     ) ?? displayedParts.code;
-
   return {
     code: code?.toLocaleUpperCase("es-PE"),
     name: displayedParts.name,

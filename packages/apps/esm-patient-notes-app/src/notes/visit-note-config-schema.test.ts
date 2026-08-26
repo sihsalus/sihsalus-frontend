@@ -27,4 +27,14 @@ describe('visit note clinical concept defaults', () => {
 
     expect(new Set(independentlyPersistedConceptUuids).size).toBe(independentlyPersistedConceptUuids.length);
   });
+
+  it('uses the provider colegiatura attribute provisioned by SIHSALUS content', () => {
+    expect(visitNoteConfigSchema.professionalRegistrationProviderAttributeTypeUuid._default).toBe(
+      '0da4d3db-4385-40de-a4b0-fd8d89c4ec10',
+    );
+  });
+
+  it('scopes the one-primary-diagnosis contract to the ambulatory visit type', () => {
+    expect(visitNoteConfigSchema.outpatientVisitTypeUuid._default).toBe('b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09');
+  });
 });

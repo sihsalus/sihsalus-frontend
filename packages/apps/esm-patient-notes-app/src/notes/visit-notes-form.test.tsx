@@ -1,8 +1,8 @@
 import {
   getDefaultsFromConfigSchema,
   showSnackbar,
-  userHasAccess,
   useConfig,
+  userHasAccess,
   useSession,
 } from "@openmrs/esm-framework";
 import dayjs from "dayjs";
@@ -318,6 +318,34 @@ test("keeps the resolved form visible but blocks saving when background verifica
   expect(mockSaveCanonicalVisitNote).not.toHaveBeenCalled();
 });
 
+test("preserves non-ambulatory Visit Notes behavior for a legacy display-only diagnosis", async () => {
+  const user = userEvent.setup();
+  mockFetchDiagnosisConceptsByName.mockResolvedValue([
+    { uuid: "legacy-display-only", display: "F15.5 - Trastorno mental" },
+  ]);
+  mockSaveCanonicalVisitNote.mockResolvedValueOnce({
+    status: 201,
+    data: { uuid: "non-ambulatory-encounter" },
+  } as Awaited<ReturnType<typeof saveCanonicalVisitNote>>);
+
+  renderVisitNotesForm();
+  await user.type(
+    screen.getByPlaceholderText("Choose a primary diagnosis"),
+    "F15.5",
+  );
+  await user.click(
+    await screen.findByRole("button", {
+      name: "F15.5 - Trastorno mental",
+    }),
+  );
+  await selectCodigoPrestacional(user);
+  await user.click(screen.getByRole("button", { name: /Save and close/i }));
+
+  await waitFor(() =>
+    expect(mockSaveCanonicalVisitNote).toHaveBeenCalledOnce(),
+  );
+});
+
 test("keeps the resolved form mounted while revalidating and blocks saving until verification completes", async () => {
   const user = userEvent.setup();
   mockUseCanonicalVisitNoteEncounter.mockReturnValue({
@@ -384,17 +412,21 @@ test("typing in the diagnosis search input triggers a search", async () => {
 
   // Wait for the search results to appear
   const targetSearchResult = await screen.findByRole("button", {
-    name: "Diabetes Mellitus",
+    name: "E14.9 - Diabetes Mellitus",
   });
   expect(targetSearchResult).toBeInTheDocument();
   expect(
-    screen.getByRole("button", { name: "Diabetes Mellitus, Type II" }),
+    screen.getByRole("button", {
+      name: "E11.9 - Diabetes Mellitus, Type II",
+    }),
   ).toBeInTheDocument();
 
   // clicking on a search result displays the selected diagnosis as a tag
   await user.click(targetSearchResult);
-  expect(screen.getByTitle("Diabetes Mellitus")).toBeInTheDocument();
-  const diabetesMellitusTag = screen.getByTitle(/^Diabetes Mellitus$/i);
+  expect(screen.getByTitle("E14.9 - Diabetes Mellitus")).toBeInTheDocument();
+  const diabetesMellitusTag = screen.getByTitle(
+    /^E14\.9 - Diabetes Mellitus$/i,
+  );
   expect(diabetesMellitusTag).toBeInTheDocument();
 
   const closeTagButton = screen.getByRole("button", { name: /clear filter/i });
@@ -420,7 +452,9 @@ test("enables saving when a diagnosis is added without editing another clinical 
   const searchBox = screen.getByPlaceholderText("Choose a primary diagnosis");
   await user.type(searchBox, "Diabetes Mellitus");
   await user.click(
-    await screen.findByRole("button", { name: "Diabetes Mellitus" }),
+    await screen.findByRole("button", {
+      name: "E14.9 - Diabetes Mellitus",
+    }),
   );
 
   expect(submitButton).toBeEnabled();
@@ -464,8 +498,190 @@ test("uses the CIE-10 concept mapping when the diagnosis name does not contain t
       conceptMappings: [
         {
           conceptReferenceTerm: {
-            code: "E11.9",
-            conceptSource: { name: "ICD-10-WHO" },
+            code: 'E11.9',
+            conceptSource: { name: 'ICD-10-WHO' },
+          },
+        },
+      ],
+    },
+  ]);
+
+  renderVisitNotesForm();
+
+  await user.type(screen.getByPlaceholderText('Choose a primary diagnosis'), 'diabetes');
+  const diagnosisOption = await screen.findByRole('button', {
+    name: 'E11.9 - Diabetes mellitus tipo II',
+  });
+  await user.click(diagnosisOption);
+
+  expect(screen.getByTitle('E11.9 - Diabetes mellitus tipo II')).toBeInTheDocument();
+});
+
+test('links both coded fields to their configured official Peruvian references', () => {
+  renderVisitNotesForm();
+
+  expect(
+    screen.getByRole('link', {
+      name: /official MINSA CIE-10 catalog/i,
+    }),
+  ).toHaveAttribute('href', 'https://www.minsa.gob.pe/reunis/index.asp?niv=1&op=3');
+  expect(
+    screen.getByRole('link', {
+      name: /official SIS reference for FUA prestational codes/i,
+    }),
+  ).toHaveAttribute('href', 'https://www.gob.pe/institucion/sis/normas-legales/7772769-000002-2026-sis-grep');
+});
+
+test('renders an error message when no matching diagnoses are found', async () => {
+  const user = userEvent.setup();
+  mockFetchDiagnosisConceptsByName.mockResolvedValue([]);
+
+  renderVisitNotesForm();
+
+  const searchBox = screen.getByPlaceholderText('Choose a primary diagnosis');
+  await user.type(searchBox, 'COVID-21');
+
+  await screen.findByText(/No diagnoses found/i);
+  expect(getByTextWithMarkup('No diagnoses found matching "COVID-21"')).toBeInTheDocument();
+});
+
+test('searches and saves one selected codigo prestacional concept', async () => {
+  const user = userEvent.setup();
+
+  mockUseConfig.mockReturnValue(getMockConfig({ prestacionalConceptSourceName: 'Codigos Prestacionales' }));
+  mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
+  mockFetchPrestacionalConceptsByName.mockResolvedValue([
+    { uuid: 'prestacional-001', display: '001 - Consulta externa' },
+    { uuid: 'prestacional-002', display: '002 - Control ambulatorio' },
+  ]);
+  mockSaveCanonicalVisitNote.mockResolvedValueOnce({
+    status: 201,
+    data: { uuid: 'new-visit-note-encounter-uuid' },
+  } as Awaited<ReturnType<typeof saveCanonicalVisitNote>>);
+
+  renderVisitNotesForm();
+
+  const diagnosisSearchBox = screen.getByPlaceholderText('Choose a primary diagnosis');
+  await user.type(diagnosisSearchBox, 'Diabetes Mellitus');
+  await user.click(await screen.findByRole('button', { name: 'E14.9 - Diabetes Mellitus' }));
+
+  const codigoPrestacionalSearchBox = screen.getByRole('searchbox', {
+    name: /indique el código prestacional/i,
+  });
+  await user.type(codigoPrestacionalSearchBox, 'consulta');
+
+  await waitFor(() =>
+    expect(mockFetchPrestacionalConceptsByName).toHaveBeenCalledWith('consulta', 'Codigos Prestacionales'),
+  );
+  await user.click(await screen.findByRole('button', { name: '001 - Consulta externa' }));
+
+  expect(screen.getByTitle('001 - Consulta externa')).toBeInTheDocument();
+  expect(codigoPrestacionalSearchBox).toBeDisabled();
+  expect(screen.queryByRole('button', { name: '002 - Control ambulatorio' })).not.toBeInTheDocument();
+
+  const submitButton = screen.getByRole('button', { name: /Save and close/i });
+  await user.click(submitButton);
+
+  await waitFor(() => expect(mockSaveCanonicalVisitNote).toHaveBeenCalledTimes(1));
+  expect(mockSaveCanonicalVisitNote).toHaveBeenCalledWith(
+    expect.any(AbortController),
+    expect.objectContaining({
+      obs: expect.arrayContaining([
+        expect.objectContaining({
+          concept: {
+            display: '',
+            uuid: defaultVisitNoteClinicalConceptUuids.codigoPrestacionalConceptUuid,
+          },
+          formFieldNamespace: 'visit-notes',
+          formFieldPath: 'codigo-prestacional',
+          // The selected catalog concept goes out as valueCoded. Sending its display
+          // text instead would require a Text question, and the previous target (the
+          // catalog ConvSet, datatype N/A) rejected every value with "Don't know how
+          // to handle ZZ", aborting the whole encounter.
+          value: 'prestacional-001',
+        }),
+      ]),
+    }),
+  );
+});
+
+test('does not save a diagnosis that only looks like CIE-10 without a catalog mapping', async () => {
+  const user = userEvent.setup();
+  mockFetchDiagnosisConceptsByName.mockResolvedValue([
+    { uuid: 'legacy-display-only', display: 'F15.5 - Trastorno mental' },
+  ]);
+  mockFetchPrestacionalConceptsByName.mockResolvedValue([
+    { uuid: 'prestacional-001', display: '001 - Consulta externa' },
+  ]);
+
+  renderVisitNotesForm(
+    {},
+    {
+      visitContext: {
+        uuid: 'active-visit-uuid',
+        visitType: { uuid: 'b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09' },
+        location: { uuid: 'operational-location-uuid' },
+      } as never,
+    },
+  );
+
+  await user.type(screen.getByPlaceholderText('Choose a primary diagnosis'), 'F15.5');
+  await user.click(await screen.findByRole('button', { name: 'F15.5 - Trastorno mental' }));
+  await user.type(screen.getByRole('searchbox', { name: /indique el código prestacional/i }), 'consulta');
+  await user.click(await screen.findByRole('button', { name: '001 - Consulta externa' }));
+  await user.click(screen.getByRole('button', { name: /Save and close/i }));
+
+  expect(await screen.findByText(/must have a CIE-10 catalog mapping/i)).toBeInTheDocument();
+  expect(mockSaveCanonicalVisitNote).not.toHaveBeenCalled();
+});
+
+test('does not save two primary diagnoses in Consulta Externa', async () => {
+  const user = userEvent.setup();
+  mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
+
+  renderVisitNotesForm(
+    {},
+    {
+      visitContext: {
+        uuid: 'active-visit-uuid',
+        visitType: { uuid: 'b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09' },
+        location: { uuid: 'operational-location-uuid' },
+      } as never,
+    },
+  );
+
+  const searchBox = screen.getByPlaceholderText('Choose a primary diagnosis');
+  await user.type(searchBox, 'Diabetes');
+  await user.click(await screen.findByRole('button', { name: 'E14.9 - Diabetes Mellitus' }));
+  await user.type(searchBox, 'Diabetes');
+  await user.click(await screen.findByRole('button', { name: 'E11.9 - Diabetes Mellitus, Type II' }));
+  await selectCodigoPrestacional(user);
+  await user.click(screen.getByRole('button', { name: /Save and close/i }));
+
+  expect(await screen.findByText(/requires exactly one primary diagnosis/i)).toBeInTheDocument();
+  expect(mockSaveCanonicalVisitNote).not.toHaveBeenCalled();
+});
+
+test('resolves colegiatura from the configured Provider attribute type', () => {
+  renderVisitNotesForm();
+
+  expect(mockUseProviderSignatureDetails).toHaveBeenCalledWith(
+    mockSessionDataResponse.data.currentProvider.uuid,
+    '0da4d3db-4385-40de-a4b0-fd8d89c4ec10',
+  );
+});
+
+test('puts a mapped SIS code before the prestational concept name', async () => {
+  const user = userEvent.setup();
+  mockFetchPrestacionalConceptsByName.mockResolvedValue([
+    {
+      uuid: 'prestacional-056',
+      display: 'Consulta externa',
+      conceptMappings: [
+        {
+          conceptReferenceTerm: {
+            code: '056',
+            conceptSource: { name: 'SIS' },
           },
         },
       ],
@@ -650,13 +866,8 @@ test("allows only one in-flight create when submit is triggered twice synchronou
   );
 
   renderVisitNotesForm();
-  await user.type(
-    screen.getByPlaceholderText("Choose a primary diagnosis"),
-    "Diabetes Mellitus",
-  );
-  await user.click(
-    await screen.findByRole("button", { name: "Diabetes Mellitus" }),
-  );
+  await user.type(screen.getByPlaceholderText('Choose a primary diagnosis'), 'Diabetes Mellitus');
+  await user.click(await screen.findByRole('button', { name: 'E14.9 - Diabetes Mellitus' }));
   await selectCodigoPrestacional(user);
 
   const submitButton = screen.getByRole("button", { name: /Save and close/i });
@@ -680,13 +891,9 @@ test("blocks saving until a catalog concept backs the mandatory codigo prestacio
 
   renderVisitNotesForm();
 
-  const diagnosisSearchBox = screen.getByPlaceholderText(
-    "Choose a primary diagnosis",
-  );
-  await user.type(diagnosisSearchBox, "Diabetes Mellitus");
-  await user.click(
-    await screen.findByRole("button", { name: "Diabetes Mellitus" }),
-  );
+  const diagnosisSearchBox = screen.getByPlaceholderText('Choose a primary diagnosis');
+  await user.type(diagnosisSearchBox, 'Diabetes Mellitus');
+  await user.click(await screen.findByRole('button', { name: 'E14.9 - Diabetes Mellitus' }));
 
   await user.click(screen.getByRole("button", { name: /Save and close/i }));
 
@@ -782,9 +989,9 @@ test("renders a success snackbar upon successfully recording a visit note", asyn
   const clinicalNote = screen.getByRole("textbox", {
     name: /Additional notes/i,
   });
-  const searchBox = screen.getByPlaceholderText("Choose a primary diagnosis");
-  await user.type(searchBox, "Diabetes Mellitus");
-  const targetSearchResult = await screen.findByText("Diabetes Mellitus");
+  const searchBox = screen.getByPlaceholderText('Choose a primary diagnosis');
+  await user.type(searchBox, 'Diabetes Mellitus');
+  const [targetSearchResult] = await screen.findAllByRole('button', { name: /Diabetes Mellitus/i });
   expect(targetSearchResult).toBeInTheDocument();
 
   await user.click(targetSearchResult);
@@ -850,9 +1057,9 @@ test("renders an error snackbar if there was a problem recording a condition", a
 
   const submitButton = screen.getByRole("button", { name: /Save and close/i });
 
-  const searchBox = screen.getByPlaceholderText("Choose a primary diagnosis");
-  await user.type(searchBox, "Diabetes Mellitus");
-  const targetSearchResult = await screen.findByText("Diabetes Mellitus");
+  const searchBox = screen.getByPlaceholderText('Choose a primary diagnosis');
+  await user.type(searchBox, 'Diabetes Mellitus');
+  const [targetSearchResult] = await screen.findAllByRole('button', { name: /Diabetes Mellitus/i });
   expect(targetSearchResult).toBeInTheDocument();
 
   await user.click(targetSearchResult);
@@ -892,7 +1099,18 @@ test("initializes form with existing encounter data when in edit mode", () => {
       {
         uuid: "456",
         diagnosis: {
-          coded: { uuid: "789", display: "Diabetes Mellitus" },
+          coded: {
+            uuid: '789',
+            display: 'Diabetes Mellitus',
+            conceptMappings: [
+              {
+                conceptReferenceTerm: {
+                  code: 'E14.9',
+                  conceptSource: { name: 'ICD-10' },
+                },
+              },
+            ],
+          },
         },
         certainty: "PROVISIONAL",
         rank: 1,
@@ -915,7 +1133,7 @@ test("initializes form with existing encounter data when in edit mode", () => {
   ).toHaveValue("Existing clinical note");
 
   // Verify diagnosis is pre-filled
-  expect(screen.getByTitle("Diabetes Mellitus")).toBeInTheDocument();
+  expect(screen.getByTitle('E14.9 - Diabetes Mellitus')).toBeInTheDocument();
 });
 
 test("updates existing visit note when in edit mode", async () => {
@@ -935,7 +1153,18 @@ test("updates existing visit note when in edit mode", async () => {
       {
         uuid: "456",
         diagnosis: {
-          coded: { uuid: "789", display: "Diabetes Mellitus" },
+          coded: {
+            uuid: '789',
+            display: 'Diabetes Mellitus',
+            conceptMappings: [
+              {
+                conceptReferenceTerm: {
+                  code: 'E14.9',
+                  conceptSource: { name: 'ICD-10' },
+                },
+              },
+            ],
+          },
         },
         certainty: "PROVISIONAL",
         rank: 1,
@@ -1052,13 +1281,13 @@ test("handles existing diagnoses correctly when in edit mode", async () => {
   expect(submitButton).toBeEnabled();
 
   // Add new diagnosis
-  const searchBox = screen.getByPlaceholderText("Choose a primary diagnosis");
-  await user.type(searchBox, "Diabetes Mellitus");
-  const targetSearchResult = await screen.findByText("Diabetes Mellitus");
+  const searchBox = screen.getByPlaceholderText('Choose a primary diagnosis');
+  await user.type(searchBox, 'Diabetes Mellitus');
+  const [targetSearchResult] = await screen.findAllByRole('button', { name: /Diabetes Mellitus/i });
   await user.click(targetSearchResult);
 
   // Verify new diagnosis is displayed
-  expect(screen.getByTitle("Diabetes Mellitus")).toBeInTheDocument();
+  expect(screen.getByTitle('E14.9 - Diabetes Mellitus')).toBeInTheDocument();
 });
 
 test("enables saving when only the diagnosis type changes", async () => {

@@ -118,10 +118,26 @@ export const diagnosisSearchResponse = {
     {
       uuid: '119481AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       display: 'Diabetes Mellitus',
+      conceptMappings: [
+        {
+          conceptReferenceTerm: {
+            code: 'E14.9',
+            conceptSource: { name: 'ICD-10' },
+          },
+        },
+      ],
     },
     {
       uuid: '142473AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       display: 'Diabetes Mellitus, Type II',
+      conceptMappings: [
+        {
+          conceptReferenceTerm: {
+            code: 'E11.9',
+            conceptSource: { name: 'ICD-10' },
+          },
+        },
+      ],
     },
   ],
 };

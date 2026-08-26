@@ -186,6 +186,8 @@ export interface Diagnosis {
   certainty: string;
   rank: number;
   display: string;
+  conceptMappings?: Array<ConceptReferenceMapping>;
+  mappings?: Array<ConceptReferenceMapping>;
   /** UUID de la respuesta al concepto "Tipo de diagnóstico" (NTS-139): Presuntivo | Definitivo | Repetitivo */
   tipoConceptUuid?: string;
 }

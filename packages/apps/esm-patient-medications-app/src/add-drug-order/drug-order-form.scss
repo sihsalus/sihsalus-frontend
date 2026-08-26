@@ -190,6 +190,11 @@
   }
 }
 
+.required {
+  color: colors.$red-60;
+  margin-left: layout.$spacing-01;
+}
+
 .buttonSet {
   margin-left: calc(layout.$spacing-05 * -1);
 

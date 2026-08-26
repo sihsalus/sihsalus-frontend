@@ -15,16 +15,17 @@ vi.mock('@openmrs/esm-framework', async () => {
   return {
     ...actual,
     OpenmrsDatePicker: React.forwardRef(
-      (_props: Record<string, unknown>, ref: import('react').ForwardedRef<HTMLSpanElement>) =>
-        React.createElement('span', { ref }, 'OpenmrsDatePicker'),
+      (props: Record<string, unknown>, ref: import('react').ForwardedRef<HTMLSpanElement>) =>
+        React.createElement('span', { ref }, props.labelText as import('react').ReactNode),
     ),
   };
 });
 
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseSession = vi.mocked(useSession);
+const defaultConfig = getDefaultsFromConfigSchema(configSchema) as ConfigObject;
 
-mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema) as ConfigObject);
+mockUseConfig.mockReturnValue(defaultConfig);
 mockUseSession.mockReturnValue(mockSessionDataResponse.data);
 
 vi.mock('../api/order-config', async () => ({
@@ -58,6 +59,15 @@ vi.mock('../api/api', async () => ({
     .mockReturnValue({ requireOutpatientQuantity: true, error: null, isLoading: false }),
 }));
 
+afterEach(() => {
+  mockUseConfig.mockReturnValue(defaultConfig);
+  (useRequireOutpatientQuantity as vi.Mock).mockReturnValue({
+    requireOutpatientQuantity: true,
+    error: null,
+    isLoading: false,
+  });
+});
+
 function renderDrugOrderForm(initialOrderBasketItem: DrugOrderBasketItem) {
   return render(
     <DrugOrderForm
@@ -81,6 +91,65 @@ function createNewOrderBasketItem(overrides?: Partial<DrugOrderBasketItem>): Dru
     ...overrides,
   } as DrugOrderBasketItem;
 }
+
+function getRequiredFieldLabels() {
+  return screen.getAllByTitle('Required').map((indicator) =>
+    indicator.parentElement?.textContent
+      ?.replace(/\s*\*$/, '')
+      .replace(/\s+/g, ' ')
+      .trim(),
+  );
+}
+
+describe('DrugOrderForm - required field indicators', () => {
+  it('marks every required field configured for a structured outpatient order', () => {
+    renderDrugOrderForm(createNewOrderBasketItem());
+
+    expect(getRequiredFieldLabels()).toEqual([
+      'Dose',
+      'Dose unit',
+      'Route',
+      'Frequency',
+      'Start date',
+      'Quantity to dispense',
+      'Quantity unit',
+      'Prescription refills',
+      'Indication',
+    ]);
+    screen.getAllByTitle('Required').forEach((indicator) => {
+      expect(indicator).toHaveTextContent('*');
+    });
+  });
+
+  it('marks free-text dosage instead of the structured dosage fields', async () => {
+    const user = userEvent.setup();
+    renderDrugOrderForm(createNewOrderBasketItem());
+
+    await user.click(screen.getByRole('switch', { name: /free text dosage/i }));
+
+    expect(getRequiredFieldLabels()).toEqual([
+      'Free text dosage',
+      'Start date',
+      'Quantity to dispense',
+      'Quantity unit',
+      'Prescription refills',
+      'Indication',
+    ]);
+  });
+
+  it('does not mark indication or dispensing fields when they are optional', () => {
+    mockUseConfig.mockReturnValue({ ...defaultConfig, requireIndication: false });
+    (useRequireOutpatientQuantity as vi.Mock).mockReturnValue({
+      requireOutpatientQuantity: false,
+      error: null,
+      isLoading: false,
+    });
+
+    renderDrugOrderForm(createNewOrderBasketItem());
+
+    expect(getRequiredFieldLabels()).toEqual(['Dose', 'Dose unit', 'Route', 'Frequency', 'Start date']);
+  });
+});
 
 describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
   it('prevents scientific notation and signs in medication dose and duration inputs', () => {

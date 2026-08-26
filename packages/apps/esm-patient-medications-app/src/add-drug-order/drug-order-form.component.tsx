@@ -125,6 +125,21 @@ function InputWrapper({ children }) {
   );
 }
 
+function RequiredFieldLabel({ label, required = true }: { label: string; required?: boolean }) {
+  const { t } = useTranslation();
+
+  return (
+    <span>
+      {label}
+      {required && (
+        <span aria-hidden="true" title={t('required', 'Required')} className={styles.required}>
+          *
+        </span>
+      )}
+    </span>
+  );
+}
+
 export function DrugOrderForm({
   initialOrderBasketItem,
   patient,
@@ -135,7 +150,7 @@ export function DrugOrderForm({
   workspaceTitle,
 }: DrugOrderFormProps) {
   const { t } = useTranslation();
-  const { daysDurationUnit, durationUnitsDaysMap } = useConfig<ConfigObject>();
+  const { daysDurationUnit, durationUnitsDaysMap, requireIndication } = useConfig<ConfigObject>();
   const isTablet = useLayoutType() === 'tablet';
   const { orderConfigObject, error: errorFetchingOrderConfig } = useOrderConfig();
   const { requireOutpatientQuantity } = useRequireOutpatientQuantity();
@@ -442,7 +457,7 @@ export function DrugOrderForm({
                       control={control}
                       name="freeTextDosage"
                       type="textArea"
-                      labelText={t('freeTextDosage', 'Free text dosage')}
+                      labelText={<RequiredFieldLabel label={t('freeTextDosage', 'Free text dosage')} />}
                       placeholder={t('freeTextDosage', 'Free text dosage')}
                       maxLength={65535}
                     />
@@ -460,7 +475,7 @@ export function DrugOrderForm({
                             name="dosage"
                             id="doseSelection"
                             placeholder={t('editDoseComboBoxPlaceholder', 'Dose')}
-                            label={t('editDoseComboBoxTitle', 'Dose')}
+                            label={<RequiredFieldLabel label={t('editDoseComboBoxTitle', 'Dose')} />}
                             min={0.01}
                             hideSteppers={true}
                             step={0.01}
@@ -478,7 +493,7 @@ export function DrugOrderForm({
                           id="dosingUnits"
                           shouldFilterItem={filterItemsByName}
                           placeholder={t('editDosageUnitsPlaceholder', 'Unit')}
-                          titleText={t('editDosageUnitsTitle', 'Dose unit')}
+                          titleText={<RequiredFieldLabel label={t('editDosageUnitsTitle', 'Dose unit')} />}
                           items={drugDosingUnits}
                           itemToString={(item: CommonMedicationValueCoded) => item?.value}
                         />
@@ -496,7 +511,7 @@ export function DrugOrderForm({
                           name="route"
                           placeholder={t('editRouteComboBoxTitle', 'Route')}
                           shouldFilterItem={filterItemsByName}
-                          titleText={t('editRouteComboBoxTitle', 'Route')}
+                          titleText={<RequiredFieldLabel label={t('editRouteComboBoxTitle', 'Route')} />}
                           type="comboBox"
                         />
                       </InputWrapper>
@@ -511,7 +526,7 @@ export function DrugOrderForm({
                           items={orderFrequencies}
                           shouldFilterItem={filterItemsBySynonymNames}
                           placeholder={t('editFrequencyComboBoxTitle', 'Frequency')}
-                          titleText={t('editFrequencyComboBoxTitle', 'Frequency')}
+                          titleText={<RequiredFieldLabel label={t('editFrequencyComboBoxTitle', 'Frequency')} />}
                           itemToString={(item: CommonMedicationValueCoded) => item?.value}
                         />
                       </InputWrapper>
@@ -585,7 +600,7 @@ export function DrugOrderForm({
                             {...field}
                             maxDate={new Date()}
                             id="startDatePicker"
-                            labelText={t('startDate', 'Start date')}
+                            labelText={<RequiredFieldLabel label={t('startDate', 'Start date')} />}
                             size={isTablet ? 'lg' : 'sm'}
                             invalid={Boolean(fieldState?.error?.message)}
                             invalidText={fieldState?.error?.message}
@@ -648,7 +663,12 @@ export function DrugOrderForm({
                       name="pillsDispensed"
                       type="number"
                       id="quantityDispensed"
-                      label={t('quantityToDispense', 'Quantity to dispense')}
+                      label={
+                        <RequiredFieldLabel
+                          label={t('quantityToDispense', 'Quantity to dispense')}
+                          required={requireOutpatientQuantity}
+                        />
+                      }
                       min={0}
                       hideSteppers
                       allowEmpty
@@ -681,7 +701,12 @@ export function DrugOrderForm({
                       name="quantityUnits"
                       placeholder={t('editDispensingUnit', 'Quantity unit')}
                       shouldFilterItem={filterItemsByName}
-                      titleText={t('editDispensingUnit', 'Quantity unit')}
+                      titleText={
+                        <RequiredFieldLabel
+                          label={t('editDispensingUnit', 'Quantity unit')}
+                          required={requireOutpatientQuantity}
+                        />
+                      }
                       type="comboBox"
                     />
                   </InputWrapper>
@@ -696,7 +721,12 @@ export function DrugOrderForm({
                         id="prescriptionRefills"
                         integer
                         min={0}
-                        label={t('prescriptionRefills', 'Prescription refills')}
+                        label={
+                          <RequiredFieldLabel
+                            label={t('prescriptionRefills', 'Prescription refills')}
+                            required={requireOutpatientQuantity}
+                          />
+                        }
                         max={99}
                         allowEmpty
                       />
@@ -706,7 +736,12 @@ export function DrugOrderForm({
                         isTablet={isTablet}
                         setValue={setValue}
                         name="numRefills"
-                        labelText={t('prescriptionRefills', 'Prescription refills')}
+                        labelText={
+                          <RequiredFieldLabel
+                            label={t('prescriptionRefills', 'Prescription refills')}
+                            required={requireOutpatientQuantity}
+                          />
+                        }
                         max={99}
                         min={0}
                       />
@@ -722,7 +757,9 @@ export function DrugOrderForm({
                       name="indication"
                       type="textInput"
                       id="indication"
-                      labelText={t('indication', 'Indication')}
+                      labelText={
+                        <RequiredFieldLabel label={t('indication', 'Indication')} required={requireIndication} />
+                      }
                       placeholder={t('indicationPlaceholder', 'e.g. "Hypertension"')}
                       maxLength={150}
                     />
@@ -768,7 +805,7 @@ interface CustomNumberInputProps {
   setValue: (name: keyof MedicationOrderFormData, value: number) => void;
   control: Control<MedicationOrderFormData>;
   name: keyof MedicationOrderFormData;
-  labelText: string;
+  labelText: React.ReactNode;
   isTablet: boolean;
   max?: number;
   min?: number;

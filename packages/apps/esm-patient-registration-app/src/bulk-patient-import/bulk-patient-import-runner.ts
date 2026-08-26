@@ -1,4 +1,5 @@
 import {
+  makeUrl,
   omrsOfflineCachingStrategyHttpHeaderName,
   openmrsFetch,
   restBaseUrl,
@@ -124,7 +125,7 @@ function assertConfiguredApproval(expected: BulkPatientImportExecutionContext) {
 }
 
 async function fetchFreshSession(signal?: AbortSignal): Promise<Session> {
-  const url = new URL(`${restBaseUrl}/session`, globalThis.location.origin);
+  const url = new URL(makeUrl(`${restBaseUrl}/session`), globalThis.location.origin);
   url.searchParams.set('_bulkPatientImportCheck', globalThis.crypto.randomUUID());
   const response = await openmrsFetch<Session>(url.href, {
     cache: 'no-store',

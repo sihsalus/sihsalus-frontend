@@ -199,7 +199,10 @@ function getPatientInstructionsLabels(
     ),
     medicationIndication: t('outpatientMedicationIndication', 'Indicación'),
     medicationNumberOfRefills: t('outpatientMedicationNumberOfRefills', 'Número de renovaciones'),
-    signatureAndStamp: t('outpatientPatientInstructionsSignatureAndStamp', 'Firma y sello del profesional responsable'),
+    signatureAndStamp: t(
+      'outpatientPatientInstructionsSignatureAndStamp',
+      'Firma, sello y N.° de colegiatura del profesional responsable',
+    ),
     generatedAt: t('generatedAt', 'Generado'),
     page: t('page', 'Página'),
     followUpDateDisclaimer: includesIndicatedFollowUpDate

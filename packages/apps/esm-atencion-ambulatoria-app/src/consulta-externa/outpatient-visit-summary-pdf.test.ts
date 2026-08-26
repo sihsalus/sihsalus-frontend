@@ -40,7 +40,7 @@ const patientInstructionsLabels: OutpatientPatientInstructionsPdfLabels = {
   medicationAsNeededReasonMissing: 'Según necesidad (PRN; motivo no registrado)',
   medicationIndication: 'Indicación',
   medicationNumberOfRefills: 'Número de renovaciones',
-  signatureAndStamp: 'Firma y sello del profesional responsable',
+  signatureAndStamp: 'Firma, sello y N.° de colegiatura del profesional responsable',
   generatedAt: 'Generado',
   page: 'Página',
   followUpDateDisclaimer:
@@ -274,7 +274,7 @@ describe('outpatient visit summary PDF', () => {
       expect(renderedText).toContain('Dra. Próxima');
       expect(renderedText).toContain('Fecha de control indicada');
       expect(renderedText).toContain('Medicamentos indicados');
-      expect(renderedText).toContain('Firma y sello del profesional responsable');
+      expect(renderedText).toContain('Firma, sello y N.° de colegiatura del profesional responsable');
       expect(renderedText).toContain('Paracetamol');
       expect(renderedText).toContain('500 mg');
       expect(renderedText).toContain('DNI: 00000000');

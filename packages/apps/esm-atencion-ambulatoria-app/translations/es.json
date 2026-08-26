@@ -188,7 +188,7 @@
   "outpatientPatientInstructionsScheduledAppointmentProfessional": "Profesional",
   "outpatientPatientInstructionsScheduledAppointmentService": "Servicio",
   "outpatientPatientInstructionsSection": "Indicaciones",
-  "outpatientPatientInstructionsSignatureAndStamp": "Firma y sello del profesional responsable",
+  "outpatientPatientInstructionsSignatureAndStamp": "Firma, sello y N.° de colegiatura del profesional responsable",
   "outpatientPdfUnsupportedCharacters": "El documento contiene caracteres que no se pueden representar con seguridad. Revise el texto registrado o contacte a soporte.",
   "outpatientPatientMedications": "Medicamentos indicados",
   "outpatientSummaryDisclaimer": "Resumen de una atención ambulatoria generado desde el registro clínico electrónico. No es un documento de alta hospitalaria ni reemplaza la firma o certificación institucional cuando corresponda.",

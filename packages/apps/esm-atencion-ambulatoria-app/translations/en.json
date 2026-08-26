@@ -188,7 +188,7 @@
   "outpatientPatientInstructionsScheduledAppointmentProfessional": "Professional",
   "outpatientPatientInstructionsScheduledAppointmentService": "Service",
   "outpatientPatientInstructionsSection": "Instructions",
-  "outpatientPatientInstructionsSignatureAndStamp": "Responsible professional's signature and stamp",
+  "outpatientPatientInstructionsSignatureAndStamp": "Responsible professional's signature, stamp, and license number",
   "outpatientPdfUnsupportedCharacters": "The document contains characters that cannot be represented safely. Review the recorded text or contact support.",
   "outpatientPatientMedications": "Medication instructions",
   "outpatientSummaryDisclaimer": "Summary of an outpatient encounter generated from the electronic clinical record. It is not a hospital discharge document and does not replace an institutional signature or certification when required.",

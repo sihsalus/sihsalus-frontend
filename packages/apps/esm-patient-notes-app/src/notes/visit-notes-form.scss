@@ -12,6 +12,31 @@
   color: colors.$gray-70;
 }
 
+.fieldLabelWithHelp {
+  display: flex;
+  align-items: flex-start;
+  gap: layout.$spacing-02;
+}
+
+.catalogHelpLink {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: layout.$spacing-01;
+  color: colors.$blue-60;
+}
+
+.catalogHelpLink:hover {
+  background-color: colors.$blue-10;
+  color: colors.$blue-70;
+}
+
+.catalogHelpLink:focus {
+  outline: 2px solid colors.$blue-60;
+  outline-offset: 1px;
+}
+
 .required {
   color: colors.$red-60;
   margin-left: layout.$spacing-01;

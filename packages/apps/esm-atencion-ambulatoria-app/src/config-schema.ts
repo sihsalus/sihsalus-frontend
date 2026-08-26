@@ -1,4 +1,4 @@
-import { Type } from '@openmrs/esm-framework';
+import { Type, validators } from '@openmrs/esm-framework';
 
 const anamnesisConceptDefaults = {
   anamnesisUuid: '6d99603e-ae9d-4838-8a09-ba75e27ff1e9',
@@ -101,6 +101,100 @@ export const configSchema = {
     _default: {
       ambulatory: 'b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09', // Atención Ambulatoria
     },
+  },
+
+  appointmentVisitAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Visit attribute type used to link the active outpatient visit to its originating appointment',
+    _default: '193508ab-20c6-5291-9f23-0257335eaabd',
+  },
+
+  referralEncounterRoleUuid: {
+    _type: Type.UUID,
+    _description: 'Encounter role assigned to the professional who records an institutional referral',
+    _default: '240b26f9-dd88-4172-823d-4a8bfeb7841f',
+  },
+  referralOriginRenaesCode: {
+    _type: Type.String,
+    _description: 'RENIPRESS code printed for the Santa Clotilde origin facility',
+    _default: '00000066',
+  },
+  referralOriginFacilityName: {
+    _type: Type.String,
+    _description: 'Institutional origin name printed on referral sheets',
+    _default: 'Hospital Santa Clotilde',
+  },
+  outpatientDocumentFacilityAddress: {
+    _type: Type.String,
+    _description:
+      'Verified facility location printed on outpatient documents. Do not replace it with an unverified street address.',
+    _default: 'Distrito de Napo, provincia de Maynas, Loreto',
+  },
+  outpatientDocumentFacilityPhone: {
+    _type: Type.String,
+    _description: 'Official facility telephone printed on outpatient documents',
+    _default: '965 336 199',
+  },
+  outpatientDocumentFacilityLocationUuid: {
+    _type: Type.UUID,
+    _description:
+      'Location UUID whose verified legacy contact values may be used as a deployment-order fallback on outpatient documents',
+    _default: '35d2234e-129a-4c40-abb2-1ae0b72c1602',
+  },
+  outpatientDocumentFacilityPhoneAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Location attribute type UUID containing the institutional telephone for outpatient documents',
+    _default: '07c79e2a-b4e8-4100-9210-6f87bc9b77c9',
+  },
+  outpatientDocumentFacilityIpressCodeAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Location attribute type UUID containing the unique IPRESS code for outpatient documents',
+    _default: '5fd2b028-5b40-4c85-9a65-01a7ea2cde2b',
+  },
+  recetaUnica: {
+    identifierSourceUuid: {
+      _type: Type.String,
+      _description:
+        'Fuente idgen (SequentialIdentifierGenerator) que emite el correlativo de la Receta Única. Vacío desactiva la emisión: sin numeración de servidor solo se imprime la hoja informativa. El log de idgen (fecha, usuario, comentario) es el registro de auditoría de emisión.',
+      _default: '',
+    },
+    validityDays: {
+      _type: Type.Number,
+      _description:
+        'Días de vigencia impresos en la receta a partir de la fecha de emisión del servidor. Confirmar el valor vigente con la dirección de farmacia según la directiva SISMED (RM 116-2018).',
+      _default: 3,
+      _validators: [validators.inRange(1, 30)],
+    },
+    collegiateNumberProviderAttributeTypeUuid: {
+      _type: Type.UUID,
+      _description:
+        'Provider attribute type con el número de colegiatura del prescriptor («Código de Colegio Profesional»). Si el profesional no lo tiene registrado, el espacio queda para completarse a mano.',
+      _default: 'ba8e90d1-3b9c-442e-b245-5b57ea34df64',
+    },
+  },
+  referralDestinations: {
+    _type: Type.Array,
+    _description:
+      'Verified referral destinations offered by the institutional referral form. Keep the RENIPRESS code with the historical selection.',
+    _elements: {
+      _type: Type.Object,
+      renaesCode: { _type: Type.String },
+      name: { _type: Type.String },
+    },
+    _default: [
+      {
+        renaesCode: '00000001',
+        name: 'Hospital Iquitos “César Garayar García”',
+      },
+      {
+        renaesCode: '00000003',
+        name: 'Hospital Regional de Loreto “Felipe Santiago Arriola Iglesias”',
+      },
+      {
+        renaesCode: '00011409',
+        name: 'Hospital III Iquitos — EsSalud',
+      },
+    ],
   },
 
   legacyCe001FieldPaths: {
@@ -533,6 +627,21 @@ export const configSchema = {
       _description: 'Tipo de referencia: Emergencia, Urgencia, Electiva (f0000170)',
       _default: 'f0000170-0000-4000-8000-000000000170',
     },
+    referralEmergencyUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Respuesta Emergencia para el tipo de referencia',
+      _default: 'f0000171-0000-4000-8000-000000000171',
+    },
+    referralUrgencyUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Respuesta Urgencia para el tipo de referencia',
+      _default: 'f0000172-0000-4000-8000-000000000172',
+    },
+    referralElectiveUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Respuesta Electiva para el tipo de referencia',
+      _default: 'f0000173-0000-4000-8000-000000000173',
+    },
     referralReasonUuid: {
       _type: Type.ConceptUuid,
       _description: 'Motivo de referencia',
@@ -543,10 +652,65 @@ export const configSchema = {
       _description: 'Establecimiento destino de la referencia (proyecto: establecimiento-destino-referencia)',
       _default: '6a1e18c1-8874-45fe-92dd-26758d5d6ba7',
     },
+    referralDestinationSpecialtyUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Especialidad de destino de la referencia institucional',
+      _default: 'fd1a48d5-f1cf-42b7-9b8c-141c9817f7a3',
+    },
+    referralDestinationSpecialtyOtherUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Especialidad de destino no incluida en el catálogo',
+      _default: '0344ee24-397e-47cb-8cb5-e5546b4da8db',
+    },
+    referralOtherSpecialtyUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Respuesta Otro para la especialidad de destino',
+      _default: '4cf9f13f-bbac-50db-8fac-85205b58b44c',
+    },
+    referralPatientConditionUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Condición del paciente al inicio del traslado',
+      _default: 'e6106442-523e-4043-973d-f33330025777',
+    },
+    referralPatientStableUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Respuesta Estable para la condición al inicio del traslado',
+      _default: '0f0baaea-9613-45c3-8a39-c2f5e14f4bbf',
+    },
+    referralPatientPoorConditionUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Respuesta Mal estado para la condición al inicio del traslado',
+      _default: '3176c0d4-e650-4454-9679-e3b989ecb140',
+    },
+    referralTransportModeUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Modo de transporte de la referencia institucional',
+      _default: 'd37c5028-3820-49fe-98da-d7d05049e601',
+    },
+    referralLandTransportUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Respuesta Terrestre para el modo de transporte',
+      _default: '844be877-6d20-45e2-876f-dc5de42edd67',
+    },
+    referralAirTransportUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Respuesta Aéreo para el modo de transporte',
+      _default: '2a228c88-7daf-4f60-9e55-c884c9302bd8',
+    },
+    referralRiverTransportUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Respuesta Fluvial para el modo de transporte',
+      _default: 'd5e04df9-d1dc-431e-bd71-c934ec3e18e2',
+    },
     counterReferralResponseUuid: {
       _type: Type.ConceptUuid,
       _description: 'Respuesta de contrarreferencia del establecimiento destino (f0000174)',
       _default: 'f0000174-0000-4000-8000-000000000174',
+    },
+    counterReferralConditionUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Condición del paciente al retorno registrada en la contrarreferencia (f0000175)',
+      _default: 'f0000175-0000-4000-8000-000000000175',
     },
   },
 
@@ -758,6 +922,24 @@ export interface ConfigObject {
   visitTypes: {
     ambulatory: string;
   };
+  appointmentVisitAttributeTypeUuid: string;
+  referralEncounterRoleUuid: string;
+  referralOriginRenaesCode: string;
+  referralOriginFacilityName: string;
+  outpatientDocumentFacilityAddress: string;
+  outpatientDocumentFacilityPhone: string;
+  outpatientDocumentFacilityLocationUuid: string;
+  outpatientDocumentFacilityPhoneAttributeTypeUuid: string;
+  outpatientDocumentFacilityIpressCodeAttributeTypeUuid: string;
+  recetaUnica: {
+    identifierSourceUuid: string;
+    validityDays: number;
+    collegiateNumberProviderAttributeTypeUuid: string;
+  };
+  referralDestinations: Array<{
+    renaesCode: string;
+    name: string;
+  }>;
   legacyCe001FieldPaths: {
     labOrders: string;
     prescriptions: string;

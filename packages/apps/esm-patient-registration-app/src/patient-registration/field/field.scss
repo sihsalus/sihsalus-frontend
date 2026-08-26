@@ -230,6 +230,12 @@
   max-width: 32rem;
 }
 
+.temporarySisConfirmation {
+  display: grid;
+  row-gap: layout.$spacing-04;
+  margin-block-start: layout.$spacing-05;
+}
+
 .identifierFieldRow {
   display: flex;
   align-items: center;

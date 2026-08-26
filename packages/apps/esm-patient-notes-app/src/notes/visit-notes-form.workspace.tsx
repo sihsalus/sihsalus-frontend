@@ -15,8 +15,9 @@ import {
   Stack,
   TextArea,
   Tile,
+  Tooltip,
 } from '@carbon/react';
-import { Add, CloseFilled, WarningFilled } from '@carbon/react/icons';
+import { Add, CloseFilled, Information, WarningFilled } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   createAttachment,
@@ -52,6 +53,7 @@ import { z } from 'zod';
 import type { ConfigObject } from '../config-schema';
 import { visitNotesEditPrivilege } from '../constants';
 import type { Concept, Diagnosis, ObsPayload, VisitNotePayload } from '../types';
+import { formatPrestacionalDisplay, getCie10DisplayParts, getPrestacionalDisplayParts } from './catalog-concept.utils';
 import { defaultVisitNoteClinicalConceptUuids } from './visit-note-config-schema';
 import {
   findActiveObservation,
@@ -176,7 +178,11 @@ interface SelectedDiagnosisProps {
   t: TFunction;
 }
 
-const cie10DisplayPattern = /^(?<name>.+?)\s*\((?<code>[A-Z][0-9][A-Z0-9.]{1,5})\)\s*$/i;
+interface CatalogHelpLinkProps {
+  ariaLabel: string;
+  href?: string;
+  tooltipLabel: string;
+}
 
 function isMostlyUpperCase(value: string) {
   const letters: Array<string> = value.match(/\p{L}/gu) ?? [];
@@ -210,24 +216,9 @@ function toReadableDiagnosisName(value: string) {
     .join(' ');
 }
 
-function getConceptMappingCode(concept: Concept) {
-  const mappings = concept.conceptMappings ?? concept.mappings ?? [];
-  const cie10Mapping = mappings.find((mapping) => {
-    const sourceName =
-      mapping.conceptReferenceTerm?.conceptSource?.name ?? mapping.conceptReferenceTerm?.conceptSource?.display ?? '';
-    return /icd[-\s]?10|cie[-\s]?10/i.test(sourceName);
-  });
-
-  return cie10Mapping?.conceptReferenceTerm?.code;
-}
-
 function formatDiagnosisDisplay(conceptOrDiagnosis: Concept | Diagnosis) {
-  const display = conceptOrDiagnosis.display?.trim() ?? '';
-  const codeFromMapping = 'uuid' in conceptOrDiagnosis ? getConceptMappingCode(conceptOrDiagnosis) : undefined;
-  const match = display.match(cie10DisplayPattern);
-  const code = codeFromMapping ?? match?.groups?.code;
-  const rawName = match?.groups?.name ?? display;
-  const readableName = toReadableDiagnosisName(rawName);
+  const { code, name } = getCie10DisplayParts(conceptOrDiagnosis);
+  const readableName = toReadableDiagnosisName(name);
 
   return code ? `${code.toLocaleUpperCase('es-PE')} - ${readableName}` : readableName;
 }
@@ -560,13 +551,16 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
       try {
         const transformedDiagnoses = encounter.diagnoses
           .filter((diagnosis) => !diagnosis.voided)
-          .map((d) => ({
-            patient: patientUuid,
-            diagnosis: { coded: d.diagnosis.coded?.uuid },
-            certainty: d.certainty,
-            rank: d.rank,
-            display: d.display,
-          }));
+          .map((d) => {
+            const codedConcept = d.diagnosis.coded as Concept | undefined;
+            return {
+              patient: patientUuid,
+              diagnosis: { coded: codedConcept?.uuid },
+              certainty: d.certainty,
+              rank: d.rank,
+              display: codedConcept?.display ? formatDiagnosisDisplay(codedConcept) : d.display,
+            };
+          });
 
         const primaryDiagnoses = transformedDiagnoses.filter((d) => d.rank === 1);
         const secondaryDiagnoses = transformedDiagnoses.filter((d) => d.rank === 2);
@@ -704,7 +698,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
       setSelectedCodigoPrestacional(concept);
       setCodigoPrestacionalSearchValue('');
       setSearchPrestacionalResults([]);
-      setValue('codigoPrestacional', concept.display, { shouldDirty: true });
+      setValue('codigoPrestacional', formatPrestacionalDisplay(concept), { shouldDirty: true });
       clearErrors('codigoPrestacional');
     },
     [clearErrors, setValue],
@@ -718,7 +712,7 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
   const createDiagnosis = useCallback(
     (concept: Concept) => ({
       certainty: 'PROVISIONAL',
-      display: concept.display,
+      display: formatDiagnosisDisplay(concept),
       diagnosis: {
         coded: concept.uuid,
       },
@@ -1275,11 +1269,21 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
             </div>
             <Row className={styles.row}>
               <Column sm={1}>
-                <span className={styles.columnLabel}>
-                  <RequiredFieldLabel
-                    label={t('primaryDiagnosisRequiredLabel', 'Diagnóstico principal (Obligatorio)')}
+                <div className={styles.fieldLabelWithHelp}>
+                  <span className={styles.columnLabel}>
+                    <RequiredFieldLabel
+                      label={t('primaryDiagnosisRequiredLabel', 'Diagnóstico principal (Obligatorio)')}
+                    />
+                  </span>
+                  <CatalogHelpLink
+                    ariaLabel={t('cie10OfficialSource', 'Open the official MINSA CIE-10 catalog')}
+                    href={config.cie10ReferenceUrl}
+                    tooltipLabel={t(
+                      'cie10OfficialSourceTooltip',
+                      'Consult the official MINSA CIE-10 catalog, including its spreadsheet and current updates.',
+                    )}
                   />
-                </span>
+                </div>
               </Column>
               <Column sm={3}>
                 <FormGroup legendText={t('searchForPrimaryDiagnosis', 'Search for a primary diagnosis')}>
@@ -1352,11 +1356,21 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
             </Row>
             <Row className={styles.row}>
               <Column sm={1}>
-                <span className={styles.columnLabel}>
-                  <RequiredFieldLabel
-                    label={t('codigoPrestacionalRequiredLabel', 'Código Prestacional (Obligatorio)')}
+                <div className={styles.fieldLabelWithHelp}>
+                  <span className={styles.columnLabel}>
+                    <RequiredFieldLabel
+                      label={t('codigoPrestacionalRequiredLabel', 'Código Prestacional (Obligatorio)')}
+                    />
+                  </span>
+                  <CatalogHelpLink
+                    ariaLabel={t('prestacionalOfficialSource', 'Open the official SIS prestational-code reference')}
+                    href={config.prestacionalReferenceUrl}
+                    tooltipLabel={t(
+                      'prestacionalOfficialSourceTooltip',
+                      'Consult the official SIS reference for FUA prestational codes.',
+                    )}
                   />
-                </span>
+                </div>
               </Column>
               <Column sm={3}>
                 <PrestacionalSearch
@@ -1376,8 +1390,8 @@ const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNote
                       className={styles.tag}
                       dismissTooltipLabel={t('clearFilter', 'Clear filter')}
                       onClose={handleRemovePrestacional}
-                      tagTitle={selectedCodigoPrestacional.display}
-                      text={selectedCodigoPrestacional.display}
+                      tagTitle={formatPrestacionalDisplay(selectedCodigoPrestacional)}
+                      text={formatPrestacionalDisplay(selectedCodigoPrestacional)}
                       title={t('clearFilter', 'Clear filter')}
                       type="cyan"
                     />
@@ -1767,17 +1781,29 @@ function PrestacionalSearch({
       {isLoading ? <Loader /> : null}
       {!isLoading && value && searchResults?.length > 0 ? (
         <ul className={styles.diagnosisList}>
-          {searchResults.map((prestacional) => (
-            <li className={styles.diagnosis} key={prestacional.uuid}>
-              <button
-                type="button"
-                className={classnames(styles.diagnosisButton, styles.diagnosisButtonSingle)}
-                onClick={() => onAddPrestacional(prestacional)}
-              >
-                <span className={styles.diagnosisName}>{prestacional.display}</span>
-              </button>
-            </li>
-          ))}
+          {searchResults.map((prestacional) => {
+            const { code, name } = getPrestacionalDisplayParts(prestacional);
+
+            return (
+              <li className={styles.diagnosis} key={prestacional.uuid}>
+                <button
+                  type="button"
+                  className={classnames(styles.diagnosisButton, {
+                    [styles.diagnosisButtonSingle]: !code,
+                  })}
+                  onClick={() => onAddPrestacional(prestacional)}
+                >
+                  {code ? (
+                    <>
+                      <span className={styles.diagnosisCode}>{code}</span>
+                      <span className={styles.diagnosisSeparator}>-</span>
+                    </>
+                  ) : null}
+                  <span className={styles.diagnosisName}>{name}</span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       ) : null}
       {!isLoading && value && searchResults?.length === 0 ? (
@@ -1799,6 +1825,28 @@ function PrestacionalSearch({
         />
       ) : null}
     </>
+  );
+}
+
+function CatalogHelpLink({ ariaLabel, href, tooltipLabel }: CatalogHelpLinkProps) {
+  const safeHref = href?.trim();
+  if (!safeHref?.startsWith('https://')) {
+    return null;
+  }
+
+  return (
+    <Tooltip align="right" label={tooltipLabel}>
+      <a
+        aria-label={ariaLabel}
+        className={styles.catalogHelpLink}
+        href={safeHref}
+        rel="noopener noreferrer"
+        target="_blank"
+        title={tooltipLabel}
+      >
+        <Information aria-hidden size={16} />
+      </a>
+    </Tooltip>
   );
 }
 
@@ -1836,27 +1884,26 @@ function DiagnosesDisplay({
   if (searchResults?.length > 0) {
     return (
       <ul className={styles.diagnosisList}>
-        {searchResults.map((diagnosis, index) => {
+        {searchResults.map((diagnosis) => {
           if (isDiagnosisNotSelected(diagnosis)) {
-            const formattedDiagnosis = formatDiagnosisDisplay(diagnosis);
-            const [code, ...nameParts] = formattedDiagnosis.split(' - ');
-            const diagnosisName = nameParts.join(' - ');
+            const { code, name } = getCie10DisplayParts(diagnosis);
+            const diagnosisName = toReadableDiagnosisName(name);
 
             return (
-              <li className={styles.diagnosis} key={index}>
+              <li className={styles.diagnosis} key={diagnosis.uuid}>
                 <button
                   type="button"
                   className={styles.diagnosisButton}
                   onClick={() => onAddDiagnosis(diagnosis, fieldName)}
                 >
-                  {diagnosisName ? (
+                  {code ? (
                     <>
                       <span className={styles.diagnosisCode}>{code}</span>
                       <span className={styles.diagnosisSeparator}>-</span>
                       <span className={styles.diagnosisName}>{diagnosisName}</span>
                     </>
                   ) : (
-                    <span className={styles.diagnosisName}>{formattedDiagnosis}</span>
+                    <span className={styles.diagnosisName}>{diagnosisName}</span>
                   )}
                 </button>
               </li>

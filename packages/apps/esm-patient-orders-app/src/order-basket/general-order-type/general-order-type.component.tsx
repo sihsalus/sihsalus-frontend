@@ -1,12 +1,12 @@
 import { Button, Tile } from '@carbon/react';
 import { ImageMedical, Medication, UserFollow } from '@carbon/react/icons';
-import { AddIcon, ChevronDownIcon, ChevronUpIcon, MaybeIcon } from '@openmrs/esm-framework';
+import { AddIcon, ChevronDownIcon, ChevronUpIcon, MaybeIcon, useConfig } from '@openmrs/esm-framework';
 import { type OrderBasketItem, useOrderBasket, useOrderType } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { type OrderTypeDefinition } from '../../config-schema';
+import { type ConfigObject, type OrderTypeDefinition } from '../../config-schema';
 
 import styles from './general-order-panel.scss';
 import OrderBasketItemTile from './order-basket-item-tile.component';
@@ -96,8 +96,14 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
 }) => {
   const { t } = useTranslation();
   const { orderType, isLoadingOrderType } = useOrderType(orderTypeUuid);
+  const { careSettingUuid } = useConfig<ConfigObject>();
+  const prepareOrderPostData = useCallback(
+    (order: OrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
+      prepOrderPostData(order, patientUuid, encounterUuid, careSettingUuid),
+    [careSettingUuid],
+  );
 
-  const { orders, setOrders } = useOrderBasket<OrderBasketItem>(orderTypeUuid, prepOrderPostData);
+  const { orders, setOrders } = useOrderBasket<OrderBasketItem>(orderTypeUuid, prepareOrderPostData);
   const [isExpanded, setIsExpanded] = useState(orders.length > 0);
   const {
     incompleteOrderBasketItems,

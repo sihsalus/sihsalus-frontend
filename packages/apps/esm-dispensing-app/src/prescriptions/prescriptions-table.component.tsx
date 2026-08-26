@@ -13,6 +13,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  Tag,
   Tile,
 } from '@carbon/react';
 import { formatDatetime, getUserFacingErrorMessage, parseDate, useConfig } from '@openmrs/esm-framework';
@@ -72,10 +73,10 @@ const PrescriptionsTable: React.FC<PrescriptionsTableProps> = ({
   // t('cancelled', 'Cancelled')
 
   let columns = [
-    { header: t('created', 'Created'), key: 'created' },
+    { header: t('datePrescribed', 'Date prescribed'), key: 'created' },
     { header: t('patientName', 'Patient name'), key: 'patient' },
-    { header: t('prescriber', 'Prescriber'), key: 'prescriber' },
-    { header: t('drugs', 'Drugs'), key: 'drugs' },
+    { header: t('prescribedBy', 'Prescribed by'), key: 'prescriber' },
+    { header: t('prescribedMedications', 'Prescribed medications'), key: 'drugs' },
     { header: t('lastDispenser', 'Last dispenser'), key: 'lastDispenser' },
     { header: t('status', 'Status'), key: 'status' },
   ];
@@ -140,8 +141,26 @@ const PrescriptionsTable: React.FC<PrescriptionsTableProps> = ({
                                   formatDatetime(parseDate(cell.value))
                                 ) : cell.id.endsWith('patient') ? (
                                   <PatientInfoCell patient={cell.value} />
+                                ) : cell.id.endsWith('drugs') ? (
+                                  <ul
+                                    aria-label={t('prescribedMedications', 'Prescribed medications')}
+                                    className={styles.prescribedMedications}
+                                  >
+                                    {String(cell.value)
+                                      .split('; ')
+                                      .filter(Boolean)
+                                      .map((medication) => (
+                                        <li key={medication}>{medication}</li>
+                                      ))}
+                                  </ul>
                                 ) : cell.id.endsWith('status') ? (
-                                  t(cell.value)
+                                  cell.value ? (
+                                    <Tag size="sm" type={getPrescriptionStatusTagType(cell.value)}>
+                                      {t(cell.value)}
+                                    </Tag>
+                                  ) : (
+                                    '—'
+                                  )
                                 ) : (
                                   cell.value
                                 )}
@@ -205,3 +224,20 @@ const PrescriptionsTable: React.FC<PrescriptionsTableProps> = ({
 };
 
 export default PrescriptionsTable;
+
+function getPrescriptionStatusTagType(status: string): 'blue' | 'green' | 'purple' | 'red' | 'gray' {
+  switch (status) {
+    case 'active':
+      return 'blue';
+    case 'completed':
+      return 'green';
+    case 'paused':
+      return 'purple';
+    case 'cancelled':
+    case 'closed':
+    case 'expired':
+      return 'red';
+    default:
+      return 'gray';
+  }
+}

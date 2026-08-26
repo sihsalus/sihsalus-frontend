@@ -1,7 +1,15 @@
 import { toOmrsIsoString } from '@openmrs/esm-framework';
 import { type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
+import { renderHook } from '@testing-library/react';
+import useSWRImmutable from 'swr/immutable';
 
-import { prepMedicationOrderPostData } from './api';
+import { prepMedicationOrderPostData, useRequireOutpatientQuantity } from './api';
+
+vi.mock('swr/immutable', () => ({
+  default: vi.fn(),
+}));
+
+const mockUseSWRImmutable = vi.mocked(useSWRImmutable);
 
 describe('prepMedicationOrderPostData', () => {
   const baseOrder = {
@@ -71,5 +79,38 @@ describe('prepMedicationOrderPostData', () => {
     const result = prepMedicationOrderPostData(order, 'patient-uuid', 'encounter-uuid', 'provider-uuid');
 
     expect(result.dateActivated).toBe(toOmrsIsoString(startDate));
+  });
+});
+
+describe('useRequireOutpatientQuantity', () => {
+  it.each([
+    {
+      state: { data: undefined, error: undefined, isLoading: true },
+      expected: true,
+      label: 'while the setting is loading',
+    },
+    {
+      state: { data: undefined, error: new Error('forbidden'), isLoading: false },
+      expected: true,
+      label: 'when the clinical role cannot read the setting',
+    },
+    {
+      state: { data: { data: { value: 'true' } }, error: undefined, isLoading: false },
+      expected: true,
+      label: 'when the setting is explicitly true',
+    },
+    {
+      state: { data: { data: { value: 'false' } }, error: undefined, isLoading: false },
+      expected: false,
+      label: 'only when the setting is explicitly false',
+    },
+  ])('uses the safe quantity policy $label', ({ state, expected }) => {
+    mockUseSWRImmutable.mockReturnValue(state as ReturnType<typeof useSWRImmutable>);
+
+    const { result } = renderHook(() => useRequireOutpatientQuantity());
+
+    expect(result.current.requireOutpatientQuantity).toBe(expected);
+    expect(result.current.isLoading).toBe(state.isLoading);
+    expect(result.current.error).toBe(state.error);
   });
 });

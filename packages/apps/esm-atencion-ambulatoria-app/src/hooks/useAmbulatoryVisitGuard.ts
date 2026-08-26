@@ -17,6 +17,7 @@ interface AmbulatoryVisitGuardOptions {
 }
 
 interface AmbulatoryVisitGuard {
+  verifiedAmbulatoryVisitUuid: string | null;
   requireAmbulatoryVisit: () => VerifiedAmbulatoryVisit | null;
 }
 
@@ -31,6 +32,16 @@ export function useAmbulatoryVisitGuard({
 }: AmbulatoryVisitGuardOptions): AmbulatoryVisitGuard {
   const { t } = useTranslation();
   const { currentVisit, error, isLoading, isValidating } = useVisitOrOfflineVisit(patientUuid);
+  const verifiedAmbulatoryVisitUuid =
+    !isLoading &&
+    !isValidating &&
+    !error &&
+    currentVisit?.uuid &&
+    currentVisit.startDatetime &&
+    ambulatoryVisitTypeUuid &&
+    currentVisit.visitType?.uuid?.toLowerCase() === ambulatoryVisitTypeUuid.toLowerCase()
+      ? currentVisit.uuid
+      : null;
 
   const showVisitError = useCallback(
     (subtitle: string) => {
@@ -94,5 +105,5 @@ export function useAmbulatoryVisitGuard({
     return currentVisit as VerifiedAmbulatoryVisit;
   }, [ambulatoryVisitTypeUuid, currentVisit, error, isLoading, isValidating, showVisitError, t]);
 
-  return { requireAmbulatoryVisit };
+  return { requireAmbulatoryVisit, verifiedAmbulatoryVisitUuid };
 }

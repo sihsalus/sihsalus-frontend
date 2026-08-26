@@ -137,6 +137,7 @@ const RequestInterconsultaWorkspaceForm: React.FC<RequestInterconsultaWorkspaceC
         const basketOrder: OrderBasketItem = {
           ...initialOrder,
           action: initialOrder?.action ?? 'NEW',
+          careSetting: config.careSettingUuid,
           concept: {
             uuid: destinationConceptUuid,
             display: destinationDisplay,
@@ -214,7 +215,13 @@ const RequestInterconsultaWorkspaceForm: React.FC<RequestInterconsultaWorkspaceC
   return (
     <Workspace2 title={t('requestInterconsulta', 'Solicitar interconsulta')} hasUnsavedChanges={isDirty}>
       <Form className={styles.form} onSubmit={handleSubmit}>
-        <Stack gap={5} className={styles.formContent}>
+        <Stack gap={6} className={styles.formContent}>
+          <p className={styles.formIntro}>
+            {t(
+              'requestInterconsultaIntro',
+              'Solicite la evaluación de otro profesional sin duplicar la información que ya está registrada en la historia clínica.',
+            )}
+          </p>
           {!visit && (
             <InlineNotification
               kind="error"
@@ -239,110 +246,140 @@ const RequestInterconsultaWorkspaceForm: React.FC<RequestInterconsultaWorkspaceC
               )}
             />
           )}
-          <RadioButtonGroup
-            legendText={t('destinationType', 'Tipo de destino')}
-            name="interconsulta-destination-type"
-            orientation="vertical"
-            valueSelected={destinationMode}
-            onChange={(value: DestinationMode) => setDestinationMode(value)}
-          >
-            <RadioButton
-              id="destination-local"
-              labelText={t('localConsultingRoom', 'Consultorio o servicio de Santa Clotilde')}
-              value="LOCAL"
-            />
-            <RadioButton
-              id="destination-external"
-              labelText={t('externalSpecialist', 'Especialista externo o remoto')}
-              value="EXTERNAL"
-            />
-          </RadioButtonGroup>
-          {isExternalDestination ? (
-            <>
-              <InlineNotification
-                kind="info"
-                lowContrast
-                hideCloseButton
-                title={t('externalInterconsultation', 'Interconsulta externa o remota')}
-                subtitle={t(
-                  'externalInterconsultationHelper',
-                  'Registra una consulta clínica entre profesionales. No genera referencia, contrarreferencia ni traslado.',
+          <section className={styles.formSection} aria-labelledby="interconsulta-destination-heading">
+            <header className={styles.sectionHeader}>
+              <h3 id="interconsulta-destination-heading" className={styles.sectionTitle}>
+                {t('destinationSectionTitle', 'Destino de la interconsulta')}
+              </h3>
+              <p className={styles.sectionDescription}>
+                {t(
+                  'destinationSectionHelper',
+                  'Seleccione el servicio que evaluará al paciente. Esto no crea una referencia ni un traslado.',
                 )}
-              />
-              <TextInput
-                id="interconsulta-external-specialist"
-                labelText={t('externalSpecialistName', 'Especialidad o profesional destino')}
-                helperText={t('externalSpecialistNameHelper', 'Ejemplo: Cardiología remota')}
-                maxLength={80}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => setExternalSpecialist(event.target.value)}
-                value={externalSpecialist}
-              />
-            </>
-          ) : (
-            <>
-              {destinationCatalogError && (
-                <InlineNotification
-                  kind="error"
-                  lowContrast
-                  hideCloseButton
-                  title={t('destinationCatalogError', 'No se pudo cargar el catálogo de consultorios')}
-                  subtitle={t('destinationCatalogErrorHelper', 'Actualice la pantalla o inténtelo nuevamente.')}
+              </p>
+            </header>
+            <Stack gap={5}>
+              <RadioButtonGroup
+                legendText={t('destinationType', 'Tipo de destino')}
+                name="interconsulta-destination-type"
+                orientation={isTablet ? 'vertical' : 'horizontal'}
+                valueSelected={destinationMode}
+                onChange={(value: DestinationMode) => setDestinationMode(value)}
+              >
+                <RadioButton
+                  id="destination-local"
+                  labelText={t('localConsultingRoom', 'Consultorio o servicio de Santa Clotilde')}
+                  value="LOCAL"
                 />
+                <RadioButton
+                  id="destination-external"
+                  labelText={t('externalSpecialist', 'Especialista externo o remoto')}
+                  value="EXTERNAL"
+                />
+              </RadioButtonGroup>
+              {isExternalDestination ? (
+                <>
+                  <InlineNotification
+                    kind="info"
+                    lowContrast
+                    hideCloseButton
+                    title={t('externalInterconsultation', 'Interconsulta externa o remota')}
+                    subtitle={t(
+                      'externalInterconsultationHelper',
+                      'Registra una consulta clínica entre profesionales. No genera referencia, contrarreferencia ni traslado.',
+                    )}
+                  />
+                  <TextInput
+                    id="interconsulta-external-specialist"
+                    labelText={t('externalSpecialistName', 'Especialidad o profesional destino')}
+                    helperText={t('externalSpecialistNameHelper', 'Ejemplo: Cardiología remota')}
+                    maxLength={80}
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => setExternalSpecialist(event.target.value)}
+                    value={externalSpecialist}
+                  />
+                </>
+              ) : (
+                <>
+                  {destinationCatalogError && (
+                    <InlineNotification
+                      kind="error"
+                      lowContrast
+                      hideCloseButton
+                      title={t('destinationCatalogError', 'No se pudo cargar el catálogo de consultorios')}
+                      subtitle={t('destinationCatalogErrorHelper', 'Actualice la pantalla o inténtelo nuevamente.')}
+                    />
+                  )}
+                  <ComboBox
+                    id="interconsulta-service"
+                    items={services}
+                    itemToString={(item: OrderableService | null) => item?.display ?? ''}
+                    onChange={({ selectedItem }: { selectedItem: OrderableService | null }) => setService(selectedItem)}
+                    onInputChange={(input: string) => setSearchTerm(input ?? '')}
+                    placeholder={t('searchService', 'Buscar consultorio o servicio...')}
+                    selectedItem={service}
+                    titleText={t('destinationService', 'Consultorio o servicio destino')}
+                    helperText={
+                      isLoadingServices
+                        ? t('loading', 'Cargando...')
+                        : t('destinationServiceHelper', 'Seleccione un consultorio o servicio')
+                    }
+                  />
+                </>
               )}
-              <ComboBox
-                id="interconsulta-service"
-                items={services}
-                itemToString={(item: OrderableService | null) => item?.display ?? ''}
-                onChange={({ selectedItem }: { selectedItem: OrderableService | null }) => setService(selectedItem)}
-                onInputChange={(input: string) => setSearchTerm(input ?? '')}
-                placeholder={t('searchService', 'Buscar consultorio o servicio...')}
-                selectedItem={service}
-                titleText={t('destinationService', 'Consultorio o servicio destino')}
-                helperText={
-                  isLoadingServices
-                    ? t('loading', 'Cargando...')
-                    : t('destinationServiceHelper', 'Seleccione un consultorio o servicio')
-                }
+            </Stack>
+          </section>
+          <section className={styles.formSection} aria-labelledby="interconsulta-request-heading">
+            <header className={styles.sectionHeader}>
+              <h3 id="interconsulta-request-heading" className={styles.sectionTitle}>
+                {t('clinicalRequestSectionTitle', 'Solicitud clínica')}
+              </h3>
+              <p className={styles.sectionDescription}>
+                {t(
+                  'clinicalRequestSectionHelper',
+                  'Registre únicamente el motivo, la prioridad y, si corresponde, la fecha programada.',
+                )}
+              </p>
+            </header>
+            <Stack gap={5}>
+              <TextArea
+                id="interconsulta-motivo"
+                labelText={t('reasonForRequest', 'Motivo')}
+                helperText={t('reasonHelper', 'Motivo clínico de la interconsulta. No repita datos del paciente.')}
+                maxCount={350}
+                onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setMotivo(event.target.value)}
+                rows={4}
+                value={motivo}
               />
-            </>
-          )}
-          <RadioButtonGroup
-            legendText={t('priority', 'Prioridad')}
-            name="interconsulta-urgency"
-            orientation="vertical"
-            valueSelected={urgency}
-            onChange={(value: Urgency) => setUrgency(value)}
-          >
-            <RadioButton id="urgency-routine" labelText={t('urgencyRoutine', 'Rutina')} value="ROUTINE" />
-            <RadioButton id="urgency-stat" labelText={t('urgencyStat', 'Urgente')} value="STAT" />
-            <RadioButton
-              id="urgency-scheduled"
-              labelText={t('urgencyScheduled', 'Programada')}
-              value="ON_SCHEDULED_DATE"
-            />
-          </RadioButtonGroup>
-          {urgency === 'ON_SCHEDULED_DATE' && (
-            <DatePicker
-              datePickerType="single"
-              minDate={new Date()}
-              onChange={(dates: Array<Date>) => setScheduledDate(dates?.[0] ?? null)}
-            >
-              <DatePickerInput
-                id="interconsulta-scheduled-date"
-                labelText={t('scheduledDate', 'Fecha programada')}
-                placeholder="dd/mm/aaaa"
-              />
-            </DatePicker>
-          )}
-          <TextArea
-            id="interconsulta-motivo"
-            labelText={t('reasonForRequest', 'Motivo')}
-            helperText={t('reasonHelper', 'Motivo clínico de la interconsulta. No repita datos del paciente.')}
-            maxCount={350}
-            onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setMotivo(event.target.value)}
-            rows={4}
-            value={motivo}
-          />
+              <RadioButtonGroup
+                legendText={t('priority', 'Prioridad')}
+                name="interconsulta-urgency"
+                orientation={isTablet ? 'vertical' : 'horizontal'}
+                valueSelected={urgency}
+                onChange={(value: Urgency) => setUrgency(value)}
+              >
+                <RadioButton id="urgency-routine" labelText={t('urgencyRoutine', 'Rutina')} value="ROUTINE" />
+                <RadioButton id="urgency-stat" labelText={t('urgencyStat', 'Urgente')} value="STAT" />
+                <RadioButton
+                  id="urgency-scheduled"
+                  labelText={t('urgencyScheduled', 'Programada')}
+                  value="ON_SCHEDULED_DATE"
+                />
+              </RadioButtonGroup>
+              {urgency === 'ON_SCHEDULED_DATE' && (
+                <DatePicker
+                  datePickerType="single"
+                  minDate={new Date()}
+                  onChange={(dates: Array<Date>) => setScheduledDate(dates?.[0] ?? null)}
+                >
+                  <DatePickerInput
+                    id="interconsulta-scheduled-date"
+                    labelText={t('scheduledDate', 'Fecha programada')}
+                    placeholder="dd/mm/aaaa"
+                  />
+                </DatePicker>
+              )}
+            </Stack>
+          </section>
         </Stack>
         <ButtonSet className={isTablet ? `${styles.buttonSet} ${styles.tabletButtonSet}` : styles.buttonSet}>
           <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>

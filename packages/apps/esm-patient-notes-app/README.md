@@ -12,10 +12,10 @@ La lectura usa `app:hoja.clinica.resumenConsulta`; el botón, la ventana y el wo
 
 El selector y la observación que guarda la selección cumplen funciones distintas:
 
-| Configuración | Propósito | Valor por defecto |
-| --- | --- | --- |
-| `prestacionalConceptSourceName` | Nombres alternativos, separados por comas, del ConvSet que contiene el catálogo mostrado por el selector | `Codigos Prestacionales,Códigos Prestacionales` |
-| `visitNoteConfig.codigoPrestacionalConceptUuid` | Concepto pregunta de datatype `Coded` que recibe la selección | `34630b86-5106-4aea-8382-f55c02e4ba2c` |
+| Configuración                                   | Propósito                                                                                                | Valor por defecto                               |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `prestacionalConceptSourceName`                 | Nombres alternativos, separados por comas, del ConvSet que contiene el catálogo mostrado por el selector | `Codigos Prestacionales,Códigos Prestacionales` |
+| `visitNoteConfig.codigoPrestacionalConceptUuid` | Concepto pregunta de datatype `Coded` que recibe la selección                                            | `34630b86-5106-4aea-8382-f55c02e4ba2c`          |
 
 Aunque conserva el nombre histórico `prestacionalConceptSourceName`, el primer parámetro no busca un Concept Source de OpenMRS. La implementación localiza por nombre/display el ConvSet configurado y filtra sus `setMembers`.
 
@@ -37,6 +37,19 @@ Al guardar, el UUID del miembro seleccionado se persiste como `valueCoded`:
 Los despliegues que sobrescribían `visitNoteConfig.codigoPrestacionalConceptUuid` con el UUID del ConvSet deben retirar o corregir ese override. Un override externo prevalece sobre el nuevo valor por defecto y mantendría el error de persistencia.
 
 La validación exige seleccionar un miembro real del catálogo; el texto libre no genera un encounter.
+
+Diagnósticos y códigos prestacionales solicitan también los `conceptMappings` de cada concepto. La interfaz presenta ambos catálogos como `<código> - <denominación>`; conserva compatibilidad con conceptos históricos que traen el código dentro de `display`, pero prefiere el mapping CIE-10 o SIS/FUA cuando está disponible. La búsqueda prestacional también admite el código guardado únicamente en el mapping.
+
+### Referencias oficiales configurables
+
+Los botones de ayuda abren fuentes peruanas oficiales en una pestaña nueva. Las URL son configurables porque la versión normativa y el catálogo desplegado deben mantenerse coordinados:
+
+| Configuración              | Fuente por defecto                                                                                                                                                                         |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `cie10ReferenceUrl`        | [MINSA/REUNIS: manuales y códigos CIE-10](https://www.minsa.gob.pe/reunis/index.asp?niv=1&op=3), que incluye el Excel oficial y los anexos vigentes de uso/cese                            |
+| `prestacionalReferenceUrl` | [SIS: Resolución Gerencial N.° 000002-2026-SIS/GREP](https://www.gob.pe/institucion/sis/normas-legales/7772769-000002-2026-sis-grep), vigente desde el 1 de marzo de 2026 para códigos FUA |
+
+Un despliegue que use una versión posterior debe actualizar la URL junto con el contenido importado; el enlace de ayuda no valida ni reemplaza el catálogo OpenMRS/OCL.
 
 ## Configuración clínica
 

@@ -2,7 +2,7 @@
 
 **Estado:** implementación parcial; contrato base desplegado y siguientes fases pendientes.
 **Fecha inicial:** 2026-07-17.
-**Última actualización:** 2026-08-11.
+**Última actualización:** 2026-08-25.
 **Base:** auditoría exhaustiva de frontend, content package/OCL, módulos backend
 (FUA, identitylookup) y normativa vigente (referencias al final).
 
@@ -118,7 +118,7 @@ PERSONA  (afiliación conocida)          VISITA  (financiador de ESTA atención)
 ├─ Plan/Régimen SIS (coded)             ├─ Número de seguro/contrato                 payload
 ├─ Código de afiliación                 ├─ Estado de acreditación (coded)
 ├─ Vigencia (afiliación/caducidad)      ├─ Fecha+hora de verificación
-└─ Última verificación (cuándo/cómo)    └─ Método (manual-web | setisis | siteds)
+└─ Última verificación (cuándo/cómo)    └─ Sin método/procedencia en el snapshot actual
          │                                        ▲
          └── se COPIA al iniciar la visita ───────┘   (editable por Admisión, auditado)
 ```
@@ -130,9 +130,17 @@ Reglas:
   antes del FUA.
 - "Sin seguro" es un **estado transitorio** (D.U. 017-2019: afiliación SIS de
   oficio) — el flujo debe dejar el pendiente visible, no normalizarlo.
-- Toda verificación queda trazada: estado + fecha/hora + método + usuario. Los
-  visit attributes para esto **ya existen en el content** (`Fecha y Hora de
-  Consulta SIS`, `Resultado de Consulta SIS`, `Estado de Acreditación SIS`).
+- En persona, toda verificación conserva estado + fecha/hora + método. La
+  visita/FUA actual solo transporta financiador, número, estado y fecha: copiar
+  método/usuario al snapshot y al contrato FUA sigue siendo deuda coordinada.
+- `siasis-adt` es la atestación explícita del operador de que SIASIS emitió o
+  mostró el código `E-########` en la operación actual. No representa una API
+  automática ni un código ACREDITA; un E histórico o solo transcrito no activa
+  cobertura sin esa confirmación y su comprobación local de duplicados.
+- Temporalmente, la regla local `E canónico + Vigente + timestamp` habilita el
+  flujo vigente de visita/FUA, pero FUA no debe interpretar E como código único
+  ACREDITA. La procedencia `siasis-adt` queda en persona hasta ampliar el
+  snapshot y el contrato FUA en la fase coordinada.
 
 ---
 

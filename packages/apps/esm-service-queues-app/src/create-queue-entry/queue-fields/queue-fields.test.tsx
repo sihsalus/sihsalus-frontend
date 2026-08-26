@@ -189,6 +189,29 @@ describe('QueueFields', () => {
     expect(mockPostQueueEntry).not.toHaveBeenCalled();
   });
 
+  it('enqueues a triage visit with an explicitly known non-SIS financer', async () => {
+    const user = userEvent.setup();
+    let callbacks: QueueFieldsCallbacks | undefined;
+    mockGetSisFinancingState.mockReturnValue('notApplicable');
+
+    render(<QueueFields requireActiveSisFinancing setCallbacks={(value) => (callbacks = value)} />);
+    await user.selectOptions(screen.getByLabelText('Select a service'), queues[0].uuid);
+
+    await expect(callbacks?.onVisitCreatedOrUpdated(mockVisitAlice)).resolves.toBeUndefined();
+    expect(mockFetchVisitInsurance).toHaveBeenCalledWith(mockVisitAlice.uuid);
+    expect(mockPostQueueEntry).toHaveBeenCalledWith(
+      mockVisitAlice.uuid,
+      queues[0].uuid,
+      mockVisitAlice.patient.uuid,
+      '197852c7-5fd4-4b33-89cc-7bae6848c65a',
+      '176052c7-5fd4-4b33-89cc-7bae6848c65a',
+      0,
+      '1',
+      'queue-number-attribute-uuid',
+      mockVisitAlice.startDatetime,
+    );
+  });
+
   it('creates an administrative queue entry without requiring a visit or queue ticket configuration', async () => {
     const user = userEvent.setup();
     let callbacks: QueueFieldsCallbacks | undefined;

@@ -45,7 +45,9 @@ describe('Peru identifier validation', () => {
     expect(rule?.pattern.test('E41267525')).toBe(false);
     expect(rule?.pattern.test('E-4126752')).toBe(false);
     expect(rule?.sanitize('e 4126-7525')).toBe('E-41267525');
-    expect(rule?.maxLength).toBe(10);
+    expect(rule?.sanitize('E-123456789')).toBe('E-123456789');
+    expect(rule?.pattern.test(rule?.sanitize('E-123456789') ?? '')).toBe(false);
+    expect(rule?.maxLength).toBe(11);
   });
 
   it('does not invent a country-independent format for foreign identity cards', () => {

@@ -199,7 +199,7 @@ describe('AddDrugOrderWorkspace drug search', () => {
     const aspirin81OpenFormButton = within(aspirin81Div).getByText(/Order form/i);
     await user.click(aspirin81OpenFormButton);
 
-    expect(screen.getByText(/Order Form/i)).toBeInTheDocument();
+    expect(screen.getByText(/Medication prescription/i)).toBeInTheDocument();
   });
 
   test('can open an item in the medication form and on saving, it should add the order in the order basket store', async () => {
@@ -218,12 +218,12 @@ describe('AddDrugOrderWorkspace drug search', () => {
     const openFormButton = within(aspirin81Div).getByText(/Order form/i);
     await user.click(openFormButton);
 
-    expect(screen.getByText(/Order Form/i)).toBeInTheDocument();
-    const indicationField = screen.getByRole('textbox', { name: 'Indication' });
+    expect(screen.getByText(/Medication prescription/i)).toBeInTheDocument();
+    const indicationField = screen.getByRole('textbox', { name: /Diagnosis or reason for prescription/i });
     await user.type(indicationField, 'Hypertension');
     const freeTextDosageToggle = document.querySelector('#freeTextDosageToggle') as HTMLElement;
     await user.click(freeTextDosageToggle);
-    await user.type(screen.getByPlaceholderText(/free text dosage/i), 'Take one tablet by mouth twice daily');
+    await user.type(screen.getByPlaceholderText(/free.?text dosage/i), 'Take one tablet by mouth twice daily');
     const saveFormButton = screen.getByText(/Save order/i);
     await waitFor(() => expect(saveFormButton).toBeEnabled());
     act(() => {
@@ -252,7 +252,7 @@ describe('AddDrugOrderWorkspace drug search', () => {
     const aspirin81Div = getByTextWithMarkup(/Aspirin 81mg/i).closest('[role="listitem"]') as HTMLElement;
     await user.click(within(aspirin81Div).getByText(/Order form/i));
 
-    expect(screen.getByText(/Order Form/i)).toBeInTheDocument();
+    expect(screen.getByText(/Medication prescription/i)).toBeInTheDocument();
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
 
     await user.click(screen.getByText(/Discard/i));
@@ -270,7 +270,7 @@ describe('AddDrugOrderWorkspace drug search', () => {
     const aspirin81Div = getByTextWithMarkup(/Aspirin 81mg/i).closest('[role="listitem"]') as HTMLElement;
     await user.click(within(aspirin81Div).getByText(/Order form/i));
 
-    expect(screen.getByText(/Order Form/i)).toBeInTheDocument();
+    expect(screen.getByText(/Medication prescription/i)).toBeInTheDocument();
 
     await user.click(screen.getByText(/Discard/i));
 
@@ -286,7 +286,7 @@ describe('AddDrugOrderWorkspace drug search', () => {
     const aspirin81Div = getByTextWithMarkup(/Aspirin 81mg/i).closest('[role="listitem"]') as HTMLElement;
     await user.click(within(aspirin81Div).getByText(/Order form/i));
 
-    expect(screen.getByText(/Order Form/i)).toBeInTheDocument();
+    expect(screen.getByText(/Medication prescription/i)).toBeInTheDocument();
 
     // Clear the pre-filled dose value and enter 0
     const doseInput = screen.getByRole('spinbutton', { name: /dose/i });
@@ -336,7 +336,7 @@ describe('AddDrugOrderWorkspace drug search', () => {
 
     renderAddDrugOrderWorkspace({ order: revisedDraft, orderToEditOrdererUuid: '' });
 
-    const indicationField = screen.getByRole('textbox', { name: 'Indication' });
+    const indicationField = screen.getByRole('textbox', { name: /Diagnosis or reason for prescription/i });
     await user.clear(indicationField);
     await user.type(indicationField, 'Updated draft for patient A');
     const saveButton = screen.getByRole('button', { name: /save order/i });
@@ -654,7 +654,7 @@ describe('AddDrugOrderWorkspace drug search', () => {
     );
     await waitFor(() => expect(saveButton).toBeEnabled());
     expect(mockCloseWorkspace).not.toHaveBeenCalled();
-    expect(screen.getByText(/order form/i)).toBeInTheDocument();
+    expect(screen.getByText(/Medication prescription/i)).toBeInTheDocument();
     expect(patientAHookResult.current.orders).toEqual([revisedOrder]);
   });
 });

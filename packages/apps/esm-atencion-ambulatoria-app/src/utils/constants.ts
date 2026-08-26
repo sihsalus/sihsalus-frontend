@@ -14,6 +14,7 @@ export const moduleName = '@sihsalus/esm-atencion-ambulatoria-app';
 // ── Workspace names ──
 export const patientFormEntryWorkspace = 'patient-form-entry-workspace';
 export const visitNotesFormWorkspace = 'visit-notes-form-workspace';
+export const institutionalReferralWorkspace = 'institutional-referral-form-workspace';
 
 // ── Privileges ──
 /** Declared by the order-basket workspace in esm-patient-orders-app/src/routes.json. */

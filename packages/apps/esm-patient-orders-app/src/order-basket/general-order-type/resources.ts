@@ -20,14 +20,20 @@ export function prepOrderPostData(
   order: OrderBasketItem,
   patientUuid: string,
   encounterUuid: string | null,
-  careSettingUuid: string,
+  careSettingUuid?: string,
 ): OrderPost {
-  if (order.action === 'NEW' || order.action === 'RENEW') {
+  const isNewOrder = order.action === 'NEW' || order.action === 'RENEW';
+  const careSetting = isNewOrder ? (careSettingUuid ?? order.careSetting) : (order.careSetting ?? careSettingUuid);
+  if (!careSetting) {
+    throw new Error('A care setting is required to submit a general order.');
+  }
+
+  if (isNewOrder) {
     return {
       action: 'NEW',
       type: 'order',
       patient: patientUuid,
-      careSetting: careSettingUuid,
+      careSetting,
       orderer: order.orderer,
       encounter: encounterUuid,
       concept: order.concept.uuid,
@@ -43,7 +49,7 @@ export function prepOrderPostData(
       action: 'REVISE',
       type: 'order',
       patient: patientUuid,
-      careSetting: order.careSetting,
+      careSetting,
       orderer: order.orderer,
       encounter: encounterUuid,
       concept: order?.concept?.uuid,
@@ -59,7 +65,7 @@ export function prepOrderPostData(
       action: 'DISCONTINUE',
       type: 'order',
       patient: patientUuid,
-      careSetting: order.careSetting,
+      careSetting,
       orderer: order.orderer,
       encounter: encounterUuid,
       concept: order?.concept?.uuid,

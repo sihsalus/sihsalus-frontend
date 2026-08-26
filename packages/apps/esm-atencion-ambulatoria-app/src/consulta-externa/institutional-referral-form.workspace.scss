@@ -1,0 +1,98 @@
+@use "@carbon/layout";
+@use "@carbon/type";
+
+.form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: space-between;
+}
+
+.formContent {
+  overflow-y: auto;
+  padding: layout.$spacing-05 layout.$spacing-05 layout.$spacing-07;
+}
+
+.formIntro {
+  @include type.type-style("body-compact-01");
+
+  color: var(--cds-text-secondary);
+  margin: 0;
+}
+
+.formSection {
+  background: var(--cds-layer-01);
+  border: 1px solid var(--cds-border-subtle-01);
+  padding: layout.$spacing-05;
+}
+
+.sectionHeader {
+  border-bottom: 1px solid var(--cds-border-subtle-01);
+  margin: calc(-1 * layout.$spacing-05) calc(-1 * layout.$spacing-05)
+    layout.$spacing-05;
+  padding: layout.$spacing-04 layout.$spacing-05;
+}
+
+.sectionTitle {
+  @include type.type-style("heading-compact-01");
+
+  color: var(--cds-text-primary);
+  margin: 0;
+}
+
+.sectionDescription {
+  @include type.type-style("helper-text-01");
+
+  color: var(--cds-text-secondary);
+  margin: layout.$spacing-02 0 0;
+}
+
+.contextList {
+  display: grid;
+  gap: layout.$spacing-04;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+
+  div {
+    min-width: 0;
+  }
+
+  dt {
+    @include type.type-style("label-01");
+
+    color: var(--cds-text-secondary);
+  }
+
+  dd {
+    @include type.type-style("body-compact-01");
+
+    color: var(--cds-text-primary);
+    margin: layout.$spacing-02 0 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.buttonSet {
+  background: var(--cds-layer-01);
+  border-top: 1px solid var(--cds-border-subtle-01);
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding: layout.$spacing-05;
+}
+
+.tabletButtonSet {
+  margin: 0;
+  padding: 0;
+}
+
+.button {
+  max-width: 50%;
+  width: 50%;
+}
+
+@media (max-width: 42rem) {
+  .contextList {
+    grid-template-columns: 1fr;
+  }
+}

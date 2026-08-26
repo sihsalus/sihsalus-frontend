@@ -49,7 +49,17 @@ afiliación administrativa de la persona para esa atención:
 - Autofinanciamiento muestra solo el financiador.
 - Cambiar de financiador limpia los complementos del anterior y el payload vuelve a sanearlos antes de
   persistir.
-- DNI, CE, pasaporte y otros identificadores del paciente nunca se copian como número de seguro.
+- DNI, CE, pasaporte, HCE y los identificadores sin tipo nunca se copian como número de seguro. La única
+  excepción es `E-########` del tipo configurado en `sisTemporaryAffiliationPatientIdentifierTypeUuid`, y
+  solo cuando una lectura REST fresca confirma el identificador canónico vigente, el financiador es SIS y la
+  persona conserva acreditación Vigente con fecha/hora ISO completa y método `manual-web`, `setisis` o
+  `siasis-adt`; FHIR vacío/obsoleto, un E con separador o longitud inválidos, otro tipo, evidencia ausente o modo
+  offline falla cerrado.
+  El mismo snapshot fresco se reutiliza en la copia posterior para no abrir una segunda carrera de lectura.
+
+El método de verificación aún no forma parte de los atributos de visita: se valida desde persona antes de crear
+el snapshot, pero esa procedencia no queda disponible en la visita histórica ni en FUA. Añadir método/usuario al
+snapshot exige un cambio coordinado de content, backend y consumidores; no debe inferirse después del hecho.
 
 El mapeo predeterminado persona→visita incluye financiador, número, estado SIS y fecha/hora de consulta;
 los ocho tipos de atributo forman el contrato canónico compartido con Visitas Activas y FUA. Los overrides
@@ -74,6 +84,13 @@ no entran en un ciclo de reintentos: muestran `Revisar cobertura` y llevan a la 
 solo cuando el usuario tiene `app:opciones.registrarPaciente`; sin ese permiso no se ofrece una acción que
 terminaría bloqueada. La obligatoriedad del financiador, la derivación automática a Caja y un privilegio
 administrativo más específico para editar únicamente cobertura continúan como decisiones pendientes.
+
+Cuando el formulario se abre desde una ruta que exige triaje, la barrera
+compatible `requireActiveSisFinancing` significa financiamiento resuelto: acepta
+SIS vigente con bundle completo y un financiador no-SIS explícito, incluido
+autofinanciamiento. Un financiador ausente o un SIS incompleto, inactivo,
+pendiente o no consultado impide ejecutar el callback de cola. Esta regla no
+amplía la elegibilidad de FUA.
 
 ## Taxonomia clinica del resumen del paciente
 

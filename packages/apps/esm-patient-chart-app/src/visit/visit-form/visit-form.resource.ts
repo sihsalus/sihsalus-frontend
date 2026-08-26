@@ -9,15 +9,26 @@ import {
 } from '@openmrs/esm-framework';
 import {
   type amPm,
+  ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID,
+  ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID,
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  hasTrustedTemporarySisCoverageEvidence,
   INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID,
   INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
   INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_VERIFICATION_METHOD_PERSON_ATTRIBUTE_TYPE_UUID,
+  isInsuranceCodeAllowed,
+  isTemporarySisAffiliationCode,
   normalizeFinanciadorConceptUuid,
+  normalizeTemporarySisAffiliationCode,
+  type PersonInsurance,
+  type PatientIdentifierInput,
+  type PatientIdentifierReference,
   SELF_FINANCED_CONCEPT_UUID,
   SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_CONCEPT_UUID,
+  SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
 } from '@openmrs/esm-patient-common-lib';
 import { useMemo, useState } from 'react';
 import useSWR from 'swr';
@@ -270,11 +281,17 @@ export function usePersonAttributesForVisitDefaults(patientUuid?: string) {
   );
 }
 
-function normalizeIdentifierValue(value: string) {
-  return value
-    .trim()
-    .toLocaleUpperCase()
-    .replace(/[^\p{L}\p{N}]/gu, '');
+export function getPatientIdentifierReferences(patient: fhir.Patient | undefined): Array<PatientIdentifierReference> {
+  if (!Array.isArray(patient?.identifier)) {
+    return [];
+  }
+
+  return patient.identifier
+    .map((identifier) => ({
+      value: identifier.value?.trim() ?? '',
+      identifierTypeUuid: identifier.type?.coding?.find(({ code }) => Boolean(code?.trim()))?.code?.trim() ?? null,
+    }))
+    .filter(({ value }) => Boolean(value));
 }
 
 /**
@@ -284,8 +301,10 @@ function normalizeIdentifierValue(value: string) {
  */
 export function sanitizeVisitCoverageAttributes(
   attributes: Record<string, string>,
-  patientIdentifierValues: ReadonlyArray<string> = [],
+  patientIdentifiers: ReadonlyArray<PatientIdentifierInput> = [],
   financiadorIsConfigured = true,
+  sisTemporaryAffiliationPatientIdentifierTypeUuid = SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+  temporarySisCoverageEvidence?: PersonInsurance,
 ) {
   const sanitizedAttributes = { ...attributes };
   const rawFinanciador = sanitizedAttributes[FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID];
@@ -298,19 +317,31 @@ export function sanitizeVisitCoverageAttributes(
   const isSis = financiador === SIS_CONCEPT_UUID;
   const isSelfFinanced = financiador === SELF_FINANCED_CONCEPT_UUID;
   const insuranceNumber = sanitizedAttributes[INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID];
-  const normalizedIdentifiers = new Set(patientIdentifierValues.map(normalizeIdentifierValue).filter(Boolean));
-  const insuranceNumberIsDocument = Boolean(
-    insuranceNumber && normalizedIdentifiers.has(normalizeIdentifierValue(insuranceNumber)),
+  const temporaryInsuranceCode = normalizeTemporarySisAffiliationCode(insuranceNumber);
+  const evidenceInsuranceCode = normalizeTemporarySisAffiliationCode(temporarySisCoverageEvidence?.insuranceCode);
+  const temporaryCoverageHasTrustedEvidence = Boolean(
+    temporaryInsuranceCode &&
+      temporaryInsuranceCode === evidenceInsuranceCode &&
+      temporarySisCoverageEvidence &&
+      hasTrustedTemporarySisCoverageEvidence(temporarySisCoverageEvidence),
   );
+  const insuranceNumberIsBlockedIdentifier =
+    !isInsuranceCodeAllowed(
+      insuranceNumber,
+      financiador,
+      patientIdentifiers,
+      sisTemporaryAffiliationPatientIdentifierTypeUuid,
+    ) ||
+    (isTemporarySisAffiliationCode(insuranceNumber) && !temporaryCoverageHasTrustedEvidence);
 
   if (!financiadorIsConfigured) {
-    if (insuranceNumberIsDocument) {
+    if (insuranceNumberIsBlockedIdentifier) {
       sanitizedAttributes[INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID] = '';
     }
     return sanitizedAttributes;
   }
 
-  if (!financiador || isSelfFinanced || insuranceNumberIsDocument) {
+  if (!financiador || isSelfFinanced || insuranceNumberIsBlockedIdentifier) {
     sanitizedAttributes[INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID] = '';
   }
 
@@ -327,11 +358,27 @@ export function getDefaultVisitAttributesFromPersonAttributes(
   attributes: Array<PersonAttributeResponse> = [],
   mappings: Array<PersonAttributeVisitAttributeDefault> = [],
   configuredVisitAttributeUuids = new Set<string>(),
+  sisTemporaryAffiliationPatientIdentifierTypeUuid = SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
 ) {
-  const identifiers = Array.isArray(patient?.identifier) ? patient.identifier : [];
-  const patientIdentifiers = new Set(
-    identifiers.map(({ value }) => (value ? normalizeIdentifierValue(value) : '')).filter(Boolean),
+  const patientIdentifiers = getPatientIdentifierReferences(patient);
+  const personFinanciadorAttribute = attributes.find(
+    ({ attributeType }) => attributeType.uuid === INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
   );
+  const personFinanciadorValue = personFinanciadorAttribute?.value;
+  const rawPersonFinanciador =
+    typeof personFinanciadorValue === 'object' ? personFinanciadorValue?.uuid : personFinanciadorValue?.trim();
+  const personFinanciador = normalizeFinanciadorConceptUuid(rawPersonFinanciador || null);
+  const personAttributeValue = (attributeTypeUuid: string) => {
+    const value = attributes.find((attribute) => attribute.attributeType.uuid === attributeTypeUuid)?.value;
+    return typeof value === 'object' ? value?.uuid?.trim() : value?.trim();
+  };
+  const personInsurance: PersonInsurance = {
+    insuranceTypeUuid: rawPersonFinanciador || null,
+    insuranceCode: personAttributeValue(INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID) || null,
+    accreditationStatusUuid: personAttributeValue(ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID) || null,
+    accreditationCheckedAt: personAttributeValue(ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID) || null,
+    verificationMethod: personAttributeValue(INSURANCE_VERIFICATION_METHOD_PERSON_ATTRIBUTE_TYPE_UUID) || null,
+  };
 
   return mappings.reduce<Record<string, string>>((defaults, { personAttributeTypeUuid, visitAttributeTypeUuid }) => {
     if (!configuredVisitAttributeUuids.has(visitAttributeTypeUuid)) {
@@ -348,10 +395,17 @@ export function getDefaultVisitAttributesFromPersonAttributes(
     const isInsuranceNumberMapping =
       personAttributeTypeUuid === INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID &&
       visitAttributeTypeUuid === INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID;
-    const duplicatesPatientIdentifier =
-      typeof normalizedValue === 'string' && patientIdentifiers.has(normalizeIdentifierValue(normalizedValue));
+    const insuranceNumberIsAllowed =
+      !isInsuranceNumberMapping ||
+      (isInsuranceCodeAllowed(
+        normalizedValue,
+        personFinanciador,
+        patientIdentifiers,
+        sisTemporaryAffiliationPatientIdentifierTypeUuid,
+      ) &&
+        (!isTemporarySisAffiliationCode(normalizedValue) || hasTrustedTemporarySisCoverageEvidence(personInsurance)));
 
-    if (normalizedValue && !(isInsuranceNumberMapping && duplicatesPatientIdentifier)) {
+    if (normalizedValue && insuranceNumberIsAllowed) {
       defaults[visitAttributeTypeUuid] = normalizedValue;
     }
 

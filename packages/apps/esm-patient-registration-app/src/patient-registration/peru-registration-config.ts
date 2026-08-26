@@ -47,7 +47,9 @@ export const peruSisProductConceptUuid = '72b9edbf-1ec8-4b1a-8957-b1597aab8757';
 export const peruSisTypeDescriptionAttributeTypeUuid = '4bf4517f-38f4-44a2-a6c4-52b2e797034a';
 export const peruSisEessNameAttributeTypeUuid = '2b0382d9-5f7c-425d-ad6e-a4489dafd2f5';
 // Person attribute "Método de Verificación de Seguro" (sihsalus-content #167).
-// FreeText con valores acordados: manual-web | setisis | siteds.
+// FreeText con valores acordados: manual-web | setisis | siteds | siasis-adt.
+// `siasis-adt` identifica la confirmación explícita de un código E emitido o
+// consultado en SIASIS durante el alta/edición administrativa actual.
 export const peruInsuranceVerificationMethodAttributeTypeUuid = 'bc1e5c92-e46a-4bc9-8cba-d9093a0eb659';
 
 /** SETISIS attributes whose meaning is exclusive to SIS. */

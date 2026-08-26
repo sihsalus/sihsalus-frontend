@@ -5,3 +5,8 @@
 .modalDescription {
   margin-bottom: layout.$spacing-05;
 }
+
+.registeredOrdersHeading {
+  @include type.type-style('heading-compact-02');
+  margin-bottom: layout.$spacing-04;
+}

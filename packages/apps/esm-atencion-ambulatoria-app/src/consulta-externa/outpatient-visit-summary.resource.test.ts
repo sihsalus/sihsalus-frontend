@@ -1,6 +1,7 @@
 import type { ConfigObject } from '../config-schema';
 import {
   buildOutpatientVisitSummary,
+  getLinkedAppointmentUuids,
   getVisitSummaryRepresentationForTesting,
   type OutpatientSummaryPatient,
   OutpatientVisitSummaryContractError,
@@ -64,7 +65,10 @@ const source: VisitSummarySource = {
       encounterProviders: [
         {
           uuid: 'encounter-provider-uuid',
-          provider: { uuid: 'provider-uuid', person: { uuid: 'person-uuid', display: 'Dra. Demo' } },
+          provider: {
+            uuid: 'provider-uuid',
+            person: { uuid: 'person-uuid', display: 'Dra. Demo' },
+          },
         },
       ],
       obs: [
@@ -72,8 +76,16 @@ const source: VisitSummarySource = {
         { uuid: 'height-obs', concept: { uuid: 'height' }, value: 160 },
         { uuid: 'systolic-obs', concept: { uuid: 'systolic' }, value: 110 },
         { uuid: 'diastolic-obs', concept: { uuid: 'diastolic' }, value: 70 },
-        { uuid: 'chief-obs', concept: { uuid: 'chief-complaint' }, value: 'Dolor de cabeza' },
-        { uuid: 'subjective-obs', concept: { uuid: 'soap-subjective' }, value: 'Cefalea de dos días' },
+        {
+          uuid: 'chief-obs',
+          concept: { uuid: 'chief-complaint' },
+          value: 'Dolor de cabeza',
+        },
+        {
+          uuid: 'subjective-obs',
+          concept: { uuid: 'soap-subjective' },
+          value: 'Cefalea de dos días',
+        },
         {
           uuid: 'general-state-obs',
           concept: { uuid: 'soap-objective' },
@@ -86,7 +98,11 @@ const source: VisitSummarySource = {
           value: 'Sin hallazgos de alarma',
           formFieldPath: 'rfe-forms-cabezaCuello',
         },
-        { uuid: 'plan-obs', concept: { uuid: 'therapeutic-indications' }, value: 'Hidratación y reposo' },
+        {
+          uuid: 'plan-obs',
+          concept: { uuid: 'therapeutic-indications' },
+          value: 'Hidratación y reposo',
+        },
         {
           uuid: 'diagnosis-type-obs',
           concept: { uuid: 'diagnosis-type' },
@@ -123,12 +139,18 @@ const source: VisitSummarySource = {
           dose: 1,
           doseUnits: { uuid: 'tablet', display: 'tableta' },
           frequency: { uuid: 'every-eight-hours', display: 'cada 8 horas' },
-          orderer: { uuid: 'provider-uuid', person: { uuid: 'person-uuid', display: 'Dra. Demo' } },
+          orderer: {
+            uuid: 'provider-uuid',
+            person: { uuid: 'person-uuid', display: 'Dra. Demo' },
+          },
         },
         {
           uuid: 'lab-order',
           concept: { uuid: 'pregnancy-test', display: 'Prueba de embarazo' },
-          orderType: { uuid: 'test-order-type', display: 'Laboratory Test Order' },
+          orderType: {
+            uuid: 'test-order-type',
+            display: 'Laboratory Test Order',
+          },
         },
       ],
     },
@@ -149,13 +171,71 @@ function build(overrides: Partial<Parameters<typeof buildOutpatientVisitSummary>
 }
 
 describe('outpatient visit summary contract', () => {
+  it('preserves verified facility contact details for printable documents', () => {
+    const summary = build({
+      facilityAddress: 'Distrito de prueba, provincia de prueba, Loreto',
+      facilityPhone: '900 000 000',
+      facilityIpressCode: '00000000',
+    });
+
+    expect(summary).toMatchObject({
+      facilityAddress: 'Distrito de prueba, provincia de prueba, Loreto',
+      facilityPhone: '900 000 000',
+      facilityIpressCode: '00000000',
+    });
+  });
+
   it('uses a balanced exact-visit representation with diagnoses and encounter orders', () => {
     const representation = getVisitSummaryRepresentationForTesting();
     expect(representation.split('(')).toHaveLength(representation.split(')').length);
     expect(representation).toContain('patient:(uuid)');
+    expect(representation).toContain('attributes:(uuid,voided,value,attributeType:(uuid))');
     expect(representation).toContain('diagnoses:(');
     expect(representation).toContain('orders:(');
     expect(representation).toContain('previousOrder:(uuid)');
+    expect(representation).toContain('orderReasonNonCoded');
+    expect(representation).toContain('asNeeded,asNeededCondition');
+    expect(representation).toContain('numRefills');
+    expect(representation).toContain('dateStopped,autoExpireDate');
+  });
+
+  it('extracts only active appointment links of the configured visit attribute type', () => {
+    expect(
+      getLinkedAppointmentUuids(
+        {
+          ...source,
+          attributes: [
+            {
+              uuid: 'active-link',
+              value: ' appointment-uuid ',
+              attributeType: { uuid: 'appointment-link-type' },
+            },
+            {
+              uuid: 'duplicate-link',
+              value: 'APPOINTMENT-UUID',
+              attributeType: { uuid: 'APPOINTMENT-LINK-TYPE' },
+            },
+            {
+              uuid: 'voided-link',
+              voided: true,
+              value: 'voided-appointment',
+              attributeType: { uuid: 'appointment-link-type' },
+            },
+            {
+              uuid: 'other-attribute',
+              value: 'other-appointment',
+              attributeType: { uuid: 'other-type' },
+            },
+            {
+              uuid: 'empty-link',
+              value: '   ',
+              attributeType: { uuid: 'appointment-link-type' },
+            },
+          ],
+        },
+        'appointment-link-type',
+      ),
+    ).toEqual(['APPOINTMENT-UUID']);
   });
 
   it('maps only the verified visit into the patient report', () => {
@@ -163,7 +243,11 @@ describe('outpatient visit summary contract', () => {
 
     expect(summary.patient.name).toBe('Paciente Sintético');
     expect(summary.providers).toEqual(['Dra. Demo']);
-    expect(summary.vitals).toMatchObject({ bloodPressure: '110/70 mmHg', weight: '60 kg', height: '160 cm' });
+    expect(summary.vitals).toMatchObject({
+      bloodPressure: '110/70 mmHg',
+      weight: '60 kg',
+      height: '160 cm',
+    });
     expect(summary.anamnesis.chiefComplaint).toBe('Dolor de cabeza');
     expect(summary.anamnesis.biologicalFunctions.summary).toBeNull();
     expect(summary.soap.subjective).toBe('Cefalea de dos días');
@@ -172,12 +256,184 @@ describe('outpatient visit summary contract', () => {
       generalState: 'Paciente en buen estado general',
       headAndNeck: 'Sin hallazgos de alarma',
     });
-    expect(summary.diagnoses).toEqual([expect.objectContaining({ display: 'Cefalea', cie10Code: 'R51', type: 'D' })]);
+    expect(summary.diagnoses).toEqual([
+      expect.objectContaining({
+        display: 'Cefalea',
+        cie10Code: 'R51',
+        type: 'D',
+      }),
+    ]);
     expect(summary.orders).toEqual([
-      expect.objectContaining({ uuid: 'medication-order', category: 'medication' }),
-      expect.objectContaining({ uuid: 'lab-order', category: 'laboratory', name: 'Prueba de embarazo' }),
+      expect.objectContaining({
+        uuid: 'medication-order',
+        category: 'medication',
+      }),
+      expect.objectContaining({
+        uuid: 'lab-order',
+        category: 'laboratory',
+        name: 'Prueba de embarazo',
+      }),
     ]);
     expect(summary.hasClinicalContent).toBe(true);
+  });
+
+  it('classifies a concept-only Drug Order as a canonical medication order', () => {
+    const originalEncounter = source.encounters?.[0];
+    if (!originalEncounter) throw new Error('The synthetic fixture requires an encounter.');
+    const summary = build({
+      source: {
+        ...source,
+        encounters: [
+          {
+            ...originalEncounter,
+            orders: [
+              {
+                uuid: 'concept-only-medication',
+                concept: { uuid: 'iron-concept', display: 'Hierro' },
+                orderType: { uuid: 'drug-order-type', display: 'Drug Order' },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(summary.hasRecordedMedicationOrders).toBe(true);
+    expect(summary.orders).toEqual([
+      expect.objectContaining({
+        uuid: 'concept-only-medication',
+        category: 'medication',
+        name: 'Hierro',
+      }),
+    ]);
+  });
+
+  it('maps a PRN medication and its reason as distinct printable fields', () => {
+    const originalEncounter = source.encounters?.[0];
+    if (!originalEncounter) throw new Error('The synthetic fixture requires an encounter.');
+    const summary = build({
+      source: {
+        ...source,
+        encounters: [
+          {
+            ...originalEncounter,
+            orders: [
+              {
+                uuid: 'prn-medication',
+                drug: { uuid: 'drug-uuid', display: 'Paracetamol 500 mg' },
+                orderType: { uuid: 'drug-order-type', display: 'Drug Order' },
+                dose: 1,
+                doseUnits: { uuid: 'tablet', display: 'tableta' },
+                asNeeded: true,
+                asNeededCondition: 'Dolor o fiebre',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(summary.orders).toEqual([
+      expect.objectContaining({
+        uuid: 'prn-medication',
+        asNeeded: true,
+        asNeededCondition: 'Dolor o fiebre',
+        details: '1 tableta',
+      }),
+    ]);
+  });
+
+  it('maps the medication indication and zero refills without conflating them', () => {
+    const originalEncounter = source.encounters?.[0];
+    if (!originalEncounter) throw new Error('The synthetic fixture requires an encounter.');
+    const summary = build({
+      source: {
+        ...source,
+        encounters: [
+          {
+            ...originalEncounter,
+            orders: [
+              {
+                uuid: 'medication-with-instructions',
+                drug: { uuid: 'drug-uuid', display: 'Paracetamol 500 mg' },
+                orderType: { uuid: 'drug-order-type', display: 'Drug Order' },
+                orderReasonNonCoded: ' Cefalea ',
+                numRefills: 0,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(summary.orders).toEqual([
+      expect.objectContaining({
+        uuid: 'medication-with-instructions',
+        orderReasonNonCoded: 'Cefalea',
+        numRefills: 0,
+      }),
+    ]);
+  });
+
+  it('does not carry a stale PRN reason when the medication is not marked as needed', () => {
+    const originalEncounter = source.encounters?.[0];
+    if (!originalEncounter) throw new Error('The synthetic fixture requires an encounter.');
+    const summary = build({
+      source: {
+        ...source,
+        encounters: [
+          {
+            ...originalEncounter,
+            orders: [
+              {
+                uuid: 'scheduled-medication',
+                drug: { uuid: 'drug-uuid', display: 'Amoxicilina 500 mg' },
+                orderType: { uuid: 'drug-order-type', display: 'Drug Order' },
+                asNeeded: false,
+                asNeededCondition: 'Texto obsoleto que no debe imprimirse',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(summary.orders).toEqual([
+      expect.objectContaining({
+        uuid: 'scheduled-medication',
+        asNeeded: false,
+        asNeededCondition: null,
+      }),
+    ]);
+  });
+
+  it.each([
+    ['voided', { voided: true }],
+    ['discontinued', { action: 'DISCONTINUE' }],
+  ] as const)('remembers a %s canonical medication order without printing it as active', (_label, state) => {
+    const originalEncounter = source.encounters?.[0];
+    if (!originalEncounter) throw new Error('The synthetic fixture requires an encounter.');
+    const summary = build({
+      source: {
+        ...source,
+        encounters: [
+          {
+            ...originalEncounter,
+            orders: [
+              {
+                uuid: `${_label}-medication`,
+                drug: { uuid: 'drug-uuid', display: 'Medicamento sintético' },
+                orderType: { uuid: 'drug-order-type', display: 'Drug Order' },
+                ...state,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(summary.hasRecordedMedicationOrders).toBe(true);
+    expect(summary.orders).toEqual([]);
   });
 
   it.each([

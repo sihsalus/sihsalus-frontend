@@ -31,6 +31,7 @@ You should now be able to leverage the service queues module 🎉
 ## Dependencias backend/content
 
 - Conceptos de prioridad y estado configurados en `config-schema`.
+- `appointmentTriage` replica únicamente el contrato de enrutamiento que Colas necesita para operar sin cargar el microfrontend de Citas. `config-schema.test.ts` exige que permanezca idéntico al contrato canónico de `@sihsalus/esm-appointments-app`.
 - Servicios, rooms y ubicaciones configurados para el establecimiento.
 - Visitas activas para pacientes en cola.
 - Providers/usuarios asociados cuando se usa asignacion por prestador o room.
@@ -66,6 +67,7 @@ Excepción actual: la extensión `visit-form-queue-fields` declara únicamente p
 
 - El resumen de consulta se identifica por la combinación exacta de Encounter Type y Form configurados. Colas muestra primero los diagnósticos nativos activos y usa las observaciones históricas solo como fallback sin duplicarlas.
 - El guardado de triaje que queda pendiente en el equipo no mueve al paciente. La transición automática solo se ejecuta después de una respuesta confirmada del encounter; después de sincronizar un triaje offline, refrescar la cola y usar `Enviar a atención`. No borrar la acción offline para forzar el cambio de cola.
+- La entrada y la acción de triaje aceptan SIS vigente con bundle completo o un financiador no-SIS registrado explícitamente. Mientras la cobertura está cargando o no pudo leerse, la acción permanece verificando y no afirma que corresponda Caja. Un financiador ausente, o un SIS incompleto, inactivo, pendiente o no consultado, mantiene el bloqueo y la derivación a Caja.
 - La visita obtenida para el panel debe incluir UUID y ubicación verificables antes de habilitar la creación o edición. Al cerrar el workspace, el panel vuelve a consultar la visita.
 - La pantalla de colas no debe quedar en blanco si faltan rooms o servicios; debe mostrar una configuracion pendiente accionable.
 - Si no hay camas, rooms o servicios configurados, el mensaje debe decir que falta configuracion de ubicacion/servicio, no lanzar error generico.

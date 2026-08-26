@@ -10,6 +10,7 @@ import type {
   RESTPatientNote,
   VisitNotePayload,
 } from '../types';
+import { formatPrestacionalDisplay } from './catalog-concept.utils';
 import { defaultVisitNoteClinicalConceptUuids } from './visit-note-config-schema';
 
 interface UseVisitNotes {
@@ -38,6 +39,7 @@ export type CanonicalVisitNoteResolution =
   | { status: 'ambiguous' | 'error'; encounter: null; mutate: () => unknown };
 
 const encounterPageSize = 100;
+const catalogConceptMappingsRepresentation = 'conceptMappings:(conceptReferenceTerm:(conceptSource:(name),code))';
 const canonicalEncounterUuidNamespace = uuidv5('sihsalus:canonical-visit-note:v1', uuidv5.URL);
 
 export class AmbiguousVisitNoteSaveError extends Error {
@@ -149,7 +151,7 @@ const canonicalVisitNoteRepresentation =
   'provider:(uuid,display,person:(uuid,display))),' +
   'obs:(uuid,obsDatetime,display,concept:(uuid,display),value,' +
   'formFieldNamespace,formFieldPath,voided),' +
-  'diagnoses:(uuid,display,certainty,rank,voided,diagnosis:(coded:(uuid,display))))';
+  `diagnoses:(uuid,display,certainty,rank,voided,diagnosis:(coded:(uuid,display,${catalogConceptMappingsRepresentation}))))`;
 
 function getResourceUuid(value: unknown): string | undefined {
   if (typeof value === 'string') return value;
@@ -443,7 +445,7 @@ export function useCanonicalVisitNoteEncounter(
 }
 
 export function fetchDiagnosisConceptsByName(searchTerm: string, diagnosisConceptClass: string) {
-  const customRepresentation = 'custom:(uuid,display)';
+  const customRepresentation = `custom:(uuid,display,${catalogConceptMappingsRepresentation})`;
   const url = `${restBaseUrl}/concept?name=${searchTerm}&searchType=fuzzy&class=${diagnosisConceptClass}&v=${customRepresentation}`;
 
   return openmrsFetch<Array<Concept>>(url).then(({ data }) => data['results']);
@@ -452,7 +454,7 @@ export function fetchDiagnosisConceptsByName(searchTerm: string, diagnosisConcep
 export function fetchPrestacionalConceptsByName(searchTerm: string, conceptSourceName = 'Codigos Prestacionales') {
   const configuredConceptSetNames = getConfiguredConceptSourceNames(conceptSourceName);
   const conceptSetQuery = encodeURIComponent(configuredConceptSetNames[0] ?? conceptSourceName);
-  const customRepresentation = 'custom:(uuid,display,setMembers:(uuid,display))';
+  const customRepresentation = `custom:(uuid,display,setMembers:(uuid,display,${catalogConceptMappingsRepresentation}))`;
   const url = `${restBaseUrl}/concept?q=${conceptSetQuery}&searchType=fuzzy&v=${customRepresentation}&limit=20`;
 
   return openmrsFetch<Array<Concept>>(url).then(({ data }) => {
@@ -462,8 +464,8 @@ export function fetchPrestacionalConceptsByName(searchTerm: string, conceptSourc
     const normalizedSearchTerm = normalizeSearchText(searchTerm);
 
     return (matchingConceptSet?.setMembers ?? [])
-      .filter((concept) => normalizeSearchText(concept.display).includes(normalizedSearchTerm))
-      .sort((left, right) => left.display.localeCompare(right.display));
+      .filter((concept) => normalizeSearchText(formatPrestacionalDisplay(concept)).includes(normalizedSearchTerm))
+      .sort((left, right) => formatPrestacionalDisplay(left).localeCompare(formatPrestacionalDisplay(right)));
   });
 }
 

@@ -1,10 +1,13 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { omrsOfflineCachingStrategyHttpHeaderName, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
 import {
+  getPersonSisFinancingState,
   ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID,
   ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID,
   copyFinanciadorToVisit,
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  fetchFreshPatientIdentifiers,
+  fetchFreshPersonInsurance,
   fetchPersonInsurance,
   fetchVisitInsurance,
   getCodedValueUuid,
@@ -13,7 +16,10 @@ import {
   INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID,
   INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
   INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_VERIFICATION_METHOD_PERSON_ATTRIBUTE_TYPE_UUID,
+  isInsuranceCodeAllowed,
   LEGACY_SIS_PRODUCT_CONCEPT_UUIDS,
+  isTriageFinancingEligible,
   normalizeFinanciadorConceptUuid,
   SELF_FINANCED_CONCEPT_UUID,
   SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
@@ -23,6 +29,7 @@ import {
   SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID,
   SIS_ACCREDITATION_PENDING_CONCEPT_UUID,
   SIS_CONCEPT_UUID,
+  SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
   safeCopyFinanciadorToVisit,
 } from './financiador.resource';
 
@@ -36,8 +43,16 @@ const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const patientUuid = 'patient-uuid-1';
 const visitUuid = 'visit-uuid-1';
 const personUrl = `${restBaseUrl}/person/${patientUuid}?v=custom:(attributes:(uuid,value,attributeType:(uuid)))`;
-const identifiersUrl = `${restBaseUrl}/patient/${patientUuid}?v=custom:(identifiers:(identifier,voided))`;
+const identifiersUrl = `${restBaseUrl}/patient/${patientUuid}?v=custom:(identifiers:(identifier,identifierType:(uuid),voided))`;
 const visitUrl = `${restBaseUrl}/visit/${visitUuid}?v=custom:(attributes:(uuid,value,attributeType:(uuid)))`;
+
+function isPersonInsuranceReadUrl(url: string) {
+  return url === personUrl || url.startsWith(`${restBaseUrl}/person/${patientUuid}?`);
+}
+
+function isPatientIdentifiersReadUrl(url: string) {
+  return url === identifiersUrl || url.startsWith(`${restBaseUrl}/patient/${patientUuid}?`);
+}
 
 const essaludConceptUuid = 'af799b5e-313c-4352-80c4-5007dcd42f29';
 const accreditationVigenteUuid = SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID;
@@ -49,23 +64,64 @@ type PersonAttribute = {
   attributeType: { uuid: string };
 };
 
+function temporarySisPersonAttributes(
+  verificationMethod: string | null = 'siasis-adt',
+  accreditationCheckedAtValue = accreditationCheckedAt,
+): Array<PersonAttribute> {
+  return [
+    {
+      uuid: 'attr-1',
+      value: SIS_CONCEPT_UUID,
+      attributeType: { uuid: INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID },
+    },
+    {
+      uuid: 'attr-2',
+      value: 'E-12345678',
+      attributeType: { uuid: INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID },
+    },
+    {
+      uuid: 'attr-3',
+      value: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+      attributeType: { uuid: ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID },
+    },
+    {
+      uuid: 'attr-4',
+      value: accreditationCheckedAtValue,
+      attributeType: { uuid: ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID },
+    },
+    ...(verificationMethod
+      ? [
+          {
+            uuid: 'attr-5',
+            value: verificationMethod,
+            attributeType: { uuid: INSURANCE_VERIFICATION_METHOD_PERSON_ATTRIBUTE_TYPE_UUID },
+          },
+        ]
+      : []),
+  ];
+}
+
 function mockFetchSequence({
   personAttributes = [],
   patientIdentifiers = [],
   visitAttributes = [],
 }: {
   personAttributes?: Array<PersonAttribute>;
-  patientIdentifiers?: Array<{ identifier: string; voided?: boolean }>;
+  patientIdentifiers?: Array<{
+    identifier: string;
+    identifierType?: { uuid?: string };
+    voided?: boolean;
+  }>;
   visitAttributes?: Array<PersonAttribute>;
 }) {
   mockOpenmrsFetch.mockImplementation((url: string) => {
-    if (url === personUrl) {
+    if (isPersonInsuranceReadUrl(url)) {
       return Promise.resolve({ data: { attributes: personAttributes } }) as never;
     }
     if (url === visitUrl) {
       return Promise.resolve({ data: { attributes: visitAttributes } }) as never;
     }
-    if (url === identifiersUrl) {
+    if (isPatientIdentifiersReadUrl(url)) {
       return Promise.resolve({ data: { identifiers: patientIdentifiers } }) as never;
     }
     // Escrituras (POST a /visit/{uuid}/attribute[...]) devuelven ok.
@@ -103,10 +159,10 @@ function mockStatefulVisitPersistence({
   let nextCreatedUuid = 1;
 
   mockOpenmrsFetch.mockImplementation((url: string, init?: { method?: string; body?: unknown }) => {
-    if (!init?.method && url === personUrl) {
+    if (!init?.method && isPersonInsuranceReadUrl(url)) {
       return Promise.resolve({ data: { attributes: personAttributes } }) as never;
     }
-    if (!init?.method && url === identifiersUrl) {
+    if (!init?.method && isPatientIdentifiersReadUrl(url)) {
       return Promise.resolve({ data: { identifiers: [] } }) as never;
     }
     if (!init?.method && url === visitUrl) {
@@ -214,6 +270,101 @@ describe('normalizeFinanciadorConceptUuid', () => {
   });
 });
 
+describe('insurance code and patient identifier contract', () => {
+  const temporaryCode = 'E-12345678';
+
+  it('allows the configured temporary E identifier only for SIS', () => {
+    expect(
+      isInsuranceCodeAllowed(temporaryCode, SIS_CONCEPT_UUID, [
+        { value: temporaryCode, identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID },
+      ]),
+    ).toBe(true);
+  });
+
+  it('honors a deployment-specific temporary affiliation identifier type', () => {
+    expect(
+      isInsuranceCodeAllowed(
+        temporaryCode,
+        SIS_CONCEPT_UUID,
+        [{ value: temporaryCode, identifierTypeUuid: 'custom-temporary-sis-type' }],
+        'custom-temporary-sis-type',
+      ),
+    ).toBe(true);
+  });
+
+  it('blocks E-######## when SIS has no exact matching temporary identifier', () => {
+    expect(isInsuranceCodeAllowed(temporaryCode, SIS_CONCEPT_UUID, [])).toBe(false);
+    expect(
+      isInsuranceCodeAllowed(temporaryCode, SIS_CONCEPT_UUID, [
+        {
+          value: 'E-87654321',
+          identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+        },
+      ]),
+    ).toBe(false);
+  });
+
+  it.each([
+    'dni-type',
+    'ce-type',
+    'passport-type',
+    'hce-type',
+    'other-type',
+  ])('blocks an E-shaped match classified as %s', (identifierTypeUuid) => {
+    expect(
+      isInsuranceCodeAllowed(temporaryCode, SIS_CONCEPT_UUID, [{ value: temporaryCode, identifierTypeUuid }]),
+    ).toBe(false);
+  });
+
+  it('blocks untyped, non-SIS, non-E and ambiguously typed matches', () => {
+    expect(isInsuranceCodeAllowed(temporaryCode, SIS_CONCEPT_UUID, [temporaryCode])).toBe(false);
+    expect(
+      isInsuranceCodeAllowed(temporaryCode, essaludConceptUuid, [
+        { value: temporaryCode, identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID },
+      ]),
+    ).toBe(false);
+    expect(
+      isInsuranceCodeAllowed('12345678', SIS_CONCEPT_UUID, [
+        { value: '12-345-678', identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID },
+      ]),
+    ).toBe(false);
+    expect(
+      isInsuranceCodeAllowed('E 12345678', SIS_CONCEPT_UUID, [
+        { value: temporaryCode, identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID },
+      ]),
+    ).toBe(false);
+    expect(
+      isInsuranceCodeAllowed(temporaryCode, SIS_CONCEPT_UUID, [
+        { value: temporaryCode, identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID },
+        { value: 'E 12345678', identifierTypeUuid: 'hce-type' },
+      ]),
+    ).toBe(false);
+  });
+
+  it.each([
+    'E12345678',
+    'E 12345678',
+    'E-123456789',
+    'E-1234',
+    'E 1234',
+    'E1234',
+  ])('does not let malformed typed identifier %s validate a canonical temporary code', (identifierValue) => {
+    expect(
+      isInsuranceCodeAllowed(temporaryCode, SIS_CONCEPT_UUID, [
+        {
+          value: identifierValue,
+          identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+        },
+      ]),
+    ).toBe(false);
+    expect(isInsuranceCodeAllowed(identifierValue, SIS_CONCEPT_UUID, [])).toBe(false);
+  });
+
+  it('does not reject a code that does not match any patient identifier', () => {
+    expect(isInsuranceCodeAllowed('SIS-452781', SIS_CONCEPT_UUID, ['12345678'])).toBe(true);
+  });
+});
+
 describe('SIS financing eligibility', () => {
   it('requires both the SIS financiador and an active accreditation', () => {
     expect(
@@ -261,6 +412,38 @@ describe('SIS financing eligibility', () => {
     ).toBe('missing');
   });
 
+  it('distinguishes missing financing from an explicitly known non-SIS financer', () => {
+    expect(
+      getSisFinancingState({
+        financiadorUuid: null,
+        insuranceNumber: null,
+        accreditationStatusUuid: null,
+        accreditationCheckedAt: null,
+      }),
+    ).toBe('missing');
+    expect(
+      getSisFinancingState({
+        financiadorUuid: essaludConceptUuid,
+        insuranceNumber: null,
+        accreditationStatusUuid: null,
+        accreditationCheckedAt: null,
+      }),
+    ).toBe('notApplicable');
+  });
+
+  it.each([
+    ['active', true],
+    ['notApplicable', true],
+    ['inactive', false],
+    ['pending', false],
+    ['notConsulted', false],
+    ['missing', false],
+    [null, false],
+    [undefined, false],
+  ] as const)('evaluates %s as triage eligibility %s', (state, expected) => {
+    expect(isTriageFinancingEligible(state)).toBe(expected);
+  });
+
   it('reads the visit-level financing attributes used by triage', async () => {
     mockFetchSequence({
       visitAttributes: [
@@ -296,6 +479,53 @@ describe('SIS financing eligibility', () => {
   });
 });
 
+describe('getPersonSisFinancingState', () => {
+  const trustedTemporaryPerson = {
+    insuranceTypeUuid: SIS_CONCEPT_UUID,
+    insuranceCode: 'E-11138562',
+    accreditationStatusUuid: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+    accreditationCheckedAt,
+    verificationMethod: 'siasis-adt',
+  };
+
+  it('acredita un E temporal solo con evidencia de verificación confiable', () => {
+    expect(getPersonSisFinancingState(trustedTemporaryPerson)).toBe('active');
+  });
+
+  it('trata un E temporal sin método confiable como cobertura incompleta', () => {
+    // El caso real de la marcha blanca: «Afiliación Temporal» E-11138562
+    // registrada a mano. La persona leía `active`, el copiado descartaba el
+    // código y la revalidación de triaje reventaba con «no pudo sincronizarse».
+    expect(getPersonSisFinancingState({ ...trustedTemporaryPerson, verificationMethod: null })).toBe('missing');
+    expect(getPersonSisFinancingState({ ...trustedTemporaryPerson, verificationMethod: 'manual' })).toBe('missing');
+    // Una fecha civil sin hora tampoco acredita.
+    expect(
+      getPersonSisFinancingState({ ...trustedTemporaryPerson, accreditationCheckedAt: '2026-08-11' }),
+    ).toBe('missing');
+  });
+
+  it('aplica la regla también a códigos con intención temporal malformada', () => {
+    expect(
+      getPersonSisFinancingState({ ...trustedTemporaryPerson, insuranceCode: 'E 111385', verificationMethod: null }),
+    ).toBe('missing');
+  });
+
+  it('no exige método de verificación a un carné SIS regular ni a una IAFAS no-SIS', () => {
+    expect(
+      getPersonSisFinancingState({ ...trustedTemporaryPerson, insuranceCode: 'SIS-123', verificationMethod: null }),
+    ).toBe('active');
+    expect(
+      getPersonSisFinancingState({
+        insuranceTypeUuid: essaludConceptUuid,
+        insuranceCode: 'ESSALUD-1',
+        accreditationStatusUuid: null,
+        accreditationCheckedAt: null,
+        verificationMethod: null,
+      }),
+    ).toBe('notApplicable');
+  });
+});
+
 describe('fetchPersonInsurance', () => {
   it('returns empty insurance without fetching when the patient UUID is missing', async () => {
     await expect(fetchPersonInsurance('')).resolves.toEqual({
@@ -303,6 +533,7 @@ describe('fetchPersonInsurance', () => {
       insuranceCode: null,
       accreditationStatusUuid: null,
       accreditationCheckedAt: null,
+      verificationMethod: null,
     });
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });
@@ -325,6 +556,11 @@ describe('fetchPersonInsurance', () => {
           value: accreditationVigenteUuid,
           attributeType: { uuid: ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID },
         },
+        {
+          uuid: 'attr-4',
+          value: 'manual-web',
+          attributeType: { uuid: INSURANCE_VERIFICATION_METHOD_PERSON_ATTRIBUTE_TYPE_UUID },
+        },
       ],
     });
 
@@ -333,8 +569,9 @@ describe('fetchPersonInsurance', () => {
       insuranceCode: 'COD-000123',
       accreditationStatusUuid: accreditationVigenteUuid,
       accreditationCheckedAt: null,
+      verificationMethod: 'manual-web',
     });
-    expect(mockOpenmrsFetch).toHaveBeenCalledWith(personUrl);
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => isPersonInsuranceReadUrl(String(url)))).toBe(true);
   });
 
   it('supports coded values that arrive as plain strings', async () => {
@@ -354,6 +591,81 @@ describe('fetchPersonInsurance', () => {
   });
 });
 
+describe('fresh temporary SIS coverage reads', () => {
+  beforeEach(() => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_787_589_000_000);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('uses unique network-only URLs and the same abort signal for person and identifier proof', async () => {
+    const abortController = new AbortController();
+    mockFetchSequence({
+      personAttributes: temporarySisPersonAttributes(),
+      patientIdentifiers: [
+        {
+          identifier: 'E-12345678',
+          identifierType: { uuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID },
+        },
+      ],
+    });
+
+    await Promise.all([
+      fetchFreshPersonInsurance(patientUuid, abortController.signal),
+      fetchFreshPatientIdentifiers(patientUuid, abortController.signal),
+    ]);
+
+    const personCall = mockOpenmrsFetch.mock.calls.find(([url]) => isPersonInsuranceReadUrl(String(url)));
+    const identifiersCall = mockOpenmrsFetch.mock.calls.find(([url]) => isPatientIdentifiersReadUrl(String(url)));
+    expect(personCall).toBeDefined();
+    expect(identifiersCall).toBeDefined();
+
+    const personRequestUrl = new URL(String(personCall?.[0]), 'https://example.test');
+    const identifiersRequestUrl = new URL(String(identifiersCall?.[0]), 'https://example.test');
+    expect(personRequestUrl.pathname).toBe(`${restBaseUrl}/person/${patientUuid}`);
+    expect(personRequestUrl.searchParams.get('v')).toBe('custom:(attributes:(uuid,value,attributeType:(uuid)))');
+    expect(personRequestUrl.searchParams.get('_')).toMatch(/^1787589000000-\d+$/);
+    expect(identifiersRequestUrl.pathname).toBe(`${restBaseUrl}/patient/${patientUuid}`);
+    expect(identifiersRequestUrl.searchParams.get('v')).toBe(
+      'custom:(identifiers:(identifier,identifierType:(uuid),voided))',
+    );
+    expect(identifiersRequestUrl.searchParams.get('_')).toMatch(/^1787589000000-\d+$/);
+    expect(personRequestUrl.searchParams.get('_')).not.toBe(identifiersRequestUrl.searchParams.get('_'));
+
+    const expectedRequestOptions = {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-store',
+        [omrsOfflineCachingStrategyHttpHeaderName]: 'network-only-or-cache-only',
+      },
+      signal: abortController.signal,
+    };
+    expect(personCall?.[1]).toEqual(expectedRequestOptions);
+    expect(identifiersCall?.[1]).toEqual(expectedRequestOptions);
+  });
+
+  it('propagates a failed network-only proof instead of substituting cached coverage', async () => {
+    const networkError = new TypeError('Failed to fetch');
+    mockOpenmrsFetch.mockRejectedValue(networkError);
+
+    await expect(fetchFreshPersonInsurance(patientUuid)).rejects.toBe(networkError);
+    await expect(fetchFreshPatientIdentifiers(patientUuid)).rejects.toBe(networkError);
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
+    for (const [, requestOptions] of mockOpenmrsFetch.mock.calls) {
+      expect(requestOptions).toEqual(
+        expect.objectContaining({
+          cache: 'no-store',
+          headers: expect.objectContaining({
+            [omrsOfflineCachingStrategyHttpHeaderName]: 'network-only-or-cache-only',
+          }),
+        }),
+      );
+    }
+  });
+});
+
 describe('copyFinanciadorToVisit', () => {
   it('reports a missing financer when the person has no insurance data', async () => {
     mockFetchSequence({ personAttributes: [] });
@@ -367,7 +679,7 @@ describe('copyFinanciadorToVisit', () => {
     });
     // La visita también se lee para conservar una cobertura histórica coherente.
     expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
-    expect(mockOpenmrsFetch).toHaveBeenCalledWith(personUrl);
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => isPersonInsuranceReadUrl(String(url)))).toBe(true);
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(visitUrl);
   });
 
@@ -595,7 +907,7 @@ describe('copyFinanciadorToVisit', () => {
 
   it('does not fetch identifiers for an inapplicable historic self-financed code', async () => {
     mockOpenmrsFetch.mockImplementation((url: string) => {
-      if (url === personUrl) {
+      if (isPersonInsuranceReadUrl(url)) {
         return Promise.resolve({
           data: {
             attributes: [
@@ -613,7 +925,7 @@ describe('copyFinanciadorToVisit', () => {
           },
         }) as never;
       }
-      if (url === identifiersUrl) {
+      if (isPatientIdentifiersReadUrl(url)) {
         return Promise.reject(new Error('identifier endpoint unavailable')) as never;
       }
       if (url === visitUrl) {
@@ -628,7 +940,7 @@ describe('copyFinanciadorToVisit', () => {
       created: 1,
       updated: 0,
     });
-    expect(mockOpenmrsFetch).not.toHaveBeenCalledWith(identifiersUrl);
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => isPatientIdentifiersReadUrl(String(url)))).toBe(false);
     expect(getWriteCalls().map(([, init]) => (init as { body: unknown }).body)).toEqual([
       { attributeType: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID, value: SELF_FINANCED_CONCEPT_UUID },
     ]);
@@ -751,6 +1063,220 @@ describe('copyFinanciadorToVisit', () => {
     });
   });
 
+  it.each([
+    'manual-web',
+    'setisis',
+    'siasis-adt',
+  ])('copies E-######## with fresh identifier and trusted %s evidence', async (verificationMethod) => {
+    mockFetchSequence({
+      personAttributes: temporarySisPersonAttributes(verificationMethod),
+      patientIdentifiers: [
+        {
+          identifier: 'E-12345678',
+          identifierType: { uuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID },
+        },
+      ],
+    });
+
+    await expect(copyFinanciadorToVisit({ patientUuid, visitUuid })).resolves.toMatchObject({
+      ok: true,
+      created: 4,
+    });
+    expect(getWriteCalls().map(([, init]) => (init as { body: unknown }).body)).toContainEqual({
+      attributeType: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+      value: 'E-12345678',
+    });
+  });
+
+  it.each([
+    ['missing method', null, accreditationCheckedAt],
+    ['unknown method', 'spreadsheet-import', accreditationCheckedAt],
+    ['date without time and zone', 'siasis-adt', '2026-08-12'],
+  ])('does not copy E-######## with %s', async (_caseName, verificationMethod, checkedAt) => {
+    mockFetchSequence({
+      personAttributes: temporarySisPersonAttributes(verificationMethod, checkedAt),
+      patientIdentifiers: [
+        {
+          identifier: 'E-12345678',
+          identifierType: { uuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID },
+        },
+      ],
+    });
+
+    await expect(copyFinanciadorToVisit({ patientUuid, visitUuid })).resolves.toMatchObject({
+      ok: true,
+      created: 3,
+      reviewReason: 'incomplete-coverage',
+    });
+    expect(getWriteCalls().map(([, init]) => (init as { body: unknown }).body)).not.toContainEqual({
+      attributeType: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+      value: 'E-12345678',
+    });
+  });
+
+  it.each([
+    'E12345678',
+    'E 12345678',
+  ])('does not copy E-######## from malformed REST identifier %s', async (identifier) => {
+    mockFetchSequence({
+      personAttributes: temporarySisPersonAttributes(),
+      patientIdentifiers: [
+        {
+          identifier,
+          identifierType: { uuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID },
+        },
+      ],
+    });
+
+    await copyFinanciadorToVisit({ patientUuid, visitUuid });
+
+    expect(getWriteCalls().map(([, init]) => (init as { body: unknown }).body)).not.toContainEqual({
+      attributeType: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+      value: 'E-12345678',
+    });
+  });
+
+  it('does not trust a stale caller snapshot when REST no longer contains the E identifier', async () => {
+    mockFetchSequence({
+      personAttributes: temporarySisPersonAttributes(),
+      patientIdentifiers: [],
+    });
+
+    await copyFinanciadorToVisit({
+      patientUuid,
+      visitUuid,
+      patientIdentifiers: [
+        {
+          value: 'E-12345678',
+          identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+        },
+      ],
+    });
+
+    expect(mockOpenmrsFetch.mock.calls.filter(([url]) => isPatientIdentifiersReadUrl(String(url)))).toHaveLength(1);
+    expect(getWriteCalls().map(([, init]) => (init as { body: unknown }).body)).not.toContainEqual({
+      attributeType: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+      value: 'E-12345678',
+    });
+  });
+
+  it('reuses an explicitly fresh empty proof without fetching or restoring a stale E identifier', async () => {
+    mockFetchSequence({
+      personAttributes: temporarySisPersonAttributes(),
+    });
+
+    await copyFinanciadorToVisit({
+      patientUuid,
+      visitUuid,
+      patientIdentifiers: [
+        {
+          value: 'E-12345678',
+          identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+        },
+      ],
+      freshPatientIdentifiers: [],
+      freshPersonInsurance: {
+        insuranceTypeUuid: SIS_CONCEPT_UUID,
+        insuranceCode: 'E-12345678',
+        accreditationStatusUuid: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+        accreditationCheckedAt,
+        verificationMethod: 'siasis-adt',
+      },
+    });
+
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => isPatientIdentifiersReadUrl(String(url)))).toBe(false);
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => isPersonInsuranceReadUrl(String(url)))).toBe(false);
+    expect(getWriteCalls().map(([, init]) => (init as { body: unknown }).body)).not.toContainEqual({
+      attributeType: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+      value: 'E-12345678',
+    });
+  });
+
+  it('uses one fresh proof when REST gained the E identifier after the caller snapshot', async () => {
+    mockFetchSequence({
+      personAttributes: temporarySisPersonAttributes(),
+    });
+
+    await copyFinanciadorToVisit({
+      patientUuid,
+      visitUuid,
+      patientIdentifiers: [],
+      freshPatientIdentifiers: [
+        {
+          value: 'E-12345678',
+          identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+        },
+      ],
+      freshPersonInsurance: {
+        insuranceTypeUuid: SIS_CONCEPT_UUID,
+        insuranceCode: 'E-12345678',
+        accreditationStatusUuid: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+        accreditationCheckedAt,
+        verificationMethod: 'siasis-adt',
+      },
+    });
+
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => isPatientIdentifiersReadUrl(String(url)))).toBe(false);
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => isPersonInsuranceReadUrl(String(url)))).toBe(false);
+    expect(getWriteCalls().map(([, init]) => (init as { body: unknown }).body)).toContainEqual({
+      attributeType: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+      value: 'E-12345678',
+    });
+  });
+
+  it.each([
+    ['no identifiers', []],
+    [
+      'an unrelated temporary identifier',
+      [
+        {
+          identifier: 'E-87654321',
+          identifierType: { uuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID },
+        },
+      ],
+    ],
+  ] as const)('does not copy E-######## when REST returns %s', async (_case, patientIdentifiers) => {
+    mockFetchSequence({
+      personAttributes: temporarySisPersonAttributes(),
+      patientIdentifiers: [...patientIdentifiers],
+    });
+
+    await expect(copyFinanciadorToVisit({ patientUuid, visitUuid })).resolves.toMatchObject({
+      ok: true,
+      created: 3,
+      reviewReason: 'incomplete-coverage',
+    });
+    expect(getWriteCalls().map(([, init]) => (init as { body: unknown }).body)).not.toContainEqual({
+      attributeType: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+      value: 'E-12345678',
+    });
+  });
+
+  it('ignores voided identifiers when checking an insurance number', async () => {
+    mockFetchSequence({
+      personAttributes: [
+        {
+          uuid: 'attr-1',
+          value: SIS_CONCEPT_UUID,
+          attributeType: { uuid: INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID },
+        },
+        {
+          uuid: 'attr-2',
+          value: '72-344-001',
+          attributeType: { uuid: INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID },
+        },
+      ],
+      patientIdentifiers: [{ identifier: '72344001', identifierType: { uuid: 'dni-type' }, voided: true }],
+    });
+
+    await copyFinanciadorToVisit({ patientUuid, visitUuid });
+
+    expect(getWriteCalls().map(([, init]) => (init as { body: unknown }).body)).toContainEqual({
+      attributeType: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+      value: '72-344-001',
+    });
+  });
+
   it('never copies a document identifier as the affiliation number', async () => {
     mockFetchSequence({
       personAttributes: [
@@ -774,7 +1300,7 @@ describe('copyFinanciadorToVisit', () => {
     expect(getWriteCalls().map(([, init]) => (init as { body: unknown }).body)).toEqual([
       { attributeType: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID, value: SIS_CONCEPT_UUID },
     ]);
-    expect(mockOpenmrsFetch).toHaveBeenCalledWith(identifiersUrl);
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => isPatientIdentifiersReadUrl(String(url)))).toBe(true);
   });
 
   it('normalizes legacy SIS products to the SIS concept when writing the Financiador attribute', async () => {
@@ -1285,7 +1811,7 @@ describe('copyFinanciadorToVisit', () => {
     let failInsuranceNumberOnce = true;
 
     mockOpenmrsFetch.mockImplementation((url: string, init?: { method?: string; body?: unknown }) => {
-      if (url === personUrl) {
+      if (isPersonInsuranceReadUrl(url)) {
         return Promise.resolve({ data: { attributes: personAttributes } }) as never;
       }
       if (url === visitUrl) {
@@ -1363,7 +1889,7 @@ describe('copyFinanciadorToVisit', () => {
     ];
 
     mockOpenmrsFetch.mockImplementation((url: string, init?: { method?: string; body?: unknown }) => {
-      if (url === personUrl) {
+      if (isPersonInsuranceReadUrl(url)) {
         return Promise.resolve({ data: { attributes: personAttributes } }) as never;
       }
       if (url === visitUrl) {

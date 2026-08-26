@@ -171,7 +171,7 @@ const PrescriptionsPrintout: React.FC<PrescriptionsPrintoutProps> = ({
           })}
           {requesters.size > 0 && (
             <p className={styles.prescriber}>
-              {t('prescribedBy', 'Prescribed By')}:{' '}
+              {t('prescribedBy', 'Prescribed by')}:{' '}
               {Array.from(requesters.values())
                 .map((name) => name?.split('(')?.at(0))
                 ?.join(', ')}

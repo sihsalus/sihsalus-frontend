@@ -9,13 +9,14 @@
  * Ver docs/clinical/plan-alineamiento-seguros-sis.md (PR #606) y
  * sihsalus-content#163 (aprovisionamiento de los attribute types).
  */
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { omrsOfflineCachingStrategyHttpHeaderName, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
 // ── Person attribute types (afiliación de la persona) ───────────────────────
 export const INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID = '56188294-b42c-481d-a987-4b495116c580';
 export const INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID = '374b130f-7457-476f-87b1-f182aa77c434';
 export const ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID = '9b3df0a1-0c58-4f55-9868-9c38f1db1005';
 export const ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID = '9b3df0a1-0c58-4f55-9868-9c38f1db1006';
+export const INSURANCE_VERIFICATION_METHOD_PERSON_ATTRIBUTE_TYPE_UUID = 'bc1e5c92-e46a-4bc9-8cba-d9093a0eb659';
 
 // ── Visit attribute types (financiador de ESTA atención) ────────────────────
 export const FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID = '3a988e33-a6c0-4b76-b924-01abb998944b';
@@ -31,6 +32,35 @@ export const SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID = '9b3df0a1-0c58-4f55-9868-
 export const SIS_ACCREDITATION_PENDING_CONCEPT_UUID = '9b3df0a1-0c58-4f55-9868-9c38f1db2053';
 export const SIS_ACCREDITATION_NOT_CONSULTED_CONCEPT_UUID = '9b3df0a1-0c58-4f55-9868-9c38f1db2054';
 export const SELF_FINANCED_CONCEPT_UUID = 'cc72568e-d0d9-46a8-a618-91f0d679f518';
+/** Afiliación temporal E-######## emitida/registrada por SIASIS/SIS y capturada en SIH Salus. */
+export const SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID = '68a90c20-eec8-433a-aa92-83e549d801db';
+export const SIS_TEMPORARY_AFFILIATION_VERIFICATION_METHOD = 'siasis-adt';
+export const TRUSTED_SIS_VERIFICATION_METHODS = [
+  'manual-web',
+  'setisis',
+  SIS_TEMPORARY_AFFILIATION_VERIFICATION_METHOD,
+] as const;
+export type TrustedSisVerificationMethod = (typeof TRUSTED_SIS_VERIFICATION_METHODS)[number];
+
+const trustedSisVerificationMethods: ReadonlySet<string> = new Set(TRUSTED_SIS_VERIFICATION_METHODS);
+const isoDateTimePattern = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?(Z|([+-])(\d{2}):(\d{2}))$/;
+let freshCoverageRequestSequence = 0;
+
+function getFreshCoverageRequestNonce() {
+  freshCoverageRequestSequence += 1;
+  return `${Date.now()}-${freshCoverageRequestSequence}`;
+}
+
+function getFreshCoverageRequestOptions(signal?: AbortSignal) {
+  return {
+    cache: 'no-store' as const,
+    headers: {
+      'Cache-Control': 'no-store',
+      [omrsOfflineCachingStrategyHttpHeaderName]: 'network-only-or-cache-only' as const,
+    },
+    ...(signal ? { signal } : {}),
+  };
+}
 
 const canonicalSisAccreditationStatusUuids: ReadonlySet<string> = new Set([
   SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
@@ -88,9 +118,20 @@ export interface VisitInsurance {
 interface PatientIdentifiersResponse {
   identifiers?: Array<{
     identifier?: string;
+    identifierType?: {
+      uuid?: string;
+    };
     voided?: boolean;
   }>;
 }
+
+export interface PatientIdentifierReference {
+  value: string;
+  /** Ausente significa procedencia desconocida y se trata de forma conservadora. */
+  identifierTypeUuid?: string | null;
+}
+
+export type PatientIdentifierInput = PatientIdentifierReference | string;
 
 // ── Helpers de mapeo/normalización ───────────────────────────────────────────
 
@@ -150,7 +191,12 @@ export function getSisFinancingState({
   accreditationStatusUuid,
   accreditationCheckedAt,
 }: VisitInsurance): SisFinancingState {
-  if (normalizeFinanciadorConceptUuid(financiadorUuid) !== SIS_CONCEPT_UUID) {
+  const normalizedFinanciadorUuid = normalizeFinanciadorConceptUuid(financiadorUuid);
+  if (!normalizedFinanciadorUuid) {
+    return 'missing';
+  }
+
+  if (normalizedFinanciadorUuid !== SIS_CONCEPT_UUID) {
     return 'notApplicable';
   }
 
@@ -170,6 +216,47 @@ export function getSisFinancingState({
   }
 }
 
+/**
+ * Estado SIS efectivo de la PERSONA, con la misma regla de confianza que el
+ * copiado persona→visita: un código temporal E-… solo acredita con evidencia
+ * de verificación confiable; sin ella, el estado se calcula como si el código
+ * no existiera (→ `missing`, que falla cerrado hacia revisión/Caja).
+ *
+ * Sin esto, los guardas que evalúan a la persona (llegada de cita, triaje)
+ * veían `active` donde el copiado luego descartaba el código, y la
+ * revalidación de triaje reventaba con «no pudo sincronizarse» — o, en el
+ * camino sin permisos de visita, dejaba pasar la afiliación no verificada.
+ *
+ * La consistencia código↔identificadores (isInsuranceCodeAllowed) queda a
+ * propósito en el copiado, su único dueño: exige identificadores frescos y su
+ * divergencia sí debe tratarse como error de datos, no como estado.
+ */
+export function getPersonSisFinancingState(
+  personInsurance: PersonInsurance,
+  sisConceptUuid: string = SIS_CONCEPT_UUID,
+): SisFinancingState {
+  const hasUntrustedTemporaryCode =
+    isTemporarySisAffiliationLikeCode(personInsurance.insuranceCode) &&
+    !hasTrustedTemporarySisCoverageEvidence(personInsurance, sisConceptUuid);
+
+  return getSisFinancingState({
+    financiadorUuid: personInsurance.insuranceTypeUuid,
+    insuranceNumber: hasUntrustedTemporaryCode ? null : personInsurance.insuranceCode,
+    accreditationStatusUuid: personInsurance.accreditationStatusUuid,
+    accreditationCheckedAt: personInsurance.accreditationCheckedAt,
+  });
+}
+
+/**
+ * El triaje requiere un financiador identificado. SIS debe estar vigente y
+ * completo; una IAFAS no-SIS o el autofinanciamiento no requieren
+ * acreditación SIS. Este criterio no se aplica al FUA, que conserva su barrera
+ * exclusiva de SIS vigente.
+ */
+export function isTriageFinancingEligible(state: SisFinancingState | null | undefined): boolean {
+  return state === 'active' || state === 'notApplicable';
+}
+
 // ── Lectura de la afiliación de la persona ───────────────────────────────────
 
 export interface PersonInsuranceAttributeTypeUuids {
@@ -177,6 +264,7 @@ export interface PersonInsuranceAttributeTypeUuids {
   insuranceCodeAttributeTypeUuid?: string;
   accreditationStatusAttributeTypeUuid?: string;
   accreditationCheckedAtAttributeTypeUuid?: string;
+  verificationMethodAttributeTypeUuid?: string;
 }
 
 export interface PersonInsurance {
@@ -188,6 +276,8 @@ export interface PersonInsurance {
   accreditationStatusUuid: string | null;
   /** Fecha/hora (texto) de la última verificación de acreditación. */
   accreditationCheckedAt: string | null;
+  /** Fuente controlada de la verificación de acreditación. */
+  verificationMethod: string | null;
 }
 
 const EMPTY_PERSON_INSURANCE: PersonInsurance = {
@@ -195,10 +285,32 @@ const EMPTY_PERSON_INSURANCE: PersonInsurance = {
   insuranceCode: null,
   accreditationStatusUuid: null,
   accreditationCheckedAt: null,
+  verificationMethod: null,
 };
 
 function findAttribute(attributes: Array<RestAttribute>, attributeTypeUuid: string): RestAttribute | undefined {
   return attributes.find((attribute) => attribute.attributeType?.uuid === attributeTypeUuid);
+}
+
+const personInsuranceRepresentation = 'custom:(attributes:(uuid,value,attributeType:(uuid)))';
+
+function mapPersonInsurance(
+  attributes: Array<RestAttribute>,
+  {
+    insuranceTypeAttributeTypeUuid = INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
+    insuranceCodeAttributeTypeUuid = INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID,
+    accreditationStatusAttributeTypeUuid = ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID,
+    accreditationCheckedAtAttributeTypeUuid = ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID,
+    verificationMethodAttributeTypeUuid = INSURANCE_VERIFICATION_METHOD_PERSON_ATTRIBUTE_TYPE_UUID,
+  }: PersonInsuranceAttributeTypeUuids = {},
+): PersonInsurance {
+  return {
+    insuranceTypeUuid: getCodedValueUuid(findAttribute(attributes, insuranceTypeAttributeTypeUuid)?.value),
+    insuranceCode: getTextValue(findAttribute(attributes, insuranceCodeAttributeTypeUuid)?.value),
+    accreditationStatusUuid: getCodedValueUuid(findAttribute(attributes, accreditationStatusAttributeTypeUuid)?.value),
+    accreditationCheckedAt: getTextValue(findAttribute(attributes, accreditationCheckedAtAttributeTypeUuid)?.value),
+    verificationMethod: getTextValue(findAttribute(attributes, verificationMethodAttributeTypeUuid)?.value),
+  };
 }
 
 /**
@@ -207,28 +319,37 @@ function findAttribute(attributes: Array<RestAttribute>, attributeTypeUuid: stri
  */
 export async function fetchPersonInsurance(
   patientUuid: string,
-  {
-    insuranceTypeAttributeTypeUuid = INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
-    insuranceCodeAttributeTypeUuid = INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID,
-    accreditationStatusAttributeTypeUuid = ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID,
-    accreditationCheckedAtAttributeTypeUuid = ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID,
-  }: PersonInsuranceAttributeTypeUuids = {},
+  attributeTypeUuids: PersonInsuranceAttributeTypeUuids = {},
 ): Promise<PersonInsurance> {
   if (!patientUuid?.trim()) {
     return EMPTY_PERSON_INSURANCE;
   }
 
   const { data } = await openmrsFetch<PersonAttributesResponse>(
-    `${restBaseUrl}/person/${patientUuid}?v=custom:(attributes:(uuid,value,attributeType:(uuid)))`,
+    `${restBaseUrl}/person/${patientUuid}?v=${personInsuranceRepresentation}`,
   );
-  const attributes = data?.attributes ?? [];
+  return mapPersonInsurance(data?.attributes ?? [], attributeTypeUuids);
+}
 
-  return {
-    insuranceTypeUuid: getCodedValueUuid(findAttribute(attributes, insuranceTypeAttributeTypeUuid)?.value),
-    insuranceCode: getTextValue(findAttribute(attributes, insuranceCodeAttributeTypeUuid)?.value),
-    accreditationStatusUuid: getCodedValueUuid(findAttribute(attributes, accreditationStatusAttributeTypeUuid)?.value),
-    accreditationCheckedAt: getTextValue(findAttribute(attributes, accreditationCheckedAtAttributeTypeUuid)?.value),
-  };
+/** Lee la afiliación de persona sin permitir que el service worker satisfaga la verificación. */
+export async function fetchFreshPersonInsurance(
+  patientUuid: string,
+  signal?: AbortSignal,
+  attributeTypeUuids: PersonInsuranceAttributeTypeUuids = {},
+): Promise<PersonInsurance> {
+  if (!patientUuid?.trim()) {
+    return EMPTY_PERSON_INSURANCE;
+  }
+
+  const searchParams = new URLSearchParams({
+    v: personInsuranceRepresentation,
+    _: getFreshCoverageRequestNonce(),
+  });
+  const { data } = await openmrsFetch<PersonAttributesResponse>(
+    `${restBaseUrl}/person/${encodeURIComponent(patientUuid)}?${searchParams.toString()}`,
+    getFreshCoverageRequestOptions(signal),
+  );
+  return mapPersonInsurance(data?.attributes ?? [], attributeTypeUuids);
 }
 
 /** Lee el financiador y la acreditación persistidos para una atención. */
@@ -258,19 +379,53 @@ export async function fetchVisitInsurance(
   };
 }
 
-/** Lee los documentos vigentes del paciente para impedir que se usen como afiliación. */
-export async function fetchPatientIdentifierValues(patientUuid: string): Promise<Array<string>> {
+/** Lee los identificadores vigentes con su tipo para validar su uso como afiliación. */
+export async function fetchPatientIdentifiers(patientUuid: string): Promise<Array<PatientIdentifierReference>> {
   if (!patientUuid?.trim()) {
     return [];
   }
 
   const { data } = await openmrsFetch<PatientIdentifiersResponse>(
-    `${restBaseUrl}/patient/${patientUuid}?v=custom:(identifiers:(identifier,voided))`,
+    `${restBaseUrl}/patient/${patientUuid}?v=custom:(identifiers:(identifier,identifierType:(uuid),voided))`,
   );
-  return (data?.identifiers ?? [])
+  return mapPatientIdentifiers(data?.identifiers ?? []);
+}
+
+function mapPatientIdentifiers(
+  identifiers: NonNullable<PatientIdentifiersResponse['identifiers']>,
+): Array<PatientIdentifierReference> {
+  return identifiers
     .filter(({ voided }) => !voided)
-    .map(({ identifier }) => identifier?.trim() ?? '')
-    .filter(Boolean);
+    .map(({ identifier, identifierType }) => ({
+      value: identifier?.trim() ?? '',
+      identifierTypeUuid: identifierType?.uuid?.trim() || null,
+    }))
+    .filter(({ value }) => Boolean(value));
+}
+
+/** Lee identificadores tipados sin permitir una respuesta del cache offline. */
+export async function fetchFreshPatientIdentifiers(
+  patientUuid: string,
+  signal?: AbortSignal,
+): Promise<Array<PatientIdentifierReference>> {
+  if (!patientUuid?.trim()) {
+    return [];
+  }
+
+  const searchParams = new URLSearchParams({
+    v: 'custom:(identifiers:(identifier,identifierType:(uuid),voided))',
+    _: getFreshCoverageRequestNonce(),
+  });
+  const { data } = await openmrsFetch<PatientIdentifiersResponse>(
+    `${restBaseUrl}/patient/${encodeURIComponent(patientUuid)}?${searchParams.toString()}`,
+    getFreshCoverageRequestOptions(signal),
+  );
+  return mapPatientIdentifiers(data?.identifiers ?? []);
+}
+
+/** Compatibilidad; las decisiones de cobertura deben usar `fetchPatientIdentifiers`. */
+export async function fetchPatientIdentifierValues(patientUuid: string): Promise<Array<string>> {
+  return (await fetchPatientIdentifiers(patientUuid)).map(({ value }) => value);
 }
 
 // ── Upsert persona → visita ──────────────────────────────────────────────────
@@ -293,10 +448,30 @@ export interface CopyFinanciadorToVisitParams extends NormalizeFinanciadorOption
    */
   onlyFillMissing?: boolean;
   /**
-   * Identificadores documentales conocidos del paciente (DNI, CE, pasaporte,
-   * etc.). Ninguno de ellos puede usarse como número de afiliación.
+   * Identificadores conocidos con su tipo. Solo el tipo temporal SIS
+   * configurado puede compartir un valor E-######## con la afiliación SIS.
+   */
+  patientIdentifiers?: ReadonlyArray<PatientIdentifierInput>;
+  /**
+   * Identificadores leídos de REST para este intento de persistencia. La
+   * presencia de este campo, incluso como arreglo vacío, prueba que el caller
+   * no está reutilizando el snapshot FHIR para decidir una afiliación E.
+   */
+  freshPatientIdentifiers?: ReadonlyArray<PatientIdentifierInput>;
+  /**
+   * Afiliación de persona leída para este intento. `null` representa una
+   * lectura fallida y evita que el copier repita la consulta dentro del mismo
+   * intento; `undefined` solicita una lectura nueva.
+   */
+  freshPersonInsurance?: PersonInsurance | null;
+  /**
+   * Compatibilidad con consumidores antiguos. Sin tipo, todos los valores
+   * fallan cerrado y no habilitan la excepción SIS.
+   * @deprecated Use `patientIdentifiers`.
    */
   patientIdentifierValues?: ReadonlyArray<string>;
+  /** Tipo que identifica la afiliación temporal SIS E-########. */
+  sisTemporaryAffiliationPatientIdentifierTypeUuid?: string;
 }
 
 export interface CopyFinanciadorToVisitResult {
@@ -332,13 +507,128 @@ function normalizeDocumentValue(value: string): string {
     .replace(/[^\p{L}\p{N}]/gu, '');
 }
 
-function isPatientIdentifier(value: string | null, patientIdentifierValues: ReadonlyArray<string>): boolean {
-  if (!value) {
+function toPatientIdentifierReference(identifier: PatientIdentifierInput): PatientIdentifierReference {
+  return typeof identifier === 'string'
+    ? { value: identifier, identifierTypeUuid: null }
+    : {
+        value: identifier.value,
+        identifierTypeUuid: identifier.identifierTypeUuid?.trim() || null,
+      };
+}
+
+export function normalizeTemporarySisAffiliationCode(value: string | null | undefined): string | null {
+  const normalizedValue = value?.trim().toLocaleUpperCase() ?? '';
+  return /^E-\d{8}$/.test(normalizedValue) ? normalizedValue : null;
+}
+
+export function isTemporarySisAffiliationCode(value: string | null | undefined): boolean {
+  return Boolean(normalizeTemporarySisAffiliationCode(value));
+}
+
+/** Detecta la intención de un código temporal E, aunque su forma o longitud sea inválida. */
+export function isTemporarySisAffiliationLikeCode(value: string | null | undefined): boolean {
+  return /^E(?:[-\s]?\d)/.test(value?.trim().toLocaleUpperCase() ?? '');
+}
+
+/** Exige fecha, hora, segundos y zona explícita; una fecha civil no acredita. */
+export function isValidInsuranceVerificationIsoDateTime(value: string | null | undefined): boolean {
+  const normalizedValue = value?.trim() ?? '';
+  const match = isoDateTimePattern.exec(normalizedValue);
+  if (!match || Number.isNaN(Date.parse(normalizedValue))) {
     return false;
   }
 
+  const [, yearValue, monthValue, dayValue, hourValue, minuteValue, secondValue, millisecondValue = '0'] = match;
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+  const day = Number(dayValue);
+  const hour = Number(hourValue);
+  const minute = Number(minuteValue);
+  const second = Number(secondValue);
+  const millisecond = Number(millisecondValue.padEnd(3, '0'));
+  const localParts = new Date(Date.UTC(year, month - 1, day, hour, minute, second, millisecond));
+
+  return (
+    localParts.getUTCFullYear() === year &&
+    localParts.getUTCMonth() === month - 1 &&
+    localParts.getUTCDate() === day &&
+    localParts.getUTCHours() === hour &&
+    localParts.getUTCMinutes() === minute &&
+    localParts.getUTCSeconds() === second &&
+    localParts.getUTCMilliseconds() === millisecond
+  );
+}
+
+export function hasTrustedSisVerificationEvidence(
+  accreditationCheckedAt: string | null | undefined,
+  verificationMethod: string | null | undefined,
+): boolean {
+  return (
+    isValidInsuranceVerificationIsoDateTime(accreditationCheckedAt) &&
+    trustedSisVerificationMethods.has(verificationMethod?.trim() ?? '')
+  );
+}
+
+/** Contrato mínimo de persona para convertir un E temporal en cobertura activa. */
+export function hasTrustedTemporarySisCoverageEvidence(
+  {
+    insuranceTypeUuid,
+    insuranceCode,
+    accreditationStatusUuid,
+    accreditationCheckedAt,
+    verificationMethod,
+  }: PersonInsurance,
+  sisConceptUuid = SIS_CONCEPT_UUID,
+): boolean {
+  return Boolean(
+    normalizeFinanciadorConceptUuid(insuranceTypeUuid, { sisConceptUuid }) === sisConceptUuid &&
+      normalizeTemporarySisAffiliationCode(insuranceCode) &&
+      accreditationStatusUuid === SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID &&
+      hasTrustedSisVerificationEvidence(accreditationCheckedAt, verificationMethod),
+  );
+}
+
+/**
+ * Permite un match únicamente si todos los identificadores coincidentes son
+ * E-######## del tipo temporal configurado y el financiador efectivo es SIS.
+ * Toda intención de código E exige forma canónica y al menos un match;
+ * FHIR/REST vacío, identificadores sin tipo o duplicados bajo otro tipo fallan
+ * cerrado.
+ */
+export function isInsuranceCodeAllowed(
+  value: string | null | undefined,
+  financiadorUuid: string | null | undefined,
+  patientIdentifiers: ReadonlyArray<PatientIdentifierInput> = [],
+  sisTemporaryAffiliationPatientIdentifierTypeUuid = SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+  sisConceptUuid = SIS_CONCEPT_UUID,
+): boolean {
+  if (!value) {
+    return true;
+  }
+
   const normalizedValue = normalizeDocumentValue(value);
-  return patientIdentifierValues.some((identifier) => normalizeDocumentValue(identifier) === normalizedValue);
+  const matchingIdentifiers = patientIdentifiers
+    .map(toPatientIdentifierReference)
+    .filter(({ value: identifierValue }) => normalizeDocumentValue(identifierValue) === normalizedValue);
+  const isTemporarySisAffiliationLike = isTemporarySisAffiliationLikeCode(value);
+
+  if (matchingIdentifiers.length === 0) {
+    return !isTemporarySisAffiliationLike;
+  }
+
+  const normalizedFinanciador = normalizeFinanciadorConceptUuid(financiadorUuid ?? null, { sisConceptUuid });
+  const configuredTypeUuid = sisTemporaryAffiliationPatientIdentifierTypeUuid.trim();
+  const canonicalTemporaryCode = normalizeTemporarySisAffiliationCode(value);
+  return Boolean(
+    normalizedFinanciador === sisConceptUuid &&
+      configuredTypeUuid &&
+      canonicalTemporaryCode &&
+      matchingIdentifiers.every(
+        ({ value: identifierValue, identifierTypeUuid }) =>
+          identifierTypeUuid === configuredTypeUuid &&
+          normalizeTemporarySisAffiliationCode(identifierValue) === canonicalTemporaryCode,
+      ),
+  );
 }
 
 /**
@@ -359,6 +649,10 @@ function isPatientIdentifier(value: string | null, patientIdentifierValues: Read
  *   de la afiliación de la persona, no se mezclan sus datos complementarios;
  *   si no existe financiador, primero se eliminan los complementos huérfanos.
  * - Un identificador documental del paciente nunca se copia como afiliación.
+ *   Solo E-######## del tipo temporal SIS configurado puede coincidir, y
+ *   únicamente cuando el financiador efectivo es SIS y la persona conserva
+ *   acreditación activa con fecha ISO completa y método de verificación
+ *   controlado. El método aún no se transporta al snapshot de visita.
  *
  * Lanza en caso de error de red/servidor; los flujos de UI deben usar
  * {@link safeCopyFinanciadorToVisit}, que nunca lanza.
@@ -372,7 +666,11 @@ export async function copyFinanciadorToVisit({
   legacySisProductConceptUuids,
   selfFinancedConceptUuids = [SELF_FINANCED_CONCEPT_UUID],
   onlyFillMissing = false,
+  patientIdentifiers,
+  freshPatientIdentifiers,
+  freshPersonInsurance,
   patientIdentifierValues,
+  sisTemporaryAffiliationPatientIdentifierTypeUuid = SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
 }: CopyFinanciadorToVisitParams): Promise<CopyFinanciadorToVisitResult> {
   const {
     financiadorVisitAttributeTypeUuid = FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
@@ -381,23 +679,39 @@ export async function copyFinanciadorToVisit({
     accreditationCheckedAtVisitAttributeTypeUuid = SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
   } = visitAttributeTypeUuids ?? {};
 
-  const personInsurance = await fetchPersonInsurance(patientUuid, personAttributeTypeUuids);
+  const personInsurance =
+    freshPersonInsurance === undefined
+      ? await fetchFreshPersonInsurance(patientUuid, undefined, personAttributeTypeUuids)
+      : (freshPersonInsurance ?? EMPTY_PERSON_INSURANCE);
   const personFinanciador = normalizeFinanciadorConceptUuid(personInsurance.insuranceTypeUuid, {
     sisConceptUuid,
     legacySisProductConceptUuids,
   });
   const personIsSelfFinanced = Boolean(personFinanciador && selfFinancedConceptUuids.includes(personFinanciador));
-  const resolvedPatientIdentifierValues =
+  const personHasTemporarySisAffiliationCode = isTemporarySisAffiliationCode(personInsurance.insuranceCode);
+  const resolvedPatientIdentifiers =
     personFinanciador && personInsurance.insuranceCode && !personIsSelfFinanced
-      ? patientIdentifierValues?.length
-        ? patientIdentifierValues
-        : await fetchPatientIdentifierValues(patientUuid)
+      ? personHasTemporarySisAffiliationCode
+        ? (freshPatientIdentifiers ?? (await fetchFreshPatientIdentifiers(patientUuid)))
+        : patientIdentifiers?.length
+          ? patientIdentifiers
+          : patientIdentifierValues?.length
+            ? patientIdentifierValues
+            : await fetchFreshPatientIdentifiers(patientUuid)
       : [];
   const safeInsuranceCode = personIsSelfFinanced
     ? null
-    : isPatientIdentifier(personInsurance.insuranceCode, resolvedPatientIdentifierValues)
-      ? null
-      : personInsurance.insuranceCode;
+    : isInsuranceCodeAllowed(
+          personInsurance.insuranceCode,
+          personFinanciador,
+          resolvedPatientIdentifiers,
+          sisTemporaryAffiliationPatientIdentifierTypeUuid,
+          sisConceptUuid,
+        ) &&
+        (!personHasTemporarySisAffiliationCode ||
+          hasTrustedTemporarySisCoverageEvidence(personInsurance, sisConceptUuid))
+      ? personInsurance.insuranceCode
+      : null;
 
   const { data } = await openmrsFetch<VisitAttributesResponse>(
     `${restBaseUrl}/visit/${visitUuid}?v=custom:(attributes:(uuid,value,attributeType:(uuid)))`,

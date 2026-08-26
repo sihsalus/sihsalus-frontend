@@ -12,6 +12,7 @@ import {
   fetchPersonInsurance,
   fetchFreshPatientVitalStatus,
   fetchVisitInsurance,
+  getPersonSisFinancingState,
   getSisFinancingState,
   safeCopyFinanciadorToVisit,
 } from '@openmrs/esm-patient-common-lib';
@@ -54,6 +55,7 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   fetchPersonInsurance: vi.fn(),
   fetchFreshPatientVitalStatus: vi.fn(),
   fetchVisitInsurance: vi.fn(),
+  getPersonSisFinancingState: vi.fn(),
   getSisFinancingState: vi.fn(),
   safeCopyFinanciadorToVisit: vi.fn(),
 }));
@@ -72,6 +74,7 @@ const mockNavigate = vi.mocked(navigate);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockFetchVisitInsurance = vi.mocked(fetchVisitInsurance);
+const mockGetPersonSisFinancingState = vi.mocked(getPersonSisFinancingState);
 const mockGetSisFinancingState = vi.mocked(getSisFinancingState);
 const mockSafeCopyFinanciadorToVisit = vi.mocked(safeCopyFinanciadorToVisit);
 
@@ -218,7 +221,9 @@ describe('AppointmentArrivalModal', () => {
       insuranceCode: 'SIS-123',
       accreditationStatusUuid: 'active-status-uuid',
       accreditationCheckedAt: '2026-08-11T14:30:00.000-05:00',
+      verificationMethod: 'siasis-adt',
     });
+    mockGetPersonSisFinancingState.mockReturnValue('active');
     mockGetSisFinancingState.mockReturnValue('active');
     mockSafeCopyFinanciadorToVisit.mockResolvedValue({ ok: true, skipped: true, created: 0, updated: 0 });
     mockUseConfig.mockReturnValue({
@@ -574,6 +579,7 @@ describe('AppointmentArrivalModal', () => {
       insuranceCode: null,
       accreditationStatusUuid: null,
       accreditationCheckedAt: null,
+      verificationMethod: null,
     });
 
     renderModal();
@@ -589,6 +595,50 @@ describe('AppointmentArrivalModal', () => {
     expect(mockNavigate).toHaveBeenCalledWith({
       to: expect.stringContaining(`/patient/${appointment.patient.uuid}/edit?focusSection=insurance&afterUrl=`),
     });
+  });
+
+  it('allows explicitly non-SIS financing through arrival and active-visit queue validation', async () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      appointmentArrivalRules: [{ ...appointmentArrivalRule, requiresTriage: true }],
+      triageRouting: {
+        enabled: true,
+        encounterTypeUuid: 'triage-encounter-type-uuid',
+        queueLocationUuid: 'triage-location-uuid',
+        queueUuid: 'triage-queue-uuid',
+      },
+      checkInButton: { enabled: true, showIfActiveVisit: true, customUrl: '' },
+    });
+    mockGetActiveVisitsForPatient.mockResolvedValue(visitsResponse([activeVisit]));
+    mockFetchPersonInsurance.mockResolvedValue({
+      insuranceTypeUuid: 'essalud-concept-uuid',
+      insuranceCode: 'ESSALUD-123',
+      accreditationStatusUuid: null,
+      accreditationCheckedAt: null,
+      verificationMethod: null,
+    });
+    mockFetchVisitInsurance.mockResolvedValue({
+      financiadorUuid: 'essalud-concept-uuid',
+      insuranceNumber: 'ESSALUD-123',
+      accreditationStatusUuid: null,
+      accreditationCheckedAt: null,
+    });
+    mockGetSisFinancingState.mockReturnValue('notApplicable');
+
+    renderModal();
+    await userEvent.click(getQueueButton());
+
+    const launchOptions = mockLaunchWorkspace2.mock.calls[0][1] as {
+      onBeforeQueueEntrySave: (visit: typeof activeVisit) => Promise<boolean>;
+    };
+    await expect(launchOptions.onBeforeQueueEntrySave(activeVisit)).resolves.toBe(true);
+    expect(mockFetchPersonInsurance).toHaveBeenCalledWith(appointment.patient.uuid);
+    expect(mockFetchVisitInsurance).toHaveBeenCalledWith(activeVisit.uuid);
+    expect(mockEnsureAppointmentVisitLink).toHaveBeenCalledWith(
+      activeVisit.uuid,
+      appointment.uuid,
+      appointmentVisitAttributeTypeUuid,
+    );
   });
 
   it('blocks enqueuing with an active visit from another location', async () => {
@@ -810,7 +860,8 @@ describe('AppointmentArrivalModal', () => {
       accreditationStatusUuid: 'inactive-status-uuid',
       accreditationCheckedAt: '2026-08-11T14:30:00.000-05:00',
     });
-    mockGetSisFinancingState.mockReturnValueOnce('active').mockReturnValueOnce('inactive');
+    mockGetPersonSisFinancingState.mockReturnValue('active');
+    mockGetSisFinancingState.mockReturnValue('inactive');
 
     renderModal();
     await userEvent.click(getQueueButton());

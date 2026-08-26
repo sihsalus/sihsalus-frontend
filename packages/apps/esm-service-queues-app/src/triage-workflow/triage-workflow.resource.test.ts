@@ -17,6 +17,7 @@ import { transitionQueueEntry } from '../modals/queue-entry-actions.resource';
 import { type QueueEntry } from '../types';
 import {
   type AppointmentTriageConfig,
+  getAppointmentTriageConfig,
   getLinkedAppointmentUuid,
   getPersonSisState,
   getSisState,
@@ -61,7 +62,6 @@ const appointmentConfig: AppointmentTriageConfig = {
       appointmentLocationUuid: 'appointment-location-uuid',
       appointmentServiceUuid: 'appointment-service-uuid',
       queueUuid: destinationQueueUuid,
-      requiresTriage: true,
     },
   ],
 };
@@ -117,22 +117,39 @@ describe('outpatient triage workflow', () => {
       insuranceCode: 'SIS-123',
       accreditationStatusUuid: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
       accreditationCheckedAt: '2026-08-13T10:00:00.000-05:00',
-    });
+      verificationMethod: 'siasis-adt',
+});
     vi.mocked(getConfig).mockImplementation(async (moduleName) => {
-      if (moduleName === '@sihsalus/esm-appointments-app') {
-        return appointmentConfig;
+      if (moduleName === '@sihsalus/esm-service-queues-app') {
+        return {
+          appointmentTriage: appointmentConfig,
+          concepts: { defaultStatusConceptUuid: waitingStatusUuid },
+        };
       }
-      return { concepts: { defaultStatusConceptUuid: waitingStatusUuid } };
+      throw new Error(`Unexpected config request: ${moduleName}`);
     });
+  });
+
+  it('loads triage routing from the queue module without requiring the appointments module', async () => {
+    await expect(getAppointmentTriageConfig()).resolves.toEqual(appointmentConfig);
+    expect(getConfig).toHaveBeenCalledWith('@sihsalus/esm-service-queues-app');
+    expect(getConfig).not.toHaveBeenCalledWith('@sihsalus/esm-appointments-app');
   });
 
   it('derives the appointment, SIS, and triage states from the active visit', () => {
     const pendingEntry = makeQueueEntry();
     const completedEntry = makeQueueEntry({ triaged: true });
+    const nonSisEntry = makeQueueEntry({ sis: false });
+    nonSisEntry.visit.attributes.push({
+      uuid: 'non-sis-financiador-attribute-uuid',
+      attributeType: { uuid: FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID },
+      value: 'essalud-concept-uuid',
+    });
 
     expect(getLinkedAppointmentUuid(pendingEntry, appointmentConfig)).toBe('appointment-uuid');
     expect(getSisState(pendingEntry)).toBe('active');
-    expect(getSisState(makeQueueEntry({ sis: false }))).toBe('notApplicable');
+    expect(getSisState(makeQueueEntry({ sis: false }))).toBe('missing');
+    expect(getSisState(nonSisEntry)).toBe('notApplicable');
     expect(getTriageState(pendingEntry, appointmentConfig)).toBe('pending');
     expect(getTriageState(completedEntry, appointmentConfig)).toBe('completed');
   });
@@ -201,9 +218,28 @@ describe('outpatient triage workflow', () => {
       insuranceCode: 'SIS-123',
       accreditationStatusUuid: SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID,
       accreditationCheckedAt: '2026-08-13T10:00:00.000-05:00',
-    };
+      verificationMethod: null,
+};
 
     expect(getPersonSisState(insurance)).toBe('inactive');
+  });
+
+  it('treats an unverified temporary affiliation as incomplete coverage at person level', () => {
+    // Caso real de la marcha blanca (E-11138562, «Afiliación Temporal»).
+    const insurance: PersonInsurance = {
+      insuranceTypeUuid: SIS_CONCEPT_UUID,
+      insuranceCode: 'E-11138562',
+      accreditationStatusUuid: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+      accreditationCheckedAt: '2026-08-13T10:00:00.000-05:00',
+      verificationMethod: null,
+    };
+
+    // Con evidencia confiable acredita; sin ella, el estado de persona debe
+    // coincidir con el de la visita tras el copiado (que descarta el código),
+    // para que la revalidación no reviente con «no pudo sincronizarse» ni el
+    // camino sin permisos de visita deje pasar la afiliación no verificada.
+    expect(getPersonSisState({ ...insurance, verificationMethod: 'siasis-adt' })).toBe('active');
+    expect(getPersonSisState(insurance)).toBe('missing');
   });
 
   it('persists current patient coverage into the visit and verifies the stored result', async () => {
@@ -230,7 +266,8 @@ describe('outpatient triage workflow', () => {
       insuranceCode: 'SIS-123',
       accreditationStatusUuid: SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID,
       accreditationCheckedAt: '2026-08-13T10:00:00.000-05:00',
-    });
+      verificationMethod: null,
+});
 
     await expect(revalidateCurrentSisState(makeQueueEntry(), false)).resolves.toBe('inactive');
     expect(copyFinanciadorToVisit).not.toHaveBeenCalled();

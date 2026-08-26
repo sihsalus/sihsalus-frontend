@@ -117,6 +117,46 @@ export const defaultQueueTable: TableDefinitions = {
 };
 
 export const configSchema = {
+  appointmentTriage: {
+    _description:
+      'Queue-owned copy of the appointment routing fields required to identify, capture and route outpatient triage without loading the Appointments microfrontend.',
+    careRoutingContractVersion: {
+      _type: Type.String,
+      _default: '',
+    },
+    appointmentVisitAttributeTypeUuid: {
+      _type: Type.UUID,
+      _default: '',
+    },
+    triageRouting: {
+      enabled: {
+        _type: Type.Boolean,
+        _default: false,
+      },
+      queueUuid: {
+        _type: Type.UUID,
+        _default: '',
+      },
+      queueLocationUuid: {
+        _type: Type.UUID,
+        _default: '',
+      },
+      encounterTypeUuid: {
+        _type: Type.UUID,
+        _default: '',
+      },
+    },
+    appointmentArrivalRules: {
+      _type: Type.Array,
+      _description: 'Exact appointment service and location pairs that leave triage for one destination queue.',
+      _default: [],
+      _elements: {
+        appointmentServiceUuid: { _type: Type.UUID },
+        appointmentLocationUuid: { _type: Type.UUID },
+        queueUuid: { _type: Type.UUID },
+      },
+    },
+  },
   appointmentStatuses: {
     _type: Type.Array,
     _description: 'Configurable appointment status (status of appointments)',
@@ -470,6 +510,21 @@ function columnHasType(columnDef: ColumnDefinition, type: ColumnType): boolean {
 }
 
 export interface ConfigObject {
+  appointmentTriage: {
+    careRoutingContractVersion: string;
+    appointmentVisitAttributeTypeUuid: string;
+    triageRouting: {
+      enabled: boolean;
+      queueUuid: string;
+      queueLocationUuid: string;
+      encounterTypeUuid: string;
+    };
+    appointmentArrivalRules: Array<{
+      appointmentServiceUuid: string;
+      appointmentLocationUuid: string;
+      queueUuid: string;
+    }>;
+  };
   appointmentStatuses: Array<string>;
   biometrics: BiometricsConfigObject;
   concepts: {

@@ -1,6 +1,12 @@
 import { Button, ButtonSkeleton, SkeletonText, Tile } from '@carbon/react';
 import { ShoppingCartArrowUp } from '@carbon/react/icons';
-import { ArrowRightIcon, ShoppingCartArrowDownIcon, useLayoutType, useSession } from '@openmrs/esm-framework';
+import {
+  ArrowRightIcon,
+  ShoppingCartArrowDownIcon,
+  useConfig,
+  useLayoutType,
+  useSession,
+} from '@openmrs/esm-framework';
 import {
   type OrderableConcept,
   type OrderBasketItem,
@@ -11,6 +17,7 @@ import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { type ConfigObject } from '../../../config-schema';
 import { createEmptyOrder, prepOrderPostData } from '../resources';
 
 import styles from './search-results.scss';
@@ -36,6 +43,7 @@ const OrderableConceptSearchResults: React.FC<OrderableConceptSearchResultsProps
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
+  const { careSettingUuid } = useConfig<ConfigObject>();
   const { concepts, isLoading, error } = useOrderableConceptSets(searchTerm, orderableConceptSets);
 
   if (isLoading) {
@@ -80,6 +88,7 @@ const OrderableConceptSearchResults: React.FC<OrderableConceptSearchResultsProps
             {concepts.map((concept) => (
               <TestTypeSearchResultItem
                 key={concept.uuid}
+                careSettingUuid={careSettingUuid}
                 openOrderForm={openOrderForm}
                 concept={concept}
                 orderTypeUuid={orderTypeUuid}
@@ -161,6 +170,7 @@ const TestTypeSearchSkeleton = () => {
 };
 
 interface TestTypeSearchResultItemProps {
+  careSettingUuid: string;
   concept: OrderableConcept;
   openOrderForm: (searchResult: OrderBasketItem) => void;
   orderTypeUuid: string;
@@ -168,6 +178,7 @@ interface TestTypeSearchResultItemProps {
 }
 
 const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
+  careSettingUuid,
   concept,
   openOrderForm,
   orderTypeUuid,
@@ -176,7 +187,12 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
-  const { orders, setOrders } = useOrderBasket<OrderBasketItem>(orderTypeUuid, prepOrderPostData);
+  const prepareOrderPostData = useCallback(
+    (order: OrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
+      prepOrderPostData(order, patientUuid, encounterUuid, careSettingUuid),
+    [careSettingUuid],
+  );
+  const { orders, setOrders } = useOrderBasket<OrderBasketItem>(orderTypeUuid, prepareOrderPostData);
 
   const orderAlreadyInBasket = useMemo(
     () => orders?.some((order) => order.concept.uuid === concept.uuid),

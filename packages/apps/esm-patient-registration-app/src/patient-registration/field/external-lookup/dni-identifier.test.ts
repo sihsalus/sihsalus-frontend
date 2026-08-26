@@ -4,7 +4,12 @@ import {
   peruPassportPatientIdentifierTypeUuid,
   peruTemporaryAffiliationPatientIdentifierTypeUuid,
 } from '../../peru-registration-config';
-import { getDocumentIdentifierEntries, getDocumentIdentifierEntry } from './dni-identifier';
+import {
+  getDocumentIdentifierEntries,
+  getDocumentIdentifierEntry,
+  isValidIdentityIdentifier,
+  normalizeIdentityIdentifier,
+} from './dni-identifier';
 
 describe('civil document identifiers', () => {
   const identifiers = {
@@ -46,5 +51,43 @@ describe('civil document identifiers', () => {
 
   it('keeps the first-document helper for the interactive lookup', () => {
     expect(getDocumentIdentifierEntry(identifiers, identifierTypes)?.[0]).toBe('dni');
+  });
+
+  it('preserves and validates the canonical E-######## identity reference', () => {
+    const temporaryType = identifierTypes.find(
+      ({ uuid }) => uuid === peruTemporaryAffiliationPatientIdentifierTypeUuid,
+    );
+    const normalized = normalizeIdentityIdentifier(
+      'e 4126-7525',
+      peruTemporaryAffiliationPatientIdentifierTypeUuid,
+      'Afiliación temporal SIS',
+      temporaryType,
+    );
+
+    expect(normalized).toBe('E-41267525');
+    expect(
+      isValidIdentityIdentifier(
+        normalized,
+        peruTemporaryAffiliationPatientIdentifierTypeUuid,
+        'Afiliación temporal SIS',
+        temporaryType,
+      ),
+    ).toBe(true);
+
+    const overlong = normalizeIdentityIdentifier(
+      'E-123456789',
+      peruTemporaryAffiliationPatientIdentifierTypeUuid,
+      'Afiliación temporal SIS',
+      temporaryType,
+    );
+    expect(overlong).toBe('E-123456789');
+    expect(
+      isValidIdentityIdentifier(
+        overlong,
+        peruTemporaryAffiliationPatientIdentifierTypeUuid,
+        'Afiliación temporal SIS',
+        temporaryType,
+      ),
+    ).toBe(false);
   });
 });

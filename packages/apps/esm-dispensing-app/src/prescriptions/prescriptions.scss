@@ -150,3 +150,12 @@
 .paginationContainer {
   width: 100%;
 }
+
+.prescribedMedications {
+  min-width: 12rem;
+  padding-inline-start: layout.$spacing-05;
+
+  li + li {
+    margin-top: layout.$spacing-02;
+  }
+}

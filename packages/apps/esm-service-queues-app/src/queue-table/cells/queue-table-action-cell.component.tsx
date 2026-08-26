@@ -10,7 +10,11 @@ import {
   useLayoutType,
   useSession,
 } from '@openmrs/esm-framework';
-import { canCopyFinanciadorToVisit, fetchFreshPatientVitalStatus } from '@openmrs/esm-patient-common-lib';
+import {
+  canCopyFinanciadorToVisit,
+  fetchFreshPatientVitalStatus,
+  isTriageFinancingEligible,
+} from '@openmrs/esm-patient-common-lib';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -35,11 +39,13 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
   const isTriageQueue = Boolean(queueEntry.workflow?.isTriageQueue);
   const patientPerson = queueEntry.patient?.person as { dead?: boolean; deathDate?: string | null } | undefined;
   const isDeceasedPatient = Boolean(patientPerson?.dead || patientPerson?.deathDate);
-  // Solo se pide Caja cuando la cobertura se pudo LEER y no es SIS vigente.
+  // Solo se pide Caja cuando la cobertura se pudo LEER y no es elegible para
+  // triaje (SIS vigente o un financiador no-SIS explícito).
   // Mientras carga o si la lectura falla, no se afirma que el paciente no
   // tiene cobertura: se muestra el boton de triaje deshabilitado.
   const isSisStateResolved = Boolean(queueEntry.workflow?.isSisStateResolved);
-  const requiresCashier = isTriageQueue && isSisStateResolved && queueEntry.workflow?.sisState !== 'active';
+  const requiresCashier =
+    isTriageQueue && isSisStateResolved && !isTriageFinancingEligible(queueEntry.workflow?.sisState);
   const isAwaitingSisState = isTriageQueue && !isSisStateResolved;
   const canOpenBilling = userHasAccess('app:home.facturacion', session?.user);
   const canPerformTriage =
@@ -80,7 +86,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
     try {
       const freshSisState = await revalidateCurrentSisState(queueEntry, canCopyFinanciadorToVisit(session?.user));
       await mutateQueueEntries();
-      if (freshSisState !== 'active') {
+      if (!isTriageFinancingEligible(freshSisState)) {
         handleSendToCashier();
         return;
       }

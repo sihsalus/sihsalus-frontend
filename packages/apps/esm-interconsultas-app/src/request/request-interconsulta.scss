@@ -1,4 +1,5 @@
 @use "@carbon/layout";
+@use "@carbon/type";
 
 .form {
   display: flex;
@@ -8,13 +9,50 @@
 }
 
 .formContent {
+  overflow-y: auto;
+  padding: layout.$spacing-05 layout.$spacing-05 layout.$spacing-07;
+}
+
+.formIntro {
+  @include type.type-style("body-compact-01");
+
+  color: var(--cds-text-secondary);
+  margin: 0;
+}
+
+.formSection {
+  background: var(--cds-layer-01);
+  border: 1px solid var(--cds-border-subtle-01);
   padding: layout.$spacing-05;
 }
 
+.sectionHeader {
+  border-bottom: 1px solid var(--cds-border-subtle-01);
+  margin: calc(-1 * layout.$spacing-05) calc(-1 * layout.$spacing-05) layout.$spacing-05;
+  padding: layout.$spacing-04 layout.$spacing-05;
+}
+
+.sectionTitle {
+  @include type.type-style("heading-compact-01");
+
+  color: var(--cds-text-primary);
+  margin: 0;
+}
+
+.sectionDescription {
+  @include type.type-style("helper-text-01");
+
+  color: var(--cds-text-secondary);
+  margin: layout.$spacing-02 0 0;
+}
+
 .buttonSet {
+  background: var(--cds-layer-01);
+  border-top: 1px solid var(--cds-border-subtle-01);
   margin-top: auto;
   display: flex;
   justify-content: flex-end;
+  padding: layout.$spacing-05;
 }
 
 .tabletButtonSet {

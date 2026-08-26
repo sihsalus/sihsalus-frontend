@@ -118,3 +118,24 @@ export function getDniIdentifier(
     );
   });
 }
+
+export function getTemporaryAffiliationIdentifier(
+  identifiers: Record<string, PatientIdentifierValue> = {},
+  identifierTypes: Array<PatientIdentifierType> = [],
+) {
+  return Object.entries(identifiers).find(([fieldName, identifier]) => {
+    const identifierType = identifierTypes.find(
+      (type) => type.fieldName === fieldName || type.uuid === identifier.identifierTypeUuid,
+    );
+    const identifierName = (identifier.identifierName ?? identifierType?.name ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase();
+
+    return (
+      identifier.identifierTypeUuid === peruTemporaryAffiliationPatientIdentifierTypeUuid ||
+      identifierType?.uuid === peruTemporaryAffiliationPatientIdentifierTypeUuid ||
+      identifierName.includes('AFILIACION TEMPORAL')
+    );
+  });
+}

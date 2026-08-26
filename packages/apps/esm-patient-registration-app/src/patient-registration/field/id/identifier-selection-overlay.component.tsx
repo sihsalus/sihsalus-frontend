@@ -15,6 +15,7 @@ import {
   peruDniPatientIdentifierTypeUuid,
   peruForeignPatientIdentifierTypeUuids,
   peruOtherPatientIdentifierTypeUuid,
+  peruTemporaryAffiliationPatientIdentifierTypeUuid,
 } from '../../peru-registration-config';
 import Overlay from '../../ui-components/overlay/overlay.component';
 import {
@@ -32,8 +33,12 @@ interface PatientIdentifierOverlayProps {
 }
 
 const exclusiveIdentifierTypeUuids: Record<string, string | Array<string>> = {
-  [peruDniPatientIdentifierTypeUuid]: peruForeignPatientIdentifierTypeUuids,
+  [peruDniPatientIdentifierTypeUuid]: [
+    ...peruForeignPatientIdentifierTypeUuids,
+    peruTemporaryAffiliationPatientIdentifierTypeUuid,
+  ],
   ...Object.fromEntries(peruForeignPatientIdentifierTypeUuids.map((uuid) => [uuid, peruDniPatientIdentifierTypeUuid])),
+  [peruTemporaryAffiliationPatientIdentifierTypeUuid]: peruDniPatientIdentifierTypeUuid,
 };
 
 function normalizeSearchValue(value?: string) {

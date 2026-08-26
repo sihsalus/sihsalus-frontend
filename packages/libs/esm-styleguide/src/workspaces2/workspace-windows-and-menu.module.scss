@@ -1,8 +1,11 @@
 .workspaceWindowsAndMenuContainer {
-  position: relative;
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
   display: flex;
   height: 100%;
-  width: 100%;
+  width: fit-content;
+  z-index: 100;
 
   // When any workspace is maximized, remove containment to allow fixed positioning
   &.hasMaximizedWindow {

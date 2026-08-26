@@ -132,10 +132,6 @@ export const Workspace2: React.FC<Workspace2Props> = ({ title, children, hasUnsa
   const { maximized } = openedWindow;
   const width = windowDef?.width ?? 'narrow';
 
-  const isActionMenuOpened = Object.values(registeredWindowsByName).some(
-    (window) => window.group === openedGroup.groupName && window.icon !== undefined,
-  );
-
   const isWindowHidden = openedWindowIndex < openedWindows.length - 1 || isMostRecentlyOpenedWindowHidden;
 
   return (
@@ -144,7 +140,7 @@ export const Workspace2: React.FC<Workspace2Props> = ({ title, children, hasUnsa
         [styles.narrowWorkspace]: width === 'narrow',
         [styles.widerWorkspace]: width === 'wider',
         [styles.extraWideWorkspace]: width === 'extra-wide',
-        [styles.isActionMenuOpened]: isActionMenuOpened,
+        [styles.isActionMenuOpened]: showActionMenu,
       })}
     >
       <div

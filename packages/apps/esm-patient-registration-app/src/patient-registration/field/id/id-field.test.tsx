@@ -465,6 +465,22 @@ describe('Identifiers', () => {
     expect(screen.getByText('Carnet de Extranjeria')).toBeInTheDocument();
   });
 
+  it('replaces the default DNI with temporary SIS affiliation', async () => {
+    const user = userEvent.setup();
+    renderIdentifiersWithState({ dni: buildIdentifier(dniIdentifierType) });
+
+    await user.click(screen.getByRole('button', { name: 'Configure' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Afiliación temporal SIS' }));
+
+    expect(screen.getByRole('checkbox', { name: 'DNI' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Afiliación temporal SIS' })).toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: 'Configure identifiers' }));
+
+    expect(screen.queryByRole('textbox', { name: 'DNI' })).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Afiliación temporal SIS' })).toHaveAttribute('aria-required', 'true');
+  });
+
   it('presents DIE as Cédula de Identidad and keeps it mutually exclusive with DNI', async () => {
     const user = userEvent.setup();
     renderIdentifiersWithState({

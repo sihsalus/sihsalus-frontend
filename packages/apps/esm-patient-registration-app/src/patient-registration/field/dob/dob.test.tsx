@@ -99,6 +99,38 @@ describe('Dob', () => {
     expect(dateOfBirthInput).toBeInTheDocument();
   });
 
+  it('starts estimated age empty and marks only years as required', () => {
+    const setFieldValue = vi.fn();
+
+    render(
+      <Formik initialValues={{ birthdate: '', birthdateEstimated: false, yearsEstimated: 0, monthsEstimated: 0 }} onSubmit={() => {}}>
+        <Form>
+          <PatientRegistrationContext.Provider
+            value={{
+              identifierTypes: [],
+              values: initialFormValues,
+              validationSchema: null,
+              inEditMode: false,
+              setFieldValue,
+              setCapturePhotoProps: (_value) => {},
+              setFieldTouched: () => {},
+              currentPhoto: '',
+              isOffline: false,
+              initialFormValues,
+            }}
+          >
+            <DobField />
+          </PatientRegistrationContext.Provider>
+        </Form>
+      </Formik>,
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: /no/i }));
+
+    expect(setFieldValue).toHaveBeenCalledWith('yearsEstimated', '');
+    expect(setFieldValue).toHaveBeenCalledWith('monthsEstimated', '');
+  });
+
   it('prevents and ignores invalid estimated age values', () => {
     const setFieldValue = vi.fn();
 

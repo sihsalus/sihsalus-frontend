@@ -95,6 +95,15 @@ describe('responsible person utilities', () => {
     expect(errors.estimatedAge).toBe('responsibleEstimatedAgeRequired');
   });
 
+  it('requires the second family name like the main patient form', () => {
+    const errors = validateResponsiblePersonForm({
+      ...validResponsiblePerson,
+      familyName2: '',
+    });
+
+    expect(errors.familyName2).toBe('familyName2Required');
+  });
+
   it('accepts and preserves a known date of birth without an approximate age', () => {
     const values: ResponsiblePersonFormValues = {
       ...validResponsiblePerson,

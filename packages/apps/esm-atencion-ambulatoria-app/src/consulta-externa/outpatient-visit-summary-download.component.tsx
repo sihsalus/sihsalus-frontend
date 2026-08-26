@@ -8,6 +8,7 @@ import type { ConfigObject } from '../config-schema';
 import { useAmbulatoryVisitGuard } from '../hooks';
 import { formatDeceasedName } from '../utils/utils';
 import styles from './consulta-externa-dashboard.scss';
+import { useOutpatientFacilityIdentity } from './outpatient-facility.resource';
 import { fetchNextScheduledAppointment, isUpcomingScheduledAppointment } from './outpatient-next-appointment.resource';
 import { printPdfBytes } from './outpatient-pdf-print';
 import {
@@ -200,6 +201,23 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
   const { t, i18n } = useTranslation();
   const config = useConfig<ConfigObject>();
   const session = useSession();
+  const sessionLocationUuid = session?.sessionLocation?.uuid ?? null;
+  const facilityIdentity = useOutpatientFacilityIdentity({
+    sessionLocationUuid,
+    fallbackLocationUuid: config.outpatientDocumentFacilityLocationUuid,
+    phoneAttributeTypeUuid: config.outpatientDocumentFacilityPhoneAttributeTypeUuid,
+    ipressCodeAttributeTypeUuid: config.outpatientDocumentFacilityIpressCodeAttributeTypeUuid,
+    fallbackAddress: config.outpatientDocumentFacilityAddress,
+    fallbackPhone: config.outpatientDocumentFacilityPhone,
+    fallbackIpressCode: config.referralOriginRenaesCode,
+  });
+  const isWaitingForFacilityMetadata = facilityIdentity.isLoading;
+  const facilityIdentityFingerprint = JSON.stringify([
+    session?.sessionLocation?.display ?? null,
+    facilityIdentity.facilityAddress,
+    facilityIdentity.facilityPhone,
+    facilityIdentity.facilityIpressCode,
+  ]);
   const { patient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
   const { requireAmbulatoryVisit, verifiedAmbulatoryVisitUuid } = useAmbulatoryVisitGuard({
     patientUuid,
@@ -212,16 +230,20 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
   const mountedRef = useRef(true);
   const activePatientUuidRef = useRef(patientUuid);
   const activeVisitUuidRef = useRef(verifiedAmbulatoryVisitUuid);
+  const activeSessionLocationUuidRef = useRef(sessionLocationUuid);
+  const activeFacilityIdentityFingerprintRef = useRef(facilityIdentityFingerprint);
 
   useLayoutEffect(() => {
     activeGenerationAbortControllerRef.current?.abort();
     activeGenerationAbortControllerRef.current = null;
     activePatientUuidRef.current = patientUuid;
     activeVisitUuidRef.current = verifiedAmbulatoryVisitUuid;
+    activeSessionLocationUuidRef.current = sessionLocationUuid;
+    activeFacilityIdentityFingerprintRef.current = facilityIdentityFingerprint;
     generationEpochRef.current += 1;
     generationInProgressRef.current = false;
     setGenerationTarget(null);
-  }, [patientUuid, verifiedAmbulatoryVisitUuid]);
+  }, [facilityIdentityFingerprint, patientUuid, sessionLocationUuid, verifiedAmbulatoryVisitUuid]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -288,9 +310,9 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         expectedVisitTypeUuid: config.visitTypes.ambulatory,
         patient: summaryPatient,
         facilityName: session?.sessionLocation?.display ?? t('healthFacility', 'Establecimiento de salud'),
-        facilityAddress: config.outpatientDocumentFacilityAddress,
-        facilityPhone: config.outpatientDocumentFacilityPhone,
-        facilityIpressCode: config.referralOriginRenaesCode,
+        facilityAddress: facilityIdentity.facilityAddress,
+        facilityPhone: facilityIdentity.facilityPhone,
+        facilityIpressCode: facilityIdentity.facilityIpressCode,
         concepts: config.concepts,
       });
       return {
@@ -301,10 +323,10 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
     [
       config.appointmentVisitAttributeTypeUuid,
       config.concepts,
-      config.outpatientDocumentFacilityAddress,
-      config.outpatientDocumentFacilityPhone,
-      config.referralOriginRenaesCode,
       config.visitTypes.ambulatory,
+      facilityIdentity.facilityAddress,
+      facilityIdentity.facilityIpressCode,
+      facilityIdentity.facilityPhone,
       getErrorTitle,
       isPatientLoading,
       patient,
@@ -331,6 +353,8 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       activeGenerationAbortControllerRef.current?.abort();
       const operationPatientUuid = patientUuid;
       const operationVisitUuid = verifiedAmbulatoryVisitUuid;
+      const operationSessionLocationUuid = sessionLocationUuid;
+      const operationFacilityIdentityFingerprint = facilityIdentityFingerprint;
       const operationAbortController = new AbortController();
       const operationEpoch = generationEpochRef.current + 1;
       generationEpochRef.current = operationEpoch;
@@ -340,6 +364,8 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         !operationAbortController.signal.aborted &&
         activePatientUuidRef.current === operationPatientUuid &&
         activeVisitUuidRef.current === operationVisitUuid &&
+        activeSessionLocationUuidRef.current === operationSessionLocationUuid &&
+        activeFacilityIdentityFingerprintRef.current === operationFacilityIdentityFingerprint &&
         generationEpochRef.current === operationEpoch;
       generationInProgressRef.current = true;
       setGenerationTarget(target);
@@ -383,7 +409,16 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         }
       }
     },
-    [getErrorTitle, loadVerifiedSummary, patientUuid, showError, t, verifiedAmbulatoryVisitUuid],
+    [
+      facilityIdentityFingerprint,
+      getErrorTitle,
+      loadVerifiedSummary,
+      patientUuid,
+      sessionLocationUuid,
+      showError,
+      t,
+      verifiedAmbulatoryVisitUuid,
+    ],
   );
 
   const handleDownload = useCallback(() => {
@@ -530,19 +565,20 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
   const printLabel = t('printOutpatientPatientInstructions', 'Imprimir indicaciones');
   const downloadLabel = t('downloadOutpatientCareReport', 'Descargar resumen de esta atención');
   const isGenerating = generationTarget !== null;
+  const documentActionsDisabled = isGenerating || isWaitingForFacilityMetadata;
 
   return (
     <div
       className={styles.dashboardActions}
       role="group"
       aria-label={t('outpatientDocumentActions', 'Documentos de la atención ambulatoria')}
-      aria-busy={isGenerating}
+      aria-busy={documentActionsDisabled}
     >
       <Button
         kind="tertiary"
         size="sm"
         renderIcon={Printer}
-        disabled={isGenerating}
+        disabled={documentActionsDisabled}
         onClick={handlePrintPatientInstructions}
         aria-label={printLabel}
       >
@@ -554,7 +590,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         kind="ghost"
         size="sm"
         renderIcon={Download}
-        disabled={isGenerating}
+        disabled={documentActionsDisabled}
         onClick={handleDownload}
         aria-label={downloadLabel}
       >

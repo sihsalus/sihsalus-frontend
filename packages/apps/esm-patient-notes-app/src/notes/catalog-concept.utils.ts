@@ -116,12 +116,15 @@ export function getCie10MappedCode(
   concept: CatalogConcept,
 ): string | undefined {
   const mappings = concept.conceptMappings ?? concept.mappings ?? [];
-  const mappedCode = mappings.find(
-    (mapping) =>
-      cie10SourcePattern.test(getMappingSource(mapping)) &&
-      getMappingCode(mapping),
-  );
-  const code = mappedCode ? getMappingCode(mappedCode)?.trim() : undefined;
+  const mappedCode = mappings.find((mapping) => {
+    const source =
+      mapping.conceptReferenceTerm?.conceptSource?.name?.trim() ||
+      mapping.conceptReferenceTerm?.conceptSource?.display?.trim() ||
+      "";
+    const code = mapping.conceptReferenceTerm?.code?.trim();
+    return cie10SourcePattern.test(source) && code;
+  });
+  const code = mappedCode?.conceptReferenceTerm?.code?.trim();
 
   return code ? code.toLocaleUpperCase("es-PE") : undefined;
 }

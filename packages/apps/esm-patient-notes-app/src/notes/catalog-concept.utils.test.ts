@@ -44,11 +44,30 @@ describe("catalog concept display", () => {
         ],
       }),
     ).toBe("U07.1X-MINSA");
+    expect(
+      getCie10MappedCode({
+        display: "Diagnóstico con source visible",
+        conceptMappings: [
+          {
+            conceptReferenceTerm: {
+              code: "R51",
+              conceptSource: { name: "", display: "CIE-10 MINSA" },
+            },
+          },
+        ],
+      }),
+    ).toBe("R51");
   });
 
   it("does not treat display text or a mapping from another source as CIE-10 authority", () => {
     expect(
       getCie10MappedCode({ display: "F15.5 - Trastorno mental" }),
+    ).toBeUndefined();
+    expect(
+      getCie10MappedCode({
+        display: "Trastorno mental",
+        conceptMappings: [{ display: "ICD-10: F15.5" }],
+      }),
     ).toBeUndefined();
     expect(
       getCie10MappedCode({

@@ -15,6 +15,7 @@ import {
   fetchPersonInsurance,
   fetchFreshPatientVitalStatus,
   fetchVisitInsurance,
+  getPersonSisFinancingState,
   getSisFinancingState,
   isTriageFinancingEligible,
   safeCopyFinanciadorToVisit,
@@ -469,16 +470,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         code: TRIAGE_FINANCING_UNDEFINED,
       });
     }
-    if (
-      !isTriageFinancingEligible(
-        getSisFinancingState({
-          financiadorUuid: patientInsurance.insuranceTypeUuid,
-          insuranceNumber: patientInsurance.insuranceCode,
-          accreditationStatusUuid: patientInsurance.accreditationStatusUuid,
-          accreditationCheckedAt: patientInsurance.accreditationCheckedAt,
-        }),
-      )
-    ) {
+    if (!isTriageFinancingEligible(getPersonSisFinancingState(patientInsurance))) {
       throw Object.assign(new Error('The patient does not have active SIS financing.'), {
         code: TRIAGE_SIS_FINANCING_REQUIRED,
       });

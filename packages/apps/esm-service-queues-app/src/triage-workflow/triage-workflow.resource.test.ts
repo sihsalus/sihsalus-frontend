@@ -224,6 +224,24 @@ describe('outpatient triage workflow', () => {
     expect(getPersonSisState(insurance)).toBe('inactive');
   });
 
+  it('treats an unverified temporary affiliation as incomplete coverage at person level', () => {
+    // Caso real de la marcha blanca (E-11138562, «Afiliación Temporal»).
+    const insurance: PersonInsurance = {
+      insuranceTypeUuid: SIS_CONCEPT_UUID,
+      insuranceCode: 'E-11138562',
+      accreditationStatusUuid: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+      accreditationCheckedAt: '2026-08-13T10:00:00.000-05:00',
+      verificationMethod: null,
+    };
+
+    // Con evidencia confiable acredita; sin ella, el estado de persona debe
+    // coincidir con el de la visita tras el copiado (que descarta el código),
+    // para que la revalidación no reviente con «no pudo sincronizarse» ni el
+    // camino sin permisos de visita deje pasar la afiliación no verificada.
+    expect(getPersonSisState({ ...insurance, verificationMethod: 'siasis-adt' })).toBe('active');
+    expect(getPersonSisState(insurance)).toBe('missing');
+  });
+
   it('persists current patient coverage into the visit and verifies the stored result', async () => {
     vi.mocked(copyFinanciadorToVisit).mockResolvedValue({ ok: true, skipped: false, created: 0, updated: 1 });
     vi.mocked(fetchVisitInsurance).mockResolvedValue({

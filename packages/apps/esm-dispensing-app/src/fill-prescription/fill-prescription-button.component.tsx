@@ -16,7 +16,7 @@ import {
 } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { dispensingEditPrivilege, PRIVILEGE_CREATE_DISPENSE } from '../constants';
+import { dispensingEditPrivilege, PRIVILEGE_ADD_ORDERS, PRIVILEGE_CREATE_DISPENSE } from '../constants';
 import styles from './fill-prescription-button.scss';
 
 const FillPrescriptionButton: React.FC<{}> = () => {
@@ -24,17 +24,18 @@ const FillPrescriptionButton: React.FC<{}> = () => {
   const responsiveSize = isTablet ? 'lg' : 'md';
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = Boolean(
+  const canRegisterManualPrescription = Boolean(
     session?.user &&
       userHasAccess(dispensingEditPrivilege, session.user) &&
-      userHasAccess(PRIVILEGE_CREATE_DISPENSE, session.user),
+      userHasAccess(PRIVILEGE_CREATE_DISPENSE, session.user) &&
+      userHasAccess(PRIVILEGE_ADD_ORDERS, session.user),
   );
 
   const launchSearchWorkspace = () => {
     launchWorkspace2(
       'dispensing-patient-search-workspace',
       {
-        workspaceTitle: t('fillPrescriptionForPatient', 'Fill prescription for patient'),
+        workspaceTitle: t('fillPrescriptionForPatient', 'Register a manual prescription'),
         onPatientSelected(
           patientUuid: string,
           patient: fhir.Patient,
@@ -67,7 +68,7 @@ const FillPrescriptionButton: React.FC<{}> = () => {
                 title: t('visitRequired', 'Visit required'),
                 subtitle: t(
                   'visitRequiredForPatientToFillPrescription',
-                  'Visit required for patient to fill prescription',
+                  'An active visit is required to register a manual prescription.',
                 ),
                 kind: 'error',
               });
@@ -81,19 +82,19 @@ const FillPrescriptionButton: React.FC<{}> = () => {
     );
   };
 
-  if (!canEdit) {
+  if (!canRegisterManualPrescription) {
     return null;
   }
 
   return (
     <div className={styles.buttonContainer}>
       <Button
-        kind="primary"
+        kind="tertiary"
         renderIcon={(props) => <AddIcon size={16} {...props} />}
         size={responsiveSize}
         onClick={launchSearchWorkspace}
       >
-        {t('fillPrescription', 'Fill prescription')}
+        {t('fillPrescription', 'Register prescription manually')}
       </Button>
     </div>
   );

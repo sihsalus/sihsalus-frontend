@@ -14,7 +14,7 @@ vi.mock('@openmrs/esm-framework', async () => {
 
   return {
     ...actual,
-    useLayoutType: vi.fn(() => 'desktop'),
+    useLayoutType: vi.fn(() => 'small-desktop'),
     OpenmrsDatePicker: React.forwardRef(
       (props: Record<string, unknown>, ref: import('react').ForwardedRef<HTMLSpanElement>) =>
         React.createElement('span', { ref }, props.labelText as import('react').ReactNode),
@@ -67,7 +67,7 @@ vi.mock('../api/api', async () => ({
 
 afterEach(() => {
   mockUseConfig.mockReturnValue(defaultConfig);
-  mockUseLayoutType.mockReturnValue('desktop');
+  mockUseLayoutType.mockReturnValue('small-desktop');
   (useRequireOutpatientQuantity as vi.Mock).mockReturnValue({
     requireOutpatientQuantity: true,
     error: null,

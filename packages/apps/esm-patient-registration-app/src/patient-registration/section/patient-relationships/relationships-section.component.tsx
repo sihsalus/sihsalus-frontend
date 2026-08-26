@@ -1220,19 +1220,6 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
                     'A minor cannot be assigned as the responsible person for another minor.',
                   )}
                 />
-              ) : requiresResponsibleRelationship &&
-                !hasResponsibleRelationship(relationships, minorResponsibleRelationshipTypes) &&
-                !hasIncompleteRelationship(relationships) &&
-                !relationshipsMeta.touched ? (
-                <InlineNotification
-                  kind="warning"
-                  lowContrast
-                  title={t('responsibleRelationshipRequiredTitle', 'Responsible family member required')}
-                  subtitle={t(
-                    'responsibleRelationshipRequiredForMinor',
-                    'For minors, record a responsible family member, guardian, or legal representative.',
-                  )}
-                />
               ) : null}
               {relationships && relationships.length > 0
                 ? relationships.map((relationship: RelationshipValue, index) => (

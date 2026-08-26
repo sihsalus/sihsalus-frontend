@@ -27,7 +27,7 @@ describe('SectionWrapper', () => {
     } as RegistrationConfig);
   });
 
-  it('highlights the responsible person section when a minor has no responsible adult', () => {
+  it('does not report the missing responsible person before form submission', () => {
     render(
       <Formik
         initialValues={{ birthdate: dayjs().subtract(10, 'years').toDate(), relationships: [] }}
@@ -37,9 +37,10 @@ describe('SectionWrapper', () => {
       </Formik>,
     );
 
-    const section = screen.getByText('Section content').closest('[data-requires-attention="true"]');
+    const section = screen.getByText('Section content').closest('#responsiblePerson');
     expect(section).toBeInTheDocument();
     expect(section).not.toHaveAttribute('aria-invalid');
+    expect(section).not.toHaveAttribute('data-requires-attention');
   });
 
   it('marks the responsible person section invalid after its validation error is touched', () => {

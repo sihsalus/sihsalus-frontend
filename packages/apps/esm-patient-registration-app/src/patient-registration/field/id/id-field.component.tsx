@@ -21,7 +21,6 @@ import {
   peruTemporaryAffiliationPatientIdentifierTypeUuid,
 } from '../../peru-registration-config';
 import styles from '../field.scss';
-import { TemporarySisAffiliationConfirmation } from '../external-lookup/temporary-sis-affiliation.component';
 import IdentifierSelectionOverlay from './identifier-selection-overlay.component';
 
 const noHiddenPatientIdentifierTypeUuids: ReadonlyArray<string> = [];
@@ -293,7 +292,6 @@ export const Identifiers: React.FC = () => {
           />
         ) : null}
       </div>
-      <TemporarySisAffiliationConfirmation />
     </div>
   );
 };

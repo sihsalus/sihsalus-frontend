@@ -468,6 +468,14 @@ describe('SisLookupField', () => {
     windowOpenSpy.mockRestore();
   });
 
+  it('shows the SIS verification result form by default', () => {
+    renderLookup(<SisLookupField />);
+
+    expect(screen.getByText('Resultado de la verificación')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Vigente' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /registrar resultado de verificación/i })).not.toBeInTheDocument();
+  });
+
   it('opens the online SIS portal, copies the DNI, and shows the result mini-form', async () => {
     const user = userEvent.setup();
     const { setFieldValue } = renderLookup(<SisLookupField />);
@@ -545,7 +553,6 @@ describe('SisLookupField', () => {
     const user = userEvent.setup();
     const { setFieldTouched, setFieldValue } = renderLookup(<SisLookupField />);
 
-    await user.click(screen.getByRole('button', { name: /registrar resultado de verificación/i }));
     await user.click(screen.getByRole('radio', { name: 'Vigente' }));
     await screen.findByRole('option', { name: 'SIS Para Todos' });
     await user.selectOptions(screen.getByLabelText(/producto sis/i), 'sis-para-todos-uuid');
@@ -587,17 +594,29 @@ describe('SisLookupField', () => {
     expect(screen.getByText('Verificación SIS aplicada al formulario')).toBeInTheDocument();
   });
 
-  it('preserves an existing SIS affiliation code when applying a manual verification result', async () => {
+  it('requires a SIS product before applying the verification result', async () => {
+    const user = userEvent.setup();
+    const { setFieldValue } = renderLookup(<SisLookupField />);
+
+    await user.click(screen.getByRole('radio', { name: 'Vigente' }));
+    await user.click(screen.getByRole('button', { name: /aplicar al formulario/i }));
+
+    expect(screen.getByText('Seleccione un producto SIS')).toBeInTheDocument();
+    expect(setFieldValue).not.toHaveBeenCalled();
+  });
+
+  it('preserves an existing affiliation code when applying a manual verification result', async () => {
     const user = userEvent.setup();
     const values = buildFormValues();
     values.attributes = {
-      [peruInsuranceTypeAttributeTypeUuid]: peruInsuranceSisConceptUuid,
+      [peruInsuranceTypeAttributeTypeUuid]: 'previous-financer',
       [peruInsuranceCodeAttributeTypeUuid]: 'SIS-EXISTENTE',
     };
     const { setFieldValue } = renderLookup(<SisLookupField />, values);
 
-    await user.click(screen.getByRole('button', { name: /registrar resultado de verificación/i }));
     await user.click(screen.getByRole('radio', { name: 'Vigente' }));
+    await screen.findByRole('option', { name: 'SIS Para Todos' });
+    await user.selectOptions(screen.getByLabelText(/producto sis/i), 'sis-para-todos-uuid');
     await user.click(screen.getByRole('button', { name: /aplicar al formulario/i }));
 
     expect(setFieldValue).toHaveBeenCalledWith(
@@ -605,6 +624,7 @@ describe('SisLookupField', () => {
       'SIS-EXISTENTE',
       false,
     );
+    expect(screen.getByRole('radio', { name: 'Vigente' })).toBeInTheDocument();
   });
 
   it('disables the online link, preselects pendiente, and applies the pending status when offline', async () => {
@@ -614,10 +634,10 @@ describe('SisLookupField', () => {
     expect(screen.getByRole('button', { name: /verificar sis \(en línea\)/i })).toBeDisabled();
     expect(screen.getByText(/sin conexión: no se puede abrir la consulta sis en línea/i)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /registrar resultado de verificación/i }));
-
     expect(screen.getByRole('radio', { name: 'No consultada / pendiente' })).toBeChecked();
 
+    await screen.findByRole('option', { name: 'SIS Para Todos' });
+    await user.selectOptions(screen.getByLabelText(/producto sis/i), 'sis-para-todos-uuid');
     await user.click(screen.getByRole('button', { name: /aplicar al formulario/i }));
 
     expect(setFieldValue).toHaveBeenCalledWith(
@@ -648,6 +668,8 @@ describe('SisLookupField', () => {
     expect(screen.queryByLabelText(/código de afiliado/i)).not.toBeInTheDocument();
     expect(setFieldValue).not.toHaveBeenCalled();
 
+    await screen.findByRole('option', { name: 'SIS Para Todos' });
+    await user.selectOptions(screen.getByLabelText(/producto sis/i), 'sis-para-todos-uuid');
     await user.click(screen.getByRole('button', { name: /aplicar al formulario/i }));
 
     expect(setFieldValue).toHaveBeenCalledWith(
@@ -678,6 +700,8 @@ describe('SisLookupField', () => {
 
     await user.click(screen.getByRole('button', { name: /consultar sis/i }));
     expect(await screen.findByRole('radio', { name: 'Vigente' })).toBeChecked();
+    await screen.findByRole('option', { name: 'SIS Para Todos' });
+    await user.selectOptions(screen.getByLabelText(/producto sis/i), 'sis-para-todos-uuid');
 
     // The operator dismisses the automatic result and records a manual one.
     await user.click(screen.getByRole('button', { name: /cerrar/i }));

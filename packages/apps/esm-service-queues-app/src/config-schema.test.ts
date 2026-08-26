@@ -17,6 +17,12 @@ describe('service queues configuration defaults', () => {
     );
   });
 
+  it('uses the provisioned service finished concept for completed triage routing', () => {
+    expect(configSchema.concepts.finishedServiceStatusConceptUuid._default).toBe(
+      '707b1d1e-d7f7-4dad-a382-3734e35933c3',
+    );
+  });
+
   it('owns the same outpatient triage contract as appointments', () => {
     const appointmentsConfig = frontendConfig['@sihsalus/esm-appointments-app'];
     const queueConfig = frontendConfig['@sihsalus/esm-service-queues-app'].appointmentTriage;

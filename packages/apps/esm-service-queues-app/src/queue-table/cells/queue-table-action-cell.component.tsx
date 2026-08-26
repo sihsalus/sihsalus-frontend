@@ -36,6 +36,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
   const session = useSession();
   const canTransition = canTransitionServiceQueueEntries(session?.user);
   const canTriage = canTriageQueuePatients(session?.user);
+  const isTriageConfigLoading = queueEntry.workflow?.triageState === 'loading';
   const isTriageQueue = Boolean(queueEntry.workflow?.isTriageQueue);
   const patientPerson = queueEntry.patient?.person as { dead?: boolean; deathDate?: string | null } | undefined;
   const isDeceasedPatient = Boolean(patientPerson?.dead || patientPerson?.deathDate);
@@ -150,7 +151,7 @@ export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProp
     }
   };
 
-  if (!canTransition && !canPerformTriage) {
+  if (isTriageConfigLoading || (!canTransition && !canPerformTriage)) {
     return null;
   }
 

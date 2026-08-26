@@ -12,6 +12,7 @@ Amend the following concepts in the configuration schema to get started using th
 
 - `defaultPriorityConceptUuid` - concept UUID for `not urgent`.
 - `defaultStatusConceptUuid` - concept UUID for `waiting`.
+- `finishedServiceStatusConceptUuid` - concept UUID for `service finished`; se usa al completar y derivar el triaje.
 - `emergencyPriorityConcept` - concept UUID for `emergency`.
 
 After configuring the concepts, add the services according to the facility setup by clicking the `Add new service` button.
@@ -35,6 +36,14 @@ You should now be able to leverage the service queues module 🎉
 - Servicios, rooms y ubicaciones configurados para el establecimiento.
 - Visitas activas para pacientes en cola.
 - Providers/usuarios asociados cuando se usa asignacion por prestador o room.
+
+La configuración `appointmentTriage` pertenece a Colas y replica únicamente el contrato de enrutamiento necesario; no
+carga el microfrontend ni exige el permiso `app:home.citas`. Mientras este contrato termina de cargar, la fila muestra
+`Verificando` y no ofrece una acción genérica que pueda confundirse con el triaje.
+
+Después de guardar el triaje y recibir la confirmación del encounter, la entrada se mueve a la cola clínica configurada
+para la cita, conserva su prioridad y adopta el estado definido por `finishedServiceStatusConceptUuid` (por defecto,
+`Servicio Finalizado`). Ya no se reutiliza `defaultStatusConceptUuid` (`Esperando`) para esta transición.
 
 ## Contrato RBAC actual
 

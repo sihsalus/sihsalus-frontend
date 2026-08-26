@@ -367,7 +367,8 @@ describe('AppointmentForm', () => {
 
     await waitForLoadingToFinish();
     const noteInput = screen.getByLabelText(/write an additional note/i);
-    await user.type(noteInput, 'a'.repeat(appointmentNoteMaxLength + 1));
+    await user.click(noteInput);
+    await user.paste('a'.repeat(appointmentNoteMaxLength + 1));
 
     expect(noteInput).toHaveValue('a'.repeat(appointmentNoteMaxLength));
     expect(screen.getByText(`${appointmentNoteMaxLength}/${appointmentNoteMaxLength}`)).toBeInTheDocument();

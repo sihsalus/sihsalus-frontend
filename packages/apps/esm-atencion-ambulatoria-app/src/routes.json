@@ -88,5 +88,20 @@
       "title": "Selección de Formularios",
       "type": "form"
     }
+  ],
+  "workspaces2": [
+    {
+      "name": "institutional-referral-form-workspace",
+      "component": "institutionalReferralWorkspace",
+      "window": "institutional-referral-window",
+      "privileges": "app:hoja.clinica.consultaExterna.editar"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "institutional-referral-window",
+      "group": "patient-chart",
+      "width": "wider"
+    }
   ]
 }

@@ -141,6 +141,26 @@
   gap: layout.$spacing-05;
 }
 
+.referralFlow {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.referralFlowViews {
+  max-width: 40rem;
+}
+
+.referralActions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: layout.$spacing-03;
+}
+
+.referralStatusTag {
+  margin-left: layout.$spacing-03;
+}
+
 .emptyState {
   display: flex;
   flex-direction: column;

@@ -47,6 +47,10 @@ export const genericConditionsOverview = getAsyncLifecycle(
 // CONSULTA EXTERNA EXPORTS
 // ================================================================================
 export const consultaExternaDashboard = getSyncLifecycle(ConsultaExternaDashboard, options);
+export const institutionalReferralWorkspace = getAsyncLifecycle(
+  () => import('./consulta-externa/institutional-referral-form.workspace'),
+  options,
+);
 // t('consultaExternaTooltip', 'Consulta externa')
 export const consultaExternaDashboardLink = getSyncLifecycle(
   createDashboardLink({ ...consultaExternaDashboardMeta, moduleName }),

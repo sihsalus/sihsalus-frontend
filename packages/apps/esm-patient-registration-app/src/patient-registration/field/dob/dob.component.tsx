@@ -126,7 +126,7 @@ export const DobField: React.FC = () => {
       setFieldValue('monthsEstimated', '');
       setFieldTouched('birthdateEstimated', true, false);
     },
-    [dateOfBirth, setFieldTouched, setFieldValue],
+    [setFieldTouched, setFieldValue],
   );
 
   const onDateChange = useCallback(

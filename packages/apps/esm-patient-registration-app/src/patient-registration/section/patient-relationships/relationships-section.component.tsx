@@ -1090,7 +1090,7 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
       responsibleOption.focus({ preventScroll: true });
       setPendingResponsibleSelectionIndex(null);
     }
-  }, [pendingResponsibleSelectionIndex, values.relationships]);
+  }, [pendingResponsibleSelectionIndex]);
 
   useEffect(() => {
     const wasRequired = previouslyRequiredResponsibleRelationship.current;

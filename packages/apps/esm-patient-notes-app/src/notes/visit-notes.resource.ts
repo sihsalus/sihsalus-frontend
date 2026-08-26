@@ -45,7 +45,7 @@ export type CanonicalVisitNoteResolution =
 
 const encounterPageSize = 100;
 const catalogConceptMappingsRepresentation =
-  "conceptMappings:(conceptReferenceTerm:(conceptSource:(name),code))";
+  "conceptMappings:(conceptReferenceTerm:(conceptSource:(name,display),code))";
 const canonicalEncounterUuidNamespace = uuidv5(
   "sihsalus:canonical-visit-note:v1",
   uuidv5.URL,

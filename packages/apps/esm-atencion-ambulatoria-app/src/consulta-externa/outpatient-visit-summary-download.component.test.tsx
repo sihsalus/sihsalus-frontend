@@ -180,7 +180,8 @@ describe('OutpatientVisitSummaryDownload', () => {
       expect.objectContaining({ visitUuid: 'visit-uuid' }),
       expect.objectContaining({
         indicatedFollowUpDate: 'Fecha de control indicada',
-        medications: 'Receta',
+        medications: 'Medicamentos indicados',
+        signatureAndStamp: 'Firma y sello del profesional responsable',
         therapeuticIndications: 'Indicaciones terapéuticas',
       }),
       expect.any(String),

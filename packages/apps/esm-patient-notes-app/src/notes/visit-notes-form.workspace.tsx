@@ -346,7 +346,8 @@ const VisitNotesFormContent: React.FC<
     currentVisitContext?.visit?.visitType?.uuid ??
     currentVisitContext?.visitType?.uuid;
   const isOutpatientVisit =
-    activeVisitTypeUuid?.toLowerCase() === outpatientVisitTypeUuid.toLowerCase();
+    activeVisitTypeUuid?.toLowerCase() ===
+    outpatientVisitTypeUuid.toLowerCase();
   const encounterVisitUuid = getReferenceUuid(
     (
       encounter as
@@ -1020,9 +1021,7 @@ const VisitNotesFormContent: React.FC<
         }
         if (
           isOutpatientVisit &&
-          combinedDiagnoses.some(
-            (diagnosis) => !getCie10MappedCode(diagnosis),
-          )
+          combinedDiagnoses.some((diagnosis) => !getCie10MappedCode(diagnosis))
         ) {
           showSnackbar({
             title: t("visitNoteSaveError", "Error saving visit note"),

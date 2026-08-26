@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.openmrs.org/routes.schema.json",
   "backendDependencies": {
-    "attachments": ">=4.0.1 <5.0.0",
+    "attachments": ">=4.0.1-sihsalus.1 <5.0.0",
     "webservices.rest": ">=2.2.0"
   },
   "extensions": [

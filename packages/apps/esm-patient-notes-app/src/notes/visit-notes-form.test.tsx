@@ -382,6 +382,50 @@ test('formats CIE-10 diagnosis search results and selected tags for readability'
   expect(screen.getByTitle(formattedDiagnosis)).toBeInTheDocument();
 });
 
+test('uses the CIE-10 concept mapping when the diagnosis name does not contain the code', async () => {
+  const user = userEvent.setup();
+
+  mockFetchDiagnosisConceptsByName.mockResolvedValue([
+    {
+      uuid: 'cie10-e119',
+      display: 'Diabetes mellitus tipo II',
+      conceptMappings: [
+        {
+          conceptReferenceTerm: {
+            code: 'E11.9',
+            conceptSource: { name: 'ICD-10-WHO' },
+          },
+        },
+      ],
+    },
+  ]);
+
+  renderVisitNotesForm();
+
+  await user.type(screen.getByPlaceholderText('Choose a primary diagnosis'), 'diabetes');
+  const diagnosisOption = await screen.findByRole('button', {
+    name: 'E11.9 - Diabetes mellitus tipo II',
+  });
+  await user.click(diagnosisOption);
+
+  expect(screen.getByTitle('E11.9 - Diabetes mellitus tipo II')).toBeInTheDocument();
+});
+
+test('links both coded fields to their configured official Peruvian references', () => {
+  renderVisitNotesForm();
+
+  expect(
+    screen.getByRole('link', {
+      name: /official MINSA CIE-10 catalog/i,
+    }),
+  ).toHaveAttribute('href', 'https://www.minsa.gob.pe/reunis/index.asp?niv=1&op=3');
+  expect(
+    screen.getByRole('link', {
+      name: /official SIS reference for FUA prestational codes/i,
+    }),
+  ).toHaveAttribute('href', 'https://www.gob.pe/institucion/sis/normas-legales/7772769-000002-2026-sis-grep');
+});
+
 test('renders an error message when no matching diagnoses are found', async () => {
   const user = userEvent.setup();
   mockFetchDiagnosisConceptsByName.mockResolvedValue([]);
@@ -453,6 +497,39 @@ test('searches and saves one selected codigo prestacional concept', async () => 
       ]),
     }),
   );
+});
+
+test('puts a mapped SIS code before the prestational concept name', async () => {
+  const user = userEvent.setup();
+  mockFetchPrestacionalConceptsByName.mockResolvedValue([
+    {
+      uuid: 'prestacional-056',
+      display: 'Consulta externa',
+      conceptMappings: [
+        {
+          conceptReferenceTerm: {
+            code: '056',
+            conceptSource: { name: 'SIS' },
+          },
+        },
+      ],
+    },
+  ]);
+
+  renderVisitNotesForm();
+
+  await user.type(
+    screen.getByRole('searchbox', {
+      name: /indique el código prestacional/i,
+    }),
+    '056',
+  );
+  const prestacionalOption = await screen.findByRole('button', {
+    name: '056 - Consulta externa',
+  });
+  await user.click(prestacionalOption);
+
+  expect(screen.getByTitle('056 - Consulta externa')).toBeInTheDocument();
 });
 
 test('allows only one in-flight create when submit is triggered twice synchronously', async () => {

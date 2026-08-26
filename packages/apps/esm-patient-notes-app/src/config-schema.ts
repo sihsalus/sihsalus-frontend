@@ -18,6 +18,18 @@ export const configSchema = {
     _description:
       'Comma-separated display names of the ConvSet whose members are SIHSALUS prestacional codes imported from OCL',
   },
+  cie10ReferenceUrl: {
+    _type: Type.String,
+    _default: 'https://www.minsa.gob.pe/reunis/index.asp?niv=1&op=3',
+    _description:
+      'Official MINSA/REUNIS reference for the Peruvian CIE-10 catalog, including the spreadsheet and current additions or retirements',
+  },
+  prestacionalReferenceUrl: {
+    _type: Type.String,
+    _default: 'https://www.gob.pe/institucion/sis/normas-legales/7772769-000002-2026-sis-grep',
+    _description:
+      'Official SIS reference for the current FUA prestational codes; override when the configured catalog follows a newer resolution',
+  },
   stickyNoteConceptUuid: {
     _type: Type.ConceptUuid,
     _default: '165095AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
@@ -27,9 +39,11 @@ export const configSchema = {
 };
 
 export interface ConfigObject {
+  cie10ReferenceUrl: string;
   diagnosisConceptClass: string;
   isPrimaryDiagnosisRequired: boolean;
   prestacionalConceptSourceName: string;
+  prestacionalReferenceUrl: string;
   stickyNoteConceptUuid: string;
   visitNoteConfig: VisitNoteConfigObject;
 }

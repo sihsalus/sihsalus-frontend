@@ -6,65 +6,46 @@ import {
   ModalBody,
   ModalFooter,
   ModalHeader,
-  PasswordInput,
   Stack,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { showSnackbar } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { z } from 'zod';
 import { changeUserPassword } from './change-password.resource';
+import PasswordInput from './password-input.component';
+import {
+  type ChangePasswordFormData,
+  createChangePasswordFormSchema,
+  getPasswordRequirements,
+  INCORRECT_OLD_PASSWORD_ERROR_CODE,
+  normalizeChangePasswordError,
+} from './change-password.validation';
 import styles from './change-password-modal.scss';
 
 interface ChangePasswordModalProps {
-  close(): () => void;
+  close(): void;
 }
 
 const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ close }) => {
   const { t } = useTranslation();
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(null);
-
-  const oldPasswordValidation = z
-    .string({
-      required_error: t('oldPasswordRequired', 'Old password is required'),
-    })
-    .trim()
-    .min(1, t('oldPasswordRequired', 'Old password is required'));
-
-  const newPasswordValidation = z
-    .string({
-      required_error: t('newPasswordRequired', 'New password is required'),
-    })
-    .trim()
-    .min(1, t('newPasswordRequired', 'New password is required'));
-
-  const passwordConfirmationValidation = z
-    .string({
-      required_error: t('passwordConfirmationRequired', 'Password confirmation is required'),
-    })
-    .trim()
-    .min(1, t('passwordConfirmationRequired', 'Password confirmation is required'));
-
-  const changePasswordFormSchema = z
-    .object({
-      oldPassword: oldPasswordValidation,
-      newPassword: newPasswordValidation,
-      passwordConfirmation: passwordConfirmationValidation,
-    })
-    .refine((data) => data.newPassword === data.passwordConfirmation, {
-      message: t('passwordsDoNotMatch', 'Passwords do not match'),
-      path: ['passwordConfirmation'],
-    });
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const changePasswordFormSchema = createChangePasswordFormSchema(t);
+  const passwordRequirements = getPasswordRequirements(t);
+  const passwordInputLabels = {
+    hidePasswordLabel: t('hidePassword', 'Hide password'),
+    showPasswordLabel: t('showPassword', 'Show password'),
+  };
 
   const {
     handleSubmit,
     control,
     formState: { errors },
-  } = useForm({
+  } = useForm<ChangePasswordFormData>({
     resolver: zodResolver(changePasswordFormSchema),
+    mode: 'all',
     defaultValues: {
       oldPassword: '',
       newPassword: '',
@@ -72,7 +53,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ close }) => {
     },
   });
 
-  const onSubmit: SubmitHandler<z.infer<typeof changePasswordFormSchema>> = useCallback(
+  const onSubmit: SubmitHandler<ChangePasswordFormData> = useCallback(
     (data) => {
       setIsChangingPassword(true);
       const { oldPassword, newPassword } = data;
@@ -87,8 +68,18 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ close }) => {
           });
         })
         .catch((error) => {
-          const errorMessage = error?.responseBody?.message ?? error?.message;
-          setErrorMessage(errorMessage);
+          setErrorMessage(
+            getUserFacingErrorMessage(
+              normalizeChangePasswordError(error),
+              t('passwordChangeFailed', 'The password could not be changed. Please try again'),
+              {
+                codeMessages: {
+                  [INCORRECT_OLD_PASSWORD_ERROR_CODE]: t('oldPasswordIncorrect', 'The current password is incorrect'),
+                },
+                logContext: 'Changing password',
+              },
+            ),
+          );
         })
         .finally(() => {
           setIsChangingPassword(false);
@@ -101,18 +92,24 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ close }) => {
 
   return (
     <Form onSubmit={handleSubmit(onSubmit, onError)}>
-      <ModalHeader closeModal={close} title={t('changePassword', 'Change password')} />
+      <ModalHeader
+        closeModal={close}
+        iconDescription={t('close', 'Close')}
+        title={t('changePassword', 'Change password')}
+      />
       <ModalBody>
         <Stack gap={5} className={styles.languageOptionsContainer}>
           <Controller
             name="oldPassword"
             control={control}
-            render={({ field: { onChange, value } }) => (
+            render={({ field: { onBlur, onChange, value } }) => (
               <PasswordInput
+                {...passwordInputLabels}
                 id="oldPassword"
                 invalid={!!errors?.oldPassword}
                 invalidText={errors?.oldPassword?.message}
                 labelText={t('oldPassword', 'Old password')}
+                onBlur={onBlur}
                 onChange={onChange}
                 value={value}
               />
@@ -121,12 +118,15 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ close }) => {
           <Controller
             name="newPassword"
             control={control}
-            render={({ field: { onChange, value } }) => (
+            render={({ field: { onBlur, onChange, value } }) => (
               <PasswordInput
+                {...passwordInputLabels}
+                helperText={passwordRequirements}
                 id="newPassword"
                 invalid={!!errors?.newPassword}
                 invalidText={errors?.newPassword?.message}
                 labelText={t('newPassword', 'New password')}
+                onBlur={onBlur}
                 onChange={onChange}
                 value={value}
               />
@@ -135,12 +135,14 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ close }) => {
           <Controller
             name="passwordConfirmation"
             control={control}
-            render={({ field: { onChange, value } }) => (
+            render={({ field: { onBlur, onChange, value } }) => (
               <PasswordInput
+                {...passwordInputLabels}
                 id="passwordConfirmation"
                 invalid={!!errors?.passwordConfirmation}
                 invalidText={errors?.passwordConfirmation?.message}
                 labelText={t('confirmPassword', 'Confirm new password')}
+                onBlur={onBlur}
                 onChange={onChange}
                 value={value}
               />

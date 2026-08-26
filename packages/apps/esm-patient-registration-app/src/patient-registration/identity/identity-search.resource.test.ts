@@ -10,6 +10,7 @@ import {
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
+  makeUrl: (path: string) => (path.startsWith('http') ? path : `${globalThis.openmrsBase}${path}`),
   omrsOfflineCachingStrategyHttpHeaderName: 'x-omrs-offline-caching-strategy',
 }));
 
@@ -94,8 +95,15 @@ describe('searchLocalIdentityByDocument', () => {
     );
 
     expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
+    const requestUrls = mockOpenmrsFetch.mock.calls.map(([url]) => new URL(String(url), globalThis.location.origin));
+    expect(new Set(requestUrls.map((url) => url.pathname))).toEqual(
+      new Set(['/openmrs/ws/rest/v1/patient', '/openmrs/ws/rest/v1/person']),
+    );
     for (const [url, options] of mockOpenmrsFetch.mock.calls) {
-      expect(url).toContain('_bulkPatientImportCheck=');
+      const requestUrl = new URL(String(url), globalThis.location.origin);
+      expect(String(url)).toMatch(/^https?:\/\//);
+      expect(requestUrl.origin).toBe(globalThis.location.origin);
+      expect(requestUrl.searchParams.has('_bulkPatientImportCheck')).toBe(true);
       expect(options).toEqual(
         expect.objectContaining({
           cache: 'no-store',
@@ -126,6 +134,8 @@ describe('searchLocalIdentityByDocument', () => {
       if (requestUrl.pathname.endsWith('/patient')) {
         requestUrl.searchParams.delete('_bulkPatientImportCheck');
         requestUrl.searchParams.set('startIndex', '50');
+        requestUrl.protocol = 'http:';
+        requestUrl.host = 'openmrs-internal:8080';
         return {
           data: { results: [], links: [{ rel: 'next', uri: requestUrl.href }] },
           ok: true,
@@ -144,7 +154,11 @@ describe('searchLocalIdentityByDocument', () => {
     ).resolves.toEqual([
       expect.objectContaining({ kind: 'patient', uuid: 'synthetic-patient-uuid', identifier: '11111111' }),
     ]);
-    expect(mockOpenmrsFetch.mock.calls.filter(([url]) => String(url).includes('/patient?'))).toHaveLength(2);
+    const patientRequests = mockOpenmrsFetch.mock.calls
+      .map(([url]) => new URL(String(url), globalThis.location.origin))
+      .filter((url) => url.pathname.endsWith('/patient'));
+    expect(patientRequests).toHaveLength(2);
+    expect(patientRequests[1].origin).toBe(globalThis.location.origin);
   });
 
   it('fails closed when a fresh pagination link repeats instead of treating the result as complete', async () => {
@@ -186,6 +200,8 @@ describe('fetchFreshPatientIdentityByUuid', () => {
     mockOpenmrsFetch.mockResolvedValueOnce({ data: patient, ok: true } as never);
 
     await expect(fetchFreshPatientIdentityByUuid('synthetic-patient-uuid')).resolves.toEqual(patient);
+    const requestUrl = new URL(String(mockOpenmrsFetch.mock.calls[0][0]), globalThis.location.origin);
+    expect(requestUrl.pathname).toBe('/openmrs/ws/rest/v1/patient/synthetic-patient-uuid');
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(
       expect.stringMatching(/\/patient\/synthetic-patient-uuid\?v=.*&_bulkPatientImportCheck=/),
       expect.objectContaining({

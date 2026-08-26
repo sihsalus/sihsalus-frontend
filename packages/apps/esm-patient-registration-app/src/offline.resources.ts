@@ -1,6 +1,7 @@
 import {
   type FetchResponse,
   getConfig,
+  makeUrl,
   messageOmrsServiceWorker,
   omrsOfflineCachingStrategyHttpHeaderName,
   openmrsFetch,
@@ -246,7 +247,7 @@ async function fetchAutoGenerationOptions() {
 }
 
 async function fetchFreshMetadata<T>(url: string, signal: AbortSignal): Promise<FetchResponse<T>> {
-  const requestUrl = new URL(url, globalThis.location.origin);
+  const requestUrl = new URL(makeUrl(url), globalThis.location.origin);
   requestUrl.searchParams.set('_bulkPatientImportMetadata', globalThis.crypto.randomUUID());
 
   const response = await openmrsFetch<T>(requestUrl.href, {
@@ -268,8 +269,8 @@ async function fetchFreshMetadata<T>(url: string, signal: AbortSignal): Promise<
 async function fetchAllFreshMetadataResults<T>(initialUrl: string, signal: AbortSignal): Promise<Array<T>> {
   const results: Array<T> = [];
   const visited = new Set<string>();
-  const restPath = `${new URL(restBaseUrl, globalThis.location.origin).pathname.replace(/\/$/, '')}/`;
-  let nextUrl: string | undefined = initialUrl;
+  const restPath = `${new URL(makeUrl(restBaseUrl), globalThis.location.origin).pathname.replace(/\/$/, '')}/`;
+  let nextUrl: string | undefined = makeUrl(initialUrl);
 
   for (let page = 0; nextUrl && page < maxFreshMetadataPages; page++) {
     const linkedUrl = new URL(nextUrl, globalThis.location.origin);

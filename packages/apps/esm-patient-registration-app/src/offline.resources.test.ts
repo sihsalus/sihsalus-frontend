@@ -6,6 +6,7 @@ const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
   getConfig: vi.fn(),
+  makeUrl: (path: string) => (path.startsWith('http') ? path : `${globalThis.openmrsBase}${path}`),
   messageOmrsServiceWorker: vi.fn(),
   omrsOfflineCachingStrategyHttpHeaderName: 'x-omrs-offline-caching-strategy',
   openmrsFetch: vi.fn(),
@@ -139,6 +140,16 @@ describe('registration metadata offline caching', () => {
     );
     expect(freshCalls).toHaveLength(4);
     expect(
+      new Set(freshCalls.map(([input]) => new URL(input, globalThis.location.origin).pathname)),
+    ).toEqual(
+      new Set([
+        '/openmrs/ws/rest/v1/patientidentifiertype',
+        '/openmrs/ws/rest/v1/metadatamapping/termmapping',
+        '/openmrs/ws/rest/v1/idgen/identifiersource',
+        '/openmrs/ws/rest/v1/idgen/autogenerationoption',
+      ]),
+    );
+    expect(
       new Set(
         freshCalls.map(([input]) =>
           new URL(input, globalThis.location.origin).searchParams.get('_bulkPatientImportMetadata'),
@@ -241,6 +252,11 @@ describe('registration metadata offline caching', () => {
         identifierSources: [expect.objectContaining({ uuid: sourceUuid })],
       }),
     ]);
+    const freshUrls = mockOpenmrsFetch.mock.calls
+      .map(([input]) => new URL(input, globalThis.location.origin))
+      .filter((url) => url.searchParams.has('_bulkPatientImportMetadata'));
+    expect(freshUrls.length).toBeGreaterThan(4);
+    expect(freshUrls.every((url) => url.pathname.startsWith('/openmrs/ws/rest/v1/'))).toBe(true);
   });
 
   it('fails closed when a fresh metadata pagination link repeats', async () => {

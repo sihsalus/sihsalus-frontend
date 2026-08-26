@@ -103,6 +103,12 @@ export const configSchema = {
     },
   },
 
+  appointmentVisitAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Visit attribute type used to link the active outpatient visit to its originating appointment',
+    _default: '193508ab-20c6-5291-9f23-0257335eaabd',
+  },
+
   legacyCe001FieldPaths: {
     _type: Type.Object,
     _description:
@@ -758,6 +764,7 @@ export interface ConfigObject {
   visitTypes: {
     ambulatory: string;
   };
+  appointmentVisitAttributeTypeUuid: string;
   legacyCe001FieldPaths: {
     labOrders: string;
     prescriptions: string;

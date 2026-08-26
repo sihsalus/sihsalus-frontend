@@ -46,11 +46,15 @@ Anamnesis y SOAP son únicos por visita ambulatoria: cero coincidencias crea, un
 
 Consulta Externa ofrece una descarga PDF denominada **Resumen de atención ambulatoria** para la visita activa, con identificación del paciente, establecimiento, profesional, signos vitales, anamnesis, examen físico segmentado, diagnósticos nativos CIE-10, plan y órdenes asociadas a los encounters de esa visita. El documento se genera íntegramente en el navegador; los datos no se envían a un servicio de PDF externo.
 
+La cabecera ofrece además **Imprimir indicaciones**, una hoja PDF breve para entregar al paciente. Incluye identificación, fecha y responsable de la atención, la próxima cita programada verificable, indicaciones terapéuticas, órdenes de medicamentos no anuladas, sustituidas, suspendidas ni vencidas registradas en la visita y la fecha de control indicada. Las órdenes canónicas tienen prioridad; el texto histórico de prescripción se usa únicamente cuando la visita no contiene órdenes canónicas, para evitar duplicados.
+
+La **Próxima cita programada** proviene de Appointment Scheduling y se muestra con fecha, servicio, lugar y profesional disponibles. La fecha de control, en cambio, es una observación clínica y no demuestra que exista una reserva; por eso aparece por separado como **Fecha de control indicada** y se aclara que debe confirmarse la programación. Si no se puede consultar la agenda, la impresión continúa con receta e indicaciones, pero avisa al usuario y omite la cita no verificada. El PDF se genera localmente, no incluye identificadores del paciente ni de la visita en el nombre del archivo y descarga el mismo documento como respaldo cuando el visor PDF integrado no carga o informa un error.
+
 La Epicrisis pertenece al egreso de hospitalización según la NTS 139. Consulta Externa no abre ni reutiliza `Formulario Epicrisis Médica` ni `(Página 16) Epicrisis`; su documento es únicamente el resumen de la atención ambulatoria.
 
 `CE-SOAP-001-NOTA SOAP` versión `1.1.0` registra el examen general y el examen regional por sistemas mediante campos diferenciados por `formFieldPath`. Ningún campo se completa como “normal” automáticamente. La lectura conserva compatibilidad con las notas SOAP históricas `1.0.0`.
 
-La descarga falla cerrada si no se puede verificar que la visita, su tipo ambulatorio y el paciente coincidan. La primera versión se limita intencionalmente a la visita activa: debe descargarse antes de finalizarla. Una futura descarga histórica necesitará un selector explícito de visita; nunca debe elegir silenciosamente “la última” del paciente.
+La generación de ambos documentos falla cerrada si no se puede verificar que la visita, su tipo ambulatorio y el paciente coincidan. La primera versión se limita intencionalmente a la visita activa: los documentos deben generarse antes de finalizarla. Una futura generación histórica necesitará un selector explícito de visita; nunca debe elegir silenciosamente “la última” del paciente.
 
 ## TODO QA/QLTY
 

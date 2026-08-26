@@ -1,16 +1,13 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import type { ConfigObject } from '../config-schema';
-import {
-  getFormEngineFieldPath,
-  physicalExamFields,
-  type PhysicalExamValues,
-} from '../utils/physical-exam';
+import { getFormEngineFieldPath, type PhysicalExamValues, physicalExamFields } from '../utils/physical-exam';
 
 const TIPO_DX_FORM_FIELD_NAMESPACE = 'visit-notes';
 const TIPO_DX_FIELD_PREFIX = 'tipo-dx-';
 
 const VISIT_SUMMARY_REPRESENTATION =
   'custom:(uuid,patient:(uuid),visitType:(uuid,display),startDatetime,stopDatetime,location:(uuid,display),' +
+  'attributes:(uuid,voided,value,attributeType:(uuid)),' +
   'encounters:(uuid,voided,encounterDatetime,location:(uuid,display),' +
   'encounterProviders:(uuid,provider:(uuid,display,person:(uuid,display)),encounterRole:(uuid,display)),' +
   'diagnoses:(uuid,display,voided,certainty,rank,diagnosis:(coded:(uuid,display,mappings:(display)),nonCoded)),' +
@@ -18,6 +15,7 @@ const VISIT_SUMMARY_REPRESENTATION =
   'orders:(uuid,voided,action,previousOrder:(uuid),orderType:(uuid,display),concept:(uuid,display),' +
   'drug:(uuid,display,strength),dose,doseUnits:(uuid,display),route:(uuid,display),frequency:(uuid,display),' +
   'duration,durationUnits:(uuid,display),quantity,quantityUnits:(uuid,display),dosingInstructions,instructions,' +
+  'dateStopped,autoExpireDate,' +
   'orderer:(uuid,display,person:(uuid,display)))))';
 
 interface OpenmrsRef {
@@ -65,6 +63,8 @@ interface VisitSummaryOrder {
   quantityUnits?: OpenmrsRef;
   dosingInstructions?: string;
   instructions?: string;
+  dateStopped?: string | null;
+  autoExpireDate?: string | null;
   orderer?: OpenmrsRef & { person?: OpenmrsRef };
 }
 
@@ -90,6 +90,12 @@ export interface VisitSummarySource {
   startDatetime?: string;
   stopDatetime?: string | null;
   location?: OpenmrsRef;
+  attributes?: Array<{
+    uuid?: string;
+    voided?: boolean;
+    value?: unknown;
+    attributeType?: { uuid?: string };
+  }>;
   encounters?: VisitSummaryEncounter[];
 }
 
@@ -115,6 +121,8 @@ export interface OutpatientSummaryOrder {
   name: string;
   details: string | null;
   orderer: string | null;
+  dateStopped?: string | null;
+  autoExpireDate?: string | null;
 }
 
 export interface OutpatientVisitSummary {
@@ -169,6 +177,7 @@ export interface OutpatientVisitSummary {
     legacyPrescriptions: string | null;
   };
   orders: OutpatientSummaryOrder[];
+  hasRecordedMedicationOrders: boolean;
   hasClinicalContent: boolean;
 }
 
@@ -194,6 +203,23 @@ export async function fetchOutpatientVisitSummarySource(visitUuid: string): Prom
     `${restBaseUrl}/visit/${visitUuid}?v=${VISIT_SUMMARY_REPRESENTATION}`,
   );
   return response.data;
+}
+
+export function getLinkedAppointmentUuids(
+  source: VisitSummarySource,
+  appointmentVisitAttributeTypeUuid: string,
+): string[] {
+  const expectedAttributeTypeUuid = appointmentVisitAttributeTypeUuid.trim().toLowerCase();
+  if (!expectedAttributeTypeUuid) return [];
+
+  const linkedAppointmentUuids = new Map<string, string>();
+  for (const attribute of source.attributes ?? []) {
+    const value = typeof attribute.value === 'string' ? attribute.value.trim() : '';
+    if (!attribute.voided && value && attribute.attributeType?.uuid?.toLowerCase() === expectedAttributeTypeUuid) {
+      linkedAppointmentUuids.set(value.toLowerCase(), value);
+    }
+  }
+  return [...linkedAppointmentUuids.values()];
 }
 
 function asText(value: unknown, fallback?: string): string | null {
@@ -226,11 +252,7 @@ function getLatestObservation(
       (obs) =>
         !obs.voided &&
         (conceptUuid === undefined || obs.concept?.uuid === conceptUuid) &&
-        (fieldPath === undefined
-          ? true
-          : fieldPath === null
-            ? !obs.formFieldPath
-            : obs.formFieldPath === fieldPath),
+        (fieldPath === undefined ? true : fieldPath === null ? !obs.formFieldPath : obs.formFieldPath === fieldPath),
     );
     if (match) return match;
   }
@@ -351,6 +373,12 @@ function orderDetails(order: VisitSummaryOrder): string | null {
   return parts.length ? parts.join(' · ') : null;
 }
 
+function getOrderCategory(order: VisitSummaryOrder): OutpatientSummaryOrder['category'] {
+  const type = order.orderType?.display?.toLocaleLowerCase() ?? '';
+  if (order.drug || /\bdrug\b|medication|medicamento/.test(type)) return 'medication';
+  return /lab|laborator|test|prueba|examen/.test(type) ? 'laboratory' : 'other';
+}
+
 function mapOrders(encounters: VisitSummaryEncounter[]): OutpatientSummaryOrder[] {
   const seen = new Set<string>();
   const sourceOrders = encounters.flatMap((encounter) => encounter.orders ?? []).filter((order) => !order.voided);
@@ -360,18 +388,18 @@ function mapOrders(encounters: VisitSummaryEncounter[]): OutpatientSummaryOrder[
   return sourceOrders.flatMap((order) => {
     if (seen.has(order.uuid) || order.action === 'DISCONTINUE' || supersededOrderUuids.has(order.uuid)) return [];
     seen.add(order.uuid);
-    const type = order.orderType?.display?.toLocaleLowerCase() ?? '';
-    const category = order.drug ? 'medication' : /lab|laborator|test|prueba|examen/.test(type) ? 'laboratory' : 'other';
     const drugName = [order.drug?.display, order.drug?.strength].filter(Boolean).join(' ');
     const name = drugName || order.concept?.display || order.orderType?.display;
     if (!name) return [];
     return [
       {
         uuid: order.uuid,
-        category,
+        category: getOrderCategory(order),
         name,
         details: orderDetails(order),
         orderer: order.orderer?.person?.display ?? order.orderer?.display ?? null,
+        dateStopped: order.dateStopped ?? null,
+        autoExpireDate: order.autoExpireDate ?? null,
       },
     ];
   });
@@ -444,6 +472,9 @@ export function buildOutpatientVisitSummary({
     bowelMovements: getObservationText(encounters, concepts.bowelMovementsUuid),
   };
   const diagnoses = mapDiagnoses(encounters, concepts);
+  const hasRecordedMedicationOrders = encounters.some((encounter) =>
+    (encounter.orders ?? []).some((order) => getOrderCategory(order) === 'medication'),
+  );
   const orders = mapOrders(encounters);
   const anamnesis = {
     chiefComplaint: getObservationText(encounters, concepts.chiefComplaintUuid),
@@ -460,11 +491,7 @@ export function buildOutpatientVisitSummary({
     plan: getObservationText(encounters, concepts.soapPlanUuid),
   };
   const physicalExam = physicalExamFields.reduce((values, field) => {
-    values[field.key] = getObservationText(
-      encounters,
-      undefined,
-      getFormEngineFieldPath(field.questionId),
-    );
+    values[field.key] = getObservationText(encounters, undefined, getFormEngineFieldPath(field.questionId));
     return values;
   }, {} as PhysicalExamValues);
   soap.objective = getObservationText(encounters, concepts.soapObjectiveUuid, null);
@@ -517,6 +544,7 @@ export function buildOutpatientVisitSummary({
     diagnoses,
     treatment,
     orders,
+    hasRecordedMedicationOrders,
     hasClinicalContent,
   };
 }

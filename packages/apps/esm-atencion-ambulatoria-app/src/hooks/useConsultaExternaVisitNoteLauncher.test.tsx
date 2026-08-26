@@ -64,7 +64,10 @@ describe('useConsultaExternaVisitNoteLauncher', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireAmbulatoryVisit.mockReturnValue(activeVisit);
-    mockUseAmbulatoryVisitGuard.mockReturnValue({ requireAmbulatoryVisit });
+    mockUseAmbulatoryVisitGuard.mockReturnValue({
+      requireAmbulatoryVisit,
+      verifiedAmbulatoryVisitUuid: visitUuid,
+    });
     mockUsePatientChartStore.mockReturnValue({
       patientUuid,
       patient,

@@ -36,4 +36,8 @@ describe('Atencion Ambulatoria configuration', () => {
   it('scopes generic Visit Notes to the ambulatory visit type', () => {
     expect(configSchema.visitTypes._default.ambulatory).toBe('b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09');
   });
+
+  it('uses the canonical appointment-to-visit link attribute', () => {
+    expect(configSchema.appointmentVisitAttributeTypeUuid._default).toBe('193508ab-20c6-5291-9f23-0257335eaabd');
+  });
 });

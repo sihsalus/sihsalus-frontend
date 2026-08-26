@@ -44,6 +44,14 @@
   margin: 0;
 }
 
+.dashboardActions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+  justify-content: flex-end;
+}
+
 .widgetContainer {
   padding: layout.$spacing-05 0;
 }
@@ -79,6 +87,17 @@
 }
 
 @media (max-width: 41.99rem) {
+  .dashboardActions {
+    align-items: stretch;
+    justify-content: flex-start;
+    width: 100%;
+
+    > button {
+      flex: 1 1 auto;
+      max-width: none;
+    }
+  }
+
   .clinicalEntryToolbar {
     align-items: stretch;
     flex-direction: column;

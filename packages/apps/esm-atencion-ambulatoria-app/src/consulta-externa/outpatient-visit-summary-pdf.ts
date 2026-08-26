@@ -1,4 +1,8 @@
 import type { PDFFont, PDFPage } from 'pdf-lib';
+import {
+  isUpcomingScheduledAppointment,
+  type OutpatientScheduledAppointment,
+} from './outpatient-next-appointment.resource';
 import type { OutpatientSummaryOrder, OutpatientVisitSummary } from './outpatient-visit-summary.resource';
 
 const PAGE_WIDTH = 595.28;
@@ -78,6 +82,29 @@ export interface OutpatientVisitSummaryPdfLabels {
   disclaimer: string;
 }
 
+export interface OutpatientPatientInstructionsPdfLabels {
+  title: string;
+  patient: string;
+  identifiers: string;
+  careDetails: string;
+  visitDate: string;
+  location: string;
+  professional: string;
+  scheduledAppointment: string;
+  scheduledAppointmentDate: string;
+  scheduledAppointmentService: string;
+  scheduledAppointmentLocation: string;
+  scheduledAppointmentProfessional: string;
+  instructions: string;
+  indicatedFollowUpDate: string;
+  therapeuticIndications: string;
+  medications: string;
+  legacyPrescriptions: string;
+  generatedAt: string;
+  page: string;
+  followUpDateDisclaimer: string;
+}
+
 interface PdfFonts {
   regular: PDFFont;
   bold: PDFFont;
@@ -96,6 +123,13 @@ interface PdfState {
   };
 }
 
+export class OutpatientPdfUnsupportedCharacterError extends Error {
+  constructor() {
+    super('The PDF contains text that cannot be represented by the embedded font.');
+    this.name = 'OutpatientPdfUnsupportedCharacterError';
+  }
+}
+
 function safePdfText(value: string, font: PDFFont): string {
   return [...value]
     .map((character) => {
@@ -104,7 +138,7 @@ function safePdfText(value: string, font: PDFFont): string {
         font.encodeText(character);
         return character;
       } catch {
-        return '?';
+        throw new OutpatientPdfUnsupportedCharacterError();
       }
     })
     .join('');
@@ -164,7 +198,12 @@ function ensureSpace(state: PdfState, height: number): void {
 function drawLines(
   state: PdfState,
   lines: string[],
-  options: { font?: PDFFont; size?: number; color?: import('pdf-lib').RGB; indent?: number } = {},
+  options: {
+    font?: PDFFont;
+    size?: number;
+    color?: import('pdf-lib').RGB;
+    indent?: number;
+  } = {},
 ): void {
   const font = options.font ?? state.fonts.regular;
   const size = options.size ?? BODY_SIZE;
@@ -239,18 +278,17 @@ function drawOrderList(state: PdfState, title: string, orders: OutpatientSummary
   });
 }
 
-function formatDate(value: string | null, locale: string): string {
+function formatDate(value: string | null | undefined, locale: string): string {
   if (!value) return '';
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
-  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(parsed);
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(parsed);
 }
 
-export async function createOutpatientVisitSummaryPdf(
-  summary: OutpatientVisitSummary,
-  labels: OutpatientVisitSummaryPdfLabels,
-  locale: string,
-): Promise<Uint8Array> {
+async function createPdfState(title: string, facilityName: string): Promise<PdfState> {
   const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
   const document = await PDFDocument.create();
   const fonts = {
@@ -270,13 +308,13 @@ export async function createOutpatientVisitSummaryPdf(
     },
   };
 
-  document.setTitle(labels.title);
-  document.setSubject(labels.title);
-  document.setAuthor(summary.facilityName);
+  document.setTitle(title);
+  document.setSubject(title);
+  document.setAuthor(facilityName);
   document.setCreator('SIH Salus');
   document.setProducer('SIH Salus');
 
-  state.page.drawText(safePdfText(summary.facilityName, fonts.bold), {
+  state.page.drawText(safePdfText(facilityName, fonts.bold), {
     x: PAGE_MARGIN,
     y: state.y,
     size: 10,
@@ -284,8 +322,91 @@ export async function createOutpatientVisitSummaryPdf(
     color: state.colors.primary,
   });
   state.y -= 22;
-  drawLines(state, wrapText(labels.title, fonts.bold, 16, CONTENT_WIDTH), { font: fonts.bold, size: 16 });
+  drawLines(state, wrapText(title, fonts.bold, 16, CONTENT_WIDTH), {
+    font: fonts.bold,
+    size: 16,
+  });
   state.y -= 4;
+
+  return state;
+}
+
+function drawPdfFooter(
+  state: PdfState,
+  labels: { disclaimer: string; generatedAt: string; page: string },
+  locale: string,
+): void {
+  ensureSpace(state, 42);
+  state.y -= 10;
+  drawLines(state, wrapText(labels.disclaimer, state.fonts.regular, 7.5, CONTENT_WIDTH), {
+    size: 7.5,
+    color: state.colors.muted,
+  });
+  drawLines(
+    state,
+    wrapText(
+      `${labels.generatedAt}: ${formatDate(new Date().toISOString(), locale)}`,
+      state.fonts.regular,
+      7.5,
+      CONTENT_WIDTH,
+    ),
+    { size: 7.5, color: state.colors.muted },
+  );
+
+  const pages = state.document.getPages();
+  pages.forEach((page, index) => {
+    const footer = `${labels.page} ${index + 1} / ${pages.length}`;
+    page.drawText(safePdfText(footer, state.fonts.regular), {
+      x: PAGE_WIDTH - PAGE_MARGIN - state.fonts.regular.widthOfTextAtSize(footer, 7.5),
+      y: 20,
+      size: 7.5,
+      font: state.fonts.regular,
+      color: state.colors.muted,
+    });
+  });
+}
+
+function hasText(value: string | null | undefined): boolean {
+  return Boolean(value?.trim());
+}
+
+function getCanonicalMedicationOrders(summary: OutpatientVisitSummary): OutpatientSummaryOrder[] {
+  const generatedAt = Date.now();
+  return summary.orders.filter((order) => {
+    if (order.category !== 'medication') return false;
+    return ![order.dateStopped, order.autoExpireDate].some((value) => {
+      if (!value) return false;
+      const endedAt = new Date(value).getTime();
+      return !Number.isNaN(endedAt) && endedAt <= generatedAt;
+    });
+  });
+}
+
+function hasRecordedCanonicalMedicationOrders(summary: OutpatientVisitSummary): boolean {
+  return summary.hasRecordedMedicationOrders;
+}
+
+export function hasOutpatientPatientInstructions(
+  summary: OutpatientVisitSummary,
+  scheduledAppointment?: OutpatientScheduledAppointment | null,
+): boolean {
+  const medicationOrders = getCanonicalMedicationOrders(summary);
+  return Boolean(
+    isUpcomingScheduledAppointment(scheduledAppointment) ||
+      hasText(summary.treatment.nextAppointment) ||
+      hasText(summary.treatment.therapeuticIndications) ||
+      medicationOrders.length ||
+      (!hasRecordedCanonicalMedicationOrders(summary) && hasText(summary.treatment.legacyPrescriptions)),
+  );
+}
+
+export async function createOutpatientVisitSummaryPdf(
+  summary: OutpatientVisitSummary,
+  labels: OutpatientVisitSummaryPdfLabels,
+  locale: string,
+): Promise<Uint8Array> {
+  const state = await createPdfState(labels.title, summary.facilityName);
+  const { document } = state;
 
   drawSectionTitle(state, labels.patient);
   drawField(state, labels.patient, summary.patient.name);
@@ -405,36 +526,73 @@ export async function createOutpatientVisitSummaryPdf(
     summary.orders.filter((order) => order.category === 'other'),
   );
 
-  ensureSpace(state, 42);
-  state.y -= 10;
-  drawLines(state, wrapText(labels.disclaimer, fonts.regular, 7.5, CONTENT_WIDTH), {
-    size: 7.5,
-    color: state.colors.muted,
-  });
-  drawLines(
-    state,
-    wrapText(
-      `${labels.generatedAt}: ${formatDate(new Date().toISOString(), locale)}`,
-      fonts.regular,
-      7.5,
-      CONTENT_WIDTH,
-    ),
-    { size: 7.5, color: state.colors.muted },
-  );
-
-  const pages = document.getPages();
-  pages.forEach((page, index) => {
-    const footer = `${labels.page} ${index + 1} / ${pages.length}`;
-    page.drawText(safePdfText(footer, fonts.regular), {
-      x: PAGE_WIDTH - PAGE_MARGIN - fonts.regular.widthOfTextAtSize(footer, 7.5),
-      y: 20,
-      size: 7.5,
-      font: fonts.regular,
-      color: state.colors.muted,
-    });
-  });
+  drawPdfFooter(state, labels, locale);
 
   return document.save();
+}
+
+export async function createOutpatientPatientInstructionsPdf(
+  summary: OutpatientVisitSummary,
+  labels: OutpatientPatientInstructionsPdfLabels,
+  locale: string,
+  scheduledAppointment?: OutpatientScheduledAppointment | null,
+): Promise<Uint8Array> {
+  const state = await createPdfState(labels.title, summary.facilityName);
+  const printableScheduledAppointment = isUpcomingScheduledAppointment(scheduledAppointment)
+    ? scheduledAppointment
+    : null;
+
+  drawSectionTitle(state, labels.patient);
+  drawField(state, labels.patient, summary.patient.name);
+  drawField(
+    state,
+    labels.identifiers,
+    summary.patient.identifiers.length
+      ? `${summary.patient.identifiers[0].label}: ${summary.patient.identifiers[0].value}`
+      : null,
+  );
+
+  drawSectionTitle(state, labels.careDetails);
+  drawField(state, labels.visitDate, formatDate(summary.visitStart, locale));
+  drawField(state, labels.location, summary.location);
+  drawField(state, labels.professional, summary.providers.join(' · ') || null);
+
+  if (printableScheduledAppointment) {
+    drawSectionTitle(state, labels.scheduledAppointment);
+    drawField(state, labels.scheduledAppointmentDate, formatDate(printableScheduledAppointment.startDateTime, locale));
+    drawField(state, labels.scheduledAppointmentService, printableScheduledAppointment.service);
+    drawField(state, labels.scheduledAppointmentLocation, printableScheduledAppointment.location);
+    drawField(state, labels.scheduledAppointmentProfessional, printableScheduledAppointment.provider);
+  }
+
+  if (hasText(summary.treatment.nextAppointment) || hasText(summary.treatment.therapeuticIndications)) {
+    drawSectionTitle(state, labels.instructions);
+    drawField(state, labels.indicatedFollowUpDate, summary.treatment.nextAppointment);
+    drawField(state, labels.therapeuticIndications, summary.treatment.therapeuticIndications);
+  }
+
+  const medicationOrders = getCanonicalMedicationOrders(summary);
+  if (medicationOrders.length) {
+    drawOrderList(state, labels.medications, medicationOrders);
+  } else if (!hasRecordedCanonicalMedicationOrders(summary) && hasText(summary.treatment.legacyPrescriptions)) {
+    drawSectionTitle(state, labels.legacyPrescriptions);
+    drawLines(
+      state,
+      wrapText(summary.treatment.legacyPrescriptions as string, state.fonts.regular, BODY_SIZE, CONTENT_WIDTH),
+    );
+  }
+
+  drawPdfFooter(
+    state,
+    {
+      disclaimer: labels.followUpDateDisclaimer,
+      generatedAt: labels.generatedAt,
+      page: labels.page,
+    },
+    locale,
+  );
+
+  return state.document.save();
 }
 
 export function downloadOutpatientVisitSummaryPdf(bytes: Uint8Array, fileName: string): void {
@@ -453,10 +611,22 @@ export function downloadOutpatientVisitSummaryPdf(bytes: Uint8Array, fileName: s
   }
 }
 
-export function createOutpatientVisitSummaryFileName(visitUuid: string, visitStart: string): string {
+function getSafeVisitDate(visitStart: string): string {
   const date = new Date(visitStart);
   const sourceDate = /^(\d{4}-\d{2}-\d{2})(?:T|$)/.exec(visitStart)?.[1];
-  const safeDate = Number.isNaN(date.getTime()) ? 'sin-fecha' : (sourceDate ?? date.toISOString().slice(0, 10));
+  return Number.isNaN(date.getTime()) ? 'sin-fecha' : (sourceDate ?? date.toISOString().slice(0, 10));
+}
+
+function createVisitScopedPdfFileName(prefix: string, visitUuid: string, visitStart: string): string {
+  const safeDate = getSafeVisitDate(visitStart);
   const safeVisitSuffix = visitUuid.replace(/[^a-zA-Z0-9]/g, '').slice(-8) || 'visita';
-  return `resumen-atencion-ambulatoria-${safeDate}-${safeVisitSuffix}.pdf`;
+  return `${prefix}-${safeDate}-${safeVisitSuffix}.pdf`;
+}
+
+export function createOutpatientVisitSummaryFileName(visitUuid: string, visitStart: string): string {
+  return createVisitScopedPdfFileName('resumen-atencion-ambulatoria', visitUuid, visitStart);
+}
+
+export function createOutpatientPatientInstructionsFileName(_visitUuid: string, visitStart: string): string {
+  return `indicaciones-para-el-paciente-${getSafeVisitDate(visitStart)}.pdf`;
 }

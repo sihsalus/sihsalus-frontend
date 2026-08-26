@@ -1,4 +1,5 @@
 import { Type, validator } from '@openmrs/esm-framework';
+import { DEFAULT_SPECIAL_PRESCRIPTION_DRUG_NAMES } from './add-drug-order/special-prescription';
 
 export const configSchema = {
   daysDurationUnit: {
@@ -89,6 +90,15 @@ export const configSchema = {
       _type: Type.String,
     },
   },
+  specialPrescriptionDrugNames: {
+    _type: Type.Array,
+    _description:
+      'Substance names that trigger the "requires a special prescription" warning in the drug order form (defaults to the narcotics and psychotropics of D.S. N° 023-2001-SA lists II A, III A, III B and III C). Matching is accent-insensitive and whole-word based against the drug and concept display names. Set to an empty array to disable the warning.',
+    _default: DEFAULT_SPECIAL_PRESCRIPTION_DRUG_NAMES,
+    _elements: {
+      _type: Type.String,
+    },
+  },
 };
 
 export interface ConfigObject {
@@ -106,4 +116,5 @@ export interface ConfigObject {
   durationUnitsDaysMap: Record<string, number>;
   outpatientDurationUnitUuids: Array<string>;
   drugCategoryConceptSets: Array<string>;
+  specialPrescriptionDrugNames: Array<string>;
 }

@@ -844,3 +844,34 @@ describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 });
+
+describe('special prescription warning', () => {
+  const morphineDrug = {
+    uuid: 'morphine-drug-uuid',
+    display: 'Morfina clorhidrato 20 mg/mL solución inyectable',
+    name: 'Morfina clorhidrato 20 mg/mL solución inyectable',
+    strength: '20 mg/mL',
+    dosageForm: { display: 'Solución inyectable', uuid: 'injectable-dosage-form-uuid' },
+    concept: { display: 'Morfina', uuid: 'morphine-concept-uuid' },
+  } as unknown as DrugOrderBasketItem['drug'];
+
+  it('warns when the selected drug requires a special prescription', () => {
+    renderDrugOrderForm(createNewOrderBasketItem({ drug: morphineDrug }));
+
+    expect(screen.getByText(/requires a special prescription/i)).toBeInTheDocument();
+    expect(screen.getByText(/023-2001-SA/)).toBeInTheDocument();
+  });
+
+  it('does not warn for drugs outside the special prescription list', () => {
+    renderDrugOrderForm(createNewOrderBasketItem());
+
+    expect(screen.queryByText(/requires a special prescription/i)).not.toBeInTheDocument();
+  });
+
+  it('does not warn when the configured substance list is empty', () => {
+    mockUseConfig.mockReturnValue({ ...defaultConfig, specialPrescriptionDrugNames: [] });
+    renderDrugOrderForm(createNewOrderBasketItem({ drug: morphineDrug }));
+
+    expect(screen.queryByText(/requires a special prescription/i)).not.toBeInTheDocument();
+  });
+});

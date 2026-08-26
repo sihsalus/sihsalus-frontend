@@ -129,6 +129,8 @@
   "selectQuantityUnitsErrorMessage": "La unidad de cantidad es obligatoria",
   "selectRouteErrorMessage": "La vía de administración es obligatoria",
   "selectUnitErrorMessage": "La unidad de dosis es obligatoria",
+  "specialPrescriptionRequired": "Este medicamento requiere receta especial",
+  "specialPrescriptionRequiredSubtitle": "{{substance}} figura en el listado de estupefacientes y psicotrópicos sujetos a fiscalización sanitaria (D.S. N.º 023-2001-SA). Debe prescribirse en receta especial numerada.",
   "startDate": "Fecha de inicio",
   "subCategories": "Categorías",
   "takeAsNeeded": "Tomar según sea necesario",

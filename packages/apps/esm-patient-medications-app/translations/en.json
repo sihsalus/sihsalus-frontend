@@ -128,6 +128,8 @@
   "selectQuantityUnitsErrorMessage": "Quantity unit is required",
   "selectRouteErrorMessage": "Route is required",
   "selectUnitErrorMessage": "Dose unit is required",
+  "specialPrescriptionRequired": "This medication requires a special prescription",
+  "specialPrescriptionRequiredSubtitle": "{{substance}} is listed as a narcotic or psychotropic substance subject to sanitary control (D.S. N° 023-2001-SA). It must be prescribed on a numbered special prescription form.",
   "startDate": "Start date",
   "subCategories": "Categories",
   "takeAsNeeded": "Take as needed",

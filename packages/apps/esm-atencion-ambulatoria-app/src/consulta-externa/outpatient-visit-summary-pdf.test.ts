@@ -34,12 +34,13 @@ const patientInstructionsLabels: OutpatientPatientInstructionsPdfLabels = {
   instructions: 'Indicaciones',
   indicatedFollowUpDate: 'Fecha de control indicada',
   therapeuticIndications: 'Indicaciones terapéuticas',
-  medications: 'Receta',
-  legacyPrescriptions: 'Receta',
+  medications: 'Medicamentos indicados',
+  legacyPrescriptions: 'Medicamentos indicados',
+  signatureAndStamp: 'Firma y sello del profesional responsable',
   generatedAt: 'Generado',
   page: 'Página',
   followUpDateDisclaimer:
-    'La fecha de control indicada no confirma una cita programada. Confirme la reserva con el establecimiento de salud.',
+    'La fecha de control indicada no confirma una cita programada. Esta hoja no sustituye una receta válida para dispensación.',
 };
 
 const scheduledAppointment: OutpatientScheduledAppointment = {
@@ -240,12 +241,15 @@ describe('outpatient visit summary PDF', () => {
       expect(renderedText).toContain('Consultorio 1');
       expect(renderedText).toContain('Dra. Próxima');
       expect(renderedText).toContain('Fecha de control indicada');
+      expect(renderedText).toContain('Medicamentos indicados');
+      expect(renderedText).toContain('Firma y sello del profesional responsable');
       expect(renderedText).toContain('Paracetamol');
       expect(renderedText).toContain('500 mg');
       expect(renderedText).toContain('DNI: 00000000');
       expect(renderedText).not.toContain('ALT-0001');
       expect(renderedText).not.toContain('LEGACY QUE NO DEBE IMPRIMIRSE');
       expect(renderedText).toContain('no confirma una cita programada');
+      expect(renderedText).toContain('no sustituye una receta válida');
     } finally {
       drawText.mockRestore();
     }

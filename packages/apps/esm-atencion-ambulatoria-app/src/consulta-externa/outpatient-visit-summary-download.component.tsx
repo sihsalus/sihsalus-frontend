@@ -147,7 +147,7 @@ function getPatientInstructionsLabels(
 ): OutpatientPatientInstructionsPdfLabels {
   const documentDisclaimer = t(
     'outpatientPatientInstructionsDisclaimer',
-    'Documento generado desde el registro clínico electrónico de esta atención ambulatoria. Siga las indicaciones del personal de salud y consulte al establecimiento si tiene dudas.',
+    'Hoja informativa generada desde el registro clínico electrónico de esta atención ambulatoria. Debe ser revisada, firmada y sellada por el profesional responsable antes de entregarla al paciente. No sustituye una receta médica o electrónica válida para dispensación.',
   );
   return {
     title: t('outpatientPatientInstructions', 'Indicaciones para el paciente'),
@@ -165,8 +165,9 @@ function getPatientInstructionsLabels(
     scheduledAppointmentProfessional: t('outpatientPatientInstructionsScheduledAppointmentProfessional', 'Profesional'),
     indicatedFollowUpDate: t('outpatientPatientInstructionsControlDate', 'Fecha de control indicada'),
     therapeuticIndications: t('therapeuticIndications', 'Indicaciones terapéuticas'),
-    medications: t('outpatientPatientPrescription', 'Receta'),
-    legacyPrescriptions: t('outpatientPatientPrescription', 'Receta'),
+    medications: t('outpatientPatientMedications', 'Medicamentos indicados'),
+    legacyPrescriptions: t('outpatientPatientMedications', 'Medicamentos indicados'),
+    signatureAndStamp: t('outpatientPatientInstructionsSignatureAndStamp', 'Firma y sello del profesional responsable'),
     generatedAt: t('generatedAt', 'Generado'),
     page: t('page', 'Página'),
     followUpDateDisclaimer: includesIndicatedFollowUpDate
@@ -423,7 +424,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
           getErrorTitle('patient-instructions'),
           t(
             'outpatientPatientInstructionsNoData',
-            'Registre una fecha de control, indicaciones terapéuticas o una receta antes de imprimir este documento.',
+            'Registre una fecha de control, indicaciones terapéuticas o medicamentos antes de imprimir este documento.',
           ),
         );
         return;
@@ -444,7 +445,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
             getErrorTitle('patient-instructions'),
             t(
               'outpatientPatientInstructionsNoData',
-              'Registre una fecha de control, indicaciones terapéuticas o una receta antes de imprimir este documento.',
+              'Registre una fecha de control, indicaciones terapéuticas o medicamentos antes de imprimir este documento.',
             ),
           );
           return;
@@ -469,7 +470,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
             getErrorTitle('patient-instructions'),
             t(
               'outpatientPatientInstructionsNoData',
-              'Registre una fecha de control, indicaciones terapéuticas o una receta antes de imprimir este documento.',
+              'Registre una fecha de control, indicaciones terapéuticas o medicamentos antes de imprimir este documento.',
             ),
           );
           return;

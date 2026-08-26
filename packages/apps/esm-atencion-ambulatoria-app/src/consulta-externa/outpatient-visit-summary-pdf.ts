@@ -100,6 +100,7 @@ export interface OutpatientPatientInstructionsPdfLabels {
   therapeuticIndications: string;
   medications: string;
   legacyPrescriptions: string;
+  signatureAndStamp: string;
   generatedAt: string;
   page: string;
   followUpDateDisclaimer: string;
@@ -276,6 +277,29 @@ function drawOrderList(state: PdfState, title: string, orders: OutpatientSummary
     const details = [order.name, order.details, order.orderer].filter(Boolean).join(' — ');
     drawLines(state, wrapText(`• ${details}`, state.fonts.regular, BODY_SIZE, CONTENT_WIDTH), { indent: 4 });
   });
+}
+
+function drawSignatureAndStampBlock(state: PdfState, label: string): void {
+  const lineWidth = 240;
+  const lineStart = (PAGE_WIDTH - lineWidth) / 2;
+  ensureSpace(state, 135);
+  state.y -= 54;
+  state.page.drawLine({
+    start: { x: lineStart, y: state.y },
+    end: { x: lineStart + lineWidth, y: state.y },
+    thickness: 0.7,
+    color: state.colors.line,
+  });
+  state.y -= LINE_HEIGHT;
+  const safeLabel = safePdfText(label, state.fonts.bold);
+  state.page.drawText(safeLabel, {
+    x: (PAGE_WIDTH - state.fonts.bold.widthOfTextAtSize(safeLabel, BODY_SIZE)) / 2,
+    y: state.y,
+    size: BODY_SIZE,
+    font: state.fonts.bold,
+    color: state.colors.text,
+  });
+  state.y -= 18;
 }
 
 function formatDate(value: string | null | undefined, locale: string): string {
@@ -581,6 +605,8 @@ export async function createOutpatientPatientInstructionsPdf(
       wrapText(summary.treatment.legacyPrescriptions as string, state.fonts.regular, BODY_SIZE, CONTENT_WIDTH),
     );
   }
+
+  drawSignatureAndStampBlock(state, labels.signatureAndStamp);
 
   drawPdfFooter(
     state,

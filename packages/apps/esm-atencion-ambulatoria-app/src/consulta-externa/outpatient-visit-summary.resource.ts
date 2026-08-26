@@ -13,8 +13,10 @@ const VISIT_SUMMARY_REPRESENTATION =
   'diagnoses:(uuid,display,voided,certainty,rank,diagnosis:(coded:(uuid,display,mappings:(display)),nonCoded)),' +
   'obs:(uuid,voided,concept:(uuid,display),value,display,formFieldNamespace,formFieldPath),' +
   'orders:(uuid,voided,action,previousOrder:(uuid),orderType:(uuid,display),concept:(uuid,display),' +
+  'orderReasonNonCoded,' +
   'drug:(uuid,display,strength),dose,doseUnits:(uuid,display),route:(uuid,display),frequency:(uuid,display),' +
-  'duration,durationUnits:(uuid,display),quantity,quantityUnits:(uuid,display),dosingInstructions,instructions,' +
+  'asNeeded,asNeededCondition,duration,durationUnits:(uuid,display),quantity,quantityUnits:(uuid,display),numRefills,' +
+  'dosingInstructions,instructions,' +
   'dateStopped,autoExpireDate,' +
   'orderer:(uuid,display,person:(uuid,display)))))';
 
@@ -52,15 +54,19 @@ interface VisitSummaryOrder {
   previousOrder?: OpenmrsRef;
   orderType?: OpenmrsRef;
   concept?: OpenmrsRef;
+  orderReasonNonCoded?: string | null;
   drug?: OpenmrsRef & { strength?: string };
   dose?: number;
   doseUnits?: OpenmrsRef;
   route?: OpenmrsRef;
   frequency?: OpenmrsRef;
+  asNeeded?: boolean;
+  asNeededCondition?: string | null;
   duration?: number;
   durationUnits?: OpenmrsRef;
   quantity?: number;
   quantityUnits?: OpenmrsRef;
+  numRefills?: number | null;
   dosingInstructions?: string;
   instructions?: string;
   dateStopped?: string | null;
@@ -122,6 +128,10 @@ export interface OutpatientSummaryOrder {
   name: string;
   details: string | null;
   orderer: string | null;
+  asNeeded: boolean;
+  asNeededCondition: string | null;
+  orderReasonNonCoded: string | null;
+  numRefills: number | null;
   dateStopped?: string | null;
   autoExpireDate?: string | null;
 }
@@ -405,6 +415,13 @@ function mapOrders(encounters: VisitSummaryEncounter[]): OutpatientSummaryOrder[
         name,
         details: orderDetails(order),
         orderer: order.orderer?.person?.display ?? order.orderer?.display ?? null,
+        asNeeded: order.asNeeded === true,
+        asNeededCondition: order.asNeeded === true ? order.asNeededCondition?.trim() || null : null,
+        orderReasonNonCoded: order.orderReasonNonCoded?.trim() || null,
+        numRefills:
+          typeof order.numRefills === 'number' && Number.isInteger(order.numRefills) && order.numRefills >= 0
+            ? order.numRefills
+            : null,
         dateStopped: order.dateStopped ?? null,
         autoExpireDate: order.autoExpireDate ?? null,
       },

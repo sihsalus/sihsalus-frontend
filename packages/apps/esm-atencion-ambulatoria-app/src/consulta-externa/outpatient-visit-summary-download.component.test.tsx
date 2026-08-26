@@ -210,6 +210,12 @@ describe('OutpatientVisitSummaryDownload', () => {
       expect.objectContaining({
         indicatedFollowUpDate: 'Fecha de control indicada',
         medications: 'Medicamentos indicados',
+        medicationAsNeeded: 'Según necesidad (PRN)',
+        medicationAsNeededReasonMissing: 'Según necesidad (PRN; motivo no registrado)',
+        medicationIndication: 'Indicación',
+        medicationNumberOfRefills: 'Número de renovaciones',
+        followUpDateDisclaimer:
+          'Hoja informativa generada desde el registro clínico electrónico de esta atención ambulatoria. Debe ser revisada, firmada y sellada por el profesional responsable antes de entregarla al paciente. No sustituye una receta médica o electrónica válida para dispensación.',
         signatureAndStamp: 'Firma y sello del profesional responsable',
         therapeuticIndications: 'Indicaciones terapéuticas',
       }),

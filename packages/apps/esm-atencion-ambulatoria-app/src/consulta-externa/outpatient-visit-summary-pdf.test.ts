@@ -36,6 +36,10 @@ const patientInstructionsLabels: OutpatientPatientInstructionsPdfLabels = {
   therapeuticIndications: 'Indicaciones terapéuticas',
   medications: 'Medicamentos indicados',
   legacyPrescriptions: 'Medicamentos indicados',
+  medicationAsNeeded: 'Según necesidad (PRN)',
+  medicationAsNeededReasonMissing: 'Según necesidad (PRN; motivo no registrado)',
+  medicationIndication: 'Indicación',
+  medicationNumberOfRefills: 'Número de renovaciones',
   signatureAndStamp: 'Firma y sello del profesional responsable',
   generatedAt: 'Generado',
   page: 'Página',
@@ -138,6 +142,10 @@ const summary: OutpatientVisitSummary = {
       name: 'Paracetamol',
       details: '500 mg',
       orderer: 'Dra. Demo',
+      asNeeded: false,
+      asNeededCondition: null,
+      orderReasonNonCoded: null,
+      numRefills: null,
     },
   ],
   hasRecordedMedicationOrders: true,
@@ -279,6 +287,84 @@ describe('outpatient visit summary PDF', () => {
     }
   });
 
+  it('prints the PRN indication and its recorded reason with the medication', async () => {
+    const { PDFPage } = await import('pdf-lib');
+    const drawText = vi.spyOn(PDFPage.prototype, 'drawText');
+
+    try {
+      await createOutpatientPatientInstructionsPdf(
+        {
+          ...summary,
+          orders: summary.orders.map((order) => ({
+            ...order,
+            asNeeded: true,
+            asNeededCondition: 'dolor o fiebre',
+          })),
+        },
+        patientInstructionsLabels,
+        'es-PE',
+      );
+      const renderedText = drawText.mock.calls.map(([text]) => text).join('\n');
+
+      expect(renderedText).toContain('Según necesidad (PRN): dolor o fiebre');
+    } finally {
+      drawText.mockRestore();
+    }
+  });
+
+  it('prints the medication indication and zero renewals without changing the dispensing disclaimer', async () => {
+    const { PDFPage } = await import('pdf-lib');
+    const drawText = vi.spyOn(PDFPage.prototype, 'drawText');
+
+    try {
+      await createOutpatientPatientInstructionsPdf(
+        {
+          ...summary,
+          orders: summary.orders.map((order) => ({
+            ...order,
+            orderReasonNonCoded: 'Cefalea',
+            numRefills: 0,
+          })),
+        },
+        patientInstructionsLabels,
+        'es-PE',
+      );
+      const renderedText = drawText.mock.calls.map(([text]) => text).join('\n');
+
+      expect(renderedText).toContain('Indicación: Cefalea');
+      expect(renderedText).toContain('Número de renovaciones: 0');
+      expect(renderedText).toContain('no sustituye una receta válida');
+    } finally {
+      drawText.mockRestore();
+    }
+  });
+
+  it('does not print PRN copy or a stale condition for a scheduled medication', async () => {
+    const { PDFPage } = await import('pdf-lib');
+    const drawText = vi.spyOn(PDFPage.prototype, 'drawText');
+
+    try {
+      await createOutpatientPatientInstructionsPdf(
+        {
+          ...summary,
+          orders: summary.orders.map((order) => ({
+            ...order,
+            asNeeded: false,
+            asNeededCondition: 'CONDICIÓN PRN OBSOLETA',
+          })),
+        },
+        patientInstructionsLabels,
+        'es-PE',
+      );
+      const renderedText = drawText.mock.calls.map(([text]) => text).join('\n');
+
+      expect(renderedText).not.toContain('Según necesidad (PRN)');
+      expect(renderedText).not.toContain('CONDICIÓN PRN OBSOLETA');
+    } finally {
+      drawText.mockRestore();
+    }
+  });
+
   it('uses the legacy prescription only when canonical medication orders are absent', async () => {
     const legacyOnlySummary: OutpatientVisitSummary = {
       ...summary,
@@ -336,6 +422,10 @@ describe('outpatient visit summary PDF', () => {
           name: 'Medicamento suspendido',
           details: null,
           orderer: null,
+          asNeeded: false,
+          asNeededCondition: null,
+          orderReasonNonCoded: null,
+          numRefills: null,
           dateStopped: '2000-01-01T00:00:00.000Z',
         },
         {
@@ -344,6 +434,10 @@ describe('outpatient visit summary PDF', () => {
           name: 'Medicamento activo',
           details: 'Una tableta',
           orderer: null,
+          asNeeded: false,
+          asNeededCondition: null,
+          orderReasonNonCoded: null,
+          numRefills: null,
           autoExpireDate: '2999-01-01T00:00:00.000Z',
         },
       ],
@@ -385,6 +479,10 @@ describe('outpatient visit summary PDF', () => {
           name: 'Hemograma',
           details: null,
           orderer: null,
+          asNeeded: false,
+          asNeededCondition: null,
+          orderReasonNonCoded: null,
+          numRefills: null,
         },
       ],
       hasRecordedMedicationOrders: false,
@@ -412,6 +510,10 @@ describe('outpatient visit summary PDF', () => {
             name: 'Medicamento vencido',
             details: null,
             orderer: null,
+            asNeeded: false,
+            asNeededCondition: null,
+            orderReasonNonCoded: null,
+            numRefills: null,
             autoExpireDate: '2000-01-01T00:00:00.000Z',
           },
         ],
@@ -440,6 +542,10 @@ describe('outpatient visit summary PDF', () => {
             name: 'Paracetamol',
             details: null,
             orderer: null,
+            asNeeded: false,
+            asNeededCondition: null,
+            orderReasonNonCoded: null,
+            numRefills: null,
           },
         ],
       }),

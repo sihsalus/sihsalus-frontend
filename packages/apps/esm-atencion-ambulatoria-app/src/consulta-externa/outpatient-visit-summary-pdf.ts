@@ -12,7 +12,14 @@ const CONTENT_WIDTH = PAGE_WIDTH - PAGE_MARGIN * 2;
 const BODY_SIZE = 9;
 const LINE_HEIGHT = 13;
 
-export interface OutpatientVisitSummaryPdfLabels {
+interface OutpatientMedicationOrderPdfLabels {
+  medicationAsNeeded: string;
+  medicationAsNeededReasonMissing: string;
+  medicationIndication: string;
+  medicationNumberOfRefills: string;
+}
+
+export interface OutpatientVisitSummaryPdfLabels extends OutpatientMedicationOrderPdfLabels {
   title: string;
   patient: string;
   identifiers: string;
@@ -82,7 +89,7 @@ export interface OutpatientVisitSummaryPdfLabels {
   disclaimer: string;
 }
 
-export interface OutpatientPatientInstructionsPdfLabels {
+export interface OutpatientPatientInstructionsPdfLabels extends OutpatientMedicationOrderPdfLabels {
   title: string;
   patient: string;
   identifiers: string;
@@ -272,11 +279,32 @@ function drawField(state: PdfState, label: string, value: string | null | undefi
   });
 }
 
-function drawOrderList(state: PdfState, title: string, orders: OutpatientSummaryOrder[]): void {
+function drawOrderList(
+  state: PdfState,
+  title: string,
+  orders: OutpatientSummaryOrder[],
+  medicationLabels?: OutpatientMedicationOrderPdfLabels,
+): void {
   if (!orders.length) return;
   drawSectionTitle(state, title);
   orders.forEach((order) => {
-    const details = [order.name, order.details, order.orderer].filter(Boolean).join(' — ');
+    const asNeededDetails =
+      order.asNeeded && medicationLabels
+        ? order.asNeededCondition
+          ? `${medicationLabels.medicationAsNeeded}: ${order.asNeededCondition}`
+          : medicationLabels.medicationAsNeededReasonMissing
+        : null;
+    const indicationDetails =
+      medicationLabels && order.orderReasonNonCoded
+        ? `${medicationLabels.medicationIndication}: ${order.orderReasonNonCoded}`
+        : null;
+    const refillDetails =
+      medicationLabels && typeof order.numRefills === 'number'
+        ? `${medicationLabels.medicationNumberOfRefills}: ${order.numRefills}`
+        : null;
+    const details = [order.name, order.details, indicationDetails, asNeededDetails, refillDetails, order.orderer]
+      .filter(Boolean)
+      .join(' — ');
     drawLines(state, wrapText(`• ${details}`, state.fonts.regular, BODY_SIZE, CONTENT_WIDTH), { indent: 4 });
   });
 }
@@ -558,6 +586,7 @@ export async function createOutpatientVisitSummaryPdf(
     state,
     labels.medications,
     summary.orders.filter((order) => order.category === 'medication'),
+    labels,
   );
   drawOrderList(
     state,
@@ -617,7 +646,7 @@ export async function createOutpatientPatientInstructionsPdf(
 
   const medicationOrders = getCanonicalMedicationOrders(summary);
   if (medicationOrders.length) {
-    drawOrderList(state, labels.medications, medicationOrders);
+    drawOrderList(state, labels.medications, medicationOrders, labels);
   } else if (!hasRecordedCanonicalMedicationOrders(summary) && hasText(summary.treatment.legacyPrescriptions)) {
     drawSectionTitle(state, labels.legacyPrescriptions);
     drawLines(

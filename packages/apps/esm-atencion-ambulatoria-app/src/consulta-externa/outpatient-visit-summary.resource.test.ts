@@ -193,6 +193,9 @@ describe('outpatient visit summary contract', () => {
     expect(representation).toContain('diagnoses:(');
     expect(representation).toContain('orders:(');
     expect(representation).toContain('previousOrder:(uuid)');
+    expect(representation).toContain('orderReasonNonCoded');
+    expect(representation).toContain('asNeeded,asNeededCondition');
+    expect(representation).toContain('numRefills');
     expect(representation).toContain('dateStopped,autoExpireDate');
   });
 
@@ -301,6 +304,105 @@ describe('outpatient visit summary contract', () => {
         uuid: 'concept-only-medication',
         category: 'medication',
         name: 'Hierro',
+      }),
+    ]);
+  });
+
+  it('maps a PRN medication and its reason as distinct printable fields', () => {
+    const originalEncounter = source.encounters?.[0];
+    if (!originalEncounter) throw new Error('The synthetic fixture requires an encounter.');
+    const summary = build({
+      source: {
+        ...source,
+        encounters: [
+          {
+            ...originalEncounter,
+            orders: [
+              {
+                uuid: 'prn-medication',
+                drug: { uuid: 'drug-uuid', display: 'Paracetamol 500 mg' },
+                orderType: { uuid: 'drug-order-type', display: 'Drug Order' },
+                dose: 1,
+                doseUnits: { uuid: 'tablet', display: 'tableta' },
+                asNeeded: true,
+                asNeededCondition: 'Dolor o fiebre',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(summary.orders).toEqual([
+      expect.objectContaining({
+        uuid: 'prn-medication',
+        asNeeded: true,
+        asNeededCondition: 'Dolor o fiebre',
+        details: '1 tableta',
+      }),
+    ]);
+  });
+
+  it('maps the medication indication and zero refills without conflating them', () => {
+    const originalEncounter = source.encounters?.[0];
+    if (!originalEncounter) throw new Error('The synthetic fixture requires an encounter.');
+    const summary = build({
+      source: {
+        ...source,
+        encounters: [
+          {
+            ...originalEncounter,
+            orders: [
+              {
+                uuid: 'medication-with-instructions',
+                drug: { uuid: 'drug-uuid', display: 'Paracetamol 500 mg' },
+                orderType: { uuid: 'drug-order-type', display: 'Drug Order' },
+                orderReasonNonCoded: ' Cefalea ',
+                numRefills: 0,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(summary.orders).toEqual([
+      expect.objectContaining({
+        uuid: 'medication-with-instructions',
+        orderReasonNonCoded: 'Cefalea',
+        numRefills: 0,
+      }),
+    ]);
+  });
+
+  it('does not carry a stale PRN reason when the medication is not marked as needed', () => {
+    const originalEncounter = source.encounters?.[0];
+    if (!originalEncounter) throw new Error('The synthetic fixture requires an encounter.');
+    const summary = build({
+      source: {
+        ...source,
+        encounters: [
+          {
+            ...originalEncounter,
+            orders: [
+              {
+                uuid: 'scheduled-medication',
+                drug: { uuid: 'drug-uuid', display: 'Amoxicilina 500 mg' },
+                orderType: { uuid: 'drug-order-type', display: 'Drug Order' },
+                asNeeded: false,
+                asNeededCondition: 'Texto obsoleto que no debe imprimirse',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(summary.orders).toEqual([
+      expect.objectContaining({
+        uuid: 'scheduled-medication',
+        asNeeded: false,
+        asNeededCondition: null,
       }),
     ]);
   });

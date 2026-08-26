@@ -29,7 +29,7 @@ export function useClinicalHistoryPagination<T>(url: string | null) {
 interface DatedEncounter {
   encounterDatetime: string;
   form?: string | { uuid?: string } | null;
-  visit?: string | { visitType?: string | { uuid?: string } | null } | null;
+  visit?: string | { uuid?: string; visitType?: string | { uuid?: string } | null } | null;
   uuid?: string;
 }
 

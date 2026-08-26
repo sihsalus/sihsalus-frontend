@@ -49,7 +49,23 @@ function getIdentifierLabel(identifier: fhir.Identifier): string {
   );
 }
 
-function toSummaryPatient(patient: fhir.Patient): OutpatientSummaryPatient | null {
+function formatPatientAddress(patient: fhir.Patient): string | null {
+  const address = patient.address?.find((candidate) => candidate.use === 'home') ?? patient.address?.[0];
+  if (!address) return null;
+  const parts = [
+    ...(address.line ?? []),
+    address.district,
+    address.city,
+    address.state,
+    address.postalCode,
+    address.country,
+  ]
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part));
+  return [...new Set(parts)].join(', ') || null;
+}
+
+export function toSummaryPatient(patient: fhir.Patient): OutpatientSummaryPatient | null {
   if (!patient.id) return null;
   const name = formatDeceasedName(patient);
   if (!name) return null;
@@ -63,6 +79,7 @@ function toSummaryPatient(patient: fhir.Patient): OutpatientSummaryPatient | nul
     identifiers,
     birthDate: patient.birthDate ?? null,
     gender: patient.gender ?? null,
+    address: formatPatientAddress(patient),
   };
 }
 

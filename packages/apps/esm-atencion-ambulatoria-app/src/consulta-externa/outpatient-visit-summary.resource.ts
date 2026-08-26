@@ -105,6 +105,7 @@ export interface OutpatientSummaryPatient {
   identifiers: Array<{ label: string; value: string }>;
   birthDate: string | null;
   gender: string | null;
+  address?: string | null;
 }
 
 export interface OutpatientSummaryDiagnosis {

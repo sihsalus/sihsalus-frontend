@@ -24,7 +24,7 @@ vi.mock('./plan-tratamiento.component', () => ({
   default: () => <div>Treatment plan panel</div>,
 }));
 vi.mock('./referencia-contrarreferencia.component', () => ({
-  default: () => <div>Referral panel</div>,
+  default: () => <div>Referral and counter-referral panel</div>,
 }));
 vi.mock('./sis-financing-warning.component', () => ({ default: () => null }));
 
@@ -64,8 +64,7 @@ describe('ConsultaExternaDashboard', () => {
     expect(screen.queryByText('Diagnosis panel')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Referencia / Contrarreferencia' }));
-    expect(screen.getByText('Referral panel')).toBeVisible();
+    expect(screen.getByText('Referral and counter-referral panel')).toBeVisible();
     expect(screen.queryByText('Treatment plan panel')).not.toBeInTheDocument();
-
   });
 });

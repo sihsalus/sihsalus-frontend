@@ -59,7 +59,7 @@ Recurso base: **Order** con order type `Interconsulta` (`f3c2e4b6-8b5a-11e5-8e9b
 | Rechazada               | `fulfillerStatus = DECLINED` + `fulfillerComment` = motivo              |
 | Cancelada               | orden descontinuada (`dateStopped`) por el solicitante                  |
 
-- **Crear desde la canasta**: el workspace agrega una orden completa al estado compartido de Order Basket; `Firmar y cerrar` la publica junto con las demás órdenes en el encounter de órdenes de la visita.
+- **Crear desde la canasta**: el workspace agrega una orden completa al estado compartido de Order Basket, incluido el `careSetting` configurado; `Firmar y cerrar` la publica junto con las demás órdenes en el encounter de órdenes de la visita. Si falta ese dato obligatorio, el transformador bloquea el envío en vez de publicar una orden incompleta.
 - **Crear desde la acción directa del chart**: `POST encounter` (tipo `Interconsulta — NTS 102`, `e4834799-…`) dentro de la visita activa + `POST order`.
 - **Bandeja**: `GET order?orderTypes={uuid}&v=custom:(…)` — filtrado por estado/servicio/location en cliente (el REST API no permite filtrar `fulfillerStatus null` ni combinar DECLINED+canceladas en una consulta).
 - **Responder**: `POST encounter/{order.encounter.uuid}` con `obs: [{concept: respuesta, value, order: {uuid}}]` (mismo patrón que los resultados de laboratorio) y luego `fulfillerdetails → COMPLETED`. El profesional que responde queda auditado como creador de las obs y del cambio (`auditInfo`).

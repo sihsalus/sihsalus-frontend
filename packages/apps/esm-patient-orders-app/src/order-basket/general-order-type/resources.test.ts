@@ -39,4 +39,27 @@ describe('general order resources', () => {
       urgency: 'ROUTINE',
     });
   });
+
+  it('uses the care setting carried by a custom order basket item', () => {
+    const order = {
+      ...createEmptyOrder(concept, 'provider-uuid', orderTypeUuid),
+      careSetting: 'outpatient-care-setting',
+      urgencyCode: 'ROUTINE',
+    } as OrderBasketItem;
+
+    expect(prepOrderPostData(order, 'patient-uuid', 'encounter-uuid')).toMatchObject({
+      careSetting: 'outpatient-care-setting',
+      encounter: 'encounter-uuid',
+      orderType: orderTypeUuid,
+      patient: 'patient-uuid',
+    });
+  });
+
+  it('fails closed when neither configuration nor the basket item supplies a care setting', () => {
+    const order = createEmptyOrder(concept, 'provider-uuid', orderTypeUuid);
+
+    expect(() => prepOrderPostData(order, 'patient-uuid', 'encounter-uuid')).toThrow(
+      'A care setting is required to submit a general order.',
+    );
+  });
 });

@@ -10,6 +10,7 @@ Los permisos de lectura protegen los puntos de entrada y mantienen visibles los 
 | ----------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------- |
 | Consulta externa e historia médica        | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar`                                             |
 | Formularios AMPATH de Consulta Externa    | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.formulariosClinicos`    |
+| Hoja de Referencia Institucional nativa   | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar`                                             |
 | Diagnóstico/plan desde Consulta Externa   | `app:hoja.clinica.consultaExterna` | `app:hoja.clinica.consultaExterna.editar` + `app:hoja.clinica.resumenConsulta.editar` |
 | Historia social                           | `app:hoja.clinica.historiaSocial`  | `app:hoja.clinica.historiaSocial.editar`                                              |
 | Prescripción desde el plan de tratamiento | Entrada por Consulta Externa       | `app:hoja.clinica.canastaOrdenes` + `app:hoja.clinica.ordenes.editar`                 |
@@ -26,7 +27,7 @@ La acción **Registrar Diagnóstico** abre el workspace de Visit Notes, que pers
 
 Con `showSisFinancingWarning: true` (apagada por defecto), el dashboard de consulta externa muestra una advertencia no bloqueante cuando la visita activa no tiene financiador definido o el SIS no está vigente, con la misma semántica que el gating de triaje (`getSisFinancingState` sobre los visit attributes canónicos de `@openmrs/esm-patient-common-lib`). Si el usuario tiene `app:home.facturacion`, la advertencia ofrece la acción "Ir a Caja"; sin ese privilegio solo informa. La atención clínica nunca se bloquea: el hard-stop permanece en el flujo de FUA (ver `docs/clinical/plan-alineamiento-seguros-sis.md`).
 
-La pestaña **Referencia / Contrarreferencia** lee exclusivamente encounters de `encounterTypes.referralCounterReferral`. Las interconsultas basadas en órdenes no pertenecen a ese historial; se solicitan y consultan desde `esm-interconsultas-app`.
+La pestaña **Referencia / Contrarreferencia** lee exclusivamente encounters de `encounterTypes.referralCounterReferral` y contiene dos vistas independientes: **Referencias emitidas** y **Contrarreferencias recibidas**. El filtro de cada flujo se aplica antes de la paginación; una respuesta de contrarreferencia permanece asociada al encounter de su referencia y no se crea como un registro suelto. Las interconsultas basadas en órdenes no pertenecen a ese historial; se solicitan y consultan desde `esm-interconsultas-app`.
 
 ## TODO content/backend
 
@@ -36,11 +37,13 @@ La pestaña **Referencia / Contrarreferencia** lee exclusivamente encounters de 
 - Confirmar que los datos de triaje provengan del encounter type correcto y no se mezclen con vitales de otros flujos.
 - Documentar qué formularios de consulta externa crean encounter nuevo y cuáles deben editar el encounter clínico actual.
 
-Los valores de `formsList` para consulta externa usan los nombres estables publicados por content (`CE-001-CONSULTA EXTERNA`, `CE-ANAM-001-ANAMNESIS`, `CE-SOAP-001-NOTA SOAP` y `CE-REF-001-REFERENCIA-CONTRARREFERENCIA`). No deben reemplazarse por los UUID de los archivos de esquema, porque esos UUID pueden variar entre entornos.
+Los valores de `formsList` para consulta externa usan los nombres estables publicados por content (`CE-001-CONSULTA EXTERNA`, `CE-ANAM-001-ANAMNESIS`, `CE-SOAP-001-NOTA SOAP` y `CE-REF-001-REFERENCIA-CONTRARREFERENCIA`). No deben reemplazarse por los UUID de los archivos de esquema, porque esos UUID pueden variar entre entornos. Consulta Externa registra nuevas referencias mediante el workspace nativo **Hoja de Referencia Institucional**; el esquema AMPATH se conserva solo como compatibilidad de captura básica y no es el punto de entrada de Consulta Externa.
 
 El dashboard muestra una cabecera compacta propia para garantizar que `Consulta Externa` se traduzca en el namespace del módulo. El orden operativo de las pestañas sigue el flujo clínico: Triajes previos, Anamnesis, Examen físico / SOAP, Diagnóstico, Plan de Tratamiento y Referencia / Contrarreferencia.
 
-Anamnesis y SOAP son únicos por visita ambulatoria: cero coincidencias crea, una edita y más de una bloquea. Referencia es repetible porque cada derivación es un evento clínico independiente; siempre crea un encounter nuevo, pero siempre adjunto a la visita ambulatoria verificada.
+Anamnesis y SOAP son únicos por visita ambulatoria: cero coincidencias crea, una edita y más de una bloquea. Referencia es repetible porque cada derivación es un evento clínico independiente; el workspace crea un encounter nuevo adjunto a la visita ambulatoria verificada y persiste únicamente destino, especialidad, prioridad, condición de salida, transporte y motivo. Paciente, visita, triaje, diagnósticos, tratamiento y profesional no se duplican.
+
+El catálogo inicial de destinos se configura en `referralDestinations` con nombre y código RENIPRESS; la selección conserva ambos en el encounter histórico. La exportación **Hoja de Referencia Institucional** se genera localmente a partir de la visita y deja vacíos para llenado manual los bloques de responsable de la referencia, responsable del establecimiento, personal que acompaña, personal que recibe, firmas y sellos.
 
 ## Resumen de atención ambulatoria
 

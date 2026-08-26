@@ -48,5 +48,40 @@ describe('fetchPrestacionalConceptsByName', () => {
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(
       expect.stringContaining('/concept?q=Codigos%20Prestacionales&searchType=fuzzy'),
     );
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(expect.stringContaining('setMembers:(uuid,display,conceptMappings:'));
+  });
+
+  it('permite buscar por el codigo prestacional guardado en el mapping del concepto', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          {
+            uuid: 'catalog',
+            display: 'Codigos Prestacionales',
+            setMembers: [
+              {
+                uuid: 'prestacional-056',
+                display: 'Consulta externa',
+                conceptMappings: [
+                  {
+                    conceptReferenceTerm: {
+                      code: '056',
+                      conceptSource: { name: 'SIS' },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    await expect(fetchPrestacionalConceptsByName('056', 'Codigos Prestacionales')).resolves.toEqual([
+      expect.objectContaining({
+        uuid: 'prestacional-056',
+        display: 'Consulta externa',
+      }),
+    ]);
   });
 });

@@ -41,28 +41,22 @@ export interface PatientNote {
   encounterProviderRole: string;
 }
 
+export interface ConceptReferenceMapping {
+  display?: string;
+  conceptReferenceTerm?: {
+    code?: string;
+    conceptSource?: {
+      display?: string;
+      name?: string;
+    };
+    display?: string;
+  };
+}
+
 export interface Concept {
   display: string;
-  conceptMappings?: Array<{
-    conceptReferenceTerm?: {
-      code?: string;
-      conceptSource?: {
-        display?: string;
-        name?: string;
-      };
-      display?: string;
-    };
-  }>;
-  mappings?: Array<{
-    conceptReferenceTerm?: {
-      code?: string;
-      conceptSource?: {
-        display?: string;
-        name?: string;
-      };
-      display?: string;
-    };
-  }>;
+  conceptMappings?: Array<ConceptReferenceMapping>;
+  mappings?: Array<ConceptReferenceMapping>;
   setMembers?: Array<Concept>;
   uuid: string;
 }

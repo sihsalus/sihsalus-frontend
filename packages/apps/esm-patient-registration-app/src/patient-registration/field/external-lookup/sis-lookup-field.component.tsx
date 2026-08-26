@@ -156,8 +156,9 @@ export const SisLookupField = () => {
   const [status, setStatus] = useState<LookupStatus | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(true);
   const [verificationMethod, setVerificationMethod] = useState<SisVerificationMethod>('manual-web');
-  const [accreditation, setAccreditation] = useState<SisAccreditationSelection | ''>('');
+  const [accreditation, setAccreditation] = useState<SisAccreditationSelection | ''>(isOffline ? 'pending' : '');
   const [selectedProductUuid, setSelectedProductUuid] = useState('');
+  const [productValidationVisible, setProductValidationVisible] = useState(false);
   const [affiliateCode, setAffiliateCode] = useState('');
   const [eessName, setEessName] = useState('');
 
@@ -285,7 +286,8 @@ export const SisLookupField = () => {
   };
 
   const handleApply = () => {
-    if (!accreditation) {
+    if (!accreditation || !selectedProductUuid) {
+      setProductValidationVisible(true);
       return;
     }
 
@@ -393,15 +395,21 @@ export const SisLookupField = () => {
           <Select
             id="sis-manual-product"
             labelText={t('sisManualProductLabel', 'Producto SIS')}
+            invalid={productValidationVisible && !selectedProductUuid}
+            invalidText={t('sisManualProductRequired', 'Seleccione un producto SIS')}
+            required
             value={selectedProductUuid}
-            onChange={(event) => setSelectedProductUuid(event.target.value)}
+            onChange={(event) => {
+              setSelectedProductUuid(event.target.value);
+              setProductValidationVisible(false);
+            }}
           >
             <SelectItem
               value=""
               text={
                 isLoadingProducts
                   ? t('sisManualProductLoading', 'Cargando productos SIS…')
-                  : t('sisManualProductPlaceholder', 'Seleccione (opcional)')
+                  : t('sisManualProductPlaceholder', 'Seleccione')
               }
             />
             {productAnswers.map((answer) => (

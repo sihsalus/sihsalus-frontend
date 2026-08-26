@@ -51,10 +51,8 @@ export const SectionWrapper = ({ sectionDefinition, index }: SectionWrapperProps
     <div
       aria-invalid={responsibleRelationshipError || undefined}
       className={classNames(styles.sectionAnchor, {
-        [styles.sectionRequiresAttention]: responsibleRelationshipRequired && !responsibleRelationshipError,
         [styles.sectionHasError]: responsibleRelationshipError,
       })}
-      data-requires-attention={responsibleRelationshipRequired || undefined}
       id={sectionDefinition.id}
     >
       <h3 className={styles.productiveHeading02}>

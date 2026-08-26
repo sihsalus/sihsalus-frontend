@@ -213,6 +213,40 @@ describe('outpatient visit summary contract', () => {
     });
   });
 
+  it('continues when a drug detail cannot be enriched', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({
+        data: {
+          uuid: 'visit-uuid',
+          encounters: [
+            {
+              uuid: 'encounter-uuid',
+              encounterDatetime: '2026-08-26T12:00:00.000Z',
+              orders: [
+                {
+                  uuid: 'drug-order-uuid',
+                  drug: { uuid: 'drug-uuid', display: 'Medicamento sintético' },
+                  orderType: { uuid: 'drug-order-type', display: 'Drug Order' },
+                },
+              ],
+            },
+          ],
+        },
+        headers: { get: () => 'Tue, 26 Aug 2026 14:00:00 GMT' },
+      } as unknown as Awaited<ReturnType<typeof openmrsFetch>>)
+      .mockRejectedValueOnce(new Error('no hay permiso para /drug'));
+
+    const result = await fetchOutpatientVisitSummarySource('visit-uuid');
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
+    expect(mockOpenmrsFetch.mock.calls[0]?.[0]).not.toContain('drug:(');
+    expect(mockOpenmrsFetch.mock.calls[1]?.[0]).toContain('/drug/drug-uuid?');
+    expect(result.encounters?.[0]?.orders?.[0]).toMatchObject({
+      uuid: 'drug-order-uuid',
+      drug: { uuid: 'drug-uuid', display: 'Medicamento sintético' },
+    });
+  });
+
   it('enriches only DrugOrder entries when a visit also contains TestOrder entries', async () => {
     mockOpenmrsFetch
       .mockResolvedValueOnce({

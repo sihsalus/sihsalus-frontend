@@ -278,15 +278,17 @@ export async function fetchOutpatientVisitSummarySource(visitUuid: string): Prom
   const drugDetails = new Map<string, OpenmrsRef & { strength?: string }>();
   await Promise.all(
     [...drugUuids.values()].map(async (drugUuid) => {
-      const { data } = await openmrsFetch<OpenmrsRef & { strength?: string }>(
-        `${restBaseUrl}/drug/${encodeURIComponent(drugUuid)}?v=${DRUG_DETAILS_REPRESENTATION}`,
-      );
-      if (!data?.uuid || data.uuid.toLowerCase() !== drugUuid.toLowerCase()) {
-        throw new OutpatientVisitSummaryContractError(
-          'El medicamento no coincide con la orden de la visita solicitada.',
+      try {
+        const { data } = await openmrsFetch<OpenmrsRef & { strength?: string }>(
+          `${restBaseUrl}/drug/${encodeURIComponent(drugUuid)}?v=${DRUG_DETAILS_REPRESENTATION}`,
         );
+        if (!data?.uuid || data.uuid.toLowerCase() !== drugUuid.toLowerCase()) return;
+        drugDetails.set(drugUuid.toLowerCase(), data);
+      } catch {
+        // Do not block document generation when enrichment fails due to
+        // non-fatal backend visibility or lookup issues; the order display name
+        // is already present from the visit payload.
       }
-      drugDetails.set(drugUuid.toLowerCase(), data);
     }),
   );
 

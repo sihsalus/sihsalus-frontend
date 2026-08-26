@@ -34,10 +34,21 @@ vi.mock('./outpatient-pdf-print', () => ({
 vi.mock('./outpatient-visit-summary-pdf', () => ({
   createOutpatientPatientInstructionsFileName: vi.fn(() => 'patient-instructions.pdf'),
   createOutpatientPatientInstructionsPdf: vi.fn(async () => new Uint8Array([4, 5, 6])),
+  createOutpatientRecetaUnicaFileName: vi.fn(() => 'receta-unica.pdf'),
+  createOutpatientRecetaUnicaPdf: vi.fn(async () => new Uint8Array([7, 8, 9])),
   createOutpatientVisitSummaryFileName: vi.fn(() => 'visit-report.pdf'),
   createOutpatientVisitSummaryPdf: vi.fn(async () => new Uint8Array([1, 2, 3])),
   downloadOutpatientVisitSummaryPdf: vi.fn(),
   hasOutpatientPatientInstructions: vi.fn(() => true),
+  hasOutpatientRecetaUnicaContent: vi.fn(() => true),
+}));
+vi.mock('./receta-unica.resource', () => ({
+  fetchProviderCollegiateNumber: vi.fn(async () => 'CMP 12345'),
+  generateRecetaUnicaNumber: vi.fn(async () => ({
+    number: 'RU-000123',
+    issuedAt: '2026-08-26T14:00:00.000Z',
+    validUntil: '2026-08-29T14:00:00.000Z',
+  })),
 }));
 vi.mock('./outpatient-visit-summary.resource', () => ({
   buildOutpatientVisitSummary: vi.fn(() => ({
@@ -107,6 +118,11 @@ describe('OutpatientVisitSummaryDownload', () => {
       outpatientDocumentFacilityPhoneAttributeTypeUuid: 'phone-attribute-type-uuid',
       outpatientDocumentFacilityIpressCodeAttributeTypeUuid: 'ipress-attribute-type-uuid',
       referralOriginRenaesCode: '00000000',
+      recetaUnica: {
+        identifierSourceUuid: '',
+        validityDays: 3,
+        collegiateNumberProviderAttributeTypeUuid: 'colegiatura-attribute-type-uuid',
+      },
       concepts: {},
     });
     mockUsePatient.mockReturnValue({ patient, isLoading: false, error: null });
@@ -679,5 +695,50 @@ describe('OutpatientVisitSummaryDownload', () => {
 
     await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' })));
     expect(screen.queryByText(/synthetic backend details/i)).not.toBeInTheDocument();
+  });
+});
+
+
+describe('receta única desde el dashboard', () => {
+  it('no ofrece la emisión cuando no hay fuente de numeración configurada', () => {
+    render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" />);
+    expect(screen.queryByRole('button', { name: /emitir receta única/i })).not.toBeInTheDocument();
+  });
+
+  it('falla cerrado cuando el servidor no entrega numeración: sin PDF y con aviso accionable', async () => {
+    mockUseConfig.mockReturnValue({
+      ...(mockUseConfig.getMockImplementation()?.() ?? mockUseConfig.mock.results[0]?.value ?? {}),
+      appointmentVisitAttributeTypeUuid: 'appointment-link-type-uuid',
+      visitTypes: { ambulatory: 'ambulatory-type' },
+      outpatientDocumentFacilityAddress: 'Distrito de prueba, provincia de prueba, Loreto',
+      outpatientDocumentFacilityPhone: '900 000 000',
+      outpatientDocumentFacilityLocationUuid: 'hsc-location-uuid',
+      outpatientDocumentFacilityPhoneAttributeTypeUuid: 'phone-attribute-type-uuid',
+      outpatientDocumentFacilityIpressCodeAttributeTypeUuid: 'ipress-attribute-type-uuid',
+      referralOriginRenaesCode: '00000000',
+      recetaUnica: {
+        identifierSourceUuid: 'receta-source-uuid',
+        validityDays: 3,
+        collegiateNumberProviderAttributeTypeUuid: 'colegiatura-attribute-type-uuid',
+      },
+      concepts: {},
+    });
+    const { generateRecetaUnicaNumber } = await import('./receta-unica.resource');
+    vi.mocked(generateRecetaUnicaNumber).mockRejectedValueOnce(new Error('idgen no disponible'));
+    const { createOutpatientRecetaUnicaPdf } = await import('./outpatient-visit-summary-pdf');
+    const { printPdfBytes } = await import('./outpatient-pdf-print');
+
+    render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" />);
+    const button = await screen.findByRole('button', { name: /emitir receta única/i });
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'No se pudo emitir la Receta Única' }),
+      ),
+    );
+    expect(createOutpatientRecetaUnicaPdf).not.toHaveBeenCalled();
+    expect(printPdfBytes).not.toHaveBeenCalled();
   });
 });

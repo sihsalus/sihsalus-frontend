@@ -1,4 +1,4 @@
-import { Type } from '@openmrs/esm-framework';
+import { Type, validators } from '@openmrs/esm-framework';
 
 const anamnesisConceptDefaults = {
   anamnesisUuid: '6d99603e-ae9d-4838-8a09-ba75e27ff1e9',
@@ -150,6 +150,27 @@ export const configSchema = {
     _type: Type.UUID,
     _description: 'Location attribute type UUID containing the unique IPRESS code for outpatient documents',
     _default: '5fd2b028-5b40-4c85-9a65-01a7ea2cde2b',
+  },
+  recetaUnica: {
+    identifierSourceUuid: {
+      _type: Type.String,
+      _description:
+        'Fuente idgen (SequentialIdentifierGenerator) que emite el correlativo de la Receta Única. Vacío desactiva la emisión: sin numeración de servidor solo se imprime la hoja informativa. El log de idgen (fecha, usuario, comentario) es el registro de auditoría de emisión.',
+      _default: '',
+    },
+    validityDays: {
+      _type: Type.Number,
+      _description:
+        'Días de vigencia impresos en la receta a partir de la fecha de emisión del servidor. Confirmar el valor vigente con la dirección de farmacia según la directiva SISMED (RM 116-2018).',
+      _default: 3,
+      _validators: [validators.inRange(1, 30)],
+    },
+    collegiateNumberProviderAttributeTypeUuid: {
+      _type: Type.UUID,
+      _description:
+        'Provider attribute type con el número de colegiatura del prescriptor («Código de Colegio Profesional»). Si el profesional no lo tiene registrado, el espacio queda para completarse a mano.',
+      _default: 'ba8e90d1-3b9c-442e-b245-5b57ea34df64',
+    },
   },
   referralDestinations: {
     _type: Type.Array,
@@ -910,6 +931,11 @@ export interface ConfigObject {
   outpatientDocumentFacilityLocationUuid: string;
   outpatientDocumentFacilityPhoneAttributeTypeUuid: string;
   outpatientDocumentFacilityIpressCodeAttributeTypeUuid: string;
+  recetaUnica: {
+    identifierSourceUuid: string;
+    validityDays: number;
+    collegiateNumberProviderAttributeTypeUuid: string;
+  };
   referralDestinations: Array<{
     renaesCode: string;
     name: string;

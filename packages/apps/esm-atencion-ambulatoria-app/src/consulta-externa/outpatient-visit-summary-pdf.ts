@@ -113,6 +113,45 @@ export interface OutpatientPatientInstructionsPdfLabels extends OutpatientMedica
   followUpDateDisclaimer: string;
 }
 
+export interface OutpatientRecetaUnicaPdfLabels extends OutpatientMedicationOrderPdfLabels {
+  title: string;
+  pharmacyCopy: string;
+  patientCopy: string;
+  prescriptionNumber: string;
+  issuedAt: string;
+  validUntil: string;
+  patient: string;
+  identifiers: string;
+  birthDate: string;
+  diagnoses: string;
+  presumptive: string;
+  definitive: string;
+  repeat: string;
+  medications: string;
+  visitDate: string;
+  location: string;
+  professional: string;
+  collegiateNumber: string;
+  indicatedFollowUpDate: string;
+  therapeuticIndications: string;
+  signatureAndStamp: string;
+  validOnlySignedLegend: string;
+  generatedAt: string;
+  page: string;
+  disclaimer: string;
+}
+
+export interface RecetaUnicaEmissionPrintData {
+  /** Correlativo emitido por la fuente idgen del servidor. */
+  number: string;
+  /** Emisión según el reloj del servidor. */
+  issuedAt: string;
+  /** Último día de vigencia. */
+  validUntil: string;
+  /** Colegiatura registrada del prescriptor; null deja la línea manuscrita. */
+  collegiateNumber: string | null;
+}
+
 interface PdfFonts {
   regular: PDFFont;
   bold: PDFFont;
@@ -668,6 +707,117 @@ export async function createOutpatientPatientInstructionsPdf(
   );
 
   return state.document.save();
+}
+
+function drawRecetaUnicaHeaderFields(
+  state: PdfState,
+  labels: OutpatientRecetaUnicaPdfLabels,
+  receta: RecetaUnicaEmissionPrintData,
+  copyLabel: string,
+  locale: string,
+): void {
+  drawSectionTitle(state, copyLabel);
+  drawField(state, labels.prescriptionNumber, receta.number);
+  drawField(state, labels.issuedAt, formatDate(receta.issuedAt, locale));
+  drawField(state, labels.validUntil, formatDate(receta.validUntil, locale));
+}
+
+function drawRecetaUnicaDiagnoses(state: PdfState, labels: OutpatientRecetaUnicaPdfLabels, summary: OutpatientVisitSummary): void {
+  if (!summary.diagnoses.length) return;
+  drawSectionTitle(state, labels.diagnoses);
+  summary.diagnoses.forEach((diagnosis) => {
+    const code = diagnosis.cie10Code ? `${diagnosis.cie10Code} — ` : '';
+    const diagnosisType = { P: labels.presumptive, D: labels.definitive, R: labels.repeat }[diagnosis.type];
+    drawLines(
+      state,
+      wrapText(`• ${code}${diagnosis.display} (${diagnosisType})`, state.fonts.regular, BODY_SIZE, CONTENT_WIDTH),
+      { indent: 4 },
+    );
+  });
+}
+
+function drawRecetaUnicaPrescriber(
+  state: PdfState,
+  labels: OutpatientRecetaUnicaPdfLabels,
+  summary: OutpatientVisitSummary,
+  receta: RecetaUnicaEmissionPrintData,
+): void {
+  drawSectionTitle(state, labels.professional);
+  drawField(state, labels.professional, summary.providers.join(' · ') || null);
+  // Sin colegiatura registrada, la línea queda para el manuscrito: la firma y
+  // el sello siguen siendo lo que valida el documento.
+  drawField(state, labels.collegiateNumber, receta.collegiateNumber ?? '________________');
+  drawSignatureAndStampBlock(state, labels.signatureAndStamp);
+  drawLines(state, wrapText(labels.validOnlySignedLegend, state.fonts.bold, 8, CONTENT_WIDTH), {
+    font: state.fonts.bold,
+    size: 8,
+    color: state.colors.muted,
+  });
+}
+
+/**
+ * Receta Única Estandarizada en dos cuerpos (RM 116-2018): página 1 para
+ * farmacia —con diagnósticos CIE-10 y el detalle completo de cada orden,
+ * incluida la cantidad— y página 2 como ejemplar del paciente con las
+ * indicaciones. Ambos cuerpos llevan el mismo correlativo del servidor y su
+ * vigencia. Esta función NO acuña números: recibe la emisión ya auditada por
+ * idgen y debe abortarse la impresión si aquella falló.
+ */
+export async function createOutpatientRecetaUnicaPdf(
+  summary: OutpatientVisitSummary,
+  labels: OutpatientRecetaUnicaPdfLabels,
+  locale: string,
+  receta: RecetaUnicaEmissionPrintData,
+): Promise<Uint8Array> {
+  const state = await createPdfState(labels.title, summary.facilityName, summary);
+  const medicationOrders = getCanonicalMedicationOrders(summary);
+
+  // ── Cuerpo 1: ejemplar de farmacia ─────────────────────────────────────────
+  drawRecetaUnicaHeaderFields(state, labels, receta, labels.pharmacyCopy, locale);
+
+  drawSectionTitle(state, labels.patient);
+  drawField(state, labels.patient, summary.patient.name);
+  drawField(
+    state,
+    labels.identifiers,
+    summary.patient.identifiers.map(({ label, value }) => `${label}: ${value}`).join(' · ') || null,
+  );
+  drawField(state, labels.birthDate, summary.patient.birthDate);
+
+  drawRecetaUnicaDiagnoses(state, labels, summary);
+  drawOrderList(state, labels.medications, medicationOrders, labels);
+  drawRecetaUnicaPrescriber(state, labels, summary, receta);
+
+  // ── Cuerpo 2: ejemplar del paciente ────────────────────────────────────────
+  addPage(state);
+  drawRecetaUnicaHeaderFields(state, labels, receta, labels.patientCopy, locale);
+
+  drawSectionTitle(state, labels.patient);
+  drawField(state, labels.patient, summary.patient.name);
+  drawField(state, labels.visitDate, formatDate(summary.visitStart, locale));
+  drawField(state, labels.location, summary.location);
+
+  drawOrderList(state, labels.medications, medicationOrders, labels);
+  if (hasText(summary.treatment.nextAppointment) || hasText(summary.treatment.therapeuticIndications)) {
+    drawSectionTitle(state, labels.therapeuticIndications);
+    drawField(state, labels.indicatedFollowUpDate, summary.treatment.nextAppointment);
+    drawField(state, labels.therapeuticIndications, summary.treatment.therapeuticIndications);
+  }
+  drawRecetaUnicaPrescriber(state, labels, summary, receta);
+
+  drawPdfFooter(state, { disclaimer: labels.disclaimer, generatedAt: labels.generatedAt, page: labels.page }, locale);
+
+  return state.document.save();
+}
+
+/** La receta exige al menos una orden canónica de medicación en la visita. */
+export function hasOutpatientRecetaUnicaContent(summary: OutpatientVisitSummary): boolean {
+  return getCanonicalMedicationOrders(summary).length > 0;
+}
+
+export function createOutpatientRecetaUnicaFileName(recetaNumber: string, visitStart: string): string {
+  const safeNumber = recetaNumber.replace(/[^A-Za-z0-9-]+/g, '-');
+  return `receta-unica-${safeNumber}-${getSafeVisitDate(visitStart)}.pdf`;
 }
 
 export function downloadOutpatientVisitSummaryPdf(bytes: Uint8Array, fileName: string): void {

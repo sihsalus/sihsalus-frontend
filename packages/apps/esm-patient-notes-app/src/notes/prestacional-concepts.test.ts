@@ -1,72 +1,78 @@
-import { openmrsFetch } from '@openmrs/esm-framework';
-import { fetchPrestacionalConceptsByName } from './visit-notes.resource';
+import { openmrsFetch } from "@openmrs/esm-framework";
+import { fetchPrestacionalConceptsByName } from "./visit-notes.resource";
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
-describe('fetchPrestacionalConceptsByName', () => {
+describe("fetchPrestacionalConceptsByName", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('devuelve solo miembros del concept-set Codigos Prestacionales que coinciden con la busqueda', async () => {
+  it("devuelve solo miembros del concept-set Codigos Prestacionales que coinciden con la busqueda", async () => {
     mockOpenmrsFetch.mockResolvedValueOnce({
       data: {
         results: [
           {
-            uuid: 'catalog',
-            display: 'Codigos Prestacionales',
+            uuid: "catalog",
+            display: "Codigos Prestacionales",
             setMembers: [
               {
-                uuid: 'prestacional-002',
-                display: '002 - Control ambulatorio',
+                uuid: "prestacional-002",
+                display: "002 - Control ambulatorio",
               },
               {
-                uuid: 'prestacional-001',
-                display: '001 - Consulta externa',
+                uuid: "prestacional-001",
+                display: "001 - Consulta externa",
               },
               {
-                uuid: 'prestacional-003',
-                display: '003 - Procedimiento',
+                uuid: "prestacional-003",
+                display: "003 - Procedimiento",
               },
             ],
           },
           {
-            uuid: 'other-set',
-            display: 'Otro catalogo',
-            setMembers: [{ uuid: 'other-001', display: 'Consulta extra' }],
+            uuid: "other-set",
+            display: "Otro catalogo",
+            setMembers: [{ uuid: "other-001", display: "Consulta extra" }],
           },
         ],
       },
     } as Awaited<ReturnType<typeof openmrsFetch>>);
 
-    await expect(fetchPrestacionalConceptsByName('consulta', 'Codigos Prestacionales')).resolves.toEqual([
+    await expect(
+      fetchPrestacionalConceptsByName("consulta", "Codigos Prestacionales"),
+    ).resolves.toEqual([
       {
-        uuid: 'prestacional-001',
-        display: '001 - Consulta externa',
+        uuid: "prestacional-001",
+        display: "001 - Consulta externa",
       },
     ]);
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/concept?q=Codigos%20Prestacionales&searchType=fuzzy'),
+      expect.stringContaining(
+        "/concept?q=Codigos%20Prestacionales&searchType=fuzzy",
+      ),
     );
-    expect(mockOpenmrsFetch).toHaveBeenCalledWith(expect.stringContaining('setMembers:(uuid,display,conceptMappings:'));
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      expect.stringContaining("setMembers:(uuid,display,conceptMappings:"),
+    );
   });
 
-  it('permite buscar por el codigo prestacional guardado en el mapping del concepto', async () => {
+  it("permite buscar por el codigo prestacional guardado en el mapping del concepto", async () => {
     mockOpenmrsFetch.mockResolvedValueOnce({
       data: {
         results: [
           {
-            uuid: 'catalog',
-            display: 'Codigos Prestacionales',
+            uuid: "catalog",
+            display: "Codigos Prestacionales",
             setMembers: [
               {
-                uuid: 'prestacional-056',
-                display: 'Consulta externa',
+                uuid: "prestacional-056",
+                display: "Consulta externa",
                 conceptMappings: [
                   {
                     conceptReferenceTerm: {
-                      code: '056',
-                      conceptSource: { name: 'SIS' },
+                      code: "056",
+                      conceptSource: { name: "SIS" },
                     },
                   },
                 ],
@@ -77,10 +83,12 @@ describe('fetchPrestacionalConceptsByName', () => {
       },
     } as Awaited<ReturnType<typeof openmrsFetch>>);
 
-    await expect(fetchPrestacionalConceptsByName('056', 'Codigos Prestacionales')).resolves.toEqual([
+    await expect(
+      fetchPrestacionalConceptsByName("056", "Codigos Prestacionales"),
+    ).resolves.toEqual([
       expect.objectContaining({
-        uuid: 'prestacional-056',
-        display: 'Consulta externa',
+        uuid: "prestacional-056",
+        display: "Consulta externa",
       }),
     ]);
   });

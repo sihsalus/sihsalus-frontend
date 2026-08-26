@@ -37,6 +37,50 @@
   outline-offset: 1px;
 }
 
+.summaryIntroduction {
+  margin: layout.$spacing-03 0 layout.$spacing-05;
+}
+
+.summaryHeading {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.readOnlyBadge {
+  @include type.type-style("label-01");
+  padding: layout.$spacing-01 layout.$spacing-03;
+  background-color: colors.$blue-10;
+  color: colors.$blue-70;
+}
+
+.summaryDescription {
+  @include type.type-style("body-compact-01");
+  max-width: 42rem;
+  margin-top: layout.$spacing-02;
+  color: colors.$gray-70;
+}
+
+.summarySectionHeading {
+  margin: layout.$spacing-03 0 layout.$spacing-05;
+}
+
+.readOnlyValue {
+  @include type.type-style("body-01");
+  min-height: layout.$spacing-09;
+  padding: layout.$spacing-04;
+  border-left: 0.1875rem solid colors.$gray-30;
+  background-color: colors.$gray-10;
+  color: colors.$gray-90;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.emptySummaryValue {
+  color: colors.$gray-60;
+  font-style: italic;
+}
+
 .required {
   color: colors.$red-60;
   margin-left: layout.$spacing-01;

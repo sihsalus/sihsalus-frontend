@@ -202,7 +202,7 @@ export interface DiagnosisPayload {
 }
 
 export type EncounterDiagnosisPayload =
-  | (Omit<DiagnosisPayload, 'encounter'> & {
+  | (Omit<DiagnosisPayload, "encounter"> & {
       encounter?: string;
       uuid?: string;
     })

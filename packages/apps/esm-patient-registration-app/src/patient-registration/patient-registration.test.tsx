@@ -34,6 +34,7 @@ import {
   peruInsuranceSelfFinancingConceptUuid,
   peruInsuranceTypeAttributeTypeUuid,
   peruPassportPatientIdentifierTypeUuid,
+  peruTemporaryAffiliationPatientIdentifierTypeUuid,
 } from './peru-registration-config';
 import { RegistrationDomainError, registrationErrorCodes } from './registration-errors';
 import { getPatientRelationshipsUrl } from './section/patient-relationships/relationships.resource';
@@ -693,12 +694,14 @@ describe('Registering a new patient', () => {
       '12345678',
       expect.any(AbortController),
       expect.objectContaining({ patientIdentifierTypeUuid: peruDniPatientIdentifierTypeUuid }),
+      expect.objectContaining({ requireFreshNetwork: true, signal: expect.any(AbortSignal) }),
     );
     expect(mockSearchLocalIdentityByDocument).toHaveBeenNthCalledWith(
       2,
       'PA123456',
       expect.any(AbortController),
       expect.objectContaining({ patientIdentifierTypeUuid: peruPassportPatientIdentifierTypeUuid }),
+      expect.objectContaining({ requireFreshNetwork: true, signal: expect.any(AbortSignal) }),
     );
     expect(savePatientForm).not.toHaveBeenCalled();
     expect(mockShowSnackbar).toHaveBeenCalledWith(
@@ -722,6 +725,58 @@ describe('Registering a new patient', () => {
             'A patient already exists with this document. Find the existing patient before registering a new one.',
         }),
       }),
+    );
+  });
+
+  it('preserves E-######## and uses the exact identifier type in the fresh create preflight', async () => {
+    const user = userEvent.setup();
+    const temporaryAffiliationType = {
+      fieldName: 'afiliacionTemporalSis',
+      format: '^E-[0-9]{8}$',
+      identifierSources: [],
+      isPrimary: false,
+      name: 'Afiliación Temporal SIS',
+      required: false,
+      uniquenessBehavior: 'UNIQUE' as const,
+      uuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
+    };
+    mockResourcesContextValue.identifierTypes = [...mockIdentifierTypes, temporaryAffiliationType];
+    mockUseInitialFormValues.mockReturnValue([
+      {
+        ...initialFormValues,
+        patientUuid: 'new-patient-uuid',
+        identifiers: {
+          afiliacionTemporalSis: {
+            autoGeneration: false,
+            identifierName: temporaryAffiliationType.name,
+            identifierTypeUuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
+            identifierValue: 'E-41267525',
+            initialValue: '',
+            preferred: false,
+            required: false,
+            selectedSource: null,
+          },
+        },
+      } as unknown as FormValues,
+      vi.fn(),
+      { isLoading: false },
+    ]);
+    mockSearchLocalIdentityByDocument.mockResolvedValue([]);
+    const savePatientForm = vi.fn().mockResolvedValue('new-patient-uuid');
+
+    render(<PatientRegistration isOffline={false} savePatientForm={savePatientForm} />, { wrapper: Wrapper });
+    await fillRequiredFields();
+    await user.click(screen.getByRole('button', { name: /register patient/i }));
+
+    await waitFor(() => expect(savePatientForm).toHaveBeenCalled());
+    expect(mockSearchLocalIdentityByDocument).toHaveBeenCalledWith(
+      'E-41267525',
+      expect.any(AbortController),
+      {
+        patientIdentifierTypeUuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
+        personDocumentTypeConceptUuid: undefined,
+      },
+      { requireFreshNetwork: true, signal: expect.any(AbortSignal) },
     );
   });
 

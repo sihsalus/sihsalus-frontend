@@ -1,10 +1,18 @@
 import { renderHook, waitFor } from '@testing-library/react';
 
 import { type FetchResponse, openmrsFetch, type Visit } from '@openmrs/esm-framework';
+import {
+  ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID,
+  ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_VERIFICATION_METHOD_PERSON_ATTRIBUTE_TYPE_UUID,
+  SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+  SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+} from '@openmrs/esm-patient-common-lib';
 
 import {
   getDefaultVisitAttributesFromPatientAddress,
   getDefaultVisitAttributesFromPersonAttributes,
+  getPatientIdentifierReferences,
   normalizeVisitTimeFormatInput,
   normalizeVisitTimeInput,
   reconcileVisitCreation,
@@ -25,6 +33,13 @@ const sisConceptUuid = '97c6e901-7570-4ab8-a9c0-9cf2b0f5bc0c';
 const selfFinancedConceptUuid = 'cc72568e-d0d9-46a8-a618-91f0d679f518';
 const addressExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/address';
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+
+function buildFhirIdentifier(value: string, identifierTypeUuid?: string): fhir.Identifier {
+  return {
+    value,
+    ...(identifierTypeUuid ? { type: { coding: [{ code: identifierTypeUuid }] } } : {}),
+  };
+}
 
 describe('reconcileVisitCreation', () => {
   const patientUuid = 'patient-uuid';
@@ -176,6 +191,22 @@ function openmrsAddressExtensions(...extensions: Array<ReturnType<typeof openmrs
   };
 }
 
+describe('getPatientIdentifierReferences', () => {
+  it('preserves FHIR identifier types and leaves missing coding untyped', () => {
+    expect(
+      getPatientIdentifierReferences({
+        identifier: [
+          buildFhirIdentifier(' E-12345678 ', SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID),
+          buildFhirIdentifier('72344001'),
+        ],
+      } as fhir.Patient),
+    ).toEqual([
+      { value: 'E-12345678', identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID },
+      { value: '72344001', identifierTypeUuid: null },
+    ]);
+  });
+});
+
 describe('getDefaultVisitAttributesFromPersonAttributes', () => {
   const mapping = [
     {
@@ -184,6 +215,48 @@ describe('getDefaultVisitAttributesFromPersonAttributes', () => {
     },
   ];
   const configuredAttributeUuids = new Set([insuranceNumberVisitAttributeTypeUuid]);
+  const coverageAttributes = (
+    payerUuid: string,
+    insuranceCode: string,
+    {
+      status = SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+      checkedAt = '2026-08-12T15:30:00.000-05:00',
+      method = 'siasis-adt' as string | null,
+    } = {},
+  ) => [
+    {
+      uuid: 'payer-attribute',
+      attributeType: { uuid: insuranceTypePersonAttributeTypeUuid, format: 'org.openmrs.Concept' },
+      value: payerUuid,
+    },
+    {
+      uuid: 'insurance-code-attribute',
+      attributeType: { uuid: insuranceCodePersonAttributeTypeUuid, format: 'java.lang.String' },
+      value: insuranceCode,
+    },
+    {
+      uuid: 'accreditation-status-attribute',
+      attributeType: { uuid: ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID, format: 'org.openmrs.Concept' },
+      value: status,
+    },
+    {
+      uuid: 'accreditation-checked-at-attribute',
+      attributeType: { uuid: ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID, format: 'java.lang.String' },
+      value: checkedAt,
+    },
+    ...(method
+      ? [
+          {
+            uuid: 'verification-method-attribute',
+            attributeType: {
+              uuid: INSURANCE_VERIFICATION_METHOD_PERSON_ATTRIBUTE_TYPE_UUID,
+              format: 'java.lang.String',
+            },
+            value: method,
+          },
+        ]
+      : []),
+  ];
 
   it('prefills the insurance number when it is distinct from the patient identifiers', () => {
     const defaults = getDefaultVisitAttributesFromPersonAttributes(
@@ -219,6 +292,80 @@ describe('getDefaultVisitAttributesFromPersonAttributes', () => {
     expect(defaults).toEqual({});
   });
 
+  it('prefills a matching E-######## identifier as the insurance number for SIS', () => {
+    const defaults = getDefaultVisitAttributesFromPersonAttributes(
+      {
+        identifier: [buildFhirIdentifier('E-12345678', SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID)],
+      } as fhir.Patient,
+      coverageAttributes(sisConceptUuid, 'E-12345678'),
+      mapping,
+      configuredAttributeUuids,
+    );
+
+    expect(defaults).toEqual({ [insuranceNumberVisitAttributeTypeUuid]: 'E-12345678' });
+  });
+
+  it.each([
+    ['missing method', { method: null }],
+    ['unknown method', { method: 'spreadsheet-import' }],
+    ['date without time and zone', { checkedAt: '2026-08-12' }],
+    ['inactive accreditation', { status: 'inactive-status' }],
+  ])('does not prefill a typed E identifier with %s', (_caseName, evidenceOverride) => {
+    const defaults = getDefaultVisitAttributesFromPersonAttributes(
+      {
+        identifier: [buildFhirIdentifier('E-12345678', SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID)],
+      } as fhir.Patient,
+      coverageAttributes(sisConceptUuid, 'E-12345678', evidenceOverride),
+      mapping,
+      configuredAttributeUuids,
+    );
+
+    expect(defaults).toEqual({});
+  });
+
+  it('does not prefill E-######## from empty or stale FHIR identifiers', () => {
+    for (const patient of [
+      {} as fhir.Patient,
+      {
+        identifier: [buildFhirIdentifier('E-87654321', SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID)],
+      } as fhir.Patient,
+    ]) {
+      expect(
+        getDefaultVisitAttributesFromPersonAttributes(
+          patient,
+          coverageAttributes(sisConceptUuid, 'E-12345678'),
+          mapping,
+          configuredAttributeUuids,
+        ),
+      ).toEqual({});
+    }
+  });
+
+  it('blocks the same E value when FHIR reports another identifier type or no type', () => {
+    for (const identifier of [buildFhirIdentifier('E-12345678', 'hce-type'), buildFhirIdentifier('E-12345678')]) {
+      expect(
+        getDefaultVisitAttributesFromPersonAttributes(
+          { identifier: [identifier] } as fhir.Patient,
+          coverageAttributes(sisConceptUuid, 'E-12345678'),
+          mapping,
+          configuredAttributeUuids,
+        ),
+      ).toEqual({});
+    }
+  });
+
+  it('honors the configured deployment-specific temporary identifier type', () => {
+    expect(
+      getDefaultVisitAttributesFromPersonAttributes(
+        { identifier: [buildFhirIdentifier('E-12345678', 'custom-temporary-sis-type')] } as fhir.Patient,
+        coverageAttributes(sisConceptUuid, 'E-12345678'),
+        mapping,
+        configuredAttributeUuids,
+        'custom-temporary-sis-type',
+      ),
+    ).toEqual({ [insuranceNumberVisitAttributeTypeUuid]: 'E-12345678' });
+  });
+
   it('normalizes a legacy SIS plan when prefilling the visit financer', () => {
     const defaults = getDefaultVisitAttributesFromPersonAttributes(
       {} as fhir.Patient,
@@ -247,6 +394,13 @@ describe('sanitizeVisitCoverageAttributes', () => {
     [insuranceNumberVisitAttributeTypeUuid]: 'SIS-452781',
     [accreditationStatusVisitAttributeTypeUuid]: 'vigente-concept',
     [accreditationCheckedAtVisitAttributeTypeUuid]: '2026-08-11T14:30:00.000-05:00',
+  };
+  const trustedTemporarySisEvidence = {
+    insuranceTypeUuid: sisConceptUuid,
+    insuranceCode: 'E-12345678',
+    accreditationStatusUuid: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+    accreditationCheckedAt: '2026-08-12T15:30:00.000-05:00',
+    verificationMethod: 'siasis-adt',
   };
 
   it('keeps all applicable SIS coverage fields', () => {
@@ -317,6 +471,126 @@ describe('sanitizeVisitCoverageAttributes', () => {
       [insuranceNumberVisitAttributeTypeUuid]: '',
       [accreditationStatusVisitAttributeTypeUuid]: 'vigente-concept',
     });
+  });
+
+  it('keeps E-######## only for a typed temporary SIS identifier under SIS', () => {
+    const attributes = {
+      [financiadorVisitAttributeTypeUuid]: sisConceptUuid,
+      [insuranceNumberVisitAttributeTypeUuid]: 'E-12345678',
+    };
+
+    expect(
+      sanitizeVisitCoverageAttributes(
+        attributes,
+        [{ value: 'E-12345678', identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID }],
+        true,
+        SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+        trustedTemporarySisEvidence,
+      ),
+    ).toMatchObject({ [insuranceNumberVisitAttributeTypeUuid]: 'E-12345678' });
+    expect(
+      sanitizeVisitCoverageAttributes(attributes, [{ value: 'E-12345678', identifierTypeUuid: 'hce-type' }]),
+    ).toMatchObject({ [insuranceNumberVisitAttributeTypeUuid]: '' });
+  });
+
+  it('clears E-######## when the identifier snapshot is empty or stale', () => {
+    const attributes = {
+      [financiadorVisitAttributeTypeUuid]: sisConceptUuid,
+      [insuranceNumberVisitAttributeTypeUuid]: 'E-12345678',
+    };
+
+    expect(
+      sanitizeVisitCoverageAttributes(
+        attributes,
+        [],
+        true,
+        SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+        trustedTemporarySisEvidence,
+      ),
+    ).toMatchObject({
+      [insuranceNumberVisitAttributeTypeUuid]: '',
+    });
+    expect(
+      sanitizeVisitCoverageAttributes(
+        attributes,
+        [
+          {
+            value: 'E-87654321',
+            identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+          },
+        ],
+        true,
+        SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+        trustedTemporarySisEvidence,
+      ),
+    ).toMatchObject({ [insuranceNumberVisitAttributeTypeUuid]: '' });
+  });
+
+  it.each([
+    'E-1234',
+    'E-123456789',
+    'E 12345678',
+    'E12345678',
+  ])('clears malformed temporary SIS intent %s even without an identifier match', (insuranceNumber) => {
+    expect(
+      sanitizeVisitCoverageAttributes(
+        {
+          [financiadorVisitAttributeTypeUuid]: sisConceptUuid,
+          [insuranceNumberVisitAttributeTypeUuid]: insuranceNumber,
+          [accreditationStatusVisitAttributeTypeUuid]: 'vigente-concept',
+          [accreditationCheckedAtVisitAttributeTypeUuid]: '2026-08-11T14:30:00.000-05:00',
+        },
+        [],
+        true,
+        SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+        { ...trustedTemporarySisEvidence, insuranceCode: insuranceNumber },
+      ),
+    ).toMatchObject({ [insuranceNumberVisitAttributeTypeUuid]: '' });
+  });
+
+  it('clears the temporary identifier when the selected visit payer is not SIS', () => {
+    expect(
+      sanitizeVisitCoverageAttributes(
+        {
+          [financiadorVisitAttributeTypeUuid]: 'essalud-concept',
+          [insuranceNumberVisitAttributeTypeUuid]: 'E-12345678',
+        },
+        [{ value: 'E-12345678', identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID }],
+        true,
+        SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+        trustedTemporarySisEvidence,
+      ),
+    ).toMatchObject({ [insuranceNumberVisitAttributeTypeUuid]: '' });
+  });
+
+  it('honors the configured temporary SIS identifier type while sanitizing', () => {
+    expect(
+      sanitizeVisitCoverageAttributes(
+        {
+          [financiadorVisitAttributeTypeUuid]: sisConceptUuid,
+          [insuranceNumberVisitAttributeTypeUuid]: 'E-12345678',
+        },
+        [{ value: 'E-12345678', identifierTypeUuid: 'custom-temporary-sis-type' }],
+        true,
+        'custom-temporary-sis-type',
+        trustedTemporarySisEvidence,
+      ),
+    ).toMatchObject({ [insuranceNumberVisitAttributeTypeUuid]: 'E-12345678' });
+  });
+
+  it.each([null, 'spreadsheet-import'])('clears E-######## with untrusted verification method %s', (method) => {
+    expect(
+      sanitizeVisitCoverageAttributes(
+        {
+          [financiadorVisitAttributeTypeUuid]: sisConceptUuid,
+          [insuranceNumberVisitAttributeTypeUuid]: 'E-12345678',
+        },
+        [{ value: 'E-12345678', identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID }],
+        true,
+        SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+        { ...trustedTemporarySisEvidence, verificationMethod: method },
+      ),
+    ).toMatchObject({ [insuranceNumberVisitAttributeTypeUuid]: '' });
   });
 });
 

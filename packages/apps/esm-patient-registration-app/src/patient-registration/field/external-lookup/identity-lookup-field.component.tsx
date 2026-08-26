@@ -11,8 +11,6 @@ import {
   getDocumentTypeDefinitionByIdentifierType,
   identityVerificationSourceConceptUuids,
   identityVerificationStatusConceptUuids,
-  isValidDocumentNumber,
-  normalizeDocumentNumber,
   personIdentityVerificationSourceAttributeTypeUuid,
   personIdentityVerificationStatusAttributeTypeUuid,
   personIdentityVerifiedAtAttributeTypeUuid,
@@ -26,7 +24,7 @@ import {
 import { applyPersonToRegistrationForm, clearPromotionSelection } from '../../identity/promotion';
 import { PatientRegistrationContext } from '../../patient-registration-context';
 import styles from '../field.scss';
-import { getDocumentIdentifierEntry } from './dni-identifier';
+import { getDocumentIdentifierEntry, isValidIdentityIdentifier, normalizeIdentityIdentifier } from './dni-identifier';
 import { lookupReniecIdentityByDni, type ReniecIdentityLookupResult } from './reniec-lookup.resource';
 
 type LookupStatus = {
@@ -111,7 +109,12 @@ export const IdentityLookupField = () => {
     : undefined;
   const documentIdentifierTypeUuid = documentEntry?.[1]?.identifierTypeUuid ?? documentIdentifierType?.uuid;
   const documentDefinition = getDocumentTypeDefinitionByIdentifierType(documentIdentifierTypeUuid);
-  const normalizedDocumentNumber = normalizeDocumentNumber(documentValue, documentDefinition);
+  const normalizedDocumentNumber = normalizeIdentityIdentifier(
+    documentValue,
+    documentIdentifierTypeUuid,
+    documentName,
+    documentIdentifierType,
+  );
   const documentKey = documentEntry ? `${documentIdentifierTypeUuid ?? ''}:${normalizedDocumentNumber}` : '';
   const currentDocumentKey = useRef(documentKey);
   const previousDocumentKey = useRef(documentKey);
@@ -145,7 +148,8 @@ export const IdentityLookupField = () => {
 
   const searchDocument = (request: { abortController: AbortController }, expectedDocumentNumber: string) =>
     searchLocalIdentityByDocument(expectedDocumentNumber, request.abortController, {
-      patientIdentifierTypeUuid: documentDefinition?.patientIdentifierTypeUuid ?? undefined,
+      patientIdentifierTypeUuid:
+        documentIdentifierTypeUuid ?? documentDefinition?.patientIdentifierTypeUuid ?? undefined,
       personDocumentTypeConceptUuid: documentDefinition?.documentTypeConceptUuid,
     });
 
@@ -220,7 +224,14 @@ export const IdentityLookupField = () => {
       return;
     }
 
-    if (!isValidDocumentNumber(normalizedDocumentNumber, documentDefinition)) {
+    if (
+      !isValidIdentityIdentifier(
+        normalizedDocumentNumber,
+        documentIdentifierTypeUuid,
+        documentName,
+        documentIdentifierType,
+      )
+    ) {
       setLookupStatus({
         documentKey,
         kind: 'warning',

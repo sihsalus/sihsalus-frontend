@@ -34,12 +34,27 @@ triaje es:
 `isTriageFinancingEligible` centraliza este criterio para Citas, Hoja Clínica y
 Colas; no modifica la barrera propia de FUA, que continúa exigiendo SIS vigente.
 
-La copia normaliza productos SIS legacy al concepto SIS, nunca usa DNI/CE/pasaporte como afiliación,
-elimina complementos incompatibles y es idempotente para poder reparar una escritura parcial sobre la
-misma visita. Con `onlyFillMissing`, el financiador elegido manualmente en la visita prevalece y no se
+La copia normaliza productos SIS legacy al concepto SIS y nunca usa DNI/CE/pasaporte/HCE ni identificadores
+sin tipo como afiliación. La única excepción es `E-########` del tipo de afiliación temporal SIS configurado
+(`68a90c20-eec8-433a-aa92-83e549d801db` por defecto), y solo cuando el financiador efectivo es SIS; el mismo
+valor canónico debe existir en una lectura REST fresca como identificador vigente de ese tipo: una respuesta
+vacía, obsoleta, malformada por separador o longitud (`E12345678`, `E 12345678`, `E-1234`, etc.) o con otro tipo
+falla cerrado. Además, la persona debe tener estado SIS Vigente, fecha/hora ISO completa con zona y método
+controlado `manual-web`, `setisis` o `siasis-adt`; importaciones o datos hidratados sin esa evidencia no habilitan
+el E. También elimina complementos incompatibles y es idempotente para poder reparar una escritura parcial sobre
+la misma visita. Con `onlyFillMissing`, el financiador elegido manualmente en la visita prevalece y no se
 mezclan los complementos de una afiliación distinta. Si la visita no tiene financiador pero conserva número,
 estado o fecha huérfanos, esos valores se eliminan antes de adoptar el financiador de la persona; nunca se
 reclasifican como datos de la nueva IAFAS.
+
+Las lecturas que autorizan un `E-########` usan URL única, `no-store` y la estrategia offline
+`network-only-or-cache-only`; un error de red no se sustituye por un snapshot FHIR o de service worker. El inicio
+de visita comparte un `AbortSignal` entre persona e identificadores y reutiliza ese resultado en la copia. Un
+reintento descarta el intento anterior y vuelve a obtener ambas pruebas antes de persistir cobertura.
+
+La visita conserva el snapshot verificado de financiador, número, estado y fecha, pero todavía no tiene un
+atributo para el método de verificación. Por ello la procedencia permanece en la persona y se pierde al separar
+el snapshot histórico; transportar método/usuario a visita y FUA requiere un cambio coordinado posterior.
 
 En una sincronización explícita (`onlyFillMissing: false`), cambiar de financiador invalida primero el estado
 SIS y los complementos anteriores. Al salir de SIS conserva el financiador previo como marcador recuperable

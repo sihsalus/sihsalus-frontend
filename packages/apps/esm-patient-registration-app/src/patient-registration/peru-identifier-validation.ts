@@ -49,10 +49,14 @@ export function getPeruIdentifierRule(
   if (uuid === peruTemporaryAffiliationPatientIdentifierTypeUuid || name.includes('AFILIACION TEMPORAL')) {
     return {
       pattern: /^E-\d{8}$/,
-      maxLength: 10,
+      // Allow one overflow character to remain visible and fail validation;
+      // maxLength=10 would silently turn E-123456789 into E-12345678.
+      maxLength: 11,
       inputMode: 'text',
       sanitize: (value) => {
-        const digits = value.toUpperCase().replace(/^E-?/, '').replace(/\D/g, '').slice(0, 8);
+        // Do not truncate an extra digit into a different, apparently valid
+        // affiliation. Keep the full normalized value so validation blocks it.
+        const digits = value.toUpperCase().replace(/^E-?/, '').replace(/\D/g, '');
         return digits || /^E-?/i.test(value) ? `E-${digits}` : '';
       },
       messageKey: 'temporaryAffiliationIdentifierInvalid',

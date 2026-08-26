@@ -20,9 +20,16 @@ import {
 import {
   copyFinanciadorToVisitPrivileges,
   createOfflineVisitForPatient,
+  ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID,
+  ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID,
+  fetchFreshPatientIdentifiers,
+  fetchFreshPersonInsurance,
   fetchFreshPatientVitalStatus,
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID,
   INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
+  INSURANCE_VERIFICATION_METHOD_PERSON_ATTRIBUTE_TYPE_UUID,
   SELF_FINANCED_CONCEPT_UUID,
   SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_ACCREDITATION_INACTIVE_CONCEPT_UUID,
@@ -30,6 +37,7 @@ import {
   SIS_ACCREDITATION_PENDING_CONCEPT_UUID,
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_CONCEPT_UUID,
+  SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
   safeCopyFinanciadorToVisit,
 } from '@openmrs/esm-patient-common-lib';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -311,6 +319,8 @@ const mockDeleteVisitAttribute = vi.mocked(deleteVisitAttribute).mockResolvedVal
 const mockGetVisitAttributes = vi.mocked(getVisitAttributes);
 const mockReconcileVisitCreation = vi.mocked(reconcileVisitCreation);
 const mockCreateOfflineVisitForPatient = vi.mocked(createOfflineVisitForPatient);
+const mockFetchFreshPatientIdentifiers = vi.mocked(fetchFreshPatientIdentifiers);
+const mockFetchFreshPersonInsurance = vi.mocked(fetchFreshPersonInsurance);
 const mockFetchFreshPatientVitalStatus = vi.mocked(fetchFreshPatientVitalStatus);
 const mockSafeCopyFinanciadorToVisit = vi.mocked(safeCopyFinanciadorToVisit);
 const mockUsePersonAttributesForVisitDefaults = vi.mocked(usePersonAttributesForVisitDefaults);
@@ -319,6 +329,8 @@ const mockUseVisitProvenanceAddressOptions = vi.mocked(useVisitProvenanceAddress
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
   createOfflineVisitForPatient: vi.fn(),
+  fetchFreshPatientIdentifiers: vi.fn(),
+  fetchFreshPersonInsurance: vi.fn(),
   fetchFreshPatientVitalStatus: vi.fn(),
   safeCopyFinanciadorToVisit: vi.fn(),
   useActivePatientEnrollment: vi.fn().mockReturnValue({
@@ -487,9 +499,15 @@ describe('Visit form', () => {
       updated: 0,
     });
     mockUseConnectivity.mockReturnValue(true);
-    mockCreateOfflineVisitForPatient.mockResolvedValue({} as Awaited<
-      ReturnType<typeof createOfflineVisitForPatient>
-    >);
+    mockCreateOfflineVisitForPatient.mockResolvedValue({} as Awaited<ReturnType<typeof createOfflineVisitForPatient>>);
+    mockFetchFreshPatientIdentifiers.mockResolvedValue([]);
+    mockFetchFreshPersonInsurance.mockResolvedValue({
+      insuranceTypeUuid: null,
+      insuranceCode: null,
+      accreditationStatusUuid: null,
+      accreditationCheckedAt: null,
+      verificationMethod: null,
+    });
     mockFetchFreshPatientVitalStatus.mockResolvedValue({ dead: false, deathDate: null, isDeceased: false });
     mockOnVisitCreatedOrUpdatedCallback.mockResolvedValue(undefined);
     mockUseSession.mockReturnValue({
@@ -1114,6 +1132,8 @@ describe('Visit form', () => {
     expect(mockSafeCopyFinanciadorToVisit).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
+        freshPatientIdentifiers: undefined,
+        freshPersonInsurance: undefined,
         onlyFillMissing: true,
         patientUuid: mockPatient.id,
         visitUuid,
@@ -1182,6 +1202,203 @@ describe('Visit form', () => {
     expect(showSnackbar).not.toHaveBeenCalledWith(
       expect.objectContaining({ title: 'Consulta iniciada; cobertura requiere apoyo' }),
     );
+  });
+
+  it('removes a stale E affiliation after one fresh REST read proves the identifier was deleted', async () => {
+    const user = userEvent.setup();
+    mockTemporarySisCoverage([
+      {
+        value: 'E-12345678',
+        type: { coding: [{ code: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID }] },
+      },
+    ]);
+    mockFetchFreshPatientIdentifiers.mockResolvedValue([]);
+
+    renderVisitForm();
+    expect(await screen.findByRole('textbox', { name: 'Insurance Policy Number (optional)' })).toHaveValue(
+      'E-12345678',
+    );
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockSaveVisit).toHaveBeenCalledTimes(1));
+    const persistedInsuranceNumbers = (mockSaveVisit.mock.calls[0][0].attributes ?? []).filter(
+      ({ attributeType }) => attributeType === INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+    );
+    expect(persistedInsuranceNumbers).toEqual([]);
+    expect(mockFetchFreshPatientIdentifiers).toHaveBeenCalledTimes(1);
+    expect(mockFetchFreshPatientIdentifiers).toHaveBeenCalledWith(mockPatient.id, expect.any(AbortSignal));
+    expect(mockFetchFreshPersonInsurance).toHaveBeenCalledTimes(1);
+    expect(mockFetchFreshPersonInsurance).toHaveBeenCalledWith(mockPatient.id, expect.any(AbortSignal));
+    expect(mockFetchFreshPatientIdentifiers.mock.calls[0][1]).toBe(mockFetchFreshPersonInsurance.mock.calls[0][1]);
+    await waitFor(() => expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledTimes(1));
+    expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        freshPatientIdentifiers: [],
+        freshPersonInsurance: expect.objectContaining({ verificationMethod: 'siasis-adt' }),
+      }),
+    );
+  });
+
+  it.each([
+    ['identifier proof fails', true, false],
+    ['person insurance proof fails', false, true],
+    ['both proofs fail', true, true],
+  ])('fails closed without persisting E when %s', async (_caseName, identifiersFail, insuranceFails) => {
+    const user = userEvent.setup();
+    mockTemporarySisCoverage([
+      {
+        value: 'E-12345678',
+        type: { coding: [{ code: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID }] },
+      },
+    ]);
+    if (identifiersFail) {
+      mockFetchFreshPatientIdentifiers.mockRejectedValue(new Error('identifier read failed'));
+    } else {
+      mockFetchFreshPatientIdentifiers.mockResolvedValue([
+        {
+          value: 'E-12345678',
+          identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+        },
+      ]);
+    }
+    if (insuranceFails) {
+      mockFetchFreshPersonInsurance.mockRejectedValue(new Error('insurance read failed'));
+    }
+
+    renderVisitForm();
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockSaveVisit).toHaveBeenCalledTimes(1));
+    expect(
+      (mockSaveVisit.mock.calls[0][0].attributes ?? []).some(
+        ({ attributeType, value }) =>
+          attributeType === INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID && value === 'E-12345678',
+      ),
+    ).toBe(false);
+    expect(mockFetchFreshPatientIdentifiers).toHaveBeenCalledTimes(1);
+    expect(mockFetchFreshPersonInsurance).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledTimes(1));
+    expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        freshPatientIdentifiers: identifiersFail
+          ? []
+          : [
+              {
+                value: 'E-12345678',
+                identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+              },
+            ],
+        freshPersonInsurance: insuranceFails ? null : expect.objectContaining({ verificationMethod: 'siasis-adt' }),
+      }),
+    );
+  });
+
+  it.each([
+    'manual-web',
+    'setisis',
+    'siasis-adt',
+  ])('restores a newly added E affiliation with trusted %s evidence when FHIR is stale absent', async (verificationMethod) => {
+    const user = userEvent.setup();
+    mockTemporarySisCoverage([], verificationMethod);
+    mockFetchFreshPatientIdentifiers.mockResolvedValue([
+      {
+        value: 'E-12345678',
+        identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+      },
+    ]);
+
+    renderVisitForm();
+    expect(await screen.findByRole('textbox', { name: 'Insurance Policy Number (optional)' })).toHaveValue('');
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockSaveVisit).toHaveBeenCalledTimes(1));
+    expect(mockSaveVisit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attributes: expect.arrayContaining([
+          {
+            attributeType: INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
+            value: 'E-12345678',
+          },
+        ]),
+      }),
+      expect.any(Object),
+    );
+    expect(mockFetchFreshPatientIdentifiers).toHaveBeenCalledTimes(1);
+    expect(mockFetchFreshPersonInsurance).toHaveBeenCalledTimes(1);
+    expect(mockSafeCopyFinanciadorToVisit).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['missing method', null, '2026-08-12T15:30:00.000-05:00'],
+    ['unknown method', 'spreadsheet-import', '2026-08-12T15:30:00.000-05:00'],
+    ['date without time and zone', 'siasis-adt', '2026-08-12'],
+  ])('does not persist an active E bundle with %s', async (_caseName, verificationMethod, checkedAt) => {
+    const user = userEvent.setup();
+    mockTemporarySisCoverage(
+      [
+        {
+          value: 'E-12345678',
+          type: { coding: [{ code: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID }] },
+        },
+      ],
+      verificationMethod,
+      checkedAt,
+    );
+    mockFetchFreshPatientIdentifiers.mockResolvedValue([
+      {
+        value: 'E-12345678',
+        identifierTypeUuid: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+      },
+    ]);
+
+    renderVisitForm();
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockSaveVisit).toHaveBeenCalledTimes(1));
+    expect(
+      (mockSaveVisit.mock.calls[0][0].attributes ?? []).some(
+        ({ attributeType, value }) =>
+          attributeType === INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID && value === 'E-12345678',
+      ),
+    ).toBe(false);
+    expect(mockFetchFreshPatientIdentifiers).toHaveBeenCalledTimes(1);
+    expect(mockFetchFreshPersonInsurance).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledTimes(1));
+    expect(mockSafeCopyFinanciadorToVisit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        freshPatientIdentifiers: expect.arrayContaining([expect.objectContaining({ value: 'E-12345678' })]),
+        freshPersonInsurance: expect.objectContaining({ verificationMethod }),
+      }),
+    );
+  });
+
+  it('does not persist or verify a temporary E affiliation in the offline visit path', async () => {
+    const user = userEvent.setup();
+    mockTemporarySisCoverage([
+      {
+        value: 'E-12345678',
+        type: { coding: [{ code: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID }] },
+      },
+    ]);
+    mockUseConnectivity.mockReturnValue(false);
+
+    renderVisitForm();
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a UPSS/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockCreateOfflineVisitForPatient).toHaveBeenCalledTimes(1));
+    expect(mockFetchFreshPatientIdentifiers).not.toHaveBeenCalled();
+    expect(mockFetchFreshPersonInsurance).not.toHaveBeenCalled();
+    expect(mockSaveVisit).not.toHaveBeenCalled();
+    expect(mockSafeCopyFinanciadorToVisit).not.toHaveBeenCalled();
   });
 
   it('uses an active SIS payload as the triage fast path without recopying coverage', async () => {
@@ -3441,6 +3658,79 @@ async function selectVisitType(user: ReturnType<typeof userEvent.setup>, visitTy
 
 async function selectEssaludPayer(user: ReturnType<typeof userEvent.setup>) {
   await user.selectOptions(screen.getByRole('combobox', { name: 'Financiador (optional)' }), essaludConceptUuid);
+}
+
+function mockTemporarySisCoverage(
+  fhirIdentifiers: Array<fhir.Identifier>,
+  verificationMethod: string | null = 'siasis-adt',
+  accreditationCheckedAt = '2026-08-12T15:30:00.000-05:00',
+) {
+  mockUsePatient.mockReturnValue({
+    error: null,
+    isLoading: false,
+    patient: {
+      ...mockFhirPatient,
+      identifier: fhirIdentifiers,
+    },
+    patientUuid: mockPatient.id,
+  });
+  mockUsePersonAttributesForVisitDefaults.mockReturnValue({
+    attributes: [
+      {
+        uuid: 'person-financiador',
+        attributeType: {
+          uuid: INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
+          format: 'org.openmrs.Concept',
+        },
+        value: { uuid: SIS_CONCEPT_UUID, display: 'SIS' },
+      },
+      {
+        uuid: 'person-insurance-number',
+        attributeType: {
+          uuid: INSURANCE_CODE_PERSON_ATTRIBUTE_TYPE_UUID,
+          format: 'java.lang.String',
+        },
+        value: 'E-12345678',
+      },
+      {
+        uuid: 'person-accreditation-status',
+        attributeType: {
+          uuid: ACCREDITATION_STATUS_PERSON_ATTRIBUTE_TYPE_UUID,
+          format: 'org.openmrs.Concept',
+        },
+        value: { uuid: sisAccreditationStatusConceptUuid, display: 'Vigente' },
+      },
+      {
+        uuid: 'person-accreditation-date',
+        attributeType: {
+          uuid: ACCREDITATION_CHECKED_AT_PERSON_ATTRIBUTE_TYPE_UUID,
+          format: 'java.lang.String',
+        },
+        value: accreditationCheckedAt,
+      },
+      ...(verificationMethod
+        ? [
+            {
+              uuid: 'person-verification-method',
+              attributeType: {
+                uuid: INSURANCE_VERIFICATION_METHOD_PERSON_ATTRIBUTE_TYPE_UUID,
+                format: 'java.lang.String',
+              },
+              value: verificationMethod,
+            },
+          ]
+        : []),
+    ],
+    error: null,
+    isLoading: false,
+  });
+  mockFetchFreshPersonInsurance.mockResolvedValue({
+    insuranceTypeUuid: SIS_CONCEPT_UUID,
+    insuranceCode: 'E-12345678',
+    accreditationStatusUuid: sisAccreditationStatusConceptUuid,
+    accreditationCheckedAt,
+    verificationMethod,
+  });
 }
 
 function renderVisitForm(visitToEdit?: Visit, overrides: Partial<typeof testProps> = {}) {

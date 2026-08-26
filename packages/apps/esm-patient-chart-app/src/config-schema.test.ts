@@ -8,6 +8,7 @@ import {
   INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
   SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
 } from '@openmrs/esm-patient-common-lib';
 
 import {
@@ -26,6 +27,12 @@ describe('patient chart configuration defaults', () => {
 
   it('uses a visit attribute to persist a companion per consultation', () => {
     expect(esmPatientChartSchema.companionVisitAttributeTypeUuid._default).toBe('710da0b9-e15f-47f0-827a-e97f1937c81d');
+  });
+
+  it('uses the SIH Salus E-######## identifier type for temporary SIS affiliation', () => {
+    expect(esmPatientChartSchema.sisTemporaryAffiliationPatientIdentifierTypeUuid._default).toBe(
+      SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
+    );
   });
 
   it('captures the complete canonical person-to-visit coverage bundle', () => {

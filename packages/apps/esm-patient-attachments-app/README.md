@@ -44,7 +44,8 @@ configuration until the compatible backend and role contract have been rolled ou
 
 ### Backend compatibility requirement
 
-This integration requires a compatible Attachments release in the `>=4.0.1 <5.0.0` range and a coordinated backend,
-role, and configuration rollout. The declared backend dependency supports compatibility diagnostics; the
-disabled-by-default runtime feature flag controls activation. Configure `pdf` in `attachments.allowedFileExtensions`
-and validate the complete workflow contract in a coordinated non-production environment before enabling the feature.
+This integration requires a compatible SIH Salus Attachments release in the
+`>=4.0.1-sihsalus.1 <5.0.0` range and a coordinated backend, role, and configuration rollout. The declared backend
+dependency supports compatibility diagnostics; the disabled-by-default runtime feature flag controls activation.
+Configure `pdf` in `attachments.allowedFileExtensions` and validate the complete workflow contract in a coordinated
+non-production environment before enabling the feature.

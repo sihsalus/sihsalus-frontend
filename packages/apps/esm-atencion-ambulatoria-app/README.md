@@ -63,6 +63,8 @@ El content que crea esos Attribute Types y completa la `Location` debe desplegar
 
 La **Próxima cita programada** proviene de Appointment Scheduling y se muestra con fecha, servicio, lugar y profesional disponibles. La fecha de control, en cambio, es una observación clínica y no demuestra que exista una reserva; por eso aparece por separado como **Fecha de control indicada** y se aclara que debe confirmarse la programación. Si no se puede consultar la agenda, la impresión continúa con medicamentos e indicaciones, pero avisa al usuario y omite la cita no verificada. El PDF se genera localmente, no incluye identificadores del paciente ni de la visita en el nombre del archivo y descarga el mismo documento como respaldo cuando el visor PDF integrado no carga o informa un error.
 
+La lectura de órdenes usa la representación polimórfica `FULL` de REST para respetar las diferencias entre `DrugOrder` y `TestOrder`, y enriquece únicamente la fortaleza de los medicamentos identificados. Una orden de laboratorio en la misma atención no debe impedir la generación de los documentos ni perder el detalle de dosis de los medicamentos.
+
 La Epicrisis pertenece al egreso de hospitalización según la NTS 139. Consulta Externa no abre ni reutiliza `Formulario Epicrisis Médica` ni `(Página 16) Epicrisis`; su documento es únicamente el resumen de la atención ambulatoria.
 
 `CE-SOAP-001-NOTA SOAP` versión `1.1.0` registra el examen general y el examen regional por sistemas mediante campos diferenciados por `formFieldPath`. Ningún campo se completa como “normal” automáticamente. La lectura conserva compatibilidad con las notas SOAP históricas `1.0.0`.

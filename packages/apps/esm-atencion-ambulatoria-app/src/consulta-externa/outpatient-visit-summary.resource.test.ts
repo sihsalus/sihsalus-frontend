@@ -213,6 +213,57 @@ describe('outpatient visit summary contract', () => {
     });
   });
 
+  it('enriches only DrugOrder entries when a visit also contains TestOrder entries', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({
+        data: {
+          uuid: 'visit-uuid',
+          encounters: [
+            {
+              uuid: 'encounter-uuid',
+              encounterDatetime: '2026-08-26T12:00:00.000Z',
+              orders: [
+                {
+                  uuid: 'drug-order-uuid',
+                  drug: { uuid: 'drug-uuid', display: 'Medicamento sintético' },
+                  orderType: { uuid: 'drug-order-type', display: 'Drug Order' },
+                  dose: 1,
+                },
+                {
+                  uuid: 'test-order-uuid',
+                  orderType: { uuid: 'test-order-type', display: 'Test Order' },
+                },
+              ],
+            },
+          ],
+        },
+        headers: { get: () => 'Tue, 26 Aug 2026 14:00:00 GMT' },
+      } as unknown as Awaited<ReturnType<typeof openmrsFetch>>)
+      .mockResolvedValueOnce({
+        data: {
+          uuid: 'drug-uuid',
+          display: 'Medicamento sintético',
+          strength: '100 mg',
+        },
+      } as unknown as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    const result = await fetchOutpatientVisitSummarySource('visit-uuid');
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
+    expect(mockOpenmrsFetch.mock.calls[0]?.[0]).not.toContain('drug:(');
+    expect(mockOpenmrsFetch.mock.calls[1]?.[0]).toContain('/drug/drug-uuid?');
+    const orders = result.encounters?.[0]?.orders;
+    expect(orders?.[0]).toEqual(
+      expect.objectContaining({
+        uuid: 'drug-order-uuid',
+        drug: expect.objectContaining({ display: 'Medicamento sintético', strength: '100 mg' }),
+        dose: 1,
+      }),
+    );
+    expect(orders?.[1]).toEqual(expect.objectContaining({ uuid: 'test-order-uuid' }));
+    expect(orders?.[1]).not.toHaveProperty('drug');
+  });
+
   it('preserves verified facility contact details for printable documents', () => {
     const summary = build({
       facilityAddress: 'Distrito de prueba, provincia de prueba, Loreto',
@@ -237,12 +288,11 @@ describe('outpatient visit summary contract', () => {
     expect(representation).toContain('encounterRole:(uuid,display)');
     expect(representation).toContain('conceptReferenceTerm:(code,conceptSource:(name,display))');
     expect(representation).toContain('diagnoses:(');
-    expect(representation).toContain('orders:(');
-    expect(representation).toContain('previousOrder:(uuid)');
-    expect(representation).toContain('orderReasonNonCoded');
-    expect(representation).toContain('asNeeded,asNeededCondition');
-    expect(representation).toContain('numRefills');
-    expect(representation).toContain('dateStopped,autoExpireDate');
+    expect(representation).toContain('orders:FULL');
+    expect(representation).not.toContain('orders:(');
+    expect(representation).not.toContain('drug:(');
+    expect(representation).not.toContain('asNeeded');
+    expect(representation).not.toContain('numRefills');
   });
 
   it('extracts only active appointment links of the configured visit attribute type', () => {
@@ -463,6 +513,7 @@ describe('outpatient visit summary contract', () => {
 
   it.each([
     ['voided', { voided: true }],
+    ['voided in FULL representation', { auditInfo: { dateVoided: '2026-08-26T12:30:00.000Z' } }],
     ['discontinued', { action: 'DISCONTINUE' }],
   ] as const)('remembers a %s canonical medication order without printing it as active', (_label, state) => {
     const originalEncounter = source.encounters?.[0];

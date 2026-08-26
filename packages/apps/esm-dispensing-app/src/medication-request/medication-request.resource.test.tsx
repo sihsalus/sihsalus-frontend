@@ -1311,10 +1311,13 @@ describe('Medication Request Resource Test', () => {
     });
   });
 
-  test('updateMedicationRequestFulfillerStatus should call medication request FHIR endpoint with appropriate data ', () => {
+  test.each([
+    MedicationRequestFulfillerStatus.completed,
+    MedicationRequestFulfillerStatus.in_progress,
+  ])('updateMedicationRequestFulfillerStatus should PATCH the explicit %s status', (fulfillerStatus) => {
     const medicationRequestUuid = '123abc';
 
-    updateMedicationRequestFulfillerStatus(medicationRequestUuid, MedicationRequestFulfillerStatus.completed);
+    updateMedicationRequestFulfillerStatus(medicationRequestUuid, fulfillerStatus);
     expect(openmrsFetch).toHaveBeenCalledWith(`/ws/fhir2/R4/MedicationRequest/${medicationRequestUuid}`, {
       method: 'PATCH',
       headers: {
@@ -1324,7 +1327,7 @@ describe('Medication Request Resource Test', () => {
         extension: [
           {
             url: OPENMRS_FHIR_EXT_REQUEST_FULFILLER_STATUS,
-            valueCode: MedicationRequestFulfillerStatus.completed,
+            valueCode: fulfillerStatus,
           },
         ],
       },

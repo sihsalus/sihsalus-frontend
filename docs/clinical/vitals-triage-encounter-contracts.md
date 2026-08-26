@@ -75,12 +75,21 @@ los llamaba placeholders).
 ## Estado de frontend y pendientes
 
 - **Offline del formulario custom**: `Save and close` persiste primero una
-  intención inmutable con UUID y datetime estables en la cola del usuario. La
+  intención con UUID estable y datetime local provisional en la cola del
+  usuario. En línea, una lectura fresca `network-only` de la visita confirma su
+  identidad y límites y aporta el HTTP `Date`; antes del primer intento solo el
+  datetime puede canonicalizarse mediante una transición atómica. Si falta esa
+  autoridad o se contradice con la visita, el ítem queda en cola sin POST. La
   escritura inmediata y la sincronización usan checkpoints, guard de paciente
   vivo y reconciliación exacta de cabecera, observaciones y providers. Un
   resultado ambiguo no se reintenta a ciegas. La transición de la cola de
   triaje se difiere hasta que el encounter esté confirmado; si se sincronizó
   después, el operador refresca Colas y usa `Enviar a atención`.
+- **Hora capturada offline**: al reconectar se valida el datetime original
+  contra una lectura fresca de visita y hora del servidor, pero nunca se
+  reemplaza por la hora de reconexión. Si el reloj del dispositivo estaba mal y
+  la captura queda fuera de esos límites, el ítem permanece sin intentar y
+  requiere reconciliación; no existe una corrección silenciosa segura.
 - **Límite offline pendiente**: no hay autosave antes de presionar `Save and
 close`, y el gate automatizado de laptop todavía no cubre signos vitales ni
   triaje. No declarar aceptación operacional hasta ejecutar un smoke sintético
@@ -89,7 +98,8 @@ close`, y el gate automatizado de laptop todavía no cubre signos vitales ni
   encounter de vitales con motivo y auditoría (el guardado es append-only por
   diseño; `updateVitalsAndBiometrics` existe pero no se usa).
 - **Hora de medición editable**: el payload ya envía `encounterDatetime`
-  explícito (= momento del guardado); falta un campo de UI para registro
+  explícito (hora del servidor para el guardado en línea o captura original
+  validada para el guardado offline); falta un campo de UI para registro
   retrospectivo.
 - **E2E verdadero**: el spec de Playwright de vitales
   (`e2e/tests/critical-paths.spec.ts`) puede pasar sin abrir el formulario ni

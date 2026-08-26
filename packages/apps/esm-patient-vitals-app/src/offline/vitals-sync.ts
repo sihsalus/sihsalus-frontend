@@ -22,8 +22,11 @@ const vitalsSynchronizationError = 'The offline vitals could not be synchronized
 const canonicalUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const recoveredEncounterRepresentation =
   'custom:(uuid,encounterDatetime,patient:(uuid),encounterType:(uuid),location:(uuid),visit:(uuid),voided,encounterProviders:(provider:(uuid),encounterRole:(uuid),voided),obs:(concept:(uuid),value,voided))';
+const authoritativeVisitTimingRepresentation = 'custom:(uuid,startDatetime,stopDatetime,voided,patient:(uuid))';
+const httpDatePrecisionMilliseconds = 999;
 
 let recoveryRequestSequence = 0;
+let visitTimingRequestSequence = 0;
 
 export interface VitalsObservationCreate {
   concept: string;
@@ -74,8 +77,22 @@ interface PersistVitalsOptions {
   displayName: string;
 }
 
-type QueueTransition = 'initial' | 'claim' | 'complete';
+type QueueTransition = 'initial' | 'server-time' | 'claim' | 'complete';
 type UpdateVitalsContent = NonNullable<SyncProcessOptions<VitalsSyncItemContent>['updateContent']>;
+
+interface AuthoritativeVisitTiming {
+  serverDatetime: Date;
+  startDatetime: Date;
+  stopDatetime: Date | null;
+}
+
+interface FreshVisitTimingResponse {
+  uuid?: string;
+  startDatetime?: string;
+  stopDatetime?: string | null;
+  voided?: boolean;
+  patient?: string | { uuid?: string };
+}
 
 interface RecoveredEncounter {
   uuid?: string;
@@ -155,9 +172,11 @@ export function buildVitalsEncounter({
 }
 
 /**
- * Persists the immutable clinical intent locally before any server write. A
- * confirmed response removes the queue row; an unavailable or ambiguous
- * response leaves the same UUID queued for reconciliation.
+ * Persists the clinical intent locally before any server write. While online,
+ * only its provisional device datetime may be replaced by the authoritative
+ * server/visit time before the first attempt. A confirmed response removes the
+ * queue row; an unavailable or ambiguous response leaves the same UUID queued
+ * for reconciliation.
  */
 export async function persistVitalsEncounter(
   encounter: VitalsEncounterCreate,
@@ -167,8 +186,10 @@ export async function persistVitalsEncounter(
   const descriptor = createDescriptor(encounter, displayName);
   let queuedItemId = await queueVitalsContent({ _id: encounter.uuid, encounter }, descriptor, 'initial');
 
+  let authoritativeVisitTiming: AuthoritativeVisitTiming;
   try {
     await assertFreshPatientIsAlive(encounter.patient, abortController.signal);
+    authoritativeVisitTiming = await fetchAuthoritativeVisitTiming(encounter, abortController.signal);
   } catch (error) {
     if (isDeceasedPatientError(error)) {
       await deleteQueuedItemBestEffort(queuedItemId);
@@ -182,6 +203,26 @@ export async function persistVitalsEncounter(
     return { status: 'queued', encounterUuid: encounter.uuid };
   }
 
+  const authoritativeEncounter = getServerTimedEncounter(encounter, authoritativeVisitTiming);
+  if (!authoritativeEncounter) {
+    return { status: 'queued', encounterUuid: encounter.uuid };
+  }
+
+  let persistedEncounter = encounter;
+  if (!isEqual(authoritativeEncounter, encounter)) {
+    try {
+      const authoritativeContent = { _id: encounter.uuid, encounter: authoritativeEncounter };
+      queuedItemId = await queueVitalsContent(authoritativeContent, descriptor, 'server-time');
+      const storedItem = await getSynchronizationItem<VitalsSyncItemContent>(queuedItemId);
+      if (!storedItem || !isEqual(storedItem.content, authoritativeContent)) {
+        return { status: 'queued', encounterUuid: encounter.uuid };
+      }
+      persistedEncounter = authoritativeEncounter;
+    } catch {
+      return { status: 'queued', encounterUuid: encounter.uuid };
+    }
+  }
+
   let attemptId: string;
   let attemptedContent: VitalsSyncItemContent;
   let claimedCheckpoint: VitalsWriteCheckpoint | undefined;
@@ -189,16 +230,16 @@ export async function persistVitalsEncounter(
     attemptId = createClinicalUuid();
     attemptedContent = {
       _id: encounter.uuid,
-      encounter,
+      encounter: persistedEncounter,
       _syncState: {
-        encounter: { status: 'attempted', payload: encounter, attemptId },
+        encounter: { status: 'attempted', payload: persistedEncounter, attemptId },
       },
     };
     queuedItemId = await queueVitalsContent(attemptedContent, descriptor, 'claim');
     const claimedItem = await getSynchronizationItem<VitalsSyncItemContent>(queuedItemId);
     claimedCheckpoint = claimedItem?.content._syncState?.encounter;
   } catch {
-    // The initial immutable row was already durable. A checkpoint/read failure
+    // The initial row was already durable. A checkpoint/read failure
     // must not invite a second submission with a different encounter UUID.
     return { status: 'queued', encounterUuid: encounter.uuid };
   }
@@ -214,7 +255,7 @@ export async function persistVitalsEncounter(
 
   let response: Awaited<ReturnType<typeof postVitalsEncounter>>;
   try {
-    response = await postVitalsEncounter(encounter, abortController.signal);
+    response = await postVitalsEncounter(persistedEncounter, abortController.signal);
   } catch (error) {
     if (isDefiniteRejectedWrite(error)) {
       await deleteQueuedItemBestEffort(queuedItemId);
@@ -231,7 +272,7 @@ export async function persistVitalsEncounter(
   const completedContent: VitalsSyncItemContent = {
     ...attemptedContent,
     _syncState: {
-      encounter: { status: 'completed', payload: encounter, attemptId },
+      encounter: { status: 'completed', payload: persistedEncounter, attemptId },
     },
   };
   try {
@@ -280,6 +321,11 @@ export async function synchronizeVitalsEncounter(
       throw createVitalsSynchronizationError();
     }
 
+    const authoritativeVisitTiming = await fetchAuthoritativeVisitTiming(item.encounter, options.abort.signal);
+    if (!isEncounterDatetimeWithinVisit(item.encounter.encounterDatetime, authoritativeVisitTiming)) {
+      throw createVitalsSynchronizationError();
+    }
+
     const attemptId = createClinicalUuid();
     await claimWrite(options.updateContent, item.encounter, attemptId);
     const response = await postVitalsEncounter(item.encounter, options.abort.signal);
@@ -307,6 +353,18 @@ export function reconcileVitalsQueueContent(
   }
 
   assertValidContent(existingContent);
+  if (transition === 'server-time') {
+    if (
+      existingContent._syncState?.encounter ||
+      proposedContent._syncState?.encounter ||
+      existingContent._id !== proposedContent._id ||
+      !encountersDifferOnlyByDatetime(existingContent.encounter, proposedContent.encounter)
+    ) {
+      throw createVitalsQueueError();
+    }
+    return proposedContent;
+  }
+
   if (existingContent._id !== proposedContent._id || !isEqual(existingContent.encounter, proposedContent.encounter)) {
     throw createVitalsQueueError();
   }
@@ -399,6 +457,89 @@ async function fetchEncounterForRecovery(encounterUuid: string, signal: AbortSig
     }
     throw error;
   }
+}
+
+async function fetchAuthoritativeVisitTiming(
+  encounter: VitalsEncounterCreate,
+  signal: AbortSignal,
+): Promise<AuthoritativeVisitTiming> {
+  const searchParams = new URLSearchParams({
+    v: authoritativeVisitTimingRepresentation,
+    _: getVisitTimingRequestNonce(),
+  });
+  const response = await openmrsFetch<FreshVisitTimingResponse>(
+    `${restBaseUrl}/visit/${encodeURIComponent(encounter.visit)}?${searchParams.toString()}`,
+    {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-store',
+        [omrsOfflineCachingStrategyHttpHeaderName]: 'network-only-or-cache-only',
+      },
+      signal,
+      rejectOnAuthFailure: true,
+    },
+  );
+  const serverDatetime = parseDate(response.headers?.get?.('Date'));
+  const startDatetime = parseDate(response.data?.startDatetime);
+  const stopDatetimeValue: unknown = response.data?.stopDatetime;
+  const stopDatetime = stopDatetimeValue === null ? null : parseDate(stopDatetimeValue);
+  const hasValidStopDatetime =
+    Object.hasOwn(response.data ?? {}, 'stopDatetime') && (stopDatetimeValue === null || Boolean(stopDatetime));
+
+  if (
+    response.data?.uuid !== encounter.visit ||
+    response.data?.voided !== false ||
+    getReferenceUuid(response.data?.patient) !== encounter.patient ||
+    !serverDatetime ||
+    !startDatetime ||
+    !hasValidStopDatetime ||
+    (stopDatetime && stopDatetime < startDatetime)
+  ) {
+    throw createVitalsSynchronizationError();
+  }
+
+  return { serverDatetime, startDatetime, stopDatetime };
+}
+
+function getServerTimedEncounter(
+  encounter: VitalsEncounterCreate,
+  timing: AuthoritativeVisitTiming,
+): VitalsEncounterCreate | null {
+  if (timing.stopDatetime || timing.startDatetime.valueOf() > getServerUpperBound(timing)) {
+    return null;
+  }
+  const encounterDatetime = new Date(Math.max(timing.serverDatetime.valueOf(), timing.startDatetime.valueOf()));
+  return { ...encounter, encounterDatetime: encounterDatetime.toISOString() };
+}
+
+function isEncounterDatetimeWithinVisit(encounterDatetime: string, timing: AuthoritativeVisitTiming): boolean {
+  const parsedEncounterDatetime = parseDate(encounterDatetime);
+  if (!parsedEncounterDatetime) {
+    return false;
+  }
+  return (
+    parsedEncounterDatetime >= timing.startDatetime &&
+    parsedEncounterDatetime.valueOf() <= getServerUpperBound(timing) &&
+    (!timing.stopDatetime || parsedEncounterDatetime <= timing.stopDatetime)
+  );
+}
+
+function getServerUpperBound(timing: AuthoritativeVisitTiming): number {
+  return timing.serverDatetime.valueOf() + httpDatePrecisionMilliseconds;
+}
+
+function encountersDifferOnlyByDatetime(existing: VitalsEncounterCreate, proposed: VitalsEncounterCreate): boolean {
+  const { encounterDatetime: _existingDatetime, ...existingClinicalData } = existing;
+  const { encounterDatetime: _proposedDatetime, ...proposedClinicalData } = proposed;
+  return isEqual(existingClinicalData, proposedClinicalData);
+}
+
+function parseDate(value?: unknown): Date | null {
+  if (typeof value !== 'string' || !value.trim()) {
+    return null;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.valueOf()) ? null : parsed;
 }
 
 function postVitalsEncounter(encounter: VitalsEncounterCreate, signal: AbortSignal) {
@@ -568,6 +709,11 @@ function areEncounterDatetimesEqual(actual?: string, expected?: string) {
 function getRecoveryRequestNonce() {
   recoveryRequestSequence += 1;
   return `${Date.now()}-${recoveryRequestSequence}`;
+}
+
+function getVisitTimingRequestNonce() {
+  visitTimingRequestSequence += 1;
+  return `${Date.now()}-${visitTimingRequestSequence}`;
 }
 
 function createClinicalUuid() {

@@ -154,7 +154,7 @@ export const SisLookupField = () => {
   const { identifierTypes, values, setFieldValue, setFieldTouched, isOffline } = useContext(PatientRegistrationContext);
   const [isAutoLoading, setIsAutoLoading] = useState(false);
   const [status, setStatus] = useState<LookupStatus | null>(null);
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(true);
   const [verificationMethod, setVerificationMethod] = useState<SisVerificationMethod>('manual-web');
   const [accreditation, setAccreditation] = useState<SisAccreditationSelection | ''>('');
   const [selectedProductUuid, setSelectedProductUuid] = useState('');
@@ -290,10 +290,7 @@ export const SisLookupField = () => {
     }
 
     const product = productAnswers.find((answer) => answer.uuid === selectedProductUuid);
-    const currentInsuranceCode =
-      values.attributes?.[peruInsuranceTypeAttributeTypeUuid] === peruInsuranceSisConceptUuid
-        ? values.attributes?.[peruInsuranceCodeAttributeTypeUuid]?.trim()
-        : '';
+    const currentInsuranceCode = values.attributes?.[peruInsuranceCodeAttributeTypeUuid]?.trim() ?? '';
     applySisVerificationToForm(
       {
         status: accreditation,
@@ -307,7 +304,6 @@ export const SisLookupField = () => {
       setFieldTouched,
     );
 
-    setIsFormOpen(false);
     setStatus({
       kind: 'success',
       title:

@@ -14,6 +14,7 @@ import {
   INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
   INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
   LEGACY_SIS_PRODUCT_CONCEPT_UUIDS,
+  isTriageFinancingEligible,
   normalizeFinanciadorConceptUuid,
   SELF_FINANCED_CONCEPT_UUID,
   SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
@@ -259,6 +260,38 @@ describe('SIS financing eligibility', () => {
         accreditationCheckedAt: null,
       }),
     ).toBe('missing');
+  });
+
+  it('distinguishes missing financing from an explicitly known non-SIS financer', () => {
+    expect(
+      getSisFinancingState({
+        financiadorUuid: null,
+        insuranceNumber: null,
+        accreditationStatusUuid: null,
+        accreditationCheckedAt: null,
+      }),
+    ).toBe('missing');
+    expect(
+      getSisFinancingState({
+        financiadorUuid: essaludConceptUuid,
+        insuranceNumber: null,
+        accreditationStatusUuid: null,
+        accreditationCheckedAt: null,
+      }),
+    ).toBe('notApplicable');
+  });
+
+  it.each([
+    ['active', true],
+    ['notApplicable', true],
+    ['inactive', false],
+    ['pending', false],
+    ['notConsulted', false],
+    ['missing', false],
+    [null, false],
+    [undefined, false],
+  ] as const)('evaluates %s as triage eligibility %s', (state, expected) => {
+    expect(isTriageFinancingEligible(state)).toBe(expected);
   });
 
   it('reads the visit-level financing attributes used by triage', async () => {

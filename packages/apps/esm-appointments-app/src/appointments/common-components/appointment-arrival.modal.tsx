@@ -16,6 +16,7 @@ import {
   fetchFreshPatientVitalStatus,
   fetchVisitInsurance,
   getSisFinancingState,
+  isTriageFinancingEligible,
   safeCopyFinanciadorToVisit,
 } from '@openmrs/esm-patient-common-lib';
 import { formatPersonName, getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
@@ -457,7 +458,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     }
   };
 
-  const assertPatientHasActiveSisForTriage = async () => {
+  const assertPatientHasEligibleFinancingForTriage = async () => {
     if (!arrivalRule?.requiresTriage) {
       return;
     }
@@ -468,12 +469,16 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
         code: TRIAGE_FINANCING_UNDEFINED,
       });
     }
-    if (getSisFinancingState({
-      financiadorUuid: patientInsurance.insuranceTypeUuid,
-      insuranceNumber: patientInsurance.insuranceCode,
-      accreditationStatusUuid: patientInsurance.accreditationStatusUuid,
-      accreditationCheckedAt: patientInsurance.accreditationCheckedAt,
-    }) !== 'active') {
+    if (
+      !isTriageFinancingEligible(
+        getSisFinancingState({
+          financiadorUuid: patientInsurance.insuranceTypeUuid,
+          insuranceNumber: patientInsurance.insuranceCode,
+          accreditationStatusUuid: patientInsurance.accreditationStatusUuid,
+          accreditationCheckedAt: patientInsurance.accreditationCheckedAt,
+        }),
+      )
+    ) {
       throw Object.assign(new Error('The patient does not have active SIS financing.'), {
         code: TRIAGE_SIS_FINANCING_REQUIRED,
       });
@@ -527,7 +532,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
               code: TRIAGE_SIS_FINANCING_REQUIRED,
             });
           }
-          if (getSisFinancingState(visitInsurance) !== 'active') {
+          if (!isTriageFinancingEligible(getSisFinancingState(visitInsurance))) {
             throw Object.assign(new Error('The visit does not have active SIS financing.'), {
               code: TRIAGE_SIS_FINANCING_REQUIRED,
             });
@@ -655,7 +660,7 @@ const AppointmentArrivalModal: React.FC<AppointmentArrivalModalProps> = ({
     try {
       const rule = assertArrivalActionIsConfigured('queue');
       assertVisitLinkIsConfigured();
-      await assertPatientHasActiveSisForTriage();
+      await assertPatientHasEligibleFinancingForTriage();
       const requiredAppointmentLocationUuid = getAppointmentLocationUuid();
       if (!(await validateAppointmentStatus())) {
         closeModal();

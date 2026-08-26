@@ -17,7 +17,11 @@ import {
   useSession,
   type Visit,
 } from '@openmrs/esm-framework';
-import { fetchVisitInsurance, getSisFinancingState } from '@openmrs/esm-patient-common-lib';
+import {
+  fetchVisitInsurance,
+  getSisFinancingState,
+  isTriageFinancingEligible,
+} from '@openmrs/esm-patient-common-lib';
 import { getCompatibleUserFacingErrorMessage } from '@openmrs/esm-utils';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -181,7 +185,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
               });
             }
             const visitInsurance = await fetchVisitInsurance(visit.uuid);
-            if (getSisFinancingState(visitInsurance) !== 'active') {
+            if (!isTriageFinancingEligible(getSisFinancingState(visitInsurance))) {
               throw Object.assign(new Error('The visit does not have active SIS financing.'), {
                 code: TRIAGE_SIS_FINANCING_REQUIRED,
               });

@@ -75,6 +75,13 @@ solo cuando el usuario tiene `app:opciones.registrarPaciente`; sin ese permiso n
 terminaría bloqueada. La obligatoriedad del financiador, la derivación automática a Caja y un privilegio
 administrativo más específico para editar únicamente cobertura continúan como decisiones pendientes.
 
+Cuando el formulario se abre desde una ruta que exige triaje, la barrera
+compatible `requireActiveSisFinancing` significa financiamiento resuelto: acepta
+SIS vigente con bundle completo y un financiador no-SIS explícito, incluido
+autofinanciamiento. Un financiador ausente o un SIS incompleto, inactivo,
+pendiente o no consultado impide ejecutar el callback de cola. Esta regla no
+amplía la elegibilidad de FUA.
+
 ## Taxonomia clinica del resumen del paciente
 
 Los nombres visibles del resumen deben usar lenguaje clinico entendido por los equipos peruanos. Los nombres tecnicos de FHIR son detalles de implementacion. Por ejemplo, FHIR `Condition` puede representar un problema activo, un diagnostico de una atencion o una condicion historica resuelta; eso no obliga a mostrar una seccion llamada `Condiciones`.

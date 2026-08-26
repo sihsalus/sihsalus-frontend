@@ -1,11 +1,13 @@
 import { getDefaultsFromConfigSchema, type Order, type Patient, useConfig } from '@openmrs/esm-framework';
 import {
   fetchVisitInsurance,
+  SELF_FINANCED_CONCEPT_UUID,
   SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
   SIS_CONCEPT_UUID,
 } from '@openmrs/esm-patient-common-lib';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { renderWithSwr } from 'test-utils';
 import { type Config, configSchema } from '../../config-schema';
 import { useLabOrders } from '../../laboratory.resource';
 import OrdersDataTable from './orders-data-table.component';
@@ -198,7 +200,8 @@ describe('OrdersDataTable', () => {
     expect(row2).toHaveTextContent('M');
     expect(row2).toHaveTextContent('1');
     expect(await within(row1).findByText('Active SIS')).toBeInTheDocument();
-    expect(await within(row2).findByText('No SIS')).toBeInTheDocument();
+    expect(await within(row2).findByText('Verify SIS')).toBeInTheDocument();
+    expect(within(row2).queryByText('No SIS')).not.toBeInTheDocument();
 
     const user = userEvent.setup();
     await user.click(within(row1).getByLabelText('Expand current row'));
@@ -219,6 +222,35 @@ describe('OrdersDataTable', () => {
     expect(orderDetailsTable2).toHaveTextContent('01-Jan-2021');
     expect(orderDetailsTable2).toHaveTextContent('Received');
     expect(orderDetailsTable2).toHaveTextContent('Rutina');
+  });
+
+  it('distinguishes explicit non-SIS financing from a missing payer', async () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+    });
+    mockFetchVisitInsurance.mockImplementation(async (visitUuid) =>
+      visitUuid === 'visit-uuid-1'
+        ? {
+            financiadorUuid: SIS_CONCEPT_UUID,
+            insuranceNumber: 'SIS-001',
+            accreditationStatusUuid: SIS_ACCREDITATION_ACTIVE_CONCEPT_UUID,
+            accreditationCheckedAt: '2026-08-24',
+          }
+        : {
+            financiadorUuid: SELF_FINANCED_CONCEPT_UUID,
+            insuranceNumber: null,
+            accreditationStatusUuid: null,
+            accreditationCheckedAt: null,
+          },
+    );
+
+    renderWithSwr(<OrdersDataTable />);
+
+    const rows = screen.getAllByRole('row');
+    const dataRows = rows.slice(1).filter((row) => within(row).queryByLabelText('Expand current row'));
+    const nonSisRow = dataRows[1];
+    expect(await within(nonSisRow).findByText('No SIS')).toBeInTheDocument();
+    expect(within(nonSisRow).queryByText('Verify SIS')).not.toBeInTheDocument();
   });
 
   it('should show patient identifier if it is configured', () => {

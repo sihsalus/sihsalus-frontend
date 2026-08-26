@@ -47,6 +47,7 @@ import {
   getSisFinancingState,
   INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
   isFinanciadorCopyAuthorizationError,
+  isTriageFinancingEligible,
   normalizeFinanciadorConceptUuid,
   type PatientWorkspace2DefinitionProps,
   type SafeCopyFinanciadorToVisitResult,
@@ -166,16 +167,13 @@ function hasCompleteVisitCoverage(
   ).trim();
 
   if (requireActiveSisFinancing) {
-    if (financiador !== SIS_CONCEPT_UUID) {
-      return false;
-    }
-    return (
+    return isTriageFinancingEligible(
       getSisFinancingState({
         financiadorUuid: financiador,
         insuranceNumber,
         accreditationStatusUuid,
         accreditationCheckedAt,
-      }) === 'active'
+      }),
     );
   }
 
@@ -454,9 +452,10 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           copyPromise = safeCopyFinanciadorToVisit({
             patientUuid,
             visitUuid,
-            // Triage treats active SIS as a hard precondition. In that context,
-            // a retry after Admissions corrects the affiliation must refresh a
-            // stale pending/inactive/unknown visit bundle instead of preserving it.
+            // Triage requires resolved financing: active SIS or an explicitly
+            // identified non-SIS financer. A retry after Admissions corrects
+            // the affiliation must refresh a stale pending/inactive/unknown
+            // visit bundle instead of preserving it.
             onlyFillMissing: !requireActiveSisFinancing,
             patientIdentifierValues,
           });
@@ -1604,9 +1603,9 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
               await callbacks.onVisitCreatedOrUpdated(visit);
               completedPostSubmitActions.current.add(actionId);
               if (callbacks.kind === 'queue-entry') {
-                // A successful triage queue callback has freshly verified the
-                // persisted visit as active SIS coverage. Until that happens,
-                // keep the copy retryable on the already-created visit.
+                // A successful triage queue callback has freshly verified
+                // eligible persisted financing. Until that happens, keep the
+                // copy retryable on the already-created visit.
                 if (requireActiveSisFinancing) {
                   completedPostSubmitActions.current.add('financiador');
                 }

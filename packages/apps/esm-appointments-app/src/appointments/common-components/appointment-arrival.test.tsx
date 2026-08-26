@@ -218,6 +218,7 @@ describe('AppointmentArrivalModal', () => {
       insuranceCode: 'SIS-123',
       accreditationStatusUuid: 'active-status-uuid',
       accreditationCheckedAt: '2026-08-11T14:30:00.000-05:00',
+      verificationMethod: 'siasis-adt',
     });
     mockGetSisFinancingState.mockReturnValue('active');
     mockSafeCopyFinanciadorToVisit.mockResolvedValue({ ok: true, skipped: true, created: 0, updated: 0 });
@@ -574,6 +575,7 @@ describe('AppointmentArrivalModal', () => {
       insuranceCode: null,
       accreditationStatusUuid: null,
       accreditationCheckedAt: null,
+      verificationMethod: null,
     });
 
     renderModal();
@@ -609,6 +611,7 @@ describe('AppointmentArrivalModal', () => {
       insuranceCode: 'ESSALUD-123',
       accreditationStatusUuid: null,
       accreditationCheckedAt: null,
+      verificationMethod: null,
     });
     mockFetchVisitInsurance.mockResolvedValue({
       financiadorUuid: 'essalud-concept-uuid',

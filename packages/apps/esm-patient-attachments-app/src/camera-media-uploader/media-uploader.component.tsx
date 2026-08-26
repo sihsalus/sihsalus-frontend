@@ -22,10 +22,20 @@ export function isAllowedAttachmentFileName(fileName: string, allowedFileExtensi
   return allowedFileExtensions.includes(fileExtension);
 }
 
+export function getEffectiveMaxFileSizeMb(configuredMaxFileSize: number, override?: number): number {
+  return typeof override === 'number' && Number.isFinite(override) && override > 0 ? override : configuredMaxFileSize;
+}
+
 const MediaUploaderComponent = () => {
   const { t } = useTranslation(moduleName);
-  const { maxFileSize } = useConfig();
-  const { allowedExtensions = [], setFilesToUpload, multipleFiles } = useContext(CameraMediaUploaderContext);
+  const { maxFileSize: configuredMaxFileSize } = useConfig();
+  const {
+    allowedExtensions = [],
+    maxFileSizeMb,
+    setFilesToUpload,
+    multipleFiles,
+  } = useContext(CameraMediaUploaderContext);
+  const maxFileSize = getEffectiveMaxFileSizeMb(configuredMaxFileSize, maxFileSizeMb);
   const [errorNotification, setErrorNotification] = useState<ErrorNotification | null>(null);
   const uploadsEnabled = allowedExtensions.length > 0;
 

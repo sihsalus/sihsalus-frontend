@@ -8,3 +8,8 @@ page of the Developer Documentation.
 
 Attachment creation accepts an optional `AbortSignal`. Long-running or session-bound flows must pass their active
 signal so logout, account change, navigation, or explicit cancellation can stop the upload request.
+
+Callers that associate a document with a clinical record may also pass an `AttachmentUploadContext` containing a
+persisted encounter UUID plus a deterministic form-field namespace and path. The patient UUID, encounter UUID, and
+form-field metadata must be validated by the owning workflow; omitting the context preserves the existing
+patient-level attachment behavior.

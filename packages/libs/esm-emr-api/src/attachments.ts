@@ -1,6 +1,6 @@
 /** @module @category API */
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-api';
-import type { UploadedFile } from './types';
+import type { AttachmentUploadContext, UploadedFile } from './types';
 
 /** Base URL for the attachment REST API endpoint. */
 export const attachmentUrl = `${restBaseUrl}/attachment`;
@@ -58,6 +58,8 @@ export function getAttachments(patientUuid: string, includeEncounterless: boolea
  *   Should include `file` (File object) or `base64Content`, plus `fileName` and
  *   `fileDescription`.
  * @param signal An optional signal that cancels the upload request.
+ * @param context Optional encounter and form-field metadata for an exact
+ *   clinical association. Callers must only pass persisted identifiers.
  * @returns A Promise that resolves with the FetchResponse containing the created
  *   attachment data.
  *
@@ -71,11 +73,22 @@ export function getAttachments(patientUuid: string, includeEncounterless: boolea
  * });
  * ```
  */
-export async function createAttachment(patientUuid: string, fileToUpload: UploadedFile, signal?: AbortSignal) {
+export async function createAttachment(
+  patientUuid: string,
+  fileToUpload: UploadedFile,
+  signal?: AbortSignal,
+  context?: AttachmentUploadContext,
+) {
   const formData = new FormData();
 
   formData.append('fileCaption', fileToUpload.fileDescription);
   formData.append('patient', patientUuid);
+
+  if (context) {
+    formData.append('encounter', context.encounterUuid);
+    formData.append('formFieldNamespace', context.formFieldNamespace);
+    formData.append('formFieldPath', context.formFieldPath);
+  }
 
   if (fileToUpload.file) {
     formData.append('file', fileToUpload.file, fileToUpload.fileName);

@@ -3,6 +3,7 @@ import { type FetchResponse, type UploadedFile } from '@openmrs/esm-framework';
 export type CameraMediaUploadView = 'camera' | 'upload';
 
 export interface CameraMediaUploaderContextType {
+  maxFileSizeMb?: number;
   multipleFiles?: boolean;
   collectDescription?: boolean;
   saveFile?: (file: UploadedFile) => Promise<FetchResponse<unknown>>;

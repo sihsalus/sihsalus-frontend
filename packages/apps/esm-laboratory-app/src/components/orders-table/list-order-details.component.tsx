@@ -128,6 +128,8 @@ const ListOrderDetails: React.FC<ListOrdersDetailsProps> = ({ groupedOrders }) =
               </Accordion>
             )}
 
+            <ExtensionSlot name="lab-order-pdf-attachments-slot" state={{ order }} />
+
             <div className={styles.buttonSection}>
               {order.fulfillerStatus === 'RECEIVED' || order.fulfillerStatus == null ? (
                 <>

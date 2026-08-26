@@ -24,9 +24,9 @@ import { builtInSections, type RegistrationConfig, type SectionDefinition } from
 import { moduleName } from '../constants';
 import { ResourcesContext } from '../offline.resources';
 import BeforeSavePrompt from './before-save-prompt';
-import { getDocumentIdentifierEntries } from './field/external-lookup/dni-identifier';
+import { getDocumentIdentifierEntries, normalizeIdentityIdentifier } from './field/external-lookup/dni-identifier';
 import { type SavePatientForm, SavePatientTransactionManager } from './form-manager';
-import { getDocumentTypeDefinitionByIdentifierType, normalizeDocumentNumber } from './identity/identity-documents';
+import { getDocumentTypeDefinitionByIdentifierType } from './identity/identity-documents';
 import { fetchPersonForPromotion, searchLocalIdentityByDocument } from './identity/identity-search.resource';
 import { applyPersonToRegistrationForm } from './identity/promotion';
 import { DummyDataInput } from './input/dummy-data/dummy-data-input.component';
@@ -252,7 +252,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   const savePatientTransactionManager = useRef(new SavePatientTransactionManager());
   const promotePersonUuid = useMemo(() => new URLSearchParams(search ?? '').get('promotePerson'), [search]);
   const [isLoadingPromotion, setIsLoadingPromotion] = useState(!!promotePersonUuid && !hasPatientRoute);
-  const validationSchema = getValidationSchema(config, identifierTypes);
+  const validationSchema = getValidationSchema(config, identifierTypes, initialFormValuesState);
   const areIdentifiersUnavailableForSubmit = (hasFormIdentifiers: boolean) =>
     !isOffline &&
     !(inEditMode && hasFormIdentifiers) &&
@@ -373,7 +373,12 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
           );
           const identifierTypeUuid = identifier.identifierTypeUuid ?? identifierType?.uuid;
           const definition = getDocumentTypeDefinitionByIdentifierType(identifierTypeUuid);
-          const documentNumber = normalizeDocumentNumber(identifier.identifierValue, definition);
+          const documentNumber = normalizeIdentityIdentifier(
+            identifier.identifierValue,
+            identifierTypeUuid,
+            identifier.identifierName,
+            identifierType,
+          );
           const documentKey = `${identifierTypeUuid ?? ''}:${documentNumber}`;
 
           if (!documentNumber || checkedDocuments.has(documentKey)) {
@@ -381,10 +386,15 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
           }
           checkedDocuments.add(documentKey);
 
-          const identityMatches = await searchLocalIdentityByDocument(documentNumber, abortController, {
-            patientIdentifierTypeUuid: definition?.patientIdentifierTypeUuid ?? undefined,
-            personDocumentTypeConceptUuid: definition?.documentTypeConceptUuid,
-          });
+          const identityMatches = await searchLocalIdentityByDocument(
+            documentNumber,
+            abortController,
+            {
+              patientIdentifierTypeUuid: identifierTypeUuid ?? definition?.patientIdentifierTypeUuid ?? undefined,
+              personDocumentTypeConceptUuid: definition?.documentTypeConceptUuid,
+            },
+            { requireFreshNetwork: true, signal: abortController.signal },
+          );
           const existingPatient = identityMatches.find((match) => match.kind === 'patient');
           const existingPerson = identityMatches.find((match) => match.kind === 'person');
 

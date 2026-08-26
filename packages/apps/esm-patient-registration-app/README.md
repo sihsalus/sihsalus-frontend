@@ -68,6 +68,23 @@ Para el análisis completo de identidad documental, RENIEC/SIS, promoción de `P
 
 El identificador temporal debe generarse con el tipo/fuente configurada de OpenMRS/IdGen. No debe construirse en frontend con lógica ad hoc. Cuando luego aparece DNI u otro documento civil, se agrega como identificador adicional y se actualiza el estado de identificación; no se elimina automáticamente el código temporal porque sirve para reconciliación y auditoría.
 
+La afiliación temporal SIS `E-########` es una excepción de procedencia, no de formato: el frontend tampoco la
+genera. El operador transcribe el código que SIASIS acaba de emitir o consultar y ejecuta una única confirmación
+explícita. Antes de aplicarla, el registro hace una búsqueda local fresca con el UUID exacto del tipo de identificador;
+si no hay duplicado ni cobertura incompatible, guarda financiador SIS, el mismo código E, estado `Vigente`, fecha/hora
+estable y método controlado `siasis-adt`. Escribir el código por sí solo no acredita al paciente. Tampoco se infiere
+cobertura desde códigos existentes, hidratados/importados, autogenerados ni sin conexión. Un código E realmente nuevo
+agregado durante una edición administrativa sí puede recorrer la misma confirmación explícita.
+
+Para reconocer una acreditación ya registrada se exige el mismo `E-########` canónico, estado `Vigente`, fecha/hora
+ISO válida y un método SIS conocido (`manual-web`, `setisis` o `siasis-adt`). Dígitos sueltos, prefijos alternativos,
+`siteds`, procedencia desconocida o un bundle incompleto quedan en revisión; nunca se convierten ni renuevan su fecha.
+Al reabrir un paciente, un bundle persistido con `siasis-adt` solo conserva esa atestación si permanece intacto:
+financiador SIS, E canónico igual al identificador tipado, estado `Vigente` y timestamp ISO original. Los residuos o
+cambios parciales exigen revisión; sí se permite reemplazarlo atómicamente por otro financiador limpio, por SIS `No
+consultada` sin método/fecha residual (aunque conserve un código no acreditado coherente) o por una nueva verificación
+completa de un flujo conocido, incluso si su resultado es `No vigente` o `Pendiente`.
+
 ## Residencia, nacimiento y contacto
 
 El registro Perú muestra residencia, lugar de nacimiento y teléfono en una sola sección visual: `Residencia, nacimiento y contacto`.

@@ -8,6 +8,7 @@ import {
   INSURANCE_TYPE_PERSON_ATTRIBUTE_TYPE_UUID,
   SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_ACCREDITATION_STATUS_VISIT_ATTRIBUTE_TYPE_UUID,
+  SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
 } from '@openmrs/esm-patient-common-lib';
 
 const canonicalCoverageVisitAttributeTypes = [
@@ -146,6 +147,12 @@ export const esmPatientChartSchema = {
     _description:
       'Visit attribute type used to persist a per-attempt idempotency token and reconcile ambiguous visit creation responses.',
     _default: 'eb8b793b-f259-451d-9c09-53aa0ffd0d3f',
+  },
+  sisTemporaryAffiliationPatientIdentifierTypeUuid: {
+    _type: Type.PatientIdentifierTypeUuid,
+    _description:
+      'Patient identifier type whose E-######## value may also be used as the insurance number, exclusively for SIS coverage.',
+    _default: SIS_TEMPORARY_AFFILIATION_PATIENT_IDENTIFIER_TYPE_UUID,
   },
   restrictByVisitLocationTag: {
     _type: Type.Boolean,
@@ -371,6 +378,7 @@ export interface ChartConfig {
   offlineVisitTypeUuid: string;
   companionVisitAttributeTypeUuid: string;
   visitPersistenceTokenAttributeTypeUuid: string;
+  sisTemporaryAffiliationPatientIdentifierTypeUuid: string;
   restrictByVisitLocationTag: boolean;
   visitLocationTag: string;
   showAllEncountersTab: boolean;

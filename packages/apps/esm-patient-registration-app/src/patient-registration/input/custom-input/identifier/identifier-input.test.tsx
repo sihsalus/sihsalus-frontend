@@ -15,6 +15,7 @@ import {
   PatientRegistrationContext,
   type PatientRegistrationContextProps,
 } from '../../../patient-registration-context';
+import { peruTemporaryAffiliationPatientIdentifierTypeUuid } from '../../../peru-registration-config';
 
 import IdentifierInput from './identifier-input.component';
 
@@ -207,6 +208,28 @@ describe('identifier input', () => {
     expect(input).toHaveValue('12345678');
     expect(setFieldValueSpy).toHaveBeenCalledTimes(10);
     expect(setFieldValueSpy).toHaveBeenLastCalledWith(`identifiers.${fieldName}.identifierValue`, '12345678');
+  });
+
+  it('keeps a ninth temporary-affiliation digit visible so validation can reject it', () => {
+    const temporaryAffiliationIdentifier = {
+      ...openmrsID,
+      autoGeneration: false,
+      identifierName: 'Afiliación temporal SIS',
+      identifierTypeUuid: peruTemporaryAffiliationPatientIdentifierTypeUuid,
+      identifierValue: '',
+      initialValue: '',
+      required: true,
+    };
+    setupIdentifierInput(temporaryAffiliationIdentifier);
+    const input = screen.getByRole('textbox', { name: 'Afiliación temporal SIS' });
+
+    expect(input).toHaveAttribute('maxLength', '11');
+    fireEvent.change(input, { target: { value: 'E-123456789' } });
+
+    expect(mockContextValues.setFieldValue).toHaveBeenLastCalledWith(
+      `identifiers.${fieldName}.identifierValue`,
+      'E-123456789',
+    );
   });
 
   it('displays an edit button when there is an initial value', async () => {

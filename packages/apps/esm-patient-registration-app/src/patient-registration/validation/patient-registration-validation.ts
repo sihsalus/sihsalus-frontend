@@ -22,7 +22,13 @@ import {
   type RelationshipValue,
 } from '../patient-registration.types';
 import { getPeruIdentifierRule } from '../peru-identifier-validation';
-import { peruInsuranceSisConceptUuid } from '../peru-registration-config';
+import {
+  peruInsuranceAccreditationNotConsultedConceptUuid,
+  peruInsuranceAccreditationStatusAttributeTypeUuid,
+  peruInsuranceCodeAttributeTypeUuid,
+  peruInsuranceSisConceptUuid,
+} from '../peru-registration-config';
+import { requiresSiasisAdtBundleReview } from '../temporary-sis-affiliation';
 import { validateRequiredField } from './required-field-validation';
 
 const t = (key: string, _value: string) => key;
@@ -51,6 +57,10 @@ const insuranceAccreditationDateBeforeBirthdateMessage = t(
 const insuranceCodeRequiredForSisMessage = t(
   'insuranceCodeRequiredForSis',
   'El código de afiliación es obligatorio para pacientes del SIS',
+);
+const temporarySisSiasisBundleNeedsReviewMessage = t(
+  'temporarySisSiasisBundleNeedsReview',
+  'Revise la afiliación temporal SIS: una cobertura E vigente requiere código e identificador coincidentes, fecha y hora completas, y una fuente de verificación válida',
 );
 
 function parseDateOnly(value: unknown) {
@@ -427,6 +437,7 @@ function hasActiveRelationship(relationships: Array<RelationshipValue> | undefin
 export function getValidationSchema(
   config: RegistrationConfig,
   identifierTypes: Array<FetchedPatientIdentifierType> = [],
+  initialValues?: FormValues,
 ) {
   const insuranceAccreditationCheckedAtAttributeUuid = getPersonAttributeFieldUuid(
     config,
@@ -787,9 +798,29 @@ export function getValidationSchema(
         return true;
       }
 
+      // A clean reset to "No consultada" deliberately removes the previous
+      // accreditation code/evidence and may be saved for later verification.
+      if (
+        formValues?.attributes?.[peruInsuranceAccreditationStatusAttributeTypeUuid] ===
+        peruInsuranceAccreditationNotConsultedConceptUuid
+      ) {
+        return true;
+      }
+
       return this.createError({
         path: `attributes.${insuranceCodeAttributeUuid}`,
         message: insuranceCodeRequiredForSisMessage,
+      });
+    })
+    .test('siasis-adt-bundle-consistent', temporarySisSiasisBundleNeedsReviewMessage, function (values) {
+      const formValues = values as unknown as FormValues | undefined;
+      if (!requiresSiasisAdtBundleReview(formValues, identifierTypes, initialValues)) {
+        return true;
+      }
+
+      return this.createError({
+        path: `attributes.${insuranceCodeAttributeUuid ?? peruInsuranceCodeAttributeTypeUuid}`,
+        message: temporarySisSiasisBundleNeedsReviewMessage,
       });
     });
 }

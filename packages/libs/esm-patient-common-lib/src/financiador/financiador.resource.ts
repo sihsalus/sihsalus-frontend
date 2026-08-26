@@ -217,6 +217,37 @@ export function getSisFinancingState({
 }
 
 /**
+ * Estado SIS efectivo de la PERSONA, con la misma regla de confianza que el
+ * copiado persona→visita: un código temporal E-… solo acredita con evidencia
+ * de verificación confiable; sin ella, el estado se calcula como si el código
+ * no existiera (→ `missing`, que falla cerrado hacia revisión/Caja).
+ *
+ * Sin esto, los guardas que evalúan a la persona (llegada de cita, triaje)
+ * veían `active` donde el copiado luego descartaba el código, y la
+ * revalidación de triaje reventaba con «no pudo sincronizarse» — o, en el
+ * camino sin permisos de visita, dejaba pasar la afiliación no verificada.
+ *
+ * La consistencia código↔identificadores (isInsuranceCodeAllowed) queda a
+ * propósito en el copiado, su único dueño: exige identificadores frescos y su
+ * divergencia sí debe tratarse como error de datos, no como estado.
+ */
+export function getPersonSisFinancingState(
+  personInsurance: PersonInsurance,
+  sisConceptUuid: string = SIS_CONCEPT_UUID,
+): SisFinancingState {
+  const hasUntrustedTemporaryCode =
+    isTemporarySisAffiliationLikeCode(personInsurance.insuranceCode) &&
+    !hasTrustedTemporarySisCoverageEvidence(personInsurance, sisConceptUuid);
+
+  return getSisFinancingState({
+    financiadorUuid: personInsurance.insuranceTypeUuid,
+    insuranceNumber: hasUntrustedTemporaryCode ? null : personInsurance.insuranceCode,
+    accreditationStatusUuid: personInsurance.accreditationStatusUuid,
+    accreditationCheckedAt: personInsurance.accreditationCheckedAt,
+  });
+}
+
+/**
  * El triaje requiere un financiador identificado. SIS debe estar vigente y
  * completo; una IAFAS no-SIS o el autofinanciamiento no requieren
  * acreditación SIS. Este criterio no se aplica al FUA, que conserva su barrera

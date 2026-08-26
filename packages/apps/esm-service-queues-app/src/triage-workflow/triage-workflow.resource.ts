@@ -4,6 +4,7 @@ import {
   fetchPersonInsurance,
   fetchVisitInsurance,
   FINANCIADOR_VISIT_ATTRIBUTE_TYPE_UUID,
+  getPersonSisFinancingState,
   getSisFinancingState,
   INSURANCE_NUMBER_VISIT_ATTRIBUTE_TYPE_UUID,
   SIS_ACCREDITATION_CHECKED_AT_VISIT_ATTRIBUTE_TYPE_UUID,
@@ -180,12 +181,12 @@ export function getSisState(queueEntry: QueueEntry): SisState {
  * presenting that snapshot as current after Admission corrects the patient.
  */
 export function getPersonSisState(personInsurance: PersonInsurance): SisState {
-  return getSisFinancingState({
-    financiadorUuid: personInsurance.insuranceTypeUuid,
-    insuranceNumber: personInsurance.insuranceCode,
-    accreditationStatusUuid: personInsurance.accreditationStatusUuid,
-    accreditationCheckedAt: personInsurance.accreditationCheckedAt,
-  });
+  // Delegado al helper canonico: aplica la misma regla de confianza que el
+  // copiado persona→visita, de modo que un E temporal sin verificacion
+  // confiable lee `missing` aqui y en la visita. Antes leia `active`, y la
+  // revalidacion reventaba con «no pudo sincronizarse» (o dejaba pasar al
+  // paciente en el camino sin permisos de visita).
+  return getPersonSisFinancingState(personInsurance);
 }
 
 /**

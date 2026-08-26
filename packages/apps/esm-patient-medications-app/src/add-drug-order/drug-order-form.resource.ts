@@ -40,13 +40,13 @@ export function drugOrderBasketItemToFormValue(item: DrugOrderBasketItem, startD
     patientInstructions: item?.patientInstructions ?? '',
     asNeeded: item?.asNeeded ?? false,
     asNeededCondition: item?.asNeededCondition ?? '',
-    duration: item?.duration,
-    durationUnit: item?.durationUnit,
+    duration: item?.duration ?? null,
+    durationUnit: item?.durationUnit ?? null,
     pillsDispensed: item?.pillsDispensed ?? null,
-    quantityUnits: item?.quantityUnits,
+    quantityUnits: item?.quantityUnits ?? null,
     numRefills: item?.numRefills ?? null,
-    indication: item?.indication,
-    frequency: item?.frequency,
+    indication: item?.indication ?? '',
+    frequency: item?.frequency ?? null,
     startDate,
   };
 }
@@ -96,39 +96,56 @@ function useCreateMedicationOrderFormSchema() {
         message: t('freeDosageErrorMessage', 'Add free dosage note'),
       }),
       dosage: z
-        .number({
-          invalid_type_error: t('dosageRequiredErrorMessage', 'Dosage is required'),
+        .number()
+        .nullable()
+        .refine((value) => value !== null, {
+          message: t('dosageRequiredErrorMessage', 'Dosage is required'),
         })
-        .gt(0, { message: t('dosageGreaterThanZeroErrorMessage', 'Dose must be greater than 0') }),
-      unit: z.object(
-        { ...comboSchema },
-        {
-          invalid_type_error: t('selectUnitErrorMessage', 'Dose unit is required'),
-        },
-      ),
-      route: z.object(
-        { ...comboSchema },
-        {
-          invalid_type_error: t('selectRouteErrorMessage', 'Route is required'),
-        },
-      ),
+        .refine((value) => value === null || value > 0, {
+          message: t('dosageGreaterThanZeroErrorMessage', 'Dose must be greater than 0'),
+        }),
+      unit: z
+        .object({ ...comboSchema })
+        .nullable()
+        .refine((value) => Boolean(value), {
+          message: t('selectUnitErrorMessage', 'Dose unit is required'),
+        }),
+      route: z
+        .object({ ...comboSchema })
+        .nullable()
+        .refine((value) => Boolean(value), {
+          message: t('selectRouteErrorMessage', 'Route is required'),
+        }),
       patientInstructions: z.string().nullable(),
       asNeeded: z.boolean(),
       asNeededCondition: z.string().nullable(),
-      duration: z.number().nullable(),
-      durationUnit: z.object({ ...comboSchema }).nullable(),
+      duration: z
+        .number()
+        .nullable()
+        .refine((value) => !requireOutpatientQuantity || value !== null, {
+          message: t('durationRequiredErrorMessage', 'Treatment duration is required'),
+        })
+        .refine((value) => value === null || value > 0, {
+          message: t('durationGreaterThanZeroErrorMessage', 'Duration must be greater than 0'),
+        }),
+      durationUnit: z
+        .object({ ...comboSchema })
+        .nullable()
+        .refine((value) => !requireOutpatientQuantity || Boolean(value), {
+          message: t('durationUnitRequiredErrorMessage', 'Duration unit is required'),
+        }),
       indication: requireIndication
         ? z.string().refine((value) => value !== '', {
             message: t('indicationErrorMessage', 'Indication is required'),
           })
         : z.string().nullish(),
       startDate: z.date(),
-      frequency: z.object(
-        { ...frequencySchema },
-        {
-          invalid_type_error: t('selectFrequencyErrorMessage', 'Frequency is required'),
-        },
-      ),
+      frequency: z
+        .object({ ...frequencySchema })
+        .nullable()
+        .refine((value) => Boolean(value), {
+          message: t('selectFrequencyErrorMessage', 'Frequency is required'),
+        }),
     };
 
     const outpatientDrugOrderFields = {
@@ -193,7 +210,36 @@ function useCreateMedicationOrderFormSchema() {
       frequency: z.object(frequencySchema).nullable(),
     });
 
-    return z.discriminatedUnion('isFreeTextDosage', [nonFreeTextDosageSchema, freeTextDosageSchema]);
+    return z
+      .discriminatedUnion('isFreeTextDosage', [nonFreeTextDosageSchema, freeTextDosageSchema])
+      .superRefine((data, context) => {
+        const hasDuration = typeof data.duration === 'number';
+        const hasDurationUnit = Boolean(data.durationUnit);
+
+        if (!requireOutpatientQuantity && hasDurationUnit && !hasDuration) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t('durationRequiredErrorMessage', 'Treatment duration is required'),
+            path: ['duration'],
+          });
+        }
+
+        if (!requireOutpatientQuantity && hasDuration && !hasDurationUnit) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t('durationUnitRequiredErrorMessage', 'Duration unit is required'),
+            path: ['durationUnit'],
+          });
+        }
+
+        if (data.asNeeded && !data.asNeededCondition?.trim()) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t('prnReasonRequiredErrorMessage', 'Specify the reason for as-needed medication'),
+            path: ['asNeededCondition'],
+          });
+        }
+      });
   }, [requireIndication, requireOutpatientQuantity, t]);
 
   return schema;

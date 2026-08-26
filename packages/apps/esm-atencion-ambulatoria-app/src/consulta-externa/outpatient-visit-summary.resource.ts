@@ -5,6 +5,12 @@ import { getFormEngineFieldPath, type PhysicalExamValues, physicalExamFields } f
 const TIPO_DX_FORM_FIELD_NAMESPACE = 'visit-notes';
 const TIPO_DX_FIELD_PREFIX = 'tipo-dx-';
 
+// Encounter.orders is polymorphic. FULL lets REST dispatch each entry through
+// its concrete DrugOrder/TestOrder handler; a single custom shape would try to
+// reflect DrugOrder-only properties (for example `drug`) on TestOrder and
+// reject the complete visit with HTTP 400.
+const DRUG_DETAILS_REPRESENTATION = 'custom:(uuid,display,strength)';
+
 const VISIT_SUMMARY_REPRESENTATION =
   'custom:(uuid,patient:(uuid),visitType:(uuid,display),startDatetime,stopDatetime,location:(uuid,display),' +
   'attributes:(uuid,voided,value,attributeType:(uuid)),' +
@@ -14,13 +20,7 @@ const VISIT_SUMMARY_REPRESENTATION =
   'diagnoses:(uuid,display,voided,certainty,rank,diagnosis:(coded:(uuid,display,' +
   'mappings:(display,conceptReferenceTerm:(code,conceptSource:(name,display)))),nonCoded)),' +
   'obs:(uuid,voided,concept:(uuid,display),value,display,formFieldNamespace,formFieldPath),' +
-  'orders:(uuid,voided,action,previousOrder:(uuid),orderType:(uuid,display),concept:(uuid,display),' +
-  'orderReasonNonCoded,' +
-  'drug:(uuid,display,strength),dose,doseUnits:(uuid,display),route:(uuid,display),frequency:(uuid,display),' +
-  'asNeeded,asNeededCondition,duration,durationUnits:(uuid,display),quantity,quantityUnits:(uuid,display),numRefills,' +
-  'dosingInstructions,instructions,' +
-  'dateStopped,autoExpireDate,' +
-  'orderer:(uuid,display,person:(uuid,display)))))';
+  'orders:FULL))';
 
 interface OpenmrsRef {
   uuid: string;
@@ -60,6 +60,9 @@ interface VisitSummaryDiagnosis {
 interface VisitSummaryOrder {
   uuid: string;
   voided?: boolean;
+  auditInfo?: {
+    dateVoided?: string | null;
+  };
   action?: string;
   previousOrder?: OpenmrsRef;
   orderType?: OpenmrsRef;
@@ -262,10 +265,49 @@ export async function fetchOutpatientVisitSummarySource(visitUuid: string): Prom
   const response = await openmrsFetch<VisitSummarySource>(
     `${restBaseUrl}/visit/${visitUuid}?v=${VISIT_SUMMARY_REPRESENTATION}`,
   );
+  const source = response.data;
+  const drugUuids = new Map<string, string>();
+  for (const encounter of source.encounters ?? []) {
+    for (const order of encounter.orders ?? []) {
+      if (order.drug?.uuid) {
+        drugUuids.set(order.drug.uuid.toLowerCase(), order.drug.uuid);
+      }
+    }
+  }
+
+  const drugDetails = new Map<string, OpenmrsRef & { strength?: string }>();
+  await Promise.all(
+    [...drugUuids.values()].map(async (drugUuid) => {
+      const { data } = await openmrsFetch<OpenmrsRef & { strength?: string }>(
+        `${restBaseUrl}/drug/${encodeURIComponent(drugUuid)}?v=${DRUG_DETAILS_REPRESENTATION}`,
+      );
+      if (!data?.uuid || data.uuid.toLowerCase() !== drugUuid.toLowerCase()) {
+        throw new OutpatientVisitSummaryContractError(
+          'El medicamento no coincide con la orden de la visita solicitada.',
+        );
+      }
+      drugDetails.set(drugUuid.toLowerCase(), data);
+    }),
+  );
+
   const serverDateHeader = response.headers?.get?.('date');
   const serverDateMs = serverDateHeader ? Date.parse(serverDateHeader) : Number.NaN;
   return {
-    ...response.data,
+    ...source,
+    encounters: source.encounters?.map((encounter) => ({
+      ...encounter,
+      orders: encounter.orders?.map((order) =>
+        order.drug
+          ? {
+              ...order,
+              drug: {
+                ...order.drug,
+                ...drugDetails.get(order.drug.uuid.toLowerCase()),
+              },
+            }
+          : order,
+      ),
+    })),
     responseServerDatetime: Number.isNaN(serverDateMs) ? null : new Date(serverDateMs).toISOString(),
   };
 }
@@ -456,7 +498,9 @@ function getOrderCategory(order: VisitSummaryOrder): OutpatientSummaryOrder['cat
 
 function mapOrders(encounters: VisitSummaryEncounter[]): OutpatientSummaryOrder[] {
   const seen = new Set<string>();
-  const sourceOrders = encounters.flatMap((encounter) => encounter.orders ?? []).filter((order) => !order.voided);
+  const sourceOrders = encounters
+    .flatMap((encounter) => encounter.orders ?? [])
+    .filter((order) => !order.voided && !order.auditInfo?.dateVoided);
   const supersededOrderUuids = new Set(
     sourceOrders.map((order) => order.previousOrder?.uuid).filter((uuid): uuid is string => Boolean(uuid)),
   );

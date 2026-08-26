@@ -13,6 +13,7 @@ import {
   MedicationRequestCombinedStatus,
   MedicationRequestFulfillerStatus,
   MedicationRequestStatus,
+  type Quantity,
 } from './types';
 import {
   calculateIsFreeTextDosage,
@@ -41,6 +42,7 @@ import {
   getQuantity,
   getQuantityUnitsMatch,
   getRefillsAllowed,
+  isMedicationRequestFullyDispensed,
   isMostRecentMedicationDispense,
   revalidate,
 } from './utils';
@@ -760,7 +762,7 @@ describe('Util Tests', () => {
     const medicationRequest: MedicationRequest = {
       id: '1c1ad91e-8653-453a-9f59-8d5c36249aff',
       dispenseRequest: {
-        numberOfRepeatsAllowed: undefined,
+        numberOfRepeatsAllowed: 0,
         quantity: {
           value: 30,
           unit: 'mg',
@@ -859,7 +861,152 @@ describe('Util Tests', () => {
       whenPrepared: '',
     };
 
-    test('when adding new dispense should return null even if dispense meets or exceeds quantity if restrict total quantity dispensed config is false', () => {
+    const createMedicationRequest = (
+      quantity: Quantity | undefined,
+      numberOfRepeatsAllowed: number | undefined,
+    ): MedicationRequest => ({
+      ...medicationRequest,
+      status: MedicationRequestStatus.active,
+      dispenseRequest: {
+        ...medicationRequest.dispenseRequest,
+        numberOfRepeatsAllowed,
+        quantity,
+      },
+    });
+
+    const createMedicationDispense = (
+      id: string,
+      status: MedicationDispenseStatus | 'cancelled',
+      quantity: Quantity | undefined,
+    ): MedicationDispense => ({
+      ...existingMedicationDispense,
+      id,
+      status: status as MedicationDispenseStatus,
+      quantity,
+      whenHandedOver: `2026-08-25T10:00:0${id.length}-05:00`,
+      whenPrepared: `2026-08-25T10:00:0${id.length}-05:00`,
+    });
+
+    const validQuantity: Quantity = { value: 30, unit: 'tablet', code: 'tablet' };
+
+    test('should complete an order with refills only after completed dispenses cover every fill', () => {
+      const request = createMedicationRequest(validQuantity, 1);
+      const firstFill = createMedicationDispense('first', MedicationDispenseStatus.completed, validQuantity);
+      const finalFill = createMedicationDispense('', MedicationDispenseStatus.completed, validQuantity);
+
+      expect(
+        computeNewFulfillerStatusAfterDispenseEvent(
+          finalFill,
+          {
+            request,
+            dispenses: [firstFill],
+          },
+          false,
+        ),
+      ).toBe(MedicationRequestFulfillerStatus.completed);
+    });
+
+    test('should not count on-hold, declined, or cancelled dispense quantities toward completion', () => {
+      const request = createMedicationRequest(validQuantity, 0);
+      const completedPartial = createMedicationDispense('completed', MedicationDispenseStatus.completed, {
+        ...validQuantity,
+        value: 10,
+      });
+      const nonCompletedDispenses = [
+        createMedicationDispense('on-hold', MedicationDispenseStatus.on_hold, {
+          ...validQuantity,
+          value: 20,
+        }),
+        createMedicationDispense('declined', MedicationDispenseStatus.declined, {
+          ...validQuantity,
+          value: 20,
+        }),
+        createMedicationDispense('cancelled', 'cancelled', {
+          ...validQuantity,
+          value: 20,
+        }),
+      ];
+
+      expect(
+        isMedicationRequestFullyDispensed({
+          request,
+          dispenses: [completedPartial, ...nonCompletedDispenses],
+        }),
+      ).toBe(false);
+    });
+
+    test.each([
+      ['missing order quantity', undefined, 0],
+      ['zero order quantity', { ...validQuantity, value: 0 }, 0],
+      ['negative order quantity', { ...validQuantity, value: -1 }, 0],
+      ['non-finite order quantity', { ...validQuantity, value: Number.POSITIVE_INFINITY }, 0],
+      ['missing order code', { ...validQuantity, code: undefined }, 0],
+      ['negative refills', validQuantity, -1],
+      ['fractional refills', validQuantity, 0.5],
+    ])('should not auto-complete with %s', (_label, requestQuantity, refills) => {
+      const request = createMedicationRequest(requestQuantity as Quantity | undefined, refills as number | undefined);
+      const completedDispense = createMedicationDispense(
+        'completed',
+        MedicationDispenseStatus.completed,
+        validQuantity,
+      );
+
+      expect(isMedicationRequestFullyDispensed({ request, dispenses: [completedDispense] })).toBe(false);
+    });
+
+    test.each([
+      ['missing dispense quantity', undefined],
+      ['zero dispense quantity', { ...validQuantity, value: 0 }],
+      ['negative dispense quantity', { ...validQuantity, value: -1 }],
+      ['non-finite dispense quantity', { ...validQuantity, value: Number.NaN }],
+      ['missing dispense code', { ...validQuantity, code: undefined }],
+      ['different dispense code', { ...validQuantity, code: 'capsule' }],
+    ])('should not auto-complete with %s', (_label, invalidQuantity) => {
+      const request = createMedicationRequest(validQuantity, 0);
+      const validCompletedDispense = createMedicationDispense(
+        'valid',
+        MedicationDispenseStatus.completed,
+        validQuantity,
+      );
+      const invalidCompletedDispense = createMedicationDispense(
+        'invalid',
+        MedicationDispenseStatus.completed,
+        invalidQuantity as Quantity | undefined,
+      );
+
+      expect(
+        isMedicationRequestFullyDispensed({
+          request,
+          dispenses: [validCompletedDispense, invalidCompletedDispense],
+        }),
+      ).toBe(false);
+    });
+
+    test.each([
+      ['missing refill count', { ...validQuantity, unit: undefined }, undefined],
+      ['different unit display', { ...validQuantity, unit: 'tableta' }, 0],
+    ])('should complete with the same coded quantity when %s', (_label, dispenseQuantity, refills) => {
+      const request = createMedicationRequest(validQuantity, refills);
+      const completedDispense = createMedicationDispense(
+        'completed',
+        MedicationDispenseStatus.completed,
+        dispenseQuantity,
+      );
+
+      expect(isMedicationRequestFullyDispensed({ request, dispenses: [completedDispense] })).toBe(true);
+    });
+
+    test('should fail closed when both quantity systems are present and differ', () => {
+      const request = createMedicationRequest({ ...validQuantity, system: 'http://unitsofmeasure.org' }, 0);
+      const completedDispense = createMedicationDispense('completed', MedicationDispenseStatus.completed, {
+        ...validQuantity,
+        system: 'http://snomed.info/sct',
+      });
+
+      expect(isMedicationRequestFullyDispensed({ request, dispenses: [completedDispense] })).toBe(false);
+    });
+
+    test('when adding a completed dispense should complete the request when it covers the order even if quantity restriction is false', () => {
       newMedicationDispense.extension[0].valueDateTime = '2023-01-03T14:00:00-05:00';
       newMedicationDispense.whenHandedOver = '2023-01-03T14:00:00-05:00';
       newMedicationDispense.whenPrepared = '2023-01-03T14:00:00-05:00';
@@ -871,7 +1018,7 @@ describe('Util Tests', () => {
           { request: medicationRequest, dispenses: [] },
           false,
         ),
-      ).toBeNull();
+      ).toBe(MedicationRequestFulfillerStatus.completed);
     });
 
     test('when adding new dispense should return on-hold if status of new dispense is on-hold and if restrict total quantity dispensed config is false', () => {
@@ -900,7 +1047,7 @@ describe('Util Tests', () => {
       ).toBe(MedicationRequestFulfillerStatus.completed);
     });
 
-    test('when adding new dispense should return null if total dispensed less than total ordered and restrict total quantity dispensed config is true', () => {
+    test('when adding new dispense should return in-progress if total dispensed is less than total ordered', () => {
       newMedicationDispense.extension[0].valueDateTime = '2023-01-03T14:00:00-05:00';
       newMedicationDispense.status = MedicationDispenseStatus.completed;
       newMedicationDispense.quantity.value = 20;
@@ -910,7 +1057,7 @@ describe('Util Tests', () => {
           { request: medicationRequest, dispenses: [] },
           true,
         ),
-      ).toBeNull();
+      ).toBe(MedicationRequestFulfillerStatus.in_progress);
     });
 
     test('when adding new on-hold dispense should return on-hold if restrict total quantity dispensed config is true', () => {
@@ -926,12 +1073,12 @@ describe('Util Tests', () => {
       ).toBe(MedicationRequestFulfillerStatus.on_hold);
     });
 
-    test('when adding new dispense to request with existing dispense should return complete if meets total quantity ordered and restrict total quantity dispensed config is true', () => {
+    test('when adding completed dispenses should return complete if their cumulative quantity meets the order', () => {
       newMedicationDispense.extension[0].valueDateTime = '2023-01-03T14:00:00-05:00';
-      newMedicationDispense.status = MedicationDispenseStatus.on_hold;
+      newMedicationDispense.status = MedicationDispenseStatus.completed;
       newMedicationDispense.quantity.value = 20;
       existingMedicationDispense.extension[0].valueDateTime = '2023-01-03T14:00:00-05:00';
-      existingMedicationDispense.status = MedicationDispenseStatus.on_hold;
+      existingMedicationDispense.status = MedicationDispenseStatus.completed;
       existingMedicationDispense.quantity.value = 10;
       expect(
         computeNewFulfillerStatusAfterDispenseEvent(
@@ -945,7 +1092,7 @@ describe('Util Tests', () => {
       ).toBe(MedicationRequestFulfillerStatus.completed);
     });
 
-    test('when adding new dispense to request with existing dispense should return null if does not meet total quantiy order and  restrict total quantity dispensed config is true', () => {
+    test('when adding new dispense to request with existing dispense should remain in-progress below the ordered total', () => {
       newMedicationDispense.extension[0].valueDateTime = '2023-01-03T14:00:00-05:00';
       newMedicationDispense.status = MedicationDispenseStatus.completed;
       newMedicationDispense.quantity.value = 10;
@@ -961,17 +1108,20 @@ describe('Util Tests', () => {
           },
           true,
         ),
-      ).toBeNull();
+      ).toBe(MedicationRequestFulfillerStatus.in_progress);
     });
 
-    test('when editing existing dispense should return null if does not meet total quantity order and  restrict total quantity dispensed config is true', () => {
+    test.each([
+      false,
+      true,
+    ])('when editing a fully dispensed request down to a partial quantity should return in-progress (restrict=%s)', (restrictTotalQuantityDispensed) => {
       existingMedicationDispense.extension[0].valueDateTime = '2023-01-03T14:00:00-05:00';
       existingMedicationDispense.status = MedicationDispenseStatus.completed;
-      existingMedicationDispense.quantity.value = 30;
+      existingMedicationDispense.quantity = { ...validQuantity, value: 30 };
       const editedExistingMedicationDispense = {
         ...existingMedicationDispense,
+        quantity: { ...validQuantity, value: 20 },
       };
-      editedExistingMedicationDispense.quantity.value = 20;
       expect(
         computeNewFulfillerStatusAfterDispenseEvent(
           editedExistingMedicationDispense,
@@ -979,19 +1129,19 @@ describe('Util Tests', () => {
             request: medicationRequest,
             dispenses: [existingMedicationDispense],
           },
-          true,
+          restrictTotalQuantityDispensed,
         ),
-      ).toBeNull();
+      ).toBe(MedicationRequestFulfillerStatus.in_progress);
     });
 
     test('when editing existing dispense should return complete if meets total quantity order and  restrict total quantity dispensed config is true', () => {
       existingMedicationDispense.extension[0].valueDateTime = '2023-01-03T14:00:00-05:00';
       existingMedicationDispense.status = MedicationDispenseStatus.completed;
-      existingMedicationDispense.quantity.value = 20;
+      existingMedicationDispense.quantity = { value: 20, unit: 'mg', code: '123abc' };
       const editedExistingMedicationDispense = {
         ...existingMedicationDispense,
+        quantity: { value: 30, unit: 'mg', code: '123abc' },
       };
-      editedExistingMedicationDispense.quantity.value = 30;
       expect(
         computeNewFulfillerStatusAfterDispenseEvent(
           editedExistingMedicationDispense,
@@ -1008,11 +1158,11 @@ describe('Util Tests', () => {
       medicationRequest.status = MedicationRequestStatus.completed;
       existingMedicationDispense.extension[0].valueDateTime = '2023-01-03T14:00:00-05:00';
       existingMedicationDispense.status = MedicationDispenseStatus.completed;
-      existingMedicationDispense.quantity.value = 20;
+      existingMedicationDispense.quantity = { value: 20, unit: 'mg', code: '123abc' };
       const editedExistingMedicationDispense = {
         ...existingMedicationDispense,
+        quantity: { value: 30, unit: 'mg', code: '123abc' },
       };
-      editedExistingMedicationDispense.quantity.value = 30;
       expect(
         computeNewFulfillerStatusAfterDispenseEvent(
           editedExistingMedicationDispense,
@@ -1025,15 +1175,18 @@ describe('Util Tests', () => {
       ).toBe(MedicationRequestFulfillerStatus.completed);
     });
 
-    test('when editing existing dispense should return fulfiller status null if medication request status is *NOT* completed and restrict total quantity dispensed is set false', () => {
+    test('when editing an active request should remain active if the completed quantity is partial and quantity restriction is false', () => {
       medicationRequest.status = MedicationRequestStatus.active;
       existingMedicationDispense.extension[0].valueDateTime = '2023-01-03T14:00:00-05:00';
       existingMedicationDispense.status = MedicationDispenseStatus.completed;
-      existingMedicationDispense.quantity.value = 20;
+      existingMedicationDispense.quantity = { value: 20, unit: 'mg', code: '123abc' };
       const editedExistingMedicationDispense = {
         ...existingMedicationDispense,
+        quantity: {
+          ...existingMedicationDispense.quantity,
+          value: 20,
+        },
       };
-      editedExistingMedicationDispense.quantity.value = 30;
       expect(
         computeNewFulfillerStatusAfterDispenseEvent(
           editedExistingMedicationDispense,
@@ -1043,7 +1196,7 @@ describe('Util Tests', () => {
           },
           false,
         ),
-      ).toBe(null);
+      ).toBe(MedicationRequestFulfillerStatus.in_progress);
     });
   });
 
@@ -1555,6 +1708,14 @@ describe('Util Tests', () => {
       expect(
         computeTotalQuantityDispensed([medicationDispense1, medicationDispenseNoQuantity, medicationDispense2]),
       ).toBe(20);
+    });
+    test('should not count quantities from non-completed dispense events', () => {
+      expect(
+        computeTotalQuantityDispensed([
+          medicationDispense1,
+          { ...medicationDispense2, status: MedicationDispenseStatus.on_hold },
+        ]),
+      ).toBe(5);
     });
     // TODO: figure out how to get this to work
     /*test("should throw Error if unit mismatch", () => {

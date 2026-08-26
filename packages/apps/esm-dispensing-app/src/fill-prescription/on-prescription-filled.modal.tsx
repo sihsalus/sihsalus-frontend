@@ -14,11 +14,14 @@ import {
   updateMedicationRequestFulfillerStatus,
   usePrescriptionDetails,
 } from '../medication-request/medication-request.resource';
-import { MedicationDispenseStatus, MedicationRequestFulfillerStatus } from '../types';
+import { MedicationDispenseStatus } from '../types';
 import {
+  computeNewFulfillerStatusAfterDispenseEvent,
+  getFulfillerStatus,
   getMedicationDisplay,
   getMedicationReferenceOrCodeableConcept,
   getUuidFromReference,
+  isMedicationRequestFullyDispensed,
   markEncounterAsStale,
   revalidate,
 } from '../utils';
@@ -56,8 +59,17 @@ const OnPrescriptionFilledModal: React.FC<OnPrescriptionFilledModalProps> = ({ p
   const { t } = useTranslation();
   const { mutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const isSubmittingRef = React.useRef(false);
+  const pendingMedicationRequestBundles = React.useMemo(
+    () => medicationRequestBundles.filter((bundle) => !isMedicationRequestFullyDispensed(bundle)),
+    [medicationRequestBundles],
+  );
 
   const onConfirm = async () => {
+    if (isSubmittingRef.current) {
+      return;
+    }
+
     if (!dispensingLocationUuid) {
       showSnackbar({
         title: t('errorDispensingMedication', 'Error dispensing medication'),
@@ -67,10 +79,12 @@ const OnPrescriptionFilledModal: React.FC<OnPrescriptionFilledModalProps> = ({ p
       return;
     }
 
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     markEncounterAsStale(encounterUuid);
+    let hasSavedDispense = false;
     try {
-      for (const medicationRequestBundle of medicationRequestBundles) {
+      for (const medicationRequestBundle of pendingMedicationRequestBundles) {
         const medicationDispensePayload = initiateMedicationDispenseBody(
           medicationRequestBundle.request,
           session,
@@ -82,28 +96,56 @@ const OnPrescriptionFilledModal: React.FC<OnPrescriptionFilledModalProps> = ({ p
           getMedicationReferenceOrCodeableConcept(medicationRequestBundle.request),
         );
 
-        await saveMedicationDispense(medicationDispensePayload, MedicationDispenseStatus.completed)
-          .then((response) => {
-            const hasNoRefills = medicationRequestBundle.request.dispenseRequest.numberOfRepeatsAllowed === 0;
-            if (response.ok && hasNoRefills) {
-              return updateMedicationRequestFulfillerStatus(
+        let dispenseSaved = false;
+        try {
+          const response = await saveMedicationDispense(medicationDispensePayload, MedicationDispenseStatus.completed);
+          dispenseSaved = response.ok && (response.status === 200 || response.status === 201);
+          if (!dispenseSaved) {
+            throw new Error('Medication dispense request was not accepted');
+          }
+          hasSavedDispense = true;
+
+          const newFulfillerStatus = computeNewFulfillerStatusAfterDispenseEvent(
+            medicationDispensePayload,
+            medicationRequestBundle,
+            false,
+          );
+          const currentFulfillerStatus = getFulfillerStatus(medicationRequestBundle.request) ?? null;
+          if (currentFulfillerStatus !== newFulfillerStatus) {
+            try {
+              await updateMedicationRequestFulfillerStatus(
                 getUuidFromReference(
-                  medicationDispensePayload.authorizingPrescription[0].reference, // assumes authorizing prescription exist
+                  medicationDispensePayload.authorizingPrescription[0].reference, // assumes authorizing prescription exists
                 ),
-                MedicationRequestFulfillerStatus.completed,
-              ).then(() => response);
-            } else {
-              return response;
+                newFulfillerStatus,
+              );
+            } catch (error) {
+              showSnackbar({
+                title: t('dispenseSavedOrderStatusPending', 'Dispense saved; order status pending'),
+                kind: 'warning',
+                subtitle: getUserFacingErrorMessage(
+                  error,
+                  t(
+                    'dispenseSavedOrderStatusPendingForMedication',
+                    '{{medication}} was dispensed, but the order status could not be updated. Do not dispense it again; refresh the list and contact support if it remains active.',
+                    { medication: medicationDisplay },
+                  ),
+                  {
+                    logContext: 'Update registered medication request after saved dispense',
+                  },
+                ),
+              });
+              continue;
             }
-          })
-          .then(() => {
-            showSnackbar({
-              title: t('stockDispensed', 'Stock dispensed'),
-              subtitle: medicationDisplay,
-              isLowContrast: false,
-            });
-          })
-          .catch((error) => {
+          }
+
+          showSnackbar({
+            title: t('stockDispensed', 'Stock dispensed'),
+            subtitle: medicationDisplay,
+            isLowContrast: false,
+          });
+        } catch (error) {
+          if (!dispenseSaved) {
             showSnackbar({
               title: t('errorDispensingMedication', 'Error dispensing medication'),
               kind: 'error',
@@ -114,17 +156,35 @@ const OnPrescriptionFilledModal: React.FC<OnPrescriptionFilledModalProps> = ({ p
                   '{{medication}}: no se pudo completar la dispensación. Intente nuevamente.',
                   { medication: medicationDisplay },
                 ),
-                { logContext: `Fill prescription ${medicationRequestBundle.request.id}` },
+                { logContext: 'Dispense registered medication request' },
               ),
             });
-          });
+          }
+        }
       }
-
-      close();
     } finally {
-      revalidate(mutate, encounterUuid);
+      try {
+        await revalidate(mutate, encounterUuid);
+      } catch (error) {
+        if (hasSavedDispense) {
+          showSnackbar({
+            kind: 'warning',
+            title: t('dispenseSavedRefreshPending', 'Dispense saved; refresh pending'),
+            subtitle: getUserFacingErrorMessage(
+              error,
+              t(
+                'dispenseSavedRefreshPendingMessage',
+                'The dispense was saved, but the list could not be refreshed. Reload it before continuing.',
+              ),
+              { logContext: 'Refresh prescriptions after dispensing registered orders' },
+            ),
+          });
+        }
+      }
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
+    close();
   };
 
   const patientName = getPatientName(patient);
@@ -195,7 +255,7 @@ const OnPrescriptionFilledModal: React.FC<OnPrescriptionFilledModalProps> = ({ p
             !dispensingLocationUuid ||
             areOrdersLoading ||
             Boolean(ordersError) ||
-            medicationRequestBundles.length === 0
+            pendingMedicationRequestBundles.length === 0
           }
           onClick={() => {
             onConfirm();

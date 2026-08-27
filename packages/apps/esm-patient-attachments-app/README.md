@@ -44,8 +44,16 @@ configuration until the compatible backend and role contract have been rolled ou
 
 ### Backend compatibility requirement
 
-This integration requires a compatible SIH Salus Attachments release in the
-`>=4.0.1-sihsalus.1 <5.0.0` range and a coordinated backend, role, and configuration rollout. The declared backend
-dependency supports compatibility diagnostics; the disabled-by-default runtime feature flag controls activation.
-Configure `pdf` in `attachments.allowedFileExtensions` and validate the complete workflow contract in a coordinated
-non-production environment before enabling the feature.
+The declared backend dependency is `attachments >=4.0.0 <5.0.0`, which is what the always-mounted surfaces of this
+module need: the chart attachments dashboard, the patient photo widget, and reading supplemental laboratory PDFs all
+work on a stock upstream Attachments 4.x.
+
+**Uploading** a supplemental laboratory PDF is the only part that needs the SIH Salus release
+`>=4.0.1-sihsalus.1 <5.0.0`, because it posts `formFieldNamespace` and `formFieldPath` alongside the attachment and
+upstream 4.0.0 ignores them. That path is gated by the `enableLabOrderPdfAttachments` runtime flag, which defaults to
+`false`; if it is enabled against an upstream backend the upload fails with a visible error while reads keep working.
+
+The requirement is deliberately not expressed as a hard `backendDependencies` range. Doing so reported the entire
+module as version-incompatible on any upstream 4.0.0 deployment — a permanent false alarm in Implementer Tools for a
+feature that ships disabled. Configure `pdf` in `attachments.allowedFileExtensions` and validate the complete workflow
+contract in a coordinated non-production environment before enabling the feature.

@@ -76,6 +76,7 @@
   "clinicalStatus": "Estado clínico",
   "clinicalStatusRequired": "Se requiere un estado clínico",
   "clinicalViews": "Módulos MINSA",
+  "complementaryTests": "Pruebas complementarias",
   "conceptSetLoaded": "ConceptSet cargado",
   "conceptSetMembers": "Miembros del ConceptSet",
   "conceptSetUuid": "ConceptSet UUID",

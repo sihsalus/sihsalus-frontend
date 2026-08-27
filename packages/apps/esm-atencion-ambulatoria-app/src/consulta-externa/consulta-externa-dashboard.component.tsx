@@ -1,5 +1,5 @@
 import { Layer, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
-import { Activity, ArrowRight, Catalog, DocumentMultiple_01, ListChecked } from '@carbon/react/icons';
+import { Activity, ArrowRight, Catalog, DocumentMultiple_01, ListChecked, Microscope } from '@carbon/react/icons';
 import { ExtensionSlot } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useState } from 'react';
@@ -36,6 +36,7 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
               <Tab renderIcon={Activity}>{t('triageAndChiefComplaint', 'Triajes previos')}</Tab>
               <Tab renderIcon={DocumentMultiple_01}>{t('anamnesis', 'Anamnesis')}</Tab>
               <Tab renderIcon={DocumentMultiple_01}>{t('soapNotes', 'Examen físico / SOAP')}</Tab>
+              <Tab renderIcon={Microscope}>{t('complementaryTests', 'Pruebas complementarias')}</Tab>
               <Tab renderIcon={Catalog}>{t('diagnosisClassification', 'Diagnóstico')}</Tab>
               <Tab renderIcon={ListChecked}>{t('treatmentPlan', 'Plan de Tratamiento')}</Tab>
               <Tab renderIcon={ArrowRight}>{t('referralCounterReferral', 'Referencia / Contrarreferencia')}</Tab>
@@ -51,9 +52,16 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
               </TabPanel>
               <TabPanel>{selectedTab === 1 ? <Anamnesis patientUuid={patientUuid} /> : null}</TabPanel>
               <TabPanel>{selectedTab === 2 ? <NotasSoap patientUuid={patientUuid} /> : null}</TabPanel>
-              <TabPanel>{selectedTab === 3 ? <DiagnosticoClasificado patientUuid={patientUuid} /> : null}</TabPanel>
-              <TabPanel>{selectedTab === 4 ? <PlanTratamiento patientUuid={patientUuid} /> : null}</TabPanel>
-              <TabPanel>{selectedTab === 5 ? <ReferenciaContraReferencia patientUuid={patientUuid} /> : null}</TabPanel>
+              <TabPanel>
+                {selectedTab === 3 ? (
+                  <div className={styles.combinedPanel}>
+                    <ExtensionSlot name="consulta-externa-pruebas-complementarias-slot" state={{ patientUuid }} />
+                  </div>
+                ) : null}
+              </TabPanel>
+              <TabPanel>{selectedTab === 4 ? <DiagnosticoClasificado patientUuid={patientUuid} /> : null}</TabPanel>
+              <TabPanel>{selectedTab === 5 ? <PlanTratamiento patientUuid={patientUuid} /> : null}</TabPanel>
+              <TabPanel>{selectedTab === 6 ? <ReferenciaContraReferencia patientUuid={patientUuid} /> : null}</TabPanel>
             </TabPanels>
           </Tabs>
         </Layer>

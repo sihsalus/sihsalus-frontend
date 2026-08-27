@@ -76,6 +76,7 @@
   "clinicalStatus": "Clinical status",
   "clinicalStatusRequired": "A clinical status is required",
   "clinicalViews": "MINSA modules",
+  "complementaryTests": "Complementary tests",
   "conceptSetLoaded": "ConceptSet loaded",
   "conceptSetMembers": "ConceptSet members",
   "conceptSetUuid": "ConceptSet UUID",

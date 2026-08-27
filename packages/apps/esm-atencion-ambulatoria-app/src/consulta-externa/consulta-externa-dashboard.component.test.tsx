@@ -32,7 +32,13 @@ const mockExtensionSlot = vi.mocked(ExtensionSlot);
 
 describe('ConsultaExternaDashboard', () => {
   beforeEach(() => {
-    mockExtensionSlot.mockImplementation(() => <div>Triage panel</div>);
+    mockExtensionSlot.mockImplementation(({ name }) =>
+      name === 'consulta-externa-pruebas-complementarias-slot' ? (
+        <div>Laboratory results card</div>
+      ) : (
+        <div>Triage panel</div>
+      ),
+    );
   });
 
   it('orders the tabs according to the clinical workflow and keeps panels aligned', async () => {
@@ -43,6 +49,7 @@ describe('ConsultaExternaDashboard', () => {
       'Triajes previos',
       'Anamnesis',
       'Examen físico / SOAP',
+      'Pruebas complementarias',
       'Diagnóstico',
       'Plan de Tratamiento',
       'Referencia / Contrarreferencia',
@@ -55,9 +62,15 @@ describe('ConsultaExternaDashboard', () => {
     expect(screen.getByText('SOAP panel')).toBeVisible();
     expect(screen.queryByText('Diagnosis panel')).not.toBeInTheDocument();
 
+    // The clinician reads what the laboratory returned before classifying, so
+    // the tab sits between the physical examination and the diagnosis.
+    await user.click(screen.getByRole('tab', { name: 'Pruebas complementarias' }));
+    expect(screen.getByText('Laboratory results card')).toBeVisible();
+    expect(screen.queryByText('SOAP panel')).not.toBeInTheDocument();
+
     await user.click(screen.getByRole('tab', { name: 'Diagnóstico' }));
     expect(screen.getByText('Diagnosis panel')).toBeVisible();
-    expect(screen.queryByText('SOAP panel')).not.toBeInTheDocument();
+    expect(screen.queryByText('Laboratory results card')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Plan de Tratamiento' }));
     expect(screen.getByText('Treatment plan panel')).toBeVisible();

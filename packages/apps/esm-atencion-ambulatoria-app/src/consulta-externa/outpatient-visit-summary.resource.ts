@@ -18,7 +18,8 @@ const VISIT_SUMMARY_REPRESENTATION =
   'encounterProviders:(uuid,voided,provider:(uuid,display,' +
   'attributes:(uuid,voided,value,attributeType:(uuid,display)),person:(uuid,display)),encounterRole:(uuid,display)),' +
   'diagnoses:(uuid,display,voided,certainty,rank,diagnosis:(coded:(uuid,display,' +
-  'mappings:(display,conceptReferenceTerm:(code,conceptSource:(name,display)))),nonCoded)),' +
+  'mappings:(display,conceptReferenceTerm:(code,conceptSource:(name,display))),' +
+  'names:(display,conceptNameType)),nonCoded)),' +
   'obs:(uuid,voided,concept:(uuid,display),value,display,formFieldNamespace,formFieldPath),' +
   'orders:FULL))';
 
@@ -52,6 +53,7 @@ interface VisitSummaryDiagnosis {
           conceptSource?: { name?: string; display?: string };
         };
       }>;
+      names?: Array<{ display?: string; conceptNameType?: string | null }>;
     };
     nonCoded?: string;
   };
@@ -439,15 +441,28 @@ function getDiagnosisType(
   return 'P';
 }
 
+const cie10CodePattern = /^[A-Z][0-9][A-Z0-9.]{1,5}$/i;
+
+/**
+ * An explicit CIE-10/ICD-10 mapping wins. The MINSA CIE-10 catalog loaded by
+ * content ships no mappings and stores the code as the concept's SHORT name,
+ * which is a structured catalog field and therefore also accepted.
+ */
 function getCie10MappingCode(diagnosis: VisitSummaryDiagnosis): string | null {
-  const cie10Mapping = diagnosis.diagnosis?.coded?.mappings?.find((mapping) => {
+  const coded = diagnosis.diagnosis?.coded;
+  const cie10Mapping = coded?.mappings?.find((mapping) => {
     const source =
       mapping.conceptReferenceTerm?.conceptSource?.name?.trim() ||
       mapping.conceptReferenceTerm?.conceptSource?.display?.trim() ||
       '';
     return /icd[-\s]?10|cie[-\s]?10/i.test(source) && mapping.conceptReferenceTerm?.code?.trim();
   });
-  return cie10Mapping?.conceptReferenceTerm?.code?.trim() || null;
+  const mappedCode = cie10Mapping?.conceptReferenceTerm?.code?.trim();
+  if (mappedCode) return mappedCode;
+  const shortName = coded?.names?.find(
+    (name) => name.conceptNameType === 'SHORT' && cie10CodePattern.test(name.display?.trim() ?? ''),
+  );
+  return shortName?.display?.trim().toLocaleUpperCase('es-PE') || null;
 }
 
 function mapDiagnoses(

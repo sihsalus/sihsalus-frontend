@@ -35,7 +35,7 @@
   "diagnoses": "Diagnoses",
   "discard": "Discard",
   "editStickyNote": "Edit sticky note",
-  "emptyDiagnosisText": "No diagnosis selected — Enter a diagnosis below",
+  "emptyDiagnosisText": "No diagnosis selected — Enter a diagnosis above",
   "enterNotePlaceholder": "Enter your sticky note here...",
   "enterPrimaryDiagnoses": "Enter Primary diagnoses",
   "enterSecondaryDiagnoses": "Enter Secondary diagnoses",

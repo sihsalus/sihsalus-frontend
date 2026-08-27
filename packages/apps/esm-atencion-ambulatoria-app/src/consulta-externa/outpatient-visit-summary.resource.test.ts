@@ -763,6 +763,43 @@ describe('outpatient visit summary contract', () => {
     });
   });
 
+  it('reads the CIE-10 code from the catalog SHORT name when the concept has no mapping', () => {
+    // The MINSA catalog loaded by content stores the code as the SHORT name and ships no mappings.
+    const canonicalEncounter = source.encounters?.[0];
+    const primaryDiagnosis = canonicalEncounter?.diagnoses?.[0];
+    if (!canonicalEncounter || !primaryDiagnosis?.diagnosis?.coded) {
+      throw new Error('The synthetic fixture requires a coded primary diagnosis.');
+    }
+    const summary = build({
+      source: {
+        ...source,
+        encounters: [
+          {
+            ...canonicalEncounter,
+            diagnoses: [
+              {
+                ...primaryDiagnosis,
+                diagnosis: {
+                  coded: {
+                    ...primaryDiagnosis.diagnosis.coded,
+                    mappings: [],
+                    names: [
+                      { display: 'CEFALEA', conceptNameType: 'FULLY_SPECIFIED' },
+                      { display: 'r51', conceptNameType: 'SHORT' },
+                    ],
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(summary).toMatchObject({ clinicalRecordCompleteness: 'canonical-complete' });
+    expect(summary.diagnoses[0].cie10Code).toBe('R51');
+  });
+
   it('accepts the structured CIE-10 source display when its source name is empty', () => {
     const canonicalEncounter = source.encounters?.[0];
     const primaryDiagnosis = canonicalEncounter?.diagnoses?.[0];

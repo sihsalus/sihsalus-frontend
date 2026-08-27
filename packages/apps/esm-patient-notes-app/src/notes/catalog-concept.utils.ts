@@ -1,6 +1,9 @@
 import type { Concept, ConceptReferenceMapping } from "../types";
 
-type CatalogConcept = Pick<Concept, "conceptMappings" | "display" | "mappings">;
+type CatalogConcept = Pick<
+  Concept,
+  "conceptMappings" | "display" | "mappings" | "names"
+>;
 
 export interface CatalogDisplayParts {
   code?: string;
@@ -51,6 +54,25 @@ function getMappingCode(mapping: ConceptReferenceMapping) {
   ).trim();
 }
 
+/**
+ * The MINSA CIE-10 catalog loaded by content stores each code as the concept's
+ * SHORT name (`C020` for "TUMOR MALIGNO DE LA CARA DORSAL DE LA LENGUA") and
+ * ships no concept mappings at all. A SHORT name is a structured catalog field
+ * maintained with the concept, not free display text, so it is accepted as
+ * authority next to an explicit mapping.
+ */
+function getCatalogShortNameCode(
+  concept: CatalogConcept,
+  codePattern: RegExp,
+): string | undefined {
+  const shortName = (concept.names ?? []).find((name) => {
+    const text = (name.display ?? name.name)?.trim();
+    return name.conceptNameType === "SHORT" && text && codePattern.test(text);
+  });
+
+  return (shortName?.display ?? shortName?.name)?.trim() || undefined;
+}
+
 function findMappedCode(
   concept: CatalogConcept,
   sourcePattern: RegExp,
@@ -98,6 +120,7 @@ export function getCie10DisplayParts(
   );
   const code =
     findMappedCode(concept, cie10SourcePattern, cie10CodePattern) ??
+    getCatalogShortNameCode(concept, cie10CodePattern) ??
     displayedParts.code;
 
   return {
@@ -107,9 +130,9 @@ export function getCie10DisplayParts(
 }
 
 /**
- * Returns only a code backed by an explicit CIE-10/ICD-10 concept mapping.
- * Display text and code shape are intentionally not treated as authority:
- * MINSA catalogs can contain valid local code variants, while legacy displays
+ * Returns a code backed by the catalog itself: an explicit CIE-10/ICD-10
+ * concept mapping, or the catalog's SHORT name when it carries the code.
+ * Display text is intentionally not treated as authority: a legacy display
  * can merely look like a CIE-10 code.
  */
 export function getCie10MappedCode(
@@ -124,7 +147,9 @@ export function getCie10MappedCode(
     const code = mapping.conceptReferenceTerm?.code?.trim();
     return cie10SourcePattern.test(source) && code;
   });
-  const code = mappedCode?.conceptReferenceTerm?.code?.trim();
+  const code =
+    mappedCode?.conceptReferenceTerm?.code?.trim() ||
+    getCatalogShortNameCode(concept, cie10CodePattern);
 
   return code ? code.toLocaleUpperCase("es-PE") : undefined;
 }

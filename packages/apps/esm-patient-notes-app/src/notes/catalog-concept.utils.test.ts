@@ -22,6 +22,53 @@ describe("catalog concept display", () => {
     ).toEqual({ code: "E11.9", name: "Diabetes mellitus tipo II" });
   });
 
+  it("reads CIE-10 from the catalog SHORT name when the concept has no mapping", () => {
+    // The MINSA catalog stores the code as the SHORT name and ships no mappings.
+    const concept = {
+      display: "TUMOR MALIGNO DE LA CARA DORSAL DE LA LENGUA",
+      conceptMappings: [],
+      names: [
+        {
+          display: "TUMOR MALIGNO DE LA CARA DORSAL DE LA LENGUA",
+          conceptNameType: "FULLY_SPECIFIED",
+        },
+        { display: "C020", conceptNameType: "SHORT" },
+      ],
+    };
+
+    expect(getCie10DisplayParts(concept)).toEqual({
+      code: "C020",
+      name: "TUMOR MALIGNO DE LA CARA DORSAL DE LA LENGUA",
+    });
+    expect(getCie10MappedCode(concept)).toBe("C020");
+  });
+
+  it("prefers an explicit CIE-10 mapping over the SHORT name", () => {
+    expect(
+      getCie10MappedCode({
+        display: "Cefalea",
+        conceptMappings: [
+          {
+            conceptReferenceTerm: {
+              code: "R51",
+              conceptSource: { name: "ICD-10-WHO" },
+            },
+          },
+        ],
+        names: [{ display: "R51-LOCAL", conceptNameType: "SHORT" }],
+      }),
+    ).toBe("R51");
+  });
+
+  it("ignores a SHORT name that is not shaped like a CIE-10 code", () => {
+    expect(
+      getCie10MappedCode({
+        display: "Hipertensión",
+        names: [{ display: "HTA", conceptNameType: "SHORT" }],
+      }),
+    ).toBeUndefined();
+  });
+
   it("keeps supporting CIE-10 codes embedded in legacy concept displays", () => {
     expect(
       getCie10DisplayParts({

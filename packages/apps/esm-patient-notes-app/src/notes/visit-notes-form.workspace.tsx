@@ -852,6 +852,7 @@ const VisitNotesFormContent: React.FC<
       rank: 2,
       conceptMappings: concept.conceptMappings,
       mappings: concept.mappings,
+      names: concept.names,
     }),
     [patientUuid],
   );
@@ -1374,111 +1375,6 @@ const VisitNotesFormContent: React.FC<
                 </Tile>
               </Column>
             </Row>
-            <div className={styles.diagnosesText}>
-              {selectedPrimaryDiagnoses?.length > 0 &&
-                selectedPrimaryDiagnoses.map((diagnosis, index) => (
-                  <div key={index} className={styles.diagnosisRow}>
-                    <SelectedDiagnosis
-                      diagnosis={diagnosis}
-                      kind="primary"
-                      onRemove={() =>
-                        handleRemoveDiagnosis(diagnosis, "primaryInputSearch")
-                      }
-                      t={t}
-                    />
-                    <div className={styles.tipoSelector}>
-                      <RadioButtonGroup
-                        legendText=""
-                        name={`tipo-primary-${index}`}
-                        valueSelected={
-                          diagnosisTipos[diagnosis.diagnosis.coded] ??
-                          diagnosisTypePresuntivoUuid
-                        }
-                        onChange={(value) =>
-                          value != null &&
-                          handleDiagnosisTypeChange(
-                            diagnosis.diagnosis.coded,
-                            String(value),
-                          )
-                        }
-                        orientation="horizontal"
-                      >
-                        <RadioButton
-                          id={`tipo-primary-${index}-p`}
-                          labelText={t("presuntivo", "P - Presuntivo")}
-                          value={diagnosisTypePresuntivoUuid}
-                        />
-                        <RadioButton
-                          id={`tipo-primary-${index}-d`}
-                          labelText={t("definitivo", "D - Definitivo")}
-                          value={diagnosisTypeDefinitivoUuid}
-                        />
-                        <RadioButton
-                          id={`tipo-primary-${index}-r`}
-                          labelText={t("repetitivo", "R - Repetido")}
-                          value={diagnosisTypeRepetitivoUuid}
-                        />
-                      </RadioButtonGroup>
-                    </div>
-                  </div>
-                ))}
-              {selectedSecondaryDiagnoses?.length > 0 &&
-                selectedSecondaryDiagnoses.map((diagnosis, index) => (
-                  <div key={index} className={styles.diagnosisRow}>
-                    <SelectedDiagnosis
-                      diagnosis={diagnosis}
-                      kind="secondary"
-                      onRemove={() =>
-                        handleRemoveDiagnosis(diagnosis, "secondaryInputSearch")
-                      }
-                      t={t}
-                    />
-                    <div className={styles.tipoSelector}>
-                      <RadioButtonGroup
-                        legendText=""
-                        name={`tipo-secondary-${index}`}
-                        valueSelected={
-                          diagnosisTipos[diagnosis.diagnosis.coded] ??
-                          diagnosisTypePresuntivoUuid
-                        }
-                        onChange={(value) =>
-                          value != null &&
-                          handleDiagnosisTypeChange(
-                            diagnosis.diagnosis.coded,
-                            String(value),
-                          )
-                        }
-                        orientation="horizontal"
-                      >
-                        <RadioButton
-                          id={`tipo-secondary-${index}-p`}
-                          labelText={t("presuntivo", "P - Presuntivo")}
-                          value={diagnosisTypePresuntivoUuid}
-                        />
-                        <RadioButton
-                          id={`tipo-secondary-${index}-d`}
-                          labelText={t("definitivo", "D - Definitivo")}
-                          value={diagnosisTypeDefinitivoUuid}
-                        />
-                        <RadioButton
-                          id={`tipo-secondary-${index}-r`}
-                          labelText={t("repetitivo", "R - Repetido")}
-                          value={diagnosisTypeRepetitivoUuid}
-                        />
-                      </RadioButtonGroup>
-                    </div>
-                  </div>
-                ))}
-              {!selectedPrimaryDiagnoses?.length &&
-                !selectedSecondaryDiagnoses?.length && (
-                  <span>
-                    {t(
-                      "emptyDiagnosisText",
-                      "No diagnosis selected — Enter a diagnosis below",
-                    )}
-                  </span>
-                )}
-            </div>
             <Row className={styles.row}>
               <Column sm={1}>
                 <div className={styles.fieldLabelWithHelp}>
@@ -1607,6 +1503,111 @@ const VisitNotesFormContent: React.FC<
                 </FormGroup>
               </Column>
             </Row>
+            <div className={styles.diagnosesText}>
+              {selectedPrimaryDiagnoses?.length > 0 &&
+                selectedPrimaryDiagnoses.map((diagnosis, index) => (
+                  <div key={index} className={styles.diagnosisRow}>
+                    <SelectedDiagnosis
+                      diagnosis={diagnosis}
+                      kind="primary"
+                      onRemove={() =>
+                        handleRemoveDiagnosis(diagnosis, "primaryInputSearch")
+                      }
+                      t={t}
+                    />
+                    <div className={styles.tipoSelector}>
+                      <RadioButtonGroup
+                        legendText=""
+                        name={`tipo-primary-${index}`}
+                        valueSelected={
+                          diagnosisTipos[diagnosis.diagnosis.coded] ??
+                          diagnosisTypePresuntivoUuid
+                        }
+                        onChange={(value) =>
+                          value != null &&
+                          handleDiagnosisTypeChange(
+                            diagnosis.diagnosis.coded,
+                            String(value),
+                          )
+                        }
+                        orientation="horizontal"
+                      >
+                        <RadioButton
+                          id={`tipo-primary-${index}-p`}
+                          labelText={t("presuntivo", "P - Presuntivo")}
+                          value={diagnosisTypePresuntivoUuid}
+                        />
+                        <RadioButton
+                          id={`tipo-primary-${index}-d`}
+                          labelText={t("definitivo", "D - Definitivo")}
+                          value={diagnosisTypeDefinitivoUuid}
+                        />
+                        <RadioButton
+                          id={`tipo-primary-${index}-r`}
+                          labelText={t("repetitivo", "R - Repetido")}
+                          value={diagnosisTypeRepetitivoUuid}
+                        />
+                      </RadioButtonGroup>
+                    </div>
+                  </div>
+                ))}
+              {selectedSecondaryDiagnoses?.length > 0 &&
+                selectedSecondaryDiagnoses.map((diagnosis, index) => (
+                  <div key={index} className={styles.diagnosisRow}>
+                    <SelectedDiagnosis
+                      diagnosis={diagnosis}
+                      kind="secondary"
+                      onRemove={() =>
+                        handleRemoveDiagnosis(diagnosis, "secondaryInputSearch")
+                      }
+                      t={t}
+                    />
+                    <div className={styles.tipoSelector}>
+                      <RadioButtonGroup
+                        legendText=""
+                        name={`tipo-secondary-${index}`}
+                        valueSelected={
+                          diagnosisTipos[diagnosis.diagnosis.coded] ??
+                          diagnosisTypePresuntivoUuid
+                        }
+                        onChange={(value) =>
+                          value != null &&
+                          handleDiagnosisTypeChange(
+                            diagnosis.diagnosis.coded,
+                            String(value),
+                          )
+                        }
+                        orientation="horizontal"
+                      >
+                        <RadioButton
+                          id={`tipo-secondary-${index}-p`}
+                          labelText={t("presuntivo", "P - Presuntivo")}
+                          value={diagnosisTypePresuntivoUuid}
+                        />
+                        <RadioButton
+                          id={`tipo-secondary-${index}-d`}
+                          labelText={t("definitivo", "D - Definitivo")}
+                          value={diagnosisTypeDefinitivoUuid}
+                        />
+                        <RadioButton
+                          id={`tipo-secondary-${index}-r`}
+                          labelText={t("repetitivo", "R - Repetido")}
+                          value={diagnosisTypeRepetitivoUuid}
+                        />
+                      </RadioButtonGroup>
+                    </div>
+                  </div>
+                ))}
+              {!selectedPrimaryDiagnoses?.length &&
+                !selectedSecondaryDiagnoses?.length && (
+                  <span>
+                    {t(
+                      "emptyDiagnosisText",
+                      "No diagnosis selected — Enter a diagnosis above",
+                    )}
+                  </span>
+                )}
+            </div>
             <Row className={styles.row}>
               <Column sm={1}>
                 <div className={styles.fieldLabelWithHelp}>

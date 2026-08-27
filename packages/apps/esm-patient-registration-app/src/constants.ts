@@ -7,7 +7,10 @@ export const personRelationshipRepresentation =
   'relationshipType:(uuid,display,description,aIsToB,bIsToA))';
 
 export const moduleName = '@sihsalus/esm-patient-registration-app';
-export const defaultSisOnlineVerificationUrl = 'http://app8.susalud.gob.pe:8380/acreditacion/busqueda-asegurado:newSearch=true';
+// Port 8380 speaks TLS: the http:// form answers with an empty reply, and the
+// https:// form returns 200 with a valid certificate.
+export const defaultSisOnlineVerificationUrl =
+  'https://app8.susalud.gob.pe:8380/acreditacion/busqueda-asegurado:newSearch=true';
 export const patientRegistration = 'patient-registration';
 export const patientImport = 'patient-import';
 

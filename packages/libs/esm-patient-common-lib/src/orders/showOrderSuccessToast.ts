@@ -77,5 +77,5 @@ export function showOrderSuccessToast(moduleName: string, patientOrderItems: Arr
     kind: 'success',
     title: getNotificationTitle(moduleName, placedOrders, updatedOrders, discontinuedOrders, activeActions),
     subtitle: subtitleParts.join(' '),
-  });
+  } as any);
 }

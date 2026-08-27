@@ -16,7 +16,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 
-import { useLabEncounter, useOrderConceptByUuid } from '../lab-results/lab-results.resource';
+import { flattenLeafConcepts, useLabEncounter, useOrderConceptByUuid } from '../lab-results/lab-results.resource';
 
 import styles from './test-order.scss';
 
@@ -113,16 +113,35 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions, hide
       )?.resource;
 
     if (concept && concept.setMembers && concept.setMembers.length > 0) {
-      return concept?.setMembers.map((memberConcept) => {
-        const memberObs = testResultObs?.groupMembers?.find((obs) => obs.concept.uuid === memberConcept.uuid);
+      const leafConcepts = flattenLeafConcepts(concept);
+
+      const findObs = (members: Array<any> | undefined, conceptUuid: string): any => {
+        if (!members) return undefined;
+        for (const m of members) {
+          if (m.concept?.uuid === conceptUuid) return m;
+          if (m.groupMembers && m.groupMembers.length > 0) {
+            const f = findObs(m.groupMembers, conceptUuid);
+            if (f) return f;
+          }
+        }
+        return undefined;
+      };
+
+      return leafConcepts.map((memberConcept) => {
+        const memberObs = findObs(testResultObs?.groupMembers, memberConcept.uuid);
         const fhirObs = memberObs ? findFhirObs(memberObs.uuid) : null;
         const fhirRanges = extractRangesFromFhirObs(fhirObs);
 
         return {
           id: memberConcept.uuid,
-          testType: <div className={styles.testType}>{memberConcept.display}</div>,
+          testType: (
+            <div className={styles.testType}>
+              {memberConcept.groupLabel ? `${memberConcept.groupLabel} - ${memberConcept.display}` : memberConcept.display}
+            </div>
+          ),
           result: isLoadingResult ? <SkeletonText /> : (getObservationValueDisplay(memberObs?.value) ?? '--'),
           normalRange: formatReferenceRange(memberConcept, fhirRanges),
+          observations: memberObs?.comment || '--',
         };
       });
     } else if (concept && (!concept.setMembers || concept.setMembers.length === 0)) {
@@ -135,6 +154,7 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions, hide
           testType: <div className={styles.testType}>{concept.display}</div>,
           result: isLoadingResult ? <SkeletonText /> : (getObservationValueDisplay(testResultObs?.value) ?? '--'),
           normalRange: formatReferenceRange(concept, fhirRanges),
+          observations: testResultObs?.comment || '--',
         },
       ];
     } else {

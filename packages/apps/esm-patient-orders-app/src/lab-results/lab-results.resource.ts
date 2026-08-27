@@ -12,8 +12,9 @@ const labEncounterRepresentation =
   'value:(uuid,display,name:(uuid,name),names:(uuid,conceptNameType,name))))';
 const labConceptRepresentation =
   'custom:(uuid,display,name,datatype,set,answers,hiNormal,hiAbsolute,hiCritical,lowNormal,lowAbsolute,lowCritical,units,allowDecimal,' +
-  'setMembers:(uuid,display,answers,datatype,hiNormal,hiAbsolute,hiCritical,lowNormal,lowAbsolute,lowCritical,units,allowDecimal))';
-const conceptObsRepresentation = 'custom:(uuid,display,concept:(uuid,display),groupMembers,value)';
+  'setMembers:(uuid,display,name,datatype,answers,hiNormal,hiAbsolute,hiCritical,lowNormal,lowAbsolute,lowCritical,units,allowDecimal,' +
+  'setMembers:(uuid,display,name,datatype,answers,hiNormal,hiAbsolute,hiCritical,lowNormal,lowAbsolute,lowCritical,units,allowDecimal)))';
+const conceptObsRepresentation = 'custom:(uuid,display,concept:(uuid,display),groupMembers,value,comment)';
 
 type NullableNumber = number | null | undefined;
 export interface LabOrderConcept {
@@ -36,6 +37,7 @@ export interface LabOrderConcept {
   lowCritical?: NullableNumber;
   allowDecimal?: boolean | null;
   units?: string;
+  groupLabel?: string;
 }
 
 export interface ConceptName {
@@ -201,22 +203,25 @@ export function createObservationPayload(
   values: Record<string, unknown>,
   status: string,
 ) {
+  const orderComment = values['order-comment'] ? String(values['order-comment']) : undefined;
+
   if (concept.set && concept.setMembers.length > 0) {
     const groupMembers = concept.setMembers
       .map((member) => createGroupMember(member, order, values, status))
-      .filter((member) => member !== null && member.value !== null && member.value !== undefined);
+      .filter((member) => member !== null);
 
     if (groupMembers.length === 0) {
       return { obs: [] };
     }
 
-    return { obs: [createObservation(order, groupMembers, null, status)] };
+    return { obs: [createObservation(order, groupMembers, null, status, orderComment)] };
   } else {
     const value = getValue(concept, values);
+    const comment = values[`${concept.uuid}-comment`] ? String(values[`${concept.uuid}-comment`]) : orderComment;
     if (value === null || value === undefined) {
       return { obs: [] };
     }
-    return { obs: [createObservation(order, null, value, status)] };
+    return { obs: [createObservation(order, null, value, status, comment)] };
   }
 }
 
@@ -230,8 +235,26 @@ export function updateObservation(observationUuid: string, payload: Record<strin
   });
 }
 
-function createGroupMember(member: LabOrderConcept, order: Order, values: Record<string, unknown>, status: string) {
+function createGroupMember(member: LabOrderConcept, order: Order, values: Record<string, unknown>, status: string): any {
+  if (member.setMembers && member.setMembers.length > 0) {
+    const subMembers = member.setMembers
+      .map((sub) => createGroupMember(sub, order, values, status))
+      .filter((sub) => sub !== null);
+    if (subMembers.length === 0) {
+      return null;
+    }
+    const obsDatetime = new Date().toISOString();
+    return {
+      concept: { uuid: member.uuid },
+      status: status,
+      order: { uuid: order.uuid },
+      obsDatetime,
+      groupMembers: subMembers,
+    };
+  }
+
   const value = getValue(member, values);
+  const comment = values[`${member.uuid}-comment`] ? String(values[`${member.uuid}-comment`]) : undefined;
   if (value === null || value === undefined) {
     return null;
   }
@@ -242,10 +265,22 @@ function createGroupMember(member: LabOrderConcept, order: Order, values: Record
     status: status,
     order: { uuid: order.uuid },
     obsDatetime,
+    ...(comment && { comment }),
   };
 }
 
-function createObservation(order: Order, groupMembers = null, value = null, status: string) {
+export function flattenLeafConcepts(concept: LabOrderConcept, parentLabel?: string): Array<LabOrderConcept> {
+  if (concept.setMembers && concept.setMembers.length > 0) {
+    const currentLabel = parentLabel ?? concept.display;
+    return concept.setMembers.flatMap((member) => flattenLeafConcepts(member, currentLabel));
+  }
+  if (concept.set) {
+    return [];
+  }
+  return [{ ...concept, groupLabel: parentLabel }];
+}
+
+function createObservation(order: Order, groupMembers = null, value = null, status: string, comment?: string) {
   const obsDatetime = new Date().toISOString();
   return {
     concept: { uuid: order.concept.uuid },
@@ -254,6 +289,7 @@ function createObservation(order: Order, groupMembers = null, value = null, stat
     obsDatetime,
     ...(groupMembers && groupMembers.length > 0 && { groupMembers }),
     ...(value !== null && value !== undefined && { value }),
+    ...(comment && { comment }),
   };
 }
 
@@ -277,7 +313,7 @@ function getValue(concept: LabOrderConcept, values: Record<string, unknown>) {
   return null;
 }
 
-export const isCoded = (concept: LabOrderConcept) => concept.datatype?.display === 'Coded';
-export const isNumeric = (concept: LabOrderConcept) => concept.datatype?.display === 'Numeric';
-export const isPanel = (concept: LabOrderConcept) => concept.setMembers?.length > 0;
-export const isText = (concept: LabOrderConcept) => concept.datatype?.display === 'Text';
+export const isPanel = (concept: LabOrderConcept) => Boolean(concept?.setMembers?.length > 0);
+export const isCoded = (concept: LabOrderConcept) => !isPanel(concept) && concept?.datatype?.display === 'Coded';
+export const isNumeric = (concept: LabOrderConcept) => !isPanel(concept) && concept?.datatype?.display === 'Numeric';
+export const isText = (concept: LabOrderConcept) => !isPanel(concept) && concept?.datatype?.display === 'Text';

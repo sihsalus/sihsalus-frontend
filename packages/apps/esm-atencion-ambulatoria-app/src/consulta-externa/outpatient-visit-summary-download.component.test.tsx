@@ -1,4 +1,4 @@
-import { showSnackbar, useConfig, usePatient, useSession } from '@openmrs/esm-framework';
+import { showModal, showSnackbar, useConfig, usePatient, useSession } from '@openmrs/esm-framework';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useAmbulatoryVisitGuard } from '../hooks';
@@ -92,6 +92,7 @@ const mockIsRecetaClinicallyReady = vi.mocked(isOutpatientRecetaUnicaClinicallyR
 const mockGenerateRecetaUnicaNumber = vi.mocked(generateRecetaUnicaNumber);
 const mockPrintPdf = vi.mocked(printPdfBytes);
 const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockShowModal = vi.mocked(showModal);
 
 const patient = {
   resourceType: 'Patient',
@@ -327,9 +328,39 @@ describe('OutpatientVisitSummaryDownload', () => {
 
     await user.click(screen.getByRole('button', { name: 'Imprimir indicaciones' }));
 
-    await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' })));
+    await waitFor(() =>
+      expect(mockShowModal).toHaveBeenCalledWith(
+        'outpatient-missing-document-data-dialog',
+        expect.objectContaining({
+          title: 'No se pudo generar el PDF de indicaciones',
+          requirements: [
+            { id: 'followUpDate', tab: 'treatment' },
+            { id: 'therapeuticIndications', tab: 'treatment' },
+            { id: 'medications', tab: 'treatment' },
+          ],
+        }),
+      ),
+    );
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' }));
     expect(mockCreateInstructionsPdf).not.toHaveBeenCalled();
     expect(mockPrintPdf).not.toHaveBeenCalled();
+  });
+
+  it('sends the clinician to the tab that owns the missing datum', async () => {
+    const user = userEvent.setup();
+    const onNavigateToTab = vi.fn();
+    mockFetchNextScheduledAppointment.mockResolvedValue(null);
+    mockHasInstructions.mockReturnValue(false);
+    render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" onNavigateToTab={onNavigateToTab} />);
+
+    await user.click(screen.getByRole('button', { name: 'Imprimir indicaciones' }));
+
+    await waitFor(() =>
+      expect(mockShowModal).toHaveBeenCalledWith(
+        'outpatient-missing-document-data-dialog',
+        expect.objectContaining({ onNavigateToTab }),
+      ),
+    );
   });
 
   it('prints the remaining instructions but warns when the appointment calendar cannot be verified', async () => {
@@ -745,10 +776,10 @@ describe('OutpatientVisitSummaryDownload', () => {
     await user.click(screen.getByRole('button', { name: 'Imprimir indicaciones' }));
 
     await waitFor(() =>
-      expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect(mockShowModal).toHaveBeenCalledWith(
+        'outpatient-missing-document-data-dialog',
         expect.objectContaining({
-          kind: 'error',
-          subtitle:
+          description:
             'El documento contiene caracteres que no se pueden representar con seguridad. Revise el texto registrado o contacte a soporte.',
         }),
       ),
@@ -764,7 +795,12 @@ describe('OutpatientVisitSummaryDownload', () => {
 
     await user.click(screen.getByRole('button', { name: 'Imprimir indicaciones' }));
 
-    await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' })));
+    await waitFor(() =>
+      expect(mockShowModal).toHaveBeenCalledWith(
+        'outpatient-missing-document-data-dialog',
+        expect.objectContaining({ title: 'No se pudo generar el PDF de indicaciones' }),
+      ),
+    );
     expect(screen.queryByText(/synthetic backend details/i)).not.toBeInTheDocument();
   });
 });
@@ -808,7 +844,8 @@ describe('receta única desde el dashboard', () => {
     fireEvent.click(button);
 
     await waitFor(() =>
-      expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect(mockShowModal).toHaveBeenCalledWith(
+        'outpatient-missing-document-data-dialog',
         expect.objectContaining({ title: 'No se pudo emitir la Receta Única' }),
       ),
     );
@@ -839,16 +876,32 @@ describe('receta única desde el dashboard', () => {
       concepts: {},
     });
     mockIsRecetaClinicallyReady.mockReturnValue(false);
+    mockBuildSummary.mockReturnValue({
+      visitUuid: 'visit-uuid',
+      visitStart: '2026-08-23T14:00:00.000-05:00',
+      sourceServerDatetime: '2026-08-26T14:00:00.000Z',
+      clinicalEncounterDatetime: '2026-08-24T00:10:00.000-05:00',
+      clinicalRecordCompleteness: 'canonical-incomplete',
+      clinicalRecordIssues: ['primary-diagnosis-cie10-mapping-missing', 'responsible-provider-missing-or-ambiguous'],
+      responsibleProviderUuid: 'provider-uuid',
+      responsibleProvider: 'Dra. Responsable',
+      responsibleProfessionalRegistration: 'CMP-12345',
+      hasClinicalContent: true,
+    } as ReturnType<typeof buildOutpatientVisitSummary>);
 
     render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" />);
     const button = await screen.findByRole('button', { name: /emitir receta única/i });
     fireEvent.click(button);
 
     await waitFor(() =>
-      expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect(mockShowModal).toHaveBeenCalledWith(
+        'outpatient-missing-document-data-dialog',
         expect.objectContaining({
-          kind: 'error',
-          subtitle: expect.stringContaining('diagnóstico principal'),
+          title: 'No se pudo emitir la Receta Única',
+          requirements: [
+            { id: 'primaryDiagnosisCie10', tab: 'diagnosis' },
+            { id: 'responsibleProfessional', tab: 'soap' },
+          ],
         }),
       ),
     );

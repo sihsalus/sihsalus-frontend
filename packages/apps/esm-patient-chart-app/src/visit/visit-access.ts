@@ -1,6 +1,11 @@
 import { userHasAccess } from '@openmrs/esm-framework';
 
-import { adtPrivilege, clinicalChartPrivilege, clinicalChartVisitsEditPrivilege } from '../constants';
+import {
+  adtPrivilege,
+  clinicalChartPrivilege,
+  clinicalChartVisitsEditPrivilege,
+  recordEncountersPrivilege,
+} from '../constants';
 
 type User = Parameters<typeof userHasAccess>[1] | null | undefined;
 
@@ -25,14 +30,20 @@ function holdsPrivilege(privilege: string, user: User) {
 }
 
 /**
- * Admission staff, i.e. an account that carries the ADT privilege and has no
- * clinical chart access of its own. A clinician who also covers admission keeps
- * the clinical actions -- the same rule `canTransitionServiceQueueEntries`
- * applies in the service queues app. Excluding everyone who merely holds the ADT
- * privilege would strip the actions from any combined clinical role.
+ * Admission staff, i.e. an account that carries the ADT privilege and cannot
+ * record clinical encounters. A clinician who also covers admission keeps the
+ * clinical actions, as `canTransitionServiceQueueEntries` already does in the
+ * service queues app; excluding everyone who merely holds the ADT privilege
+ * would strip them from any combined clinical role.
+ *
+ * Chart access is not the discriminator: legacy admission roles open the chart
+ * (`app:hoja.clinica`, even `app:hoja.clinica.visitas.editar`) so check-in can
+ * attach appointments to a visit, yet grant no clinical writing at all. The
+ * native `Add Encounters` privilege is the line administrative roles never
+ * cross.
  */
 function isAdmissionOnlyUser(user: User) {
-  return !isSuperUser(user) && holdsPrivilege(adtPrivilege, user) && !holdsPrivilege(clinicalChartPrivilege, user);
+  return !isSuperUser(user) && holdsPrivilege(adtPrivilege, user) && !holdsPrivilege(recordEncountersPrivilege, user);
 }
 
 export function canCreateVisit(user: User) {

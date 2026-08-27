@@ -89,21 +89,19 @@ describe('canCloseClinicalVisit', () => {
   });
 
   it('lets a clinician who also covers admission close the visit', () => {
-    grantPrivileges('app:home.admision', 'app:hoja.clinica', 'app:hoja.clinica.visitas.editar');
+    const privileges = ['app:home.admision', 'Add Encounters', 'app:hoja.clinica', 'app:hoja.clinica.visitas.editar'];
+    grantPrivileges(...privileges);
 
-    expect(
-      canCloseClinicalVisit(
-        buildUser({ privileges: ['app:home.admision', 'app:hoja.clinica', 'app:hoja.clinica.visitas.editar'] }),
-      ),
-    ).toBe(true);
+    expect(canCloseClinicalVisit(buildUser({ privileges }))).toBe(true);
   });
 
-  it('keeps clinical closure hidden from an account that is only admission', () => {
-    grantPrivileges('app:home.admision', 'app:hoja.clinica.visitas.editar');
+  it('keeps clinical closure hidden from admission staff who can open the chart but not record encounters', () => {
+    // The legacy `SIHSALUS Admision` role grants chart access and even
+    // `visitas.editar` for check-in, with no clinical writing capability.
+    const privileges = ['app:home.admision', 'app:hoja.clinica', 'app:hoja.clinica.visitas.editar', 'Edit Visits'];
+    grantPrivileges(...privileges);
 
-    expect(
-      canCloseClinicalVisit(buildUser({ privileges: ['app:home.admision', 'app:hoja.clinica.visitas.editar'] })),
-    ).toBe(false);
+    expect(canCloseClinicalVisit(buildUser({ privileges }))).toBe(false);
   });
 
   it('still lets a super user close a clinical visit', () => {
@@ -138,11 +136,17 @@ describe('canManuallyStartVisit', () => {
   });
 
   it('lets a clinician who also covers admission start a visit manually', () => {
-    grantPrivileges('app:home.admision', 'app:hoja.clinica', 'Add Visits');
+    const privileges = ['app:home.admision', 'Add Encounters', 'app:hoja.clinica', 'Add Visits'];
+    grantPrivileges(...privileges);
 
-    expect(
-      canManuallyStartVisit(buildUser({ privileges: ['app:home.admision', 'app:hoja.clinica', 'Add Visits'] })),
-    ).toBe(true);
+    expect(canManuallyStartVisit(buildUser({ privileges }))).toBe(true);
+  });
+
+  it('keeps manual start hidden from admission staff who can open the chart but not record encounters', () => {
+    const privileges = ['app:home.admision', 'app:hoja.clinica', 'Add Visits'];
+    grantPrivileges(...privileges);
+
+    expect(canManuallyStartVisit(buildUser({ privileges }))).toBe(false);
   });
 
   it('still lets a super user start a visit manually', () => {

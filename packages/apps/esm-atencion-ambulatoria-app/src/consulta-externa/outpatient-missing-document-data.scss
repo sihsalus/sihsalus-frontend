@@ -20,7 +20,6 @@
 .requirement {
   @include type.type-style("body-compact-01");
   align-items: baseline;
-  color: $text-01;
   display: flex;
   flex-wrap: wrap;
   gap: layout.$spacing-03;

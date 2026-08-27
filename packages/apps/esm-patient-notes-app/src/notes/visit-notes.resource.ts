@@ -46,6 +46,9 @@ export type CanonicalVisitNoteResolution =
 const encounterPageSize = 100;
 const catalogConceptMappingsRepresentation =
   "conceptMappings:(conceptReferenceTerm:(conceptSource:(name,display),code))";
+// The MINSA CIE-10 catalog carries the code as the concept's SHORT name.
+const catalogConceptNamesRepresentation =
+  "names:(display,conceptNameType,locale)";
 const canonicalEncounterUuidNamespace = uuidv5(
   "sihsalus:canonical-visit-note:v1",
   uuidv5.URL,
@@ -522,7 +525,7 @@ export function fetchDiagnosisConceptsByName(
   searchTerm: string,
   diagnosisConceptClass: string,
 ) {
-  const customRepresentation = `custom:(uuid,display,${catalogConceptMappingsRepresentation})`;
+  const customRepresentation = `custom:(uuid,display,${catalogConceptMappingsRepresentation},${catalogConceptNamesRepresentation})`;
   const url = `${restBaseUrl}/concept?name=${searchTerm}&searchType=fuzzy&class=${diagnosisConceptClass}&v=${customRepresentation}`;
 
   return openmrsFetch<Array<Concept>>(url).then(({ data }) => data["results"]);

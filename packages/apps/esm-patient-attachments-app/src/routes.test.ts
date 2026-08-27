@@ -1,23 +1,16 @@
-import { isVersionSatisfied } from '@openmrs/esm-framework';
-
 import routes from './routes.json';
 
-const attachmentsRange = routes.backendDependencies.attachments;
-
 describe('attachments backend contract', () => {
-  // Only uploading a supplemental laboratory PDF needs the SIH Salus release,
-  // and that path ships behind a runtime flag that defaults to false. Declaring
-  // the fork as a hard requirement reported the whole module as incompatible on
-  // every upstream deployment, which is a permanent false alarm.
-  it('accepts a stock upstream Attachments 4.x backend', () => {
-    expect(isVersionSatisfied(attachmentsRange, '4.0.0')).toBe(true);
-  });
-
-  it('accepts the SIH Salus release that supports laboratory PDF uploads', () => {
-    expect(isVersionSatisfied(attachmentsRange, '4.0.1-sihsalus.1')).toBe(true);
-  });
-
-  it('still rejects the next major, whose contract is unverified', () => {
-    expect(isVersionSatisfied(attachmentsRange, '5.0.0')).toBe(false);
+  // The range has to admit a stock upstream Attachments 4.x. Only uploading a
+  // supplemental laboratory PDF needs the SIH Salus release, and that path
+  // ships behind a runtime flag that defaults to false; declaring the fork as a
+  // hard requirement reported the whole module as version-incompatible on every
+  // upstream deployment, which is a permanent false alarm in Implementer Tools.
+  //
+  // Asserted as a literal rather than through isVersionSatisfied because the
+  // framework test stub hardcodes that helper to return true, so a semantic
+  // check here would pass no matter what the range said.
+  it('accepts both upstream 4.x and the SIH Salus release', () => {
+    expect(routes.backendDependencies.attachments).toBe('>=4.0.0 <5.0.0');
   });
 });

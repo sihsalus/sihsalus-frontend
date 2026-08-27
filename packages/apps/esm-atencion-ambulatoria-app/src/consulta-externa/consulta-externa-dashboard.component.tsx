@@ -2,11 +2,12 @@ import { Layer, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import { Activity, ArrowRight, Catalog, DocumentMultiple_01, ListChecked, Microscope } from '@carbon/react/icons';
 import { ExtensionSlot } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { consultaExternaPrivilege } from '../utils/constants';
 import Anamnesis from './anamnesis.component';
 import styles from './consulta-externa-dashboard.scss';
+import { type ConsultaExternaTabId, getConsultaExternaTabIndex } from './consulta-externa-tabs';
 import DiagnosticoClasificado from './diagnostico-clasificado.component';
 import NotasSoap from './notas-soap.component';
 import OutpatientVisitSummaryDownload from './outpatient-visit-summary-download.component';
@@ -22,13 +23,17 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
   const { t } = useTranslation();
   const [selectedTab, setSelectedTab] = useState(0);
 
+  const handleNavigateToTab = useCallback((tabId: ConsultaExternaTabId) => {
+    setSelectedTab(getConsultaExternaTabIndex(tabId));
+  }, []);
+
   return (
     <RequirePrivilege privilege={consultaExternaPrivilege}>
       <div>
         <SisFinancingWarning patientUuid={patientUuid} />
         <header className={styles.dashboardHeader}>
           <h1 className={styles.dashboardHeading}>{t('consultaExterna', 'Consulta Externa')}</h1>
-          <OutpatientVisitSummaryDownload patientUuid={patientUuid} />
+          <OutpatientVisitSummaryDownload patientUuid={patientUuid} onNavigateToTab={handleNavigateToTab} />
         </header>
         <Layer className={styles.tabsContainer}>
           <Tabs selectedIndex={selectedTab} onChange={({ selectedIndex }) => setSelectedTab(selectedIndex)}>
@@ -44,24 +49,42 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
 
             <TabPanels>
               <TabPanel>
-                {selectedTab === 0 ? (
+                {selectedTab === getConsultaExternaTabIndex('triage') ? (
                   <div className={styles.combinedPanel}>
                     <ExtensionSlot name="consulta-externa-vitals-summary-slot" state={{ patientUuid }} />
                   </div>
                 ) : null}
               </TabPanel>
-              <TabPanel>{selectedTab === 1 ? <Anamnesis patientUuid={patientUuid} /> : null}</TabPanel>
-              <TabPanel>{selectedTab === 2 ? <NotasSoap patientUuid={patientUuid} /> : null}</TabPanel>
               <TabPanel>
-                {selectedTab === 3 ? (
+                {selectedTab === getConsultaExternaTabIndex('anamnesis') ? (
+                  <Anamnesis patientUuid={patientUuid} />
+                ) : null}
+              </TabPanel>
+              <TabPanel>
+                {selectedTab === getConsultaExternaTabIndex('soap') ? <NotasSoap patientUuid={patientUuid} /> : null}
+              </TabPanel>
+              <TabPanel>
+                {selectedTab === getConsultaExternaTabIndex('complementaryTests') ? (
                   <div className={styles.combinedPanel}>
                     <ExtensionSlot name="consulta-externa-pruebas-complementarias-slot" state={{ patientUuid }} />
                   </div>
                 ) : null}
               </TabPanel>
-              <TabPanel>{selectedTab === 4 ? <DiagnosticoClasificado patientUuid={patientUuid} /> : null}</TabPanel>
-              <TabPanel>{selectedTab === 5 ? <PlanTratamiento patientUuid={patientUuid} /> : null}</TabPanel>
-              <TabPanel>{selectedTab === 6 ? <ReferenciaContraReferencia patientUuid={patientUuid} /> : null}</TabPanel>
+              <TabPanel>
+                {selectedTab === getConsultaExternaTabIndex('diagnosis') ? (
+                  <DiagnosticoClasificado patientUuid={patientUuid} />
+                ) : null}
+              </TabPanel>
+              <TabPanel>
+                {selectedTab === getConsultaExternaTabIndex('treatment') ? (
+                  <PlanTratamiento patientUuid={patientUuid} />
+                ) : null}
+              </TabPanel>
+              <TabPanel>
+                {selectedTab === getConsultaExternaTabIndex('referral') ? (
+                  <ReferenciaContraReferencia patientUuid={patientUuid} />
+                ) : null}
+              </TabPanel>
             </TabPanels>
           </Tabs>
         </Layer>

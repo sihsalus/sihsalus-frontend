@@ -18,7 +18,11 @@ vi.mock('./notas-soap.component', () => ({
   default: () => <div>SOAP panel</div>,
 }));
 vi.mock('./outpatient-visit-summary-download.component', () => ({
-  default: () => <button type="button">Download report</button>,
+  default: ({ onNavigateToTab }: { onNavigateToTab?: (tabId: string) => void }) => (
+    <button onClick={() => onNavigateToTab?.('treatment')} type="button">
+      Download report
+    </button>
+  ),
 }));
 vi.mock('./plan-tratamiento.component', () => ({
   default: () => <div>Treatment plan panel</div>,
@@ -79,5 +83,17 @@ describe('ConsultaExternaDashboard', () => {
     await user.click(screen.getByRole('tab', { name: 'Referencia / Contrarreferencia' }));
     expect(screen.getByText('Referral and counter-referral panel')).toBeVisible();
     expect(screen.queryByText('Treatment plan panel')).not.toBeInTheDocument();
+  });
+
+  it('opens the tab a blocked document points at', async () => {
+    const user = userEvent.setup();
+    render(<ConsultaExternaDashboard patientUuid="synthetic-patient-uuid" />);
+
+    expect(screen.queryByText('Treatment plan panel')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Download report' }));
+
+    expect(screen.getByText('Treatment plan panel')).toBeVisible();
+    expect(screen.getByRole('tab', { name: 'Plan de Tratamiento' })).toHaveAttribute('aria-selected', 'true');
   });
 });

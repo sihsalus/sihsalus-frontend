@@ -1,0 +1,42 @@
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
+
+.description {
+  @include type.type-style("body-01");
+  color: $text-02;
+  margin-bottom: layout.$spacing-05;
+}
+
+.requirements {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.requirement {
+  @include type.type-style("body-compact-01");
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+
+  &::before {
+    content: "•";
+    color: $text-02;
+  }
+}
+
+.requirementLocation {
+  @include type.type-style("label-01");
+  color: $text-02;
+}
+
+.hint {
+  @include type.type-style("body-01");
+  color: $text-02;
+  margin-top: layout.$spacing-05;
+}

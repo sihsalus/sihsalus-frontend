@@ -71,6 +71,11 @@
       "name": "ambulatoria-condition-delete-confirmation-dialog",
       "component": "conditionFilterDeleteConfirmationDialog",
       "privileges": "app:hoja.clinica.historiaSocial.editar"
+    },
+    {
+      "name": "outpatient-missing-document-data-dialog",
+      "component": "outpatientMissingDocumentDataModal",
+      "privileges": "app:hoja.clinica.consultaExterna"
     }
   ],
   "workspaces": [

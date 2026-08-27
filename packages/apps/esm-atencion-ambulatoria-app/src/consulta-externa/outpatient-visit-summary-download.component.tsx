@@ -1,6 +1,6 @@
 import { Button } from '@carbon/react';
 import { Download, Printer } from '@carbon/react/icons';
-import { createErrorHandler, showSnackbar, useConfig, usePatient, useSession } from '@openmrs/esm-framework';
+import { createErrorHandler, showModal, showSnackbar, useConfig, usePatient, useSession } from '@openmrs/esm-framework';
 import type { TFunction } from 'i18next';
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,13 @@ import type { ConfigObject } from '../config-schema';
 import { useAmbulatoryVisitGuard } from '../hooks';
 import { formatDeceasedName } from '../utils/utils';
 import styles from './consulta-externa-dashboard.scss';
+import type { ConsultaExternaTabId } from './consulta-externa-tabs';
+import {
+  getMissingPatientInstructionsRequirements,
+  getMissingRecetaUnicaRequirements,
+  getMissingVisitSummaryRequirements,
+  type OutpatientDocumentRequirement,
+} from './outpatient-document-requirements';
 import { useOutpatientFacilityIdentity } from './outpatient-facility.resource';
 import { fetchNextScheduledAppointment, isUpcomingScheduledAppointment } from './outpatient-next-appointment.resource';
 import { printPdfBytes } from './outpatient-pdf-print';
@@ -26,9 +33,6 @@ import {
   createOutpatientVisitSummaryFileName,
   createOutpatientVisitSummaryPdf,
   downloadOutpatientVisitSummaryPdf,
-  hasOutpatientPatientInstructions,
-  hasOutpatientRecetaUnicaContent,
-  isOutpatientRecetaUnicaClinicallyReady,
   type OutpatientPatientInstructionsPdfLabels,
   type OutpatientRecetaUnicaPdfLabels,
   type OutpatientVisitSummaryPdfLabels,
@@ -37,6 +41,8 @@ import { generateRecetaUnicaNumber } from './receta-unica.resource';
 
 interface OutpatientVisitSummaryDownloadProps {
   patientUuid: string;
+  /** Lets the blocked-document modal send the clinician to the tab that owns the missing datum. */
+  onNavigateToTab?: (tabId: ConsultaExternaTabId) => void;
 }
 
 type GenerationTarget = 'patient-instructions' | 'receta-unica' | 'visit-summary';
@@ -301,7 +307,10 @@ function getRecetaUnicaLabels(t: TFunction): OutpatientRecetaUnicaPdfLabels {
   };
 }
 
-const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadProps> = ({ patientUuid }) => {
+const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadProps> = ({
+  patientUuid,
+  onNavigateToTab,
+}) => {
   const { t, i18n } = useTranslation();
   const config = useConfig<ConfigObject>();
   const session = useSession();
@@ -360,9 +369,26 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
     };
   }, []);
 
-  const showError = useCallback((title: string, subtitle: string) => {
-    showSnackbar({ isLowContrast: false, kind: 'error', title, subtitle });
-  }, []);
+  /**
+   * A document that cannot be produced opens a modal, not a snackbar: the toast
+   * fades and a print button that appears to do nothing reads as broken. The
+   * warnings that still produce a document stay as snackbars.
+   */
+  const showBlockedDocument = useCallback(
+    (
+      title: string,
+      { description, requirements = [] }: { description?: string; requirements?: OutpatientDocumentRequirement[] } = {},
+    ) => {
+      const dispose = showModal('outpatient-missing-document-data-dialog', {
+        closeModal: () => dispose(),
+        title,
+        description,
+        requirements,
+        onNavigateToTab,
+      });
+    },
+    [onNavigateToTab],
+  );
 
   const showClinicalRecordWarning = useCallback(
     (summary: OutpatientVisitSummary) => {
@@ -409,23 +435,23 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       if (!visit) return null;
       const errorTitle = getErrorTitle(target);
       if (isPatientLoading) {
-        showError(
-          errorTitle,
-          t('outpatientSummaryPatientPending', 'Los datos del paciente todavía se están verificando.'),
-        );
+        showBlockedDocument(errorTitle, {
+          description: t('outpatientSummaryPatientPending', 'Los datos del paciente todavía se están verificando.'),
+        });
         return null;
       }
       if (patientError || !patient) {
-        showError(errorTitle, t('outpatientSummaryPatientError', 'No se pudo verificar la identidad del paciente.'));
+        showBlockedDocument(errorTitle, {
+          description: t('outpatientSummaryPatientError', 'No se pudo verificar la identidad del paciente.'),
+        });
         return null;
       }
 
       const summaryPatient = toSummaryPatient(patient);
       if (!summaryPatient || summaryPatient.uuid.toLowerCase() !== patientUuid.toLowerCase()) {
-        showError(
-          errorTitle,
-          t('outpatientSummaryPatientMismatch', 'La identidad del paciente no coincide con la visita.'),
-        );
+        showBlockedDocument(errorTitle, {
+          description: t('outpatientSummaryPatientMismatch', 'La identidad del paciente no coincide con la visita.'),
+        });
         return null;
       }
 
@@ -477,7 +503,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       patientUuid,
       requireAmbulatoryVisit,
       session?.sessionLocation?.display,
-      showError,
+      showBlockedDocument,
       t,
     ],
   );
@@ -532,9 +558,9 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
                 'El documento contiene caracteres que no se pueden representar con seguridad. Revise el texto registrado o contacte a soporte.',
               )
             : null;
-        showError(
-          getErrorTitle(target),
-          unsupportedCharacterMessage ??
+        showBlockedDocument(getErrorTitle(target), {
+          description:
+            unsupportedCharacterMessage ??
             (target === 'patient-instructions'
               ? t(
                   'outpatientPatientInstructionsGenerationError',
@@ -544,7 +570,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
                   'outpatientSummaryGenerationError',
                   'No se pudo verificar o generar el resumen de esta atención. Recargue e intente nuevamente.',
                 )),
-        );
+        });
       } finally {
         if (isCurrent()) {
           generationInProgressRef.current = false;
@@ -558,7 +584,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       loadVerifiedSummary,
       patientUuid,
       sessionLocationUuid,
-      showError,
+      showBlockedDocument,
       t,
       verifiedAmbulatoryVisitUuid,
     ],
@@ -566,15 +592,16 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
 
   const handleDownload = useCallback(() => {
     return runWithSummary('visit-summary', async (summary, _linkedAppointmentUuids, isCurrent) => {
-      if (!summary.hasClinicalContent) {
+      const missingSummaryRequirements = getMissingVisitSummaryRequirements(summary);
+      if (missingSummaryRequirements.length) {
         if (!isCurrent()) return;
-        showError(
-          getErrorTitle('visit-summary'),
-          t(
+        showBlockedDocument(getErrorTitle('visit-summary'), {
+          description: t(
             'outpatientSummaryNoClinicalData',
             'Esta atención todavía no tiene información clínica suficiente para generar el resumen.',
           ),
-        );
+          requirements: missingSummaryRequirements,
+        });
         return;
       }
 
@@ -599,7 +626,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         ),
       });
     });
-  }, [getErrorTitle, i18n.language, runWithSummary, showClinicalRecordWarning, showError, t]);
+  }, [getErrorTitle, i18n.language, runWithSummary, showBlockedDocument, showClinicalRecordWarning, t]);
 
   const handlePrintPatientInstructions = useCallback(() => {
     return runWithSummary('patient-instructions', async (summary, linkedAppointmentUuids, isCurrent, signal) => {
@@ -625,14 +652,9 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       if (!isCurrent()) return;
       scheduledAppointment = isUpcomingScheduledAppointment(scheduledAppointment) ? scheduledAppointment : null;
 
-      if (!hasOutpatientPatientInstructions(summary, scheduledAppointment)) {
-        showError(
-          getErrorTitle('patient-instructions'),
-          t(
-            'outpatientPatientInstructionsNoData',
-            'Registre una fecha de control, indicaciones terapéuticas o medicamentos antes de imprimir este documento.',
-          ),
-        );
+      const missingInstructions = getMissingPatientInstructionsRequirements(summary, scheduledAppointment);
+      if (missingInstructions.length) {
+        showBlockedDocument(getErrorTitle('patient-instructions'), { requirements: missingInstructions });
         return;
       }
 
@@ -651,14 +673,9 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       if (!isCurrent()) return;
       if (scheduledAppointment && !isUpcomingScheduledAppointment(scheduledAppointment)) {
         scheduledAppointment = null;
-        if (!hasOutpatientPatientInstructions(summary, null)) {
-          showError(
-            getErrorTitle('patient-instructions'),
-            t(
-              'outpatientPatientInstructionsNoData',
-              'Registre una fecha de control, indicaciones terapéuticas o medicamentos antes de imprimir este documento.',
-            ),
-          );
+        const missingWithoutAppointment = getMissingPatientInstructionsRequirements(summary, null);
+        if (missingWithoutAppointment.length) {
+          showBlockedDocument(getErrorTitle('patient-instructions'), { requirements: missingWithoutAppointment });
           return;
         }
         bytes = await createOutpatientPatientInstructionsPdf(
@@ -676,14 +693,9 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       if (!isCurrent()) return;
       if (outcome === 'content-stale' && scheduledAppointment) {
         scheduledAppointment = null;
-        if (!hasOutpatientPatientInstructions(summary, null)) {
-          showError(
-            getErrorTitle('patient-instructions'),
-            t(
-              'outpatientPatientInstructionsNoData',
-              'Registre una fecha de control, indicaciones terapéuticas o medicamentos antes de imprimir este documento.',
-            ),
-          );
+        const missingWithoutAppointment = getMissingPatientInstructionsRequirements(summary, null);
+        if (missingWithoutAppointment.length) {
+          showBlockedDocument(getErrorTitle('patient-instructions'), { requirements: missingWithoutAppointment });
           return;
         }
         bytes = await createOutpatientPatientInstructionsPdf(
@@ -713,7 +725,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
               ),
       });
     });
-  }, [getErrorTitle, i18n.language, patientUuid, runWithSummary, showClinicalRecordWarning, showError, t]);
+  }, [getErrorTitle, i18n.language, patientUuid, runWithSummary, showBlockedDocument, showClinicalRecordWarning, t]);
 
   // Un frontend nuevo puede convivir con una configuración desplegada que aún
   // no declara el bloque: sin fuente configurada la emisión queda apagada.
@@ -724,24 +736,9 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
   };
   const handlePrintRecetaUnica = useCallback(() => {
     return runWithSummary('receta-unica', async (summary, _linkedAppointmentUuids, isCurrent, signal) => {
-      if (!isOutpatientRecetaUnicaClinicallyReady(summary)) {
-        showError(
-          getErrorTitle('receta-unica'),
-          t(
-            'recetaUnicaClinicalContractIncomplete',
-            'Antes de emitir la receta, registre un único diagnóstico principal con mapping CIE-10 y un único profesional responsable en el encuentro clínico.',
-          ),
-        );
-        return;
-      }
-      if (!hasOutpatientRecetaUnicaContent(summary)) {
-        showError(
-          getErrorTitle('receta-unica'),
-          t(
-            'recetaUnicaNoMedications',
-            'Registre al menos un medicamento mediante una orden vigente del profesional responsable antes de emitir la receta.',
-          ),
-        );
+      const missingRecetaRequirements = getMissingRecetaUnicaRequirements(summary);
+      if (missingRecetaRequirements.length) {
+        showBlockedDocument(getErrorTitle('receta-unica'), { requirements: missingRecetaRequirements });
         return;
       }
 
@@ -759,13 +756,12 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       } catch (error) {
         if (!isCurrent()) return;
         createErrorHandler()(error);
-        showError(
-          getErrorTitle('receta-unica'),
-          t(
+        showBlockedDocument(getErrorTitle('receta-unica'), {
+          description: t(
             'recetaUnicaNumberUnavailable',
             'El servidor no entregó la numeración. Sin correlativo auditado no se emite la Receta Única; entregue la hoja de indicaciones informativa.',
           ),
-        );
+        });
         return;
       }
       if (!isCurrent()) return;
@@ -799,7 +795,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
     recetaUnicaConfig.identifierSourceUuid,
     recetaUnicaConfig.validityDays,
     runWithSummary,
-    showError,
+    showBlockedDocument,
     t,
   ]);
 

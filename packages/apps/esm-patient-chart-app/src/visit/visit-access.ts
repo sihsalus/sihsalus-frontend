@@ -4,6 +4,34 @@ import { adtPrivilege, clinicalChartPrivilege, clinicalChartVisitsEditPrivilege 
 
 type User = Parameters<typeof userHasAccess>[1] | null | undefined;
 
+/**
+ * Roles OpenMRS treats as super users. `userHasAccess` grants them every
+ * privilege, so they have to be recognised before any privilege-based exclusion.
+ */
+const superUserRoles = new Set(['System Developer', 'Application: Has Super User Privileges']);
+
+function isSuperUser(user: User) {
+  return Boolean(user?.roles?.some((role) => superUserRoles.has(role.name) || superUserRoles.has(role.display)));
+}
+
+/**
+ * `userHasAccess` answers "may this user do X?", and that is always `true` for a
+ * super user. Negating it therefore cannot exclude anyone: a super user matches
+ * every exclusion and loses the action instead of gaining it. Exclusions must
+ * read the privileges the account actually holds.
+ */
+function holdsPrivilege(privilege: string, user: User) {
+  return Boolean(user?.privileges?.some((granted) => granted.display === privilege || granted.name === privilege));
+}
+
+/**
+ * Admission staff, i.e. an account that really carries the ADT privilege rather
+ * than inheriting it as a super user.
+ */
+function isAdmissionUser(user: User) {
+  return !isSuperUser(user) && holdsPrivilege(adtPrivilege, user);
+}
+
 export function canCreateVisit(user: User) {
   return (
     userHasAccess('Add Visits', user) ||
@@ -28,7 +56,7 @@ export function canEditVisit(user: User) {
  */
 export function canCloseClinicalVisit(user: User) {
   return (
-    !userHasAccess(adtPrivilege, user) &&
+    !isAdmissionUser(user) &&
     userHasAccess(clinicalChartPrivilege, user) &&
     userHasAccess(clinicalChartVisitsEditPrivilege, user)
   );
@@ -40,7 +68,7 @@ export function canCloseClinicalVisit(user: User) {
  * instead of bypassing arrival and queue routing from patient search/chart.
  */
 export function canManuallyStartVisit(user: User) {
-  return !userHasAccess(adtPrivilege, user) && userHasAccess(clinicalChartPrivilege, user) && canCreateVisit(user);
+  return !isAdmissionUser(user) && userHasAccess(clinicalChartPrivilege, user) && canCreateVisit(user);
 }
 
 export const canStartVisit = canCreateVisit;

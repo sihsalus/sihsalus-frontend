@@ -4,30 +4,48 @@ import { canCloseClinicalVisit, canEditVisit, canManuallyStartVisit, canStartVis
 
 const mockUserHasAccess = vi.mocked(userHasAccess);
 
+type TestUser = Parameters<typeof userHasAccess>[1];
+
+function buildUser({ privileges = [], roles = [] }: { privileges?: Array<string>; roles?: Array<string> } = {}) {
+  return {
+    privileges: privileges.map((name) => ({ uuid: name, name, display: name })),
+    roles: roles.map((name) => ({ uuid: name, name, display: name })),
+  } as TestUser;
+}
+
+/** Mirrors the real `userHasAccess`, which grants a super user every privilege. */
+function grantPrivileges(...granted: Array<string>) {
+  mockUserHasAccess.mockImplementation((privilege) => granted.includes(privilege as string));
+}
+
+function grantEverything() {
+  mockUserHasAccess.mockReturnValue(true);
+}
+
 describe('canStartVisit', () => {
   beforeEach(() => {
     mockUserHasAccess.mockReset();
   });
 
   it('accepts the native OpenMRS Add Visits privilege', () => {
-    mockUserHasAccess.mockImplementation((privilege) => privilege === 'Add Visits');
+    grantPrivileges('Add Visits');
 
-    expect(canStartVisit({} as Parameters<typeof userHasAccess>[1])).toBe(true);
+    expect(canStartVisit(buildUser())).toBe(true);
     expect(mockUserHasAccess).toHaveBeenCalledWith('Add Visits', expect.anything());
   });
 
   it('keeps the existing admission and clinical visit privileges compatible', () => {
-    mockUserHasAccess.mockImplementation((privilege) => privilege === 'app:home.admision');
-    expect(canStartVisit({} as Parameters<typeof userHasAccess>[1])).toBe(true);
+    grantPrivileges('app:home.admision');
+    expect(canStartVisit(buildUser())).toBe(true);
 
-    mockUserHasAccess.mockImplementation((privilege) => privilege === 'app:hoja.clinica.visitas.editar');
-    expect(canStartVisit({} as Parameters<typeof userHasAccess>[1])).toBe(true);
+    grantPrivileges('app:hoja.clinica.visitas.editar');
+    expect(canStartVisit(buildUser())).toBe(true);
   });
 
   it('rejects users without any supported visit creation privilege', () => {
     mockUserHasAccess.mockReturnValue(false);
 
-    expect(canStartVisit({} as Parameters<typeof userHasAccess>[1])).toBe(false);
+    expect(canStartVisit(buildUser())).toBe(false);
   });
 });
 
@@ -37,15 +55,15 @@ describe('canEditVisit', () => {
   });
 
   it('accepts the native OpenMRS Edit Visits privilege', () => {
-    mockUserHasAccess.mockImplementation((privilege) => privilege === 'Edit Visits');
+    grantPrivileges('Edit Visits');
 
-    expect(canEditVisit({} as Parameters<typeof userHasAccess>[1])).toBe(true);
+    expect(canEditVisit(buildUser())).toBe(true);
   });
 
   it('does not treat Add Visits alone as permission to edit', () => {
-    mockUserHasAccess.mockImplementation((privilege) => privilege === 'Add Visits');
+    grantPrivileges('Add Visits');
 
-    expect(canEditVisit({} as Parameters<typeof userHasAccess>[1])).toBe(false);
+    expect(canEditVisit(buildUser())).toBe(false);
   });
 });
 
@@ -55,33 +73,42 @@ describe('canCloseClinicalVisit', () => {
   });
 
   it('requires both clinical chart access and clinical visit editing', () => {
-    mockUserHasAccess.mockImplementation((privilege) =>
-      ['app:hoja.clinica', 'app:hoja.clinica.visitas.editar'].includes(privilege as string),
-    );
+    grantPrivileges('app:hoja.clinica', 'app:hoja.clinica.visitas.editar');
 
-    expect(canCloseClinicalVisit({} as Parameters<typeof userHasAccess>[1])).toBe(true);
+    expect(
+      canCloseClinicalVisit(buildUser({ privileges: ['app:hoja.clinica', 'app:hoja.clinica.visitas.editar'] })),
+    ).toBe(true);
   });
 
   it('does not let admission close a clinical visit through its native visit capabilities', () => {
-    mockUserHasAccess.mockImplementation((privilege) =>
-      ['app:home.admision', 'Add Visits', 'Edit Visits'].includes(privilege as string),
-    );
+    grantPrivileges('app:home.admision', 'Add Visits', 'Edit Visits');
 
-    expect(canCloseClinicalVisit({} as Parameters<typeof userHasAccess>[1])).toBe(false);
+    expect(canCloseClinicalVisit(buildUser({ privileges: ['app:home.admision', 'Add Visits', 'Edit Visits'] }))).toBe(
+      false,
+    );
   });
 
   it('keeps clinical closure hidden when an admission role has accumulated clinical privileges', () => {
-    mockUserHasAccess.mockImplementation((privilege) =>
-      ['app:home.admision', 'app:hoja.clinica', 'app:hoja.clinica.visitas.editar'].includes(privilege as string),
-    );
+    grantPrivileges('app:home.admision', 'app:hoja.clinica', 'app:hoja.clinica.visitas.editar');
 
-    expect(canCloseClinicalVisit({} as Parameters<typeof userHasAccess>[1])).toBe(false);
+    expect(
+      canCloseClinicalVisit(
+        buildUser({ privileges: ['app:home.admision', 'app:hoja.clinica', 'app:hoja.clinica.visitas.editar'] }),
+      ),
+    ).toBe(false);
+  });
+
+  it('still lets a super user close a clinical visit', () => {
+    grantEverything();
+
+    expect(canCloseClinicalVisit(buildUser({ roles: ['System Developer'] }))).toBe(true);
+    expect(canCloseClinicalVisit(buildUser({ roles: ['Application: Has Super User Privileges'] }))).toBe(true);
   });
 
   it('rejects a stale clinical edit privilege without access to the clinical chart', () => {
-    mockUserHasAccess.mockImplementation((privilege) => privilege === 'app:hoja.clinica.visitas.editar');
+    grantPrivileges('app:hoja.clinica.visitas.editar');
 
-    expect(canCloseClinicalVisit({} as Parameters<typeof userHasAccess>[1])).toBe(false);
+    expect(canCloseClinicalVisit(buildUser({ privileges: ['app:hoja.clinica.visitas.editar'] }))).toBe(false);
   });
 });
 
@@ -91,26 +118,28 @@ describe('canManuallyStartVisit', () => {
   });
 
   it('allows a clinical user who can create visits', () => {
-    mockUserHasAccess.mockImplementation((privilege) =>
-      ['app:hoja.clinica', 'Add Visits'].includes(privilege as string),
-    );
+    grantPrivileges('app:hoja.clinica', 'Add Visits');
 
-    expect(canManuallyStartVisit({} as Parameters<typeof userHasAccess>[1])).toBe(true);
+    expect(canManuallyStartVisit(buildUser({ privileges: ['app:hoja.clinica', 'Add Visits'] }))).toBe(true);
   });
 
   it('does not let admission bypass appointment arrival and queue routing', () => {
-    mockUserHasAccess.mockImplementation((privilege) =>
-      ['app:home.admision', 'Add Visits'].includes(privilege as string),
-    );
+    grantPrivileges('app:home.admision', 'Add Visits');
 
-    expect(canManuallyStartVisit({} as Parameters<typeof userHasAccess>[1])).toBe(false);
+    expect(canManuallyStartVisit(buildUser({ privileges: ['app:home.admision', 'Add Visits'] }))).toBe(false);
   });
 
   it('keeps manual start hidden when an admission role has accumulated clinical privileges', () => {
-    mockUserHasAccess.mockImplementation((privilege) =>
-      ['app:home.admision', 'app:hoja.clinica', 'Add Visits'].includes(privilege as string),
-    );
+    grantPrivileges('app:home.admision', 'app:hoja.clinica', 'Add Visits');
 
-    expect(canManuallyStartVisit({} as Parameters<typeof userHasAccess>[1])).toBe(false);
+    expect(
+      canManuallyStartVisit(buildUser({ privileges: ['app:home.admision', 'app:hoja.clinica', 'Add Visits'] })),
+    ).toBe(false);
+  });
+
+  it('still lets a super user start a visit manually', () => {
+    grantEverything();
+
+    expect(canManuallyStartVisit(buildUser({ roles: ['System Developer'] }))).toBe(true);
   });
 });

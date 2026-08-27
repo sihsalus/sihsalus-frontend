@@ -434,7 +434,7 @@ test("typing in the diagnosis search input triggers a search", async () => {
   await user.click(closeTagButton);
   // no selected diagnoses left
   expect(
-    screen.getByText(/No diagnosis selected — Enter a diagnosis below/i),
+    screen.getByText(/No diagnosis selected — Enter a diagnosis above/i),
   ).toBeInTheDocument();
 });
 
@@ -1195,7 +1195,7 @@ test("handles existing diagnoses correctly when in edit mode", async () => {
 
   // Verify no diagnoses are selected
   expect(
-    screen.getByText(/No diagnosis selected — Enter a diagnosis below/i),
+    screen.getByText(/No diagnosis selected — Enter a diagnosis above/i),
   ).toBeInTheDocument();
   expect(submitButton).toBeEnabled();
 

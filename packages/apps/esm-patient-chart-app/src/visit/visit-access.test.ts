@@ -88,13 +88,21 @@ describe('canCloseClinicalVisit', () => {
     );
   });
 
-  it('keeps clinical closure hidden when an admission role has accumulated clinical privileges', () => {
+  it('lets a clinician who also covers admission close the visit', () => {
     grantPrivileges('app:home.admision', 'app:hoja.clinica', 'app:hoja.clinica.visitas.editar');
 
     expect(
       canCloseClinicalVisit(
         buildUser({ privileges: ['app:home.admision', 'app:hoja.clinica', 'app:hoja.clinica.visitas.editar'] }),
       ),
+    ).toBe(true);
+  });
+
+  it('keeps clinical closure hidden from an account that is only admission', () => {
+    grantPrivileges('app:home.admision', 'app:hoja.clinica.visitas.editar');
+
+    expect(
+      canCloseClinicalVisit(buildUser({ privileges: ['app:home.admision', 'app:hoja.clinica.visitas.editar'] })),
     ).toBe(false);
   });
 
@@ -129,12 +137,12 @@ describe('canManuallyStartVisit', () => {
     expect(canManuallyStartVisit(buildUser({ privileges: ['app:home.admision', 'Add Visits'] }))).toBe(false);
   });
 
-  it('keeps manual start hidden when an admission role has accumulated clinical privileges', () => {
+  it('lets a clinician who also covers admission start a visit manually', () => {
     grantPrivileges('app:home.admision', 'app:hoja.clinica', 'Add Visits');
 
     expect(
       canManuallyStartVisit(buildUser({ privileges: ['app:home.admision', 'app:hoja.clinica', 'Add Visits'] })),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('still lets a super user start a visit manually', () => {

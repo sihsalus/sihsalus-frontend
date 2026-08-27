@@ -25,11 +25,14 @@ function holdsPrivilege(privilege: string, user: User) {
 }
 
 /**
- * Admission staff, i.e. an account that really carries the ADT privilege rather
- * than inheriting it as a super user.
+ * Admission staff, i.e. an account that carries the ADT privilege and has no
+ * clinical chart access of its own. A clinician who also covers admission keeps
+ * the clinical actions -- the same rule `canTransitionServiceQueueEntries`
+ * applies in the service queues app. Excluding everyone who merely holds the ADT
+ * privilege would strip the actions from any combined clinical role.
  */
-function isAdmissionUser(user: User) {
-  return !isSuperUser(user) && holdsPrivilege(adtPrivilege, user);
+function isAdmissionOnlyUser(user: User) {
+  return !isSuperUser(user) && holdsPrivilege(adtPrivilege, user) && !holdsPrivilege(clinicalChartPrivilege, user);
 }
 
 export function canCreateVisit(user: User) {
@@ -56,7 +59,7 @@ export function canEditVisit(user: User) {
  */
 export function canCloseClinicalVisit(user: User) {
   return (
-    !isAdmissionUser(user) &&
+    !isAdmissionOnlyUser(user) &&
     userHasAccess(clinicalChartPrivilege, user) &&
     userHasAccess(clinicalChartVisitsEditPrivilege, user)
   );
@@ -68,7 +71,7 @@ export function canCloseClinicalVisit(user: User) {
  * instead of bypassing arrival and queue routing from patient search/chart.
  */
 export function canManuallyStartVisit(user: User) {
-  return !isAdmissionUser(user) && userHasAccess(clinicalChartPrivilege, user) && canCreateVisit(user);
+  return !isAdmissionOnlyUser(user) && userHasAccess(clinicalChartPrivilege, user) && canCreateVisit(user);
 }
 
 export const canStartVisit = canCreateVisit;

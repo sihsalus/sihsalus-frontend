@@ -35,6 +35,8 @@ export const peruHomeActions = getAsyncLifecycle(
   options,
 );
 
+export const referenceLinks = getAsyncLifecycle(() => import('./reference-links/reference-links.component'), options);
+
 // t('home', 'Home')
 export const homePageHeader = getAsyncLifecycle(() => import('./page-header/page-header.component'), options);
 

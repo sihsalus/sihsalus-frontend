@@ -64,9 +64,46 @@ describe('ImplementerTools', () => {
       expect(showToast).toHaveBeenCalledWith(
         expect.objectContaining({
           actionButtonLabel: 'View modules',
+          kind: 'error',
           title: 'Some modules have unresolved backend dependencies',
         }),
       ),
     );
+  });
+
+  it('reports a version mismatch as a warning without naming the empty category', async () => {
+    mockUseBackendDependencies.mockReturnValue({
+      modules: [
+        {
+          name: '@sihsalus/esm-patient-attachments-app',
+          dependencies: [
+            {
+              name: 'attachments',
+              requiredVersion: '>=4.0.1-sihsalus.1 <5.0.0',
+              installedVersion: '4.0.0',
+              type: 'version-mismatch',
+            },
+          ],
+        },
+      ],
+      error: null,
+      errorStatus: null,
+      isRetrying: false,
+      retry: vi.fn(),
+    });
+
+    render(<Root />);
+
+    await waitFor(() => expect(showToast).toHaveBeenCalled());
+
+    const [{ description, kind, title }] = vi.mocked(showToast).mock.calls[0];
+
+    expect(kind).toBe('warning');
+    expect(title).toBe('Some modules need a different backend version');
+    expect(description).toContain('1 backend module has an incompatible version.');
+    // The regression: a summary that opened with "0 backend module(s) are
+    // missing" buried the single finding that mattered.
+    expect(description).not.toContain('0 backend module');
+    expect(description).toContain('attachments 4.0.0 -> >=4.0.1-sihsalus.1 <5.0.0');
   });
 });

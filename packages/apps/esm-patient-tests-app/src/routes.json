@@ -24,6 +24,13 @@
       "component": "externalOverview"
     },
     {
+      "name": "consulta-externa-lab-results-widget",
+      "slot": "consulta-externa-pruebas-complementarias-slot",
+      "component": "externalOverview",
+      "privileges": "app:hoja.clinica.resultados",
+      "order": 0
+    },
+    {
       "name": "results-viewer",
       "slots": ["patient-chart-results-viewer-slot", "patient-chart-test-results-dashboard-slot"],
       "component": "resultsViewer",

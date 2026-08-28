@@ -15,10 +15,14 @@ export const configSchema = {
       },
     },
     _default: [
-      /*{
+      {
         conceptUuid: '24305e8e-f3dc-4ac6-bf87-e4f11f3b970e',
         defaultOpen: false,
-      },*/
+      },
+      {
+        conceptUuid: 'c5cedfda-c2b7-4c85-b420-ecf0b53cba08',
+        defaultOpen: false,
+      },
       {
         conceptUuid: '7e750f3a-8d5c-45b1-8e94-ebf850208e35',
         defaultOpen: false,

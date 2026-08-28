@@ -1,4 +1,4 @@
-import { Button, ButtonSet, Form, InlineLoading, InlineNotification, Stack } from '@carbon/react';
+import { Button, ButtonSet, Form, InlineLoading, InlineNotification, Stack, TextInput } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   getUserFacingErrorMessage,
@@ -15,11 +15,12 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { mutate } from 'swr';
 import {
   createObservationPayload,
+  flattenLeafConcepts,
   isCoded,
   isNumeric,
   isPanel,
@@ -93,13 +94,35 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
     if (concept && completeLabResult && order?.fulfillerStatus === 'COMPLETED') {
       if (isCoded(concept) && completeLabResult?.value?.uuid) {
         setValue(concept.uuid, completeLabResult.value.uuid);
+        if (completeLabResult.comment) {
+          setValue(`${concept.uuid}-comment`, completeLabResult.comment);
+        }
       } else if (isNumeric(concept) && completeLabResult?.value) {
         setValue(concept.uuid, parseFloat(String(completeLabResult.value)));
+        if (completeLabResult.comment) {
+          setValue(`${concept.uuid}-comment`, completeLabResult.comment);
+        }
       } else if (isText(concept) && completeLabResult?.value) {
         setValue(concept.uuid, completeLabResult.value);
+        if (completeLabResult.comment) {
+          setValue(`${concept.uuid}-comment`, completeLabResult.comment);
+        }
       } else if (isPanel(concept)) {
-        concept.setMembers.forEach((member) => {
-          const obs = completeLabResult.groupMembers.find((v) => v.concept.uuid === member.uuid);
+        const leafConcepts = flattenLeafConcepts(concept);
+        const findObs = (members: Array<any> | undefined, conceptUuid: string): any => {
+          if (!members) return undefined;
+          for (const m of members) {
+            if (m.concept?.uuid === conceptUuid) return m;
+            if (m.groupMembers && m.groupMembers.length > 0) {
+              const f = findObs(m.groupMembers, conceptUuid);
+              if (f) return f;
+            }
+          }
+          return undefined;
+        };
+
+        leafConcepts.forEach((member) => {
+          const obs = findObs(completeLabResult.groupMembers, member.uuid);
           let value: unknown;
           if (isCoded(member)) {
             value = obs?.value?.uuid;
@@ -108,10 +131,16 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
           } else if (isText(member)) {
             value = obs?.value;
           }
-          if (value) {
+          if (value !== undefined && value !== null) {
             setValue(member.uuid, value);
           }
+          if (obs?.comment) {
+            setValue(`${member.uuid}-comment`, obs.comment);
+          }
         });
+        if (completeLabResult.comment) {
+          setValue('order-comment', completeLabResult.comment);
+        }
       }
     }
   }, [concept, completeLabResult, order, setValue]);
@@ -190,15 +219,29 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
 
     // Handle update operation for completed lab order results
     if (order.fulfillerStatus === 'COMPLETED') {
-      const updateTasks = Object.entries(formValues).map(([conceptUuid, value]) => {
-        const obs = completeLabResult?.groupMembers?.find((v) => v.concept.uuid === conceptUuid) ?? completeLabResult;
+      const findObs = (members: Array<any> | undefined, conceptUuid: string): any => {
+        if (!members) return undefined;
+        for (const m of members) {
+          if (m.concept?.uuid === conceptUuid) return m;
+          if (m.groupMembers && m.groupMembers.length > 0) {
+            const f = findObs(m.groupMembers, conceptUuid);
+            if (f) return f;
+          }
+        }
+        return undefined;
+      };
+
+      const formEntries = Object.entries(formValues).filter(([key]) => !key.endsWith('-comment'));
+      const updateTasks = formEntries.map(([conceptUuid, value]) => {
+        const obs = findObs(completeLabResult?.groupMembers, conceptUuid) ?? completeLabResult;
         const obsDatetime = new Date().toISOString();
-        return updateObservation(obs?.uuid, { value, obsDatetime });
+        const comment = formValues[`${conceptUuid}-comment`] ? String(formValues[`${conceptUuid}-comment`]) : undefined;
+        return updateObservation(obs?.uuid, { value, comment, obsDatetime });
       });
       const updateResults = await Promise.allSettled(updateTasks);
       const failedObsconceptUuids = updateResults.reduce<Array<string | undefined>>((prev, curr, index) => {
         if (curr.status === 'rejected') {
-          const conceptUuid = Object.keys(formValues).at(index);
+          const conceptUuid = formEntries.at(index)?.[0];
           prev.push(conceptUuid);
         }
         return prev;
@@ -280,7 +323,26 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
         {concept && (
           <Stack gap={5}>
             {!isLoading ? (
-              <ResultFormField defaultValue={completeLabResult} concept={concept} control={control} errors={errors} />
+              <>
+                <ResultFormField defaultValue={completeLabResult} concept={concept} control={control} errors={errors} />
+                {isPanel(concept) && (
+                  <Controller
+                    control={control}
+                    name="order-comment"
+                    render={({ field }) => (
+                      <TextInput
+                        {...field}
+                        className={styles.textInput}
+                        id="order-comment"
+                        labelText={t('observations', 'Observaciones')}
+                        placeholder={t('enterObservations', 'Ingrese observaciones aquí')}
+                        type="text"
+                        value={typeof field.value === 'string' ? field.value : ''}
+                      />
+                    )}
+                  />
+                )}
+              </>
             ) : (
               <InlineLoading description={t('loadingInitialValues', 'Loading initial values') + '...'} />
             )}

@@ -16,6 +16,7 @@ export const defaultVisitNoteClinicalConceptUuids = {
   soapObjectiveConceptUuid: "160532AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
   soapAssessmentConceptUuid: "160533AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
   soapPlanConceptUuid: "f0000201-0000-4000-8000-000000000201",
+  therapeuticIndicationsConceptUuid: "b762afd0-dfc6-430d-8963-0be05f77a12a",
   labOrdersConceptUuid: "f0000204-0000-4000-8000-000000000204",
   proceduresConceptUuid: "f0000206-0000-4000-8000-000000000206",
   prescriptionsConceptUuid: "f0000215-0000-4000-8000-000000000215",
@@ -131,6 +132,13 @@ export default {
     _default: defaultVisitNoteClinicalConceptUuids.soapPlanConceptUuid,
     _description: "SOAP plan / treatment concept used by outpatient forms",
   },
+  therapeuticIndicationsConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default:
+      defaultVisitNoteClinicalConceptUuids.therapeuticIndicationsConceptUuid,
+    _description:
+      "Free-text non-pharmacological instructions for the outpatient treatment plan",
+  },
   labOrdersConceptUuid: {
     _type: Type.ConceptUuid,
     _default: defaultVisitNoteClinicalConceptUuids.labOrdersConceptUuid,
@@ -232,6 +240,7 @@ export interface VisitNoteConfigObject {
   soapObjectiveConceptUuid: string;
   soapAssessmentConceptUuid: string;
   soapPlanConceptUuid: string;
+  therapeuticIndicationsConceptUuid: string;
   labOrdersConceptUuid: string;
   proceduresConceptUuid: string;
   prescriptionsConceptUuid: string;

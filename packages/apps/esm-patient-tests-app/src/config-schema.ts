@@ -85,6 +85,15 @@ export const configSchema = {
       _default: ['020e5471-8750-44f6-82dd-af6d8eb63544'],
     },
   },
+  testTypeSearchAliases: {
+    _type: Type.Object,
+    _description:
+      'Local search aliases keyed by the UUID of an orderable test concept. These are a compatibility fallback until the same synonym is published in OCL.',
+    _default: {
+      // Alanina transferasa / ALT. The HSC team commonly searches for this test as TGP.
+      '4686f6f2-a42e-47c3-aa56-8301bd1c71b6': ['TGP'],
+    },
+  },
   showReferenceNumberField: {
     _type: Type.Boolean,
     _default: false,
@@ -243,4 +252,5 @@ export interface ConfigObject {
   }>;
   resultsViewerConcepts: Array<ObsTreeEntry>;
   priorityConfigs: Array<PriorityConfig>;
+  testTypeSearchAliases: Record<string, Array<string>>;
 }

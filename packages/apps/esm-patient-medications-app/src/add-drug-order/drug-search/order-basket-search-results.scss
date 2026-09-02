@@ -131,6 +131,13 @@
   @include type.type-style("body-compact-01");
 }
 
+.catalogGuidance {
+  @include type.type-style("body-compact-01");
+  color: $text-02;
+  margin-top: layout.$spacing-05;
+  max-width: 38rem;
+}
+
 .label01 {
   @include type.type-style("label-01");
 }

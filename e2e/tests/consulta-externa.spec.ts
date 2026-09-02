@@ -7,8 +7,10 @@ if (!patientUuid) {
 
 const consultaExternaTabs = [
   /Triajes previos/i,
+  /Antecedentes/i,
   /Anamnesis/i,
-  /Examen f[ií]sico \/ SOAP/i,
+  /Examen f[ií]sico/i,
+  /Pruebas complementarias/i,
   /Diagn[oó]stico/i,
   /Plan de Tratamiento/i,
   /Referencia \/ Contrarreferencia/i,
@@ -16,10 +18,16 @@ const consultaExternaTabs = [
 
 const historySections = [
   { tab: /Anamnesis/i, region: /Historial de Anamnesis/i },
-  { tab: /Examen f[ií]sico \/ SOAP/i, region: /Historial de examen f[ií]sico \/ SOAP/i },
+  { tab: /Examen f[ií]sico/i, region: /Historial de examen f[ií]sico/i },
   { tab: /Diagn[oó]stico/i, region: /Historial de Diagn[oó]sticos/i },
-  { tab: /Plan de Tratamiento/i, region: /Historial de Planes de Tratamiento/i },
-  { tab: /Referencia \/ Contrarreferencia/i, region: /Historial de referencias y contrarreferencias/i },
+  {
+    tab: /Plan de Tratamiento/i,
+    region: /Historial de Planes de Tratamiento/i,
+  },
+  {
+    tab: /Referencia \/ Contrarreferencia/i,
+    region: /Historial de referencias y contrarreferencias/i,
+  },
 ];
 
 async function openConsultaExterna(page: Page) {
@@ -28,11 +36,13 @@ async function openConsultaExterna(page: Page) {
 }
 
 function getConsultaExternaTabList(page: Page) {
-  return page.getByRole('tablist', { name: /Pestañas de Consulta Externa|Consulta Externa tabs/i });
+  return page.getByRole('tablist', {
+    name: /Pestañas de Consulta Externa|Consulta Externa tabs/i,
+  });
 }
 
 test.describe('Consulta externa - hoja clínica', () => {
-  test('muestra las seis pestañas de la hoja de consulta externa', async ({ page }) => {
+  test('muestra las ocho pestañas de la hoja de consulta externa', async ({ page }) => {
     await openConsultaExterna(page);
 
     await expect(page).not.toHaveURL(/\/login/);
@@ -48,12 +58,28 @@ test.describe('Consulta externa - hoja clínica', () => {
 
     await expect(tabList.getByRole('tab')).toHaveText([
       'Triajes previos',
+      'Antecedentes',
       'Anamnesis',
-      'Examen físico / SOAP',
+      'Examen físico',
+      'Pruebas complementarias',
       'Diagnóstico',
       'Plan de Tratamiento',
       'Referencia / Contrarreferencia',
     ]);
+  });
+
+  test('reutiliza la tarjeta de resultados en Pruebas complementarias', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'La tarjeta solo necesita un proyecto');
+
+    await openConsultaExterna(page);
+
+    const tabList = getConsultaExternaTabList(page);
+    await expect(tabList).toBeVisible({ timeout: 20_000 });
+    await tabList.getByRole('tab', { name: /Pruebas complementarias/i }).click();
+
+    await expect(page.getByRole('heading', { name: /Resultados Recientes|Recent Results/i }).first()).toBeVisible({
+      timeout: 20_000,
+    });
   });
 
   test('cada pestaña clínica muestra su historial', async ({ page }, testInfo) => {

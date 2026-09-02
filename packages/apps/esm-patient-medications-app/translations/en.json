@@ -65,6 +65,7 @@
   "launchOrderBasket": "Launch order basket",
   "loadingCategoryTree": "Loading category tree...",
   "male": "Male",
+  "missingDrugCatalogGuidance": "A medication name cannot be prescribed as free text. Ask Pharmacy or the catalog administrator to register the generic name, strength and dosage form; when applicable, its concept must also be published and synchronized through OCL.",
   "medicationDurationAndUnit": "for {{duration}} {{durationUnit}}",
   "medicationIndefiniteDuration": "Indefinite duration",
   "Medications": "Medications",

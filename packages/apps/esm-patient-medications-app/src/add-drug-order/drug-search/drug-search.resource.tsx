@@ -51,9 +51,89 @@ interface DrugListFetchResult {
   errors: Array<Error>;
 }
 
+interface DrugConceptSearchResult {
+  uuid: string;
+  display: string;
+}
+
 const maxConceptsPerRequest = 20;
 const drugPageSize = 50;
 const drugSearchRepresentation = 'custom:(uuid,display,name,strength,dosageForm:(display,uuid),concept:(display,uuid))';
+const drugConceptSearchRepresentation = 'custom:(uuid,display)';
+
+const toError = (reason: unknown) => (reason instanceof Error ? reason : new Error(String(reason)));
+
+async function fetchDrugsByConceptUuids(concepts: string[]): Promise<DrugListFetchResult> {
+  const drugs: Array<DrugSearchResult> = [];
+  const errors: Array<Error> = [];
+
+  for (let start = 0; start < concepts.length; start += maxConceptsPerRequest) {
+    const batch = concepts.slice(start, start + maxConceptsPerRequest);
+    const conceptsParam = batch.join(',');
+    try {
+      let startIndex = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await openmrsFetch<{
+          results: Array<DrugSearchResult>;
+        }>(
+          `${restBaseUrl}/drug?concepts=${conceptsParam}&v=${drugSearchRepresentation}&limit=${drugPageSize}&startIndex=${startIndex}`,
+        );
+        const results = response.data?.results ?? [];
+        drugs.push(...results);
+        hasMore = results.length === drugPageSize;
+        startIndex += drugPageSize;
+      }
+    } catch (error) {
+      console.error(`Failed to fetch drugs for concepts: ${conceptsParam}`, error);
+      errors.push(toError(error));
+    }
+  }
+
+  return {
+    drugs: Array.from(new Map(drugs.map((drug) => [drug.uuid, drug])).values()),
+    errors,
+  };
+}
+
+async function fetchDrugSearchResults(query: string): Promise<DrugListFetchResult> {
+  const encodedQuery = encodeURIComponent(query.trim());
+  const [directSearch, conceptSearch] = await Promise.allSettled([
+    openmrsFetch<{ results: Array<DrugSearchResult> }>(
+      `${restBaseUrl}/drug?q=${encodedQuery}&v=${drugSearchRepresentation}`,
+    ),
+    openmrsFetch<{ results: Array<DrugConceptSearchResult> }>(
+      `${restBaseUrl}/concept?q=${encodedQuery}&class=Drug&limit=${drugPageSize}&v=${drugConceptSearchRepresentation}`,
+    ),
+  ]);
+
+  const directDrugs = directSearch.status === 'fulfilled' ? (directSearch.value.data?.results ?? []) : [];
+  const errors = directSearch.status === 'rejected' ? [toError(directSearch.reason)] : [];
+  const conceptUuids =
+    conceptSearch.status === 'fulfilled'
+      ? (conceptSearch.value.data?.results ?? []).map((concept) => concept.uuid).filter(Boolean)
+      : [];
+
+  if (conceptSearch.status === 'rejected') {
+    errors.push(toError(conceptSearch.reason));
+  }
+
+  const conceptDrugResult = conceptUuids.length
+    ? await fetchDrugsByConceptUuids(conceptUuids)
+    : { drugs: [], errors: [] };
+  errors.push(...conceptDrugResult.errors);
+
+  const drugs = Array.from(
+    new Map([...directDrugs, ...conceptDrugResult.drugs].map((drug) => [drug.uuid, drug])).values(),
+  );
+
+  if (!drugs.length && errors.length) {
+    throw errors[0] ?? new Error('Drug search failed');
+  }
+
+  return { drugs, errors };
+}
 
 /**
  * Search for a list of drugs based on the given query string or concepts (uuid/name/mapping)
@@ -61,13 +141,14 @@ const drugSearchRepresentation = 'custom:(uuid,display,name,strength,dosageForm:
  * @returns
  */
 export function useDrugSearch(query: string) {
-  const { data, ...rest } = useSWRImmutable<FetchResponse<{ results: Array<DrugSearchResult> }>, Error>(
-    query ? `${restBaseUrl}/drug?q=${query}&v=${drugSearchRepresentation}` : null,
-    openmrsFetch,
+  const { data, ...rest } = useSWRImmutable<DrugListFetchResult, Error>(
+    query ? ['drug-search-by-name-or-concept', query] : null,
+    ([, searchQuery]: [string, string]) => fetchDrugSearchResults(searchQuery),
   );
 
   return {
-    drugs: data?.data?.results,
+    drugs: data?.drugs,
+    partialErrors: data?.errors ?? [],
     ...rest,
   };
 }
@@ -96,34 +177,7 @@ export function useDrugsByConcepts(concepts: string[]) {
   const cacheKey = shouldFetch ? ['drugs-by-uuids', ...sortedConcepts] : null;
 
   const { data, isLoading } = useSWRImmutable<DrugListFetchResult, Error>(cacheKey, async () => {
-    const drugs: Array<DrugSearchResult> = [];
-    const errors: Array<Error> = [];
-
-    for (let start = 0; start < concepts.length; start += maxConceptsPerRequest) {
-      const batch = concepts.slice(start, start + maxConceptsPerRequest);
-      const conceptsParam = batch.join(',');
-      try {
-        let startIndex = 0;
-        let hasMore = true;
-
-        while (hasMore) {
-          const response = await openmrsFetch<{ results: Array<DrugSearchResult> }>(
-            `${restBaseUrl}/drug?concepts=${conceptsParam}&v=${drugSearchRepresentation}&limit=${drugPageSize}&startIndex=${startIndex}`,
-          );
-          const results = response.data?.results ?? [];
-          drugs.push(...results);
-          hasMore = results.length === drugPageSize;
-          startIndex += drugPageSize;
-        }
-      } catch (e) {
-        console.error(`Failed to fetch drugs for concepts: ${conceptsParam}`, e);
-        errors.push(e instanceof Error ? e : new Error(String(e)));
-      }
-    }
-
-    const deduped = Array.from(new Map(drugs.map((drug) => [drug.uuid, drug])).values());
-
-    return { drugs: deduped, errors };
+    return fetchDrugsByConceptUuids(concepts);
   });
 
   return useMemo(

@@ -867,6 +867,15 @@ test("renders a success snackbar upon successfully recording a visit note", asyn
         concept: { display: "", uuid: "162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" },
         value: "Sample clinical note",
       },
+      {
+        concept: {
+          display: "",
+          uuid: defaultVisitNoteClinicalConceptUuids.therapeuticIndicationsConceptUuid,
+        },
+        formFieldNamespace: "visit-notes",
+        formFieldPath: "therapeutic-indications",
+        value: "Dieta baja en sal y caminata diaria",
+      },
     ]),
     patient: mockPatient.id,
     visit: "active-visit-uuid",
@@ -882,6 +891,7 @@ test("renders a success snackbar upon successfully recording a visit note", asyn
   mockUseVisitNoteClinicalContext.mockReturnValue({
     clinicalContext: {
       chiefComplaint: "Cough and fever from outpatient care",
+      therapeuticIndications: "Mantener actividad física",
     },
     error: undefined,
     isLoading: false,
@@ -893,6 +903,9 @@ test("renders a success snackbar upon successfully recording a visit note", asyn
     {
       visitContext: {
         uuid: "active-visit-uuid",
+        visitType: {
+          uuid: "b1f0e8a1-9c5d-4f0e-8892-81f3140fbc09",
+        },
         location: {
           uuid: "operational-location-uuid",
           display: "UPSS - CONSULTA EXTERNA",
@@ -903,6 +916,9 @@ test("renders a success snackbar upon successfully recording a visit note", asyn
 
   const clinicalNote = screen.getByRole("textbox", {
     name: /Additional notes/i,
+  });
+  const therapeuticIndications = screen.getByRole("textbox", {
+    name: /Non-pharmacological instructions/i,
   });
   const searchBox = screen.getByPlaceholderText("Choose a primary diagnosis");
   await user.type(searchBox, "Diabetes Mellitus");
@@ -922,6 +938,12 @@ test("renders a success snackbar upon successfully recording a visit note", asyn
   await user.clear(clinicalNote);
   await user.type(clinicalNote, "Sample clinical note");
   expect(clinicalNote).toHaveValue("Sample clinical note");
+  expect(therapeuticIndications).toHaveValue("Mantener actividad física");
+  await user.clear(therapeuticIndications);
+  await user.type(
+    therapeuticIndications,
+    "Dieta baja en sal y caminata diaria",
+  );
 
   const submitButton = screen.getByRole("button", { name: /Save and close/i });
   await selectCodigoPrestacional(user);

@@ -21,7 +21,11 @@ const sisConcepts = {
   acreditacionNoConsultada: '9b3df0a1-0c58-4f55-9868-9c38f1db2054',
 } as const;
 
-const requiredPrivileges = ['app:hoja.clinica.consultaExterna', 'app:hoja.clinica.consultaExterna.editar'];
+const requiredPrivileges = [
+  'app:hoja.clinica.consultaExterna',
+  'app:hoja.clinica.consultaExterna.editar',
+  'app:hoja.clinica.resultados',
+];
 
 async function createApiContext(playwright: PlaywrightWorkerArgs['playwright']) {
   const { username, password } = getE2ECredentials();
@@ -51,7 +55,9 @@ test.describe('Consulta externa acceptance metadata', () => {
     try {
       const response = await api.get('privilege?v=custom:(uuid,name,retired)&limit=1000');
       expect(response.ok(), 'Expected privileges to be queryable').toBeTruthy();
-      const payload = (await response.json()) as { results?: Array<{ name: string; retired?: boolean }> };
+      const payload = (await response.json()) as {
+        results?: Array<{ name: string; retired?: boolean }>;
+      };
       const activePrivilegeNames = new Set(
         payload.results?.filter((privilege) => !privilege.retired).map((privilege) => privilege.name) ?? [],
       );

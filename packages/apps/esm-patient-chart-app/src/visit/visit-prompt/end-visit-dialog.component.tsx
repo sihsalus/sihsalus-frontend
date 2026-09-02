@@ -7,11 +7,7 @@ import {
   toOmrsIsoString,
   useVisit,
 } from '@openmrs/esm-framework';
-import {
-  fetchVisitInsurance,
-  getSisFinancingState,
-  launchPatientWorkspace,
-} from '@openmrs/esm-patient-common-lib';
+import { fetchVisitInsurance, getSisFinancingState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInfiniteVisits2 } from '../visits-widget/visit.resource';
@@ -61,9 +57,9 @@ async function validateRequiredVisitSummaryFields(
   visitUuid: string,
 ): Promise<RequiredVisitSummaryValidation> {
   const customRepresentation = 'custom:(uuid,diagnoses:(rank,voided),obs:(formFieldPath,value,display))';
-  const { data } = await openmrsFetch<{ results: Array<VisitEncounterSummary> }>(
-    `${restBaseUrl}/encounter?patient=${patientUuid}&visit=${visitUuid}&v=${customRepresentation}&limit=50`,
-  );
+  const { data } = await openmrsFetch<{
+    results: Array<VisitEncounterSummary>;
+  }>(`${restBaseUrl}/encounter?patient=${patientUuid}&visit=${visitUuid}&v=${customRepresentation}&limit=50`);
   const encounters = data?.results ?? [];
 
   return {
@@ -150,9 +146,31 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
       void mutateInfiniteVisits();
 
       if (shouldGenerateFua) {
-        await openmrsFetch(`${ModuleFuaRestURL}/generateFromVisit/${encodeURIComponent(activeVisit.uuid)}`, {
-          method: 'POST',
-        });
+        try {
+          await openmrsFetch(`${ModuleFuaRestURL}/generateFromVisit/${encodeURIComponent(activeVisit.uuid)}`, {
+            method: 'POST',
+          });
+        } catch (error: unknown) {
+          getUserFacingErrorMessage(
+            error,
+            t(
+              'visitEndedFuaPendingDescription',
+              'The visit was closed, but FUA generation could not be confirmed. Check FUA Management before retrying.',
+            ),
+            { logContext: 'Generate FUA after visit closure' },
+          );
+          closeModal();
+          showSnackbar({
+            isLowContrast: true,
+            kind: 'warning',
+            subtitle: t(
+              'visitEndedFuaPendingDescription',
+              'The visit was closed, but FUA generation could not be confirmed. Check FUA Management before retrying.',
+            ),
+            title: t('visitEndedFuaPending', 'Visit ended; verify FUA'),
+          });
+          return;
+        }
       }
 
       closeModal();
@@ -169,16 +187,13 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
       });
     } catch (error: unknown) {
       showSnackbar({
-        title: t('errorEndingVisitOrGeneratingFUA', 'Error ending visit or generating FUA'),
+        title: t('errorEndingVisit', 'Error ending visit'),
         kind: 'error',
         isLowContrast: false,
         subtitle: getUserFacingErrorMessage(
           error,
-          t(
-            'errorEndingVisitOrGeneratingFUAMessage',
-            'No se pudo finalizar la consulta o generar el FUA. Intente nuevamente.',
-          ),
-          { logContext: 'End visit and generate FUA' },
+          t('errorEndingVisitMessage', 'The visit could not be confirmed as ended. Verify its status before retrying.'),
+          { logContext: 'End visit' },
         ),
       });
     } finally {

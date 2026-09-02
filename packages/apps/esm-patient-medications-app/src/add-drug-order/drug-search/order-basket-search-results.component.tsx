@@ -107,6 +107,12 @@ export default function OrderBasketSearchResults({
             </span>{' '}
             <span>{t('usingADifferentTerm', 'using a different term')}</span>
           </p>
+          <p className={styles.catalogGuidance}>
+            {t(
+              'missingDrugCatalogGuidance',
+              'A medication name cannot be prescribed as free text. Ask Pharmacy or the catalog administrator to register the generic name, strength and dosage form; when applicable, its concept must also be published and synchronized through OCL.',
+            )}
+          </p>
         </div>
       </Tile>
     );

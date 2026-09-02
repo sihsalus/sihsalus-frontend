@@ -27,6 +27,8 @@ export const visitNotesPrivilege = 'app:hoja.clinica.resumenConsulta';
 export const visitNotesEditPrivilege = 'app:hoja.clinica.resumenConsulta.editar';
 export const socialHistoryPrivilege = 'app:hoja.clinica.historiaSocial';
 export const socialHistoryEditPrivilege = 'app:hoja.clinica.historiaSocial.editar';
+/** Declared by the past-visits dashboard in esm-patient-chart-app/src/routes.json. */
+export const patientVisitsPrivilege = 'app:hoja.clinica.visitas';
 
 export const orderBasketEditPrivilege = 'app:hoja.clinica.ordenes.editar';
 /** Both privileges are required by the Order Basket window and workspace. */

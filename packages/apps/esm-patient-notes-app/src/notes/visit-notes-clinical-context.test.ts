@@ -141,6 +141,31 @@ describe("useVisitNoteClinicalContext procedures fallback", () => {
     );
   });
 
+  it("reads non-pharmacological instructions from their dedicated concept", async () => {
+    mockOpenmrsFetch.mockResolvedValue({
+      data: {
+        results: [
+          buildEncounter("patient-therapeutic-indications", [
+            {
+              conceptUuid:
+                defaultVisitNoteClinicalConceptUuids.therapeuticIndicationsConceptUuid,
+              value: "Dieta baja en sal y caminata diaria",
+            },
+          ]),
+        ],
+      },
+    } as never);
+
+    const { result } = renderHook(() =>
+      useVisitNoteClinicalContext("patient-therapeutic-indications"),
+    );
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.clinicalContext.therapeuticIndications).toBe(
+      "Dieta baja en sal y caminata diaria",
+    );
+  });
+
   it("excludes the visit-note encounter so outpatient care remains the summary source", async () => {
     const patientUuid = "patient-read-only-summary";
     const visitUuid = "visit-1";

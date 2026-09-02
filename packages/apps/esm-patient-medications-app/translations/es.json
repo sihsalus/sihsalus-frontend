@@ -65,6 +65,7 @@
   "launchOrderBasket": "Abrir canasta de órdenes",
   "loadingCategoryTree": "Cargando árbol de categorías...",
   "male": "Masculino",
+  "missingDrugCatalogGuidance": "El nombre de un medicamento no puede prescribirse como texto libre. Solicite a Farmacia o al administrador del catálogo que registre el nombre genérico, la concentración y la forma farmacéutica; cuando corresponda, el concepto también debe publicarse y sincronizarse mediante OCL.",
   "medicationDurationAndUnit": "por {{duration}} {{durationUnit}}",
   "medicationIndefiniteDuration": "Duración indefinida",
   "Medications": "Medicamentos",

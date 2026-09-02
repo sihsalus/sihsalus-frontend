@@ -1,7 +1,11 @@
 import { useEffect, useRef } from 'react';
 
 export const laboratoryNotificationTopic = 'laboratory';
+export const labOrderCreatedEventType = 'LAB_ORDER_CREATED';
 export const labResultReadyEventType = 'LAB_RESULT_READY';
+const laboratoryEventTypes = [labOrderCreatedEventType, labResultReadyEventType] as const;
+
+export type LaboratoryNotificationEventType = (typeof laboratoryEventTypes)[number];
 
 type LaboratoryNotification = {
   id: string;
@@ -18,12 +22,15 @@ export function getLaboratoryNotificationsUrl(openmrsBase = globalThis.openmrsBa
 }
 
 /**
- * Subscribes to the privacy-minimized result-ready signal from the SIHSALUS notifications OMOD.
+ * Subscribes to privacy-minimized order and result signals from the SIHSALUS notifications OMOD.
  * EventSource reconnects automatically when the server ends its bounded SSE response.
  */
-export function useLabResultReadyNotifications(enabled: boolean, onResultReady: () => void) {
-  const callbackRef = useRef(onResultReady);
-  callbackRef.current = onResultReady;
+export function useLaboratoryNotifications(
+  enabled: boolean,
+  onNotification: (eventType: LaboratoryNotificationEventType) => void,
+) {
+  const callbackRef = useRef(onNotification);
+  callbackRef.current = onNotification;
 
   useEffect(() => {
     const url = getLaboratoryNotificationsUrl();
@@ -34,7 +41,7 @@ export function useLabResultReadyNotifications(enabled: boolean, onResultReady: 
     const eventSource = new EventSource(url, { withCredentials: true });
     let lastDeliveredId: string | null = null;
 
-    const handleResultReady = (rawEvent: Event) => {
+    const handleNotification = (rawEvent: Event) => {
       const message = rawEvent as MessageEvent<string>;
       let notification: LaboratoryNotification;
       try {
@@ -47,18 +54,22 @@ export function useLabResultReadyNotifications(enabled: boolean, onResultReady: 
         typeof notification.id !== 'string' ||
         notification.id === lastDeliveredId ||
         notification.topic !== laboratoryNotificationTopic ||
-        notification.type !== labResultReadyEventType
+        !laboratoryEventTypes.includes(notification.type as LaboratoryNotificationEventType)
       ) {
         return;
       }
 
       lastDeliveredId = notification.id;
-      callbackRef.current();
+      callbackRef.current(notification.type as LaboratoryNotificationEventType);
     };
 
-    eventSource.addEventListener(labResultReadyEventType, handleResultReady);
+    laboratoryEventTypes.forEach((eventType) => {
+      eventSource.addEventListener(eventType, handleNotification);
+    });
     return () => {
-      eventSource.removeEventListener(labResultReadyEventType, handleResultReady);
+      laboratoryEventTypes.forEach((eventType) => {
+        eventSource.removeEventListener(eventType, handleNotification);
+      });
       eventSource.close();
     };
   }, [enabled]);

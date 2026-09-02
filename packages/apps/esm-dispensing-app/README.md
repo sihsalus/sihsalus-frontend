@@ -58,6 +58,18 @@ The action is shown only when the user has all of `app:home.farmacia.editar`, `T
 
 Submitting the basket persists the medication orders before the confirmation modal opens. Closing that modal or choosing **Leave pending for dispensing** does not undo the registered orders. The modal lists the saved medication orders and only then offers the separate **Dispense now** action. In the pharmacy table, each row groups orders from one encounter; medication names are listed individually, and expanding the row shows the order-level details and actions.
 
+## Realtime medication-order notifications
+
+When `enableRealtimeMedicationOrderNotifications` is enabled, the dashboard subscribes to the
+authenticated `pharmacy` SSE topic provided by `sihsalusnotifications` OMOD 1.1.0 or newer. A
+`MEDICATION_ORDER_CREATED` event revalidates the existing pharmacy worklist and shows a generic
+in-app notice. The event contains only an order UUID; medication, dosage, instructions, patient
+identity, and diagnosis remain available only through the normal authorized OpenMRS APIs.
+
+Realtime delivery is a refresh hint, not a clinical source of truth. The existing periodic refresh
+continues to work if SSE is unavailable. Deployments without the notifications OMOD can set
+`enableRealtimeMedicationOrderNotifications` to `false` to avoid unnecessary reconnect attempts.
+
 ## TODO SIHSALUS hardening
 
 - Mapear estos privilegios a roles SIHSALUS reales: farmacia, tecnico farmacia, medico, enfermeria, administrador y auditor.

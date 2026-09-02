@@ -45,6 +45,8 @@
   "inactiveSis": "SIS inactivo",
   "laboratory": "Laboratorio",
   "Laboratory": "Laboratorio",
+  "labResultReady": "Resultado de laboratorio disponible",
+  "labResultReadyMessage": "La bandeja de laboratorio se actualizó automáticamente.",
   "labResultsApprovedSuccessfully": "Los resultados de laboratorio han sido aprobados y finalizados exitosamente",
   "loading": "Cargando",
   "minorUrgency": "Urgencia menor",

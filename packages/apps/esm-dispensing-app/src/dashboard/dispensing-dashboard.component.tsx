@@ -6,27 +6,31 @@ import { useSWRConfig } from 'swr';
 import { type PharmacyConfig } from '../config-schema';
 import { PRESCRIPTIONS_TABLE_ENDPOINT } from '../constants';
 import FillPrescriptionButton from '../fill-prescription/fill-prescription-button.component';
-import { useMedicationOrderNotifications } from '../pharmacy-notifications.resource';
 import { PharmacyHeader } from '../pharmacy-header/pharmacy-header.component';
+import { useMedicationOrderNotifications } from '../pharmacy-notifications.resource';
 import PrescriptionTabLists from '../prescriptions/prescription-tab-lists.component';
 
 export default function DispensingDashboard() {
   const config = useConfig<PharmacyConfig>();
   const { t } = useTranslation();
   const { mutate } = useSWRConfig();
+  const refreshPharmacyWorklist = useCallback(() => {
+    void mutate((key) => typeof key === 'string' && key.startsWith(`${fhirBaseUrl}/${PRESCRIPTIONS_TABLE_ENDPOINT}`));
+  }, [mutate]);
   const handleMedicationOrderCreated = useCallback(() => {
-    void mutate(
-      (key) =>
-        typeof key === 'string' && key.startsWith(`${fhirBaseUrl}/${PRESCRIPTIONS_TABLE_ENDPOINT}`),
-    );
+    refreshPharmacyWorklist();
     showSnackbar({
       isLowContrast: true,
       kind: 'info',
       title: t('medicationOrderCreated', 'New medication order'),
       subtitle: t('medicationOrderCreatedMessage', 'A new medication order was added to the pharmacy worklist.'),
     });
-  }, [mutate, t]);
-  useMedicationOrderNotifications(config.enableRealtimeMedicationOrderNotifications, handleMedicationOrderCreated);
+  }, [refreshPharmacyWorklist, t]);
+  useMedicationOrderNotifications(
+    config.enableRealtimeMedicationOrderNotifications,
+    handleMedicationOrderCreated,
+    refreshPharmacyWorklist,
+  );
 
   if (config.dispenseBehavior.restrictTotalQuantityDispensed && config.dispenseBehavior.allowModifyingPrescription) {
     return (

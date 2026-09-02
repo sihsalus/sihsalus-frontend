@@ -70,6 +70,12 @@ Realtime delivery is a refresh hint, not a clinical source of truth. The existin
 continues to work if SSE is unavailable. Deployments without the notifications OMOD can set
 `enableRealtimeMedicationOrderNotifications` to `false` to avoid unnecessary reconnect attempts.
 
+With OMOD 1.2.0 or newer, delivery is also restricted to the order encounter's location matching
+the user's current OpenMRS session location. The browser uses standard SSE `Last-Event-ID` replay
+across bounded reconnects. If the backend can no longer replay a cursor, the dashboard silently
+refetches the authoritative worklist and does not show a duplicate notification. The frontend does
+not persist order UUIDs or notification history in browser storage.
+
 ## TODO SIHSALUS hardening
 
 - Mapear estos privilegios a roles SIHSALUS reales: farmacia, tecnico farmacia, medico, enfermeria, administrador y auditor.

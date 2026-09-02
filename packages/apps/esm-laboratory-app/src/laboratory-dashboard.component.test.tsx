@@ -46,7 +46,7 @@ describe('Laboratory dashboard realtime notifications', () => {
     render(<LaboratoryDashboard />);
 
     expect(screen.getByRole('heading', { name: 'Laboratory' })).toBeInTheDocument();
-    expect(mocks.realtimeHook).toHaveBeenCalledWith(true, expect.any(Function));
+    expect(mocks.realtimeHook).toHaveBeenCalledWith(true, expect.any(Function), expect.any(Function));
     const onNotification = mocks.realtimeHook.mock.calls[0][1] as (eventType: string) => void;
 
     act(() => onNotification('LAB_RESULT_READY'));
@@ -73,5 +73,15 @@ describe('Laboratory dashboard realtime notifications', () => {
       title: 'New laboratory order',
       subtitle: 'A new order was added to the laboratory worklist.',
     });
+  });
+
+  it('silently refreshes laboratory orders when the replay cursor is unavailable', () => {
+    render(<LaboratoryDashboard />);
+    const onResyncRequired = mocks.realtimeHook.mock.calls[0][2] as () => void;
+
+    act(() => onResyncRequired());
+
+    expect(mocks.invalidateLabOrders).toHaveBeenCalledOnce();
+    expect(mocks.showSnackbar).not.toHaveBeenCalled();
   });
 });

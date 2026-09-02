@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getPharmacyNotificationsUrl,
   medicationOrderCreatedEventType,
+  notificationResyncEventType,
   useMedicationOrderNotifications,
 } from './pharmacy-notifications.resource';
 
@@ -53,7 +54,8 @@ describe('pharmacy medication-order notifications', () => {
 
   it('delivers each valid medication-order event once and closes on unmount', () => {
     const onOrderCreated = vi.fn();
-    const { unmount } = renderHook(() => useMedicationOrderNotifications(true, onOrderCreated));
+    const onResyncRequired = vi.fn();
+    const { unmount } = renderHook(() => useMedicationOrderNotifications(true, onOrderCreated, onResyncRequired));
     const source = FakeEventSource.instances[0];
 
     expect(source.url).toBe('/openmrs/ws/sihsalus/notifications/sse?topics=pharmacy');
@@ -72,11 +74,23 @@ describe('pharmacy medication-order notifications', () => {
     unmount();
     expect(source.close).toHaveBeenCalledOnce();
     expect(source.listeners.has(medicationOrderCreatedEventType)).toBe(false);
+    expect(source.listeners.has(notificationResyncEventType)).toBe(false);
+  });
+
+  it('requests a silent authoritative refresh when replay cannot be completed', () => {
+    const onOrderCreated = vi.fn();
+    const onResyncRequired = vi.fn();
+    renderHook(() => useMedicationOrderNotifications(true, onOrderCreated, onResyncRequired));
+
+    FakeEventSource.instances[0].emit(notificationResyncEventType, '{"reason":"cursor-unavailable"}');
+
+    expect(onResyncRequired).toHaveBeenCalledOnce();
+    expect(onOrderCreated).not.toHaveBeenCalled();
   });
 
   it('ignores malformed and unauthorized-topic events', () => {
     const onOrderCreated = vi.fn();
-    renderHook(() => useMedicationOrderNotifications(true, onOrderCreated));
+    renderHook(() => useMedicationOrderNotifications(true, onOrderCreated, vi.fn()));
     const source = FakeEventSource.instances[0];
 
     source.emit(medicationOrderCreatedEventType, 'not-json');
@@ -88,12 +102,21 @@ describe('pharmacy medication-order notifications', () => {
       medicationOrderCreatedEventType,
       JSON.stringify({ id: 'event-2', topic: 'pharmacy', type: 'MEDICATION_ORDER_UPDATED' }),
     );
+    source.emit(
+      medicationOrderCreatedEventType,
+      JSON.stringify({
+        id: 'event-3',
+        topic: 'pharmacy',
+        type: medicationOrderCreatedEventType,
+        payload: { orderUuid: 'not-a-uuid' },
+      }),
+    );
 
     expect(onOrderCreated).not.toHaveBeenCalled();
   });
 
   it('does not connect when realtime notifications are disabled', () => {
-    renderHook(() => useMedicationOrderNotifications(false, vi.fn()));
+    renderHook(() => useMedicationOrderNotifications(false, vi.fn(), vi.fn()));
 
     expect(FakeEventSource.instances).toHaveLength(0);
   });

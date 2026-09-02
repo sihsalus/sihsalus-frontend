@@ -54,16 +54,14 @@ describe('Dispensing dashboard realtime notifications', () => {
     render(<DispensingDashboard />);
 
     expect(screen.getByRole('heading', { name: 'Pharmacy' })).toBeInTheDocument();
-    expect(mocks.realtimeHook).toHaveBeenCalledWith(true, expect.any(Function));
+    expect(mocks.realtimeHook).toHaveBeenCalledWith(true, expect.any(Function), expect.any(Function));
     const onOrderCreated = mocks.realtimeHook.mock.calls[0][1] as () => void;
 
     act(() => onOrderCreated());
 
     expect(mocks.mutate).toHaveBeenCalledOnce();
     const isPharmacyWorklistKey = mocks.mutate.mock.calls[0][0] as (key: unknown) => boolean;
-    expect(isPharmacyWorklistKey('/openmrs/ws/fhir2/R4/Encounter?_query=encountersWithMedicationRequests')).toBe(
-      true,
-    );
+    expect(isPharmacyWorklistKey('/openmrs/ws/fhir2/R4/Encounter?_query=encountersWithMedicationRequests')).toBe(true);
     expect(isPharmacyWorklistKey('/openmrs/ws/fhir2/R4/MedicationRequest?encounter=one')).toBe(false);
     expect(mocks.showSnackbar).toHaveBeenCalledWith({
       isLowContrast: true,
@@ -71,5 +69,15 @@ describe('Dispensing dashboard realtime notifications', () => {
       title: 'New medication order',
       subtitle: 'A new medication order was added to the pharmacy worklist.',
     });
+  });
+
+  it('silently refreshes the worklist when the replay cursor is unavailable', () => {
+    render(<DispensingDashboard />);
+    const onResyncRequired = mocks.realtimeHook.mock.calls[0][2] as () => void;
+
+    act(() => onResyncRequired());
+
+    expect(mocks.mutate).toHaveBeenCalledOnce();
+    expect(mocks.showSnackbar).not.toHaveBeenCalled();
   });
 });

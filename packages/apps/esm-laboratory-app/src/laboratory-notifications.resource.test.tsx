@@ -4,6 +4,7 @@ import {
   getLaboratoryNotificationsUrl,
   labOrderCreatedEventType,
   labResultReadyEventType,
+  notificationResyncEventType,
   useLaboratoryNotifications,
 } from './laboratory-notifications.resource';
 
@@ -54,7 +55,8 @@ describe('laboratory notifications', () => {
 
   it('delivers valid order and result events once and closes on unmount', () => {
     const onNotification = vi.fn();
-    const { unmount } = renderHook(() => useLaboratoryNotifications(true, onNotification));
+    const onResyncRequired = vi.fn();
+    const { unmount } = renderHook(() => useLaboratoryNotifications(true, onNotification, onResyncRequired));
     const source = FakeEventSource.instances[0];
 
     expect(source.url).toBe('/openmrs/ws/sihsalus/notifications/sse?topics=laboratory');
@@ -84,11 +86,23 @@ describe('laboratory notifications', () => {
     expect(source.close).toHaveBeenCalledOnce();
     expect(source.listeners.has(labResultReadyEventType)).toBe(false);
     expect(source.listeners.has(labOrderCreatedEventType)).toBe(false);
+    expect(source.listeners.has(notificationResyncEventType)).toBe(false);
+  });
+
+  it('requests a silent authoritative refresh when replay cannot be completed', () => {
+    const onNotification = vi.fn();
+    const onResyncRequired = vi.fn();
+    renderHook(() => useLaboratoryNotifications(true, onNotification, onResyncRequired));
+
+    FakeEventSource.instances[0].emit(notificationResyncEventType, '{"reason":"cursor-unavailable"}');
+
+    expect(onResyncRequired).toHaveBeenCalledOnce();
+    expect(onNotification).not.toHaveBeenCalled();
   });
 
   it('ignores malformed and mismatched events', () => {
     const onNotification = vi.fn();
-    renderHook(() => useLaboratoryNotifications(true, onNotification));
+    renderHook(() => useLaboratoryNotifications(true, onNotification, vi.fn()));
     const source = FakeEventSource.instances[0];
 
     source.emit(labResultReadyEventType, 'not-json');
@@ -100,12 +114,21 @@ describe('laboratory notifications', () => {
       labResultReadyEventType,
       JSON.stringify({ id: 'event-2', topic: 'laboratory', type: 'LAB_ORDER_UPDATED' }),
     );
+    source.emit(
+      labResultReadyEventType,
+      JSON.stringify({
+        id: 'event-3',
+        topic: 'laboratory',
+        type: labResultReadyEventType,
+        payload: { orderUuid: 'not-a-uuid' },
+      }),
+    );
 
     expect(onNotification).not.toHaveBeenCalled();
   });
 
   it('does not connect when realtime notifications are disabled', () => {
-    renderHook(() => useLaboratoryNotifications(false, vi.fn()));
+    renderHook(() => useLaboratoryNotifications(false, vi.fn(), vi.fn()));
 
     expect(FakeEventSource.instances).toHaveLength(0);
   });

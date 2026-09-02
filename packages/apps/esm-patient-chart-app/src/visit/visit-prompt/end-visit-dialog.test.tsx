@@ -1,14 +1,5 @@
-import {
-  type FetchResponse,
-  openmrsFetch,
-  showSnackbar,
-  useVisit,
-} from '@openmrs/esm-framework';
-import {
-  fetchVisitInsurance,
-  getSisFinancingState,
-  launchPatientWorkspace,
-} from '@openmrs/esm-patient-common-lib';
+import { type FetchResponse, openmrsFetch, showSnackbar, useVisit } from '@openmrs/esm-framework';
+import { fetchVisitInsurance, getSisFinancingState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockCurrentVisit } from 'test-utils';
@@ -92,7 +83,9 @@ describe('End visit dialog', () => {
     render(<EndVisitDialog patientUuid="some-patient-uuid" closeModal={mockCloseModal} />);
 
     expect(
-      screen.getByRole('heading', { name: /are you sure you want to end this active visit?/i }),
+      screen.getByRole('heading', {
+        name: /are you sure you want to end this active visit?/i,
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/you can add additional encounters to this visit in the visit summary/i),
@@ -166,7 +159,10 @@ describe('End visit dialog', () => {
   test('ends a non-SIS visit without validating or generating a FUA', async () => {
     const user = userEvent.setup();
     mockGetSisFinancingState.mockReturnValue('notApplicable');
-    mockOpenmrsFetch.mockResolvedValueOnce({ status: 200, data: {} } as FetchResponse);
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      status: 200,
+      data: {},
+    } as FetchResponse);
 
     render(<EndVisitDialog patientUuid="some-patient-uuid" closeModal={mockCloseModal} />);
 
@@ -189,7 +185,7 @@ describe('End visit dialog', () => {
     });
   });
 
-  test('displays an error snackbar if there was a problem ending a visit or generating FUA', async () => {
+  test('displays an error snackbar without claiming success if ending the visit fails', async () => {
     const user = userEvent.setup();
 
     const error = {
@@ -235,11 +231,57 @@ describe('End visit dialog', () => {
     );
     await waitFor(() =>
       expect(mockShowSnackbar).toHaveBeenCalledWith({
-        subtitle: 'No se pudo finalizar la consulta o generar el FUA. Intente nuevamente.',
+        subtitle: 'The visit could not be confirmed as ended. Verify its status before retrying.',
         kind: 'error',
-        title: 'Error ending visit or generating FUA',
+        title: 'Error ending visit',
         isLowContrast: false,
       }),
     );
+  });
+
+  test('asks the user to verify the FUA when generation fails after the visit was closed', async () => {
+    const user = userEvent.setup();
+    const fuaError = {
+      message: 'FUA module unavailable',
+      response: {
+        status: 503,
+        statusText: 'Service unavailable',
+      },
+    };
+
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({
+        data: {
+          results: [
+            {
+              diagnoses: [{ rank: 1, voided: false }],
+              obs: [{ formFieldPath: 'codigo-prestacional', value: '056' }],
+            },
+          ],
+        },
+      } as FetchResponse)
+      .mockResolvedValueOnce({ status: 200, data: {} } as FetchResponse)
+      .mockRejectedValueOnce(fuaError);
+
+    render(<EndVisitDialog patientUuid="some-patient-uuid" closeModal={mockCloseModal} />);
+
+    await user.click(screen.getByRole('button', { name: /finalizar consulta$/i }));
+
+    await waitFor(() =>
+      expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+        3,
+        `/ws/module/fua/generateFromVisit/${encodeURIComponent(mockCurrentVisit.uuid)}`,
+        { method: 'POST' },
+      ),
+    );
+    expect(mockMutate).toHaveBeenCalled();
+    expect(mockCloseModal).toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      isLowContrast: true,
+      kind: 'warning',
+      subtitle:
+        'The visit was closed, but FUA generation could not be confirmed. Check FUA Management before retrying.',
+      title: 'Visit ended; verify FUA',
+    });
   });
 });

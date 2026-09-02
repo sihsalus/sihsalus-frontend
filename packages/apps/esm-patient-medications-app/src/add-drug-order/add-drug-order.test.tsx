@@ -60,7 +60,10 @@ const mockUseDrugTemplate = vi.mocked(useDrugTemplate);
 const mockExtensionSlot = vi.mocked(ExtensionSlot);
 const mockUserHasAccess = vi.mocked(UserHasAccess);
 const usePatientOrdersMock = vi.fn();
-const mockPatientB = { ...mockFhirPatient, id: 'patient-b-uuid' } as fhir.Patient;
+const mockPatientB = {
+  ...mockFhirPatient,
+  id: 'patient-b-uuid',
+} as fhir.Patient;
 const prepareIdentityPostData = ((order) => order) as unknown as PostDataPrepFunction;
 
 mockUseSession.mockReturnValue(mockSessionDataResponse.data);
@@ -99,6 +102,7 @@ describe('AddDrugOrderWorkspace drug search', () => {
     mockUseDrugSearch.mockImplementation(() => ({
       isLoading: false,
       drugs: mockDrugSearchResultApiData,
+      partialErrors: [],
       error: null,
       isValidating: false,
       mutate: vi.fn(),
@@ -147,6 +151,24 @@ describe('AddDrugOrderWorkspace drug search', () => {
     const asprin162 = screen.getByText(/Aspirin 162.5mg/i);
     expect(asprin162).toBeInTheDocument();
     expect(asprin162.closest('[role="listitem"]')).toHaveTextContent(/Aspirin.*162.5mg.*tablet/i);
+  });
+
+  test('explains the governed catalog workflow when a medication is missing', async () => {
+    const user = userEvent.setup();
+    mockUseDrugSearch.mockImplementation(() => ({
+      isLoading: false,
+      drugs: [],
+      partialErrors: [],
+      error: null,
+      isValidating: false,
+      mutate: vi.fn(),
+    }));
+
+    renderAddDrugOrderWorkspace();
+    await user.type(screen.getByRole('searchbox'), 'Ácido ursodesoxicólico');
+
+    expect(await screen.findByText(/cannot be prescribed as free text/i)).toBeInTheDocument();
+    expect(screen.getByText(/generic name, strength and dosage form/i)).toBeInTheDocument();
   });
 
   test('no buttons to click if the medication is already prescribed', async () => {
@@ -219,7 +241,9 @@ describe('AddDrugOrderWorkspace drug search', () => {
     await user.click(openFormButton);
 
     expect(screen.getByText(/Medication prescription/i)).toBeInTheDocument();
-    const indicationField = screen.getByRole('textbox', { name: /Diagnosis or reason for prescription/i });
+    const indicationField = screen.getByRole('textbox', {
+      name: /Diagnosis or reason for prescription/i,
+    });
     await user.type(indicationField, 'Hypertension');
     const freeTextDosageToggle = document.querySelector('#freeTextDosageToggle') as HTMLElement;
     await user.click(freeTextDosageToggle);
@@ -227,7 +251,10 @@ describe('AddDrugOrderWorkspace drug search', () => {
     const saveFormButton = screen.getByText(/Save order/i);
     await waitFor(() => expect(saveFormButton).toBeEnabled());
     act(() => {
-      getPatientChartStore().setState({ patient: mockPatientB, patientUuid: mockPatientB.id });
+      getPatientChartStore().setState({
+        patient: mockPatientB,
+        patientUuid: mockPatientB.id,
+      });
     });
     await user.click(saveFormButton);
 
@@ -334,16 +361,25 @@ describe('AddDrugOrderWorkspace drug search', () => {
       patientBHookResult.current.setOrders([patientBMedication]);
     });
 
-    renderAddDrugOrderWorkspace({ order: revisedDraft, orderToEditOrdererUuid: '' });
+    renderAddDrugOrderWorkspace({
+      order: revisedDraft,
+      orderToEditOrdererUuid: '',
+    });
 
-    const indicationField = screen.getByRole('textbox', { name: /Diagnosis or reason for prescription/i });
+    const indicationField = screen.getByRole('textbox', {
+      name: /Diagnosis or reason for prescription/i,
+    });
     await user.clear(indicationField);
     await user.type(indicationField, 'Updated draft for patient A');
     const saveButton = screen.getByRole('button', { name: /save order/i });
     await waitFor(() => expect(saveButton).toBeEnabled());
     await user.click(saveButton);
 
-    await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
+    await waitFor(() =>
+      expect(mockCloseWorkspace).toHaveBeenCalledWith({
+        discardUnsavedChanges: true,
+      }),
+    );
     expect(mockPostOrder).not.toHaveBeenCalled();
     expect(patientAHookResult.current.orders).toEqual([
       otherRevisionOfSameDrug,
@@ -415,7 +451,11 @@ describe('AddDrugOrderWorkspace drug search', () => {
       await request.promise;
     });
 
-    await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
+    await waitFor(() =>
+      expect(mockCloseWorkspace).toHaveBeenCalledWith({
+        discardUnsavedChanges: true,
+      }),
+    );
     expect(mockPostOrder).toHaveBeenCalledTimes(1);
     expect(mockMutateOrders).toHaveBeenCalledTimes(1);
     expect(mockShowOrderSuccessToast).toHaveBeenCalledTimes(1);
@@ -463,7 +503,10 @@ describe('AddDrugOrderWorkspace drug search', () => {
     await waitFor(() => expect(mockPostOrder).toHaveBeenCalledTimes(1));
 
     act(() => {
-      getPatientChartStore().setState({ patient: mockPatientB, patientUuid: mockPatientB.id });
+      getPatientChartStore().setState({
+        patient: mockPatientB,
+        patientUuid: mockPatientB.id,
+      });
     });
     workspace.rerender(
       getAddDrugOrderWorkspaceElement({
@@ -493,7 +536,10 @@ describe('AddDrugOrderWorkspace drug search', () => {
 
     await act(async () => {
       fireEvent.submit(document.querySelector('#drugOrderForm') as HTMLFormElement);
-      getPatientChartStore().setState({ patient: mockPatientB, patientUuid: mockPatientB.id });
+      getPatientChartStore().setState({
+        patient: mockPatientB,
+        patientUuid: mockPatientB.id,
+      });
       await Promise.resolve();
       await Promise.resolve();
       await Promise.resolve();
@@ -545,7 +591,10 @@ describe('AddDrugOrderWorkspace drug search', () => {
     await waitFor(() => expect(mockPostOrder).toHaveBeenCalledTimes(1));
 
     act(() => {
-      getPatientChartStore().setState({ patient: mockPatientB, patientUuid: mockPatientB.id });
+      getPatientChartStore().setState({
+        patient: mockPatientB,
+        patientUuid: mockPatientB.id,
+      });
     });
     await act(async () => {
       request.reject(new Error('Stale backend error'));
@@ -570,7 +619,10 @@ describe('AddDrugOrderWorkspace drug search', () => {
 
     act(() => {
       // Exported workspaces can run outside the chart and must not depend on this global store.
-      getPatientChartStore().setState({ patient: mockPatientB, patientUuid: mockPatientB.id });
+      getPatientChartStore().setState({
+        patient: mockPatientB,
+        patientUuid: mockPatientB.id,
+      });
     });
     const workspace = renderExportedAddDrugOrderWorkspace({
       order: patientARevisedOrder,
@@ -624,7 +676,9 @@ describe('AddDrugOrderWorkspace drug search', () => {
     await waitFor(() => expect(mockMutateOrders).toHaveBeenCalledTimes(2));
     expect(mockShowOrderSuccessToast).toHaveBeenCalledTimes(1);
     expect(mockCloseWorkspace).toHaveBeenCalledTimes(1);
-    expect(mockCloseWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true });
+    expect(mockCloseWorkspace).toHaveBeenCalledWith({
+      discardUnsavedChanges: true,
+    });
   });
 
   test('keeps the backend REVISE workspace and basket intact when the POST fails', async () => {
@@ -649,7 +703,10 @@ describe('AddDrugOrderWorkspace drug search', () => {
 
     await waitFor(() =>
       expect(mockShowSnackbar).toHaveBeenCalledWith(
-        expect.objectContaining({ kind: 'error', subtitle: 'Backend unavailable' }),
+        expect.objectContaining({
+          kind: 'error',
+          subtitle: 'Backend unavailable',
+        }),
       ),
     );
     await waitFor(() => expect(saveButton).toBeEnabled());
@@ -738,7 +795,13 @@ function renderExportedAddDrugOrderWorkspace({
   orderToEditOrdererUuid?: string | null;
   patient?: fhir.Patient;
 } = {}) {
-  return render(getExportedAddDrugOrderWorkspaceElement({ order, orderToEditOrdererUuid, patient }));
+  return render(
+    getExportedAddDrugOrderWorkspaceElement({
+      order,
+      orderToEditOrdererUuid,
+      patient,
+    }),
+  );
 }
 
 function getExportedAddDrugOrderWorkspaceElement({

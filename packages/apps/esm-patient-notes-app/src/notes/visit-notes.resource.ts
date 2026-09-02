@@ -72,6 +72,7 @@ export interface VisitNoteClinicalContext {
   objective?: string;
   assessment?: string;
   plan?: string;
+  therapeuticIndications?: string;
   auxiliaryExams?: string;
   procedures?: string;
   prescriptions?: string;
@@ -886,6 +887,9 @@ export function useVisitNoteClinicalContext(
       visitNoteConfig.soapPlanConceptUuid,
       "soap-plan",
       legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath,
+    ),
+    therapeuticIndications: getLatest(
+      visitNoteConfig.therapeuticIndicationsConceptUuid,
     ),
     auxiliaryExams: getLatest(visitNoteConfig.labOrdersConceptUuid),
     procedures: getLatestProceduresText(),

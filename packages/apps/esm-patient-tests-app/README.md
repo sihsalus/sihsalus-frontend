@@ -4,9 +4,13 @@ Functionality for viewing test results and ordering tests, whether lab tests, ra
 
 Creating or editing a test order requires an active clinical Provider linked to the current session. The order UI must fail closed and must not construct an order with a missing orderer.
 
+Orderable tests are searched by their display name and concept names. `testTypeSearchAliases` provides a configurable compatibility fallback keyed by concept UUID; the default adds `TGP` for the existing alanine transferase concept. The same alias must still be published in OCL so this local fallback can eventually be removed.
+
 ## Test Results
 
 It provides tabular and chart-based overviews of the test results available for a patient.
+
+The reusable recent-results card is registered in `consulta-externa-pruebas-complementarias-slot` for the **Pruebas complementarias** tab in Consulta Externa. The host passes the active `patientUuid`; the extension keeps its FHIR loading, empty state, and navigation to the complete Results dashboard. This Consulta Externa registration requires `app:hoja.clinica.resultados` and remains read-only.
 
 IMPORTANT NOTE: To have data show up in this view, your concepts just need to have "Type: Test" or "Type: LabSet".
 If you are seeing strange things showing up, like Temperature, in the Test Results viewer, then you probably just need to change the Type for your Temperature concept to something other than "Test", such as "Finding."

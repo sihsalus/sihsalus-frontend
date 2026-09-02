@@ -41,6 +41,7 @@ describe('DrugSearchComboBox', () => {
     mockUseDrugSearch.mockImplementation(() => ({
       isLoading: false,
       drugs: mockDrugSearchResultApiData,
+      partialErrors: [],
       error: null,
       isValidating: false,
       mutate: vi.fn(),
@@ -76,6 +77,7 @@ describe('DrugSearchComboBox', () => {
     mockUseDrugSearch.mockImplementation(() => ({
       isLoading: false,
       drugs: [drugWithoutDosageForm],
+      partialErrors: [],
       error: null,
       isValidating: false,
       mutate: vi.fn(),

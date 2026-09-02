@@ -57,11 +57,6 @@ export interface OutpatientVisitSummaryPdfLabels extends OutpatientMedicationOrd
   mood: string;
   urine: string;
   bowelMovements: string;
-  soap: string;
-  subjective: string;
-  objective: string;
-  assessment: string;
-  plan: string;
   physicalExam: string;
   generalCondition: string;
   consciousnessStatus: string;
@@ -88,6 +83,7 @@ export interface OutpatientVisitSummaryPdfLabels extends OutpatientMedicationOrd
   legacyPrescriptions: string;
   medications: string;
   laboratoryOrders: string;
+  laboratoryResult: string;
   otherOrders: string;
   signatureAndStamp: string;
   generatedAt: string;
@@ -348,6 +344,7 @@ function drawOrderList(
   title: string,
   orders: OutpatientSummaryOrder[],
   medicationLabels?: OutpatientMedicationOrderPdfLabels,
+  resultLabel?: string,
 ): void {
   if (!orders.length) return;
   drawSectionTitle(state, title);
@@ -366,7 +363,16 @@ function drawOrderList(
       medicationLabels && typeof order.numRefills === 'number'
         ? `${medicationLabels.medicationNumberOfRefills}: ${order.numRefills}`
         : null;
-    const details = [order.name, order.details, indicationDetails, asNeededDetails, refillDetails, order.orderer]
+    const resultDetails = resultLabel && order.result ? `${resultLabel}: ${order.result}` : null;
+    const details = [
+      order.name,
+      order.details,
+      resultDetails,
+      indicationDetails,
+      asNeededDetails,
+      refillDetails,
+      order.orderer,
+    ]
       .filter(Boolean)
       .join(' — ');
     drawLines(state, wrapText(`• ${details}`, state.fonts.regular, BODY_SIZE, CONTENT_WIDTH), { indent: 4 });
@@ -604,15 +610,7 @@ export async function createOutpatientVisitSummaryPdf(
     drawField(state, labels.bowelMovements, summary.anamnesis.biologicalFunctions.bowelMovements);
   }
 
-  if (Object.values(summary.soap).some(Boolean)) {
-    drawSectionTitle(state, labels.soap);
-    drawField(state, labels.subjective, summary.soap.subjective);
-    drawField(state, labels.objective, summary.soap.objective);
-    drawField(state, labels.assessment, summary.soap.assessment);
-    drawField(state, labels.plan, summary.soap.plan);
-  }
-
-  if (Object.values(summary.physicalExam).some(Boolean)) {
+  if (Object.values(summary.physicalExam).some(Boolean) || summary.soap.objective) {
     drawSectionTitle(state, labels.physicalExam);
     drawField(state, labels.generalCondition, summary.physicalExam.generalState);
     drawField(state, labels.consciousnessStatus, summary.physicalExam.consciousness);
@@ -624,7 +622,7 @@ export async function createOutpatientVisitSummaryPdf(
     drawField(state, labels.genitourinarySystem, summary.physicalExam.genitourinary);
     drawField(state, labels.musculoskeletalAndExtremities, summary.physicalExam.musculoskeletal);
     drawField(state, labels.neurologicalExam, summary.physicalExam.neurological);
-    drawField(state, labels.otherObjectiveFindings, summary.physicalExam.otherFindings);
+    drawField(state, labels.otherObjectiveFindings, summary.physicalExam.otherFindings ?? summary.soap.objective);
   }
 
   if (summary.diagnoses.length) {
@@ -669,6 +667,8 @@ export async function createOutpatientVisitSummaryPdf(
     state,
     labels.laboratoryOrders,
     summary.orders.filter((order) => order.category === 'laboratory'),
+    undefined,
+    labels.laboratoryResult,
   );
   drawOrderList(
     state,

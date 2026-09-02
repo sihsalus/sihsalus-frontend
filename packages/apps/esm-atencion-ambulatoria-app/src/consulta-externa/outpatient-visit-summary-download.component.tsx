@@ -147,11 +147,6 @@ function getVisitSummaryLabels(t: TFunction): OutpatientVisitSummaryPdfLabels {
     mood: t('mood', 'Estado de ánimo'),
     urine: t('urine', 'Orina'),
     bowelMovements: t('bowelMovements', 'Deposiciones'),
-    soap: t('soapNotes', 'Evaluación clínica (SOAP)'),
-    subjective: t('subjective', 'Subjetivo'),
-    objective: t('objective', 'Objetivo'),
-    assessment: t('assessment', 'Apreciación'),
-    plan: t('plan', 'Plan'),
     physicalExam: t('physicalExam', 'Examen físico'),
     generalCondition: t('generalCondition', 'Estado general'),
     consciousnessStatus: t('consciousnessStatus', 'Conciencia y orientación'),
@@ -185,6 +180,7 @@ function getVisitSummaryLabels(t: TFunction): OutpatientVisitSummaryPdfLabels {
     medicationIndication: t('outpatientMedicationIndication', 'Indicación'),
     medicationNumberOfRefills: t('outpatientMedicationNumberOfRefills', 'Número de renovaciones'),
     laboratoryOrders: t('laboratoryOrders', 'Órdenes de laboratorio'),
+    laboratoryResult: t('laboratoryResult', 'Resultado'),
     otherOrders: t('otherOrders', 'Otras órdenes'),
     signatureAndStamp: t('outpatientSummarySignatureAndStamp', 'Firma y sello manual del profesional responsable'),
     generatedAt: t('generatedAt', 'Generado'),
@@ -377,7 +373,13 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
   const showBlockedDocument = useCallback(
     (
       title: string,
-      { description, requirements = [] }: { description?: string; requirements?: OutpatientDocumentRequirement[] } = {},
+      {
+        description,
+        requirements = [],
+      }: {
+        description?: string;
+        requirements?: OutpatientDocumentRequirement[];
+      } = {},
     ) => {
       const dispose = showModal('outpatient-missing-document-data-dialog', {
         closeModal: () => dispose(),
@@ -654,7 +656,9 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
 
       const missingInstructions = getMissingPatientInstructionsRequirements(summary, scheduledAppointment);
       if (missingInstructions.length) {
-        showBlockedDocument(getErrorTitle('patient-instructions'), { requirements: missingInstructions });
+        showBlockedDocument(getErrorTitle('patient-instructions'), {
+          requirements: missingInstructions,
+        });
         return;
       }
 
@@ -675,7 +679,9 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         scheduledAppointment = null;
         const missingWithoutAppointment = getMissingPatientInstructionsRequirements(summary, null);
         if (missingWithoutAppointment.length) {
-          showBlockedDocument(getErrorTitle('patient-instructions'), { requirements: missingWithoutAppointment });
+          showBlockedDocument(getErrorTitle('patient-instructions'), {
+            requirements: missingWithoutAppointment,
+          });
           return;
         }
         bytes = await createOutpatientPatientInstructionsPdf(
@@ -695,7 +701,9 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         scheduledAppointment = null;
         const missingWithoutAppointment = getMissingPatientInstructionsRequirements(summary, null);
         if (missingWithoutAppointment.length) {
-          showBlockedDocument(getErrorTitle('patient-instructions'), { requirements: missingWithoutAppointment });
+          showBlockedDocument(getErrorTitle('patient-instructions'), {
+            requirements: missingWithoutAppointment,
+          });
           return;
         }
         bytes = await createOutpatientPatientInstructionsPdf(
@@ -738,7 +746,9 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
     return runWithSummary('receta-unica', async (summary, _linkedAppointmentUuids, isCurrent, signal) => {
       const missingRecetaRequirements = getMissingRecetaUnicaRequirements(summary);
       if (missingRecetaRequirements.length) {
-        showBlockedDocument(getErrorTitle('receta-unica'), { requirements: missingRecetaRequirements });
+        showBlockedDocument(getErrorTitle('receta-unica'), {
+          requirements: missingRecetaRequirements,
+        });
         return;
       }
 

@@ -20,7 +20,7 @@ const VISIT_SUMMARY_REPRESENTATION =
   'diagnoses:(uuid,display,voided,certainty,rank,diagnosis:(coded:(uuid,display,' +
   'mappings:(display,conceptReferenceTerm:(code,conceptSource:(name,display))),' +
   'names:(display,conceptNameType)),nonCoded)),' +
-  'obs:(uuid,voided,concept:(uuid,display),value,display,formFieldNamespace,formFieldPath),' +
+  'obs:(uuid,voided,concept:(uuid,display),value,display,formFieldNamespace,formFieldPath,order:(uuid)),' +
   'orders:FULL))';
 
 interface OpenmrsRef {
@@ -36,6 +36,7 @@ interface VisitSummaryObservation {
   display?: string;
   formFieldNamespace?: string;
   formFieldPath?: string;
+  order?: OpenmrsRef;
 }
 
 interface VisitSummaryDiagnosis {
@@ -155,6 +156,7 @@ export interface OutpatientSummaryOrder {
   category: 'medication' | 'laboratory' | 'other';
   name: string;
   details: string | null;
+  result?: string | null;
   orderer: string | null;
   ordererUuid?: string | null;
   asNeeded: boolean;
@@ -513,6 +515,18 @@ function getOrderCategory(order: VisitSummaryOrder): OutpatientSummaryOrder['cat
   return /lab|laborator|test|prueba|examen/.test(type) ? 'laboratory' : 'other';
 }
 
+function getOrderResult(encounters: VisitSummaryEncounter[], orderUuid: string): string | null {
+  for (const encounter of [...encounters].sort(
+    (a, b) => new Date(b.encounterDatetime).getTime() - new Date(a.encounterDatetime).getTime(),
+  )) {
+    const result = encounter.obs?.find(
+      (observation) => !observation.voided && observation.order?.uuid?.toLowerCase() === orderUuid.toLowerCase(),
+    );
+    if (result) return asText(result.value, result.display);
+  }
+  return null;
+}
+
 function mapOrders(encounters: VisitSummaryEncounter[]): OutpatientSummaryOrder[] {
   const seen = new Set<string>();
   const sourceOrders = encounters
@@ -527,12 +541,14 @@ function mapOrders(encounters: VisitSummaryEncounter[]): OutpatientSummaryOrder[
     const drugName = [order.drug?.display, order.drug?.strength].filter(Boolean).join(' ');
     const name = drugName || order.concept?.display || order.orderType?.display;
     if (!name) return [];
+    const category = getOrderCategory(order);
     return [
       {
         uuid: order.uuid,
-        category: getOrderCategory(order),
+        category,
         name,
         details: orderDetails(order),
+        result: category === 'laboratory' ? getOrderResult(encounters, order.uuid) : null,
         orderer: order.orderer?.person?.display ?? order.orderer?.display ?? null,
         ordererUuid: order.orderer?.uuid ?? null,
         asNeeded: order.asNeeded === true,

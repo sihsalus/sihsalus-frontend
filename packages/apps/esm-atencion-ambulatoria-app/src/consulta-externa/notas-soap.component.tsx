@@ -10,11 +10,11 @@ import { hasSegmentedPhysicalExam, physicalExamFields } from '../utils/physical-
 import ClinicalHistoryCard from './clinical-history-card.component';
 import styles from './consulta-externa-dashboard.scss';
 
-interface NotasSoapProps {
+interface ExamenFisicoProps {
   patientUuid: string;
 }
 
-const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
+const ExamenFisico: React.FC<ExamenFisicoProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const { soapEntries, isLoading, isValidating, error, mutate, pagination, sourceErrors } = useSoapNotes(
@@ -38,13 +38,16 @@ const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
     mutate,
     entryMode: 'one-per-visit',
   });
+  const physicalExamEntries = soapEntries.filter(
+    (entry) => hasSegmentedPhysicalExam(entry.physicalExam) || Boolean(entry.objective),
+  );
 
   return (
     <ClinicalHistoryCard
-      title={t('soapNotesHistory', 'Historial de examen físico / SOAP')}
-      actionLabel={t('addSoapNote', 'Registrar examen físico segmentado')}
-      empty={soapEntries.length === 0}
-      emptyDisplayText={t('physicalExamAndSoapNotes', 'registros de examen físico / SOAP')}
+      title={t('physicalExamHistory', 'Historial de examen físico')}
+      actionLabel={t('recordPhysicalExam', 'Registrar examen físico')}
+      empty={physicalExamEntries.length === 0}
+      emptyDisplayText={t('physicalExamRecords', 'registros de examen físico')}
       editPrivilege={[consultaExternaEditPrivilege, clinicalFormsPrivilege]}
       error={error}
       isLoading={isLoading}
@@ -55,7 +58,7 @@ const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
       sourceErrors={sourceErrors}
     >
       <Accordion>
-        {soapEntries.map((entry) => (
+        {physicalExamEntries.map((entry) => (
           <AccordionItem
             key={entry.encounterUuid}
             title={
@@ -68,13 +71,9 @@ const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
               </span>
             }
           >
-            <div className={`${styles.soapSection} ${styles.soapSubjective}`}>
-              <h5>{t('subjective', 'Subjetivo (S)')}</h5>
-              <p>{entry.subjective || t('noData', 'Sin datos')}</p>
-            </div>
             {hasSegmentedPhysicalExam(entry.physicalExam) ? (
               <div className={`${styles.soapSection} ${styles.soapObjective}`}>
-                <h5>{t('segmentedPhysicalExam', 'Examen físico segmentado')}</h5>
+                <h5>{t('physicalExam', 'Examen físico')}</h5>
                 <dl className={styles.physicalExamGrid}>
                   {physicalExamFields.map((field) =>
                     entry.physicalExam[field.key] ? (
@@ -88,18 +87,10 @@ const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
               </div>
             ) : (
               <div className={`${styles.soapSection} ${styles.soapObjective}`}>
-                <h5>{t('objective', 'Objetivo (O)')}</h5>
+                <h5>{t('physicalExam', 'Examen físico')}</h5>
                 <p>{entry.objective || t('noData', 'Sin datos')}</p>
               </div>
             )}
-            <div className={`${styles.soapSection} ${styles.soapAssessment}`}>
-              <h5>{t('assessment', 'Apreciación (A)')}</h5>
-              <p>{entry.assessment || t('noData', 'Sin datos')}</p>
-            </div>
-            <div className={`${styles.soapSection} ${styles.soapPlan}`}>
-              <h5>{t('plan', 'Plan (P)')}</h5>
-              <p>{entry.plan || t('noData', 'Sin datos')}</p>
-            </div>
           </AccordionItem>
         ))}
       </Accordion>
@@ -107,4 +98,4 @@ const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
   );
 };
 
-export default NotasSoap;
+export default ExamenFisico;

@@ -38,6 +38,8 @@
   "inactiveSis": "Inactive SIS",
   "laboratory": "Laboratory",
   "Laboratory": "Laboratory",
+  "labResultReady": "Laboratory result available",
+  "labResultReadyMessage": "The laboratory worklist was updated automatically.",
   "labResultsApprovedSuccessfully": "Lab results have been successfully approved and finalized",
   "loading": "Loading",
   "minorUrgency": "Minor urgency",

@@ -29,7 +29,8 @@ vi.mock('./lab-tiles/laboratory-summary-tiles.component', () => ({
 }));
 
 vi.mock('./laboratory-notifications.resource', () => ({
-  useLabResultReadyNotifications: mocks.realtimeHook,
+  labOrderCreatedEventType: 'LAB_ORDER_CREATED',
+  useLaboratoryNotifications: mocks.realtimeHook,
 }));
 
 vi.mock('./laboratory.resource', () => ({
@@ -46,9 +47,9 @@ describe('Laboratory dashboard realtime notifications', () => {
 
     expect(screen.getByRole('heading', { name: 'Laboratory' })).toBeInTheDocument();
     expect(mocks.realtimeHook).toHaveBeenCalledWith(true, expect.any(Function));
-    const onResultReady = mocks.realtimeHook.mock.calls[0][1] as () => void;
+    const onNotification = mocks.realtimeHook.mock.calls[0][1] as (eventType: string) => void;
 
-    act(() => onResultReady());
+    act(() => onNotification('LAB_RESULT_READY'));
 
     expect(mocks.invalidateLabOrders).toHaveBeenCalledOnce();
     expect(mocks.showSnackbar).toHaveBeenCalledWith({
@@ -56,6 +57,21 @@ describe('Laboratory dashboard realtime notifications', () => {
       kind: 'info',
       title: 'Laboratory result available',
       subtitle: 'The laboratory worklist was updated automatically.',
+    });
+  });
+
+  it('refreshes laboratory orders and shows a generic notice when an order is created', () => {
+    render(<LaboratoryDashboard />);
+    const onNotification = mocks.realtimeHook.mock.calls[0][1] as (eventType: string) => void;
+
+    act(() => onNotification('LAB_ORDER_CREATED'));
+
+    expect(mocks.invalidateLabOrders).toHaveBeenCalledOnce();
+    expect(mocks.showSnackbar).toHaveBeenCalledWith({
+      isLowContrast: true,
+      kind: 'info',
+      title: 'New laboratory order',
+      subtitle: 'A new order was added to the laboratory worklist.',
     });
   });
 });

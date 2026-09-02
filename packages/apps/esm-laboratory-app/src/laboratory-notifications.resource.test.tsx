@@ -2,8 +2,9 @@ import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getLaboratoryNotificationsUrl,
+  labOrderCreatedEventType,
   labResultReadyEventType,
-  useLabResultReadyNotifications,
+  useLaboratoryNotifications,
 } from './laboratory-notifications.resource';
 
 class FakeEventSource {
@@ -35,7 +36,7 @@ class FakeEventSource {
   }
 }
 
-describe('laboratory result-ready notifications', () => {
+describe('laboratory notifications', () => {
   beforeEach(() => {
     FakeEventSource.instances = [];
     vi.stubGlobal('openmrsBase', '/openmrs/');
@@ -51,9 +52,9 @@ describe('laboratory result-ready notifications', () => {
     expect(getLaboratoryNotificationsUrl('')).toBeNull();
   });
 
-  it('delivers each valid result-ready event once and closes on unmount', () => {
-    const onResultReady = vi.fn();
-    const { unmount } = renderHook(() => useLabResultReadyNotifications(true, onResultReady));
+  it('delivers valid order and result events once and closes on unmount', () => {
+    const onNotification = vi.fn();
+    const { unmount } = renderHook(() => useLaboratoryNotifications(true, onNotification));
     const source = FakeEventSource.instances[0];
 
     expect(source.url).toBe('/openmrs/ws/sihsalus/notifications/sse?topics=laboratory');
@@ -67,16 +68,27 @@ describe('laboratory result-ready notifications', () => {
     });
     source.emit(labResultReadyEventType, event);
     source.emit(labResultReadyEventType, event);
+    source.emit(
+      labOrderCreatedEventType,
+      JSON.stringify({
+        id: '1aef6dc9-5000-4295-9756-f6beba41bd0d',
+        topic: 'laboratory',
+        type: labOrderCreatedEventType,
+        payload: { orderUuid: 'e1522ef2-c541-4b80-80ea-6f45ecdd8cbe' },
+      }),
+    );
 
-    expect(onResultReady).toHaveBeenCalledTimes(1);
+    expect(onNotification).toHaveBeenNthCalledWith(1, labResultReadyEventType);
+    expect(onNotification).toHaveBeenNthCalledWith(2, labOrderCreatedEventType);
     unmount();
     expect(source.close).toHaveBeenCalledOnce();
     expect(source.listeners.has(labResultReadyEventType)).toBe(false);
+    expect(source.listeners.has(labOrderCreatedEventType)).toBe(false);
   });
 
   it('ignores malformed and mismatched events', () => {
-    const onResultReady = vi.fn();
-    renderHook(() => useLabResultReadyNotifications(true, onResultReady));
+    const onNotification = vi.fn();
+    renderHook(() => useLaboratoryNotifications(true, onNotification));
     const source = FakeEventSource.instances[0];
 
     source.emit(labResultReadyEventType, 'not-json');
@@ -89,11 +101,11 @@ describe('laboratory result-ready notifications', () => {
       JSON.stringify({ id: 'event-2', topic: 'laboratory', type: 'LAB_ORDER_UPDATED' }),
     );
 
-    expect(onResultReady).not.toHaveBeenCalled();
+    expect(onNotification).not.toHaveBeenCalled();
   });
 
   it('does not connect when realtime notifications are disabled', () => {
-    renderHook(() => useLabResultReadyNotifications(false, vi.fn()));
+    renderHook(() => useLaboratoryNotifications(false, vi.fn()));
 
     expect(FakeEventSource.instances).toHaveLength(0);
   });

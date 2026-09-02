@@ -42,7 +42,7 @@ export const configSchema = {
     _type: Type.Boolean,
     _default: true,
     _description:
-      'Refresh the laboratory dashboard and show an in-app notice when the SIHSALUS notifications OMOD emits a completed-result event.',
+      'Refresh the laboratory dashboard and show an in-app notice when the SIHSALUS notifications OMOD emits an order-created or completed-result event.',
   },
   resultsViewerConcepts: {
     _type: Type.Array,

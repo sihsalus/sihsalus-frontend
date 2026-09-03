@@ -1,7 +1,7 @@
-import { type Visit } from '@openmrs/esm-framework';
 import { type APIRequestContext, expect } from '@playwright/test';
 import dayjs from 'dayjs';
-import { type Encounter } from './types';
+import { voidOpenmrsResource } from '../../utils/openmrs-cleanup';
+import { type Encounter, type Visit } from './types';
 
 export interface Observation {
   uuid: string;
@@ -41,7 +41,6 @@ export const createEncounter = async (
   const encounterRes = await api.post('encounter', {
     data: {
       encounterDatetime,
-      form: 'c75f120a-04ec-11e3-8780-2b40bef9a44b',
       patient: patientId,
       visit: visit.uuid,
       encounterProviders: [
@@ -50,14 +49,14 @@ export const createEncounter = async (
           provider: providerId,
         },
       ],
-      location: process.env.E2E_LOGIN_DEFAULT_LOCATION_UUID,
+      location: visit.location.uuid,
       encounterType: '39da3525-afe4-45ff-8977-c53b7b359158',
     },
   });
-  expect(encounterRes.ok()).toBeTruthy();
+  expect(encounterRes.ok(), 'The synthetic laboratory encounter must be created').toBeTruthy();
   return await encounterRes.json();
 };
 
 export const deleteEncounter = async (api: APIRequestContext, uuid: string) => {
-  await api.delete(`encounter/${uuid}`, { data: {} });
+  await voidOpenmrsResource(api, { resource: 'encounter', uuid });
 };

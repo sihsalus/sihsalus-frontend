@@ -11,7 +11,7 @@ name: E2E
 on:
   workflow_dispatch:
   pull_request:
-    types: [labeled, synchronize, reopened]
+    types: [opened, labeled, synchronize, reopened]
     branches: [main]
   # push:
   #   branches: [main]
@@ -24,24 +24,47 @@ env:
   IBM_TELEMETRY_DISABLED: "true"
   TURBO_TELEMETRY_DISABLED: "1"
   DO_NOT_TRACK: "1"
-  # SPA + backend the suite points at (repo Variables).
-  E2E_BASE_URL: ${{ vars.E2E_BASE_URL }}
+  # Always exercise the SPA built from this SHA; only the backend is remote.
+  E2E_BASE_URL: http://127.0.0.1:8080/openmrs/spa
   E2E_API_BASE_URL: ${{ vars.E2E_API_BASE_URL }}
+  E2E_GATE_TARGET: ${{ vars.E2E_GATE_TARGET }}
   E2E_LOGIN_DEFAULT_LOCATION_UUID: ${{ vars.E2E_LOGIN_DEFAULT_LOCATION_UUID }}
   E2E_PATIENT_UUID: ${{ vars.E2E_PATIENT_UUID }}
   E2E_APPOINTMENTS_PATIENT_UUID: ${{ vars.E2E_APPOINTMENTS_PATIENT_UUID }}
   # Login used by global-setup.ts (repo Secrets).
   E2E_USER_ADMIN_USERNAME: ${{ secrets.E2E_USER_ADMIN_USERNAME }}
   E2E_USER_ADMIN_PASSWORD: ${{ secrets.E2E_USER_ADMIN_PASSWORD }}
+  SIHSALUS_BACKEND_URL: ${{ vars.E2E_API_BASE_URL }}
+  SIHSALUS_DEV_APPS: "none"
+  SIHSALUS_REQUIRE_BACKEND_URL: "true"
 
 jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-node-env
+      - name: Validate E2E contracts
+        run: yarn test:e2e:contracts
+
   e2e:
     # Only run for push/dispatch, or for PRs explicitly labeled `e2e`.
     if: >-
       github.event_name != 'pull_request' ||
       contains(github.event.pull_request.labels.*.name, 'e2e')
+    needs: contracts
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: clinical
+            command: yarn test:e2e
+          - suite: laboratory
+            command: yarn playwright test -c e2e/laboratory/playwright.config.ts
     permissions:
       contents: read
     steps:
@@ -56,8 +79,8 @@ jobs:
         run: |
           missing=0
           for name in \
-            E2E_BASE_URL \
             E2E_API_BASE_URL \
+            E2E_GATE_TARGET \
             E2E_LOGIN_DEFAULT_LOCATION_UUID \
             E2E_PATIENT_UUID \
             E2E_APPOINTMENTS_PATIENT_UUID \
@@ -74,18 +97,18 @@ jobs:
       - name: Install Playwright browser (chromium)
         run: yarn playwright install --with-deps chromium
 
-      - name: Build apps
-        run: yarn build:apps
+      - name: Build and assemble SPA
+        run: yarn package:spa
 
       # Playwright's webServer config starts `yarn start` and waits for the
       # login page before running the suite.
       - name: Run E2E tests
-        run: yarn test:e2e
+        run: ${{ matrix.command }}
 
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.suite }}
           path: playwright-report/
           retention-days: 7

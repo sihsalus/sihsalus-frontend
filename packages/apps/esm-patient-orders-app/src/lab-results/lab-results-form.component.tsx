@@ -1,4 +1,4 @@
-import { Button, ButtonSet, Form, InlineLoading, InlineNotification, Stack, TextInput } from '@carbon/react';
+import { Button, ButtonSet, Form, InlineLoading, InlineNotification, Stack } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   getUserFacingErrorMessage,
@@ -15,7 +15,7 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { mutate } from 'swr';
 import {
@@ -109,6 +109,7 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
         }
       } else if (isPanel(concept)) {
         const leafConcepts = flattenLeafConcepts(concept);
+        // biome-ignore lint/suspicious/noExplicitAny: observation group members array representation
         const findObs = (members: Array<any> | undefined, conceptUuid: string): any => {
           if (!members) return undefined;
           for (const m of members) {
@@ -219,6 +220,7 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
 
     // Handle update operation for completed lab order results
     if (order.fulfillerStatus === 'COMPLETED') {
+      // biome-ignore lint/suspicious/noExplicitAny: observation group members array representation
       const findObs = (members: Array<any> | undefined, conceptUuid: string): any => {
         if (!members) return undefined;
         for (const m of members) {
@@ -231,12 +233,17 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
         return undefined;
       };
 
-      const formEntries = Object.entries(formValues).filter(([key]) => !key.endsWith('-comment'));
+      const formEntries = Object.entries(formValues).filter(([key]) => !key.endsWith('-comment') && key !== 'order-comment');
       const updateTasks = formEntries.map(([conceptUuid, value]) => {
         const obs = findObs(completeLabResult?.groupMembers, conceptUuid) ?? completeLabResult;
         const obsDatetime = new Date().toISOString();
         const comment = formValues[`${conceptUuid}-comment`] ? String(formValues[`${conceptUuid}-comment`]) : undefined;
-        return updateObservation(obs?.uuid, { value, comment, obsDatetime });
+        // biome-ignore lint/suspicious/noExplicitAny: observation formatted value representation
+        let formattedValue: any = value;
+        if (typeof value === 'string' && value.length === 36 && value.includes('-')) {
+          formattedValue = { uuid: value };
+        }
+        return updateObservation(obs?.uuid, { value: formattedValue, comment, obsDatetime });
       });
       const updateResults = await Promise.allSettled(updateTasks);
       const failedObsconceptUuids = updateResults.reduce<Array<string | undefined>>((prev, curr, index) => {
@@ -267,14 +274,14 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
     // Set the observation status to 'FINAL' as we're not capturing it in the form
     const obsPayload = createObservationPayload(concept, order, formValues, 'FINAL');
     const orderDiscontinuationPayload = {
-      previousOrder: order.uuid,
+      previousOrder: order?.uuid,
       type: 'testorder',
       action: 'DISCONTINUE',
-      careSetting: order.careSetting.uuid,
-      encounter: order.encounter.uuid,
-      patient: order.patient.uuid,
-      concept: order.concept.uuid,
-      orderer: order.orderer,
+      careSetting: order?.careSetting?.uuid,
+      encounter: order?.encounter?.uuid,
+      patient: order?.patient?.uuid,
+      concept: order?.concept?.uuid,
+      orderer: order?.orderer,
     };
     const resultsStatusPayload = {
       fulfillerStatus: 'COMPLETED',
@@ -325,23 +332,6 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
             {!isLoading ? (
               <>
                 <ResultFormField defaultValue={completeLabResult} concept={concept} control={control} errors={errors} />
-                {isPanel(concept) && (
-                  <Controller
-                    control={control}
-                    name="order-comment"
-                    render={({ field }) => (
-                      <TextInput
-                        {...field}
-                        className={styles.textInput}
-                        id="order-comment"
-                        labelText={t('observations', 'Observaciones')}
-                        placeholder={t('enterObservations', 'Ingrese observaciones aquí')}
-                        type="text"
-                        value={typeof field.value === 'string' ? field.value : ''}
-                      />
-                    )}
-                  />
-                )}
               </>
             ) : (
               <InlineLoading description={t('loadingInitialValues', 'Loading initial values') + '...'} />

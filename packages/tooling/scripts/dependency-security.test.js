@@ -10,6 +10,8 @@ const packageJson = JSON.parse(readFileSync(path.join(repositoryRoot, 'package.j
 const yarnLock = readFileSync(path.join(repositoryRoot, 'yarn.lock'), 'utf8');
 
 const protectedDependencies = [
+  { name: 'browserslist', minimumSafeVersion: '4.28.7' },
+  { name: 'fast-uri', minimumSafeVersion: '3.1.6' },
   { name: 'flatted', minimumSafeVersion: '3.4.2' },
   { name: 'nanoid', minimumSafeVersion: '3.3.18' },
   { name: 'shell-quote', minimumSafeVersion: '1.8.4' },

@@ -187,6 +187,6 @@ jobs:
       - name: Security Audit
         # Yarn otherwise audits only direct dependencies of the active root
         # workspace and misses vulnerable transitive packages in workspaces.
-        # Advisory 1124282 affects only unstable RSC APIs. The audit script
-        # first fails closed if any RSC API/dependency enters this declarative SPA.
+        # The audit script first enforces the supported React Router contract
+        # and rejects RSC APIs or dependencies in this declarative SPA.
         run: yarn security:audit

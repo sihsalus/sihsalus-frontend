@@ -11,8 +11,10 @@ import { useCompletedLabResults, useOrderConceptByUuid } from './lab-results.res
 
 type LabResultsProps = {
   order: Order;
+  hideObservations?: boolean;
 };
-const LabResults: React.FC<LabResultsProps> = ({ order }) => {
+
+const LabResults: React.FC<LabResultsProps> = ({ order, hideObservations }) => {
   const { t } = useTranslation();
   const { isLoading: isLoadingConcepts, error: conceptError } = useOrderConceptByUuid(order.concept.uuid);
   const { isLoading, error } = useCompletedLabResults(order);
@@ -41,13 +43,13 @@ const LabResults: React.FC<LabResultsProps> = ({ order }) => {
 
   return (
     <Tile className={styles.resultsCiontainer}>
-      <OrderDetail order={order} />
+      <OrderDetail order={order} hideObservations={hideObservations} />
     </Tile>
   );
 };
 
 export default LabResults;
 
-const OrderDetail = ({ order }: { order: Order }) => {
-  return <TestOrder testOrder={order} hideInstructions={true} hideSupplementalPdf={true} />;
+const OrderDetail = ({ order, hideObservations }: { order: Order; hideObservations?: boolean }) => {
+  return <TestOrder testOrder={order} hideInstructions={true} hideSupplementalPdf={true} hideObservations={hideObservations} />;
 };

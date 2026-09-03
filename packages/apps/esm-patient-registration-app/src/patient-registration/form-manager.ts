@@ -688,12 +688,19 @@ export class FormManager {
       const effectiveCompanionRelationshipUuid = state.companionRemoved
         ? undefined
         : (state.companionRelationshipUuid ?? relationship.companionRelationshipUuid);
+      const companionSignature = getCompanionRelationshipTransactionSignature(
+        relationship,
+        relationship.relatedPersonUuid ?? state.relatedPersonUuid,
+        companionRelationshipType,
+        effectiveCompanionRelationshipUuid,
+      );
+      const companionAlreadyCompleted = !!state.companionCompleted && state.companionSignature === companionSignature;
       const deletesMainRelationship = relationship.action === 'DELETE' && !!relationship.uuid && !state.mainCompleted;
       const deletesCompanionRelationship =
         !!companionRelationshipType &&
         !!effectiveCompanionRelationshipUuid &&
         (relationship.action === 'DELETE' || !relationship.isCompanion) &&
-        !state.companionCompleted;
+        !companionAlreadyCompleted;
 
       return deletesMainRelationship || deletesCompanionRelationship;
     });

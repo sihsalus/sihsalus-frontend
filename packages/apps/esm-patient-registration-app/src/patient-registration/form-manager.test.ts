@@ -610,9 +610,21 @@ describe('FormManager', () => {
 
     it('also rejects removing the persisted companion relationship before writing patient data', async () => {
       const config = getPeruRegistrationConfig();
+      const transaction = new SavePatientTransactionManager();
       config.relationshipOptions = {
         ...config.relationshipOptions,
         companionRelationshipType: 'companion-type-uuid/aIsToB',
+      };
+      transaction.relationshipRows['relationship-uuid'] = {
+        companionCompleted: true,
+        companionRelationshipUuid: 'companion-relationship-uuid',
+        companionSignature: JSON.stringify({
+          action: 'UPDATE',
+          companionRelationshipType: 'companion-type-uuid/aIsToB',
+          companionRelationshipUuid: 'companion-relationship-uuid',
+          isCompanion: true,
+          relatedPersonUuid: 'responsible-person-uuid',
+        }),
       };
 
       await expect(
@@ -641,7 +653,7 @@ describe('FormManager', () => {
           {},
           getSessionWithPrivileges(),
           config,
-          new SavePatientTransactionManager(),
+          transaction,
         ),
       ).rejects.toMatchObject({ code: registrationErrorCodes.relationshipDeleteForbidden });
 

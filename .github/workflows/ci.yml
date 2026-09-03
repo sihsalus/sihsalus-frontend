@@ -14,9 +14,9 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
-  IBM_TELEMETRY_DISABLED: 'true'
-  TURBO_TELEMETRY_DISABLED: '1'
-  DO_NOT_TRACK: '1'
+  IBM_TELEMETRY_DISABLED: "true"
+  TURBO_TELEMETRY_DISABLED: "1"
+  DO_NOT_TRACK: "1"
 
 jobs:
   # Repo-wide safety nets that the per-workspace `turbo` tasks in `quality`
@@ -43,6 +43,17 @@ jobs:
       # when a clinician presses the corresponding action.
       - name: Validate Workspace Registrations
         run: yarn validate:workspaces
+
+      # Every workspace must have discoverable tests or a time-bounded entry in
+      # the test-debt register. Compare with the Git base so neither new debt
+      # exceptions nor new --passWithNoTests suppressions can enter silently.
+      - name: Validate Test Governance
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            yarn validate:test-governance --base "origin/${{ github.base_ref }}"
+          else
+            yarn validate:test-governance --base "${{ github.event.before }}"
+          fi
 
       # Clinical and administrative entry points must fail closed in the UI.
       # Backend authorization remains authoritative, but no critical route,

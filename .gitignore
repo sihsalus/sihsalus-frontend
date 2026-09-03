@@ -41,11 +41,18 @@ packages/libs/*/src/**/*.d.ts.map
 
 # Playwright
 e2e/storage-state.json
+e2e/**/storageState.json
+e2e/**/storage-state.json
 test-results/
 playwright-report/
 test-screenshots/
 .playwright-mcp/
 artifacts/
+
+# JUnit reports emitted by modular E2E suites
+results.xml
+e2e/**/results.xml
+e2e/**/junit*.xml
 
 # Large binary test fixtures (use Git LFS or download at test time)
 **/__mocks__/*.zip

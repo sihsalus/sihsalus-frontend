@@ -25,6 +25,8 @@ Las listas y estados vacíos siguen visibles en modo de solo lectura, pero sin b
 
 La acción **Registrar Diagnóstico** abre el workspace de Visit Notes, que persiste diagnósticos CIE-10 como diagnósticos nativos del encounter. Requiere una visita ambulatoria activa verificada y los dos privilegios de modificación indicados en la tabla. `CE-001-CONSULTA EXTERNA` no debe volver a capturar diagnósticos mediante observaciones.
 
+El historial obtiene el código desde el mapping estructurado CIE-10/ICD-10. Para el catálogo MINSA importado sin mappings, admite el nombre `SHORT` del concepto como código catalogado; no infiere el código desde el texto visible del diagnóstico.
+
 ## Advertencia de financiamiento SIS (opcional)
 
 Con `showSisFinancingWarning: true` (apagada por defecto), el dashboard de consulta externa muestra una advertencia no bloqueante cuando la visita activa no tiene financiador definido o el SIS no está vigente, con la misma semántica que el gating de triaje (`getSisFinancingState` sobre los visit attributes canónicos de `@openmrs/esm-patient-common-lib`). Si el usuario tiene `app:home.facturacion`, la advertencia ofrece la acción "Ir a Caja"; sin ese privilegio solo informa. La atención clínica nunca se bloquea: el hard-stop permanece en el flujo de FUA (ver `docs/clinical/plan-alineamiento-seguros-sis.md`).
@@ -32,6 +34,8 @@ Con `showSisFinancingWarning: true` (apagada por defecto), el dashboard de consu
 La pestaña **Referencia / Contrarreferencia** lee exclusivamente encounters de `encounterTypes.referralCounterReferral` y contiene dos vistas independientes: **Referencias emitidas** y **Contrarreferencias recibidas**. El filtro de cada flujo se aplica antes de la paginación; una respuesta de contrarreferencia permanece asociada al encounter de su referencia y no se crea como un registro suelto. Las interconsultas basadas en órdenes no pertenecen a ese historial; se solicitan y consultan desde `esm-interconsultas-app`.
 
 La pestaña **Antecedentes**, situada antes de **Anamnesis**, reutiliza las vistas existentes de antecedentes médicos y sociales. La lectura está protegida por `app:hoja.clinica.historiaSocial`; las acciones de registro conservan los permisos de edición originales. La cabecera incluye **Consultas previas** solo para usuarios con `app:hoja.clinica.visitas` y abre el dashboard histórico canónico, sin duplicar ni cambiar la visita activa.
+
+Los antecedentes personales cargan todas las páginas del historial FHIR. Para crear o editar exigen que la sesión tenga un proveedor clínico; el backend deriva el registrador desde la sesión autenticada y la edición conserva `recordedDate`. Al abrir un antecedente social nuevo se envía `encounterUuid` vacío: el UUID configurado identifica el tipo de encounter y no debe tratarse como un encounter existente.
 
 La pestaña **Pruebas complementarias** monta `consulta-externa-pruebas-complementarias-slot` con el `patientUuid` activo. `@sihsalus/esm-patient-tests-app` aporta en ese slot la misma tarjeta de resultados recientes que usa la historia clínica, protegida por `app:hoja.clinica.resultados`; Consulta Externa no duplica su consulta FHIR ni su lógica de navegación. La tarjeta es de solo lectura y **Ver todos los resultados** abre el dashboard completo de resultados.
 

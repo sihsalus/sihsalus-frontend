@@ -1,6 +1,7 @@
 import { Button, InlineNotification, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import {
   ArrowLeftIcon,
+  getUserFacingErrorMessage,
   ListCheckedIcon,
   SearchIcon,
   showSnackbar,
@@ -93,7 +94,10 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
     orderToEditOrdererUuid ?? '',
     visitContext?.uuid ?? '',
   ]);
-  const backendSubmissionRef = useRef<{ generation: number; promise: Promise<void> } | null>(null);
+  const backendSubmissionRef = useRef<{
+    generation: number;
+    promise: Promise<void>;
+  } | null>(null);
   const backendSubmissionGenerationRef = useRef(0);
   const backendSubmissionContextKeyRef = useRef(submissionContextKey);
   const isMountedRef = useRef(false);
@@ -238,7 +242,11 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
               isLowContrast: false,
               kind: 'error',
               title: t('errorSavingDrugOrder', 'Error saving drug order'),
-              subtitle: error.message,
+              subtitle: getUserFacingErrorMessage(
+                error,
+                t('errorSavingDrugOrderMessage', 'The medication order could not be saved. Please try again.'),
+                { logContext: 'Save medication order' },
+              ),
             });
           }
         })
@@ -248,7 +256,10 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
           }
         });
 
-      backendSubmissionRef.current = { generation: submissionGeneration, promise: submission };
+      backendSubmissionRef.current = {
+        generation: submissionGeneration,
+        promise: submission,
+      };
       return submission;
     },
     [

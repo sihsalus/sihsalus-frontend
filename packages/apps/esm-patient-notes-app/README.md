@@ -40,6 +40,8 @@ La validación exige seleccionar un miembro real del catálogo; el texto libre n
 
 Diagnósticos y códigos prestacionales solicitan también los `conceptMappings` de cada concepto. La interfaz presenta ambos catálogos como `<código> - <denominación>`; conserva compatibilidad con conceptos históricos que traen el código dentro de `display`, pero prefiere el mapping CIE-10 o SIS/FUA cuando está disponible. La búsqueda prestacional también admite el código guardado únicamente en el mapping.
 
+La búsqueda de diagnósticos acepta códigos CIE-10 con o sin punto. Para una entrada como `K71.0` consulta tanto `K710`, que es el formato usado por los nombres cortos del catálogo MINSA importado, como `K71.0`, fusiona los resultados sin duplicados y prioriza la coincidencia exacta respaldada por un mapping CIE-10 o por el nombre corto del catálogo.
+
 En una visita del tipo ambulatorio configurado, el guardado exige exactamente un diagnóstico principal y que cada diagnóstico principal o secundario seleccionado tenga un mapping estructurado con fuente CIE-10/ICD-10 y código no vacío. El texto visible o la forma aparente del código no se usan como autoridad. Los demás tipos de visita conservan su comportamiento previo.
 
 El profesional del encounter se registra con `visitNoteConfig.clinicianEncounterRole`. La colegiatura mostrada se obtiene únicamente del Provider Attribute Type configurado en `professionalRegistrationProviderAttributeTypeUuid`; no se sustituye con el identificador del provider. Su ausencia no bloquea el guardado clínico, porque el despliegue puede completar el dato después y los documentos conservan una línea de firma, sello y colegiatura manual. Esto no constituye firma digital.

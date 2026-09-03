@@ -92,6 +92,8 @@ autofinanciamiento. Un financiador ausente o un SIS incompleto, inactivo,
 pendiente o no consultado impide ejecutar el callback de cola. Esta regla no
 amplía la elegibilidad de FUA.
 
+Al finalizar una consulta elegible para FUA, la prevalidación recorre todas las páginas de encounters de la visita. Solo acepta como diagnóstico principal uno no anulado con código respaldado por mapping CIE-10/ICD-10 o por el nombre `SHORT` del catálogo MINSA, y exige además el código prestacional. Si no puede verificar ambos datos, abre el resumen de consulta y no cierra la visita.
+
 ## Taxonomia clinica del resumen del paciente
 
 Los nombres visibles del resumen deben usar lenguaje clinico entendido por los equipos peruanos. Los nombres tecnicos de FHIR son detalles de implementacion. Por ejemplo, FHIR `Condition` puede representar un problema activo, un diagnostico de una atencion o una condicion historica resuelta; eso no obliga a mostrar una seccion llamada `Condiciones`.

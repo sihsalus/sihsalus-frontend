@@ -54,6 +54,7 @@
   "errorLoadingCategories": "Error al cargar categorías de medicamentos",
   "errorLoadingTree": "Error al cargar la estructura de categorías",
   "errorSavingDrugOrder": "Error al guardar el orden de las medicaciones",
+  "errorSavingDrugOrderMessage": "No se pudo guardar la orden de medicamento. Inténtelo nuevamente.",
   "female": "Femenino",
   "freeDosageErrorMessage": "Agregue una indicación de dosificación",
   "freeTextDosage": "Dosificación en texto libre (excepción)",

@@ -1,4 +1,4 @@
-import { type FetchResponse, openmrsFetch, restBaseUrl, useFeatureFlag, type Visit } from '@openmrs/esm-framework';
+import { type FetchResponse, logError, openmrsFetch, restBaseUrl, useFeatureFlag, type Visit } from '@openmrs/esm-framework';
 import {
   type Drug,
   type DrugOrderBasketItem,
@@ -86,7 +86,7 @@ async function fetchDrugsByConceptUuids(concepts: string[]): Promise<DrugListFet
         startIndex += drugPageSize;
       }
     } catch (error) {
-      console.error(`Failed to fetch drugs for concepts: ${conceptsParam}`, error);
+      logError(error, 'Fetch medications linked to matching concepts');
       errors.push(toError(error));
     }
   }

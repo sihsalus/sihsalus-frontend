@@ -1,4 +1,4 @@
-import { useConfig } from '@openmrs/esm-framework';
+import { useConfig, useSession } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
@@ -38,6 +38,7 @@ const mockUpdateCondition = vi.mocked(updateCondition);
 const mockUseConditions = vi.mocked(useConditions);
 const mockUseConditionsSearch = vi.mocked(useConditionsSearchFromConceptSet);
 const mockUseConfig = vi.mocked(useConfig);
+const mockUseSession = vi.mocked(useSession);
 
 const patientUuid = 'patient-1';
 
@@ -71,6 +72,10 @@ function renderForm(overrides: { condition?: Condition; formContext?: 'creating'
 describe('ConditionsForm (Salud Materna)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseSession.mockReturnValue({
+      currentProvider: { uuid: 'provider-1' },
+      user: { uuid: 'user-1' },
+    } as ReturnType<typeof useSession>);
     mockUseConfig.mockReturnValue({
       conditionConceptSets: { antecedentesPatologicos: { uuid: 'set-1' } },
     } as unknown as ReturnType<typeof useConfig>);
@@ -104,7 +109,12 @@ describe('ConditionsForm (Salud Materna)', () => {
     expect(mockUpdateCondition).toHaveBeenCalledTimes(1);
     expect(mockUpdateCondition).toHaveBeenCalledWith(
       'condition-1',
-      expect.objectContaining({ conceptId: 'concept-asma', display: 'Asma' }),
+      expect.objectContaining({
+        conceptId: 'concept-asma',
+        display: 'Asma',
+        providerUuid: expect.any(String),
+        recordedDate: '2026-01-01T00:00:00.000Z',
+      }),
     );
   });
 
@@ -138,7 +148,12 @@ describe('ConditionsForm (Salud Materna)', () => {
 
     expect(mockCreateCondition).toHaveBeenCalledTimes(1);
     expect(mockCreateCondition).toHaveBeenCalledWith(
-      expect.objectContaining({ conceptId: 'concept-asma', display: 'Asma', patientId: patientUuid }),
+      expect.objectContaining({
+        conceptId: 'concept-asma',
+        display: 'Asma',
+        patientId: patientUuid,
+        providerUuid: expect.any(String),
+      }),
     );
   });
 });

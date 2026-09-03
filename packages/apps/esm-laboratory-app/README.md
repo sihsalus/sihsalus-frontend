@@ -51,11 +51,11 @@ The laboratory workflow remains usable if realtime delivery is interrupted becau
 refresh hint. Deployments without the notifications OMOD must set
 `enableRealtimeLabResultNotifications` to `false` to avoid unnecessary reconnect attempts.
 
-Delivery is restricted to the order encounter's location matching the user's current OpenMRS
-session location. Standard SSE `Last-Event-ID` replay recovers short network interruptions. If the
-backend no longer recognizes the cursor, the dashboard silently refetches the authoritative
-worklist without showing a duplicate notice. The frontend does not persist order UUIDs or
-notification history in browser storage.
+Delivery is restricted to events whose encounter location and the user's current OpenMRS session
+location resolve to the same nearest ancestor tagged `Facility Location`. Standard SSE
+`Last-Event-ID` replay recovers short network interruptions. If the backend no longer recognizes
+the cursor, the dashboard silently refetches the authoritative worklist without showing a duplicate
+notice. The frontend does not persist order UUIDs or notification history in browser storage.
 
 ## Getting Started
 

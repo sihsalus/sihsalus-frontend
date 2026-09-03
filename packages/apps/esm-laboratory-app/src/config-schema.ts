@@ -38,6 +38,12 @@ export const configSchema = {
     _description:
       'Enable reviewing lab results before final approval. When enabled, lab results will be submitted for review before being approved and finalized.',
   },
+  enableRealtimeLabResultNotifications: {
+    _type: Type.Boolean,
+    _default: true,
+    _description:
+      'Refresh the laboratory dashboard and show an in-app notice when the SIHSALUS notifications OMOD emits an order-created or completed-result event.',
+  },
   resultsViewerConcepts: {
     _type: Type.Array,
     _description: 'Conceptos de sets de laboratorio utilizados para filtrar las órdenes por grupo.',
@@ -59,6 +65,7 @@ export const configSchema = {
 };
 
 export type Config = {
+  enableRealtimeLabResultNotifications: boolean;
   enableReviewingLabResultsBeforeApproval: boolean;
   laboratoryOrderTypeUuid: string;
   labTableColumns: Array<LabTableColumnName>;

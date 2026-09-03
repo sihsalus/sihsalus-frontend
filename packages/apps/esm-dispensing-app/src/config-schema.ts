@@ -101,6 +101,12 @@ export const configSchema = {
     _description: 'The interval, in milliseconds, to query the backend for new/changed data',
     _default: 60000,
   },
+  enableRealtimeMedicationOrderNotifications: {
+    _type: Type.Boolean,
+    _description:
+      'Refresh the pharmacy dashboard and show an in-app notice when the SIHSALUS notifications OMOD emits a medication-order-created event.',
+    _default: true,
+  },
   serviceConceptSetUuid: {
     _type: Type.UUID,
     _description: 'Concept set UUID whose members represent services shown by dispensing dashboard tiles.',
@@ -186,6 +192,7 @@ export interface PharmacyConfig {
     };
   };
   refreshInterval: number;
+  enableRealtimeMedicationOrderNotifications: boolean;
   serviceConceptSetUuid: string;
   dispenseBehavior: {
     allowModifyingPrescription: boolean;

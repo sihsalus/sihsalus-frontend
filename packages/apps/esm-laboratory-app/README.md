@@ -36,6 +36,26 @@ The module supports the following configuration options:
 | `labTableColumns`                         | `Array<string>` | `['name', 'age', 'sex', 'totalOrders', 'action']` | Columns to display in the lab table. Allowed values: `name`, `age`, `dob`, `sex`, `totalOrders`, `action`, `patientId` |
 | `patientIdIdentifierTypeUuid`             | `UUID`          | `05a29f94-c0ed-11e2-94be-8c13b969e334`            | Identifier type UUID for the patient ID column. Only needed if `patientId` is included in `labTableColumns`            |
 | `enableReviewingLabResultsBeforeApproval` | `boolean`       | `false`                                           | When enabled, lab results are submitted for review before being approved and finalized                                 |
+| `enableRealtimeLabResultNotifications`    | `boolean`       | `true`                                            | Refresh the dashboard for new laboratory orders and completed results                                                  |
+
+## Realtime laboratory notifications
+
+When `enableRealtimeLabResultNotifications` is enabled, the dashboard subscribes to the authenticated
+`laboratory` SSE topic provided by `sihsalusnotifications` OMOD 1.2.0 or newer.
+`LAB_ORDER_CREATED` and `LAB_RESULT_READY` events invalidate the existing laboratory-order queries
+and show generic in-app notices. Each event contains only an order UUID; the browser retrieves
+authoritative data through the normal OpenMRS REST API and never receives test names, result values,
+or patient demographics in the notification.
+
+The laboratory workflow remains usable if realtime delivery is interrupted because SSE is only a
+refresh hint. Deployments without the notifications OMOD must set
+`enableRealtimeLabResultNotifications` to `false` to avoid unnecessary reconnect attempts.
+
+Delivery is restricted to the order encounter's location matching the user's current OpenMRS
+session location. Standard SSE `Last-Event-ID` replay recovers short network interruptions. If the
+backend no longer recognizes the cursor, the dashboard silently refetches the authoritative
+worklist without showing a duplicate notice. The frontend does not persist order UUIDs or
+notification history in browser storage.
 
 ## Getting Started
 

@@ -39,7 +39,7 @@
     "url": "https://github.com/openmrs/openmrs-esm-user-onboarding/issues"
   },
   "dependencies": {
-    "@carbon/react": "^1.83.0",
+    "@carbon/react": "^1.115.0",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
     "react-joyride": "^2.8.2"
@@ -55,15 +55,15 @@
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
-    "@playwright/test": "^1.52.0",
+    "@playwright/test": "^1.62.1",
     "@swc/cli": "0.8.1",
-    "@swc/core": "1.15.21",
+    "@swc/core": "1.16.1",
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.0",
     "css-loader": "^6.8.1",
     "dayjs": "1.x",
     "dotenv": "^16.0.3",
-    "i18next": "^26.3.6",
+    "i18next": "^26.4.0",
     "i18next-parser": "^9.3.0",
     "openmrs": "*",
     "react": "^18.3.1",

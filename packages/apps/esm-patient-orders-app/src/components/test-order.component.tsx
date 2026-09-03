@@ -24,6 +24,7 @@ interface TestOrderProps {
   testOrder: Order;
   hideInstructions?: boolean;
   hideSupplementalPdf?: boolean;
+  hideObservations?: boolean;
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: generic value display mapping
@@ -43,21 +44,20 @@ const formatReferenceRange = (concept: any, fhirRanges?: any) => {
 
   const low = fhirRanges?.lowNormal ?? concept?.lowNormal ?? concept?.lowAbsolute;
   const high = fhirRanges?.hiNormal ?? concept?.hiNormal ?? concept?.hiAbsolute;
-  const units = fhirRanges?.units ?? concept?.units;
-  const displayUnit = units ? ` ${units}` : '';
+  const units = concept?.units ? ` ${concept.units}` : '';
 
   const hasLower = low !== null && low !== undefined && low !== '';
   const hasUpper = high !== null && high !== undefined && high !== '';
 
   if (hasLower && hasUpper) {
-    return `${low} - ${high}${displayUnit}`;
+    return `${low} - ${high}${units}`;
   } else if (hasUpper) {
-    return `<= ${high}${displayUnit}`;
+    return `<= ${high}${units}`;
   } else if (hasLower) {
-    return `>= ${low}${displayUnit}`;
+    return `>= ${low}${units}`;
   }
 
-  return units ? displayUnit.trim() : 'N/A';
+  return units ? units.trim() : 'N/A';
 };
 
 // biome-ignore lint/suspicious/noExplicitAny: third-party FHIR Observation reference ranges representation
@@ -85,25 +85,58 @@ const extractRangesFromFhirObs = (fhirObs: any) => {
   return result;
 };
 
-const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions, hideSupplementalPdf }) => {
+const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions, hideSupplementalPdf, hideObservations }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { concept, isLoading: isLoadingTestConcepts } = useOrderConceptByUuid(testOrder.concept.uuid);
-  const { encounter, isLoading: isLoadingResult } = useLabEncounter(testOrder.encounter.uuid);
+  const encounterUuid = testOrder?.encounter?.uuid;
+  const { concept, isLoading: isLoadingTestConcepts } = useOrderConceptByUuid(testOrder?.concept?.uuid);
+  const { encounter, isLoading: isLoadingResult } = useLabEncounter(encounterUuid);
 
   // biome-ignore lint/suspicious/noExplicitAny: third-party FHIR Observation bundle representation
   const { data: fhirObsBundle } = useSWR<any>(
-    testOrder.encounter.uuid
-      ? `/ws/fhir2/R4/Observation?encounter=Encounter/${testOrder.encounter.uuid}&_count=100`
-      : null,
+    encounterUuid ? `/ws/fhir2/R4/Observation?encounter=Encounter/${encounterUuid}&_count=100` : null,
     openmrsFetch,
   );
 
+  const targetConceptUuid = testOrder.concept?.uuid || (testOrder as any).conceptUuid;
+
   const testResultObs = useMemo(() => {
-    if (encounter && concept) {
-      return encounter.obs?.find((obs) => obs.order?.uuid === testOrder.uuid);
+    if (!encounter?.obs || !Array.isArray(encounter.obs)) return undefined;
+
+    // 1. Direct match by order.uuid
+    let obs = encounter.obs.find((o) => o?.order?.uuid === testOrder.uuid);
+
+    // 2. Match inside groupMembers by order.uuid
+    if (!obs) {
+      obs = encounter.obs.find((o) => o?.groupMembers?.some((m: any) => m?.order?.uuid === testOrder.uuid));
     }
-  }, [concept, encounter, testOrder.uuid]);
+
+    // 3. Fallback by concept.uuid (ONLY for COMPLETED or DRAFT orders, NEVER for PENDING / NEW orders)
+    const isCompleted = (testOrder.fulfillerStatus as string) === 'COMPLETED' || (testOrder.fulfillerStatus as string) === 'DRAFT';
+    if (!obs && isCompleted && targetConceptUuid) {
+      const byConcept = encounter.obs.filter(
+        (o) =>
+          o?.concept?.uuid === targetConceptUuid ||
+          o?.groupMembers?.some((m: any) => m?.concept?.uuid === targetConceptUuid),
+      );
+      if (byConcept.length > 0) {
+        obs = byConcept[byConcept.length - 1];
+      }
+    }
+
+    return obs;
+  }, [encounter, testOrder.uuid, testOrder.fulfillerStatus, targetConceptUuid]);
+
+  const orderObservationComment = useMemo(() => {
+    if (!testResultObs) return undefined;
+    if (testResultObs.comment) return testResultObs.comment;
+    if (testResultObs.groupMembers && Array.isArray(testResultObs.groupMembers)) {
+      for (const m of testResultObs.groupMembers) {
+        if (m?.comment) return m.comment;
+      }
+    }
+    return undefined;
+  }, [testResultObs]);
 
   const testRows = useMemo(() => {
     const findFhirObs = (obsUuid: string) =>
@@ -116,10 +149,10 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions, hide
       const leafConcepts = flattenLeafConcepts(concept);
 
       const findObs = (members: Array<any> | undefined, conceptUuid: string): any => {
-        if (!members) return undefined;
+        if (!members || !Array.isArray(members)) return undefined;
         for (const m of members) {
-          if (m.concept?.uuid === conceptUuid) return m;
-          if (m.groupMembers && m.groupMembers.length > 0) {
+          if (m?.concept?.uuid === conceptUuid) return m;
+          if (m?.groupMembers && m.groupMembers.length > 0) {
             const f = findObs(m.groupMembers, conceptUuid);
             if (f) return f;
           }
@@ -128,7 +161,9 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions, hide
       };
 
       return leafConcepts.map((memberConcept) => {
-        const memberObs = findObs(testResultObs?.groupMembers, memberConcept.uuid);
+        const memberObs =
+          findObs(testResultObs?.groupMembers, memberConcept.uuid) ||
+          (testResultObs ? findObs(encounter?.obs, memberConcept.uuid) : undefined);
         const fhirObs = memberObs ? findFhirObs(memberObs.uuid) : null;
         const fhirRanges = extractRangesFromFhirObs(fhirObs);
 
@@ -207,6 +242,12 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions, hide
         <div className={styles.instructionsContainer}>
           <span className={styles.detailLabel}>{t('instructions', 'Instructions')}:</span>
           <span className={styles.detailValue}>{cleanInstructions}</span>
+        </div>
+      )}
+      {!hideObservations && !(concept?.setMembers && concept.setMembers.length > 0) && orderObservationComment && (
+        <div className={styles.instructionsContainer}>
+          <span className={styles.detailLabel}>{t('observations', 'Observaciones')}:</span>
+          <span className={styles.detailValue}>{orderObservationComment}</span>
         </div>
       )}
       {isLoadingTestConcepts ? (

@@ -297,6 +297,27 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
     });
   }, [parsedLabOrders]);
 
+  const isRelatedLabset = useCallback(
+    (orderConceptUuid: string | undefined) => {
+      if (!orderConceptUuid || !selectedLabsetUuid) return true;
+      if (orderConceptUuid === selectedLabsetUuid) return true;
+
+      const targetSet = fetchedLabsets?.find((s) => s.uuid === selectedLabsetUuid);
+      const targetMembers = targetSet ? getMemberUuids(targetSet) : [];
+      if (targetMembers.includes(orderConceptUuid)) return true;
+
+      const orderSet = fetchedLabsets?.find((s) => s.uuid === orderConceptUuid);
+      if (orderSet) {
+        const orderMembers = getMemberUuids(orderSet);
+        if (orderMembers.includes(selectedLabsetUuid)) return true;
+        if (targetMembers.some((mUuid) => orderMembers.includes(mUuid))) return true;
+      }
+
+      return false;
+    },
+    [selectedLabsetUuid, fetchedLabsets],
+  );
+
   const groupedOrdersByPatient = useMemo(() => {
     if (parsedLabOrders && parsedLabOrders.length > 0) {
       const patientUuids = [...new Set(parsedLabOrders.map((order) => order.patient.uuid))];
@@ -309,14 +330,11 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
 
             // Apply labset filter to individual orders if set
             if (selectedLabsetUuid && fetchedLabsets) {
-              const currentLabset = fetchedLabsets.find((set) => set.uuid === selectedLabsetUuid);
-              const memberUuids = currentLabset ? getMemberUuids(currentLabset) : [];
-
-              labOrdersForPatient = labOrdersForPatient.filter(
-                (order) => order.concept?.uuid === selectedLabsetUuid || memberUuids.includes(order.concept?.uuid),
+              labOrdersForPatient = labOrdersForPatient.filter((order) =>
+                isRelatedLabset(order.concept?.uuid),
               );
-              flattenedLabOrdersForPatient = flattenedLabOrdersForPatient.filter(
-                (order) => order.conceptUuid === selectedLabsetUuid || memberUuids.includes(order.conceptUuid),
+              flattenedLabOrdersForPatient = flattenedLabOrdersForPatient.filter((order) =>
+                isRelatedLabset(order.conceptUuid),
               );
             }
 

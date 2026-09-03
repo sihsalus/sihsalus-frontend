@@ -6,14 +6,55 @@ import {
   StructuredListRow,
   StructuredListWrapper,
 } from '@carbon/react';
-import { ExtensionSlot, formatDate, parseDate } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, ExtensionSlot, formatDate, parseDate } from '@openmrs/esm-framework';
+import useSWR from 'swr';
 import type { ReactNode } from 'react';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type GroupedOrders } from '../../types';
 import { getFulfillerStatusDisplay, getOrderUrgencyDisplay } from '../../utils/order-display';
 import { extractPriorityFromInstructions } from '../../utils/priority-parser';
 import styles from './list-order-details.scss';
+
+const labEncounterRepresentation =
+  'custom:(uuid,obs:(uuid,obsDatetime,voided,comment,groupMembers:(uuid,obsDatetime,voided,comment,value,concept:(uuid)),order:(uuid),concept:(uuid),value))';
+
+function useOrderObservationComment(order: any) {
+  const { data: encounterData } = useSWR<any>(
+    order?.encounter?.uuid ? `${restBaseUrl}/encounter/${order.encounter.uuid}?v=${labEncounterRepresentation}` : null,
+    openmrsFetch,
+  );
+
+  return useMemo(() => {
+    const obsList = encounterData?.obs ?? encounterData?.data?.obs ?? [];
+    if (!Array.isArray(obsList)) return undefined;
+
+    const isPanel = order.concept?.setMembers && order.concept.setMembers.length > 0;
+    if (isPanel) return undefined;
+
+    let targetObs = obsList.find((o: any) => o?.order?.uuid === order.uuid);
+    if (!targetObs) {
+      targetObs = obsList.find((o: any) => o?.groupMembers?.some((m: any) => m?.order?.uuid === order.uuid));
+    }
+    if (!targetObs && order.fulfillerStatus === 'COMPLETED' && order.concept?.uuid) {
+      const byConcept = obsList.filter(
+        (o: any) => o?.concept?.uuid === order.concept.uuid || o?.groupMembers?.some((m: any) => m?.concept?.uuid === order.concept.uuid),
+      );
+      if (byConcept.length > 0) {
+        targetObs = byConcept[byConcept.length - 1];
+      }
+    }
+
+    if (!targetObs) return undefined;
+    if (targetObs.comment) return targetObs.comment;
+    if (Array.isArray(targetObs.groupMembers)) {
+      for (const m of targetObs.groupMembers) {
+        if (m?.comment) return m.comment;
+      }
+    }
+    return undefined;
+  }, [encounterData, order]);
+}
 
 type OrderDetailsRowProps = {
   label: ReactNode;
@@ -58,117 +99,110 @@ const getPriorityColor = (urgency: string | undefined): string => {
   }
 };
 
-const ListOrderDetails: React.FC<ListOrdersDetailsProps> = ({ groupedOrders }) => {
+const OrderItemDetails = ({ order }: { order: any }) => {
   const { t } = useTranslation();
+  const { urgency, cleanInstructions } = extractPriorityFromInstructions(order.instructions, order.urgency);
+  const orderObservationComment = useOrderObservationComment(order);
+
+  return (
+    <div className={styles.orderDetailsContainer}>
+      <StructuredListWrapper className={styles.orderDetailsWrapper}>
+        <StructuredListBody>
+          <OrderDetailRow
+            label={t('urgencyStatus', 'Urgency:')}
+            value={
+              <div className={styles.priorityPill} data-urgency-color={getPriorityColor(urgency)}>
+                {getOrderUrgencyDisplay(urgency, t)}
+                {(urgency?.toUpperCase() === '65CF194E-05A7-4832-BA6D-9B7C9940A7C2' ||
+                  urgency?.toUpperCase() === 'ON_SCHEDULED_DATE') &&
+                  order.scheduledDate &&
+                  ` (${formatDate(parseDate(order.scheduledDate))})`}
+              </div>
+            }
+          />
+          <OrderDetailRow label={t('testOrdered', 'Test ordered:')} value={order.display} />
+          <OrderDetailRow
+            label={t('orderStatus', 'Status:')}
+            value={
+              <div
+                className={styles.statusPill}
+                data-status={(order.fulfillerStatus ?? 'Order not picked').replace('_', ' ')}
+              >
+                {getFulfillerStatusDisplay(order.fulfillerStatus, t)}
+              </div>
+            }
+          />
+          <OrderDetailRow label={t('orderNumbers', 'Order number:')} value={order.orderNumber} />
+          <OrderDetailRow
+            label={t('orderDate', 'Order date:')}
+            value={formatDate(parseDate(order.dateActivated))}
+          />
+          <OrderDetailRow label={t('orderedBy', 'Ordered By:')} value={order.orderer?.display} />
+          <OrderDetailRow
+            label={t('orderInstructions', 'Instructions:')}
+            value={cleanInstructions ?? t('NoInstructionLeft', 'No instructions are provided.')}
+          />
+          {orderObservationComment && (
+            <OrderDetailRow label={t('observations', 'Observaciones:')} value={orderObservationComment} />
+          )}
+
+          {order.fulfillerStatus === 'DECLINED' && (
+            <OrderDetailRow label={t('reasonForDecline', 'Reason for decline:')} value={order.fulfillerComment} />
+          )}
+        </StructuredListBody>
+      </StructuredListWrapper>
+      {(order.fulfillerStatus === 'COMPLETED' || order.fulfillerStatus === 'DRAFT') && (
+        <Accordion>
+          <AccordionItem
+            open={order.fulfillerStatus === 'COMPLETED'}
+            title={<span className={styles.accordionTitle}>{t('viewTestResults', 'View test results')}</span>}
+          >
+            <div className={styles.viewResults}>
+              <ExtensionSlot
+                className={styles.labResultSlot}
+                state={{ order: order, hideObservations: true }}
+                name="completed-lab-order-results-slot"
+              />
+            </div>
+          </AccordionItem>
+        </Accordion>
+      )}
+
+      <ExtensionSlot name="lab-order-pdf-attachments-slot" state={{ order }} />
+
+      <div className={styles.buttonSection}>
+        {order.fulfillerStatus === 'RECEIVED' || order.fulfillerStatus == null ? (
+          <>
+            <div className={styles.testsOrderedActions}>
+              <ExtensionSlot state={{ order: order }} name="rejected-ordered-actions-slot" />
+              <ExtensionSlot state={{ order: order }} name="tests-ordered-actions-slot" />
+              <ExtensionSlot state={{ order: order }} name="add-lab-order-details-slot" />
+            </div>
+          </>
+        ) : order.fulfillerStatus === 'IN_PROGRESS' ? (
+          <>
+            <div className={styles.testsOrderedActions}>
+              <ExtensionSlot
+                className={styles.menuLink}
+                state={{ order: order }}
+                name="inprogress-tests-actions-slot"
+              />
+            </div>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
+const ListOrderDetails: React.FC<ListOrdersDetailsProps> = ({ groupedOrders }) => {
   const originalOrders = groupedOrders?.originalOrders ?? [];
 
   return (
     <div>
-      {originalOrders.map((order) => {
-        const { urgency, cleanInstructions } = extractPriorityFromInstructions(order.instructions, order.urgency);
-
-        return (
-          <div key={order.orderNumber} className={styles.orderDetailsContainer}>
-            <StructuredListWrapper className={styles.orderDetailsWrapper}>
-              <StructuredListBody>
-                <OrderDetailRow
-                  label={t('urgencyStatus', 'Urgency:')}
-                  value={
-                    <div className={styles.priorityPill} data-urgency-color={getPriorityColor(urgency)}>
-                      {getOrderUrgencyDisplay(urgency, t)}
-                      {(urgency?.toUpperCase() === '65CF194E-05A7-4832-BA6D-9B7C9940A7C2' ||
-                        urgency?.toUpperCase() === 'ON_SCHEDULED_DATE') &&
-                        order.scheduledDate &&
-                        ` (${formatDate(parseDate(order.scheduledDate))})`}
-                    </div>
-                  }
-                />
-                <OrderDetailRow label={t('testOrdered', 'Test ordered:')} value={order.display} />
-                <OrderDetailRow
-                  label={t('orderStatus', 'Status:')}
-                  value={
-                    <div
-                      className={styles.statusPill}
-                      data-status={(order.fulfillerStatus ?? 'Order not picked').replace('_', ' ')}
-                    >
-                      {getFulfillerStatusDisplay(order.fulfillerStatus, t)}
-                    </div>
-                  }
-                />
-                <OrderDetailRow label={t('orderNumbers', 'Order number:')} value={order.orderNumber} />
-                <OrderDetailRow
-                  label={t('orderDate', 'Order date:')}
-                  value={formatDate(parseDate(order.dateActivated))}
-                />
-                <OrderDetailRow label={t('orderedBy', 'Ordered By:')} value={order.orderer?.display} />
-                <OrderDetailRow
-                  label={t('orderInstructions', 'Instructions:')}
-                  value={cleanInstructions ?? t('NoInstructionLeft', 'No instructions are provided.')}
-                />
-
-                {order.fulfillerStatus === 'DECLINED' && (
-                  <OrderDetailRow label={t('reasonForDecline', 'Reason for decline:')} value={order.fulfillerComment} />
-                )}
-              </StructuredListBody>
-            </StructuredListWrapper>
-            {(order.fulfillerStatus === 'COMPLETED' || order.fulfillerStatus === 'DRAFT') && (
-              <Accordion>
-                <AccordionItem
-                  open={order.fulfillerStatus === 'COMPLETED'}
-                  title={<span className={styles.accordionTitle}>{t('viewTestResults', 'View test results')}</span>}
-                >
-                  <div className={styles.viewResults}>
-                    <ExtensionSlot
-                      className={styles.labResultSlot}
-                      state={{ order: order }}
-                      name="completed-lab-order-results-slot"
-                    />
-                  </div>
-                </AccordionItem>
-              </Accordion>
-            )}
-
-            <ExtensionSlot name="lab-order-pdf-attachments-slot" state={{ order }} />
-
-            <div className={styles.buttonSection}>
-              {order.fulfillerStatus === 'RECEIVED' || order.fulfillerStatus == null ? (
-                <>
-                  <div className={styles.testsOrderedActions}>
-                    <ExtensionSlot state={{ order: order }} name="rejected-ordered-actions-slot" />
-                    <ExtensionSlot state={{ order: order }} name="tests-ordered-actions-slot" />
-                    <ExtensionSlot state={{ order: order }} name="add-lab-order-details-slot" />
-                  </div>
-                </>
-              ) : order.fulfillerStatus === 'IN_PROGRESS' ? (
-                <>
-                  <div className={styles.testsOrderedActions}>
-                    <ExtensionSlot
-                      className={styles.menuLink}
-                      state={{ order: order }}
-                      name="inprogress-tests-actions-slot"
-                    />
-                  </div>
-                </>
-              ) : order.fulfillerStatus === 'DRAFT' ? (
-                <>
-                  <div className={styles.testsOrderedActions}>
-                    <ExtensionSlot
-                      className={styles.menuLink}
-                      state={{ order: order }}
-                      name="amended-ordered-actions-slot"
-                    />
-                    <ExtensionSlot
-                      className={styles.menuLink}
-                      state={{ order: order }}
-                      name="approved-ordered-actions-slot"
-                    />
-                  </div>
-                </>
-              ) : null}
-            </div>
-          </div>
-        );
-      })}
+      {originalOrders.map((order) => (
+        <OrderItemDetails key={order.orderNumber} order={order} />
+      ))}
     </div>
   );
 };

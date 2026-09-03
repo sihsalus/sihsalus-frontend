@@ -112,7 +112,6 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: os,library
-          trivyignores: .trivyignore.yaml
           limit-severities-for-sarif: true
 
       - name: Scan immutable image (linux/arm64)
@@ -129,7 +128,6 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: os,library
-          trivyignores: .trivyignore.yaml
           limit-severities-for-sarif: true
 
       - name: Upload Trivy scan (linux/amd64)

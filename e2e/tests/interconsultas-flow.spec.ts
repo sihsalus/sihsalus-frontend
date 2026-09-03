@@ -1,6 +1,7 @@
 import { type APIRequestContext, type APIResponse, expect, type PlaywrightWorkerArgs, test } from '@playwright/test';
 import { getE2ECredentials } from '../utils/e2e-api';
 import { getOpenmrsRestBaseUrl, shouldIgnoreHTTPSErrors } from '../utils/e2e-urls';
+import { voidOpenmrsResources } from '../utils/openmrs-cleanup';
 
 /**
  * Flujo completo de interconsultas (esm-interconsultas-app):
@@ -70,7 +71,8 @@ async function getDefaultLocation(api: APIRequestContext) {
     payload.results?.find((candidate) => candidate.uuid === configuredLocation) ??
     payload.results?.find((candidate) => candidate.uuid);
   expect(location?.uuid, 'Expected at least one location').toBeTruthy();
-  return location!;
+  if (!location?.uuid) throw new Error('Expected at least one location');
+  return location;
 }
 
 async function getDefaultVisitType(api: APIRequestContext) {
@@ -80,7 +82,8 @@ async function getDefaultVisitType(api: APIRequestContext) {
     payload.results?.find((candidate) => candidate.display === 'Consulta Ambulatoria') ??
     payload.results?.find((candidate) => candidate.uuid);
   expect(visitType?.uuid, 'Expected at least one visit type').toBeTruthy();
-  return visitType!;
+  if (!visitType?.uuid) throw new Error('Expected at least one visit type');
+  return visitType;
 }
 
 async function getProvider(api: APIRequestContext) {
@@ -101,7 +104,8 @@ async function getProvider(api: APIRequestContext) {
     payload.results?.find((candidate) => !candidate.retired && !/^UNKNOWN\b/i.test(candidate.display ?? '')) ??
     payload.results?.find((candidate) => candidate.uuid);
   expect(provider?.uuid, 'Expected provider').toBeTruthy();
-  return provider!;
+  if (!provider?.uuid) throw new Error('Expected provider');
+  return provider;
 }
 
 async function getDestinationServiceConcept(api: APIRequestContext) {
@@ -123,7 +127,8 @@ async function getDestinationServiceConcept(api: APIRequestContext) {
   const concept =
     payload.results?.find((candidate) => /interconsulta/i.test(candidate.display ?? '')) ?? payload.results?.[0];
   expect(concept?.uuid, 'Expected a destination service concept').toBeTruthy();
-  return concept!;
+  if (!concept?.uuid) throw new Error('Expected a destination service concept');
+  return concept;
 }
 
 async function getRequestEncounterType(api: APIRequestContext) {
@@ -155,18 +160,12 @@ async function createPatient(api: APIRequestContext, locationUuid: string, famil
 }
 
 async function cleanup(api: APIRequestContext, created: CreatedState) {
-  if (created.orderUuid) {
-    await api.delete(`order/${created.orderUuid}`, { data: {} }).catch(() => null);
-  }
-  if (created.encounterUuid) {
-    await api.delete(`encounter/${created.encounterUuid}`, { data: {} }).catch(() => null);
-  }
-  if (created.visitUuid) {
-    await api.delete(`visit/${created.visitUuid}`, { data: {} }).catch(() => null);
-  }
-  if (created.patientUuid) {
-    await api.delete(`patient/${created.patientUuid}`, { data: {} }).catch(() => null);
-  }
+  await voidOpenmrsResources(api, [
+    created.orderUuid ? { resource: 'order', uuid: created.orderUuid } : undefined,
+    created.encounterUuid ? { resource: 'encounter', uuid: created.encounterUuid } : undefined,
+    created.visitUuid ? { resource: 'visit', uuid: created.visitUuid } : undefined,
+    created.patientUuid ? { resource: 'patient', uuid: created.patientUuid } : undefined,
+  ]);
 }
 
 test('interconsulta: solicitud, bandeja, pickup, respuesta y chart', async ({ page, playwright }, testInfo) => {

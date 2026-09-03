@@ -1,6 +1,7 @@
 import { type APIRequestContext, type APIResponse, expect, type PlaywrightWorkerArgs, test } from '@playwright/test';
 import { getE2ECredentials } from '../utils/e2e-api';
 import { getOpenmrsRestBaseUrl, shouldIgnoreHTTPSErrors } from '../utils/e2e-urls';
+import { voidOpenmrsResources } from '../utils/openmrs-cleanup';
 
 const INTERCONSULTATION_ORDER_TYPE_UUID = 'f3c2e4b6-8b5a-11e5-8e9b-12345678901b';
 const CARE_SETTING_UUID = '6f0c9a92-6f24-11e3-af88-005056821db0';
@@ -79,7 +80,8 @@ async function getDefaultLocation(api: APIRequestContext) {
     payload.results?.find((candidate) => candidate.uuid);
 
   expect(location?.uuid, 'Expected at least one location').toBeTruthy();
-  return location!;
+  if (!location?.uuid) throw new Error('Expected at least one location');
+  return location;
 }
 
 async function getDefaultVisitType(api: APIRequestContext) {
@@ -93,7 +95,8 @@ async function getDefaultVisitType(api: APIRequestContext) {
     payload.results?.find((candidate) => candidate.uuid);
 
   expect(visitType?.uuid, 'Expected at least one visit type').toBeTruthy();
-  return visitType!;
+  if (!visitType?.uuid) throw new Error('Expected at least one visit type');
+  return visitType;
 }
 
 async function getAdminProvider(api: APIRequestContext) {
@@ -115,7 +118,8 @@ async function getAdminProvider(api: APIRequestContext) {
     payload.results?.find((candidate) => candidate.uuid);
 
   expect(provider?.uuid, 'Expected provider').toBeTruthy();
-  return provider!;
+  if (!provider?.uuid) throw new Error('Expected provider');
+  return provider;
 }
 
 async function getInterconsultationConcept(api: APIRequestContext) {
@@ -144,7 +148,8 @@ async function getInterconsultationConcept(api: APIRequestContext) {
     payload.results?.find((candidate) => candidate.uuid);
 
   expect(concept?.uuid, 'Expected at least one interconsultation concept').toBeTruthy();
-  return concept!;
+  if (!concept?.uuid) throw new Error('Expected at least one interconsultation concept');
+  return concept;
 }
 
 async function getRequestEncounterType(api: APIRequestContext) {
@@ -200,47 +205,13 @@ async function createPatient(api: APIRequestContext, locationUuid: string) {
   return expectOk<OpenmrsResource>(patientResponse, 'Expected patient creation to succeed');
 }
 
-async function voidOrder(api: APIRequestContext, orderUuid: string) {
-  const deleteResponse = await api.delete(`order/${orderUuid}`, { data: {} });
-  if (deleteResponse.ok()) {
-    return;
-  }
-
-  const orderResponse = await api.get(`order/${orderUuid}?v=custom:(uuid,voided)`);
-  if (orderResponse.ok()) {
-    const order = await orderResponse.json();
-    if (order.voided) {
-      return;
-    }
-  }
-
-  const errorPayload = await readResponse(deleteResponse);
-  throw new Error(`Could not void order ${orderUuid}: ${JSON.stringify(errorPayload)?.slice(0, 600)}`);
-}
-
 async function cleanup(api: APIRequestContext, created: CreatedState) {
-  if (created.orderUuid) {
-    await voidOrder(api, created.orderUuid);
-  }
-
-  if (created.encounterUuid) {
-    await api.delete(`encounter/${created.encounterUuid}`, { data: {} });
-  }
-
-  if (created.visit?.uuid) {
-    await api.post(`visit/${created.visit.uuid}`, {
-      data: {
-        location: created.visit.location?.uuid,
-        startDatetime: created.visit.startDatetime,
-        visitType: created.visit.visitType?.uuid,
-        stopDatetime: new Date().toISOString(),
-      },
-    });
-  }
-
-  if (created.patientUuid) {
-    await api.delete(`patient/${created.patientUuid}`, { data: {} });
-  }
+  await voidOpenmrsResources(api, [
+    created.orderUuid ? { resource: 'order', uuid: created.orderUuid } : undefined,
+    created.encounterUuid ? { resource: 'encounter', uuid: created.encounterUuid } : undefined,
+    created.visit?.uuid ? { resource: 'visit', uuid: created.visit.uuid } : undefined,
+    created.patientUuid ? { resource: 'patient', uuid: created.patientUuid } : undefined,
+  ]);
 }
 
 test('creates an interconsultation order and picks it up through fulfiller status', async ({

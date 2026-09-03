@@ -1,19 +1,21 @@
 # Pruebas end-to-end
 
 Playwright contra un OpenMRS desplegado. **Nunca contra producción ni con datos
-reales**: los specs crean y anulan pacientes sintéticos.
+reales**: los specs de escritura crean y anulan sus propios pacientes; los de
+lectura usan pacientes reservados que llevan el marcador `E2E` o `SYNTHETIC`.
 
 ## Qué corre y qué no
 
 Hay dos conjuntos con contratos distintos. Confundirlos es la causa de que
 existieran specs escritos contra componentes borrados meses atrás.
 
-| Conjunto                | Ubicación                      | ¿Corre con `yarn test:e2e`?                          | ¿Typecheck en CI?       |
-| ----------------------- | ------------------------------ | ---------------------------------------------------- | ----------------------- |
-| Suite principal         | `e2e/tests/*.spec.ts`          | **Sí** (`testDir` de `playwright.config.ts`)         | Sí                      |
-| Suites modulares        | `e2e/<módulo>/specs/*.spec.ts` | No — cada una tiene su propio `playwright.config.ts` | Solo las listadas abajo |
-| Scripts de verificación | `e2e/scripts/*.mjs`            | No — se ejecutan a mano con `node`                   | No                      |
-| Capturas                | `e2e/screenshots/`             | No                                                   | No                      |
+| Conjunto                | Ubicación                        | ¿Corre con `yarn test:e2e`?                          | ¿Typecheck en CI?       |
+| ----------------------- | -------------------------------- | ---------------------------------------------------- | ----------------------- |
+| Suite principal         | `e2e/tests/*.spec.ts`            | **Sí** (`testDir` de `playwright.config.ts`)         | Sí                      |
+| Laboratorio             | `e2e/laboratory/specs/*.spec.ts` | En su job de CI con etiqueta `e2e`                   | Sí                      |
+| Otras suites modulares  | `e2e/<módulo>/specs/*.spec.ts`   | No — cada una tiene su propio `playwright.config.ts` | Solo las listadas abajo |
+| Scripts de verificación | `e2e/scripts/*.mjs`              | No — se ejecutan a mano con `node`                   | No                      |
+| Capturas                | `e2e/screenshots/`               | No                                                   | No                      |
 
 ```sh
 # Suite principal (3 proyectos: desktop, tablet, mobile)
@@ -28,14 +30,43 @@ yarn test:e2e:offline-laptop --project="Microsoft Edge Stable" --headed
 # Contratos unitarios fail-closed del gate, sin tocar backend
 yarn test:e2e:offline-laptop:unit
 
-# Typecheck de lo que está bajo contrato
-yarn typecheck:e2e
+# Contratos locales que corren en cada PR (typecheck + preflight unitario)
+yarn test:e2e:contracts
 ```
 
-En CI (`.github/workflows/e2e.yml`) la suite principal corre **solo** en PRs con
-la etiqueta `e2e` o por `workflow_dispatch`, y exige 7 variables/secretos
+En CI (`.github/workflows/e2e.yml`) los contratos locales corren en cada PR. Las
+suites de navegador principal y laboratorio corren **solo** en PRs con la
+etiqueta `e2e` o por `workflow_dispatch`, y exigen 7 variables/secretos
 (preflight que falla si falta alguna). Un gate que solo corre cuando alguien se
 acuerda no protege de nada: si tocas flujos clínicos, pon la etiqueta.
+
+El preflight exige `E2E_GATE_TARGET=DEV|QLTY`, comprueba que el backend sea el
+origen HTTPS exacto del ambiente elegido y solo permite que el SPA sea ese mismo
+origen o un servidor loopback. Producción y hosts parecidos quedan rechazados.
+En CI el SPA siempre se ensambla desde el SHA bajo prueba y se sirve en loopback;
+no se valida por accidente una versión anterior desplegada.
+Antes de crear workers también comprueba que ambos pacientes estén activos y
+marcados como sintéticos, que la ubicación y el proveedor clínico estén activos,
+y que `E2E_PATIENT_UUID` tenga exactamente una visita preparada activa. El
+preflight no imprime el cuerpo del paciente en los logs.
+
+## Cobertura activa
+
+| Flujo                     | Evidencia E2E obligatoria                                                                   |
+| ------------------------- | ------------------------------------------------------------------------------------------- |
+| Acceso                    | Login interactivo, sesión autenticada, shell, importmap, rutas y navegación                 |
+| Consulta Externa          | Ocho pestañas, antecedentes antes de anamnesis, historiales, resultados y consultas previas |
+| Diagnóstico / plan        | Búsqueda de K71.0, retiro y reemplazo del principal e indicaciones no farmacológicas        |
+| Catálogos de órdenes      | Presentación ordenable de ácido ursodesoxicólico y agregado acumulativo de TGP + TGO        |
+| Contratos del ambiente    | Pacientes sintéticos, visita activa, proveedor, privilegios, SIS, CIE-10 y medicamento      |
+| Laboratorio               | Visualización de solicitud, recojo, registro de resultado, finalización y rechazo           |
+| Otros módulos principales | Admisión, citas, registro Perú, interconsultas, odontograma y accesibilidad básica          |
+
+Todavía no son gates E2E: interoperabilidad FUA/HIS con MINSA, NetLab, una
+consulta ambulatoria completa persistida y recargada, PDFs revisados visualmente,
+ni la matriz negativa de roles de solo lectura. Esos casos necesitan servicios
+externos o fixtures aislados adicionales; no deben simularse como si validaran
+una integración real.
 
 ## Gate de laptops offline
 
@@ -61,7 +92,6 @@ que compilan limpio. Están **fuera** las que aún acumulan errores de tipos:
 | `form-builder`    | 53      | `string \| undefined` de variables de entorno, objetos posiblemente indefinidos                                                                                                                                                        |
 | `billing`         | 35      | igual que arriba                                                                                                                                                                                                                       |
 | `dispensing`      | 13      | importa `Order`/`Visit`/`OpenmrsResource` desde `@openmrs/esm-framework`, que no los reexporta; tampoco están en el entry point público de `esm-emr-api`/`esm-api`. Requiere definir los tipos localmente, como hace `patient-imaging` |
-| `laboratory`      | 10      | env vars y campos opcionales                                                                                                                                                                                                           |
 | `fast-data-entry` | 7       | igual                                                                                                                                                                                                                                  |
 | `screenshots`     | 4       | igual                                                                                                                                                                                                                                  |
 
@@ -91,7 +121,10 @@ degradarse en silencio.
 
 Los specs que necesitan un paciente lo reciben por `E2E_PATIENT_UUID`
 (`E2E_APPOINTMENTS_PATIENT_UUID` para citas) y **fallan al cargar el módulo** si
-falta — es deliberado: mejor un error claro que una corrida que no prueba nada.
+falta. Ambos deben identificar pacientes reservados cuyo nombre o identificador
+contenga el token independiente `E2E` o `SYNTHETIC`; el primero debe tener una
+sola visita activa. Es deliberado: mejor un error claro que una corrida que no
+prueba nada o que toque por accidente una historia no sintética.
 
 Al crear datos desde un script, anularlos al terminar. Ojo: `DELETE
 /ws/rest/v1/patient/{uuid}` responde **200 sin anular nada** si no se pasa

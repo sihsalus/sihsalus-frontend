@@ -41,6 +41,7 @@
     "validate:critical-route-privileges": "node packages/tooling/scripts/validate-critical-route-privileges.js",
     "validate:react-router": "node packages/tooling/scripts/validate-react-router-contract.js",
     "validate:lint-coverage": "node packages/tooling/scripts/validate-lint-coverage.js",
+    "validate:test-governance": "node packages/tooling/scripts/validate-test-governance.js",
     "validate:workspaces": "node packages/tooling/scripts/audit-workspaces.js",
     "typecheck": "node node_modules/turbo/bin/turbo run typescript",
     "typecheck:e2e": "tsc -p e2e/tsconfig.json",

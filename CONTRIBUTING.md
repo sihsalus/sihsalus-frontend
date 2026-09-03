@@ -193,6 +193,10 @@ For every applicable validation, record:
 
 - A fix must include a test that fails for the original defect whenever
   technically feasible.
+- New workspaces must declare a `test` script and include at least one
+  discoverable test. Do not add `--passWithNoTests`. Time-bounded legacy gaps
+  are recorded in `config/test-governance.json`; remove the exception when a
+  test lands instead of renewing it by default.
 - Test behavior and contract boundaries, not only snapshots or implementation
   details.
 - Permission changes require both allowed and denied paths.

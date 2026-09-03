@@ -19,7 +19,9 @@ import styles from './list-order-details.scss';
 const labEncounterRepresentation =
   'custom:(uuid,obs:(uuid,obsDatetime,voided,comment,groupMembers:(uuid,obsDatetime,voided,comment,value,concept:(uuid)),order:(uuid),concept:(uuid),value))';
 
+// biome-ignore lint/suspicious/noExplicitAny: order object representation
 function useOrderObservationComment(order: any) {
+  // biome-ignore lint/suspicious/noExplicitAny: encounter data payload representation
   const { data: encounterData } = useSWR<any>(
     order?.encounter?.uuid ? `${restBaseUrl}/encounter/${order.encounter.uuid}?v=${labEncounterRepresentation}` : null,
     openmrsFetch,
@@ -32,12 +34,15 @@ function useOrderObservationComment(order: any) {
     const isPanel = order.concept?.setMembers && order.concept.setMembers.length > 0;
     if (isPanel) return undefined;
 
+    // biome-ignore lint/suspicious/noExplicitAny: observation representation
     let targetObs = obsList.find((o: any) => o?.order?.uuid === order.uuid);
     if (!targetObs) {
+      // biome-ignore lint/suspicious/noExplicitAny: group member observation representation
       targetObs = obsList.find((o: any) => o?.groupMembers?.some((m: any) => m?.order?.uuid === order.uuid));
     }
     if (!targetObs && order.fulfillerStatus === 'COMPLETED' && order.concept?.uuid) {
       const byConcept = obsList.filter(
+        // biome-ignore lint/suspicious/noExplicitAny: observation representation
         (o: any) => o?.concept?.uuid === order.concept.uuid || o?.groupMembers?.some((m: any) => m?.concept?.uuid === order.concept.uuid),
       );
       if (byConcept.length > 0) {
@@ -99,6 +104,7 @@ const getPriorityColor = (urgency: string | undefined): string => {
   }
 };
 
+// biome-ignore lint/suspicious/noExplicitAny: order representation
 const OrderItemDetails = ({ order }: { order: any }) => {
   const { t } = useTranslation();
   const { urgency, cleanInstructions } = extractPriorityFromInstructions(order.instructions, order.urgency);

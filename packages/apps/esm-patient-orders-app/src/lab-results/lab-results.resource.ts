@@ -163,7 +163,7 @@ export async function updateOrderResult(
   encounterUuid: string,
   obsPayload: unknown,
   fulfillerPayload: unknown,
-  orderPayload?: OrderDiscontinuationPayload,
+  _orderPayload?: OrderDiscontinuationPayload,
   abortController?: AbortController,
 ) {
   const saveEncounter = await openmrsFetch(`${restBaseUrl}/encounter/${encounterUuid}`, {
@@ -227,7 +227,12 @@ export function updateObservation(observationUuid: string, payload: Record<strin
   });
 }
 
-function createGroupMember(member: LabOrderConcept, order: Order, values: Record<string, unknown>, status: string): any {
+function createGroupMember(
+  member: LabOrderConcept,
+  order: Order,
+  values: Record<string, unknown>,
+  status: string,
+): Record<string, unknown> | null {
   if (member.setMembers && member.setMembers.length > 0) {
     const subMembers = member.setMembers
       .map((sub) => createGroupMember(sub, order, values, status))

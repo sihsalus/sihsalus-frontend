@@ -450,6 +450,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
     selectedLabsetUuid,
     fetchedLabsets,
     instructionsFilter,
+    isRelatedLabset,
   ]);
 
   const searchResults = useMemo(() => {

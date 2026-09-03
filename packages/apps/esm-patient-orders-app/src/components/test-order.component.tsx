@@ -98,6 +98,7 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions, hide
     openmrsFetch,
   );
 
+  // biome-ignore lint/suspicious/noExplicitAny: testOrder conceptUuid fallback representation
   const targetConceptUuid = testOrder.concept?.uuid || (testOrder as any).conceptUuid;
 
   const testResultObs = useMemo(() => {
@@ -108,6 +109,7 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions, hide
 
     // 2. Match inside groupMembers by order.uuid
     if (!obs) {
+      // biome-ignore lint/suspicious/noExplicitAny: group member representation
       obs = encounter.obs.find((o) => o?.groupMembers?.some((m: any) => m?.order?.uuid === testOrder.uuid));
     }
 
@@ -117,6 +119,7 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions, hide
       const byConcept = encounter.obs.filter(
         (o) =>
           o?.concept?.uuid === targetConceptUuid ||
+          // biome-ignore lint/suspicious/noExplicitAny: group member concept representation
           o?.groupMembers?.some((m: any) => m?.concept?.uuid === targetConceptUuid),
       );
       if (byConcept.length > 0) {
@@ -148,6 +151,7 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions, hide
     if (concept && concept.setMembers && concept.setMembers.length > 0) {
       const leafConcepts = flattenLeafConcepts(concept);
 
+      // biome-ignore lint/suspicious/noExplicitAny: observation members array representation
       const findObs = (members: Array<any> | undefined, conceptUuid: string): any => {
         if (!members || !Array.isArray(members)) return undefined;
         for (const m of members) {
@@ -195,7 +199,7 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder, hideInstructions, hide
     } else {
       return [];
     }
-  }, [concept, isLoadingResult, testResultObs, fhirObsBundle]);
+  }, [concept, isLoadingResult, testResultObs, fhirObsBundle, encounter?.obs]);
 
   const cleanInstructions = testOrder.instructions
     ? testOrder.instructions.replace(/\s*\|\|priorityUuid:[a-fA-F0-9-]+\|\|/g, '').trim()

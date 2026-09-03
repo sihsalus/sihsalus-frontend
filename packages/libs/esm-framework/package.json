@@ -89,7 +89,7 @@
     "swr": "2.x"
   },
   "devDependencies": {
-    "@openmrs/typedoc-plugin-file-categories": "9.0.3-pre.4728",
+    "@openmrs/typedoc-plugin-file-categories": "10.0.0",
     "@swc/cli": "0.8.1",
     "@swc/core": "1.15.21",
     "@types/fhir": "0.0.31",

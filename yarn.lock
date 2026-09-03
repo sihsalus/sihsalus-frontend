@@ -4305,7 +4305,7 @@ __metadata:
     "@openmrs/esm-styleguide": "workspace:*"
     "@openmrs/esm-translations": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
-    "@openmrs/typedoc-plugin-file-categories": "npm:9.0.3-pre.4728"
+    "@openmrs/typedoc-plugin-file-categories": "npm:10.0.0"
     "@swc/cli": "npm:0.8.1"
     "@swc/core": "npm:1.15.21"
     "@types/fhir": "npm:0.0.31"
@@ -4692,12 +4692,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openmrs/typedoc-plugin-file-categories@npm:9.0.3-pre.4728":
-  version: 9.0.3-pre.4728
-  resolution: "@openmrs/typedoc-plugin-file-categories@npm:9.0.3-pre.4728"
+"@openmrs/typedoc-plugin-file-categories@npm:10.0.0":
+  version: 10.0.0
+  resolution: "@openmrs/typedoc-plugin-file-categories@npm:10.0.0"
   peerDependencies:
     typedoc: ">=0.28.0"
-  checksum: 10c0/4b9819acfa0115bac9856517babf363c975db4fa77b40f0e8e4b12b85ea0b5fe48652355e171ffe0104219bf3a6e112d6414e2e7f2379c261aea01d7ecfce0df
+  checksum: 10c0/cfaaf4d9d222eb3d4d3cf577921b97d5d8caa4ff9a38aff47570a6175d3736c5b15c8aa833b5a2d85173596d8786350e3ebc7c2679bf603ca74b8421914f4900
   languageName: node
   linkType: hard
 

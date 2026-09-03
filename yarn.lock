@@ -4396,7 +4396,7 @@ __metadata:
     concurrently: "npm:^9.2.1"
     cross-env: "npm:^10.1.0"
     dayjs: "npm:^1.11.13"
-    dexie: "npm:^3.0.3"
+    dexie: "npm:^4.4.5"
     happy-dom: "npm:^20.6.0"
     i18next: "npm:^26.3.6"
     lodash-es: "npm:^4.17.21"
@@ -9007,7 +9007,7 @@ __metadata:
     "@rspack/cli": "npm:1.7.11"
     "@sihsalus/esm-rbac": "workspace:*"
     classnames: "npm:^2.3.2"
-    dexie: "npm:^3.0.3"
+    dexie: "npm:^4.4.5"
     fuzzy: "npm:^0.1.3"
     lodash-es: "npm:^4.17.15"
     openmrs: "npm:*"
@@ -14666,6 +14666,13 @@ __metadata:
   version: 3.2.7
   resolution: "dexie@npm:3.2.7"
   checksum: 10c0/5d7dad9deb3a24b676f8c630a2517ec0e243906fbcbd3cc7946798ee4ff05766eae7b6dd29deb0f090151552f136ac70a2c0bf0a8a8dbd840e643710efb80347
+  languageName: node
+  linkType: hard
+
+"dexie@npm:^4.4.5":
+  version: 4.4.5
+  resolution: "dexie@npm:4.4.5"
+  checksum: 10c0/a88439b82842b27929fb5e883944ff9a739f1b713382b1eb09745166cad41ce83ca443aa850ae185e9f75569f643aa8efb4126e52971db2b8c9ca27eab1afce2
   languageName: node
   linkType: hard
 

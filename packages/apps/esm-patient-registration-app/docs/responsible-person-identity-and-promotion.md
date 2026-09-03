@@ -67,6 +67,7 @@ El app de registro ya tiene una separación relevante:
 - El responsable nuevo se registra en el formulario y su `Person` se crea al enviar el registro (`POST /person` seguido de `POST /relationship`), nunca antes, para no dejar personas huérfanas.
 - El paciente nuevo se crea con `POST /patient`.
 - El formulario ahora soporta promoción: cuando la sección 0 encuentra una `Person` no paciente (o se abre con `?promotePerson=<uuid>`), el submit reutiliza ese UUID con `POST /patient` + `person: "<uuid>"` en lugar de generar uno nuevo.
+- Retirar o reemplazar un vínculo persistido requiere el privilegio backend `Delete Relationships`. El submit en línea lo valida antes de guardar identificadores o datos demográficos, evitando un paciente actualizado parcialmente seguido por un `DELETE /relationship` con respuesta `403`. El paquete de contenido asigna este privilegio explícitamente a `Admision`; otros roles fallan de forma cerrada con un mensaje específico.
 
 Este documento describe el diseño completo; ver `Estado de implementación` arriba para lo ya construido.
 
@@ -1230,6 +1231,7 @@ El cambio no debe quedarse solo en la pantalla visual de admisión. Hay que revi
 13. Si se requiere múltiples documentos civiles activos, se debe diseñar una entidad documental o atributos separados por tipo antes de implementarlo.
 14. Offline no permite promoción.
 15. Los tests cubren duplicados, provider/person y RENIEC/SIS no disponibles.
+16. Un cambio que elimina un vínculo persistido se rechaza antes de cualquier escritura si la sesión no tiene `Delete Relationships`, y continúa normalmente cuando sí lo tiene.
 
 ## Decisión recomendada
 

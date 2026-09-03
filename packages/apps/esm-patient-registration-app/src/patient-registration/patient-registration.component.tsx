@@ -539,6 +539,10 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
                   'promotionOfflineSubtitle',
                   'Promoting an existing person to patient requires a connection.',
                 ),
+                [registrationErrorCodes.relationshipDeleteForbidden]: t(
+                  'relationshipDeleteForbiddenError',
+                  'Your account cannot remove or replace saved relationships. No changes from this attempt were saved. Ask an authorized user for help.',
+                ),
                 [registrationErrorCodes.relationshipPersonRequired]: t(
                   'relationshipPersonRequiredError',
                   'Select or register a person before saving the relationship.',

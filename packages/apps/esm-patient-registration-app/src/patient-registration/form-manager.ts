@@ -8,6 +8,7 @@ import {
   showSnackbar,
   toOmrsIsoString,
   translateFrom,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import { formatCalendarDate, parsePatientBirthdate } from '@openmrs/esm-utils';
 import { type RegistrationConfig } from '../config-schema';
@@ -348,6 +349,12 @@ export class FormManager {
       values = { ...values, patientUuid: personUuidToPromote };
     }
 
+    FormManager.assertRelationshipDeleteAccess(
+      values.relationships,
+      currentUser,
+      config.relationshipOptions?.companionRelationshipType,
+      savePatientTransactionManager,
+    );
     FormManager.assertObservationConfiguration(values.obs, currentLocation, currentUser, config);
 
     const patientIdentifiers: Array<PatientIdentifier> = await FormManager.savePatientIdentifiers(
@@ -664,6 +671,40 @@ export class FormManager {
     }
 
     return results;
+  }
+
+  static assertRelationshipDeleteAccess(
+    relationships: Array<RelationshipValue> | undefined,
+    currentUser: Session,
+    companionRelationshipType?: string,
+    transactionManager: SavePatientTransactionManager = new SavePatientTransactionManager(),
+  ) {
+    const requiresDeletePrivilege = (relationships ?? []).some((relationship) => {
+      if (!relationship.action) {
+        return false;
+      }
+
+      const state = transactionManager.relationshipRows[getRelationshipTransactionKey(relationship)] ?? {};
+      const effectiveCompanionRelationshipUuid = state.companionRemoved
+        ? undefined
+        : (state.companionRelationshipUuid ?? relationship.companionRelationshipUuid);
+      const deletesMainRelationship = relationship.action === 'DELETE' && !!relationship.uuid && !state.mainCompleted;
+      const deletesCompanionRelationship =
+        !!companionRelationshipType &&
+        !!effectiveCompanionRelationshipUuid &&
+        (relationship.action === 'DELETE' || !relationship.isCompanion) &&
+        !state.companionCompleted;
+
+      return deletesMainRelationship || deletesCompanionRelationship;
+    });
+
+    if (requiresDeletePrivilege && (!currentUser.user || !userHasAccess('Delete Relationships', currentUser.user))) {
+      throw new RegistrationDomainError(
+        registrationErrorCodes.relationshipDeleteForbidden,
+        'The current user lacks Delete Relationships, required to remove or replace a persisted relationship.',
+        { technicalDetails: { requiredPrivilege: 'Delete Relationships' } },
+      );
+    }
   }
 
   static async saveRelationshipForRow(

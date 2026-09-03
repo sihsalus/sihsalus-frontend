@@ -1,4 +1,14 @@
-import { type OpenmrsResource } from '@openmrs/esm-framework';
+export interface OpenmrsResource {
+  uuid: string;
+  display?: string;
+}
+
+export interface Visit {
+  uuid: string;
+  location: OpenmrsResource;
+  startDatetime: string;
+  visitType: OpenmrsResource;
+}
 
 export interface Encounter {
   uuid: string;

@@ -25,6 +25,8 @@
     "serve:prod": "yarn build:apps && yarn assemble && openmrs start",
     "test": "cross-env TZ=UTC node node_modules/turbo/bin/turbo run test --concurrency=2",
     "test:e2e": "playwright test",
+    "test:e2e:contracts": "yarn typecheck:e2e && yarn test:e2e:unit",
+    "test:e2e:unit": "vitest run e2e/utils/e2e-gate-config.test.ts e2e/utils/e2e-remote-preflight.test.ts e2e/utils/openmrs-cleanup.test.ts --environment node",
     "test:e2e:offline-laptop:config": "vitest run e2e/offline-laptop/gate-config.test.ts --environment node",
     "test:e2e:offline-laptop:unit": "vitest run e2e/offline-laptop/gate-config.test.ts e2e/offline-laptop/synthetic-patient-cleanup.test.ts e2e/offline-laptop/evidence-sanitization.test.ts --environment node",
     "test:e2e:offline-laptop": "playwright test -c e2e/offline-laptop/playwright.config.ts",

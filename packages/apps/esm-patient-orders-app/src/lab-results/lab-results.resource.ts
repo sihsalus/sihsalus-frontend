@@ -75,6 +75,16 @@ export interface Mapping {
   resourceVersion: string;
 }
 
+export class LabResultCompletionError extends Error {
+  constructor(
+    public readonly observationUuid: string | null,
+    public readonly completionCause: unknown,
+  ) {
+    super('The laboratory observation was saved, but the order could not be marked as completed.');
+    this.name = 'LabResultCompletionError';
+  }
+}
+
 export function useOrderConceptByUuid(uuid: string) {
   const isValid = Boolean(uuid && uuid !== 'undefined');
   const apiUrl = isValid ? `${restBaseUrl}/concept/${uuid}?v=${labConceptRepresentation}` : null;
@@ -114,10 +124,7 @@ export function useObservation(obsUuid: string) {
   const isValid = Boolean(obsUuid && obsUuid !== 'undefined');
   const url = isValid ? `${restBaseUrl}/obs/${obsUuid}?v=${conceptObsRepresentation}` : null;
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: Observation }, Error>(
-    url,
-    openmrsFetch,
-  );
+  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: Observation }, Error>(url, openmrsFetch);
   return {
     data: data?.data,
     isLoading: isValid ? isLoading : false,
@@ -157,36 +164,102 @@ export function useCompletedLabResults(order: Order) {
   };
 }
 
-// TODO: the calls to update order and observations for results should be transactional to allow for rollback
-export async function updateOrderResult(
-  orderUuid: string,
+type ObservationPayload = Record<string, unknown> & {
+  groupMembers?: Array<ObservationPayload>;
+};
+
+function prepareStandaloneObservation(
+  observation: ObservationPayload,
+  patientUuid: string,
   encounterUuid: string,
-  obsPayload: unknown,
+): ObservationPayload {
+  return {
+    ...observation,
+    person: patientUuid,
+    encounter: encounterUuid,
+    ...(observation.groupMembers
+      ? {
+          groupMembers: observation.groupMembers.map((member) =>
+            prepareStandaloneObservation(member, patientUuid, encounterUuid),
+          ),
+        }
+      : {}),
+  };
+}
+
+function getSingleObservation(obsPayload: unknown): ObservationPayload {
+  if (!obsPayload || typeof obsPayload !== 'object' || !('obs' in obsPayload)) {
+    throw new Error('A laboratory observation payload is required.');
+  }
+
+  const observations = (obsPayload as { obs?: unknown }).obs;
+  if (!Array.isArray(observations) || observations.length !== 1) {
+    throw new Error('Exactly one laboratory observation group must be saved.');
+  }
+
+  const observation = observations[0];
+  if (!observation || typeof observation !== 'object') {
+    throw new Error('The laboratory observation payload is invalid.');
+  }
+  return observation as ObservationPayload;
+}
+
+export async function completeOrderResult(
+  orderUuid: string,
   fulfillerPayload: unknown,
-  _orderPayload?: OrderDiscontinuationPayload,
   abortController?: AbortController,
 ) {
-  const saveEncounter = await openmrsFetch(`${restBaseUrl}/encounter/${encounterUuid}`, {
+  const response = await openmrsFetch(`${restBaseUrl}/order/${orderUuid}/fulfillerdetails/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     signal: abortController?.signal,
-    body: obsPayload,
+    body: JSON.stringify(fulfillerPayload),
   });
 
-  if (saveEncounter.ok) {
-    const fulfillOrder = await openmrsFetch(`${restBaseUrl}/order/${orderUuid}/fulfillerdetails/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      signal: abortController?.signal,
-      body: fulfillerPayload,
-    });
-    return fulfillOrder;
+  if (response.ok === false) {
+    throw new Error('Failed to mark the laboratory order as completed.');
   }
-  throw new Error('Failed to update order');
+  return response;
+}
+
+// OpenMRS EncounterResource replaces the encounter's complete top-level obs set when
+// the `obs` property is posted. Save this result through ObsResource instead so adding
+// one laboratory result cannot remove unrelated clinical observations.
+export async function updateOrderResult(
+  orderUuid: string,
+  encounterUuid: string,
+  obsPayload: unknown,
+  fulfillerPayload: unknown,
+  orderPayload?: OrderDiscontinuationPayload,
+  abortController?: AbortController,
+) {
+  const patientUuid = orderPayload?.patient?.trim() ?? '';
+  const observation = prepareStandaloneObservation(getSingleObservation(obsPayload), patientUuid, encounterUuid);
+
+  if (!observation.person) {
+    throw new Error('A patient is required to save a laboratory observation.');
+  }
+
+  const saveObservation = await openmrsFetch<{ uuid?: string }>(`${restBaseUrl}/obs`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    signal: abortController?.signal,
+    body: JSON.stringify(observation),
+  });
+
+  if (saveObservation.ok === false) {
+    throw new Error('Failed to save the laboratory observation.');
+  }
+
+  try {
+    return await completeOrderResult(orderUuid, fulfillerPayload, abortController);
+  } catch (error) {
+    throw new LabResultCompletionError(saveObservation.data?.uuid ?? null, error);
+  }
 }
 
 export function createObservationPayload(
@@ -218,6 +291,9 @@ export function createObservationPayload(
 }
 
 export function updateObservation(observationUuid: string, payload: Record<string, unknown>) {
+  if (!observationUuid?.trim()) {
+    return Promise.reject(new Error('A valid observation UUID is required.'));
+  }
   return openmrsFetch(`${restBaseUrl}/obs/${observationUuid}`, {
     method: 'POST',
     headers: {
@@ -299,9 +375,7 @@ function getValue(concept: LabOrderConcept, values: Record<string, unknown>) {
   }
 
   const isCodedType =
-    datatype?.display === 'Coded' ||
-    datatype?.hl7Abbreviation === 'CWE' ||
-    datatype?.hl7Abbreviation === 'Coded';
+    datatype?.display === 'Coded' || datatype?.hl7Abbreviation === 'CWE' || datatype?.hl7Abbreviation === 'Coded';
 
   if (isCodedType) {
     if (typeof value === 'object' && value !== null && 'uuid' in value) {

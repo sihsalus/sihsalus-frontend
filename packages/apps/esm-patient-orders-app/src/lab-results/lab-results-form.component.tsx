@@ -19,12 +19,14 @@ import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { mutate } from 'swr';
 import {
+  completeOrderResult,
   createObservationPayload,
   flattenLeafConcepts,
   isCoded,
   isNumeric,
   isPanel,
   isText,
+  LabResultCompletionError,
   updateObservation,
   updateOrderResult,
   useCompletedLabResults,
@@ -62,6 +64,7 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
   const isTablet = useLayoutType() === 'tablet';
   const { concept, isLoading: isLoadingConcepts } = useOrderConceptByUuid(order.concept.uuid);
   const [showEmptyFormErrorNotification, setShowEmptyFormErrorNotification] = useState(false);
+  const [needsOrderCompletion, setNeedsOrderCompletion] = useState(false);
   const schema = useLabResultsFormSchema(order.concept.uuid);
   const { completeLabResult, isLoading, mutate: mutateResults } = useCompletedLabResults(order);
   const invalidateLabOrdersRef = useRef(invalidateLabOrders);
@@ -81,7 +84,7 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
 
   const {
     control,
-    formState: { errors, isDirty, isSubmitting },
+    formState: { dirtyFields, errors, isDirty, isSubmitting },
     setValue,
     handleSubmit,
   } = useForm<Record<string, unknown>>({
@@ -91,7 +94,7 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
   });
 
   useEffect(() => {
-    if (concept && completeLabResult && order?.fulfillerStatus === 'COMPLETED') {
+    if (concept && completeLabResult) {
       if (isCoded(concept) && completeLabResult?.value?.uuid) {
         setValue(concept.uuid, completeLabResult.value.uuid);
         if (completeLabResult.comment) {
@@ -144,7 +147,7 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
         }
       }
     }
-  }, [concept, completeLabResult, order, setValue]);
+  }, [concept, completeLabResult, setValue]);
 
   useEffect(() => {
     if (isWorkspace2) {
@@ -218,7 +221,46 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
       });
     };
 
-    // Handle update operation for completed lab order results
+    const resultsStatusPayload = {
+      fulfillerStatus: 'COMPLETED',
+      fulfillerComment: 'Test Results Entered',
+    };
+
+    // If the observation succeeded but the fulfiller-status request failed, retry only
+    // the idempotent status transition. Never create a duplicate observation.
+    if (needsOrderCompletion || (completeLabResult?.uuid && order.fulfillerStatus !== 'COMPLETED')) {
+      try {
+        await completeOrderResult(order.uuid, resultsStatusPayload, abortController);
+        setNeedsOrderCompletion(false);
+        closeCurrentWorkspaceWithSavedChanges();
+        void mutateOrderData();
+        void mutateResults();
+        invalidateLabOrdersRef.current?.();
+        showNotification(
+          'success',
+          t('successfullySavedLabResults', 'Lab results for {{orderNumber}} have been successfully updated', {
+            orderNumber: order?.orderNumber,
+          }),
+        );
+      } catch (err) {
+        showNotification(
+          'error',
+          getUserFacingErrorMessage(
+            err,
+            t(
+              'errorCompletingLabOrderMessage',
+              'The result is already saved, but the order is still pending. Try completing the order again.',
+            ),
+            { logContext: 'Complete laboratory order after saving result' },
+          ),
+        );
+      }
+      return setShowEmptyFormErrorNotification(false);
+    }
+
+    // Handle update operation for completed lab order results. Updating several Obs
+    // through separate REST calls can leave a panel partially changed, so this flow
+    // permits exactly one observation revision per submission.
     if (order.fulfillerStatus === 'COMPLETED') {
       // biome-ignore lint/suspicious/noExplicitAny: observation group members array representation
       const findObs = (members: Array<any> | undefined, conceptUuid: string): any => {
@@ -233,36 +275,78 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
         return undefined;
       };
 
-      const formEntries = Object.entries(formValues).filter(([key]) => !key.endsWith('-comment') && key !== 'order-comment');
-      const updateTasks = formEntries.map(([conceptUuid, value]) => {
-        const obs = findObs(completeLabResult?.groupMembers, conceptUuid) ?? completeLabResult;
-        const obsDatetime = new Date().toISOString();
-        const comment = formValues[`${conceptUuid}-comment`] ? String(formValues[`${conceptUuid}-comment`]) : undefined;
-        // biome-ignore lint/suspicious/noExplicitAny: observation formatted value representation
-        let formattedValue: any = value;
-        if (typeof value === 'string' && value.length === 36 && value.includes('-')) {
-          formattedValue = { uuid: value };
-        }
-        return updateObservation(obs?.uuid, { value: formattedValue, comment, obsDatetime });
-      });
-      const updateResults = await Promise.allSettled(updateTasks);
-      const failedObsconceptUuids = updateResults.reduce<Array<string | undefined>>((prev, curr, index) => {
-        if (curr.status === 'rejected') {
-          const conceptUuid = formEntries.at(index)?.[0];
-          prev.push(conceptUuid);
-        }
-        return prev;
-      }, []);
+      const dirtyKeys = Object.keys(dirtyFields);
+      const updates = new Map<string, Record<string, unknown>>();
+      const missingConceptUuids = new Set<string>();
 
-      if (failedObsconceptUuids.length) {
-        showNotification('error', 'Could not save obs with concept uuids ' + failedObsconceptUuids.join(', '));
-      } else {
+      for (const dirtyKey of dirtyKeys) {
+        const isOrderComment = dirtyKey === 'order-comment';
+        const conceptUuid = isOrderComment ? concept.uuid : dirtyKey.replace(/-comment$/, '');
+        const obs = isOrderComment
+          ? completeLabResult
+          : completeLabResult?.concept?.uuid === conceptUuid
+            ? completeLabResult
+            : findObs(completeLabResult?.groupMembers, conceptUuid);
+
+        if (!obs?.uuid) {
+          missingConceptUuids.add(conceptUuid);
+          continue;
+        }
+
+        const update = updates.get(obs.uuid) ?? { obsDatetime: new Date().toISOString() };
+        if (dirtyKey.endsWith('-comment') || isOrderComment) {
+          update.comment = String(formValues[dirtyKey] ?? '');
+        } else {
+          const value = formValues[dirtyKey];
+          update.value =
+            typeof value === 'string' && value.length === 36 && value.includes('-') ? { uuid: value } : value;
+        }
+        updates.set(obs.uuid, update);
+      }
+
+      if (missingConceptUuids.size > 0) {
+        showNotification(
+          'error',
+          t(
+            'labResultObservationMissing',
+            'The original observation was not found for: {{conceptUuids}}. No changes were made.',
+            { conceptUuids: [...missingConceptUuids].join(', ') },
+          ),
+        );
+        return setShowEmptyFormErrorNotification(false);
+      }
+
+      if (updates.size > 1) {
+        showNotification(
+          'error',
+          t('editOneLabResultAtATime', 'For safety, edit only one panel result at a time. No changes were made.'),
+        );
+        return setShowEmptyFormErrorNotification(false);
+      }
+
+      if (updates.size === 0) {
+        closeCurrentWorkspace();
+        return setShowEmptyFormErrorNotification(false);
+      }
+
+      const [[observationUuid, payload]] = [...updates.entries()];
+      try {
+        await updateObservation(observationUuid, payload);
         closeCurrentWorkspaceWithSavedChanges();
         showNotification(
           'success',
           t('successfullySavedLabResults', 'Lab results for {{orderNumber}} have been successfully updated', {
             orderNumber: order?.orderNumber,
           }),
+        );
+      } catch (err) {
+        showNotification(
+          'error',
+          getUserFacingErrorMessage(
+            err,
+            t('errorSavingLabResultsMessage', 'No se pudieron guardar los resultados. Intente nuevamente.'),
+            { logContext: 'Update laboratory result observation' },
+          ),
         );
       }
       void mutateResults();
@@ -283,11 +367,6 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
       concept: order?.concept?.uuid,
       orderer: order?.orderer,
     };
-    const resultsStatusPayload = {
-      fulfillerStatus: 'COMPLETED',
-      fulfillerComment: 'Test Results Entered',
-    };
-
     try {
       await updateOrderResult(
         order.uuid,
@@ -310,6 +389,18 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
         }),
       );
     } catch (err) {
+      if (err instanceof LabResultCompletionError) {
+        setNeedsOrderCompletion(true);
+        void mutateResults();
+        showNotification(
+          'error',
+          t(
+            'labResultSavedOrderPending',
+            'The result was saved, but the order could not be marked as completed. Try again to complete only the order.',
+          ),
+        );
+        return;
+      }
       showNotification(
         'error',
         getUserFacingErrorMessage(

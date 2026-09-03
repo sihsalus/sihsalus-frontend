@@ -10,6 +10,10 @@ const TIPO_DX_FIELD_PREFIX = 'tipo-dx-';
 // reflect DrugOrder-only properties (for example `drug`) on TestOrder and
 // reject the complete visit with HTTP 400.
 const DRUG_DETAILS_REPRESENTATION = 'custom:(uuid,display,strength)';
+const NESTED_OBS_REPRESENTATION =
+  'uuid,voided,concept:(uuid,display),value,display,order:(uuid),' +
+  'groupMembers:(uuid,voided,concept:(uuid,display),value,display,order:(uuid),' +
+  'groupMembers:(uuid,voided,concept:(uuid,display),value,display,order:(uuid)))';
 
 const VISIT_SUMMARY_REPRESENTATION =
   'custom:(uuid,patient:(uuid),visitType:(uuid,display),startDatetime,stopDatetime,location:(uuid,display),' +
@@ -20,7 +24,7 @@ const VISIT_SUMMARY_REPRESENTATION =
   'diagnoses:(uuid,display,voided,certainty,rank,diagnosis:(coded:(uuid,display,' +
   'mappings:(display,conceptReferenceTerm:(code,conceptSource:(name,display))),' +
   'names:(display,conceptNameType)),nonCoded)),' +
-  'obs:(uuid,voided,concept:(uuid,display),value,display,formFieldNamespace,formFieldPath,order:(uuid)),' +
+  `obs:(${NESTED_OBS_REPRESENTATION},formFieldNamespace,formFieldPath),` +
   'orders:FULL))';
 
 interface OpenmrsRef {
@@ -37,6 +41,7 @@ interface VisitSummaryObservation {
   formFieldNamespace?: string;
   formFieldPath?: string;
   order?: OpenmrsRef;
+  groupMembers?: VisitSummaryObservation[];
 }
 
 interface VisitSummaryDiagnosis {
@@ -515,14 +520,51 @@ function getOrderCategory(order: VisitSummaryOrder): OutpatientSummaryOrder['cat
   return /lab|laborator|test|prueba|examen/.test(type) ? 'laboratory' : 'other';
 }
 
+function observationResultText(observation: VisitSummaryObservation, includeConceptName = false): string | null {
+  const activeMembers = observation.groupMembers?.filter((member) => !member.voided) ?? [];
+  if (activeMembers.length > 0) {
+    const memberResults = activeMembers.flatMap((member) => {
+      const result = observationResultText(member, true);
+      return result ? [result] : [];
+    });
+    return memberResults.length > 0 ? memberResults.join(' · ') : null;
+  }
+
+  const value = asText(observation.value);
+  const display = observation.display?.trim() || null;
+  const result = value ?? display;
+  if (!result) return null;
+
+  const conceptName = observation.concept?.display?.trim();
+  if (
+    !includeConceptName ||
+    !conceptName ||
+    result.toLocaleLowerCase().startsWith(`${conceptName.toLocaleLowerCase()}:`)
+  ) {
+    return result;
+  }
+  return `${conceptName}: ${result}`;
+}
+
+function findOrderObservation(
+  observations: VisitSummaryObservation[] | undefined,
+  orderUuid: string,
+): VisitSummaryObservation | null {
+  for (const observation of observations ?? []) {
+    if (observation.voided) continue;
+    if (observation.order?.uuid?.toLowerCase() === orderUuid.toLowerCase()) return observation;
+    const nested = findOrderObservation(observation.groupMembers, orderUuid);
+    if (nested) return nested;
+  }
+  return null;
+}
+
 function getOrderResult(encounters: VisitSummaryEncounter[], orderUuid: string): string | null {
   for (const encounter of [...encounters].sort(
     (a, b) => new Date(b.encounterDatetime).getTime() - new Date(a.encounterDatetime).getTime(),
   )) {
-    const result = encounter.obs?.find(
-      (observation) => !observation.voided && observation.order?.uuid?.toLowerCase() === orderUuid.toLowerCase(),
-    );
-    if (result) return asText(result.value, result.display);
+    const result = findOrderObservation(encounter.obs, orderUuid);
+    if (result) return observationResultText(result);
   }
   return null;
 }

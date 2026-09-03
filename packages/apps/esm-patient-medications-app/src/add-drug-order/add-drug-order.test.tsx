@@ -171,6 +171,25 @@ describe('AddDrugOrderWorkspace drug search', () => {
     expect(screen.getByText(/generic name, strength and dosage form/i)).toBeInTheDocument();
   });
 
+  test('warns when medication search returns only partial results', async () => {
+    const user = userEvent.setup();
+    mockUseDrugSearch.mockImplementation(() => ({
+      isLoading: false,
+      drugs: mockDrugSearchResultApiData,
+      partialErrors: [new Error('Internal concept endpoint detail')],
+      error: null,
+      isValidating: false,
+      mutate: vi.fn(),
+    }));
+
+    renderAddDrugOrderWorkspace();
+    await user.type(screen.getByRole('searchbox'), 'Aspirin');
+
+    expect(await screen.findByText('Some drugs could not be loaded')).toBeInTheDocument();
+    expect(screen.queryByText('Internal concept endpoint detail')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(3);
+  });
+
   test('no buttons to click if the medication is already prescribed', async () => {
     usePatientOrdersMock.mockReturnValue({
       isLoading: false,
@@ -705,7 +724,7 @@ describe('AddDrugOrderWorkspace drug search', () => {
       expect(mockShowSnackbar).toHaveBeenCalledWith(
         expect.objectContaining({
           kind: 'error',
-          subtitle: 'Backend unavailable',
+          subtitle: 'The medication order could not be saved. Please try again.',
         }),
       ),
     );

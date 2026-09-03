@@ -21,6 +21,15 @@ const mockMutate = vi.fn();
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseVisit = vi.mocked(useVisit);
+const primaryDiagnosisWithCie10 = {
+  rank: 1,
+  voided: false,
+  diagnosis: {
+    coded: {
+      names: [{ display: 'K710', conceptNameType: 'SHORT' }],
+    },
+  },
+};
 
 describe('End visit dialog', () => {
   beforeEach(() => {
@@ -64,7 +73,7 @@ describe('End visit dialog', () => {
         data: {
           results: [
             {
-              diagnoses: [{ rank: 1, voided: false }],
+              diagnoses: [primaryDiagnosisWithCie10],
               obs: [{ formFieldPath: 'codigo-prestacional', value: '056' }],
             },
           ],
@@ -185,6 +194,74 @@ describe('End visit dialog', () => {
     });
   });
 
+  test('does not accept a primary diagnosis without a catalogued CIE-10 code', async () => {
+    const user = userEvent.setup();
+
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          {
+            uuid: 'encounter-1',
+            diagnoses: [{ rank: 1, voided: false, diagnosis: { coded: { names: [] } } }],
+            obs: [{ formFieldPath: 'codigo-prestacional', value: '056' }],
+          },
+        ],
+      },
+    } as FetchResponse);
+
+    render(<EndVisitDialog patientUuid="some-patient-uuid" closeModal={mockCloseModal} />);
+
+    await user.click(screen.getByRole('button', { name: /finalizar consulta$/i }));
+
+    await waitFor(() => expect(mockLaunchPatientWorkspace).toHaveBeenCalled());
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subtitle: 'Complete Primary diagnosis in Resumen de consulta before finalizing the visit.',
+      }),
+    );
+  });
+
+  test('validates encounters beyond the first page before ending a SIS visit', async () => {
+    const user = userEvent.setup();
+    const firstPage = Array.from({ length: 100 }, (_, index) => ({
+      uuid: `encounter-${index}`,
+      diagnoses: [],
+      obs: [],
+    }));
+
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({
+        data: { results: firstPage, totalCount: 101 },
+      } as FetchResponse)
+      .mockResolvedValueOnce({
+        data: {
+          results: [
+            {
+              uuid: 'encounter-100',
+              diagnoses: [primaryDiagnosisWithCie10],
+              obs: [{ formFieldPath: 'codigo-prestacional', value: '056' }],
+            },
+          ],
+          totalCount: 101,
+        },
+      } as FetchResponse)
+      .mockResolvedValueOnce({ status: 200, data: {} } as FetchResponse)
+      .mockResolvedValueOnce({ data: {} } as FetchResponse);
+
+    render(<EndVisitDialog patientUuid="some-patient-uuid" closeModal={mockCloseModal} />);
+
+    await user.click(screen.getByRole('button', { name: /finalizar consulta$/i }));
+
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(2, expect.stringContaining('startIndex=100')));
+    await waitFor(() =>
+      expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+        '/ws/rest/v1/clinicalvisitclosure',
+        expect.objectContaining({ method: 'POST' }),
+      ),
+    );
+  });
+
   test('displays an error snackbar without claiming success if ending the visit fails', async () => {
     const user = userEvent.setup();
 
@@ -200,7 +277,7 @@ describe('End visit dialog', () => {
       data: {
         results: [
           {
-            diagnoses: [{ rank: 1, voided: false }],
+            diagnoses: [primaryDiagnosisWithCie10],
             obs: [{ formFieldPath: 'codigo-prestacional', value: '056' }],
           },
         ],
@@ -254,7 +331,7 @@ describe('End visit dialog', () => {
         data: {
           results: [
             {
-              diagnoses: [{ rank: 1, voided: false }],
+              diagnoses: [primaryDiagnosisWithCie10],
               obs: [{ formFieldPath: 'codigo-prestacional', value: '056' }],
             },
           ],

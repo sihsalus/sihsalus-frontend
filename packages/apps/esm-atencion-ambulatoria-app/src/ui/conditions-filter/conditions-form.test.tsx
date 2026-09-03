@@ -1,5 +1,5 @@
-import { useConfig } from '@openmrs/esm-framework';
-import type { DefaultPatientWorkspaceProps } from '@openmrs/esm-patient-common-lib';
+import { useConfig, useSession } from '@openmrs/esm-framework';
+import { type DefaultPatientWorkspaceProps, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -43,6 +43,8 @@ const mockUpdateCondition = vi.mocked(updateCondition);
 const mockUseConditions = vi.mocked(useConditions);
 const mockUseConditionsSearch = vi.mocked(useConditionsSearchFromConceptSet);
 const mockUseConfig = vi.mocked(useConfig);
+const mockUseSession = vi.mocked(useSession);
+const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
 
 const matchingCondition: Condition = {
   id: 'condition-1',
@@ -78,6 +80,10 @@ function renderForm(overrides: { condition?: Condition; formContext?: 'creating'
 describe('ConditionsForm (antecedentes)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseSession.mockReturnValue({
+      currentProvider: { uuid: 'provider-1' },
+      user: { uuid: 'user-1' },
+    } as ReturnType<typeof useSession>);
     mockUseConfig.mockReturnValue({
       conditionConceptSets: { antecedentesPatologicos: { uuid: 'set-1' } },
       conditionFreeTextFallbackConceptUuid: 'fallback-1',
@@ -127,7 +133,12 @@ describe('ConditionsForm (antecedentes)', () => {
 
     expect(mockCreateCondition).toHaveBeenCalledTimes(1);
     expect(mockCreateCondition).toHaveBeenCalledWith(
-      expect.objectContaining({ conceptId: 'concept-asma', display: 'Asma', clinicalStatus: 'active' }),
+      expect.objectContaining({
+        conceptId: 'concept-asma',
+        display: 'Asma',
+        clinicalStatus: 'active',
+        providerUuid: expect.any(String),
+      }),
     );
     expect(closeWorkspaceWithSavedChanges).toHaveBeenCalled();
   });
@@ -143,7 +154,12 @@ describe('ConditionsForm (antecedentes)', () => {
     expect(mockUpdateCondition).toHaveBeenCalledTimes(1);
     expect(mockUpdateCondition).toHaveBeenCalledWith(
       'condition-1',
-      expect.objectContaining({ conceptId: 'concept-asma', display: 'Asma' }),
+      expect.objectContaining({
+        conceptId: 'concept-asma',
+        display: 'Asma',
+        providerUuid: expect.any(String),
+        recordedDate: '2026-01-01T00:00:00.000Z',
+      }),
     );
   });
 
@@ -164,5 +180,24 @@ describe('ConditionsForm (antecedentes)', () => {
     expect(await screen.findByText(/No se pudo cargar el antecedente a editar/i)).toBeInTheDocument();
     expect(mockUpdateCondition).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: /Save & close/i })).toBeEnabled();
+  });
+
+  it('crea un encounter nuevo al abrir el formulario de antecedente social', async () => {
+    const user = userEvent.setup();
+    renderForm();
+
+    await user.click(screen.getByRole('radio', { name: 'Social' }));
+    await user.click(screen.getByRole('button', { name: /Save & close/i }));
+
+    expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        formInfo: expect.objectContaining({
+          encounterUuid: '',
+          formUuid: 'form-1',
+          patientUuid: 'patient-1',
+        }),
+      }),
+    );
   });
 });

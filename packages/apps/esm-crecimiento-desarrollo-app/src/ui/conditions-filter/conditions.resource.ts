@@ -1,9 +1,9 @@
 import { type DataTableSortState } from '@carbon/react';
-import { fhirBaseUrl, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { fhirBaseUrl, openmrsFetch, restBaseUrl, useConfig, useFhirFetchAll } from '@openmrs/esm-framework';
 import { useMemo, useState } from 'react';
 import useSWR from 'swr';
 
-import { type FHIRCondition, type FHIRConditionResponse } from './types';
+import { type FHIRCondition } from './types';
 
 export type Condition = {
   clinicalStatus: string;
@@ -48,10 +48,7 @@ type CreatePayload = {
       },
     ];
   };
-  onsetDateTime: string;
-  recorder: {
-    reference: string;
-  };
+  onsetDateTime?: string;
   recordedDate: string;
   resourceType: string;
   subject: {
@@ -68,10 +65,11 @@ export type FormFields = {
   clinicalStatus: string;
   conceptId: string;
   display: string;
-  abatementDateTime: string;
-  onsetDateTime: string;
+  abatementDateTime?: string | null;
+  onsetDateTime?: string | null;
   patientId: string;
-  userId: string;
+  providerUuid: string;
+  recordedDate?: string;
 };
 
 // Tipos para ConceptSet
@@ -105,7 +103,7 @@ export function useConditionsFromConceptSet(patientUuid: string, conceptSetUuid:
     isLoading: conditionsLoading,
     isValidating,
     mutate,
-  } = useSWR<{ data: FHIRConditionResponse }, Error>(patientUuid ? conditionsUrl : null, openmrsFetch);
+  } = useFhirFetchAll<FHIRCondition>(patientUuid ? conditionsUrl : null);
 
   // Obtenemos el ConceptSet con la estructura correcta
   const conceptSetUrl = `${restBaseUrl}/concept/${conceptSetUuid}?v=custom:(setMembers:(uuid,name))`;
@@ -117,15 +115,14 @@ export function useConditionsFromConceptSet(patientUuid: string, conceptSetUuid:
   } = useSWR<{ data: OpenmrsConcept }, Error>(conceptSetUuid ? conceptSetUrl : null, openmrsFetch);
 
   const formattedConditions = useMemo(() => {
-    if (!conditionsData?.data?.total || !conceptSetData?.data?.setMembers) {
+    if (!conditionsData || !conceptSetData?.data?.setMembers) {
       return null;
     }
 
     const conceptSet = conceptSetData.data;
     const allowedConceptUuids = new Set(conceptSet.setMembers.map((member) => member.uuid));
 
-    return conditionsData.data.entry
-      .map((entry) => entry.resource ?? [])
+    return conditionsData
       .map(mapConditionProperties)
       .filter((condition) => allowedConceptUuids.has(condition.conceptId))
       .sort((a, b) => (b.onsetDateTime > a.onsetDateTime ? 1 : -1));
@@ -183,18 +180,13 @@ export function useConditionsSearchFromConceptSet(conditionToLookup: string, con
 
 export function useConditions(patientUuid: string) {
   const conditionsUrl = `${fhirBaseUrl}/Condition?patient=${patientUuid}&_count=100`;
-  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: FHIRConditionResponse }, Error>(
+  const { data, error, isLoading, isValidating, mutate } = useFhirFetchAll<FHIRCondition>(
     patientUuid ? conditionsUrl : null,
-    openmrsFetch,
   );
 
-  const formattedConditions =
-    data?.data?.total > 0
-      ? data?.data?.entry
-          .map((entry) => entry.resource ?? [])
-          .map(mapConditionProperties)
-          .sort((a, b) => (b.onsetDateTime > a.onsetDateTime ? 1 : -1))
-      : null;
+  const formattedConditions = data
+    ?.map(mapConditionProperties)
+    .sort((a, b) => (b.onsetDateTime > a.onsetDateTime ? 1 : -1));
 
   return {
     conditions: data ? formattedConditions : null,
@@ -239,34 +231,7 @@ export async function createCondition(payload: FormFields) {
   const controller = new AbortController();
   const url = `${fhirBaseUrl}/Condition`;
 
-  const completePayload: CreatePayload = {
-    clinicalStatus: {
-      coding: [
-        {
-          system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
-          code: payload.clinicalStatus,
-        },
-      ],
-    },
-    code: {
-      coding: [
-        {
-          code: payload.conceptId,
-          display: payload.display,
-        },
-      ],
-    },
-    abatementDateTime: payload.abatementDateTime,
-    onsetDateTime: payload.onsetDateTime,
-    recorder: {
-      reference: `Practitioner/${payload.userId}`,
-    },
-    recordedDate: new Date().toISOString(),
-    resourceType: 'Condition',
-    subject: {
-      reference: `Patient/${payload.patientId}`,
-    },
-  };
+  const completePayload = buildConditionPayload(payload, new Date().toISOString());
 
   const res = await openmrsFetch(url, {
     headers: {
@@ -280,11 +245,12 @@ export async function createCondition(payload: FormFields) {
   return res;
 }
 
-export async function updateCondition(conditionId, payload: FormFields) {
-  const controller = new AbortController();
-  const url = `${fhirBaseUrl}/Condition/${conditionId}`;
+function buildConditionPayload(payload: FormFields, recordedDate: string): CreatePayload {
+  if (!payload.providerUuid) {
+    throw new Error('A clinical provider is required to record a condition.');
+  }
 
-  const completePayload: EditPayload = {
+  return {
     clinicalStatus: {
       coding: [
         {
@@ -301,17 +267,23 @@ export async function updateCondition(conditionId, payload: FormFields) {
         },
       ],
     },
-    abatementDateTime: payload.abatementDateTime,
-    id: conditionId,
-    onsetDateTime: payload.onsetDateTime,
-    recorder: {
-      reference: `Practitioner/${payload.userId}`,
-    },
-    recordedDate: new Date().toISOString(),
+    ...(payload.abatementDateTime ? { abatementDateTime: payload.abatementDateTime } : {}),
+    ...(payload.onsetDateTime ? { onsetDateTime: payload.onsetDateTime } : {}),
+    recordedDate,
     resourceType: 'Condition',
     subject: {
       reference: `Patient/${payload.patientId}`,
     },
+  };
+}
+
+export async function updateCondition(conditionId, payload: FormFields) {
+  const controller = new AbortController();
+  const url = `${fhirBaseUrl}/Condition/${conditionId}`;
+
+  const completePayload: EditPayload = {
+    ...buildConditionPayload(payload, payload.recordedDate ?? new Date().toISOString()),
+    id: conditionId,
   };
 
   const res = await openmrsFetch(url, {

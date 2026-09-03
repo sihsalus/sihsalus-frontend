@@ -1,4 +1,4 @@
-import { Button, ButtonSkeleton, SkeletonText, Tile } from '@carbon/react';
+import { Button, ButtonSkeleton, InlineNotification, SkeletonText, Tile } from '@carbon/react';
 import { ShoppingCartArrowUp } from '@carbon/react/icons';
 import {
   ArrowRightIcon,
@@ -53,7 +53,7 @@ export default function OrderBasketSearchResults({
 }: OrderBasketSearchResultsProps) {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { drugs, isLoading, error } = useDrugSearch(searchTerm);
+  const { drugs, isLoading, error, partialErrors } = useDrugSearch(searchTerm);
 
   if (!searchTerm) {
     return <div className={styles.container}></div>;
@@ -120,6 +120,14 @@ export default function OrderBasketSearchResults({
 
   return (
     <div className={styles.container}>
+      {partialErrors.length > 0 ? (
+        <InlineNotification
+          kind="warning"
+          lowContrast
+          title={t('partialDrugResults', 'Some drugs could not be loaded')}
+          hideCloseButton
+        />
+      ) : null}
       <div className={styles.orderBasketSearchResultsHeader}>
         <span className={styles.searchResultsCount}>
           {t('searchResultsMatchesForTerm', '{{count}} results for "{{searchTerm}}"', {

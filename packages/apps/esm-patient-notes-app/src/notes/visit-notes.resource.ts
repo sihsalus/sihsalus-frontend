@@ -15,7 +15,10 @@ import type {
   RESTPatientNote,
   VisitNotePayload,
 } from "../types";
-import { formatPrestacionalDisplay } from "./catalog-concept.utils";
+import {
+  formatPrestacionalDisplay,
+  getCie10MappedCode,
+} from "./catalog-concept.utils";
 import { defaultVisitNoteClinicalConceptUuids } from "./visit-note-config-schema";
 
 interface UseVisitNotes {
@@ -522,14 +525,82 @@ export function useCanonicalVisitNoteEncounter(
     : { status: "error", encounter: null, mutate: mutateResolution };
 }
 
-export function fetchDiagnosisConceptsByName(
+function getDiagnosisSearchPlan(searchTerm: string) {
+  const trimmedSearchTerm = searchTerm.trim();
+  if (!trimmedSearchTerm) {
+    return { exactCode: undefined, searchTerms: [] };
+  }
+
+  const compactCode = trimmedSearchTerm
+    .replace(/[.\s]/g, "")
+    .toLocaleUpperCase("es-PE");
+  const isCie10Code =
+    /^[A-Z0-9.\s]+$/i.test(trimmedSearchTerm) &&
+    /^[A-Z][0-9][A-Z0-9]{1,4}$/.test(compactCode);
+
+  if (!isCie10Code) {
+    return { exactCode: undefined, searchTerms: [trimmedSearchTerm] };
+  }
+
+  const dottedCode =
+    compactCode.length > 3
+      ? `${compactCode.slice(0, 3)}.${compactCode.slice(3)}`
+      : compactCode;
+
+  return {
+    exactCode: compactCode,
+    searchTerms: [...new Set([compactCode, dottedCode])],
+  };
+}
+
+function normalizeCie10Code(code?: string) {
+  return code?.replace(/[.\s]/g, "").toLocaleUpperCase("es-PE");
+}
+
+export async function fetchDiagnosisConceptsByName(
   searchTerm: string,
   diagnosisConceptClass: string,
 ) {
-  const customRepresentation = `custom:(uuid,display,${catalogConceptMappingsRepresentation},${catalogConceptNamesRepresentation})`;
-  const url = `${restBaseUrl}/concept?name=${searchTerm}&searchType=fuzzy&class=${diagnosisConceptClass}&v=${customRepresentation}`;
+  const { exactCode, searchTerms } = getDiagnosisSearchPlan(searchTerm);
+  if (!searchTerms.length) {
+    return [];
+  }
 
-  return openmrsFetch<Array<Concept>>(url).then(({ data }) => data["results"]);
+  const customRepresentation = `custom:(uuid,display,${catalogConceptMappingsRepresentation},${catalogConceptNamesRepresentation})`;
+  const responses = await Promise.all(
+    searchTerms.map((term) => {
+      const url = `${restBaseUrl}/concept?name=${encodeURIComponent(term)}&searchType=fuzzy&class=${encodeURIComponent(diagnosisConceptClass)}&v=${customRepresentation}`;
+
+      return openmrsFetch<Array<Concept>>(url).then(
+        ({ data }) => data["results"] ?? [],
+      );
+    }),
+  );
+
+  const uniqueConcepts = new Map<string, Concept>();
+  responses.flat().forEach((concept) => {
+    if (!uniqueConcepts.has(concept.uuid)) {
+      uniqueConcepts.set(concept.uuid, concept);
+    }
+  });
+  const concepts = [...uniqueConcepts.values()];
+
+  if (!exactCode) {
+    return concepts;
+  }
+
+  return concepts
+    .map((concept, index) => ({
+      concept,
+      index,
+      isExact: normalizeCie10Code(getCie10MappedCode(concept)) === exactCode,
+    }))
+    .sort(
+      (left, right) =>
+        Number(right.isExact) - Number(left.isExact) ||
+        left.index - right.index,
+    )
+    .map(({ concept }) => concept);
 }
 
 export function fetchPrestacionalConceptsByName(

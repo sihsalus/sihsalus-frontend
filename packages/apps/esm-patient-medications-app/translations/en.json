@@ -54,6 +54,7 @@
   "errorLoadingCategories": "Error loading drug categories",
   "errorLoadingTree": "Error loading category structure",
   "errorSavingDrugOrder": "Error saving drug order",
+  "errorSavingDrugOrderMessage": "The medication order could not be saved. Please try again.",
   "female": "Female",
   "freeDosageErrorMessage": "Add free dosage note",
   "freeTextDosage": "Free-text dosage (exception)",

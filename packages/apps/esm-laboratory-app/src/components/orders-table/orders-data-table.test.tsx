@@ -274,4 +274,27 @@ describe('OrdersDataTable', () => {
     expect(row2).toHaveTextContent('1');
     expect(screen.queryByText(/BAD-ID/)).not.toBeInTheDocument();
   });
+
+  it('uses the authorized patient display when the role cannot view the nested person', async () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+    });
+    const result = mockUseLabOrdersImplementation({});
+    mockUseLabOrders.mockReturnValue({
+      ...result,
+      labOrders: [
+        {
+          ...result.labOrders[0],
+          patient: {
+            uuid: 'patient-with-redacted-person',
+            display: 'PAT-REDACTED - Authorized Patient Display',
+          } as Patient,
+        },
+      ],
+    });
+
+    renderWithSwr(<OrdersDataTable />);
+
+    expect(await screen.findByText('PAT-REDACTED - Authorized Patient Display')).toBeInTheDocument();
+  });
 });

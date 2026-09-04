@@ -395,7 +395,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
                   identifier.identifierType.uuid === patientIdIdentifierTypeUuid,
               )?.identifier,
               patientUuid: patientUuid,
-              patientName: patient?.person?.display,
+              patientName: patient?.person?.display || patient?.display,
               patientAge: patient?.person?.birthdate
                 ? age(patient.person.birthdate)
                 : patient?.person?.age != null

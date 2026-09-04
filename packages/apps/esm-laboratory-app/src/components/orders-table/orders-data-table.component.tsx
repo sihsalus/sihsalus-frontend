@@ -30,7 +30,6 @@ import {
   ExtensionSlot,
   formatDate,
   type OrderUrgency,
-  openmrsFetch,
   parseDate,
   restBaseUrl,
   showModal,
@@ -44,6 +43,7 @@ import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 import { type Config } from '../../config-schema';
 import { laboratoryEditPrivilege } from '../../constants';
+import { fetchConfiguredLabsets, type LabsetMember, type LabsetResponse } from '../../labsets.resource';
 import { useLabOrders } from '../../laboratory.resource';
 import { type FlattenedOrder, type FulfillerStatus, type Order } from '../../types';
 import { getFulfillerStatusDisplay } from '../../utils/order-display';
@@ -177,18 +177,6 @@ const getPriorityRank = (urgency: string | undefined): number => {
   }
 };
 
-interface LabsetMember {
-  uuid: string;
-  display: string;
-  setMembers?: Array<LabsetMember>;
-}
-
-interface LabsetResponse {
-  uuid: string;
-  display: string;
-  setMembers: Array<LabsetMember>;
-}
-
 const getMemberUuids = (labset: LabsetResponse | LabsetMember): Array<string> => {
   const uuids: Array<string> = [];
   const recurse = (member: LabsetResponse | LabsetMember) => {
@@ -230,10 +218,6 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   const canEdit = userHasAccess(laboratoryEditPrivilege, session?.user);
   const { labTableColumns, patientIdIdentifierTypeUuid, resultsViewerConcepts } = useConfig<Config>();
 
-  const fetchLabsets = useCallback((urls: Array<string>) => {
-    return Promise.all(urls.map((url) => openmrsFetch<LabsetResponse>(url).then((res) => res.data)));
-  }, []);
-
   const conceptUrls = useMemo(() => {
     return (
       resultsViewerConcepts?.map(
@@ -245,7 +229,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
 
   const { data: fetchedLabsets } = useSWR<Array<LabsetResponse>, Error>(
     conceptUrls.length ? conceptUrls : null,
-    fetchLabsets,
+    fetchConfiguredLabsets,
   );
 
   const labsetOptions = useMemo(() => {
@@ -411,7 +395,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
                   identifier.identifierType.uuid === patientIdIdentifierTypeUuid,
               )?.identifier,
               patientUuid: patientUuid,
-              patientName: patient?.person?.display,
+              patientName: patient?.person?.display || patient?.display,
               patientAge: patient?.person?.birthdate
                 ? age(patient.person.birthdate)
                 : patient?.person?.age != null

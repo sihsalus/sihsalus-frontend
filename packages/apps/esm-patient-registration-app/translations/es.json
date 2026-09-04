@@ -404,6 +404,7 @@
   "relationship": "Relación",
   "relationshipAuntUncle": "Tío/a",
   "relationshipAuntUncleLabel": "Tía/Tío",
+  "relationshipDeleteForbiddenError": "Su cuenta no puede eliminar ni reemplazar vínculos guardados. No se guardó ningún cambio de este intento. Solicite ayuda a un usuario autorizado.",
   "relationshipNephewNieceLabel": "Sobrina/Sobrino",
   "relationshipNieceNephew": "Sobrino/a",
   "relationshipPersonMustExist": "El familiar debe ser una persona existente o registrarse en este formulario",

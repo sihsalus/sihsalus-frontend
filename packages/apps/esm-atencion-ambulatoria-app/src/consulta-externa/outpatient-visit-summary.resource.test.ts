@@ -333,7 +333,8 @@ describe('outpatient visit summary contract', () => {
     expect(representation).toContain('encounterRole:(uuid,display)');
     expect(representation).toContain('conceptReferenceTerm:(code,conceptSource:(name,display))');
     expect(representation).toContain('diagnoses:(');
-    expect(representation).toContain('formFieldPath,order:(uuid)');
+    expect(representation).toContain('groupMembers:(');
+    expect(representation).toContain('formFieldNamespace,formFieldPath');
     expect(representation).toContain('orders:FULL');
     expect(representation).not.toContain('orders:(');
     expect(representation).not.toContain('drug:(');
@@ -426,6 +427,58 @@ describe('outpatient visit summary contract', () => {
       }),
     ]);
     expect(summary.hasClinicalContent).toBe(true);
+  });
+
+  it('renders every active leaf value from a nested laboratory panel', () => {
+    const encounter = source.encounters?.[0];
+    if (!encounter) throw new Error('The synthetic fixture requires an encounter.');
+
+    const summary = build({
+      source: {
+        ...source,
+        encounters: [
+          {
+            ...encounter,
+            obs: [
+              ...(encounter.obs ?? []).filter((observation) => observation.uuid !== 'lab-result-obs'),
+              {
+                uuid: 'panel-result-obs',
+                concept: { uuid: 'blood-panel', display: 'Panel hematológico' },
+                order: { uuid: 'lab-order' },
+                groupMembers: [
+                  {
+                    uuid: 'nested-group-obs',
+                    concept: { uuid: 'red-cell-panel', display: 'Serie roja' },
+                    groupMembers: [
+                      {
+                        uuid: 'hemoglobin-obs',
+                        concept: { uuid: 'hemoglobin', display: 'Hemoglobina' },
+                        value: 12.5,
+                      },
+                    ],
+                  },
+                  {
+                    uuid: 'coded-member-obs',
+                    concept: { uuid: 'morphology', display: 'Morfología' },
+                    value: { uuid: 'normal', display: 'Normal' },
+                  },
+                  {
+                    uuid: 'voided-member-obs',
+                    voided: true,
+                    concept: { uuid: 'discarded', display: 'Descartado' },
+                    value: 'No debe imprimirse',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(summary.orders.find((order) => order.uuid === 'lab-order')?.result).toBe(
+      'Hemoglobina: 12.5 · Morfología: Normal',
+    );
   });
 
   it('classifies a concept-only Drug Order as a canonical medication order', () => {

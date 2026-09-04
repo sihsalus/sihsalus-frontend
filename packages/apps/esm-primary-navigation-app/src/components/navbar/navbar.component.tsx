@@ -135,7 +135,11 @@ const Navbar: React.FC = () => {
       ? `${session.sessionId}:${session.user?.uuid ?? 'unknown'}`
       : 'anonymous';
 
-  if (session?.user?.person) {
+  // The REST representation may omit `user.person` when a role does not have
+  // the broad View People privilege. Authentication and the presence of the
+  // current user are the authoritative signals; treating a redacted person as
+  // a logged-out session creates an endless /login -> referrer redirect loop.
+  if (session?.authenticated && session?.user) {
     return session.sessionLocation ? (
       <HeaderContainer key={sessionKey} render={HeaderItems}></HeaderContainer>
     ) : (

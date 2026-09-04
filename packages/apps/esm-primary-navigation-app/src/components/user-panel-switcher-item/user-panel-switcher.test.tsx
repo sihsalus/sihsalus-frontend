@@ -27,4 +27,19 @@ describe('UserPanelSwitcher', () => {
 
     expect(await screen.findByText(/Dr Healther Morgan/i)).toBeInTheDocument();
   });
+
+  it('falls back to the user display when person details are redacted by RBAC', async () => {
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      user: {
+        ...mockLoggedInUser,
+        display: 'Laboratory User',
+        person: undefined,
+      } as unknown as LoggedInUser,
+    } as unknown as Session);
+
+    render(<UserPanelSwitcher />);
+
+    expect(await screen.findByText('Laboratory User')).toBeInTheDocument();
+  });
 });

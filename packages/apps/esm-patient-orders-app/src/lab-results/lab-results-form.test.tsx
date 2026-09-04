@@ -4,8 +4,10 @@ import userEvent from '@testing-library/user-event';
 
 import { type Encounter } from '../types/encounter';
 import {
+  completeOrderResult,
   type Datatype,
   type LabOrderConcept,
+  updateObservation,
   updateOrderResult,
   useCompletedLabResults,
   useLabEncounter,
@@ -18,12 +20,16 @@ const mockUseOrderConceptByUuid = vi.mocked(useOrderConceptByUuid);
 const mockUseLabEncounter = vi.mocked(useLabEncounter);
 const mockUseObservation = vi.mocked(useObservation);
 const mockUseCompletedLabResults = vi.mocked(useCompletedLabResults);
+const mockCompleteOrderResult = vi.mocked(completeOrderResult);
+const mockUpdateObservation = vi.mocked(updateObservation);
 
 vi.mock('./lab-results.resource', async () => ({
   ...(await vi.importActual('./lab-results.resource')),
   useOrderConceptByUuid: vi.fn(),
   useLabEncounter: vi.fn(),
   useObservation: vi.fn(),
+  completeOrderResult: vi.fn().mockResolvedValue({}),
+  updateObservation: vi.fn().mockResolvedValue({}),
   updateOrderResult: vi.fn().mockResolvedValue({}),
   useCompletedLabResults: vi.fn(),
   isCoded: (concept) => concept?.datatype?.display === 'Coded',
@@ -711,5 +717,201 @@ describe('LabResultsForm', () => {
 
     const saveButton = screen.getByRole('button', { name: /Save and close/i });
     expect(saveButton).toBeDisabled();
+  });
+
+  test('fails closed before writing when a completed panel member cannot be resolved', async () => {
+    const user = userEvent.setup();
+    mockUseOrderConceptByUuid.mockReturnValue({
+      concept: {
+        uuid: 'concept-uuid',
+        display: 'Panel Sintético',
+        set: true,
+        setMembers: [
+          {
+            uuid: 'missing-member-uuid',
+            display: 'Miembro faltante',
+            datatype: { display: 'Numeric', hl7Abbreviation: 'NM' },
+            setMembers: [],
+            allowDecimal: false,
+          },
+        ],
+        datatype: { display: 'N/A', hl7Abbreviation: 'N/A' },
+      } as LabOrderConcept,
+      isLoading: false,
+      error: null,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+    mockUseCompletedLabResults.mockReturnValue({
+      completeLabResult: {
+        uuid: 'panel-observation-uuid',
+        concept: { uuid: 'concept-uuid', display: 'Panel Sintético' },
+        groupMembers: [],
+      } as never,
+      isLoading: false,
+      error: null,
+      mutate: vi.fn(),
+    });
+
+    render(<LabResultsForm {...testProps} order={{ ...mockOrder, fulfillerStatus: 'COMPLETED' } as Order} />);
+    await user.type(screen.getByLabelText(/Miembro faltante/i), '10');
+    await user.click(screen.getByRole('button', { name: /Save and close/i }));
+
+    await waitFor(() => expect(mockUpdateObservation).not.toHaveBeenCalled());
+    expect(testProps.closeWorkspaceWithSavedChanges).not.toHaveBeenCalled();
+  });
+
+  test('updates one completed panel member with one observation request', async () => {
+    const user = userEvent.setup();
+    mockUseOrderConceptByUuid.mockReturnValue({
+      concept: {
+        uuid: 'concept-uuid',
+        display: 'Panel Sintético',
+        set: true,
+        setMembers: [
+          {
+            uuid: 'member-uuid',
+            display: 'Hemoglobina sintética',
+            datatype: { display: 'Numeric', hl7Abbreviation: 'NM' },
+            setMembers: [],
+            allowDecimal: false,
+          },
+        ],
+        datatype: { display: 'N/A', hl7Abbreviation: 'N/A' },
+      } as LabOrderConcept,
+      isLoading: false,
+      error: null,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+    mockUseCompletedLabResults.mockReturnValue({
+      completeLabResult: {
+        uuid: 'panel-observation-uuid',
+        concept: { uuid: 'concept-uuid', display: 'Panel Sintético' },
+        groupMembers: [
+          {
+            uuid: 'member-observation-uuid',
+            concept: { uuid: 'member-uuid', display: 'Hemoglobina sintética' },
+            value: 11,
+          },
+        ],
+      } as never,
+      isLoading: false,
+      error: null,
+      mutate: vi.fn(),
+    });
+
+    render(<LabResultsForm {...testProps} order={{ ...mockOrder, fulfillerStatus: 'COMPLETED' } as Order} />);
+    const input = screen.getByLabelText(/Hemoglobina sintética/i);
+    await waitFor(() => expect(input).toHaveValue(11));
+    await user.clear(input);
+    await user.type(input, '12');
+    await user.click(screen.getByRole('button', { name: /Save and close/i }));
+
+    await waitFor(() =>
+      expect(mockUpdateObservation).toHaveBeenCalledWith(
+        'member-observation-uuid',
+        expect.objectContaining({ value: 12, obsDatetime: expect.any(String) }),
+      ),
+    );
+    expect(mockUpdateObservation).toHaveBeenCalledOnce();
+  });
+
+  test('fails closed before writing when more than one completed panel member changed', async () => {
+    const user = userEvent.setup();
+    mockUseOrderConceptByUuid.mockReturnValue({
+      concept: {
+        uuid: 'concept-uuid',
+        display: 'Panel Sintético',
+        set: true,
+        setMembers: [
+          {
+            uuid: 'first-member-uuid',
+            display: 'Primer miembro',
+            datatype: { display: 'Numeric', hl7Abbreviation: 'NM' },
+            setMembers: [],
+            allowDecimal: false,
+          },
+          {
+            uuid: 'second-member-uuid',
+            display: 'Segundo miembro',
+            datatype: { display: 'Numeric', hl7Abbreviation: 'NM' },
+            setMembers: [],
+            allowDecimal: false,
+          },
+        ],
+        datatype: { display: 'N/A', hl7Abbreviation: 'N/A' },
+      } as LabOrderConcept,
+      isLoading: false,
+      error: null,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+    mockUseCompletedLabResults.mockReturnValue({
+      completeLabResult: {
+        uuid: 'panel-observation-uuid',
+        concept: { uuid: 'concept-uuid', display: 'Panel Sintético' },
+        groupMembers: [
+          {
+            uuid: 'first-observation-uuid',
+            concept: { uuid: 'first-member-uuid', display: 'Primer miembro' },
+            value: 1,
+          },
+          {
+            uuid: 'second-observation-uuid',
+            concept: { uuid: 'second-member-uuid', display: 'Segundo miembro' },
+            value: 2,
+          },
+        ],
+      } as never,
+      isLoading: false,
+      error: null,
+      mutate: vi.fn(),
+    });
+
+    render(<LabResultsForm {...testProps} order={{ ...mockOrder, fulfillerStatus: 'COMPLETED' } as Order} />);
+    const firstInput = screen.getByLabelText(/Primer miembro/i);
+    const secondInput = screen.getByLabelText(/Segundo miembro/i);
+    await waitFor(() => {
+      expect(firstInput).toHaveValue(1);
+      expect(secondInput).toHaveValue(2);
+    });
+    await user.clear(firstInput);
+    await user.type(firstInput, '10');
+    await user.clear(secondInput);
+    await user.type(secondInput, '20');
+    await user.click(screen.getByRole('button', { name: /Save and close/i }));
+
+    await waitFor(() => expect(mockUpdateObservation).not.toHaveBeenCalled());
+    expect(testProps.closeWorkspaceWithSavedChanges).not.toHaveBeenCalled();
+  });
+
+  test('retries only order completion when a saved result has a pending order', async () => {
+    const user = userEvent.setup();
+    mockUseCompletedLabResults.mockReturnValue({
+      completeLabResult: {
+        uuid: 'saved-observation-uuid',
+        concept: { uuid: 'concept-uuid', display: 'Test Concept' },
+        value: 50,
+      } as never,
+      isLoading: false,
+      error: null,
+      mutate: vi.fn(),
+    });
+
+    render(<LabResultsForm {...testProps} />);
+    const input = await screen.findByLabelText('Test Concept (0 - 100 mg/dL)');
+    await waitFor(() => expect(input).toHaveValue(50));
+    await user.click(screen.getByRole('button', { name: /Save and close/i }));
+
+    await waitFor(() =>
+      expect(mockCompleteOrderResult).toHaveBeenCalledWith(
+        'order-uuid',
+        { fulfillerStatus: 'COMPLETED', fulfillerComment: 'Test Results Entered' },
+        expect.anything(),
+      ),
+    );
+    expect(updateOrderResult).not.toHaveBeenCalled();
+    expect(mockUpdateObservation).not.toHaveBeenCalled();
   });
 });

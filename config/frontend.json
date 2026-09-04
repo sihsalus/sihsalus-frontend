@@ -1,4 +1,9 @@
 {
+  "@sihsalus/esm-help-menu-app": {
+    "releaseNotesUrl": "/ayuda/novedades/",
+    "documentationUrl": "/ayuda/",
+    "supportUrl": "/ayuda/soporte/"
+  },
   "@sihsalus/esm-stock-management-app": {
     "packingUnitsUUID": "bce2b1af-98b1-48a2-98a2-3e4ffb3c79c2",
     "dispensingUnitsUUID": "162402AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",

@@ -101,6 +101,8 @@
   "medicationDispenseSaveErrorMessage": "Could not save the dispense record. Please try again.",
   "medicationFormulation": "Medication Formulation",
   "medicationListUpdated": "Medication dispense list has been updated.",
+  "medicationOrderCreated": "New medication order",
+  "medicationOrderCreatedMessage": "A new medication order was added to the pharmacy worklist.",
   "missedCollections": "Missed collections",
   "noAllergyDetailsFound": "No allergy details found",
   "noHistoryFound": "No history found",

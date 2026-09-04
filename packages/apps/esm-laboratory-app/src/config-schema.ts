@@ -40,9 +40,9 @@ export const configSchema = {
   },
   enableRealtimeLabResultNotifications: {
     _type: Type.Boolean,
-    _default: true,
+    _default: false,
     _description:
-      'Refresh the laboratory dashboard and show an in-app notice when the SIHSALUS notifications OMOD emits an order-created or completed-result event.',
+      'Refresh the laboratory dashboard and show an in-app notice when a compatible SIHSALUS notifications OMOD is deployed. Enable explicitly after validating the backend transport.',
   },
   resultsViewerConcepts: {
     _type: Type.Array,

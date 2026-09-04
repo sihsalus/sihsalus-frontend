@@ -104,8 +104,8 @@ export const configSchema = {
   enableRealtimeMedicationOrderNotifications: {
     _type: Type.Boolean,
     _description:
-      'Refresh the pharmacy dashboard and show an in-app notice when the SIHSALUS notifications OMOD emits a medication-order-created event.',
-    _default: true,
+      'Refresh the pharmacy dashboard and show an in-app notice when a compatible SIHSALUS notifications OMOD is deployed. Enable explicitly after validating the backend transport.',
+    _default: false,
   },
   serviceConceptSetUuid: {
     _type: Type.UUID,

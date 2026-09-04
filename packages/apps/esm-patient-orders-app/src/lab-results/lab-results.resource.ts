@@ -134,6 +134,22 @@ export function useObservation(obsUuid: string) {
   };
 }
 
+type LabResultObservationIndex = {
+  obs?: Array<{
+    uuid?: string;
+    voided?: boolean;
+    order?: { uuid?: string } | null;
+  } | null>;
+};
+
+export function findLabResultObservationUuid(encounter: LabResultObservationIndex | undefined, orderUuid: string) {
+  if (!orderUuid) {
+    return '';
+  }
+
+  return encounter?.obs.find((obs) => !obs?.voided && obs?.order?.uuid === orderUuid)?.uuid ?? '';
+}
+
 export function useCompletedLabResults(order: Order) {
   const {
     encounter,
@@ -146,12 +162,7 @@ export function useCompletedLabResults(order: Order) {
     isLoading: isLoadingObs,
     error: isErrorObs,
     mutate: mutateObs,
-  } = useObservation(
-    (
-      encounter?.obs.find((obs) => obs?.order?.uuid === order?.uuid) ||
-      encounter?.obs.find((obs) => obs?.concept?.uuid === order?.concept?.uuid)
-    )?.uuid ?? '',
-  );
+  } = useObservation(findLabResultObservationUuid(encounter, order?.uuid));
 
   return {
     isLoading: isLoadingEncounter || isLoadingObs,

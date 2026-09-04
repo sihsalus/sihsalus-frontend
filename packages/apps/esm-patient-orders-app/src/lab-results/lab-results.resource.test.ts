@@ -1,6 +1,11 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
-import { LabResultCompletionError, updateObservation, updateOrderResult } from './lab-results.resource';
+import {
+  findLabResultObservationUuid,
+  LabResultCompletionError,
+  updateObservation,
+  updateOrderResult,
+} from './lab-results.resource';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
@@ -42,6 +47,53 @@ const groupedObservationPayload = {
 describe('laboratory result persistence', () => {
   beforeEach(() => {
     mockOpenmrsFetch.mockReset();
+  });
+
+  it('selects a result only when it is explicitly linked to the requested order', () => {
+    const encounter = {
+      obs: [
+        {
+          uuid: 'same-concept-other-order',
+          concept: { uuid: 'panel-concept-uuid' },
+          order: { uuid: 'other-order-uuid' },
+        },
+        {
+          uuid: 'same-concept-without-order',
+          concept: { uuid: 'panel-concept-uuid' },
+        },
+        {
+          uuid: 'voided-result-for-order',
+          voided: true,
+          concept: { uuid: 'panel-concept-uuid' },
+          order: { uuid: 'order-uuid' },
+        },
+        {
+          uuid: 'active-result-for-order',
+          concept: { uuid: 'panel-concept-uuid' },
+          order: { uuid: 'order-uuid' },
+        },
+      ],
+    };
+
+    expect(findLabResultObservationUuid(encounter, 'order-uuid')).toBe('active-result-for-order');
+  });
+
+  it('does not fall back to another observation with the same concept', () => {
+    const encounter = {
+      obs: [
+        {
+          uuid: 'same-concept-other-order',
+          concept: { uuid: 'panel-concept-uuid' },
+          order: { uuid: 'other-order-uuid' },
+        },
+        {
+          uuid: 'same-concept-without-order',
+          concept: { uuid: 'panel-concept-uuid' },
+        },
+      ],
+    };
+
+    expect(findLabResultObservationUuid(encounter, 'order-uuid')).toBe('');
   });
 
   it('creates one standalone Obs tree without replacing encounter observations', async () => {

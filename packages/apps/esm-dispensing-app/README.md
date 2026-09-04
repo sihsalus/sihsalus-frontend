@@ -60,15 +60,15 @@ Submitting the basket persists the medication orders before the confirmation mod
 
 ## Realtime medication-order notifications
 
-When `enableRealtimeMedicationOrderNotifications` is enabled, the dashboard subscribes to the
+Realtime delivery is fail-safe off by default. When `enableRealtimeMedicationOrderNotifications` is explicitly enabled, the dashboard subscribes to the
 authenticated `pharmacy` SSE topic provided by `sihsalusnotifications` OMOD 1.2.0 or newer. A
 `MEDICATION_ORDER_CREATED` event revalidates the existing pharmacy worklist and shows a generic
 in-app notice. The event contains only an order UUID; medication, dosage, instructions, patient
 identity, and diagnosis remain available only through the normal authorized OpenMRS APIs.
 
 Realtime delivery is a refresh hint, not a clinical source of truth. The existing periodic refresh
-continues to work if SSE is unavailable. Deployments without the notifications OMOD can set
-`enableRealtimeMedicationOrderNotifications` to `false` to avoid unnecessary reconnect attempts.
+continues to work if SSE is unavailable. Deploy and validate the compatible notifications OMOD
+before enabling the flag; deployments without it keep the default disabled.
 
 Delivery is restricted to events whose encounter location and the user's current OpenMRS session
 location resolve to the same nearest ancestor tagged `Facility Location`. The browser uses standard

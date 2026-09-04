@@ -36,11 +36,11 @@ The module supports the following configuration options:
 | `labTableColumns`                         | `Array<string>` | `['name', 'age', 'sex', 'totalOrders', 'action']` | Columns to display in the lab table. Allowed values: `name`, `age`, `dob`, `sex`, `totalOrders`, `action`, `patientId` |
 | `patientIdIdentifierTypeUuid`             | `UUID`          | `05a29f94-c0ed-11e2-94be-8c13b969e334`            | Identifier type UUID for the patient ID column. Only needed if `patientId` is included in `labTableColumns`            |
 | `enableReviewingLabResultsBeforeApproval` | `boolean`       | `false`                                           | When enabled, lab results are submitted for review before being approved and finalized                                 |
-| `enableRealtimeLabResultNotifications`    | `boolean`       | `true`                                            | Refresh the dashboard for new laboratory orders and completed results                                                  |
+| `enableRealtimeLabResultNotifications`    | `boolean`       | `false`                                           | Refresh the dashboard for new laboratory orders and completed results after the compatible OMOD is validated          |
 
 ## Realtime laboratory notifications
 
-When `enableRealtimeLabResultNotifications` is enabled, the dashboard subscribes to the authenticated
+Realtime delivery is fail-safe off by default. When `enableRealtimeLabResultNotifications` is explicitly enabled, the dashboard subscribes to the authenticated
 `laboratory` SSE topic provided by `sihsalusnotifications` OMOD 1.2.0 or newer.
 `LAB_ORDER_CREATED` and `LAB_RESULT_READY` events invalidate the existing laboratory-order queries
 and show generic in-app notices. Each event contains only an order UUID; the browser retrieves
@@ -48,8 +48,8 @@ authoritative data through the normal OpenMRS REST API and never receives test n
 or patient demographics in the notification.
 
 The laboratory workflow remains usable if realtime delivery is interrupted because SSE is only a
-refresh hint. Deployments without the notifications OMOD must set
-`enableRealtimeLabResultNotifications` to `false` to avoid unnecessary reconnect attempts.
+refresh hint. Deploy and validate the compatible notifications OMOD before enabling the flag;
+deployments without it keep the default disabled to avoid unnecessary reconnect attempts.
 
 Delivery is restricted to events whose encounter location and the user's current OpenMRS session
 location resolve to the same nearest ancestor tagged `Facility Location`. Standard SSE

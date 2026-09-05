@@ -35,6 +35,60 @@
   border: 1px solid colors.$gray-20;
 }
 
+.tableContainer {
+  overflow-x: auto;
+  scrollbar-gutter: stable;
+}
+
+.table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.patientColumn {
+  width: 10rem;
+}
+
+.documentColumn {
+  width: 8rem;
+}
+
+.dateTimeColumn {
+  width: 8rem;
+}
+
+.locationColumn,
+.serviceColumn {
+  width: 9rem;
+}
+
+.providerColumn {
+  width: 10rem;
+}
+
+.appointmentKindColumn {
+  width: 8rem;
+}
+
+.statusColumn {
+  width: 7.5rem;
+}
+
+.careColumn {
+  width: 10.5rem;
+  white-space: nowrap;
+
+  :global(.cds--btn) {
+    max-width: 100%;
+    white-space: nowrap;
+  }
+}
+
+.actionsColumn {
+  width: 3rem;
+  min-width: 3rem;
+}
+
 .headerContainer {
   display: flex;
   justify-content: space-between;
@@ -99,8 +153,8 @@
 }
 
 @media (max-width: $breakpoint-small-desktop-max) {
-  .container {
-    overflow-x: auto;
+  .secondaryColumn {
+    display: none;
   }
 
   .toolbar {
@@ -113,6 +167,14 @@
 }
 
 @media (max-width: $breakpoint-tablet-max) {
+  .table {
+    min-width: 48rem;
+  }
+
+  .tertiaryColumn {
+    display: none;
+  }
+
   .toolbar {
     grid-template-columns: minmax(0, 1fr);
 
@@ -120,6 +182,29 @@
       width: 100%;
       max-width: none;
     }
+  }
+}
+
+@media (max-width: $breakpoint-phone-max) {
+  .table {
+    min-width: 40rem;
+  }
+
+  .documentColumn {
+    display: none;
+  }
+
+  .patientColumn {
+    width: 9rem;
+  }
+
+  .dateTimeColumn,
+  .serviceColumn {
+    width: 7.5rem;
+  }
+
+  .careColumn {
+    width: 10rem;
   }
 }
 

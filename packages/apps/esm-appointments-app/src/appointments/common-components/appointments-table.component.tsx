@@ -40,7 +40,7 @@ import classNames from 'classnames';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import utc from 'dayjs/plugin/utc';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
 
@@ -58,7 +58,7 @@ import { formatCivilDocumentIdentifier } from '../../helpers/patient-identifiers
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
 import { type Appointment, AppointmentStatus } from '../../types';
 import AppointmentDetails from '../details/appointment-details.component';
-import { getPageSizes, useAppointmentSearchResults } from '../utils';
+import { getPageSizes, sortAppointmentsByStartDateDescending, useAppointmentSearchResults } from '../utils';
 
 import { AppointmentStatusTag } from './appointment-status-tag.component';
 import AppointmentActions from './appointments-actions.component';
@@ -125,7 +125,8 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
   const [pageSize, setPageSize] = useState(25);
   const [searchString, setSearchString] = useState('');
   const [editingAppointmentUuid, setEditingAppointmentUuid] = useState<string | null>(null);
-  const searchResults = useAppointmentSearchResults(appointments, searchString);
+  const sortedAppointments = useMemo(() => sortAppointmentsByStartDateDescending(appointments), [appointments]);
+  const searchResults = useAppointmentSearchResults(sortedAppointments, searchString);
   const { results, goTo, currentPage } = usePagination(searchResults, pageSize);
   const { customPatientChartUrl } = useConfig<ConfigObject>();
   const session = useSession();
@@ -222,6 +223,17 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
       key: 'care',
     },
   ];
+  const columnClassNames: Record<string, string> = {
+    patientName: styles.patientColumn,
+    identifier: styles.documentColumn,
+    dateTime: styles.dateTimeColumn,
+    location: classNames(styles.locationColumn, styles.tertiaryColumn),
+    serviceType: styles.serviceColumn,
+    provider: classNames(styles.providerColumn, styles.secondaryColumn),
+    appointmentKind: classNames(styles.appointmentKindColumn, styles.secondaryColumn),
+    status: styles.statusColumn,
+    care: styles.careColumn,
+  };
 
   const rowData = results?.map((appointment) => ({
     id: appointment.uuid,
@@ -354,22 +366,27 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                 {t('download', 'Download')}
               </Button>
             </div>
-            <TableContainer {...getTableContainerProps()}>
-              <Table {...getTableProps()}>
+            <TableContainer {...getTableContainerProps()} className={styles.tableContainer}>
+              <Table {...getTableProps()} className={styles.table}>
                 <TableHead>
                   <TableRow>
                     <TableExpandHeader enableToggle {...getExpandHeaderProps()} />
                     {allowBatchStatusChange ? <TableSelectAll {...getSelectionProps()} /> : null}
                     {headers.map((header) => {
-                      const { key, ...headerProps } = getHeaderProps({ header });
+                      const { key, className, ...headerProps } = getHeaderProps({ header });
 
                       return (
-                        <TableHeader key={key} {...headerProps}>
+                        <TableHeader
+                          key={key}
+                          {...headerProps}
+                          className={classNames(className, columnClassNames[header.key])}
+                          data-column={header.key}
+                        >
                           {header.header}
                         </TableHeader>
                       );
                     })}
-                    <TableHeader />
+                    <TableHeader className={styles.actionsColumn} />
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -414,7 +431,11 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                             >
                               {allowBatchStatusChange ? <TableSelectRow {...getSelectionProps({ row })} /> : null}
                               {row.cells.map((cell) => (
-                                <TableCell key={cell.id}>
+                                <TableCell
+                                  key={cell.id}
+                                  className={columnClassNames[cell.info.header]}
+                                  data-column={cell.info.header}
+                                >
                                   {cell.info.header === 'identifier' ? (
                                     <PatientDocumentCell appointment={matchingAppointment} />
                                   ) : (
@@ -422,7 +443,13 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                                   )}
                                 </TableCell>
                               ))}
-                              <TableCell className={classNames('cds--table-column-menu', styles.actionsCell)}>
+                              <TableCell
+                                className={classNames(
+                                  'cds--table-column-menu',
+                                  styles.actionsCell,
+                                  styles.actionsColumn,
+                                )}
+                              >
                                 {canEditAppointment || canMarkMissed || canCancelAppointment ? (
                                   <OverflowMenu
                                     align="left"

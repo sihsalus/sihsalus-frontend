@@ -5,8 +5,21 @@
 
 .queueEntryStatusContainer {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  flex-wrap: wrap;
   gap: layout.$spacing-02;
+  min-width: 0;
+}
+
+.queueName {
+  display: inline-flex;
+  align-items: center;
+  gap: layout.$spacing-02;
+  min-width: 0;
+
+  > span:last-child {
+    overflow-wrap: anywhere;
+  }
 }
 
 .navDivider {
@@ -16,7 +29,7 @@
 }
 
 .tag {
-  margin: layout.$spacing-02 0;
+  margin: 0;
   min-width: layout.$spacing-10;
 }
 

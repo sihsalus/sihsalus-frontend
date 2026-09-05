@@ -43,10 +43,37 @@
 .table {
   width: 100%;
   table-layout: fixed;
+
+  :global(.cds--table-expand) {
+    width: 3rem;
+    min-width: 3rem;
+    padding: 0;
+  }
+
+  :global(.cds--table-expand__button) {
+    width: 3rem;
+    min-width: 3rem;
+    padding: 0;
+    color: colors.$gray-100;
+  }
+
+  :global(.cds--table-expand__svg) {
+    width: 1rem;
+    height: 1rem;
+    fill: currentColor;
+    opacity: 1;
+  }
+
+  :global(.cds--table-column-checkbox) {
+    width: 3.25rem;
+    min-width: 3.25rem;
+    padding-inline: layout.$spacing-05 layout.$spacing-03;
+  }
 }
 
 .patientColumn {
   width: 10rem;
+  padding-inline-start: layout.$spacing-05 !important;
 }
 
 .documentColumn {
@@ -57,9 +84,12 @@
   width: 8rem;
 }
 
-.locationColumn,
-.serviceColumn {
+.locationColumn {
   width: 9rem;
+}
+
+.serviceColumn {
+  width: 12rem;
 }
 
 .providerColumn {
@@ -156,23 +186,11 @@
   .secondaryColumn {
     display: none;
   }
-
-  .toolbar {
-    grid-template-columns: minmax(0, 1fr) auto;
-
-    .searchbar {
-      grid-column: 1 / -1;
-    }
-  }
 }
 
 @media (max-width: $breakpoint-tablet-max) {
   .table {
     min-width: 48rem;
-  }
-
-  .tertiaryColumn {
-    display: none;
   }
 
   .toolbar {

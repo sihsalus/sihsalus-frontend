@@ -134,6 +134,35 @@ describe('AppointmentActions', () => {
     expect(mockUserHasAccess).toHaveBeenCalledWith(['app:home.citas', 'app:home.citas.editar'], expect.anything());
   });
 
+  it('keeps chart usage limited to check-in without exposing checkout actions', () => {
+    appointment.status = AppointmentStatus.SCHEDULED;
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
+      checkOutButton: { enabled: true, customUrl: '' },
+    });
+    mockUseTodaysVisits.mockReturnValue({
+      visits: [],
+      error: null,
+      isLoading: false,
+      mutateVisit: vi.fn(),
+    });
+
+    render(
+      <AppointmentActions {...defaultProps} checkInOnly />,
+    );
+
+    expect(screen.getByRole('button', { name: /check in/i })).toBeInTheDocument();
+    expect(mockUserHasAccess).toHaveBeenCalledWith(
+      ['app:home.citas', 'app:home.citas.editar'],
+      expect.anything(),
+    );
+    expect(mockUserHasAccess).not.toHaveBeenCalledWith(
+      ['app:home.citas', 'app:home.citas.editar.finalizarAtencion'],
+      expect.anything(),
+    );
+  });
+
   it.each(['app:home.citas', 'app:home.citas.editar'])('does not offer check-in without %s', (missingPrivilege) => {
     appointment.status = AppointmentStatus.SCHEDULED;
     mockUserHasAccess.mockImplementation((requiredPrivileges) => {

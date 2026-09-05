@@ -227,7 +227,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
     patientName: styles.patientColumn,
     identifier: styles.documentColumn,
     dateTime: styles.dateTimeColumn,
-    location: classNames(styles.locationColumn, styles.tertiaryColumn),
+    location: classNames(styles.locationColumn, styles.secondaryColumn),
     serviceType: styles.serviceColumn,
     provider: classNames(styles.providerColumn, styles.secondaryColumn),
     appointmentKind: classNames(styles.appointmentKindColumn, styles.secondaryColumn),

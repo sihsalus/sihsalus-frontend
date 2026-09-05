@@ -74,6 +74,29 @@ export function useAppointmentSearchResults(data: Appointment[], searchString: s
   }, [searchString, data]);
 }
 
+/**
+ * Returns appointments ordered from the latest scheduled start to the earliest.
+ * Invalid dates are kept at the end and the source array is never mutated.
+ */
+export function sortAppointmentsByStartDateDescending(appointments: Appointment[]): Appointment[] {
+  return [...appointments].sort((appointmentA, appointmentB) => {
+    const timestampA = new Date(appointmentA.startDateTime).getTime();
+    const timestampB = new Date(appointmentB.startDateTime).getTime();
+    const hasValidTimestampA = Number.isFinite(timestampA);
+    const hasValidTimestampB = Number.isFinite(timestampB);
+
+    if (!hasValidTimestampA) {
+      return hasValidTimestampB ? 1 : 0;
+    }
+
+    if (!hasValidTimestampB) {
+      return -1;
+    }
+
+    return timestampB - timestampA;
+  });
+}
+
 export function filterByServiceType(appointmentList: Array<Appointment>, appointmentServiceTypes: Array<string>) {
   return appointmentServiceTypes?.length > 0
     ? appointmentList.filter(({ service }) => appointmentServiceTypes.includes(service.uuid))

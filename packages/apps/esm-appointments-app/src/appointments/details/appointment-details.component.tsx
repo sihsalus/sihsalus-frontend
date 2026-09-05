@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { getAppointmentProviderName, getGender } from '../../helpers';
+import { getAppointmentKindLabel, getAppointmentProviderName, getGender } from '../../helpers';
 import { usePatientAppointmentHistory } from '../../hooks/usePatientAppointmentHistory';
 import { type Appointment } from '../../types';
 
@@ -66,14 +66,26 @@ const AppointmentDetails: React.FC<AppointmentDetailsProps> = ({ appointment }) 
   const telecom = patient?.telecom?.filter((contact) => contact.value?.trim()) ?? [];
   const phoneContacts = telecom.filter((contact) => !contact.system || contact.system === 'phone');
   const providerName = getAppointmentProviderName(appointment) ?? t('unassignedProvider', 'No provider assigned');
+  const locationName = appointment.location?.name ?? appointment.service.location?.display ?? '—';
+  const appointmentKind = getAppointmentKindLabel(appointment.appointmentKind, t);
 
   return (
     <div className={styles.appointmentDetailsContainer}>
       <p className={styles.title}>{appointment.service.name}</p>
       <p className={styles.subTitle}>{formatDatetime(new Date(appointment.startDateTime))}</p>
-      <div className={styles.providerSummary}>
-        <p className={styles.labelBold}>{t('responsibleProvider', 'Responsible provider')}: </p>
-        <p className={styles.label}>{providerName}</p>
+      <div className={styles.appointmentSummary}>
+        <div className={styles.labelContainer}>
+          <p className={styles.labelBold}>{t('responsibleProvider', 'Responsible provider')}: </p>
+          <p className={styles.label}>{providerName}</p>
+        </div>
+        <div className={styles.labelContainer}>
+          <p className={styles.labelBold}>{t('location', 'UPSS')}: </p>
+          <p className={styles.label}>{locationName}</p>
+        </div>
+        <div className={styles.labelContainer}>
+          <p className={styles.labelBold}>{t('appointmentType', 'Appointment type')}: </p>
+          <p className={styles.label}>{appointmentKind}</p>
+        </div>
       </div>
 
       <div className={styles.patientInfoGrid}>

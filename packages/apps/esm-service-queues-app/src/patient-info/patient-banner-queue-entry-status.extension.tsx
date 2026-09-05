@@ -45,8 +45,10 @@ const PatientChartQueueEntryStatus: React.FC<Pick<PatientBannerQueueEntryStatusP
 
   return (
     <div className={styles.queueEntryStatusContainer}>
-      <span className={styles.separator}>&middot;</span>
-      <span>{queueEntry.queue.name}</span>
+      <span className={styles.queueName}>
+        <span className={styles.separator}>&middot;</span>
+        <span>{queueEntry.queue.name}</span>
+      </span>
       <Tag
         className={mappedPriority === 'Priority' ? styles.priorityTag : styles.tag}
         type={getTagType(mappedPriority?.toLocaleLowerCase('en'))}

@@ -53,6 +53,10 @@
   flex-wrap: wrap;
 }
 
+.patientNameRow {
+  row-gap: layout.$spacing-02;
+}
+
 .patientName {
   @include type.type-style('heading-03');
   color: #161616;
@@ -70,8 +74,31 @@
 }
 
 .patientTagsSlot {
-  display: inline-flex;
+  display: flex;
+  flex: 1 1 20rem;
   align-items: center;
+  flex-wrap: wrap;
+  gap: layout.$spacing-02;
+  min-width: 0;
+
+  > :global([data-extension-id]) {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+
+    > * {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: layout.$spacing-02;
+      min-width: 0;
+    }
+  }
+
+  :global(.cds--tag) {
+    max-width: 100%;
+    margin: 0;
+  }
 }
 
 .patientDemographics {
@@ -111,6 +138,12 @@
 .patientBottomSlot {
   display: inline-flex;
   align-items: center;
+}
+
+@media (max-width: $breakpoint-tablet-max) {
+  .patientTagsSlot {
+    flex-basis: 100%;
+  }
 }
 
 .contactDetails {

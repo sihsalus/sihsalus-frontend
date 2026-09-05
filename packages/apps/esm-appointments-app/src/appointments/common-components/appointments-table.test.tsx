@@ -175,6 +175,36 @@ describe('AppointmentsTable', () => {
     expect(screen.getByRole('link', { name: /john wilson/i })).toHaveAttribute('href', 'url-to-patient-chart');
   });
 
+  it('shows the latest appointments on the first page without mutating the source collection', () => {
+    const appointments = Array.from({ length: 26 }, (_, index) => ({
+      ...mockAppointments[0],
+      uuid: `appointment-${index.toString().padStart(2, '0')}`,
+      startDateTime: new Date(2026, 8, 3, 0, index).toISOString(),
+      patient: {
+        ...mockAppointments[0].patient,
+        uuid: `patient-${index.toString().padStart(2, '0')}`,
+        name: `Patient ${index.toString().padStart(2, '0')}`,
+      },
+    })) as Array<Appointment>;
+    const originalOrder = appointments.map(({ uuid }) => uuid);
+
+    renderAppointmentsTable({ appointments, appointmentStatus: AppointmentStatus.SCHEDULED });
+
+    const patientLinks = screen.getAllByRole('link').map((link) => link.textContent);
+    expect(patientLinks[0]).toBe('Patient 25');
+    expect(screen.getByText('Patient 01')).toBeInTheDocument();
+    expect(screen.queryByText('Patient 00')).not.toBeInTheDocument();
+    expect(appointments.map(({ uuid }) => uuid)).toEqual(originalOrder);
+  });
+
+  it('marks lower-priority columns so responsive layouts can hide them', () => {
+    renderAppointmentsTable({ appointments: mockAppointments });
+
+    expect(screen.getByRole('button', { name: /Responsible provider/i })).toHaveAttribute('data-column', 'provider');
+    expect(screen.getByRole('button', { name: /Appointment type/i })).toHaveAttribute('data-column', 'appointmentKind');
+    expect(screen.getByRole('button', { name: /Atención/i })).toHaveAttribute('data-column', 'care');
+  });
+
   it('renders a cancelled appointment as non-interactive red text', () => {
     const cancelledAppointment = {
       ...mockAppointments[0],

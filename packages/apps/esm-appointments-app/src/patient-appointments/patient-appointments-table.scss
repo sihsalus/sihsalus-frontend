@@ -1,1 +1,151 @@
-// Reserved for future styles
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.tableContainer {
+  container-type: inline-size;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 100%;
+  table-layout: fixed;
+
+  th,
+  td {
+    vertical-align: middle;
+  }
+}
+
+.productiveHeading01 {
+  @include type.type-style('heading-compact-01');
+}
+
+.text02 {
+  color: $text-02;
+}
+
+.dateColumn {
+  width: 8.5rem;
+}
+
+.locationColumn {
+  width: 10rem;
+}
+
+.serviceColumn {
+  width: 14rem;
+}
+
+.providerColumn {
+  width: 12rem;
+}
+
+.statusColumn {
+  width: 8rem;
+}
+
+.typeColumn {
+  width: 11rem;
+}
+
+.notesColumn {
+  width: 12rem;
+}
+
+.actionsColumn {
+  width: 13rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: layout.$spacing-02;
+  min-width: 0;
+}
+
+.responsiveDetailsRow {
+  display: none;
+}
+
+.responsiveDetails {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: layout.$spacing-03 layout.$spacing-05;
+
+  dt {
+    @include type.type-style('label-01');
+    color: $text-02;
+    font-weight: 600;
+  }
+
+  dd {
+    @include type.type-style('body-compact-01');
+    overflow-wrap: anywhere;
+  }
+}
+
+@container (max-width: 70rem) {
+  .locationColumn,
+  .providerColumn,
+  .typeColumn,
+  .notesColumn {
+    display: none;
+  }
+
+  .responsiveDetailsRow {
+    display: table-row;
+
+    > td {
+      border-top: 1px solid $ui-03;
+      padding-block: layout.$spacing-04;
+    }
+  }
+
+  .dateColumn {
+    width: 16%;
+  }
+
+  .serviceColumn {
+    width: 34%;
+  }
+
+  .statusColumn {
+    width: 16%;
+  }
+
+  .actionsColumn {
+    width: 34%;
+  }
+}
+
+@container (max-width: 44rem) {
+  .table {
+    min-width: 32rem;
+  }
+
+  .dateColumn {
+    width: 7.5rem;
+  }
+
+  .statusColumn {
+    width: 7.5rem;
+  }
+
+  .actionsColumn {
+    width: 11rem;
+  }
+
+  .responsiveDetails {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 32rem) {
+  .responsiveDetails {
+    grid-template-columns: 1fr;
+  }
+}

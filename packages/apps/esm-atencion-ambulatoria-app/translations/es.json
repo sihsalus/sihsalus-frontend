@@ -1,4 +1,12 @@
 {
+  "externalLabReports": "Informes de laboratorios externos",
+  "externalLabNoAutomaticImport": "Los resultados del laboratorio referencial, Netlab 1 y Netlab 2 no se importan automáticamente a esta historia. Ingrese por separado al portal oficial; SIH Salus no solicita ni almacena su clave de Netlab.",
+  "externalLabReportVerification": "Antes de adjuntar un informe, verifique el paciente, la prueba solicitada, el identificador de la muestra y la fecha del informe. Conserve el documento original e identifique el laboratorio emisor y la fecha del informe en el nombre del adjunto. La carga requiere permisos de adjuntos y un tipo de archivo permitido.",
+  "externalLabAttachmentBoundary": "Un adjunto es un documento de respaldo: no crea resultados estructurados ni completa o aprueba una orden de laboratorio. Si el informe no corresponde al paciente o a la muestra, no lo adjunte; solicite su conciliación al laboratorio.",
+  "openNetlab1": "Netlab 1 (abre en otra pestaña)",
+  "openNetlab2": "Netlab 2 (abre en otra pestaña)",
+  "viewAttachedReports": "Ver informes adjuntos",
+  "previousConsultationsHelp": "En Consultas previas, seleccione una atención por fecha para revisar sus notas, diagnósticos, órdenes y resultados. Abrir el historial no cambia la consulta activa.",
   "accidentOrTrauma": "Accidente o trauma",
   "action": "Acción",
   "actions": "Acciones",

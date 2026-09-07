@@ -105,3 +105,20 @@
 .searchInput {
   margin-top: layout.$spacing-03;
 }
+
+.catalogRequest {
+  margin: layout.$spacing-04 layout.$spacing-05;
+
+  p {
+    @include type.type-style("body-compact-01");
+    margin-bottom: layout.$spacing-04;
+  }
+
+  button {
+    margin-top: layout.$spacing-03;
+  }
+}
+
+.catalogRequestPreview {
+  margin-top: layout.$spacing-04;
+}

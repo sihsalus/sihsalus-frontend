@@ -4,8 +4,11 @@ import userEvent from '@testing-library/user-event';
 import type { PropsWithChildren } from 'react';
 import ConsultaExternaDashboard from './consulta-externa-dashboard.component';
 
+const deniedPrivileges = vi.hoisted(() => new Set<string>());
+
 vi.mock('@sihsalus/esm-rbac', () => ({
-  RequirePrivilege: ({ children }: PropsWithChildren) => children,
+  RequirePrivilege: ({ children, privilege }: PropsWithChildren<{ privilege: string }>) =>
+    deniedPrivileges.has(privilege) ? null : children,
 }));
 
 vi.mock('./anamnesis.component', () => ({
@@ -39,6 +42,8 @@ const mockExtensionSlot = vi.mocked(ExtensionSlot);
 
 describe('ConsultaExternaDashboard', () => {
   beforeEach(() => {
+    deniedPrivileges.clear();
+    vi.mocked(navigate).mockClear();
     mockExtensionSlot.mockImplementation(({ name, state }) => {
       const patientUuid = (state as { patientUuid?: string } | undefined)?.patientUuid;
 
@@ -107,6 +112,51 @@ describe('ConsultaExternaDashboard', () => {
     expect(navigate).toHaveBeenCalledWith({
       to: `\${openmrsSpaBase}/patient/synthetic-patient-uuid/chart/Visits`,
     });
+    expect(screen.getByRole('button', { name: 'Previous consultations' })).toHaveAccessibleDescription(
+      /Choose a consultation by date/,
+    );
+  });
+
+  it('hides visit history navigation without the existing read privilege', () => {
+    deniedPrivileges.add('app:hoja.clinica.visitas');
+    render(<ConsultaExternaDashboard patientUuid="synthetic-patient-uuid" />);
+
+    expect(screen.queryByRole('button', { name: 'Previous consultations' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Choose a consultation by date/)).not.toBeInTheDocument();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('shows external report guidance only in complementary tests', async () => {
+    const user = userEvent.setup();
+    render(<ConsultaExternaDashboard patientUuid="synthetic-patient-uuid" />);
+
+    expect(screen.queryByText('External laboratory reports')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Pruebas complementarias' }));
+    await user.click(screen.getByRole('button', { name: 'External laboratory reports' }));
+    expect(screen.getByText(/not automatically imported/)).toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: 'View attached reports' }));
+    expect(navigate).toHaveBeenCalledWith({
+      to: `\${openmrsSpaBase}/patient/synthetic-patient-uuid/chart/Attachments`,
+    });
+  });
+
+  it('does not expose external report actions without the results read privilege', async () => {
+    deniedPrivileges.add('app:hoja.clinica.resultados');
+    const user = userEvent.setup();
+    render(<ConsultaExternaDashboard patientUuid="synthetic-patient-uuid" />);
+
+    await user.click(screen.getByRole('tab', { name: 'Pruebas complementarias' }));
+    expect(screen.queryByText('External laboratory reports')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Netlab/ })).not.toBeInTheDocument();
+  });
+
+  it('does not mount the clinical dashboard without its entry privilege', () => {
+    deniedPrivileges.add('app:hoja.clinica.consultaExterna');
+    render(<ConsultaExternaDashboard patientUuid="synthetic-patient-uuid" />);
+
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Previous consultations' })).not.toBeInTheDocument();
   });
 
   it('opens the tab a blocked document points at', async () => {

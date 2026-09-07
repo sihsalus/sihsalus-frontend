@@ -11,15 +11,16 @@ import {
 } from '@carbon/react/icons';
 import { ExtensionSlot, navigate } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { consultaExternaPrivilege, patientVisitsPrivilege } from '../utils/constants';
+import { consultaExternaPrivilege, moduleName, patientVisitsPrivilege } from '../utils/constants';
 import Anamnesis from './anamnesis.component';
 import ConsultaExternaAntecedents from './consulta-externa-antecedents.component';
 import styles from './consulta-externa-dashboard.scss';
 import { type ConsultaExternaTabId, getConsultaExternaTabIndex } from './consulta-externa-tabs';
 import DiagnosticoClasificado from './diagnostico-clasificado.component';
 import ExamenFisico from './notas-soap.component';
+import ExternalLabResults from './external-lab-results.component';
 import OutpatientVisitSummaryDownload from './outpatient-visit-summary-download.component';
 import PlanTratamiento from './plan-tratamiento.component';
 import ReferenciaContraReferencia from './referencia-contrarreferencia.component';
@@ -30,8 +31,9 @@ interface ConsultaExternaDashboardProps {
 }
 
 const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ patientUuid }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(moduleName);
   const [selectedTab, setSelectedTab] = useState(0);
+  const historyHintId = useId();
 
   const handleNavigateToTab = useCallback((tabId: ConsultaExternaTabId) => {
     setSelectedTab(getConsultaExternaTabIndex(tabId));
@@ -46,9 +48,10 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
           <div className={styles.dashboardActions}>
             <RequirePrivilege privilege={patientVisitsPrivilege} hideUnauthorized>
               <Button
-                kind="ghost"
+                kind="tertiary"
                 size="sm"
                 renderIcon={Time}
+                aria-describedby={historyHintId}
                 onClick={() =>
                   navigate({
                     to: `\${openmrsSpaBase}/patient/${patientUuid}/chart/Visits`,
@@ -61,6 +64,14 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
             <OutpatientVisitSummaryDownload patientUuid={patientUuid} onNavigateToTab={handleNavigateToTab} />
           </div>
         </header>
+        <RequirePrivilege privilege={patientVisitsPrivilege} hideUnauthorized>
+          <p id={historyHintId} className={styles.historyHint}>
+            {t(
+              'previousConsultationsHelp',
+              'Choose a consultation by date in Previous consultations to review its notes, diagnoses, orders and results. Opening the history does not change the active consultation.',
+            )}
+          </p>
+        </RequirePrivilege>
         <Layer className={styles.tabsContainer}>
           <Tabs selectedIndex={selectedTab} onChange={({ selectedIndex }) => setSelectedTab(selectedIndex)}>
             <TabList contained activation="manual" aria-label={t('consultaExternaTabs', 'Consulta Externa tabs')}>
@@ -98,6 +109,7 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
               <TabPanel>
                 {selectedTab === getConsultaExternaTabIndex('complementaryTests') ? (
                   <div className={styles.combinedPanel}>
+                    <ExternalLabResults patientUuid={patientUuid} />
                     <ExtensionSlot name="consulta-externa-pruebas-complementarias-slot" state={{ patientUuid }} />
                   </div>
                 ) : null}

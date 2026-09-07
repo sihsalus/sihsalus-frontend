@@ -5,6 +5,7 @@ import {
   useConfig,
   useDebounce,
   useLayoutType,
+  useSession,
   type Visit,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
@@ -14,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import styles from './order-basket-search.scss';
 import OrderBasketSearchResults from './order-basket-search-results.component';
+import MissingCatalogItem from './missing-catalog-item.component';
 
 export interface DrugSearchProps {
   openOrderForm: (searchResult: DrugOrderBasketItem) => void;
@@ -33,6 +35,7 @@ export default function DrugSearch({
   onSearchTermChange,
 }: DrugSearchProps) {
   const { t } = useTranslation();
+  const session = useSession();
   const isTablet = useLayoutType() === 'tablet';
   const { debounceDelayInMs, daysDurationUnit, minimumCharacterLengthForDrugSearch } = useConfig<ConfigObject>();
   const searchableSearchTerm =
@@ -67,6 +70,7 @@ export default function DrugSearch({
           value={searchTerm}
         />
       </ResponsiveWrapper>
+      <MissingCatalogItem key={JSON.stringify([patient?.id, visit?.uuid, session?.user?.uuid])} />
       <ExtensionSlot
         name="drug-search-slot"
         state={{ openOrderForm, isSearching: Boolean(debouncedSearchTerm), visit, daysDurationUnit }}

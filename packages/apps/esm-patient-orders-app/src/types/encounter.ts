@@ -34,6 +34,7 @@ export interface Encounter {
 export interface Observation {
   uuid: string;
   display: string;
+  voided?: boolean;
   concept: {
     uuid: string;
     display: string;

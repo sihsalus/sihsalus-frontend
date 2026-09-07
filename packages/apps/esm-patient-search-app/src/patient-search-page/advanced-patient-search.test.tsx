@@ -1,8 +1,8 @@
-import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, userHasAccess, useConfig, useSession } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
-import { mockAdvancedSearchResults } from 'test-utils';
+import { mockAdvancedSearchResults, mockSession } from 'test-utils';
 
 import { configSchema, type PatientSearchConfig } from '../config-schema';
 import { useActiveVisitPatientUuids, useInfinitePatientSearch } from '../patient-search.resource';
@@ -27,6 +27,10 @@ const mockUseConfiguredAnswerConcepts = vi.mocked(useConfiguredAnswerConcepts);
 vi.mock('../patient-search.resource', async () => ({
   useInfinitePatientSearch: vi.fn(),
   useActiveVisitPatientUuids: vi.fn(),
+}));
+
+vi.mock('../recently-viewed-patients.component', () => ({
+  default: () => <section aria-label="Recently viewed patients" />,
 }));
 
 vi.mock('./refine-search/person-attributes.resource', async () => ({
@@ -145,6 +149,35 @@ describe('AdvancedPatientSearchComponent', () => {
   it('renders without crashing', () => {
     renderComponent();
     expect(screen.getByText('Refine search')).toBeInTheDocument();
+  });
+
+  it.each([
+    false,
+    true,
+  ])('shows recent charts for an empty standalone query, tablet/overlay=%s', (inTabletOrOverlay) => {
+    vi.mocked(useSession).mockReturnValue(mockSession.data);
+    vi.mocked(userHasAccess).mockReturnValue(true);
+    render(<AdvancedPatientSearchComponent query="" inTabletOrOverlay={inTabletOrOverlay} />);
+    expect(screen.getByRole('region', { name: 'Recently viewed patients' })).toBeInTheDocument();
+  });
+
+  it('keeps recent charts out of contextual patient selection', () => {
+    vi.mocked(useSession).mockReturnValue(mockSession.data);
+    vi.mocked(userHasAccess).mockReturnValue(true);
+    renderComponent({ query: '' });
+    expect(screen.queryByRole('region', { name: 'Recently viewed patients' })).not.toBeInTheDocument();
+  });
+
+  it('hides recent charts when the feature is disabled or chart access is denied', () => {
+    vi.mocked(useSession).mockReturnValue(mockSession.data);
+    vi.mocked(userHasAccess).mockReturnValue(false);
+    const { rerender } = render(<AdvancedPatientSearchComponent query="" />);
+    expect(screen.queryByRole('region', { name: 'Recently viewed patients' })).not.toBeInTheDocument();
+    vi.mocked(userHasAccess).mockReturnValue(true);
+    const config = getDefaultsFromConfigSchema(configSchema) as PatientSearchConfig;
+    mockUseConfig.mockReturnValue({ ...config, search: { ...config.search, showRecentlySearchedPatients: false } });
+    rerender(<AdvancedPatientSearchComponent query="" />);
+    expect(screen.queryByRole('region', { name: 'Recently viewed patients' })).not.toBeInTheDocument();
   });
 
   it('displays search results correctly', () => {

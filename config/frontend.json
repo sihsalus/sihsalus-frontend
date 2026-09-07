@@ -1,4 +1,9 @@
 {
+  "@sihsalus/esm-help-menu-app": {
+    "releaseNotesUrl": "/ayuda/novedades/",
+    "documentationUrl": "/ayuda/",
+    "supportUrl": "/ayuda/soporte/"
+  },
   "@sihsalus/esm-stock-management-app": {
     "packingUnitsUUID": "bce2b1af-98b1-48a2-98a2-3e4ffb3c79c2",
     "dispensingUnitsUUID": "162402AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
@@ -221,6 +226,40 @@
     }
   },
   "@sihsalus/esm-patient-chart-app": {
+    "extensionSlots": {
+      "patient-chart-dashboard-slot": {
+        "order": [
+          "charts-summary-dashboard",
+          "consulta-externa-dashboard-link",
+          "patient-appointments-summary-dashboard",
+          "encounters-summary-dashboard",
+          "results-summary-dashboard",
+          "allergies-summary-dashboard",
+          "conditions-summary-dashboard",
+          "social-history-dashboard-link",
+          "relationships-link",
+          "medications-summary-dashboard",
+          "patient-orders-summary-dashboard",
+          "test-results-summary-dashboard",
+          "imaging-summary-dashboard",
+          "clinical-procedures-summary-dashboard",
+          "attachments-results-summary-dashboard",
+          "vacunacion-summary-dashboard",
+          "tamizajes-dashboard-link",
+          "programs-summary-dashboard",
+          "case-monitoring-encounter-link",
+          "missed-follow-up-dashboard-link",
+          "interconsultas-chart-dashboard-link",
+          "well-child-care-dashboard-group-link",
+          "maternal-and-child-health-dashboard-group-link",
+          "odontologia-dashboard-link",
+          "psicologia-dashboard-link",
+          "terapia-fisica-dashboard-link",
+          "billing-summary-dashboard-link",
+          "offline-tools-patient-chart-actions-dashboard-link"
+        ]
+      }
+    },
     "visitLocationTag": "Care UPSS",
     "companionVisitAttributeTypeUuid": "710da0b9-e15f-47f0-827a-e97f1937c81d",
     "visitPersistenceTokenAttributeTypeUuid": "eb8b793b-f259-451d-9c09-53aa0ffd0d3f",

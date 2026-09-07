@@ -10,6 +10,7 @@ let testOrder: Order;
 let encounter: Encounter;
 let orderer: Provider;
 let fullName: string;
+let testName: string;
 let visit: Visit;
 
 test.beforeEach(async ({ api, patient }) => {
@@ -18,6 +19,8 @@ test.beforeEach(async ({ api, patient }) => {
   encounter = await createEncounter(api, patient.uuid, orderer.uuid, visit);
   testOrder = await generateRandomTestOrder(api, patient.uuid, encounter, orderer.uuid);
   fullName = patient.person?.display;
+  testName = testOrder.concept.display?.trim() ?? '';
+  expect(testName, 'The created laboratory order must identify its test').not.toBe('');
 });
 
 test('View test orders', async ({ page }) => {
@@ -42,8 +45,8 @@ test('View test orders', async ({ page }) => {
 
   await test.step('Then I should see the order status, test name, and urgency', async () => {
     await expect(page.getByText(/Status:Order not picked/i)).toBeVisible();
-    await expect(page.getByRole('cell', { name: 'serum glucose' })).toBeVisible();
-    await expect(page.getByText(/Routine/i)).toBeVisible();
+    await expect(page.getByRole('cell', { name: testName, exact: true })).toBeVisible();
+    await expect(page.getByText(/Rutina|Routine/i)).toBeVisible();
   });
 });
 

@@ -1,4 +1,11 @@
 {
+  "recentPatients": "Pacientes recientes",
+  "recentlyViewedPatients": "Pacientes vistos recientemente",
+  "recentlyViewedPatientsHelp": "Vuelva a abrir una historia mientras espera resultados. Se conservan los últimos 10 pacientes solo durante esta sesión.",
+  "recentlyViewedPatientsCount_one": "{{count}} paciente visto recientemente",
+  "recentlyViewedPatientsCount_other": "{{count}} pacientes vistos recientemente",
+  "noRecentlyViewedPatients": "No hay historias clínicas recientes disponibles en esta sesión.",
+  "recentlyViewedPatientsEmptyHelp": "Busque un paciente por nombre o identificador y abra su historia para verlo aquí.",
   "addPatient": "Agregar paciente",
   "age": "Edad",
   "ageUnit": "Unidad",

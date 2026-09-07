@@ -26,6 +26,50 @@ Un cambio pequeno aqui puede romper multiples apps porque muchas extensiones dep
 - El left sidebar debe mostrar labels traducidos; keys como `caseMonitoringEncounters` son defectos.
 - El right sidebar debe conservar acciones criticas: ordenes, FUA, notas de visita, formularios y listas de pacientes.
 
+### Orden del menú de historia clínica
+
+El orden SIH Salus se mantiene en un solo lugar:
+[`config/frontend.json`](../../../config/frontend.json), dentro de
+`@sihsalus/esm-patient-chart-app.extensionSlots.patient-chart-dashboard-slot.order`.
+Usa IDs de extensiones y el mecanismo nativo de OpenMRS; no depende del idioma
+ni del orden de carga de los microfrontends. Los números `order` de cada
+`routes.json` quedan como respaldo para instalaciones sin esta configuración.
+
+| Bloque de orden            | Accesos, en secuencia                                                                          |
+| -------------------------- | ---------------------------------------------------------------------------------------------- |
+| Atención y agenda          | Resumen, Consulta externa, Citas, Consultas                                                    |
+| Contexto clínico           | Signos vitales, Alergias, Antecedentes, Historia social, Ficha familiar                        |
+| Tratamiento y estudios     | Medicamentos, Órdenes, Resultados, Imágenes, Procedimientos, Adjuntos                          |
+| Prevención y continuidad   | Vacunación, Tamizajes, Programas, Seguimiento de casos, Pérdida de seguimiento, Interconsultas |
+| Atención especializada     | CRED, Salud materna, Odontología, Psicología, Terapia física                                   |
+| Administración y operación | Facturación, Acciones sin conexión                                                             |
+
+Estos bloques describen la secuencia; no añaden carpetas ni ocultan opciones.
+Citas queda junto a la atención actual y el historial de consultas, no al final
+de especialidades. Se conservan los grupos existentes de CRED y salud materna,
+sus hijos y los marcadores invisibles que registran sus rutas.
+
+El orden no concede privilegios, no habilita módulos opcionales ni modifica
+visibilidad online/offline. Los elementos sin permiso o no instalados se omiten
+sin alterar el orden relativo de los demás. Extensiones nuevas no listadas se
+conservan después de las configuradas con el orden de respaldo de OpenMRS;
+al agregar un acceso visible al producto, ubícalo explícitamente en esta lista.
+Un override del implementador puede reemplazar `order` y seguir usando `remove`
+sin que el chart vuelva a insertar elementos retirados.
+
+La regresión `esm-extensions/src/patient-chart-navigation.test.ts` contrasta la
+lista con todos los manifests y prueba el motor real de asignación, permisos,
+modo offline, extensiones opcionales y overrides. Antes de integrar un cambio
+de menú, ejecutar también `yarn test:tooling`: su control sin caché detecta IDs
+duplicados, desconocidos o nuevos accesos sin posición incluso cuando el CI
+incremental solo selecciona la app que los registra. Los inputs de caché de
+tests incluyen la configuración y todos los manifests de rutas.
+
+Validar también en DEV/QLTY el rol clínico y uno restringido, español e
+inglés, navegación con teclado, menú de escritorio/tablet y conservación del
+paciente al abrir Citas y volver al Resumen. Las pruebas locales no sustituyen
+ese smoke autenticado ni requieren crear citas para comprobar el orden.
+
 ### Acompañante por consulta
 
 El acompañante seleccionado al iniciar una consulta pertenece únicamente a esa visita. No debe crearse una relación

@@ -1,4 +1,12 @@
 {
+  "externalLabReports": "External laboratory reports",
+  "externalLabNoAutomaticImport": "Results from the reference laboratory, Netlab 1 and Netlab 2 are not automatically imported into this chart. Sign in to the official portal separately; SIH Salus does not request or store your Netlab password.",
+  "externalLabReportVerification": "Before attaching a report, verify the patient, requested test, sample identifier and report date. Keep the original document and identify the issuing laboratory and report date in the attachment name. Uploading requires attachment permissions and an allowed file type.",
+  "externalLabAttachmentBoundary": "An attachment is a supporting document: it does not create structured results or complete or approve a laboratory order. If the report does not match this patient or sample, do not attach it; ask the laboratory to reconcile it.",
+  "openNetlab1": "Netlab 1 (opens in a new tab)",
+  "openNetlab2": "Netlab 2 (opens in a new tab)",
+  "viewAttachedReports": "View attached reports",
+  "previousConsultationsHelp": "Choose a consultation by date in Previous consultations to review its notes, diagnoses, orders and results. Opening the history does not change the active consultation.",
   "accidentOrTrauma": "Accident or Trauma",
   "action": "Action",
   "actions": "Actions",

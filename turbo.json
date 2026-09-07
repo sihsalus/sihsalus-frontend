@@ -54,6 +54,8 @@
       "dependsOn": ["^build"],
       "inputs": [
         "src/**",
+        "$TURBO_ROOT$/config/frontend.json",
+        "$TURBO_ROOT$/packages/apps/*/src/routes.json",
         "__mocks__/**",
         "declarations.d.ts",
         "$TURBO_ROOT$/packages/test-utils/**",

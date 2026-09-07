@@ -13,6 +13,7 @@ export const registrationErrorCodes = {
   promotionAlreadyPatient: 'REGISTRATION_PROMOTION_ALREADY_PATIENT',
   promotionDocumentMismatch: 'REGISTRATION_PROMOTION_DOCUMENT_MISMATCH',
   promotionOffline: 'REGISTRATION_PROMOTION_OFFLINE',
+  relationshipDeleteForbidden: 'REGISTRATION_RELATIONSHIP_DELETE_FORBIDDEN',
   relationshipPersonRequired: 'REGISTRATION_RELATIONSHIP_PERSON_REQUIRED',
   relationshipRetryChanged: 'REGISTRATION_RELATIONSHIP_RETRY_CHANGED',
   relationshipUpdateInvalid: 'REGISTRATION_RELATIONSHIP_UPDATE_INVALID',

@@ -41,6 +41,45 @@ La pestaña **Pruebas complementarias** monta `consulta-externa-pruebas-compleme
 
 No existe un conector frontend con NetLab 1 o NetLab 2. Una integración futura debe implementarse mediante una interfaz institucional autorizada en backend, asociar paciente, solicitud, resultado y procedencia, y contar con reconciliación y auditoría. No se deben almacenar, compartir ni automatizar credenciales personales de profesionales desde este módulo.
 
+### Orientación para resultados referidos e historia previa
+
+En **Pruebas complementarias → Informes de laboratorios externos** se puede
+abrir Netlab 1 o Netlab 2 en otra pestaña. Las direcciones son las publicadas
+por el [INS](https://www.gob.pe/ins), verificadas el 2026-09-07. No se envían
+identificadores del paciente, parámetros de búsqueda, credenciales ni referrer;
+no hay peticiones automáticas, captura de claves, iframe, scraping ni importación.
+La guía requiere `app:hoja.clinica.resultados` y solo se monta en esa pestaña.
+
+**Ver informes adjuntos** abre el dashboard existente `Attachments` del mismo
+paciente y exige además `app:hoja.clinica.adjuntos`. No inicia una consulta ni
+carga un archivo automáticamente. La carga conserva los permisos de edición,
+la lista de tipos de archivo permitidos y el contrato backend de
+`esm-patient-attachments-app`; este cambio no habilita el flag independiente de
+PDF suplementario por orden. El profesional debe verificar paciente, prueba,
+muestra y fecha, conservar el informe original e indicar emisor y fecha en el
+nombre del adjunto (el PDF no ofrece el campo de descripción de las imágenes).
+Un adjunto no equivale a un resultado estructurado, aprobado o a
+una orden completada.
+
+El acceso **Consultas previas** se distingue de las acciones de impresión e
+incluye una explicación accesible: seleccionar la atención por fecha para
+revisar su contenido. Conserva `app:hoja.clinica.visitas`, la ruta `Visits` y
+la consulta activa. **Antecedentes** ya estaba antes de **Anamnesis**; se conserva
+ese orden y se prueba también la denegación del permiso de lectura.
+
+Pendiente para interoperabilidad real: contrato institucional con INS/laboratorio
+referencial, API y autenticación de servicio autorizadas, correspondencia de
+pacientes/muestras/órdenes, unidades y métodos, procedencia, deduplicación,
+resultados corregidos, revisión clínica y auditoría de recepción. Los proyectos
+de [interoperabilidad NOTI-CDC/NETLAB-INS](https://www.gob.pe/institucion/fsnvs/noticias/1309652-pmas-snvsp-impulsa-la-modernizacion-de-la-vigilancia-en-salud-publica-con-avances-clave-en-interoperabilidad-entre-noti-cdc-y-netlab-ins)
+no acreditan por sí mismos una interfaz disponible para SIH Salus.
+
+QA mínimo de estos accesos: orden de pestañas/paneles; permisos concedidos y
+denegados; navegación tras cambiar de paciente; enlaces externos sin datos ni
+referrer; ausencia de escrituras clínicas. Antes de integrar, verificar también
+en QLTY con datos sintéticos que la ruta histórica y los adjuntos están disponibles
+para los roles previstos. Las pruebas locales con mocks no sustituyen esa revisión.
+
 ## TODO content/backend
 
 - Validar en QLTY que `encounterTypes.externalConsultation`, `triage`, `referralCounterReferral` y `consultation` existan y sean los usados por los formularios reales.

@@ -1,5 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
 
+test.use({ storageState: { cookies: [], origins: [] } });
+
 async function gotoLogin(page: Page) {
   await page.goto('./login');
   await page.getByRole('textbox', { name: /username|nombre de usuario/i }).waitFor();

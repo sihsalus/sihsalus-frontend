@@ -9,7 +9,7 @@ aislamiento, cleanup o aceptación aún no están verificados y no deben ejecuta
 
 [`suite-catalog.json`](suite-catalog.json) es la fuente única de organización.
 Cada configuración Playwright y cada `*.spec.ts` deben pertenecer exactamente a
-una de sus 12 suites. El contrato local falla si aparece una configuración o un
+una de sus 13 suites. El contrato local falla si aparece una configuración o un
 spec sin dueño, si hay solapamientos o si `typecheck`/`ci` dejan de coincidir con
 la configuración real.
 
@@ -18,23 +18,32 @@ pueda ejecutarse sin las credenciales, datos sintéticos y ambiente coordinado
 que exija su preflight. `quarantined` conserva el código como inventario, pero
 lo rechaza de forma explícita hasta resolver la razón registrada en el catálogo.
 
-| ID                 | Configuración                               | Specs                        | Estado       | Gate | Typecheck | CI navegador |
-| ------------------ | ------------------------------------------- | ---------------------------- | ------------ | ---- | --------- | ------------ |
-| `billing`          | `e2e/billing/playwright.config.ts`          | `e2e/billing/specs`          | quarantined  | no   | no        | no           |
-| `clinical`         | `playwright.config.ts`                      | `e2e/tests`                  | **runnable** | sí   | sí        | sí           |
-| `cohort-builder`   | `e2e/cohort-builder/playwright.config.ts`   | `e2e/cohort-builder/specs`   | quarantined  | no   | sí        | no           |
-| `dispensing`       | `e2e/dispensing/playwright.config.ts`       | `e2e/dispensing/specs`       | quarantined  | no   | no        | no           |
-| `dyaku`            | `e2e/dyaku/playwright.config.ts`            | `e2e/dyaku/specs`            | quarantined  | no   | sí        | no           |
-| `fast-data-entry`  | `e2e/fast-data-entry/playwright.config.ts`  | `e2e/fast-data-entry/specs`  | quarantined  | no   | no        | no           |
-| `form-builder`     | `e2e/form-builder/playwright.config.ts`     | `e2e/form-builder/specs`     | quarantined  | no   | no        | no           |
-| `laboratory`       | `e2e/laboratory/playwright.config.ts`       | `e2e/laboratory/specs`       | **runnable** | sí   | sí        | sí           |
-| `offline-laptop`   | `e2e/offline-laptop/playwright.config.ts`   | `e2e/offline-laptop/specs`   | **runnable** | sí   | sí        | no           |
-| `patient-imaging`  | `e2e/patient-imaging/playwright.config.ts`  | `e2e/patient-imaging/specs`  | quarantined  | no   | sí        | no           |
-| `stock-management` | `e2e/stock-management/playwright.config.ts` | `e2e/stock-management/specs` | quarantined  | no   | sí        | no           |
-| `user-onboarding`  | `e2e/user-onboarding/playwright.config.ts`  | `e2e/user-onboarding/specs`  | quarantined  | no   | sí        | no           |
+| ID                  | Configuración                                | Specs                         | Estado       | Gate | Typecheck | CI navegador |
+| ------------------- | -------------------------------------------- | ----------------------------- | ------------ | ---- | --------- | ------------ |
+| `billing`           | `e2e/billing/playwright.config.ts`           | `e2e/billing/specs`           | quarantined  | no   | no        | no           |
+| `clinical`          | `playwright.config.ts`                       | `e2e/tests`                   | **runnable** | sí   | sí        | sí           |
+| `clinical-recovery` | `e2e/clinical-recovery/playwright.config.ts` | `e2e/clinical-recovery/specs` | quarantined  | no   | sí        | no           |
+| `cohort-builder`    | `e2e/cohort-builder/playwright.config.ts`    | `e2e/cohort-builder/specs`    | quarantined  | no   | sí        | no           |
+| `dispensing`        | `e2e/dispensing/playwright.config.ts`        | `e2e/dispensing/specs`        | quarantined  | no   | no        | no           |
+| `dyaku`             | `e2e/dyaku/playwright.config.ts`             | `e2e/dyaku/specs`             | quarantined  | no   | sí        | no           |
+| `fast-data-entry`   | `e2e/fast-data-entry/playwright.config.ts`   | `e2e/fast-data-entry/specs`   | quarantined  | no   | no        | no           |
+| `form-builder`      | `e2e/form-builder/playwright.config.ts`      | `e2e/form-builder/specs`      | quarantined  | no   | no        | no           |
+| `laboratory`        | `e2e/laboratory/playwright.config.ts`        | `e2e/laboratory/specs`        | **runnable** | sí   | sí        | sí           |
+| `offline-laptop`    | `e2e/offline-laptop/playwright.config.ts`    | `e2e/offline-laptop/specs`    | **runnable** | sí   | sí        | no           |
+| `patient-imaging`   | `e2e/patient-imaging/playwright.config.ts`   | `e2e/patient-imaging/specs`   | quarantined  | no   | sí        | no           |
+| `stock-management`  | `e2e/stock-management/playwright.config.ts`  | `e2e/stock-management/specs`  | quarantined  | no   | sí        | no           |
+| `user-onboarding`   | `e2e/user-onboarding/playwright.config.ts`   | `e2e/user-onboarding/specs`   | quarantined  | no   | sí        | no           |
 
 Los scripts de verificación en `e2e/scripts/` y las capturas en
 `e2e/screenshots/` no son suites Playwright y no pertenecen al catálogo.
+
+La nueva [recuperación clínica](clinical-recovery/README.md) conserva propuestas
+de firma de órdenes y notificaciones en cuarentena. El runner, su global setup,
+los hooks y la función de notificaciones bloquean su ejecución; no hay un bypass
+por variable de ambiente. Sus specs TypeScript tienen cobertura de tipos, pero
+el prototipo de notificaciones en JavaScript solo tiene comprobación sintáctica
+y pruebas del bloqueo, no validación clínica. No se promueve ninguna suite ni
+se agrega a CI de navegador.
 
 ```sh
 # Suite clínica principal (compatible con el comando histórico)
@@ -79,6 +88,17 @@ Antes de crear workers también comprueba que ambos pacientes estén activos y
 marcados como sintéticos, que la ubicación y el proveedor clínico estén activos,
 y que `E2E_PATIENT_UUID` tenga exactamente una visita preparada activa. El
 preflight no imprime el cuerpo del paciente en los logs.
+
+La suite de laboratorio valida el mismo target, ubicación y proveedor, pero no
+exige los dos pacientes reservados de la suite clínica: sus fixtures existentes
+crean un paciente sintético por prueba. Su estado de autenticación usa una ruta
+absoluta dentro de `e2e/laboratory/`, independientemente del directorio desde el
+que se lance el runner. Esta separación no habilita aprovisionamiento automático
+en la suite clínica ni cambia los secretos/variables requeridos por CI.
+
+`test:e2e:unit` descubre las pruebas unitarias de `e2e/utils/`, incluidas las de
+configuración tardía y los contratos de selectores del laboratorio. No ejecuta
+specs Playwright ni se conecta al backend.
 
 ## Cobertura activa
 
@@ -151,11 +171,21 @@ el contrato impide que ambas fuentes diverjan en silencio.
 ## Datos de prueba
 
 Los specs que necesitan un paciente lo reciben por `E2E_PATIENT_UUID`
-(`E2E_APPOINTMENTS_PATIENT_UUID` para citas) y **fallan al cargar el módulo** si
-falta. Ambos deben identificar pacientes reservados cuyo nombre o identificador
+(`E2E_APPOINTMENTS_PATIENT_UUID` para citas) y los validan en `beforeAll`, después
+del preflight, antes de usar un paciente. Así se pueden listar los specs sin
+credenciales ni pacientes; listar no ejecuta ni valida el flujo. Ambos UUID
+siguen siendo obligatorios al ejecutar la suite y deben identificar pacientes
+reservados cuyo nombre o identificador
 contenga el token independiente `E2E` o `SYNTHETIC`; el primero debe tener una
 sola visita activa. Es deliberado: mejor un error claro que una corrida que no
 prueba nada o que toque por accidente una historia no sintética.
+
+La aceptación del ácido ursodesoxicólico se mantiene: no se sustituye por otro
+medicamento disponible para hacer pasar el gate. La firma de nuevas órdenes y
+el aprovisionamiento/cleanup recuperable se revisan por separado; no se activan
+en esta recuperación de regresiones. Los recursos parciales de fixtures deben
+tener un journal privado, validación de pertenencia y recuperación antes de
+promover un nuevo harness mutante.
 
 Al crear datos desde un script, anularlos al terminar. Ojo: `DELETE
 /ws/rest/v1/patient/{uuid}` responde **200 sin anular nada** si no se pasa

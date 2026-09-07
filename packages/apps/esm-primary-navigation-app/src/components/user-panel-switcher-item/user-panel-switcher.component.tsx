@@ -4,10 +4,11 @@ import React from 'react';
 
 const UserPanelSwitcher: React.FC = () => {
   const session = useSession();
+  const userDisplay = session?.user?.person?.display ?? session?.user?.display ?? session?.user?.username ?? '';
   return (
     <SwitcherItem aria-label="User">
       <UserAvatarIcon size={20} />
-      <p>{session?.user?.person?.display}</p>
+      <p>{userDisplay}</p>
     </SwitcherItem>
   );
 };

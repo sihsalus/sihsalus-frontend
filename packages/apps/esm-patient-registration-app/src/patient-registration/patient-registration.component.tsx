@@ -43,6 +43,7 @@ import { cancelRegistration, filterOutUndefinedPatientIdentifiers, scrollIntoVie
 import { getEffectiveRegistrationConfig } from './peru-registration-config';
 import {
   getExistingPatientUuid,
+  isRegistrationDomainError,
   RegistrationDomainError,
   type RegistrationErrorCode,
   registrationErrorCodes,
@@ -480,6 +481,8 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
         });
       } else {
         const existingPatientUuid = getExistingPatientUuid(error);
+        const isExpectedAccessRestriction =
+          isRegistrationDomainError(error) && error.code === registrationErrorCodes.relationshipDeleteForbidden;
         showSnackbar({
           title: errorTitle,
           subtitle: getUserFacingErrorMessage(
@@ -539,6 +542,10 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
                   'promotionOfflineSubtitle',
                   'Promoting an existing person to patient requires a connection.',
                 ),
+                [registrationErrorCodes.relationshipDeleteForbidden]: t(
+                  'relationshipDeleteForbiddenError',
+                  'Your account cannot remove or replace saved relationships. No changes from this attempt were saved. Ask an authorized user for help.',
+                ),
                 [registrationErrorCodes.relationshipPersonRequired]: t(
                   'relationshipPersonRequiredError',
                   'Select or register a person before saving the relationship.',
@@ -568,7 +575,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
               },
             },
           ),
-          kind: 'error',
+          kind: isExpectedAccessRestriction ? 'warning' : 'error',
           ...(existingPatientUuid
             ? {
                 actionButtonLabel: t('identityLookupOpenPatient', 'Open existing patient'),

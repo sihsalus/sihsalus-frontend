@@ -1,5 +1,6 @@
 import { getDefaultsFromConfigSchema, restBaseUrl, userHasAccess, useConfig, useSession } from '@openmrs/esm-framework';
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
 
 import { configSchema, type PatientSearchConfig } from '../config-schema';
@@ -98,8 +99,9 @@ describe('RecentlySearchedPatients', () => {
       data: [],
     });
 
-    expect(screen.getByText(/no patient charts were found/i)).toBeInTheDocument();
-    expect(screen.getByText(/try to search again using the patient's unique ID number/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Recently viewed patients' })).toBeInTheDocument();
+    expect(screen.getByText(/No recently viewed patient charts are available in this session/i)).toBeInTheDocument();
+    expect(screen.getByText(/Find a patient by name or identifier/i)).toBeInTheDocument();
     expect(screen.queryByText(/recent search result/i)).not.toBeInTheDocument();
   });
 
@@ -134,7 +136,7 @@ describe('RecentlySearchedPatients', () => {
     expect(within(patientLink).getByText(/Smith, John Doe/i)).toBeInTheDocument();
     expect(within(patientLink).getByText(/1000NLY/)).toBeInTheDocument();
     expect(screen.getByRole('img')).toBeInTheDocument();
-    expect(screen.getByText(/1 recent search result/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 recently viewed patient/i)).toBeInTheDocument();
   });
 
   it('renders a loading spinner when revalidating recently searched patients', () => {
@@ -147,6 +149,32 @@ describe('RecentlySearchedPatients', () => {
     });
 
     expect(screen.getByTitle(/loading/i)).toBeInTheDocument();
+  });
+
+  it.each(['click', 'keyboard'])('reopens the selected recent chart with %s', async (activation) => {
+    const user = userEvent.setup();
+    const patientClickSideEffect = vi.fn();
+    render(
+      <PatientSearchContext.Provider value={{ patientClickSideEffect }}>
+        <RecentlySearchedPatients {...defaultProps} data={mockSearchResults} />
+      </PatientSearchContext.Provider>,
+    );
+    const link = screen.getByRole('link', { name: 'Smith, John Doe' });
+    expect(link).toHaveAttribute('href', '/openmrs/spa/patient/test-patient-uuid/chart/');
+    if (activation === 'click') {
+      await user.click(link);
+    } else {
+      link.focus();
+      await user.keyboard('{Enter}');
+    }
+    expect(patientClickSideEffect).toHaveBeenCalledOnce();
+    expect(patientClickSideEffect).toHaveBeenCalledWith('test-patient-uuid');
+  });
+
+  it('does not offer a chart link without chart access', () => {
+    mockUserHasAccess.mockReturnValue(false);
+    renderRecentlySearchedPatients({ data: mockSearchResults });
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });
 

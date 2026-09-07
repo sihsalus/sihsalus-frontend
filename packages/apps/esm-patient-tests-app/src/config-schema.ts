@@ -92,6 +92,9 @@ export const configSchema = {
     _default: {
       // Alanina transferasa / ALT. The HSC team commonly searches for this test as TGP.
       '4686f6f2-a42e-47c3-aa56-8301bd1c71b6': ['TGP'],
+      // Keep IFCC variants distinct; aliases only match concepts in the loaded orderable sets.
+      'f537c6d3-7fdd-45e1-896d-2a5da35e28bd': ['TGP'], // Without pyridoxal phosphate.
+      '354230bd-e709-4c1c-bc6e-81e43f71d59d': ['TGP'], // With pyridoxal phosphate.
     },
   },
   showReferenceNumberField: {

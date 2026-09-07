@@ -12,6 +12,13 @@
   ],
   "extensions": [
     {
+      "name": "recently-viewed-patient-tracker",
+      "component": "recentlyViewedPatientTracker",
+      "slot": "patient-header-slot",
+      "privileges": "app:hoja.clinica",
+      "offline": true
+    },
+    {
       "name": "patient-search-icon",
       "component": "patientSearchIcon",
       "slot": "top-nav-actions-slot",

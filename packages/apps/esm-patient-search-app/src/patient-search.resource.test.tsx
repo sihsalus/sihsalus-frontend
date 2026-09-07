@@ -1,48 +1,19 @@
-import { openmrsFetch, userHasAccess, useSession } from '@openmrs/esm-framework';
-import { act, renderHook } from '@testing-library/react';
-import { mockSession } from 'test-utils';
+import { openmrsFetch } from '@openmrs/esm-framework';
+import { renderHook } from '@testing-library/react';
 import useSWRInfinite from 'swr/infinite';
 
-import {
-  getActiveVisitPatientUuids,
-  isForbiddenUserPropertiesError,
-  useInfinitePatientSearch,
-  useRecentlyViewedPatients,
-  useRestPatients,
-} from './patient-search.resource';
+import { getActiveVisitPatientUuids, useInfinitePatientSearch, useRestPatients } from './patient-search.resource';
 
 vi.mock('swr/infinite', () => ({
   default: vi.fn(),
 }));
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
-const mockUserHasAccess = vi.mocked(userHasAccess);
-const mockUseSession = vi.mocked(useSession);
 const mockUseSWRInfinite = vi.mocked(useSWRInfinite);
 
 describe('patient search resource', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseSession.mockReturnValue({
-      ...mockSession.data,
-      user: {
-        ...mockSession.data.user,
-        privileges: [
-          ...mockSession.data.user.privileges,
-          {
-            display: 'Edit Users',
-            links: [],
-            name: 'Edit Users',
-            uuid: 'edit-users-privilege',
-          },
-        ],
-        userProperties: {
-          ...mockSession.data.user.userProperties,
-          patientsVisited: 'patient-a,patient-b',
-        },
-      },
-    });
-    mockUserHasAccess.mockReturnValue(true);
     mockUseSWRInfinite.mockReturnValue({
       data: undefined,
       error: undefined,
@@ -51,78 +22,6 @@ describe('patient search resource', () => {
       setSize: vi.fn(),
       size: 1,
     } as unknown as ReturnType<typeof useSWRInfinite>);
-  });
-
-  it('reads recently viewed patients from the current session without fetching the user resource', () => {
-    const { result } = renderHook(() => useRecentlyViewedPatients(true));
-
-    expect(result.current.recentlyViewedPatientUuids).toEqual(['patient-a', 'patient-b']);
-    expect(result.current.error).toBeNull();
-    expect(result.current.isLoadingPatients).toBe(false);
-    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
-  });
-
-  it('does not update recently viewed patients when the feature is disabled', async () => {
-    const { result } = renderHook(() => useRecentlyViewedPatients(false));
-
-    await result.current.updateRecentlyViewedPatients('patient-c');
-
-    expect(result.current.recentlyViewedPatientUuids).toEqual([]);
-    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
-  });
-
-  it('updates recently viewed patients in memory and persists them when the feature is enabled', async () => {
-    mockOpenmrsFetch.mockResolvedValue({ data: {} } as Awaited<ReturnType<typeof openmrsFetch>>);
-    const { result } = renderHook(() => useRecentlyViewedPatients(true));
-
-    await act(async () => {
-      await result.current.updateRecentlyViewedPatients('patient-c');
-    });
-
-    expect(result.current.recentlyViewedPatientUuids).toEqual(['patient-c', 'patient-a', 'patient-b']);
-    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/ws/rest/v1/user/'),
-      expect.objectContaining({
-        method: 'POST',
-        body: {
-          userProperties: expect.objectContaining({
-            patientsVisited: 'patient-c,patient-a,patient-b',
-          }),
-        },
-      }),
-    );
-  });
-
-  it('updates recently viewed patients in memory without persisting when user properties cannot be edited', async () => {
-    mockUseSession.mockReturnValue({
-      ...mockSession.data,
-      user: {
-        ...mockSession.data.user,
-        privileges: [],
-        roles: [],
-        userProperties: {
-          ...mockSession.data.user.userProperties,
-          patientsVisited: 'patient-a,patient-b',
-        },
-      },
-    });
-    mockUserHasAccess.mockReturnValue(false);
-    const { result } = renderHook(() => useRecentlyViewedPatients(true));
-
-    await act(async () => {
-      await result.current.updateRecentlyViewedPatients('patient-c');
-    });
-
-    expect(result.current.recentlyViewedPatientUuids).toEqual(['patient-c', 'patient-a', 'patient-b']);
-    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
-  });
-
-  it('detects forbidden user property errors from REST responses and OpenMRS error messages', () => {
-    expect(isForbiddenUserPropertiesError({ response: { status: 403 } })).toBe(true);
-    expect(
-      isForbiddenUserPropertiesError(new Error('Server responded with 403 () for url /openmrs/ws/rest/v1/user/u')),
-    ).toBe(true);
-    expect(isForbiddenUserPropertiesError({ response: { status: 500 } })).toBe(false);
   });
 
   it('trims the patient query at the REST resource boundary', () => {
@@ -186,7 +85,9 @@ describe('patient search resource', () => {
     mockOpenmrsFetch
       .mockResolvedValueOnce({ data: { results: firstPage } } as Awaited<ReturnType<typeof openmrsFetch>>)
       .mockResolvedValueOnce({
-        data: { results: [{ uuid: 'visit-100', patient: { uuid: 'patient-c' } }] },
+        data: {
+          results: [{ uuid: 'visit-100', patient: { uuid: 'patient-c' } }],
+        },
       } as Awaited<ReturnType<typeof openmrsFetch>>);
 
     await expect(getActiveVisitPatientUuids()).resolves.toEqual(['patient-a', 'patient-b', 'patient-c']);
@@ -198,8 +99,13 @@ describe('patient search resource', () => {
   });
 
   it('skips missing recently viewed patients without hiding available patients', async () => {
+    const patient = {
+      uuid: 'patient-a',
+      identifiers: [],
+      person: { personName: { display: 'Synthetic patient A' } },
+    };
     mockUseSWRInfinite.mockReturnValue({
-      data: [{ data: { uuid: 'patient-a' } }, null],
+      data: [{ data: patient }, null],
       error: undefined,
       isLoading: false,
       isValidating: false,
@@ -208,31 +114,35 @@ describe('patient search resource', () => {
     } as unknown as ReturnType<typeof useSWRInfinite>);
 
     const { result } = renderHook(() => useRestPatients(['patient-a', 'missing-patient']));
-    const fetcher = mockUseSWRInfinite.mock.calls.at(-1)?.[1] as (url: string) => Promise<unknown>;
+    const fetcher = mockUseSWRInfinite.mock.calls.at(-1)?.[1] as (key: [number, string, string]) => Promise<unknown>;
 
     mockOpenmrsFetch.mockRejectedValueOnce({ response: { status: 404 } });
 
-    await expect(fetcher('/openmrs/ws/rest/v1/patient/missing-patient')).resolves.toBeNull();
-    expect(result.current.data).toEqual([{ uuid: 'patient-a' }]);
+    await expect(
+      fetcher([0, 'patient-a,missing-patient', '/openmrs/ws/rest/v1/patient/missing-patient']),
+    ).resolves.toBeNull();
+    expect(result.current.data).toEqual([patient]);
     expect(result.current.fetchError).toBeUndefined();
   });
 
   it('skips recently viewed patients that are no longer accessible to the current user', async () => {
     renderHook(() => useRestPatients(['patient-outside-current-upss']));
-    const fetcher = mockUseSWRInfinite.mock.calls.at(-1)?.[1] as (url: string) => Promise<unknown>;
+    const fetcher = mockUseSWRInfinite.mock.calls.at(-1)?.[1] as (key: [number, string, string]) => Promise<unknown>;
 
     mockOpenmrsFetch.mockRejectedValueOnce({ response: { status: 403 } });
 
-    await expect(fetcher('/openmrs/ws/rest/v1/patient/patient-outside-current-upss')).resolves.toBeNull();
+    await expect(
+      fetcher([0, 'patient-outside-current-upss', '/openmrs/ws/rest/v1/patient/patient-outside-current-upss']),
+    ).resolves.toBeNull();
   });
 
   it('does not suppress server errors while loading recently viewed patients', async () => {
     renderHook(() => useRestPatients(['patient-a']));
-    const fetcher = mockUseSWRInfinite.mock.calls.at(-1)?.[1] as (url: string) => Promise<unknown>;
+    const fetcher = mockUseSWRInfinite.mock.calls.at(-1)?.[1] as (key: [number, string, string]) => Promise<unknown>;
     const serverError = { response: { status: 500 } };
 
     mockOpenmrsFetch.mockRejectedValueOnce(serverError);
 
-    await expect(fetcher('/openmrs/ws/rest/v1/patient/patient-a')).rejects.toBe(serverError);
+    await expect(fetcher([0, 'patient-a', '/openmrs/ws/rest/v1/patient/patient-a'])).rejects.toBe(serverError);
   });
 });

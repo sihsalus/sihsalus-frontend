@@ -65,6 +65,15 @@ dispensación. La UI nunca debe ampliar ese acceso ni mostrar saldos de otra ubi
 
 El workspace `test-results-form-workspace` ya no está registrado por este paquete. La captura de resultados no debe documentarse ni asignarse mediante `app:hoja.clinica.resultados.editar` como si fuera una capacidad activa de Patient Orders.
 
+El formulario compartido de resultados usado por Laboratorio conserva la observación
+si falla únicamente la finalización de su orden. Mientras guarda, y mientras la
+orden tenga un resultado persistido pendiente de completar, todos los valores y
+comentarios quedan en solo lectura. La acción `Completar orden` reintenta únicamente
+la transición de estado, sin crear otra observación ni descartar ediciones. Para
+corregir un resultado se debe completar la orden y volver a abrirla; un panel admite
+la revisión de una sola observación por guardado. La validación en DEV/QLTY debe
+cubrir fallo parcial, reintento fallido/exitoso, reapertura, valores cero y comentarios.
+
 La modificación de medicamentos tiene una brecha de composición: `medicamentos.editar` hace visible la acción, pero esta abre `order-basket`, registrado con `ordenes.editar`. Hasta alinear ambos guards, el rol que complete el flujo necesita los dos privilegios; no debe interpretarse la visibilidad del comando como autorización end-to-end.
 
 Los guards de UI no autorizan la mutación en el backend. Los roles todavía necesitan los privilegios OpenMRS de Orders y la visita/encounter válidos para la operación.

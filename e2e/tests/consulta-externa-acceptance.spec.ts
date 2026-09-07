@@ -1,6 +1,7 @@
 import { type APIRequestContext, expect, type PlaywrightWorkerArgs, test } from '@playwright/test';
 import { getE2ECredentials } from '../utils/e2e-api';
 import { isSyntheticE2EPatient } from '../utils/e2e-gate-config';
+import { requireE2ERuntimeUuid } from '../utils/e2e-runtime-env';
 import { getOpenmrsRestBaseUrl, shouldIgnoreHTTPSErrors } from '../utils/e2e-urls';
 
 // Contrato de metadatos que respalda la hoja de consulta externa y la
@@ -33,11 +34,8 @@ const requiredPrivileges = [
 ];
 
 const diagnosisConceptClassUuid = '8d4918b0-c2cc-11de-8d13-0010c6dffd0f';
-const outpatientPatientUuid = process.env.E2E_PATIENT_UUID;
-const appointmentsPatientUuid = process.env.E2E_APPOINTMENTS_PATIENT_UUID;
-if (!outpatientPatientUuid || !appointmentsPatientUuid) {
-  throw new Error('E2E_PATIENT_UUID and E2E_APPOINTMENTS_PATIENT_UUID must identify synthetic test patients.');
-}
+let outpatientPatientUuid: string;
+let appointmentsPatientUuid: string;
 type OpenmrsSearchResponse<T> = { results?: Array<T> };
 type CatalogConcept = {
   uuid: string;
@@ -137,6 +135,11 @@ async function getCatalogDrugs(api: APIRequestContext) {
 }
 
 test.describe('Consulta externa acceptance metadata', () => {
+  test.beforeAll(() => {
+    outpatientPatientUuid = requireE2ERuntimeUuid('E2E_PATIENT_UUID');
+    appointmentsPatientUuid = requireE2ERuntimeUuid('E2E_APPOINTMENTS_PATIENT_UUID');
+  });
+
   test.beforeEach(({ playwright: _playwright }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'Metadata acceptance only needs one project run');
   });
@@ -245,23 +248,25 @@ test.describe('Consulta externa acceptance metadata', () => {
     try {
       const response = await api.get(
         `session?v=${encodeURIComponent(
-          'custom:(authenticated,currentProvider:(uuid,retired),privileges:(name,retired))',
+          'custom:(authenticated,currentProvider:(uuid,retired),user:(uuid,retired,privileges:(name,retired)))',
         )}`,
       );
       expect(response.ok(), 'La sesión E2E debe poder consultarse').toBeTruthy();
       const session = (await response.json()) as {
         authenticated?: boolean;
         currentProvider?: { uuid?: string; retired?: boolean } | null;
-        privileges?: Array<{ name?: string; retired?: boolean }>;
+        user?: { uuid?: string; retired?: boolean; privileges?: Array<{ name?: string; retired?: boolean }> };
       };
       const assignedPrivileges = new Set(
-        session.privileges
+        session.user?.privileges
           ?.filter(({ retired }) => !retired)
           .map(({ name }) => name)
           .filter(Boolean) ?? [],
       );
 
       expect(session.authenticated, 'La cuenta E2E debe estar autenticada').toBe(true);
+      expect(session.user?.uuid, 'La sesión E2E debe identificar su usuario técnico').toBeTruthy();
+      expect(session.user?.retired ?? false, 'El usuario técnico E2E debe estar activo').toBe(false);
       expect(session.currentProvider?.uuid, 'La cuenta E2E debe estar vinculada a un proveedor clínico').toBeTruthy();
       expect(session.currentProvider?.retired ?? false, 'El proveedor clínico E2E debe estar activo').toBe(false);
       for (const privilege of requiredPrivileges) {

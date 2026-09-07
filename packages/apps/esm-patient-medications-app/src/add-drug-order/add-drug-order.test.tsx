@@ -138,8 +138,8 @@ describe('AddDrugOrderWorkspace drug search', () => {
     renderAddDrugOrderWorkspace();
 
     await user.type(screen.getByRole('searchbox'), 'Aspirin');
-    await screen.findAllByRole('listitem');
-    expect(screen.getAllByRole('listitem').length).toEqual(3);
+    const results = await screen.findByRole('list', { name: 'Medication search results' });
+    expect(within(results).getAllByRole('listitem')).toHaveLength(3);
     // Anotates results with dosing info if an order-template was found.
     const aspirin81 = getByTextWithMarkup(/Aspirin 81mg/i);
     expect(aspirin81).toBeInTheDocument();
@@ -168,7 +168,9 @@ describe('AddDrugOrderWorkspace drug search', () => {
     await user.type(screen.getByRole('searchbox'), 'Ácido ursodesoxicólico');
 
     expect(await screen.findByText(/cannot be prescribed as free text/i)).toBeInTheDocument();
-    expect(screen.getByText(/generic name, strength and dosage form/i)).toBeInTheDocument();
+    expect(screen.getByText(/Ask Pharmacy or the catalog administrator to register/i)).toHaveTextContent(
+      /generic name, strength and dosage form/i,
+    );
   });
 
   test('warns when medication search returns only partial results', async () => {
@@ -187,7 +189,9 @@ describe('AddDrugOrderWorkspace drug search', () => {
 
     expect(await screen.findByText('Some drugs could not be loaded')).toBeInTheDocument();
     expect(screen.queryByText('Internal concept endpoint detail')).not.toBeInTheDocument();
-    expect(screen.getAllByRole('listitem')).toHaveLength(3);
+    expect(
+      within(screen.getByRole('list', { name: 'Medication search results' })).getAllByRole('listitem'),
+    ).toHaveLength(3);
   });
 
   test('no buttons to click if the medication is already prescribed', async () => {
@@ -200,7 +204,9 @@ describe('AddDrugOrderWorkspace drug search', () => {
     renderAddDrugOrderWorkspace();
 
     await user.type(screen.getByRole('searchbox'), 'Aspirin');
-    expect(screen.getAllByRole('listitem').length).toEqual(3);
+    expect(
+      within(screen.getByRole('list', { name: 'Medication search results' })).getAllByRole('listitem'),
+    ).toHaveLength(3);
     const aspirin162Div = getByTextWithMarkup(/Aspirin 162.5mg/i).closest('[role="listitem"]');
     expect(aspirin162Div).toHaveTextContent(/Already prescribed/i);
   });

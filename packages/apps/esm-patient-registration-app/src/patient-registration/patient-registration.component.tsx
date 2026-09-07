@@ -43,6 +43,7 @@ import { cancelRegistration, filterOutUndefinedPatientIdentifiers, scrollIntoVie
 import { getEffectiveRegistrationConfig } from './peru-registration-config';
 import {
   getExistingPatientUuid,
+  isRegistrationDomainError,
   RegistrationDomainError,
   type RegistrationErrorCode,
   registrationErrorCodes,
@@ -480,6 +481,8 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
         });
       } else {
         const existingPatientUuid = getExistingPatientUuid(error);
+        const isExpectedAccessRestriction =
+          isRegistrationDomainError(error) && error.code === registrationErrorCodes.relationshipDeleteForbidden;
         showSnackbar({
           title: errorTitle,
           subtitle: getUserFacingErrorMessage(
@@ -572,7 +575,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
               },
             },
           ),
-          kind: 'error',
+          kind: isExpectedAccessRestriction ? 'warning' : 'error',
           ...(existingPatientUuid
             ? {
                 actionButtonLabel: t('identityLookupOpenPatient', 'Open existing patient'),

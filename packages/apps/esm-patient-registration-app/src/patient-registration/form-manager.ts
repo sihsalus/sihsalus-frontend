@@ -690,7 +690,7 @@ export class FormManager {
         : (state.companionRelationshipUuid ?? relationship.companionRelationshipUuid);
       const companionSignature = getCompanionRelationshipTransactionSignature(
         relationship,
-        relationship.relatedPersonUuid ?? state.relatedPersonUuid,
+        relationship.relatedPersonUuid || state.relatedPersonUuid,
         companionRelationshipType,
         effectiveCompanionRelationshipUuid,
       );

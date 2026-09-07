@@ -1,6 +1,14 @@
-import { getConfig, messageOmrsServiceWorker } from '@openmrs/esm-framework';
+import {
+  getConfig,
+  getSessionStore,
+  messageOmrsServiceWorker,
+  type Session,
+  type SyncProcessOptions,
+} from '@openmrs/esm-framework';
 
-import { cachePatientUrlsForOfflineUse, getPatientUrlsToBeCached } from './offline';
+import { cachePatientUrlsForOfflineUse, getPatientUrlsToBeCached, syncPatientRegistration } from './offline';
+import { FormManager } from './patient-registration/form-manager';
+import { type PatientRegistration } from './patient-registration/patient-registration.types';
 
 vi.mock('@openmrs/esm-framework', async () => {
   const { refreshOfflineCacheEntry } = await vi.importActual<typeof import('@openmrs/esm-offline/src/public')>(
@@ -10,6 +18,7 @@ vi.mock('@openmrs/esm-framework', async () => {
     ...(await vi.importActual('@openmrs/esm-framework')),
     fhirBaseUrl: '/ws/fhir2/R4',
     getConfig: vi.fn(),
+    getSessionStore: vi.fn(),
     makeUrl: vi.fn((url: string) => `/openmrs${url}`),
     messageOmrsServiceWorker: vi.fn(),
     omrsOfflineCachingStrategyHttpHeaderName: 'x-omrs-offline-caching-strategy',
@@ -19,14 +28,43 @@ vi.mock('@openmrs/esm-framework', async () => {
 });
 
 const mockGetConfig = vi.mocked(getConfig);
+const mockGetSessionStore = vi.mocked(getSessionStore);
 const mockMessageOmrsServiceWorker = vi.mocked(messageOmrsServiceWorker);
 
-describe('patient registration offline cache', () => {
+const createSession = (userUuid: string, privilegeNames: Array<string> = []): Session => ({
+  authenticated: true,
+  sessionId: `session-${userUuid}`,
+  user: {
+    uuid: userUuid,
+    display: userUuid,
+    username: userUuid,
+    systemId: userUuid,
+    userProperties: {},
+    person: {} as never,
+    privileges: privilegeNames.map((name) => ({
+      uuid: name,
+      name,
+      display: name,
+    })),
+    roles: [],
+    retired: false,
+    locale: 'es',
+    allowedLocales: ['es'],
+  },
+});
+
+describe('patient registration offline cache and synchronization', () => {
   let cachedResponses: Map<string, Response>;
   let cachePut: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetSessionStore.mockReturnValue({
+      getState: vi.fn(() => ({
+        loaded: true,
+        session: createSession('active-user'),
+      })),
+    } as never);
     mockMessageOmrsServiceWorker.mockResolvedValue({ success: true });
     cachedResponses = new Map();
     cachePut = vi.fn(async (request: RequestInfo | URL, response: Response) => {
@@ -44,8 +82,155 @@ describe('patient registration offline cache', () => {
     });
   });
 
+  it.each([
+    {
+      change: 'granted',
+      queuedPrivileges: [],
+      activePrivileges: ['Delete Relationships'],
+    },
+    {
+      change: 'revoked',
+      queuedPrivileges: ['Delete Relationships'],
+      activePrivileges: [],
+    },
+  ])('uses current privileges after access is $change for the queue owner', async ({
+    queuedPrivileges,
+    activePrivileges,
+  }) => {
+    const queuedSession = {
+      ...createSession('active-user', queuedPrivileges),
+      currentProvider: { uuid: 'provider-uuid', identifier: 'provider-id' },
+    };
+    const activeSession = {
+      ...createSession('active-user', activePrivileges),
+      currentProvider: {
+        uuid: 'new-provider-uuid',
+        identifier: 'new-provider-id',
+      },
+    };
+    mockGetSessionStore.mockReturnValue({
+      getState: vi.fn(() => ({ loaded: true, session: activeSession })),
+    } as never);
+    const savePatientFormOnline = vi.spyOn(FormManager, 'savePatientFormOnline').mockResolvedValue(null);
+    const queuedPatient = {
+      _patientRegistrationData: {
+        currentUser: queuedSession,
+        identifierTypes: [],
+      },
+    } as PatientRegistration;
+    const options = {
+      abort: new AbortController(),
+      userId: 'active-user',
+      index: 0,
+      items: [queuedPatient],
+      dependencies: [],
+    } as SyncProcessOptions<PatientRegistration>;
+
+    await syncPatientRegistration(queuedPatient, options);
+
+    expect(savePatientFormOnline).toHaveBeenCalledOnce();
+    expect(savePatientFormOnline.mock.calls[0][8]).toEqual({
+      ...queuedSession,
+      user: activeSession.user,
+    });
+    expect(savePatientFormOnline.mock.calls[0][11]).toBe(options.abort);
+    expect(queuedPatient._patientRegistrationData.currentUser).toBe(queuedSession);
+    expect(queuedSession.user.privileges.map(({ name }) => name)).toEqual(queuedPrivileges);
+  });
+
+  it('does not synchronize a queued registration under a different active user', async () => {
+    mockGetSessionStore.mockReturnValue({
+      getState: vi.fn(() => ({
+        loaded: true,
+        session: createSession('different-user'),
+      })),
+    } as never);
+    const savePatientFormOnline = vi.spyOn(FormManager, 'savePatientFormOnline').mockResolvedValue(null);
+    const queuedPatient = {
+      _patientRegistrationData: {
+        currentUser: createSession('queue-owner'),
+        identifierTypes: [],
+      },
+    } as PatientRegistration;
+    const options = {
+      abort: new AbortController(),
+      userId: 'queue-owner',
+      index: 0,
+      items: [queuedPatient],
+      dependencies: [],
+    } as SyncProcessOptions<PatientRegistration>;
+
+    await expect(syncPatientRegistration(queuedPatient, options)).rejects.toThrow(
+      'The queued patient registration is not owned by the active session.',
+    );
+    expect(savePatientFormOnline).not.toHaveBeenCalled();
+  });
+
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
+  });
+
+  it.each([
+    { state: 'loading', sessionState: { loaded: false } },
+    {
+      state: 'expired',
+      sessionState: {
+        loaded: true,
+        session: { ...createSession('queue-owner'), authenticated: false },
+      },
+    },
+    {
+      state: 'missing its user',
+      sessionState: { loaded: true, session: { authenticated: true } },
+    },
+  ])('rejects before saving while the session is $state and allows an authenticated retry', async ({
+    sessionState,
+  }) => {
+    const getState = vi.fn().mockReturnValue(sessionState);
+    mockGetSessionStore.mockReturnValue({ getState } as never);
+    const savePatientFormOnline = vi.spyOn(FormManager, 'savePatientFormOnline').mockResolvedValue(null);
+    const queuedPatient = {
+      _patientRegistrationData: { currentUser: createSession('queue-owner') },
+    } as PatientRegistration;
+    const options = {
+      abort: new AbortController(),
+      userId: 'queue-owner',
+      index: 0,
+      items: [queuedPatient],
+      dependencies: [],
+    } as SyncProcessOptions<PatientRegistration>;
+
+    await expect(syncPatientRegistration(queuedPatient, options)).rejects.toThrow(
+      'The queued patient registration is not owned by the active session.',
+    );
+    expect(savePatientFormOnline).not.toHaveBeenCalled();
+
+    getState.mockReturnValue({
+      loaded: true,
+      session: createSession('queue-owner'),
+    });
+    await expect(syncPatientRegistration(queuedPatient, options)).resolves.toBeUndefined();
+    expect(savePatientFormOnline).toHaveBeenCalledOnce();
+    expect(savePatientFormOnline.mock.calls[0][6]).toEqual([]);
+  });
+
+  it('propagates a failed save so the queue can retain the registration for retry', async () => {
+    const queuedPatient = {
+      _patientRegistrationData: { currentUser: createSession('active-user') },
+    } as PatientRegistration;
+    const options = {
+      abort: new AbortController(),
+      userId: 'active-user',
+      index: 0,
+      items: [queuedPatient],
+      dependencies: [],
+    } as SyncProcessOptions<PatientRegistration>;
+    const saveError = new Error('Synthetic save failure');
+    const savePatientFormOnline = vi.spyOn(FormManager, 'savePatientFormOnline').mockRejectedValueOnce(saveError);
+
+    await expect(syncPatientRegistration(queuedPatient, options)).rejects.toBe(saveError);
+    expect(savePatientFormOnline).toHaveBeenCalledOnce();
   });
 
   it('caches every REST resource required to hydrate an existing patient', async () => {

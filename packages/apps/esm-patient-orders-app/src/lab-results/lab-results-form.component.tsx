@@ -69,6 +69,8 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
   const { completeLabResult, isLoading, mutate: mutateResults } = useCompletedLabResults(order);
   const invalidateLabOrdersRef = useRef(invalidateLabOrders);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const isCompletionOnly =
+    needsOrderCompletion || Boolean(completeLabResult?.uuid && order.fulfillerStatus !== 'COMPLETED');
 
   useEffect(() => {
     invalidateLabOrdersRef.current = invalidateLabOrders;
@@ -100,7 +102,7 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
         if (completeLabResult.comment) {
           setValue(`${concept.uuid}-comment`, completeLabResult.comment);
         }
-      } else if (isNumeric(concept) && completeLabResult?.value) {
+      } else if (isNumeric(concept) && completeLabResult?.value != null) {
         setValue(concept.uuid, parseFloat(String(completeLabResult.value)));
         if (completeLabResult.comment) {
           setValue(`${concept.uuid}-comment`, completeLabResult.comment);
@@ -131,7 +133,7 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
           if (isCoded(member)) {
             value = obs?.value?.uuid;
           } else if (isNumeric(member)) {
-            value = obs?.value ? parseFloat(String(obs.value)) : undefined;
+            value = obs?.value != null ? parseFloat(String(obs.value)) : undefined;
           } else if (isText(member)) {
             value = obs?.value;
           }
@@ -228,7 +230,7 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
 
     // If the observation succeeded but the fulfiller-status request failed, retry only
     // the idempotent status transition. Never create a duplicate observation.
-    if (needsOrderCompletion || (completeLabResult?.uuid && order.fulfillerStatus !== 'COMPLETED')) {
+    if (isCompletionOnly) {
       try {
         await completeOrderResult(order.uuid, resultsStatusPayload, abortController);
         setNeedsOrderCompletion(false);
@@ -417,13 +419,25 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
   const content = (
     <Form className={styles.form} onSubmit={handleSubmit(saveLabResults)}>
       <div className={styles.grid}>
+        {isCompletionOnly && (
+          <InlineNotification
+            kind="warning"
+            lowContrast
+            hideCloseButton
+            title={t('labOrderCompletionPending', 'Order completion pending')}
+            subtitle={t(
+              'labResultsReadOnlyUntilCompleted',
+              'Results are read-only because they are already saved. Complete the order first, then reopen it to correct a result.',
+            )}
+          />
+        )}
         {concept.setMembers.length > 0 && <p className={styles.heading}>{concept.display}</p>}
         {concept && (
           <Stack gap={5}>
             {!isLoading ? (
-              <>
+              <fieldset disabled={isSubmitting || isCompletionOnly}>
                 <ResultFormField defaultValue={completeLabResult} concept={concept} control={control} errors={errors} />
-              </>
+              </fieldset>
             ) : (
               <InlineLoading description={t('loadingInitialValues', 'Loading initial values') + '...'} />
             )}
@@ -460,6 +474,8 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
         >
           {isSubmitting ? (
             <InlineLoading description={t('saving', 'Saving') + '...'} />
+          ) : isCompletionOnly ? (
+            t('completeLabOrder', 'Complete order')
           ) : (
             t('saveAndClose', 'Save and close')
           )}

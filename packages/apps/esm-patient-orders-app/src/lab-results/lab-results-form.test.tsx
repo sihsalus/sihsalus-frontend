@@ -7,6 +7,7 @@ import {
   completeOrderResult,
   type Datatype,
   type LabOrderConcept,
+  LabResultCompletionError,
   updateObservation,
   updateOrderResult,
   useCompletedLabResults,
@@ -902,7 +903,7 @@ describe('LabResultsForm', () => {
     render(<LabResultsForm {...testProps} />);
     const input = await screen.findByLabelText('Test Concept (0 - 100 mg/dL)');
     await waitFor(() => expect(input).toHaveValue(50));
-    await user.click(screen.getByRole('button', { name: /Save and close/i }));
+    await user.click(screen.getByRole('button', { name: /Complete order/i }));
 
     await waitFor(() =>
       expect(mockCompleteOrderResult).toHaveBeenCalledWith(
@@ -912,6 +913,72 @@ describe('LabResultsForm', () => {
       ),
     );
     expect(updateOrderResult).not.toHaveBeenCalled();
+    expect(mockUpdateObservation).not.toHaveBeenCalled();
+  });
+
+  test.each([0, 50])('keeps persisted value %s and its comment read-only until order completion', async (value) => {
+    const user = userEvent.setup();
+    mockUseCompletedLabResults.mockReturnValue({
+      completeLabResult: {
+        uuid: 'saved-observation-uuid',
+        concept: { uuid: 'concept-uuid', display: 'Test Concept' },
+        value,
+        comment: 'Persisted synthetic comment',
+      } as never,
+      isLoading: false,
+      error: null,
+      mutate: vi.fn(),
+    });
+    render(<LabResultsForm {...testProps} />);
+    const input = await screen.findByLabelText('Test Concept (0 - 100 mg/dL)');
+    const comment = screen.getByLabelText('Observaciones');
+    await waitFor(() => expect(input).toHaveValue(value));
+    expect(input).toBeDisabled();
+    expect(comment).toBeDisabled();
+    await user.type(input, '60');
+    await user.type(comment, 'Discarded edit');
+    expect(input).toHaveValue(value);
+    expect(comment).toHaveValue('Persisted synthetic comment');
+    expect(screen.getByText(/Results are read-only/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Complete order/i }));
+    await waitFor(() => expect(mockCompleteOrderResult).toHaveBeenCalledTimes(1));
+    expect(updateOrderResult).not.toHaveBeenCalled();
+    expect(mockUpdateObservation).not.toHaveBeenCalled();
+  });
+
+  test('locks value and comment during saving and keeps them locked after a partial save', async () => {
+    const user = userEvent.setup();
+    let rejectSave: (reason: unknown) => void;
+    vi.mocked(updateOrderResult).mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectSave = reject;
+        }),
+    );
+    render(<LabResultsForm {...testProps} />);
+    const input = await screen.findByLabelText('Test Concept (0 - 100 mg/dL)');
+    const comment = screen.getByLabelText('Observaciones');
+    await user.type(input, '50');
+    await user.type(comment, 'Persisted synthetic comment');
+    await user.click(screen.getByRole('button', { name: /Save and close/i }));
+    await waitFor(() => expect(updateOrderResult).toHaveBeenCalledTimes(1));
+    expect(input).toBeDisabled();
+    expect(comment).toBeDisabled();
+    rejectSave(new LabResultCompletionError('saved-observation-uuid', new Error('Synthetic failure')));
+    const retry = await screen.findByRole('button', { name: /Complete order/i });
+    expect(input).toBeDisabled();
+    expect(comment).toBeDisabled();
+    expect(input).toHaveValue(50);
+    expect(testProps.closeWorkspaceWithSavedChanges).not.toHaveBeenCalled();
+    mockCompleteOrderResult.mockRejectedValueOnce(new Error('Synthetic completion failure'));
+    await user.click(retry);
+    await waitFor(() => expect(mockCompleteOrderResult).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(retry).toBeEnabled());
+    expect(input).toBeDisabled();
+    expect(testProps.closeWorkspaceWithSavedChanges).not.toHaveBeenCalled();
+    await user.click(retry);
+    await waitFor(() => expect(testProps.closeWorkspaceWithSavedChanges).toHaveBeenCalledTimes(1));
+    expect(updateOrderResult).toHaveBeenCalledTimes(1);
     expect(mockUpdateObservation).not.toHaveBeenCalled();
   });
 });

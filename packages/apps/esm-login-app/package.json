@@ -39,11 +39,11 @@
     "access": "public"
   },
   "dependencies": {
-    "@carbon/react": "^1.92.1",
+    "@carbon/react": "^1.115.0",
     "@hookform/resolvers": "^3.6.0",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
-    "react-hook-form": "^7.52.2",
+    "react-hook-form": "^7.87.0",
     "zod": "^3.23.8"
   },
   "peerDependencies": {
@@ -63,7 +63,7 @@
     "react-i18next": "^17.0.11",
     "react-router-dom": "7.18.2",
     "rxjs": "^6.5.3",
-    "swr": "2.2.5",
+    "swr": "2.5.1",
     "typescript": "6.0.3",
     "vitest": "^4.1.7"
   }

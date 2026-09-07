@@ -93,7 +93,7 @@ export default function OrderBasketItemTile({ orderBasketItem, onItemClick, onRe
                 <span className={styles.orderErrorText}>
                   <WarningIcon size={16} /> &nbsp;{' '}
                   <span className={styles.label01}>{t('error', 'Error').toUpperCase()}</span> &nbsp;
-                  {orderBasketItem.orderError.responseBody?.error?.message ?? orderBasketItem.orderError.message}
+                  {t('errorSavingDrugOrderMessage', 'The medication order could not be saved. Please try again.')}
                 </span>
               </>
             )}

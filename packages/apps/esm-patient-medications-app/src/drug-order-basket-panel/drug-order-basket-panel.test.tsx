@@ -95,6 +95,29 @@ describe('OrderBasketPanel', () => {
     expect(screen.getByRole('button', { name: /Add/i })).toBeInTheDocument();
   });
 
+  test.each([
+    { message: 'Synthetic private transport detail' },
+    {
+      message: 'Synthetic private transport detail',
+      responseBody: { error: { message: 'Synthetic private backend detail' } },
+    },
+  ])('shows safe guidance instead of technical signing errors (%#)', (orderError) => {
+    const order = {
+      ...getTemplateOrderBasketItem(mockDrugSearchResultApiData[0], null),
+      urgency: 'STAT',
+      urgencyCode: 'STAT',
+      orderError,
+    } as DrugOrderBasketItem;
+    mockUseOrderBasket.mockReturnValue({ orders: [order] });
+
+    render(<DrugOrderBasketPanel {...testProps} />);
+
+    expect(screen.getByText('The medication order could not be saved. Please try again.')).toBeVisible();
+    expect(screen.queryByText(/Synthetic private/)).not.toBeInTheDocument();
+    expect(screen.getByText('STAT — immediately')).toBeVisible();
+    expect(screen.getByRole('button', { name: /Remove from basket/i })).toBeEnabled();
+  });
+
   test('launches the drug order form from the order basket state callback', async () => {
     const user = userEvent.setup();
     const launchAddDrugOrder = vi.fn();

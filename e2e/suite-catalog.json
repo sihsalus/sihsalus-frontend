@@ -22,6 +22,16 @@
       "reason": "Gate clínico activo; requiere datos sintéticos y un ambiente DEV o QLTY coordinado."
     },
     {
+      "id": "clinical-recovery",
+      "config": "e2e/clinical-recovery/playwright.config.ts",
+      "specDir": "e2e/clinical-recovery/specs",
+      "status": "quarantined",
+      "gate": false,
+      "typecheck": true,
+      "ci": false,
+      "reason": "Propuestas recuperadas: firma clínica y notificaciones requieren fixtures, privacidad y cleanup aprobados."
+    },
+    {
       "id": "cohort-builder",
       "config": "e2e/cohort-builder/playwright.config.ts",
       "specDir": "e2e/cohort-builder/specs",

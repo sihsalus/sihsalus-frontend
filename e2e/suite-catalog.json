@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "suites": [
+    {
+      "id": "billing",
+      "config": "e2e/billing/playwright.config.ts",
+      "specDir": "e2e/billing/specs",
+      "status": "quarantined",
+      "gate": false,
+      "typecheck": false,
+      "ci": false,
+      "reason": "Aún tiene errores de typecheck y no cuenta con limpieza y aceptación E2E verificadas."
+    },
+    {
+      "id": "clinical",
+      "config": "playwright.config.ts",
+      "specDir": "e2e/tests",
+      "status": "runnable",
+      "gate": true,
+      "typecheck": true,
+      "ci": true,
+      "reason": "Gate clínico activo; requiere datos sintéticos y un ambiente DEV o QLTY coordinado."
+    },
+    {
+      "id": "cohort-builder",
+      "config": "e2e/cohort-builder/playwright.config.ts",
+      "specDir": "e2e/cohort-builder/specs",
+      "status": "quarantined",
+      "gate": false,
+      "typecheck": true,
+      "ci": false,
+      "reason": "Compila, pero sus fixtures mutables y su limpieza aún no están validados como gate."
+    },
+    {
+      "id": "dispensing",
+      "config": "e2e/dispensing/playwright.config.ts",
+      "specDir": "e2e/dispensing/specs",
+      "status": "quarantined",
+      "gate": false,
+      "typecheck": false,
+      "ci": false,
+      "reason": "Tiene errores de typecheck y contratos mutables de órdenes y visitas pendientes de validar."
+    },
+    {
+      "id": "dyaku",
+      "config": "e2e/dyaku/playwright.config.ts",
+      "specDir": "e2e/dyaku/specs",
+      "status": "quarantined",
+      "gate": false,
+      "typecheck": true,
+      "ci": false,
+      "reason": "Compila, pero depende de contenido FHIR Perú no validado como gate reproducible."
+    },
+    {
+      "id": "fast-data-entry",
+      "config": "e2e/fast-data-entry/playwright.config.ts",
+      "specDir": "e2e/fast-data-entry/specs",
+      "status": "quarantined",
+      "gate": false,
+      "typecheck": false,
+      "ci": false,
+      "reason": "Tiene errores de typecheck y su flujo mutable todavía no cuenta con limpieza verificada."
+    },
+    {
+      "id": "form-builder",
+      "config": "e2e/form-builder/playwright.config.ts",
+      "specDir": "e2e/form-builder/specs",
+      "status": "quarantined",
+      "gate": false,
+      "typecheck": false,
+      "ci": false,
+      "reason": "Tiene errores de typecheck y modifica formularios sin un aislamiento aprobado."
+    },
+    {
+      "id": "laboratory",
+      "config": "e2e/laboratory/playwright.config.ts",
+      "specDir": "e2e/laboratory/specs",
+      "status": "runnable",
+      "gate": true,
+      "typecheck": true,
+      "ci": true,
+      "reason": "Gate de laboratorio activo; requiere datos sintéticos y un ambiente DEV o QLTY coordinado."
+    },
+    {
+      "id": "offline-laptop",
+      "config": "e2e/offline-laptop/playwright.config.ts",
+      "specDir": "e2e/offline-laptop/specs",
+      "status": "runnable",
+      "gate": true,
+      "typecheck": true,
+      "ci": false,
+      "reason": "Gate manual activo; requiere una laptop coordinada, datos sintéticos y DEV o QLTY."
+    },
+    {
+      "id": "patient-imaging",
+      "config": "e2e/patient-imaging/playwright.config.ts",
+      "specDir": "e2e/patient-imaging/specs",
+      "status": "quarantined",
+      "gate": false,
+      "typecheck": true,
+      "ci": false,
+      "reason": "Compila, pero sus dependencias de imagenología y fixtures no están validadas como gate."
+    },
+    {
+      "id": "stock-management",
+      "config": "e2e/stock-management/playwright.config.ts",
+      "specDir": "e2e/stock-management/specs",
+      "status": "quarantined",
+      "gate": false,
+      "typecheck": true,
+      "ci": false,
+      "reason": "Compila, pero sus fixtures, permisos y limpieza no están validados como gate."
+    },
+    {
+      "id": "user-onboarding",
+      "config": "e2e/user-onboarding/playwright.config.ts",
+      "specDir": "e2e/user-onboarding/specs",
+      "status": "quarantined",
+      "gate": false,
+      "typecheck": true,
+      "ci": false,
+      "reason": "Compila, pero crea identidades y permisos sin aislamiento ni limpieza aprobados."
+    }
+  ]
+}

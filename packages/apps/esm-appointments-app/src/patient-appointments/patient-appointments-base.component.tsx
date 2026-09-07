@@ -136,6 +136,7 @@ const PatientAppointmentsBase: React.FC<PatientAppointmentsBaseProps> = ({ patie
                   switchedView={switchedView}
                   setSwitchedView={setSwitchedView}
                   patientUuid={patientUuid}
+                  allowCheckIn={patientAppointmentContext === PatientAppointmentContextTypes.PATIENT_CHART}
                 />
               );
             }

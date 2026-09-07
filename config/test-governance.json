@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "recordedOn": "2026-09-03",
+  "exceptions": [
+    {
+      "workspace": "@sihsalus/esm-bed-management-app",
+      "path": "packages/apps/esm-bed-management-app",
+      "owner": "sihsalus@pucp.edu.pe",
+      "risk": "high",
+      "priority": "P1",
+      "missing": ["test-files"],
+      "reason": "La administración de camas no tiene regresiones automatizadas para asignación, traslado y liberación.",
+      "expiresOn": "2026-12-31"
+    },
+    {
+      "workspace": "@sihsalus/esm-generic-patient-widgets-app",
+      "path": "packages/apps/esm-generic-patient-widgets-app",
+      "owner": "sihsalus@pucp.edu.pe",
+      "risk": "medium",
+      "priority": "P1",
+      "missing": ["test-files"],
+      "reason": "Los widgets compartidos de observaciones no cubren carga, estados vacíos, errores ni representación de datos.",
+      "expiresOn": "2026-12-31"
+    },
+    {
+      "workspace": "@sihsalus/esm-help-menu-app",
+      "path": "packages/apps/esm-help-menu-app",
+      "owner": "sihsalus@pucp.edu.pe",
+      "risk": "low",
+      "priority": "P2",
+      "missing": ["test-files"],
+      "reason": "El menú de ayuda no tiene pruebas de apertura, navegación entre contenido ni estados de error.",
+      "expiresOn": "2027-02-28"
+    },
+    {
+      "workspace": "@sihsalus/esm-psicologia-app",
+      "path": "packages/apps/esm-psicologia-app",
+      "owner": "sihsalus@pucp.edu.pe",
+      "risk": "high",
+      "priority": "P0",
+      "missing": ["test-files"],
+      "reason": "El tablero de psicología no cubre la consulta de atenciones, observaciones clínicas ni fallos del backend.",
+      "expiresOn": "2026-10-31"
+    },
+    {
+      "workspace": "@sihsalus/esm-referrals-app",
+      "path": "packages/apps/esm-referrals-app",
+      "owner": "sihsalus@pucp.edu.pe",
+      "risk": "high",
+      "priority": "P0",
+      "missing": ["test-files"],
+      "reason": "El flujo de referencias no cubre listado, acciones, motivos, permisos ni respuestas de error.",
+      "expiresOn": "2026-10-31"
+    },
+    {
+      "workspace": "@sihsalus/esm-seguimiento-casos-app",
+      "path": "packages/apps/esm-seguimiento-casos-app",
+      "owner": "sihsalus@pucp.edu.pe",
+      "risk": "high",
+      "priority": "P0",
+      "missing": ["test-files"],
+      "reason": "El seguimiento de casos no tiene regresiones para el tablero, encuentros ni expresiones clínicas.",
+      "expiresOn": "2026-10-31"
+    },
+    {
+      "workspace": "@sihsalus/esm-staff-scheduling-app",
+      "path": "packages/apps/esm-staff-scheduling-app",
+      "owner": "sihsalus@pucp.edu.pe",
+      "risk": "high",
+      "priority": "P0",
+      "missing": ["test-files"],
+      "reason": "La programación de personal no cubre carga de turnos, representación del horario ni errores de servicio.",
+      "expiresOn": "2026-10-31"
+    },
+    {
+      "workspace": "@sihsalus/esm-system-admin-app",
+      "path": "packages/apps/esm-system-admin-app",
+      "owner": "sihsalus@pucp.edu.pe",
+      "risk": "high",
+      "priority": "P1",
+      "missing": ["test-files"],
+      "reason": "El panel administrativo no tiene regresiones para sus accesos, enlaces y comportamiento ante capacidades ausentes.",
+      "expiresOn": "2026-12-31"
+    },
+    {
+      "workspace": "@sihsalus/esm-terapia-fisica-app",
+      "path": "packages/apps/esm-terapia-fisica-app",
+      "owner": "sihsalus@pucp.edu.pe",
+      "risk": "high",
+      "priority": "P0",
+      "missing": ["test-files"],
+      "reason": "El tablero de terapia física no cubre la consulta de atenciones, observaciones ni estados de error.",
+      "expiresOn": "2026-10-31"
+    },
+    {
+      "workspace": "@openmrs/esm-feature-flags",
+      "path": "packages/libs/esm-feature-flags",
+      "owner": "sihsalus@pucp.edu.pe",
+      "risk": "high",
+      "priority": "P1",
+      "missing": ["test-files"],
+      "reason": "La librería compartida de feature flags no tiene pruebas de registro, evaluación ni cambios de estado.",
+      "expiresOn": "2026-12-31"
+    },
+    {
+      "workspace": "@openmrs/esm-translations",
+      "path": "packages/libs/esm-translations",
+      "owner": "sihsalus@pucp.edu.pe",
+      "risk": "medium",
+      "priority": "P1",
+      "missing": ["test-files"],
+      "reason": "La librería compartida de traducciones no cubre carga de recursos ni resolución de idiomas y namespaces.",
+      "expiresOn": "2026-12-31"
+    },
+    {
+      "workspace": "@openmrs/rspack-config",
+      "path": "packages/tooling/rspack-config",
+      "owner": "sihsalus@pucp.edu.pe",
+      "risk": "medium",
+      "priority": "P2",
+      "missing": ["test-script", "test-files"],
+      "reason": "La configuración compartida de Rspack no declara script de test ni pruebas para sus contratos de construcción.",
+      "expiresOn": "2027-02-28"
+    }
+  ]
+}

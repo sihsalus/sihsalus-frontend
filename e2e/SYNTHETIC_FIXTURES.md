@@ -102,6 +102,8 @@ metadata deliberately blocks cleanup for review rather than guessing a new one.
   clinical orders as separate, still-unapproved workflows. This journal does
   not cover temporary users, roles, or concurrent runtime notification captures.
 
-No current-SHA DEV/QLTY validation is claimed by this foundation. Keep the PR
-in draft until the activation contract above has an accountable reviewer and
-environment-specific evidence.
+No current-SHA DEV/QLTY validation is claimed by this foundation. Explicitly
+authorized integration of this disconnected utility does not add an adapter,
+setup/teardown hook or CLI, activate a suite, or waive CONTRIBUTING requirements.
+Keep any activation or adapter PR in draft until an accountable owner has reviewed
+the activation contract above and the required environment-specific evidence.

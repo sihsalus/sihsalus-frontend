@@ -42,6 +42,12 @@ yarn start --port 3000
 
 `yarn start` necesita primero un SPA válido en `dist/spa`; `yarn package:spa` compila las apps, ensambla ese artefacto y lo valida. El dev server hace proxy de las peticiones de API al backend definido en `SIHSALUS_BACKEND_URL` (ver [.env.template](.env.template)). Si no se define, usa `http://gidis-hsc-dev.inf.pucp.edu.pe` y lo advierte al arrancar.
 
+`SIHSALUS_BACKEND_URL` acepta el origen o la base de API terminada en `/openmrs`;
+el proxy normaliza esta última para no enviar `/openmrs/openmrs/...`. La URL debe
+usar HTTP(S), sin credenciales, query ni fragmento. Las rutas de contexto
+personalizadas se conservan. Esta normalización no cambia el backend elegido ni
+la política TLS.
+
 ## Repository Structure
 
 ```

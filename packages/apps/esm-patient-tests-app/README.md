@@ -6,6 +6,18 @@ Creating or editing a test order requires an active clinical Provider linked to 
 
 Orderable tests are searched by their display name and concept names. `testTypeSearchAliases` provides a configurable compatibility fallback keyed by concept UUID; the default adds `TGP` for the existing alanine transferase concept. The same alias must still be published in OCL so this local fallback can eventually be removed.
 
+### Search by concepts and synonyms
+
+The order picker searches the names/synonyms imported into OpenMRS for the configured orderable concept sets. It ignores accents, letter case, repeated whitespace, word order and grammatical connectors, and supports partial words. A match must come from one catalog name or configured alias; it does not combine unrelated synonyms or infer equivalence from OCL mappings. Duplicate UUIDs across groups appear once with their combined names; different methods and panels retain their own UUIDs and full labels.
+
+If no catalog-name match exists, a single spelling error in a long alphabetic word can produce a clearly labeled suggestion. Short codes, numbers and method markers are not typo-corrected. Suggestions require opening the order form; neither direct addition nor bulk addition is available for them. The existing Provider, order permissions and order submission contracts are unchanged.
+
+Read-only OCL metadata verification on 2026-09-07 confirmed [SIHSALUS/laboratorio/1300](https://app.openconceptlab.org/#/orgs/SIHSALUS/sources/laboratorio/concepts/1300/) (`9a9c73d0-76e6-4b84-b20c-dfe8efea9542`): “Prueba de hematocrito”, “Hematocrit”, “Hct”, “Hto”, “PCV”, “Packed cell volume” and “Crit”. “Recuento de hematocrito” was not one of its names. The procedures catalog also contains hematocrit and blood-count panels; these are not substituted for the laboratory concept. Tests use the verified names as metadata fixtures, not as new configuration defaults or proof of deployed orderability.
+
+The local content bundle `laboratorio/2026-07-10-02` also contains these names and a direct `CONCEPT-SET` mapping from the configured Tests Orderability root (`4318`) to hematocrit (`1300`). This verifies the bundled relationship, not that DEV/QLTY has successfully imported that version.
+
+OCL is the terminology source, not a runtime browser dependency: this change adds no OCL token, direct OCL calls, catalog writes or new synonyms. Newly published synonyms must be imported into OpenMRS and included in an orderable set before the picker can use them. Validate search by name/synonym, selected UUID, method/panel distinction and loading/error states locally; confirm actual orderability and save/reload with a synthetic patient and an authorized clinical Provider in coordinated DEV/QLTY before release.
+
 ## Test Results
 
 It provides tabular and chart-based overviews of the test results available for a patient.

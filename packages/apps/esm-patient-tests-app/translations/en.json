@@ -5,6 +5,8 @@
   "addLabOrderWorkspaceTitle": "Add lab order",
   "addOrderableForOrderType": "Add {{orderTypeDisplay}}",
   "allLabTests": "All lab tests",
+  "approximateTestMatches": "Similar catalog names. Check the test, specimen and method in the order form before adding it.",
+  "matchedConceptName": "Catalog name: {{name}}",
   "back": "Back",
   "backToOrderBasket": "Back to order basket",
   "backToTimeline": "Back to timeline",

@@ -5,6 +5,8 @@
   "addLabOrderWorkspaceTitle": "Agregar orden de laboratorio",
   "addOrderableForOrderType": "Agregar {{orderTypeDisplay}}",
   "allLabTests": "Todas las pruebas de laboratorio",
+  "approximateTestMatches": "Nombres similares del catálogo. Revise el examen, la muestra y el método en el formulario antes de agregarlo.",
+  "matchedConceptName": "Nombre en el catálogo: {{name}}",
   "back": "Atrás",
   "backToOrderBasket": "Regresar a la canasta de órdenes",
   "backToTimeline": "Regresar al calendario",

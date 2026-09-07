@@ -190,7 +190,7 @@ function TestTypeSearchResults({
   );
 
   const addAllToBasket = useCallback(() => {
-    if (!session.currentProvider?.uuid) {
+    if (!session.currentProvider?.uuid || testTypes.some((test) => test.approximateMatch)) {
       return;
     }
 
@@ -312,16 +312,18 @@ function TestTypeSearchResults({
                   })}
               </span>
               <div className={styles.headerActions}>
-                {isSpecificLabsetSelected && testTypes.length > 0 && (
-                  <Button
-                    kind="ghost"
-                    onClick={addAllToBasket}
-                    size={isTablet ? 'md' : 'sm'}
-                    renderIcon={(props: any) => <ShoppingCartArrowDownIcon size={16} {...props} />}
-                  >
-                    {t('addAllToBasket', 'Agregar todos')}
-                  </Button>
-                )}
+                {isSpecificLabsetSelected &&
+                  testTypes.length > 0 &&
+                  !testTypes.some((test) => test.approximateMatch) && (
+                    <Button
+                      kind="ghost"
+                      onClick={addAllToBasket}
+                      size={isTablet ? 'md' : 'sm'}
+                      renderIcon={(props: any) => <ShoppingCartArrowDownIcon size={16} {...props} />}
+                    >
+                      {t('addAllToBasket', 'Agregar todos')}
+                    </Button>
+                  )}
                 {searchTerm && (
                   <Button kind="ghost" onClick={focusAndClearSearchInput} size={isTablet ? 'md' : 'sm'}>
                     {t('clearSearchResults', 'Clear results')}
@@ -329,6 +331,14 @@ function TestTypeSearchResults({
                 )}
               </div>
             </div>
+          )}
+          {testTypes.some((test) => test.approximateMatch) && (
+            <p role="status" className={styles.bodyShort01}>
+              {t(
+                'approximateTestMatches',
+                'Similar catalog names. Check the test, specimen and method in the order form before adding it.',
+              )}
+            </p>
           )}
           <div ref={resultsContainerRef} className={styles.resultsContainer} onScroll={handleScroll}>
             {grouped.map((group, groupIndex) => (
@@ -452,6 +462,13 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
         <p>
           <span className={styles.heading}>{testType.label}</span>{' '}
         </p>
+        {testType.matchedName && testType.matchedName !== testType.label && (
+          <p className={styles.bodyShort01}>
+            {t('matchedConceptName', 'Catalog name: {{name}}', {
+              name: testType.matchedName,
+            })}
+          </p>
+        )}
       </div>
       <div className={styles.searchResultActions}>
         {testTypeAlreadyInBasket ? (
@@ -462,7 +479,7 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
           >
             {t('removeFromBasket', 'Remove from basket')}
           </Button>
-        ) : (
+        ) : !testType.approximateMatch ? (
           <Button
             kind="ghost"
             renderIcon={(props: ComponentProps<typeof ShoppingCartArrowDownIcon>) => (
@@ -472,7 +489,7 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
           >
             {t('directlyAddToBasket', 'Add to basket')}
           </Button>
-        )}
+        ) : null}
         <Button
           kind="ghost"
           renderIcon={(props: ComponentProps<typeof ArrowRightIcon>) => <ArrowRightIcon size={16} {...props} />}

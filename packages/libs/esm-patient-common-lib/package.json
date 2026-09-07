@@ -46,7 +46,7 @@
   "devDependencies": {
     "@openmrs/esm-extensions": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
-    "react-router-dom": "7.18.2",
+    "react-router-dom": "7.18.3",
     "typescript": "6.0.3",
     "vitest": "^4.1.7"
   }

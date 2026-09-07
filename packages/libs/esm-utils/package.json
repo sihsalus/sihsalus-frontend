@@ -74,10 +74,10 @@
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "dayjs": "^1.11.13",
-    "happy-dom": "^20.6.0",
+    "happy-dom": "^20.14.0",
     "rimraf": "^6.1.3",
     "rxjs": "^6.5.3",
-    "timezone-mock": "^1.4.2",
+    "timezone-mock": "^1.4.3",
     "typescript": "6.0.3",
     "vitest": "^4.1.7"
   },

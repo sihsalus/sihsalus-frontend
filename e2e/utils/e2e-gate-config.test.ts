@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type E2EGateTarget, isSyntheticE2EPatient, loadE2EGateConfig } from './e2e-gate-config';
+import { type E2EGateTarget, isSyntheticE2EPatient, loadE2EBaseConfig, loadE2EGateConfig } from './e2e-gate-config';
 
 const targetOrigins: Record<E2EGateTarget, string> = {
   DEV: 'https://gidis-hsc-dev.inf.pucp.edu.pe',
@@ -22,6 +22,18 @@ function validEnvironment(target: E2EGateTarget = 'DEV'): NodeJS.ProcessEnv {
 }
 
 describe('loadE2EGateConfig', () => {
+  it('loads the protected non-production connection before synthetic fixtures exist', () => {
+    const environment = validEnvironment();
+    delete environment.E2E_PATIENT_UUID;
+    delete environment.E2E_APPOINTMENTS_PATIENT_UUID;
+
+    expect(loadE2EBaseConfig(environment)).toMatchObject({
+      apiBaseUrl: `${targetOrigins.DEV}/openmrs`,
+      target: 'DEV',
+    });
+    expect(() => loadE2EGateConfig(environment)).toThrow(/E2E_APPOINTMENTS_PATIENT_UUID is required/);
+  });
+
   it.each(['DEV', 'QLTY'] as const)('accepts a loopback SPA backed by %s', (target) => {
     expect(loadE2EGateConfig(validEnvironment(target))).toMatchObject({
       apiBaseUrl: `${targetOrigins[target]}/openmrs`,

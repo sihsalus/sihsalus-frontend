@@ -9,13 +9,16 @@ const allowedBackendOrigins: Record<E2EGateTarget, string> = {
 
 const loopbackHostnames = new Set(['localhost', '127.0.0.1', '[::1]']);
 
-export interface E2EGateConfig {
+export interface E2EBaseConfig {
   apiBaseUrl: string;
-  appointmentsPatientUuid: string;
   locationUuid: string;
-  patientUuid: string;
   spaBaseUrl: string;
   target: E2EGateTarget;
+}
+
+export interface E2EGateConfig extends E2EBaseConfig {
+  appointmentsPatientUuid: string;
+  patientUuid: string;
 }
 
 export interface E2EPatientIdentity {
@@ -104,7 +107,7 @@ function normalizedPath(url: URL) {
  * explicit SIH Salus non-production allowlist. The SPA may be the deployed
  * target or a loopback dev server that proxies to that target.
  */
-export function loadE2EGateConfig(environment: NodeJS.ProcessEnv = process.env): E2EGateConfig {
+export function loadE2EBaseConfig(environment: NodeJS.ProcessEnv = process.env): E2EBaseConfig {
   const target = requireTarget(environment);
   const allowedBackendOrigin = allowedBackendOrigins[target];
 
@@ -142,10 +145,17 @@ export function loadE2EGateConfig(environment: NodeJS.ProcessEnv = process.env):
 
   return {
     apiBaseUrl: apiUrl.href.replace(/\/+$/, ''),
-    appointmentsPatientUuid: requireUuid(environment, 'E2E_APPOINTMENTS_PATIENT_UUID'),
     locationUuid: requireUuid(environment, 'E2E_LOGIN_DEFAULT_LOCATION_UUID'),
-    patientUuid: requireUuid(environment, 'E2E_PATIENT_UUID'),
     spaBaseUrl: spaUrl.href.replace(/\/+$/, ''),
     target,
+  };
+}
+
+/** Loads the base gate plus the required, explicitly configured synthetic patients. */
+export function loadE2EGateConfig(environment: NodeJS.ProcessEnv = process.env): E2EGateConfig {
+  return {
+    ...loadE2EBaseConfig(environment),
+    appointmentsPatientUuid: requireUuid(environment, 'E2E_APPOINTMENTS_PATIENT_UUID'),
+    patientUuid: requireUuid(environment, 'E2E_PATIENT_UUID'),
   };
 }

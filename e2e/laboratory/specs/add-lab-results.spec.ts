@@ -1,16 +1,8 @@
-import { type Order, type Visit } from '@openmrs/esm-framework';
 import { expect } from '@playwright/test';
 import { getSpaUrl } from '../../utils/e2e-urls';
-import {
-  createEncounter,
-  deleteEncounter,
-  deleteTestOrder,
-  endVisit,
-  generateRandomTestOrder,
-  getProvider,
-  startVisit,
-} from '../commands';
-import { type Encounter, type Provider } from '../commands/types';
+import { voidOpenmrsResources } from '../../utils/openmrs-cleanup';
+import { createEncounter, generateRandomTestOrder, getProvider, startVisit } from '../commands';
+import { type Encounter, type Order, type Provider, type Visit } from '../commands/types';
 import { test } from '../core';
 import { LaboratoryPage } from '../pages';
 
@@ -100,13 +92,9 @@ test.describe('Laboratory order workflow', () => {
 });
 
 test.afterEach(async ({ api }) => {
-  if (visit) {
-    await endVisit(api, visit);
-  }
-  if (encounter?.uuid) {
-    await deleteEncounter(api, encounter.uuid);
-  }
-  if (testOrder?.uuid) {
-    await deleteTestOrder(api, testOrder.uuid);
-  }
+  await voidOpenmrsResources(api, [
+    testOrder?.uuid ? { resource: 'order', uuid: testOrder.uuid } : undefined,
+    encounter?.uuid ? { resource: 'encounter', uuid: encounter.uuid } : undefined,
+    visit?.uuid ? { resource: 'visit', uuid: visit.uuid } : undefined,
+  ]);
 });

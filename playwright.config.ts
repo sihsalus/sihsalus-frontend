@@ -14,7 +14,7 @@ const webServer =
         command: webServerCommand,
         url: getSpaUrl('login'),
         timeout: 120_000,
-        reuseExistingServer: !!process.env.CI,
+        reuseExistingServer: !process.env.CI,
       };
 
 export default defineConfig({

@@ -1,6 +1,8 @@
 import path from 'node:path';
 import * as dotenv from 'dotenv';
 import { loginToOpenmrsAndWriteStorageState } from '../../utils/e2e-api';
+import { loadE2EGateConfig } from '../../utils/e2e-gate-config';
+import { validateE2ERemotePreflight } from '../../utils/e2e-remote-preflight';
 
 dotenv.config();
 
@@ -12,6 +14,8 @@ dotenv.config();
  */
 
 async function globalSetup() {
+  const config = loadE2EGateConfig();
+  await validateE2ERemotePreflight(config, { requirePreparedOutpatientVisit: false });
   await loginToOpenmrsAndWriteStorageState({
     locale: 'en',
     storageStatePath: path.resolve(__dirname, '../storageState.json'),

@@ -35,13 +35,13 @@ interface TestTypeSearchResultsProps extends TestTypeSearchProps {
   cancelOrder: () => void;
   searchTerm: string;
   focusAndClearSearchInput: () => void;
+  fetchedLabsets?: Array<{ uuid: string; display: string }>;
 }
 
 interface TestTypeSearchResultItemProps {
   orderTypeUuid: string;
   testType: TestType;
   openOrderForm: (searchResult: TestOrderBasketItem) => void;
-  returnToOrderBasket: () => void;
 }
 
 let lastSelectedLabset = 'ALL';
@@ -140,6 +140,7 @@ export function TestTypeSearch({
         openLabForm={openLabForm}
         searchTerm={debouncedSearchTerm}
         returnToOrderBasket={returnToOrderBasket}
+        fetchedLabsets={fetchedLabsets}
       />
     </>
   );
@@ -160,6 +161,7 @@ function TestTypeSearchResults({
   orderableConceptSets,
   openLabForm,
   focusAndClearSearchInput,
+  fetchedLabsets,
 }: TestTypeSearchResultsProps) {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -191,16 +193,39 @@ function TestTypeSearchResults({
     if (!session.currentProvider?.uuid) {
       return;
     }
-    const testsToAdd = testTypes.filter(
-      (testType) => !orders?.some((order) => order.testType.conceptUuid === testType.conceptUuid),
-    );
-
-    if (testsToAdd.length === 0) return;
 
     const selectedPriority = getSavedPriorityConfig(priorityConfigs);
     if (!selectedPriority) {
       return;
     }
+
+    if (isSpecificLabsetSelected && orderableConceptSets?.length === 1) {
+      const parentConceptUuid = orderableConceptSets[0];
+      if (orders?.some((order) => order.testType.conceptUuid === parentConceptUuid)) {
+        return;
+      }
+      const parentLabset = fetchedLabsets?.find((l) => l.uuid === parentConceptUuid);
+      const parentLabel = parentLabset?.display || testTypes[0]?.groupLabel || t('fullLabSet', 'Examen completo');
+      const parentTestType: TestType = {
+        label: parentLabel,
+        conceptUuid: parentConceptUuid,
+        synonyms: [],
+      };
+      const labOrder = createLabOrder(parentTestType);
+      labOrder.urgency = selectedPriority.conceptUuid;
+      labOrder.urgencyCode = selectedPriority.urgency;
+      labOrder.isOrderIncomplete = selectedPriority.requiresScheduledDate ? !labOrder.scheduledDate : false;
+
+      setOrders([...orders, labOrder]);
+      cancelOrder();
+      return;
+    }
+
+    const testsToAdd = testTypes.filter(
+      (testType) => !orders?.some((order) => order.testType.conceptUuid === testType.conceptUuid),
+    );
+
+    if (testsToAdd.length === 0) return;
 
     const newLabOrders = testsToAdd.map((testType) => {
       const labOrder = createLabOrder(testType);
@@ -212,7 +237,19 @@ function TestTypeSearchResults({
 
     setOrders([...orders, ...newLabOrders]);
     cancelOrder();
-  }, [testTypes, orders, setOrders, createLabOrder, cancelOrder, priorityConfigs, session.currentProvider?.uuid]);
+  }, [
+    session.currentProvider?.uuid,
+    priorityConfigs,
+    isSpecificLabsetSelected,
+    orderableConceptSets,
+    orders,
+    fetchedLabsets,
+    testTypes,
+    t,
+    createLabOrder,
+    setOrders,
+    cancelOrder,
+  ]);
 
   const resultsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -303,7 +340,6 @@ function TestTypeSearchResults({
                     orderTypeUuid={orderTypeUuid}
                     openOrderForm={openLabForm}
                     testType={testType}
-                    returnToOrderBasket={cancelOrder}
                   />
                 ))}
               </div>
@@ -357,7 +393,6 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
   testType,
   openOrderForm,
   orderTypeUuid,
-  returnToOrderBasket,
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -400,16 +435,7 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
     labOrder.isOrderIncomplete = selectedPriority.requiresScheduledDate ? !labOrder.scheduledDate : false;
 
     setOrders([...orders, labOrder]);
-    returnToOrderBasket();
-  }, [
-    orders,
-    setOrders,
-    createLabOrder,
-    returnToOrderBasket,
-    testType,
-    priorityConfigs,
-    session.currentProvider?.uuid,
-  ]);
+  }, [orders, setOrders, createLabOrder, testType, priorityConfigs, session.currentProvider?.uuid]);
 
   const removeFromBasket = useCallback(() => {
     setOrders(orders.filter((order) => order.testType.conceptUuid !== testType.conceptUuid));
@@ -417,7 +443,9 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
 
   return (
     <Tile
-      className={classNames(styles.searchResultTile, { [styles.tabletSearchResultTile]: isTablet })}
+      className={classNames(styles.searchResultTile, {
+        [styles.tabletSearchResultTile]: isTablet,
+      })}
       role="listitem"
     >
       <div className={classNames(styles.searchResultTileContent, styles.text02)}>

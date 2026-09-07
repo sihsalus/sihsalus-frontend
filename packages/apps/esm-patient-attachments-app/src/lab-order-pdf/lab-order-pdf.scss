@@ -1,0 +1,49 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.container {
+  margin-block-start: layout.$spacing-05;
+  border-block-start: 1px solid var(--cds-border-subtle);
+  padding-block-start: layout.$spacing-04;
+}
+
+.header,
+.previewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-03;
+}
+
+.header h5 {
+  @include type.type-style('heading-compact-01');
+}
+
+.empty {
+  @include type.type-style('body-compact-01');
+  color: var(--cds-text-secondary);
+  margin-block-start: layout.$spacing-03;
+}
+
+.list {
+  list-style: none;
+  margin: layout.$spacing-03 0 0;
+  padding: 0;
+}
+
+.preview {
+  margin-block-start: layout.$spacing-04;
+  border: 1px solid var(--cds-border-subtle);
+}
+
+.previewHeader {
+  @include type.type-style('label-01');
+  padding-inline-start: layout.$spacing-04;
+}
+
+.preview iframe {
+  display: block;
+  width: 100%;
+  min-height: 32rem;
+  border: 0;
+}

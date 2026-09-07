@@ -15,10 +15,14 @@ export const configSchema = {
       },
     },
     _default: [
-      /*{
+      {
         conceptUuid: '24305e8e-f3dc-4ac6-bf87-e4f11f3b970e',
         defaultOpen: false,
-      },*/
+      },
+      {
+        conceptUuid: 'c5cedfda-c2b7-4c85-b420-ecf0b53cba08',
+        defaultOpen: false,
+      },
       {
         conceptUuid: '7e750f3a-8d5c-45b1-8e94-ebf850208e35',
         defaultOpen: false,
@@ -79,6 +83,15 @@ export const configSchema = {
         _type: Type.UUID,
       },
       _default: ['020e5471-8750-44f6-82dd-af6d8eb63544'],
+    },
+  },
+  testTypeSearchAliases: {
+    _type: Type.Object,
+    _description:
+      'Local search aliases keyed by the UUID of an orderable test concept. These are a compatibility fallback until the same synonym is published in OCL.',
+    _default: {
+      // Alanina transferasa / ALT. The HSC team commonly searches for this test as TGP.
+      '4686f6f2-a42e-47c3-aa56-8301bd1c71b6': ['TGP'],
     },
   },
   showReferenceNumberField: {
@@ -239,4 +252,5 @@ export interface ConfigObject {
   }>;
   resultsViewerConcepts: Array<ObsTreeEntry>;
   priorityConfigs: Array<PriorityConfig>;
+  testTypeSearchAliases: Record<string, Array<string>>;
 }

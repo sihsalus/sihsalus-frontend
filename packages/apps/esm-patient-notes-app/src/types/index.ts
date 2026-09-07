@@ -53,10 +53,19 @@ export interface ConceptReferenceMapping {
   };
 }
 
+/** A concept name as returned by the REST `names` representation. */
+export interface CatalogConceptName {
+  display?: string;
+  name?: string;
+  conceptNameType?: string | null;
+  locale?: string;
+}
+
 export interface Concept {
   display: string;
   conceptMappings?: Array<ConceptReferenceMapping>;
   mappings?: Array<ConceptReferenceMapping>;
+  names?: Array<CatalogConceptName>;
   setMembers?: Array<Concept>;
   uuid: string;
 }
@@ -186,6 +195,9 @@ export interface Diagnosis {
   certainty: string;
   rank: number;
   display: string;
+  conceptMappings?: Array<ConceptReferenceMapping>;
+  mappings?: Array<ConceptReferenceMapping>;
+  names?: Array<CatalogConceptName>;
   /** UUID de la respuesta al concepto "Tipo de diagnóstico" (NTS-139): Presuntivo | Definitivo | Repetitivo */
   tipoConceptUuid?: string;
 }
@@ -202,7 +214,7 @@ export interface DiagnosisPayload {
 }
 
 export type EncounterDiagnosisPayload =
-  | (Omit<DiagnosisPayload, 'encounter'> & {
+  | (Omit<DiagnosisPayload, "encounter"> & {
       encounter?: string;
       uuid?: string;
     })

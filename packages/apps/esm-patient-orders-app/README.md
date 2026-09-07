@@ -68,6 +68,10 @@ La modificación de medicamentos tiene una brecha de composición: `medicamentos
 
 Los guards de UI no autorizan la mutación en el backend. Los roles todavía necesitan los privilegios OpenMRS de Orders y la visita/encounter válidos para la operación.
 
+Los detalles de una orden de laboratorio incluyen el slot `lab-order-pdf-attachments-slot` después de sus resultados
+estructurados. El documento PDF es suplementario: no reemplaza resultados, no completa ni aprueba la orden y sólo
+puede asociarse cuando la orden, el encounter y el paciente ya tienen UUID persistidos.
+
 ## TODO backend/permisos/auditoria
 
 - Validar `ChargeItemDefinition` contra el `fhir2 >= 1.2` ya declarado cuando el hook de precio esté habilitado.

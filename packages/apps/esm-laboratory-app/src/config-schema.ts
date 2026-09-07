@@ -42,7 +42,8 @@ export const configSchema = {
     _type: Type.Array,
     _description: 'Conceptos de sets de laboratorio utilizados para filtrar las órdenes por grupo.',
     _default: [
-      //{ conceptUuid: '24305e8e-f3dc-4ac6-bf87-e4f11f3b970e' }, // Hemograma completo
+      { conceptUuid: '24305e8e-f3dc-4ac6-bf87-e4f11f3b970e' }, // Hemograma completo
+      { conceptUuid: 'c5cedfda-c2b7-4c85-b420-ecf0b53cba08' }, // Sedimento Urinario
       { conceptUuid: '7e750f3a-8d5c-45b1-8e94-ebf850208e35' }, // Examen completo de orina
       //{ conceptUuid: 'df144cc2-6718-4005-9881-f39eafd73315' }, // Examen de Heces
       { conceptUuid: '339febfd-699e-4a26-927f-1f9a7780bb5e' }, // Panel de Química del Suero

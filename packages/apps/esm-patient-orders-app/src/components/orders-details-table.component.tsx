@@ -102,7 +102,8 @@ const getPriorityColor = (urgency: string | undefined): string => {
 };
 
 const resultsViewerConcepts = [
-  //'24305e8e-f3dc-4ac6-bf87-e4f11f3b970e', // Hemograma completo
+  '24305e8e-f3dc-4ac6-bf87-e4f11f3b970e', // Hemograma completo
+  'c5cedfda-c2b7-4c85-b420-ecf0b53cba08', // Sedimento Urinario
   '7e750f3a-8d5c-45b1-8e94-ebf850208e35', // Examen completo de orina
   //'df144cc2-6718-4005-9881-f39eafd73315', // Examen de heces (panel)
   '339febfd-699e-4a26-927f-1f9a7780bb5e', // Panel de Química del Suero
@@ -538,12 +539,25 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
 
     // Filtrado por grupo de pruebas
     if (selectedLabsetUuid && fetchedLabsets) {
-      const currentLabset = fetchedLabsets.find((set) => set.uuid === selectedLabsetUuid);
-      const memberUuids = currentLabset ? getMemberUuids(currentLabset) : [];
+      const isRelatedLabset = (orderConceptUuid: string | undefined) => {
+        if (!orderConceptUuid || !selectedLabsetUuid) return true;
+        if (orderConceptUuid === selectedLabsetUuid) return true;
 
-      result = result.filter(
-        (order) => order.concept?.uuid === selectedLabsetUuid || memberUuids.includes(order.concept?.uuid),
-      );
+        const targetSet = fetchedLabsets.find((s) => s.uuid === selectedLabsetUuid);
+        const targetMembers = targetSet ? getMemberUuids(targetSet) : [];
+        if (targetMembers.includes(orderConceptUuid)) return true;
+
+        const orderSet = fetchedLabsets.find((s) => s.uuid === orderConceptUuid);
+        if (orderSet) {
+          const orderMembers = getMemberUuids(orderSet);
+          if (orderMembers.includes(selectedLabsetUuid)) return true;
+          if (targetMembers.some((mUuid) => orderMembers.includes(mUuid))) return true;
+        }
+
+        return false;
+      };
+
+      result = result.filter((order) => isRelatedLabset(order.concept?.uuid));
     }
 
     // Filtrado por estado
@@ -574,9 +588,8 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
           dosage:
             order.type === 'drugorder' ? (
               <div className={styles.singleLineText}>{`${t('indication', 'Indication').toUpperCase()}
-              ${order.orderReasonNonCoded} ${'-'} ${t('quantity', 'Quantity').toUpperCase()} ${order.quantity} ${
-                order?.quantityUnits?.display
-              } `}</div>
+              ${order.orderReasonNonCoded} ${'-'} ${t('quantity', 'Quantity').toUpperCase()} ${order.quantity} ${order?.quantityUnits?.display
+                } `}</div>
             ) : (
               '--'
             ),
@@ -812,11 +825,11 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
                     selectedOrderTypeUuid === null
                       ? t('orders', 'Orders')
                       : // t('Drug Order_few', 'Drug Orders')
-                        // t('Test Order_few', 'Test Orders')
-                        t(selectedOrderName?.toLowerCase() ?? 'orders', {
-                          count: 3,
-                          default: selectedOrderName,
-                        })
+                      // t('Test Order_few', 'Test Orders')
+                      t(selectedOrderName?.toLowerCase() ?? 'orders', {
+                        count: 3,
+                        default: selectedOrderName,
+                      })
                   }
                   launchForm={canEditOrders && canUseOrderBasket ? launchOrderBasket : undefined}
                 />

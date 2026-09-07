@@ -984,6 +984,7 @@ describe('RelationshipsSection', () => {
     );
     await user.type(screen.getByRole('textbox', { name: /first name/i }), 'María');
     await user.type(screen.getByRole('textbox', { name: /^family name/i }), 'Quispe');
+    await user.type(screen.getByRole('textbox', { name: /second family name/i }), 'Paredes');
     await user.click(screen.getByRole('radio', { name: /female/i }));
     await user.click(screen.getByRole('tab', { name: /^no$/i }));
     await user.type(screen.getByRole('spinbutton', { name: /approximate age/i }), '35');
@@ -1000,7 +1001,7 @@ describe('RelationshipsSection', () => {
         givenName: 'María',
         middleName: '',
         familyName: 'Quispe',
-        familyName2: '',
+        familyName2: 'Paredes',
         gender: 'female',
         birthdate: '',
         birthdateEstimated: true,
@@ -1011,7 +1012,7 @@ describe('RelationshipsSection', () => {
         relationshipType: '057de23f-3d9c-4314-9391-4452970739c6/aIsToB',
       }),
     );
-    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonName', 'María Quispe');
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonName', 'María Quispe Paredes');
     expect(setFieldValue).toHaveBeenCalledWith(
       'relationships[0].relationshipType',
       '057de23f-3d9c-4314-9391-4452970739c6/aIsToB',

@@ -8,6 +8,7 @@ import {
   computeQuantityRemaining,
   computeTotalQuantityDispensed,
   getMostRecentMedicationDispenseStatus,
+  isMedicationRequestFullyDispensed,
 } from '../utils';
 import styles from './action-buttons.scss';
 
@@ -36,7 +37,8 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
   );
   const dispensable =
     medicationRequestStatus === MedicationRequestStatus.active &&
-    mostRecentMedicationDispenseStatus !== MedicationDispenseStatus.declined;
+    mostRecentMedicationDispenseStatus !== MedicationDispenseStatus.declined &&
+    !isMedicationRequestFullyDispensed(medicationRequestBundle);
 
   const pauseable =
     config.actionButtons.pauseButton.enabled &&

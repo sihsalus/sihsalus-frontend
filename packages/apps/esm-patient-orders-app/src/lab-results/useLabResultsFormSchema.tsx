@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { type LabOrderConcept, useOrderConceptByUuid } from './lab-results.resource';
+import { flattenLeafConcepts, type LabOrderConcept, useOrderConceptByUuid } from './lab-results.resource';
 
 type SchemaRecord = Record<string, z.ZodType>;
 
@@ -19,10 +19,9 @@ export const useLabResultsFormSchema = (labOrderConceptUuid: string) => {
     return z.object({});
   }
 
-  const setMembers = concept?.setMembers ?? [];
-
-  if (setMembers.length > 0) {
-    return createSetMembersSchema(setMembers);
+  if (concept.setMembers && concept.setMembers.length > 0) {
+    const leafConcepts = flattenLeafConcepts(concept);
+    return createSetMembersSchema(leafConcepts);
   }
 
   return createSingleConceptSchema(concept);
@@ -53,6 +52,8 @@ const createSingleConceptSchema = (labOrderConcept: LabOrderConcept) => {
 
   return z.object({
     [labOrderConcept.uuid]: zodObject,
+    [`${labOrderConcept.uuid}-comment`]: z.string().optional(),
+    'order-comment': z.string().optional(),
   });
 };
 
@@ -62,12 +63,14 @@ const createSingleConceptSchema = (labOrderConcept: LabOrderConcept) => {
  * @returns A Zod schema object for the set of concepts.
  */
 const createSetMembersSchema = (labOrderConcepts: Array<LabOrderConcept>): z.ZodObject<SchemaRecord> => {
-  const schema = z.object(
-    labOrderConcepts.reduce<SchemaRecord>((acc, member) => {
+  const schema = z.object({
+    'order-comment': z.string().optional(),
+    ...labOrderConcepts.reduce<SchemaRecord>((acc, member) => {
       acc[member.uuid] = createSchema(member);
+      acc[`${member.uuid}-comment`] = z.string().optional();
       return acc;
     }, {}),
-  );
+  });
 
   return schema;
 };

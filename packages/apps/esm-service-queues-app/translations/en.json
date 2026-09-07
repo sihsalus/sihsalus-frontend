@@ -381,6 +381,7 @@
   "transitionPatientAction": "Transition patient",
   "transitionPatientStatusOrQueue": "Select a new status or queue for patient to transition to.",
   "triageBlockedByFinancing": "Triage blocked by financing",
+  "triageChecking": "Checking",
   "triageCompleted": "Triage completed",
   "triageForm": "Triage form",
   "triageNote": "Triage note",

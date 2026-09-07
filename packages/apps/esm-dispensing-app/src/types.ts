@@ -359,6 +359,7 @@ export enum MedicationRequestStatus {
  * hence the case difference from the other statuses
  */
 export enum MedicationRequestFulfillerStatus {
+  in_progress = 'IN_PROGRESS',
   on_hold = 'ON_HOLD',
   declined = 'DECLINED',
   completed = 'COMPLETED',

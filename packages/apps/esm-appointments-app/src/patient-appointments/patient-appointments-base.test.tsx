@@ -118,7 +118,7 @@ describe('AppointmentsOverview', () => {
       expect(screen.getByRole('columnheader', { name: new RegExp(header, 'i') })).toBeInTheDocument();
     });
 
-    expect(screen.getAllByRole('row').length).toEqual(7); // 7 appts in mock data + header row
+    expect(document.querySelectorAll('[data-appointment-row]')).toHaveLength(6);
     expect(screen.getByRole('columnheader', { name: /provider/i })).toBeInTheDocument();
     expect(screen.getAllByText(/^programada$/i)[0].closest('.cds--tag')).not.toBeNull();
 

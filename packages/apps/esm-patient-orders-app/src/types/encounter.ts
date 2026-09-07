@@ -48,6 +48,7 @@ export interface Observation {
   location: OpenmrsResource;
   order: Order;
   status: string;
+  comment?: string;
 }
 
 export interface Diagnosis {

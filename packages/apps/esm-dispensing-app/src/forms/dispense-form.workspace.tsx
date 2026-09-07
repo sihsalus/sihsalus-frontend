@@ -10,7 +10,7 @@ import {
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
 import { type PharmacyConfig } from '../config-schema';
@@ -76,8 +76,10 @@ const DispenseForm: React.FC<Workspace2DefinitionProps<DispenseFormProps, {}, {}
 
   // to prevent duplicate submits
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   const [shouldCompleteOrder, setShouldCompleteOrder] = useState(false);
+  const completionChoiceTouchedRef = useRef(false);
 
   const [isFreeTextDosage, setIsFreeTextDosage] = useState(() => {
     const dosageInstruction = getDosageInstruction(medicationDispense?.dosageInstruction);
@@ -153,121 +155,185 @@ const DispenseForm: React.FC<Workspace2DefinitionProps<DispenseFormProps, {}, {}
   };
 
   // Submit medication dispense form
-  const handleSubmit = () => {
-    if (isSubmitting) {
-      return Promise.resolve();
+  const handleSubmit = async () => {
+    if (isSubmittingRef.current) {
+      return;
     }
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     const abortController = new AbortController();
     markEncounterAsStale(encounterUuid);
-    return saveMedicationDispense(medicationDispensePayload, MedicationDispenseStatus.completed, abortController)
-      .then((response) => {
-        if (response.ok) {
-          if (config.completeOrderWithThisDispense && shouldCompleteOrder) {
-            return updateMedicationRequestFulfillerStatus(
-              getUuidFromReference(
-                medicationDispensePayload.authorizingPrescription[0].reference, // assumes authorizing prescription exist
-              ),
-              MedicationRequestFulfillerStatus.completed,
-            ).then(() => response);
-          }
-          const newFulfillerStatus = computeNewFulfillerStatusAfterDispenseEvent(
+    let dispenseSaved = false;
+    let orderMarkedCompleted = false;
+    let statusUpdateFailed = false;
+    let statusUpdateErrorMessage: string | undefined;
+
+    try {
+      const response = await saveMedicationDispense(
+        medicationDispensePayload,
+        MedicationDispenseStatus.completed,
+        abortController,
+      );
+      dispenseSaved = response.ok && (response.status === 200 || response.status === 201);
+      if (!dispenseSaved) {
+        throw new Error('Medication dispense request was not accepted');
+      }
+
+      const usesExplicitCompletionChoice =
+        config.completeOrderWithThisDispense && mode === 'enter' && !medicationDispense?.id;
+      const newFulfillerStatus = usesExplicitCompletionChoice
+        ? shouldCompleteOrder
+          ? MedicationRequestFulfillerStatus.completed
+          : MedicationRequestFulfillerStatus.in_progress
+        : computeNewFulfillerStatusAfterDispenseEvent(
             medicationDispensePayload,
             medicationRequestBundle,
             config.dispenseBehavior.restrictTotalQuantityDispensed,
           );
-          if (getFulfillerStatus(medicationRequestBundle.request) !== newFulfillerStatus) {
-            return updateMedicationRequestFulfillerStatus(
-              getUuidFromReference(
-                medicationDispensePayload.authorizingPrescription[0].reference, // assumes authorizing prescription exist
-              ),
-              newFulfillerStatus,
-            ).then(() => response);
-          }
+
+      const currentFulfillerStatus = getFulfillerStatus(medicationRequestBundle.request) ?? null;
+      if (currentFulfillerStatus !== newFulfillerStatus) {
+        try {
+          await updateMedicationRequestFulfillerStatus(
+            getUuidFromReference(
+              medicationDispensePayload.authorizingPrescription[0].reference, // assumes authorizing prescription exists
+            ),
+            newFulfillerStatus,
+          );
+          orderMarkedCompleted = newFulfillerStatus === MedicationRequestFulfillerStatus.completed;
+        } catch (error) {
+          statusUpdateFailed = true;
+          statusUpdateErrorMessage = getUserFacingErrorMessage(
+            error,
+            t(
+              'dispenseSavedOrderStatusPendingMessage',
+              'The dispense was saved, but the order status could not be updated. Do not dispense it again; refresh the list and contact support if it remains active.',
+            ),
+            { logContext: 'Update medication request after saved dispense' },
+          );
         }
-        return response;
-      })
-      .then((response) => {
-        const { status } = response;
-        if (config.enableStockDispense && (status === 201 || status === 200)) {
+      }
+
+      if (config.enableStockDispense) {
+        try {
           const stockDispenseRequestPayload = createStockDispenseRequestPayload(
             inventoryItem,
             patientUuid,
             encounterUuid,
             medicationDispensePayload,
           );
-          sendStockDispenseRequest(stockDispenseRequestPayload, abortController).then(
-            () => {
-              showSnackbar({
-                title: t('stockDispensed', 'Stock dispensed'),
-                kind: 'success',
-                subtitle: t('stockDispensedSuccessfully', 'Stock dispensed successfully and batch level updated.'),
-              });
-            },
-            (error) => {
-              showSnackbar({
-                title: t('stockDispenseError', 'Error al actualizar el inventario'),
-                kind: 'error',
-                subtitle: getUserFacingErrorMessage(
-                  error,
-                  t(
-                    'stockDispenseErrorMessage',
-                    'La dispensación se guardó, pero no se pudo actualizar el inventario.',
-                  ),
-                  { logContext: 'Update stock after medication dispense' },
-                ),
-              });
-            },
-          );
-        }
-        return response;
-      })
-      .then(
-        (response) => {
-          const { status } = response;
-          if (config.completeOrderWithThisDispense && shouldCompleteOrder && response?.data?.status === 'completed') {
-            showSnackbar({
-              title: t('prescriptionCompleted', 'Prescription completed'),
-              kind: 'success',
-              subtitle: t(
-                'prescriptionCompletedSuccessfully',
-                'Medication dispensed and prescription marked as completed',
-              ),
-            });
-          }
-          if (status === 201 || status === 200) {
-            revalidate(mutate, encounterUuid);
-            showSnackbar({
-              kind: 'success',
-              subtitle: t('medicationListUpdated', 'Medication dispense list has been updated.'),
-              title: t(
-                mode === 'enter' ? 'medicationDispensed' : 'medicationDispenseUpdated',
-                mode === 'enter'
-                  ? 'Medication successfully dispensed.'
-                  : 'Medication dispense record successfully updated.',
-              ),
-            });
-            closeWorkspace({ discardUnsavedChanges: true });
-            setIsSubmitting(false);
-            onWorkspaceClosed?.();
-          }
-        },
-        (error) => {
+          await sendStockDispenseRequest(stockDispenseRequestPayload, abortController);
+          showSnackbar({
+            title: t('stockDispensed', 'Stock dispensed'),
+            kind: 'success',
+            subtitle: t('stockDispensedSuccessfully', 'Stock dispensed successfully and batch level updated.'),
+          });
+        } catch (error) {
           showSnackbar({
             kind: 'error',
-            title: t(
-              mode === 'enter' ? 'medicationDispenseError' : 'medicationDispenseUpdatedError',
-              mode === 'enter' ? 'Error dispensing medication.' : 'Error updating dispense record',
-            ),
+            title: t('stockDispenseError', 'Error updating inventory'),
             subtitle: getUserFacingErrorMessage(
               error,
-              t('medicationDispenseSaveErrorMessage', 'No se pudo guardar la dispensación. Intente nuevamente.'),
-              { logContext: 'Save medication dispense' },
+              t('stockDispenseErrorMessage', 'The dispense record was saved, but inventory could not be updated.'),
+              { logContext: 'Update stock after medication dispense' },
             ),
           });
-          setIsSubmitting(false);
-        },
-      );
+        }
+      }
+
+      try {
+        await revalidate(mutate, encounterUuid);
+      } catch (error) {
+        showSnackbar({
+          kind: 'warning',
+          title: t('dispenseSavedRefreshPending', 'Dispense saved; refresh pending'),
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t(
+              'dispenseSavedRefreshPendingMessage',
+              'The dispense was saved, but the list could not be refreshed. Reload it before continuing.',
+            ),
+            { logContext: 'Refresh prescriptions after medication dispense' },
+          ),
+        });
+      }
+
+      if (statusUpdateFailed) {
+        showSnackbar({
+          kind: 'warning',
+          title: t('dispenseSavedOrderStatusPending', 'Dispense saved; order status pending'),
+          subtitle:
+            statusUpdateErrorMessage ??
+            t(
+              'dispenseSavedOrderStatusPendingMessage',
+              'The dispense was saved, but the order status could not be updated. Do not dispense it again; refresh the list and contact support if it remains active.',
+            ),
+        });
+      } else if (orderMarkedCompleted) {
+        showSnackbar({
+          title: t('prescriptionCompleted', 'Prescription completed'),
+          kind: 'success',
+          subtitle: t('prescriptionCompletedSuccessfully', 'Medication dispensed and prescription marked as completed'),
+        });
+      } else {
+        showSnackbar({
+          kind: 'success',
+          subtitle: t('medicationListUpdated', 'Medication dispense list has been updated.'),
+          title: t(
+            mode === 'enter' ? 'medicationDispensed' : 'medicationDispenseUpdated',
+            mode === 'enter'
+              ? 'Medication successfully dispensed.'
+              : 'Medication dispense record successfully updated.',
+          ),
+        });
+      }
+
+      closeWorkspace({ discardUnsavedChanges: true });
+      onWorkspaceClosed?.();
+    } catch (error) {
+      if (!dispenseSaved) {
+        try {
+          await revalidate(mutate, encounterUuid);
+        } catch {
+          // Keep the encounter marked as stale so the next consumer retries the read.
+        }
+        showSnackbar({
+          kind: 'error',
+          title: t(
+            mode === 'enter' ? 'medicationDispenseError' : 'medicationDispenseUpdatedError',
+            mode === 'enter' ? 'Error dispensing medication.' : 'Error updating dispense record',
+          ),
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('medicationDispenseSaveErrorMessage', 'Could not save the dispense record. Please try again.'),
+            { logContext: 'Save medication dispense' },
+          ),
+        });
+      } else {
+        try {
+          await revalidate(mutate, encounterUuid);
+        } catch {
+          // Keep the encounter marked as stale so the next consumer retries the read.
+        }
+        showSnackbar({
+          kind: 'warning',
+          title: t('dispenseSavedOrderStatusPending', 'Dispense saved; order status pending'),
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t(
+              'dispenseSavedOrderStatusPendingMessage',
+              'The dispense was saved, but the order status could not be updated. Do not dispense it again; refresh the list and contact support if it remains active.',
+            ),
+            { logContext: 'Complete workflow after saved medication dispense' },
+          ),
+        });
+        closeWorkspace({ discardUnsavedChanges: true });
+        onWorkspaceClosed?.();
+      }
+    } finally {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+    }
   };
 
   const updateMedicationDispense = useCallback((medicationDispenseUpdate: Partial<MedicationDispense>) => {
@@ -298,7 +364,8 @@ const DispenseForm: React.FC<Workspace2DefinitionProps<DispenseFormProps, {}, {}
       medicationDispensePayload.performer &&
       medicationDispensePayload.performer[0]?.actor.reference &&
       medicationDispensePayload.quantity?.value &&
-      (!quantityRemaining || medicationDispensePayload?.quantity?.value <= quantityRemaining) &&
+      (quantityRemaining == null ||
+        (quantityRemaining > 0 && medicationDispensePayload?.quantity?.value <= quantityRemaining)) &&
       medicationDispensePayload.quantity?.code &&
       ((allCodedDosage && !isFreeTextDosage) ||
         (!anyCodedDosage && isFreeTextDosage && medicationDispensePayload.dosageInstruction[0]?.text)) &&
@@ -311,17 +378,21 @@ const DispenseForm: React.FC<Workspace2DefinitionProps<DispenseFormProps, {}, {}
   // initialize the internal dispense payload with the dispenses passed in as props
   useEffect(() => setMedicationDispensePayload(medicationDispense), [medicationDispense]);
 
-  // Auto-default "Complete Order With This Dispense" checkbox for orders with no refills
+  // Auto-default completion only when the entered dispense safely covers the full remaining order.
   useEffect(() => {
-    // Only auto-default in 'enter' mode when creating a new dispense
-    if (mode === 'enter' && medicationRequestBundle?.request?.dispenseRequest) {
-      const numberOfRepeatsAllowed = medicationRequestBundle.request.dispenseRequest.numberOfRepeatsAllowed;
-      // Default to true if order doesn't support refills
-      if (numberOfRepeatsAllowed === 0 || numberOfRepeatsAllowed === null || numberOfRepeatsAllowed === undefined) {
-        setShouldCompleteOrder(true);
-      }
+    if (
+      mode === 'enter' &&
+      !medicationDispense?.id &&
+      medicationDispensePayload &&
+      medicationRequestBundle &&
+      !completionChoiceTouchedRef.current
+    ) {
+      setShouldCompleteOrder(
+        computeNewFulfillerStatusAfterDispenseEvent(medicationDispensePayload, medicationRequestBundle, false) ===
+          MedicationRequestFulfillerStatus.completed,
+      );
     }
-  }, [medicationRequestBundle, mode]);
+  }, [medicationDispense?.id, medicationDispensePayload, medicationRequestBundle, mode]);
 
   const isButtonDisabled = (config.enableStockDispense ? !inventoryItem : false) || !isValid || isSubmitting;
 
@@ -378,7 +449,10 @@ const DispenseForm: React.FC<Workspace2DefinitionProps<DispenseFormProps, {}, {}
                     id="complete-order-with-this-dispense"
                     labelText={t('completeOrderWithThisDispense', 'Complete order with this dispense')}
                     checked={shouldCompleteOrder}
-                    onChange={(_, { checked }) => setShouldCompleteOrder(checked)}
+                    onChange={(_, { checked }) => {
+                      completionChoiceTouchedRef.current = true;
+                      setShouldCompleteOrder(checked);
+                    }}
                   />
                 )}
                 {config.enableStockDispense && (

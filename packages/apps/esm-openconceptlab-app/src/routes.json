@@ -8,13 +8,15 @@
     {
       "name": "admin-ocl-card-link",
       "slot": "system-admin-page-card-link-slot",
-      "component": "adminOclCardLink"
+      "component": "adminOclCardLink",
+      "privileges": "Manage Concepts"
     }
   ],
   "pages": [
     {
       "component": "root",
-      "route": "ocl"
+      "route": "ocl",
+      "privileges": "Manage Concepts"
     }
   ]
 }

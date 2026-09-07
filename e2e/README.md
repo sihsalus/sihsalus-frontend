@@ -1,26 +1,48 @@
 # Pruebas end-to-end
 
 Playwright contra un OpenMRS desplegado. **Nunca contra producción ni con datos
-reales**: los specs crean y anulan pacientes sintéticos.
+reales**. Las suites `runnable` exigen datos sintéticos y cleanup verificado por
+su gate. Las suites históricas permanecen `quarantined` precisamente porque su
+aislamiento, cleanup o aceptación aún no están verificados y no deben ejecutarse.
 
-## Qué corre y qué no
+## Catálogo y runner
 
-Hay dos conjuntos con contratos distintos. Confundirlos es la causa de que
-existieran specs escritos contra componentes borrados meses atrás.
+[`suite-catalog.json`](suite-catalog.json) es la fuente única de organización.
+Cada configuración Playwright y cada `*.spec.ts` deben pertenecer exactamente a
+una de sus 12 suites. El contrato local falla si aparece una configuración o un
+spec sin dueño, si hay solapamientos o si `typecheck`/`ci` dejan de coincidir con
+la configuración real.
 
-| Conjunto                | Ubicación                      | ¿Corre con `yarn test:e2e`?                          | ¿Typecheck en CI?       |
-| ----------------------- | ------------------------------ | ---------------------------------------------------- | ----------------------- |
-| Suite principal         | `e2e/tests/*.spec.ts`          | **Sí** (`testDir` de `playwright.config.ts`)         | Sí                      |
-| Suites modulares        | `e2e/<módulo>/specs/*.spec.ts` | No — cada una tiene su propio `playwright.config.ts` | Solo las listadas abajo |
-| Scripts de verificación | `e2e/scripts/*.mjs`            | No — se ejecutan a mano con `node`                   | No                      |
-| Capturas                | `e2e/screenshots/`             | No                                                   | No                      |
+`runnable` significa que el runner permite iniciar la suite; no significa que
+pueda ejecutarse sin las credenciales, datos sintéticos y ambiente coordinado
+que exija su preflight. `quarantined` conserva el código como inventario, pero
+lo rechaza de forma explícita hasta resolver la razón registrada en el catálogo.
+
+| ID                 | Configuración                               | Specs                        | Estado       | Gate | Typecheck | CI navegador |
+| ------------------ | ------------------------------------------- | ---------------------------- | ------------ | ---- | --------- | ------------ |
+| `billing`          | `e2e/billing/playwright.config.ts`          | `e2e/billing/specs`          | quarantined  | no   | no        | no           |
+| `clinical`         | `playwright.config.ts`                      | `e2e/tests`                  | **runnable** | sí   | sí        | sí           |
+| `cohort-builder`   | `e2e/cohort-builder/playwright.config.ts`   | `e2e/cohort-builder/specs`   | quarantined  | no   | sí        | no           |
+| `dispensing`       | `e2e/dispensing/playwright.config.ts`       | `e2e/dispensing/specs`       | quarantined  | no   | no        | no           |
+| `dyaku`            | `e2e/dyaku/playwright.config.ts`            | `e2e/dyaku/specs`            | quarantined  | no   | sí        | no           |
+| `fast-data-entry`  | `e2e/fast-data-entry/playwright.config.ts`  | `e2e/fast-data-entry/specs`  | quarantined  | no   | no        | no           |
+| `form-builder`     | `e2e/form-builder/playwright.config.ts`     | `e2e/form-builder/specs`     | quarantined  | no   | no        | no           |
+| `laboratory`       | `e2e/laboratory/playwright.config.ts`       | `e2e/laboratory/specs`       | **runnable** | sí   | sí        | sí           |
+| `offline-laptop`   | `e2e/offline-laptop/playwright.config.ts`   | `e2e/offline-laptop/specs`   | **runnable** | sí   | sí        | no           |
+| `patient-imaging`  | `e2e/patient-imaging/playwright.config.ts`  | `e2e/patient-imaging/specs`  | quarantined  | no   | sí        | no           |
+| `stock-management` | `e2e/stock-management/playwright.config.ts` | `e2e/stock-management/specs` | quarantined  | no   | sí        | no           |
+| `user-onboarding`  | `e2e/user-onboarding/playwright.config.ts`  | `e2e/user-onboarding/specs`  | quarantined  | no   | sí        | no           |
+
+Los scripts de verificación en `e2e/scripts/` y las capturas en
+`e2e/screenshots/` no son suites Playwright y no pertenecen al catálogo.
 
 ```sh
-# Suite principal (3 proyectos: desktop, tablet, mobile)
+# Suite clínica principal (compatible con el comando histórico)
 yarn test:e2e
 
-# Una suite modular
-yarn playwright test -c e2e/<módulo>/playwright.config.ts --headed
+# Suites ejecutables por ID; los argumentos restantes pasan a Playwright
+yarn test:e2e:suite clinical --project=desktop
+yarn test:e2e:suite laboratory --headed
 
 # Gate opt-in de navegador/laptop offline contra DEV/QLTY
 yarn test:e2e:offline-laptop --project="Microsoft Edge Stable" --headed
@@ -28,14 +50,53 @@ yarn test:e2e:offline-laptop --project="Microsoft Edge Stable" --headed
 # Contratos unitarios fail-closed del gate, sin tocar backend
 yarn test:e2e:offline-laptop:unit
 
-# Typecheck de lo que está bajo contrato
-yarn typecheck:e2e
+# Contratos locales que corren en cada PR (typecheck + preflight unitario)
+yarn test:e2e:contracts
+
+# Contrato del catálogo y del runner, sin navegador ni backend
+yarn test:e2e:catalog
 ```
 
-En CI (`.github/workflows/e2e.yml`) la suite principal corre **solo** en PRs con
-la etiqueta `e2e` o por `workflow_dispatch`, y exige 7 variables/secretos
+El runner usa el config asociado al ID y lanza Playwright sin shell. Rechaza
+IDs desconocidos, suites en cuarentena y argumentos `-c`, `--config` o
+`--config=…`; por tanto, un argumento reenviado no puede sustituir la
+configuración aprobada. No existe un `test:e2e:all`: promover una suite exige
+resolver su razón de cuarentena y actualizar catálogo, typecheck y CI de forma
+explícita.
+
+En CI (`.github/workflows/e2e.yml`) los contratos locales corren en cada PR. Las
+suites de navegador principal y laboratorio corren **solo** en PRs con la
+etiqueta `e2e` o por `workflow_dispatch`, y exigen 7 variables/secretos
 (preflight que falla si falta alguna). Un gate que solo corre cuando alguien se
 acuerda no protege de nada: si tocas flujos clínicos, pon la etiqueta.
+
+El preflight exige `E2E_GATE_TARGET=DEV|QLTY`, comprueba que el backend sea el
+origen HTTPS exacto del ambiente elegido y solo permite que el SPA sea ese mismo
+origen o un servidor loopback. Producción y hosts parecidos quedan rechazados.
+En CI el SPA siempre se ensambla desde el SHA bajo prueba y se sirve en loopback;
+no se valida por accidente una versión anterior desplegada.
+Antes de crear workers también comprueba que ambos pacientes estén activos y
+marcados como sintéticos, que la ubicación y el proveedor clínico estén activos,
+y que `E2E_PATIENT_UUID` tenga exactamente una visita preparada activa. El
+preflight no imprime el cuerpo del paciente en los logs.
+
+## Cobertura activa
+
+| Flujo                     | Evidencia E2E obligatoria                                                                   |
+| ------------------------- | ------------------------------------------------------------------------------------------- |
+| Acceso                    | Login interactivo, sesión autenticada, shell, importmap, rutas y navegación                 |
+| Consulta Externa          | Ocho pestañas, antecedentes antes de anamnesis, historiales, resultados y consultas previas |
+| Diagnóstico / plan        | Búsqueda de K71.0, retiro y reemplazo del principal e indicaciones no farmacológicas        |
+| Catálogos de órdenes      | Presentación ordenable de ácido ursodesoxicólico y agregado acumulativo de TGP + TGO        |
+| Contratos del ambiente    | Pacientes sintéticos, visita activa, proveedor, privilegios, SIS, CIE-10 y medicamento      |
+| Laboratorio               | Visualización de solicitud, recojo, registro de resultado, finalización y rechazo           |
+| Otros módulos principales | Admisión, citas, registro Perú, interconsultas, odontograma y accesibilidad básica          |
+
+Todavía no son gates E2E: interoperabilidad FUA/HIS con MINSA, NetLab, una
+consulta ambulatoria completa persistida y recargada, PDFs revisados visualmente,
+ni la matriz negativa de roles de solo lectura. Esos casos necesitan servicios
+externos o fixtures aislados adicionales; no deben simularse como si validaran
+una integración real.
 
 ## Gate de laptops offline
 
@@ -54,20 +115,20 @@ por equipo y los criterios de evidencia están en el
 ## Cobertura de typecheck
 
 `e2e/tsconfig.json` incluye la suite principal, `utils/` y las suites modulares
-que compilan limpio. Están **fuera** las que aún acumulan errores de tipos:
+marcadas con `typecheck: true` en el catálogo. El contrato verifica ambas
+fuentes. Están **fuera** las que aún acumulan errores de tipos:
 
 | Suite excluida    | Errores | Naturaleza                                                                                                                                                                                                                             |
 | ----------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `form-builder`    | 53      | `string \| undefined` de variables de entorno, objetos posiblemente indefinidos                                                                                                                                                        |
 | `billing`         | 35      | igual que arriba                                                                                                                                                                                                                       |
 | `dispensing`      | 13      | importa `Order`/`Visit`/`OpenmrsResource` desde `@openmrs/esm-framework`, que no los reexporta; tampoco están en el entry point público de `esm-emr-api`/`esm-api`. Requiere definir los tipos localmente, como hace `patient-imaging` |
-| `laboratory`      | 10      | env vars y campos opcionales                                                                                                                                                                                                           |
 | `fast-data-entry` | 7       | igual                                                                                                                                                                                                                                  |
 | `screenshots`     | 4       | igual                                                                                                                                                                                                                                  |
 
-Medido con `tsc` sobre todo `e2e/**`. Al arreglar una suite, **agrégala al
-`include`** de `e2e/tsconfig.json`: es lo único que impide que vuelva a
-degradarse en silencio.
+Medido con `tsc` sobre todo `e2e/**`. Al arreglar una suite, hay que agregarla al
+`include` de `e2e/tsconfig.json` y cambiar su bandera `typecheck` en el catálogo;
+el contrato impide que ambas fuentes diverjan en silencio.
 
 ## Trampas verificadas en este repositorio
 
@@ -91,7 +152,10 @@ degradarse en silencio.
 
 Los specs que necesitan un paciente lo reciben por `E2E_PATIENT_UUID`
 (`E2E_APPOINTMENTS_PATIENT_UUID` para citas) y **fallan al cargar el módulo** si
-falta — es deliberado: mejor un error claro que una corrida que no prueba nada.
+falta. Ambos deben identificar pacientes reservados cuyo nombre o identificador
+contenga el token independiente `E2E` o `SYNTHETIC`; el primero debe tener una
+sola visita activa. Es deliberado: mejor un error claro que una corrida que no
+prueba nada o que toque por accidente una historia no sintética.
 
 Al crear datos desde un script, anularlos al terminar. Ojo: `DELETE
 /ws/rest/v1/patient/{uuid}` responde **200 sin anular nada** si no se pasa

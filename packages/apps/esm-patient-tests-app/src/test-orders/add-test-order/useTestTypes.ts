@@ -1,5 +1,7 @@
+import { useConfig } from '@openmrs/esm-framework';
 import { useOrderableConceptSets } from '@openmrs/esm-patient-common-lib';
 import { useMemo } from 'react';
+import type { ConfigObject } from '../../config-schema';
 
 export interface TestType {
   label: string;
@@ -37,6 +39,7 @@ export function useTestTypes(
   // Pasamos un string vacío a useOrderableConceptSets para que retorne todos los miembros sin filtrar
   // prematuramente a nivel del set principal o intermedio.
   const { concepts, isLoading, error } = useOrderableConceptSets('', orderableConceptSets);
+  const { testTypeSearchAliases = {} } = useConfig<ConfigObject>();
 
   const results = useMemo(() => {
     if (isLoading || error || !concepts) {
@@ -64,7 +67,10 @@ export function useTestTypes(
           const normalizedSearch = normalizeText(searchTerm);
           const displayMatches = normalizeText(c.display).includes(normalizedSearch);
           const synonymMatches = c.names?.some((name: any) => normalizeText(name.display).includes(normalizedSearch));
-          return displayMatches || synonymMatches;
+          const configuredAliasMatches = testTypeSearchAliases[c.uuid]?.some((alias) =>
+            normalizeText(alias).includes(normalizedSearch),
+          );
+          return displayMatches || synonymMatches || configuredAliasMatches;
         })
       : sorted;
 
@@ -72,13 +78,18 @@ export function useTestTypes(
       testTypes: filtered.map((c) => ({
         label: c.display,
         conceptUuid: c.uuid,
-        synonyms: c.synonyms ?? c.names?.map((n: any) => n.display) ?? [],
+        synonyms: Array.from(
+          new Set([
+            ...(c.synonyms ?? c.names?.map((n: any) => n.display) ?? []),
+            ...(testTypeSearchAliases[c.uuid] ?? []),
+          ]),
+        ),
         groupLabel: c.groupLabel,
       })),
       isLoading,
       error,
     };
-  }, [isLoading, concepts, error, searchTerm]);
+  }, [isLoading, concepts, error, searchTerm, testTypeSearchAliases]);
 
   return results;
 }

@@ -1,6 +1,6 @@
 import { Button } from '@carbon/react';
 import { Download, Printer } from '@carbon/react/icons';
-import { createErrorHandler, showSnackbar, useConfig, usePatient, useSession } from '@openmrs/esm-framework';
+import { createErrorHandler, showModal, showSnackbar, useConfig, usePatient, useSession } from '@openmrs/esm-framework';
 import type { TFunction } from 'i18next';
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -8,10 +8,16 @@ import type { ConfigObject } from '../config-schema';
 import { useAmbulatoryVisitGuard } from '../hooks';
 import { formatDeceasedName } from '../utils/utils';
 import styles from './consulta-externa-dashboard.scss';
+import type { ConsultaExternaTabId } from './consulta-externa-tabs';
+import {
+  getMissingPatientInstructionsRequirements,
+  getMissingRecetaUnicaRequirements,
+  getMissingVisitSummaryRequirements,
+  type OutpatientDocumentRequirement,
+} from './outpatient-document-requirements';
 import { useOutpatientFacilityIdentity } from './outpatient-facility.resource';
 import { fetchNextScheduledAppointment, isUpcomingScheduledAppointment } from './outpatient-next-appointment.resource';
 import { printPdfBytes } from './outpatient-pdf-print';
-import { fetchProviderCollegiateNumber, generateRecetaUnicaNumber } from './receta-unica.resource';
 import {
   buildOutpatientVisitSummary,
   fetchOutpatientVisitSummarySource,
@@ -20,22 +26,23 @@ import {
   type OutpatientVisitSummary,
 } from './outpatient-visit-summary.resource';
 import {
-  hasOutpatientRecetaUnicaContent,
-  type OutpatientRecetaUnicaPdfLabels,
-  createOutpatientRecetaUnicaFileName,
-  createOutpatientRecetaUnicaPdf,
   createOutpatientPatientInstructionsFileName,
   createOutpatientPatientInstructionsPdf,
+  createOutpatientRecetaUnicaFileName,
+  createOutpatientRecetaUnicaPdf,
   createOutpatientVisitSummaryFileName,
   createOutpatientVisitSummaryPdf,
   downloadOutpatientVisitSummaryPdf,
-  hasOutpatientPatientInstructions,
   type OutpatientPatientInstructionsPdfLabels,
+  type OutpatientRecetaUnicaPdfLabels,
   type OutpatientVisitSummaryPdfLabels,
 } from './outpatient-visit-summary-pdf';
+import { generateRecetaUnicaNumber } from './receta-unica.resource';
 
 interface OutpatientVisitSummaryDownloadProps {
   patientUuid: string;
+  /** Lets the blocked-document modal send the clinician to the tab that owns the missing datum. */
+  onNavigateToTab?: (tabId: ConsultaExternaTabId) => void;
 }
 
 type GenerationTarget = 'patient-instructions' | 'receta-unica' | 'visit-summary';
@@ -101,6 +108,23 @@ function getVisitSummaryLabels(t: TFunction): OutpatientVisitSummaryPdfLabels {
     visitType: t('visitType', 'Tipo de visita'),
     location: t('location', 'Lugar de atención'),
     professional: t('responsibleHealthProfessional', 'Personal de salud responsable'),
+    responsibleProfessionalMissing: t(
+      'responsibleProfessionalMissingForPrint',
+      'No registrado — completar manualmente',
+    ),
+    professionalRegistration: t('professionalRegistration', 'N.° de colegiatura'),
+    professionalRegistrationMissing: t(
+      'professionalRegistrationMissingForPrint',
+      'No registrado — completar manualmente',
+    ),
+    clinicalEncounterDateMissing: t(
+      'clinicalEncounterDateMissingForPrint',
+      'No registrada — verificar historia clínica',
+    ),
+    incompleteClinicalRecordWarning: t(
+      'outpatientIncompleteClinicalRecordPrintWarning',
+      'ADVERTENCIA: registro clínico histórico o incompleto. No fue posible verificar íntegramente un único encuentro clínico, diagnóstico principal CIE-10 y profesional responsable. Revise y complete los datos manuales antes de firmar o entregar.',
+    ),
     vitalSigns: t('vitalSigns', 'Signos vitales y antropometría'),
     bloodPressure: t('bloodPressure', 'Presión arterial'),
     temperature: t('temperature', 'Temperatura'),
@@ -123,11 +147,6 @@ function getVisitSummaryLabels(t: TFunction): OutpatientVisitSummaryPdfLabels {
     mood: t('mood', 'Estado de ánimo'),
     urine: t('urine', 'Orina'),
     bowelMovements: t('bowelMovements', 'Deposiciones'),
-    soap: t('soapNotes', 'Evaluación clínica (SOAP)'),
-    subjective: t('subjective', 'Subjetivo'),
-    objective: t('objective', 'Objetivo'),
-    assessment: t('assessment', 'Apreciación'),
-    plan: t('plan', 'Plan'),
     physicalExam: t('physicalExam', 'Examen físico'),
     generalCondition: t('generalCondition', 'Estado general'),
     consciousnessStatus: t('consciousnessStatus', 'Conciencia y orientación'),
@@ -161,7 +180,9 @@ function getVisitSummaryLabels(t: TFunction): OutpatientVisitSummaryPdfLabels {
     medicationIndication: t('outpatientMedicationIndication', 'Indicación'),
     medicationNumberOfRefills: t('outpatientMedicationNumberOfRefills', 'Número de renovaciones'),
     laboratoryOrders: t('laboratoryOrders', 'Órdenes de laboratorio'),
+    laboratoryResult: t('laboratoryResult', 'Resultado'),
     otherOrders: t('otherOrders', 'Otras órdenes'),
+    signatureAndStamp: t('outpatientSummarySignatureAndStamp', 'Firma y sello manual del profesional responsable'),
     generatedAt: t('generatedAt', 'Generado'),
     page: t('page', 'Página'),
     disclaimer: t(
@@ -187,6 +208,23 @@ function getPatientInstructionsLabels(
     visitDate: t('visitDate', 'Fecha y hora de atención'),
     location: t('location', 'Lugar de atención'),
     professional: t('responsibleHealthProfessional', 'Personal de salud responsable'),
+    responsibleProfessionalMissing: t(
+      'responsibleProfessionalMissingForPrint',
+      'No registrado — completar manualmente',
+    ),
+    professionalRegistration: t('professionalRegistration', 'N.° de colegiatura'),
+    professionalRegistrationMissing: t(
+      'professionalRegistrationMissingForPrint',
+      'No registrado — completar manualmente',
+    ),
+    clinicalEncounterDateMissing: t(
+      'clinicalEncounterDateMissingForPrint',
+      'No registrada — verificar historia clínica',
+    ),
+    incompleteClinicalRecordWarning: t(
+      'outpatientIncompleteClinicalRecordPrintWarning',
+      'ADVERTENCIA: registro clínico histórico o incompleto. No fue posible verificar íntegramente un único encuentro clínico, diagnóstico principal CIE-10 y profesional responsable. Revise y complete los datos manuales antes de firmar o entregar.',
+    ),
     instructions: t('outpatientPatientInstructionsSection', 'Indicaciones'),
     scheduledAppointment: t('outpatientPatientInstructionsScheduledAppointment', 'Próxima cita programada'),
     scheduledAppointmentDate: t('outpatientPatientInstructionsScheduledAppointmentDate', 'Fecha y hora'),
@@ -240,7 +278,10 @@ function getRecetaUnicaLabels(t: TFunction): OutpatientRecetaUnicaPdfLabels {
     professional: t('responsibleProfessional', 'Personal de salud responsable'),
     collegiateNumber: t('collegiateNumber', 'N.º de colegiatura'),
     medicationAsNeeded: t('outpatientMedicationAsNeeded', 'Según necesidad (PRN)'),
-    medicationAsNeededReasonMissing: t('outpatientMedicationAsNeededReasonMissing', 'Según necesidad (PRN; motivo no registrado)'),
+    medicationAsNeededReasonMissing: t(
+      'outpatientMedicationAsNeededReasonMissing',
+      'Según necesidad (PRN; motivo no registrado)',
+    ),
     medicationIndication: t('outpatientMedicationIndication', 'Indicación'),
     medicationNumberOfRefills: t('outpatientMedicationNumberOfRefills', 'Número de renovaciones'),
     indicatedFollowUpDate: t('outpatientPatientInstructionsControlDate', 'Fecha de control indicada'),
@@ -262,7 +303,10 @@ function getRecetaUnicaLabels(t: TFunction): OutpatientRecetaUnicaPdfLabels {
   };
 }
 
-const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadProps> = ({ patientUuid }) => {
+const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadProps> = ({
+  patientUuid,
+  onNavigateToTab,
+}) => {
   const { t, i18n } = useTranslation();
   const config = useConfig<ConfigObject>();
   const session = useSession();
@@ -321,9 +365,61 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
     };
   }, []);
 
-  const showError = useCallback((title: string, subtitle: string) => {
-    showSnackbar({ isLowContrast: false, kind: 'error', title, subtitle });
-  }, []);
+  /**
+   * A document that cannot be produced opens a modal, not a snackbar: the toast
+   * fades and a print button that appears to do nothing reads as broken. The
+   * warnings that still produce a document stay as snackbars.
+   */
+  const showBlockedDocument = useCallback(
+    (
+      title: string,
+      {
+        description,
+        requirements = [],
+      }: {
+        description?: string;
+        requirements?: OutpatientDocumentRequirement[];
+      } = {},
+    ) => {
+      const dispose = showModal('outpatient-missing-document-data-dialog', {
+        closeModal: () => dispose(),
+        title,
+        description,
+        requirements,
+        onNavigateToTab,
+      });
+    },
+    [onNavigateToTab],
+  );
+
+  const showClinicalRecordWarning = useCallback(
+    (summary: OutpatientVisitSummary) => {
+      if (summary.clinicalRecordCompleteness !== 'canonical-complete') {
+        showSnackbar({
+          isLowContrast: false,
+          kind: 'warning',
+          title: t('outpatientIncompleteClinicalRecord', 'Registro clínico histórico o incompleto'),
+          subtitle: t(
+            'outpatientIncompleteClinicalRecordWarning',
+            'El documento se generará como informativo, con una advertencia y campos pendientes para verificación manual antes de firmar o entregar.',
+          ),
+        });
+        return;
+      }
+      if (!summary.responsibleProfessionalRegistration) {
+        showSnackbar({
+          isLowContrast: false,
+          kind: 'warning',
+          title: t('professionalRegistrationMissing', 'Colegiatura no registrada'),
+          subtitle: t(
+            'professionalRegistrationMissingPrintWarning',
+            'El PDF se generará con la colegiatura pendiente para completarla manualmente antes de firmar y entregar.',
+          ),
+        });
+      }
+    },
+    [t],
+  );
 
   const getErrorTitle = useCallback(
     (target: GenerationTarget) =>
@@ -341,23 +437,23 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       if (!visit) return null;
       const errorTitle = getErrorTitle(target);
       if (isPatientLoading) {
-        showError(
-          errorTitle,
-          t('outpatientSummaryPatientPending', 'Los datos del paciente todavía se están verificando.'),
-        );
+        showBlockedDocument(errorTitle, {
+          description: t('outpatientSummaryPatientPending', 'Los datos del paciente todavía se están verificando.'),
+        });
         return null;
       }
       if (patientError || !patient) {
-        showError(errorTitle, t('outpatientSummaryPatientError', 'No se pudo verificar la identidad del paciente.'));
+        showBlockedDocument(errorTitle, {
+          description: t('outpatientSummaryPatientError', 'No se pudo verificar la identidad del paciente.'),
+        });
         return null;
       }
 
       const summaryPatient = toSummaryPatient(patient);
       if (!summaryPatient || summaryPatient.uuid.toLowerCase() !== patientUuid.toLowerCase()) {
-        showError(
-          errorTitle,
-          t('outpatientSummaryPatientMismatch', 'La identidad del paciente no coincide con la visita.'),
-        );
+        showBlockedDocument(errorTitle, {
+          description: t('outpatientSummaryPatientMismatch', 'La identidad del paciente no coincide con la visita.'),
+        });
         return null;
       }
 
@@ -380,6 +476,10 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         facilityAddress: facilityIdentity.facilityAddress,
         facilityPhone: facilityIdentity.facilityPhone,
         facilityIpressCode: facilityIdentity.facilityIpressCode,
+        professionalRegistrationProviderAttributeTypeUuid: config.professionalRegistrationProviderAttributeTypeUuid,
+        clinicianEncounterRoleUuid: config.clinicianEncounterRoleUuid,
+        responsibleEncounterTypeUuid: config.encounterTypes.visitNote,
+        responsibleFormUuid: config.formsList.visitNoteFormUuid,
         concepts: config.concepts,
       });
       return {
@@ -389,7 +489,11 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
     },
     [
       config.appointmentVisitAttributeTypeUuid,
+      config.clinicianEncounterRoleUuid,
       config.concepts,
+      config.encounterTypes.visitNote,
+      config.formsList.visitNoteFormUuid,
+      config.professionalRegistrationProviderAttributeTypeUuid,
       config.visitTypes.ambulatory,
       facilityIdentity.facilityAddress,
       facilityIdentity.facilityIpressCode,
@@ -401,7 +505,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       patientUuid,
       requireAmbulatoryVisit,
       session?.sessionLocation?.display,
-      showError,
+      showBlockedDocument,
       t,
     ],
   );
@@ -456,9 +560,9 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
                 'El documento contiene caracteres que no se pueden representar con seguridad. Revise el texto registrado o contacte a soporte.',
               )
             : null;
-        showError(
-          getErrorTitle(target),
-          unsupportedCharacterMessage ??
+        showBlockedDocument(getErrorTitle(target), {
+          description:
+            unsupportedCharacterMessage ??
             (target === 'patient-instructions'
               ? t(
                   'outpatientPatientInstructionsGenerationError',
@@ -468,7 +572,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
                   'outpatientSummaryGenerationError',
                   'No se pudo verificar o generar el resumen de esta atención. Recargue e intente nuevamente.',
                 )),
-        );
+        });
       } finally {
         if (isCurrent()) {
           generationInProgressRef.current = false;
@@ -482,7 +586,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       loadVerifiedSummary,
       patientUuid,
       sessionLocationUuid,
-      showError,
+      showBlockedDocument,
       t,
       verifiedAmbulatoryVisitUuid,
     ],
@@ -490,23 +594,29 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
 
   const handleDownload = useCallback(() => {
     return runWithSummary('visit-summary', async (summary, _linkedAppointmentUuids, isCurrent) => {
-      if (!summary.hasClinicalContent) {
+      const missingSummaryRequirements = getMissingVisitSummaryRequirements(summary);
+      if (missingSummaryRequirements.length) {
         if (!isCurrent()) return;
-        showError(
-          getErrorTitle('visit-summary'),
-          t(
+        showBlockedDocument(getErrorTitle('visit-summary'), {
+          description: t(
             'outpatientSummaryNoClinicalData',
             'Esta atención todavía no tiene información clínica suficiente para generar el resumen.',
           ),
-        );
+          requirements: missingSummaryRequirements,
+        });
         return;
       }
+
+      showClinicalRecordWarning(summary);
 
       const bytes = await createOutpatientVisitSummaryPdf(summary, getVisitSummaryLabels(t), i18n.language || 'es-PE');
       if (!isCurrent()) return;
       downloadOutpatientVisitSummaryPdf(
         bytes,
-        createOutpatientVisitSummaryFileName(summary.visitUuid, summary.visitStart),
+        createOutpatientVisitSummaryFileName(
+          summary.visitUuid,
+          summary.clinicalEncounterDatetime ?? summary.visitStart,
+        ),
       );
       showSnackbar({
         isLowContrast: true,
@@ -518,7 +628,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         ),
       });
     });
-  }, [getErrorTitle, i18n.language, runWithSummary, showError, t]);
+  }, [getErrorTitle, i18n.language, runWithSummary, showBlockedDocument, showClinicalRecordWarning, t]);
 
   const handlePrintPatientInstructions = useCallback(() => {
     return runWithSummary('patient-instructions', async (summary, linkedAppointmentUuids, isCurrent, signal) => {
@@ -544,18 +654,20 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       if (!isCurrent()) return;
       scheduledAppointment = isUpcomingScheduledAppointment(scheduledAppointment) ? scheduledAppointment : null;
 
-      if (!hasOutpatientPatientInstructions(summary, scheduledAppointment)) {
-        showError(
-          getErrorTitle('patient-instructions'),
-          t(
-            'outpatientPatientInstructionsNoData',
-            'Registre una fecha de control, indicaciones terapéuticas o medicamentos antes de imprimir este documento.',
-          ),
-        );
+      const missingInstructions = getMissingPatientInstructionsRequirements(summary, scheduledAppointment);
+      if (missingInstructions.length) {
+        showBlockedDocument(getErrorTitle('patient-instructions'), {
+          requirements: missingInstructions,
+        });
         return;
       }
 
-      const fileName = createOutpatientPatientInstructionsFileName(summary.visitUuid, summary.visitStart);
+      showClinicalRecordWarning(summary);
+
+      const fileName = createOutpatientPatientInstructionsFileName(
+        summary.visitUuid,
+        summary.clinicalEncounterDatetime ?? summary.visitStart,
+      );
       let bytes = await createOutpatientPatientInstructionsPdf(
         summary,
         getPatientInstructionsLabels(t, Boolean(summary.treatment?.nextAppointment?.trim())),
@@ -565,14 +677,11 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       if (!isCurrent()) return;
       if (scheduledAppointment && !isUpcomingScheduledAppointment(scheduledAppointment)) {
         scheduledAppointment = null;
-        if (!hasOutpatientPatientInstructions(summary, null)) {
-          showError(
-            getErrorTitle('patient-instructions'),
-            t(
-              'outpatientPatientInstructionsNoData',
-              'Registre una fecha de control, indicaciones terapéuticas o medicamentos antes de imprimir este documento.',
-            ),
-          );
+        const missingWithoutAppointment = getMissingPatientInstructionsRequirements(summary, null);
+        if (missingWithoutAppointment.length) {
+          showBlockedDocument(getErrorTitle('patient-instructions'), {
+            requirements: missingWithoutAppointment,
+          });
           return;
         }
         bytes = await createOutpatientPatientInstructionsPdf(
@@ -590,14 +699,11 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       if (!isCurrent()) return;
       if (outcome === 'content-stale' && scheduledAppointment) {
         scheduledAppointment = null;
-        if (!hasOutpatientPatientInstructions(summary, null)) {
-          showError(
-            getErrorTitle('patient-instructions'),
-            t(
-              'outpatientPatientInstructionsNoData',
-              'Registre una fecha de control, indicaciones terapéuticas o medicamentos antes de imprimir este documento.',
-            ),
-          );
+        const missingWithoutAppointment = getMissingPatientInstructionsRequirements(summary, null);
+        if (missingWithoutAppointment.length) {
+          showBlockedDocument(getErrorTitle('patient-instructions'), {
+            requirements: missingWithoutAppointment,
+          });
           return;
         }
         bytes = await createOutpatientPatientInstructionsPdf(
@@ -627,7 +733,7 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
               ),
       });
     });
-  }, [getErrorTitle, i18n.language, patientUuid, runWithSummary, showError, t]);
+  }, [getErrorTitle, i18n.language, patientUuid, runWithSummary, showBlockedDocument, showClinicalRecordWarning, t]);
 
   // Un frontend nuevo puede convivir con una configuración desplegada que aún
   // no declara el bloque: sin fuente configurada la emisión queda apagada.
@@ -638,11 +744,11 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
   };
   const handlePrintRecetaUnica = useCallback(() => {
     return runWithSummary('receta-unica', async (summary, _linkedAppointmentUuids, isCurrent, signal) => {
-      if (!hasOutpatientRecetaUnicaContent(summary)) {
-        showError(
-          getErrorTitle('receta-unica'),
-          t('recetaUnicaNoMedications', 'Registre al menos un medicamento mediante órdenes antes de emitir la receta.'),
-        );
+      const missingRecetaRequirements = getMissingRecetaUnicaRequirements(summary);
+      if (missingRecetaRequirements.length) {
+        showBlockedDocument(getErrorTitle('receta-unica'), {
+          requirements: missingRecetaRequirements,
+        });
         return;
       }
 
@@ -660,31 +766,13 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
       } catch (error) {
         if (!isCurrent()) return;
         createErrorHandler()(error);
-        showError(
-          getErrorTitle('receta-unica'),
-          t(
+        showBlockedDocument(getErrorTitle('receta-unica'), {
+          description: t(
             'recetaUnicaNumberUnavailable',
             'El servidor no entregó la numeración. Sin correlativo auditado no se emite la Receta Única; entregue la hoja de indicaciones informativa.',
           ),
-        );
+        });
         return;
-      }
-      if (!isCurrent()) return;
-
-      // La colegiatura registrada es un mejor-esfuerzo: si falta o falla la
-      // lectura, la línea queda para completarse a mano junto a la firma.
-      let collegiateNumber: string | null = null;
-      const providerUuid = session?.currentProvider?.uuid;
-      if (providerUuid) {
-        try {
-          collegiateNumber = await fetchProviderCollegiateNumber(
-            providerUuid,
-            recetaUnicaConfig.collegiateNumberProviderAttributeTypeUuid,
-            signal,
-          );
-        } catch {
-          collegiateNumber = null;
-        }
       }
       if (!isCurrent()) return;
 
@@ -692,12 +780,13 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
         number: emission.number,
         issuedAt: emission.issuedAt,
         validUntil: emission.validUntil,
-        collegiateNumber,
       });
       if (!isCurrent()) return;
-      const outcome = await printPdfBytes(bytes, createOutpatientRecetaUnicaFileName(emission.number, summary.visitStart), {
-        signal,
-      });
+      const outcome = await printPdfBytes(
+        bytes,
+        createOutpatientRecetaUnicaFileName(emission.number, summary.clinicalEncounterDatetime ?? summary.visitStart),
+        { signal },
+      );
       if (!isCurrent()) return;
       if (outcome === 'cancelled' || outcome === 'content-stale') return;
       showSnackbar({
@@ -713,12 +802,10 @@ const OutpatientVisitSummaryDownload: React.FC<OutpatientVisitSummaryDownloadPro
     getErrorTitle,
     i18n.language,
     patientUuid,
-    recetaUnicaConfig.collegiateNumberProviderAttributeTypeUuid,
     recetaUnicaConfig.identifierSourceUuid,
     recetaUnicaConfig.validityDays,
     runWithSummary,
-    session?.currentProvider?.uuid,
-    showError,
+    showBlockedDocument,
     t,
   ]);
 

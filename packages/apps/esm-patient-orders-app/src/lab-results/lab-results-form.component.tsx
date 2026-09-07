@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { mutate } from 'swr';
 import {
   createObservationPayload,
+  flattenLeafConcepts,
   isCoded,
   isNumeric,
   isPanel,
@@ -93,13 +94,36 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
     if (concept && completeLabResult && order?.fulfillerStatus === 'COMPLETED') {
       if (isCoded(concept) && completeLabResult?.value?.uuid) {
         setValue(concept.uuid, completeLabResult.value.uuid);
+        if (completeLabResult.comment) {
+          setValue(`${concept.uuid}-comment`, completeLabResult.comment);
+        }
       } else if (isNumeric(concept) && completeLabResult?.value) {
         setValue(concept.uuid, parseFloat(String(completeLabResult.value)));
+        if (completeLabResult.comment) {
+          setValue(`${concept.uuid}-comment`, completeLabResult.comment);
+        }
       } else if (isText(concept) && completeLabResult?.value) {
         setValue(concept.uuid, completeLabResult.value);
+        if (completeLabResult.comment) {
+          setValue(`${concept.uuid}-comment`, completeLabResult.comment);
+        }
       } else if (isPanel(concept)) {
-        concept.setMembers.forEach((member) => {
-          const obs = completeLabResult.groupMembers.find((v) => v.concept.uuid === member.uuid);
+        const leafConcepts = flattenLeafConcepts(concept);
+        // biome-ignore lint/suspicious/noExplicitAny: observation group members array representation
+        const findObs = (members: Array<any> | undefined, conceptUuid: string): any => {
+          if (!members) return undefined;
+          for (const m of members) {
+            if (m.concept?.uuid === conceptUuid) return m;
+            if (m.groupMembers && m.groupMembers.length > 0) {
+              const f = findObs(m.groupMembers, conceptUuid);
+              if (f) return f;
+            }
+          }
+          return undefined;
+        };
+
+        leafConcepts.forEach((member) => {
+          const obs = findObs(completeLabResult.groupMembers, member.uuid);
           let value: unknown;
           if (isCoded(member)) {
             value = obs?.value?.uuid;
@@ -108,10 +132,16 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
           } else if (isText(member)) {
             value = obs?.value;
           }
-          if (value) {
+          if (value !== undefined && value !== null) {
             setValue(member.uuid, value);
           }
+          if (obs?.comment) {
+            setValue(`${member.uuid}-comment`, obs.comment);
+          }
         });
+        if (completeLabResult.comment) {
+          setValue('order-comment', completeLabResult.comment);
+        }
       }
     }
   }, [concept, completeLabResult, order, setValue]);
@@ -190,15 +220,35 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
 
     // Handle update operation for completed lab order results
     if (order.fulfillerStatus === 'COMPLETED') {
-      const updateTasks = Object.entries(formValues).map(([conceptUuid, value]) => {
-        const obs = completeLabResult?.groupMembers?.find((v) => v.concept.uuid === conceptUuid) ?? completeLabResult;
+      // biome-ignore lint/suspicious/noExplicitAny: observation group members array representation
+      const findObs = (members: Array<any> | undefined, conceptUuid: string): any => {
+        if (!members) return undefined;
+        for (const m of members) {
+          if (m.concept?.uuid === conceptUuid) return m;
+          if (m.groupMembers && m.groupMembers.length > 0) {
+            const f = findObs(m.groupMembers, conceptUuid);
+            if (f) return f;
+          }
+        }
+        return undefined;
+      };
+
+      const formEntries = Object.entries(formValues).filter(([key]) => !key.endsWith('-comment') && key !== 'order-comment');
+      const updateTasks = formEntries.map(([conceptUuid, value]) => {
+        const obs = findObs(completeLabResult?.groupMembers, conceptUuid) ?? completeLabResult;
         const obsDatetime = new Date().toISOString();
-        return updateObservation(obs?.uuid, { value, obsDatetime });
+        const comment = formValues[`${conceptUuid}-comment`] ? String(formValues[`${conceptUuid}-comment`]) : undefined;
+        // biome-ignore lint/suspicious/noExplicitAny: observation formatted value representation
+        let formattedValue: any = value;
+        if (typeof value === 'string' && value.length === 36 && value.includes('-')) {
+          formattedValue = { uuid: value };
+        }
+        return updateObservation(obs?.uuid, { value: formattedValue, comment, obsDatetime });
       });
       const updateResults = await Promise.allSettled(updateTasks);
       const failedObsconceptUuids = updateResults.reduce<Array<string | undefined>>((prev, curr, index) => {
         if (curr.status === 'rejected') {
-          const conceptUuid = Object.keys(formValues).at(index);
+          const conceptUuid = formEntries.at(index)?.[0];
           prev.push(conceptUuid);
         }
         return prev;
@@ -224,14 +274,14 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
     // Set the observation status to 'FINAL' as we're not capturing it in the form
     const obsPayload = createObservationPayload(concept, order, formValues, 'FINAL');
     const orderDiscontinuationPayload = {
-      previousOrder: order.uuid,
+      previousOrder: order?.uuid,
       type: 'testorder',
       action: 'DISCONTINUE',
-      careSetting: order.careSetting.uuid,
-      encounter: order.encounter.uuid,
-      patient: order.patient.uuid,
-      concept: order.concept.uuid,
-      orderer: order.orderer,
+      careSetting: order?.careSetting?.uuid,
+      encounter: order?.encounter?.uuid,
+      patient: order?.patient?.uuid,
+      concept: order?.concept?.uuid,
+      orderer: order?.orderer,
     };
     const resultsStatusPayload = {
       fulfillerStatus: 'COMPLETED',
@@ -280,7 +330,9 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
         {concept && (
           <Stack gap={5}>
             {!isLoading ? (
-              <ResultFormField defaultValue={completeLabResult} concept={concept} control={control} errors={errors} />
+              <>
+                <ResultFormField defaultValue={completeLabResult} concept={concept} control={control} errors={errors} />
+              </>
             ) : (
               <InlineLoading description={t('loadingInitialValues', 'Loading initial values') + '...'} />
             )}

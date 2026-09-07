@@ -5,6 +5,8 @@
   "careQueues": "Cola de atención",
   "careQueuesDescription": "Pacientes en espera y atención",
   "caseMonitoring": "Monitoreo y seguimiento de casos",
+  "clinicalReferenceLinks": "Enlaces de referencia",
+  "clinicalReferenceLinksCaption": "Servicios externos a SIH Salus. Se abren en una pestaña nueva.",
   "contactAdministrator": "Por favor, intente usar los links del menú de navegación situado a la izquierda. Si el problema persiste, contacte con su administrador del sistema.",
   "dashboardNotFound": "El panel que está buscando no existe.",
   "dashboardNotFoundDescription": "No se pudo encontrar la página solicitada. Es posible que se haya movido, eliminado o que el panel configurado no exista.",

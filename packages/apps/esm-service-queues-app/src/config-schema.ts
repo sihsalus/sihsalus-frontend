@@ -54,6 +54,9 @@ const defaultIdentifierTypeUuid = '05a29f94-c0ed-11e2-94be-8c13b969e334'; // Ope
 const defaultPriorityUuid = 'bf3a08c6-cbe6-4f00-8e06-5f5437790b85';
 const defaultEmergencyPriorityUuid = '933e6d55-d64a-498d-b1b2-b3d5242e4199';
 const defaultUrgentPriorityUuid = '1606e719-d480-40c9-b586-835458ad0a96';
+const defaultQueueStatusUuids = {
+  finishedService: '707b1d1e-d7f7-4dad-a382-3734e35933c3',
+} as const;
 
 export const defaultColumnConfig: ColumnConfig = {
   identifierTypeUuid: defaultIdentifierTypeUuid,
@@ -94,7 +97,7 @@ export const defaultColumnConfig: ColumnConfig = {
       iconComponent: 'Group',
     },
     {
-      conceptUuid: '707b1d1e-d7f7-4dad-a382-3734e35933c3',
+      conceptUuid: defaultQueueStatusUuids.finishedService,
       iconComponent: 'Group',
     },
   ],
@@ -173,6 +176,11 @@ export const configSchema = {
       _type: Type.ConceptUuid,
       _description: 'The UUID of the default status for the queues eg Waiting.',
       _default: '51ae5e4d-b72b-4912-bf31-a17efb690aeb',
+    },
+    finishedServiceStatusConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'The UUID of the queue status used when a service has been completed.',
+      _default: defaultQueueStatusUuids.finishedService,
     },
     defaultTransitionStatus: {
       _type: Type.ConceptUuid,
@@ -530,6 +538,7 @@ export interface ConfigObject {
   concepts: {
     defaultPriorityConceptUuid: string;
     defaultStatusConceptUuid: string;
+    finishedServiceStatusConceptUuid: string;
     defaultTransitionStatus: string;
     diastolicBloodPressureUuid: string;
     emergencyPriorityConceptUuid: string;

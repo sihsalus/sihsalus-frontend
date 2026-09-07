@@ -49,13 +49,14 @@ import {
 import classNames from 'classnames';
 import { capitalize } from 'lodash-es';
 import { type ChangeEvent, type ComponentProps, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type Control, Controller, type FieldErrors, useController } from 'react-hook-form';
+import { type Control, Controller, useController } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useActivePatientOrders, useRequireOutpatientQuantity } from '../api';
 import { useOrderConfig } from '../api/order-config';
 import { type ConfigObject } from '../config-schema';
 import { translateCarbonWithId } from './carbon-translation';
 import { durationToDays, type MedicationOrderFormData, useDrugOrderForm } from './drug-order-form.resource';
+import { DEFAULT_SPECIAL_PRESCRIPTION_DRUG_NAMES, findSpecialPrescriptionMatch } from './special-prescription';
 import styles from './drug-order-form.scss';
 
 const DAYS_DURATION_UNIT_UUID = '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
@@ -166,6 +167,8 @@ export function DrugOrderForm({
   const outpatientDurationUnitUuids =
     medicationConfig?.outpatientDurationUnitUuids ?? defaultOutpatientDurationUnitUuids;
   const requireIndication = medicationConfig?.requireIndication ?? true;
+  const specialPrescriptionDrugNames =
+    medicationConfig?.specialPrescriptionDrugNames ?? DEFAULT_SPECIAL_PRESCRIPTION_DRUG_NAMES;
   const isTablet = useLayoutType() === 'tablet';
   const { orderConfigObject, error: errorFetchingOrderConfig } = useOrderConfig();
   const { requireOutpatientQuantity } = useRequireOutpatientQuantity();
@@ -299,12 +302,6 @@ export function DrugOrderForm({
     } as DrugOrderBasketItem;
 
     await onSave(newBasketItem);
-  };
-
-  const handleFormSubmissionError = (errors: FieldErrors<MedicationOrderFormData>) => {
-    if (errors) {
-      console.error('Error in drug order form', errors);
-    }
   };
 
   const drugDosingUnits: Array<DosingUnit> = useMemo(
@@ -482,6 +479,11 @@ export function DrugOrderForm({
     [activeOrders, drug, initialOrderBasketItem],
   );
 
+  const specialPrescriptionSubstance = useMemo(
+    () => findSpecialPrescriptionMatch(drug, specialPrescriptionDrugNames),
+    [drug, specialPrescriptionDrugNames],
+  );
+
   return (
     <Workspace2 title={workspaceTitle} hasUnsavedChanges={isDirty}>
       <div className={styles.container}>
@@ -505,7 +507,7 @@ export function DrugOrderForm({
         <ExtensionSlot name="allergy-list-pills-slot" state={{ patientUuid: patient?.id }} />
         <Form
           className={styles.orderForm}
-          onSubmit={handleSubmit(handleFormSubmission, handleFormSubmissionError)}
+          onSubmit={handleSubmit(handleFormSubmission)}
           id="drugOrderForm"
         >
           <div>
@@ -528,6 +530,20 @@ export function DrugOrderForm({
                 unitValue={watchedUnitValue}
               />
             </div>
+            {specialPrescriptionSubstance && (
+              <InlineNotification
+                kind="warning"
+                lowContrast
+                hideCloseButton
+                className={styles.inlineNotification}
+                title={t('specialPrescriptionRequired', 'This medication requires a special prescription')}
+                subtitle={t(
+                  'specialPrescriptionRequiredSubtitle',
+                  '{{substance}} is listed as a narcotic or psychotropic substance subject to sanitary control (D.S. N° 023-2001-SA). It must be prescribed on a numbered special prescription form.',
+                  { substance: capitalize(specialPrescriptionSubstance) },
+                )}
+              />
+            )}
             <section className={styles.formSection}>
               <Grid className={styles.gridRow}>
                 <Column lg={12} md={6} sm={4}>

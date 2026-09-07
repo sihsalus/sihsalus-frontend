@@ -13,8 +13,9 @@ test('CI audits every workspace and transitive dependency', () => {
   assert.match(ciWorkflow, /run: yarn security:audit/);
   assert.equal(
     rootManifest.scripts['security:audit'],
-    'yarn validate:react-router && yarn npm audit --all --recursive --severity high --ignore 1124282',
+    'yarn validate:react-router && yarn npm audit --all --recursive --severity high',
   );
+  assert.doesNotMatch(rootManifest.scripts['security:audit'], /--ignore/);
 });
 
 test('release builds the exact commit that passed CI', () => {
@@ -45,7 +46,7 @@ test('release scans the immutable digest before promoting mutable aliases', () =
   assert.match(scanStep, /image-ref: .*@\$\{\{ steps\.build\.outputs\.digest \}\}/);
   assert.match(scanStep, /severity: HIGH,CRITICAL/);
   assert.match(scanStep, /exit-code: '1'/);
-  assert.match(scanStep, /trivyignores: \.trivyignore\.yaml/);
+  assert.doesNotMatch(scanStep, /trivyignores:/);
 
   const promotionStep = releaseWorkflow.slice(promotionIndex);
   assert.match(promotionStep, /imagetools create --prefer-index=false/);
@@ -76,7 +77,7 @@ test('multiarch scans both immutable platforms before promoting its mutable alia
   assert.match(scanSteps, /TRIVY_PLATFORM: linux\/amd64/);
   assert.match(scanSteps, /TRIVY_PLATFORM: linux\/arm64/);
   assert.equal((scanSteps.match(/exit-code: '1'/g) ?? []).length, 2);
-  assert.equal((scanSteps.match(/trivyignores: \.trivyignore\.yaml/g) ?? []).length, 2);
+  assert.doesNotMatch(scanSteps, /trivyignores:/);
   assert.equal((scanSteps.match(/limit-severities-for-sarif: true/g) ?? []).length, 2);
 
   const promotionStep = multiarchWorkflow.slice(promotionIndex);

@@ -14,6 +14,14 @@ Lab technicians can enter test results by expanding an in-progress order and cli
 
 ![Adding lab results](assets/screenshots/labs_enter_results.png)
 
+## Supplemental PDF documents
+
+Every persisted laboratory order renders `lab-order-pdf-attachments-slot` directly, so existing PDFs remain readable
+in every order state. The completed structured-result consumer passes `hideSupplementalPdf` to its shared detail
+component only to prevent a duplicate slot. PDFs are supplementary documents only. Uploading one must not enter
+structured results, complete or approve the order, or replace an existing document. Upload is available only while
+the order is `IN_PROGRESS`.
+
 ## Customizing tab panels and summary tiles
 
 Implementers can add or remove laboratory tab panels and summary tiles via extension configuration in the [routes.json](https://github.com/openmrs/openmrs-esm-laboratory-app/blob/main/src/routes.json) file.
@@ -22,12 +30,12 @@ Implementers can add or remove laboratory tab panels and summary tiles via exten
 
 The module supports the following configuration options:
 
-| Property | Type | Default | Description |
-| --- | --- | --- | --- |
-| `laboratoryOrderTypeUuid` | `string` | `52a447d3-a64a-11e3-9aeb-50e549534c5e` | UUID for the laboratory order type |
-| `labTableColumns` | `Array<string>` | `['name', 'age', 'sex', 'totalOrders', 'action']` | Columns to display in the lab table. Allowed values: `name`, `age`, `dob`, `sex`, `totalOrders`, `action`, `patientId` |
-| `patientIdIdentifierTypeUuid` | `UUID` | `05a29f94-c0ed-11e2-94be-8c13b969e334` | Identifier type UUID for the patient ID column. Only needed if `patientId` is included in `labTableColumns` |
-| `enableReviewingLabResultsBeforeApproval` | `boolean` | `false` | When enabled, lab results are submitted for review before being approved and finalized |
+| Property                                  | Type            | Default                                           | Description                                                                                                            |
+| ----------------------------------------- | --------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `laboratoryOrderTypeUuid`                 | `string`        | `52a447d3-a64a-11e3-9aeb-50e549534c5e`            | UUID for the laboratory order type                                                                                     |
+| `labTableColumns`                         | `Array<string>` | `['name', 'age', 'sex', 'totalOrders', 'action']` | Columns to display in the lab table. Allowed values: `name`, `age`, `dob`, `sex`, `totalOrders`, `action`, `patientId` |
+| `patientIdIdentifierTypeUuid`             | `UUID`          | `05a29f94-c0ed-11e2-94be-8c13b969e334`            | Identifier type UUID for the patient ID column. Only needed if `patientId` is included in `labTableColumns`            |
+| `enableReviewingLabResultsBeforeApproval` | `boolean`       | `false`                                           | When enabled, lab results are submitted for review before being approved and finalized                                 |
 
 ## Getting Started
 

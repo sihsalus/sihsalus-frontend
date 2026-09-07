@@ -19,8 +19,10 @@
   color: colors.$gray-70;
 }
 
-.providerSummary {
-  display: flex;
+.appointmentSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: layout.$spacing-03 layout.$spacing-05;
   margin-top: layout.$spacing-02;
 }
 
@@ -83,4 +85,16 @@
 
 .labelContainer {
   display: flex;
+}
+
+@media (max-width: 66rem) {
+  .appointmentSummary,
+  .patientInfoGrid {
+    grid-template-columns: 1fr;
+    row-gap: layout.$spacing-05;
+  }
+
+  .labelContainer {
+    flex-wrap: wrap;
+  }
 }

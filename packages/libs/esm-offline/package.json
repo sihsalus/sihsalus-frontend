@@ -55,7 +55,7 @@
     "rxjs": "6.x"
   },
   "dependencies": {
-    "dexie": "^3.0.3",
+    "dexie": "^4.4.5",
     "lodash-es": "^4.17.21",
     "uuid": "^14.0.0",
     "workbox-window": "^6.1.5"

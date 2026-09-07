@@ -35,6 +35,90 @@
   border: 1px solid colors.$gray-20;
 }
 
+.tableContainer {
+  overflow-x: auto;
+  scrollbar-gutter: stable;
+}
+
+.table {
+  width: 100%;
+  table-layout: fixed;
+
+  :global(.cds--table-expand) {
+    width: 3rem;
+    min-width: 3rem;
+    padding: 0;
+  }
+
+  :global(.cds--table-expand__button) {
+    width: 3rem;
+    min-width: 3rem;
+    padding: 0;
+    color: colors.$gray-100;
+  }
+
+  :global(.cds--table-expand__svg) {
+    width: 1rem;
+    height: 1rem;
+    fill: currentColor;
+    opacity: 1;
+  }
+
+  :global(.cds--table-column-checkbox) {
+    width: 3.25rem;
+    min-width: 3.25rem;
+    padding-inline: layout.$spacing-05 layout.$spacing-03;
+  }
+}
+
+.patientColumn {
+  width: 10rem;
+  padding-inline-start: layout.$spacing-05 !important;
+}
+
+.documentColumn {
+  width: 8rem;
+}
+
+.dateTimeColumn {
+  width: 8rem;
+}
+
+.locationColumn {
+  width: 9rem;
+}
+
+.serviceColumn {
+  width: 12rem;
+}
+
+.providerColumn {
+  width: 10rem;
+}
+
+.appointmentKindColumn {
+  width: 8rem;
+}
+
+.statusColumn {
+  width: 7.5rem;
+}
+
+.careColumn {
+  width: 10.5rem;
+  white-space: nowrap;
+
+  :global(.cds--btn) {
+    max-width: 100%;
+    white-space: nowrap;
+  }
+}
+
+.actionsColumn {
+  width: 3rem;
+  min-width: 3rem;
+}
+
 .headerContainer {
   display: flex;
   justify-content: space-between;
@@ -99,20 +183,16 @@
 }
 
 @media (max-width: $breakpoint-small-desktop-max) {
-  .container {
-    overflow-x: auto;
-  }
-
-  .toolbar {
-    grid-template-columns: minmax(0, 1fr) auto;
-
-    .searchbar {
-      grid-column: 1 / -1;
-    }
+  .secondaryColumn {
+    display: none;
   }
 }
 
 @media (max-width: $breakpoint-tablet-max) {
+  .table {
+    min-width: 48rem;
+  }
+
   .toolbar {
     grid-template-columns: minmax(0, 1fr);
 
@@ -120,6 +200,29 @@
       width: 100%;
       max-width: none;
     }
+  }
+}
+
+@media (max-width: $breakpoint-phone-max) {
+  .table {
+    min-width: 40rem;
+  }
+
+  .documentColumn {
+    display: none;
+  }
+
+  .patientColumn {
+    width: 9rem;
+  }
+
+  .dateTimeColumn,
+  .serviceColumn {
+    width: 7.5rem;
+  }
+
+  .careColumn {
+    width: 10rem;
   }
 }
 

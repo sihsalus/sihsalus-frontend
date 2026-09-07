@@ -48,13 +48,12 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
 }) => {
   const { t } = useTranslation();
   const {
-    clinicalEncounterUuid,
     concepts,
     formsList: { clinicalEncounterFormUuid },
   } = useConfig<ConfigObject>();
 
   const headerTitle = t('socialHistory', 'Social History');
-  const handleOpenOrEditClinicalEncounterForm = (encounterUUID = clinicalEncounterUuid) => {
+  const handleOpenOrEditClinicalEncounterForm = (encounterUUID = '') => {
     launchPatientWorkspace(patientFormEntryWorkspace, {
       workspaceTitle: t('socialHistory', 'Social History'),
       mutateForm: mutate(

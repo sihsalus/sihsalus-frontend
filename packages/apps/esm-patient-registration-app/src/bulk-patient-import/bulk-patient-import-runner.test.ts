@@ -10,6 +10,7 @@ import {
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
+  makeUrl: (path: string) => (path.startsWith('http') ? path : `${globalThis.openmrsBase}${path}`),
   omrsOfflineCachingStrategyHttpHeaderName: 'x-omrs-offline-caching-strategy',
   openmrsFetch: vi.fn(),
 }));
@@ -119,8 +120,11 @@ describe('bulk patient import execution boundary', () => {
   it('requires the exact approved file, origin, build, user, location, and privilege', async () => {
     await expect(assertFreshBulkPatientImportContext(buildApprovedContext())).resolves.toBeUndefined();
 
+    const sessionUrl = new URL(String(mockOpenmrsFetch.mock.calls[0][0]), globalThis.location.origin);
+    expect(sessionUrl.pathname).toBe('/openmrs/ws/rest/v1/session');
+    expect(sessionUrl.searchParams.has('_bulkPatientImportCheck')).toBe(true);
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/ws/rest/v1/session'),
+      expect.stringContaining('/openmrs/ws/rest/v1/session'),
       expect.objectContaining({
         cache: 'no-store',
         headers: { 'x-omrs-offline-caching-strategy': 'network-only-or-cache-only' },

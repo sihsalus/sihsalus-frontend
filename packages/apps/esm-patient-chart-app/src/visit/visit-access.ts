@@ -1,8 +1,50 @@
 import { userHasAccess } from '@openmrs/esm-framework';
 
-import { adtPrivilege, clinicalChartPrivilege, clinicalChartVisitsEditPrivilege } from '../constants';
+import {
+  adtPrivilege,
+  clinicalChartPrivilege,
+  clinicalChartVisitsEditPrivilege,
+  recordEncountersPrivilege,
+} from '../constants';
 
 type User = Parameters<typeof userHasAccess>[1] | null | undefined;
+
+/**
+ * Roles OpenMRS treats as super users. `userHasAccess` grants them every
+ * privilege, so they have to be recognised before any privilege-based exclusion.
+ */
+const superUserRoles = new Set(['System Developer', 'Application: Has Super User Privileges']);
+
+function isSuperUser(user: User) {
+  return Boolean(user?.roles?.some((role) => superUserRoles.has(role.name) || superUserRoles.has(role.display)));
+}
+
+/**
+ * `userHasAccess` answers "may this user do X?", and that is always `true` for a
+ * super user. Negating it therefore cannot exclude anyone: a super user matches
+ * every exclusion and loses the action instead of gaining it. Exclusions must
+ * read the privileges the account actually holds.
+ */
+function holdsPrivilege(privilege: string, user: User) {
+  return Boolean(user?.privileges?.some((granted) => granted.display === privilege || granted.name === privilege));
+}
+
+/**
+ * Admission staff, i.e. an account that carries the ADT privilege and cannot
+ * record clinical encounters. A clinician who also covers admission keeps the
+ * clinical actions, as `canTransitionServiceQueueEntries` already does in the
+ * service queues app; excluding everyone who merely holds the ADT privilege
+ * would strip them from any combined clinical role.
+ *
+ * Chart access is not the discriminator: legacy admission roles open the chart
+ * (`app:hoja.clinica`, even `app:hoja.clinica.visitas.editar`) so check-in can
+ * attach appointments to a visit, yet grant no clinical writing at all. The
+ * native `Add Encounters` privilege is the line administrative roles never
+ * cross.
+ */
+function isAdmissionOnlyUser(user: User) {
+  return !isSuperUser(user) && holdsPrivilege(adtPrivilege, user) && !holdsPrivilege(recordEncountersPrivilege, user);
+}
 
 export function canCreateVisit(user: User) {
   return (
@@ -28,7 +70,7 @@ export function canEditVisit(user: User) {
  */
 export function canCloseClinicalVisit(user: User) {
   return (
-    !userHasAccess(adtPrivilege, user) &&
+    !isAdmissionOnlyUser(user) &&
     userHasAccess(clinicalChartPrivilege, user) &&
     userHasAccess(clinicalChartVisitsEditPrivilege, user)
   );
@@ -40,7 +82,7 @@ export function canCloseClinicalVisit(user: User) {
  * instead of bypassing arrival and queue routing from patient search/chart.
  */
 export function canManuallyStartVisit(user: User) {
-  return !userHasAccess(adtPrivilege, user) && userHasAccess(clinicalChartPrivilege, user) && canCreateVisit(user);
+  return !isAdmissionOnlyUser(user) && userHasAccess(clinicalChartPrivilege, user) && canCreateVisit(user);
 }
 
 export const canStartVisit = canCreateVisit;

@@ -1,4 +1,4 @@
-import { omrsOfflineCachingStrategyHttpHeaderName, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { makeUrl, omrsOfflineCachingStrategyHttpHeaderName, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
 import { personDocumentNumberAttributeTypeUuid, personDocumentTypeAttributeTypeUuid } from './identity-documents';
 
@@ -225,7 +225,7 @@ function getIdentitySearchUrl(url: string, requireFreshNetwork = false) {
     return url;
   }
 
-  const requestUrl = new URL(url, globalThis.location.origin);
+  const requestUrl = new URL(makeUrl(url), globalThis.location.origin);
   requestUrl.searchParams.set('_bulkPatientImportCheck', globalThis.crypto.randomUUID());
   return requestUrl.href;
 }
@@ -236,8 +236,8 @@ async function fetchAllFreshIdentityPages<T>(
 ): Promise<Array<T>> {
   const results: Array<T> = [];
   const visited = new Set<string>();
-  let nextUrl: string | undefined = initialUrl;
-  const restPath = `${new URL(restBaseUrl, globalThis.location.origin).pathname.replace(/\/$/, '')}/`;
+  let nextUrl: string | undefined = makeUrl(initialUrl);
+  const restPath = `${new URL(makeUrl(restBaseUrl), globalThis.location.origin).pathname.replace(/\/$/, '')}/`;
 
   for (let page = 0; nextUrl && page < maxFreshIdentityPages; page++) {
     const linkedUrl = new URL(nextUrl, globalThis.location.origin);

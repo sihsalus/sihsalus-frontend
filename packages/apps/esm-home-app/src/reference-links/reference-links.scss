@@ -1,0 +1,86 @@
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
+
+.referenceLinks {
+  padding: layout.$spacing-06 layout.$spacing-05 0;
+  max-width: 100%;
+}
+
+.heading {
+  @include type.type-style("heading-compact-01");
+  color: colors.$gray-70;
+  margin: 0;
+}
+
+.caption {
+  @include type.type-style("label-01");
+  color: colors.$gray-60;
+  margin: layout.$spacing-02 0 layout.$spacing-04;
+}
+
+.linkList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: layout.$spacing-03;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linkItem {
+  min-width: 0;
+}
+
+.link {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: layout.$spacing-03;
+  height: 100%;
+  box-sizing: border-box;
+  padding: layout.$spacing-04;
+  color: colors.$gray-100;
+  text-decoration: none;
+  background-color: colors.$white-0;
+  // A dashed edge separates these from the solid action cards above: the
+  // destination is outside SIH Salus.
+  border: 1px dashed colors.$gray-30;
+
+  &:hover {
+    background-color: colors.$gray-10;
+    border-color: var(--brand-01);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--brand-01);
+    outline-offset: -2px;
+  }
+}
+
+.linkText {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-01;
+  min-width: 0;
+}
+
+.linkLabel {
+  @include type.type-style("heading-compact-01");
+  color: colors.$gray-100;
+}
+
+.linkDescription {
+  @include type.type-style("label-01");
+  color: colors.$gray-60;
+}
+
+.linkIcon {
+  flex: 0 0 auto;
+  margin-top: layout.$spacing-01;
+  fill: colors.$gray-60;
+}
+
+.link:hover .linkIcon {
+  fill: var(--brand-01);
+}

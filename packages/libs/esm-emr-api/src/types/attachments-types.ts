@@ -8,6 +8,16 @@ export interface UploadedFile {
   capturedFromWebcam?: boolean;
 }
 
+/**
+ * Optional clinical context used by the attachments backend to associate an
+ * uploaded document with an existing encounter and form field.
+ */
+export interface AttachmentUploadContext {
+  encounterUuid: string;
+  formFieldNamespace: string;
+  formFieldPath: string;
+}
+
 export interface Attachment {
   id: string;
   src: string;

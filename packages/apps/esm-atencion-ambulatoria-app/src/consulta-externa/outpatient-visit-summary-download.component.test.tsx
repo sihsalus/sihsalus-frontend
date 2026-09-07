@@ -1,4 +1,4 @@
-import { showSnackbar, useConfig, usePatient, useSession } from '@openmrs/esm-framework';
+import { showModal, showSnackbar, useConfig, usePatient, useSession } from '@openmrs/esm-framework';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useAmbulatoryVisitGuard } from '../hooks';
@@ -18,7 +18,9 @@ import {
   createOutpatientVisitSummaryPdf,
   downloadOutpatientVisitSummaryPdf,
   hasOutpatientPatientInstructions,
+  isOutpatientRecetaUnicaClinicallyReady,
 } from './outpatient-visit-summary-pdf';
+import { generateRecetaUnicaNumber } from './receta-unica.resource';
 
 vi.mock('../hooks', () => ({ useAmbulatoryVisitGuard: vi.fn() }));
 vi.mock('./outpatient-facility.resource', () => ({
@@ -41,6 +43,7 @@ vi.mock('./outpatient-visit-summary-pdf', () => ({
   downloadOutpatientVisitSummaryPdf: vi.fn(),
   hasOutpatientPatientInstructions: vi.fn(() => true),
   hasOutpatientRecetaUnicaContent: vi.fn(() => true),
+  isOutpatientRecetaUnicaClinicallyReady: vi.fn(() => true),
 }));
 vi.mock('./receta-unica.resource', () => ({
   fetchProviderCollegiateNumber: vi.fn(async () => 'CMP 12345'),
@@ -54,6 +57,13 @@ vi.mock('./outpatient-visit-summary.resource', () => ({
   buildOutpatientVisitSummary: vi.fn(() => ({
     visitUuid: 'visit-uuid',
     visitStart: '2026-08-23T14:00:00.000-05:00',
+    sourceServerDatetime: '2026-08-26T14:00:00.000Z',
+    clinicalEncounterDatetime: '2026-08-24T00:10:00.000-05:00',
+    clinicalRecordCompleteness: 'canonical-complete',
+    clinicalRecordIssues: [],
+    responsibleProviderUuid: 'provider-uuid',
+    responsibleProvider: 'Dra. Responsable',
+    responsibleProfessionalRegistration: 'CMP-12345',
     hasClinicalContent: true,
   })),
   fetchOutpatientVisitSummarySource: vi.fn(async () => ({
@@ -78,8 +88,11 @@ const mockCreateVisitFileName = vi.mocked(createOutpatientVisitSummaryFileName);
 const mockCreateInstructionsPdf = vi.mocked(createOutpatientPatientInstructionsPdf);
 const mockCreateInstructionsFileName = vi.mocked(createOutpatientPatientInstructionsFileName);
 const mockHasInstructions = vi.mocked(hasOutpatientPatientInstructions);
+const mockIsRecetaClinicallyReady = vi.mocked(isOutpatientRecetaUnicaClinicallyReady);
+const mockGenerateRecetaUnicaNumber = vi.mocked(generateRecetaUnicaNumber);
 const mockPrintPdf = vi.mocked(printPdfBytes);
 const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockShowModal = vi.mocked(showModal);
 
 const patient = {
   resourceType: 'Patient',
@@ -112,6 +125,10 @@ describe('OutpatientVisitSummaryDownload', () => {
     mockUseConfig.mockReturnValue({
       appointmentVisitAttributeTypeUuid: 'appointment-link-type-uuid',
       visitTypes: { ambulatory: 'ambulatory-type' },
+      encounterTypes: { visitNote: 'visit-note-type' },
+      formsList: { visitNoteFormUuid: 'visit-note-form' },
+      clinicianEncounterRoleUuid: 'clinician-role',
+      professionalRegistrationProviderAttributeTypeUuid: 'professional-registration-type',
       outpatientDocumentFacilityAddress: 'Distrito de prueba, provincia de prueba, Loreto',
       outpatientDocumentFacilityPhone: '900 000 000',
       outpatientDocumentFacilityLocationUuid: 'hsc-location-uuid',
@@ -147,6 +164,13 @@ describe('OutpatientVisitSummaryDownload', () => {
     mockBuildSummary.mockReturnValue({
       visitUuid: 'visit-uuid',
       visitStart: '2026-08-23T14:00:00.000-05:00',
+      sourceServerDatetime: '2026-08-26T14:00:00.000Z',
+      clinicalEncounterDatetime: '2026-08-24T00:10:00.000-05:00',
+      clinicalRecordCompleteness: 'canonical-complete',
+      clinicalRecordIssues: [],
+      responsibleProviderUuid: 'provider-uuid',
+      responsibleProvider: 'Dra. Responsable',
+      responsibleProfessionalRegistration: 'CMP-12345',
       hasClinicalContent: true,
     } as ReturnType<typeof buildOutpatientVisitSummary>);
     mockFetchSource.mockResolvedValue({
@@ -157,6 +181,7 @@ describe('OutpatientVisitSummaryDownload', () => {
     mockCreateInstructionsPdf.mockResolvedValue(new Uint8Array([4, 5, 6]));
     mockCreateInstructionsFileName.mockReturnValue('patient-instructions.pdf');
     mockHasInstructions.mockReturnValue(true);
+    mockIsRecetaClinicallyReady.mockReturnValue(true);
     mockPrintPdf.mockResolvedValue('print-requested');
     mockIsUpcomingScheduledAppointment.mockImplementation((appointment) => Boolean(appointment));
     mockFetchNextScheduledAppointment.mockResolvedValue(scheduledAppointment);
@@ -182,6 +207,10 @@ describe('OutpatientVisitSummaryDownload', () => {
         facilityAddress: 'Dirección vigente desde Location',
         facilityPhone: '911 111 111',
         facilityIpressCode: '00001111',
+        professionalRegistrationProviderAttributeTypeUuid: 'professional-registration-type',
+        clinicianEncounterRoleUuid: 'clinician-role',
+        responsibleEncounterTypeUuid: 'visit-note-type',
+        responsibleFormUuid: 'visit-note-form',
       }),
     );
     expect(mockUseOutpatientFacilityIdentity).toHaveBeenCalledWith({
@@ -193,8 +222,51 @@ describe('OutpatientVisitSummaryDownload', () => {
       fallbackPhone: '900 000 000',
       fallbackIpressCode: '00000000',
     });
-    expect(mockCreateVisitFileName).toHaveBeenCalledWith('visit-uuid', '2026-08-23T14:00:00.000-05:00');
+    expect(mockCreateVisitFileName).toHaveBeenCalledWith('visit-uuid', '2026-08-24T00:10:00.000-05:00');
     expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
+  });
+
+  it('warns but still generates the summary when colegiatura must be completed manually', async () => {
+    const user = userEvent.setup();
+    mockBuildSummary.mockReturnValue({
+      visitUuid: 'visit-uuid',
+      visitStart: '2026-08-23T14:00:00.000-05:00',
+      clinicalRecordCompleteness: 'canonical-complete',
+      clinicalRecordIssues: [],
+      responsibleProfessionalRegistration: null,
+      hasClinicalContent: true,
+    } as ReturnType<typeof buildOutpatientVisitSummary>);
+
+    render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" />);
+    await user.click(screen.getByRole('button', { name: 'Descargar resumen de esta atención' }));
+
+    await waitFor(() => expect(mockCreateVisitPdf).toHaveBeenCalledOnce());
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'warning', title: 'Colegiatura no registrada' }),
+    );
+  });
+
+  it('warns but still generates an informational summary for a legacy clinical record', async () => {
+    const user = userEvent.setup();
+    mockBuildSummary.mockReturnValue({
+      visitUuid: 'visit-uuid',
+      visitStart: '2026-08-23T14:00:00.000-05:00',
+      clinicalEncounterDatetime: null,
+      clinicalRecordCompleteness: 'legacy',
+      clinicalRecordIssues: ['canonical-encounter-missing'],
+      responsibleProviderUuid: null,
+      responsibleProvider: null,
+      responsibleProfessionalRegistration: null,
+      hasClinicalContent: true,
+    } as ReturnType<typeof buildOutpatientVisitSummary>);
+
+    render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" />);
+    await user.click(screen.getByRole('button', { name: 'Descargar resumen de esta atención' }));
+
+    await waitFor(() => expect(mockCreateVisitPdf).toHaveBeenCalledOnce());
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'warning', title: 'Registro clínico histórico o incompleto' }),
+    );
   });
 
   it('generates the concise PDF and opens the browser print flow', async () => {
@@ -238,7 +310,7 @@ describe('OutpatientVisitSummaryDownload', () => {
       expect.any(String),
       scheduledAppointment,
     );
-    expect(mockCreateInstructionsFileName).toHaveBeenCalledWith('visit-uuid', '2026-08-23T14:00:00.000-05:00');
+    expect(mockCreateInstructionsFileName).toHaveBeenCalledWith('visit-uuid', '2026-08-24T00:10:00.000-05:00');
     expect(mockDownloadPdf).not.toHaveBeenCalled();
     expect(mockShowSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -256,9 +328,39 @@ describe('OutpatientVisitSummaryDownload', () => {
 
     await user.click(screen.getByRole('button', { name: 'Imprimir indicaciones' }));
 
-    await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' })));
+    await waitFor(() =>
+      expect(mockShowModal).toHaveBeenCalledWith(
+        'outpatient-missing-document-data-dialog',
+        expect.objectContaining({
+          title: 'No se pudo generar el PDF de indicaciones',
+          requirements: [
+            { id: 'followUpDate', tab: 'treatment' },
+            { id: 'therapeuticIndications', tab: 'treatment' },
+            { id: 'medications', tab: 'treatment' },
+          ],
+        }),
+      ),
+    );
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' }));
     expect(mockCreateInstructionsPdf).not.toHaveBeenCalled();
     expect(mockPrintPdf).not.toHaveBeenCalled();
+  });
+
+  it('sends the clinician to the tab that owns the missing datum', async () => {
+    const user = userEvent.setup();
+    const onNavigateToTab = vi.fn();
+    mockFetchNextScheduledAppointment.mockResolvedValue(null);
+    mockHasInstructions.mockReturnValue(false);
+    render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" onNavigateToTab={onNavigateToTab} />);
+
+    await user.click(screen.getByRole('button', { name: 'Imprimir indicaciones' }));
+
+    await waitFor(() =>
+      expect(mockShowModal).toHaveBeenCalledWith(
+        'outpatient-missing-document-data-dialog',
+        expect.objectContaining({ onNavigateToTab }),
+      ),
+    );
   });
 
   it('prints the remaining instructions but warns when the appointment calendar cannot be verified', async () => {
@@ -674,10 +776,10 @@ describe('OutpatientVisitSummaryDownload', () => {
     await user.click(screen.getByRole('button', { name: 'Imprimir indicaciones' }));
 
     await waitFor(() =>
-      expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect(mockShowModal).toHaveBeenCalledWith(
+        'outpatient-missing-document-data-dialog',
         expect.objectContaining({
-          kind: 'error',
-          subtitle:
+          description:
             'El documento contiene caracteres que no se pueden representar con seguridad. Revise el texto registrado o contacte a soporte.',
         }),
       ),
@@ -693,11 +795,15 @@ describe('OutpatientVisitSummaryDownload', () => {
 
     await user.click(screen.getByRole('button', { name: 'Imprimir indicaciones' }));
 
-    await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'error' })));
+    await waitFor(() =>
+      expect(mockShowModal).toHaveBeenCalledWith(
+        'outpatient-missing-document-data-dialog',
+        expect.objectContaining({ title: 'No se pudo generar el PDF de indicaciones' }),
+      ),
+    );
     expect(screen.queryByText(/synthetic backend details/i)).not.toBeInTheDocument();
   });
 });
-
 
 describe('receta única desde el dashboard', () => {
   it('no ofrece la emisión cuando no hay fuente de numeración configurada', () => {
@@ -710,6 +816,10 @@ describe('receta única desde el dashboard', () => {
       ...(mockUseConfig.getMockImplementation()?.() ?? mockUseConfig.mock.results[0]?.value ?? {}),
       appointmentVisitAttributeTypeUuid: 'appointment-link-type-uuid',
       visitTypes: { ambulatory: 'ambulatory-type' },
+      encounterTypes: { visitNote: 'visit-note-type' },
+      formsList: { visitNoteFormUuid: 'visit-note-form' },
+      clinicianEncounterRoleUuid: 'clinician-role',
+      professionalRegistrationProviderAttributeTypeUuid: 'professional-registration-type',
       outpatientDocumentFacilityAddress: 'Distrito de prueba, provincia de prueba, Loreto',
       outpatientDocumentFacilityPhone: '900 000 000',
       outpatientDocumentFacilityLocationUuid: 'hsc-location-uuid',
@@ -734,11 +844,67 @@ describe('receta única desde el dashboard', () => {
     fireEvent.click(button);
 
     await waitFor(() =>
-      expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect(mockShowModal).toHaveBeenCalledWith(
+        'outpatient-missing-document-data-dialog',
         expect.objectContaining({ title: 'No se pudo emitir la Receta Única' }),
       ),
     );
     expect(createOutpatientRecetaUnicaPdf).not.toHaveBeenCalled();
     expect(printPdfBytes).not.toHaveBeenCalled();
+  });
+
+  it('no solicita correlativo cuando falta el responsable o el CIE-10 canónico', async () => {
+    mockUseConfig.mockReturnValue({
+      ...(mockUseConfig.getMockImplementation()?.() ?? mockUseConfig.mock.results[0]?.value ?? {}),
+      appointmentVisitAttributeTypeUuid: 'appointment-link-type-uuid',
+      visitTypes: { ambulatory: 'ambulatory-type' },
+      encounterTypes: { visitNote: 'visit-note-type' },
+      formsList: { visitNoteFormUuid: 'visit-note-form' },
+      clinicianEncounterRoleUuid: 'clinician-role',
+      professionalRegistrationProviderAttributeTypeUuid: 'professional-registration-type',
+      outpatientDocumentFacilityAddress: 'Distrito de prueba, provincia de prueba, Loreto',
+      outpatientDocumentFacilityPhone: '900 000 000',
+      outpatientDocumentFacilityLocationUuid: 'hsc-location-uuid',
+      outpatientDocumentFacilityPhoneAttributeTypeUuid: 'phone-attribute-type-uuid',
+      outpatientDocumentFacilityIpressCodeAttributeTypeUuid: 'ipress-attribute-type-uuid',
+      referralOriginRenaesCode: '00000000',
+      recetaUnica: {
+        identifierSourceUuid: 'receta-source-uuid',
+        validityDays: 3,
+        collegiateNumberProviderAttributeTypeUuid: 'professional-registration-type',
+      },
+      concepts: {},
+    });
+    mockIsRecetaClinicallyReady.mockReturnValue(false);
+    mockBuildSummary.mockReturnValue({
+      visitUuid: 'visit-uuid',
+      visitStart: '2026-08-23T14:00:00.000-05:00',
+      sourceServerDatetime: '2026-08-26T14:00:00.000Z',
+      clinicalEncounterDatetime: '2026-08-24T00:10:00.000-05:00',
+      clinicalRecordCompleteness: 'canonical-incomplete',
+      clinicalRecordIssues: ['primary-diagnosis-cie10-mapping-missing', 'responsible-provider-missing-or-ambiguous'],
+      responsibleProviderUuid: 'provider-uuid',
+      responsibleProvider: 'Dra. Responsable',
+      responsibleProfessionalRegistration: 'CMP-12345',
+      hasClinicalContent: true,
+    } as ReturnType<typeof buildOutpatientVisitSummary>);
+
+    render(<OutpatientVisitSummaryDownload patientUuid="patient-uuid" />);
+    const button = await screen.findByRole('button', { name: /emitir receta única/i });
+    fireEvent.click(button);
+
+    await waitFor(() =>
+      expect(mockShowModal).toHaveBeenCalledWith(
+        'outpatient-missing-document-data-dialog',
+        expect.objectContaining({
+          title: 'No se pudo emitir la Receta Única',
+          requirements: [
+            { id: 'primaryDiagnosisCie10', tab: 'diagnosis' },
+            { id: 'responsibleProfessional', tab: 'soap' },
+          ],
+        }),
+      ),
+    );
+    expect(mockGenerateRecetaUnicaNumber).not.toHaveBeenCalled();
   });
 });

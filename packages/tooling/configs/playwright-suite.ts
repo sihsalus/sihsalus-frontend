@@ -21,6 +21,7 @@ type SuiteOptions = {
   channel?: string;
   outputDir?: string;
   reporter?: PlaywrightTestConfig['reporter'];
+  webServer?: PlaywrightTestConfig['webServer'];
 };
 
 export function defineAppE2ESuite(options: SuiteOptions) {
@@ -37,6 +38,7 @@ export function defineAppE2ESuite(options: SuiteOptions) {
     outputDir: options.outputDir,
     reporter: options.reporter ?? (process.env.CI ? [['junit', { outputFile: 'results.xml' }], ['html']] : [['html']]),
     globalSetup: options.globalSetup,
+    webServer: options.webServer,
     use: {
       baseURL: options.baseURL,
       locale: options.locale,

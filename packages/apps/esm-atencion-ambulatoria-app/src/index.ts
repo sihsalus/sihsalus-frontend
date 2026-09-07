@@ -51,6 +51,10 @@ export const institutionalReferralWorkspace = getAsyncLifecycle(
   () => import('./consulta-externa/institutional-referral-form.workspace'),
   options,
 );
+export const outpatientMissingDocumentDataModal = getAsyncLifecycle(
+  () => import('./consulta-externa/outpatient-missing-document-data.modal'),
+  options,
+);
 // t('consultaExternaTooltip', 'Consulta externa')
 export const consultaExternaDashboardLink = getSyncLifecycle(
   createDashboardLink({ ...consultaExternaDashboardMeta, moduleName }),

@@ -30,6 +30,66 @@ const unitsDontMatchErrorMessage =
   "Misconfiguration, please contact your System Administrator:  Can't calculate quantity dispensed if units don't match. Likely issue: allowModifyingPrescription and restrictTotalQuantityDispensed configuration parameters both set to true. " +
   'Either set restrictTotalQuantityDispensed to false or set allowModifyingPrescription to false. If you have previously entered dispense events that modified prescriptions, you will likely need to clean up or remove that data before setting restrictTotalQuantityDispensed to true.';
 
+type ComparableQuantity = {
+  value: number;
+  code: string;
+  system?: string;
+};
+
+function getComparableQuantity(quantity?: Quantity): ComparableQuantity | null {
+  const value = quantity?.value;
+  const code = typeof quantity?.code === 'string' ? quantity.code.trim() : '';
+  const system = typeof quantity?.system === 'string' ? quantity.system.trim() : '';
+
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0 || !code) {
+    return null;
+  }
+
+  return { value, code, ...(system ? { system } : {}) };
+}
+
+/**
+ * Returns whether completed dispense records safely account for the full ordered quantity.
+ * Non-completed records never contribute to the total, and ambiguous quantity data fails closed.
+ */
+export function isMedicationRequestFullyDispensed(medicationRequestBundle: MedicationRequestBundle): boolean {
+  const requestQuantity = getComparableQuantity(medicationRequestBundle?.request?.dispenseRequest?.quantity);
+  const rawRefillsAllowed = medicationRequestBundle?.request?.dispenseRequest?.numberOfRepeatsAllowed;
+  const refillsAllowed = rawRefillsAllowed ?? 0;
+
+  if (!requestQuantity || !Number.isInteger(refillsAllowed) || refillsAllowed < 0) {
+    return false;
+  }
+
+  const completedDispenses =
+    medicationRequestBundle?.dispenses?.filter((dispense) => dispense.status === MedicationDispenseStatus.completed) ??
+    [];
+
+  if (completedDispenses.length === 0) {
+    return false;
+  }
+
+  let totalDispensed = 0;
+  for (const dispense of completedDispenses) {
+    const dispenseQuantity = getComparableQuantity(dispense.quantity);
+    if (
+      !dispenseQuantity ||
+      dispenseQuantity.code !== requestQuantity.code ||
+      (dispenseQuantity.system && requestQuantity.system && dispenseQuantity.system !== requestQuantity.system)
+    ) {
+      return false;
+    }
+
+    totalDispensed += dispenseQuantity.value;
+    if (!Number.isFinite(totalDispensed)) {
+      return false;
+    }
+  }
+
+  const totalOrdered = requestQuantity.value * (1 + refillsAllowed);
+  return Number.isFinite(totalOrdered) && totalDispensed >= totalOrdered;
+}
+
 /**
  * Computes the fulfiller status for a bundle
  *
@@ -42,8 +102,7 @@ export function computeFulfillerStatus(
   restrictTotalQuantityDispensed: boolean,
   isDeleteOfCompletedDispense: boolean = false,
 ): MedicationRequestFulfillerStatus {
-  if (restrictTotalQuantityDispensed && computeQuantityRemaining(medicationRequestBundle) <= 0) {
-    // if we set to restrict total quantity dispenses and quantity remaining less than 0, set status to completed
+  if (isMedicationRequestFullyDispensed(medicationRequestBundle)) {
     return MedicationRequestFulfillerStatus.completed;
   }
 
@@ -167,14 +226,20 @@ export function computeNewFulfillerStatusAfterDispenseEvent(
     dispenses = dispenses.map((dispense) => (dispense.id === medicationDispense.id ? medicationDispense : dispense));
   }
 
-  // then call computeFulfillerStatus to compute status
-  return computeFulfillerStatus(
-    {
-      request: medicationRequestBundle.request,
-      dispenses: dispenses,
-    },
-    restrictTotalQuantityDispensed,
-    false,
+  const updatedBundle = {
+    request: medicationRequestBundle.request,
+    dispenses,
+  };
+
+  if (isMedicationRequestFullyDispensed(medicationRequestBundle) && !isMedicationRequestFullyDispensed(updatedBundle)) {
+    return MedicationRequestFulfillerStatus.in_progress;
+  }
+
+  // A completed dispense that does not yet satisfy the full order is explicitly in progress.
+  // This avoids sending an unproven null extension while keeping partial orders non-terminal.
+  return (
+    computeFulfillerStatus(updatedBundle, restrictTotalQuantityDispensed, false) ??
+    MedicationRequestFulfillerStatus.in_progress
   );
 }
 
@@ -273,14 +338,16 @@ export function computePrescriptionStatusMessageCode(
 
 export function computeQuantityRemaining(medicationRequestBundle: MedicationRequestBundle): number {
   if (medicationRequestBundle) {
+    const completedDispenses = medicationRequestBundle.dispenses.filter(
+      (medicationDispense) => medicationDispense.status === MedicationDispenseStatus.completed,
+    );
     // hard protect against quantity type mistmatch
-    if (!getQuantityUnitsMatch([medicationRequestBundle.request, ...medicationRequestBundle.dispenses])) {
+    if (!getQuantityUnitsMatch([medicationRequestBundle.request, ...completedDispenses])) {
       throw new Error(unitsDontMatchErrorMessage);
     }
 
     return (
-      computeTotalQuantityOrdered(medicationRequestBundle.request) -
-      computeTotalQuantityDispensed(medicationRequestBundle.dispenses)
+      computeTotalQuantityOrdered(medicationRequestBundle.request) - computeTotalQuantityDispensed(completedDispenses)
     );
   }
   return 0;
@@ -292,10 +359,13 @@ export function computeQuantityRemaining(medicationRequestBundle: MedicationRequ
  */
 export function computeTotalQuantityDispensed(medicationDispenses: Array<MedicationDispense>): number {
   if (medicationDispenses) {
-    if (!getQuantityUnitsMatch(medicationDispenses)) {
+    const completedDispenses = medicationDispenses.filter(
+      (medicationDispense) => medicationDispense.status === MedicationDispenseStatus.completed,
+    );
+    if (!getQuantityUnitsMatch(completedDispenses)) {
       throw new Error(unitsDontMatchErrorMessage);
     }
-    const quantity = medicationDispenses
+    const quantity = completedDispenses
       .map((medicationDispense) => (medicationDispense.quantity?.value ? medicationDispense.quantity?.value : 0))
       .reduce((acc, currentValue) => acc + currentValue, 0);
     return quantity;

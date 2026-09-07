@@ -96,4 +96,22 @@ describe('StopVisitOverflowMenuItem', () => {
 
     expect(screen.queryByRole('menuitem', { name: /End Visit/i })).not.toBeInTheDocument();
   });
+
+  it('stays available for a super user, who inherits every privilege', () => {
+    mockUseSession.mockReturnValue({
+      user: {
+        uuid: 'super-user',
+        privileges: [],
+        roles: [{ uuid: 'system-developer', name: 'System Developer', display: 'System Developer' }],
+      },
+    } as unknown as ReturnType<typeof useSession>);
+    mockUserHasAccess.mockReturnValue(true);
+    mockUseVisit.mockReturnValue({
+      currentVisit: mockCurrentVisit,
+    } as ReturnType<typeof useVisit>);
+
+    render(<StopVisitOverflowMenuItem patientUuid={mockPatient.id} />);
+
+    expect(screen.getByRole('menuitem', { name: /End Visit/i })).toBeInTheDocument();
+  });
 });

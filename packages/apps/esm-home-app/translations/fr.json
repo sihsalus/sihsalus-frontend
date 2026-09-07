@@ -19,5 +19,7 @@
   "registerPatientDescription": "DNI de préférence ; CE/CNV si applicable",
   "searchPatient": "Rechercher un patient",
   "searchPatientDescription": "DNI, CE, CNV ou HCE",
-  "pageNotFound": "Page non trouvé"
+  "pageNotFound": "Page non trouvé",
+  "clinicalReferenceLinks": "Liens de référence",
+  "clinicalReferenceLinksCaption": "Services externes à SIH Salus. Ils s'ouvrent dans un nouvel onglet."
 }

@@ -33,12 +33,15 @@ export function parseAllowedFileExtensions(value?: string | null): Array<string>
   ];
 }
 
-export function useAllowedFileExtensions() {
+export function useAllowedFileExtensions(enabled = true) {
   const allowedFileExtensionsGlobalProperty = 'attachments.allowedFileExtensions';
   const customRepresentation = 'custom:(value)';
   const url = `${restBaseUrl}/systemsetting?&v=${customRepresentation}&q=${allowedFileExtensionsGlobalProperty}`;
 
-  const { data, error, isLoading } = useSWRImmutable<{ data: { results: Array<GlobalProperty> } }>(url, openmrsFetch);
+  const { data, error, isLoading } = useSWRImmutable<{ data: { results: Array<GlobalProperty> } }>(
+    enabled ? url : null,
+    openmrsFetch,
+  );
 
   const allowedFileExtensions = useMemo(() => {
     const firstResult = data?.data?.results?.[0];
@@ -48,7 +51,7 @@ export function useAllowedFileExtensions() {
   return {
     allowedFileExtensions,
     error,
-    isConfigured: !isLoading && !error && allowedFileExtensions.length > 0,
-    isLoading,
+    isConfigured: enabled && !isLoading && !error && allowedFileExtensions.length > 0,
+    isLoading: enabled ? isLoading : false,
   };
 }

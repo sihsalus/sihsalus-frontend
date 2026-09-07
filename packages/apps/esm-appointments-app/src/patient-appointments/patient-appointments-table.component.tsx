@@ -16,12 +16,13 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import AppointmentsActions from '../appointments/common-components/appointments-actions.component';
 import { AppointmentStatusTag } from '../appointments/common-components/appointment-status-tag.component';
 import { getAppointmentKindLabel, getAppointmentProviderName, getAppointmentStatusLabel } from '../helpers';
 import { type Appointment } from '../types';
 
 import { PatientAppointmentsActionMenu } from './patient-appointments-action-menu.component';
-import styles from './patient-appointments-action-menu.scss';
+import styles from './patient-appointments-table.scss';
 
 dayjs.extend(utc);
 
@@ -37,6 +38,7 @@ interface AppointmentTableProps {
   switchedView: boolean;
   setSwitchedView: (value: boolean) => void;
   patientUuid: string;
+  allowCheckIn?: boolean;
 }
 
 const PatientAppointmentsTable: React.FC<AppointmentTableProps> = ({
@@ -44,6 +46,7 @@ const PatientAppointmentsTable: React.FC<AppointmentTableProps> = ({
   patientUuid,
   switchedView,
   setSwitchedView,
+  allowCheckIn = false,
 }) => {
   const { t } = useTranslation();
   const { results: paginatedAppointments, currentPage, goTo } = usePagination(patientAppointments, pageSize);
@@ -88,17 +91,26 @@ const PatientAppointmentsTable: React.FC<AppointmentTableProps> = ({
     () => new Map(paginatedAppointments.map((appointment) => [appointment.uuid, appointment])),
     [paginatedAppointments],
   );
+  const columnClassNames: Record<string, string> = {
+    date: styles.dateColumn,
+    location: styles.locationColumn,
+    service: styles.serviceColumn,
+    provider: styles.providerColumn,
+    status: styles.statusColumn,
+    type: styles.typeColumn,
+    notes: styles.notesColumn,
+  };
 
   return (
     <div>
       <DataTable rows={tableRows} headers={tableHeaders} isSortable size={isTablet ? 'lg' : 'sm'} useZebraStyles>
         {({ rows, headers, getHeaderProps, getTableProps }) => (
-          <TableContainer>
-            <Table {...getTableProps()}>
+          <TableContainer className={styles.tableContainer}>
+            <Table {...getTableProps()} className={styles.table}>
               <TableHead>
                 <TableRow>
                   {headers.map((header) => {
-                    const { key, ...headerProps } = getHeaderProps({
+                    const { key, className, ...headerProps } = getHeaderProps({
                       header,
                       isSortable: header.isSortable,
                     });
@@ -106,38 +118,73 @@ const PatientAppointmentsTable: React.FC<AppointmentTableProps> = ({
                     return (
                       <TableHeader
                         key={key}
-                        className={classNames(styles.productiveHeading01, styles.text02)}
+                        className={classNames(
+                          className,
+                          styles.productiveHeading01,
+                          styles.text02,
+                          columnClassNames[header.key],
+                        )}
                         {...headerProps}
                       >
                         {renderHeaderLabel(header.header)}
                       </TableHeader>
                     );
                   })}
-                  <TableHeader />
+                  <TableHeader className={styles.actionsColumn}>{t('care', 'Atención')}</TableHeader>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {rows.map((row) => {
                   const appointment = appointmentsByUuid.get(row.id);
 
-                  return (
-                    <TableRow key={row.id}>
-                      {row.cells.map((cell) => (
-                        <TableCell key={cell.id}>
-                          {cell.info.header === 'status' ? (
-                            <AppointmentStatusTag status={appointment?.status} />
-                          ) : (
-                            (cell.value?.content ?? cell.value)
-                          )}
+                  return appointment ? (
+                    <React.Fragment key={row.id}>
+                      <TableRow data-appointment-row>
+                        {row.cells.map((cell) => (
+                          <TableCell key={cell.id} className={columnClassNames[cell.info.header]}>
+                            {cell.info.header === 'status' ? (
+                              <AppointmentStatusTag status={appointment.status} />
+                            ) : (
+                              (cell.value?.content ?? cell.value)
+                            )}
+                          </TableCell>
+                        ))}
+                        <TableCell className={classNames('cds--table-column-menu', styles.actionsColumn)}>
+                          <div className={styles.actions}>
+                            {allowCheckIn ? (
+                              <AppointmentsActions appointment={appointment} checkInOnly />
+                            ) : null}
+                            <PatientAppointmentsActionMenu appointment={appointment} patientUuid={patientUuid} />
+                          </div>
                         </TableCell>
-                      ))}
-                      <TableCell className="cds--table-column-menu">
-                        {appointment ? (
-                          <PatientAppointmentsActionMenu appointment={appointment} patientUuid={patientUuid} />
-                        ) : null}
-                      </TableCell>
-                    </TableRow>
-                  );
+                      </TableRow>
+                      <TableRow className={styles.responsiveDetailsRow}>
+                        <TableCell colSpan={headers.length + 1}>
+                          <dl className={styles.responsiveDetails}>
+                            <div>
+                              <dt>{t('location', 'UPSS')}</dt>
+                              <dd>{appointment.location?.name ?? '—'}</dd>
+                            </div>
+                            <div>
+                              <dt>{t('provider', 'Provider')}</dt>
+                              <dd>
+                                {getAppointmentProviderName(appointment) ??
+                                  t('unassignedProvider', 'No provider assigned')}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt>{t('appointmentType', 'Appointment type')}</dt>
+                              <dd>{getAppointmentKindLabel(appointment.appointmentKind, t) || '—'}</dd>
+                            </div>
+                            <div>
+                              <dt>{t('notes', 'Notes')}</dt>
+                              <dd>{appointment.comments || '—'}</dd>
+                            </div>
+                          </dl>
+                        </TableCell>
+                      </TableRow>
+                    </React.Fragment>
+                  ) : null;
                 })}
               </TableBody>
             </Table>

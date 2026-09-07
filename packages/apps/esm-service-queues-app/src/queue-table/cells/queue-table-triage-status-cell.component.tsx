@@ -7,6 +7,7 @@ export function QueueTableTriageStatusCell({ queueEntry }: QueueTableCellCompone
   const { t } = useTranslation();
   const state = queueEntry.workflow?.triageState ?? 'notRequired';
   const content = {
+    loading: { label: t('triageChecking', 'Verificando'), type: 'gray' as const },
     pending: { label: t('triagePending', 'Pendiente'), type: 'blue' as const },
     completed: { label: t('triageCompleted', 'Realizado'), type: 'green' as const },
     notRequired: { label: t('triageNotRequired', 'No aplica'), type: 'gray' as const },

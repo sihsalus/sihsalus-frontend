@@ -1,5 +1,5 @@
 import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { showSnackbar, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar, userHasAccess, useSession } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -33,14 +33,17 @@ const DeleteConditionModal: React.FC<DeleteConditionModalProps> = ({ closeDelete
         kind: 'success',
         title: t('conditionDeleted', 'Condition deleted'),
       });
-    } catch (error) {
-      console.error('Error deleting condition: ', error);
-
+    } catch (error: unknown) {
+      setIsDeleting(false);
       showSnackbar({
         isLowContrast: false,
         kind: 'error',
         title: t('errorDeletingCondition', 'Error deleting condition'),
-        subtitle: error?.message,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('conditionDeleteFailed', 'The condition could not be deleted. Please try again.'),
+          { logContext: 'Delete maternal health condition' },
+        ),
       });
     }
   }, [closeDeleteModal, conditionId, mutate, t]);

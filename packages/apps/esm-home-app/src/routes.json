@@ -64,6 +64,13 @@
       "offline": true
     },
     {
+      "name": "reference-links",
+      "slot": "home-dashboard-slot",
+      "component": "referenceLinks",
+      "online": true,
+      "offline": false
+    },
+    {
       "name": "metrics-slot",
       "slot": "home-dashboard-slot",
       "component": "metrics",

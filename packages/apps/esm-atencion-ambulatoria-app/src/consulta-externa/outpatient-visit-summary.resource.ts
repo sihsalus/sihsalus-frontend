@@ -5,20 +5,23 @@ import { getFormEngineFieldPath, type PhysicalExamValues, physicalExamFields } f
 const TIPO_DX_FORM_FIELD_NAMESPACE = 'visit-notes';
 const TIPO_DX_FIELD_PREFIX = 'tipo-dx-';
 
+// Encounter.orders is polymorphic. FULL lets REST dispatch each entry through
+// its concrete DrugOrder/TestOrder handler; a single custom shape would try to
+// reflect DrugOrder-only properties (for example `drug`) on TestOrder and
+// reject the complete visit with HTTP 400.
+const DRUG_DETAILS_REPRESENTATION = 'custom:(uuid,display,strength)';
+
 const VISIT_SUMMARY_REPRESENTATION =
   'custom:(uuid,patient:(uuid),visitType:(uuid,display),startDatetime,stopDatetime,location:(uuid,display),' +
   'attributes:(uuid,voided,value,attributeType:(uuid)),' +
-  'encounters:(uuid,voided,encounterDatetime,location:(uuid,display),' +
-  'encounterProviders:(uuid,provider:(uuid,display,person:(uuid,display)),encounterRole:(uuid,display)),' +
-  'diagnoses:(uuid,display,voided,certainty,rank,diagnosis:(coded:(uuid,display,mappings:(display)),nonCoded)),' +
-  'obs:(uuid,voided,concept:(uuid,display),value,display,formFieldNamespace,formFieldPath),' +
-  'orders:(uuid,voided,action,previousOrder:(uuid),orderType:(uuid,display),concept:(uuid,display),' +
-  'orderReasonNonCoded,' +
-  'drug:(uuid,display,strength),dose,doseUnits:(uuid,display),route:(uuid,display),frequency:(uuid,display),' +
-  'asNeeded,asNeededCondition,duration,durationUnits:(uuid,display),quantity,quantityUnits:(uuid,display),numRefills,' +
-  'dosingInstructions,instructions,' +
-  'dateStopped,autoExpireDate,' +
-  'orderer:(uuid,display,person:(uuid,display)))))';
+  'encounters:(uuid,voided,encounterDatetime,encounterType:(uuid),form:(uuid),location:(uuid,display),' +
+  'encounterProviders:(uuid,voided,provider:(uuid,display,' +
+  'attributes:(uuid,voided,value,attributeType:(uuid,display)),person:(uuid,display)),encounterRole:(uuid,display)),' +
+  'diagnoses:(uuid,display,voided,certainty,rank,diagnosis:(coded:(uuid,display,' +
+  'mappings:(display,conceptReferenceTerm:(code,conceptSource:(name,display))),' +
+  'names:(display,conceptNameType)),nonCoded)),' +
+  'obs:(uuid,voided,concept:(uuid,display),value,display,formFieldNamespace,formFieldPath,order:(uuid)),' +
+  'orders:FULL))';
 
 interface OpenmrsRef {
   uuid: string;
@@ -33,6 +36,7 @@ interface VisitSummaryObservation {
   display?: string;
   formFieldNamespace?: string;
   formFieldPath?: string;
+  order?: OpenmrsRef;
 }
 
 interface VisitSummaryDiagnosis {
@@ -42,7 +46,16 @@ interface VisitSummaryDiagnosis {
   certainty?: string;
   rank?: number;
   diagnosis?: {
-    coded?: OpenmrsRef & { mappings?: Array<{ display?: string }> };
+    coded?: OpenmrsRef & {
+      mappings?: Array<{
+        display?: string;
+        conceptReferenceTerm?: {
+          code?: string;
+          conceptSource?: { name?: string; display?: string };
+        };
+      }>;
+      names?: Array<{ display?: string; conceptNameType?: string | null }>;
+    };
     nonCoded?: string;
   };
 }
@@ -50,6 +63,9 @@ interface VisitSummaryDiagnosis {
 interface VisitSummaryOrder {
   uuid: string;
   voided?: boolean;
+  auditInfo?: {
+    dateVoided?: string | null;
+  };
   action?: string;
   previousOrder?: OpenmrsRef;
   orderType?: OpenmrsRef;
@@ -78,10 +94,21 @@ interface VisitSummaryEncounter {
   uuid: string;
   voided?: boolean;
   encounterDatetime: string;
+  encounterType?: OpenmrsRef;
+  form?: OpenmrsRef;
   location?: OpenmrsRef;
   encounterProviders?: Array<{
     uuid: string;
-    provider?: OpenmrsRef & { person?: OpenmrsRef };
+    voided?: boolean;
+    provider?: OpenmrsRef & {
+      attributes?: Array<{
+        uuid?: string;
+        voided?: boolean;
+        value?: unknown;
+        attributeType?: OpenmrsRef;
+      }>;
+      person?: OpenmrsRef;
+    };
     encounterRole?: OpenmrsRef;
   }>;
   diagnoses?: VisitSummaryDiagnosis[];
@@ -103,6 +130,8 @@ export interface VisitSummarySource {
     attributeType?: { uuid?: string };
   }>;
   encounters?: VisitSummaryEncounter[];
+  /** Fecha de la cabecera HTTP `Date` de la lectura REST; no proviene del navegador. */
+  responseServerDatetime?: string | null;
 }
 
 export interface OutpatientSummaryPatient {
@@ -127,7 +156,9 @@ export interface OutpatientSummaryOrder {
   category: 'medication' | 'laboratory' | 'other';
   name: string;
   details: string | null;
+  result?: string | null;
   orderer: string | null;
+  ordererUuid?: string | null;
   asNeeded: boolean;
   asNeededCondition: string | null;
   orderReasonNonCoded: string | null;
@@ -135,6 +166,13 @@ export interface OutpatientSummaryOrder {
   dateStopped?: string | null;
   autoExpireDate?: string | null;
 }
+
+export type OutpatientClinicalRecordIssue =
+  | 'canonical-encounter-missing'
+  | 'canonical-encounter-ambiguous'
+  | 'primary-diagnosis-missing-or-ambiguous'
+  | 'primary-diagnosis-cie10-mapping-missing'
+  | 'responsible-provider-missing-or-ambiguous';
 
 export interface OutpatientVisitSummary {
   visitUuid: string;
@@ -146,7 +184,15 @@ export interface OutpatientVisitSummary {
   visitType: string;
   visitStart: string;
   visitEnd: string | null;
+  sourceServerDatetime: string | null;
   location: string | null;
+  clinicalEncounterDatetime: string | null;
+  responsibleProviderUuid: string | null;
+  responsibleProvider: string | null;
+  responsibleProfessionalRegistration: string | null;
+  clinicalRecordCompleteness: 'canonical-complete' | 'canonical-incomplete' | 'legacy';
+  clinicalRecordIssues: OutpatientClinicalRecordIssue[];
+  /** @deprecated Use responsibleProvider. Kept for consumers that still render referral metadata. */
   providers: string[];
   vitals: {
     bloodPressure: string | null;
@@ -205,6 +251,10 @@ export interface BuildOutpatientVisitSummaryOptions {
   facilityAddress?: string | null;
   facilityPhone?: string | null;
   facilityIpressCode?: string | null;
+  professionalRegistrationProviderAttributeTypeUuid: string;
+  clinicianEncounterRoleUuid: string;
+  responsibleEncounterTypeUuid: string;
+  responsibleFormUuid: string;
   concepts: ConfigObject['concepts'];
 }
 
@@ -219,7 +269,53 @@ export async function fetchOutpatientVisitSummarySource(visitUuid: string): Prom
   const response = await openmrsFetch<VisitSummarySource>(
     `${restBaseUrl}/visit/${visitUuid}?v=${VISIT_SUMMARY_REPRESENTATION}`,
   );
-  return response.data;
+  const source = response.data;
+  const drugUuids = new Map<string, string>();
+  for (const encounter of source.encounters ?? []) {
+    for (const order of encounter.orders ?? []) {
+      if (order.drug?.uuid) {
+        drugUuids.set(order.drug.uuid.toLowerCase(), order.drug.uuid);
+      }
+    }
+  }
+
+  const drugDetails = new Map<string, OpenmrsRef & { strength?: string }>();
+  await Promise.all(
+    [...drugUuids.values()].map(async (drugUuid) => {
+      try {
+        const { data } = await openmrsFetch<OpenmrsRef & { strength?: string }>(
+          `${restBaseUrl}/drug/${encodeURIComponent(drugUuid)}?v=${DRUG_DETAILS_REPRESENTATION}`,
+        );
+        if (!data?.uuid || data.uuid.toLowerCase() !== drugUuid.toLowerCase()) return;
+        drugDetails.set(drugUuid.toLowerCase(), data);
+      } catch {
+        // Do not block document generation when enrichment fails due to
+        // non-fatal backend visibility or lookup issues; the order display name
+        // is already present from the visit payload.
+      }
+    }),
+  );
+
+  const serverDateHeader = response.headers?.get?.('date');
+  const serverDateMs = serverDateHeader ? Date.parse(serverDateHeader) : Number.NaN;
+  return {
+    ...source,
+    encounters: source.encounters?.map((encounter) => ({
+      ...encounter,
+      orders: encounter.orders?.map((order) =>
+        order.drug
+          ? {
+              ...order,
+              drug: {
+                ...order.drug,
+                ...drugDetails.get(order.drug.uuid.toLowerCase()),
+              },
+            }
+          : order,
+      ),
+    })),
+    responseServerDatetime: Number.isNaN(serverDateMs) ? null : new Date(serverDateMs).toISOString(),
+  };
 }
 
 export function getLinkedAppointmentUuids(
@@ -347,6 +443,30 @@ function getDiagnosisType(
   return 'P';
 }
 
+const cie10CodePattern = /^[A-Z][0-9][A-Z0-9.]{1,5}$/i;
+
+/**
+ * An explicit CIE-10/ICD-10 mapping wins. The MINSA CIE-10 catalog loaded by
+ * content ships no mappings and stores the code as the concept's SHORT name,
+ * which is a structured catalog field and therefore also accepted.
+ */
+function getCie10MappingCode(diagnosis: VisitSummaryDiagnosis): string | null {
+  const coded = diagnosis.diagnosis?.coded;
+  const cie10Mapping = coded?.mappings?.find((mapping) => {
+    const source =
+      mapping.conceptReferenceTerm?.conceptSource?.name?.trim() ||
+      mapping.conceptReferenceTerm?.conceptSource?.display?.trim() ||
+      '';
+    return /icd[-\s]?10|cie[-\s]?10/i.test(source) && mapping.conceptReferenceTerm?.code?.trim();
+  });
+  const mappedCode = cie10Mapping?.conceptReferenceTerm?.code?.trim();
+  if (mappedCode) return mappedCode;
+  const shortName = coded?.names?.find(
+    (name) => name.conceptNameType === 'SHORT' && cie10CodePattern.test(name.display?.trim() ?? ''),
+  );
+  return shortName?.display?.trim().toLocaleUpperCase('es-PE') || null;
+}
+
 function mapDiagnoses(
   encounters: VisitSummaryEncounter[],
   concepts: ConfigObject['concepts'],
@@ -359,12 +479,11 @@ function mapDiagnoses(
       const coded = diagnosis.diagnosis?.coded;
       const display = coded?.display ?? diagnosis.diagnosis?.nonCoded ?? diagnosis.display;
       if (!display) return [];
-      const cie10Mapping = coded?.mappings?.find((mapping) => mapping.display?.toUpperCase().startsWith('ICD-10'));
       return [
         {
           uuid: diagnosis.uuid,
           display,
-          cie10Code: cie10Mapping?.display?.split(':').slice(1).join(':').trim() || null,
+          cie10Code: getCie10MappingCode(diagnosis),
           rank: diagnosis.rank ?? null,
           type: getDiagnosisType(encounter, diagnosis, concepts),
         },
@@ -396,9 +515,23 @@ function getOrderCategory(order: VisitSummaryOrder): OutpatientSummaryOrder['cat
   return /lab|laborator|test|prueba|examen/.test(type) ? 'laboratory' : 'other';
 }
 
+function getOrderResult(encounters: VisitSummaryEncounter[], orderUuid: string): string | null {
+  for (const encounter of [...encounters].sort(
+    (a, b) => new Date(b.encounterDatetime).getTime() - new Date(a.encounterDatetime).getTime(),
+  )) {
+    const result = encounter.obs?.find(
+      (observation) => !observation.voided && observation.order?.uuid?.toLowerCase() === orderUuid.toLowerCase(),
+    );
+    if (result) return asText(result.value, result.display);
+  }
+  return null;
+}
+
 function mapOrders(encounters: VisitSummaryEncounter[]): OutpatientSummaryOrder[] {
   const seen = new Set<string>();
-  const sourceOrders = encounters.flatMap((encounter) => encounter.orders ?? []).filter((order) => !order.voided);
+  const sourceOrders = encounters
+    .flatMap((encounter) => encounter.orders ?? [])
+    .filter((order) => !order.voided && !order.auditInfo?.dateVoided);
   const supersededOrderUuids = new Set(
     sourceOrders.map((order) => order.previousOrder?.uuid).filter((uuid): uuid is string => Boolean(uuid)),
   );
@@ -408,13 +541,16 @@ function mapOrders(encounters: VisitSummaryEncounter[]): OutpatientSummaryOrder[
     const drugName = [order.drug?.display, order.drug?.strength].filter(Boolean).join(' ');
     const name = drugName || order.concept?.display || order.orderType?.display;
     if (!name) return [];
+    const category = getOrderCategory(order);
     return [
       {
         uuid: order.uuid,
-        category: getOrderCategory(order),
+        category,
         name,
         details: orderDetails(order),
+        result: category === 'laboratory' ? getOrderResult(encounters, order.uuid) : null,
         orderer: order.orderer?.person?.display ?? order.orderer?.display ?? null,
+        ordererUuid: order.orderer?.uuid ?? null,
         asNeeded: order.asNeeded === true,
         asNeededCondition: order.asNeeded === true ? order.asNeededCondition?.trim() || null : null,
         orderReasonNonCoded: order.orderReasonNonCoded?.trim() || null,
@@ -429,16 +565,76 @@ function mapOrders(encounters: VisitSummaryEncounter[]): OutpatientSummaryOrder[
   });
 }
 
-function getProviderNames(encounters: VisitSummaryEncounter[]): string[] {
-  return [
-    ...new Set(
-      encounters.flatMap((encounter) =>
-        (encounter.encounterProviders ?? [])
-          .map((entry) => entry.provider?.person?.display ?? entry.provider?.display)
-          .filter((name): name is string => Boolean(name)),
-      ),
-    ),
-  ];
+function resolveResponsibleClinicalEncounter(
+  encounters: VisitSummaryEncounter[],
+  professionalRegistrationProviderAttributeTypeUuid: string,
+  clinicianEncounterRoleUuid: string,
+  responsibleEncounterTypeUuid: string,
+  responsibleFormUuid: string,
+): Pick<
+  OutpatientVisitSummary,
+  | 'clinicalEncounterDatetime'
+  | 'clinicalRecordCompleteness'
+  | 'clinicalRecordIssues'
+  | 'providers'
+  | 'responsibleProfessionalRegistration'
+  | 'responsibleProviderUuid'
+  | 'responsibleProvider'
+> {
+  const canonicalEncounters = encounters.filter(
+    (encounter) =>
+      encounter.encounterType?.uuid?.toLowerCase() === responsibleEncounterTypeUuid.trim().toLowerCase() &&
+      encounter.form?.uuid?.toLowerCase() === responsibleFormUuid.trim().toLowerCase(),
+  );
+  if (canonicalEncounters.length !== 1) {
+    return {
+      clinicalEncounterDatetime: null,
+      clinicalRecordCompleteness: canonicalEncounters.length === 0 ? 'legacy' : 'canonical-incomplete',
+      clinicalRecordIssues: [
+        canonicalEncounters.length === 0 ? 'canonical-encounter-missing' : 'canonical-encounter-ambiguous',
+      ],
+      responsibleProviderUuid: null,
+      responsibleProvider: null,
+      responsibleProfessionalRegistration: null,
+      providers: [],
+    };
+  }
+
+  const encounter = canonicalEncounters[0];
+  const clinicalRecordIssues: OutpatientClinicalRecordIssue[] = [];
+  const primaryDiagnoses = (encounter.diagnoses ?? []).filter((diagnosis) => !diagnosis.voided && diagnosis.rank === 1);
+  if (primaryDiagnoses.length !== 1) {
+    clinicalRecordIssues.push('primary-diagnosis-missing-or-ambiguous');
+  } else if (!getCie10MappingCode(primaryDiagnoses[0])) {
+    clinicalRecordIssues.push('primary-diagnosis-cie10-mapping-missing');
+  }
+
+  const expectedClinicianRoleUuid = clinicianEncounterRoleUuid.trim().toLowerCase();
+  const activeClinicianProviders = (encounter.encounterProviders ?? []).filter(
+    (entry) =>
+      !entry.voided && entry.provider && entry.encounterRole?.uuid?.toLowerCase() === expectedClinicianRoleUuid,
+  );
+  const provider = activeClinicianProviders.length === 1 ? activeClinicianProviders[0].provider : undefined;
+  const name = provider?.person?.display?.trim() || provider?.display?.trim() || null;
+  if (!name) clinicalRecordIssues.push('responsible-provider-missing-or-ambiguous');
+
+  const registrationAttribute = (provider?.attributes ?? []).find(
+    (attribute) =>
+      !attribute.voided &&
+      attribute.attributeType?.uuid?.toLowerCase() ===
+        professionalRegistrationProviderAttributeTypeUuid.trim().toLowerCase(),
+  );
+  const registration = asText(registrationAttribute?.value);
+
+  return {
+    clinicalEncounterDatetime: encounter.encounterDatetime,
+    clinicalRecordCompleteness: clinicalRecordIssues.length ? 'canonical-incomplete' : 'canonical-complete',
+    clinicalRecordIssues,
+    responsibleProviderUuid: provider?.uuid ?? null,
+    responsibleProvider: name,
+    responsibleProfessionalRegistration: registration,
+    providers: name ? [name] : [],
+  };
 }
 
 export function buildOutpatientVisitSummary({
@@ -451,6 +647,10 @@ export function buildOutpatientVisitSummary({
   facilityAddress,
   facilityPhone,
   facilityIpressCode,
+  professionalRegistrationProviderAttributeTypeUuid,
+  clinicianEncounterRoleUuid,
+  responsibleEncounterTypeUuid,
+  responsibleFormUuid,
   concepts,
 }: BuildOutpatientVisitSummaryOptions): OutpatientVisitSummary {
   if (source.uuid?.toLowerCase() !== expectedVisitUuid.toLowerCase()) {
@@ -551,6 +751,13 @@ export function buildOutpatientVisitSummary({
         Object.values(treatment).some(Boolean) ||
         orders.length),
   );
+  const responsibility = resolveResponsibleClinicalEncounter(
+    encounters,
+    professionalRegistrationProviderAttributeTypeUuid,
+    clinicianEncounterRoleUuid,
+    responsibleEncounterTypeUuid,
+    responsibleFormUuid,
+  );
 
   return {
     visitUuid: source.uuid,
@@ -562,11 +769,12 @@ export function buildOutpatientVisitSummary({
     visitType: source.visitType.display ?? '',
     visitStart: source.startDatetime,
     visitEnd: source.stopDatetime ?? null,
+    sourceServerDatetime: source.responseServerDatetime ?? null,
     location:
       source.location?.display ??
       encounters.find((encounter) => encounter.location?.display)?.location?.display ??
       null,
-    providers: getProviderNames(encounters),
+    ...responsibility,
     vitals,
     anamnesis,
     soap,

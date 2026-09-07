@@ -367,7 +367,8 @@ describe('AppointmentForm', () => {
 
     await waitForLoadingToFinish();
     const noteInput = screen.getByLabelText(/write an additional note/i);
-    await user.type(noteInput, 'a'.repeat(appointmentNoteMaxLength + 1));
+    await user.click(noteInput);
+    await user.paste('a'.repeat(appointmentNoteMaxLength + 1));
 
     expect(noteInput).toHaveValue('a'.repeat(appointmentNoteMaxLength));
     expect(screen.getByText(`${appointmentNoteMaxLength}/${appointmentNoteMaxLength}`)).toBeInTheDocument();
@@ -940,6 +941,7 @@ describe('AppointmentForm', () => {
     renderWithSwr(<AppointmentForm {...defaultProps} />);
     await waitForLoadingToFinish();
     await selectLocationAndService(user);
+    await enableResponsibleProvider(user);
     expect(screen.getByRole('option', { name: mockProviders.data[0].display })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: mockProviders.data[1].display })).not.toBeInTheDocument();
   });

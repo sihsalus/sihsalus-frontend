@@ -1,6 +1,6 @@
-import { type Order } from '@openmrs/esm-framework';
 import { type APIRequestContext, expect } from '@playwright/test';
-import { type Encounter } from './types';
+import { voidOpenmrsResource } from '../../utils/openmrs-cleanup';
+import { type Encounter, type Order } from './types';
 
 export const generateRandomTestOrder = async (
   api: APIRequestContext,
@@ -12,7 +12,7 @@ export const generateRandomTestOrder = async (
     data: {
       orderType: '52a447d3-a64a-11e3-9aeb-50e549534c5e',
       type: 'testorder',
-      action: 'new',
+      action: 'NEW',
       accessionNumber: null,
       urgency: 'ROUTINE',
       dateActivated: encounter.encounterDatetime,
@@ -20,7 +20,7 @@ export const generateRandomTestOrder = async (
       dateStopped: null,
       autoExpireDate: null,
       careSetting: '6f0c9a92-6f24-11e3-af88-005056821db0',
-      encounter: encounter,
+      encounter: encounter.uuid,
       patient: patientId,
       concept: '887AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       orderer: providerUuid,
@@ -37,10 +37,10 @@ export const generateRandomTestOrder = async (
       numberOfRepeats: null,
     },
   });
-  expect(order.ok()).toBeTruthy();
+  expect(order.ok(), 'The synthetic laboratory order must be created').toBeTruthy();
   return await order.json();
 };
 
 export const deleteTestOrder = async (api: APIRequestContext, uuid: string) => {
-  await api.delete(`order/${uuid}`, { data: {} });
+  await voidOpenmrsResource(api, { resource: 'order', uuid });
 };

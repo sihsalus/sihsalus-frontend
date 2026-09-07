@@ -20,14 +20,18 @@ dayjs.extend(isToday);
 
 interface AppointmentsActionsProps {
   appointment: Appointment;
+  checkInOnly?: boolean;
 }
 
-const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }) => {
+const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({
+  appointment,
+  checkInOnly = false,
+}) => {
   const { t } = useTranslation();
   const { appointmentVisitAttributeTypeUuid, checkInButton, checkOutButton } = useConfig<ConfigObject>();
   const session = useSession();
   const canCheckIn = userHasAccess(appointmentsEditPrivileges, session?.user);
-  const canCheckOut = userHasAccess(appointmentsCheckoutPrivileges, session?.user);
+  const canCheckOut = !checkInOnly && userHasAccess(appointmentsCheckoutPrivileges, session?.user);
   const { visits, isLoading: areVisitsLoading, error: visitsError, mutateVisit } = useTodaysVisits();
 
   const patientUuid = appointment.patient.uuid;
@@ -53,6 +57,11 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
   const isCheckedIn = appointment.status === AppointmentStatus.CHECKEDIN;
   const isCompleted = appointment.status === AppointmentStatus.COMPLETED;
   const isCancelled = appointment.status === AppointmentStatus.CANCELLED;
+  const isCheckInCandidate =
+    canCheckIn &&
+    checkInButton.enabled &&
+    isTodaysAppointment &&
+    canTransition(appointment.status, AppointmentStatus.CHECKEDIN);
   const canAssessAppointmentVisitLink = Boolean(appointmentVisitAttributeTypeUuid) && !areVisitsLoading && !visitsError;
   const needsAdmissionReconciliation = isCheckedIn && canAssessAppointmentVisitLink && !hasLinkedActiveVisit;
 
@@ -78,7 +87,7 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
   };
 
   const renderVisitStatus = () => {
-    if (areVisitsLoading && !isCancelled) {
+    if (areVisitsLoading && !isCancelled && (!checkInOnly || isCheckInCandidate)) {
       return <InlineLoading description={t('verifyingVisit', 'Verificando consulta…')} />;
     }
 
@@ -117,11 +126,8 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
           </Button>
         );
 
-      case canCheckIn &&
-        checkInButton.enabled &&
-        (!hasActiveVisit || checkInButton.showIfActiveVisit) &&
-        isTodaysAppointment &&
-        canTransition(appointment.status, AppointmentStatus.CHECKEDIN):
+      case isCheckInCandidate &&
+        (!hasActiveVisit || checkInButton.showIfActiveVisit):
         return <CheckInButton patientUuid={patientUuid} appointment={appointment} mutateVisits={mutateVisit} />;
 
       default:

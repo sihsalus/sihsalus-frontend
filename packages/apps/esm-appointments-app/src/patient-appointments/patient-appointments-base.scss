@@ -5,6 +5,14 @@
 
 .widgetCard {
   border: 1px solid $ui-03;
+
+  > :first-child {
+    height: auto;
+    min-height: layout.$spacing-09;
+    flex-wrap: wrap;
+    gap: layout.$spacing-03;
+    padding-right: layout.$spacing-03;
+  }
 }
 
 .productiveHeading01 {
@@ -13,9 +21,17 @@
 
 .contentSwitcherWrapper {
   display: flex;
+  flex: 1 1 28rem;
   justify-content: flex-end;
   align-items: center;
-  width: 60%;
+  width: auto;
+  max-width: 42rem;
+  min-width: 0;
+
+  > div:first-child {
+    flex: 1 1 18rem;
+    min-width: 0;
+  }
 }
 
 .contentSwitcherWrapper > div > button {
@@ -74,4 +90,30 @@
 
 .tile {
   text-align: center;
+}
+
+@media (max-width: $breakpoint-tablet-max) {
+  .contentSwitcherWrapper {
+    flex-basis: 100%;
+    justify-content: stretch;
+    max-width: none;
+  }
+
+  .divider {
+    margin-inline: layout.$spacing-03;
+  }
+}
+
+@media (max-width: $breakpoint-phone-max) {
+  .contentSwitcherWrapper {
+    flex-wrap: wrap;
+
+    > div:first-child {
+      flex-basis: 100%;
+    }
+  }
+
+  .divider {
+    display: none;
+  }
 }

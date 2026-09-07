@@ -1378,6 +1378,24 @@ describe('Patient registration validation', () => {
     expect(validationError.errors).toContain('responsibleRelationshipRequiredForMinor');
   });
 
+  it('accepts any adult family link explicitly marked as the primary responsible person', async () => {
+    const minorWithResponsibleGrandparent = {
+      ...validFormValues,
+      birthdate: dayjs().subtract(10, 'years').toDate(),
+      relationships: [
+        {
+          action: 'ADD',
+          isCompanion: true,
+          relatedPersonUuid: 'grandparent-person-uuid',
+          relatedPersonAge: 65,
+          relationshipType: 'grandparent-relationship/aIsToB',
+        },
+      ],
+    };
+
+    expect(await validateFormValues(minorWithResponsibleGrandparent)).toBeFalsy();
+  });
+
   it('should require a responsible relationship when the estimated age is under 18', async () => {
     const invalidFormValues = {
       ...validFormValues,

@@ -1,7 +1,12 @@
 import type { Session } from '@openmrs/esm-framework';
 import { ExtensionSlot, useConfig, userHasAccess } from '@openmrs/esm-framework';
 import { render } from '@testing-library/react';
-import { MedicationDispenseStatus, type MedicationRequest, MedicationRequestStatus } from '../types';
+import {
+  type MedicationDispense,
+  MedicationDispenseStatus,
+  type MedicationRequest,
+  MedicationRequestStatus,
+} from '../types';
 import { computeMedicationRequestStatus, getMostRecentMedicationDispenseStatus } from '../utils';
 import ActionButtons from './action-buttons.component';
 import CloseActionButton from './prescription-actions/close-action-button.component';
@@ -174,6 +179,31 @@ describe('Action Buttons Component tests', () => {
       />,
     );
     expect(getByText('Dispense')).toBeInTheDocument();
+  });
+
+  test('marks a fully dispensed active order as non-dispensable even when quantity restriction is disabled', () => {
+    const requestWithoutRefills = {
+      ...medicationRequest,
+      dispenseRequest: { ...medicationRequest.dispenseRequest, numberOfRepeatsAllowed: 0 },
+    };
+    const completedDispense = {
+      resourceType: 'MedicationDispense',
+      status: MedicationDispenseStatus.completed,
+      authorizingPrescription: [{ reference: `MedicationRequest/${requestWithoutRefills.id}` }],
+      quantity: { ...requestWithoutRefills.dispenseRequest.quantity },
+    } as MedicationDispense;
+
+    render(
+      <ActionButtons
+        patientUuid={mockPatientUuid}
+        encounterUuid={mockEncounterUuid}
+        medicationRequestBundle={{ request: requestWithoutRefills, dispenses: [completedDispense] }}
+        disabled={false}
+      />,
+    );
+
+    const extensionState = mockedExtensionSlot.mock.calls.at(-1)?.[0].state;
+    expect(extensionState?.dispensable).toBe(false);
   });
 
   // status = active, but validity period start time years in the past

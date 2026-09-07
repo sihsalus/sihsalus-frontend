@@ -40,6 +40,12 @@ La validación exige seleccionar un miembro real del catálogo; el texto libre n
 
 Diagnósticos y códigos prestacionales solicitan también los `conceptMappings` de cada concepto. La interfaz presenta ambos catálogos como `<código> - <denominación>`; conserva compatibilidad con conceptos históricos que traen el código dentro de `display`, pero prefiere el mapping CIE-10 o SIS/FUA cuando está disponible. La búsqueda prestacional también admite el código guardado únicamente en el mapping.
 
+La búsqueda de diagnósticos acepta códigos CIE-10 con o sin punto. Para una entrada como `K71.0` consulta tanto `K710`, que es el formato usado por los nombres cortos del catálogo MINSA importado, como `K71.0`, fusiona los resultados sin duplicados y prioriza la coincidencia exacta respaldada por un mapping CIE-10 o por el nombre corto del catálogo.
+
+En una visita del tipo ambulatorio configurado, el guardado exige exactamente un diagnóstico principal y que cada diagnóstico principal o secundario seleccionado tenga un mapping estructurado con fuente CIE-10/ICD-10 y código no vacío. El texto visible o la forma aparente del código no se usan como autoridad. Los demás tipos de visita conservan su comportamiento previo.
+
+El profesional del encounter se registra con `visitNoteConfig.clinicianEncounterRole`. La colegiatura mostrada se obtiene únicamente del Provider Attribute Type configurado en `professionalRegistrationProviderAttributeTypeUuid`; no se sustituye con el identificador del provider. Su ausencia no bloquea el guardado clínico, porque el despliegue puede completar el dato después y los documentos conservan una línea de firma, sello y colegiatura manual. Esto no constituye firma digital.
+
 ### Referencias oficiales configurables
 
 Los botones de ayuda abren fuentes peruanas oficiales en una pestaña nueva. Las URL son configurables porque la versión normativa y el catálogo desplegado deben mantenerse coordinados:
@@ -53,7 +59,9 @@ Un despliegue que use una versión posterior debe actualizar la URL junto con el
 
 ## Configuración clínica
 
-Los conceptos usados para motivo de consulta, anamnesis, funciones biológicas, SOAP, órdenes, procedimientos, prescripciones, referencia y próxima cita viven bajo `visitNoteConfig`. Deben resolverse contra el content package del ambiente; no se deben sustituir con UUIDs hardcodeados dentro de componentes.
+Los conceptos usados para motivo de consulta, anamnesis, funciones biológicas, SOAP, órdenes, procedimientos, prescripciones, referencia/contrarreferencia y próxima cita viven bajo `visitNoteConfig`. Deben resolverse contra el content package del ambiente; no se deben sustituir con UUIDs hardcodeados dentro de componentes.
+
+Motivo de consulta, tiempo de enfermedad, funciones biológicas, SOAP, exámenes auxiliares, procedimientos, prescripciones y referencia/contrarreferencia son una proyección de solo lectura de lo registrado por Consulta Externa durante la atención. Notas de visita no vuelve a persistir esos valores ni usa su propio encounter como fuente del resumen. Las interconsultas no forman parte del concepto de referencia: permanecen como órdenes en `esm-interconsultas-app`.
 
 Los defaults con contrato de datatype son:
 

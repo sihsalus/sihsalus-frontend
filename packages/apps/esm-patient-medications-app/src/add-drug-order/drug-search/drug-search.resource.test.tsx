@@ -1,10 +1,11 @@
-import { openmrsFetch } from '@openmrs/esm-framework';
+import { logError, openmrsFetch } from '@openmrs/esm-framework';
 import { renderHook, waitFor } from '@testing-library/react';
 import { SWRConfig } from 'swr';
 import { mockDrugSearchResultApiData } from 'test-utils';
-import { useConceptSets, useConceptTree, useDrugsByConcepts } from './drug-search.resource';
+import { useConceptSets, useConceptTree, useDrugSearch, useDrugsByConcepts } from './drug-search.resource';
 
 const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockLogError = vi.mocked(logError);
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <SWRConfig value={{ dedupingInterval: 0, provider: () => new Map() }}>{children}</SWRConfig>
@@ -27,7 +28,9 @@ describe('useConceptSets', () => {
       },
     });
 
-    const { result } = renderHook(() => useConceptSets(['uuid-1', 'uuid-2']), { wrapper });
+    const { result } = renderHook(() => useConceptSets(['uuid-1', 'uuid-2']), {
+      wrapper,
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -41,11 +44,81 @@ describe('useConceptSets', () => {
   test('returns an error on failed fetch', async () => {
     mockOpenmrsFetch.mockRejectedValueOnce(new Error('Network error'));
 
-    const { result } = renderHook(() => useConceptSets(['uuid-1']), { wrapper });
+    const { result } = renderHook(() => useConceptSets(['uuid-1']), {
+      wrapper,
+    });
 
     await waitFor(() => expect(result.current.error).toBeDefined());
 
     expect(result.current.conceptSets).toEqual([]);
+  });
+});
+
+describe('useDrugSearch', () => {
+  test('combines direct drug matches with formulations found through OCL concept names and aliases', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({
+        data: { results: [mockDrugSearchResultApiData[0]] },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          results: [{ uuid: 'concept-alias-uuid', display: 'Acetylsalicylic acid' }],
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          results: [mockDrugSearchResultApiData[0], mockDrugSearchResultApiData[1]],
+        },
+      });
+
+    const { result } = renderHook(() => useDrugSearch('aspirin'), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.drugs).toHaveLength(2);
+    expect(result.current.partialErrors).toEqual([]);
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(expect.stringContaining('/concept?q=aspirin&class=Drug'));
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(expect.stringContaining('/drug?concepts=concept-alias-uuid'));
+  });
+
+  test('encodes the search term sent to both REST resources', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: { results: [] } }).mockResolvedValueOnce({ data: { results: [] } });
+
+    const { result } = renderHook(() => useDrugSearch('ácido ursodesoxicólico'), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(expect.stringContaining('q=%C3%A1cido%20ursodesoxic%C3%B3lico'));
+    expect(result.current.drugs).toEqual([]);
+  });
+
+  test('keeps direct drug results when the optional concept-alias search is unavailable', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({
+        data: { results: [mockDrugSearchResultApiData[0]] },
+      })
+      .mockRejectedValueOnce(new Error('Concept search unavailable'));
+
+    const { result } = renderHook(() => useDrugSearch('aspirin'), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.error).toBeUndefined();
+    expect(result.current.drugs).toEqual([mockDrugSearchResultApiData[0]]);
+    expect(result.current.partialErrors).toEqual([expect.objectContaining({ message: 'Concept search unavailable' })]);
+  });
+
+  test('reports an error instead of a false empty catalog when alias lookup is unavailable', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { results: [] } })
+      .mockRejectedValueOnce(new Error('Concept search unavailable'));
+
+    const { result } = renderHook(() => useDrugSearch('ursodiol'), { wrapper });
+
+    await waitFor(() => expect(result.current.error).toBeDefined());
+
+    expect(result.current.drugs).toBeUndefined();
+    expect(result.current.error).toEqual(expect.objectContaining({ message: 'Concept search unavailable' }));
   });
 });
 
@@ -71,7 +144,9 @@ describe('useConceptTree', () => {
 
     mockOpenmrsFetch.mockResolvedValueOnce({ data: mockTree });
 
-    const { result } = renderHook(() => useConceptTree('set-uuid'), { wrapper });
+    const { result } = renderHook(() => useConceptTree('set-uuid'), {
+      wrapper,
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -82,7 +157,9 @@ describe('useConceptTree', () => {
   test('returns an error on failed fetch', async () => {
     mockOpenmrsFetch.mockRejectedValueOnce(new Error('Not found'));
 
-    const { result } = renderHook(() => useConceptTree('bad-uuid'), { wrapper });
+    const { result } = renderHook(() => useConceptTree('bad-uuid'), {
+      wrapper,
+    });
 
     await waitFor(() => expect(result.current.error).toBeDefined());
 
@@ -117,7 +194,9 @@ describe('useDrugsByConcepts', () => {
     const duplicatedDrug = mockDrugSearchResultApiData[0];
 
     mockOpenmrsFetch.mockResolvedValueOnce({
-      data: { results: [duplicatedDrug, duplicatedDrug, mockDrugSearchResultApiData[1]] },
+      data: {
+        results: [duplicatedDrug, duplicatedDrug, mockDrugSearchResultApiData[1]],
+      },
     });
 
     const { result } = renderHook(() => useDrugsByConcepts(['concept-uuid-1']), { wrapper });
@@ -128,7 +207,6 @@ describe('useDrugsByConcepts', () => {
   });
 
   test('collects errors from failed batches while returning successful results', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     // Generate 21 concept UUIDs to trigger two batches (max 20 per batch)
     const concepts = Array.from({ length: 21 }, (_, i) => `concept-${i}`);
 
@@ -138,7 +216,9 @@ describe('useDrugsByConcepts', () => {
     });
     mockOpenmrsFetch.mockRejectedValueOnce(new Error('Batch failed'));
 
-    const { result } = renderHook(() => useDrugsByConcepts(concepts), { wrapper });
+    const { result } = renderHook(() => useDrugsByConcepts(concepts), {
+      wrapper,
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -146,11 +226,10 @@ describe('useDrugsByConcepts', () => {
     expect(result.current.drugs[0].display).toBe('Aspirin 81mg');
     expect(result.current.errors).toHaveLength(1);
     expect(result.current.errors[0].message).toBe('Batch failed');
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to fetch drugs for concepts'),
-      expect.any(Error),
+    expect(mockLogError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Batch failed' }),
+      'Fetch medications linked to matching concepts',
     );
-    consoleErrorSpy.mockRestore();
   });
 
   test('paginates when results fill the page size', async () => {
@@ -161,7 +240,13 @@ describe('useDrugsByConcepts', () => {
       display: `Drug ${i}`,
     }));
 
-    const secondPage = [{ ...mockDrugSearchResultApiData[1], uuid: 'drug-page2-0', display: 'Drug 50' }];
+    const secondPage = [
+      {
+        ...mockDrugSearchResultApiData[1],
+        uuid: 'drug-page2-0',
+        display: 'Drug 50',
+      },
+    ];
 
     // First call returns full page (triggers pagination), second returns partial page (stops)
     mockOpenmrsFetch.mockResolvedValueOnce({ data: { results: fullPage } });

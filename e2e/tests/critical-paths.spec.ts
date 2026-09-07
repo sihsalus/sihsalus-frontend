@@ -1,17 +1,22 @@
 import { expect, test } from '@playwright/test';
 import { getE2ECredentials } from '../utils/e2e-api';
-import { getOpenmrsRestUrl, getSpaUrl, shouldIgnoreHTTPSErrors } from '../utils/e2e-urls';
+import { requireE2ERuntimeUuid } from '../utils/e2e-runtime-env';
+import { getSpaUrl, shouldIgnoreHTTPSErrors } from '../utils/e2e-urls';
 
-const patientUuid = process.env.E2E_PATIENT_UUID;
-if (!patientUuid) {
-  throw new Error('E2E_PATIENT_UUID must identify a synthetic test patient.');
-}
+let patientUuid: string;
 
 test.describe('Critical user journeys', () => {
+  test.beforeAll(() => {
+    patientUuid = requireE2ERuntimeUuid('E2E_PATIENT_UUID');
+  });
+
   test('interactive login creates an authenticated OpenMRS session', async ({ browser }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'Critical journeys run once; responsive coverage is separate');
     const { username, password } = getE2ECredentials();
-    const context = await browser.newContext({ ignoreHTTPSErrors: shouldIgnoreHTTPSErrors() });
+    const context = await browser.newContext({
+      ignoreHTTPSErrors: shouldIgnoreHTTPSErrors(),
+      storageState: { cookies: [], origins: [] },
+    });
     const page = await context.newPage();
 
     try {
@@ -25,11 +30,12 @@ test.describe('Critical user journeys', () => {
       await passwordField.fill(password);
       await page.getByRole('button', { name: /log in|login|iniciar sesi[oó]n|entrar/i }).click();
 
+      const browserOrigin = new URL(page.url()).origin;
       await expect
         .poll(
           async () => {
             const response = await page.request.get(
-              getOpenmrsRestUrl(`session?v=${encodeURIComponent('custom:(authenticated)')}`),
+              `${browserOrigin}/openmrs/ws/rest/v1/session?v=${encodeURIComponent('custom:(authenticated)')}`,
             );
             if (!response.ok()) return false;
             const session = (await response.json()) as { authenticated?: boolean };
@@ -69,7 +75,7 @@ test.describe('Critical user journeys', () => {
     await page.context().setOffline(false);
     await expect(connectivityToasts.getByText('Conexión restablecida.', { exact: true }).last()).toBeVisible();
 
-    await page.goto('patient-search');
+    await page.goto('search');
     await expect(page.locator('main, input[type="search"], input[placeholder*="Buscar"]').first()).toBeVisible({
       timeout: 20_000,
     });

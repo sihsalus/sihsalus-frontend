@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { defineAppE2ESuite } from '../../packages/tooling/configs/playwright-suite';
 import { getSpaBaseUrl, getSpaUrl } from '../utils/e2e-urls';
 
@@ -13,9 +14,9 @@ const webServer =
 
 export default defineAppE2ESuite({
   testDir: './specs',
-  globalSetup: require.resolve('./core/global-setup'),
+  globalSetup: path.resolve(__dirname, 'core/global-setup.ts'),
   baseURL: getSpaBaseUrl(),
-  storageState: './storageState.json',
+  storageState: path.resolve(__dirname, 'storageState.json'),
   expectTimeout: 40 * 1000,
   fullyParallel: true,
   trace: 'retain-on-failure',

@@ -1,9 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
+import { requireE2ERuntimeUuid } from '../utils/e2e-runtime-env';
 
-const patientUuid = process.env.E2E_PATIENT_UUID;
-if (!patientUuid) {
-  throw new Error('E2E_PATIENT_UUID must identify a synthetic test patient.');
-}
+let patientUuid: string;
 
 const consultaExternaTabs = [
   /Triajes previos/i,
@@ -23,10 +21,6 @@ const historySections = [
   {
     tab: /Plan de Tratamiento/i,
     region: /Historial de Planes de Tratamiento/i,
-  },
-  {
-    tab: /Referencia \/ Contrarreferencia/i,
-    region: /Historial de referencias y contrarreferencias/i,
   },
 ];
 
@@ -66,6 +60,10 @@ function getConsultaExternaTabList(page: Page) {
 }
 
 test.describe('Consulta externa - hoja clínica', () => {
+  test.beforeAll(() => {
+    patientUuid = requireE2ERuntimeUuid('E2E_PATIENT_UUID');
+  });
+
   test('muestra las ocho pestañas de la hoja de consulta externa', async ({ page }) => {
     await openConsultaExterna(page);
 
@@ -120,6 +118,21 @@ test.describe('Consulta externa - hoja clínica', () => {
       const historyRegion = page.getByRole('region', { name: section.region }).first();
       await expect(historyRegion, `La sección debe mostrar ${section.region}`).toBeVisible({ timeout: 15_000 });
     }
+
+    await tabList.getByRole('tab', { name: /Referencia \/ Contrarreferencia/i }).click();
+    const referralViews = page.getByRole('tablist', {
+      name: /Vistas de referencia y contrarreferencia|Referral and counter-referral views/i,
+    });
+    await expect(referralViews).toBeVisible({ timeout: 15_000 });
+    for (const view of [
+      /Referencias emitidas|Issued referrals/i,
+      /Contrarreferencias recibidas|Received counter-referrals/i,
+    ]) {
+      const tab = referralViews.getByRole('tab', { name: view });
+      await expect(tab).toBeVisible();
+      await tab.click();
+      await expect(page.getByRole('heading', { name: view, exact: true })).toBeVisible();
+    }
   });
 
   test('abre el historial canónico desde Consultas previas', async ({ page }, testInfo) => {
@@ -139,7 +152,11 @@ test.describe('Consulta externa - hoja clínica', () => {
     await selectConsultaExternaTab(page, /Diagn[oó]stico/i);
     await page.getByRole('button', { name: /Registrar Diagn[oó]stico|Add diagnosis/i }).click();
 
-    await expect(page.getByText(/Resumen de consulta|Visit note/i, { exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(
+      page.getByText(/Resumen de consulta|Visit note/i, { exact: true }).filter({ visible: true }),
+    ).toBeVisible({
+      timeout: 20_000,
+    });
     await expect(
       page.getByRole('textbox', {
         name: /Indicaciones no farmacol[oó]gicas|Non-pharmacological instructions/i,
@@ -171,7 +188,9 @@ test.describe('Consulta externa - hoja clínica', () => {
     await selectConsultaExternaTab(page, /Plan de Tratamiento/i);
     await page.getByRole('button', { name: /Prescribir medicamentos|Prescribe medications/i }).click();
 
-    await expect(page.getByText(/Canasta de [oó]rdenes|Order basket/i, { exact: true })).toBeVisible({
+    await expect(
+      page.getByText(/Canasta de [oó]rdenes|Order basket/i, { exact: true }).filter({ visible: true }),
+    ).toBeVisible({
       timeout: 20_000,
     });
 

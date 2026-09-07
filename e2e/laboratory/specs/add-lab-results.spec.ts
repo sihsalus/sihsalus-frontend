@@ -10,6 +10,7 @@ let testOrder: Order;
 let encounter: Encounter;
 let orderer: Provider;
 let fullName: string;
+let testName: string;
 let visit: Visit;
 
 test.beforeEach(async ({ api, patient }) => {
@@ -18,6 +19,8 @@ test.beforeEach(async ({ api, patient }) => {
   encounter = await createEncounter(api, patient.uuid, orderer.uuid, visit);
   testOrder = await generateRandomTestOrder(api, patient.uuid, encounter, orderer.uuid);
   fullName = patient.person?.display;
+  testName = testOrder.concept.display?.trim() ?? '';
+  expect(testName, 'The created laboratory order must identify its test').not.toBe('');
 });
 
 test.describe('Laboratory order workflow', () => {
@@ -36,7 +39,7 @@ test.describe('Laboratory order workflow', () => {
 
     await test.step('Then I should see the order with status "not picked"', async () => {
       await expect(page.getByText(/Status:Order not picked/i)).toBeVisible();
-      await expect(page.getByRole('cell', { name: 'serum glucose' })).toBeVisible();
+      await expect(page.getByRole('cell', { name: testName, exact: true })).toBeVisible();
     });
 
     await test.step('When I click Pick Lab Request and confirm', async () => {
@@ -58,12 +61,12 @@ test.describe('Laboratory order workflow', () => {
 
     await test.step('Then I should see the order with In progress status', async () => {
       await expect(page.getByLabel('Structured list section').getByText('In progress')).toBeVisible();
-      await expect(page.getByRole('cell', { name: 'serum glucose' })).toBeVisible();
+      await expect(page.getByRole('cell', { name: testName, exact: true })).toBeVisible();
     });
 
     await test.step('When I click Add lab results and enter a value', async () => {
       await page.getByRole('button', { name: 'Add lab results' }).click();
-      await page.getByRole('spinbutton', { name: 'serum glucose (>= 0' }).fill('35');
+      await page.getByRole('spinbutton', { name: testName }).fill('35');
     });
 
     await test.step('And I save the results', async () => {
@@ -85,7 +88,7 @@ test.describe('Laboratory order workflow', () => {
     await test.step('Then I should see the order with Completed status', async () => {
       await expect(page.getByLabel('Structured list section').getByText('Completed')).toBeVisible();
       await expect(
-        page.getByLabel('Structured list section').getByRole('cell', { name: 'serum glucose' }),
+        page.getByLabel('Structured list section').getByRole('cell', { name: testName, exact: true }),
       ).toBeVisible();
     });
   });

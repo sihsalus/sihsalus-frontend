@@ -4,7 +4,7 @@ import { getSpaUrl } from '../utils/e2e-urls';
 test.describe('SPA Smoke Tests', () => {
   test('shell loads and renders the login page when unauthenticated', async ({ browser }) => {
     // Use a fresh context (no stored auth) to verify login page renders
-    const ctx = await browser.newContext();
+    const ctx = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await ctx.newPage();
 
     await page.goto(getSpaUrl('login'));

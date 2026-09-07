@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { requireE2ERuntimeUuid } from '../utils/e2e-runtime-env';
 
 /**
  * E2E del formulario de citas (workspace del patient chart).
@@ -9,13 +10,10 @@ import { expect, type Page, test } from '@playwright/test';
  *  - El flujo de cita recurrente exige una fecha de finalización.
  */
 
-const PATIENT_UUID = process.env.E2E_APPOINTMENTS_PATIENT_UUID;
-if (!PATIENT_UUID) {
-  throw new Error('E2E_APPOINTMENTS_PATIENT_UUID must identify a synthetic test patient.');
-}
+let patientUuid: string;
 
 async function openAppointmentsForm(page: Page) {
-  await page.goto(`patient/${PATIENT_UUID}/chart/Appointments`, {
+  await page.goto(`patient/${patientUuid}/chart/Appointments`, {
     waitUntil: 'domcontentloaded',
   });
   await page.waitForLoadState('networkidle').catch(() => null);
@@ -46,6 +44,10 @@ async function selectFirstUpssAndGetServiceSelect(page: Page) {
 }
 
 test.describe('Formulario de citas', () => {
+  test.beforeAll(() => {
+    patientUuid = requireE2ERuntimeUuid('E2E_APPOINTMENTS_PATIENT_UUID');
+  });
+
   test('se ajusta al ancho del workspace sin desplazamiento horizontal', async ({ page }) => {
     await openAppointmentsForm(page);
 

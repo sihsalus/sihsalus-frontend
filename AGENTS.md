@@ -37,6 +37,14 @@ yarn install --immutable
 
 - Preserve unrelated work. Do not clean, restore, or mass-format files outside
   the requested scope.
+- Inventory staged, unstaged, untracked changes and existing worktrees before
+  integrating local work. Record the original branch and SHA; verify a
+  recoverable backup before relocating changes. Never drop a user's stash as
+  routine cleanup. See the preservation procedure in `CONTRIBUTING.md`.
+- Give each validating worktree its own dependency installation. Do not share
+  a `node_modules` symlink across branches; workspace links can silently test
+  another worktree. Run dependent shell steps with fail-fast behavior and
+  resolve all merge conflicts before validation.
 - An existing installation is sufficient for documentation-only work.
 - Follow the Quick Start in `README.md` to run the SPA. Do not improvise backend
   URLs, credentials, or environment variables.
@@ -49,6 +57,9 @@ yarn install --immutable
 - Declare cross-workspace dependencies in `package.json`.
 - Keep configurable clinical UUIDs in `config-schema`, workspace names in shared
   constants, and user-visible text in both `en.json` and `es.json`.
+- Treat navigation order as a product contract. Prefer the existing extension
+  slot configuration over competing per-module positions or a second sorter;
+  preserve permissions, visibility conditions, routes, and translated labels.
 - Do not weaken route/RBAC guards, safe error handling, or TypeScript options
   that are already strict.
 - Never use production, PHI, or real patients. Never expose secrets or
@@ -73,9 +84,15 @@ yarn verify:changed --base origin/main --head HEAD
   typecheck/build as clinical validation.
 - Record every applicable validation as `PASSED`, `FAILED`, `NOT RUN`, or
   `BLOCKED`, with the command, result, scope, and SHA/environment when relevant.
+- Distinguish cached results, executed tests, skipped E2E, PR CI, release, and
+  deployed-build evidence. Revalidate the final diff after conflict resolution;
+  an older green SHA does not validate newly integrated behavior.
 - E2E and clinical tests use synthetic data only in a coordinated DEV/QLTY
   environment, never production. If access is unavailable, exhaust local checks
   and block only the external validation.
+- Preflight the authorized target, session, permissions, and required content
+  before creating fixtures. Keep recoverable synthetic cleanup state until
+  cleanup succeeds; never swallow cleanup failures or delete unverified data.
 
 ## Pull request instructions
 
@@ -98,6 +115,12 @@ yarn verify:changed --base origin/main --head HEAD
   is insufficient.
 - If a missing decision or authority could change the outcome, stop and ask
   only for what is required.
+- For an authorized merge, verify checks and conversations on the exact PR
+  head, include required domain/clinical approval, and never bypass gates.
+  Monitor the resulting main CI separately from release and environment
+  health. A stale-image promotion guard is not permission to rerun or deploy
+  an older build. Finish with the requested branch clean or explain the
+  preserved local changes and remaining blockers.
 
 ## Security reporting
 

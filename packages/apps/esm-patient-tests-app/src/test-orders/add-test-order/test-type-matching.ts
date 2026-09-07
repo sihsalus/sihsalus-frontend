@@ -21,6 +21,7 @@ const normalize = (text: string) =>
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
+    .replace(/\s+/g, ' ')
     .trim();
 const connectingWords = new Set(['de', 'del', 'el', 'la', 'los', 'las', 'of', 'the']);
 const tokens = (text: string) =>
@@ -49,8 +50,10 @@ function isSingleTypo(query: string, candidate: string): boolean {
 }
 
 function matchesToken(query: string, candidate: string) {
-  // Do not let e.g. a requested 24-hour test match a 124-hour test.
-  return /\d/.test(query) ? query === candidate : candidate.includes(query);
+  // Codes and qualifiers must not match inside other words (C in anticuerpos,
+  // I in II, con in concentracion). Prefixes also keep directa != indirecta.
+  const exactOnly = query.length <= 4 || /\d/.test(query) || /^[ivxlcdm]+$/.test(query);
+  return exactOnly ? query === candidate : candidate.startsWith(query);
 }
 
 export function collectTestTypes(
@@ -93,16 +96,22 @@ export function collectTestTypes(
 
 export function searchTestTypes(tests: Array<SearchableTestType>, searchTerm: string): Array<SearchableTestType> {
   if (!searchTerm.trim()) return tests;
+  const normalizedQuery = normalize(searchTerm);
   const query = tokens(searchTerm);
-  if (!query.length) return [];
   const findMatches = (approximate: boolean) =>
     tests.flatMap((test) => {
-      const matchedName = [test.label, ...test.synonyms].find((name) => {
-        const candidate = tokens(name);
-        return query.every((word) =>
-          candidate.some((term) => matchesToken(word, term) || (approximate && isSingleTypo(word, term))),
-        );
-      });
+      const names = [test.label, ...test.synonyms];
+      const matchedName =
+        names.find((name) => normalize(name) === normalizedQuery) ??
+        names.find((name) => {
+          const candidate = tokens(name);
+          return (
+            query.length > 0 &&
+            query.every((word) =>
+              candidate.some((term) => matchesToken(word, term) || (approximate && isSingleTypo(word, term))),
+            )
+          );
+        });
       return matchedName
         ? [
             {
@@ -113,7 +122,10 @@ export function searchTestTypes(tests: Array<SearchableTestType>, searchTerm: st
           ]
         : [];
     });
-  const direct = findMatches(false);
+  const direct = findMatches(false).sort(
+    (a, b) =>
+      Number(normalize(b.matchedName) === normalizedQuery) - Number(normalize(a.matchedName) === normalizedQuery),
+  );
   // Suggestions are a fallback, never silently mixed into catalog-name matches.
   return direct.length ? direct : findMatches(true);
 }

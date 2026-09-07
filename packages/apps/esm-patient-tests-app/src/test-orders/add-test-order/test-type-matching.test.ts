@@ -17,7 +17,6 @@ describe('catalog concept name matching', () => {
     'hematocrito',
     ' HÉMATOCRITO ',
     'hemato',
-    'matocri',
     'Hct',
     'Hto',
     'PCV',
@@ -50,6 +49,17 @@ describe('catalog concept name matching', () => {
   it('does not invent a recuento synonym or mix words from different names', () => {
     expect(searchTestTypes(catalog, 'recuento de hematocrito')).toEqual([]);
     expect(searchTestTypes(catalog, 'packed hematocrito')).toEqual([]);
+  });
+
+  it.each([
+    ['hepatitis C', 'Hepatitis B anticuerpos'],
+    ['test tipo I', 'Test tipo II'],
+    ['test tipo VIII', 'Test tipo XVIII'],
+    ['alanina con piridoxal', 'Alanina IFCC sin piridoxal concentracion'],
+    ['bilirrubina directa', 'Bilirrubina indirecta'],
+    ['alanina IFCC', 'Alanina IFCC2'],
+  ])('does not substitute a qualifier or code: %s / %s', (query, display) => {
+    expect(searchTestTypes(collectTestTypes([{ uuid: 'synthetic-distinct-test', display }], {}), query)).toEqual([]);
   });
 
   it('uses a recuento synonym when explicitly supplied by the configured catalog', () => {
@@ -152,5 +162,25 @@ describe('catalog concept name matching', () => {
     expect(searchTestTypes(catalog, '  ')).toEqual(catalog);
     expect(searchTestTypes(catalog, 'de la')).toEqual([]);
     expect(searchTestTypes([], 'hematocrito')).toEqual([]);
+  });
+
+  it('still finds an explicitly supplied short alias that is also a connecting word', () => {
+    const tests = collectTestTypes([{ uuid: 'synthetic-la', display: 'Catalog test', names: [{ display: 'LA' }] }], {});
+    expect(searchTestTypes(tests, 'LA').map((test) => test.conceptUuid)).toEqual(['synthetic-la']);
+    expect(searchTestTypes(tests, 'de la')).toEqual([]);
+  });
+
+  it('ranks a complete catalog name before partial names without discarding the other tests', () => {
+    const tests = collectTestTypes(
+      [
+        { uuid: 'synthetic-panel', display: 'A panel hematocrito' },
+        { uuid: 'synthetic-individual', display: 'Hematocrito' },
+      ],
+      {},
+    );
+    expect(searchTestTypes(tests, 'hematocrito').map((test) => test.conceptUuid)).toEqual([
+      'synthetic-individual',
+      'synthetic-panel',
+    ]);
   });
 });

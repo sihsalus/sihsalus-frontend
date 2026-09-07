@@ -8,7 +8,7 @@ Orderable tests are searched by their display name and concept names. `testTypeS
 
 ### Search by concepts and synonyms
 
-The order picker searches the names/synonyms imported into OpenMRS for the configured orderable concept sets. It ignores accents, letter case, repeated whitespace, word order and grammatical connectors, and supports partial words. A match must come from one catalog name or configured alias; it does not combine unrelated synonyms or infer equivalence from OCL mappings. Duplicate UUIDs across groups appear once with their combined names; different methods and panels retain their own UUIDs and full labels.
+The order picker searches the names/synonyms imported into OpenMRS for the configured orderable concept sets. It ignores accents, letter case, repeated whitespace, word order and grammatical connectors, and supports word prefixes of at least five letters. Short tokens, numeric codes and Roman numerals require exact matches, so `C` cannot match `anticuerpos`, `con` cannot match `concentracion`, and `directa` cannot match `indirecta`. A match must come from one catalog name or configured alias; it does not combine unrelated synonyms or infer equivalence from OCL mappings. Duplicate UUIDs across groups appear once with their combined names; different methods and panels retain their own UUIDs and full labels.
 
 If no catalog-name match exists, a single spelling error in a long alphabetic word can produce a clearly labeled suggestion. Short codes, numbers and method markers are not typo-corrected. Suggestions require opening the order form; neither direct addition nor bulk addition is available for them. The existing Provider, order permissions and order submission contracts are unchanged.
 

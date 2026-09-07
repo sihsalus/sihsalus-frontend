@@ -430,7 +430,7 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
   );
 
   const addToBasket = useCallback(() => {
-    if (!session.currentProvider?.uuid) {
+    if (!session.currentProvider?.uuid || testType.approximateMatch) {
       return;
     }
     const labOrder = createLabOrder(testType);

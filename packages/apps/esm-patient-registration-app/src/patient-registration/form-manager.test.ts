@@ -50,7 +50,7 @@ import {
   peruSisEessNameAttributeTypeUuid,
   peruSisTypeDescriptionAttributeTypeUuid,
 } from './peru-registration-config';
-import { registrationErrorCodes } from './registration-errors';
+import { RegistrationDomainError, registrationErrorCodes } from './registration-errors';
 
 vi.mock('./patient-registration.resource', async () => ({
   ...(await vi.importActual('./patient-registration.resource')),
@@ -168,6 +168,21 @@ function getPeruRegistrationConfig() {
   return getEffectiveRegistrationConfig(
     getDefaultsFromConfigSchema(esmPatientRegistrationSchema) as RegistrationConfig,
   );
+}
+
+function getSessionWithPrivileges(...privileges: Array<string>): Session {
+  return {
+    authenticated: true,
+    sessionId: 'test-session',
+    user: {
+      privileges: privileges.map((privilege, index) => ({
+        display: privilege,
+        name: privilege,
+        uuid: `privilege-${index}`,
+      })),
+      roles: [],
+    },
+  } as Session;
 }
 
 describe('FormManager', () => {
@@ -513,6 +528,181 @@ describe('FormManager', () => {
           patientUuidMap,
         ),
       ).toEqual([{ nameUuid: 'additional-name-uuid', personUuid: 'patient-uuid' }]);
+    });
+
+    it('rejects a persisted relationship delete before writing patient data when access is denied', async () => {
+      const values = {
+        ...formValues,
+        patientUuid: 'patient-uuid',
+        identifiers: {},
+        relationships: [
+          {
+            action: 'DELETE' as const,
+            relatedPersonUuid: 'responsible-person-uuid',
+            relationshipType: 'relationship-type-uuid/aIsToB',
+            uuid: 'relationship-uuid',
+          },
+        ],
+      };
+
+      await expect(
+        FormManager.savePatientFormOnline(
+          false,
+          values,
+          {},
+          {},
+          null,
+          'location-uuid',
+          [],
+          {},
+          getSessionWithPrivileges(),
+          getPeruRegistrationConfig(),
+          new SavePatientTransactionManager(),
+        ),
+      ).rejects.toMatchObject({
+        code: registrationErrorCodes.relationshipDeleteForbidden,
+        technicalDetails: { requiredPrivilege: 'Delete Relationships' },
+      });
+
+      expect(mockSavePatient).not.toHaveBeenCalled();
+      expect(mockAddPatientIdentifier).not.toHaveBeenCalled();
+      expect(mockUpdatePatientIdentifier).not.toHaveBeenCalled();
+      expect(mockDeletePatientIdentifier).not.toHaveBeenCalled();
+      expect(mockDeleteRelationship).not.toHaveBeenCalled();
+    });
+
+    it('allows a persisted relationship delete when the session has Delete Relationships', async () => {
+      const values = {
+        ...formValues,
+        patientUuid: 'patient-uuid',
+        identifiers: {},
+        relationships: [
+          {
+            action: 'DELETE' as const,
+            relatedPersonUuid: 'responsible-person-uuid',
+            relationshipType: 'relationship-type-uuid/aIsToB',
+            uuid: 'relationship-uuid',
+          },
+        ],
+      };
+      mockSavePatient.mockResolvedValue({ ok: true, data: { uuid: 'patient-uuid' } } as never);
+      mockDeleteRelationship.mockResolvedValue({ ok: true } as never);
+
+      await expect(
+        FormManager.savePatientFormOnline(
+          false,
+          values,
+          {},
+          {},
+          null,
+          'location-uuid',
+          [],
+          {},
+          getSessionWithPrivileges('Delete Relationships'),
+          getPeruRegistrationConfig(),
+          new SavePatientTransactionManager(),
+        ),
+      ).resolves.toBe('patient-uuid');
+
+      expect(mockSavePatient).toHaveBeenCalledTimes(1);
+      expect(mockDeleteRelationship).toHaveBeenCalledWith('relationship-uuid');
+    });
+
+    it('uses the resolved person when rechecking an already completed companion transaction', () => {
+      const transaction = new SavePatientTransactionManager();
+      const companionRelationshipType = 'companion-type-uuid/aIsToB';
+      const relationship = {
+        action: 'UPDATE' as const,
+        companionRelationshipUuid: 'companion-relationship-uuid',
+        isCompanion: false,
+        relatedPersonUuid: '',
+        relationshipType: companionRelationshipType,
+        uuid: 'relationship-uuid',
+      };
+      transaction.relationshipRows['relationship-uuid'] = {
+        companionCompleted: true,
+        companionRelationshipUuid: 'companion-relationship-uuid',
+        relatedPersonUuid: 'resolved-person-uuid',
+        companionSignature: JSON.stringify({
+          action: 'UPDATE',
+          companionRelationshipType,
+          companionRelationshipUuid: 'companion-relationship-uuid',
+          isCompanion: false,
+          relatedPersonUuid: 'resolved-person-uuid',
+        }),
+      };
+
+      expect(() =>
+        FormManager.assertRelationshipDeleteAccess(
+          [relationship],
+          getSessionWithPrivileges(),
+          companionRelationshipType,
+          transaction,
+        ),
+      ).not.toThrow();
+      expect(() =>
+        FormManager.assertRelationshipDeleteAccess(
+          [{ ...relationship, relatedPersonUuid: 'different-person-uuid' }],
+          getSessionWithPrivileges(),
+          companionRelationshipType,
+          transaction,
+        ),
+      ).toThrow(RegistrationDomainError);
+      expect(mockDeleteRelationship).not.toHaveBeenCalled();
+    });
+
+    it('also rejects removing the persisted companion relationship before writing patient data', async () => {
+      const config = getPeruRegistrationConfig();
+      const transaction = new SavePatientTransactionManager();
+      config.relationshipOptions = {
+        ...config.relationshipOptions,
+        companionRelationshipType: 'companion-type-uuid/aIsToB',
+      };
+      transaction.relationshipRows['relationship-uuid'] = {
+        companionCompleted: true,
+        companionRelationshipUuid: 'companion-relationship-uuid',
+        companionSignature: JSON.stringify({
+          action: 'UPDATE',
+          companionRelationshipType: 'companion-type-uuid/aIsToB',
+          companionRelationshipUuid: 'companion-relationship-uuid',
+          isCompanion: true,
+          relatedPersonUuid: 'responsible-person-uuid',
+        }),
+      };
+
+      await expect(
+        FormManager.savePatientFormOnline(
+          false,
+          {
+            ...formValues,
+            patientUuid: 'patient-uuid',
+            identifiers: {},
+            relationships: [
+              {
+                action: 'UPDATE',
+                companionRelationshipUuid: 'companion-relationship-uuid',
+                isCompanion: false,
+                relatedPersonUuid: 'responsible-person-uuid',
+                relationshipType: 'relationship-type-uuid/aIsToB',
+                uuid: 'relationship-uuid',
+              },
+            ],
+          },
+          {},
+          {},
+          null,
+          'location-uuid',
+          [],
+          {},
+          getSessionWithPrivileges(),
+          config,
+          transaction,
+        ),
+      ).rejects.toMatchObject({ code: registrationErrorCodes.relationshipDeleteForbidden });
+
+      expect(mockSavePatient).not.toHaveBeenCalled();
+      expect(mockUpdateRelationship).not.toHaveBeenCalled();
+      expect(mockDeleteRelationship).not.toHaveBeenCalled();
     });
 
     it('awaits attribute deletion, propagates failures, and skips missing UUIDs', async () => {

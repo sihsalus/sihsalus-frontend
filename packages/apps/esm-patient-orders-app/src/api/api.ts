@@ -39,7 +39,32 @@ export function getMedicationByUuid(abortController: AbortController, orderUuid:
   );
 }
 
-export function useOrderEncounter(patientUuid: string): {
+type OrderEncounterReference = {
+  uuid?: string;
+  voided?: boolean;
+  encounterType?: string | { uuid?: string } | null;
+};
+
+export function findOrderEncounterUuid(
+  encounters: ReadonlyArray<OrderEncounterReference> | undefined,
+  orderEncounterType: string,
+) {
+  const expectedType = orderEncounterType?.trim().toLowerCase();
+  if (!expectedType) {
+    return undefined;
+  }
+
+  return encounters?.find((encounter) => {
+    const actualType =
+      typeof encounter.encounterType === 'string' ? encounter.encounterType : encounter.encounterType?.uuid;
+    return !encounter.voided && actualType?.toLowerCase() === expectedType;
+  })?.uuid;
+}
+
+export function useOrderEncounter(
+  patientUuid: string,
+  orderEncounterType: string,
+): {
   activeVisitRequired: boolean;
   isLoading: boolean;
   error: Error | null | undefined;
@@ -51,8 +76,8 @@ export function useOrderEncounter(patientUuid: string): {
   const now = new Date();
   const nowDateString = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
   const todayEncounter = useSWR<FetchResponse<{ results: Array<OpenmrsResource> }>, Error>(
-    !isLoadingSystemVisitSetting && !systemVisitEnabled && patientUuid
-      ? `${restBaseUrl}/encounter?patient=${patientUuid}&fromdate=${nowDateString}&limit=1`
+    !isLoadingSystemVisitSetting && !systemVisitEnabled && patientUuid && orderEncounterType
+      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${orderEncounterType}&fromdate=${nowDateString}&order=desc&limit=1`
       : null,
     openmrsFetch,
   );
@@ -76,7 +101,7 @@ export function useOrderEncounter(patientUuid: string): {
       ? {
           activeVisitRequired: true,
           isLoading: visit?.isLoading,
-          encounterUuid: visit?.currentVisit?.encounters?.[0]?.uuid,
+          encounterUuid: findOrderEncounterUuid(visit?.currentVisit?.encounters, orderEncounterType),
           error: visit?.error,
           mutate: wrapMutate(visit?.mutate),
         }
@@ -93,6 +118,7 @@ export function useOrderEncounter(patientUuid: string): {
     visit,
     todayEncounter,
     systemVisitEnabled,
+    orderEncounterType,
     noOpMutate,
     wrapMutate,
   ]);

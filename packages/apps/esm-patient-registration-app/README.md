@@ -176,10 +176,19 @@ Patient registration depends on metadata loaded at runtime: address template, re
 
 Queued registration writes share the queue synchronization abort signal, including the patient-photo attachment fallback.
 An interrupted upload must remain associated with the original queue owner and must not start under a later session.
+At synchronization time, registration requires a loaded, authenticated session for the queue owner and passes that
+session's current user and privileges to the save handler. The queued provider and registration context are preserved;
+the queued session snapshot is not mutated. Loading, expired, missing-user, or different-user sessions fail before the
+save handler runs and leave the item available for a later authenticated retry through the shared queue.
+Validate this contract with `yarn workspace @sihsalus/esm-patient-registration-app test src/offline.test.ts` and the
+shared offline queue tests. Before merging, also verify reconnection, session expiry, and changed permissions using
+synthetic registrations in coordinated DEV/QLTY; unit tests do not replace that smoke test.
 Existing-patient offline refreshes require confirmed fresh network responses. A stale cached success cannot complete the
 refresh, and each stable cache entry is replaced only after its corresponding network response succeeds.
 
 - New registrations must wait for patient identifier types before submission, because the form cannot safely create the required identifiers without that metadata.
 - Editing an existing patient may continue when identifier types are temporarily unavailable, as long as the form already has existing identifiers. The existing identifiers remain visible, but adding or changing identifier types is disabled until the metadata loads.
 - Relationship controls are shown only after relationship types are available. If they cannot be loaded, the section shows an error state instead of an endless skeleton so the rest of the edit flow can still be used.
+- Removing or replacing a persisted relationship requires the OpenMRS `Delete Relationships` privilege. Online submission checks it before writing identifiers or demographics, so an unauthorized relationship delete cannot leave a partially updated patient.
+- An expected relationship permission denial is shown as a warning with guidance to ask an authorized user; it still blocks the save. Retry checks use the person UUID already resolved by the transaction when the form row has an empty UUID, while changes to that person still require a fresh permission check.
 - Address quick search is rendered only after the address template is available. This prevents a search-only address section where the user can find an address but cannot see or edit the address fields.

@@ -102,6 +102,8 @@
   "medicationDispenseSaveErrorMessage": "No se pudo guardar la dispensación. Intente nuevamente.",
   "medicationFormulation": "Formulación del Medicamento",
   "medicationListUpdated": "La lista de dispensación de medicamentos ha sido actualizada.",
+  "medicationOrderCreated": "Nueva orden de medicamentos",
+  "medicationOrderCreatedMessage": "Se agregó una nueva orden de medicamentos a la bandeja de farmacia.",
   "missedCollections": "Retiros no realizados",
   "noAllergyDetailsFound": "No se encontraron detalles de alergias",
   "noHistoryFound": "No se encontró historial",

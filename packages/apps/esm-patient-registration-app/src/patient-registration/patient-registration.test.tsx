@@ -817,6 +817,28 @@ describe('Registering a new patient', () => {
     );
   });
 
+  it('shows a relationship permission denial as an expected warning', async () => {
+    const user = userEvent.setup();
+    const domainError = new RegistrationDomainError(
+      registrationErrorCodes.relationshipDeleteForbidden,
+      'The current user lacks Delete Relationships.',
+    );
+    const savePatientForm = vi.fn().mockRejectedValue(domainError);
+
+    render(<PatientRegistration isOffline={false} savePatientForm={savePatientForm} />, { wrapper: Wrapper });
+    await fillRequiredFields();
+    await user.click(screen.getByRole('button', { name: /register patient/i }));
+
+    await waitFor(() => expect(savePatientForm).toHaveBeenCalled());
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'warning',
+        subtitle:
+          'Your account cannot remove or replace saved relationships. No changes from this attempt were saved. Ask an authorized user for help.',
+      }),
+    );
+  });
+
   it('should not save the patient if validation fails', async () => {
     const user = userEvent.setup();
     const mockSavePatientForm = vi.fn();

@@ -26,6 +26,33 @@ responsible for enforcing the same allowlist and validating the uploaded
 content rather than trusting the filename or browser MIME type. PDF previews
 are rendered in a fully sandboxed iframe with no referrer information.
 
+## Selecting and uploading files
+
+The chart uploader accepts several files in one selection, including three or
+more images. The complete selection is validated and read before review opens,
+and review preserves selection order. If any file is unsupported, oversized,
+or unreadable, no part of that selection proceeds to review. The user can
+correct the selection and try again; no upload has started at that point.
+Single-file consumers, including supplemental laboratory PDFs and patient
+photos, reject multiple files even when supplied through drag and drop.
+
+After the user reviews each file, each upload is attempted once per batch.
+Pending, successful, and failed files remain distinguishable. Completion is
+reported only when all uploads succeed. Adding another batch is disabled while
+uploads are pending or have an unconfirmed outcome; after a failure, close the
+window and reload the attachment list to check what was saved before retrying.
+Closing the generic uploader does not cancel an in-flight request. The existing
+laboratory PDF consumer also prevents closing during its in-flight request.
+Background notifications omit filenames when an upload completes after the
+user has moved away from the patient context.
+
+Local regression coverage includes out-of-order reads of three images,
+validation/read failures, single-file restrictions, review order, callback
+rerenders/StrictMode, and partial upload failure. Before clinical rollout,
+validate selecting, reviewing, saving, and reloading at least three synthetic
+images in coordinated DEV/QLTY, plus the restricted single-PDF workflow and a
+failed upload; confirm the deployed build and synthetic fixture cleanup.
+
 ## Supplemental PDFs for laboratory orders
 
 The `lab-order-pdf-attachments-slot` shows additive PDF documents associated with one persisted laboratory order.

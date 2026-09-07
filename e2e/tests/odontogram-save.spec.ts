@@ -1,9 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
+import { requireE2ERuntimeUuid } from '../utils/e2e-runtime-env';
 
-const patientUuid = process.env.E2E_PATIENT_UUID;
-if (!patientUuid) {
-  throw new Error('E2E_PATIENT_UUID must identify a synthetic test patient.');
-}
+let patientUuid: string;
 
 interface EncounterPayload {
   patient?: string;
@@ -67,6 +65,10 @@ async function openOdontogramEditor(page: Page) {
 test.use({ serviceWorkers: 'block' });
 
 test.describe('Odontograma - registro en atención odontológica', () => {
+  test.beforeAll(() => {
+    patientUuid = requireE2ERuntimeUuid('E2E_PATIENT_UUID');
+  });
+
   test('el dashboard expone la lista de odontogramas del paciente', async ({ page }) => {
     await openOdontogramDashboard(page);
 

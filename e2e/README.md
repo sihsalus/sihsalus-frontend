@@ -89,6 +89,17 @@ marcados como sintéticos, que la ubicación y el proveedor clínico estén acti
 y que `E2E_PATIENT_UUID` tenga exactamente una visita preparada activa. El
 preflight no imprime el cuerpo del paciente en los logs.
 
+La suite de laboratorio valida el mismo target, ubicación y proveedor, pero no
+exige los dos pacientes reservados de la suite clínica: sus fixtures existentes
+crean un paciente sintético por prueba. Su estado de autenticación usa una ruta
+absoluta dentro de `e2e/laboratory/`, independientemente del directorio desde el
+que se lance el runner. Esta separación no habilita aprovisionamiento automático
+en la suite clínica ni cambia los secretos/variables requeridos por CI.
+
+`test:e2e:unit` descubre las pruebas unitarias de `e2e/utils/`, incluidas las de
+configuración tardía y los contratos de selectores del laboratorio. No ejecuta
+specs Playwright ni se conecta al backend.
+
 ## Cobertura activa
 
 | Flujo                     | Evidencia E2E obligatoria                                                                   |
@@ -160,11 +171,21 @@ el contrato impide que ambas fuentes diverjan en silencio.
 ## Datos de prueba
 
 Los specs que necesitan un paciente lo reciben por `E2E_PATIENT_UUID`
-(`E2E_APPOINTMENTS_PATIENT_UUID` para citas) y **fallan al cargar el módulo** si
-falta. Ambos deben identificar pacientes reservados cuyo nombre o identificador
+(`E2E_APPOINTMENTS_PATIENT_UUID` para citas) y los validan en `beforeAll`, después
+del preflight, antes de usar un paciente. Así se pueden listar los specs sin
+credenciales ni pacientes; listar no ejecuta ni valida el flujo. Ambos UUID
+siguen siendo obligatorios al ejecutar la suite y deben identificar pacientes
+reservados cuyo nombre o identificador
 contenga el token independiente `E2E` o `SYNTHETIC`; el primero debe tener una
 sola visita activa. Es deliberado: mejor un error claro que una corrida que no
 prueba nada o que toque por accidente una historia no sintética.
+
+La aceptación del ácido ursodesoxicólico se mantiene: no se sustituye por otro
+medicamento disponible para hacer pasar el gate. La firma de nuevas órdenes y
+el aprovisionamiento/cleanup recuperable se revisan por separado; no se activan
+en esta recuperación de regresiones. Los recursos parciales de fixtures deben
+tener un journal privado, validación de pertenencia y recuperación antes de
+promover un nuevo harness mutante.
 
 Al crear datos desde un script, anularlos al terminar. Ojo: `DELETE
 /ws/rest/v1/patient/{uuid}` responde **200 sin anular nada** si no se pasa

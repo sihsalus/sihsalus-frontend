@@ -1,7 +1,7 @@
 import { type APIRequestContext, type APIResponse } from '@playwright/test';
 import { describe, expect, it, vi } from 'vitest';
 import { type E2EGateConfig } from './e2e-gate-config';
-import { validateE2ERemotePreflight } from './e2e-remote-preflight';
+import { validateE2EBaseRemotePreflight, validateE2ERemotePreflight } from './e2e-remote-preflight';
 
 const outpatientPatientUuid = '11111111-1111-4111-8111-111111111111';
 const appointmentsPatientUuid = '22222222-2222-4222-8222-222222222222';
@@ -60,12 +60,56 @@ function validResponse(url: string): APIResponse {
 }
 
 describe('validateE2ERemotePreflight', () => {
+  it('validates a provider and location before patient fixtures are provisioned', async () => {
+    const api = apiWith(validResponse);
+    const { appointmentsPatientUuid: _appointments, patientUuid: _patient, ...baseConfig } = config;
+
+    await validateE2EBaseRemotePreflight(baseConfig, { createApiContext: async () => api });
+
+    expect(api.get).toHaveBeenCalledTimes(2);
+    expect(api.get).toHaveBeenCalledWith(expect.stringMatching(/^location\//));
+    expect(api.get).toHaveBeenCalledWith(expect.stringMatching(/^session\?/));
+    expect(api.dispose).toHaveBeenCalledOnce();
+  });
+
   it('accepts active synthetic fixtures, location, provider, and exactly one active visit', async () => {
     const api = apiWith(validResponse);
 
     await validateE2ERemotePreflight(config, { createApiContext: async () => api });
 
     expect(api.get).toHaveBeenCalledTimes(5);
+    expect(api.dispose).toHaveBeenCalledOnce();
+  });
+
+  it.each([401, 403])('stops before patient reads after an HTTP %s base-preflight failure', async (status) => {
+    const api = apiWith((url) => (url.startsWith('session?') ? response(status) : validResponse(url)));
+    await expect(validateE2ERemotePreflight(config, { createApiContext: async () => api })).rejects.toThrow(
+      /account session could not be loaded/,
+    );
+    expect(api.get).not.toHaveBeenCalledWith(expect.stringMatching(/^patient\//));
+    expect(api.dispose).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    { authenticated: false, currentProvider: { uuid: 'provider-uuid' } },
+    { authenticated: true, currentProvider: null },
+    { authenticated: true, currentProvider: { uuid: 'provider-uuid', retired: true } },
+  ])('rejects an unauthenticated session or unavailable provider in the base gate', async (session) => {
+    const api = apiWith((url) => (url.startsWith('session?') ? response(200, session) : validResponse(url)));
+    await expect(validateE2EBaseRemotePreflight(config, { createApiContext: async () => api })).rejects.toThrow(
+      /active clinical provider/,
+    );
+    expect(api.dispose).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    {},
+    { results: [{ voided: false, stopDatetime: null }], links: [{ rel: 'next' }] },
+  ])('rejects an incomplete visit listing instead of assuming uniqueness', async (visits) => {
+    const api = apiWith((url) => (url.startsWith('visit?') ? response(200, visits) : validResponse(url)));
+    await expect(validateE2ERemotePreflight(config, { createApiContext: async () => api })).rejects.toThrow(
+      /visit listing is incomplete/,
+    );
     expect(api.dispose).toHaveBeenCalledOnce();
   });
 

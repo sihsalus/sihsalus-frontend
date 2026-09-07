@@ -64,6 +64,7 @@ export interface Observation {
 
 export interface Order {
   uuid: string;
+  concept: OpenmrsResource;
   dateActivated: string;
   dateStopped?: Date | null;
   dose: number;

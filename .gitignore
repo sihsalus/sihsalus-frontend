@@ -54,6 +54,9 @@ results.xml
 e2e/**/results.xml
 e2e/**/junit*.xml
 
+# Private recovery state for the quarantined notification proposal
+e2e/.runtime-notifications-dev-state.json
+
 # Large binary test fixtures (use Git LFS or download at test time)
 **/__mocks__/*.zip
 

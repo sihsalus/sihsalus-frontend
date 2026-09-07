@@ -4,7 +4,9 @@ Functionality for viewing test results and ordering tests, whether lab tests, ra
 
 Creating or editing a test order requires an active clinical Provider linked to the current session. The order UI must fail closed and must not construct an order with a missing orderer.
 
-Orderable tests are searched by their display name and concept names. `testTypeSearchAliases` provides a configurable compatibility fallback keyed by concept UUID; the default adds `TGP` for the existing alanine transferase concept. The same alias must still be published in OCL so this local fallback can eventually be removed.
+Orderable tests are searched by their display name and concept names. `testTypeSearchAliases` provides a configurable compatibility fallback keyed by concept UUID. The default retains `TGP` for the existing alanine transferase concept and adds it to the two ALT IFCC variants, with and without pyridoxal phosphate. Each variant keeps its own UUID and backend label; the alias does not substitute one method for another or add concepts absent from the loaded orderable sets. An empty configured alias map disables the fallback. The same synonym must still be published in OCL so this local fallback can eventually be removed.
+
+The hook regression tests cover the legacy alias, each IFCC variant, distinct choices, missing concepts, and disabled aliases. Before rollout, coordinate clinical/content review and a synthetic DEV/QLTY smoke that searches for TGP, checks the method shown, and verifies the selected concept in the saved order. Metadata existence, typechecking, and local tests alone do not establish orderability against deployed content.
 
 ## Test Results
 
